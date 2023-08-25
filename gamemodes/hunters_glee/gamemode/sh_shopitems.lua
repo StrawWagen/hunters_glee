@@ -161,7 +161,6 @@ local function bloodDonorPurchase( purchaser )
         playRandomSound( purchaser, thwap, 75, math.random( 100, 120 ) )
 
     end
-
 end
 
 
