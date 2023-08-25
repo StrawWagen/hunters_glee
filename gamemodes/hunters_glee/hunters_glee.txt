@@ -1,0 +1,52 @@
+"hunters_glee"
+{
+    "base"        "base"
+    "title"       "Hunter's Glee"
+    "category"    "pve"
+    "menusystem"  "1"
+    "workshopid"  "2848253104"
+
+    "settings"
+    {
+        1
+        {
+            "name"        "huntersglee_punish_navmesh_escapers"
+            "text"        "Kill people who escape the navmesh."
+            "help"        "Stops people from camping in places the terminators cannot reach."
+            "type"        "CheckBox"
+            "default"     "1"
+        }
+        2
+        {
+            "name"        "huntersglee_players_cannot_swim"
+            "text"        "Players cannot swim."
+            "help"        "Stops people from camping in places the terminators cannot swim."
+            "type"        "CheckBox"
+            "default"     "1"
+        }
+        3
+        {
+            "name"        "termhunter_modeloverride"
+            "text"        "Model override"
+            "help"        "The model of the terminator"
+            "type"        "Text"
+            "default"     "models/terminator/player/arnold/arnold.mdl"
+        }
+        4
+        {
+            "name"        "huntersglee_spawneroverridecount"
+            "text"        "Override terminator count."
+            "help"        "Overrides how many terminators will spawn, 0 for dynamic count. Above 4 WILL lag."
+            "type"        "Numeric"
+            "default"     "0"
+        }
+        5
+        {
+            "name"        "huntersglee_proceduralcratesmaxplayers"
+            "text"        "Player num, to stop crates."
+            "help"        "When there are less than this many people online, item crates will be randomly spawned around the map."
+            "type"        "Numeric"
+            "default"     "8"
+        }
+    }
+}

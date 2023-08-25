@@ -1,0 +1,5 @@
+gamemodes\hunters_glee\gamemode\shoppinggui.lua
+gamemodes\hunters_glee\gamemode\cl_scoreboard.lua
+gamemodes\hunters_glee\gamemode\sh_detecthunterkills.lua
+gamemodes\hunters_glee\gamemode\cl_spectateflashlight.lua
+lua\autorun\cl_shadowedTextFunc.lua

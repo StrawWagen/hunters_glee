@@ -12,6 +12,7 @@ SWEP.Slot             = 1
 
 SWEP.Spawnable        = true
 SWEP.AdminSpawnable    = false
+SWEP.Category = "Hunter's Glee"
 
 SWEP.AutoSwitchTo    = true
 SWEP.AutoSwitchFrom    = true
@@ -29,6 +30,10 @@ SWEP.Secondary.DefaultClip = -1
 SWEP.Secondary.Automatic   = false
 SWEP.Secondary.Ammo        = "none"
 
+if CLIENT then
+    resource.AddFile( "materials/entities/termhunt_hands.png" )
+
+end
 
 function SWEP:DrawHUD()             end
 function SWEP:PrintWeaponInfo()     end
@@ -49,7 +54,7 @@ function SWEP:ShouldDropOnDie()            return false end
 
 function SWEP:Initialize()
     if self.SetHoldType then
-        self:SetHoldType"normal"
+        self:SetHoldType("normal")
     else
         self:SetWeaponHoldType( "normal" )
     end

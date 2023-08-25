@@ -12,8 +12,9 @@ SWEP.Slot             = 1
 
 SWEP.Spawnable        = true
 SWEP.AdminSpawnable    = false
+SWEP.Category = "Hunter's Glee"
 
-SWEP.AutoSwitchTo    = true
+SWEP.AutoSwitchTo    = false
 SWEP.AutoSwitchFrom    = true
 SWEP.Weight         = 1
 
@@ -26,9 +27,13 @@ SWEP.Primary.Ammo          = "none"
 
 SWEP.Secondary.ClipSize    = -1
 SWEP.Secondary.DefaultClip = -1
-SWEP.Secondary.Automatic   = false
+SWEP.Secondary.Automatic   = true
 SWEP.Secondary.Ammo        = "none"
 
+if CLIENT then
+    resource.AddFile( "materials/entities/termhunt_shove.png" )
+
+end
 
 function SWEP:DrawHUD()             end
 function SWEP:PrintWeaponInfo()     end
@@ -67,7 +72,6 @@ function SWEP:ShoveSound( PitMod )
     self.Owner:EmitSound( Sound2, 70, math.random( 60, 80 ) + PitMod, 1, CHAN_STATIC )
 
 end
-    
 
 function SWEP:Initialize()
     if self.SetHoldType then
@@ -88,9 +92,9 @@ end
 function SWEP:Think()
 end
 
-local gtfo=Vector(1,1,1)*65000
+local gtfo = Vector( 1, 1, 1 ) * 65000
 
-function SWEP:GetViewModelPosition( pos, ang )
+function SWEP:GetViewModelPosition( _, ang )
     return gtfo,ang
 end
 
@@ -104,10 +108,21 @@ function SWEP:CanPrimaryAttack()
     return true
 end
 
-function SWEP:PrimaryAttack()
+function SWEP:SecondaryAttack()
+    if not self:CanPrimaryAttack() then return end
+    self:PrimaryAttack( 0.25 )
+
+end
+
+function SWEP:PrimaryAttack( firstMul )
     if not SERVER then return end
     if not self:CanPrimaryAttack() then return end
-    local Owner = self.Owner
+
+    firstMul = firstMul or 1
+
+    local pitchAdded = math.abs( firstMul - 1 ) * 5
+
+    local Owner = self:GetOwner()
     local NoHit = nil
     local AimVector = Owner:GetAimVector()
     local ShootPos = Owner:GetShootPos()
@@ -130,43 +145,44 @@ function SWEP:PrimaryAttack()
         local Phys = Hit:GetPhysicsObject() 
         if Phys and IsValid( Phys ) then
             Force.z = math.Clamp( Force.z, 0.5, 1 )
-            self:ShoveSound()
+            self:ShoveSound( pitchAdded )
             if Hit:IsPlayer() then
                 Force = Force * 500
-                Hit:SetVelocity( ( Hit:GetVelocity() * 0.5 ) + Force )
-                Owner:SetVelocity( Owner:GetVelocity() + -( Force* 0.25 ) ) 
+                Hit:SetVelocity( ( Hit:GetVelocity() * 0.5 ) + Force * firstMul )
+                Owner:SetVelocity( Owner:GetVelocity() + -( Force * 0.25 ) * firstMul )
                 self:SetNextPrimaryFire( CurTime() + 1 )
 
             else
                 local PlyForce = -Force * 125
+                Force = Force * math.Clamp( Phys:GetMass() / 400, 0.25, 1 )
                 Force = Force * 40000
-                Phys:ApplyForceOffset( Force, Trace.HitPos )
-                Owner:SetVelocity( Owner:GetVelocity() + PlyForce ) 
-                
+                Phys:ApplyForceOffset( Force * firstMul, Trace.HitPos )
+                Owner:SetVelocity( Owner:GetVelocity() + PlyForce * firstMul )
+
                 self:SetNextPrimaryFire( CurTime() + 0.8 )
 
             end
 
-            Owner:ViewPunch( Angle( -15, 0, 0 ) )
+            Owner:ViewPunch( Angle( -15, 0, 0 ) * firstMul )
         else
             NoHit = true
         end
-    elseif Hit:IsWorld() and Owner:GetEyeTrace().HitWorld then -- make sure we dont do the 5 sec cooldown when they just missed an entity
-        self:SetNextPrimaryFire( CurTime() + 3 )
+    elseif Hit:IsWorld() and not Trace.HitSky and Owner:GetEyeTrace().HitWorld then -- make sure we dont do the 5 sec cooldown when they just missed an entity
+        self:SetNextPrimaryFire( CurTime() + 2.2 )
         local mul = -150
         mul = mul * ( Owner.parkourForce or 0.3 )
-        Force = Force * mul
-        self:ShoveSound( -15 )
-        Owner:SetVelocity( ( Owner:GetVelocity() * 0.4 ) + Force ) 
-        Owner:ViewPunch( Angle( -20, 0, 0 ) )
+        Force = Force * mul * firstMul
+        self:ShoveSound( -15 + pitchAdded )
+        Owner:SetVelocity( ( Owner:GetVelocity() * 0.4 ) + Force )
+        Owner:ViewPunch( Angle( -20, 0, 0 ) * firstMul )
 
     else
         NoHit = true
     end
     if NoHit then
         self:SetNextPrimaryFire( CurTime() + 0.5 )
-        self.Owner:ViewPunch( Angle( -1, 0, 0 ) )
-        self.Owner:EmitSound( "weapons/slam/throw.wav", 66, 120 )
+        Owner:ViewPunch( Angle( -1, 0, 0 ) )
+        Owner:EmitSound( "weapons/slam/throw.wav", 66, 120 )
     end
 end
 
@@ -174,7 +190,4 @@ function SWEP:OnDrop()
     if SERVER then
         self:Remove()
     end
-end
-
-function SWEP:SecondaryAttack()
 end
