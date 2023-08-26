@@ -1,7 +1,7 @@
 --announcer messages
--- will have func that sends announcement string to tbl of players
+-- func that sends announcement string to tbl of players
 -- so like check the pvs of divine conduit and give people a massive warning on their screen
--- ill just give it a "weight" variable so grigori descending from the heavens will override a small "you got score" one
+-- "weight" variable so grigori descending from the heavens will override a small "you got score"
 
 AddCSLuaFile()
 
@@ -72,7 +72,7 @@ local me = LocalPlayer()
 local screenMiddleW = ScrW() / 2
 local screenMiddleH = ScrH() / 2
 
--- we need to look for braodcast stuff!
+-- set the local vars so that we will start checkin the announcement table
 net.Receive( "glee_clean_announcement", function()
     expireTime = net.ReadFloat()
     currAnnouncement = net.ReadString()

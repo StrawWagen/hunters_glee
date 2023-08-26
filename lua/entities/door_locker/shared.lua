@@ -15,6 +15,12 @@ ENT.Model = "models/Items/item_item_crate.mdl"
 ENT.HullCheckSize = Vector( 20, 20, 10 )
 ENT.PosOffset = Vector( 0, 0, 10 )
 
+function ENT:SetupDataTables()
+    self:NetworkVar( "Entity", 0, "DoorToLock" )
+    self:NetworkVar( "Bool", 1, "CanLockDoor" )
+
+end
+
 function ENT:PostInitializeFunc()
     if CLIENT then
         -- HACK
@@ -22,29 +28,6 @@ function ENT:PostInitializeFunc()
 
     end
     --self:SetOwner( Entity( 1 ) )
-end
-
-function ENT:GetNearestDoor()
-    local nearestDoor = nil
-    local nearestDistance = math.huge
-    local myPos = self:GetPos()
-
-    -- Find all prop_door_rotating entities within a radius of 2048 units
-    local doors = ents.FindInSphere( myPos, 2048 )
-    for _, door in ipairs( doors ) do
-        if door:GetClass() == "prop_door_rotating" then
-            if not util.doorIsUsable( door ) then continue end
-            -- Calculate the distance between the door and the entity
-            local distance = myPos:Distance( door:GetPos() )
-            if distance < nearestDistance then
-                nearestDoor = door
-                nearestDistance = distance
-
-            end
-        end
-    end
-
-    return nearestDoor
 end
 
 function ENT:NukeHighlighter()
@@ -60,21 +43,21 @@ if CLIENT then
     local cam_Start3D = cam.Start3D
     local cam_End3D = cam.End3D
 
-    local doorOverrideMat = CreateMaterial( "CHAMSMATDOORLOCKER1", "UnlitGeneric", { ["$basetexture"] = "lights/white001", ["$model"] = 1, ["$ignorez"] = 1 } )
+    local doorOverrideMat = CreateMaterial( "CHAMSMATDOORLOCKER1", "UnlitGeneric", { ["$basetexture"] = "lights/white004", ["$model"] = 1, ["$ignorez"] = 1 } )
 
     function ENT:HighlightNearestDoor()
-        if not IsValid( self.nearestDoor ) then return end
+        if not IsValid( self:GetDoorToLock() ) then return end
         if not IsValid( self.player.doorHighliter ) then
-            self.player.doorHighliter = ClientsideModel( self.nearestDoor:GetModel() )
+            self.player.doorHighliter = ClientsideModel( self:GetDoorToLock():GetModel() )
 
             self.player.doorHighliter:Spawn()
 
-        elseif self.lastNearestDoor ~= self.nearestDoor then
-            self.lastNearestDoor = self.nearestDoor
-            self.nearestDoor:EmitSound( "ambient/levels/labs/electric_explosion5.wav", 100, 200 )
-            self.player.doorHighliter:SetModel( self.nearestDoor:GetModel() )
-            self.player.doorHighliter:SetPos( self.nearestDoor:GetPos() )
-            self.player.doorHighliter:SetAngles( self.nearestDoor:GetAngles() )
+        elseif self.lastNearestDoor ~= self:GetDoorToLock() then
+            self.lastNearestDoor = self:GetDoorToLock()
+            self:GetDoorToLock():EmitSound( "ambient/levels/labs/electric_explosion5.wav", 100, 200 )
+            self.player.doorHighliter:SetModel( self:GetDoorToLock():GetModel() )
+            self.player.doorHighliter:SetPos( self:GetDoorToLock():GetPos() )
+            self.player.doorHighliter:SetAngles( self:GetDoorToLock():GetAngles() )
 
         end
         if IsValid( self.player.doorHighliter ) then
@@ -82,7 +65,13 @@ if CLIENT then
             cam_Start3D();
                 materialOverride( doorOverrideMat )
 
-                setColorModulation( 255, 255, 255 )
+                green, blue = 255, 255
+                if not self:GetCanLockDoor() then
+                    green, blue = 0, 0
+
+                end
+
+                setColorModulation( 255, green, blue )
 
                 self.player.doorHighliter:DrawModel()
                 materialOverride()
@@ -91,10 +80,53 @@ if CLIENT then
 
         end
     end
+elseif SERVER then
+
+    function ENT:DecideCanLockDoor()
+        local door = self:GetDoorToLock()
+        if not IsValid( door ) then return end
+        if door:GetInternalVariable( "m_eDoorState" ) == 2 then return nil, "That door is open." end
+        if door:GetInternalVariable( "m_bLocked" ) == true then return nil, "That door is already locked." end
+
+        return true
+
+    end
+
+    function ENT:GetNearestDoor()
+        local nearestDoor = nil
+        local nearestDistance = math.huge
+        local myPos = self:GetPos()
+
+        -- Find all prop_door_rotating entities within a radius of 2048 units
+        local doors = ents.FindInSphere( myPos, 2048 )
+        for _, door in ipairs( doors ) do
+            if door:GetClass() == "prop_door_rotating" then
+                if not util.doorIsUsable( door ) then continue end
+                if not door:IsSolid() then return end
+                -- Calculate the distance between the door and the entity
+                local distance = myPos:Distance( door:GetPos() )
+                if distance < nearestDistance then
+                    nearestDoor = door
+                    nearestDistance = distance
+
+                end
+            end
+        end
+
+        return nearestDoor
+
+    end
 end
 
 function ENT:CanPlace()
-    if not IsValid( self.nearestDoor ) then return end
+    if not IsValid( self:GetDoorToLock() ) then return end
+    local canLock, cannotLockReason = self:DecideCanLockDoor()
+
+    if not canLock then
+        huntersGlee_Announce( { self.player }, 10, 5, cannotLockReason )
+        return
+
+    end
     return true
 
 end
@@ -102,7 +134,11 @@ end
 function ENT:ModifiableThink()
     self:SetPos( self.player:GetEyeTrace().HitPos + self.PosOffset )
 
-    self.nearestDoor = self:GetNearestDoor()
+    if SERVER then
+        self:SetDoorToLock( self:GetNearestDoor() )
+        self:SetCanLockDoor( self:DecideCanLockDoor() )
+
+    end
     if CLIENT then
         -- HACK
         self:SetNoDraw( true )
@@ -168,25 +204,26 @@ local function DoorOnUsedInitial( _, thingUsingTheDoor, currentlyProcessingPlaye
     -- check if the thing using the door is a player
     if thingUsingTheDoor:IsPlayer() then
         if thingUsingTheDoor == currentlyProcessingPlayer then
-            msg = "You've used a door you locked!"
+            currentlyProcessingPlayer:GivePlayerScore( -50 )
+            msg = "You locked this door, -50 score."
 
         -- check if the player has a specific value
-        elseif IsValid( currentlyProcessingPlayer.huntersGleeHunterThatIsTargetingPly ) then
+        elseif IsValid( thingUsingTheDoor.huntersGleeHunterThatIsTargetingPly ) then
             -- give the player a bunch of score
-            currentlyProcessingPlayer:GivePlayerScore( 150 )
-            msg = "A fleeing player has used one of your locked doors, you gain 150 score!"
+            currentlyProcessingPlayer:GivePlayerScore( 250 )
+            msg = "A fleeing player has used one of your locked doors, you gain 250 score!"
 
         else
             -- give the player some score
-            currentlyProcessingPlayer:GivePlayerScore( 85 )
-            msg = "A player has used one of your locked doors, you gain 85 score!"
+            currentlyProcessingPlayer:GivePlayerScore( 150 )
+            msg = "A player has used one of your locked doors, you gain 150 score!"
 
         end
     -- check if the thing using the door is a nextbot
     elseif thingUsingTheDoor:IsNextBot() then
         -- give the player a bit less score
-        currentlyProcessingPlayer:GivePlayerScore( 25 )
-        msg = "A terminator has used one of your locked doors, you gain 25 score!"
+        currentlyProcessingPlayer:GivePlayerScore( 80 )
+        msg = "A terminator has used one of your locked doors, you gain 80 score!"
 
     end
     huntersGlee_Announce( { currentlyProcessingPlayer }, 5, 10, msg )
@@ -199,7 +236,8 @@ function ENT:OnRemove()
 end
 
 function ENT:Place()
-    local door = self.nearestDoor
+    if not SERVER then return end
+    local door = self:GetDoorToLock()
     LockDoorAndRunAFunctionWhenTheDoorIsUsed( door, self.player, DoorOnUsedInitial )
     door:EmitSound( "doors/door_locked2.wav", 80 )
 

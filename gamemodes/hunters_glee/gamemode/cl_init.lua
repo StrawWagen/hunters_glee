@@ -1,8 +1,8 @@
 include( "shared.lua" )
-include( "cl_targetid.lua" )
-include( "cl_scoreboard.lua" )
-include( "cl_spectateflashlight.lua" )
 include( "shoppinggui.lua" )
+include( "modules/cl_targetid.lua" )
+include( "modules/cl_scoreboard.lua" )
+include( "modules/cl_spectateflashlight.lua" )
 
 local doHud = CreateClientConVar( "huntersglee_cl_showhud", 1, true, false, "Show the hud? Beats, score, round state...", 0, 1 )
 

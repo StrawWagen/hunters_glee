@@ -289,6 +289,6 @@ function ENT:Place()
     self.player = nil
     self:SetOwner( NULL )
 
-    SetGlobal2Entity( "terhunt_divine_conduit", self )
+    GAMEMODE:setTemporaryTrueBool( "terhunt_divine_conduit", 180 )
 
 end

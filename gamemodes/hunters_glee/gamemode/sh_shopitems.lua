@@ -1,4 +1,7 @@
+-- prophunt cant handle no active weapon
 -- metal detector with twist
+-- hypochondria perk fast heart beat makes your guy scream thinking hes having a heart attack idk 
+
 
 local thwap = {
     Sound( "physics/body/body_medium_impact_hard3.wav" ),
@@ -2134,7 +2137,7 @@ local function doorLockerPurchase( purchaser )
 end
 
 local function inversionCanPurchase( _ )
-    if IsValid( GetGlobal2Entity( "terhunt_player_swapper", nil ) ) then return nil, "It is too soon for another inversion to begin." end
+    if GAMEMODE:isTemporaryTrueBool( "terhunt_player_swapper" ) then return nil, "It is too soon for another inversion to begin." end
     return true, nil
 
 end
@@ -2236,6 +2239,16 @@ local function spawnAnotherHunterCheck( _ )
 
 end
 
+hook.Add( "huntersglee_plykilledhunter", "glee_rewardLinkedKills", function( killer, hunter )
+    if not hunter.linkedPlayer then return end
+    if killer ~= hunter.linkedPlayer then return end
+    local reward = 400
+    killer:GivePlayerScore( reward )
+
+    huntersGlee_Announce( { killer }, 50, 15, "You feel at peace, a weight has been lifted.\nThe doppleganger is dead...\n+" .. reward .. " score." )
+
+end )
+
 local function additionalHunter( purchaser )
 
     if not SERVER then return end
@@ -2265,7 +2278,7 @@ local function additionalHunter( purchaser )
 end
 
 local function conduitCanPurchase( _ )
-    if IsValid( GetGlobal2Entity( "terhunt_divine_conduit", nil ) ) then return nil, "It is too soon for another conduit to be opened." end
+    if GAMEMODE:isTemporaryTrueBool( "terhunt_divine_conduit" ) then return nil, "It is too soon for another conduit to be opened." end
     return true, nil
 
 end
@@ -2279,8 +2292,8 @@ local function conduitPurchase( purchaser )
 
 end
 
-local glee_scoretochosentimeoffset_divisor = CreateConVar( "huntersglee_scoretochosentimeoffset_divisor", "5", FCVAR_ARCHIVE, "smaller means grigori time goes up faster. bigger, means slower", 0, 100000 )
-local glee_chosenkillsrequired = CreateConVar( "huntersglee_chosenkillsrequired", "5", FCVAR_ARCHIVE, "how many hunters one must kill to get grigori", 0, 100000 )
+local glee_scoretochosentimeoffset_divisor = CreateConVar( "huntersglee_scoretochosentimeoffset_divisor", "5", FCVAR_NONE, "smaller means grigori time goes up faster. bigger, means slower", 0, 100000 )
+local glee_chosenkillsrequired = CreateConVar( "huntersglee_chosenkillsrequired", "2", FCVAR_NONE, "how many hunters one must kill to get grigori", 0, 100000 )
 
 if SERVER then
     -- offset will update constantly, use nw2
@@ -2590,18 +2603,6 @@ GM.ROUND_SETUP      = 0 -- wait until the navmesh has definitely spawned
 GM.ROUND_ACTIVE     = 1 -- death has consequences and score can accumulate
 GM.ROUND_INACTIVE   = 2 -- let players run around and prevent death
 GM.ROUND_LIMBO      = 3 -- just display winners
-
-        [ "score" ] = {
-            name = "Score",
-            desc = "Free score",
-            cost = -1000,
-            category = "Innate",
-            purchaseTimes = {
-                GAMEMODE.ROUND_INACTIVE,
-                GAMEMODE.ROUND_ACTIVE,
-            },
-            purchaseFunc = function() end,
-        },
 
 --]]
 
@@ -3213,8 +3214,8 @@ function GM:SetupShopCatalouge()
         -- lets dead people get a revive but they're fucked
         [ "additionalhunter" ] = {
             name = "Linked hunter",
-            desc = "Spawn another hunter.\nThey will take on your appearance.\nThe newcomer will never lose you, if you regain your life...",
-            cost = -125,
+            desc = "Spawn another hunter.\nThey will take on your appearance.\nIf you personally kill it, you will gain 400 score.\nThe newcomer will never lose you, if you regain your life...",
+            cost = -150,
             markup = 1,
             cooldown = 80,
             category = "Undead",
@@ -3228,7 +3229,7 @@ function GM:SetupShopCatalouge()
         -- ultimate stalemate breaker
         [ "temporalinversion" ] = {
             name = "Temporal Inversion",
-            desc = "Swaps a player out for their most remote enemy.\nCosts 400 to place.",
+            desc = "Swaps a player out for their most remote enemy.\nCosts 400 to place.\nCan only be used every 3 minutes.",
             cost = 0,
             markup = 1,
             cooldown = 5,
@@ -3272,7 +3273,7 @@ function GM:SetupShopCatalouge()
         -- explosive end to round
         [ "divinechosen" ] = {
             name = "grigori",
-            desc = "The ultimate sacrifice.\nThe gods gift you a fraction of their power, to end the hunt.\nRequires \"Patience\" to run dry, and 5 hunters be dead in your name.",
+            desc = "The ultimate sacrifice.\nThe gods gift you a fraction of their power, to end the hunt.\nRequires \"Patience\" to run dry, and 2 hunters be dead in your name.",
             cost = 1500,
             markup = 1,
             cooldown = math.huge,
@@ -3305,12 +3306,5 @@ function GM:SetupShopCatalouge()
 
     -- pls put other shop items in this hook! ty
     xpcall( function() hook.Run( "huntersglee_postshopsetup_shared", nil ) end, ErrorNoHaltWithStack )
-
-end
-
-function GM:SetupShop()
-    GAMEMODE.shopItems = {}
-    GAMEMODE.shopCategories = {}
-    GAMEMODE.invalidShopItems = {}
 
 end

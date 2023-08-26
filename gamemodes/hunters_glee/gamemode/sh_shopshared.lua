@@ -58,6 +58,14 @@ end
 
 -- all below is shared
 
+function GM:SetupShop()
+    GAMEMODE.shopItems = {}
+    GAMEMODE.shopCategories = {}
+    GAMEMODE.invalidShopItems = {}
+
+end
+
+-- yes, you can just add shop items!
 function GM:getDebugShopItemStructureTable()
     -- example item
     local theItemTable = { 
@@ -97,25 +105,26 @@ function GM:getDebugShopItemStructureTable()
 
 end
 
-local function addShopFail( shopItemName, reason )
-    ErrorNoHaltWithStack( "HUNTER'S GLEE: GAMEMODE:addShopItem( " .. shopItemName .. ", \"shopItemData\" ) failed for reason... " .. reason )
+local function addShopFail( shopItemIdentifier, reason )
+    ErrorNoHaltWithStack( "HUNTER'S GLEE: GAMEMODE:addShopItem( " .. shopItemIdentifier .. ", \"shopItemData\" ) failed for reason... " .. reason )
 
 end
 
-function GM:addShopItem( shopItemName, shopItemData )
+-- add VIA this function!
+function GM:addShopItem( shopItemIdentifier, shopItemData )
     -- check all the non-optional stuff
-    if not istable( shopItemData ) then addShopFail( shopItemName, "data table is not a table" ) return end
-    if not shopItemData.name then addShopFail( shopItemName, "invalid name" ) return end
-    if not shopItemData.desc then addShopFail( shopItemName, "invalid desc ( description )" ) return end
-    if not shopItemData.cost then addShopFail( shopItemName, "invalid cost" ) return end
-    if not shopItemData.category then addShopFail( shopItemName, "invalid category, create a new category first" ) return end
-    if not shopItemData.purchaseTimes or table.Count( shopItemData.purchaseTimes ) <= 0 then addShopFail( shopItemName, "purchaseTimes are not specified" ) return end
-    if not shopItemData.purchaseFunc then addShopFail( shopItemName, "invalid purchaseFunc" ) return end
+    if not istable( shopItemData ) then addShopFail( shopItemIdentifier, "data table is not a table" ) return end
+    if not shopItemData.name then addShopFail( shopItemIdentifier, "invalid name" ) return end
+    if not shopItemData.desc then addShopFail( shopItemIdentifier, "invalid desc ( description )" ) return end
+    if not shopItemData.cost then addShopFail( shopItemIdentifier, "invalid cost" ) return end
+    if not shopItemData.category then addShopFail( shopItemIdentifier, "invalid category, create a new category first" ) return end
+    if not shopItemData.purchaseTimes or table.Count( shopItemData.purchaseTimes ) <= 0 then addShopFail( shopItemIdentifier, "purchaseTimes are not specified" ) return end
+    if not shopItemData.purchaseFunc then addShopFail( shopItemIdentifier, "invalid purchaseFunc" ) return end
 
     -- if you reallllly want to override a shop item, fine!
-    if GAMEMODE.shopItems[shopItemName] ~= nil and hook.Run( "glee_canoverrideshopitem", shopItemName ) == nil then addShopFail( shopItemName, "Tried to add a shop item that already exists" ) return end
+    if GAMEMODE.shopItems[shopItemIdentifier] ~= nil and hook.Run( "glee_canoverrideshopitem", shopItemIdentifier ) == nil then addShopFail( shopItemIdentifier, "Tried to add a shop item that already exists" ) return end
 
-    GAMEMODE.shopItems[shopItemName] = shopItemData
+    GAMEMODE.shopItems[shopItemIdentifier] = shopItemData
 
 end
 

@@ -51,6 +51,11 @@ function SWEP:UpdateColor()
 
 end
 
+hook.Add( "PlayerDeath", "reviverfallbackremoveblockswitch", function( victim )
+    victim.blockSwitchingWeaponsReviver = nil
+
+end )
+
 hook.Add( "PlayerSwitchWeapon", "blockswitchingfromreviver", function( ply, _, _ )
     if ply.blockSwitchingWeaponsReviver then return true end
 end )
@@ -263,6 +268,7 @@ function SWEP:OnRemove()
     if self.resurrectingLoop then
         self.resurrectingLoop:Stop()
     end
+    self:GetOwner().blockSwitchingWeaponsReviver = nil
     timer.Stop( "weapon_idle" .. self:EntIndex() )
 
 end

@@ -262,10 +262,17 @@ function ENT:Place()
     plyToSwap:EmitSound( "hl1/ambience/port_suckin1.wav", 100, 80 )
 
     local timerName = "glee_playerswapper_timer_" .. tostring( plyToSwap:GetCreationID() )
+    local steps = 14
 
-    timer.Create( timerName, 1, 14, function()
+    timer.Create( timerName, 1, steps, function()
+        if not IsValid( self ) then timer.Remove( timerName ) return end
         if not IsValid( plyToSwap ) then timer.Remove( timerName ) return end
-        if not plyToSwap:Alive() then timer.Remove( timerName ) return end
+        if not plyToSwap:Alive() then
+            self:SwapPlayerAndTerminator( plyToSwap, furthestTerminator )
+            timer.Remove( timerName )
+            return
+
+        end
 
         local countdown = timer.RepsLeft( timerName )
 
@@ -286,9 +293,7 @@ function ENT:Place()
 
         if countdown == 0 then
             self:SwapPlayerAndTerminator( plyToSwap, furthestTerminator )
-            timer.Remove( timerName ) -- redundancy!
-            SafeRemoveEntityDelayed( self, 240 )
-            SetGlobal2Entity( "terhunt_player_swapper", self )
+            SafeRemoveEntity( self )
 
         elseif countdown <= 8 then
             GAMEMODE:GivePanic( plyToSwap, 50 )
@@ -318,7 +323,6 @@ function ENT:Place()
     self.player = nil
     self:SetOwner( NULL )
 
-    SetGlobal2Entity( "terhunt_player_swapper", self )
-
+    GAMEMODE:setTemporaryTrueBool( "terhunt_player_swapper", 240 + steps )
 
 end

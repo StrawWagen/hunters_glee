@@ -1,6 +1,7 @@
 function EFFECT:Init( data )
     local vOffset = data:GetOrigin()
     self.Ent = data:GetEntity()
+    if not IsValid( self.Ent ) then return end
     self.Position = vOffset
     self.Scayul = data:GetScale()
     self.TimeToDie = CurTime() + self.Scayul * 4

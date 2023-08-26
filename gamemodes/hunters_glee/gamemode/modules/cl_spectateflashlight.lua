@@ -25,7 +25,7 @@ local function DoFlashlight( state )
             end
 
             -- need this to stop a super terrible flashing effect
-            local dieTime = me:Ping() / 400
+            local dieTime = me:Ping() / 300
             dieTime = math.max( 0.1, dieTime )
 
             local dlight = DynamicLight( me:EntIndex() )

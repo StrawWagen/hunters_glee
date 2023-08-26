@@ -4,10 +4,11 @@ DeriveGamemode( "base" )
 
 include( "player_class/player_termrunner.lua" )
 
-include( "sh_panic.lua" )
 include( "sh_shopshared.lua" )
-include( "sh_playerdrowning.lua" )
-include( "sh_detecthunterkills.lua" )
+include( "modules/sh_panic.lua" )
+include( "modules/sh_playerdrowning.lua" )
+include( "modules/sh_detecthunterkills.lua" )
+include( "modules/sh_tempbools.lua" )
 
 resource.AddSingleFile( "sound/53937_meutecee_trumpethit07.wav" )
 resource.AddSingleFile( "sound/418788_name_heartbeat_single.wav" )
