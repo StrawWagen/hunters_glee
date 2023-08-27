@@ -22,16 +22,6 @@ function GM:purchaseItem( ply, itemIdentifier )
         end
     end
 
-    local name = "huntersglee_purchasecount_" .. itemIdentifier
-    -- use nw2 because this will never be set when player is not valid clientside
-    local oldCount = ply:GetNW2Int( name, 0 )
-    if oldCount == 0 then
-        -- clean this up when round restarts
-        GAMEMODE:RunFunctionOnProperCleanup( function() ply:SetNW2Int( name, 0 ) end, ply )
-
-    end
-    ply:SetNW2Int( name, oldCount + 1 )
-
     if dat.cooldown and dat.cooldown > 0 then
         GAMEMODE:doShopCooldown( ply, itemIdentifier, dat.cooldown )
 
@@ -51,6 +41,17 @@ function GM:purchaseItem( ply, itemIdentifier )
     net.Send( ply )
 
     ply:GivePlayerScore( -cost )
+
+    -- increment purchase count.. AFTER the cost is calculated...
+    local name = "huntersglee_purchasecount_" .. itemIdentifier
+    -- use nw2 because this will never be set when player is not valid clientside
+    local oldCount = ply:GetNW2Int( name, 0 )
+    if oldCount == 0 then
+        -- clean this up when round restarts
+        GAMEMODE:RunFunctionOnProperCleanup( function() ply:SetNW2Int( name, 0 ) end, ply )
+
+    end
+    ply:SetNW2Int( name, oldCount + 1 )
 
     if game.IsDedicated() then
         -- 'log' shop item purchases 

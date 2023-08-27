@@ -208,37 +208,6 @@ function ENT:CanPlace()
 
 end
 
-local directions = {
-    Vector( 1, 0, 0 ),
-    Vector( -1, 0, 0 ),
-    Vector( 0, 1, 0 ),
-    Vector( 0, -1, 0 ),
-    Vector( 0, 0, 1 ),
-    Vector( 0, 0, -1 ),
-}
-
-function ENT:NookRating( multiplier )
-    local facesBlocked = 0
-    local myPos = self:GetPos()
-    for _, direction in ipairs( directions ) do
-        local traceData = {
-            start = myPos,
-            endpos = myPos + direction * 500,
-            mask = MASK_SOLID_BRUSHONLY,
-
-        }
-
-        local trace = util.TraceLine( traceData )
-        if not trace.Hit then continue end
-
-        facesBlocked = facesBlocked + 1
-
-    end
-
-    return facesBlocked * multiplier
-
-end
-
 function ENT:Cancel()
     if not self.player then return end
     local preventCancel = self.preventCancel or 0
@@ -284,7 +253,6 @@ function ENT:GetGivenScore()
 
     scoreGiven = scoreGiven / startGivingScoreDist -- scale this to 0-1
     scoreGiven = scoreGiven * 40 -- bring this back up to the score we want
-    scoreGiven = scoreGiven + self:NookRating( 4 ) -- reward for placing indoors
 
     if smallestDistLinear < 1700 then
         scoreGiven = scoreGiven * 2.5 -- leap to way higher scores

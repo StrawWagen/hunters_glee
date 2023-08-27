@@ -2,6 +2,7 @@
 
 DeriveGamemode( "base" )
 
+include( "lib/sh_termfuncs.lua" )
 include( "player_class/player_termrunner.lua" )
 
 include( "sh_shopshared.lua" )

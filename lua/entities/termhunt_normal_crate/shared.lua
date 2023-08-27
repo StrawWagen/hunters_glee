@@ -24,44 +24,50 @@ local cratePunishmentDist = 1100
 
 function ENT:GetGivenScore()
     local plys = player.GetAll()
-    local smallestDist = maxScoreDist^2
+    local distToClosestPly = maxScoreDist^2
+    local myPos = self:GetPos()
 
     for _, currentPly in ipairs( plys ) do
         if currentPly:Health() <= 0 then continue end
-        local distToCurrentPlySqr = self:GetPos():DistToSqr( currentPly:GetPos() )
-        if distToCurrentPlySqr < smallestDist then
-            smallestDist = distToCurrentPlySqr
+        local distToCurrentPlySqr = myPos:DistToSqr( currentPly:GetPos() )
+        if distToCurrentPlySqr < distToClosestPly then
+            distToClosestPly = distToCurrentPlySqr
         end
     end
 
-    local smallestPunishmentDist = cratePunishmentDist^2
+    local closestCrateDist = cratePunishmentDist^2
     local tooCloseCount = 0
     local punishmentCount = 0
 
     for _, currentCrate in ipairs( ents.FindByClass( "item_item_crate" ) ) do
-        local distToCurrentCrateSqr = self:GetPos():DistToSqr( currentCrate:GetPos() )
-        if distToCurrentCrateSqr < smallestPunishmentDist then
+        local distToCurrentCrateSqr = myPos:DistToSqr( currentCrate:GetPos() )
+        if distToCurrentCrateSqr < closestCrateDist then
             tooCloseCount = tooCloseCount + 1
+            -- if we ever go above 3 crates in proximity, the proximity cost starts racking up
             if tooCloseCount < 3 then continue end
             punishmentCount = tooCloseCount
-            smallestPunishmentDist = distToCurrentCrateSqr
+            closestCrateDist = distToCurrentCrateSqr
         end
     end
 
-    local punishmentLinear = math.sqrt( smallestPunishmentDist )
-    local smallestDistLinear = math.sqrt( smallestDist )
+    local closestCrateDistLinear = math.sqrt( closestCrateDist )
+    local distToClosestPlyLinear = math.sqrt( distToClosestPly )
 
-    local punishmentGiven = math.abs( punishmentLinear - cratePunishmentDist )
+    -- how far we from the crate punishment distance
+    local punishmentGiven = math.abs( closestCrateDistLinear - cratePunishmentDist )
     punishmentGiven = punishmentGiven / cratePunishmentDist
-    punishmentGiven = punishmentCount + punishmentGiven * 7
+    -- so we have more than 3 crates nearby, that's a base punishment, then we add onto that the closer the 4th crate is to us
+    punishmentGiven = punishmentCount + ( punishmentGiven * 7 )^2
 
-    local scoreGiven =  math.Clamp( smallestDistLinear, 0, maxScoreDist )
+    local scoreGiven = math.Clamp( distToClosestPlyLinear, 0, maxScoreDist )
     scoreGiven = scoreGiven / maxScoreDist
-    scoreGiven = ( scoreGiven * 15 )
+    scoreGiven = ( scoreGiven * 5 )
+
+    scoreGiven = scoreGiven + terminator_Extras.GetNookScore( myPos ) * 6
 
     scoreGiven = scoreGiven + -punishmentGiven
 
-    if smallestDistLinear < tooCloseToPlayer then
+    if distToClosestPlyLinear < tooCloseToPlayer then
         scoreGiven = scoreGiven * 0.25
     end
 

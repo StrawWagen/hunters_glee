@@ -1,5 +1,6 @@
 AddCSLuaFile( "shared.lua" )
 AddCSLuaFile( "cl_init.lua" )
+AddCSLuaFile( "lib/sh_termfuncs.lua" )
 AddCSLuaFile( "modules/cl_targetid.lua" )
 AddCSLuaFile( "modules/cl_scoreboard.lua" )
 AddCSLuaFile( "modules/cl_spectateflashlight.lua" )

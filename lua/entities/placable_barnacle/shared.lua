@@ -245,9 +245,6 @@ function ENT:Think()
     end
 end
 
-local MEMORY_INERT = 2
-local MEMORY_WEAPONIZEDNPC = 32
-
 function ENT:Place( placeTraceResult )
     local yaw = math.Rand( -180, 180 )
     local ang = Angle( 0, yaw ,0 )

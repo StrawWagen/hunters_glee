@@ -75,10 +75,12 @@ function ENT:GetGivenScore()
     local tooCloseCount = 0
     local punishmentCount = 0
 
+    local myPos = self:GetPos()
+
     if termhunt_barrels_spawned then
         for _, currentBarrel in ipairs( termhunt_barrels_spawned ) do
             if not IsValid( currentBarrel ) then continue end
-            local distToCurrentBarrelSqr = self:GetPos():DistToSqr( currentBarrel:GetPos() )
+            local distToCurrentBarrelSqr = myPos:DistToSqr( currentBarrel:GetPos() )
 
             if distToCurrentBarrelSqr < smallestPunishmentDist then
                 tooCloseCount = tooCloseCount + 1
@@ -94,6 +96,7 @@ function ENT:GetGivenScore()
 
     local punishmentGiven = math.abs( punishmentLinear - barrelPunishmentDist )
     punishmentGiven = punishmentGiven / barrelPunishmentDist
+    punishmentGiven = punishmentGiven ^ 2
     punishmentGiven = punishmentCount + punishmentGiven * 40
 
     local barrelCount = 0
@@ -103,9 +106,9 @@ function ENT:GetGivenScore()
     end
 
     local scoreGiven = 40 - barrelCount
-    scoreGiven = scoreGiven + self:NookRating( 2 )
     scoreGiven = scoreGiven + -punishmentGiven
     scoreGiven = math.Clamp( scoreGiven, -75, 10 )
+    scoreGiven = scoreGiven + terminator_Extras.GetNookScore( myPos ) * 6
 
     return scoreGiven, punishmentGiven
 

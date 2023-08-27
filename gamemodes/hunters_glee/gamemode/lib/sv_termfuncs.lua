@@ -1,38 +1,5 @@
-local directions = {
-    Vector( 1, 0, 0 ),
-    Vector( -1, 0, 0 ),
-    Vector( 0, 1, 0 ),
-    Vector( 0, -1, 0 ),
-    Vector( 0, 0, 1 ),
-    Vector( 0, 0, -1 ),
-}
-
 local terminator_Extras = terminator_Extras or {}
 local coroutine_running = coroutine.running
-
--- how nooked is this pos?
--- 6 for very enclosed/nooked
--- 1 for not enclosed/nooked
-terminator_Extras.GetNookScore = function( pos )
-    local facesBlocked = 0
-    for _, direction in ipairs( directions ) do
-        local traceData = {
-            start = pos,
-            endpos = pos + direction * 800,
-            mask = MASK_SOLID_BRUSHONLY,
-
-        }
-
-        local trace = util.TraceLine( traceData )
-        if not trace.Hit and not trace.HitSky then continue end
-
-        facesBlocked = facesBlocked + math.abs( trace.Fraction - 1 )
-
-    end
-
-    return facesBlocked
-
-end
 
 -- guess what this does
 function GM:posCanSee( startPos, endPos, mask )
