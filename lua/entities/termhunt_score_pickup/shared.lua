@@ -24,51 +24,85 @@ local defaultScore = 15
 
 function ENT:Initialize()
     if SERVER then
-        self.canDoScoreTime = CurTime() + 0.5
+        self.nextAllowedMerge = CurTime() + 1
+        self.nextScoreDecay = CurTime() + 30
+        self.canBePickedUpTime = CurTime() + 0.5
         self.DoNotDuplicate = true
         if self:GetScore() == 0 then
             self:SetScore( 15 )
 
         end
-        local scale = 0.5 + math.abs( self:GetScore() ) / 100
-
-        local color = nil
-        if self:GetScore() > 0 then
-            color = color_good
-
-        elseif self:GetScore() <= 0 then
-            color = color_bad
-
-        end
-
         self:SetModel( "models/maxofs2d/hover_rings.mdl" )
-        self:SetModelScale( scale, 0.0001 )
-        local offset = ( self:GetModelRadius() * scale ) / 2
-        self:PhysicsInitSphere( self:GetModelRadius() * scale )
-        self:SetMoveType( MOVETYPE_VPHYSICS )
-        self:SetSolid( SOLID_VPHYSICS )
-        self:SetColor( color )
-
         self:SetTrigger( true )
-        self:UseTriggerBounds( true, 24 )
 
-        timer.Simple( 0, function()
-            if not IsValid( self ) then return end
-            self:SetPos( self:GetPos() + Vector( 0, 0, offset ) )
+        self:ReflectScoreInAppearance()
 
-        end )
+        self:SetCollisionGroup( COLLISION_GROUP_WEAPON )
 
         local phys = self:GetPhysicsObject()
         if IsValid( phys ) then
-            phys:Wake()
-            phys:SetMass( self:GetScore() * 4 )
             phys:SetBuoyancyRatio( 8 )
             phys:SetMaterial( "glass" )
+
         end
+
+        self:HandleScorePhysics()
 
         self:SoundThink( 1 )
 
     end
+end
+
+function ENT:GetScoreScaleMagicNum()
+    return 0.5 + math.abs( self:GetScore() ) / 100
+
+end
+
+function ENT:UpdateScoreLive()
+
+    self.nextAllowedMerge = CurTime() + 0.5
+
+    self:ReflectScoreInAppearance()
+    self:HandleScorePhysics()
+
+end
+
+function ENT:ReflectScoreInAppearance()
+    local scale = self:GetScoreScaleMagicNum()
+
+    local color = nil
+    if self:GetScore() > 0 then
+        color = color_good
+
+    elseif self:GetScore() <= 0 then
+        color = color_bad
+
+    end
+
+    self:PhysicsInitSphere( self:GetModelRadius() * scale )
+    self:SetModelScale( scale, 0.0001 )
+    self:SetColor( color )
+
+end
+
+function ENT:HandleScorePhysics()
+
+    timer.Simple( 0, function()
+        if not IsValid( self ) then return end
+        local scale = self:GetScoreScaleMagicNum()
+        local offset = ( self:GetModelRadius() * scale ) / 4
+
+        self:SetPos( self:GetPos() + Vector( 0, 0, offset ) )
+        local phys = self:GetPhysicsObject()
+
+        if IsValid( phys ) then
+            phys:SetMass( self:GetScore() * 4 )
+            phys:Wake()
+
+            self:UseTriggerBounds( true, 24 )
+
+        end
+    end )
 end
 
 function ENT:Think()
@@ -83,17 +117,101 @@ function ENT:Think()
         self:SetNextClientThink( CurTime() + 3 + math.Rand( -0.1, 0.1 ) )
         return true
 
+    else
+        -- slowly lose score
+        if self.nextScoreDecay > CurTime() then return end
+        if self.nextAllowedMerge > CurTime() then return end
+        self.nextScoreDecay = CurTime() + 30
+        if IsValid( self:GetPhysicsObject() ) and self:GetPhysicsObject():GetVelocity():LengthSqr() > 15^2 then return end
+
+        local newScore = 0
+        local scoreStep = 2
+        local oldScore = self:GetScore()
+        if oldScore >= defaultScore or oldScore <= defaultScore then
+            newScore = oldScore * 0.99
+
+        elseif oldScore < 0 then
+            newScore = oldScore + -scoreStep
+
+        elseif oldScore > 0 then
+            newScore = oldScore + scoreStep
+
+        end
+        if newScore < scoreStep and newScore > -scoreStep then
+            SafeRemoveEntity( self )
+            return
+
+        end
+
+        self:SetScore( newScore )
+        self:UpdateScoreLive()
+
+    end
+end
+
+function ENT:MergeWith( otherEnt )
+    if self.beingMergedWithAnotherBall then return end -- idk if this will really be needed
+    if self.nextAllowedMerge > CurTime() then return end
+    if otherEnt.nextAllowedMerge > CurTime() then return end
+    local theBestOne = nil
+    local myScore = self:GetScore()
+    local theirScore = otherEnt:GetScore()
+
+    if myScore == theirScore then
+        theBestOne = self
+        theWorstOne = otherEnt
+
+    elseif myScore > theirScore then
+        theBestOne = self
+        theWorstOne = otherEnt
+
+    else
+        theBestOne = otherEnt
+        theWorstOne = self
+
+    end
+
+    theWorstOne.beingMergedWithAnotherBall = true
+
+    local velocitiesAdded = Vector()
+    if IsValid( theWorstOne:GetPhysicsObject() ) then
+        velocitiesAdded = velocitiesAdded + theWorstOne:GetVelocity()
+
+    end
+    if IsValid( theBestOne:GetPhysicsObject() ) then
+        velocitiesAdded = velocitiesAdded + theBestOne:GetVelocity()
+        timer.Simple( 0, function()
+            if not IsValid( theBestOne ) then return end
+            theBestOne:GetPhysicsObject():SetVelocity( velocitiesAdded )
+
+        end )
+    end
+
+    theBestOne:SetScore( theBestOne:GetScore() + theWorstOne:GetScore() )
+    theBestOne:PloopSound()
+    theBestOne:UpdateScoreLive()
+
+    SafeRemoveEntity( theWorstOne )
+
+end
+
+function ENT:PloopSound()
+    local pit = 100 + -math.abs( self:GetScore() ) / 2
+    if pit < 30 then
+        pit = 30 + -math.abs( self:GetScore() ) / 20
+
+    end
+    self:EmitSound( "garrysmod/balloon_pop_cute.wav", 75, pit )
+    if self:GetScore() <= 0 then
+        self:EmitSound( "buttons/combine_button2.wav", 75, pit )
+
     end
 end
 
 function ENT:DoScore( reciever )
     if not reciever:IsPlayer() then return end
 
-    self:EmitSound( "garrysmod/balloon_pop_cute.wav", 75, 100 + -math.abs( self:GetScore() ) / 2 )
-    if self:GetScore() <= 0 then
-        self:EmitSound( "buttons/combine_button2.wav", 75, 100 + -math.abs( self:GetScore() ) / 2 )
-
-    end
+    self:PloopSound()
 
     local pos = self:WorldSpaceCenter()
     local mul = self:GetScore() / defaultScore
@@ -115,7 +233,7 @@ function ENT:DoScore( reciever )
 end
 
 function ENT:Touch( touched )
-    if self.canDoScoreTime > CurTime() then return end
+    if self.canBePickedUpTime > CurTime() then return end
     self:DoScore( touched )
 
 end
@@ -126,6 +244,7 @@ function ENT:Use( user )
 end
 
 function ENT:OnTakeDamage( dmg )
+    self:TakePhysicsDamage( dmg )
     local absScore = math.abs( self:GetScore() )
     if dmg:GetDamage() > absScore and math.random( 0, 100 ) > 25 then
         local pit = math.random( 150, 160 ) + -( absScore / 4 )
@@ -138,6 +257,11 @@ end
 
 function ENT:PhysicsCollide( colData, _ )
     self:DoScore( colData.HitEntity )
+    if colData.HitEntity:GetClass() == "termhunt_score_pickup" then
+        self:MergeWith( colData.HitEntity )
+        return
+
+    end
     if colData.Speed < 30 then return end
     self:SoundThink( colData.Speed / 100 )
 
@@ -157,7 +281,13 @@ function ENT:SoundThink( volume )
     if self.impactSound then
         self.impactSound:Stop()
         self.impactSound:SetSoundLevel( math.Clamp( 65 + math.abs( self:GetScore() / 2 ), 0, 140 ) )
-        self.impactSound:PlayEx( volume, 150 + -( math.abs( self:GetScore() ) / 1.5 ) )
+
+        local pit = 150 + -math.abs( self:GetScore() ) / 1.5
+        if pit < 30 then
+            pit = 30 + -math.abs( self:GetScore() ) / 20
+
+        end
+        self.impactSound:PlayEx( volume, pit )
         util.ScreenShake( self:GetPos(), 0.2, 20, 0.2, 600 )
 
     end

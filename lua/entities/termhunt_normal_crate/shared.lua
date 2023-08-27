@@ -57,15 +57,16 @@ function ENT:GetGivenScore()
     local punishmentGiven = math.abs( closestCrateDistLinear - cratePunishmentDist )
     punishmentGiven = punishmentGiven / cratePunishmentDist
     -- so we have more than 3 crates nearby, that's a base punishment, then we add onto that the closer the 4th crate is to us
-    punishmentGiven = punishmentCount + ( punishmentGiven * 7 )^2
+    punishmentGiven = punishmentCount + ( punishmentGiven * 7 ) ^ 2
 
     local scoreGiven = math.Clamp( distToClosestPlyLinear, 0, maxScoreDist )
     scoreGiven = scoreGiven / maxScoreDist
     scoreGiven = ( scoreGiven * 5 )
 
-    scoreGiven = scoreGiven + terminator_Extras.GetNookScore( myPos ) * 6
+    scoreGiven = scoreGiven + ( terminator_Extras.GetNookScore( myPos ) - 1.5 ) * 7
 
     scoreGiven = scoreGiven + -punishmentGiven
+    scoreGiven = math.Clamp( scoreGiven, -math.huge, 30 )
 
     if distToClosestPlyLinear < tooCloseToPlayer then
         scoreGiven = scoreGiven * 0.25

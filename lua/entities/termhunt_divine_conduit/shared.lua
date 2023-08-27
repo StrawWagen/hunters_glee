@@ -260,7 +260,12 @@ function ENT:Place()
 
                 if not GAMEMODE:IsUnderSky( strikingPos ) then return end
 
-                local powa = 4
+                local powa = 5
+                if not self.firstPowafulStrike then
+                    self.firstPowafulStrike = true
+                    powa = 7
+
+                end
                 if divineIncrement > 200 then
                     powa = 1.25
 

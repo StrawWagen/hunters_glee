@@ -3122,7 +3122,7 @@ function GM:SetupShopCatalouge()
         -- makes the map worth exploring
         [ "normcrate" ] = {
             name = "Supplies",
-            desc = "Supplies without a beacon.\nContains health or armour, and rarely a weapon, or some smg / ar2 grenades.",
+            desc = "Supplies without a beacon.\nContains health or armour, and rarely a weapon, or some smg / ar2 grenades.\nPlace indoors for more score.",
             cost = 0,
             markup = 1,
             cooldown = 10,
@@ -3136,7 +3136,7 @@ function GM:SetupShopCatalouge()
         },
         [ "weapcrate" ] = {
             name = "Crate of weapons",
-            desc = "Supply crate with 4 weapons in it",
+            desc = "Supply crate with 4 weapons in it\nPlace indoors for more score.",
             cost = 0,
             markup = 1,
             cooldown = 55,

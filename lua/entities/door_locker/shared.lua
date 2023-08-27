@@ -174,11 +174,11 @@ function LockDoorAndRunAFunctionWhenTheDoorIsUsed( door, playerAttaching, functi
 
     local hookName = "CheckUsedEntity_DoorLocker_" .. door:GetCreationID()
 
-    -- add a hook to run when a player uses an entity
-    hook.Add( "PlayerUse", hookName, function( thingUsingTheDoor, entity )
+    local function UsedCheckIfIsDoor( thingUsingTheDoor, entity )
         -- check if the used entity is the door
         -- the used entity is the door, so check if it is locked
         if entity == door and door:GetSaveTable().m_bLocked then
+            -- not necessary since doors now cant be locked twice, good to keep it tho
             for _, currentlyProcessingPlayer in ipairs( door.doorPlayers ) do
                 -- the door is locked, so run the function
                 functionToRun( door, thingUsingTheDoor, currentlyProcessingPlayer )
@@ -188,7 +188,12 @@ function LockDoorAndRunAFunctionWhenTheDoorIsUsed( door, playerAttaching, functi
             -- clear the table
             door.doorPlayers = {}
         end
-    end )
+    end
+
+    -- add a hook to run when a player uses an entity
+    hook.Add( "PlayerUse", hookName, UsedCheckIfIsDoor )
+    hook.Add( "TerminatorUse", hookName, UsedCheckIfIsDoor )
+
 end
 
 -- this is ran once on a door, when it's first used by something
