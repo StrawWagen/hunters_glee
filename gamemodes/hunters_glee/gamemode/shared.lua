@@ -123,7 +123,7 @@ end
 
 function GM:ResetShopItemCooldowns()
     if SERVER then
-        net.Start( "resetplayershopcooldowns" )
+        net.Start( "glee_resetplayershopcooldowns" )
         net.Broadcast()
 
         for _, currentPlayer in ipairs( player.GetAll() ) do

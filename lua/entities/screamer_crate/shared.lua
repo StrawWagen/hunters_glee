@@ -249,8 +249,14 @@ function ENT:Cancel()
     filter:RemoveAllPlayers()
     filter:AddPlayer( self.player )
 
-    local cancelSound = CreateSound( self.player, "common/wpn_hudoff.wav" )
+    local filterPlayerOnly = RecipientFilter()
+    filterPlayerOnly:AddPlayer( self.player )
+
+    local cancelSound = CreateSound( self.player, "common/wpn_hudoff.wav", filterPlayerOnly )
     cancelSound:Play()
+
+    GAMEMODE:RefundShopItemCooldown( self.player, self.itemIdentifier )
+
     SafeRemoveEntity( self )
 
 end

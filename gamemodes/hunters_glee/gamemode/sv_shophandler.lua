@@ -1,18 +1,18 @@
-function GM:purchaseItem( ply, argStr )
-    --print( ply, argStr )
-    local purchasable, notPurchasableReason = GAMEMODE:canPurchase( ply, argStr )
+function GM:purchaseItem( ply, itemIdentifier )
+    --print( ply, itemIdentifier )
+    local purchasable, notPurchasableReason = GAMEMODE:canPurchase( ply, itemIdentifier )
     if not purchasable then
         ply:PrintMessage( HUD_PRINTTALK, notPurchasableReason )
         return
     end
-    local dat = GAMEMODE.shopItems[argStr]
+    local dat = GAMEMODE.shopItems[itemIdentifier]
     local purchaseFunc = dat.purchaseFunc
     if purchaseFunc then
         if isfunction( purchaseFunc ) then
-            local noErrors, _ = pcall( purchaseFunc, ply )
+            local noErrors, _ = pcall( purchaseFunc, ply, itemIdentifier )
             if noErrors == false then
-                GAMEMODE:invalidateShopItem( argStr )
-                ErrorNoHaltWithStack( argStr .. "'s purchaseFunc function errored." )
+                GAMEMODE:invalidateShopItem( itemIdentifier )
+                ErrorNoHaltWithStack( itemIdentifier .. "'s purchaseFunc function errored." )
                 return
 
             end
@@ -22,7 +22,7 @@ function GM:purchaseItem( ply, argStr )
         end
     end
 
-    local name = "huntersglee_purchasecount_" .. argStr
+    local name = "huntersglee_purchasecount_" .. itemIdentifier
     -- use nw2 because this will never be set when player is not valid clientside
     local oldCount = ply:GetNW2Int( name, 0 )
     if oldCount == 0 then
@@ -33,21 +33,21 @@ function GM:purchaseItem( ply, argStr )
     ply:SetNW2Int( name, oldCount + 1 )
 
     if dat.cooldown and dat.cooldown > 0 then
-        GAMEMODE:doShopCooldown( ply, argStr, dat.cooldown )
+        GAMEMODE:doShopCooldown( ply, itemIdentifier, dat.cooldown )
 
-        net.Start( "sendshopcooldowntoplayer" )
+        net.Start( "glee_sendshopcooldowntoplayer" )
             local cooldownClamped = math.Clamp( dat.cooldown, 0, 2147483645 ) -- if cooldown == 2147483645 then assume infinite, and only allow one purchase per round.
             net.WriteFloat( cooldownClamped )
-            net.WriteString( argStr )
+            net.WriteString( itemIdentifier )
         net.Send( ply )
 
     end
 
-    local cost = GAMEMODE:shopItemCost( argStr, ply )
+    local cost = GAMEMODE:shopItemCost( itemIdentifier, ply )
 
-    net.Start( "gleeconfirmpurchase" )
+    net.Start( "glee_confirmpurchase" )
         net.WriteFloat( cost )
-        net.WriteString( argStr )
+        net.WriteString( itemIdentifier )
     net.Send( ply )
 
     ply:GivePlayerScore( -cost )
@@ -83,3 +83,11 @@ concommand.Add( "termhunt_purchase", function( ply, _, args, _ )
     GAMEMODE:purchaseItem( ply, args[1] )
 
 end, autoComplete, "purchase an item", FCVAR_NONE )
+
+function GM:RefundShopItemCooldown( ply, itemIdentifier )
+    GAMEMODE:noShopCooldown( ply, itemIdentifier )
+    net.Start( "glee_invalidateshopcooldown" )
+        net.WriteString( itemIdentifier )
+    net.Send( ply )
+
+end

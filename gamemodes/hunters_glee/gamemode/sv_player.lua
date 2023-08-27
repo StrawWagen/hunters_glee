@@ -780,7 +780,7 @@ function GM:SendDeadPlayersToClients()
         timer.Simple( count * 0.05, function()
             local ply = currentDeadPlayerData.ply
             local pos = currentDeadPlayerData.pos
-            net.Start( "storeResurrectPos" )
+            net.Start( "glee_storeresurrectpos" )
             net.WriteEntity( ply )
             net.WriteVector( pos )
             net.Broadcast()

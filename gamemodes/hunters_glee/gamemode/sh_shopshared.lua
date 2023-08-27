@@ -12,7 +12,7 @@ elseif CLIENT then
 
     local nextResetShopCooldownsRecieve = 0
 
-    net.Receive( "resetplayershopcooldowns", function()
+    net.Receive( "glee_resetplayershopcooldowns", function()
         if nextResetShopCooldownsRecieve > CurTime() then return end
         nextResetShopCooldownsRecieve = CurTime() + 0.01
 
@@ -22,7 +22,7 @@ elseif CLIENT then
 
     local nextRecieveShopCooldown = 0
 
-    net.Receive( "sendshopcooldowntoplayer", function()
+    net.Receive( "glee_sendshopcooldowntoplayer", function()
 
         if nextRecieveShopCooldown > CurTime() then return end
         nextRecieveShopCooldown = CurTime() + 0.01
@@ -38,7 +38,20 @@ elseif CLIENT then
 
     end )
 
-    net.Receive( "gleeconfirmpurchase", function()
+    local nextInvalidateShopCooldown = 0
+
+    net.Receive( "glee_invalidateshopcooldown", function()
+
+        if nextInvalidateShopCooldown > CurTime() then return end
+        nextInvalidateShopCooldown = CurTime() + 0.01
+
+        local toPurchase = net.ReadString()
+
+        GAMEMODE:noShopCooldown( LocalPlayer(), toPurchase )
+
+    end )
+
+    net.Receive( "glee_confirmpurchase", function()
         local cost = net.ReadFloat()
         local itemId = net.ReadString()
         if cost > 0 then
@@ -259,6 +272,11 @@ end
 function GM:doShopCooldown( ply, toPurchase, cooldown )
     if not cooldown or cooldown <= 0 then return end
     ply.shopItemCooldowns[toPurchase] = CurTime() + cooldown
+
+end
+
+function GM:noShopCooldown( ply, toPurchase )
+    ply.shopItemCooldowns[toPurchase] = 0
 
 end
 

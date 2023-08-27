@@ -51,10 +51,10 @@ end
 function ENT:GetGivenScore()
     if not IsValid( self.nearestThing ) then return end
     if self.nearestThing:IsPlayer() then
-        return -200
+        return -300
 
     elseif self.nearestThing:IsNextBot() then
-        return -400
+        return -200
 
     end
 end

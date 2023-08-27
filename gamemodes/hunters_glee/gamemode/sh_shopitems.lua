@@ -1466,7 +1466,7 @@ end
 
 local nextWitnessRecieve = 0
 
-net.Receive( "witnesseddeathconfirm", function()
+net.Receive( "glee_witnesseddeathconfirm", function()
     if nextWitnessRecieve > CurTime() then return end
     nextWitnessRecieve = CurTime() + 0.01
     local witnessing = net.ReadEntity()
@@ -1572,7 +1572,7 @@ local function witnessPurchase( purchaser )
 
             end
 
-            net.Start( "witnesseddeathconfirm" )
+            net.Start( "glee_witnesseddeathconfirm" )
             net.WriteEntity( gettingAttacked )
             net.Broadcast()
 
@@ -2081,56 +2081,63 @@ local function ghostCanPurchase( purchaser )
 end
 
 
-local function screamerPurchase( purchaser )
+local function screamerPurchase( purchaser, itemIdentifier )
     local crate = ents.Create( "screamer_crate" )
+    crate.itemIdentifier = itemIdentifier
     crate:SetOwner( purchaser )
     crate:Spawn()
 
 end
 
 
-local function nonScreamerPurchase( purchaser )
+local function nonScreamerPurchase( purchaser, itemIdentifier )
     local crate = ents.Create( "termhunt_normal_crate" )
+    crate.itemIdentifier = itemIdentifier
     crate:SetOwner( purchaser )
     crate:Spawn()
 
 end
 
 
-local function weaponsCratePurchase( purchaser )
+local function weaponsCratePurchase( purchaser, itemIdentifier )
     local crate = ents.Create( "termhunt_weapon_crate" )
+    crate.itemIdentifier = itemIdentifier
     crate:SetOwner( purchaser )
     crate:Spawn()
 
 end
 
 
-local function manhackCratePurchase( purchaser )
+local function manhackCratePurchase( purchaser, itemIdentifier )
     local crate = ents.Create( "termhunt_manhack_crate" )
+    crate.itemIdentifier = itemIdentifier
     crate:SetOwner( purchaser )
     crate:Spawn()
 
 end
 
 
-local function barrelsPurchase( purchaser )
+local function barrelsPurchase( purchaser, itemIdentifier )
     local barrels = ents.Create( "termhunt_barrels" )
+    barrels.itemIdentifier = itemIdentifier
     barrels:SetOwner( purchaser )
     barrels:Spawn()
 
 end
 
 
-local function barnaclePurchase( purchaser )
+local function barnaclePurchase( purchaser, itemIdentifier )
     local barnacle = ents.Create( "placable_barnacle" )
+    barnacle.itemIdentifier = itemIdentifier
     barnacle:SetOwner( purchaser )
     barnacle:Spawn()
 
 end
 
 
-local function doorLockerPurchase( purchaser )
+local function doorLockerPurchase( purchaser, itemIdentifier )
     local doorLocker = ents.Create( "door_locker" )
+    doorLocker.itemIdentifier = itemIdentifier
     doorLocker:SetOwner( purchaser )
     doorLocker:Spawn()
 
@@ -2142,17 +2149,35 @@ local function inversionCanPurchase( _ )
 
 end
 
-local function plySwapperPurchase( purchaser )
+local function plySwapperPurchase( purchaser, itemIdentifier )
     local playerSwapper = ents.Create( "player_swapper" )
+    playerSwapper.itemIdentifier = itemIdentifier
     playerSwapper:SetOwner( purchaser )
     playerSwapper:Spawn()
 
 end
 
-local function immortalizerPurchase( purchaser )
+local function immortalizerPurchase( purchaser, itemIdentifier )
     local immortalizer = ents.Create( "termhunt_immortalizer" )
+    immortalizer.itemIdentifier = itemIdentifier
     immortalizer:SetOwner( purchaser )
     immortalizer:Spawn()
+
+end
+
+local function conduitCanPurchase( _ )
+    if GAMEMODE:isTemporaryTrueBool( "terhunt_divine_conduit" ) then return nil, "It is too soon for another conduit to be opened." end
+    return true, nil
+
+end
+
+local function conduitPurchase( purchaser, itemIdentifier )
+    local conduit = ents.Create( "termhunt_divine_conduit" )
+    conduit.itemIdentifier = itemIdentifier
+    conduit:SetOwner( purchaser )
+    conduit:Spawn()
+
+    return true
 
 end
 
@@ -2275,21 +2300,6 @@ local function additionalHunter( purchaser )
     end )
 
     return true
-end
-
-local function conduitCanPurchase( _ )
-    if GAMEMODE:isTemporaryTrueBool( "terhunt_divine_conduit" ) then return nil, "It is too soon for another conduit to be opened." end
-    return true, nil
-
-end
-
-local function conduitPurchase( purchaser )
-    local conduit = ents.Create( "termhunt_divine_conduit" )
-    conduit:SetOwner( purchaser )
-    conduit:Spawn()
-
-    return true
-
 end
 
 local glee_scoretochosentimeoffset_divisor = CreateConVar( "huntersglee_scoretochosentimeoffset_divisor", "5", FCVAR_NONE, "smaller means grigori time goes up faster. bigger, means slower", 0, 100000 )
@@ -3169,7 +3179,7 @@ function GM:SetupShopCatalouge()
         -- punishes careless movement
         [ "barnacle" ] = {
             name = "Barnacle",
-            desc = "Barnacle.\nYou gain 60 score the first time it grabs someone, and 30 score every second it has someone grabbed.",
+            desc = "Barnacle.\nYou gain 100 score the first time it grabs someone, and 45 score every further second it has someone grabbed.",
             cost = 5,
             markup = 1,
             cooldown = 0.5,
@@ -3183,7 +3193,7 @@ function GM:SetupShopCatalouge()
         },
         [ "doorlocker" ] = {
             name = "Door locker",
-            desc = "Locks doors, you gain score when something uses it.\n25 score, default.\n100 score if a player fleeing a hunter uses it.",
+            desc = "Locks doors, you gain score when something uses it.\n150 score, default.\n250 score if a player fleeing a hunter uses it.\nDon't use your own locked doors.",
             cost = 5,
             markup = 1,
             cooldown = 0.5,

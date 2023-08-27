@@ -290,7 +290,7 @@ net.Receive( "glee_stoppedspectating", function()
 
 end )
 
-local function shouldPaintHint()
+local function shopHints()
     local inBetween = GAMEMODE:RoundState() == GAMEMODE.ROUND_INACTIVE
     local me = LocalPlayer()
     local dead = me:Health() <= 0
@@ -306,14 +306,21 @@ local function shouldPaintHint()
 
         local myScore = me:GetScore()
 
-        if not me.openedHuntersGleeShop then
-            return true, "Death is not the end."
+        local preHookResult = hook.Run( "huntersglee_cl_displayhint_predeadhints", me )
+        if preHookResult then
+            return true, preHookResult
+
+        elseif not me.openedHuntersGleeShop then
+            local clientsMenuKey = input.LookupBinding( "+menu" )
+            clientsMenuKey = input.GetKeyCode( clientsMenuKey )
+
+            local keyName = input.GetKeyName( clientsMenuKey )
+            local phrase = language.GetPhrase( keyName )
+
+            return true, "Death is not the end.\nPress \" " .. string.upper( phrase ) .. " \" to open the shop."
 
         elseif not me.glee_DefinitelyBoughtAnUndeadItem then
-            return true, "Purchase an 'Undead' item. If you earn enough, you can come back.", true
-
-        elseif not me.glee_HasBoughtDivineIntervention and myScore >= GAMEMODE:shopItemCost( "resurrection", me ) then
-            return true, "It's time for Divine Intervention.", true
+            return true, "Purchase an 'Undead' item. If you earn enough, you can come back."
 
         elseif not me.glee_HasSpectatedSomeone then
             local clientsLeftClick = input.LookupBinding( "+attack" )
@@ -321,7 +328,7 @@ local function shouldPaintHint()
 
             local keyName = input.GetKeyName( clientsLeftClick )
             local phrase = language.GetPhrase( keyName )
-            return true, "Press " .. phrase .. " to follow stuff!", true
+            return true, "Press " .. phrase .. " to follow stuff!"
 
         elseif not me.glee_HasSwitchedSpectateModes and IsValid( me:GetObserverTarget() ) then
             local clientsSpaceBar = input.LookupBinding( "+jump" )
@@ -329,7 +336,7 @@ local function shouldPaintHint()
 
             local keyName = input.GetKeyName( clientsSpaceBar )
             local phrase = language.GetPhrase( keyName )
-            return true, "Press " .. phrase .. " to switch spectate modes!", true
+            return true, "Press " .. phrase .. " to switch spectate modes!"
 
         elseif not me.glee_HasStoppedSpectatingSomething and IsValid( me:GetObserverTarget() ) then
             local clientsSpaceBar = input.LookupBinding( "+attack2" )
@@ -337,7 +344,7 @@ local function shouldPaintHint()
 
             local keyName = input.GetKeyName( clientsSpaceBar )
             local phrase = language.GetPhrase( keyName )
-            return true, "Press " .. phrase .. " to stop following stuff!", true
+            return true, "Press " .. phrase .. " to stop following stuff!"
 
         elseif not me.glee_HasDoneSpectateFlashlight and render.GetLightColor( me:GetPos() ):LengthSqr() < 0.005 then
 
@@ -346,7 +353,16 @@ local function shouldPaintHint()
 
             local keyName = input.GetKeyName( flashlightBind )
             local phrase = language.GetPhrase( keyName )
-            return true, "Press " .. phrase .. " to toggle the spectate flashlight!", true
+            return true, "Press " .. phrase .. " to toggle the spectate flashlight!"
+
+        elseif not me.glee_HasBoughtDivineIntervention and myScore >= GAMEMODE:shopItemCost( "resurrection", me ) then
+            return true, "It's time for Divine Intervention."
+
+        end
+
+        local postHookResult = hook.Run( "huntersglee_cl_displayhint_postdeadhints", me )
+        if postHookResult then
+            return true, postHookResult
 
         end
     end
@@ -358,21 +374,8 @@ local openTheDamnShopState = nil
 local function paintHintForTheShop( _, cur )
     if not GAMEMODE:CanShowDefaultHud() then return end
     if not doHud:GetBool() then return end
-    local _, preamble, blockPostAmble = shouldPaintHint()
+    local _, theHint = shopHints()
 
-    local clientsMenuKey = input.LookupBinding( "+menu" )
-    clientsMenuKey = input.GetKeyCode( clientsMenuKey )
-
-    local keyName = input.GetKeyName( clientsMenuKey )
-    local phrase = language.GetPhrase( keyName )
-
-    local postamble = ""
-    if not blockPostAmble then
-        postamble = " Press \" " .. string.upper( phrase ) .. " \" to open the shop."
-
-    end
-
-    local text = preamble .. postamble
     local textColor = Color( 255, 255, 255 )
 
     if ( cur % 8 ) > 7.75 then
@@ -387,7 +390,7 @@ local function paintHintForTheShop( _, cur )
 
     end
 
-    surface.drawShadowedTextBetter( text, "termhuntShopHintFont", textColor, 128, 128 + 120, false )
+    surface.drawShadowedTextBetter( theHint, "termhuntShopHintFont", textColor, 128, 128 + 120, false )
 
 end
 
@@ -619,7 +622,7 @@ function HUDPaint()
             paintPlyBPM( ply )
 
         end
-        if shouldPaintHint() then
+        if shopHints() then
             paintHintForTheShop( ply, cur )
 
         end
@@ -668,7 +671,7 @@ end
 potentialResurrectionData = {}
 local nextResurrectRecieve = 0
 
-net.Receive( "storeResurrectPos", function()
+net.Receive( "glee_storeresurrectpos", function()
     if nextResurrectRecieve > CurTime() then return end
     nextResurrectRecieve = CurTime() + 0.01
     local ply = net.ReadEntity()
