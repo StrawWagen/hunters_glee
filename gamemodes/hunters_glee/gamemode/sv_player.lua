@@ -21,6 +21,7 @@ function GM:calculateBPM( cur, players )
     for _, ply in ipairs( players ) do
         if ply:Alive() then
             local plyPos = ply:GetShootPos()
+            local plysMoveType = ply:GetMoveType()
             local nearestHunter = GAMEMODE:getNearestHunter( plyPos, hunters )
             local nextDistancePosSave = ply.nextDistancePosSave or 0
             local directlyUnderneathArea, distToAreaSqr = ply:GetNavAreaData()
@@ -138,7 +139,7 @@ function GM:calculateBPM( cur, players )
 
             end
 
-            local onLadder = ply:GetMoveType() == MOVETYPE_LADDER
+            local onLadder = plysMoveType == MOVETYPE_LADDER
             local doBpmDecrease = false
             local blockScore = false
 
@@ -202,24 +203,29 @@ function GM:calculateBPM( cur, players )
 
             -- when ply is off navmesh, slowly sap their life
             if doBpmDecrease and punishEscapingBool then
-                local badMovement = ply:GetMoveType() == MOVETYPE_NOCLIP or ply:Health() <= 0 or ply:GetObserverMode() ~= OBS_MODE_NONE or ply:InVehicle()
+                local badMovement = plysMoveType == MOVETYPE_NOCLIP or ply:Health() <= 0 or ply:GetObserverMode() ~= OBS_MODE_NONE or ply:InVehicle()
                 if not badMovement and hasNavmesh then
                     local BPMDecrease = ply.historicBPMDecrease or 0
-                    ply.historicBPMDecrease = BPMDecrease + 1
+                    local added = 3
+                    if onLadder then
+                        added = 1
+
+                    end
+                    ply.historicBPMDecrease = BPMDecrease + added
 
                     BPM = math.Clamp( BPM + -BPMDecrease, 0, math.huge )
                     BPM = math.Round( BPM )
 
                     if BPM < restingBPMPermanent then
-                        GAMEMODE:GivePanic( ply, 2 )
+                        GAMEMODE:GivePanic( ply, 3 )
 
                     end
                     if BPM < restingBPMPermanent and BPMDecrease > restingBPMPermanent * 2 then
                         local divisor = 100
-                        if BPMDecrease > restingBPMPermanent * 3 then
-                            divisor = 50
-                        elseif BPMDecrease > restingBPMPermanent * 3 then
+                        if BPMDecrease > restingBPMPermanent * 4 then
                             divisor = 10
+                        elseif BPMDecrease > restingBPMPermanent * 3 then
+                            divisor = 50
                         end
                         local damage = math.ceil( ply:GetMaxHealth() / divisor )
                         ply:TakeDamage( damage, game.GetWorld(), game.GetWorld() )
@@ -231,7 +237,7 @@ function GM:calculateBPM( cur, players )
             elseif ply.historicBPMDecrease then
                 local BPMDecrease = ply.historicBPMDecrease
                 if BPMDecrease and BPMDecrease > 0 then
-                    ply.historicBPMDecrease = ply.historicBPMDecrease + -0.5
+                    ply.historicBPMDecrease = ply.historicBPMDecrease + -1
 
                 elseif BPMDecrease and BPMDecrease <= 0 then
                     ply.historicBPMDecrease = nil
@@ -245,6 +251,11 @@ function GM:calculateBPM( cur, players )
         else
             if istable( ply.BPMHistoric ) then
                 ply.BPMHistoric = nil
+
+            end
+            if ply.historicBPMDecrease then
+                ply.historicBPMDecrease = nil
+
             end
             ply:SetNWInt( "termHuntPlyBPM", 0 )
         end
@@ -894,48 +905,6 @@ hook.Add( "EntityTakeDamage", "huntersglee_makepvpreallybad", function( dmgTarg,
         end
     end
 end )
-
-local function setDropWeapons( ply, attacker, _ )
-    for _, wep in pairs( ply:GetWeapons() ) do
-
-        if not IsValid( wep ) then continue end
-        if wep.ShouldDropOnDie and wep:ShouldDropOnDie() == false then continue end
-
-        local newWep = ents.Create( wep:GetClass() )
-        if not IsValid( newWep ) then continue end
-        newWep:SetPos( ply:GetShootPos() )
-        newWep:SetAngles( AngleRand() )
-        newWep:Spawn()
-
-        newWep:SetCollisionGroup( COLLISION_GROUP_INTERACTIVE_DEBRIS )
-        local forceDir = ply:GetAimVector()
-
-        timer.Simple( 0, function()
-            if not IsValid( newWep ) then return end
-            if not IsValid( ply ) then return end
-
-            local newWepObj = newWep:GetPhysicsObject()
-            if not newWepObj or not newWepObj.IsValid or not newWepObj:IsValid() then return end
-            newWepObj:ApplyForceCenter( forceDir * newWepObj:GetMass() * math.random( 150, 300 ) )
-
-        end )
-
-        local wepWeight = 0
-        if attacker.GetWeightOfWeapon then
-            wepWeight = attacker:GetWeightOfWeapon( wep )
-
-        end
-
-        timer.Simple( math.random( 240, 280 ) + wepWeight * 40, function()
-            if not IsValid( newWep ) then return end
-            if IsValid( newWep:GetOwner() ) or IsValid( newWep:GetParent() ) then return end
-
-        end )
-    end
-end
-
-hook.Add( "DoPlayerDeath", "straw_gleedropper_dropweaponoverride", setDropWeapons )
-
 
 function GM:CacheNavareas( players )
     for _, ply in ipairs( players ) do

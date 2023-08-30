@@ -163,7 +163,7 @@ function SWEP:ResurrectPly( ent )
     self:GetOwner():EmitSound( "ambient/levels/labs/electric_explosion1.wav", 100, 120, 1, CHAN_STATIC, SND_NOFLAGS, 10 )
 
     if self:GetOwner().GivePlayerScore then
-        self:GetOwner():GivePlayerScore( 100 )
+        self:GetOwner():GivePlayerScore( 200 )
 
     end
 
@@ -210,7 +210,7 @@ function SWEP:Think()
         local ent = self.toResurrect
         local tooFar = self.resurrectStartPos:DistToSqr( self:GetOwner():GetPos() ) > 75^2
         local keyDown = self:GetOwner():KeyDown( IN_ATTACK )
-        local cancel = tooFar or not keyDown
+        local cancel = tooFar or not keyDown or self.toResurrect:Health() > 0
         local done = false
         if cancel then
             done = true

@@ -23,6 +23,7 @@ include( "modules/sv_navpatcher.lua" )
 include( "modules/sv_doorbash.lua" )
 include( "modules/sv_mapvote.lua" )
 include( "modules/sv_zcratespawner.lua" )
+include( "modules/sv_weapondropper.lua" )
 
 util.AddNetworkString( "glee_storeresurrectpos" )
 util.AddNetworkString( "glee_witnesseddeathconfirm" )
@@ -565,9 +566,10 @@ function GM:removePorters() -- it was either do this, or make the terminator use
     local teleporters = ents.FindByClass( "trigger_teleport" )
     for _, porter in ipairs( teleporters ) do
 
+        -- do a bunch of checks to see if porter just teleports between the same, big navmesh group.
         local portersPos = porter:WorldSpaceCenter()
         local portersArea = GAMEMODE:getNearestNav( portersPos, 1000 )
-        if not IsValid( portersArea ) then SafeRemoveEntity( porter ) continue end
+        if not portersArea or not portersArea.IsValid or not portersArea:IsValid() then SafeRemoveEntity( porter ) continue end
 
         local portersPosFloored = GAMEMODE:getFloor( portersPos )
         if not portersArea:IsVisible( portersPosFloored ) then SafeRemoveEntity( porter ) continue end
@@ -583,7 +585,7 @@ function GM:removePorters() -- it was either do this, or make the terminator use
             if not IsValid( dest ) then SafeRemoveEntity( porter ) break end
             local destPos = dest:WorldSpaceCenter()
             local area = GAMEMODE:getNearestNav( destPos, 1000 )
-            if not IsValid( area ) then SafeRemoveEntity( porter ) break end
+            if not area or not area.IsValid or not area:IsValid() then SafeRemoveEntity( porter ) break end
 
             local destPosFloored = GAMEMODE:getFloor( destPos )
             if not area:IsVisible( destPosFloored ) then SafeRemoveEntity( porter ) break end

@@ -1,7 +1,8 @@
+
+CreateConVar( "huntersglee_players_cannot_swim", 1, bit.bor( FCVAR_NOTIFY, FCVAR_ARCHIVE, FCVAR_REPLICATED ), "Block players from swimming?.", 0, 1 )
+CreateConVar( "huntersglee_cannotswim_graceperiod", 4.5, bit.bor( FCVAR_NOTIFY, FCVAR_ARCHIVE, FCVAR_REPLICATED ), "How long to let players swim for?.", 0, 64 )
+
 if SERVER then
-
-    CreateConVar( "huntersglee_players_cannot_swim", 1, bit.bor( FCVAR_NOTIFY, FCVAR_ARCHIVE ), "Block players from swimming?.", 0, 32 )
-
     function GM:managePlayerDrowning( players )
         for _, ply in ipairs( players ) do
             if ply:WaterLevel() >= 3 then
@@ -12,7 +13,9 @@ if SERVER then
                 if ply.glee_drowning then
                     if ply.glee_drowning < CurTime() then
                         local dmginfo = DamageInfo()
-                        dmginfo:SetDamage( ply:GetMaxHealth() / 25 )
+                        ply.glee_drowning_damagecount = ply.glee_drowning_damagecount + 1
+                        local drownDamage = ( ply:GetMaxHealth() / 25 ) + ply.glee_drowning_damagecount * 2
+                        dmginfo:SetDamage( drownDamage )
                         dmginfo:SetDamageType( DMG_DROWN )
                         dmginfo:SetAttacker( game.GetWorld() )
                         dmginfo:SetInflictor( game.GetWorld() )
@@ -25,9 +28,11 @@ if SERVER then
                 else
                     -- will start drowning soon
                     ply.glee_drowning = CurTime() + 8
+                    ply.glee_drowning_damagecount = 0
                     GAMEMODE:GivePanic( ply, 45 )
                 end
             else
+                ply.glee_drowning_damagecount = nil
                 ply.glee_drowning = nil
 
             end
@@ -47,6 +52,14 @@ local function blockPlySwimming()
 
 end
 
+local function getDrowningGracePeriod()
+    if not gracePeriodLengthCached then
+        gracePeriodLengthCached = GetConVar( "huntersglee_cannotswim_graceperiod" )
+
+    end
+    return gracePeriodLengthCached
+end
+
 local CMoveData = FindMetaTable( "CMoveData" )
 
 function CMoveData:RemoveKeys( keys )
@@ -60,13 +73,14 @@ hook.Add( "SetupMove", "glee_unabletoswim", function( ply, mvd )
     if not blockPlySwimming() then return end
     if blockPlySwimming():GetBool() ~= true then return end
     local waterLvl = ply:WaterLevel()
+    local cur = CurTime()
     if waterLvl >= 2 and ply:Alive() and ply:GetMoveType() ~= MOVETYPE_NOCLIP then
         if SERVER then
             local nextWaterSound = ply.glee_nextWaterSound or 0
 
-            if ply.glee_DoSufferingSplash and waterLvl >= 2 and nextWaterSound < CurTime() then
+            if ply.glee_DoSufferingSplash and waterLvl >= 2 and nextWaterSound < cur then
                 ply.glee_DoSufferingSplash = nil
-                ply.glee_nextWaterSound = CurTime() + math.Rand( 0.2, 0.8 )
+                ply.glee_nextWaterSound = cur + math.Rand( 0.2, 0.8 )
                 if waterLvl == 2 then
                     ply:EmitSound( "ambient/water/water_splash" .. math.random( 1, 3 ) .. ".wav", 75 )
 
@@ -76,28 +90,40 @@ hook.Add( "SetupMove", "glee_unabletoswim", function( ply, mvd )
                 end
             end
 
-            if waterLvl == 2 and nextWaterSound < CurTime() then
-                ply.glee_nextWaterSound = CurTime() + math.Rand( 1, 2 )
+            if waterLvl == 2 and nextWaterSound < cur then
+                ply.glee_nextWaterSound = cur + math.Rand( 1, 2 )
                 ply:EmitSound( "ambient/water/water_splash" .. math.random( 1, 3 ) .. ".wav", 75 )
 
-            elseif waterLvl == 3 and nextWaterSound < CurTime() then
-                ply.glee_nextWaterSound = CurTime() + math.Rand( 1.5, 3 )
+            elseif waterLvl == 3 and nextWaterSound < cur then
+                ply.glee_nextWaterSound = cur + math.Rand( 1.5, 3 )
                 ply:EmitSound( "player/footsteps/wade" .. math.random( 1, 8 ) .. ".wav", 75, math.random( 40, 60 ) )
 
             end
         end
 
         local noswimming_briefrespite = ply.glee_noswimming_briefrespite or 0
+        local noswimming_lastlandlubbering = ply.glee_noswimming_lastlandlubbering or 0
+        local timeSinceFreeFromWater = math.abs( noswimming_lastlandlubbering - cur )
 
         if not ply:IsOnGround() then
             if ply.glee_drowning then
                 ply.glee_drowning = ply.glee_drowning + -0.003
 
             end
-            if noswimming_briefrespite < CurTime() then
+            if noswimming_briefrespite < cur then
+                local timeItTakesToLoseSwim = getDrowningGracePeriod():GetFloat()
+                local swimmingStrengthNormalized = timeSinceFreeFromWater / timeItTakesToLoseSwim
+                local maxTheyCanGoUp = -swimmingStrengthNormalized * 400
+                maxTheyCanGoUp = maxTheyCanGoUp + 400
+                if maxTheyCanGoUp > 0 and SERVER then
+                    -- warn ply
+                    GAMEMODE:GivePanic( ply, 5 )
+
+                end
+                maxTheyCanGoUp = math.Clamp( maxTheyCanGoUp, -100, 400 )
+
                 local vel = mvd:GetVelocity()
-                local newZ = -vel.z * 1.115
-                newZ = math.Clamp( newZ, -400, -45 )
+                local newZ = math.Clamp( vel.z, -400, maxTheyCanGoUp )
                 vel.z = newZ
                 mvd:SetVelocity( vel )
 
@@ -107,10 +133,13 @@ hook.Add( "SetupMove", "glee_unabletoswim", function( ply, mvd )
                 end
             end
         else
-            ply.glee_noswimming_briefrespite = CurTime() + 0.8
-            ply.glee_nextWaterSound = CurTime() + 0.8
+            ply.glee_noswimming_briefrespite = cur + 0.8
+            ply.glee_nextWaterSound = cur + 0.8
             ply.glee_DoSufferingSplash = true
 
         end
+    elseif ply:IsOnGround() then
+        ply.glee_noswimming_lastlandlubbering = cur
+
     end
 end )

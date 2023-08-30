@@ -1,8 +1,8 @@
 if CLIENT then
     -- cache panic so we aren't calling getnwint
     local clPanic = nil
-    function doClaustrophobiaWarn( scale )
-        local refractAmount = scale / 14000
+    function doPanicDistort( scale )
+        local refractAmount = scale / 10000
         if scale <= 25 then return end
         local overlayMaterial = "models/props_c17/fisheyelens"
         DrawMaterialOverlay( overlayMaterial, refractAmount )
@@ -12,7 +12,7 @@ if CLIENT then
     hook.Add( "RenderScreenspaceEffects", "huntersglee_panicmessupview", function()
         if not clPanic or clPanic <= 0 then return end
         if LocalPlayer():Health() <= 0 then return end
-        doClaustrophobiaWarn( clPanic )
+        doPanicDistort( clPanic )
 
     end )
 

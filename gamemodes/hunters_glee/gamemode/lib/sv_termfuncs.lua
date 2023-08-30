@@ -39,7 +39,7 @@ function GM:getFloor( pos )
         mask = 131083
     }
     local Trace = util.TraceLine( Dat )
-    if not Trace.HitWorld then return end
+    if not Trace.HitWorld then return pos end
     return Trace.HitPos, Trace
 end
 

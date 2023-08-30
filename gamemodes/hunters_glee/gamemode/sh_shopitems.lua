@@ -704,12 +704,12 @@ if CLIENT then
 
     net.Receive( "huntersglee_blindnessdefine", function()
         local blindState = net.ReadBool()
-        LocalPlayer().isBlind = blindState
+        LocalPlayer().glee_IsBlind = blindState
 
     end )
 
     local function IsBlind()
-        if _LocalPlayer().isBlind ~= true then return end
+        if _LocalPlayer().glee_IsBlind ~= true then return end
         if _LocalPlayer():GetNWBool( "huntersglee_shouldbeblind", nil ) ~= true then return end
         if _LocalPlayer():Health() <= 0 then return end
 
@@ -807,6 +807,38 @@ local function blindnessPurchase( purchaser )
 
 end
 
+local function hypochondriacPurchase( purchaser )
+    local hookName = "glee_hypochondriac_panicdamage_" .. purchaser:GetCreationID()
+
+    local sendHypochondriacDefine = function( hypochondriac, bool )
+        if bool == nil then return end
+        hypochondriac:SetNWBool( "huntersglee_ishypochondriac", bool )
+
+    end
+
+    hook.Add( "EntityTakeDamage", hookName, function( victim, dmgInfo )
+        if victim ~= purchaser then return end
+        if not IsValid( purchaser ) then hook.Remove( "EntityTakeDamage", hookName ) return end
+        if not purchaser:GetNWBool( "huntersglee_ishypochondriac", bool ) then hook.Remove( "EntityTakeDamage", hookName ) return end
+
+        if purchaser:Health() <= 0 then return end
+
+        local damageDone = dmgInfo:GetDamage()
+
+        GAMEMODE:GivePanic( purchaser, damageDone * 4 )
+
+    end )
+
+    sendHypochondriacDefine( purchaser, true )
+
+    local undoInnate = function( respawner )
+        sendHypochondriacDefine( respawner, false )
+
+    end
+
+    GAMEMODE:PutInnateInProperCleanup( nil, undoInnate, purchaser )
+
+end
 
 local function deafnessPurchase( purchaser )
     purchaser.glee_IsDeaf = true
@@ -2302,8 +2334,8 @@ local function additionalHunter( purchaser )
     return true
 end
 
-local glee_scoretochosentimeoffset_divisor = CreateConVar( "huntersglee_scoretochosentimeoffset_divisor", "5", FCVAR_NONE, "smaller means grigori time goes up faster. bigger, means slower", 0, 100000 )
-local glee_chosenkillsrequired = CreateConVar( "huntersglee_chosenkillsrequired", "2", FCVAR_NONE, "how many hunters one must kill to get grigori", 0, 100000 )
+local glee_scoretochosentimeoffset_divisor = CreateConVar( "huntersglee_scoretochosentimeoffset_divisor", "5", bit.bor( FCVAR_REPLICATED, FCVAR_ARCHIVE ), "smaller means grigori time goes up faster. bigger, means slower", 0, 100000 )
+local glee_chosenkillsrequired = CreateConVar( "huntersglee_chosenkillsrequired", "2", bit.bor( FCVAR_REPLICATED, FCVAR_ARCHIVE ), "how many hunters one must kill to get grigori", 0, 100000 )
 
 if SERVER then
     -- offset will update constantly, use nw2
@@ -2726,7 +2758,7 @@ function GM:SetupShopCatalouge()
         -- keeps the rounds going
         [ "revivekit" ] = {
             name = "Revive Kit",
-            desc = "Revives dead players.\nYou gain 100 score per resurrection.",
+            desc = "Revives dead players.\nYou gain 200 score per resurrection.",
             cost = 30,
             markup = 1.5,
             cooldown = 0.25,
@@ -2866,6 +2898,21 @@ function GM:SetupShopCatalouge()
             weight = -90,
             purchaseCheck = { unUndeadCheck },
             purchaseFunc = blindnessPurchase,
+        },
+        [ "hypochondriac" ] = {
+            name = "Hypochondriac.",
+            desc = "You are extremely receptive to pain, .",
+            cost = -50,
+            markup = 0.2,
+            cooldown = math.huge,
+            category = "Innate",
+            purchaseTimes = {
+                GAMEMODE.ROUND_INACTIVE,
+                GAMEMODE.ROUND_ACTIVE,
+            },
+            weight = -90,
+            purchaseCheck = { unUndeadCheck },
+            purchaseFunc = hypochondriacPurchase,
         },
         [ "deafness" ] = {
             name = "Hard of hearing.",
