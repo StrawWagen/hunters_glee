@@ -134,6 +134,7 @@ hook.Add( "SetupMove", "glee_unabletoswim", function( ply, mvd )
             end
         else
             ply.glee_noswimming_briefrespite = cur + 0.8
+            ply.glee_noswimming_lastlandlubbering = cur + -( getDrowningGracePeriod():GetFloat() / 2 )
             ply.glee_nextWaterSound = cur + 0.8
             ply.glee_DoSufferingSplash = true
 
