@@ -1,6 +1,10 @@
--- prophunt cant handle no active weapon
+-- Q&A update
+-- already enough features for Q&A update
+-- officially announce modding support
+-- change workshop icon
+-- add gifs to workshop page
+
 -- metal detector with twist
--- hypochondria perk fast heart beat makes your guy scream thinking hes having a heart attack idk 
 
 
 local thwap = {
@@ -488,7 +492,11 @@ local function mimicMadnessPurchase( purchaser )
                 startMimicPropManagment( ply.theMimicPropOnTop )
 
             end )
-            ply.oldMimicWeapon = ply:GetActiveWeapon():GetClass()
+            ply.oldMimicWeapon = nil
+            if IsValid( ply:GetActiveWeapon() ) then
+                ply.oldMimicWeapon = ply:GetActiveWeapon():GetClass()
+
+            end
 
             nukeWeapon( ply )
 
@@ -516,8 +524,10 @@ local function mimicMadnessPurchase( purchaser )
                 ply:SetObserverMode( OBS_MODE_NONE )
 
                 ply:DrawViewModel( true, 0 )
-                if ply.oldMimicWeapon then ply:SelectWeapon( ply.oldMimicWeapon ) end
+                if ply.oldMimicWeapon then
+                    ply:SelectWeapon( ply.oldMimicWeapon )
 
+                end
             end
 
             ply:Fire( "alpha", 255, 0 )
@@ -1174,6 +1184,7 @@ end
 local function chameleonCanPurchase( purchaser )
     if purchaser.hasChameleon then return false, "You already have this gene." end
     return true
+
 end
 
 local function chameleonPurchase( purchaser )
