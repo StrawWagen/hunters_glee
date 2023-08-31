@@ -240,20 +240,18 @@ function termHuntOpenTheShop()
         horisScroller.OnMouseWheeled = function( self, delta )
             local oldOffset = self.OffsetX or 0
             local stepSize = self.shopItemWidth
-            self:RemoveCoolTooltip()
 
             local offsetStepped = math.Round( self.OffsetX + delta * -stepSize * 1.05 )
             self.OffsetX = offsetStepped
             self:InvalidateLayout( true )
 
-            timer.Simple( 0, function()
-                local newOffset = self.OffsetX or 0
-                if newOffset ~= oldOffset then -- dont do anything if we reach the end of the scroller
-                    local pitchOffset = ( oldOffset - newOffset ) * 0.1
-                    _LocalPlayer():EmitSound( "physics/plastic/plastic_barrel_impact_soft2.wav", 60, 100 + pitchOffset, 0.2 )
+            local newOffset = self.OffsetX or 0
+            if newOffset ~= oldOffset then -- dont do anything if we reach the end of the scroller
+                self:RemoveCoolTooltip()
+                local pitchOffset = ( oldOffset - newOffset ) * 0.1
+                _LocalPlayer():EmitSound( "physics/plastic/plastic_barrel_impact_soft2.wav", 60, 100 + pitchOffset, 0.2 )
 
-                end
-            end )
+            end
 
             return true
 
