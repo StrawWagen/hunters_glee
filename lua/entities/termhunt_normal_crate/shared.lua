@@ -127,7 +127,6 @@ function GM:NormalCrate( pos )
 end
 
 function ENT:Place()
-
     local betrayalScore = self:GetGivenScore()
     local crate = GAMEMODE:NormalCrate( self:GetPos2() )
 

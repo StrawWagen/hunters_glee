@@ -14,8 +14,6 @@ local thwap = {
 
 }
 
-termHunt_ShopItems = {}
-
 --local white = Color( 255,255,255 )
 
 local gunCock = Sound( "items/ammo_pickup.wav" )
@@ -38,7 +36,7 @@ end
 
 
 local function unUndeadCheck( purchaser )
-    if purchaser:Health() <= 0 then return false, "You must be un-undead to purchase this." end
+    if purchaser:Health() <= 0 then return false, "You must be alive to purchase this." end
     return true, ""
 
 end
@@ -2647,6 +2645,7 @@ end
 --[[
 
 these are here for demonstration, they are defined in shared
+see sh_shopshared.lua for example that shows what every shopitem var does
 
 -- weird ones
 GM.INVALID          = -1 -- tell people to install a navmesh
@@ -2912,7 +2911,7 @@ function GM:SetupShopCatalouge()
         },
         [ "hypochondriac" ] = {
             name = "Hypochondriac.",
-            desc = "You are extremely receptive to pain, .",
+            desc = "You are extremely receptive to pain.",
             cost = -50,
             markup = 0.2,
             cooldown = math.huge,
@@ -3020,7 +3019,7 @@ function GM:SetupShopCatalouge()
         --flat upgrade
         [ "froglegs" ] = {
             name = "Frog Legged Parkourist",
-            desc = "Your legs become frog.\nThe gangly shape of your legs slow you down.\nYou are capable of frog kicking off walls.\nYour shove propels you further.\nYour superior frog geneology permits you to absorb greater falls.\nRibbit.",
+            desc = "Your legs become frog.\nThe gangly shape of your legs slows you down.\nYou are capable of frog kicking off walls.\nYour shove propels you further.\nYour superior frog geneology permits you to absorb greater falls.\nRibbit.",
             cost = 300,
             markup = 2,
             cooldown = math.huge,
@@ -3360,6 +3359,7 @@ function GM:SetupShopCatalouge()
         [ "Items" ] = 1,
         [ "Innate" ] = 2,
         [ "Undead" ] = 3,
+
     }
 
     for shopCategoryName, shopCategoryPriority in pairs( defaultCategories ) do
@@ -3372,7 +3372,14 @@ function GM:SetupShopCatalouge()
 
     end
 
+    GAMEMODE.shopIsReadyForItems = true
+
     -- pls put other shop items in this hook! ty
     xpcall( function() hook.Run( "huntersglee_postshopsetup_shared", nil ) end, ErrorNoHaltWithStack )
+
+end
+
+function GM:IsShopReadyForItems()
+    return self.shopIsReadyForItems
 
 end
