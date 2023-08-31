@@ -380,12 +380,14 @@ function termHuntOpenTheShop()
             textLabel:Dock( TOP )
 
             textLabel.Think = function( self )
-                self:SetTextInset( offsetNextToIdentifier, 0 )
+                self:SetTextInset( offsetNextToIdentifier, offsetNextToIdentifier )
                 self:SetFont( "termhuntShopItemSmallerFont" )
                 self:SetText( shopItem.coolTooltipString )
                 self:SetContentAlignment( 7 )
                 self:SetWrap( true )
                 self:SizeToContentsY()
+                local sizeX, sizeY = self:GetSize()
+                self:SetSize( sizeX, sizeY + offsetNextToIdentifier )
 
                 if coolTooltip.hasSetup then
                     self:SetTextColor( itemNameColor )
