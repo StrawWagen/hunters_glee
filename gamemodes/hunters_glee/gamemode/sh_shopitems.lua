@@ -2506,7 +2506,7 @@ local function divineChosenPurchase( purchaser )
         end
     end
 
-    -- repeat the nw2bool setting and ensure they got the weap
+    -- ensure they got the weap and sure, why not repeat the nw2bool
     timer.Create( maintainChosenWeapTimer, 0.1, 0, function()
         if IsValid( purchaser ) and purchaser.glee_IsDivineChosen then
             purchaser:SetNW2Bool( "isdivinechosen", true )
@@ -2514,7 +2514,6 @@ local function divineChosenPurchase( purchaser )
             purchaser.divineChosenThink()
 
         else
-            -- If the entity is no longer valid, stop the timer
             timer.Remove( maintainChosenWeapTimer )
             purchaser:SetNW2Bool( "isdivinechosen", nil )
             SetGlobalBool( "chosenhasarrived", nil )
@@ -2553,7 +2552,7 @@ local function divineChosenPurchase( purchaser )
                     return
 
                 end
-                GAMEMODE.roundExtraData.divinePatienceEnds = math.max( CurTime() + 60, GAMEMODE.roundExtraData.divinePatienceEnds + 30 )
+                GAMEMODE.roundExtraData.divinePatienceEnds = math.max( CurTime() + 90, GAMEMODE.roundExtraData.divinePatienceEnds + 40 )
 
             end
         end )
@@ -2593,6 +2592,7 @@ local function divineChosenPurchase( purchaser )
 
         purchaser:Resurrect()
 
+        -- lighting where they spawn
         timer.Simple( 0.1, function()
             local placeholder = ents.Create( "prop_physics" )
             placeholder:SetPos( randAreasCenter )
