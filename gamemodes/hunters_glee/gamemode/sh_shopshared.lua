@@ -364,7 +364,7 @@ function GM:canPurchase( ply, toPurchase )
     if cost >= 0 and frags < cost and cost ~= 0 then return nil, REASON_POOR end
 
     local nextPurchase = ply.shopItemCooldowns[toPurchase] or -20000
-    local nextPurchasePresentable = math.Round( math.abs( nextPurchase - CurTime() ) )
+    local nextPurchasePresentable = math.Round( math.abs( nextPurchase - CurTime() ), 1 )
     local cooldownReason = "Cooldown, Purchasable in " .. tostring( nextPurchasePresentable )
     if nextPurchase == math.huge then
         cooldownReason = "This is only purchasable once per round."

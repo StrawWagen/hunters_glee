@@ -54,10 +54,11 @@ function SWEP:GetChannel()
 
 end
 
-function SWEP:ChannelSwitch( add, override )
+function SWEP:ChannelSwitch( add )
     self:SendWeaponAnim( ACT_VM_PRIMARYATTACK )
-    self:GetOwner():GetViewModel():SetPlaybackRate( 4 ) -- faster slap
-    self:GetOwner():SetAnimation( PLAYER_ATTACK1 )
+    local owner = self:GetOwner()
+    owner:GetViewModel():SetPlaybackRate( 4 ) -- faster
+    owner:SetAnimation( PLAYER_ATTACK1 )
 
     add = add or 1
 
@@ -76,10 +77,13 @@ function SWEP:ChannelSwitch( add, override )
 
     if not SERVER then return end
 
-    self:GetOwner().huntersglee_preferredradiochannel = newChannel
-    self:UpdateServersideChannel( channelIn )
+    owner.huntersglee_preferredradiochannel = newChannel
+    self:UpdateServersideChannel( newChannel )
 
+    if newChannel == 0 then
+        huntersGlee_Announce( { owner }, 1, 1.5, "Global chat turned off." )
 
+    end
 end
 
 function SWEP:PrimaryAttack()
@@ -130,6 +134,7 @@ end
 function SWEP:GetViewModelPosition( pos, ang )
     local offset = Vector( 0, 0, -5 )
     return pos + offset, ang
+
 end
 
 function SWEP:CustomAmmoDisplay()

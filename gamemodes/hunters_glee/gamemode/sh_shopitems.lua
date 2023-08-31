@@ -68,10 +68,12 @@ local function revivePurchase( purchaser )
 
     if hasWeap then
         weap:AddResurrect()
+        weap:AddResurrect()
 
     else
-        purchaser:Give( reviver, false )
-        loadoutConfirm( purchaser, 1 )
+        weap = purchaser:Give( reviver, false )
+        weap:AddResurrect()
+        loadoutConfirm( purchaser, 2 )
 
     end
 end
@@ -3132,7 +3134,7 @@ function GM:SetupShopCatalouge()
         -- wacky ass shit
         [ "bombgland" ] = {
             name = "Bomb Gland.",
-            desc = "You accumulate bombs. Drop them with the bomb gland.\nLeft Click for small bombs, Reload for a big bomb.\nRight click to detonate oldest bomb.\nAfter you surpass 4 bombs, there's a chance that any damage will explode your bombs.\nIf you die, all your bombs explode.",
+            desc = "You accumulate bombs. Drop them with the bomb gland.\nLeft Click for small bombs, Reload for a big bomb.\nRight click to detonate oldest bomb.\nAfter you surpass 4 bombs, there's a chance that ANY damage will explode your undropped bombs.\nIf you die, all your bombs explode.",
             cost = 75,
             markup = 2,
             cooldown = math.huge,
