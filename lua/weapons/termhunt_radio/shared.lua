@@ -111,17 +111,34 @@ function SWEP:ChannelSwitch( add )
     end
 end
 
+function SWEP:SwitchedToNoChannelSnd()
+    self:EmitSound( "ambient/levels/prison/radio_random11.wav", 65, 75 )
+
+end
+function SWEP:SwitchedChannelSnd()
+    self:EmitSound( "ambient/levels/prison/radio_random11.wav", 65, 75 )
+
+end
+function SWEP:SwitchedTo666Snd()
+    self:EmitSound( "ambient/levels/citadel/strange_talk11.wav", 65, 120 )
+
+end
+
 function SWEP:PrimaryAttack()
     if self.NextPrimaryFire > CurTime() then return end
     self.NextPrimaryFire = CurTime() + 0.2
 
     if IsFirstTimePredicted() then
         self:ChannelSwitch( 1 )
-        if self:GetChannelIndex() == 1 then
-            self:EmitSound( "ambient/levels/prison/radio_random11.wav", 65, 75 )
+
+        if self:GetChannelIndex() == 6 then
+            self:SwitchedTo666Snd()
+
+        elseif self:GetChannelIndex() == 1 then
+            self:SwitchedToNoChannelSnd()
 
         else
-            self:EmitSound( "ambient/levels/prison/radio_random11.wav", 65 )
+            self:SwitchedChannelSnd()
 
         end
     end
@@ -133,11 +150,15 @@ function SWEP:SecondaryAttack()
 
     if IsFirstTimePredicted() then
         self:ChannelSwitch( -1 )
-        if self:GetChannelIndex() == 1 then
-            self:EmitSound( "ambient/levels/prison/radio_random11.wav", 65, 75 )
+
+        if self:GetChannelIndex() == 6 then
+            self:SwitchedTo666Snd()
+
+        elseif self:GetChannelIndex() == 1 then
+            self:SwitchedToNoChannelSnd()
 
         else
-            self:EmitSound( "ambient/levels/prison/radio_random11.wav", 65 )
+            self:SwitchedChannelSnd()
 
         end
     end
@@ -208,7 +229,8 @@ end
 
 function SWEP:ShutDown()
     if not IsValid( self.OldOwner ) then return end
-    self.static = nil
+    self.sound_static = nil
+    self.sound_screams = nil
     self.OldOwner.termhuntRadio = nil
     self.OldOwner.glee_RadioChannel = nil
 
@@ -227,15 +249,37 @@ end
 
 function SWEP:ManageSound()
     if not SERVER then return end
-    if IsValid( self.static ) and self.static:IsPlaying() then return end
-    self.static = self.static or CreateSound( self:GetOwner(), "ambient/levels/prison/radio_random1.wav" )
-    if self == self:GetOwner():GetActiveWeapon() and self:GetOwner():Health() > 0 and self:GetChannelIndex() ~= 1 then
-        self.doneFadeOut = nil
-        self.static:PlayEx( 0.8, self:GetStaticPitch() )
-    else
-        if not self.doneFadeOut then
-            self.doneFadeOut = true
-            self.static:FadeOut( 0.5 )
+    if not IsValid( self.sound_static ) or not self.sound_static:IsPlaying() then
+        local index = self:GetChannelIndex()
+        self.sound_static = self.sound_static or CreateSound( self:GetOwner(), "ambient/levels/prison/radio_random1.wav" )
+
+        if self == self:GetOwner():GetActiveWeapon() and self:GetOwner():Health() > 0 and index ~= 1 and index ~= 6 then
+            self.doneFadeOut = nil
+            self.sound_static:PlayEx( 0.8, self:GetStaticPitch() )
+
+        else
+            if not self.doneFadeOut then
+                self.doneFadeOut = true
+                self.sound_static:FadeOut( 0.25 )
+
+            end
+        end
+    end
+
+    if not IsValid( self.sound_screams ) or not self.sound_screams:IsPlaying() then
+        local index = self:GetChannelIndex()
+        self.sound_screams = self.sound_screams or CreateSound( self:GetOwner(), "ambient/levels/citadel/citadel_ambient_voices1.wav" )
+        if self == self:GetOwner():GetActiveWeapon() and self:GetOwner():Health() > 0 and index == 6 then
+            self.doneScreamsFadeOut = nil
+            self.sound_screams:SetSoundLevel( 65 )
+            self.sound_screams:PlayEx( 0.6, self:GetStaticPitch() )
+
+        else
+            if not self.doneScreamsFadeOut then
+                self.doneScreamsFadeOut = true
+                self.sound_screams:FadeOut( 0.25 )
+
+            end
         end
     end
 end

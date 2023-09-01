@@ -716,7 +716,7 @@ end )
 
 function channel666Check( purchaser )
     if not purchaser:GetNW2Bool( "glee_canpurchase_666", false ) then
-        return false, "Pure souls cannot purchase this.\nYou must sin...\nMurder when it will last, will suffice."
+        return false, "Pure souls cannot purchase this.\nYou must sin...\nMurder when it lasts, will suffice."
 
     end
 
