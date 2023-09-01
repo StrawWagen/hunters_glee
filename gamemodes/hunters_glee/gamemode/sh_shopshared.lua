@@ -237,6 +237,11 @@ function GM:shopMarkup( purchaser, toPurchase )
     return 1
 end
 
+local function errorCatchingMitt( errMessage )
+    ErrorNoHaltWithStack( errMessage )
+
+end
+
 function GM:shopItemCost( toPurchase, purchaser )
     if not toPurchase then return end
     local dat = GAMEMODE:GetShopItemData( toPurchase )
@@ -245,10 +250,10 @@ function GM:shopItemCost( toPurchase, purchaser )
     local cost = nil
 
     if isfunction( costRaw ) then
-        local noErrors, returned = pcall( costRaw, purchaser )
+        local noErrors, returned = xpcall( costRaw, errorCatchingMitt, purchaser )
         if noErrors == false then
             GAMEMODE:invalidateShopItem( toPurchase )
-            ErrorNoHaltWithStack( toPurchase .. "'s cost function errored." )
+            print( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s cost function errored!!!!!!!!!!!" )
             return 0
 
         else
@@ -322,10 +327,10 @@ function GM:canPurchase( ply, toPurchase )
     end
     if istable( canEvenShow ) then
         for _, theCurrentShowFunc in ipairs( canEvenShow ) do
-            local noErrors, returned = pcall( theCurrentShowFunc, ply )
+            local noErrors, returned = xpcall( theCurrentShowFunc, errorCatchingMitt, ply )
             if noErrors == false then
                 GAMEMODE:invalidateShopItem( toPurchase )
-                ErrorNoHaltWithStack( toPurchase .. "'s canShowInShop function errored." )
+                print( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s canShowInShop function errored!!!!!!!!!!!" )
                 return nil, REASON_ERROR
 
             else
@@ -343,10 +348,10 @@ function GM:canPurchase( ply, toPurchase )
     end
     if istable( checkFunc ) then
         for _, theCurrentCheckFunc in ipairs( checkFunc ) do
-            local noErrors, returned, reason = pcall( theCurrentCheckFunc, ply )
+            local noErrors, returned, reason = xpcall( theCurrentCheckFunc, errorCatchingMitt, ply )
             if noErrors == false then
                 GAMEMODE:invalidateShopItem( toPurchase )
-                ErrorNoHaltWithStack( toPurchase .. "'s purchaseCheck function errored." )
+                print( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s purchaseCheck function errored!!!!!!!!!!!" )
                 return nil, REASON_ERROR
 
             else

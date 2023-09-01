@@ -101,6 +101,7 @@ local switchSound = Sound( "buttons/lightswitch2.wav" )
 
 local invisibleColor = Color( 0, 0, 0, 0 )
 local itemNameColor = Color( 255, 255, 255, 255 )
+local itemDescriptionColor = Color( 255, 255, 255, 230 )
 local whiteFaded = Color( 255, 255, 255, 240 )
 local shopItemColor = Color( 73, 73, 73, 255 )
 
@@ -287,8 +288,23 @@ function termHuntOpenTheShop()
         shopItem:SetSize( myCategoryPanel.shopItemWidth, myCategoryPanel.shopItemHeight )
         shopItem:SetText( "" )
 
+        shopItem.IsHoveredCooler = function( self )
+            local tooltipHovered = nil
+            if self.coolTooltip then
+                tooltipHovered = self.coolTooltip:IsHovered()
+
+            end
+            return self:IsHovered() or tooltipHovered
+
+        end
+
         shopItem.Think = function( self )
-            local hovering = self:IsHovered()
+            local tooltipHovered = nil
+            if self.coolTooltip then
+                tooltipHovered = self.coolTooltip:IsHovered()
+
+            end
+            local hovering = self:IsHoveredCooler() or tooltipHovered
             if hovering ~= self.hovered then
                 if not self.purchasable and not self.initialSetup then
                     -- do nothing
@@ -328,7 +344,7 @@ function termHuntOpenTheShop()
         shopItem.OnBeginHovering = function( self )
             -- this is spaghetti
             local coolTooltip = vgui.Create( "DSizeToContents", _LocalPlayer().MAINSCROLLPANEL, shopPanelName( identifier ) .. "_cooltooltip" )
-            -- hide the jank!
+            -- hide the jank setup bugs!
             coolTooltip.isSetupTime = CurTime() + 0.1
 
             shopItem.coolTooltip = coolTooltip
@@ -339,7 +355,7 @@ function termHuntOpenTheShop()
             local tooltipsY = itemsY + categorysY
             local tooltipsX = itemsX + -myCategoryPanel.OffsetX
             coolTooltip.xPos, coolTooltip.yPos = tooltipsX, tooltipsY
-            local fallbackYPos = tooltipsY + myCategoryPanel.shopItemHeight
+            local yPosUnder = tooltipsY + shopItem.shopItemNameHPadded * 3.5
 
             coolTooltip:SetSize( myCategoryPanel.shopItemWidth, myCategoryPanel.shopItemHeight )
             -- up up and away!
@@ -352,15 +368,30 @@ function termHuntOpenTheShop()
 
             end
 
+            coolTooltip.OnMousePressed = function( _, keyCode )
+                shopItem:OnMousePressed( keyCode )
+
+            end
+
+            coolTooltip.OnMouseReleased = function( _, keyCode )
+                shopItem:OnMouseReleased( keyCode )
+
+            end
+
+            coolTooltip.OnMouseWheeled = function( _, delta )
+                myCategoryPanel:OnMouseWheeled( delta )
+
+            end
+
             coolTooltip.Think = function ( self )
                 local _, scaledSizeY = self:GetSize()
                 if scaledSizeY ~= 0 then
-                    -- now it's actually in the right spot
-                    local finalYNormal = tooltipsY + -scaledSizeY
-                    if finalYNormal > 0 then
-                        self:SetPos( tooltipsX, finalYNormal )
+                    local bottomOfTip = yPosUnder + scaledSizeY + height / 10
+                    if bottomOfTip > height then
+                        yPosAbove = tooltipsY + -scaledSizeY
+                        self:SetPos( tooltipsX, yPosAbove )
                     else
-                        self:SetPos( tooltipsX, fallbackYPos )
+                        self:SetPos( tooltipsX, yPosUnder )
                     end
                 end
 
@@ -390,7 +421,7 @@ function termHuntOpenTheShop()
                 self:SetSize( sizeX, sizeY + offsetNextToIdentifier )
 
                 if coolTooltip.hasSetup then
-                    self:SetTextColor( itemNameColor )
+                    self:SetTextColor( itemDescriptionColor )
 
                 end
 
@@ -472,12 +503,15 @@ function termHuntOpenTheShop()
             surface.SetFont( "termhuntShopItemFont" )
             local _, shopItemNameH = surface.GetTextSize( self.itemData.name )
 
+            local shopItemNameHPadded = shopItemNameH * 1.2
+            self.shopItemNameHPadded = shopItemNameHPadded
+
             --item name
             draw.DrawText( self.itemData.name, "termhuntShopItemFont", offsetNextToIdentifier, offsetNextToIdentifier, itemNameColor, TEXT_ALIGN_LEFT )
             --item cost
-            draw.DrawText( self.costString, "termhuntShopItemFont", offsetNextToIdentifier, shopItemNameH * 1.2 + offsetNextToIdentifier, self.costColor, TEXT_ALIGN_LEFT )
+            draw.DrawText( self.costString, "termhuntShopItemFont", offsetNextToIdentifier, shopItemNameHPadded + offsetNextToIdentifier, self.costColor, TEXT_ALIGN_LEFT )
             -- current markup being applied
-            draw.DrawText( self.markupString, "termhuntShopItemFont", offsetNextToIdentifier, shopItemNameH + shopItemNameH * 1.2 + offsetNextToIdentifier, Color( 140, 140, 140, 255 ), TEXT_ALIGN_LEFT )
+            draw.DrawText( self.markupString, "termhuntShopItemFont", offsetNextToIdentifier, shopItemNameHPadded + shopItemNameHPadded + offsetNextToIdentifier, Color( 140, 140, 140, 255 ), TEXT_ALIGN_LEFT )
 
             self.myOverlayColor = nil
 
@@ -485,9 +519,9 @@ function termHuntOpenTheShop()
                 self.myOverlayColor = Color( 0, 0, 0, 200 )
                 draw.RoundedBox( 0, 0, 0, self:GetWide(), self:GetTall(), self.myOverlayColor )
 
-            elseif not self:IsHovered() then
+            elseif not self:IsHoveredCooler() then
                 self.pressed = nil
-                self.myOverlayColor = Color( 0, 0, 0, 25 )
+                self.myOverlayColor = Color( 0, 0, 0, 45 )
                 draw.RoundedBox( 0, 0, 0, self:GetWide(), self:GetTall(), self.myOverlayColor )
 
             elseif self.pressed then

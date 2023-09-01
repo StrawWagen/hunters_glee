@@ -14,6 +14,7 @@ include( "modules/sh_tempbools.lua" )
 resource.AddSingleFile( "sound/53937_meutecee_trumpethit07.wav" )
 resource.AddSingleFile( "sound/418788_name_heartbeat_single.wav" )
 resource.AddSingleFile( "sound/209578_zott820_cash-register-purchase.wav" )
+resource.AddSingleFile( "sound/482735__copyc4t__cartoon-long-throw.wav" )
 
 GM.Name = "Hunter's Glee"
 GM.Author = "StrawWagen"

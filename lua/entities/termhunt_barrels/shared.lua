@@ -108,7 +108,7 @@ function ENT:GetGivenScore()
     local scoreGiven = 40 - barrelCount
     scoreGiven = scoreGiven + -punishmentGiven
     scoreGiven = math.Clamp( scoreGiven, -75, 10 )
-    scoreGiven = scoreGiven + terminator_Extras.GetNookScore( myPos ) * 6
+    scoreGiven = scoreGiven + terminator_Extras.GetNookScore( myPos ) * 4
 
     return scoreGiven, punishmentGiven
 

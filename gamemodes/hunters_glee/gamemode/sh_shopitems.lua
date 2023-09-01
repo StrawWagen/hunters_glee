@@ -1308,14 +1308,71 @@ local function juggernautPurchase( purchaser )
 
 end
 
+local slipSound = Sound( "482735__copyc4t__cartoon-long-throw.wav" )
 
-local function rosesPurchase( purchaser )
-    purchaser:doSpeedModifier( "rosedebuff", -50 )
-    purchaser:doSpeedClamp( "rosedebuff", 0 ) -- speed buffs dont work
+local function greasyHandsPurchase( purchaser )
+
+    purchaser.glee_hasGreasyHands = true
+
+    local hookKey1 = "huntersglee_shop_greasyhands_swap" .. purchaser:GetCreationID()
+    local timerName = "huntersglee_shop_greasyhands_firing" .. purchaser:GetCreationID()
+
+    local function passesTheBpmTest( ply, added )
+        added = added or 0
+        return ply:GetNWInt( "termHuntPlyBPM" ) > math.random( 60, 300 + added )
+
+    end
+
+    local function dropWeaponFunny( wep )
+        purchaser:EmitSound( slipSound, 78, math.random( 100, 110 ), 0.9 )
+        timer.Simple( 0.1, function()
+            if not IsValid( purchaser ) then return end
+            if not IsValid( wep ) then return end
+            if not purchaser:HasWeapon( wep:GetClass() ) then return end
+            -- zamn u never know what can happen in 0.1 seconds....
+            purchaser:DropWeaponKeepAmmo( wep )
+
+        end )
+    end
+
+    hook.Add( "PlayerSwitchWeapon", hookKey1, function( swapper, _, newWeapon )
+        if swapper ~= purchaser then return end
+        if not purchaser.glee_hasGreasyHands then hook.Remove( hookKey1 ) return end
+        if purchaser:Health() <= 0 then return end
+
+        if passesTheBpmTest( purchaser ) or purchaser.glee_greasyhands_queuedDrop then
+            if not purchaser:CanDropWeaponKeepAmmo( newWeapon ) then
+                purchaser.glee_greasyhands_queuedDrop = true
+                return
+
+            end
+            purchaser.glee_greasyhands_queuedDrop = nil
+            dropWeaponFunny( newWeapon )
+
+        end
+    end )
+
+    timer.Create( timerName, 0.75, 0, function()
+        if not IsValid( purchaser ) then timer.Remove( timerName ) end
+        if not purchaser.glee_hasGreasyHands then timer.Remove( timerName ) end
+        if purchaser:Health() <= 0 then return end
+
+        if not purchaser:KeyDown( IN_ATTACK ) and not purchaser:KeyDown( IN_ATTACK2 ) then return end
+
+        local wep = purchaser:GetActiveWeapon()
+
+        if not purchaser:CanDropWeaponKeepAmmo( wep ) then return end
+        if not passesTheBpmTest( purchaser, 100 ) then return end
+
+        dropWeaponFunny( wep )
+
+    end )
 
     local undoInnate = function( respawner )
-        respawner:doSpeedModifier( "rosedebuff", nil )
-        respawner:doSpeedClamp( "rosedebuff", nil )
+        hook.Remove( hookKey1 )
+        timer.Stop( timerName )
+        respawner.glee_hasGreasyHands = nil
+        respawner.glee_greasyhands_queuedDrop = nil
 
     end
 
@@ -2345,7 +2402,7 @@ local function additionalHunter( purchaser )
     return true
 end
 
-local glee_scoretochosentimeoffset_divisor = CreateConVar( "huntersglee_scoretochosentimeoffset_divisor", "5", bit.bor( FCVAR_REPLICATED, FCVAR_ARCHIVE ), "smaller means grigori time goes up faster. bigger, means slower", 0, 100000 )
+local glee_scoretochosentimeoffset_divisor = CreateConVar( "huntersglee_scoretochosentimeoffset_divisor", "6", bit.bor( FCVAR_REPLICATED, FCVAR_ARCHIVE ), "smaller means grigori time goes up faster. bigger, means slower", 0, 100000 )
 local glee_chosenkillsrequired = CreateConVar( "huntersglee_chosenkillsrequired", "2", bit.bor( FCVAR_REPLICATED, FCVAR_ARCHIVE ), "how many hunters one must kill to get grigori", 0, 100000 )
 
 if SERVER then
@@ -2355,7 +2412,7 @@ if SERVER then
 
     hook.Add( "huntersglee_givescore", "glee_chosentrackscore", function( _, scoreGivenRaw )
         local scoreGiven = math.abs( scoreGivenRaw )
-        local moreTime = scoreGiven / glee_scoretochosentimeoffset_divisor:GetInt()
+        local moreTime = scoreGiven / glee_scoretochosentimeoffset_divisor:GetFloat()
         moreTime = moreTime / #player.GetAll()
 
         local startTimeOffset = GAMEMODE.roundExtraData.divineChosen_StartTimeOffset or 0
@@ -2372,6 +2429,7 @@ if SERVER then
 end
 
 local function divineChosenCanPurchase( purchaser )
+
     -- damn it i dropped my spaghetti
     local minutes = 10 + ( GetGlobal2Int( "glee_chosen_timeoffset", 0 ) / 60 )
     minutes = math.Clamp( minutes, 0, 20 )
@@ -2383,7 +2441,7 @@ local function divineChosenCanPurchase( purchaser )
     local huntersKilled = purchaser:HuntersKilled()
 
     local pt1 = "Their patience has ended."
-    local pt2 = "You've killed enough hunters."
+    local pt2 = "\nYou've killed enough hunters."
     local block
     if timeToAllow > CurTime() then
         pt1 = "Presently, their patience lasts " .. formatted .. "."
@@ -2942,10 +3000,10 @@ function GM:SetupShopCatalouge()
             purchaseFunc = deafnessPurchase,
         },
         -- flat downgrade
-        [ "smelltheroses" ] = {
-            name = "Smell the roses.",
-            desc = "Move slower, and speed buffs don't work on you.\nYou know how to live life in the slow lane.\nReally appreciate what's around you.",
-            cost = -50,
+        [ "greasyhands" ] = {
+            name = "Greasy Hands.",
+            desc = "Eating greasy food all your life,\nyour hands... adapted to their new, circumstances...\nUnder stress, the grease flows like a faucet.",
+            cost = -120,
             markup = 0.25,
             cooldown = math.huge,
             category = "Innate",
@@ -2955,7 +3013,7 @@ function GM:SetupShopCatalouge()
             },
             weight = -80,
             purchaseCheck = { unUndeadCheck },
-            purchaseFunc = rosesPurchase,
+            purchaseFunc = greasyHandsPurchase,
         },
         -- flat downgrade
         [ "badknees" ] = {
@@ -3377,7 +3435,7 @@ function GM:SetupShopCatalouge()
     GAMEMODE.shopIsReadyForItems = true
 
     -- pls put other shop items in this hook! ty
-    xpcall( function() hook.Run( "huntersglee_postshopsetup_shared", nil ) end, ErrorNoHaltWithStack )
+    ProtectedCall( function() hook.Run( "huntersglee_postshopsetup_shared", nil ) end )
 
 end
 

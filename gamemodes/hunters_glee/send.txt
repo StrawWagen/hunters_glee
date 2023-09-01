@@ -4,7 +4,6 @@ gamemodes\hunters_glee\gamemode\modules\cl_spectateflashlight.lua
 
 gamemodes\hunters_glee\gamemode\modules\sh_tempbools.lua
 gamemodes\hunters_glee\gamemode\modules\sh_detecthunterkills.lua
-
 gamemodes\hunters_glee\gamemode\lib\sh_termfuncs.lua
 
 lua\autorun\cl_shadowedTextFunc.lua

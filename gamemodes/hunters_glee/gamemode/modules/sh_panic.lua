@@ -2,7 +2,7 @@ if CLIENT then
     -- cache panic so we aren't calling getnwint
     local clPanic = nil
     function doPanicDistort( scale )
-        local refractAmount = scale / 10000
+        local refractAmount = scale / 12000
         if scale <= 25 then return end
         local overlayMaterial = "models/props_c17/fisheyelens"
         DrawMaterialOverlay( overlayMaterial, refractAmount )
