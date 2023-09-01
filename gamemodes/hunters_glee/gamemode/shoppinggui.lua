@@ -290,8 +290,8 @@ function termHuntOpenTheShop()
 
         shopItem.IsHoveredCooler = function( self )
             local tooltipHovered = nil
-            if self.coolTooltip then
-                tooltipHovered = self.coolTooltip:IsHovered()
+            if self.coolTooltip and self.coolTooltip.fakeButton then
+                tooltipHovered = self.coolTooltip.fakeButton:IsHovered()
 
             end
             return self:IsHovered() or tooltipHovered
@@ -368,21 +368,6 @@ function termHuntOpenTheShop()
 
             end
 
-            coolTooltip.OnMousePressed = function( _, keyCode )
-                shopItem:OnMousePressed( keyCode )
-
-            end
-
-            coolTooltip.OnMouseReleased = function( _, keyCode )
-                shopItem:OnMouseReleased( keyCode )
-
-            end
-
-            coolTooltip.OnMouseWheeled = function( _, delta )
-                myCategoryPanel:OnMouseWheeled( delta )
-
-            end
-
             coolTooltip.Think = function ( self )
                 local _, scaledSizeY = self:GetSize()
                 if scaledSizeY ~= 0 then
@@ -390,8 +375,10 @@ function termHuntOpenTheShop()
                     if bottomOfTip > height then
                         yPosAbove = tooltipsY + -scaledSizeY
                         self:SetPos( tooltipsX, yPosAbove )
+                        self.fakeButton:SetPos( tooltipsX, yPosAbove )
                     else
                         self:SetPos( tooltipsX, yPosUnder )
+                        self.fakeButton:SetPos( tooltipsX, yPosAbove )
                     end
                 end
 
@@ -400,7 +387,42 @@ function termHuntOpenTheShop()
 
             end
 
-            local textLabel = vgui.Create( "DLabel", coolTooltip, shopPanelName( identifier ) .. "_cooltooltip_label" )
+
+            local tooltipTopButton = vgui.Create( "DButton", coolTooltip, shopPanelName( identifier ) .. "_cooltooltip_topbutton" )
+
+            coolTooltip.fakeButton = tooltipTopButton
+            tooltipTopButton:SetText( "" )
+
+            tooltipTopButton:Dock( TOP )
+
+            tooltipTopButton.Paint = function( _ )
+            end
+
+            tooltipTopButton.OnMousePressed = function( _, keyCode )
+                shopItem:OnMousePressed( keyCode )
+
+            end
+
+            tooltipTopButton.OnMouseReleased = function( _, keyCode )
+                shopItem:OnMouseReleased( keyCode )
+
+            end
+
+            tooltipTopButton.OnMouseWheeled = function( _, delta )
+                myCategoryPanel:OnMouseWheeled( delta )
+
+            end
+
+            tooltipTopButton.PaintOver = function( self )
+                if not coolTooltip.hasSetup then return end
+                if shopItem.myOverlayColor then
+                    draw.RoundedBox( 0, 0, 0, self:GetWide(), self:GetTall(), shopItem.myOverlayColor )
+
+                end
+            end
+
+
+            local textLabel = vgui.Create( "DLabel", tooltipTopButton, shopPanelName( identifier ) .. "_cooltooltip_label" )
 
             textLabel:SetTextColor( invisibleColor )
 
@@ -411,6 +433,7 @@ function termHuntOpenTheShop()
             textLabel:Dock( TOP )
 
             textLabel.Think = function( self )
+                if coolTooltip.gettingRemoved then return end
                 self:SetTextInset( offsetNextToIdentifier, offsetNextToIdentifier )
                 self:SetFont( "termhuntShopItemSmallerFont" )
                 self:SetText( shopItem.coolTooltipString )
@@ -418,7 +441,9 @@ function termHuntOpenTheShop()
                 self:SetWrap( true )
                 self:SizeToContentsY()
                 local sizeX, sizeY = self:GetSize()
-                self:SetSize( sizeX, sizeY + offsetNextToIdentifier )
+
+                self:SetSize( sizeX + -offsetNextToIdentifier, sizeY + offsetNextToIdentifier )
+                coolTooltip.fakeButton:SetSize( sizeX, sizeY + offsetNextToIdentifier )
 
                 if coolTooltip.hasSetup then
                     self:SetTextColor( itemDescriptionColor )
@@ -426,20 +451,25 @@ function termHuntOpenTheShop()
                 end
 
             end
-            textLabel.PaintOver = function( self )
-                if not coolTooltip.hasSetup then return end
-                if shopItem.myOverlayColor then
-                    draw.RoundedBox( 0, 0, 0, self:GetWide(), self:GetTall(), shopItem.myOverlayColor )
-
-                end
-            end
         end
 
         shopItem.RemoveCoolTooltip = function( self )
-            if shopItem.coolTooltip then
-                shopItem.coolTooltip:Remove()
+            local tooltip = shopItem.coolTooltip
+            if not tooltip then return end
+            if tooltip.textLabel then
+                tooltip.textLabel:Remove()
 
             end
+            -- let the text remove so it NEVER flashes
+            timer.Simple( 0, function()
+                if not IsValid( tooltip ) then return end
+                if tooltip.fakeButton then
+                    tooltip.fakeButton:Remove()
+
+                end
+                tooltip:Remove()
+
+            end )
         end
 
         shopItem.Paint = function( self )

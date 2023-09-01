@@ -570,39 +570,46 @@ end )
 
 local teamPlaying = GM.TEAM_PLAYING
 local teamSpectating = GM.TEAM_SPECTATE
-local distToBlockProxy = 1500^2
+local distToBlockProxy = 1250^2
 
-hook.Add( "PlayerCanHearPlayersVoice", "termhuntMaximumRange", function( listener, talker )
-    local doProxChat = GAMEMODE.doProxChat
-    if not doProxChat then return true, false end
+local doProxChatCached = nil
+local hasdonetheconfirmprint = nil
+local _IsValid = IsValid
+
+hook.Add( "Think", "glee_cachedoproxchat", function()
+    doProxChatCached = GAMEMODE.doProxChat
+
+end )
+
+hook.Add( "PlayerCanHearPlayersVoice", "glee_voicechat_system", function( listener, talker )
+    if not doProxChatCached then return true, false end
 
     local talkerTeam = talker.termHuntTeam
     local listenerTeam = listener.termHuntTeam
 
-    local speakerIsSpectator = talkerTeam == teamSpectating
-    local speakerIsPlaying = talkerTeam == teamPlaying
+    local talkerIsSpectator = talkerTeam == teamSpectating
+    local talkerIsPlaying = talkerTeam == teamPlaying
 
     local listenerIsSpectator = listenerTeam == teamSpectating
     local listenerIsPlaying = listenerTeam == teamPlaying
 
-    -- if listener is spectator, they can hear everything
-    -- if listener is playing, they cannot hear people far away
-
     if listenerIsSpectator then
-        if speakerIsPlaying then
+        if talkerIsPlaying then
+            if _IsValid( talker.termhuntRadio ) and talker.glee_RadioChannel == 666 then
+                return true
+
+            end
             return true, true
 
-        elseif speakerIsSpectator then
+        elseif talkerIsSpectator then
             return true
 
         end
     elseif listenerIsPlaying then
-        if speakerIsPlaying then
-            local haveRadio = IsValid( talker.termhuntRadio ) and IsValid( listener.termhuntRadio )
-            if haveRadio then
-                local talkerChannel = talker.termhuntRadioChannel
-                local listenerChannel = listener.termhuntRadioChannel
-                if talkerChannel == 0 or listenerChannel == 0 then return false end
+        if talkerIsPlaying then
+            if _IsValid( talker.termhuntRadio ) and _IsValid( listener.termhuntRadio ) and talker.glee_RadioChannel > 0 and listener.glee_RadioChannel > 0 then
+                local talkerChannel = talker.glee_RadioChannel
+                local listenerChannel = listener.glee_RadioChannel
 
                 local sameRadio = talkerChannel == listenerChannel
                 if sameRadio then
@@ -617,7 +624,16 @@ hook.Add( "PlayerCanHearPlayersVoice", "termhuntMaximumRange", function( listene
                 return true, true
 
             end
-        elseif speakerIsSpectator then
+        elseif talkerIsSpectator then
+            if _IsValid( listener.termhuntRadio ) and listener.glee_RadioChannel == 666 then
+                if not hasdonetheconfirmprint then
+                    hasdonetheconfirmprint = true
+                    print( "omg " .. listener:Name() .. " heard " .. talker:Name() )
+
+                end
+                return true
+
+            end
             return false
 
         end

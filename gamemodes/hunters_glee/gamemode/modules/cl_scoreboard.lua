@@ -37,6 +37,7 @@ local PLAYER_LINE = {
         self.Mute = self:Add( "DImageButton" )
         self.Mute:SetSize( 32, 32 )
         self.Mute:Dock( RIGHT )
+        self.Mute:SetTooltip( "Mute/Unmute this player's voicechat" )
 
         self.Ping = self:Add( "DLabel" )
         self.Ping:Dock( RIGHT )
@@ -44,6 +45,8 @@ local PLAYER_LINE = {
         self.Ping:SetFont( "ScoreboardDefault" )
         self.Ping:SetTextColor( Color( 93, 93, 93 ) )
         self.Ping:SetContentAlignment( 5 )
+        self.Ping:SetTooltip( "Ping" )
+        self.Ping:SetMouseInputEnabled( true )
 
         self.Deaths = self:Add( "DLabel" )
         self.Deaths:Dock( RIGHT )
@@ -51,6 +54,8 @@ local PLAYER_LINE = {
         self.Deaths:SetFont( "ScoreboardDefault" )
         self.Deaths:SetTextColor( Color( 93, 93, 93 ) )
         self.Deaths:SetContentAlignment( 5 )
+        self.Deaths:SetTooltip( "Deaths" )
+        self.Deaths:SetMouseInputEnabled( true )
 
         self.Kills = self:Add( "DLabel" )
         self.Kills:Dock( RIGHT )
@@ -58,6 +63,17 @@ local PLAYER_LINE = {
         self.Kills:SetFont( "ScoreboardDefault" )
         self.Kills:SetTextColor( Color( 93, 93, 93 ) )
         self.Kills:SetContentAlignment( 5 )
+        self.Kills:SetTooltip( "Score.\nEither get close to hunters, or game the Shop." )
+        self.Kills:SetMouseInputEnabled( true )
+
+        self.RadioChannel = self:Add( "DLabel" )
+        self.RadioChannel:Dock( RIGHT )
+        self.RadioChannel:SetWidth( 50 )
+        self.RadioChannel:SetFont( "ScoreboardDefault" )
+        self.RadioChannel:SetTextColor( Color( 93, 93, 93 ) )
+        self.RadioChannel:SetContentAlignment( 5 )
+        self.RadioChannel:SetTooltip( "Radio channel.\nIf you're on the same radio channel as someone, you can talk to them from anywhere." )
+        self.RadioChannel:SetMouseInputEnabled( true )
 
         self:Dock( TOP )
         self:DockPadding( 3, 3, 3, 3 )
@@ -105,6 +121,11 @@ local PLAYER_LINE = {
         if self.NumPing == nil or self.NumPing ~= self.Player:Ping() then
             self.NumPing = self.Player:Ping()
             self.Ping:SetText( self.NumPing )
+        end
+
+        if self.NumChannel == nil or self.NumChannel ~= self.Player:GetGleeRadioChannel() then
+            self.NumChannel = self.Player:GetGleeRadioChannel()
+            self.RadioChannel:SetText( self.NumChannel )
         end
 
         local zPos = 0
@@ -197,20 +218,17 @@ local SCORE_BOARD = {
     end,
 
     PerformLayout = function( self )
-
         self:SetSize( 700, ScrH() - 200 )
         self:SetPos( ScrW() / 2 - 350, 100 )
 
     end,
 
     Paint = function( self, w, h )
-
         --draw.RoundedBox( 4, 0, 0, w, h, Color( 0, 0, 0, 200 ) )
 
     end,
 
     Think = function( self, w, h )
-
         self.Name:SetText( GetHostName() )
 
         --

@@ -14,7 +14,17 @@ SWEP.ViewModelFOV = 54
 SWEP.UseHands = true
 SWEP.Weight = 1
 
-SWEP.totalChannels = 4
+-- have internal channel inside radio, and have what we show to plys/other code
+local legalChannels = {
+    [1] = 0,
+    [2] = 1,
+    [3] = 2,
+    [4] = 3,
+    [5] = 4,
+    [6] = 666
+
+}
+SWEP.totalChannels = #legalChannels
 
 SWEP.Primary.ClipSize = 1
 SWEP.Primary.DefaultClip = 1
@@ -34,23 +44,29 @@ end
 function SWEP:Initialize()
     self.Range = 1800
     self.MeleeWeaponDistance = self.Range
-    self:SetNWInt( "radiochannel", 1 )
+    self:SetNWInt( "glee_radiochannel_index", 2 )
     self.OldOwner = nil
     self.NextPrimaryFire = 0
     self.NextSecondaryFire = 0
 
 end
 
-function SWEP:UpdateServersideChannel( channelIn )
-    local channel = channelIn or self:GetChannel()
+function SWEP:UpdateServersideChannel()
+    local channel = self:GetChannelTranslated()
     local owner = self:GetOwner()
     owner.termhuntRadio = self
-    owner.termhuntRadioChannel = channel
+    owner:SetGleeRadioChannel( channel )
+
 
 end
 
-function SWEP:GetChannel()
-    return self:GetNWInt( "radiochannel" )
+function SWEP:GetChannelIndex()
+    return self:GetNWInt( "glee_radiochannel_index" )
+
+end
+
+function SWEP:GetChannelTranslated()
+    return legalChannels[ self:GetChannelIndex() ]
 
 end
 
@@ -62,38 +78,46 @@ function SWEP:ChannelSwitch( add )
 
     add = add or 1
 
-    local currChannel = self:GetChannel()
+    local can666 = owner:GetNWBool( "glee_cantalk_tothedead", false )
+    local currChannel = self:GetChannelIndex()
     local newChannel = currChannel + add
 
-    if newChannel > self.totalChannels then
-        newChannel = 0
+    if newChannel >= 6 and not can666 then
+        newChannel = 1
 
-    elseif newChannel < 0 then
-        newChannel = self.totalChannels
+    elseif newChannel > self.totalChannels then
+        newChannel = 1
 
+    elseif newChannel < 1 then
+        if can666 then
+            newChannel = self.totalChannels
+
+        else
+            newChannel = 5
+
+        end
     end
 
-    self:SetNWInt( "radiochannel", newChannel )
+    self:SetNWInt( "glee_radiochannel_index", newChannel )
 
     if not SERVER then return end
 
     owner.huntersglee_preferredradiochannel = newChannel
     self:UpdateServersideChannel( newChannel )
 
-    if newChannel == 0 then
+    if newChannel == 1 then
         huntersGlee_Announce( { owner }, 1, 1.5, "Global chat turned off." )
 
     end
 end
 
 function SWEP:PrimaryAttack()
-
     if self.NextPrimaryFire > CurTime() then return end
     self.NextPrimaryFire = CurTime() + 0.2
 
     if IsFirstTimePredicted() then
         self:ChannelSwitch( 1 )
-        if self:GetChannel() == 0 then
+        if self:GetChannelIndex() == 1 then
             self:EmitSound( "ambient/levels/prison/radio_random11.wav", 65, 75 )
 
         else
@@ -109,7 +133,7 @@ function SWEP:SecondaryAttack()
 
     if IsFirstTimePredicted() then
         self:ChannelSwitch( -1 )
-        if self:GetChannel() == 0 then
+        if self:GetChannelIndex() == 1 then
             self:EmitSound( "ambient/levels/prison/radio_random11.wav", 65, 75 )
 
         else
@@ -120,7 +144,7 @@ function SWEP:SecondaryAttack()
 end
 
 function SWEP:Reload()
-    if self:GetChannel() == 0 then return end
+    if self:GetChannelIndex() == 1 then return end
     nextReload = self.nextReload or 0
     if nextReload > CurTime() then return end
 
@@ -142,22 +166,23 @@ function SWEP:CustomAmmoDisplay()
     self.AmmoDisplay.Draw = true
     self.AmmoDisplay.SecondaryAmmo = nil
     self.AmmoDisplay.PrimaryAmmo = nil
-    self.AmmoDisplay.PrimaryClip = self:GetChannel()
+    self.AmmoDisplay.PrimaryClip = self:GetChannelTranslated()
 
     return self.AmmoDisplay
 
 end
 
 function SWEP:GetStaticPitch()
-    return math.Rand( 59, 61 ) + self:GetChannel() * 5
+    return math.Rand( 59, 61 ) + self:GetChannelIndex() * 4.2
 
 end
 
 -- when it goes from on the ground to on the player
 function SWEP:Equip()
     self:SetHoldType( "slam" )
+    local owner = self:GetOwner()
 
-    self.OldOwner = self:GetOwner()
+    self.OldOwner = owner
 
     local name = self:GetCreationID() .. "staticmanagertimer"
 
@@ -166,10 +191,16 @@ function SWEP:Equip()
         self:ManageSound()
 
     end )
-    local preferredChannel = self:GetOwner().huntersglee_preferredradiochannel
+    local preferredChannel = owner.huntersglee_preferredradiochannel
     if preferredChannel then
-        self:SetNWInt( "radiochannel", preferredChannel )
+        if preferredChannel == 6 and not owner:GetNWBool( "glee_cantalk_tothedead", false ) then
+            self:SetNWInt( "glee_radiochannel_index", 2 )
+            owner.huntersglee_preferredradiochannel = 2
 
+        else
+            self:SetNWInt( "glee_radiochannel_index", preferredChannel )
+
+        end
     end
     self:UpdateServersideChannel()
 
@@ -179,7 +210,7 @@ function SWEP:ShutDown()
     if not IsValid( self.OldOwner ) then return end
     self.static = nil
     self.OldOwner.termhuntRadio = nil
-    self.OldOwner.termhuntRadioChannel = nil
+    self.OldOwner.glee_RadioChannel = nil
 
 end
 
@@ -198,7 +229,7 @@ function SWEP:ManageSound()
     if not SERVER then return end
     if IsValid( self.static ) and self.static:IsPlaying() then return end
     self.static = self.static or CreateSound( self:GetOwner(), "ambient/levels/prison/radio_random1.wav" )
-    if self == self:GetOwner():GetActiveWeapon() and self:GetOwner():Health() > 0 and self:GetColor().a ~= 0 and self:GetNWInt( "radiochannel" ) ~= 0 then
+    if self == self:GetOwner():GetActiveWeapon() and self:GetOwner():Health() > 0 and self:GetChannelIndex() ~= 1 then
         self.doneFadeOut = nil
         self.static:PlayEx( 0.8, self:GetStaticPitch() )
     else
@@ -220,5 +251,24 @@ end
 
 function SWEP:ShouldDropOnDie()
     return false
+
+end
+
+
+local plyMeta = FindMetaTable( "Player" )
+
+function plyMeta:SetGleeRadioChannel( channel )
+    self:SetNWInt( "glee_radiochannel", channel )
+    self.glee_RadioChannel = channel
+
+end
+
+function plyMeta:GetGleeRadioChannel()
+    if self:Health() <= 0 then
+        return 666
+
+    end
+
+    return self:GetNWInt( "glee_radiochannel", 1 )
 
 end

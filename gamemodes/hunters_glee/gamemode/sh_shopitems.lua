@@ -699,6 +699,44 @@ local function temporalDiceRollPurchase( purchaser )
 
 end
 
+
+hook.Add( "PlayerDeath", "glee_shop_channel666quota", function( _, _, attacker )
+    if not attacker:IsPlayer() then return end
+    if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
+    attacker:SetNW2Bool( "glee_canpurchase_666", true )
+
+end )
+
+hook.Add( "PreCleanupMap", "glee_shop_resetchannel666quota", function()
+    for _, ply in ipairs( player.GetAll() ) do
+        ply:SetNW2Bool( "glee_canpurchase_666", false )
+
+    end
+end )
+
+function channel666Check( purchaser )
+    if not purchaser:GetNW2Bool( "glee_canpurchase_666", false ) then
+        return false, "Pure souls cannot purchase this.\nYou must sin...\nMurder when it will last, will suffice."
+
+    end
+
+    return true
+
+end
+
+function channel666Purchase( purchaser )
+    purchaser:SetNWBool( "glee_cantalk_tothedead", true )
+
+    local undoInnate = function( respawner )
+        respawner:SetNWBool( "glee_cantalk_tothedead", false )
+
+    end
+
+    GAMEMODE:PutInnateInProperCleanup( nil, undoInnate, purchaser )
+
+end
+
+
 if SERVER then
     util.AddNetworkString( "huntersglee_blindnessdefine" )
 
@@ -1319,7 +1357,7 @@ local function greasyHandsPurchase( purchaser )
 
     local function passesTheBpmTest( ply, added )
         added = added or 0
-        return ply:GetNWInt( "termHuntPlyBPM" ) > math.random( 60, 300 + added )
+        return ply:GetNWInt( "termHuntPlyBPM" ) > math.random( 59, 300 + added )
 
     end
 
@@ -2969,6 +3007,38 @@ function GM:SetupShopCatalouge()
             purchaseCheck = { unUndeadCheck },
             purchaseFunc = blindnessPurchase,
         },
+        -- flat downgrade
+        [ "badknees" ] = {
+            name = "62 year old knees.",
+            desc = "62 years of living a sedentary lifestyle.\nJumping hurts, and is relatively useless.\nFall damage is lethal.",
+            cost = -120,
+            markup = 0.25,
+            cooldown = math.huge,
+            category = "Innate",
+            purchaseTimes = {
+                GAMEMODE.ROUND_INACTIVE,
+                GAMEMODE.ROUND_ACTIVE,
+            },
+            weight = -90,
+            purchaseCheck = { unUndeadCheck },
+            purchaseFunc = badkneesPurchase,
+        },
+        -- hilarious downgrade
+        [ "greasyhands" ] = {
+            name = "Greasy Hands.",
+            desc = "Eating greasy food all your life,\nyour hands... adapted to their new, circumstances...\nUnder stress, the grease flows like a faucet.",
+            cost = -120,
+            markup = 0.25,
+            cooldown = math.huge,
+            category = "Innate",
+            purchaseTimes = {
+                GAMEMODE.ROUND_INACTIVE,
+                GAMEMODE.ROUND_ACTIVE,
+            },
+            weight = -90,
+            purchaseCheck = { unUndeadCheck },
+            purchaseFunc = greasyHandsPurchase,
+        },
         [ "hypochondriac" ] = {
             name = "Hypochondriac.",
             desc = "You are extremely receptive to pain.",
@@ -2980,7 +3050,7 @@ function GM:SetupShopCatalouge()
                 GAMEMODE.ROUND_INACTIVE,
                 GAMEMODE.ROUND_ACTIVE,
             },
-            weight = -90,
+            weight = -80,
             purchaseCheck = { unUndeadCheck },
             purchaseFunc = hypochondriacPurchase,
         },
@@ -2998,38 +3068,6 @@ function GM:SetupShopCatalouge()
             weight = -80,
             purchaseCheck = { unUndeadCheck },
             purchaseFunc = deafnessPurchase,
-        },
-        -- flat downgrade
-        [ "greasyhands" ] = {
-            name = "Greasy Hands.",
-            desc = "Eating greasy food all your life,\nyour hands... adapted to their new, circumstances...\nUnder stress, the grease flows like a faucet.",
-            cost = -120,
-            markup = 0.25,
-            cooldown = math.huge,
-            category = "Innate",
-            purchaseTimes = {
-                GAMEMODE.ROUND_INACTIVE,
-                GAMEMODE.ROUND_ACTIVE,
-            },
-            weight = -80,
-            purchaseCheck = { unUndeadCheck },
-            purchaseFunc = greasyHandsPurchase,
-        },
-        -- flat downgrade
-        [ "badknees" ] = {
-            name = "62 year old knees.",
-            desc = "62 years of living a sedentary lifestyle.\nJumping hurts, and is relatively useless.\nFall damage is lethal.",
-            cost = -120,
-            markup = 0.25,
-            cooldown = math.huge,
-            category = "Innate",
-            purchaseTimes = {
-                GAMEMODE.ROUND_INACTIVE,
-                GAMEMODE.ROUND_ACTIVE,
-            },
-            weight = -90,
-            purchaseCheck = { unUndeadCheck },
-            purchaseFunc = badkneesPurchase,
         },
         [ "sixthsense" ] = {
             name = "Sixth Sense.",
@@ -3125,6 +3163,21 @@ function GM:SetupShopCatalouge()
             purchaseCheck = unUndeadCheck,
             purchaseFunc = temporalDiceRollPurchase,
         },
+        --flat upgrade
+        [ "channel666" ] = {
+            name = "Radio channel 666.",
+            desc = "Speak to the dead.",
+            cost = 200,
+            cooldown = math.huge,
+            category = "Innate",
+            purchaseTimes = {
+                GAMEMODE.ROUND_ACTIVE,
+
+            },
+            weight = 120,
+            purchaseCheck = { unUndeadCheck, channel666Check },
+            purchaseFunc = channel666Purchase,
+        },
         -- Risk vs reward.
         [ "invisserum" ] = {
             name = "Chameleon Gene",
@@ -3140,6 +3193,7 @@ function GM:SetupShopCatalouge()
             weight = 85,
             purchaseCheck = { unUndeadCheck, chameleonCanPurchase },
             purchaseFunc = chameleonPurchase,
+            canShowInShop = hasMultiplePeople,
         },
         -- flat upgrade
         [ "coldblooded" ] = {
