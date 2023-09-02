@@ -44,6 +44,7 @@ function ENT:Initialize()
     local flareReal = ents.Create( "env_flare" )
     if not IsValid( flareReal ) then return false end
 
+    flareReal.terminatorIgnoreEnt = true
     flareReal:SetKeyValue( "spawnflags", 0 )
     flareReal:SetKeyValue( "scale", "20" )
     flareReal:Spawn()
