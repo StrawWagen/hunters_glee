@@ -3204,6 +3204,7 @@ function GM:SetupShopCatalouge()
             weight = 120,
             purchaseCheck = { unUndeadCheck, channel666Check },
             purchaseFunc = channel666Purchase,
+            canShowInShop = hasMultiplePeople,
         },
         -- Risk vs reward.
         [ "invisserum" ] = {
@@ -3220,7 +3221,6 @@ function GM:SetupShopCatalouge()
             weight = 85,
             purchaseCheck = { unUndeadCheck, chameleonCanPurchase },
             purchaseFunc = chameleonPurchase,
-            canShowInShop = hasMultiplePeople,
         },
         -- flat upgrade
         [ "coldblooded" ] = {
