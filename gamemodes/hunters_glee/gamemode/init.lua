@@ -266,6 +266,8 @@ function GM:getValidHunterPos()
     local dynamicTooCloseFailCounts = GAMEMODE.roundExtraData.dynamicTooCloseFailCounts or -2
     local dynamicTooCloseDist = GAMEMODE.roundExtraData.dynamicTooCloseDist or targetDistanceMin
 
+    if not GAMEMODE.biggestNavmeshGroups then return nil, nil end
+
     local _, theMainGroup = GAMEMODE:GetAreaInOccupiedBigGroupOrRandomBigGroup()
 
     -- 3 attempts, will march distance down if we can't find a good option

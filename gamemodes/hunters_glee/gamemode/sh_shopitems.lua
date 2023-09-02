@@ -1,5 +1,3 @@
--- Q&A update
--- already enough features for Q&A update
 -- officially announce modding support
 -- change workshop icon
 -- add gifs to workshop page
@@ -2212,6 +2210,20 @@ local function slamsPurchase( purchaser )
 end
 
 
+local function flaregunPurchase( purchaser )
+    if purchaser:HasWeapon( "termhunt_aeromatix_flare_gun" ) then
+        purchaser:GiveAmmo( 2,    "GLEE_FLAREGUN_PLAYER",         true )
+
+    else
+        purchaser:Give( "termhunt_aeromatix_flare_gun" )
+
+    end
+
+    loadoutConfirm( purchaser, 2 )
+
+end
+
+
 local function ghostCanPurchase( purchaser )
     if IsValid( purchaser.ghostEnt ) then return false, "Place yer current one ya scallywag!" end
     return true
@@ -2815,6 +2827,21 @@ function GM:SetupShopCatalouge()
             purchaseCheck = unUndeadCheck,
             purchaseFunc = slamsPurchase,
         },
+        [ "flaregun" ] = {
+            name = "Flaregun",
+            desc = "Flaregun.\n+ 2 flares.",
+            cost = 40,
+            markup = 1.25,
+            markupPerPurchase = 0.25,
+            cooldown = 0.25,
+            category = "Items",
+            purchaseTimes = {
+                GAMEMODE.ROUND_INACTIVE,
+                GAMEMODE.ROUND_ACTIVE,
+            },
+            purchaseCheck = unUndeadCheck,
+            purchaseFunc = flaregunPurchase,
+        },
         [ "nailer" ] = {
             name = "Nailer",
             desc = "Nail things together!\nNailing is rather loud.",
@@ -3165,8 +3192,8 @@ function GM:SetupShopCatalouge()
         },
         --flat upgrade
         [ "channel666" ] = {
-            name = "Radio channel 666.",
-            desc = "Speak to the dead.",
+            name = "Channel 666.",
+            desc = "Your radio bridges life and death.\nSpeak to the dead",
             cost = 200,
             cooldown = math.huge,
             category = "Innate",

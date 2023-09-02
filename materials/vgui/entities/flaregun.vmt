@@ -1,0 +1,6 @@
+"UnlitGeneric"
+{
+	"$basetexture" "vgui/entities/flaregun_entities_p"
+	"$nolod" 1
+	"$translucent" 1
+}
