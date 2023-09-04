@@ -9,7 +9,6 @@ if SERVER then
     local temporaryTrueBoolIdentifiers = {}
 
     hook.Add( "PostCleanupMap", "glee_ResetTemporaryTrueBools", function()
-        PrintTable( temporaryTrueBoolIdentifiers )
         for _, tempBoolIdentifier in ipairs( temporaryTrueBoolIdentifiers ) do
             SetGlobalBool( tempBoolIdentifier, false )
 

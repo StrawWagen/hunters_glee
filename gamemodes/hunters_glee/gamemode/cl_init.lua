@@ -632,18 +632,6 @@ function HUDPaint()
 end
 hook.Add( "HUDPaint", "termhunt_playerdisplay", HUDPaint )
 
--- yoinked from darkrp so we do it right
-local FKeyBinds = {
-    ["+menu"] = "ShowShop",
-}
-
-function GM:PlayerBindPress( _, bind, _ )
-    if FKeyBinds[bind] then
-        hook.Call( FKeyBinds[bind], GAMEMODE )
-
-    end
-end
-
 function GM:CanShowDefaultHud()
     local ply = LocalPlayer()
 
@@ -653,16 +641,6 @@ function GM:CanShowDefaultHud()
 
     return true
 
-end
-
-LocalPlayer().openedHuntersGleeShop = nil
-
-function GM:ShowShop()
-    if self:CanShowDefaultHud() then
-        LocalPlayer().openedHuntersGleeShop = true
-        termHuntOpenTheShop()
-
-    end
 end
 
 

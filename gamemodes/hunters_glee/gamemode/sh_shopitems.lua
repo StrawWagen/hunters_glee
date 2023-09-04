@@ -2,7 +2,16 @@
 -- change workshop icon
 -- add gifs to workshop page
 
--- metal detector with twist
+-- placables need to use run on key
+-- door locker is fucked
+-- boot player from shop when they buy a placable
+-- make beacon supplies simpler
+-- standardize +- placable hud stuff
+-- wasd kicks out of spectate
+-- barrels sweet spot
+-- dead people can hear alive global?
+-- give notifs when people break your crates/barrels
+
 
 
 local thwap = {
@@ -1389,8 +1398,8 @@ local function greasyHandsPurchase( purchaser )
     end )
 
     timer.Create( timerName, 0.75, 0, function()
-        if not IsValid( purchaser ) then timer.Remove( timerName ) end
-        if not purchaser.glee_hasGreasyHands then timer.Remove( timerName ) end
+        if not IsValid( purchaser ) then timer.Remove( timerName ) return end
+        if not purchaser.glee_hasGreasyHands then timer.Remove( timerName ) return end
         if purchaser:Health() <= 0 then return end
 
         if not purchaser:KeyDown( IN_ATTACK ) and not purchaser:KeyDown( IN_ATTACK2 ) then return end
@@ -2225,7 +2234,7 @@ end
 
 
 local function ghostCanPurchase( purchaser )
-    if IsValid( purchaser.ghostEnt ) then return false, "Place yer current one ya scallywag!" end
+    if IsValid( purchaser.ghostEnt ) then return false, "You're already placing something!" end
     return true
 
 end
@@ -2237,6 +2246,8 @@ local function screamerPurchase( purchaser, itemIdentifier )
     crate:SetOwner( purchaser )
     crate:Spawn()
 
+    GAMEMODE:CloseShopOnPly( purchaser )
+
 end
 
 
@@ -2246,6 +2257,7 @@ local function nonScreamerPurchase( purchaser, itemIdentifier )
     crate:SetOwner( purchaser )
     crate:Spawn()
 
+    GAMEMODE:CloseShopOnPly( purchaser )
 end
 
 
@@ -2255,6 +2267,7 @@ local function weaponsCratePurchase( purchaser, itemIdentifier )
     crate:SetOwner( purchaser )
     crate:Spawn()
 
+    GAMEMODE:CloseShopOnPly( purchaser )
 end
 
 
@@ -2264,6 +2277,7 @@ local function manhackCratePurchase( purchaser, itemIdentifier )
     crate:SetOwner( purchaser )
     crate:Spawn()
 
+    GAMEMODE:CloseShopOnPly( purchaser )
 end
 
 
@@ -2273,6 +2287,7 @@ local function barrelsPurchase( purchaser, itemIdentifier )
     barrels:SetOwner( purchaser )
     barrels:Spawn()
 
+    GAMEMODE:CloseShopOnPly( purchaser )
 end
 
 
@@ -2282,6 +2297,7 @@ local function barnaclePurchase( purchaser, itemIdentifier )
     barnacle:SetOwner( purchaser )
     barnacle:Spawn()
 
+    GAMEMODE:CloseShopOnPly( purchaser )
 end
 
 
@@ -2291,6 +2307,7 @@ local function doorLockerPurchase( purchaser, itemIdentifier )
     doorLocker:SetOwner( purchaser )
     doorLocker:Spawn()
 
+    GAMEMODE:CloseShopOnPly( purchaser )
 end
 
 local function inversionCanPurchase( _ )
@@ -2305,6 +2322,7 @@ local function plySwapperPurchase( purchaser, itemIdentifier )
     playerSwapper:SetOwner( purchaser )
     playerSwapper:Spawn()
 
+    GAMEMODE:CloseShopOnPly( purchaser )
 end
 
 local function immortalizerPurchase( purchaser, itemIdentifier )
@@ -2313,6 +2331,7 @@ local function immortalizerPurchase( purchaser, itemIdentifier )
     immortalizer:SetOwner( purchaser )
     immortalizer:Spawn()
 
+    GAMEMODE:CloseShopOnPly( purchaser )
 end
 
 local function conduitCanPurchase( _ )
@@ -2327,6 +2346,7 @@ local function conduitPurchase( purchaser, itemIdentifier )
     conduit:SetOwner( purchaser )
     conduit:Spawn()
 
+    GAMEMODE:CloseShopOnPly( purchaser )
     return true
 
 end
@@ -3194,7 +3214,7 @@ function GM:SetupShopCatalouge()
         [ "channel666" ] = {
             name = "Channel 666.",
             desc = "Your radio bridges life and death.\nSpeak to the dead",
-            cost = 200,
+            cost = 100,
             cooldown = math.huge,
             category = "Innate",
             purchaseTimes = {

@@ -365,6 +365,28 @@ function ENT:SetupPlayer( _ )
 
 end
 
+if SERVER then
+    function ENT:HandleKeys( _, key )
+        if ( self.nextPlaceThink or 0 ) > CurTime() then return end
+
+        if key == IN_ATTACK and self:CanPlace( self:GetPos2() ) then
+            self:Place()
+
+        end
+
+        if key == IN_ATTACK2 then
+            self:Cancel()
+
+        end
+    end
+
+    hook.Add( "KeyPress", "glee_doplacables_placing", function( ply, key )
+        if not IsValid( ply.ghostEnt ) then return end
+        ply.ghostEnt:HandleKeys( ply, key )
+
+    end )
+end
+
 function ENT:Think()
     if not IsValid( self.player ) then
         self.player = self:GetOwner() or nil
@@ -390,18 +412,6 @@ function ENT:Think()
 
         end
 
-        if ( self.nextPlaceThink or 0 ) > CurTime() then return end
-
-        if self.player:KeyDown( IN_ATTACK ) and self:CanPlace( self:GetPos2() ) then
-            self:Place()
-
-        end
-        if not IsValid( self.player ) then return end
-
-        if self.player:KeyDown( IN_ATTACK2 ) then
-            self:Cancel()
-
-        end
     end
 end
 

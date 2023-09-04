@@ -1,10 +1,4 @@
 
-local flashlightBind
-local flashlightButtonCode
-local nextFlashlightSwitch = 0
-
-local flashlightState = false
-
 local function DoFlashlight( state )
     local me = LocalPlayer()
     local timerName = "glee_spectateflashlight" .. LocalPlayer():EntIndex()
@@ -48,9 +42,17 @@ local function DoFlashlight( state )
     end
 end
 
+local flashlightBind
+local flashlightButtonCode
+local nextFlashlightSwitch = 0
+
+local flashlightState = false
+
 hook.Add( "PlayerButtonDown", "glee_readflashlight", function( ply, button )
     if not flashlightButtonCode then
         flashlightBind = input.LookupBinding( "impulse 100", false )
+        -- they unbound it
+        if not flashlightBind then return end
         flashlightButtonCode = input.GetKeyCode( flashlightBind )
         return
 

@@ -369,6 +369,52 @@ function termHuntOpenTheShop()
             end
 
             coolTooltip.Think = function ( self )
+
+                -- this is kind of bad
+                if coolTooltip.descLabel and coolTooltip.noBuyLabel and IsValid( coolTooltip.descLabel ) and IsValid( coolTooltip.noBuyLabel ) and not coolTooltip.gettingRemoved then
+                    local description = shopItem.coolTooltipDescription
+                    local descLabel = coolTooltip.descLabel
+
+                    -- item desc
+                    descLabel:SetTextInset( offsetNextToIdentifier, offsetNextToIdentifier )
+                    descLabel:SetFont( "termhuntShopItemSmallerFont" )
+                    descLabel:SetText( description )
+                    descLabel:SetContentAlignment( 7 )
+                    descLabel:SetWrap( true )
+                    descLabel:SizeToContentsY()
+                    local descSizeX, descSizeY = descLabel:GetSize()
+
+                    -- why you cant buy this, or markup info
+                    local noPurchase = shopItem.coolTooltipNoPurchase
+                    local noBuyLabel = coolTooltip.noBuyLabel
+
+                    if noPurchase ~= "" then
+                        noBuyLabel:SetTextInset( offsetNextToIdentifier, 0 )
+                        noBuyLabel:SetFont( "termhuntShopItemSmallerFont" )
+                        noBuyLabel:SetText( noPurchase )
+                        noBuyLabel:SetContentAlignment( 7 )
+                        noBuyLabel:SetWrap( true )
+                        noBuyLabel:SizeToContentsY()
+
+                    else
+                        noBuyLabel:SetText( "" )
+                        noBuyLabel:SetSize( myCategoryPanel.shopItemWidth, 0 )
+
+                    end
+                    local noBSizeX, noBSizeY = noBuyLabel:GetSize()
+
+                    -- put them together with padding around the text
+                    descLabel:SetSize( descSizeX + -offsetNextToIdentifier, descSizeY )
+                    noBuyLabel:SetSize( noBSizeX + -offsetNextToIdentifier, noBSizeY + offsetNextToIdentifier )
+                    coolTooltip.fakeButton:SetSize( descSizeX + noBSizeX, descSizeY + noBSizeY + offsetNextToIdentifier )
+
+                    if coolTooltip.hasSetup then
+                        descLabel:SetTextColor( itemDescriptionColor )
+                        noBuyLabel:SetTextColor( itemDescriptionColor )
+
+                    end
+                end
+
                 local _, scaledSizeY = self:GetSize()
                 if scaledSizeY ~= 0 then
                     local bottomOfTip = yPosUnder + scaledSizeY + height / 10
@@ -392,7 +438,6 @@ function termHuntOpenTheShop()
 
             coolTooltip.fakeButton = tooltipTopButton
             tooltipTopButton:SetText( "" )
-
             tooltipTopButton:Dock( TOP )
 
             tooltipTopButton.Paint = function( _ )
@@ -422,42 +467,36 @@ function termHuntOpenTheShop()
             end
 
 
-            local textLabel = vgui.Create( "DLabel", tooltipTopButton, shopPanelName( identifier ) .. "_cooltooltip_label" )
+            local descLabel = vgui.Create( "DLabel", tooltipTopButton, shopPanelName( identifier ) .. "_cooltooltip_label" )
 
-            textLabel:SetTextColor( invisibleColor )
+            descLabel:SetTextColor( invisibleColor )
 
-            coolTooltip.textLabel = textLabel
+            coolTooltip.descLabel = descLabel
 
-            textLabel:SetSize( myCategoryPanel.shopItemWidth )
-            textLabel:Dock( LEFT )
-            textLabel:Dock( TOP )
+            descLabel:SetSize( myCategoryPanel.shopItemWidth )
+            descLabel:Dock( TOP )
 
-            textLabel.Think = function( self )
-                if coolTooltip.gettingRemoved then return end
-                self:SetTextInset( offsetNextToIdentifier, offsetNextToIdentifier )
-                self:SetFont( "termhuntShopItemSmallerFont" )
-                self:SetText( shopItem.coolTooltipString )
-                self:SetContentAlignment( 7 )
-                self:SetWrap( true )
-                self:SizeToContentsY()
-                local sizeX, sizeY = self:GetSize()
 
-                self:SetSize( sizeX + -offsetNextToIdentifier, sizeY + offsetNextToIdentifier )
-                coolTooltip.fakeButton:SetSize( sizeX, sizeY + offsetNextToIdentifier )
+            local noBuyLabel = vgui.Create( "DLabel", tooltipTopButton, shopPanelName( identifier ) .. "_cooltooltip_label" )
 
-                if coolTooltip.hasSetup then
-                    self:SetTextColor( itemDescriptionColor )
+            noBuyLabel:SetTextColor( invisibleColor )
 
-                end
+            coolTooltip.noBuyLabel = noBuyLabel
 
-            end
+            noBuyLabel:SetSize( myCategoryPanel.shopItemWidth )
+            noBuyLabel:Dock( TOP )
+
         end
 
         shopItem.RemoveCoolTooltip = function( self )
             local tooltip = shopItem.coolTooltip
             if not tooltip then return end
-            if tooltip.textLabel then
-                tooltip.textLabel:Remove()
+            if tooltip.descLabel then
+                tooltip.descLabel:Remove()
+
+            end
+            if tooltip.noBuyLabel then
+                tooltip.noBuyLabel:Remove()
 
             end
             -- let the text remove so it NEVER flashes
@@ -520,9 +559,8 @@ function termHuntOpenTheShop()
 
                 end
 
-                local tooltip = description .. additionalMarkupStr .. noPurchaseReason
-
-                self.coolTooltipString = tooltip
+                self.coolTooltipDescription = description
+                self.coolTooltipNoPurchase = additionalMarkupStr .. noPurchaseReason
 
                 -- check after all the potentially custom functions had a chance to run  
                 if GAMEMODE.invalidShopItems[ identifierPaint ] then self:Remove() return end
@@ -584,3 +622,39 @@ function termHuntOpenTheShop()
 
     end
 end
+
+-- yoinked from darkrp so we do it right
+local FKeyBinds = {
+    ["+menu"] = "ShowShop",
+}
+
+function GM:PlayerBindPress( _, bind, _ )
+    if FKeyBinds[bind] then
+        hook.Call( FKeyBinds[bind], GAMEMODE )
+
+    end
+end
+
+_LocalPlayer().openedHuntersGleeShop = nil
+local nextShopOpen = 0
+
+function GM:ShowShop()
+    if nextShopOpen > CurTime() then return end
+    if self:CanShowDefaultHud() then
+        _LocalPlayer().openedHuntersGleeShop = true
+        termHuntOpenTheShop()
+
+    end
+end
+
+local nextShopClose = 0
+
+net.Receive( "glee_closetheshop", function()
+    if nextShopClose > CurTime() then return end
+    nextShopClose = CurTime() + 0.05
+
+    if not IsValid( _LocalPlayer().MAINSSHOPPANEL ) then return end
+    termHuntCloseTheShop()
+    nextShopOpen = CurTime() + 0.1
+
+end )

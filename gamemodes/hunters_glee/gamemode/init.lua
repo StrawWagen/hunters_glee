@@ -34,6 +34,7 @@ util.AddNetworkString( "glee_confirmpurchase" )
 util.AddNetworkString( "glee_followedsomething" )
 util.AddNetworkString( "glee_switchedspectatemodes" )
 util.AddNetworkString( "glee_stoppedspectating" )
+util.AddNetworkString( "glee_closetheshop" )
 
 GM.SpawnTypes = {
     "info_player_deathmatch",
@@ -166,7 +167,7 @@ function GM:Think()
 
         else
             if GAMEMODE.isBadSingleplayer then
-                huntersGlee_Announce( 1000, 1, "This gamemode is at it's best when started with at least 2 player slots.\nThat doesn't mean you need 2 people!" )
+                huntersGlee_Announce( { players }, 1000, 1, "This gamemode is at it's best when started with at least 2 player slots.\nThat doesn't mean you need 2 people!" )
 
             end
             GAMEMODE.blockpvp   = true

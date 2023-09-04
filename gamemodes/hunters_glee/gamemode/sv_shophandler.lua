@@ -97,3 +97,9 @@ function GM:RefundShopItemCooldown( ply, toPurchase )
     net.Send( ply )
 
 end
+
+function GM:CloseShopOnPly( ply )
+    net.Start( "glee_closetheshop" )
+    net.Send( ply )
+
+end
