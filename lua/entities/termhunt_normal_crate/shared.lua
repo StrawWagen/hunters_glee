@@ -20,7 +20,7 @@ ENT.placeCount = 3
 local MEMORY_BREAKABLE = 4
 local maxScoreDist = 3000
 local tooCloseToPlayer = 2000
-local cratePunishmentDist = 1100
+local cratePunishmentDist = 950
 
 function ENT:GetGivenScore()
     local plys = player.GetAll()

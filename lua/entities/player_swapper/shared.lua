@@ -323,6 +323,6 @@ function ENT:Place()
     self.player = nil
     self:SetOwner( NULL )
 
-    GAMEMODE:setTemporaryTrueBool( "terhunt_player_swapper", 240 + steps )
+    GAMEMODE:setTemporaryTrueBool( "terhunt_player_swapper", 180 + steps )
 
 end

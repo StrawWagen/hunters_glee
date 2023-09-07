@@ -15,7 +15,17 @@ function ENT:Initialize()
     if SERVER then
         self:SetNoDraw( true )
 
-        local toCreate = { "weapon_stunstick", { "weapon_slam", 3 }, { "weapon_frag", 4 }, "weapon_shotgun", "weapon_rpg", "weapon_pistol", "weapon_ar2", "weapon_357", "weapon_crossbow" }
+        local toCreate = { "weapon_stunstick",
+            "termhunt_aeromatix_flare_gun",
+            { "weapon_slam", 3 },
+            { "weapon_frag", 4 },
+            "weapon_shotgun",
+            "weapon_rpg",
+            "weapon_pistol",
+            "weapon_ar2",
+            "weapon_357",
+            "weapon_crossbow"
+        }
 
         local selected = table.Random( toCreate )
         local count = 1

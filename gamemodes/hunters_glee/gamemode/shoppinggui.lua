@@ -169,7 +169,7 @@ function termHuntOpenTheShop()
             local scoreToAddFrame = shopFrame.scoreToAddFrame or {}
             local cost = GAMEMODE:shopItemCost( scoreToAddFrame.itemIdentifier, _LocalPlayer() )
 
-            shopFrame.costString, shopFrame.costColor = GAMEMODE:translatedShopItemCost( score, cost, _LocalPlayer(), scoreToAddFrame.itemIdentifier )
+            shopFrame.costString, shopFrame.costColor = GAMEMODE:translatedShopItemCost( _LocalPlayer(), cost, scoreToAddFrame.itemIdentifier )
 
         end
 
@@ -204,6 +204,7 @@ function termHuntOpenTheShop()
 
     local sortedCategories = table.SortByKey( GAMEMODE.shopCategories, true )
 
+    -- the scrollable things that hold shop items and have names like innate and undead
     for _, category in ipairs( sortedCategories ) do
         local horisScroller = vgui.Create( "DHorizontalScroller", _LocalPlayer().MAINSCROLLPANEL, shopCategoryName( category ) )
 
@@ -270,6 +271,7 @@ function termHuntOpenTheShop()
 
     end
 
+    -- shop items
     for identifier, itemData in SortedPairsByMemberValue( GAMEMODE.shopItems, "weight", false ) do
         local myCategoryPanel = shopCategoryPanels[ itemData.category ]
         if not myCategoryPanel then ErrorNoHaltWithStack( "tried to add item " .. identifier .. " to invalid category, " .. itemData.category ) continue end
@@ -341,6 +343,7 @@ function termHuntOpenTheShop()
 
         end
 
+        -- tooltips!
         shopItem.OnBeginHovering = function( self )
             -- this is spaghetti
             local coolTooltip = vgui.Create( "DSizeToContents", _LocalPlayer().MAINSCROLLPANEL, shopPanelName( identifier ) .. "_cooltooltip" )
@@ -511,6 +514,8 @@ function termHuntOpenTheShop()
             end )
         end
 
+        -- tooltips end
+        -- paint the shop item!
         shopItem.Paint = function( self )
 
             local score = _LocalPlayer():GetScore()
@@ -526,7 +531,7 @@ function termHuntOpenTheShop()
                 self.oldScore = score
 
                 local cost = GAMEMODE:shopItemCost( identifierPaint, _LocalPlayer() )
-                self.costString, self.costColor = GAMEMODE:translatedShopItemCost( score, cost, _LocalPlayer(), identifierPaint )
+                self.costString, self.costColor = GAMEMODE:translatedShopItemCost( _LocalPlayer(), cost, identifierPaint )
 
                 -- markups applied
                 self.markupString = ""
@@ -599,6 +604,7 @@ function termHuntOpenTheShop()
             end
         end
 
+        -- buy the item!
         shopItem.OnMousePressed = function( self, keyCode )
             if keyCode ~= MOUSE_LEFT then return end
             self.pressed = true
@@ -615,7 +621,7 @@ function termHuntOpenTheShop()
             self.pressed = nil
         end
 
-        shopItem:DockMargin( 0, myCategoryPanel.topMargin, 0, 0 ) 
+        shopItem:DockMargin( 0, myCategoryPanel.topMargin, 0, 0 )
         shopItem:Dock( LEFT )
 
         --print( "put " .. identifier .. " into " .. tostring( myCategoryPanel ) )
@@ -626,6 +632,7 @@ end
 -- yoinked from darkrp so we do it right
 local FKeyBinds = {
     ["+menu"] = "ShowShop",
+
 }
 
 function GM:PlayerBindPress( _, bind, _ )

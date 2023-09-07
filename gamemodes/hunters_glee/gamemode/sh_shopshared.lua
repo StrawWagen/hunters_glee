@@ -172,13 +172,14 @@ local sadGreen = Color( 106,190,9 )
 -- so cost -50 would be '+50' and yellow because it would give players 50 score for buying
 -- cost 50 would be '-50' and depending on whether player can afford, green or red.
 -- it reverses the number i know, it's stupid
-function GM:translatedShopItemCost( compareFrags, cost, purchaser, identifier )
+function GM:translatedShopItemCost( purchaser, cost, identifier )
 
     if not cost then return "", white end
 
     local color = white
     local preTextSymbol = ""
     local theCost = ""
+    local purchasersScore = purchaser:GetScore()
 
     -- add difference between "not enough money" and "you bought this already"
     if identifier and purchaser and purchaser.shopItemCooldowns[ identifier ] == math.huge then
@@ -190,7 +191,7 @@ function GM:translatedShopItemCost( compareFrags, cost, purchaser, identifier )
         preTextSymbol = "-"
         theCost = tostring( math.abs( cost ) )
 
-        canAfford = ( compareFrags + -cost ) >= 0
+        canAfford = ( purchasersScore + -cost ) >= 0
 
         if not canAfford then
             color = red

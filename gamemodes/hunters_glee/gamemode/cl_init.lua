@@ -275,16 +275,23 @@ hook.Add( "glee_cl_confirmedpurchase", "storeIfPlayerBoughtUndeadItem", function
 end )
 
 net.Receive( "glee_followedsomething", function()
+    LocalPlayer():EmitSound( "ui/buttonrollover.wav", 0, 120, 0.8 )
     LocalPlayer().glee_HasSpectatedSomeone = true
     RunConsoleCommand( "cl_huntersgleehint_hasspectatedsomeone", "1" )
 
 end )
+net.Receive( "glee_followednexthing", function()
+    LocalPlayer():EmitSound( "ui/buttonrollover.wav", 0, 200, 0.5 )
+
+end )
 net.Receive( "glee_switchedspectatemodes", function()
+    LocalPlayer():EmitSound( "ui/buttonrollover.wav", 0, 180, 0.5 )
     LocalPlayer().glee_HasSwitchedSpectateModes = true
     RunConsoleCommand( "cl_huntersgleehint_hasswitchedspectatemodes", "1" )
 
 end )
 net.Receive( "glee_stoppedspectating", function()
+    LocalPlayer():EmitSound( "ui/buttonrollover.wav", 0, 90, 0.8 )
     LocalPlayer().glee_HasStoppedSpectatingSomething = true
     RunConsoleCommand( "cl_huntersgleehint_hasstoppedspectating", "1" )
 
@@ -437,9 +444,6 @@ local function paintMyTotalScore( ply, cur )
 
         if difference >= 500 then
             overrideColor = superScoreColor
-
-        elseif difference >= 100 then
-            overrideColor = color_white
 
         end
 
@@ -664,32 +668,61 @@ end )
 
 local function IsSpectatingTerminator()
     local spectateTarget = LocalPlayer():GetObserverTarget()
-    if not spectateTarget:IsNextBot() then return end
+    if not spectateTarget:IsNextBot() then return nil, spectateTarget end
 
     return true, spectateTarget
 
 end
 
-hook.Add( "CalcView", "glee_override_spectating_angles", function( ply, _, _, fov )
-    local is, spectateTarget = IsSpectatingTerminator()
+hook.Add( "CalcView", "glee_override_spectating_angles", function( ply, _, ang, fov )
 
-    if not is then return end
-
+    local isTerm, spectateTarget = IsSpectatingTerminator()
     local mode = ply:GetObserverMode()
-    if mode ~= OBS_MODE_IN_EYE then return end
 
-    local ang = spectateTarget:GetAngles()
-    local forward = ang:Forward()
+    if mode == OBS_MODE_CHASE then
 
-    if not spectateTarget.GetShootPos then return end
+        if not spectateTarget.GetShootPos then return end
 
-    local view = {
-        origin = spectateTarget:GetShootPos() + forward * 15,
-        angles = ang,
-        fov = fov,
-        drawviewer = false
+        local pivot = spectateTarget:GetShootPos()
+        local dir = -ang:Forward()
+        local fallbackDrawPos = pivot + dir * 15
+        local desiredDrawPos = pivot + dir * 100
 
-    }
-    return view
+        local checkTr = {
+            start = fallbackDrawPos,
+            endpos = desiredDrawPos,
+            filter = spectateTarget
 
+        }
+
+        local spectateTr = util.TraceLine( checkTr )
+
+        local view = {
+            origin = spectateTr.HitPos,
+            angles = ang,
+            fov = fov,
+            drawviewer = false,
+
+        }
+        return view
+    end
+
+    if not isTerm then return end
+
+    if mode == OBS_MODE_IN_EYE then
+        local termAng = spectateTarget:GetAngles()
+        local forward = ang:Forward()
+
+        if not spectateTarget.GetShootPos then return end
+
+        local view = {
+            origin = spectateTarget:GetShootPos() + forward * 15,
+            angles = termAng,
+            fov = fov,
+            drawviewer = false
+
+        }
+        return view
+
+    end
 end )

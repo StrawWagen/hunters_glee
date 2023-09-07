@@ -15,7 +15,7 @@ function ENT:Initialize()
     if SERVER then
         self:SetNoDraw( true )
 
-        local rareCreationOptions = { { "item_ammo_smg1_grenade", 3 }, { "weapon_frag", 4 }, "weapon_stunstick", { "weapon_slam", 2 }, "weapon_shotgun", "weapon_rpg", "weapon_pistol" }
+        local rareCreationOptions = { { "item_ammo_smg1_grenade", 3 }, { "weapon_frag", 4 }, "weapon_stunstick", "termhunt_aeromatix_flare_gun", { "weapon_slam", 2 }, "weapon_shotgun", "weapon_rpg", "weapon_pistol" }
         local toCreate = { "item_battery", "item_healthkit", "item_healthvial", "termhunt_score_pickup" }
 
         if math.random( 0, 100 ) > 95 then

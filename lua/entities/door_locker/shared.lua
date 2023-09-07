@@ -102,7 +102,7 @@ elseif SERVER then
         for _, door in ipairs( doors ) do
             if door:GetClass() == "prop_door_rotating" then
                 if not util.doorIsUsable( door ) then continue end
-                if not door:IsSolid() then return end
+                if not door:IsSolid() then continue end
                 -- Calculate the distance between the door and the entity
                 local distance = myPos:Distance( door:GetPos() )
                 if distance < nearestDistance then

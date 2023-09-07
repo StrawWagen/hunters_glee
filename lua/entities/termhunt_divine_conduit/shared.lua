@@ -121,7 +121,7 @@ function ENT:CanPlace()
 
 end
 
-ENT.radius = 1250
+ENT.radius = 1200
 
 function ENT:CircleAway()
     if not CLIENT then return end
@@ -228,9 +228,10 @@ function ENT:Place()
 
         divineIncrement = divineIncrement + 1
 
+        -- sparks
         if divineIncrement < 100 then
             for _ = 1, 2 do
-                if math.random( 1, 70 ) > divineIncrement then continue end
+                if math.random( 1, 60 ) > divineIncrement then continue end
 
                 local sparkPos = getRandomSnappedPos()
 
@@ -247,11 +248,12 @@ function ENT:Place()
                 self:EmitSound( "LoudSpark", 90, 100, 1, CHAN_STATIC )
 
             end
+        -- start striking after 120
         elseif ( divineIncrement > 120 ) and ( divineIncrement < 400 ) then
             if math.random( 175, 400 ) < divineIncrement then return end
-            if math.random( 200, 400 ) < divineIncrement then return end
+            if math.random( 215, 400 ) < divineIncrement then return end
 
-            if math.random( 0, 100 ) >= 25 then return end
+            if math.random( 0, 100 ) >= 28 then return end
 
             for _ = 1, 2 do
                 local strikingPos = getRandomSnappedPos()
@@ -294,6 +296,6 @@ function ENT:Place()
     self.player = nil
     self:SetOwner( NULL )
 
-    GAMEMODE:setTemporaryTrueBool( "terhunt_divine_conduit", 180 )
+    GAMEMODE:setTemporaryTrueBool( "terhunt_divine_conduit", 240 )
 
 end

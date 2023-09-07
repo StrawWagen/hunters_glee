@@ -1,4 +1,3 @@
-local terminator_Extras = terminator_Extras or {}
 local coroutine_running = coroutine.running
 
 -- guess what this does
@@ -19,15 +18,6 @@ function GM:posCanSee( startPos, endPos, mask )
 end
 
 local vec_zero = Vector( 0, 0, 0 )
-
--- another mystery
-terminator_Extras.dirToPos = terminator_Extras.dirToPos or function( startPos, endPos )
-    if not startPos then return vec_zero end
-    if not endPos then return vec_zero end
-
-    return ( endPos - startPos ):GetNormalized()
-
-end
 
 local minusFiveHundred = Vector( 0,0,-500 )
 local minusOne = Vector( 0,0,-500 )

@@ -1,30 +1,25 @@
 --AeroMatix || https://www.youtube.com/channel/UCzA_5QTwZxQarMzwZFBJIAw || http://steamcommunity.com/profiles/76561198176907257
 
-SWEP.Author = "AeroMatix" -- + edited by straw w wagen
-SWEP.Contact = ""
-SWEP.Gun = "flaregun_hud"
+SWEP.Author             = "AeroMatix" -- + edited by straw w wagen
 
-SWEP.Weight                = 5
-SWEP.AutoSwitchTo        = true
-SWEP.AutoSwitchFrom        = false
-SWEP.HoldType            = "pistol"
-SWEP.Category             = "Hunter's Glee"
-SWEP.PrintName             = "Flare Gun"
+SWEP.Spawnable          = true
+SWEP.PrintName          = "Flare Gun"
+SWEP.Category           = "Hunter's Glee"
+SWEP.InventoryIcon      = "flaregun_hud"
 
-SWEP.Slot = 1
-SWEP.SlotPos = 3
-SWEP.DrawAmmo = true
-SWEP.DrawCrosshair = true
-SWEP.ViewModelFOV = 65
-SWEP.ViewModelFlip = false
-SWEP.Spawnable = true
-SWEP.AdminSpawnable = false
-SWEP.BounceWeaponIcon       = false
+SWEP.HoldType           = "pistol"
+SWEP.Weight             = 3
+SWEP.Range              = 2000
+SWEP.Slot               = 1
+SWEP.SlotPos            = 3
 
-SWEP.ViewModel = "models/weapons/v_flaregun.mdl"
-SWEP.WorldModel = "models/weapons/w_357.mdl"
+SWEP.AutoSwitchFrom     = true
+SWEP.DrawAmmo           = true
+SWEP.ViewModelFlip      = false
+SWEP.BounceWeaponIcon   = false
 
-terminator_Extras.SetupAnalogWeight( SWEP )
+SWEP.ViewModel          = "models/weapons/v_flaregun.mdl"
+SWEP.WorldModel         = "models/weapons/w_357.mdl"
 
 if CLIENT then
     language.Add( "GLEE_FLAREGUN_PLAYER_ammo", "Flare" )
@@ -59,9 +54,26 @@ SWEP.Secondary.DefaultClip        = 0
 SWEP.Secondary.Automatic = false
 SWEP.Secondary.Delay = 1
 
-SWEP.Range = 2000
+function SWEP:GetProjectileOffset()
+    local owner = self:GetOwner()
+    local aimVec = owner:GetAimVector()
+    return owner:GetShootPos() + aimVec * 25, aimVec
+
+end
+
+function SWEP:CanPrimaryAttack()
+    local owner = self:GetOwner()
+    if owner:IsPlayer() then return true end
+    if not terminator_Extras.PosCanSeeComplex( owner:GetShootPos(), self:GetProjectileOffset(), self, MASK_SOLID ) then return end
+
+    if not owner.NothingOrBreakableBetweenEnemy then return end
+
+    return CurTime() >= self:GetNextPrimaryFire() and self:Clip1() > 0
+
+end
 
 function SWEP:PrimaryAttack()
+    if not self:CanPrimaryAttack() then return end
     if self:Clip1() <= 0 then
         if IsFirstTimePredicted() then
             self:EmitSound( "Weapon_Pistol.Empty" )
@@ -105,13 +117,15 @@ function SWEP:ShootFlare()
     local flare = ents.Create( "termhunt_flare" )
     if not IsValid( flare ) then return end
 
-    flare:SetAngles( owner:GetAimVector():Angle() )
+    local offsettedPos, dirToShoot = self:GetProjectileOffset()
+
+    flare:SetAngles( dirToShoot:Angle() )
     flare:Spawn()
 
-    flare:SetPos( owner:GetShootPos() )
+    flare:SetPos( offsettedPos )
     local obj = flare:GetPhysicsObject()
     if IsValid( obj ) then
-        obj:SetVelocity( self:GetForward() * 32000 )
+        obj:SetVelocity( dirToShoot * 32000 )
 
     end
 end
@@ -123,14 +137,12 @@ function SWEP:Initialize()
     self:SetHoldType( self.HoldType )
     if CLIENT then
         local oldpath = "vgui/hud/name"
-        local newpath = string.gsub( oldpath, "name", self.Gun )
+        local newpath = string.gsub( oldpath, "name", self.InventoryIcon )
         self.WepSelectIcon = surface.GetTextureID( newpath )
     end
 end
 
 function SWEP:Equip()
-    self:SetHoldType( self.HoldType )
-
 end
 
 function SWEP:OwnerChanged()
@@ -143,7 +155,7 @@ function SWEP:CanBePickedUpByNPCs()
     return true
 end
 
-function SWEP:GetNPCBulletSpread(prof)
+function SWEP:GetNPCBulletSpread( prof )
     return 0
 end
 

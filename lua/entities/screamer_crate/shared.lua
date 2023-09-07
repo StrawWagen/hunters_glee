@@ -81,7 +81,8 @@ end
 
 ENT.HullCheckSize = Vector( 20, 20, 10 )
 ENT.PosOffset = Vector( 0, 0, 10 )
-local placingCost = 75
+local deposit = -75
+local placingCost = math.abs( deposit )
 
 function GAMEMODE:ValidNum( num )
     return num or 0
@@ -189,17 +190,28 @@ function ENT:HasEnoughToPurchase()
     return true
 end
 
+function ENT:ManageMyPos()
+    local theNewBestPos = self:bestPosToBe()
+    if not theNewBestPos then return end
+    self:SetPos( theNewBestPos )
+
+end
+
 function ENT:bestPosToBe()
     local radius = self:GetModelRadius()
     local offset = radius * self.player:GetEyeTrace().HitNormal
     offset.z = math.Clamp( offset.z, -radius, radius * 0.1 )
+    if not self.player:GetEyeTrace().Hit then return end
+
     return self.player:GetEyeTrace().HitPos + offset
 
 end
 
+local vec15Z = Vector( 0,0,15 )
+
 function ENT:CanPlace()
 
-    local checkPos = self:GetPos2() + Vector( 0,0,15 )
+    local checkPos = self:GetPos2() + vec15Z
 
     if IsHullTraceFull( checkPos, self.HullCheckSize, self ) then return false end
     if getNearestNavFloor( checkPos ) == NULL then return false end
@@ -282,10 +294,10 @@ hook.Add( "HUDPaint", "screamercrate_paintscore", function()
     local placinCostStr = ""
 
     if scoreGained > 0 then
-        stringPt1 = "First beep reward + Deposit refund: "
-        placinCostStr = "Deposit: -75"
+        stringPt1 = "Projected profit: "
+        placinCostStr = "Deposit: " .. tostring( deposit )
 
-        scoreString = stringPt1 .. tostring( scoreGained )
+        scoreString = stringPt1 .. tostring( scoreGained + deposit )
     else
         stringPt1 = "Hunter luring cost: "
         scoreString = stringPt1 .. tostring( scoreGained )
@@ -297,7 +309,7 @@ hook.Add( "HUDPaint", "screamercrate_paintscore", function()
 end )
 
 function ENT:ModifiableThink()
-    self:SetPos( self:bestPosToBe() )
+    self:ManageMyPos()
 
     if SERVER then
 
@@ -366,16 +378,18 @@ function ENT:SetupPlayer( _ )
 end
 
 if SERVER then
-    function ENT:HandleKeys( _, key )
+    function ENT:HandleKeys( ply, key )
         if ( self.nextPlaceThink or 0 ) > CurTime() then return end
 
         if key == IN_ATTACK and self:CanPlace( self:GetPos2() ) then
             self:Place()
+            ply.glee_ghostEntActionTime = CurTime()
 
         end
 
         if key == IN_ATTACK2 then
             self:Cancel()
+            ply.glee_ghostEntActionTime = CurTime()
 
         end
     end

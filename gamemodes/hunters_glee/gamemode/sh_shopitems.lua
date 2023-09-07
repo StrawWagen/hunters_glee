@@ -2,12 +2,12 @@
 -- change workshop icon
 -- add gifs to workshop page
 
--- placables need to use run on key
--- door locker is fucked
--- boot player from shop when they buy a placable
--- make beacon supplies simpler
+-- placables need to use run on key -- done
+-- boot player from shop when they buy a placable -- done
+-- door locker is fucked -- done
+-- make beacon supplies simpler -- done
+-- wasd kicks out of spectate -- done
 -- standardize +- placable hud stuff
--- wasd kicks out of spectate
 -- barrels sweet spot
 -- dead people can hear alive global?
 -- give notifs when people break your crates/barrels
@@ -2234,7 +2234,7 @@ end
 
 
 local function ghostCanPurchase( purchaser )
-    if IsValid( purchaser.ghostEnt ) then return false, "You're already placing something!" end
+    if IsValid( purchaser.ghostEnt ) then return false, "You're already placing something!\nPlace it, or right click to CANCEL placing it!" end
     return true
 
 end
@@ -2258,6 +2258,7 @@ local function nonScreamerPurchase( purchaser, itemIdentifier )
     crate:Spawn()
 
     GAMEMODE:CloseShopOnPly( purchaser )
+
 end
 
 
@@ -2268,6 +2269,7 @@ local function weaponsCratePurchase( purchaser, itemIdentifier )
     crate:Spawn()
 
     GAMEMODE:CloseShopOnPly( purchaser )
+
 end
 
 
@@ -2278,6 +2280,7 @@ local function manhackCratePurchase( purchaser, itemIdentifier )
     crate:Spawn()
 
     GAMEMODE:CloseShopOnPly( purchaser )
+
 end
 
 
@@ -2288,6 +2291,7 @@ local function barrelsPurchase( purchaser, itemIdentifier )
     barrels:Spawn()
 
     GAMEMODE:CloseShopOnPly( purchaser )
+
 end
 
 
@@ -2298,6 +2302,7 @@ local function barnaclePurchase( purchaser, itemIdentifier )
     barnacle:Spawn()
 
     GAMEMODE:CloseShopOnPly( purchaser )
+
 end
 
 
@@ -2308,6 +2313,7 @@ local function doorLockerPurchase( purchaser, itemIdentifier )
     doorLocker:Spawn()
 
     GAMEMODE:CloseShopOnPly( purchaser )
+
 end
 
 local function inversionCanPurchase( _ )
@@ -2323,6 +2329,7 @@ local function plySwapperPurchase( purchaser, itemIdentifier )
     playerSwapper:Spawn()
 
     GAMEMODE:CloseShopOnPly( purchaser )
+
 end
 
 local function immortalizerPurchase( purchaser, itemIdentifier )
@@ -2332,6 +2339,7 @@ local function immortalizerPurchase( purchaser, itemIdentifier )
     immortalizer:Spawn()
 
     GAMEMODE:CloseShopOnPly( purchaser )
+
 end
 
 local function conduitCanPurchase( _ )
@@ -2347,7 +2355,6 @@ local function conduitPurchase( purchaser, itemIdentifier )
     conduit:Spawn()
 
     GAMEMODE:CloseShopOnPly( purchaser )
-    return true
 
 end
 
@@ -2421,7 +2428,7 @@ local function divineIntervention( purchaser )
 
     end )
 
-    return true
+    GAMEMODE:CloseShopOnPly( purchaser )
 
 end
 
@@ -2437,7 +2444,7 @@ end
 hook.Add( "huntersglee_plykilledhunter", "glee_rewardLinkedKills", function( killer, hunter )
     if not hunter.linkedPlayer then return end
     if killer ~= hunter.linkedPlayer then return end
-    local reward = 400
+    local reward = 350
     killer:GivePlayerScore( reward )
 
     huntersGlee_Announce( { killer }, 50, 15, "You feel at peace, a weight has been lifted.\nThe doppleganger is dead...\n+" .. reward .. " score." )
@@ -2465,11 +2472,15 @@ local function additionalHunter( purchaser )
 
         hunter.linkedPlayer = purchaser
 
+        purchaser:SetObserverMode( OBS_MODE_CHASE )
+        purchaser:SpectateEntity( hunter )
+
         timer.Stop( timerKey )
 
     end )
 
-    return true
+    GAMEMODE:CloseShopOnPly( purchaser )
+
 end
 
 local glee_scoretochosentimeoffset_divisor = CreateConVar( "huntersglee_scoretochosentimeoffset_divisor", "6", bit.bor( FCVAR_REPLICATED, FCVAR_ARCHIVE ), "smaller means grigori time goes up faster. bigger, means slower", 0, 100000 )
@@ -2805,7 +2816,7 @@ function GM:SetupShopCatalouge()
         -- lets people mess with locked rooms
         [ "lockpick" ] = {
             name = "Lockpick",
-            desc = "Lockpick, for doors.\nCan also quietly open item crates.",
+            desc = "Lockpick, for doors.\nCan also open things like crates, ( relatively ) quietly.",
             cost = 15,
             markup = 6,
             cooldown = 10,
@@ -2882,7 +2893,7 @@ function GM:SetupShopCatalouge()
         [ "ar2" ] = {
             name = "Ar2",
             desc = "Ar2 + Balls.\nAr2 balls can save you in a pinch.",
-            cost = 50,
+            cost = 75,
             markup = 2,
             markupPerPurchase = 0.5,
             cooldown = 0.25,
@@ -2913,7 +2924,7 @@ function GM:SetupShopCatalouge()
         -- keeps the rounds going
         [ "revivekit" ] = {
             name = "Revive Kit",
-            desc = "Revives dead players.\nYou gain 200 score per resurrection.",
+            desc = "Revives dead players.\nYou gain 175 score per resurrection.",
             cost = 30,
             markup = 1.5,
             cooldown = 0.25,
@@ -2978,8 +2989,8 @@ function GM:SetupShopCatalouge()
         -- heal jooce
         [ "healthkit" ] = {
             name = "Medkit",
-            desc = "Heals.\nYou gain score for healing players.\nHealing yourself is unweildy and slower.",
-            cost = 20,
+            desc = "Heals.\nYou gain score for healing players.\nHealing yourself is unweildy and slow.",
+            cost = 30,
             markup = 3,
             markupPerPurchase = 0.25,
             cooldown = 0.25,
@@ -2992,7 +3003,7 @@ function GM:SetupShopCatalouge()
             purchaseCheck = unUndeadCheck,
             purchaseFunc = medkitPurchase,
         },
-        -- this is to give the noobs in a lobby a huge score boost
+        -- this is to give the noobs in a lobby a huge score boost, also it's cool
         [ "witnessme" ] = {
             name = "Witness Me.",
             desc = "You die instantly to hunters if you have any witnesses.\nDead players can bear witness\nGain 250 score per witness.\nOnly happens once per round.",
@@ -3213,7 +3224,7 @@ function GM:SetupShopCatalouge()
         --flat upgrade
         [ "channel666" ] = {
             name = "Channel 666.",
-            desc = "Your radio bridges life and death.\nSpeak to the dead",
+            desc = "Your radio bridges life and death.\nSpeak to the dead.",
             cost = 100,
             cooldown = math.huge,
             category = "Innate",
@@ -3325,7 +3336,7 @@ function GM:SetupShopCatalouge()
         -- sell out other players/your friends to become alive
         [ "screamcrate" ] = {
             name = "Beaconed Supplies",
-            desc = "Supplies with a beacon.\nCosts 75 to place.\nRefund upon first beacon transmit.",
+            desc = "Supplies with a beacon.\nBetray the others for score.\nCosts 75 to place.\nRefund upon first beacon transmit.",
             cost = 0,
             markup = 1,
             cooldown = 60,
@@ -3340,7 +3351,7 @@ function GM:SetupShopCatalouge()
         -- makes the map worth exploring
         [ "normcrate" ] = {
             name = "Supplies",
-            desc = "Supplies without a beacon.\nContains health or armour, and rarely a weapon, or some smg / ar2 grenades.\nPlace indoors for more score.",
+            desc = "Supplies without a beacon.\nContains health or armour, and rarely a weapon, or some smg / ar2 grenades.\nPlace indoors, and far away from players and other supplies, for more score.",
             cost = 0,
             markup = 1,
             cooldown = 10,
@@ -3354,7 +3365,7 @@ function GM:SetupShopCatalouge()
         },
         [ "weapcrate" ] = {
             name = "Crate of weapons",
-            desc = "Supply crate with 4 weapons in it\nPlace indoors for more score.",
+            desc = "Supply crate with 4 weapons in it\nPlace indoors, and far away from players and other supplies, for more score.",
             cost = 0,
             markup = 1,
             cooldown = 55,
@@ -3397,7 +3408,7 @@ function GM:SetupShopCatalouge()
         -- punishes careless movement
         [ "barnacle" ] = {
             name = "Barnacle",
-            desc = "Barnacle.\nYou gain 100 score the first time it grabs someone, and 45 score every further second it has someone grabbed.",
+            desc = "Barnacle.\nYou gain 100 score the first time it grabs someone, and 45 score every further second it has someone grabbed.\nCosts more to place in groups, or place too close to players.",
             cost = 5,
             markup = 1,
             cooldown = 0.5,
@@ -3442,7 +3453,7 @@ function GM:SetupShopCatalouge()
         -- lets dead people get a revive but they're fucked
         [ "additionalhunter" ] = {
             name = "Linked hunter",
-            desc = "Spawn another hunter.\nThey will take on your appearance.\nIf you personally kill it, you will gain 400 score.\nThe newcomer will never lose you, if you regain your life...",
+            desc = "Spawn another hunter.\nThey will take on your appearance.\nIf you personally kill it, you will gain 350 score.\nThe newcomer will never lose you, if you regain your life...",
             cost = -150,
             markup = 1,
             cooldown = 80,
@@ -3457,7 +3468,7 @@ function GM:SetupShopCatalouge()
         -- ultimate stalemate breaker
         [ "temporalinversion" ] = {
             name = "Temporal Inversion",
-            desc = "Swaps a player out for their most remote enemy.\nCosts 400 to place.\nCan only be used every 3 minutes.",
+            desc = "Swaps a player out for their most remote enemy.\nCosts 400 to place.\nGlobal 3 minute delay between placing.",
             cost = 0,
             markup = 1,
             cooldown = 5,
@@ -3471,7 +3482,7 @@ function GM:SetupShopCatalouge()
         },
         [ "immortalizer" ] = {
             name = "Gift of Immortality",
-            desc = "Gift 15 seconds, of true Immortality.",
+            desc = "Gift 15 seconds, of true Immortality.\nCosts 300 to gift to players, 200 to gift to hunters.",
             cost = 0,
             markup = 1,
             cooldown = 5,
@@ -3486,7 +3497,7 @@ function GM:SetupShopCatalouge()
         -- crazy purchase
         [ "divineconduit" ] = {
             name = "Divine conduit",
-            desc = "Convey the will of the gods.\nCosts 600 to place.\nGlobal 3 minute delay between placing.",
+            desc = "Convey the will of the gods.\nCosts 600 to place.\nGlobal 4 minute delay between placing.",
             cost = 0,
             markup = 1,
             cooldown = 0,

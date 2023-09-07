@@ -374,7 +374,9 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
     local followingThing = mode == OBS_MODE_CHASE or mode == OBS_MODE_IN_EYE
 
     local placing = ply.ghostEnt
-    if IsValid( placing ) then return end
+    local actionTime = ply.glee_ghostEntActionTime or 0
+    local wasGhostEnting = actionTime + 1 > CurTime()
+    if IsValid( placing ) or wasGhostEnting then return end
 
     local spectated = nil
 
@@ -407,6 +409,8 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
                 end
             end
             if thingToFollow then
+                net.Start( "glee_followednexthing" )
+                net.Send( ply )
                 spectated = thingToFollow
                 ply:SpectateEntity( thingToFollow )
 
@@ -445,7 +449,7 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
 
             end
         end
-    elseif keyPressed == IN_ATTACK2 then
+    elseif keyPressed == IN_ATTACK2 or keyPressed == IN_FORWARD or keyPressed == IN_BACK or keyPressed == IN_MOVELEFT or keyPressed == IN_MOVERIGHT then
         if followingThing then
             ply:SetObserverMode( OBS_MODE_ROAMING )
             net.Start( "glee_stoppedspectating" )
@@ -480,6 +484,7 @@ hook.Add( "KeyPress", "glee_SwitchSpectateModes", DoKeyPressSpectateSwitch )
 
 function GM:SpectateOverrides( ply, mode )
     local placing = ply.ghostEnt
+
     local isPlacing = IsValid( placing )
 
     if GAMEMODE.canRespawn == true then
