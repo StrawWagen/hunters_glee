@@ -46,11 +46,113 @@ end
 
 ENT.HullCheckSize = Vector( 20, 20, 10 )
 
+if CLIENT then
+    function ENT:DoHudStuff()
+        local screenMiddleW = ScrW() / 2
+        local screenMiddleH = ScrH() / 2
+
+        local scoreGained = math.Round( self:GetGivenScore() )
+
+        local scoreGainedString = "Spacing Cost: " .. tostring( scoreGained )
+        surface.drawShadowedTextBetter( scoreGainedString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
+
+    end
+end
+
+local function IsHullTraceFull( startPos, hullMaxs, ignoreEnt )
+    local traceData = {
+        start = startPos,
+        endpos = startPos + Vector(0,0,1),
+        filter = ignoreEnt,
+        mins = -hullMaxs,
+        maxs = hullMaxs
+    }
+    local trace = util.TraceHull(traceData)
+
+    return trace.Hit
+
+end
+
+local function getNearestNavFloor( pos )
+    if not SERVER then return true end
+    if not pos then return NULL end
+    local Dat = {
+        start = pos,
+        endpos = pos + Vector( 0,0,-500 ),
+        mask = 131083
+    }
+    local Trace = util.TraceLine( Dat )
+    if not Trace.HitWorld then return NULL end
+    local navArea = navmesh.GetNearestNavArea( Trace.HitPos, false, 25, false, true, -2 )
+    if not navArea then return NULL end
+    if not navArea:IsValid() then return NULL end
+    return navArea
+
+end
+
+function ENT:BarnacleTrace()
+    local trace = self.player:GetEyeTrace()
+    local eyePos = trace.HitPos
+    local traceData = {
+        start = eyePos + Vector( 0,0,10 ),
+        endpos = eyePos + Vector( 0,0,1000 ),
+        mask = MASK_SOLID_BRUSHONLY,
+
+    }
+    return util.TraceLine( traceData ), eyePos
+
+end
+
+
+function ENT:CanPlaceNonScore()
+    local traceData = self:BarnacleTrace()
+
+    --debugoverlay.Cross( traceData.HitPos() )
+
+    if not traceData.HitWorld then return false, "It needs to be under something." end
+    if traceData.HitSky == true then return false, "It needs to be under something." end
+
+    local checkPos = traceData.HitPos + Vector( 0, 0, -50 )
+
+    if IsHullTraceFull( checkPos, self.HullCheckSize, self ) then return false, self.noPurchaseReason_NoRoom end
+    if getNearestNavFloor( checkPos ) == NULL then return false, self.noPurchaseReason_OffNavmesh end
+
+    return true
+
+end
+
+function ENT:CalculateCanPlace()
+    local canPlace, reason = self:CanPlaceNonScore()
+    if not canPlace then return canPlace, reason end
+    if not self:HasEnoughToPurchase() then return false, self.noPurchaseReason_TooPoor end
+    return true
+
+end
+
+function ENT:bestPosToBe()
+    local bestPos = nil
+    local canPlaceNonScore = self:CanPlaceNonScore()
+    local placeTraceResult, eyePos = self:BarnacleTrace()
+
+    if canPlaceNonScore then
+        bestPos = placeTraceResult.HitPos
+
+    else
+        bestPos = eyePos + Vector( 0, 0, 100 )
+
+    end
+    return bestPos
+
+end
+
+
+if not SERVER then return end
+
 
 local tooCloseToPlayer = 1000
 local barnaclePunishmentDist = 1000
 
-function ENT:GetGivenScore()
+function ENT:UpdateGivenScore()
     local plys = player.GetAll()
 
     local smallestDist = 16000^2
@@ -97,157 +199,15 @@ function ENT:GetGivenScore()
 
     --print( scoreGiven )
 
-    return scoreGiven, playerPenalty
+    self:SetGivenScore( scoreGiven, playerPenalty )
 
 end
 
-hook.Add( "HUDPaint", "placablebarnacle_paintscore", function()
-    if not GAMEMODE.CanShowDefaultHud or not GAMEMODE:CanShowDefaultHud() then return end
-    if not IsValid( LocalPlayer().placableBarnacle ) then return end
-
-    local screenMiddleW = ScrW() / 2
-    local screenMiddleH = ScrH() / 2
-
-    local scoreGained = math.Round( GAMEMODE:ValidNum( LocalPlayer().placableBarnacle.oldScoreGiven ) )
-
-    local scoreGainedString = "Spacing Cost: " .. tostring( scoreGained )
-    surface.drawShadowedTextBetter( scoreGainedString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
-
-end )
-
-
-local function IsHullTraceFull( startPos, hullMaxs, ignoreEnt )
-    local traceData = {
-        start = startPos,
-        endpos = startPos + Vector(0,0,1),
-        filter = ignoreEnt,
-        mins = -hullMaxs,
-        maxs = hullMaxs
-    }
-    local trace = util.TraceHull(traceData)
-
-    return trace.Hit
-
-end
-
-local function getNearestNavFloor( pos )
-    if not SERVER then return true end
-    if not pos then return NULL end
-    local Dat = {
-        start = pos,
-        endpos = pos + Vector( 0,0,-500 ),
-        mask = 131083
-    }
-    local Trace = util.TraceLine( Dat )
-    if not Trace.HitWorld then return NULL end
-    local navArea = navmesh.GetNearestNavArea( Trace.HitPos, false, 25, false, true, -2 )
-    if not navArea then return NULL end
-    if not navArea:IsValid() then return NULL end
-    return navArea
-
-end
-
-function ENT:CanPlace( traceData )
-
-    --debugoverlay.Cross( traceData.HitPos() )
-
-    if not traceData.HitWorld then return false end
-    if traceData.HitSky == true then return false end
-
-    local checkPos = traceData.HitPos + Vector( 0, 0, -50 )
-
-    if IsHullTraceFull( checkPos, self.HullCheckSize, self ) then return false end
-    if getNearestNavFloor( checkPos ) == NULL then return end
-    if not self:HasEnoughToPurchase() then return end
-    return true
-
-end
-
-function ENT:PlaceTrace()
-    local trace = self.player:GetEyeTrace()
-    local eyePos = trace.HitPos
-    local traceData = {
-        start = eyePos + Vector( 0,0,10 ),
-        endpos = eyePos + Vector( 0,0,1000 ),
-        mask = MASK_SOLID_BRUSHONLY,
-    } 
-    return util.TraceLine( traceData ), eyePos
-end
-
-function ENT:ColorThink( canPlace )
-    if self.couldPlace ~= canPlace then
-        if not canPlace then
-            self:SetColor( Color( 255, 0, 0, 255 ) )
-
-        elseif canPlace then
-            self:SetColor( Color( 0, 255, 0, 255 ) )
-
-        end
-    end
-    self.couldPlace = canPlace
- 
-end
-
-function ENT:SetupPlayer( player )
-    self.player.placableBarnacle = self
-    self.player.ghostEnt = self
-end
-
-function ENT:Think()
-    if not IsValid( self.player ) then
-        self.player = self:GetOwner() or nil
-        self:SetupPlayer( self.player )
-        if SERVER then
-            for _, currentPly in ipairs( player.GetAll() ) do
-                local prevent = self.player ~= currentPly
-                self:SetPreventTransmit( currentPly, prevent )
-
-            end
-        end
-    else
-
-        local placeTraceResult, eyePos = self:PlaceTrace()
-
-        local canPlace = self:CanPlace( placeTraceResult ) 
-
-        if canPlace then 
-            self:SetPos( placeTraceResult.HitPos )
-        else
-            self:SetPos( eyePos + Vector( 0,0,100 ) )
-        end
-
-        if SERVER then
-            self:ColorThink( canPlace )
-
-            if self:AliveCheck() then return end
-
-        elseif CLIENT then
-            local scoreGiven, penaltyGiven = self:GetGivenScore()
-
-            if scoreGiven ~= self.oldScoreGiven then
-                self.oldScoreGiven = scoreGiven
-            end
-            if penaltyGiven ~= self.oldPenaltyGiven then
-                self.oldPenaltyGiven = penaltyGiven
-            end
-        end
-
-        if not SERVER then return end
-
-        if self.player:KeyDown( IN_ATTACK ) and self:CanPlace( placeTraceResult ) then
-            self:Place( placeTraceResult )
-
-        end
-        if self.player:KeyDown( IN_ATTACK2 ) then
-            self:Cancel()
-
-        end
-    end
-end
-
-function ENT:Place( placeTraceResult )
+function ENT:Place()
     local yaw = math.Rand( -180, 180 )
     local ang = Angle( 0, yaw ,0 )
+
+    local placeTraceResult = self:BarnacleTrace()
 
     local barnacle = ents.Create( "npc_barnacle" )
     barnacle:SetPos( placeTraceResult.HitPos + Vector( 0,0,-2 ) )
@@ -276,8 +236,8 @@ function ENT:Place( placeTraceResult )
         local enemy = barnacle:GetEnemy()
         if IsValid( enemy ) and enemy:IsPlayer() and IsValid( barnacle.barnacleOwner ) and barnacle.barnacleOwner ~= enemy then
             local scoreToGive = 45
-            if not self.hasGivenHugeScoreBump then
-                self.hasGivenHugeScoreBump = true
+            if not barnacle.hasGivenHugeScoreBump then
+                barnacle.hasGivenHugeScoreBump = true
                 scoreToGive = 100
             end
             barnacle.barnacleOwner:GivePlayerScore( scoreToGive )

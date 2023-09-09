@@ -15,12 +15,30 @@ ENT.Model = "models/Items/item_item_crate.mdl"
 ENT.HullCheckSize = Vector( 20, 20, 10 )
 ENT.PosOffset = Vector( 0, 0, 10 )
 
+
+if CLIENT then
+    function ENT:DoHudStuff()
+        local screenMiddleW = ScrW() / 2
+        local screenMiddleH = ScrH() / 2
+
+        local scoreGained = math.Round( self:GetGivenScore() )
+
+        local scoreGainedString = "(In)Convenience Score: " .. tostring( scoreGained )
+        surface.drawShadowedTextBetter( scoreGainedString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
+
+    end
+end
+
+if not SERVER then return end
+
+local GM = GAMEMODE
+
 local MEMORY_BREAKABLE = 4
 local maxScoreDist = 4000
 local tooCloseToPlayer = 2000
 local cratePunishmentDist = 950
 
-function ENT:GetGivenScore()
+function ENT:UpdateGivenScore()
     local plys = player.GetAll()
     local distToClosestPly = maxScoreDist^2
     local myPos = self:GetPos()
@@ -55,7 +73,7 @@ function ENT:GetGivenScore()
     local punishmentGiven = math.abs( closestCrateDistLinear - cratePunishmentDist )
     punishmentGiven = punishmentGiven / cratePunishmentDist
     -- so we have more than 3 crates nearby, that's a base punishment, then we add onto that the closer the 4th crate is to us
-    punishmentGiven = punishmentCount + ( punishmentGiven * 10 )^2
+    punishmentGiven = punishmentCount + ( punishmentGiven * 10 ) ^ 2
 
     local scoreGiven = math.Clamp( distToClosestPlyLinear, 0, maxScoreDist )
     scoreGiven = scoreGiven / maxScoreDist
@@ -73,32 +91,8 @@ function ENT:GetGivenScore()
         scoreGiven = scoreGiven + -25
     end
 
-    return scoreGiven, punishmentGiven
-
+    self:SetGivenScore( scoreGiven )
 end
-
-hook.Add( "HUDPaint", "weaponcrate_paintscore", function()
-    if not GAMEMODE.CanShowDefaultHud or not GAMEMODE:CanShowDefaultHud() then return end
-    if not IsValid( LocalPlayer().weaponCrate ) then return end
-
-    local screenMiddleW = ScrW() / 2
-    local screenMiddleH = ScrH() / 2
-
-    local scoreGained = math.Round( GAMEMODE:ValidNum( LocalPlayer().weaponCrate.oldScoreGiven ) )
-
-    local scoreGainedString = "(In)Convenience Score: " .. tostring( scoreGained )
-    surface.drawShadowedTextBetter( scoreGainedString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
-
-end )
-
-function ENT:SetupPlayer()
-    self.player.weaponCrate = self
-    self.player.ghostEnt = self
-end
-
-if not SERVER then return end
-
-local GM = GAMEMODE
 
 function GM:WeaponsCrate( pos )
     if not pos then return end
@@ -106,7 +100,7 @@ function GM:WeaponsCrate( pos )
     local crate = ents.Create( "item_item_crate" )
     crate:SetPos( pos )
     crate:SetKeyValue( "ItemClass", "dynamic_weapons" )
-    crate:SetKeyValue( "ItemCount", 6 )
+    crate:SetKeyValue( "ItemCount", 4 )
     crate:Spawn()
 
     crate.terminatorHunterInnateReaction = function()

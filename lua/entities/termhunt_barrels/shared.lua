@@ -19,6 +19,19 @@ ENT.placeCount = 6
 
 local termhunt_barrels_spawned = {}
 
+if CLIENT then
+    function ENT:DoHudStuff()
+        local screenMiddleW = ScrW() / 2
+        local screenMiddleH = ScrH() / 2
+
+        local scoreGained = math.Round( self:GetGivenScore() )
+
+        local scoreGainedString = "Barreling Score: " .. tostring( scoreGained )
+        surface.drawShadowedTextBetter( scoreGainedString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
+
+    end
+end
+
 function ENT:SkinRandomize()
     self:SetSkin( math.random( 0, self:SkinCount() ) )
 
@@ -67,10 +80,23 @@ function ENT:PostInitializeFunc()
 
 end
 
-local MEMORY_BREAKABLE = 4
+local nextCountCheck = 0
+
+function ENT:ClientThink()
+    if nextCountCheck > CurTime() then return end
+
+    nextCountCheck = CurTime() + 0.5
+
+    self:GetBarrels()
+
+end
+
+if not SERVER then return end
+
+local MEMORY_VOLATILE = 8
 local barrelPunishmentDist = 1250
 
-function ENT:GetGivenScore()
+function ENT:UpdateGivenScore()
     local smallestPunishmentDist = barrelPunishmentDist^2
     local tooCloseCount = 0
     local punishmentCount = 0
@@ -110,39 +136,7 @@ function ENT:GetGivenScore()
     scoreGiven = math.Clamp( scoreGiven, -75, 10 )
     scoreGiven = scoreGiven + terminator_Extras.GetNookScore( myPos ) * 4
 
-    return scoreGiven, punishmentGiven
-
-end
-
-hook.Add( "HUDPaint", "barrelSpawner_paintscore", function()
-    if not GAMEMODE.CanShowDefaultHud or not GAMEMODE:CanShowDefaultHud() then return end
-    if not IsValid( LocalPlayer().barrelSpawner ) then return end
-
-    local screenMiddleW = ScrW() / 2
-    local screenMiddleH = ScrH() / 2
-
-    local scoreGained = math.Round( GAMEMODE:ValidNum( LocalPlayer().barrelSpawner.oldScoreGiven ) )
-
-    local scoreGainedString = "Barreling Score: " .. tostring( scoreGained )
-    surface.drawShadowedTextBetter( scoreGainedString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
-
-end )
-
-function ENT:SetupPlayer()
-    self.player.barrelSpawner = self
-    self.player.ghostEnt = self
-end
-
-
-
-local nextCountCheck = 0
-
-function ENT:ClientThink()
-    if nextCountCheck > CurTime() then return end
-
-    nextCountCheck = CurTime() + 0.5
-
-    self:GetBarrels()
+    self:SetGivenScore( scoreGiven )
 
 end
 
@@ -162,7 +156,7 @@ function ENT:Place()
 
     if barrel:Health() > 0 then
         barrel.terminatorHunterInnateReaction = function()
-            return MEMORY_BREAKABLE
+            return MEMORY_VOLATILE
 
         end
     end

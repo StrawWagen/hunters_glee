@@ -17,12 +17,29 @@ ENT.PosOffset = Vector( 0, 0, 10 )
 
 ENT.placeCount = 3
 
+if CLIENT then
+    function ENT:DoHudStuff()
+        local screenMiddleW = ScrW() / 2
+        local screenMiddleH = ScrH() / 2
+
+        local scoreGained = math.Round( self:GetGivenScore() )
+
+        local scoreGainedString = "(In)Convenince Score: " .. tostring( scoreGained )
+        surface.drawShadowedTextBetter( scoreGainedString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
+
+    end
+end
+
+if not SERVER then return end
+
+local GM = GAMEMODE
+
 local MEMORY_BREAKABLE = 4
 local maxScoreDist = 3000
 local tooCloseToPlayer = 2000
 local cratePunishmentDist = 950
 
-function ENT:GetGivenScore()
+function ENT:UpdateGivenScore()
     local plys = player.GetAll()
     local distToClosestPly = maxScoreDist^2
     local myPos = self:GetPos()
@@ -72,32 +89,9 @@ function ENT:GetGivenScore()
         scoreGiven = scoreGiven * 0.25
     end
 
-    return scoreGiven, punishmentGiven
+    self:SetGivenScore( scoreGiven )
 
 end
-
-hook.Add( "HUDPaint", "specialscrate_paintscore", function()
-    if not GAMEMODE.CanShowDefaultHud or not GAMEMODE:CanShowDefaultHud() then return end
-    if not IsValid( LocalPlayer().specialsCrate ) then return end
-
-    local screenMiddleW = ScrW() / 2
-    local screenMiddleH = ScrH() / 2
-
-    local scoreGained = math.Round( GAMEMODE:ValidNum( LocalPlayer().specialsCrate.oldScoreGiven ) )
-
-    local scoreGainedString = "(In)Convenince Score: " .. tostring( scoreGained )
-    surface.drawShadowedTextBetter( scoreGainedString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
-
-end )
-
-function ENT:SetupPlayer()
-    self.player.specialsCrate = self
-    self.player.ghostEnt = self
-end
-
-if not SERVER then return end
-
-local GM = GAMEMODE
 
 function GM:NormalCrate( pos )
     local itemToSpawn = "dynamic_resupply_fake"
@@ -107,7 +101,7 @@ function GM:NormalCrate( pos )
         GAMEMODE.roundExtraData.normalCratePlacedCount = normalCratePlacedCount + 1
         if ( GAMEMODE.roundExtraData.normalCratePlacedCount % 12 ) == 4 then
             itemToSpawn = "dynamic_specials_resupply_fake"
-            count = 12
+            count = 10
 
         end
     end

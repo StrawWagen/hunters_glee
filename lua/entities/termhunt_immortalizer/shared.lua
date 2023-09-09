@@ -15,65 +15,20 @@ ENT.Model = "models/Items/item_item_crate.mdl"
 ENT.HullCheckSize = Vector( 20, 20, 10 )
 ENT.PosOffset = Vector( 0, 0, 10 )
 
-if SERVER then
-    util.AddNetworkString( "gleenomoreimmortalizer" )
-
-end
-
 if CLIENT then
-    local nextNoMoreImmortalizer = 0
-    net.Receive( "gleenomoreimmortalizer", function()
-        if nextNoMoreImmortalizer > CurTime() then return end
-        nextNoMoreImmortalizer = CurTime() + 0.1
+    function ENT:DoHudStuff()
+        local screenMiddleW = ScrW() / 2
+        local screenMiddleH = ScrH() / 2
 
-        if IsValid( LocalPlayer().playerImmortalizer ) then 
-            LocalPlayer().playerImmortalizer:NukeHighlighter()
+        local scoreGained = math.Round( self:GetGivenScore() )
+        local stringPt1 = "Immortalizing Cost: "
 
-        end
+        local scoreString = stringPt1 .. tostring( scoreGained )
 
-        LocalPlayer().playerImmortalizer = nil
-        LocalPlayer().ghostEnt = nil
-
-    end )
-
-end
-
-
-function ENT:PostInitializeFunc()
-    if CLIENT then
-        -- HACK
-        self:SetNoDraw( true )
-
-    end
-    --self:SetOwner( Entity( 1 ) )
-end
-
-function ENT:GetGivenScore()
-    if not IsValid( self.nearestThing ) then return end
-    if self.nearestThing:IsPlayer() then
-        return -300
-
-    elseif self.nearestThing:IsNextBot() then
-        return -200
+        surface.drawShadowedTextBetter( scoreString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
 
     end
 end
-
-hook.Add( "HUDPaint", "plyimmortalizer_paintscore", function()
-    if not GAMEMODE.CanShowDefaultHud or not GAMEMODE:CanShowDefaultHud() then return end
-    if not IsValid( LocalPlayer().playerImmortalizer ) then return end
-
-    local screenMiddleW = ScrW() / 2
-    local screenMiddleH = ScrH() / 2
-
-    local scoreGained = math.Round( GAMEMODE:ValidNum( LocalPlayer().playerImmortalizer:GetGivenScore() ) )
-    local stringPt1 = "(In)Convenience Score: "
-
-    local scoreString = stringPt1 .. tostring( math.abs( scoreGained ) )
-
-    surface.drawShadowedTextBetter( scoreString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
-
-end )
 
 function ENT:GetNearestTarget()
     local nearestPly = nil
@@ -97,101 +52,25 @@ function ENT:GetNearestTarget()
     return nearestPly
 end
 
-function ENT:NukeHighlighter()
-    if SERVER then return end
-    SafeRemoveEntity( self.player.thingHighliter )
-
-end
-
-if CLIENT then
-
-    local green = {0,255,0}
-    local red = {255,0,0}
-
-    local materialOverride = render.MaterialOverride
-    local setColorModulation = render.SetColorModulation
-    local cam_Start3D = cam.Start3D
-    local cam_End3D = cam.End3D
-
-    local playerOverrideMat = CreateMaterial( "CHAMSMATPLAYERIMMORTALIZER1", "UnlitGeneric", { ["$basetexture"] = "lights/white001", ["$model"] = 1, ["$ignorez"] = 1 } )
-
-    function ENT:HighlightNearestThing()
-        if not IsValid( self.nearestThing ) then return end
-        if not IsValid( self.player.thingHighliter ) then
-            self.player.thingHighliter = ClientsideModel( self.nearestThing:GetModel() )
-
-            self.player.thingHighliter:Spawn()
-
-        elseif self.lastNearestThing ~= self.nearestThing then
-            self.lastNearestThing = self.nearestThing
-            self.nearestThing:EmitSound( "ambient/levels/labs/electric_explosion5.wav", 100, 200 )
-            self.player.thingHighliter:SetParent( self.nearestThing )
-            self.player.thingHighliter:SetModel( self.nearestThing:GetModel() )
-            self.player.thingHighliter:SetPos( self.nearestThing:GetPos() )
-            self.player.thingHighliter:SetAngles( self.nearestThing:GetAngles() )
-
-        end
-        if IsValid( self.player.thingHighliter ) then
-            cam_Start3D();
-                materialOverride( playerOverrideMat )
-
-                local color = green
-                if not self:HasEnoughToPurchase() then
-                    color = red
-
-                end
-
-                setColorModulation( color[1], color[2], color[3] )
-
-                self.player.thingHighliter:DrawModel()
-                materialOverride()
-
-            cam_End3D();
-
-        end
-    end
-end
-
-function ENT:CanPlace()
-    if not IsValid( self.nearestThing ) then return end
-    if self.nearestThing.glee_DamageResistant then return false end
-    if not self:HasEnoughToPurchase() then return false end
+function ENT:CalculateCanPlace()
+    if not IsValid( self:GetCurrTarget() ) then return false, "Nothing to immortalize." end
+    if self:GetCurrTarget().glee_DamageResistant then return false, "That's already immortal." end
+    if not self:HasEnoughToPurchase() then return false, self.noPurchaseReason_TooPoor end
     return true
 
 end
 
-function ENT:ModifiableThink()
+if not SERVER then return end
 
-    self:SetPos( self.player:GetEyeTrace().HitPos + self.PosOffset )
+function ENT:UpdateGivenScore()
+    if not IsValid( self:GetCurrTarget() ) then return end
+    if self:GetCurrTarget():IsPlayer() then
+        self:SetGivenScore( -300 )
 
-    self.nearestThing = self:GetNearestTarget()
-
-    if CLIENT then
-        -- HACK
-        self:SetNoDraw( true )
+    elseif self:GetCurrTarget():IsNextBot() then
+        self:SetGivenScore( -150 )
 
     end
-
-    if SERVER and self:AliveCheck() then return end
-
-end
-
-function ENT:SetupPlayer()
-    self.player.playerImmortalizer = self
-    self.player.ghostEnt = self
-    if CLIENT and LocalPlayer() == self.player then
-        hook.Add( "PostDrawOpaqueRenderables", "termHuntDrawNearestThingImmortalizer", function()
-            if not IsValid( self ) or not IsValid( self.player ) then hook.Remove( "PostDrawOpaqueRenderables", "termHuntDrawNearestThingImmortalizer" ) return end
-            if self.player ~= LocalPlayer() then hook.Remove( "PostDrawOpaqueRenderables", "termHuntDrawNearestThingImmortalizer" ) return end
-            if not self.player.playerImmortalizer then self:NukeHighlighter() hook.Remove( "PostDrawOpaqueRenderables", "termHuntDrawNearestThingImmortalizer" ) return end
-            self:HighlightNearestThing()
-        end )
-    end
-end
-
-function ENT:OnRemove()
-    self:NukeHighlighter()
-
 end
 
 local rics = {
@@ -200,7 +79,7 @@ local rics = {
 }
 
 function ENT:Place()
-    local plyToImmortal = self.nearestThing
+    local plyToImmortal = self:GetCurrTarget()
 
     if not IsValid( plyToImmortal ) then return end
 
@@ -212,7 +91,7 @@ function ENT:Place()
         end
     end
 
-    if self.nearestThing:IsPlayer() then
+    if plyToImmortal:IsPlayer() then
         huntersGlee_Announce( plysToAlert, 5, 8, "You feel an imposing presence..\n" .. self.player:Name() .. " has gifted immortality to...\n" .. plyToImmortal:Name() )
         huntersGlee_Announce( { plyToImmortal }, 10, 10, "Something's off, you feel strong, you feel... Immortal.\n" .. self.player:Name() .. " has gifted you temporary Immortality." )
 
@@ -310,10 +189,8 @@ function ENT:Place()
 
     end
 
-    net.Start( "gleenomoreimmortalizer" )
-    net.Send( self.player )
+    self:TellPlyToClearHighlighter()
 
-    self.player.playerImmortalizer = nil
     self.player.ghostEnt = nil
 
     self.player = nil

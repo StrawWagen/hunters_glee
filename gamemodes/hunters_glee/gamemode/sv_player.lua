@@ -375,7 +375,7 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
 
     local placing = ply.ghostEnt
     local actionTime = ply.glee_ghostEntActionTime or 0
-    local wasGhostEnting = actionTime + 1 > CurTime()
+    local wasGhostEnting = actionTime + 0.25 > CurTime()
     if IsValid( placing ) or wasGhostEnting then return end
 
     local spectated = nil

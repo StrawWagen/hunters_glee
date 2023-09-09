@@ -1635,13 +1635,13 @@ local function witnessPurchase( purchaser )
         if not attacker or not gettingAttacked then return end
         if GAMEMODE.roundExtraData.witnessed == true then return end
         if attacker:GetEnemy() ~= gettingAttacked then return end
-        if not GAMEMODE:posCanSee( attacker:GetShootPos(), gettingAttacked:GetShootPos(), MASK_SOLID_BRUSHONLY ) then return end
+        if not terminator_Extras.posCanSee( attacker:GetShootPos(), gettingAttacked:GetShootPos(), MASK_SOLID_BRUSHONLY ) then return end
 
         local count = 0
 
         local purchaseShootPos = gettingAttacked:GetShootPos()
         for _, ply in ipairs( player.GetAll() ) do
-            if GAMEMODE:posCanSee( ply:GetShootPos(), purchaseShootPos, MASK_SOLID_BRUSHONLY ) then
+            if terminator_Extras.posCanSee( ply:GetShootPos(), purchaseShootPos, MASK_SOLID_BRUSHONLY ) then
                 count = count + 1
 
             end
@@ -1665,7 +1665,7 @@ local function witnessPurchase( purchaser )
 
         for _, ply in ipairs( player.GetAll() ) do
             if ply == gettingAttacked then continue end
-            if GAMEMODE:posCanSee( purchaseShootPos, ply:GetShootPos(), MASK_SOLID_BRUSHONLY ) then
+            if terminator_Extras.posCanSee( purchaseShootPos, ply:GetShootPos(), MASK_SOLID_BRUSHONLY ) then
                 table.insert( witnessing, ply )
                 score = score + 250
                 GAMEMODE:GivePanic( ply, 50 ) -- terrifying
@@ -3482,7 +3482,7 @@ function GM:SetupShopCatalouge()
         },
         [ "immortalizer" ] = {
             name = "Gift of Immortality",
-            desc = "Gift 15 seconds, of true Immortality.\nCosts 300 to gift to players, 200 to gift to hunters.",
+            desc = "Gift 15 seconds, of true Immortality.\nCosts 300 to gift to players, 150 to gift to hunters.",
             cost = 0,
             markup = 1,
             cooldown = 5,

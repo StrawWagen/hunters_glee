@@ -13,6 +13,10 @@ ENT.RenderGroup = RENDERGROUP_BOTH
 ENT.Category = "Hunter's Glee"
 ENT.Model = "models/Items/item_item_crate.mdl"
 
+ENT.noPurchaseReason_NoRoom = "No room to place this."
+ENT.noPurchaseReason_OffNavmesh = "The hunters can't path to that spot."
+ENT.noPurchaseReason_TooPoor = "You're too poor."
+
 sound.Add( {
     name = "horrific_crate_scream",
     channel = CHAN_WEAPON,
@@ -20,28 +24,18 @@ sound.Add( {
     sound = "hl1/fvox/beep.wav"
 } )
 
-if CLIENT then
-    -- score gained on place
-    local fontData = {
-        font = "Arial",
-        extended = false,
-        size = 40,
-        weight = 500,
-        blursize = 0,
-        scanlines = 0,
-        antialias = true,
-        underline = false,
-        italic = false,
-        strikeout = false,
-        symbol = false,
-        rotary = false,
-        shadow = false,
-        additive = false,
-        outline = false,
-    }
-    surface.CreateFont( "scoreGainedOnPlaceFont", fontData )
+function ENT:SetupDataTablesExtra()
+end
+
+function ENT:SetupDataTables()
+    self:NetworkVar( "Bool", 0, "CanPlace" )
+    self:NetworkVar( "Bool", 1, "InvalidPlacing" )
+    self:NetworkVar( "Int", 0, "GivenScore" )
+
+    self:SetupDataTablesExtra()
 
 end
+
 --sandbox support
 function ENT:SpawnFunction( ply, tr, ClassName )
 
@@ -76,7 +70,6 @@ function ENT:Initialize()
 end
 
 function ENT:PostInitializeFunc()
-
 end
 
 ENT.HullCheckSize = Vector( 20, 20, 10 )
@@ -84,9 +77,59 @@ ENT.PosOffset = Vector( 0, 0, 10 )
 local deposit = -75
 local placingCost = math.abs( deposit )
 
-function GAMEMODE:ValidNum( num )
-    return num or 0
+if CLIENT then
+    -- score gained on place
+    local fontData = {
+        font = "Arial",
+        extended = false,
+        size = 40,
+        weight = 500,
+        blursize = 0,
+        scanlines = 0,
+        antialias = true,
+        underline = false,
+        italic = false,
+        strikeout = false,
+        symbol = false,
+        rotary = false,
+        shadow = false,
+        additive = false,
+        outline = false,
+    }
+    surface.CreateFont( "scoreGainedOnPlaceFont", fontData )
 
+    hook.Add( "HUDPaint", "glee_placablestuff_hudthink", function()
+        if not GAMEMODE.CanShowDefaultHud or not GAMEMODE:CanShowDefaultHud() then return end
+        if not IsValid( LocalPlayer().ghostEnt ) then return end
+
+        LocalPlayer().ghostEnt:DoHudStuff()
+
+    end )
+
+    function ENT:DoHudStuff()
+        local screenMiddleW = ScrW() / 2
+        local screenMiddleH = ScrH() / 2
+
+        local scoreGained = math.Round( self:GetGivenScore() )
+
+        local stringPt1 = ""
+        local scoreString = ""
+        local placinCostStr = ""
+
+        if scoreGained > 0 then
+            stringPt1 = "Projected profit: "
+            placinCostStr = "Deposit: " .. tostring( deposit )
+
+            scoreString = stringPt1 .. tostring( scoreGained + deposit )
+        else
+            stringPt1 = "Hunter luring cost: "
+            scoreString = stringPt1 .. tostring( scoreGained )
+        end
+
+        surface.drawShadowedTextBetter( scoreString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
+        surface.drawShadowedTextBetter( placinCostStr, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 60 )
+
+    end
 end
 
 function ENT:GetPos2()
@@ -146,16 +189,16 @@ local function PlayRepeatingSound( self, soundPath, soundDuration )
 
     end )
 
-    self.doSound = function( self )
-        self.horrificSound:Stop()
-        self.horrificSound:PlayEx( 0.7, math.random( 120, 130 ) )
+    self.doSound = function( soundEmitter )
+        soundEmitter.horrificSound:Stop()
+        soundEmitter.horrificSound:PlayEx( 0.7, math.random( 120, 130 ) )
 
-        sound.EmitHint( SOUND_COMBAT, self:GetPos(), 20000, 1, self )
+        sound.EmitHint( SOUND_COMBAT, soundEmitter:GetPos(), 20000, 1, soundEmitter )
 
-        self:EmitSound( soundPath, 120, math.random( 140, 150 ), 1, CHAN_STATIC )
+        soundEmitter:EmitSound( soundPath, 120, math.random( 140, 150 ), 1, CHAN_STATIC )
 
-        util.ScreenShake( self:GetPos(), 1, 20, 1, 1000 )
-        local obj = self:GetPhysicsObject()
+        util.ScreenShake( soundEmitter:GetPos(), 1, 20, 1, 1000 )
+        local obj = soundEmitter:GetPhysicsObject()
         if not obj then return end
         obj:ApplyForceCenter( VectorRand() * obj:GetMass() * 100 )
         obj:ApplyTorqueCenter( VectorRand() * obj:GetMass() * 100 )
@@ -177,16 +220,19 @@ local function PlayRepeatingSound( self, soundPath, soundDuration )
     end )
 end
 
-
 function ENT:HasEnoughToPurchase()
     local ply = self.player
     if not IsValid( ply ) then return end
     if not ply.GetScore then return end
+
     local myScore = ply:GetScore()
     local given = self:GetGivenScore()
+
     local intoDebt = myScore + given < 0
     local justProfit = ( myScore + given ) > myScore
+
     if intoDebt and not justProfit then return end
+
     return true
 end
 
@@ -209,13 +255,12 @@ end
 
 local vec15Z = Vector( 0,0,15 )
 
-function ENT:CanPlace()
-
+function ENT:CalculateCanPlace()
     local checkPos = self:GetPos2() + vec15Z
 
-    if IsHullTraceFull( checkPos, self.HullCheckSize, self ) then return false end
-    if getNearestNavFloor( checkPos ) == NULL then return false end
-    if not self:HasEnoughToPurchase() then return false end
+    if IsHullTraceFull( checkPos, self.HullCheckSize, self ) then return false, self.noPurchaseReason_NoRoom end
+    if getNearestNavFloor( checkPos ) == NULL then return false, self.noPurchaseReason_OffNavmesh end
+    if not self:HasEnoughToPurchase() then return false, self.noPurchaseReason_TooPoor end
     return true
 
 end
@@ -242,98 +287,37 @@ function ENT:Cancel()
 
 end
 
-local MEMORY_BREAKABLE = 4
-local startGivingScoreDist = 3000
-local startGivingScoreDistSqr = startGivingScoreDist^2
+function ENT:DoScoreThink()
+    self:NextThink( CurTime() + engine.TickInterval() )
 
-function ENT:GetGivenScore()
-    local plys = player.GetAll()
-    local smallestDist = math.huge
+    local nextScoreThink = self.nextScoreThink or 0
+    if nextScoreThink > CurTime() then return true end
+    self.nextScoreThink = CurTime() + 0.15
 
-    for _, currentPly in ipairs( plys ) do
-        if currentPly:Health() <= 0 then continue end
-        local distToCurrentPlySqr = self:GetPos():DistToSqr( currentPly:GetPos() )
-        if distToCurrentPlySqr < smallestDist then
-            smallestDist = distToCurrentPlySqr
-        end
-    end
+    self:UpdateGivenScore()
 
-    if smallestDist > startGivingScoreDistSqr then return -5, 0 end
+    local canPlace, noBuyReason = self:CalculateCanPlace()
+    self.cannotPurchaseReason = noBuyReason
 
-    local smallestDistLinear = math.sqrt( smallestDist )
-    local scoreGiven = math.abs( smallestDistLinear - startGivingScoreDist )
+    self:SetCanPlace( canPlace )
+    self:ColorThink()
 
-    scoreGiven = scoreGiven / startGivingScoreDist -- scale this to 0-1
-    scoreGiven = scoreGiven * 40 -- bring this back up to the score we want
-
-    if smallestDistLinear < 1700 then
-        scoreGiven = scoreGiven * 2.5 -- leap to way higher scores
-    end
-
-    scoreGiven = scoreGiven + -5
-
-    if scoreGiven > 0 then
-        scoreGiven = scoreGiven + placingCost
-    end
-
-    return scoreGiven, 0
+    return true
 
 end
 
-hook.Add( "HUDPaint", "screamercrate_paintscore", function()
-    if not GAMEMODE.CanShowDefaultHud or not GAMEMODE:CanShowDefaultHud() then return end
-    if not IsValid( LocalPlayer().screamerCrate ) then return end
-
-    local screenMiddleW = ScrW() / 2
-    local screenMiddleH = ScrH() / 2
-
-    local scoreGained = math.Round( GAMEMODE:ValidNum( LocalPlayer().screamerCrate.oldScoreGiven ) )
-
-    local stringPt1 = ""
-    local scoreString = ""
-    local placinCostStr = ""
-
-    if scoreGained > 0 then
-        stringPt1 = "Projected profit: "
-        placinCostStr = "Deposit: " .. tostring( deposit )
-
-        scoreString = stringPt1 .. tostring( scoreGained + deposit )
-    else
-        stringPt1 = "Hunter luring cost: "
-        scoreString = stringPt1 .. tostring( scoreGained )
-    end
-
-    surface.drawShadowedTextBetter( scoreString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
-    surface.drawShadowedTextBetter( placinCostStr, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 60 )
-
-end )
-
 function ENT:ModifiableThink()
+    if not SERVER then return end
+
+    if self:AliveCheck() then return end
+
     self:ManageMyPos()
 
-    if SERVER then
+    return self:DoScoreThink()
 
-        if self:AliveCheck() then return end
-
-        self:ColorThink()
-
-    elseif CLIENT then
-
-        self:ClientThink()
-
-        local scoreGiven, penaltyGiven = self:GetGivenScore()
-
-        if scoreGiven ~= self.oldScoreGiven then
-            self.oldScoreGiven = scoreGiven
-        end
-        if penaltyGiven ~= self.oldPenaltyGiven then
-            self.oldPenaltyGiven = penaltyGiven
-        end
-    end
 end
 
 function ENT:ColorThink()
-
     local mode = self.player:GetObserverMode()
     local canShow = mode == OBS_MODE_ROAMING
 
@@ -350,7 +334,7 @@ function ENT:ColorThink()
     end
     self.canShow = canShow
 
-    local canPlace = self:CanPlace( self:GetPos2() )
+    local canPlace = self:GetCanPlace()
 
     if self.couldPlace ~= canPlace then
         if not canPlace then
@@ -372,36 +356,12 @@ function ENT:AliveCheck()
 end
 
 function ENT:SetupPlayer( _ )
-    self.player.screamerCrate = self
     self.player.ghostEnt = self
 
 end
 
-if SERVER then
-    function ENT:HandleKeys( ply, key )
-        if ( self.nextPlaceThink or 0 ) > CurTime() then return end
-
-        if key == IN_ATTACK and self:CanPlace( self:GetPos2() ) then
-            self:Place()
-            ply.glee_ghostEntActionTime = CurTime()
-
-        end
-
-        if key == IN_ATTACK2 then
-            self:Cancel()
-            ply.glee_ghostEntActionTime = CurTime()
-
-        end
-    end
-
-    hook.Add( "KeyPress", "glee_doplacables_placing", function( ply, key )
-        if not IsValid( ply.ghostEnt ) then return end
-        ply.ghostEnt:HandleKeys( ply, key )
-
-    end )
-end
-
 function ENT:Think()
+    local toReturn
     if not IsValid( self.player ) then
         self.player = self:GetOwner() or nil
         self:SetupPlayer( self.player )
@@ -413,19 +373,23 @@ function ENT:Think()
             end
         end
     elseif IsValid( self.player ) and IsValid( self:GetOwner() ) then
+        toReturn = self:ModifiableThink()
 
-        self:ModifiableThink()
+        if CLIENT then
+            self:ClientThink()
 
-        if not SERVER then return end
+        elseif SERVER then
 
-        local mode = self.player:GetObserverMode()
+            local mode = self.player:GetObserverMode()
+            if mode ~= OBS_MODE_ROAMING then
+                self.nextPlaceThink = CurTime() + 1
+                return
 
-        if mode ~= OBS_MODE_ROAMING then
-            self.nextPlaceThink = CurTime() + 1
-            return
+            end
+
+            return toReturn
 
         end
-
     end
 end
 
@@ -433,6 +397,79 @@ function ENT:ClientThink()
 end
 
 if not SERVER then return end
+
+function ENT:PlaceFailed()
+    if not self.cannotPurchaseReason then return end
+    huntersGlee_Announce( { self.player }, 10, 5, self.cannotPurchaseReason )
+
+end
+
+function ENT:HandleKeys( ply, key )
+    if ( self.nextPlaceThink or 0 ) > CurTime() then return end
+
+    if key == IN_ATTACK then
+        if self:GetCanPlace() then
+            self:Place()
+            ply.glee_ghostEntActionTime = CurTime()
+
+        else
+            self:PlaceFailed()
+            ply.glee_ghostEntActionTime = CurTime()
+
+        end
+    end
+
+    if key == IN_ATTACK2 then
+        self:Cancel()
+        ply.glee_ghostEntActionTime = CurTime()
+
+    end
+end
+
+hook.Add( "KeyPress", "glee_doplacables_placing", function( ply, key )
+    if not IsValid( ply.ghostEnt ) then return end
+    ply.ghostEnt:HandleKeys( ply, key )
+
+end )
+
+
+local MEMORY_BREAKABLE = 4
+local startGivingScoreDist = 3000
+local startGivingScoreDistSqr = startGivingScoreDist^2
+
+function ENT:UpdateGivenScore()
+    local plys = player.GetAll()
+    local smallestDist = math.huge
+
+    for _, currentPly in ipairs( plys ) do
+        if currentPly:Health() <= 0 then continue end
+        local distToCurrentPlySqr = self:GetPos():DistToSqr( currentPly:GetPos() )
+        if distToCurrentPlySqr < smallestDist then
+            smallestDist = distToCurrentPlySqr
+        end
+    end
+
+    if smallestDist > startGivingScoreDistSqr then self:SetGivenScore( -5 ) return end
+
+    local smallestDistLinear = math.sqrt( smallestDist )
+    local scoreGiven = math.abs( smallestDistLinear - startGivingScoreDist )
+
+    scoreGiven = scoreGiven / startGivingScoreDist -- scale this to 0-1
+    scoreGiven = scoreGiven * 40 -- bring this back up to the score we want
+
+    if smallestDistLinear < 1700 then
+        scoreGiven = scoreGiven * 2.5 -- leap to way higher scores
+    end
+
+    scoreGiven = scoreGiven + -5
+
+    if scoreGiven > 0 then
+        scoreGiven = scoreGiven + placingCost
+    end
+
+    self:SetGivenScore( scoreGiven )
+
+end
 
 local GM = GAMEMODE
 
@@ -476,18 +513,18 @@ function ENT:Place()
             crate.lastAttacker = attacker
 
         end )
-        crate:CallOnRemove( "identifyifscore", function( crate )
-            if crate.refundAndBonus and IsValid( crate.player ) then
-                if IsValid( crate.lastAttacker ) and crate.lastAttacker:IsPlayer() then
+        crate:CallOnRemove( "identifyifscore", function( removingCrate )
+            if removingCrate.refundAndBonus and IsValid( removingCrate.player ) then
+                if IsValid( removingCrate.lastAttacker ) and removingCrate.lastAttacker:IsPlayer() then
                     huntersGlee_Announce( { self.player }, 5, 10, "Someone beat the beacon, they took the deposit." )
-                    huntersGlee_Announce( { crate.lastAttacker }, 5, 10, "You've recieved " .. placingCost .. " for beating the beacon." )
+                    huntersGlee_Announce( { removingCrate.lastAttacker }, 5, 10, "You've recieved " .. placingCost .. " for beating the beacon." )
 
-                    if crate.lastAttacker.GivePlayerScore then
-                        crate.lastAttacker:GivePlayerScore( placingCost )
+                    if removingCrate.lastAttacker.GivePlayerScore then
+                        removingCrate.lastAttacker:GivePlayerScore( placingCost )
 
                     end
                 else
-                    huntersGlee_Announce( { crate.player }, 5, 10, "Your crate was broken early, you are left poorer than before." )
+                    huntersGlee_Announce( { removingCrate.player }, 5, 10, "Your crate was broken early, you are left poorer than before." )
 
                 end
             end

@@ -1,5 +1,24 @@
 
-local terminator_Extras = terminator_Extras or {}
+AddCSLuaFile()
+
+terminator_Extras = terminator_Extras or {}
+
+-- guess what this does
+terminator_Extras.posCanSee = function( startPos, endPos, mask )
+    if not startPos then return end
+    if not endPos then return end
+
+    mask = mask or bit.bor( MASK_SOLID, CONTENTS_HITBOX )
+
+    local trData = {
+        start = startPos,
+        endpos = endPos,
+        mask = mask,
+    }
+    local trace = util.TraceLine( trData )
+    return not trace.Hit, trace
+
+end
 
 -- another mystery
 terminator_Extras.dirToPos = terminator_Extras.dirToPos or function( startPos, endPos )
@@ -10,7 +29,7 @@ terminator_Extras.dirToPos = terminator_Extras.dirToPos or function( startPos, e
 
 end
 
-terminator_Extras.PosCanSeeComplex = terminator_Extras.PosCanSeeComplex or function( startPos, endPos, filter, mask )
+terminator_Extras.PosCanSeeComplex = function( startPos, endPos, filter, mask )
     if not startPos then return end
     if not endPos then return end
 
@@ -39,5 +58,38 @@ terminator_Extras.PosCanSeeComplex = terminator_Extras.PosCanSeeComplex or funct
     }
     local trace = util.TraceLine( traceData )
     return not trace.Hit, trace
+
+end
+
+local nookDirections = {
+    Vector( 1, 0, 0 ),
+    Vector( -1, 0, 0 ),
+    Vector( 0, 1, 0 ),
+    Vector( 0, -1, 0 ),
+    Vector( 0, 0, 1 ),
+    Vector( 0, 0, -1 ),
+}
+
+terminator_Extras.GetNookScore = function( pos, distance, overrideDirections )
+    local directions = overrideDirections or nookDirections
+    local facesBlocked = 0
+    distance = distance or 800
+
+    for _, direction in ipairs( directions ) do
+        local traceData = {
+            start = pos,
+            endpos = pos + direction * distance,
+            mask = MASK_SOLID_BRUSHONLY,
+
+        }
+
+        local trace = util.TraceLine( traceData )
+        if not trace.Hit then continue end
+
+        facesBlocked = facesBlocked + math.abs( trace.Fraction - 1 )
+
+    end
+
+    return facesBlocked
 
 end

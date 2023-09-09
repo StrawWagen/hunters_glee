@@ -16,25 +16,103 @@ ENT.HullCheckSize = Vector( 20, 20, 10 )
 ENT.PosOffset = Vector( 0, 0, 10 )
 
 if SERVER then
-    util.AddNetworkString( "nomoretemporalinversion" )
+    util.AddNetworkString( "glee_cleartargetedplacable" )
 
 end
 
 if CLIENT then
     local nextNoMoreInversion = 0
-    net.Receive( "nomoretemporalinversion", function()
+    net.Receive( "glee_cleartargetedplacable", function()
         if nextNoMoreInversion > CurTime() then return end
         nextNoMoreInversion = CurTime() + 0.1
 
-        LocalPlayer().playerSwapper:NukeHighlighter()
+        local toWipe = net.ReadEntity()
+        toWipe:NukeHighlighter()
 
-        LocalPlayer().playerSwapper = nil
+        if toWipe ~= LocalPlayer().ghostEnt then return end
+
+        LocalPlayer().placableTargeted = nil
         LocalPlayer().ghostEnt = nil
 
     end )
 
+    function ENT:DoHudStuff()
+        local screenMiddleW = ScrW() / 2
+        local screenMiddleH = ScrH() / 2
+
+        local scoreGained = math.Round( self:GetGivenScore() )
+        local stringPt1 = ""
+        if scoreGained < 0 then
+            stringPt1 = "Cost: "
+
+        end
+
+        local scoreString = stringPt1 .. math.abs( scoreGained )
+
+        surface.drawShadowedTextBetter( scoreString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
+
+    end
+
+    function ENT:NukeHighlighter()
+        SafeRemoveEntity( self.player.placableSnapHighligher )
+
+    end
+
+    local green = { 0, 255, 0 }
+    local red = { 255, 0, 0 }
+
+    local materialOverride = render.MaterialOverride
+    local setColorModulation = render.SetColorModulation
+    local cam_Start3D = cam.Start3D
+    local cam_End3D = cam.End3D
+
+    local playerOverrideMat = CreateMaterial( "CHAMSMATPLAYERSWAPPER1", "UnlitGeneric", { ["$basetexture"] = "lights/white001", ["$model"] = 1, ["$ignorez"] = 1 } )
+
+    function ENT:HighlightNearestTarget()
+        if not IsValid( self:GetCurrTarget() ) then return end
+        if not IsValid( self.player.placableSnapHighligher ) then
+            self.player.placableSnapHighligher = ClientsideModel( self:GetCurrTarget():GetModel() )
+
+            self.player.placableSnapHighligher:Spawn()
+
+        elseif self.lastNearestTarget ~= self:GetCurrTarget() then
+            self.lastNearestTarget = self:GetCurrTarget()
+            self:GetCurrTarget():EmitSound( "ambient/levels/labs/electric_explosion5.wav", 100, 200 )
+            self.player.placableSnapHighligher:SetParent( self:GetCurrTarget() )
+            self.player.placableSnapHighligher:SetModel( self:GetCurrTarget():GetModel() )
+            self.player.placableSnapHighligher:SetPos( self:GetCurrTarget():GetPos() )
+            self.player.placableSnapHighligher:SetAngles( self:GetCurrTarget():GetAngles() )
+
+        end
+        if IsValid( self.player.placableSnapHighligher ) then
+            cam_Start3D();
+                materialOverride( playerOverrideMat )
+
+                local color = green
+                if not self:GetCanPlace() then
+                    color = red
+
+                end
+
+                setColorModulation( color[1], color[2], color[3] )
+
+                self.player.placableSnapHighligher:DrawModel()
+                materialOverride()
+
+            cam_End3D();
+
+        end
+    end
+    function ENT:ClientThink()
+        self:SetNoDraw( true )
+
+    end
 end
 
+function ENT:SetupDataTablesExtra()
+    self:NetworkVar( "Entity", 1, "CurrTarget" )
+
+end
 
 function ENT:PostInitializeFunc()
     if CLIENT then
@@ -45,32 +123,7 @@ function ENT:PostInitializeFunc()
     --self:SetOwner( Entity( 1 ) )
 end
 
-function ENT:GetGivenScore()
-    return -400
-
-end
-
-hook.Add( "HUDPaint", "plyswapper_paintscore", function()
-    if not GAMEMODE.CanShowDefaultHud or not GAMEMODE:CanShowDefaultHud() then return end
-    if not IsValid( LocalPlayer().playerSwapper ) then return end
-
-    local screenMiddleW = ScrW() / 2
-    local screenMiddleH = ScrH() / 2
-
-    local scoreGained = math.Round( GAMEMODE:ValidNum( LocalPlayer().playerSwapper:GetGivenScore() ) )
-    local stringPt1 = ""
-    if scoreGained < 0 then
-        stringPt1 = "Cost: "
-
-    end
-
-    local scoreString = stringPt1 .. tostring( math.abs( scoreGained ) )
-
-    surface.drawShadowedTextBetter( scoreString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
-
-end )
-
-function ENT:GetNearestPlayer()
+function ENT:GetNearestTarget()
     local nearestPly = nil
     local nearestDistance = math.huge
     local myPos = self:GetPos()
@@ -99,7 +152,7 @@ function ENT:GetFurthestTerminator()
 
     for _, thing in ipairs( ents.GetAll() ) do
         if thing.isTerminatorHunterBased then
-            local distance = thing:GetPos():Distance( myPos )
+            local distance = thing:GetPos():DistToSqr( myPos )
             if distance > furthestDistance then
                 furthestTerminator = thing
                 furthestDistance = distance
@@ -145,106 +198,57 @@ function ENT:SwapPlayerAndTerminator( player, terminator )
 
 end
 
-function ENT:NukeHighlighter()
-    if SERVER then return end
-    SafeRemoveEntity( self.player.playerHighliter )
-
-end
-
-if CLIENT then
-
-    local green = {0,255,0}
-    local red = {255,0,0}
-
-    local materialOverride = render.MaterialOverride
-    local setColorModulation = render.SetColorModulation
-    local cam_Start3D = cam.Start3D
-    local cam_End3D = cam.End3D
-
-    local playerOverrideMat = CreateMaterial( "CHAMSMATPLAYERSWAPPER1", "UnlitGeneric", { ["$basetexture"] = "lights/white001", ["$model"] = 1, ["$ignorez"] = 1 } )
-
-    function ENT:HighlightNearestPlayer()
-        if not IsValid( self.nearestPlayer ) then return end
-        if not IsValid( self.player.playerHighliter ) then
-            self.player.playerHighliter = ClientsideModel( self.nearestPlayer:GetModel() )
-
-            self.player.playerHighliter:Spawn()
-
-        elseif self.lastNearestPlayer ~= self.nearestPlayer then
-            self.lastNearestPlayer = self.nearestPlayer
-            self.nearestPlayer:EmitSound( "ambient/levels/labs/electric_explosion5.wav", 100, 200 )
-            self.player.playerHighliter:SetParent( self.nearestPlayer )
-            self.player.playerHighliter:SetModel( self.nearestPlayer:GetModel() )
-            self.player.playerHighliter:SetPos( self.nearestPlayer:GetPos() )
-            self.player.playerHighliter:SetAngles( self.nearestPlayer:GetAngles() )
-
-        end
-        if IsValid( self.player.playerHighliter ) then
-            cam_Start3D();
-                materialOverride( playerOverrideMat )
-
-                local color = green
-                if not self:HasEnoughToPurchase() then
-                    color = red
-
-                end
-
-                setColorModulation( color[1], color[2], color[3] )
-
-                self.player.playerHighliter:DrawModel()
-                materialOverride()
-
-            cam_End3D();
-
-        end
-    end
-end
-
-function ENT:CanPlace()
-    if not IsValid( self.nearestPlayer ) then return end
-    if not IsValid( self:GetFurthestTerminator() ) then return end
-    if IsValid( GetGlobal2Entity( "terhunt_player_swapper", NULL ) ) then return false end
-    if not self:HasEnoughToPurchase() then return false end
+function ENT:CalculateCanPlace()
+    if not IsValid( self:GetCurrTarget() ) then return false, "You need to be looking at a player." end
+    if not IsValid( self:GetFurthestTerminator() ) then return false, "No hunters are currently spawned." end
+    if GAMEMODE:isTemporaryTrueBool( "terhunt_player_swapper" ) then return false, "It's too soon for another inversion to begin." end
+    if not self:HasEnoughToPurchase() then return false, self.noPurchaseReason_TooPoor end
     return true
 
 end
 
-function ENT:ModifiableThink()
-
+function ENT:ManageMyPos()
     self:SetPos( self.player:GetEyeTrace().HitPos + self.PosOffset )
-
-    self.nearestPlayer = self:GetNearestPlayer()
-
-    if CLIENT then
-        -- HACK
-        self:SetNoDraw( true )
-
-    end
-
-    if SERVER and self:AliveCheck() then return end
+    self:SetCurrTarget( self:GetNearestTarget() )
 
 end
 
 function ENT:SetupPlayer()
-    self.player.playerSwapper = self
+    self.player.placableTargeted = self
     self.player.ghostEnt = self
     if CLIENT and LocalPlayer() == self.player then
         hook.Add( "PostDrawOpaqueRenderables", "termHuntDrawNearestPlayerSwapper", function()
             if not IsValid( self ) or not IsValid( self.player ) then hook.Remove( "PostDrawOpaqueRenderables", "termHuntDrawNearestPlayerSwapper" ) return end
             if self.player ~= LocalPlayer() then hook.Remove( "PostDrawOpaqueRenderables", "termHuntDrawNearestPlayerSwapper" ) return end
-            if not self.player.playerSwapper then self:NukeHighlighter() hook.Remove( "PostDrawOpaqueRenderables", "termHuntDrawNearestPlayerSwapper" ) return end
-            self:HighlightNearestPlayer()
+            if not self.player.placableTargeted then self:NukeHighlighter() hook.Remove( "PostDrawOpaqueRenderables", "termHuntDrawNearestPlayerSwapper" ) return end
+            self:HighlightNearestTarget()
         end )
     end
 end
 
 function ENT:OnRemove()
+    if not CLIENT then return end
     self:NukeHighlighter()
 
 end
 
+if not SERVER then return end
+
+function ENT:TellPlyToClearHighlighter()
+    net.Start( "glee_cleartargetedplacable" )
+        net.WriteEntity( self )
+
+    net.Send( self.player )
+
+end
+
+function ENT:UpdateGivenScore()
+    self:SetGivenScore( -400 )
+
+end
+
 function ENT:Place()
-    local plyToSwap = self.nearestPlayer
+    local plyToSwap = self:GetCurrTarget()
     local furthestTerminator = self:GetFurthestTerminator()
 
     if not IsValid( plyToSwap ) or not IsValid( furthestTerminator ) then return end
@@ -314,10 +318,9 @@ function ENT:Place()
 
     end
 
-    net.Start( "nomoretemporalinversion" )
-    net.Send( self.player )
+    self:TellPlyToClearHighlighter()
 
-    self.player.playerSwapper = nil
+    self.player.placableTargeted = nil
     self.player.ghostEnt = nil
 
     self.player = nil

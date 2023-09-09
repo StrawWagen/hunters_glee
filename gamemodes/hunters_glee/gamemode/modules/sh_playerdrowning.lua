@@ -5,11 +5,11 @@ CreateConVar( "huntersglee_cannotswim_graceperiod", 4.5, bit.bor( FCVAR_NOTIFY, 
 if SERVER then
     function GM:managePlayerDrowning( players )
         for _, ply in ipairs( players ) do
-            if ply:WaterLevel() >= 3 then
-                if ply:IsOnFire() then
-                    ply:Extinguish()
-                end
-
+            local wata = ply:WaterLevel()
+            if wata >= 2 and ply:IsOnFire() then
+                ply:Extinguish()
+            end
+            if wata >= 3 then
                 if ply.glee_drowning then
                     if ply.glee_drowning < CurTime() then
                         local dmginfo = DamageInfo()

@@ -1,51 +1,44 @@
 AddCSLuaFile()
 
 ENT.Type = "anim"
-ENT.Base = "base_anim"
+ENT.Base = "dynamic_resupply_fake"
 
 ENT.Category    = "Other"
-ENT.PrintName   = "Fake Super dynamic resupply"
+ENT.PrintName   = "DynSupplies Super"
 ENT.Author      = "StrawWagen"
 ENT.Purpose     = "Drops either armor or medkits, chance to spawn weapon is much higher, Used in screaming/beacon crate"
 ENT.Spawnable    = true
 ENT.Category = "Hunter's Glee"
 ENT.AdminOnly    = false
 
-function ENT:Initialize()
-    if SERVER then
-        self:SetNoDraw( true )
+function ENT:commonCreationOptions()
+    local tbl = {
+        { class = "item_battery" },
+        { class = "item_healthkit" },
+        { class = "item_healthvial" }
 
-        local rareCreationOptions = { { "item_ammo_smg1_grenade", 3 }, { "weapon_frag", 4 }, "weapon_stunstick", "termhunt_aeromatix_flare_gun", { "weapon_slam", 2 }, { "termhunt_score_pickup", 3 }, "weapon_shotgun", "weapon_rpg", "weapon_pistol" }
-        local toCreate = { "item_battery", "item_healthkit", "item_healthvial" }
+    }
 
-        if math.random( 0, 100 ) > 70 then
-            toCreate = rareCreationOptions
-        end
+    return tbl
 
-        local selected = table.Random( toCreate )
-        local count = 1
+end
 
-        if istable( selected ) then
-            count = selected[2]
-            selected = selected[1]
 
-        end
+ENT.rareCreationChance = 30
 
-        for _ = 1, count do
-            local item = ents.Create( selected )
-            item:SetPos( self:GetPos() )
-            item:Spawn()
+function ENT:rareCreationOptions()
+    local tbl = {
+        { class = "weapon_frag", count = 4 },
+        { class = "item_ammo_smg1_grenade", count = 3 },
+        { class = "termhunt_score_pickup", count = 3 },
+        { class = "weapon_slam", count = 2 },
+        { class = "weapon_stunstick" },
+        { class = "termhunt_aeromatix_flare_gun" },
+        { class = "weapon_shotgun" },
+        { class = "weapon_rpg" },
+        { class = "weapon_pistol" }
 
-        end
+    }
+    return tbl
 
-        timer.Simple( 60 * 8, function()
-            if not IsValid( item ) then return end
-            if IsValid( item:GetParent() ) then return end
-            SafeRemoveEntity( item )
-
-        end )
-
-        SafeRemoveEntity( self )
-
-    end
 end

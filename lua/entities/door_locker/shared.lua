@@ -1,7 +1,7 @@
 AddCSLuaFile()
 
 ENT.Type = "anim"
-ENT.Base = "screamer_crate"
+ENT.Base = "player_swapper"
 
 ENT.Category    = "Other"
 ENT.PrintName   = "Door Locker"
@@ -12,153 +12,55 @@ ENT.AdminOnly    = false
 ENT.Category = "Hunter's Glee"
 ENT.Model = "models/Items/item_item_crate.mdl"
 
+if CLIENT then
+    function ENT:DoHudStuff()
+    end
+
+end
+
+if not SERVER then return end
+
 ENT.HullCheckSize = Vector( 20, 20, 10 )
 ENT.PosOffset = Vector( 0, 0, 10 )
 
-function ENT:SetupDataTables()
-    self:NetworkVar( "Entity", 0, "DoorToLock" )
-    self:NetworkVar( "Bool", 1, "CanLockDoor" )
+function ENT:GetNearestTarget()
+    local nearestDoor = nil
+    local nearestDistance = math.huge
+    local myPos = self:GetPos()
 
-end
+    -- Find all prop_door_rotating entities within a radius of 2048 units
+    local doors = ents.FindInSphere( myPos, 2048 )
+    for _, door in ipairs( doors ) do
+        if door:GetClass() == "prop_door_rotating" then
+            if not util.doorIsUsable( door ) then continue end
+            if not door:IsSolid() then continue end
+            -- Calculate the distance between the door and the entity
+            local distance = myPos:Distance( door:GetPos() )
+            if distance < nearestDistance then
+                nearestDoor = door
+                nearestDistance = distance
 
-function ENT:PostInitializeFunc()
-    if CLIENT then
-        -- HACK
-        self:SetNoDraw( true )
-
-    end
-    --self:SetOwner( Entity( 1 ) )
-end
-
-function ENT:NukeHighlighter()
-    if SERVER then return end
-    SafeRemoveEntity( self.player.doorHighliter )
-
-end
-
-if CLIENT then
-
-    local materialOverride = render.MaterialOverride
-    local setColorModulation = render.SetColorModulation
-    local cam_Start3D = cam.Start3D
-    local cam_End3D = cam.End3D
-
-    local doorOverrideMat = CreateMaterial( "CHAMSMATDOORLOCKER1", "UnlitGeneric", { ["$basetexture"] = "lights/white004", ["$model"] = 1, ["$ignorez"] = 1 } )
-
-    function ENT:HighlightNearestDoor()
-        if not IsValid( self:GetDoorToLock() ) then return end
-        if not IsValid( self.player.doorHighliter ) then
-            self.player.doorHighliter = ClientsideModel( self:GetDoorToLock():GetModel() )
-
-            self.player.doorHighliter:Spawn()
-
-        elseif self.lastNearestDoor ~= self:GetDoorToLock() then
-            self.lastNearestDoor = self:GetDoorToLock()
-            self:GetDoorToLock():EmitSound( "ambient/levels/labs/electric_explosion5.wav", 100, 200 )
-            self.player.doorHighliter:SetModel( self:GetDoorToLock():GetModel() )
-            self.player.doorHighliter:SetPos( self:GetDoorToLock():GetPos() )
-            self.player.doorHighliter:SetAngles( self:GetDoorToLock():GetAngles() )
-
-        end
-        if IsValid( self.player.doorHighliter ) then
-
-            cam_Start3D();
-                materialOverride( doorOverrideMat )
-
-                green, blue = 255, 255
-                if not self:GetCanLockDoor() then
-                    green, blue = 0, 0
-
-                end
-
-                setColorModulation( 255, green, blue )
-
-                self.player.doorHighliter:DrawModel()
-                materialOverride()
-
-            cam_End3D();
-
-        end
-    end
-elseif SERVER then
-
-    function ENT:DecideCanLockDoor()
-        local door = self:GetDoorToLock()
-        if not IsValid( door ) then return end
-        if door:GetInternalVariable( "m_eDoorState" ) == 2 then return nil, "That door is open." end
-        if door:GetInternalVariable( "m_bLocked" ) == true then return nil, "That door is already locked." end
-
-        return true
-
-    end
-
-    function ENT:GetNearestDoor()
-        local nearestDoor = nil
-        local nearestDistance = math.huge
-        local myPos = self:GetPos()
-
-        -- Find all prop_door_rotating entities within a radius of 2048 units
-        local doors = ents.FindInSphere( myPos, 2048 )
-        for _, door in ipairs( doors ) do
-            if door:GetClass() == "prop_door_rotating" then
-                if not util.doorIsUsable( door ) then continue end
-                if not door:IsSolid() then continue end
-                -- Calculate the distance between the door and the entity
-                local distance = myPos:Distance( door:GetPos() )
-                if distance < nearestDistance then
-                    nearestDoor = door
-                    nearestDistance = distance
-
-                end
             end
         end
-
-        return nearestDoor
-
     end
+
+    return nearestDoor
+
 end
 
-function ENT:CanPlace()
-    if not IsValid( self:GetDoorToLock() ) then return end
-    local canLock, cannotLockReason = self:DecideCanLockDoor()
+function ENT:UpdateGivenScore()
+    self:SetGivenScore( "0" )
 
-    if not canLock then
-        huntersGlee_Announce( { self.player }, 10, 5, cannotLockReason )
-        return
+end
 
-    end
+function ENT:CalculateCanPlace()
+    local door = self:GetCurrTarget()
+    if not IsValid( door ) then return false, "You need to aim at a door." end
+    if door:GetInternalVariable( "m_eDoorState" ) == 2 then return false, "That door is open." end
+    if door:GetInternalVariable( "m_bLocked" ) == true then return false, "That door is already locked." end
+
     return true
 
-end
-
-function ENT:ModifiableThink()
-    self:SetPos( self.player:GetEyeTrace().HitPos + self.PosOffset )
-
-    if SERVER then
-        self:SetDoorToLock( self:GetNearestDoor() )
-        self:SetCanLockDoor( self:DecideCanLockDoor() )
-
-    end
-    if CLIENT then
-        -- HACK
-        self:SetNoDraw( true )
-
-    end
-
-    if SERVER and self:AliveCheck() then return end
-
-end
-
-function ENT:SetupPlayer()
-    self.player.doorLocker = self
-    self.player.ghostEnt = self
-    if CLIENT and LocalPlayer() == self.player then
-        hook.Add( "PostDrawOpaqueRenderables", "termHuntDrawNearestDoorDoorLocker", function()
-            if not IsValid( self ) or not IsValid( self.player ) then hook.Remove( "PostDrawOpaqueRenderables", "termHuntDrawNearestDoorDoorLocker" ) return end
-            if self.player ~= LocalPlayer() then hook.Remove( "PostDrawOpaqueRenderables", "termHuntDrawNearestDoorDoorLocker" ) return end
-            self:HighlightNearestDoor()
-        end )
-    end
 end
 
 -- lock a prop_door_rotating
@@ -235,16 +137,13 @@ local function DoorOnUsedInitial( _, thingUsingTheDoor, currentlyProcessingPlaye
 
 end
 
-function ENT:OnRemove()
-    self:NukeHighlighter()
-
-end
-
 function ENT:Place()
     if not SERVER then return end
-    local door = self:GetDoorToLock()
+    local door = self:GetCurrTarget()
     LockDoorAndRunAFunctionWhenTheDoorIsUsed( door, self.player, DoorOnUsedInitial )
     door:EmitSound( "doors/door_locked2.wav", 80 )
+
+    self:TellPlyToClearHighlighter()
 
     SafeRemoveEntity( self )
 

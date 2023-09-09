@@ -133,7 +133,7 @@ function GM:navPatchingThink( ply )
     --debugoverlay.Line( plyPos2, currClosestPos, 5, Color(255,255,255), true )
     --print( plyPos2.z, currClosestPos.z, plyPos.z )
 
-    if not GAMEMODE:posCanSee( plyPos2, currClosestPos, MASK_SOLID_BRUSHONLY ) then return end
+    if not terminator_Extras.posCanSee( plyPos2, currClosestPos, MASK_SOLID_BRUSHONLY ) then return end
 
     self:smartConnectionThink( oldArea, currArea )
     self:smartConnectionThink( currArea, oldArea )
@@ -298,7 +298,7 @@ local function connectionDataVisOffsetCheck( currentData )
 
     local visibleCount = 0
     for _, offset in ipairs( offsets ) do
-        if not GAMEMODE:posCanSee( area1Closest + offset, area2Closest + offset, MASK_SOLID ) then continue end
+        if not terminator_Extras.posCanSee( area1Closest + offset, area2Closest + offset, MASK_SOLID ) then continue end
         --debugoverlay.Line( area1Closest + offset, area2Closest + offset, 120, Color( 255,255,255 ), true )
         visibleCount = visibleCount + 1
 

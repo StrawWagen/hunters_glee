@@ -232,7 +232,7 @@ function GM:crateSpawnThink( players )
             elseif mod == 9 and proceduralCratePlaces > 10 and #player.GetAll() <= 1 then
                 crate = GAMEMODE:ScreamingCrate( spawnPos )
 
-            elseif ( mod == 6 and proceduralCratePlaces > 8 ) or ( mod == 3 and proceduralCratePlaces > 20 ) then
+            elseif ( mod == 6 and proceduralCratePlaces > 12 ) or ( mod == 3 and proceduralCratePlaces > 20 ) then
                 crate = GAMEMODE:WeaponsCrate( spawnPos )
 
             else

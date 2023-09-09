@@ -15,7 +15,25 @@ ENT.Model = "models/Items/item_item_crate.mdl"
 ENT.HullCheckSize = Vector( 20, 20, 10 )
 ENT.PosOffset = Vector( 0, 0, 10 )
 
-function ENT:GetGivenScore()
+
+if CLIENT then
+    function ENT:DoHudStuff()
+        local screenMiddleW = ScrW() / 2
+        local screenMiddleH = ScrH() / 2
+
+        local scoreGained = math.Round( self:GetGivenScore() )
+
+        local scoreGainedString = "Manhacking Cost: " .. tostring( scoreGained )
+        surface.drawShadowedTextBetter( scoreGainedString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
+
+    end
+end
+
+if not SERVER then return end
+
+local GM = GAMEMODE
+
+function ENT:UpdateGivenScore()
     local plys = player.GetAll()
     local smallestDist = math.huge
     local scoreGiven = nil
@@ -40,32 +58,9 @@ function ENT:GetGivenScore()
         scoreGiven = 0
 
     end
-    return scoreGiven
+    self:SetGivenScore( scoreGiven )
 
 end
-
-hook.Add( "HUDPaint", "manhackcrate_paintscore", function()
-    if not GAMEMODE.CanShowDefaultHud or not GAMEMODE:CanShowDefaultHud() then return end
-    if not IsValid( LocalPlayer().glee_manhackCrate ) then return end
-
-    local screenMiddleW = ScrW() / 2
-    local screenMiddleH = ScrH() / 2
-
-    local scoreGained = math.Round( GAMEMODE:ValidNum( LocalPlayer().glee_manhackCrate.oldScoreGiven ) )
-
-    local scoreGainedString = "Manhacking Score: " .. tostring( scoreGained )
-    surface.drawShadowedTextBetter( scoreGainedString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
-
-end )
-
-function ENT:SetupPlayer()
-    self.player.glee_manhackCrate = self
-    self.player.ghostEnt = self
-end
-
-if not SERVER then return end
-
-local GM = GAMEMODE
 
 function GM:ManhackCrate( pos )
     local crate = ents.Create( "prop_physics" )
@@ -91,7 +86,7 @@ local function getCreationPos( ent )
 
 end
 
-hook.Add( "PropBreak", "glee_spawn_rewarding_manhacks", function( breaker, broken )
+hook.Add( "PropBreak", "glee_spawn_rewarding_manhacks", function( _, broken )
     if not broken.glee_IsManhackCrate then return end
     for _ = 1, 5 do
         local creationPos = getCreationPos( broken )
@@ -103,8 +98,8 @@ hook.Add( "PropBreak", "glee_spawn_rewarding_manhacks", function( breaker, broke
 
         SafeRemoveEntityDelayed( manhack, 240 )
 
-        if broken.player then
-            manhack.glee_ManhackCrateInitialOwner = broken.player
+        if broken.glee_manhackcrate_player then
+            manhack.glee_ManhackCrateInitialOwner = broken.glee_manhackcrate_player
             manhack.glee_ManhackCrateDamagingId = broken:GetCreationID()
 
         end
@@ -164,7 +159,7 @@ function ENT:Place()
     local crate = GM:ManhackCrate( self:GetPos2() )
 
     if self.player and self.player.GivePlayerScore and betrayalScore then
-        crate.player = self.player
+        crate.glee_manhackcrate_player = self.player
         self.player.glee_ManhacksThatCanDamage = self.player.glee_ManhacksThatCanDamage or {}
         self.player.glee_ManhacksThatCanDamage[ crate:GetCreationID() ] = true
         self.player:GivePlayerScore( betrayalScore )

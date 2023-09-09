@@ -1,6 +1,5 @@
 AddCSLuaFile( "shared.lua" )
 AddCSLuaFile( "cl_init.lua" )
-AddCSLuaFile( "lib/sh_termfuncs.lua" )
 AddCSLuaFile( "modules/cl_targetid.lua" )
 AddCSLuaFile( "modules/cl_scoreboard.lua" )
 AddCSLuaFile( "modules/cl_spectateflashlight.lua" )
@@ -168,7 +167,7 @@ function GM:Think()
 
         else
             if GAMEMODE.isBadSingleplayer then
-                huntersGlee_Announce( { players }, 1000, 1, "This gamemode is at it's best when started with at least 2 player slots.\nThat doesn't mean you need 2 people!" )
+                huntersGlee_Announce( players, 1000, 1, "This gamemode is at it's best when started with at least 2 player slots.\nThat doesn't mean you need 2 people!\nJust click the green \"Single Player\" and choose another option!" )
 
             end
             GAMEMODE.blockpvp   = true
@@ -287,7 +286,7 @@ function GM:getValidHunterPos()
         local wasTooClose = nil
 
         for _, pos in ipairs( GAMEMODE:allPlayerShootPositions() ) do
-            local visible, visResult = GAMEMODE:posCanSee( pos, checkPos )
+            local visible, visResult = terminator_Extras.posCanSee( pos, checkPos )
             local hitCloseBy = visResult.HitPos:DistToSqr( checkPos ) < 350^2
             if visible or hitCloseBy then
                 invalid = true

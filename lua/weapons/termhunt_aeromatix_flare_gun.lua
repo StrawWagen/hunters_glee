@@ -95,27 +95,12 @@ end
 
 function SWEP:ShootFlare()
     if not SERVER then return end
-
-    -- echo
-    local filter = RecipientFilter()
-    filter:AddAllPlayers()
     local owner = self:GetOwner()
-
-    if not IsValid( owner ) then SafeRemoveEntity( self ) return end
-
-    owner:EmitSound( "Weapon_FlareGun.Single", 90, 100, 1, CHAN_STATIC  )
-
-    local flareSound = CreateSound( self, "Weapon_FlareGun.Single", filter )
-    flareSound:SetDSP( 22 )
-    flareSound:SetSoundLevel( 140 )
-    flareSound:PlayEx( 0.8, 60 )
-
-    SafeRemoveEntityDelayed( Flare1, 12 )
-
-    sound.EmitHint( SOUND_COMBAT, owner:GetShootPos(), 6000, 1, owner )
 
     local flare = ents.Create( "termhunt_flare" )
     if not IsValid( flare ) then return end
+
+    owner:ViewPunch( Angle( -10,0,0 ) )
 
     local offsettedPos, dirToShoot = self:GetProjectileOffset()
 
@@ -128,6 +113,20 @@ function SWEP:ShootFlare()
         obj:SetVelocity( dirToShoot * 32000 )
 
     end
+
+    owner:EmitSound( "Weapon_FlareGun.Single", 90, 100, 1, CHAN_STATIC  )
+
+    -- ECHO echo echo ehco
+    local filter = RecipientFilter()
+    filter:AddAllPlayers()
+
+    local flareSound = CreateSound( self, "Weapon_FlareGun.Single", filter )
+    flareSound:SetDSP( 22 )
+    flareSound:SetSoundLevel( 140 )
+    flareSound:PlayEx( 0.8, 60 )
+
+    sound.EmitHint( SOUND_COMBAT, owner:GetShootPos(), 6000, 1, owner )
+
 end
 
 function SWEP:SecondaryAttack()
@@ -155,7 +154,7 @@ function SWEP:CanBePickedUpByNPCs()
     return true
 end
 
-function SWEP:GetNPCBulletSpread( prof )
+function SWEP:GetNPCBulletSpread( _ )
     return 0
 end
 
