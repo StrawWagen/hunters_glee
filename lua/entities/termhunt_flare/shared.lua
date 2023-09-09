@@ -108,7 +108,7 @@ function ENT:PhysicsCollide( colData, _ )
         local dmgInfo = DamageInfo()
         dmgInfo:SetDamage( impactDamage )
         dmgInfo:SetDamageType( DMG_BURN )
-        dmgInfo:SetAttacker( self:GetOwner() )
+        dmgInfo:SetAttacker( self.MyOwner )
         hitEnt:TakeDamageInfo( dmgInfo )
 
     end

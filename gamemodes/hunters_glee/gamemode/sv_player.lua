@@ -10,7 +10,7 @@ local restingBPMPermanent = 60 -- needs to match clientside var too
 
 local plyMeta = FindMetaTable( "Player" )
 local distNeededToBeOnArea = 25^2
-local posCanSee = terminator_Extras.posCanSee
+local posCanSeeComplex = terminator_Extras.PosCanSeeComplex
 
 -- manage the BPM of ppl HERE
 
@@ -135,7 +135,7 @@ function GM:calculateBPM( cur, players )
                 local closestPos = directlyUnderneathArea:GetClosestPointOnArea( plysShootPos )
                 closestPos.z = plysShootPos.z
 
-                onArea = posCanSee( _, plysShootPos, closestPos, MASK_SOLID_BRUSHONLY )
+                onArea = posCanSeeComplex( plysShootPos, closestPos, ply, MASK_SOLID_BRUSHONLY )
 
             end
 
@@ -203,10 +203,10 @@ function GM:calculateBPM( cur, players )
 
             -- when ply is off navmesh, slowly sap their life
             if doBpmDecrease and punishEscapingBool then
-                local badMovement = plysMoveType == MOVETYPE_NOCLIP or ply:Health() <= 0 or ply:GetObserverMode() ~= OBS_MODE_NONE or ply:InVehicle()
-                if not badMovement and hasNavmesh then
+                local exceptionMovement = plysMoveType == MOVETYPE_NOCLIP or ply:Health() <= 0 or ply:GetObserverMode() ~= OBS_MODE_NONE or ply:InVehicle()
+                if not exceptionMovement and hasNavmesh then
                     local BPMDecrease = ply.historicBPMDecrease or 0
-                    local added = 3
+                    local added = 2
                     if onLadder then
                         added = 1
 

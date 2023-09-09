@@ -271,6 +271,8 @@ function ENT:Place()
     timer.Create( timerName, 1, steps, function()
         if not IsValid( self ) then timer.Remove( timerName ) return end
         if not IsValid( plyToSwap ) then timer.Remove( timerName ) return end
+        furthestTerminator = furthestTerminator or self:GetFurthestTerminator()
+        if not IsValid( furthestTerminator ) then return end
         if not plyToSwap:Alive() then
             self:SwapPlayerAndTerminator( plyToSwap, furthestTerminator )
             timer.Remove( timerName )

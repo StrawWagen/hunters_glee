@@ -2472,8 +2472,11 @@ local function additionalHunter( purchaser )
 
         hunter.linkedPlayer = purchaser
 
-        purchaser:SetObserverMode( OBS_MODE_CHASE )
-        purchaser:SpectateEntity( hunter )
+        if purchaser:Health() <= 0 then
+            purchaser:SetObserverMode( OBS_MODE_CHASE )
+            purchaser:SpectateEntity( hunter )
+
+        end
 
         timer.Stop( timerKey )
 

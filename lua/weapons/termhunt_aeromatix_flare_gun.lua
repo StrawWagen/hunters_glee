@@ -105,8 +105,9 @@ function SWEP:ShootFlare()
     local offsettedPos, dirToShoot = self:GetProjectileOffset()
 
     flare:SetAngles( dirToShoot:Angle() )
-    flare:SetOwner( owner )
     flare:Spawn()
+
+    flare.MyOwner = owner
 
     flare:SetPos( offsettedPos )
     local obj = flare:GetPhysicsObject()
