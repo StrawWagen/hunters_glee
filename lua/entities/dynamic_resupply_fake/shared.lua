@@ -59,9 +59,6 @@ function ENT:Initialize()
         local count = selected.count or 1
         local class = selected.class
 
-        PrintTable( selected )
-        print( random, self.rareCreationChance )
-
         for _ = 1, count do
             local item = ents.Create( class )
             item:SetPos( self:GetPos() )

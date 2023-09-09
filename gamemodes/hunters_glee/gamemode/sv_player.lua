@@ -10,7 +10,7 @@ local restingBPMPermanent = 60 -- needs to match clientside var too
 
 local plyMeta = FindMetaTable( "Player" )
 local distNeededToBeOnArea = 25^2
-local posCanSee = GM.posCanSee
+local posCanSee = terminator_Extras.posCanSee
 
 -- manage the BPM of ppl HERE
 
@@ -578,7 +578,6 @@ local teamSpectating = GM.TEAM_SPECTATE
 local distToBlockProxy = 1250^2
 
 local doProxChatCached = nil
-local hasdonetheconfirmprint = nil
 local _IsValid = IsValid
 
 hook.Add( "Think", "glee_cachedoproxchat", function()
@@ -631,11 +630,6 @@ hook.Add( "PlayerCanHearPlayersVoice", "glee_voicechat_system", function( listen
             end
         elseif talkerIsSpectator then
             if _IsValid( listener.termhuntRadio ) and listener.glee_RadioChannel == 666 then
-                if not hasdonetheconfirmprint then
-                    hasdonetheconfirmprint = true
-                    print( "omg " .. listener:Name() .. " heard " .. talker:Name() )
-
-                end
                 return true
 
             end
