@@ -7,14 +7,18 @@
 -- door locker is fucked -- done
 -- make beacon supplies simpler -- done
 -- wasd kicks out of spectate -- done
+
+-- radio draw channel instead of ammo
+-- flares are SUPER LAGGYYYYY
+
 -- standardize +- placable hud stuff
--- barrels sweet spot
+-- barrels sweet spot?
 -- dead people can hear alive global?
--- give notifs when people break your crates/barrels
+-- give notifs when people break your crates/barrels?
 
 
 
-local thwap = {
+local thwaps = {
     Sound( "physics/body/body_medium_impact_hard3.wav" ),
     Sound( "physics/body/body_medium_impact_hard2.wav" ),
     Sound( "physics/body/body_medium_break2.wav" ),
@@ -172,7 +176,7 @@ local function bloodDonorPurchase( purchaser )
     purchaser:SetHealth( remainingHealth )
 
     for _ = 0, 2 do
-        playRandomSound( purchaser, thwap, 75, math.random( 100, 120 ) )
+        playRandomSound( purchaser, thwaps, 75, math.random( 100, 120 ) )
 
     end
 end
@@ -1713,7 +1717,7 @@ local function witnessPurchase( purchaser )
             game.SetTimeScale( 0.4 )
             util.ScreenShake( gettingAttacked:GetPos(), 10, 0.1, 3, 5000 )
             for _ = 0, 4 do
-                playRandomSound( gettingAttacked, thwap, 150, math.random( 20, 40 ) )
+                playRandomSound( gettingAttacked, thwaps, 150, math.random( 20, 40 ) )
 
             end
 

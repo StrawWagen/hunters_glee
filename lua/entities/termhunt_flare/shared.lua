@@ -61,18 +61,35 @@ function ENT:Initialize()
 
     end
 
+    -- the one that gives the big sprite
     local flareReal = ents.Create( "env_flare" )
-    if not IsValid( flareReal ) then return false end
+    if IsValid( flareReal ) then
+        flareReal.terminatorIgnoreEnt = true
+        flareReal:SetKeyValue( "spawnflags", 1 )
+        flareReal:SetKeyValue( "scale", "8" )
+        flareReal:SetParent( self )
+        flareReal:Spawn()
+        flareReal:Activate()
+        flareReal:Fire( "Start", tostring( lifetime ), 0.1 )
 
-    flareReal.terminatorIgnoreEnt = true
-    flareReal:SetKeyValue( "spawnflags", 0 )
-    flareReal:SetKeyValue( "scale", "8" )
-    flareReal:SetParent( self )
-    flareReal:Spawn()
-    flareReal:Activate()
-    flareReal:Fire( "Start", tostring( lifetime ), 0.1 )
+        self:DeleteOnRemove( flareReal )
 
-    self:DeleteOnRemove( flareReal )
+    end
+
+    -- the one with the light
+    local flareLight = ents.Create( "env_flare" )
+    if IsValid( flareLight ) then
+        flareLight.terminatorIgnoreEnt = true
+        flareLight:SetKeyValue( "spawnflags", 0 )
+        flareLight:SetKeyValue( "scale", "2" )
+        flareLight:SetParent( self )
+        flareLight:Spawn()
+        flareLight:Activate()
+        flareLight:Fire( "Start", tostring( lifetime ), 0.1 )
+
+        self:DeleteOnRemove( flareLight )
+
+    end
 
     self:SetDeathTime( CurTime() + lifetime )
 

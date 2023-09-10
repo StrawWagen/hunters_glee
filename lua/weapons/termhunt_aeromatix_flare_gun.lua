@@ -112,7 +112,7 @@ function SWEP:ShootFlare()
     flare:SetPos( offsettedPos )
     local obj = flare:GetPhysicsObject()
     if IsValid( obj ) then
-        obj:SetVelocity( dirToShoot * 32000 )
+        obj:SetVelocity( dirToShoot * 24000 )
 
     end
 
