@@ -45,3 +45,6 @@ hook.Add( "huntersglee_emptyserver", "glee_mapvote_reset", function()
     mapVoteIncrement = 0
 
 end )
+
+--ttt_bank_b13
+--ttt_frontier_land_b2

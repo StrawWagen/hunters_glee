@@ -599,11 +599,7 @@ hook.Add( "PlayerCanHearPlayersVoice", "glee_voicechat_system", function( listen
 
     if listenerIsSpectator then
         if talkerIsPlaying then
-            if _IsValid( talker.termhuntRadio ) and talker.glee_RadioChannel == 666 then
-                return true
-
-            end
-            return true, true
+            return true
 
         elseif talkerIsSpectator then
             return true

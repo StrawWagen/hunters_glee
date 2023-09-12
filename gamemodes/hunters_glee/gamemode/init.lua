@@ -77,7 +77,7 @@ GM.roundScore       = {}
 GM.roundExtraData   = {}
 
 GM.roundStartAfterNavCheck  = 60
-GM.roundStartNormal         = 60
+GM.roundStartNormal         = 40
 
 GM.nextStateTransmit = 0
 GM.startedNavmeshGeneration = nil
