@@ -27,7 +27,10 @@ if CLIENT then
         nextNoMoreInversion = CurTime() + 0.1
 
         local toWipe = net.ReadEntity()
-        toWipe:NukeHighlighter()
+        if IsValid( toWipe ) then
+            toWipe:NukeHighlighter()
+
+        end
 
         if toWipe ~= LocalPlayer().ghostEnt then return end
 

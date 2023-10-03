@@ -28,7 +28,10 @@ if CLIENT then
         nextNoMoreConduit = CurTime() + 0.1
 
         local toWipe = net.ReadEntity()
-        toWipe:CircleAway()
+        if IsValid( toWipe ) then
+            toWipe:CircleAway()
+
+        end
 
         if toWipe ~= LocalPlayer().ghostEnt then return end
         LocalPlayer().ghostEnt = nil
@@ -230,7 +233,7 @@ function ENT:Place()
         divineIncrement = divineIncrement + 1
 
         -- sparks
-        if divineIncrement < 100 then
+        if divineIncrement < 75 then
             for _ = 1, 2 do
                 if math.random( 1, 60 ) > divineIncrement then continue end
 
@@ -250,7 +253,7 @@ function ENT:Place()
 
             end
         -- start striking after 120
-        elseif ( divineIncrement > 120 ) and ( divineIncrement < 400 ) then
+        elseif ( divineIncrement > 100 ) and ( divineIncrement < 400 ) then
             if math.random( 175, 400 ) < divineIncrement then return end
             if math.random( 215, 400 ) < divineIncrement then return end
 
