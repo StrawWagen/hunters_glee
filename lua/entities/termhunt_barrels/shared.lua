@@ -25,9 +25,18 @@ if CLIENT then
         local screenMiddleH = ScrH() / 2
 
         local scoreGained = math.Round( self:GetGivenScore() )
+        local scoreGainedAlt = math.Round( self:GetGivenScoreAlt() )
 
-        local scoreGainedString = "Barreling Score: " .. tostring( scoreGained )
-        surface.drawShadowedTextBetter( scoreGainedString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
+        local scoreString = "Barreling Score: " .. tostring( scoreGained )
+        local stringPt2 = "\nToo far/close to players cost: "
+
+        if scoreGainedAlt ~= 0 then
+            scoreString = scoreString .. stringPt2 .. tostring( scoreGainedAlt )
+
+        end
+
+        surface.drawShadowedTextBetter( scoreString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
+
 
     end
 end
@@ -96,12 +105,21 @@ if not SERVER then return end
 local MEMORY_VOLATILE = 8
 local barrelPunishmentDist = 1250
 
+local tooCloseToPlySqr = 200^2
+local tooFarFromPlySqr = 1500^2
+
 function ENT:UpdateGivenScore()
     local smallestPunishmentDist = barrelPunishmentDist^2
     local tooCloseCount = 0
     local punishmentCount = 0
 
     local myPos = self:GetPos()
+    local nearestPly, nearestPlyDistSqr
+
+    if GAMEMODE.ISHUNTERSGLEE then
+        nearestPly, nearestPlyDistSqr = GAMEMODE:nearestAlivePlayer( myPos )
+
+    end
 
     if termhunt_barrels_spawned then
         for _, currentBarrel in ipairs( termhunt_barrels_spawned ) do
@@ -128,6 +146,16 @@ function ENT:UpdateGivenScore()
     local barrelCount = 0
     if termhunt_barrels_spawned and #termhunt_barrels_spawned then
         barrelCount = #termhunt_barrels_spawned
+
+    end
+
+    if IsValid( nearestPly ) and ( nearestPlyDistSqr < tooCloseToPlySqr or nearestPlyDistSqr > tooFarFromPlySqr ) then
+        local proxPenalty = 40
+        punishmentGiven = punishmentGiven + proxPenalty
+        self:SetGivenScoreAlt( -proxPenalty )
+
+    else
+        self:SetGivenScoreAlt( 0 )
 
     end
 

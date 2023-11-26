@@ -8,7 +8,6 @@ local tStartOffset = Vector( 0, 0, -2 )
 local airCheckHull = Vector( 17, 17, 1 )
 local restingBPMPermanent = 60 -- needs to match clientside var too
 
-local plyMeta = FindMetaTable( "Player" )
 local distNeededToBeOnArea = 25^2
 local posCanSeeComplex = terminator_Extras.PosCanSeeComplex
 
@@ -83,9 +82,8 @@ function GM:calculateBPM( cur, players )
 
             ply.nextBPMCalc = cur + math.random( 0.15, 0.25 )
 
-            local initialRestingScale = 1
             -- make resting bpm bigger
-            local restingBpmScale = hook.Run( "termhunt_restingbpmscale", ply, initialRestingScale ) or initialRestingScale
+            local restingBpmScale = hook.Run( "huntersglee_restingbpmscale", ply ) or 1
 
             local restingBPM = restingBPMPermanent * restingBpmScale
             local mentosBPM = 0
@@ -306,6 +304,8 @@ function GM:manageServersideCountOfBeats()
     end
 end
 
+
+
 hook.Add( "huntersglee_givescore", "huntersglee_storealivescoring", function( scorer, addedscore )
     if not IsValid( scorer ) then return end
     if not scorer:Alive() then return end
@@ -428,6 +428,10 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
                 if #stuffToSpectate <= 0 then return end
                 local sortedStuffToSpectate = table.Copy( stuffToSpectate )
                 local sortPos = ply:GetPos()
+                if eyeTrace.Hit then
+                    sortPos = eyeTrace.HitPos
+
+                end
 
                 table.sort( sortedStuffToSpectate, function( a, b ) -- sort players by distance to pos
                     local ADist = a:GetShootPos():DistToSqr( sortPos )
@@ -576,6 +580,7 @@ end )
 local teamPlaying = GM.TEAM_PLAYING
 local teamSpectating = GM.TEAM_SPECTATE
 local distToBlockProxy = 1250^2
+local distToStopHearingAlivePlayers = 1500^2
 
 local doProxChatCached = nil
 local _IsValid = IsValid
@@ -598,13 +603,15 @@ hook.Add( "PlayerCanHearPlayersVoice", "glee_voicechat_system", function( listen
     local listenerIsPlaying = listenerTeam == teamPlaying
 
     if listenerIsSpectator then
-        if talkerIsPlaying then
+        if talkerIsPlaying and talker:GetPos():DistToSqr( listener:GetPos() ) < distToStopHearingAlivePlayers then
             return true
 
         elseif talkerIsSpectator then
             return true
 
         end
+        return false
+
     elseif listenerIsPlaying then
         if talkerIsPlaying then
             if _IsValid( talker.termhuntRadio ) and _IsValid( listener.termhuntRadio ) and talker.glee_RadioChannel > 0 and listener.glee_RadioChannel > 0 then
@@ -645,8 +652,8 @@ function GM:PlayerSpawn( pl, transiton )
     local newPos = nil
     local center, area = nil, nil
 
-    if pl.resurrectPos then
-        newPos = pl.resurrectPos
+    if pl.unstuckOrigin then
+        newPos = pl.unstuckOrigin
 
     elseif IsValid( anotherAlivePlayer ) and not hook.Run( "huntersglee_blockspawn_nearplayers", pl, anotherAlivePlayer ) and GAMEMODE.hasNavmesh then
         for count = 1, 12 do
@@ -696,7 +703,7 @@ function GM:PlayerSpawn( pl, transiton )
         local offsettedNewPos = newPos + Vector( 0, 0, 15 )
         timer.Simple( engine.TickInterval(), function()
             if not IsValid( pl ) then return end
-            pl:SetPos( offsettedNewPos ) -- setpos twice... because....
+            pl:TeleportTo( offsettedNewPos )
         end )
         timer.Simple( engine.TickInterval() * 2, function()
             if not IsValid( pl ) then return end
@@ -886,10 +893,11 @@ hook.Add( "EntityTakeDamage", "huntersglee_makepvpreallybad", function( dmgTarg,
     local attacker = dmg:GetAttacker()
     local inflictor = dmg:GetInflictor()
     local areBothPlayers = dmgTarg:IsPlayer() and attacker:IsPlayer()
+    local selfDamage = dmgTarg == attacker
     if areBothPlayers and GAMEMODE.blockpvp == true then
         dmg:ScaleDamage( 0 )
 
-    elseif areBothPlayers and not dmg:IsExplosionDamage() then --lol explode
+    elseif areBothPlayers and not selfDamage and not dmg:IsExplosionDamage() then --lol explode
         if dmg:IsDamageType( DMG_DISSOLVE ) and inflictor and inflictor:GetClass() == "prop_combine_ball" then
             local nextpermittedballdamage = dmgTarg.huntersglee_nextpermittedballdamage or 0
             if nextpermittedballdamage > CurTime() then
@@ -897,16 +905,16 @@ hook.Add( "EntityTakeDamage", "huntersglee_makepvpreallybad", function( dmgTarg,
                 return
 
             end
-            dmgTarg.huntersglee_nextpermittedballdamage = CurTime() + 0.75
+            dmgTarg.huntersglee_nextpermittedballdamage = CurTime() + 0.5
 
-            dmg:SetDamage( dmgTarg:GetMaxHealth() * 0.55 )
+            dmg:SetDamage( dmgTarg:GetMaxHealth() * 0.9 )
             dmg:SetDamageForce( dmg:GetDamageForce() * 12 )
             dmgTarg:EmitSound( "NPC_CombineBall.KillImpact" )
 
             damagedplayercount = inflictor.huntersglee_ball_damagedplayercount or 0
             inflictor.huntersglee_ball_damagedplayercount = damagedplayercount + 1
 
-            if inflictor.huntersglee_ball_damagedplayercount >= 3 then
+            if inflictor.huntersglee_ball_damagedplayercount >= 6 then
                 inflictor:Fire( "Explode" )
 
             end
@@ -920,27 +928,6 @@ end )
 function GM:CacheNavareas( players )
     for _, ply in ipairs( players ) do
         ply:CacheNavArea()
-
-    end
-end
-
-function plyMeta:GetNavAreaData()
-    if not self.CachedNavArea then
-        self:CacheNavArea()
-    end
-    return self.CachedNavArea, self.SqrDistToCachedNavArea
-
-end
-
-function plyMeta:CacheNavArea()
-    local myPos = self:GetPos()
-    local area = navmesh.GetNearestNavArea( myPos, true, navCheckDist, false, true )
-    self.CachedNavArea = area
-    if area then
-        self.SqrDistToCachedNavArea = myPos:DistToSqr( area:GetClosestPointOnArea( myPos ) )
-
-    else
-        self.SqrDistToCachedNavArea = math.huge
 
     end
 end

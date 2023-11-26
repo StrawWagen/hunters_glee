@@ -27,11 +27,16 @@ function GM:purchaseItem( ply, toPurchase )
         end
     end
 
-    if dat.cooldown and dat.cooldown > 0 then
-        GAMEMODE:doShopCooldown( ply, toPurchase, dat.cooldown )
+    local theCooldown
+    if dat.cooldown then
+        theCooldown = GAMEMODE:translateShopItemCooldown( ply, toPurchase, dat.cooldown )
+
+    end
+    if theCooldown and theCooldown > 0 then
+        GAMEMODE:doShopCooldown( ply, toPurchase, theCooldown )
 
         net.Start( "glee_sendshopcooldowntoplayer" )
-            local cooldownClamped = math.Clamp( dat.cooldown, 0, 2147483645 ) -- if cooldown == 2147483645 then assume infinite, and only allow one purchase per round.
+            local cooldownClamped = math.Clamp( theCooldown, 0, 2147483645 ) -- if cooldown == 2147483645 then assume infinite, and only allow one purchase per round.
             net.WriteFloat( cooldownClamped )
             net.WriteString( toPurchase )
         net.Send( ply )
@@ -40,6 +45,7 @@ function GM:purchaseItem( ply, toPurchase )
 
     local cost = GAMEMODE:shopItemCost( toPurchase, ply )
 
+    -- cool purchase sound, kaching!
     net.Start( "glee_confirmpurchase" )
         net.WriteFloat( cost )
         net.WriteString( toPurchase )
@@ -66,7 +72,7 @@ function GM:purchaseItem( ply, toPurchase )
     end
 end
 
-local function autoComplete( cmd, stringargs )
+local function autoComplete( _, stringargs )
     local items = table.GetKeys( GAMEMODE.shopItems )
 
     --- Trim the arguments & make them lowercase.
@@ -79,10 +85,12 @@ local function autoComplete( cmd, stringargs )
             --- Add the player's name into the auto-complete.
             theComplete = "termhunt_purchase \"" .. item .. "\""
             table.insert( tbl, theComplete )
+
         end
     end
     --- Return the table for auto-complete.
     return tbl
+
 end
 
 concommand.Add( "termhunt_purchase", function( ply, _, args, _ )

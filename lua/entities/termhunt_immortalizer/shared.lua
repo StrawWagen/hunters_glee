@@ -65,10 +65,10 @@ if not SERVER then return end
 function ENT:UpdateGivenScore()
     if not IsValid( self:GetCurrTarget() ) then return end
     if self:GetCurrTarget():IsPlayer() then
-        self:SetGivenScore( -300 )
+        self:SetGivenScore( -200 )
 
     elseif self:GetCurrTarget():IsNextBot() then
-        self:SetGivenScore( -150 )
+        self:SetGivenScore( -100 )
 
     end
 end

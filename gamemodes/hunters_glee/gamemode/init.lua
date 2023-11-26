@@ -55,7 +55,7 @@ GM.SpawnTypes = {
 local overrideCountVar = CreateConVar( "huntersglee_spawneroverridecount", 0, bit.bor( FCVAR_NOTIFY, FCVAR_ARCHIVE ), "Overrides how many terminators will spawn, 0 for automatic count. Above 5 WILL lag.", 0, 32 )
 
 -- do greedy patch once per session
-HuntersGleeDoneTheGreedyPatch = HuntersGleeDoneTheGreedyPatch or nil
+GM.HuntersGleeDoneTheGreedyPatch = GM.HuntersGleeDoneTheGreedyPatch or nil
 
 GM.IsReallyHuntersGlee = true
 
@@ -76,7 +76,7 @@ GM.deadPlayers      = {}
 GM.roundScore       = {}
 GM.roundExtraData   = {}
 
-GM.roundStartAfterNavCheck  = 60
+GM.roundStartAfterNavCheck  = 40
 GM.roundStartNormal         = 40
 
 GM.nextStateTransmit = 0
@@ -161,7 +161,7 @@ function GM:Think()
         end
     end
     if currState == GAMEMODE.ROUND_INACTIVE then --round is waiting to begin
-        if GAMEMODE.termHunt_roundStartTime < cur then
+        if GAMEMODE.termHunt_roundStartTime < cur and GAMEMODE.HuntersGleeDoneTheGreedyPatch then
             GAMEMODE:roundStart() --
             GAMEMODE.isBadSingleplayer = nil --display that message once!
 
@@ -323,6 +323,8 @@ function GM:getValidHunterPos()
 end
 
 function GM:spawnHunter( classOverride )
+    if not GAMEMODE.HuntersGleeDoneTheGreedyPatch then return end
+
     local spawnPos, valid = GAMEMODE:getValidHunterPos()
 
     if not valid then return end
@@ -526,12 +528,13 @@ hook.Remove( "Think", "doGreedyPatchThinkHook" )
 -- involves adding areas under doors, windows, and then finding sections of navmesh that are separate from the biggest section, then linking them back up to it.
 function GM:SetupTheLargestGroupsNStuff()
 
+    -- navmesh groups need to be at least 40% the size of the largest one to be considered "playable"
     GAMEMODE.biggestGroupsRatio = 0.4
     GAMEMODE.GreedyPatchCouroutine = nil
 
     hook.Add( "Think", "doGreedyPatchThinkHook", function()
         local patchResult = nil
-        if not HuntersGleeDoneTheGreedyPatch and not game.SinglePlayer() then
+        if not GAMEMODE.HuntersGleeDoneTheGreedyPatch and not game.SinglePlayer() then
 
             if not GAMEMODE.GreedyPatchCouroutine then
                 GAMEMODE:speakAsHuntersGlee( "Beginning greedy navpatcher process..." )
@@ -541,7 +544,7 @@ function GM:SetupTheLargestGroupsNStuff()
             GAMEMODE.GreedyPatchCouroutine = GAMEMODE.GreedyPatchCouroutine or coroutine.create( GAMEMODE.DoGreedyPatch )
 
             local oldTime = SysTime()
-            while abs_Local( oldTime - SysTime() ) < 0.001 and GAMEMODE.GreedyPatchCouroutine and coroutine_status( GAMEMODE.GreedyPatchCouroutine ) ~= "dead" do
+            while abs_Local( oldTime - SysTime() ) < 0.01 and GAMEMODE.GreedyPatchCouroutine and coroutine_status( GAMEMODE.GreedyPatchCouroutine ) ~= "dead" do
                 patchResult, curError = coroutine_resume( GAMEMODE.GreedyPatchCouroutine, GAMEMODE )
 
                 if curError and curError ~= "done" then ErrorNoHaltWithStack( curError ) break end
@@ -617,9 +620,9 @@ function GM:removeBlockers() -- mess up locked doors on door heavy maps
             local area = GAMEMODE:getNearestNavFloor( door:WorldSpaceCenter() )
 
             if area and area:IsValid() then
-                -- door is creating blocked flag on huge areas, probably breaking pathing
+                -- door is creating blocked flag, unlock it!
                 local maxSize = math.max( area:GetSizeX(), area:GetSizeY() )
-                areaIsBig = maxSize > 51
+                areaIsBig = maxSize > 26
 
             end
 
@@ -671,7 +674,7 @@ function GM:handleGenerating( currState )
     end
     if navmeshMightBeGeneratingUntil then
         navmeshMightBeGeneratingUntil = nil
-        HuntersGleeDoneTheGreedyPatch = nil
+        GAMEMODE.HuntersGleeDoneTheGreedyPatch = nil
         RunConsoleCommand( "gmod_admin_cleanup" )
 
     end

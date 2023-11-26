@@ -154,7 +154,7 @@ local function SparkEffect( SparkPos )
 end
 
 function ENT:UpdateGivenScore()
-    self:SetGivenScore( -600 )
+    self:SetGivenScore( -450 )
 
 end
 

@@ -239,6 +239,7 @@ function ENT:Touch( touched )
 end
 
 function ENT:Use( user )
+    if user:Health() <= 0 then return end
     self:DoScore( user )
 
 end

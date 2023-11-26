@@ -8,7 +8,7 @@ local function shopCategoryName( identifier )
     return "termhunt_shopcategory_" .. identifier
 end
 
--- Your score font
+-- YOUR CURRENT SCORE
 local fontData = {
     font = "Arial",
     extended = false,
@@ -29,7 +29,7 @@ local fontData = {
 surface.CreateFont( "termhuntShopScoreFont", fontData )
 
 -- CATEGORY
-local fontData = {
+fontData = {
     font = "Arial",
     extended = false,
     size = 50,
@@ -49,7 +49,7 @@ local fontData = {
 surface.CreateFont( "termhuntShopCategoryFont", fontData )
 
 -- ITEMS
-local fontData = {
+fontData = {
     font = "Arial",
     extended = false,
     size = 25,
@@ -69,7 +69,7 @@ local fontData = {
 surface.CreateFont( "termhuntShopItemFont", fontData )
 
 -- ITEMS
-local fontData = {
+fontData = {
     font = "Arial",
     extended = false,
     size = 22.5,

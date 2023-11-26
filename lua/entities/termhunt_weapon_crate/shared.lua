@@ -100,7 +100,7 @@ function GM:WeaponsCrate( pos )
     local crate = ents.Create( "item_item_crate" )
     crate:SetPos( pos )
     crate:SetKeyValue( "ItemClass", "dynamic_weapons" )
-    crate:SetKeyValue( "ItemCount", 4 )
+    crate:SetKeyValue( "ItemCount", 5 )
     crate:Spawn()
 
     crate.terminatorHunterInnateReaction = function()

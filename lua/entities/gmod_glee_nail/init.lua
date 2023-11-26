@@ -3,7 +3,7 @@ AddCSLuaFile( "cl_init.lua" )
 AddCSLuaFile( "shared.lua" )
 AddCSLuaFile()
 
-include('shared.lua')
+include( "shared.lua" )
 
 /*---------------------------------------------------------
    Name: Initialize
@@ -120,15 +120,15 @@ hook.Add( "EntityTakeDamage", "nail_break_when_nailed_damaged", function( target
     if dmg:IsDamageType( DMG_CRUSH ) and IsValid( dmg:GetAttacker() ) and dmg:GetAttacker().isTerminatorHunterBased and IsValid( dmg:GetInflictor() ) and dmg:GetInflictor().isTerminatorHunterBased then return end
 
     -- randomly break nails, if lots of damage then break reliably
-    local damage = dmg:GetDamage() 
+    local damage = dmg:GetDamage()
 
     if dmg:IsExplosionDamage() then
-        damage = damage * 2
+        damage = damage * 4
 
     end
 
     while damage > 0 do
-        local bite = math.random( 1, 175 )
+        local bite = math.random( 1, 150 )
         tempDamage = damage - bite
         local randNail, nailsKey = table.Random( nails )
         if IsValid( randNail ) then
@@ -159,7 +159,6 @@ end )
 -- doesn't seem to work
 function ENT:Use( user )
     if not user:IsPlayer() then return end
-    if generic_WaitForProgressBar( user, "termhunt_nail_pull", 0.25, 10 ) < 100 then return end
 
     self:Break()
 

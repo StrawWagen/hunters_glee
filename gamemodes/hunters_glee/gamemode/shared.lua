@@ -2,6 +2,15 @@
 
 DeriveGamemode( "base" )
 
+-- GLOBALS!
+GM.INVALID          = -1 -- tell people to install a navmesh
+GM.ROUND_SETUP      = 0 -- wait until the navmesh has definitely spawned
+GM.ROUND_ACTIVE     = 1 -- death has consequences and score can accumulate
+GM.ROUND_INACTIVE   = 2 -- let players run around and prevent death
+GM.ROUND_LIMBO      = 3 -- just display winners
+
+GM.ISHUNTERSGLEE = true
+
 include( "player_class/player_termrunner.lua" )
 
 include( "sh_shopshared.lua" )
@@ -19,15 +28,6 @@ GM.Name = "Hunter's Glee"
 GM.Author = "StrawWagen"
 GM.Email = "N/A"
 GM.Website = "N/A"
-
--- GLOBALS!
-GM.INVALID          = -1 -- tell people to install a navmesh
-GM.ROUND_SETUP      = 0 -- wait until the navmesh has definitely spawned
-GM.ROUND_ACTIVE     = 1 -- death has consequences and score can accumulate
-GM.ROUND_INACTIVE   = 2 -- let players run around and prevent death
-GM.ROUND_LIMBO      = 3 -- just display winners
-
-GM.ISHUNTERSGLEE = true
 
 
 function GM:GetHuntersClass()

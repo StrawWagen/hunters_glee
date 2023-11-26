@@ -38,7 +38,7 @@ SWEP.Primary.Spread                 = 0                         -- How Much Of A
 SWEP.Primary.NumberofShots         = 0                          -- How Many Shots Come Out (should Be Zero)
 SWEP.Primary.Recoil             = 6                             -- How Much Jump After An Attack        
 SWEP.Primary.ClipSize           = math.huge                            -- Size Of The Clip
-SWEP.Primary.Delay                 = 0.6                        -- How longer Till Our Next Attack       
+SWEP.Primary.Delay                 = 0.8                        -- How longer Till Our Next Attack       
 SWEP.Primary.Force                 = 0                          -- The Amount Of Impact We Do To The World 
 SWEP.Primary.Distance             = 75                          -- How far can we reach?
 SWEP.SwingSound           = "weapons/iceaxe/iceaxe_swing1.wav"  -- Sound we make when we swing
@@ -99,16 +99,19 @@ sound.Add( {
     }
 } )
 
+local nailTooCloseDist = 4
+local yellow = Color( 255, 220, 0, a )
+
 function SWEP:DrawWeaponSelection(x,y,w,t,a)
 
-    draw.SimpleText("C","creditslogo",x+w/2,y,Color(255, 220, 0,a),TEXT_ALIGN_CENTER)
+    draw.SimpleText( "C", "creditslogo", x + w / 2, y, yellow, TEXT_ALIGN_CENTER )
 
 end
 
 function SWEP:Initialize()
-    self:SetWeaponHoldType(self.HoldType)
-    if ( SERVER ) then
-        self:SetWeaponHoldType(self.HoldType)
+    self:SetWeaponHoldType( self.HoldType )
+    if SERVER then
+        self:SetWeaponHoldType( self.HoldType )
         self:SetClip1( 20 )
     end
 end
@@ -132,13 +135,13 @@ function SWEP:EquipAmmo( newOwner )
 end
 
 function SWEP:Charge()
-    self:SetClip1( self:Clip1() + 40 )
+    self:SetClip1( self:Clip1() + 20 )
 
 end
 
 SWEP.Offset = {
-    Pos = {Up = -5, Right = 1, Forward = 3, },
-    Ang = {Up = 0, Right = 0, Forward = 90,}
+    Pos = { Up = -5, Right = 1, Forward = 3, },
+    Ang = { Up = 0, Right = 0, Forward = 90, }
 }
 function SWEP:DrawWorldModel()
     local pl = self:GetOwner()
@@ -215,8 +218,8 @@ function SWEP:BadHit( tr )
             tr.Entity:EmitSound( "Weapon_Crowbar.Melee_Hit", 75 )
             owner:EmitSound( "npc/zombie/claw_strike3.wav", 75, math.random( 120, 140 ), 1, CHAN_STATIC )
 
-            rndb = rndb * 4
-            rnda = rnda * 4
+            rndb = rndb * 5
+            rnda = rnda * 5
 
         else
             owner:EmitSound( "physics/metal/metal_grenade_impact_hard1.wav", 70, math.random( 150, 160 ), 1, CHAN_STATIC )
@@ -283,7 +286,7 @@ function SWEP:PrimaryAttack()
 
     local tr = {}
     tr.start = trace.HitPos
-    tr.endpos = trace.HitPos + (owner:GetAimVector() * 20.0)
+    tr.endpos = trace.HitPos + ( owner:GetAimVector() * 20.0 )
     tr.filter = { owner, whatWeHit }
 
     local nails = whatWeHit.huntersglee_breakablenails or {}
@@ -298,12 +301,23 @@ function SWEP:PrimaryAttack()
         bullet.Num    = 1
         bullet.Src    = owner:GetShootPos()
         bullet.Dir    = owner:GetAimVector()
-        bullet.Spread = Vector(0, 0, 0)
+        bullet.Spread = Vector( 0, 0, 0 )
         bullet.Tracer = 0
         bullet.Force  = 10
         bullet.Distance = self.Primary.Distance
         bullet.Damage = 0
-        owner:FireBullets(bullet)
+        owner:FireBullets( bullet )
+
+        local nearNails = ents.FindInSphere( trace.HitPos, nailTooCloseDist * 10 )
+        for _, nail in ipairs( nearNails ) do
+            if nail:GetClass() ~= "gmod_glee_nail" then continue end
+            local nailsPos = nail:GetPos() + nail:GetForward() * nail:GetModelRadius() / 2
+            if nailsPos:DistToSqr( trace.HitPos ) > nailTooCloseDist^2 then continue end
+
+            self:BadHit( trace )
+            return false
+
+        end
 
         if not self:ValidEntityToNail( secondHit, trTwo.PhysicsBone ) then
             if not IsValid( secondHit.Entity ) then
@@ -320,8 +334,8 @@ function SWEP:PrimaryAttack()
         owner:SetAnimation( PLAYER_ATTACK1 )
         self:SetNextPrimaryFire( CurTime() + self.Primary.Delay )
 
-        local rnda = self.Primary.Recoil * -1 
-        local rndb = self.Primary.Recoil * math.random(-1, 2) 
+        local rnda = self.Primary.Recoil * -2 
+        local rndb = self.Primary.Recoil * math.random(-2, 3) 
         owner:ViewPunch( Angle( rnda,rndb,rnda ) )
 
         -- Client can bail now

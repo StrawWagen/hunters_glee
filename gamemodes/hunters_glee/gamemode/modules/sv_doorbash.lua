@@ -123,3 +123,8 @@ hook.Add( "EntityTakeDamage", "huntersglee_doorsexplode", function( target, dmg 
     MakeDoor( dmg:GetDamagePosition(), target.realDoor, dmg )
 
 end )
+
+hook.Add( "GravGunPickupAllowed", "glee_dontgravgun_doordamagelisteners", function( _, gravgunned )
+    if gravgunned.isDoorDamageListener then return false end
+
+end )

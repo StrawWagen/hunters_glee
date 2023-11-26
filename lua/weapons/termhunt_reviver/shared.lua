@@ -157,7 +157,7 @@ function SWEP:ResurrectPly( ent )
 
     self:TakePrimaryAmmo( 1 )
 
-    ent.resurrectPos = self.toResurrectPos
+    ent.unstuckOrigin = self.toResurrectPos
 
     self:GetOwner():EmitSound( HealSound, 100, 90, 1, CHAN_STATIC )
     self:GetOwner():EmitSound( "ambient/levels/labs/electric_explosion1.wav", 100, 120, 1, CHAN_STATIC, SND_NOFLAGS, 10 )
@@ -176,8 +176,8 @@ function SWEP:ResurrectPly( ent )
     ent:Spawn()
     timer.Simple( 0, function()
         if not IsValid( ent ) then return end
-        ent:SetPos( ent.resurrectPos )
-        ent.resurrectPos = nil
+        ent:SetPos( ent.unstuckOrigin )
+        ent.unstuckOrigin = nil
     end )
 
     self:AttackAnim()

@@ -57,7 +57,9 @@ function GM:DoGreedyPatch()
 
     GAMEMODE:TakePotentialLinkagesAndLinkTheValidOnes( potentialLinkages )
 
-    HuntersGleeDoneTheGreedyPatch = true
+    GAMEMODE:speakAsHuntersGlee( "Greedy navpatcher is... DONE!" )
+
+    GAMEMODE.HuntersGleeDoneTheGreedyPatch = true
 
     coroutine_yield( "done" )
 
@@ -238,6 +240,7 @@ function GM:FindPotentialLinkagesBetweenNavAreaGroups( groups, maxLinksPerGroup 
             if group1Id ~= group2Id and not alreadyDone then -- skip if checking the same group
                 local currGroupLinkages = {} -- create an array to store linkages for each group pair
                 for _, area1 in ipairs( group1 ) do
+                    coroutine_yield()
                     for _, area2 in ipairs( group2 ) do
                         -- dont even bother, too far
                         if area1:GetCenter():DistToSqr( area2:GetCenter() ) > distanceToJustIgnore then continue end

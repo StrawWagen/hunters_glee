@@ -15,6 +15,8 @@ ENT.Model = "models/Items/item_item_crate.mdl"
 ENT.HullCheckSize = Vector( 20, 20, 10 )
 ENT.PosOffset = Vector( 0, 0, 10 )
 
+ENT.SwapSound = "ambient/levels/labs/electric_explosion5.wav"
+
 if SERVER then
     util.AddNetworkString( "glee_cleartargetedplacable" )
 
@@ -80,7 +82,7 @@ if CLIENT then
 
         elseif self.lastNearestTarget ~= self:GetCurrTarget() then
             self.lastNearestTarget = self:GetCurrTarget()
-            self:GetCurrTarget():EmitSound( "ambient/levels/labs/electric_explosion5.wav", 100, 200 )
+            self:GetCurrTarget():EmitSound( self.SwapSound, 100, 200 )
             self.player.placableSnapHighligher:SetParent( self:GetCurrTarget() )
             self.player.placableSnapHighligher:SetModel( self:GetCurrTarget():GetModel() )
             self.player.placableSnapHighligher:SetPos( self:GetCurrTarget():GetPos() )
@@ -185,7 +187,7 @@ function ENT:SwapPlayerAndTerminator( player, terminator )
     beam:SetScale( 1.8 )
     util.Effect( "eff_huntersglee_dicebeam", beam, true )
 
-    player:SetPos( terminatorPos )
+    player:TeleportTo( terminatorPos )
     terminator:SetPos( playerPos )
 
     player:unstuckFullHandle()
@@ -210,10 +212,18 @@ function ENT:CalculateCanPlace()
 
 end
 
+function ENT:OnNewTarget()
+end
+
 function ENT:ManageMyPos()
     self:SetPos( self.player:GetEyeTrace().HitPos + self.PosOffset )
-    self:SetCurrTarget( self:GetNearestTarget() )
+    local oldTarg = self:GetCurrTarget()
+    local newTarg = self:GetNearestTarget()
+    self:SetCurrTarget( newTarg )
+    if oldTarg ~= newTarg then
+        self:OnNewTarget( oldTarg, newTarg )
 
+    end
 end
 
 function ENT:SetupPlayer()
@@ -246,7 +256,7 @@ function ENT:TellPlyToClearHighlighter()
 end
 
 function ENT:UpdateGivenScore()
-    self:SetGivenScore( -400 )
+    self:SetGivenScore( -300 )
 
 end
 

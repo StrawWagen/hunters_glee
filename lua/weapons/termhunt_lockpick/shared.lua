@@ -183,7 +183,7 @@ function SWEP:Think()
 
     if not SERVER then return end
 
-    local step = 16
+    local step = 6
     local status = generic_WaitForProgressBar( self:GetOwner(), "termhunt_weapon_lockpick_picking", 0.25, step )
 
     if not IsValid( ent ) or ent ~= self:GetLockpickEnt() or trace.HitPos:DistToSqr( self:GetOwner():GetShootPos() ) > 100^2 then

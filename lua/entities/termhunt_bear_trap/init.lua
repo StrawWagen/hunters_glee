@@ -228,6 +228,7 @@ end
 
 function ENT:Use( user )
     if not IsValid( user ) then return end
+    if user:Health() <= 0 then return end
     if user:IsPlayer() and user:GetEyeTrace().Entity == self then
         local step = 40
         if self:IsReadyToSpring() or user.bearTrapped then

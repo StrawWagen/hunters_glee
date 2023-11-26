@@ -39,7 +39,7 @@ end
 function GM:getNearestNavFloor( pos, distance, dropDistance )
     if not pos then return NULL end
     distance = distance or 2000
-    local dropDistance = dropDistance or distance
+    dropDistance = dropDistance or distance
     local offset = minusOne * distance
     local Dat = {
         start = pos,
@@ -255,14 +255,14 @@ function GM:findValidNavResult( data, start, radius, scoreFunc, noMoreOptionsMin
 end
 
 local fiftyPowerOfTwo = 50^2
-local vec6kZ = Vector( 0, 0, 6000 )
+local vec12kZ = Vector( 0, 0, 12000 )
 local vecNeg1K = Vector( 0, 0, -1000 )
 
 function GM:IsUnderSky( pos )
     -- get the sky
     local skyTraceDat = {
         start = pos,
-        endpos = pos + vec6kZ,
+        endpos = pos + vec12kZ,
         mask = CONTENTS_SOLID,
     }
     local skyTraceResult = util.TraceLine( skyTraceDat )
@@ -281,7 +281,7 @@ function GM:IsUnderDisplacement( pos )
     -- get the sky
     local firstTraceDat = {
         start = pos,
-        endpos = pos + vec6kZ,
+        endpos = pos + vec12kZ,
         mask = MASK_SOLID_BRUSHONLY,
     }
     local firstTraceResult = util.TraceLine( firstTraceDat )
@@ -293,7 +293,7 @@ function GM:IsUnderDisplacement( pos )
         mask = MASK_SOLID_BRUSHONLY,
     }
     local secondTraceResult = util.TraceLine( secondTraceDat )
-    if secondTraceResult.HitTexture ~= "**displacement**" then return end
+    if secondTraceResult.HitTexture ~= "**displacement**" then return nil, nil end
 
     -- final check to make sure
     local thirdTraceDat = {
@@ -304,10 +304,44 @@ function GM:IsUnderDisplacement( pos )
     local thirdTraceResult = util.TraceLine( thirdTraceDat )
     local isANestedDisplacement = thirdTraceResult.HitTexture == "**displacement**" and secondTraceResult.HitPos:DistToSqr( thirdTraceResult.HitPos ) > fiftyPowerOfTwo
 
-    if thirdTraceResult.HitTexture ~= "TOOLS/TOOLSNODRAW" and not isANestedDisplacement then return nil, true end -- we are probably under a displacement
+    if thirdTraceResult.Hit and thirdTraceResult.HitTexture ~= "TOOLS/TOOLSNODRAW" and not isANestedDisplacement then return nil, true end -- we are probably under a displacement
 
     -- we are DEFINITely under one
     return true, nil
+
+end
+
+local underDisplacementOffset = Vector()
+
+-- check the actual pos + visible spots nearby to truly know if a point is under a displacement
+-- rather expensive! but it works!
+function GM:IsUnderDisplacementExtensive( pos )
+    local underBasic, underNested = self:IsUnderDisplacement( pos )
+    if underBasic or underNested then return true end
+
+    local traceStruct = {
+        mask = MASK_SOLID_BRUSHONLY,
+        start = pos,
+    }
+    for index = 1, 100 do
+        -- check next to the pos to see if there's any empty space next to it
+        underDisplacementOffset.x = math.Rand( -1, 1 ) * ( index^1.5 )
+        underDisplacementOffset.y = math.Rand( -1, 1 ) * ( index^1.5 )
+        local checkingPos = pos + underDisplacementOffset
+        if not util.IsInWorld( checkingPos ) then continue end
+
+        traceStruct.endpos = checkingPos
+
+        local seePosResult = util.TraceLine( traceStruct )
+        -- this way goes into a wall
+        if seePosResult.Hit then continue end
+
+        local checkingIsUnder, checkingIsNested = self:IsUnderDisplacement( checkingPos )
+        if checkingIsUnder or checkingIsNested then return true end
+
+    end
+    return false
+
 end
 
 function GM:getFurthestConnectedNav( start, dist, ignoreBlocker )
@@ -478,6 +512,22 @@ function GM:getAlivePlayers()
 
     return alivePlayers
 
+end
+
+function GM:nearestAlivePlayer( pos )
+    local nearestPlyDistSqr = math.huge
+    local nearestPly = nil
+
+    for _, alivePly in ipairs( GAMEMODE:getAlivePlayers() ) do
+        local distToPlySqr = alivePly:GetPos():DistToSqr( pos )
+        if distToPlySqr < nearestPlyDistSqr then
+            nearestPlyDistSqr = distToPlySqr
+            nearestPly = alivePly
+
+        end
+    end
+
+    return nearestPly, nearestPlyDistSqr
 end
 
 

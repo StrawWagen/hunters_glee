@@ -1,13 +1,12 @@
 AddCSLuaFile()
 
-SWEP.Author         = "Based off of pac3 hands."
-SWEP.Contact         = ""
-SWEP.Purpose         = "Your powers as the holy chosen."
-SWEP.Instructions   = "Left click to shove"
+SWEP.Author         = "Straw W Wagen."
+SWEP.Contact        = ""
+SWEP.Purpose        = "Your powers as the holy chosen."
+SWEP.Instructions   = "Hold down and then release, Left, or Right click."
 SWEP.PrintName      = "Divine Chosen"
 SWEP.DrawAmmo       = true
 SWEP.DrawCrosshair    = true
-SWEP.DrawWeaponInfoBox = false
 
 SWEP.SlotPos          = 1
 SWEP.Slot             = 1
@@ -17,7 +16,7 @@ SWEP.AdminOnly       = true
 SWEP.Category = "Hunter's Glee"
 
 SWEP.AutoSwitchTo    = true
-SWEP.AutoSwitchFrom    = true
+SWEP.AutoSwitchFrom    = false
 SWEP.Weight         = 1
 
 SWEP.HoldType = "normal"
@@ -43,7 +42,6 @@ end
 function SWEP:ShouldDrawViewModel() return false end
 
 function SWEP:DrawHUD()             end
-function SWEP:PrintWeaponInfo()     end
 
 function SWEP:Reload()                    return false end
 function SWEP:Holster()                    return true  end
@@ -136,7 +134,7 @@ function SWEP:Equip()
         local shockingSelf = ( dmg:GetDamageType() == DMG_SHOCK or dmg:IsExplosionDamage() ) and dmg:GetAttacker() == self:GetOwner()
         if not shockingSelf then return end
         dmg:ScaleDamage( 0.25 )
-        dmg:SetDamageForce( dmg:GetDamageForce() * 2 )
+        dmg:SetDamageForce( dmg:GetDamageForce() * 4 )
 
     end )
 
@@ -237,24 +235,31 @@ function SWEP:ChosenThink()
     end
     if owner:Alive() and self.nextHealthRegen < CurTime() and owner:Health() < maxHp then
         self.nextHealthRegen = CurTime() + 0.05
-        owner:SetHealth( math.Clamp( owner:Health() + 2, 0, maxHp ) )
+        owner:SetHealth( math.Clamp( owner:Health() + 4, 0, maxHp ) )
     end
 end
 
-local maxClip = 75
+local maxClip = 150
+local maxFastClip = 75
 
 function SWEP:ClipThink()
     if self.nextClipRegen > CurTime() then return end
     self.nextClipRegen = CurTime() + 0.10
 
     local inHighIntensity = self.inHighIntensity or 0
-    local addAmnt = 5
+    local addAmnt = 10
     if inHighIntensity > CurTime() then
-        addAmnt = 15
+        addAmnt = 30
 
     end
 
-    local newClip = math.Clamp( self:Clip1() + addAmnt, 0, maxClip )
+    local clip = self:Clip1()
+    if clip >= maxFastClip then
+        addAmnt = addAmnt / 8
+
+    end
+
+    local newClip = math.Clamp( clip + addAmnt, 0, maxClip )
     self:SetClip1( newClip )
 
     local owner = self:GetOwner()
@@ -262,10 +267,11 @@ function SWEP:ClipThink()
     local doSound = nil
     local soundPitch = 0
     local soundVolume = 1
+    local soundClip = math.Clamp( newClip, 0, maxFastClip )
 
     if owner:GetActiveWeapon() == self then
         doSound = true
-        soundPitch = 115 + -newClip / 3
+        soundPitch = 115 + -soundClip / 3
 
     else
         doSound = nil
@@ -307,7 +313,7 @@ function SWEP:Think()
         local hit = eyeTrace.HitPos
 
         local oldPrimaryHit = self.oldPrimaryHit
-        local goodNewHit = ( not oldPrimaryHit or hit:DistToSqr( oldPrimaryHit ) > 150^2 ) and self:Clip1() > 3
+        local goodNewHit = ( not oldPrimaryHit or hit:DistToSqr( oldPrimaryHit ) > 120^2 ) and self:Clip1() > 3
 
         if goodNewHit then
             self:SetClip1( self:Clip1() + -3 )
@@ -618,7 +624,7 @@ function SWEP:EpicnessThink()
 
     local theSound = ""
     if inHighIntensity < CurTime() and epic >= 100 then
-        if epic >= 200 then
+        if epic >= 250 then
             -- once we do this line, activate a period of faster regen, and ranting
             huntersGlee_Announce( { self:GetOwner() }, 100, 8, "SHOW THEM." )
             local result = table.Random( superHighIntensity )
@@ -682,7 +688,7 @@ function SWEP:EpicnessThink()
         self.epicSound2 = CreateSound( owner, theSound, filterFar )
         self.epicSound2:SetDSP( 10 )
         self.epicSound2:SetSoundLevel( 150 )
-        self.epicSound2:PlayEx( 0.4, pitch + -2 )
+        self.epicSound2:PlayEx( 0.3, pitch + -10 )
 
     end )
 
@@ -719,3 +725,8 @@ function SWEP:DrawWorldModel( flags )
         cam.End3D()
     end
 end
+
+hook.Add( "OnDamagedByExplosion", "ChosenNoRinging", function( ply )
+    if ply:HasWeapon( "termhunt_divine_chosen" ) then return true end
+
+end )

@@ -12,7 +12,7 @@ function EFFECT:Init( data )
     dlightend.R = 100
     dlightend.G = 150
     dlightend.B = 255
-    dlightend.Brightness = 1.25 * self.Scayul
+    dlightend.Brightness = math.Clamp( 1.25 * self.Scayul, 0, 10 )
     dlightend.DieTime = CurTime() + self.Delay + 2
 
 end

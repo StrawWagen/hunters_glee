@@ -71,8 +71,8 @@ function SWEP:PrimaryAttack()
 
     local ent = tr.Entity
 
-    local need = self.HealAmount
-    if IsValid( ent ) then need = math.min( ent:GetMaxHealth() - ent:Health(), self.HealAmount ) end
+    local need = self.HealAmount * 2 -- healing other players is super efficient 
+    if IsValid( ent ) then need = math.min( ent:GetMaxHealth() - ent:Health(), need ) end
 
     if IsValid( ent ) and self:Clip1() >= need and ( ent:IsPlayer() or ent:IsNPC() ) and ent:Health() < ent:GetMaxHealth() then
 
@@ -159,3 +159,31 @@ function SWEP:CustomAmmoDisplay()
     return self.AmmoDisplay
 
 end
+
+local juiceToGive = {
+    item_healthkit = 25,
+    item_healthvial = 10,
+
+}
+
+hook.Add( "PlayerCanPickupItem", "glee_medkit_absorbsitems", function( ply, item )
+    local itemsClass = item:GetClass()
+    local toGive = juiceToGive[ itemsClass ]
+    if not toGive then return end
+
+    local plysWep = ply:GetWeapon( "termhunt_medkit" )
+    if not IsValid( plysWep ) then return end
+
+    if ply:Health() < ply:GetMaxHealth() then return end
+
+    if item.glee_AbsorbedByPly then return end
+    item.glee_AbsorbedByPly = true
+
+    timer.Simple( 0, function()
+        plysWep:SetClip1( plysWep:Clip1() + toGive )
+        local pit = 100 + ( 200 / toGive )
+        ply:EmitSound( "items/medshot4.wav", 55, pit, 1, CHAN_BODY )
+        SafeRemoveEntity( item )
+
+    end )
+end )

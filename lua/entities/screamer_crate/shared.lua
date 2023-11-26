@@ -17,6 +17,8 @@ ENT.noPurchaseReason_NoRoom = "No room to place this."
 ENT.noPurchaseReason_OffNavmesh = "The hunters can't path to that spot."
 ENT.noPurchaseReason_TooPoor = "You're too poor."
 
+ENT.placedItems = 0
+
 sound.Add( {
     name = "horrific_crate_scream",
     channel = CHAN_WEAPON,
@@ -31,6 +33,7 @@ function ENT:SetupDataTables()
     self:NetworkVar( "Bool", 0, "CanPlace" )
     self:NetworkVar( "Bool", 1, "InvalidPlacing" )
     self:NetworkVar( "Int", 0, "GivenScore" )
+    self:NetworkVar( "Int", 1, "GivenScoreAlt" ) -- for some ents
 
     self:SetupDataTablesExtra()
 
@@ -178,7 +181,8 @@ local function PlayRepeatingSound( self, soundPath, soundDuration )
 
     timer.Simple( soundDuration * 0.35, function()
         if not IsValid( self ) then return end
-        self:doSound( soundPath )
+
+        self:doSoundComprehensive()
 
         if self.player and self.player.GivePlayerScore and self.refundAndBonus and self.refundAndBonus > 0 then
             self.player:GivePlayerScore( self.refundAndBonus )
@@ -189,19 +193,29 @@ local function PlayRepeatingSound( self, soundPath, soundDuration )
 
     end )
 
-    self.doSound = function( soundEmitter )
+    self.doSoundComprehensive = function()
+        self:doSound( 1 )
+
+        timer.Simple( 0.75, function()
+            if not IsValid( self ) then return end
+            self:doSound( 1.2 )
+
+        end )
+    end
+
+    self.doSound = function( soundEmitter, pitchMul )
         soundEmitter.horrificSound:Stop()
-        soundEmitter.horrificSound:PlayEx( 0.7, math.random( 120, 130 ) )
+        soundEmitter.horrificSound:PlayEx( 0.7, math.random( 120, 130 ) * pitchMul )
 
         sound.EmitHint( SOUND_COMBAT, soundEmitter:GetPos(), 20000, 1, soundEmitter )
 
-        soundEmitter:EmitSound( soundPath, 120, math.random( 140, 150 ), 1, CHAN_STATIC )
+        soundEmitter:EmitSound( soundPath, 120, math.random( 140, 150 ) * pitchMul, 1, CHAN_STATIC )
 
         util.ScreenShake( soundEmitter:GetPos(), 1, 20, 1, 1000 )
         local obj = soundEmitter:GetPhysicsObject()
         if not obj then return end
-        obj:ApplyForceCenter( VectorRand() * obj:GetMass() * 100 )
-        obj:ApplyTorqueCenter( VectorRand() * obj:GetMass() * 100 )
+        obj:ApplyForceCenter( VectorRand() * obj:GetMass() * 100 * pitchMul )
+        obj:ApplyTorqueCenter( VectorRand() * obj:GetMass() * 100 * pitchMul )
 
     end
 
@@ -212,10 +226,12 @@ local function PlayRepeatingSound( self, soundPath, soundDuration )
     timer.Create( timerName, soundDuration, 0, function()
         if IsValid( self ) then
             -- Only play the sound if the entity is still valid
-            self:doSound( soundPath )
+            self:doSoundComprehensive()
+
         else
             -- If the entity is no longer valid, stop the timer
             timer.Remove( timerName )
+
         end
     end )
 end
@@ -281,7 +297,10 @@ function ENT:Cancel()
     local cancelSound = CreateSound( self.player, "common/wpn_hudoff.wav", filterPlayerOnly )
     cancelSound:Play()
 
-    GAMEMODE:RefundShopItemCooldown( self.player, self.itemIdentifier )
+    if self.placedItems <= 0 then
+        GAMEMODE:RefundShopItemCooldown( self.player, self.itemIdentifier )
+
+    end
 
     SafeRemoveEntity( self )
 
@@ -410,6 +429,7 @@ function ENT:HandleKeys( ply, key )
     if key == IN_ATTACK then
         if self:GetCanPlace() then
             self:Place()
+            self.placedItems = self.placedItems + 1
             ply.glee_ghostEntActionTime = CurTime()
 
         else

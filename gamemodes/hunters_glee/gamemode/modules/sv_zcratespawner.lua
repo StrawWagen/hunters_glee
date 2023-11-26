@@ -179,17 +179,21 @@ local function FindCrateSpawnPos()
 
 end
 
+local staleAndNeedsAScreamer = nil
+local boringTimeNeededForScreamer = 0
+local nextCrateMixupSpawn = 0
+
 local crateSpawningCor = nil
 local nextCrateSpawn = 0
-local _CurTime = CurTime
+local CurTime = CurTime
 
 -- this code was beautiful, then the coroutine attacked....
 
 function GM:crateSpawnThink( players )
     if crateSpawningFailed then return end
     if #players > plysNeeded:GetInt() then return end
-    if nextCrateSpawn > _CurTime() then return end
-    if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then nextCrateSpawn = _CurTime() + 15 return end
+    if nextCrateSpawn > CurTime() then return end
+    if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then nextCrateSpawn = CurTime() + 15 return end
     -- continue spawning calculations
     if crateSpawningCor then
         local startTime = SysTime()
@@ -212,6 +216,14 @@ function GM:crateSpawnThink( players )
     -- create the spawning function
     elseif crateSpawningCor == nil then
         crateSpawningCor = coroutine.create( function()
+            -- if nothing is happening, spawn a screamer crate early
+            if nextCrateMixupSpawn < CurTime() then
+                nextCrateMixupSpawn = CurTime() + boringTimeNeededForScreamer * math.Rand( 0.45, 0.75 )
+                staleAndNeedsAScreamer = true
+                print( "stalescreamer" )
+
+            end
+
             local spawnPos = FindCrateSpawnPos()
             if not spawnPos then coroutine.yield( "done" ) return end
 
@@ -229,8 +241,9 @@ function GM:crateSpawnThink( players )
             if mod == 10 and proceduralCratePlaces > 15 then
                 crate = GAMEMODE:ManhackCrate( spawnPos )
 
-            elseif mod == 9 and proceduralCratePlaces > 10 and #player.GetAll() <= 1 then
+            elseif ( mod == 9 and proceduralCratePlaces > 10 and #player.GetAll() <= 1 ) or staleAndNeedsAScreamer then
                 crate = GAMEMODE:ScreamingCrate( spawnPos )
+                staleAndNeedsAScreamer = nil
 
             elseif ( mod == 6 and proceduralCratePlaces > 12 ) or ( mod == 3 and proceduralCratePlaces > 20 ) then
                 crate = GAMEMODE:WeaponsCrate( spawnPos )
@@ -244,14 +257,17 @@ function GM:crateSpawnThink( players )
 
             lastCrate = crate
 
+            -- spawn 3 crates then stop
             if ( GAMEMODE.roundExtraData.proceduralCratePlaces % 4 ) ~= 0 then
                 time = 1
 
             else
+                -- reset the crate that other crates spawn around
                 lastCrate = nil
 
             end
 
+            -- spawn 6 crates really fast
             if GAMEMODE.roundExtraData.proceduralCratePlaces < 6 then
                 time = 1
 
@@ -263,10 +279,21 @@ function GM:crateSpawnThink( players )
 
             end
 
-            nextCrateSpawn = _CurTime() + time
+            nextCrateSpawn = CurTime() + time
 
             coroutine.yield( "done" )
 
         end )
     end
 end
+
+hook.Add( "terminator_spotenemy", "glee_trackifbots_needahint", function()
+    nextCrateMixupSpawn = CurTime() + boringTimeNeededForScreamer
+
+end )
+
+hook.Add( "huntersglee_round_into_active", "glee_resetboringtime", function()
+    boringTimeNeededForScreamer = math.random( 240, 360 )
+    nextCrateMixupSpawn = CurTime() + boringTimeNeededForScreamer
+
+end )

@@ -1,9 +1,14 @@
 gamemodes\hunters_glee\gamemode\shoppinggui.lua
+gamemodes\hunters_glee\gamemode\modules\cl_targetid.lua
 gamemodes\hunters_glee\gamemode\modules\cl_scoreboard.lua
 gamemodes\hunters_glee\gamemode\modules\cl_spectateflashlight.lua
 
+gamemodes\hunters_glee\gamemode\modules\sh_panic.lua
 gamemodes\hunters_glee\gamemode\modules\sh_tempbools.lua
+gamemodes\hunters_glee\gamemode\modules\sh_playerdrowning.lua
 gamemodes\hunters_glee\gamemode\modules\sh_detecthunterkills.lua
-gamemodes\hunters_glee\gamemode\lib\sh_termfuncs.lua
 
-lua\autorun\cl_shadowedTextFunc.lua
+lua\autorun\client\cl_shadowedtextfunc.lua
+lua\autorun\sh_generic_progress.lua
+lua\autorun\sh_glee_announcingText.lua
+lua\autorun\sh_glee_functions.lua

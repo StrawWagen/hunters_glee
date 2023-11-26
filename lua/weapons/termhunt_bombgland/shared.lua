@@ -219,7 +219,6 @@ function SWEP:PrimaryAttack()
             GAMEMODE:Bleed( owner, 3 )
         end
         local small = ents.Create( "termhunt_bombsmall" )
-        small:SetPos( owner:WorldSpaceCenter() )
         small:SetCreator( ply )
         small:SetPos( owner:WorldSpaceCenter() )
         small:SetAngles( AngleRand() )

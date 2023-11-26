@@ -275,8 +275,30 @@ function GM:shopItemCost( toPurchase, purchaser )
 
 end
 
+function GM:translateShopItemCooldown( ply, toPurchase, cooldownRaw )
+    if not cooldownRaw then return end
+    local cooldown = 0
+    if isnumber( cooldownRaw ) then
+        cooldown = cooldownRaw
+
+    elseif isfunction( cooldownRaw ) then
+        local noErrors, returned = xpcall( cooldownRaw, errorCatchingMitt, ply )
+        if noErrors == false then
+            GAMEMODE:invalidateShopItem( toPurchase )
+            print( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s cooldown function errored!!!!!!!!!!!" )
+            return
+
+        else
+            cooldown = returned
+
+        end
+    end
+    return cooldown
+
+end
+
 function GM:doShopCooldown( ply, toPurchase, cooldown )
-    if not cooldown or cooldown <= 0 then return end
+    if not isnumber( cooldown ) or cooldown <= 0 then return end
     ply.shopItemCooldowns[toPurchase] = CurTime() + cooldown
 
 end

@@ -68,9 +68,15 @@ elseif SERVER then
             local panicSoundHitch = nil
 
             if panic >= 100 then
+                local hookResult = hook.Run( "huntersglee_blockpanicreset", ply, panic )
+                local canResetPanic = not underwater and hookResult ~= true
+
                 -- keeps building
-                if not underwater then
+                if canResetPanic then
                     panic = 50
+
+                else
+                    panic = panic + -25
 
                 end
 
@@ -89,7 +95,7 @@ elseif SERVER then
                     ply:EmitSound( screamSound, 130, math.Rand( 99, 106 ), 1, CHAN_STATIC )
 
                 end
-                panicSpeedPenaltyMul = 1
+                panicSpeedPenaltyMul = 2
 
             elseif panic >= 75 and increasing then
                 local screamSound = "vo/npc/male01/pain0" .. math.random( 7, 9 ) .. ".wav"
@@ -184,5 +190,11 @@ elseif SERVER then
         if not timer.Exists( panicTimer ) then
             GAMEMODE:DoPanicThinkTimer( panicTimer )
         end
+    end )
+
+    hook.Add( "PlayerDeath", "glee_panic_stopbreathingsnd", function( victim )
+        if victim.huntersglee_panicSound == nil or not victim.huntersglee_panicSound:IsPlaying() then return end
+        victim.huntersglee_panicSound:Stop()
+
     end )
 end

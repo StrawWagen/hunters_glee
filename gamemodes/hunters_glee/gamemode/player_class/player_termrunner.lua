@@ -36,7 +36,7 @@ function PLAYER:SetupPlayerFuncsCheck()
     end
 
     realPlayer.Resurrect = function()
-        if not realPlayer.resurrectPos then return end
+        if not realPlayer.unstuckOrigin then return end
 
         hook.Run( "termhunt_plyresurrected", realPlayer )
 
@@ -203,8 +203,16 @@ if SERVER then
 
     end
 
+    function meta:TeleportTo( pos )
+        self.unstuckOrigin = pos
+        self:SetPos( pos )
+        self:unstuckFullHandle()
+
+    end
+
     function meta:IsStuckBasic()
         if self:IsOnGround() then return end
+
         -- 15^2
         if self:GetVelocity():LengthSqr() > 225 then return end
         local move = self:GetMoveType()
@@ -223,7 +231,7 @@ if SERVER then
             self.glee_Unstucking = true
             local shouldBeValid
 
-            local toResurrect = self.resurrectPos or self:GetPos()
+            local toResurrect = self.unstuckOrigin or self:GetPos()
             local result = self:checkIfPlyIsStuckAndHandle( toResurrect )
 
             -- they are stuck
@@ -231,10 +239,10 @@ if SERVER then
                 -- recursive yay
                 self:unstuckFullHandle()
 
-            -- end here
+            -- not stuck anymore!!! break the recursion!
             elseif result == false then
-                if self.resurrectPos ~= nil then
-                    self.resurrectPos = nil
+                if self.unstuckOrigin ~= nil then
+                    self.unstuckOrigin = nil
 
                 end
                 self.glee_Unstucking = nil
@@ -254,7 +262,7 @@ if SERVER then
         end )
     end
 
-    -- take a player's pos, then iterate until we find an area that is,
+    -- take a player's pos, then iterate until we find a pos that is,
         -- empty, nothing there already
         -- not under a displacement
 
@@ -310,7 +318,7 @@ if SERVER then
 
             local trace = util.TraceHull( traceDataDown )
 
-            if GAMEMODE:IsUnderDisplacement( potentiallyClearPos ) or trace.Hit or trace.StartSolid then continue end
+            if trace.Hit or trace.StartSolid or GAMEMODE:IsUnderDisplacementExtensive( potentiallyClearPos ) then continue end
 
             if index == 0 then
                 -- ply is not stuck
@@ -364,6 +372,27 @@ if SERVER then
         end
     end
 
+    function meta:GetNavAreaData()
+        if not self.CachedNavArea then
+            self:CacheNavArea()
+        end
+        return self.CachedNavArea, self.SqrDistToCachedNavArea
+
+    end
+
+    function meta:CacheNavArea()
+        local myPos = self:GetPos()
+        local area = navmesh.GetNearestNavArea( myPos, true, navCheckDist, false, true )
+        self.CachedNavArea = area
+        if area then
+            self.SqrDistToCachedNavArea = myPos:DistToSqr( area:GetClosestPointOnArea( myPos ) )
+
+        else
+            self.SqrDistToCachedNavArea = math.huge
+
+        end
+    end
+
     local GAMEMODE = GAMEMODE or GM or gmod.GetGamemode()
 
     function GAMEMODE:manageUnstucking( players )
@@ -374,16 +403,24 @@ if SERVER then
                 if ply.glee_Unstucking then
                     ply.glee_basicStuckCount = 0
 
-                elseif basicStuckCount > 30 then
+                elseif basicStuckCount > 20 then
                     ply.glee_basicStuckCount = 0
                     ply:unstuckFullHandle()
+                    ply:EmitSound( "physics/rubber/rubber_tire_impact_hard2.wav", 65, math.random( 80, 100 ) )
+
                     print( "GLEE: unstucking " .. ply:Name() )
 
                 elseif ply:IsStuckBasic() then
                     ply.glee_basicStuckCount = basicStuckCount + 1
 
+                    if basicStuckCount > 10 and not ply.glee_doneUnstuckWarn then
+                        ply:EmitSound( "physics/cardboard/cardboard_box_impact_hard6.wav", 65, math.random( 50, 60 ) )
+                        ply.glee_doneUnstuckWarn = true
+
+                    end
                 elseif basicStuckCount > 0 then
                     ply.glee_basicStuckCount = 0
+                    ply.glee_doneUnstuckWarn = nil
 
                 end
             end
