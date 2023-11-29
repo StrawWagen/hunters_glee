@@ -32,3 +32,4 @@ end
 
 
 ENT.rareCreationChance = 0
+ENT.AmmoInsideWeaponsScale = 1

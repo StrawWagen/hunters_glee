@@ -261,26 +261,32 @@ function SWEP:SecondaryAttack()
     return
 end
 
-
-
-function SWEP:OnRemove()
-
+function SWEP:ShutDown()
     if self.resurrectingLoop then
         self.resurrectingLoop:Stop()
     end
-    self:GetOwner().blockSwitchingWeaponsReviver = nil
+    local owner = self:GetOwner()
+    if IsValid( owner ) then
+        owner.blockSwitchingWeaponsReviver = nil
+
+    end
     timer.Stop( "weapon_idle" .. self:EntIndex() )
 
 end
 
+function SWEP:OnRemove()
+    self:ShutDown()
+
+end
+
 function SWEP:Holster()
-
-    if self.resurrectingLoop then
-        self.resurrectingLoop:Stop()
-    end
-    timer.Stop( "weapon_idle" .. self:EntIndex() )
-
+    self:ShutDown()
     return true
+
+end
+
+function SWEP:OwnerChanged()
+    self:ShutDown()
 
 end
 

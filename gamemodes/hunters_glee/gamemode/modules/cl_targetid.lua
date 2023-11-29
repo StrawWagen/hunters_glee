@@ -1,16 +1,32 @@
+
+local distNeededToSeeTargetIdSqr = 1500^2
+
 function GM:paintNameAndHealth( trace )
 
-    local text = "ERROR"
+    local close
+    local text = "????"
     local font = "TargetID"
 
-    text = trace.Entity:Nick()
+    local hitEnt = trace.Entity
+
+    if trace.HitPos:DistToSqr( trace.StartPos ) < distNeededToSeeTargetIdSqr then
+        close = true
+
+        if hitEnt.Nick then
+            text = hitEnt:Nick()
+
+        else
+            text = ""
+
+        end
+    end
 
     surface.SetFont( font )
     local w, h = surface.GetTextSize( text )
 
     local MouseX, MouseY = gui.MousePos()
 
-    if ( MouseX == 0 && MouseY == 0 ) then
+    if MouseX == 0 and MouseY == 0 then
 
         MouseX = ScrW() / 2
         MouseY = ScrH() / 2
@@ -21,25 +37,24 @@ function GM:paintNameAndHealth( trace )
     local y = MouseY
 
     x = x - w / 2
-    y = y + 30
+    y = y + 100
 
-    -- The fonts internal drop shadow looks lousy with AA on
-    draw.SimpleText( text, font, x + 1, y + 1, Color( 0, 0, 0, 120 ) )
-    draw.SimpleText( text, font, x + 2, y + 2, Color( 0, 0, 0, 50 ) )
-    draw.SimpleText( text, font, x, y, self:GetTeamColor( trace.Entity ) )
+    surface.drawShadowedTextBetter( text, font, self:GetTeamColor( trace.Entity ), x, y, false )
 
     y = y + h + 5
 
-    text = trace.Entity:Health() .. "%"
+    if not close then return end
+    if not hitEnt:IsPlayer() then return end
+
+    text = hitEnt:Health() .. "%"
     font = "TargetIDSmall"
 
     surface.SetFont( font )
     w, h = surface.GetTextSize( text )
     x = MouseX - w / 2
 
-    draw.SimpleText( text, font, x + 1, y + 1, Color( 0, 0, 0, 120 ) )
-    draw.SimpleText( text, font, x + 2, y + 2, Color( 0, 0, 0, 50 ) )
-    draw.SimpleText( text, font, x, y, self:GetTeamColor( trace.Entity ) )
+    surface.drawShadowedTextBetter( text, font, self:GetTeamColor( trace.Entity ), x, y, false )
+
 end
 
 function GM:paintSpectateInfo( trace )
@@ -52,7 +67,7 @@ function GM:paintSpectateInfo( trace )
 
     local MouseX, MouseY = gui.MousePos()
 
-    if ( MouseX == 0 && MouseY == 0 ) then
+    if MouseX == 0 and MouseY == 0 then
 
         MouseX = ScrW() / 2
         MouseY = ScrH() / 2
@@ -75,6 +90,8 @@ function GM:paintSpectateInfo( trace )
 
 end
 
+local LocalPlayer = LocalPlayer
+
 function GM:HUDDrawTargetID()
 
     local me = LocalPlayer()
@@ -83,12 +100,15 @@ function GM:HUDDrawTargetID()
     if not trace.Hit then return end
     if not trace.HitNonWorld then return end
 
-    if not trace.Entity:IsPlayer() then return end
+    if not trace.Entity.Nick and not trace.Entity:IsNextBot() then return end
 
     local spectating = me:Health() <= 0
 
-    if not spectating then self:paintNameAndHealth( trace ) return end
-    if IsValid( me:GetObserverTarget() ) then return end
+    if not spectating then self:paintNameAndHealth( trace ) return false end
+    if IsValid( me:GetObserverTarget() ) then return false end
     self:paintSpectateInfo( trace )
+
+    -- intercept all stuff that respects HUDDrawTargetID returning false
+    return false
 
 end

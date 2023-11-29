@@ -3283,7 +3283,7 @@ local defaultItems = {
     -- flat upgrade
     [ "juggernaut" ] = {
         name = "Juggernaut",
-        desc = "Attain a new level of physique.\nYour footsteps are loud and bulky.\nYou cannot move quicker with auGMentations\nMax 500 health.",
+        desc = "Attain a new level of physique.\nYour footsteps are loud and bulky.\nYou cannot move quicker with Augmentations\nMax 500 health.",
         cost = 350,
         markup = 2,
         cooldown = math.huge,
@@ -3670,6 +3670,7 @@ function GM:SetupShopCatalouge()
         [ "Items" ] = 1,
         [ "Innate" ] = 2,
         [ "Undead" ] = 3,
+        --[ "Bank" ] = 4,
 
     }
 

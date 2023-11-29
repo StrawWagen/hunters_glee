@@ -1,5 +1,7 @@
 print( "GOOEY" )
 
+local glee_sizeScaled = glee_sizeScaled
+
 local function shopPanelName( identifier )
     return "termhunt_shoppanel_" .. identifier
 end
@@ -12,7 +14,7 @@ end
 local fontData = {
     font = "Arial",
     extended = false,
-    size = 40,
+    size = glee_sizeScaled( nil, 40 ),
     weight = 500,
     blursize = 0,
     scanlines = 0,
@@ -32,7 +34,7 @@ surface.CreateFont( "termhuntShopScoreFont", fontData )
 fontData = {
     font = "Arial",
     extended = false,
-    size = 50,
+    size = glee_sizeScaled( nil, 50 ),
     weight = 500,
     blursize = 0,
     scanlines = 0,
@@ -52,7 +54,7 @@ surface.CreateFont( "termhuntShopCategoryFont", fontData )
 fontData = {
     font = "Arial",
     extended = false,
-    size = 25,
+    size = glee_sizeScaled( nil, 25 ),
     weight = 500,
     blursize = 0,
     scanlines = 0,
@@ -72,7 +74,7 @@ surface.CreateFont( "termhuntShopItemFont", fontData )
 fontData = {
     font = "Arial",
     extended = false,
-    size = 22.5,
+    size = glee_sizeScaled( nil, 22.5 ),
     weight = 500,
     blursize = 0,
     scanlines = 0,
@@ -89,15 +91,12 @@ fontData = {
 surface.CreateFont( "termhuntShopItemSmallerFont", fontData )
 
 
-local _LocalPlayer = LocalPlayer
-
-local uiScale = ScrH() / 1080
-
-local function sizSc( sizeX, sizeY ) -- sizSc short for Size Scaled
-    return sizeX * uiScale, sizeY * uiScale
-end
+local LocalPlayer = LocalPlayer
+local draw_RoundedBox = draw.RoundedBox
 
 local switchSound = Sound( "buttons/lightswitch2.wav" )
+
+local white = Vector( 255,255,255 )
 
 local invisibleColor = Color( 0, 0, 0, 0 )
 local itemNameColor = Color( 255, 255, 255, 255 )
@@ -105,27 +104,82 @@ local itemDescriptionColor = Color( 255, 255, 255, 230 )
 local whiteFaded = Color( 255, 255, 255, 240 )
 local shopItemColor = Color( 73, 73, 73, 255 )
 
+local cantAffordOverlay = Color( 0, 0, 0, 200 )
+local scrollEndsOverlay = Color( 0, 0, 0, 100 )
+local notHoveredOverlay = Color( 0, 0, 0, 45 )
+local pressedItemOverlay = Color( 255, 255, 255, 25 )
+
 local shopCategoryPanels = {}
 local MAINSCROLLNAME = "main_scroll_window"
 
-_LocalPlayer().MAINSSHOPPANEL = _LocalPlayer().MAINSSHOPPANEL or nil
-_LocalPlayer().MAINSCROLLPANEL = _LocalPlayer().MAINSCROLLPANEL or nil
-
-local white = Vector( 255,255,255 )
+LocalPlayer().MAINSSHOPPANEL = LocalPlayer().MAINSSHOPPANEL or nil
+LocalPlayer().MAINSCROLLPANEL = LocalPlayer().MAINSCROLLPANEL or nil
 
 function termHuntCloseTheShop()
-    _LocalPlayer():EmitSound( "doors/wood_stop1.wav", 50, 160, 0.25 )
-    _LocalPlayer().MAINSSHOPPANEL:Remove()
+    LocalPlayer():EmitSound( "doors/wood_stop1.wav", 50, 160, 0.25 )
+    LocalPlayer().MAINSSHOPPANEL:Remove()
+
+end
+
+local function isHovered( panel )
+    local tooltipHovered = nil
+    if panel.coolTooltip then
+        tooltipHovered = panel.coolTooltip:IsHovered()
+
+    end
+    local hoveredCooler = nil
+    local hovered = nil
+    if panel.IsHoveredCooler then
+        hoveredCooler = panel:IsHoveredCooler()
+
+    else
+        hovered = panel:IsHovered()
+
+    end
+
+    local hovering = hoveredCooler or tooltipHovered or hovered
+
+    return hovering
+
+end
+
+local function pressableThink( panel, hovering )
+    hovering = hovering or isHovered( panel )
+
+    if hovering ~= panel.hoveredOld then
+
+        if not panel.hoveredOld and panel.OnBeginHovering then
+            panel:OnBeginHovering()
+
+        elseif panel.hoveredOld and panel.RemoveCoolTooltip then
+            panel:RemoveCoolTooltip()
+
+        end
+
+        if ( not panel.initialSetup ) or ( panel.itemData and not panel.purchasable ) then
+            -- do nothing
+
+        elseif panel.hoveredOld then
+            LocalPlayer():EmitSound( switchSound, 60, 80, 0.12 )
+
+        elseif not panel.hoveredOld then
+            LocalPlayer():EmitSound( switchSound, 60, 90, 0.12 )
+
+        end
+        panel.hoveredOld = hovering
+
+    end
+    panel.initialSetup = true
 
 end
 
 function termHuntOpenTheShop()
-    _LocalPlayer():EmitSound( "physics/wood/wood_crate_impact_soft3.wav", 50, 200, 0.45 )
+    LocalPlayer():EmitSound( "physics/wood/wood_crate_impact_soft3.wav", 50, 200, 0.45 )
 
     local shopFrame = vgui.Create( "DFrame" )
-    _LocalPlayer().MAINSSHOPPANEL = shopFrame
+    LocalPlayer().MAINSSHOPPANEL = shopFrame
 
-    local width, height = sizSc( 1920, 1080 )
+    local width, height = glee_sizeScaled( 1920, 1080 )
 
     local clientsMenuKey = input.LookupBinding( "+menu" )
     clientsMenuKey = input.GetKeyCode( clientsMenuKey )
@@ -133,11 +187,13 @@ function termHuntOpenTheShop()
     -- if pressed button that opened shop, close the shop
     function shopFrame:OnKeyCodePressed( pressed )
         if pressed == clientsMenuKey then termHuntCloseTheShop() return end
+
     end
 
     -- if pressed escape, uh, close the shop
     shopFrame.Think = function()
         if input.IsKeyDown( KEY_ESCAPE ) then termHuntCloseTheShop() return end
+
     end
 
     shopFrame:ShowCloseButton( false )
@@ -156,20 +212,20 @@ function termHuntOpenTheShop()
 
     shopFrame:Center()
     shopFrame:MakePopup()
-    shopFrame:SetTitle( "" ) -- it's a shop, if people can't figure that out then i've failed as a designer
+    shopFrame:SetTitle( "" ) -- it's a shop, what else could it be!
 
     shopFrame.Paint = function()
-        draw.RoundedBox( 0, 0, 0, shopFrame:GetWide(), shopFrame:GetTall(), Color( 37, 37, 37, 240 ) )
-        draw.RoundedBox( 0, 0, 0, shopFrame:GetWide(), shopFrame.titleBarSize, Color( 50, 50, 50, 180 ) )
+        draw_RoundedBox( 0, 0, 0, shopFrame:GetWide(), shopFrame:GetTall(), Color( 37, 37, 37, 240 ) )
+        draw_RoundedBox( 0, 0, 0, shopFrame:GetWide(), shopFrame.titleBarSize, Color( 50, 50, 50, 180 ) )
 
-        local score = _LocalPlayer():GetScore()
+        local score = LocalPlayer():GetScore()
 
         if shopFrame.scoreToAddFrame ~= shopFrame.oldScoreToAddFrame or shopFrame.oldScore ~= score then
             -- create copy
             local scoreToAddFrame = shopFrame.scoreToAddFrame or {}
-            local cost = GAMEMODE:shopItemCost( scoreToAddFrame.itemIdentifier, _LocalPlayer() )
+            local cost = GAMEMODE:shopItemCost( scoreToAddFrame.itemIdentifier, LocalPlayer() )
 
-            shopFrame.costString, shopFrame.costColor = GAMEMODE:translatedShopItemCost( _LocalPlayer(), cost, scoreToAddFrame.itemIdentifier )
+            shopFrame.costString, shopFrame.costColor = GAMEMODE:translatedShopItemCost( LocalPlayer(), cost, scoreToAddFrame.itemIdentifier )
 
         end
 
@@ -190,32 +246,93 @@ function termHuntOpenTheShop()
 
     end
 
-    _LocalPlayer().MAINSCROLLPANEL = vgui.Create( "DScrollPanel", shopFrame, MAINSCROLLNAME )
-    if not _LocalPlayer().MAINSCROLLPANEL and not _LocalPlayer().retriedShop then -- HACK
+    local mainScrollPanel = vgui.Create( "DScrollPanel", shopFrame, MAINSCROLLNAME )
+    LocalPlayer().MAINSCROLLPANEL = mainScrollPanel
+
+    -- removing this doesnt seem to change anything, leaving it just in case
+    -- definitely a HACK!
+    if not LocalPlayer().MAINSCROLLPANEL and not LocalPlayer().retriedShop then
         timer.Simple( 0.1, function()
-            _LocalPlayer().retriedShop = true
+            LocalPlayer().retriedShop = true
             termHuntOpenTheShop()
         end )
         return
     end
-    _LocalPlayer().MAINSCROLLPANEL:DockMargin( height / 20, height / 40, 0, 0 )
-    _LocalPlayer().MAINSCROLLPANEL:Dock( FILL )
 
+    -- veritcal scrolling bar width, used for other stuff too so its pretty
+    local scrollWidth = height / 18
+    mainScrollPanel.verticalScrollWidth = scrollWidth
+    mainScrollPanel.verticalScrollWidthPadded = scrollWidth + height / 80
+
+    mainScrollPanel:DockMargin( 0, height / 40, 0, 0 ) -- add negative right HERE when the shop has more than 3 categories!!! 
+    mainScrollPanel:Dock( FILL )
+
+    local scrollBar = mainScrollPanel:GetVBar()
+
+    -- move to the other side
+    scrollBar:Dock( LEFT )
+    scrollBar:SetWide( mainScrollPanel.verticalScrollWidth )
+
+    -- make the scrollbar match the style!
+    function scrollBar:Paint( w, h )
+        draw_RoundedBox( 0, 0, 0, w, h, shopItemColor )
+        draw_RoundedBox( 0, 0, 0, w, h, cantAffordOverlay )
+    end
+
+    function scrollBar.btnUp:Paint( w, h )
+        draw_RoundedBox( 0, 0, 0, w, h, shopItemColor )
+        if not self:IsHovered() then
+            draw_RoundedBox( 0, 0, 0, w, h, notHoveredOverlay )
+        end
+    end
+
+    function scrollBar.btnUp:Think()
+        pressableThink( self )
+    end
+
+    function scrollBar.btnDown:Paint( w, h )
+        draw_RoundedBox( 0, 0, 0, w, h, shopItemColor )
+        if not self:IsHovered() then
+            draw_RoundedBox( 0, 0, 0, w, h, notHoveredOverlay )
+        end
+    end
+
+    function scrollBar.btnDown:Think()
+        pressableThink( self )
+    end
+
+    function scrollBar.btnGrip:Paint( w, h )
+        draw_RoundedBox( 0, 0, 0, w, h, shopItemColor )
+
+        draw_RoundedBox( 0, 0, 0, w, offsetNextToIdentifier, scrollEndsOverlay )
+        draw_RoundedBox( 0, 0, h + -offsetNextToIdentifier, w, offsetNextToIdentifier + 1, scrollEndsOverlay )
+
+        if not self:IsHovered() then
+            draw_RoundedBox( 0, 0, 0, w, h, notHoveredOverlay )
+        end
+    end
+
+    function scrollBar.btnGrip:Think()
+        pressableThink( self )
+    end
+
+    local canvas = mainScrollPanel:GetCanvas()
+    canvas:DockPadding( mainScrollPanel.verticalScrollWidthPadded, 0, 0, 0 )
 
     local sortedCategories = table.SortByKey( GAMEMODE.shopCategories, true )
 
     -- the scrollable things that hold shop items and have names like innate and undead
     for _, category in ipairs( sortedCategories ) do
-        local horisScroller = vgui.Create( "DHorizontalScroller", _LocalPlayer().MAINSCROLLPANEL, shopCategoryName( category ) )
+        local horisScroller = vgui.Create( "DHorizontalScroller", LocalPlayer().MAINSCROLLPANEL, shopCategoryName( category ) )
 
         --print( "createdcat " .. category .. " " .. tostring( horisScroller ) )
         shopCategoryPanels[ category ] = horisScroller
 
-        _LocalPlayer().MAINSCROLLPANEL:AddItem( horisScroller )
+        LocalPlayer().MAINSCROLLPANEL:AddItem( horisScroller )
 
-        horisScroller:SetSize( sizSc( 1728, 300 ) )
+        horisScroller:SetSize( glee_sizeScaled( 1920, 300 ) )
 
-        horisScroller.titleBarTall = height / 18
+        horisScroller.titleBarTall = LocalPlayer().MAINSCROLLPANEL.verticalScrollWidth -- same height as big scroll bar is wide
         horisScroller.topMargin = horisScroller.titleBarTall + height / 80
         horisScroller.breathingRoom = horisScroller.titleBarTall * 0.1
 
@@ -229,13 +346,13 @@ function termHuntOpenTheShop()
 
         horisScroller.Paint = function( self )
             -- the long one the items sit on
-            draw.RoundedBox( 0, 0, self.topMargin, self:GetWide(), self:GetTall() + self.titleBarTall, shopItemColor )
+            draw_RoundedBox( 0, 0, self.topMargin, self:GetWide(), self:GetTall() + self.titleBarTall, shopItemColor )
             -- the little shading under the category label
-            draw.RoundedBox( 0, 0, 0, self.titleBarWide, self.titleBarTall, Color( 73, 73, 73, 240 ) )
+            draw_RoundedBox( 0, 0, 0, self.titleBarWide, self.titleBarTall, shopItemColor )
             -- lil white line
-            draw.RoundedBox( 0, 0, 0, whiteIdentifierLineWidth, self.titleBarTall, whiteFaded )
+            draw_RoundedBox( 0, 0, 0, whiteIdentifierLineWidth, self.titleBarTall, whiteFaded )
             -- name of category, eg "Innate"
-            draw.DrawText( category, "termhuntShopCategoryFont", self.TextX, self.TextY, Color( 255,255,255 ) )
+            draw.DrawText( category, "termhuntShopCategoryFont", self.TextX, self.TextY, white )
 
         end
 
@@ -251,7 +368,7 @@ function termHuntOpenTheShop()
             if newOffset ~= oldOffset then -- dont do anything if we reach the end of the scroller
                 self:RemoveCoolTooltip()
                 local pitchOffset = ( oldOffset - newOffset ) * 0.1
-                _LocalPlayer():EmitSound( "physics/plastic/plastic_barrel_impact_soft2.wav", 60, 100 + pitchOffset, 0.2 )
+                LocalPlayer():EmitSound( "physics/plastic/plastic_barrel_impact_soft2.wav", 60, 100 + pitchOffset, 0.2 )
 
             end
 
@@ -267,7 +384,7 @@ function termHuntOpenTheShop()
         end
 
         horisScroller:Dock( TOP )
-        horisScroller:DockMargin( 0, 0, 0, height / 40 ) -- between categories
+        horisScroller:DockMargin( 0, 0, 0, height / 30 ) -- between categories
 
     end
 
@@ -285,8 +402,6 @@ function termHuntOpenTheShop()
         shopItem.itemData = itemData
         shopItem.itemIdentifier = identifier
 
-        shopItem.initialSetup = true
-
         shopItem:SetSize( myCategoryPanel.shopItemWidth, myCategoryPanel.shopItemHeight )
         shopItem:SetText( "" )
 
@@ -301,26 +416,12 @@ function termHuntOpenTheShop()
         end
 
         shopItem.Think = function( self )
-            local tooltipHovered = nil
-            if self.coolTooltip then
-                tooltipHovered = self.coolTooltip:IsHovered()
+            local hovering = isHovered( self )
+            if not hovering then hovering = false end
 
-            end
-            local hovering = self:IsHoveredCooler() or tooltipHovered
+            pressableThink( self, hovering )
+
             if hovering ~= self.hovered then
-                if not self.purchasable and not self.initialSetup then
-                    -- do nothing
-                elseif hovering and not self.hovered then
-                    self:OnBeginHovering()
-                elseif self.hovered then
-                    self:RemoveCoolTooltip()
-                    _LocalPlayer():EmitSound( switchSound, 60, 80, 0.12 )
-
-                elseif not self.initialSetup then
-                    _LocalPlayer():EmitSound( switchSound, 60, 120, 0.25 )
-
-                end
-
                 if not self.hoveredScoreDisplay and hovering then
                     shopFrame.scoreToAddFrame = self
 
@@ -335,7 +436,7 @@ function termHuntOpenTheShop()
 
             if self.purchased then
                 -- other half of the purchasing sounds are handled in sh_shopshared
-                _LocalPlayer():EmitSound( switchSound, 60, 50, 0.24 )
+                LocalPlayer():EmitSound( switchSound, 60, 50, 0.24 )
                 self.purchased = nil
 
             end
@@ -346,7 +447,7 @@ function termHuntOpenTheShop()
         -- tooltips!
         shopItem.OnBeginHovering = function( self )
             -- this is spaghetti
-            local coolTooltip = vgui.Create( "DSizeToContents", _LocalPlayer().MAINSCROLLPANEL, shopPanelName( identifier ) .. "_cooltooltip" )
+            local coolTooltip = vgui.Create( "DSizeToContents", LocalPlayer().MAINSCROLLPANEL, shopPanelName( identifier ) .. "_cooltooltip" )
             -- hide the jank setup bugs!
             coolTooltip.isSetupTime = CurTime() + 0.1
 
@@ -354,9 +455,10 @@ function termHuntOpenTheShop()
             myCategoryPanel.coolTooltip = coolTooltip
 
             local _, categorysY = myCategoryPanel:GetPos()
+
             local itemsX, itemsY = shopItem:GetPos()
             local tooltipsY = itemsY + categorysY
-            local tooltipsX = itemsX + -myCategoryPanel.OffsetX
+            local tooltipsX = itemsX + -myCategoryPanel.OffsetX + LocalPlayer().MAINSCROLLPANEL.verticalScrollWidthPadded
             coolTooltip.xPos, coolTooltip.yPos = tooltipsX, tooltipsY
             local yPosUnder = tooltipsY + shopItem.shopItemNameHPadded * 3.5
 
@@ -366,8 +468,8 @@ function termHuntOpenTheShop()
 
             coolTooltip.Paint = function ( self )
                 if not self.hasSetup then return end
-                draw.RoundedBox( 0, 0, 0, self:GetWide(), self:GetTall(), shopItemColor )
-                draw.RoundedBox( 0, 0, 0, whiteIdentifierLineWidth, self:GetTall(), whiteFaded )
+                draw_RoundedBox( 0, 0, 0, self:GetWide(), self:GetTall(), shopItemColor )
+                draw_RoundedBox( 0, 0, 0, whiteIdentifierLineWidth, self:GetTall(), whiteFaded )
 
             end
 
@@ -458,13 +560,14 @@ function termHuntOpenTheShop()
 
             tooltipTopButton.OnMouseWheeled = function( _, delta )
                 myCategoryPanel:OnMouseWheeled( delta )
+                return true
 
             end
 
             tooltipTopButton.PaintOver = function( self )
                 if not coolTooltip.hasSetup then return end
                 if shopItem.myOverlayColor then
-                    draw.RoundedBox( 0, 0, 0, self:GetWide(), self:GetTall(), shopItem.myOverlayColor )
+                    draw_RoundedBox( 0, 0, 0, self:GetWide(), self:GetTall(), shopItem.myOverlayColor )
 
                 end
             end
@@ -518,7 +621,7 @@ function termHuntOpenTheShop()
         -- paint the shop item!
         shopItem.Paint = function( self )
 
-            local score = _LocalPlayer():GetScore()
+            local score = LocalPlayer():GetScore()
 
             local nextBigCaching = self.nextBigCaching or 0
 
@@ -526,16 +629,16 @@ function termHuntOpenTheShop()
 
                 local identifierPaint = self.itemIdentifier
 
-                self.purchasable, self.notPurchasableReason = GAMEMODE:canPurchase( _LocalPlayer(), identifierPaint )
+                self.purchasable, self.notPurchasableReason = GAMEMODE:canPurchase( LocalPlayer(), identifierPaint )
                 self.nextBigCaching = CurTime() + 0.1
                 self.oldScore = score
 
-                local cost = GAMEMODE:shopItemCost( identifierPaint, _LocalPlayer() )
-                self.costString, self.costColor = GAMEMODE:translatedShopItemCost( _LocalPlayer(), cost, identifierPaint )
+                local cost = GAMEMODE:shopItemCost( identifierPaint, LocalPlayer() )
+                self.costString, self.costColor = GAMEMODE:translatedShopItemCost( LocalPlayer(), cost, identifierPaint )
 
                 -- markups applied
                 self.markupString = ""
-                local currentMarkup = GAMEMODE:shopMarkup( _LocalPlayer(), identifierPaint )
+                local currentMarkup = GAMEMODE:shopMarkup( LocalPlayer(), identifierPaint )
                 if currentMarkup ~= 1 then
                     self.markupString = "( " .. tostring( currentMarkup ) .. "x markup )"
                 end
@@ -550,7 +653,7 @@ function termHuntOpenTheShop()
                 local additionalMarkupStr = ""
                 local localizedMarkupPer = self.itemData.markupPerPurchase
                 if localizedMarkupPer and isnumber( localizedMarkupPer ) then
-                    local boughtCount = GAMEMODE:purchaseCount( _LocalPlayer(), identifierPaint )
+                    local boughtCount = GAMEMODE:purchaseCount( LocalPlayer(), identifierPaint )
                     if boughtCount == 0 then
                         additionalMarkupStr = "\nCost is marked up +" .. localizedMarkupPer .. "x per purchase."
                     else
@@ -571,7 +674,7 @@ function termHuntOpenTheShop()
                 if GAMEMODE.invalidShopItems[ identifierPaint ] then self:Remove() return end
 
             end
-            draw.RoundedBox( 0, 0, 0, whiteIdentifierLineWidth, self:GetTall(), Color( 255, 255, 255, 240 ) )
+            draw_RoundedBox( 0, 0, 0, whiteIdentifierLineWidth, self:GetTall(), whiteFaded )
 
             surface.SetFont( "termhuntShopItemFont" )
             local _, shopItemNameH = surface.GetTextSize( self.itemData.name )
@@ -589,17 +692,17 @@ function termHuntOpenTheShop()
             self.myOverlayColor = nil
 
             if not self.purchasable then
-                self.myOverlayColor = Color( 0, 0, 0, 200 )
-                draw.RoundedBox( 0, 0, 0, self:GetWide(), self:GetTall(), self.myOverlayColor )
+                self.myOverlayColor = cantAffordOverlay
+                draw_RoundedBox( 0, 0, 0, self:GetWide(), self:GetTall(), self.myOverlayColor )
 
             elseif not self:IsHoveredCooler() then
                 self.pressed = nil
-                self.myOverlayColor = Color( 0, 0, 0, 45 )
-                draw.RoundedBox( 0, 0, 0, self:GetWide(), self:GetTall(), self.myOverlayColor )
+                self.myOverlayColor = notHoveredOverlay
+                draw_RoundedBox( 0, 0, 0, self:GetWide(), self:GetTall(), self.myOverlayColor )
 
             elseif self.pressed then
-                self.myOverlayColor = Color( 255, 255, 255, 25 )
-                draw.RoundedBox( 0, 0, 0, self:GetWide(), self:GetTall(), self.myOverlayColor )
+                self.myOverlayColor = pressedItemOverlay
+                draw_RoundedBox( 0, 0, 0, self:GetWide(), self:GetTall(), self.myOverlayColor )
 
             end
         end
@@ -642,13 +745,13 @@ function GM:PlayerBindPress( _, bind, _ )
     end
 end
 
-_LocalPlayer().openedHuntersGleeShop = nil
+LocalPlayer().openedHuntersGleeShop = nil
 local nextShopOpen = 0
 
 function GM:ShowShop()
     if nextShopOpen > CurTime() then return end
     if self:CanShowDefaultHud() then
-        _LocalPlayer().openedHuntersGleeShop = true
+        LocalPlayer().openedHuntersGleeShop = true
         termHuntOpenTheShop()
 
     end
@@ -660,7 +763,7 @@ net.Receive( "glee_closetheshop", function()
     if nextShopClose > CurTime() then return end
     nextShopClose = CurTime() + 0.05
 
-    if not IsValid( _LocalPlayer().MAINSSHOPPANEL ) then return end
+    if not IsValid( LocalPlayer().MAINSSHOPPANEL ) then return end
     termHuntCloseTheShop()
     nextShopOpen = CurTime() + 0.1
 

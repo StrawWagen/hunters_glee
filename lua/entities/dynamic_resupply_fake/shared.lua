@@ -24,6 +24,7 @@ function ENT:commonCreationOptions()
 
 end
 
+
 ENT.rareCreationChance = 5
 
 function ENT:rareCreationOptions()
@@ -41,6 +42,8 @@ function ENT:rareCreationOptions()
     return tbl
 
 end
+
+ENT.AmmoInsideWeaponsScale = 2
 
 function ENT:Initialize()
     if SERVER then
@@ -64,6 +67,21 @@ function ENT:Initialize()
             item:SetPos( self:GetPos() )
             item:Spawn()
 
+            if item:IsWeapon() and GAMEMODE.GiveWeaponClipsOfAmmo then
+                local clipsToGive = math.Rand( 0.5, 1.5 )
+                if math.random( 0, 100 ) < 15 then
+                    clipsToGive = math.max( clipsToGive, 1 )
+                    clipsToGive = clipsToGive * math.Rand( 3, 6 )
+
+                elseif math.random( 0, 100 ) < 50 then
+                    clipsToGive = math.max( clipsToGive, 1 )
+                    clipsToGive = clipsToGive * math.Rand( 1, 2 )
+
+                end
+                clipsToGive = clipsToGive * self.AmmoInsideWeaponsScale
+                GAMEMODE:GiveWeaponClipsOfAmmo( item, clipsToGive )
+
+            end
         end
 
         timer.Simple( 60 * 8, function()

@@ -42,3 +42,5 @@ function ENT:rareCreationOptions()
     return tbl
 
 end
+
+ENT.AmmoInsideWeaponsScale = 1.5

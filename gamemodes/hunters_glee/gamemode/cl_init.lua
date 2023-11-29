@@ -5,12 +5,13 @@ include( "modules/cl_scoreboard.lua" )
 include( "modules/cl_spectateflashlight.lua" )
 
 local doHud = CreateClientConVar( "huntersglee_cl_showhud", 1, true, false, "Show the hud? Beats, score, round state...", 0, 1 )
+local paddingFromEdge = glee_sizeScaled( nil, 48 )
 
 -- TIME
 local fontData = {
     font = "Arial",
     extended = false,
-    size = 30,
+    size = glee_sizeScaled( nil, 30 ),
     weight = 500,
     blursize = 0,
     scanlines = 0,
@@ -28,10 +29,10 @@ surface.CreateFont( "termhuntTimeFont", fontData )
 
 
 -- BEAT COUNT
-local fontData = {
+fontData = {
     font = "Arial",
     extended = false,
-    size = 30,
+    size = glee_sizeScaled( nil, 30 ),
     weight = 500,
     blursize = 0,
     scanlines = 0,
@@ -48,10 +49,10 @@ local fontData = {
 surface.CreateFont( "termhuntScoreFont", fontData )
 
 -- SHOP hINT
-local fontData = {
+fontData = {
     font = "Arial",
     extended = false,
-    size = 30,
+    size = glee_sizeScaled( nil, 30 ),
     weight = 500,
     blursize = 0,
     scanlines = 0,
@@ -68,10 +69,10 @@ local fontData = {
 surface.CreateFont( "termhuntShopHintFont", fontData )
 
 -- the RATE YOUR HJEAT BEATS OH GOD HE'S HERE
-local fontData = {
+fontData = {
     font = "Arial",
     extended = false,
-    size = 80,
+    size = glee_sizeScaled( nil, 80 ),
     weight = 500,
     blursize = 0,
     scanlines = 0,
@@ -88,10 +89,10 @@ local fontData = {
 surface.CreateFont( "termhuntBPMFont", fontData )
 
 -- triumphant font
-local fontData = {
+fontData = {
     font = "Arial",
     extended = false,
-    size = 50,
+    size = glee_sizeScaled( nil, 50 ),
     weight = 500,
     blursize = 0,
     scanlines = 0,
@@ -241,7 +242,7 @@ local function paintRoundInfo( ply, cur )
     if not GAMEMODE:CanShowDefaultHud() then return end
     if not doHud:GetBool() then return end
 
-    surface.drawShadowedTextBetter( combinedString, "termhuntTimeFont", infoColor, 128, 128, false )
+    surface.drawShadowedTextBetter( combinedString, "termhuntTimeFont", infoColor, paddingFromEdge, paddingFromEdge, false )
 
 end
 
@@ -307,7 +308,16 @@ local function shopHints()
     if inBetween then
         if me.openedHuntersGleeShop then return end
         if me:GetScore() < 50 then return end
-        return true, "You have score to spend, things to buy!"
+
+        local clientsMenuKey = input.LookupBinding( "+menu" )
+        if not clientsMenuKey then me.openedHuntersGleeShop = true return end
+
+        clientsMenuKey = input.GetKeyCode( clientsMenuKey )
+
+        local keyName = input.GetKeyName( clientsMenuKey )
+        local phrase = language.GetPhrase( keyName )
+
+        return true, "You have score to spend, things to buy!\nPress \" " .. string.upper( phrase ) .. " \" to open the shop."
 
     elseif dead then
 
@@ -319,6 +329,8 @@ local function shopHints()
 
         elseif not me.openedHuntersGleeShop then
             local clientsMenuKey = input.LookupBinding( "+menu" )
+            if not clientsMenuKey then me.openedHuntersGleeShop = true return end
+
             clientsMenuKey = input.GetKeyCode( clientsMenuKey )
 
             local keyName = input.GetKeyName( clientsMenuKey )
@@ -331,6 +343,8 @@ local function shopHints()
 
         elseif not me.glee_HasSpectatedSomeone then
             local clientsLeftClick = input.LookupBinding( "+attack" )
+            if not clientsLeftClick then me.glee_HasSpectatedSomeone = true return end
+
             clientsLeftClick = input.GetKeyCode( clientsLeftClick )
 
             local keyName = input.GetKeyName( clientsLeftClick )
@@ -339,6 +353,8 @@ local function shopHints()
 
         elseif not me.glee_HasSwitchedSpectateModes and IsValid( me:GetObserverTarget() ) then
             local clientsSpaceBar = input.LookupBinding( "+jump" )
+            if not clientsSpaceBar then me.glee_HasSwitchedSpectateModes = true return end
+
             clientsSpaceBar = input.GetKeyCode( clientsSpaceBar )
 
             local keyName = input.GetKeyName( clientsSpaceBar )
@@ -347,6 +363,8 @@ local function shopHints()
 
         elseif not me.glee_HasStoppedSpectatingSomething and IsValid( me:GetObserverTarget() ) then
             local clientsSpaceBar = input.LookupBinding( "+attack2" )
+            if not clientsSpaceBar then me.glee_HasStoppedSpectatingSomething = true return end
+
             clientsSpaceBar = input.GetKeyCode( clientsSpaceBar )
 
             local keyName = input.GetKeyName( clientsSpaceBar )
@@ -354,8 +372,9 @@ local function shopHints()
             return true, "Press " .. phrase .. " to stop following stuff!"
 
         elseif not me.glee_HasDoneSpectateFlashlight and render.GetLightColor( me:GetPos() ):LengthSqr() < 0.005 then
-
             local flashlightBind = input.LookupBinding( "impulse 100", false )
+            if not flashlightBind then me.glee_HasDoneSpectateFlashlight = true return end
+
             flashlightBind = input.GetKeyCode( flashlightBind )
 
             local keyName = input.GetKeyName( flashlightBind )
@@ -397,7 +416,7 @@ local function paintHintForTheShop( _, cur )
 
     end
 
-    surface.drawShadowedTextBetter( theHint, "termhuntShopHintFont", textColor, 128, 128 + 120, false )
+    surface.drawShadowedTextBetter( theHint, "termhuntShopHintFont", textColor, paddingFromEdge, paddingFromEdge + 120, false )
 
 end
 
@@ -498,7 +517,7 @@ local function paintMyTotalScore( ply, cur )
 
     surface.SetFont( "termhuntScoreFont" )
     surface.SetTextColor( textColor )
-    surface.SetTextPos( 128, 128 + offset )
+    surface.SetTextPos( paddingFromEdge, paddingFromEdge + offset )
     surface.DrawText( textCombo )
 
 end
@@ -520,7 +539,7 @@ local function paintPlyBPM( ply )
         local constrainedDiff = difference + fadeRangeStart
         local normalizedConstDiff = fadeRangeSize / constrainedDiff
 
-        currBpmTextAlpha = 40 + bpmTextAlpha + ( normalizedConstDiff * 240 )
+        currBpmTextAlpha = 20 + bpmTextAlpha + ( normalizedConstDiff * 150 )
         currBpmTextAlpha = math.Clamp( currBpmTextAlpha, 0, 255 )
 
     end

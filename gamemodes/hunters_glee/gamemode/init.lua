@@ -23,6 +23,7 @@ include( "modules/sv_doorbash.lua" )
 include( "modules/sv_mapvote.lua" )
 include( "modules/sv_zcratespawner.lua" )
 include( "modules/sv_weapondropper.lua" )
+include( "modules/sv_seeding_rewarder.lua" )
 
 util.AddNetworkString( "glee_storeresurrectpos" )
 util.AddNetworkString( "glee_witnesseddeathconfirm" )
@@ -495,6 +496,7 @@ local function huntersAreInCorrectGroupsFunc()
 end
 
 -- silly localization
+local SysTime = SysTime
 local abs_Local = math.abs
 local coroutine_status = coroutine.status
 local coroutine_resume = coroutine.resume

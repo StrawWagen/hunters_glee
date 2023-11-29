@@ -324,7 +324,8 @@ GM.TEAM_SPECTATE = 2
 function GM:spectatifyPlayer( ply )
     ply:SetNWBool( "termhunt_spectating", true )
     ply:Spectate( OBS_MODE_DEATHCAM )
-    ply.spectateDoFreecam = CurTime() + 8
+    ply.spectateDoFreecam = CurTime() + 4
+    ply.spectateDoFreecamForced = CurTime() + 2
     ply.termHuntTeam = GAMEMODE.TEAM_SPECTATE
 
 end
@@ -333,6 +334,7 @@ function GM:unspectatifyPlayer( ply )
     if ply.termHuntTeam ~= GAMEMODE.TEAM_SPECTATE then return end
 
     ply.spectateDoFreecam = nil
+    ply.spectateDoFreecamForced = nil
     ply.termHuntTeam = GAMEMODE.TEAM_PLAYING
 
     ply:SetNWBool( "termhunt_spectating", false )
@@ -345,6 +347,7 @@ function GM:ensureNotSpectating( ply ) -- this is kinda redundant
     if ply.termHuntTeam ~= GAMEMODE.TEAM_SPECTATE then return end
 
     ply.spectateDoFreecam = nil
+    ply.spectateDoFreecamForced = nil
     ply.termHuntTeam = GAMEMODE.TEAM_PLAYING
 
     ply:SetNWBool( "termhunt_spectating", false )
@@ -353,6 +356,18 @@ function GM:ensureNotSpectating( ply ) -- this is kinda redundant
     if ply:Alive() then
         ply:KillSilent()
     end
+end
+
+local function isMovementKey( keyPressed )
+    if keyPressed == IN_ATTACK2 or keyPressed == IN_FORWARD or keyPressed == IN_BACK or keyPressed == IN_MOVELEFT or keyPressed == IN_MOVERIGHT then return true end
+
+end
+
+local function exitDeathCam( ply )
+    ply.spectateDoFreecam = math.huge
+    ply.spectateDoFreecamForced = math.huge
+    ply:SetObserverMode( OBS_MODE_ROAMING )
+
 end
 
 -- if placing
@@ -371,16 +386,31 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
     if not SERVER then return end
     if ply.termHuntTeam ~= GAMEMODE.TEAM_SPECTATE then return end
     local mode = ply:GetObserverMode()
+
     local followingThing = mode == OBS_MODE_CHASE or mode == OBS_MODE_IN_EYE
+    local deathCamming = mode == OBS_MODE_DEATHCAM
+
 
     local placing = ply.ghostEnt
     local actionTime = ply.glee_ghostEntActionTime or 0
     local wasGhostEnting = actionTime + 0.25 > CurTime()
     if IsValid( placing ) or wasGhostEnting then return end
 
+
     local spectated = nil
 
-    if keyPressed == IN_ATTACK then
+    if deathCamming then
+        if isMovementKey( key ) and ply.spectateDoFreecamForced < CurTime() then
+            exitDeathCam( ply )
+            net.Start( "glee_stoppedspectating" )
+            net.Send( ply )
+
+        end
+        if ply.spectateDoFreecam > CurTime() then return end
+
+        exitDeathCam( ply )
+
+    elseif keyPressed == IN_ATTACK then
         local players = player.GetAll()
         local alivePlayers = GAMEMODE:returnAliveInTable( players )
         local protoStuffToSpectate = alivePlayers
@@ -453,7 +483,7 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
 
             end
         end
-    elseif keyPressed == IN_ATTACK2 or keyPressed == IN_FORWARD or keyPressed == IN_BACK or keyPressed == IN_MOVELEFT or keyPressed == IN_MOVERIGHT then
+    elseif isMovementKey( keyPressed ) then
         if followingThing then
             ply:SetObserverMode( OBS_MODE_ROAMING )
             net.Start( "glee_stoppedspectating" )
@@ -495,13 +525,6 @@ function GM:SpectateOverrides( ply, mode )
         GAMEMODE:ensureNotSpectating( ply )
         return
 
-    end
-    if mode == OBS_MODE_DEATHCAM then -- follow our corpse
-        if ply.spectateDoFreecam < CurTime() or ply:KeyDown( IN_ATTACK2 ) then
-            ply.spectateDoFreecam = math.huge
-            ply:SetObserverMode( OBS_MODE_ROAMING )
-        end
-        return
     end
     if isPlacing and mode ~= OBS_MODE_ROAMING then
         ply:SetObserverMode( OBS_MODE_ROAMING )

@@ -112,7 +112,7 @@ local function FindCrateSpawnPos()
                 if not IsValid( visPly ) then continue end
                 coroutine.yield()
                 local firstChecksShootPos = visPly:GetShootPos()
-                local vis, visTr = terminator_Extras.PosCanSee( toCheck, firstChecksShootPos )
+                local vis, visTr = terminator_Extras.PosCanSeeComplex( toCheck, firstChecksShootPos, visPly )
                 if vis then
                     visible = true
                     break
@@ -164,7 +164,7 @@ local function FindCrateSpawnPos()
     for _, visPly2 in ipairs( alivePlayers() ) do
         if not IsValid( visPly2 ) then continue end
         local finalChecksShootPos = visPly2:GetShootPos()
-        local vis, visTr = terminator_Extras.PosCanSee( bestPosition, finalChecksShootPos )
+        local vis, visTr = terminator_Extras.PosCanSeeComplex( bestPosition, finalChecksShootPos, visPly2 )
         if vis then
             return
 
@@ -220,7 +220,6 @@ function GM:crateSpawnThink( players )
             if nextCrateMixupSpawn < CurTime() then
                 nextCrateMixupSpawn = CurTime() + boringTimeNeededForScreamer * math.Rand( 0.45, 0.75 )
                 staleAndNeedsAScreamer = true
-                print( "stalescreamer" )
 
             end
 

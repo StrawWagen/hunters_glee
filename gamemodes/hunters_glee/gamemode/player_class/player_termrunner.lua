@@ -198,10 +198,12 @@ if SERVER then
         local score = self:GetScore()
         self:SetNWInt( "huntersglee_score", math.Round( score + add ) )
     end
+
     function meta:ResetScore()
         self:SetNWInt( "huntersglee_score", 0 )
 
     end
+
 
     function meta:TeleportTo( pos )
         self.unstuckOrigin = pos
@@ -209,6 +211,7 @@ if SERVER then
         self:unstuckFullHandle()
 
     end
+
 
     function meta:IsStuckBasic()
         if self:IsOnGround() then return end

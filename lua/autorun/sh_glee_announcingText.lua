@@ -50,7 +50,7 @@ if not CLIENT then return end
 local fontData = {
     font = "Arial",
     extended = false,
-    size = 40,
+    size = glee_sizeScaled( nil, 40 ),
     weight = 500,
     blursize = 0,
     scanlines = 0,
