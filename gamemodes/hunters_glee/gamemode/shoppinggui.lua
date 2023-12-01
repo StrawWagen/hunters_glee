@@ -184,9 +184,29 @@ function termHuntOpenTheShop()
     local clientsMenuKey = input.LookupBinding( "+menu" )
     clientsMenuKey = input.GetKeyCode( clientsMenuKey )
 
+    local clientsForwardKey = input.LookupBinding( "+forward" )
+    clientsForwardKey = input.GetKeyCode( clientsForwardKey )
+
+    local clientsBackKey = input.LookupBinding( "+back" )
+    clientsBackKey = input.GetKeyCode( clientsBackKey )
+
+    local clientsLeftKey = input.LookupBinding( "+moveleft" )
+    clientsLeftKey = input.GetKeyCode( clientsLeftKey )
+
+    local clientsRightKey = input.LookupBinding( "+moveright" )
+    clientsRightKey = input.GetKeyCode( clientsRightKey )
+
     -- if pressed button that opened shop, close the shop
     function shopFrame:OnKeyCodePressed( pressed )
         if pressed == clientsMenuKey then termHuntCloseTheShop() return end
+        if pressed == clientsForwardKey then shopFrame:scrollUp() return end
+        if pressed == clientsBackKey then shopFrame:scrollDown() return end
+
+        local hovered = vgui.GetHoveredPanel()
+        if not hovered or not hovered.CoolerScroll then return end
+
+        if pressed == clientsLeftKey then hovered:CoolerScroll( 1, 3 ) return end
+        if pressed == clientsRightKey then hovered:CoolerScroll( -1, 3 ) return end
 
     end
 
@@ -199,12 +219,17 @@ function termHuntOpenTheShop()
     shopFrame:ShowCloseButton( false )
 
     local bigTextPadding = height / 180
+    local leftPadding = height / 40
 
     local whiteIdentifierLineWidth = height / 250 -- the white bar
     local offsetNextToIdentifier = whiteIdentifierLineWidth * 4
 
+    local scrollWidth = height / 18
+
+    local shopCategoryWidth, shopCategoryHeight = glee_sizeScaled( 1920, 300 )
+
     shopFrame:SetSize( width, height )
-    shopFrame.titleBarSize = 50 -- the exit button isn't gonna rescale, and add space for score display
+    shopFrame.titleBarSize = scrollWidth
     shopFrame.costString = ""
     shopFrame.costColor = white
 
@@ -238,7 +263,7 @@ function termHuntOpenTheShop()
 
         surface.SetFont( "termhuntShopScoreFont" )
         local currentScoreW, _ = surface.GetTextSize( currentScoreAndBridge )
-        local initialPadding = bigTextPadding + height / 20
+        local initialPadding = bigTextPadding + leftPadding
 
         draw.DrawText( currentScoreAndBridge, "termhuntShopScoreFont", initialPadding, 5, white )
 
@@ -260,17 +285,14 @@ function termHuntOpenTheShop()
     end
 
     -- veritcal scrolling bar width, used for other stuff too so its pretty
-    local scrollWidth = height / 18
     mainScrollPanel.verticalScrollWidth = scrollWidth
     mainScrollPanel.verticalScrollWidthPadded = scrollWidth + height / 80
 
-    mainScrollPanel:DockMargin( 0, height / 40, 0, 0 ) -- add negative right HERE when the shop has more than 3 categories!!! 
+    mainScrollPanel:DockMargin( leftPadding, 0, 0, 0 ) -- add negative right HERE when the shop has more than 3 categories!!! 
     mainScrollPanel:Dock( FILL )
 
     local scrollBar = mainScrollPanel:GetVBar()
 
-    -- move to the other side
-    scrollBar:Dock( LEFT )
     scrollBar:SetWide( mainScrollPanel.verticalScrollWidth )
 
     -- make the scrollbar match the style!
@@ -316,8 +338,41 @@ function termHuntOpenTheShop()
         pressableThink( self )
     end
 
+    -- fancy scrolling sounds
+    scrollBar.oldSetScroll = scrollBar.SetScroll
+    function scrollBar:SetScroll( newScroll )
+        self:oldSetScroll( newScroll )
+
+        local lastScroll = self.lastScroll or 0
+        local currScrollTrue = self:GetScroll()
+
+        if math.abs( lastScroll - currScrollTrue ) > scrollWidth then
+            local pitchOffset = ( lastScroll - currScrollTrue ) * 0.1
+            LocalPlayer():EmitSound( "physics/plastic/plastic_barrel_impact_soft5.wav", 60, 100 + pitchOffset, 0.2 )
+
+            self.lastScroll = currScrollTrue
+
+        end
+    end
+
+    -- w and s are scrolling shortcuts
+    function shopFrame:scrollUp()
+        if not scrollBar then return end
+        local oldScroll = scrollBar:GetScroll()
+        scrollBar:SetScroll( oldScroll + -shopCategoryHeight )
+
+    end
+
+    function shopFrame:scrollDown()
+        if not scrollBar then return end
+        local oldScroll = scrollBar:GetScroll()
+        scrollBar:SetScroll( oldScroll + shopCategoryHeight )
+
+    end
+
+
     local canvas = mainScrollPanel:GetCanvas()
-    canvas:DockPadding( mainScrollPanel.verticalScrollWidthPadded, 0, 0, 0 )
+    canvas:DockPadding( 0, 0, 0, 0 )
 
     local sortedCategories = table.SortByKey( GAMEMODE.shopCategories, true )
 
@@ -330,10 +385,11 @@ function termHuntOpenTheShop()
 
         LocalPlayer().MAINSCROLLPANEL:AddItem( horisScroller )
 
-        horisScroller:SetSize( glee_sizeScaled( 1920, 300 ) )
+        horisScroller:SetSize( shopCategoryWidth, shopCategoryHeight )
 
+        horisScroller.betweenCategorySpacing = height / 80
         horisScroller.titleBarTall = LocalPlayer().MAINSCROLLPANEL.verticalScrollWidth -- same height as big scroll bar is wide
-        horisScroller.topMargin = horisScroller.titleBarTall + height / 80
+        horisScroller.topMargin = horisScroller.titleBarTall + horisScroller.betweenCategorySpacing * 2
         horisScroller.breathingRoom = horisScroller.titleBarTall * 0.1
 
         horisScroller.shopItemHeight = horisScroller:GetTall() + -horisScroller.topMargin
@@ -342,23 +398,21 @@ function termHuntOpenTheShop()
         horisScroller.titleBarWide = horisScroller.shopItemWidth * 1.5
 
         horisScroller.TextX = offsetNextToIdentifier
-        horisScroller.TextY = bigTextPadding
+        horisScroller.TextY = bigTextPadding + horisScroller.betweenCategorySpacing
 
         horisScroller.Paint = function( self )
-            -- the long one the items sit on
-            draw_RoundedBox( 0, 0, self.topMargin, self:GetWide(), self:GetTall() + self.titleBarTall, shopItemColor )
             -- the little shading under the category label
-            draw_RoundedBox( 0, 0, 0, self.titleBarWide, self.titleBarTall, shopItemColor )
+            draw_RoundedBox( 0, 0, self.betweenCategorySpacing, self.titleBarWide, self.titleBarTall, shopItemColor )
             -- lil white line
-            draw_RoundedBox( 0, 0, 0, whiteIdentifierLineWidth, self.titleBarTall, whiteFaded )
+            draw_RoundedBox( 0, 0, self.betweenCategorySpacing, whiteIdentifierLineWidth, self.titleBarTall, whiteFaded )
             -- name of category, eg "Innate"
             draw.DrawText( category, "termhuntShopCategoryFont", self.TextX, self.TextY, white )
 
         end
 
-        horisScroller.OnMouseWheeled = function( self, delta )
+        horisScroller.CoolerScroll = function( self, delta, stepScale )
             local oldOffset = self.OffsetX or 0
-            local stepSize = self.shopItemWidth
+            local stepSize = self.shopItemWidth * stepScale
 
             local offsetStepped = math.Round( self.OffsetX + delta * -stepSize * 1.05 )
             self.OffsetX = offsetStepped
@@ -368,11 +422,17 @@ function termHuntOpenTheShop()
             if newOffset ~= oldOffset then -- dont do anything if we reach the end of the scroller
                 self:RemoveCoolTooltip()
                 local pitchOffset = ( oldOffset - newOffset ) * 0.1
-                LocalPlayer():EmitSound( "physics/plastic/plastic_barrel_impact_soft2.wav", 60, 100 + pitchOffset, 0.2 )
+                pitchOffset = pitchOffset / stepScale
+                LocalPlayer():EmitSound( "physics/plastic/plastic_barrel_impact_soft2.wav", 60, 100 + pitchOffset, 0.2 * stepScale )
 
             end
 
             return true
+
+        end
+
+        horisScroller.OnMouseWheeled = function( self, delta )
+            return self:CoolerScroll( delta, 1 )
 
         end
 
@@ -384,7 +444,7 @@ function termHuntOpenTheShop()
         end
 
         horisScroller:Dock( TOP )
-        horisScroller:DockMargin( 0, 0, 0, height / 30 ) -- between categories
+        horisScroller:DockMargin( 0, 0, 0, 0 ) -- between categories
 
     end
 
@@ -458,7 +518,7 @@ function termHuntOpenTheShop()
 
             local itemsX, itemsY = shopItem:GetPos()
             local tooltipsY = itemsY + categorysY
-            local tooltipsX = itemsX + -myCategoryPanel.OffsetX + LocalPlayer().MAINSCROLLPANEL.verticalScrollWidthPadded
+            local tooltipsX = itemsX + -myCategoryPanel.OffsetX
             coolTooltip.xPos, coolTooltip.yPos = tooltipsX, tooltipsY
             local yPosUnder = tooltipsY + shopItem.shopItemNameHPadded * 3.5
 
@@ -564,6 +624,11 @@ function termHuntOpenTheShop()
 
             end
 
+            tooltipTopButton.CoolerScroll = function( _, delta, stepScale )
+                myCategoryPanel:CoolerScroll( delta, stepScale )
+
+            end
+
             tooltipTopButton.PaintOver = function( self )
                 if not coolTooltip.hasSetup then return end
                 if shopItem.myOverlayColor then
@@ -645,8 +710,9 @@ function termHuntOpenTheShop()
 
                 -- handle tooltips
                 local description = ""
-                if self.itemData.desc and self.itemData.desc ~= "" then
-                    description = self.itemData.desc
+                local descriptionReturned = GAMEMODE:translateShopItemDescription( LocalPlayer(), identifierPaint, self.itemData.desc )
+                if descriptionReturned and descriptionReturned ~= "" then
+                    description = descriptionReturned
 
                 end
 
@@ -674,6 +740,14 @@ function termHuntOpenTheShop()
                 if GAMEMODE.invalidShopItems[ identifierPaint ] then self:Remove() return end
 
             end
+
+            local hovered = self:IsHoveredCooler()
+
+            if hovered then
+                draw_RoundedBox( 0, 0, 0, self:GetWide(), self:GetTall(), shopItemColor )
+
+            end
+
             draw_RoundedBox( 0, 0, 0, whiteIdentifierLineWidth, self:GetTall(), whiteFaded )
 
             surface.SetFont( "termhuntShopItemFont" )
@@ -695,7 +769,7 @@ function termHuntOpenTheShop()
                 self.myOverlayColor = cantAffordOverlay
                 draw_RoundedBox( 0, 0, 0, self:GetWide(), self:GetTall(), self.myOverlayColor )
 
-            elseif not self:IsHoveredCooler() then
+            elseif not hovered then
                 self.pressed = nil
                 self.myOverlayColor = notHoveredOverlay
                 draw_RoundedBox( 0, 0, 0, self:GetWide(), self:GetTall(), self.myOverlayColor )
@@ -722,6 +796,11 @@ function termHuntOpenTheShop()
         shopItem.OnMouseReleased = function( self, keyCode )
             if keyCode ~= MOUSE_LEFT then return end
             self.pressed = nil
+        end
+
+        shopItem.CoolerScroll = function( _, delta, stepScale )
+            myCategoryPanel:CoolerScroll( delta, stepScale )
+
         end
 
         shopItem:DockMargin( 0, myCategoryPanel.topMargin, 0, 0 )

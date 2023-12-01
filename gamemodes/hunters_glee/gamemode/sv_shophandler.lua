@@ -10,6 +10,7 @@ function GM:purchaseItem( ply, toPurchase )
         ply:PrintMessage( HUD_PRINTTALK, notPurchasableReason )
         return
     end
+
     local dat = GAMEMODE.shopItems[toPurchase]
     local purchaseFunc = dat.purchaseFunc
     if purchaseFunc then
@@ -51,7 +52,10 @@ function GM:purchaseItem( ply, toPurchase )
         net.WriteString( toPurchase )
     net.Send( ply )
 
-    ply:GivePlayerScore( -cost )
+    if not dat.fakeCost then
+        ply:GivePlayerScore( -cost )
+
+    end
 
     -- increment purchase count.. AFTER the cost is calculated...
     local name = "huntersglee_purchasecount_" .. toPurchase
@@ -93,10 +97,13 @@ local function autoComplete( _, stringargs )
 
 end
 
+
+-- ew ew gross formatting
 concommand.Add( "termhunt_purchase", function( ply, _, args, _ )
     GAMEMODE:purchaseItem( ply, args[1] )
 
 end, autoComplete, "purchase an item", FCVAR_NONE )
+-- ew ew
 
 function GM:RefundShopItemCooldown( ply, toPurchase )
     GAMEMODE:noShopCooldown( ply, toPurchase )

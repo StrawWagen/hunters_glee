@@ -60,12 +60,10 @@ local function getDrowningGracePeriod()
     return gracePeriodLengthCached
 end
 
-local CMoveData = FindMetaTable( "CMoveData" )
-
-function CMoveData:RemoveKeys( keys )
+local function RemoveKeys( data, keys )
     -- Using bitwise operations to clear the key bits.
-    local newbuttons = bit.band( self:GetButtons(), bit.bnot( keys ) )
-    self:SetButtons( newbuttons )
+    local newbuttons = bit.band( data:GetButtons(), bit.bnot( keys ) )
+    data:SetButtons( newbuttons )
 
 end
 
@@ -128,7 +126,7 @@ hook.Add( "SetupMove", "glee_unabletoswim", function( ply, mvd )
                 mvd:SetVelocity( vel )
 
                 if mvd:KeyDown( IN_JUMP ) then
-                    mvd:RemoveKeys( IN_JUMP )
+                    RemoveKeys( mvd, IN_JUMP )
 
                 end
             end

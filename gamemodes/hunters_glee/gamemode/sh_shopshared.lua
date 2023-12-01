@@ -101,11 +101,12 @@ function GM:getDebugShopItemStructureTable()
     local theDescriptorTable = {
         [ "shopItemUniqueIdentifier" ] = {
             name = "Printed name that players see",
-            desc = "Description",
+            desc = "Description. Accepts a function.",
             cost = "Cost, negative to give player score when purchasing, Can be a function",
+            faleCost = "Optional. Whether to skip applying the cost within the purchasing system. Good if you want a shop item to more dynamically apply costs, but still show a cost.",
             markup = "Optional. Price multipler to be applied when bought out of setup",
             markupPerPurchase = "Optional. additional markup per player per purchase of item",
-            cooldown = "Optional. Cooldown between purchases, math.huge for one purchase per round",
+            cooldown = "Optional. Cooldown between purchases, math.huge for one purchase per round. Can be a number, or a function.",
             category = "What to place this with in the shop",
             purchaseTimes = "When this allowed to be bought, eg GAMEMODE.ROUND_ACTIVE ( hunting ), GAMEMODE.ROUND_INACTIVE ( right before hunting )",
             weight = "Optional. Where to order this relative to everything else in our category, accepts negative values.",
@@ -127,12 +128,12 @@ end
 function GM:addShopItem( shopItemIdentifier, shopItemData )
     -- check all the non-optional stuff
     if not istable( shopItemData ) then addShopFail( shopItemIdentifier, "data table is not a table" ) return end
-    if not shopItemData.name then addShopFail( shopItemIdentifier, "invalid name" ) return end
-    if not shopItemData.desc then addShopFail( shopItemIdentifier, "invalid desc ( description )" ) return end
-    if not shopItemData.cost then addShopFail( shopItemIdentifier, "invalid cost" ) return end
-    if not shopItemData.category then addShopFail( shopItemIdentifier, "invalid category, create a new category first" ) return end
-    if not shopItemData.purchaseTimes or table.Count( shopItemData.purchaseTimes ) <= 0 then addShopFail( shopItemIdentifier, "purchaseTimes are not specified" ) return end
-    if not shopItemData.purchaseFunc then addShopFail( shopItemIdentifier, "invalid purchaseFunc" ) return end
+    if not shopItemData.name then addShopFail( shopItemIdentifier, "invalid .name" ) return end
+    if not shopItemData.desc then addShopFail( shopItemIdentifier, "invalid .desc ( description )" ) return end
+    if not shopItemData.cost then addShopFail( shopItemIdentifier, "invalid .cost" ) return end
+    if not shopItemData.category then addShopFail( shopItemIdentifier, "invalid .category, create a new category first?" ) return end
+    if not shopItemData.purchaseTimes or table.Count( shopItemData.purchaseTimes ) <= 0 then addShopFail( shopItemIdentifier, ".purchaseTimes are not specified" ) return end
+    if not shopItemData.purchaseFunc then addShopFail( shopItemIdentifier, "invalid .purchaseFunc" ) return end
 
     -- if you reallllly want to override a shop item, fine!
     if GAMEMODE.shopItems[shopItemIdentifier] ~= nil and hook.Run( "glee_canoverrideshopitem", shopItemIdentifier ) == nil then addShopFail( shopItemIdentifier, "Tried to add a shop item that already exists" ) return end
@@ -143,7 +144,7 @@ end
 
 function GM:invalidateShopItem( identifier )
     GAMEMODE.invalidShopItems[identifier] = true
-    if SERVER then
+    if SERVER then --????
 
 
     end
@@ -288,12 +289,44 @@ function GM:translateShopItemCooldown( ply, toPurchase, cooldownRaw )
             print( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s cooldown function errored!!!!!!!!!!!" )
             return
 
+        elseif not isnumber( returned ) and returned ~= nil then -- can be nil for no cooldown
+            GAMEMODE:invalidateShopItem( toPurchase )
+            print( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s cooldown function returned a non-number!!!!!!!!!!!" )
+            return
+
         else
             cooldown = returned
 
         end
     end
     return cooldown
+
+end
+
+function GM:translateShopItemDescription( ply, toPurchase, descriptionRaw )
+    if not descriptionRaw then return end
+    local description = ""
+    if isstring( descriptionRaw ) then
+        description = descriptionRaw
+
+    elseif isfunction( descriptionRaw ) then
+        local noErrors, returned = xpcall( descriptionRaw, errorCatchingMitt, ply )
+        if noErrors == false then
+            GAMEMODE:invalidateShopItem( toPurchase )
+            print( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s description function errored!!!!!!!!!!!" )
+            return
+
+        elseif not isstring( returned ) then -- description cannot be nil.
+            GAMEMODE:invalidateShopItem( toPurchase )
+            print( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s description function returned a non-string!!!!!!!!!!!" )
+            return
+
+        else
+            description = returned
+
+        end
+    end
+    return description
 
 end
 

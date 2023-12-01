@@ -2693,7 +2693,7 @@ if CLIENT then
     local fontData = {
         font = "Arial",
         extended = false,
-        size = 40,
+        size = glee_sizeScaled( nil, 40 ),
         weight = 500,
         blursize = 0,
         scanlines = 0,
@@ -2920,6 +2920,84 @@ local function divineChosenPurchase( purchaser )
     GAMEMODE:PutInnateInProperCleanup( nil, undoInnate, purchaser )
 
 end
+
+
+
+local function canOpenAccount( purchaser )
+    if purchaser:BankHasAccount() then return false, "You've already opened a bank account." end
+    return true
+
+end
+
+local function openAccountCost( purchaser )
+    if canOpenAccount( purchaser ) then return 1000 end
+
+    local existingAccount = purchaser:BankAccount()
+
+    return existingAccount.funds
+
+end
+
+local function openAccountPurchase( purchaser )
+    timer.Simple( 0, function()
+        if not IsValid( purchaser ) then return end
+        purchaser:BankOpenAccount()
+
+    end )
+end
+
+
+local function hasBankAccount( purchaser )
+    if not purchaser:BankHasAccount() then return false, "You haven't opened a bank account yet." end
+    return true
+
+end
+
+
+local function bankDepositCost( purchaser )
+    return math.Clamp( purchaser:GetScore(), 10, 200 )
+
+end
+
+local function bankDepositDescription()
+    local chargePeriod = func_BankChargePeriod()
+    local chargePeriodDays = chargePeriod / 86400
+    chargePeriodDays = math.Round( chargePeriodDays, 2 )
+
+    local periodCharge = func_BankChargePerPeriod()
+
+    local days = "days."
+    if chargePeriodDays == 1 then
+        days = "day."
+
+    end
+    return "Deposit score for another time.\nThe bank has a 10% procesing fee when depositing.\nIdle fees of \"" .. periodCharge .. "\"% of your entire balance, will apply every \"" .. chargePeriodDays .. "\" real-time " .. days
+
+
+end
+
+local function bankDepositPurchase( purchaser )
+    local toDeposit = bankDepositCost( purchaser )
+    purchaser:GivePlayerScore( -toDeposit )
+
+    toDeposit = toDeposit * 0.9 -- ten percent processing fee in question
+    purchaser:BankDepositScore( toDeposit )
+
+end
+
+local function bankCanWithdraw( purchaser )
+    if not purchaser:BankCanDeposit( -100 ) then return false, "Your account is below the withdrawl threshold!!\nIt will be closed when the next idle fee is applied!!!" end
+    return true
+
+end
+
+local function bankWithdrawPurchase( purchaser )
+    purchaser:BankDepositScore( -100 )
+    purchaser:GivePlayerScore( 100 )
+
+end
+
+
 
 --[[
 
@@ -3217,7 +3295,7 @@ local defaultItems = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
         },
-        weight = -90,
+        weight = -80,
         purchaseCheck = { unUndeadCheck },
         purchaseFunc = greasyHandsPurchase,
     },
@@ -3247,7 +3325,7 @@ local defaultItems = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
         },
-        weight = -80,
+        weight = -90,
         purchaseCheck = { unUndeadCheck },
         purchaseFunc = deafnessPurchase,
     },
@@ -3656,12 +3734,58 @@ local defaultItems = {
         cooldown = math.huge,
         category = "Undead",
         purchaseTimes = {
-            GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
         },
         weight = 40,
         purchaseCheck = { undeadCheck, divineChosenCanPurchase },
         purchaseFunc = divineChosenPurchase,
+    },
+    -- reason to rejoin
+    [ "bankopenaccount" ] = {
+        name = "Bank account",
+        desc = "Open a bank account.",
+        cost = openAccountCost,
+        cooldown = 0,
+        category = "Bank",
+        purchaseTimes = {
+            GM.ROUND_INACTIVE,
+            GM.ROUND_ACTIVE,
+        },
+        weight = 0,
+        purchaseCheck = { canOpenAccount },
+        purchaseFunc = openAccountPurchase,
+    },
+    -- reason to rejoin
+    [ "bankdeposit" ] = {
+        name = "Deposit",
+        desc = bankDepositDescription,
+        fakeCost = true, -- score removal is handled in purchasefunc
+        cost = bankDepositCost,
+        cooldown = 0.5,
+        category = "Bank",
+        purchaseTimes = {
+            GM.ROUND_INACTIVE,
+            GM.ROUND_ACTIVE,
+        },
+        weight = 100,
+        purchaseCheck = { hasBankAccount },
+        purchaseFunc = bankDepositPurchase,
+    },
+    -- reason to rejoin
+    [ "bankwithdraw" ] = {
+        name = "Withdraw",
+        desc = "Withdraw 100 score from your account.",
+        fakeCost = true,
+        cost = -100,
+        cooldown = 0.5,
+        category = "Bank",
+        purchaseTimes = {
+            GM.ROUND_INACTIVE,
+            GM.ROUND_ACTIVE,
+        },
+        weight = 100,
+        purchaseCheck = { hasBankAccount, bankCanWithdraw },
+        purchaseFunc = bankWithdrawPurchase,
     },
 }
 
@@ -3670,7 +3794,7 @@ function GM:SetupShopCatalouge()
         [ "Items" ] = 1,
         [ "Innate" ] = 2,
         [ "Undead" ] = 3,
-        --[ "Bank" ] = 4,
+        [ "Bank" ] = 4,
 
     }
 

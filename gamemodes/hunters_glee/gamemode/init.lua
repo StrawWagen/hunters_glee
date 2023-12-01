@@ -9,6 +9,7 @@ AddCSLuaFile( "sh_shopshared.lua" )
 AddCSLuaFile( "sh_shopitems.lua" )
 
 AddCSLuaFile( "modules/sh_panic.lua" )
+AddCSLuaFile( "modules/sh_banking.lua" )
 AddCSLuaFile( "modules/sh_tempbools.lua" )
 AddCSLuaFile( "modules/sh_playerdrowning.lua" )
 AddCSLuaFile( "modules/sh_detecthunterkills.lua" )
@@ -231,6 +232,12 @@ function GM:Think()
         end
         displayName = "Hunting... "
         displayTime = GAMEMODE:getRemaining( GAMEMODE.termHunt_roundBegunTime, cur )
+
+    end
+
+    local newState = GAMEMODE:RoundState()
+    if newState ~= currState then
+        hook.Run( "glee_roundstatechanged", currState, newState )
 
     end
 

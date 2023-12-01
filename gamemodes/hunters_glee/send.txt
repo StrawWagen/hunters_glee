@@ -4,6 +4,7 @@ gamemodes\hunters_glee\gamemode\modules\cl_scoreboard.lua
 gamemodes\hunters_glee\gamemode\modules\cl_spectateflashlight.lua
 
 gamemodes\hunters_glee\gamemode\modules\sh_panic.lua
+gamemodes\hunters_glee\gamemode\modules\sh_banking.lua
 gamemodes\hunters_glee\gamemode\modules\sh_tempbools.lua
 gamemodes\hunters_glee\gamemode\modules\sh_playerdrowning.lua
 gamemodes\hunters_glee\gamemode\modules\sh_detecthunterkills.lua

@@ -18,6 +18,7 @@ include( "modules/sh_panic.lua" )
 include( "modules/sh_playerdrowning.lua" )
 include( "modules/sh_detecthunterkills.lua" )
 include( "modules/sh_tempbools.lua" )
+include( "modules/sh_banking.lua" )
 
 resource.AddSingleFile( "sound/53937_meutecee_trumpethit07.wav" )
 resource.AddSingleFile( "sound/418788_name_heartbeat_single.wav" )
