@@ -879,6 +879,7 @@ function HUDPaint()
 
         end
 
+        local spectating = ply:Health() <= 0
 
         if spectating == true then
             paintOtherPlayers( ply )
