@@ -8,16 +8,16 @@
 ----------------------------------------------------------------------------------------------------------------|
 ------------------------------// General Settings \\------------------------------------------------------------|
 SWEP.Author             = "Buzzofwar + Straw W Wagen"                           -- Your name.
-SWEP.Contact             = "1318285072"                          -- How People could contact you.
+SWEP.Contact             = "1318285072"                         -- How People could contact you.
 SWEP.Base                 = "weapon_base"                       -- What base should the swep be based on.
-SWEP.ViewModel             = "models/weapons/v_crowbar.mdl"     -- The viewModel, the model you see when you are holding it.
+SWEP.ViewModel             = "models/weapons/c_barricadeswep.mdl" -- The viewModel, the model you see when you are holding it. FROM BARRICADE SWEP
 SWEP.WorldModel         = "models/weapons/w_buzzhammer.mdl"     -- The world model, The model you when it's down on the ground.
 SWEP.HoldType             = "melee"                             -- How the swep is hold Pistol smg grenade melee.
 SWEP.PrintName             = "Nailer"                           -- your sweps name.
 SWEP.Category             = "Hunter's Glee"                     -- Make your own category for the swep.
 SWEP.Instructions         = "Nail stuff together!"              -- How do people use your swep.
 SWEP.Purpose             = ""                                   -- What is the purpose with this.
-SWEP.ViewModelFlip         = true                               -- If the model should be flipped when you see it.
+SWEP.ViewModelFlip         = false                               -- If the model should be flipped when you see it.
 SWEP.UseHands            = true                                 -- Weather the player model should use its hands.
 SWEP.AutoSwitchTo         = true                                -- when someone walks over the swep, should it automatically change to your swep.
 SWEP.Spawnable             = true                               -- Can everybody spawn this swep.
@@ -25,8 +25,7 @@ SWEP.AutoSwitchFrom     = true                                  -- Does the weap
 SWEP.FiresUnderwater     = true                                 -- Does your swep fire under water.
 SWEP.DrawCrosshair         = true                               -- Do you want it to have a crosshair.
 SWEP.DrawAmmo             = true                                -- Does the ammo show up when you are using it.
-SWEP.ViewModelFOV         = 0                                   -- How much of the weapon do you see.
-SWEP.Weight             = 10                                     -- Chose the weight of the Swep.
+SWEP.Weight             = 10                                    -- Chose the weight of the Swep.
 SWEP.SlotPos             = 2                                    -- Decide which slot you want your swep do be in.
 SWEP.Slot                 = 1                                   -- Decide which slot you want your swep do be in.
 ------------------------------\\ General Settings //------------------------------------------------------------|
@@ -66,22 +65,23 @@ if SERVER then
     resource.AddFile( "sound/hammer/hit_nail03.wav" )
     resource.AddFile( "sound/hammer/hit_nail04.wav" )
 
-    resource.AddFile( "models/weapons/w_buzzhammer.dx80.vtx" )
-    resource.AddFile( "models/weapons/w_buzzhammer.dx90.vtx" )
     resource.AddFile( "models/weapons/w_buzzhammer.mdl" )
-    resource.AddFile( "models/weapons/w_buzzhammer.phy" )
-    resource.AddFile( "models/weapons/w_buzzhammer.sw.vtx" )
-    resource.AddFile( "models/weapons/w_buzzhammer.vvd" )
+
+    resource.AddFile( "models/weapons/c_barricadeswep.phy" )
 
     resource.AddFile( "materials/models/weapons/cade_hammer.vmt" )
-    resource.AddFile( "materials/models/weapons/cade_hammer.vtf" )
     resource.AddFile( "materials/models/weapons/hammer.vmt" )
-    resource.AddFile( "materials/models/weapons/hammer.vtf" )
     resource.AddFile( "materials/models/weapons/hammer2.vmt" )
-    resource.AddFile( "materials/models/weapons/hammer2.vtf" )
 
     resource.AddFile( "materials/entities/termhunt_weapon_hammer.png" )
 
+else
+    function SWEP:HintPostStack()
+        local owner = self:GetOwner()
+        if not owner:GetNW2Bool( "gleenailer_nailattempted", false ) then return true, "PRIMARY ATTACK to nail things together." end
+        if not owner:GetNW2Bool( "gleenailer_goodnailed", false ) then return true, "The nails have to go through something.\nYou can't nail a wall to itself, etc." end
+
+    end
 end
 
 sound.Add( {
@@ -110,6 +110,7 @@ end
 
 function SWEP:Initialize()
     self:SetWeaponHoldType( self.HoldType )
+    self:SetMaterial( "models/weapons/hammer.vmt" )
     if SERVER then
         self:SetWeaponHoldType( self.HoldType )
         self:SetClip1( 20 )
@@ -169,7 +170,6 @@ function SWEP:OnRemove()
 end
 ----------------------------------------------------------------------------------------------------------------|
 function SWEP:Deploy()
-    self:GetOwner():DrawViewModel(false)
     --self:EmitSound("")
     self:SendWeaponAnim(ACT_VM_DRAW)
 end
@@ -189,7 +189,7 @@ function SWEP:Miss()
     self:EmitSound( self.SwingSound, 70, math.random( 90, 120 ) )
 
     self:SetNextPrimaryFire( CurTime() + self.Primary.Delay / 2 )
-    self:SendWeaponAnim(ACT_VM_MISSCENTER)
+    self:SendWeaponAnim( ACT_VM_MISSCENTER )
     owner:SetAnimation( PLAYER_ATTACK1 )
 
     local rnda = self.Primary.Recoil * -0.5
@@ -204,17 +204,30 @@ function SWEP:BadHit( tr )
     local owner = self:GetOwner()
 
     self:SetNextPrimaryFire( CurTime() + self.Primary.Delay / 2 )
-    self:SendWeaponAnim(ACT_VM_MISSCENTER)
+    self:SendWeaponAnim( ACT_VM_MISSCENTER )
     owner:SetAnimation( PLAYER_ATTACK1 )
 
     local rnda = self.Primary.Recoil * -0.5
-    local rndb = self.Primary.Recoil * math.Rand(-0.5, 1) 
+    local rndb = self.Primary.Recoil * math.Rand( -0.5, 1 )
+
+    if IsFirstTimePredicted() then
+        bullet = {}
+        bullet.Num    = 1
+        bullet.Src    = owner:GetShootPos()
+        bullet.Dir    = owner:GetAimVector()
+        bullet.Spread = Vector( 0, 0, 0 )
+        bullet.Tracer = 0
+        bullet.Force  = 10
+        bullet.Distance = self.Primary.Distance
+        bullet.Damage = math.random( 25, 35 )
+        owner:FireBullets( bullet )
+
+    end
 
     if tr.HitPos:Distance( owner:GetShootPos() ) < self.Primary.Distance then
         local surfaceProperties = tr.SurfaceProps
         surfaceProperties = util.GetSurfaceData( surfaceProperties )
         if tr.Entity and surfaceProperties.material == MAT_FLESH then
-            tr.Entity:TakeDamage( math.random( 25, 35 ), owner, self )
             tr.Entity:EmitSound( "Weapon_Crowbar.Melee_Hit", 75 )
             owner:EmitSound( "npc/zombie/claw_strike3.wav", 75, math.random( 120, 140 ), 1, CHAN_STATIC )
 
@@ -260,21 +273,15 @@ end
 function SWEP:PrimaryAttack()
     local owner = self:GetOwner()
     self:SetNextPrimaryFire( CurTime() + self.Primary.Delay / 2 )
-    if self:Clip1() <= 0 then
-        if IsFirstTimePredicted() then
-            owner:EmitSound( "weapons/pistol/pistol_empty.wav", 70 )
-
-        end
-        return false
-    end
 
     local trace = owner:GetEyeTrace()
-    self:SendWeaponAnim( ACT_VM_HITCENTER )
 
     local whatWeHit = trace.Entity
 
+    owner:SetNW2Bool( "gleenailer_nailattempted", true )
+
     -- Bail if invalid
-    if whatWeHit:IsWorld() or not self:ValidEntityToNail( whatWeHit, trace.PhysicsBone ) then
+    if whatWeHit:IsWorld() or self:Clip1() <= 0 or not self:ValidEntityToNail( whatWeHit, trace.PhysicsBone ) then
         if not IsValid( whatWeHit ) then
             self:Miss()
         else
@@ -296,7 +303,6 @@ function SWEP:PrimaryAttack()
     local secondHit = trTwo.Entity
 
     if IsFirstTimePredicted() then
-
         bullet = {}
         bullet.Num    = 1
         bullet.Src    = owner:GetShootPos()
@@ -329,14 +335,15 @@ function SWEP:PrimaryAttack()
 
         end
 
+        owner:SetNW2Bool( "gleenailer_goodnailed", true )
+        self:SendWeaponAnim( ACT_VM_HITKILL )
+
         self:EmitSound( self.NailedSound )
 
         owner:SetAnimation( PLAYER_ATTACK1 )
         self:SetNextPrimaryFire( CurTime() + self.Primary.Delay )
 
-        local rnda = self.Primary.Recoil * -2 
-        local rndb = self.Primary.Recoil * math.random(-2, 3) 
-        owner:ViewPunch( Angle( rnda,rndb,rnda ) )
+        owner:ViewPunch( Angle( -10,-10,-10 ) )
 
         -- Client can bail now
         if ( CLIENT ) then return true end
@@ -374,6 +381,9 @@ end
 
 local function nailUnregister( nail, ent )
     local creationId = nail:GetCreationID()
+
+    if not IsValid( ent ) then return end
+
     -- idk how this is gonna end up with a nil value but whatever
     local nails = ent.huntersglee_breakablenails or {}
     if nails[ creationId ] then
@@ -381,13 +391,11 @@ local function nailUnregister( nail, ent )
 
     end
 
-    if not IsValid( ent ) then return end
-
     if table.Count( nails ) <= 0 then
         ent.huntersglee_breakablenails = nil
         local class = ent:GetClass()
         -- only unlock doors!
-        if class ==  "prop_door_rotating" then
+        if class == "prop_door_rotating" then
             ent:Fire( "unlock", "", .01 )
 
         end

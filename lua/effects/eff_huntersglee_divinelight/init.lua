@@ -4,7 +4,6 @@ function EFFECT:Init( data )
     if not IsValid( self.Ent ) then return end
     self.Position = vOffset
     self.Scayul = data:GetScale()
-    self.TimeToDie = CurTime() + self.Scayul * 4
     local emitter = ParticleEmitter( data:GetOrigin() )
     local rollparticle = emitter:Add( "sprites/animglow02", vOffset )
 

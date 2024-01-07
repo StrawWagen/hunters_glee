@@ -104,6 +104,12 @@ function ENT:Break()
         util.ScreenShake( self:GetPos(), 10, 20, 0.1, 700 )
 
     end
+    if IsValid( self.secondEnt ) then
+        self:unregister( self.secondEnt )
+        self:EmitSound( "physics/metal/metal_box_impact_hard" .. math.random( 1, 3 ) .. ".wav", 80, math.random( 70, 90 ), 1, CHAN_STATIC )
+        util.ScreenShake( self:GetPos(), 10, 20, 0.1, 700 )
+
+    end
 
     self:Detach()
 
@@ -112,9 +118,7 @@ function ENT:Break()
 end
 
 hook.Add( "EntityTakeDamage", "nail_break_when_nailed_damaged", function( target, dmg )
-    local nails = target.huntersglee_breakablenails
-
-    if not nails then return end
+    if not target.huntersglee_breakablenails then return end
 
     -- stupid bug, bot crushes off all nails at once
     if dmg:IsDamageType( DMG_CRUSH ) and IsValid( dmg:GetAttacker() ) and dmg:GetAttacker().isTerminatorHunterBased and IsValid( dmg:GetInflictor() ) and dmg:GetInflictor().isTerminatorHunterBased then return end
@@ -127,10 +131,19 @@ hook.Add( "EntityTakeDamage", "nail_break_when_nailed_damaged", function( target
 
     end
 
-    while damage > 0 do
-        local bite = math.random( 1, 150 )
+    local done = 100
+
+    -- go thru all nails until all damage is absorbed
+    while damage > 0 and done < 100 do
+        done = done + 1
+        -- nail's health, breaks if this roll is less than damage
+        local bite = math.random( 1, 160 )
         tempDamage = damage - bite
-        local randNail, nailsKey = table.Random( nails )
+        if not target.huntersglee_breakablenails then
+            break
+
+        end
+        local randNail, nailsKey = table.Random( target.huntersglee_breakablenails )
         if IsValid( randNail ) then
             if tempDamage > 0 then
                 randNail:Break()
@@ -144,8 +157,8 @@ hook.Add( "EntityTakeDamage", "nail_break_when_nailed_damaged", function( target
 
             end
         else
-            if table.Count( nails ) > 0 then
-                table.remove( nails, nailsKey )
+            if table.Count( target.huntersglee_breakablenails ) > 0 then
+                target.huntersglee_breakablenails[ nailsKey ] = nil
 
             else
                 target.huntersglee_breakablenails = nil

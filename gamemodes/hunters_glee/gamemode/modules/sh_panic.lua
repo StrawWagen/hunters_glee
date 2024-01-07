@@ -1,5 +1,8 @@
 if CLIENT then
-    -- cache panic so we aren't calling getnwint
+
+    local LocalPlayer = LocalPlayer
+
+    -- cache panic so we aren't calling getnwfloat
     local clPanic = nil
     function doPanicDistort( scale )
         local refractAmount = scale / 12000
@@ -18,7 +21,9 @@ if CLIENT then
 
     local panicTimer = "huntersglee_panicmanagethinkclient" -- no backup for restarting this
     timer.Create( panicTimer, 0.2, 0, function()
-        clPanic = LocalPlayer():GetNWInt( "huntersglee_panic", 0 )
+        local ply = LocalPlayer()
+        if not IsValid( ply ) then return end
+        clPanic = ply:GetNWFloat( "huntersglee_panic", 0 )
 
     end )
 
@@ -32,7 +37,7 @@ elseif SERVER then
 
     function GM:GetPanic( ply )
         if not IsValid( ply ) then return 0 end
-        return ply:GetNWInt( "huntersglee_panic", 0 )
+        return ply:GetNWFloat( "huntersglee_panic", 0 )
 
     end
     function GM:GivePanic( ply, newPanic )
@@ -42,17 +47,28 @@ elseif SERVER then
         local panic = GAMEMODE:GetPanic( ply )
         panic = math.Clamp( panic + newPanic, 0, 1000 )
 
-        ply:SetNWInt( "huntersglee_panic", panic )
+        ply:SetNWFloat( "huntersglee_panic", panic )
 
         return true
 
     end
+    function GM:SetPanic( ply, newPanic )
+        if not newPanic then return end
+        if not IsValid( ply ) then return end
+        ply:SetNWFloat( "huntersglee_panic", newPanic )
+
+        return true
+
+    end
+
+    local maxPanic = 100
 
     function GM:PanicThinkSV( ply )
         local panic = GAMEMODE:GetPanic( ply )
 
         if ply:Health() <= 0 then
             panic = 0
+
         end
 
         local underwater = ply:WaterLevel() >= 3
@@ -67,7 +83,7 @@ elseif SERVER then
             local panicSoundPitch = nil
             local panicSoundHitch = nil
 
-            if panic >= 100 then
+            if panic >= maxPanic then
                 local hookResult = hook.Run( "huntersglee_blockpanicreset", ply, panic )
                 local canResetPanic = not underwater and hookResult ~= true
 
@@ -167,9 +183,23 @@ elseif SERVER then
 
         end
 
+        local bite = panic / 5
+        local maxFov = maxPanic
+        maxFov = maxFov + -bite
+        maxFov = math.Clamp( maxFov, 60, 100 )
+
+        if not ply.glee_DefaultPanicFOV or bite == 0 then
+            ply.glee_DefaultPanicFOV = ply:GetFOV()
+
+        elseif bite > 0 and not ply:KeyDown( IN_ZOOM ) then
+            local fov = math.Clamp( ply.glee_DefaultPanicFOV, 0, maxFov )
+            ply:SetFOV( fov, 0.2 )
+
+        end
+
         panic = math.Clamp( panic + -0.5, 0, 1000 )
         -- we are adding decimals to ints, but it works for some reason?
-        ply:SetNWInt( "huntersglee_panic", panic )
+        ply:SetNWFloat( "huntersglee_panic", panic )
 
     end
 
@@ -193,6 +223,7 @@ elseif SERVER then
     end )
 
     hook.Add( "PlayerDeath", "glee_panic_stopbreathingsnd", function( victim )
+        GAMEMODE:SetPanic( victim, 0 )
         if victim.huntersglee_panicSound == nil or not victim.huntersglee_panicSound:IsPlaying() then return end
         victim.huntersglee_panicSound:Stop()
 

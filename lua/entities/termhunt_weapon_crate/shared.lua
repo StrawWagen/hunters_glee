@@ -99,6 +99,8 @@ function GM:WeaponsCrate( pos )
 
     local crate = ents.Create( "item_item_crate" )
     crate:SetPos( pos )
+    local random = math.random( -4, 4 ) * 45
+    crate:SetAngles( Angle( 0, random, 0 ) )
     crate:SetKeyValue( "ItemClass", "dynamic_weapons" )
     crate:SetKeyValue( "ItemCount", 5 )
     crate:Spawn()

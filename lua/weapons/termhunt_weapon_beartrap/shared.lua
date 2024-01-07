@@ -36,9 +36,7 @@ if CLIENT then
 end
 
 if SERVER then
-
     resource.AddFile( "materials/VGUI/ttt/icon_beartrap.vmt" )
-    resource.AddFile( "materials/VGUI/ttt/icon_beartrap.vtf" )
 
     resource.AddFile( "materials/models/freeman/beartrap_diffuse.vtf" )
     resource.AddFile( "materials/models/freeman/beartrap_specular.vtf" )
@@ -46,20 +44,9 @@ if SERVER then
 
     resource.AddFile( "sound/beartrap.wav" )
 
-    resource.AddFile( "models/stiffy360/BearTrap.dx80.vtx" )
-    resource.AddFile( "models/stiffy360/BearTrap.dx90.vtx" )
     resource.AddFile( "models/stiffy360/beartrap.mdl" )
-    resource.AddFile( "models/stiffy360/BearTrap.phy" )
-    resource.AddFile( "models/stiffy360/BearTrap.sw.vtx" )
-    resource.AddFile( "models/stiffy360/beartrap.vvd" )
-    resource.AddFile( "models/stiffy360/BearTrap.xbox.vtx" )
 
-    resource.AddFile( "models/stiffy360/C_BearTrap.dx80.vtx" )
-    resource.AddFile( "models/stiffy360/C_BearTrap.dx90.vtx" )
     resource.AddFile( "models/stiffy360/c_beartrap.mdl" )
-    resource.AddFile( "models/stiffy360/C_BearTrap.sw.vtx" )
-    resource.AddFile( "models/stiffy360/c_beartrap.vvd" )
-    resource.AddFile( "models/stiffy360/C_BearTrap.xbox.vtx" )
 
     resource.AddFile( "materials/entities/termhunt_weapon_beartrap.png" )
 
@@ -96,9 +83,6 @@ function SWEP:ValidPlace()
     }
     local tr = util.TraceLine( traceStruct )
     if not tr.HitWorld then return end
-
-    local dot = vector_up:Dot( tr.HitNormal )
-    if not ( dot > 0.55 and dot <= 1 ) then return end
 
     return true, tr
 

@@ -18,15 +18,20 @@ include( "lib/sv_termfuncs.lua" )
 include( "autorun/server/sv_wallkick.lua" )
 include( "shared.lua" )
 include( "sv_player.lua" )
+include( "sv_playercommunication.lua" )
 include( "modules/sv_speedhandler.lua" )
 include( "modules/sv_navpatcher.lua" )
 include( "modules/sv_doorbash.lua" )
 include( "modules/sv_mapvote.lua" )
 include( "modules/sv_zcratespawner.lua" )
+include( "modules/sv_zproceduralspawner.lua" )
 include( "modules/sv_weapondropper.lua" )
 include( "modules/sv_seeding_rewarder.lua" )
+include( "modules/sv_skullmanager.lua" )
+include( "modules/sv_zbeartrapspawner.lua" )
+include( "modules/sv_hunterspawner.lua" )
+include( "modules/battery/sv_battery.lua" )
 
-util.AddNetworkString( "glee_storeresurrectpos" )
 util.AddNetworkString( "glee_witnesseddeathconfirm" )
 util.AddNetworkString( "glee_resetplayershopcooldowns" )
 util.AddNetworkString( "glee_sendshopcooldowntoplayer" )
@@ -37,6 +42,16 @@ util.AddNetworkString( "glee_followednexthing" )
 util.AddNetworkString( "glee_switchedspectatemodes" )
 util.AddNetworkString( "glee_stoppedspectating" )
 util.AddNetworkString( "glee_closetheshop" )
+
+resource.AddFile( "materials/vgui/hud/glee_skullpickup.vmt" )
+
+resource.AddSingleFile( "sound/53937_meutecee_trumpethit07.wav" )
+resource.AddSingleFile( "sound/418788_name_heartbeat_single.wav" )
+resource.AddSingleFile( "sound/209578_zott820_cash-register-purchase.wav" )
+resource.AddSingleFile( "sound/482735__copyc4t__cartoon-long-throw.wav" )
+
+resource.AddWorkshop( "2848253104" )
+resource.AddWorkshop( "2944078031" )
 
 GM.SpawnTypes = {
     "info_player_deathmatch",
@@ -54,8 +69,6 @@ GM.SpawnTypes = {
     "info_player_zombie",
 }
 
-local overrideCountVar = CreateConVar( "huntersglee_spawneroverridecount", 0, bit.bor( FCVAR_NOTIFY, FCVAR_ARCHIVE ), "Overrides how many terminators will spawn, 0 for automatic count. Above 5 WILL lag.", 0, 32 )
-
 -- do greedy patch once per session
 GM.HuntersGleeDoneTheGreedyPatch = GM.HuntersGleeDoneTheGreedyPatch or nil
 
@@ -67,16 +80,16 @@ GM.termHunt_navmeshCheckTime = math.huge
 GM.termHunt_NextThink = math.huge
 validNavarea = validNavarea or NULL
 
-GM.doNotUseMapSpawns = nil
-GM.hasNavmesh       = nil
-GM.blockpvp         = nil
-GM.canRespawn       = nil
-GM.canScore         = nil
-GM.doProxChat       = nil
-GM.termHunt_hunters = {}
-GM.deadPlayers      = {}
-GM.roundScore       = {}
-GM.roundExtraData   = {}
+GM.doNotUseMapSpawns    = nil
+GM.hasNavmesh           = nil
+GM.blockpvp             = nil
+GM.canRespawn           = nil
+GM.canScore             = nil
+GM.doProxChat           = nil
+GM.termHunt_hunters     = {}
+GM.deadPlayers          = {}
+GM.roundScore           = {}
+GM.roundExtraData       = {}
 
 GM.roundStartAfterNavCheck  = 40
 GM.roundStartNormal         = 40
@@ -102,7 +115,6 @@ end
 -- gamemode brains
 
 function GM:Think()
-
     local cur = _CurTime()
     GAMEMODE:managePlayerSpectating()
     GAMEMODE:manageServersideCountOfBeats()
@@ -118,19 +130,13 @@ function GM:Think()
     if GAMEMODE:handleGenerating( currState ) == true then return end
 
     -- see sv_player
-    GAMEMODE:CacheNavareas( players )
-
     -- see sv_navpatcher
-    GAMEMODE:manageNavPatching( players )
-
-    -- see sv_zplayerdrowning
-    GAMEMODE:managePlayerDrowning( players )
-
+    -- see sv_playerdrowning
     -- see player_termrunner
-    GAMEMODE:manageUnstucking( players )
-
-    -- see zcratespawner
-    GAMEMODE:crateSpawnThink( players )
+    -- see sv_zproceduralspawner
+    -- see battery/sv_battery
+    -- see sv_darknessfear
+    hook.Run( "glee_sv_validgmthink", players, currState, cur )
 
     local displayTime = nil
     local displayName = nil
@@ -177,6 +183,8 @@ function GM:Think()
             GAMEMODE.canRespawn = true
             GAMEMODE.canScore   = false
 
+            hook.Run( "glee_sv_validgmthink_inactive", players, currState, cur )
+
         end
         displayName = "Getting ready "
         displayTime = GAMEMODE:getRemaining( GAMEMODE.termHunt_roundStartTime, cur )
@@ -206,28 +214,12 @@ function GM:Think()
             GAMEMODE:roundEnd()
 
         else
-            local nextSpawn = GAMEMODE.nextTermSpawn or 0
-            if nextSpawn < cur then -- this is probably laggy so dont do it every tick
-                GAMEMODE.nextTermSpawn = cur + 0.2
-                local maxHunters = GAMEMODE:getMaxHunters()
-                local aliveTermsCount = 0
-                for _, hunter in ipairs( GAMEMODE.termHunt_hunters ) do
-                    if IsValid( hunter ) and hunter:Health() > 0 then
-                        aliveTermsCount = aliveTermsCount + 1
-
-                    end
-                end
-                if aliveTermsCount < math.floor( maxHunters ) then
-                    GAMEMODE:spawnHunter()
-
-                end
-            end
-            GAMEMODE:checkHuntersAreInCorrectGroups()
-
             GAMEMODE.blockpvp   = false
             GAMEMODE.doProxChat = true
             GAMEMODE.canRespawn = false
             GAMEMODE.canScore   = true
+
+            hook.Run( "glee_sv_validgmthink_active", players, currState, cur )
 
         end
         displayName = "Hunting... "
@@ -255,110 +247,11 @@ function GM:Think()
     end
 end
 
-function GM:getMaxHunters()
-    local overrideCount = math.Clamp( overrideCountVar:GetInt(), 0, 64 )
-    overrideCount = math.Round( overrideCount )
-    if overrideCount > 0 then return overrideCount end
-
-    -- magic numbers that means the gamemode starts at 2 hunters, and increases up to 5 hunters
-    local plyCount = #player.GetAll()
-    local plyCountWeighted = plyCount * 0.75
-    local hunterCount = 1.25 + plyCountWeighted
-    hunterCount = math.floor( hunterCount )
-    return math.Clamp( hunterCount, 2, 5 )
-
-end
-
--- spawn a hunter as far away as possible from every player by inching a distance check around
-function GM:getValidHunterPos()
-    local targetDistanceMin = 9000
-    local dynamicTooCloseFailCounts = GAMEMODE.roundExtraData.dynamicTooCloseFailCounts or -2
-    local dynamicTooCloseDist = GAMEMODE.roundExtraData.dynamicTooCloseDist or targetDistanceMin
-
-    if not GAMEMODE.biggestNavmeshGroups then return nil, nil end
-
-    local _, theMainGroup = GAMEMODE:GetAreaInOccupiedBigGroupOrRandomBigGroup()
-
-    -- 3 attempts, will march distance down if we can't find a good option
-    for _ = 0, 10 do
-        local spawnPos = nil
-        local randomArea = table.Random( theMainGroup )
-        if not randomArea or not IsValid( randomArea ) then continue end
-        spawnPos = randomArea:GetCenter()
-
-        if not isvector( spawnPos ) then continue end
-        spawnPos = spawnPos + Vector( 0,0,20 )
-
-        local checkPos = spawnPos + Vector( 0,0,50 )
-        local invalid = nil
-        local wasTooClose = nil
-
-        for _, pos in ipairs( GAMEMODE:allPlayerShootPositions() ) do
-            local visible, visResult = terminator_Extras.posCanSee( pos, checkPos )
-            local hitCloseBy = visResult.HitPos:DistToSqr( checkPos ) < 350^2
-            if visible or hitCloseBy then
-                invalid = true
-                goto skipTheValidHunterPosReturn
-
-            elseif pos:DistToSqr( checkPos ) < dynamicTooCloseDist^2 then -- dist check!
-                invalid = true
-                wasTooClose = true
-                goto skipTheValidHunterPosReturn
-
-            end
-        end
-
-        ::skipTheValidHunterPosReturn::
-
-        if not invalid then
-            --debugoverlay.Cross( spawnPos, 100, 20, color_white, true )
-            GAMEMODE.roundExtraData.dynamicTooCloseFailCounts = -2
-            return spawnPos, true
-
-        end
-
-        -- random picked area was too close, decrease radius
-        if wasTooClose then
-            --debugoverlay.Cross( spawnPos, 10, 20, Color( 255,0,0 ), true )
-            GAMEMODE.roundExtraData.dynamicTooCloseFailCounts = dynamicTooCloseFailCounts + 1
-            dynamicTooCloseDist = dynamicTooCloseDist + ( -dynamicTooCloseFailCounts * 25 )
-            GAMEMODE.roundExtraData.dynamicTooCloseDist = dynamicTooCloseDist
-
-        end
-    end
-    return nil, nil
-
-end
-
-function GM:spawnHunter( classOverride )
-    if not GAMEMODE.HuntersGleeDoneTheGreedyPatch then return end
-
-    local spawnPos, valid = GAMEMODE:getValidHunterPos()
-
-    if not valid then return end
-
-    --debugoverlay.Cross( spawnPos, 50, 20, Color( 0,0,255 ), true )
-
-    if not isvector( spawnPos ) then return end
-    local class = classOverride or GAMEMODE:GetHuntersClass()
-    local hunter = ents.Create( class )
-
-    if not IsValid( hunter ) then return end
-
-    hunter:SetPos( spawnPos + Vector( 0,0,50 ) )
-    hunter:Spawn()
-    print( hunter )
-    table.insert( GAMEMODE.termHunt_hunters, hunter )
-
-    return true, hunter
-
-end
-
 function GM:alivePlayersOrAll( plys )
     local plyFinal = {}
     if GAMEMODE:countAlive( plys ) > 0 then
         for _, ply in pairs( plys ) do
-            if ply:Alive() then
+            if ply:Health() > 0 then
                 table.insert( plyFinal, ply )
 
             end
@@ -367,7 +260,7 @@ function GM:alivePlayersOrAll( plys )
         plyFinal = plys
 
     end
-    return plyFinal
+    return plyFinalroundScore
 
 end
 
@@ -389,18 +282,43 @@ function GM:calculateTotalScore()
 end
 
 function GM:calculateWinner()
-    local plyFinal = player.GetAll()
-    table.sort( plyFinal, function( a, b )
-        if GAMEMODE:plysRoundScore( a ) > GAMEMODE:plysRoundScore( b ) then
-            return true
+    local players = player.GetAll()
 
-        else
-            return false
+    local playersWithSkullCounts = {}
 
+    for _, ply in ipairs( players ) do
+        local skulls = ply:GetSkulls()
+        local plysAtCount = playersWithSkullCounts[skulls] or {}
+
+        table.insert( plysAtCount, ply )
+
+        playersWithSkullCounts[skulls] = plysAtCount
+
+    end
+
+    local biggestCount = table.maxn( playersWithSkullCounts )
+    local bestPlayers = playersWithSkullCounts[ biggestCount ]
+    local bestPlayer
+    local tieBroken = false
+    -- break ties with score count
+    if #bestPlayers > 1 then
+        local bestScore = -math.huge
+        tieBroken = true
+        for _, ply in ipairs( bestPlayers ) do
+            local currPlysScore = ply:GetScore()
+            if currPlysScore > bestScore then
+                bestPlayer = ply
+                bestScore = currPlysScore
+
+            end
         end
-    end )
-    local winner = plyFinal[1]
-    return winner
+    else
+        bestPlayer = bestPlayers[1]
+
+    end
+
+    local winner = bestPlayer
+    return winner, tieBroken
 
 end
 
@@ -508,7 +426,7 @@ local abs_Local = math.abs
 local coroutine_status = coroutine.status
 local coroutine_resume = coroutine.resume
 
-function GM:checkHuntersAreInCorrectGroups()
+hook.Add( "glee_sv_validgmthink_active", "glee_checkhunters_areinvalidgroups", function()
     if not correctGroupsCor then
         correctGroupsCor = coroutine.create( huntersAreInCorrectGroupsFunc )
 
@@ -528,7 +446,7 @@ function GM:checkHuntersAreInCorrectGroups()
         correctGroupsCor = nil
 
     end
-end
+end )
 
 -- remove this if file was saved
 hook.Remove( "Think", "doGreedyPatchThinkHook" )
@@ -538,23 +456,23 @@ hook.Remove( "Think", "doGreedyPatchThinkHook" )
 function GM:SetupTheLargestGroupsNStuff()
 
     -- navmesh groups need to be at least 40% the size of the largest one to be considered "playable"
-    GAMEMODE.biggestGroupsRatio = 0.4
-    GAMEMODE.GreedyPatchCouroutine = nil
+    self.biggestGroupsRatio = 0.4
+    self.GreedyPatchCouroutine = nil
 
     hook.Add( "Think", "doGreedyPatchThinkHook", function()
         local patchResult = nil
-        if not GAMEMODE.HuntersGleeDoneTheGreedyPatch and not game.SinglePlayer() then
+        if not self.HuntersGleeDoneTheGreedyPatch and not game.SinglePlayer() then
 
-            if not GAMEMODE.GreedyPatchCouroutine then
-                GAMEMODE:speakAsHuntersGlee( "Beginning greedy navpatcher process..." )
+            if not self.GreedyPatchCouroutine then
+                self:speakAsHuntersGlee( "Beginning greedy navpatcher process..." )
 
             end
 
-            GAMEMODE.GreedyPatchCouroutine = GAMEMODE.GreedyPatchCouroutine or coroutine.create( GAMEMODE.DoGreedyPatch )
+            self.GreedyPatchCouroutine = self.GreedyPatchCouroutine or coroutine.create( self.DoGreedyPatch )
 
             local oldTime = SysTime()
-            while abs_Local( oldTime - SysTime() ) < 0.01 and GAMEMODE.GreedyPatchCouroutine and coroutine_status( GAMEMODE.GreedyPatchCouroutine ) ~= "dead" do
-                patchResult, curError = coroutine_resume( GAMEMODE.GreedyPatchCouroutine, GAMEMODE )
+            while abs_Local( oldTime - SysTime() ) < 0.01 and self.GreedyPatchCouroutine and coroutine_status( self.GreedyPatchCouroutine ) ~= "dead" do
+                patchResult, curError = coroutine_resume( self.GreedyPatchCouroutine, self )
 
                 if curError and curError ~= "done" then ErrorNoHaltWithStack( curError ) break end
 
@@ -562,15 +480,15 @@ function GM:SetupTheLargestGroupsNStuff()
         end
 
         -- if patch result does not equal nil, then wait
-        if ( GAMEMODE.GreedyPatchCouroutine and patchResult ~= nil ) then return end
+        if ( self.GreedyPatchCouroutine and patchResult ~= nil ) then return end
 
-        GAMEMODE.navmeshGroups = GAMEMODE:GetConnectedNavAreaGroups( navmesh.GetAllNavAreas() )
-        GAMEMODE.biggestNavmeshGroups = GAMEMODE:FilterNavareaGroupsForGreaterThanPercent( GAMEMODE.navmeshGroups, GAMEMODE.biggestGroupsRatio )
+        self.navmeshGroups = self:GetConnectedNavAreaGroups( navmesh.GetAllNavAreas() )
+        self.biggestNavmeshGroups = self:FilterNavareaGroupsForGreaterThanPercent( self.navmeshGroups, self.biggestGroupsRatio )
 
-        GAMEMODE:removePorters() -- remove teleporters that cross navmesh groups, or lead to non-navmeshed spots
+        self:removePorters() -- remove teleporters that cross navmesh groups, or lead to non-navmeshed spots
 
         -- fix maps with separate spawn rooms w/ teleporters
-        GAMEMODE:TeleportRoomCheck()
+        self:TeleportRoomCheck()
 
         hook.Remove( "Think", "doGreedyPatchThinkHook" )
 
@@ -674,6 +592,7 @@ function GM:handleGenerating( currState )
     elseif generating and currState == GAMEMODE.ROUND_ACTIVE then
         print( "Generating navmesh!\nRemoving bots..." )
         GAMEMODE:roundEnd()
+        GAMEMODE.biggestNavmeshGroups = nil
         return true
 
     elseif generating then
@@ -701,6 +620,9 @@ function GM:roundStart()
     GAMEMODE.roundExtraData = nil
     GAMEMODE.roundExtraData = {}
 
+    SetGlobalEntity( "termHuntWinner", NULL )
+    SetGlobalInt( "termHuntWinnerSkulls", 0 )
+
     for _, ply in ipairs( player.GetAll() ) do
         ply:SetDeaths( 0 )
     end
@@ -713,18 +635,13 @@ end
 
 -- from hunting into displaying score
 function GM:roundEnd()
-    for _, hunter in pairs( GAMEMODE.termHunt_hunters ) do
-        SafeRemoveEntity( hunter )
-    end
     local plyCount = #player.GetAll()
     local timeAdd = math.Clamp( plyCount * 0.7, 1, 15 ) -- give time for discussion
     GAMEMODE.limboEnd = _CurTime() + 18 + timeAdd
 
-    GAMEMODE.termHunt_hunters = {}
     GAMEMODE.deadPlayers = {}
     GAMEMODE:SetRoundState( GAMEMODE.ROUND_LIMBO )
     timer.Simple( engine.TickInterval(), function()
-
         if plyCount <= 0 then return end
 
         local winner = GAMEMODE:calculateWinner()
@@ -733,8 +650,16 @@ function GM:roundEnd()
         SetGlobalBool( "termHuntDisplayWinners", true )
         SetGlobalInt( "termHuntTotalScore", math.Round( totalScore ) )
 
+        if winner:GetSkulls() <= 0 then
+            SetGlobalEntity( "termHuntWinner", NULL )
+            SetGlobalInt( "termHuntWinnerSkulls", 0 )
+            return
+
+        end
+
         SetGlobalEntity( "termHuntWinner", winner )
-        SetGlobalInt( "termHuntWinnerScore", math.Round( GAMEMODE:plysRoundScore( winner ) ) )
+        SetGlobalInt( "termHuntWinnerSkulls", winner:GetSkulls() )
+
     end )
 
     hook.Run( "huntersglee_round_into_limbo" )
@@ -743,10 +668,18 @@ end
 
 -- from the part where finest prey & total score is displayed, into setup where people can buy stuff with discounts
 function GM:beginSetup()
+    if GAMEMODE.termHunt_hunters then
+        for _, hunter in pairs( GAMEMODE.termHunt_hunters ) do
+            SafeRemoveEntity( hunter )
+        end
+        GAMEMODE.termHunt_hunters = {}
+
+    end
     for _, ply in ipairs( player.GetAll() ) do
         ply.realRespawn = true -- wipe all shop attributes
         ply.shopItemCooldowns = {} -- reset wep cooldowns
         ply.isTerminatorHunterKiller = nil -- dont have this persist thru rounds
+        ply:ResetSkulls()
         GAMEMODE:ensureNotSpectating( ply )
 
     end
@@ -827,6 +760,7 @@ function GM:setupFinish()
 
     end
 
+    hook.Run( "huntersglee_round_into_inactive" )
     hook.Run( "huntersglee_round_firstsetup" )
 
 end

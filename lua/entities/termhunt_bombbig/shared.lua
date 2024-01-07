@@ -20,11 +20,14 @@ function ENT:Initialize()
     self:PhysicsInit( SOLID_VPHYSICS )
     self:SetCollisionGroup( COLLISION_GROUP_WEAPON )
 
+    terminator_Extras.SmartSleepEntity( self, 20 )
+
     -- Wake up our physics object so we don't start asleep
     local phys = self:GetPhysicsObject()
     if IsValid( phys ) then
         phys:Wake()
         phys:SetMass( phys:GetMass() * 50 )
+        phys:SetMaterial( "Watermelon" )
 
     end
 
@@ -62,6 +65,8 @@ function ENT:OnTakeDamage( dmg )
         self:EmitSound( "npc/headcrab_poison/ph_wallhit2.wav", 80, pit )
         self:EmitSound( "physics/flesh/flesh_squishy_impact_hard4.wav", 80, pit + 20 )
 
+        sound.EmitHint( SOUND_DANGER, self:GetPos(), 800, 4, self )
+
         local obj = self:GetPhysicsObject()
         obj:ApplyForceCenter( VectorRand() * obj:GetMass() * 200 )
 
@@ -98,12 +103,24 @@ function ENT:OnRemove()
     util.ScreenShake( self:GetPos(), 30, 40, 1, 800 )
     util.ScreenShake( self:GetPos(), 5, 20, 3, 3000 )
 
+    local attacker = self:GetCreator()
+    if not IsValid( attacker ) then
+        attacker = self:GetOwner()
+
+    end
+    if not IsValid( attacker ) then
+        attacker = self
+
+    end
+
     local explode = ents.Create( "env_explosion" )
     explode:SetPos( Vector( worldSpaceC.x, worldSpaceC.y, worldSpaceC.z ) )
-    explode:SetOwner( self:GetCreator() or self )
+    explode:SetOwner( attacker )
     explode:Spawn()
     explode:SetKeyValue( "iMagnitude", 4 * 115 )
     explode:Fire( "Explode", 0, 0 )
+
+    util.BlastDamage( self, attacker, worldSpaceC, 200, 200 )
 
     for _ = 1, 8 do
         local grossSplat = EffectData()

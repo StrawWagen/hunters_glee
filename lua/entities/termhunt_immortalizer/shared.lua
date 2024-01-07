@@ -55,7 +55,7 @@ end
 function ENT:CalculateCanPlace()
     if not IsValid( self:GetCurrTarget() ) then return false, "Nothing to immortalize." end
     if self:GetCurrTarget().glee_DamageResistant then return false, "That's already immortal." end
-    if not self:HasEnoughToPurchase() then return false, self.noPurchaseReason_TooPoor end
+    if not self:HasEnoughToPurchase() then return false, self:TooPoorString() end
     return true
 
 end
@@ -168,7 +168,7 @@ function ENT:Place()
 
         end
         if message and plyToImmortal:IsPlayer() then
-            huntersGlee_Announce( { plyToImmortal }, 10, 1, message )
+            huntersGlee_Announce( { plyToImmortal }, 10, 1.5, message )
 
         end
 

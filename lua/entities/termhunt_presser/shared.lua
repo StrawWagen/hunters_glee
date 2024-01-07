@@ -16,6 +16,7 @@ ENT.HullCheckSize = Vector( 20, 20, 10 )
 ENT.PosOffset = Vector( 0, 0, 10 )
 
 ENT.SwapSound = "ui/buttonrollover.wav"
+ENT.DrawOriginHint = true
 
 if CLIENT then
     function ENT:DoHudStuff()
@@ -45,7 +46,7 @@ function ENT:GetNearestTarget()
     local nearestDistance = math.huge
     local myPos = self:GetPos()
 
-    -- Find all players within a radius of x units
+    -- Find all things within a radius of x units
     local stuff = ents.FindInSphere( myPos, 512 )
     for _, thing in ipairs( stuff ) do
         if not IsValid( thing ) then continue end
@@ -81,7 +82,7 @@ function ENT:CalculateCanPlace()
     local targ = self:GetCurrTarget()
     if not IsValid( targ ) then return false, "Nothing to press." end
     if targ.glee_nextPresserPress and targ.glee_nextPresserPress > CurTime() then return false, "Can't press that yet." end
-    if not self:HasEnoughToPurchase() then return false, self.noPurchaseReason_TooPoor end
+    if not self:HasEnoughToPurchase() then return false, self:TooPoorString() end
     return true
 
 end

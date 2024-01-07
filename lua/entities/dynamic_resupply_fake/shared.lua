@@ -16,8 +16,10 @@ function ENT:commonCreationOptions()
     local tbl = {
         { class = "item_battery" },
         { class = "item_healthkit" },
+        { class = "termhunt_score_pickup" },
+        { class = "item_healthvial" }, -- spawn crappy more often
         { class = "item_healthvial" },
-        { class = "termhunt_score_pickup" }
+        { class = "item_healthvial" },
 
     }
     return tbl
@@ -29,6 +31,7 @@ ENT.rareCreationChance = 5
 
 function ENT:rareCreationOptions()
     local tbl = {
+        { class = "item_battery", count = 2 },
         { class = "item_ammo_smg1_grenade", count = 3 },
         { class = "weapon_frag", count = 4 },
         { class = "weapon_slam", count = 2 },
@@ -82,14 +85,16 @@ function ENT:Initialize()
                 GAMEMODE:GiveWeaponClipsOfAmmo( item, clipsToGive )
 
             end
+
+            terminator_Extras.SmartSleepEntity( item, 20 )
+
+            timer.Simple( 60 * 15, function()
+                if not IsValid( item ) then return end
+                if IsValid( item:GetParent() ) then return end
+                SafeRemoveEntity( item )
+
+            end )
         end
-
-        timer.Simple( 60 * 8, function()
-            if not IsValid( item ) then return end
-            if IsValid( item:GetParent() ) then return end
-            SafeRemoveEntity( item )
-
-        end )
 
         SafeRemoveEntity( self )
 

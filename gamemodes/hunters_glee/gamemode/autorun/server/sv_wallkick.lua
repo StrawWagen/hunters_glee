@@ -43,7 +43,7 @@ hook.Add( "KeyPress", "WallKickKeyPress", function( ply, key )
     if nextWallKick > CurTime() then return end
     if ply:InVehicle() then return end
     if ply:GetMoveType() == MOVETYPE_NOCLIP then return end
-    if not ply:Alive() then return end
+    if ply:Health() <= 0 then return end
     if ply:GetObserverMode() ~= OBS_MODE_NONE then return end
 
     

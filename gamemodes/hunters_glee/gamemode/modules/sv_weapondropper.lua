@@ -5,19 +5,7 @@ local function setDropWeapons( ply, attacker, _ )
 
         local newWep = ply:DropWeaponKeepAmmo( wep )
 
-        local wepWeight = 0
-        if attacker.GetWeightOfWeapon then
-            wepWeight = attacker:GetWeightOfWeapon( wep )
-
-        end
-
-        timer.Simple( math.random( 240, 280 ) + wepWeight * 40, function()
-            if not IsValid( newWep ) then return end
-            if IsValid( newWep:GetOwner() ) or IsValid( newWep:GetParent() ) then return end
-
-            SafeRemoveEntity( newWep )
-
-        end )
+        terminator_Extras.SmartSleepEntity( newWep, 20 )
 
     end
 end

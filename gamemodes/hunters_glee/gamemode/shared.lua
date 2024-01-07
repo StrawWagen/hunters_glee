@@ -19,11 +19,8 @@ include( "modules/sh_playerdrowning.lua" )
 include( "modules/sh_detecthunterkills.lua" )
 include( "modules/sh_tempbools.lua" )
 include( "modules/sh_banking.lua" )
-
-resource.AddSingleFile( "sound/53937_meutecee_trumpethit07.wav" )
-resource.AddSingleFile( "sound/418788_name_heartbeat_single.wav" )
-resource.AddSingleFile( "sound/209578_zott820_cash-register-purchase.wav" )
-resource.AddSingleFile( "sound/482735__copyc4t__cartoon-long-throw.wav" )
+include( "modules/sh_danceslowdown.lua" )
+include( "modules/battery/sh_battery.lua" )
 
 GM.Name = "Hunter's Glee"
 GM.Author = "StrawWagen"
@@ -68,6 +65,7 @@ end
 local function catch( err )
     print( "FUNCTION ERRORED WHEN CLEANUPTIMERS RAN!" )
     ErrorNoHaltWithStack( err )
+
 end
 
 function GM:CleanupTimers()
@@ -100,6 +98,7 @@ function GM:PostCleanupMap()
 
         for _, ply in ipairs( player.GetAll() ) do
             ply.isSetup = nil
+            ply:ResetSkulls()
 
         end
 
@@ -115,7 +114,6 @@ function GM:InitPostEntity()
 end
 
 function GM:Initialize()
-
     if SERVER then
         GAMEMODE:TermHuntSetup()
         GAMEMODE:concmdSetup()

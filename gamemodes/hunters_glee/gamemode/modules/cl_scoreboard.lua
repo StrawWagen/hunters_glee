@@ -23,6 +23,8 @@ local PLAYER_LINE = {
         self.AvatarButton:Dock( LEFT )
         self.AvatarButton:SetSize( 32, 32 )
         self.AvatarButton.DoClick = function() self.Player:ShowProfile() end
+        self.AvatarButton:SetTooltip( "Open this player's steam profile." )
+        self.AvatarButton:SetTooltipDelay( 0 )
 
         self.Avatar = vgui.Create( "AvatarImage", self.AvatarButton )
         self.Avatar:SetSize( 32, 32 )
@@ -38,6 +40,7 @@ local PLAYER_LINE = {
         self.Mute:SetSize( 32, 32 )
         self.Mute:Dock( RIGHT )
         self.Mute:SetTooltip( "Mute/Unmute this player's voicechat" )
+        self.Mute:SetTooltipDelay( 0 )
 
         self.Ping = self:Add( "DLabel" )
         self.Ping:Dock( RIGHT )
@@ -45,35 +48,29 @@ local PLAYER_LINE = {
         self.Ping:SetFont( "ScoreboardDefault" )
         self.Ping:SetTextColor( Color( 93, 93, 93 ) )
         self.Ping:SetContentAlignment( 5 )
-        self.Ping:SetTooltip( "Ping" )
         self.Ping:SetMouseInputEnabled( true )
+        self.Ping:SetTooltip( "Player's ping to the server." )
+        self.Ping:SetTooltipDelay( 0 )
 
-        self.Deaths = self:Add( "DLabel" )
-        self.Deaths:Dock( RIGHT )
-        self.Deaths:SetWidth( 50 )
-        self.Deaths:SetFont( "ScoreboardDefault" )
-        self.Deaths:SetTextColor( Color( 93, 93, 93 ) )
-        self.Deaths:SetContentAlignment( 5 )
-        self.Deaths:SetTooltip( "Deaths" )
-        self.Deaths:SetMouseInputEnabled( true )
+        self.Skulls = self:Add( "DLabel" )
+        self.Skulls:Dock( RIGHT )
+        self.Skulls:SetWidth( 50 )
+        self.Skulls:SetFont( "ScoreboardDefault" )
+        self.Skulls:SetTextColor( Color( 93, 93, 93 ) )
+        self.Skulls:SetContentAlignment( 5 )
+        self.Skulls:SetMouseInputEnabled( true )
+        self.Skulls:SetTooltip( "This player's Skulls" )
+        self.Skulls:SetTooltipDelay( 0 )
 
-        self.Kills = self:Add( "DLabel" )
-        self.Kills:Dock( RIGHT )
-        self.Kills:SetWidth( 50 )
-        self.Kills:SetFont( "ScoreboardDefault" )
-        self.Kills:SetTextColor( Color( 93, 93, 93 ) )
-        self.Kills:SetContentAlignment( 5 )
-        self.Kills:SetTooltip( "Score.\nEither get close to hunters, or game the Shop." )
-        self.Kills:SetMouseInputEnabled( true )
-
-        self.RadioChannel = self:Add( "DLabel" )
-        self.RadioChannel:Dock( RIGHT )
-        self.RadioChannel:SetWidth( 50 )
-        self.RadioChannel:SetFont( "ScoreboardDefault" )
-        self.RadioChannel:SetTextColor( Color( 93, 93, 93 ) )
-        self.RadioChannel:SetContentAlignment( 5 )
-        self.RadioChannel:SetTooltip( "Radio channel.\nIf you're on the same radio channel as someone, you can talk to them from anywhere." )
-        self.RadioChannel:SetMouseInputEnabled( true )
+        self.Score = self:Add( "DLabel" )
+        self.Score:Dock( RIGHT )
+        self.Score:SetWidth( 50 )
+        self.Score:SetFont( "ScoreboardDefault" )
+        self.Score:SetTextColor( Color( 93, 93, 93 ) )
+        self.Score:SetContentAlignment( 5 )
+        self.Score:SetMouseInputEnabled( true )
+        self.Score:SetTooltip( "Score.\nEither get close to hunters, or game the Shop" )
+        self.Score:SetTooltipDelay( 0 )
 
         self:Dock( TOP )
         self:DockPadding( 3, 3, 3, 3 )
@@ -97,6 +94,8 @@ local PLAYER_LINE = {
 
     Think = function( self )
 
+        local isObscured = GAMEMODE:IsObscured()
+
         if not IsValid( self.Player ) then
             self:SetZPos( 9999 ) -- Causes a rebuild
             self:Remove()
@@ -108,14 +107,14 @@ local PLAYER_LINE = {
             self.Name:SetText( self.PName )
         end
 
-        if self.NumKills == nil or self.NumKills ~= self.Player:GetScore() then
-            self.NumKills = self.Player:GetScore()
-            self.Kills:SetText( self.NumKills )
+        if self.NumScore == nil or self.NumScore ~= self.Player:GetScore() then
+            self.NumScore = self.Player:GetScore()
+            self.Score:SetText( self.NumScore )
         end
 
-        if self.NumDeaths == nil or self.NumDeaths ~= self.Player:Deaths() then
-            self.NumDeaths = self.Player:Deaths()
-            self.Deaths:SetText( self.NumDeaths )
+        if self.NumSkulls == nil or self.NumSkulls ~= self.Player:GetSkulls() then
+            self.NumSkulls = self.Player:GetSkulls()
+            self.Skulls:SetText( self.NumSkulls )
         end
 
         if self.NumPing == nil or self.NumPing ~= self.Player:Ping() then
@@ -123,14 +122,9 @@ local PLAYER_LINE = {
             self.Ping:SetText( self.NumPing )
         end
 
-        if self.NumChannel == nil or self.NumChannel ~= self.Player:GetGleeRadioChannel() then
-            self.NumChannel = self.Player:GetGleeRadioChannel()
-            self.RadioChannel:SetText( self.NumChannel )
-        end
-
         local zPos = 0
-        if self.NumKills then
-            zPos = zPos + -self.NumKills
+        if self.NumScore then
+            zPos = zPos + -self.NumScore
 
         end
 
@@ -178,9 +172,10 @@ local PLAYER_LINE = {
         -- We draw our background a different colour based on the status of the player
         --
 
-        if not self.Player:Alive() then
+        if not self.Player:Alive() and not GAMEMODE:IsObscured() then
             draw.RoundedBox( 4, 0, 0, w, h, Color( 200, 100, 100, 255 ) )
             return
+
         end
 
         draw.RoundedBox( 4, 0, 0, w, h, Color( 175, 175, 175, 200 ) )

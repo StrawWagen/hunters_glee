@@ -1,5 +1,6 @@
 AddCSLuaFile()
 DEFINE_BASECLASS( "player_default" )
+include( "player_termrunnertaunt.lua" )
 local PLAYER = {}
 
 PLAYER.DuckSpeed            = 0.1        -- How fast to go from not ducking, to ducking
@@ -8,7 +9,7 @@ PLAYER.UnDuckSpeed          = 0.1        -- How fast to go from ducking, to not 
 --
 -- Creates a Taunt Camera
 --
-PLAYER.TauntCam = TauntCamera()
+PLAYER.TauntCam = GLEE_TauntCamera()
 
 --
 -- See gamemodes/base/player_class/player_default.lua for all overridable variables
@@ -95,7 +96,7 @@ end
 --
 function PLAYER:ShouldDrawLocal()
 
-    if ( self.TauntCam:ShouldDrawLocalPlayer( self.Player, self.Player:IsPlayingTaunt() ) ) then return true end
+    if ( self.TauntCam:ShouldDrawLocalPlayer( self.Player, self.Player:IsPlayingTaunt2() ) ) then return true end
 
 end
 
@@ -104,7 +105,7 @@ end
 --
 function PLAYER:CreateMove( cmd )
 
-    if ( self.TauntCam:CreateMove( cmd, self.Player, self.Player:IsPlayingTaunt() ) ) then return true end
+    if ( self.TauntCam:CreateMove( cmd, self.Player, self.Player:IsPlayingTaunt2() ) ) then return end
 
 end
 
@@ -113,7 +114,7 @@ end
 --
 function PLAYER:CalcView( view )
 
-    if ( self.TauntCam:CalcView( view, self.Player, self.Player:IsPlayingTaunt() ) ) then return true end
+    if ( self.TauntCam:CalcView( view, self.Player, self.Player:IsPlayingTaunt2() ) ) then return true end
 
     -- Your stuff here
 
@@ -192,6 +193,11 @@ function meta:GetScore()
 
 end
 
+function meta:GetSkulls()
+    return self:GetNWInt( "huntersglee_skulls", 0 )
+
+end
+
 if SERVER then
     function meta:GivePlayerScore( add )
         if hook.Run( "huntersglee_givescore", self, add ) == false then return end
@@ -199,8 +205,19 @@ if SERVER then
         self:SetNWInt( "huntersglee_score", math.Round( score + add ) )
     end
 
+    function meta:GivePlayerSkulls( add )
+        if hook.Run( "huntersglee_giveskulls", self, add ) == false then return end
+        local skulls = self:GetSkulls()
+        self:SetNWInt( "huntersglee_skulls", math.Round( skulls + add ) )
+    end
+
     function meta:ResetScore()
         self:SetNWInt( "huntersglee_score", 0 )
+
+    end
+
+    function meta:ResetSkulls()
+        self:SetNWInt( "huntersglee_skulls", 0 )
 
     end
 
@@ -208,6 +225,12 @@ if SERVER then
     function meta:TeleportTo( pos )
         self.unstuckOrigin = pos
         self:SetPos( pos )
+        self:unstuckFullHandle()
+
+    end
+
+    function meta:BeginUnstuck()
+        self.unstuckOrigin = nil
         self:unstuckFullHandle()
 
     end
@@ -234,8 +257,8 @@ if SERVER then
             self.glee_Unstucking = true
             local shouldBeValid
 
-            local toResurrect = self.unstuckOrigin or self:GetPos()
-            local result = self:checkIfPlyIsStuckAndHandle( toResurrect )
+            local origin = self.unstuckOrigin or self:GetPos()
+            local result = self:checkIfPlyIsStuckAndHandle( origin )
 
             -- they are stuck
             if result == true then
@@ -396,9 +419,7 @@ if SERVER then
         end
     end
 
-    local GAMEMODE = GAMEMODE or GM or gmod.GetGamemode()
-
-    function GAMEMODE:manageUnstucking( players )
+    hook.Add( "glee_sv_validgmthink", "glee_manageunstucking", function( players )
         for _, ply in ipairs( players ) do
             if ply:Health() > 0 then
                 local basicStuckCount = ply.glee_basicStuckCount or 0
@@ -428,6 +449,6 @@ if SERVER then
                 end
             end
         end
-    end
+    end )
 end
 

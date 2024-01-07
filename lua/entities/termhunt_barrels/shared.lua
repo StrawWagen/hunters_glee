@@ -37,7 +37,6 @@ if CLIENT then
 
         surface.drawShadowedTextBetter( scoreString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
 
-
     end
 end
 
@@ -175,6 +174,8 @@ function ENT:Place()
     barrel:SetAngles( self:GetAngles() )
     barrel:SetSkin( self:GetSkin() )
     barrel:Spawn()
+
+    terminator_Extras.SmartSleepEntity( barrel, 40 )
 
     self:GetBarrels()
 

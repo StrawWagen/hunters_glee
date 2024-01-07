@@ -66,6 +66,8 @@ function GM:ManhackCrate( pos )
     local crate = ents.Create( "prop_physics" )
     crate:SetModel( "models/Items/item_item_crate.mdl" )
     crate:SetPos( pos )
+    local random = math.random( -4, 4 ) * 45
+    crate:SetAngles( Angle( 0, random, 0 ) )
     crate:Spawn()
 
     crate.glee_IsManhackCrate = true

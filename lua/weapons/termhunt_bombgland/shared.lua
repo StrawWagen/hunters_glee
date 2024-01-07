@@ -13,7 +13,7 @@ SWEP.UseHands = true
 SWEP.Weight = 1
 
 SWEP.HoldType = "normal"
-SWEP.MassForBomb = 14
+SWEP.MassForBomb = 12
 SWEP.AccumulatedMass = 0
 SWEP.OldBombBeats = 0
 SWEP.UnstableBombCount = 4
@@ -31,6 +31,19 @@ SWEP.Secondary.Automatic   = false
 SWEP.Secondary.Ammo        = "none"
 
 if CLIENT then
+
+    function SWEP:HintPostStack()
+        local owner = self:GetOwner()
+        local count = self:GetBombs()
+
+        if not owner:GetNW2Bool( "bombgland_createdbomb", false ) and count >= 1 then return true, "Primary attack to drop a small bomb!" end
+
+        if not owner:GetNW2Bool( "bombgland_createdbigbomb", false ) and count >= 4 then return true, "Reload to drop a BIG bomb!\nYou will EXPLODE when damaged if you don't!" end
+
+        if not owner:GetNW2Bool( "bombgland_detonated", false ) and owner:GetNW2Bool( "bombgland_createdbomb", false ) then return true, "Secondary attack to explode your bombs!" end
+
+    end
+else
     resource.AddFile( "materials/entities/termhunt_bombgland.png" )
 
 end
@@ -61,7 +74,7 @@ end
 
 function SWEP:GetBombs()
     if CLIENT then
-        return self:GetNWInt( "bombgland_bombs", 0 )
+        return self:GetNW2Int( "bombgland_bombs", 0 )
 
     end
     if SERVER then
@@ -74,7 +87,7 @@ function SWEP:SetBombs( bombs )
     if not SERVER then return end
     self.Bombs = bombs
 
-    self:SetNWInt( "bombgland_bombs", self.Bombs )
+    self:SetNW2Int( "bombgland_bombs", self.Bombs )
 
 end
 
@@ -138,6 +151,11 @@ function SWEP:Equip()
             if not IsValid( self ) then return end
             self.Instability = math.Clamp( self.Instability + -1, 0, math.huge )
         end )
+
+        if owner.glee_bombExplodeHint then return end
+        owner.glee_bombExplodeHint = true
+
+        huntersGlee_Announce( { owner }, 5, 10, "I gotta be careful, my bombs can't take much damage..." )
 
     end )
 
@@ -213,6 +231,8 @@ function SWEP:PrimaryAttack()
         GAMEMODE:Bleed( owner, 1 )
     end
 
+    owner:SetNW2Bool( "bombgland_createdbomb", true )
+
     timer.Simple( 0.25, function()
         if not IsValid( self ) then return end
         if GAMEMODE.Bleed then
@@ -254,6 +274,8 @@ function SWEP:Reload()
     if GAMEMODE.Bleed then
         GAMEMODE:Bleed( owner, 4 )
     end
+
+    owner:SetNW2Bool( "bombgland_createdbigbomb", true )
 
     timer.Simple( 1, function()
         if not IsValid( self ) then return end
@@ -305,6 +327,8 @@ function SWEP:DetonateOldestBomb()
 
     self:PunchValid()
     self:GetOwner():EmitSound( "weapons/bugbait/bugbait_squeeze3.wav", 55, 140 )
+
+    self:GetOwner():SetNW2Bool( "bombgland_detonated", true )
 
     oldestBomb:Fire( "IgniteLifetime", 10 )
     oldestBomb:TakeDamage( oldestBomb.MaxHealth / 1.5, self:GetOwner(), self )

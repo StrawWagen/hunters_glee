@@ -21,7 +21,7 @@ function GM:paintNameAndHealth( trace )
         end
     end
 
-    if not text then return end
+    if not text or text == "" then return end
 
     surface.SetFont( font )
     local w, h = surface.GetTextSize( text )

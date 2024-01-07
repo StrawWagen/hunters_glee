@@ -3,13 +3,6 @@
 
 local plysNeeded = CreateConVar( "huntersglee_proceduralcratesmaxplayers", 8, bit.bor( FCVAR_NOTIFY, FCVAR_ARCHIVE ), "Player count threshold to stop randomly spawning weapon crates", 0, 32 )
 
-local stepSize = 50
-local minAreas = 70
-
-local vecFiftyUp = Vector( 0, 0, 50 )
-local lastCrate = nil
-local placedAlready = {}
-local crateSpawningFailed = nil
 
 local function nearbyGreaterThanCount( pos, radius, toCheck, target )
     local radiusSqr = radius^2
@@ -25,266 +18,184 @@ local function nearbyGreaterThanCount( pos, radius, toCheck, target )
     end
 end
 
-local traceHitTooCloseDist = 200^2
-
-local function alivePlayers()
-    local out = {}
-    for _, ply in ipairs( player.GetAll() ) do
-        if ply:Health() > 0 then
-            table.insert( out, ply )
-
-        end
-    end
-    return out
-
-end
-
-local function FindCrateSpawnPos()
-    -- Get a random player's pos
-    local ply = table.Random( alivePlayers() )
-    if not ply or not IsValid( ply ) then return end
-
-    local plyShootPos = ply:GetShootPos()
-
-    -- place crates in clusters!
-    local sortCenterIsABox = false
-    local sortPos = plyShootPos
-    local searchRange = 5000
-
-    if #navmesh.GetAllNavAreas() > 4000 then
-        searchRange = 8000
-
-    end
-
-    if IsValid( lastCrate ) then
-        sortPos = lastCrate:GetPos()
-        sortCenterIsABox = true
-        searchRange = 3500
-
-    end
-
-    local crates = ents.FindByClass( "item_item_crate" )
-    if #crates > 30 then return end
-
-    local navAreas = navmesh.Find( sortPos, searchRange, stepSize, stepSize )
-
-    -- ok the spot we putting it is too small, maybe try placing next to a hunter?
-    if not navAreas or #navAreas < minAreas then
-        local hunter = table.Random( GAMEMODE.termHunt_hunters )
-        if not IsValid( hunter ) then return end
-        sortPos = hunter:GetPos()
-
-        navAreas = navmesh.Find( sortPos, searchRange, stepSize, stepSize )
-
-    end
-    -- nope didnt work
-    if not navAreas or #navAreas < minAreas then return end
-
-    -- Sort the nav areas by furthest to closest from the player
-    table.sort( navAreas, function( a, b )
-        if sortCenterIsABox == true then
-            return a:GetCenter():DistToSqr( sortPos ) < b:GetCenter():DistToSqr( sortPos )
-        else
-            return a:GetCenter():DistToSqr( sortPos ) > b:GetCenter():DistToSqr( sortPos )
-        end
-    end )
-
-    -- this whole max traces budget made more sense when this wasnt couroutined
-    local done = 0
-    local maxTraces = 400
-    local maxToCheckNook = 2000
-    local toCheckNooks = {}
-
-    -- Iterate over the collection of nav areas until we run out of traces
-    for _, area in ipairs( navAreas ) do
-        coroutine.yield()
-        if
-            not area:IsBlocked()
-            and not area:IsUnderwater()
-            and ( sortCenterIsABox or not placedAlready[ area:GetID() ] )
-            and not nearbyGreaterThanCount( pos, 400, crates, 4 )
-
-        then
-            local toCheck = area:GetRandomPoint() + vecFiftyUp
-            local visible = nil
-
-            for _, visPly in ipairs( alivePlayers() ) do
-                if not IsValid( visPly ) then continue end
-                coroutine.yield()
-                local firstChecksShootPos = visPly:GetShootPos()
-                local vis, visTr = terminator_Extras.PosCanSeeComplex( toCheck, firstChecksShootPos, visPly )
-                if vis then
-                    visible = true
-                    break
-
-                end
-                if visTr and visTr.HitPos:DistToSqr( firstChecksShootPos ) < traceHitTooCloseDist then
-                    visible = true
-                    break
-
-                end
-            end
-
-            done = done + 1
-
-            if not visible and util.IsInWorld( toCheck ) then
-                table.insert( toCheckNooks, toCheck )
-                if #toCheckNooks > maxToCheckNook then break end
-
-            end
-            if done > maxTraces then break end
-
-        end
-    end
-
-    local scoredPositions = {}
-
-    for _, toCheckPos in ipairs( toCheckNooks ) do
-        coroutine.yield()
-        local nookScore = terminator_Extras.GetNookScore( toCheckPos )
-        -- avoid boring spaces, target very open areas or very enclosed areas.
-        if nookScore < 1.5 then -- we are in a very very open space
-            nookScore = 3 + math.abs( nookScore )
-        end
-        -- when we placing the anchor box, punish putting too close to player
-        if not sortCenterIsABox then
-            local dist = toCheckPos:Distance( plyShootPos )
-            if dist < searchRange * 0.5 then
-                local proxPunishment = ( dist - searchRange ) / searchRange
-                nookScore = nookScore + ( proxPunishment * 5 )
-            end
-        end
-        scoredPositions[ math.Round( nookScore, 2 ) ] = toCheckPos
-    end
-
-    local bestPositionKey = table.maxn( scoredPositions )
-    local bestPosition = scoredPositions[ bestPositionKey ]
-
-    -- did people move so that they could see this spot?
-    for _, visPly2 in ipairs( alivePlayers() ) do
-        if not IsValid( visPly2 ) then continue end
-        local finalChecksShootPos = visPly2:GetShootPos()
-        local vis, visTr = terminator_Extras.PosCanSeeComplex( bestPosition, finalChecksShootPos, visPly2 )
-        if vis then
-            return
-
-        end
-        if visTr and visTr.HitPos:DistToSqr( finalChecksShootPos ) < traceHitTooCloseDist then
-            return
-
-        end
-    end
-
-    return bestPosition
-
-end
+local vecFiftyUp = Vector( 0, 0, 50 )
+local placedAlready = {}
 
 local staleAndNeedsAScreamer = nil
 local boringTimeNeededForScreamer = 0
 local nextCrateMixupSpawn = 0
+local lastCrate = nil
+local anchorCrate = nil
 
-local crateSpawningCor = nil
 local nextCrateSpawn = 0
 local CurTime = CurTime
 
--- this code was beautiful, then the coroutine attacked....
+local crates = {}
 
-function GM:crateSpawnThink( players )
-    if crateSpawningFailed then return end
-    if #players > plysNeeded:GetInt() then return end
+hook.Add( "Think", "glee_addcratejobs", function()
+    if #player.GetAll() > plysNeeded:GetInt() then return end
     if nextCrateSpawn > CurTime() then return end
     if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then nextCrateSpawn = CurTime() + 15 return end
-    -- continue spawning calculations
-    if crateSpawningCor then
-        local startTime = SysTime()
-        local good, result = nil, nil
-        while math.abs( startTime - SysTime() ) < 0.0004 do
-            if coroutine.status( crateSpawningCor ) == "dead" then break end
-            good, result = coroutine.resume( crateSpawningCor )
-            if good == false then
-                ErrorNoHaltWithStack( result )
-                crateSpawningFailed = true
-                break
+
+    -- if nothing is happening, spawn a screamer crate early
+    if nextCrateMixupSpawn < CurTime() then
+        nextCrateMixupSpawn = CurTime() + boringTimeNeededForScreamer * math.Rand( 0.45, 0.75 )
+        staleAndNeedsAScreamer = true
+
+    end
+
+    local time = math.random( 55 * 0.8, 55 * 1.2 )
+
+    crates = ents.FindByClass( "item_item_crate" )
+    if #crates > 30 then nextCrateSpawn = CurTime() + 10 return end
+
+    local alivePlayer = GAMEMODE:anAlivePlayer()
+    if not IsValid( alivePlayer ) then return end
+
+    local crateJob = {}
+    crateJob.jobsName = "crate"
+    crateJob.posFindingOrigin = alivePlayer:GetPos()
+    crateJob.originIsDefinitive = false
+    crateJob.sortForNearest = false
+
+    crateJob.placedAlready = placedAlready
+
+    crateJob.areaFilteringFunction = function( currJob, area )
+        if area:IsBlocked() then return end
+        if area:IsUnderwater() then return end
+        -- dont place anchor boxes in spots already taken!
+        if not currJob.sortForNearest and currJob.placedAlready[ area:GetID() ] then return end
+        if nearbyGreaterThanCount( area:GetCenter(), 400, crates, 4 ) then return end
+        return true
+
+    end
+    crateJob.hideFromPlayers = true
+    crateJob.posDerivingFunc = function( _, area )
+        local points = { area:GetRandomPoint() + vecFiftyUp }
+        for _, spot in ipairs( area:GetHidingSpots( 1 ) ) do
+            table.insert( points, spot + vecFiftyUp )
+
+        end
+        return points
+
+    end
+    crateJob.maxPositionsForScoring = 400
+    crateJob.posScoringBudget = 1000
+    crateJob.posScoringFunction = function( currJob, toCheckPos, budget )
+        -- get nook score, the more nooked the point is, the bigger the score.
+        local nookScore = terminator_Extras.GetNookScore( toCheckPos )
+
+        -- if point is in a really really open spot, give a good score, leads to weird crates in the middle of roads and stuff.
+        if nookScore < 1.5 then -- we are in a very very open space
+            nookScore = 3 + math.abs( nookScore )
+
+        end
+        -- when we placing the anchor box, punish putting too close to player
+        if not currJob.sortForNearest then
+            local dist = toCheckPos:Distance( currJob.spawningOrigin )
+            if dist < currJob.spawnRadius * 0.5 then
+                local proxPunishment = ( dist - currJob.spawnRadius ) / currJob.spawnRadius
+                nookScore = nookScore + ( proxPunishment * 5 )
 
             end
         end
+        budget = budget + - 1
+        return nookScore
 
-        if result == "done" or good ~= true then
-            crateSpawningCor = nil
+    end
+
+    GAMEMODE.roundExtraData = GAMEMODE.roundExtraData or {}
+    proceduralCratePlaces = GAMEMODE.roundExtraData.proceduralCratePlaces or 0
+    GAMEMODE.roundExtraData.proceduralCratePlaces = proceduralCratePlaces + 1
+
+    local mod = GAMEMODE.roundExtraData.proceduralCratePlaces % 12
+
+    -- handle placing crates in groups
+    if ( GAMEMODE.roundExtraData.proceduralCratePlaces % 4 ) == 0 or not IsValid( anchorCrate ) then
+        anchorCrate = lastCrate
+
+    elseif IsValid( anchorCrate ) then
+        crateJob.posFindingOrigin = anchorCrate:GetPos()
+        crateJob.sortForNearest = true
+        crateJob.spawnRadiusOverride = 3500
+        crateJob.maxPositionsForScoring = 100
+
+    end
+
+    if ( GAMEMODE.roundExtraData.proceduralCratePlaces % 4 ) ~= 3 then
+        time = 5
+
+    end
+    if GAMEMODE.roundExtraData.proceduralCratePlaces < 6 then
+        time = 1
+
+    end
+
+    if mod == 10 and proceduralCratePlaces > 15 then
+        crateJob.onPosFoundFunction = function( _, bestPosition )
+            local crate = GAMEMODE:ManhackCrate( bestPosition )
+            if not IsValid( crate ) then return false end
+            hook.Run( "glee_proccrates_cratespawned", crate )
+
+            return true
 
         end
-    -- create the spawning function
-    elseif crateSpawningCor == nil then
-        crateSpawningCor = coroutine.create( function()
-            -- if nothing is happening, spawn a screamer crate early
-            if nextCrateMixupSpawn < CurTime() then
-                nextCrateMixupSpawn = CurTime() + boringTimeNeededForScreamer * math.Rand( 0.45, 0.75 )
-                staleAndNeedsAScreamer = true
+    elseif ( mod == 9 and proceduralCratePlaces > 10 and #GAMEMODE:getDeadPlayers() <= 0 ) or staleAndNeedsAScreamer then
+        staleAndNeedsAScreamer = nil
+        crateJob.onPosFoundFunction = function( _, bestPosition )
+            local crate = GAMEMODE:ScreamingCrate( bestPosition )
+            if not IsValid( crate ) then return false end
+            hook.Run( "glee_proccrates_cratespawned", crate )
 
-            end
+            return true
 
-            local spawnPos = FindCrateSpawnPos()
-            if not spawnPos then coroutine.yield( "done" ) return end
+        end
+        crateJob.spawnRadiusOverride = 3500
+    elseif ( mod == 6 and proceduralCratePlaces > 12 ) or ( mod == 3 and proceduralCratePlaces > 20 ) then
+        crateJob.onPosFoundFunction = function( _, bestPosition )
+            local crate = GAMEMODE:WeaponsCrate( bestPosition )
+            if not IsValid( crate ) then return false end
+            hook.Run( "glee_proccrates_cratespawned", crate )
 
-            local time = math.random( 55 * 0.8, 55 * 1.2 )
+            return true
 
-            GAMEMODE.roundExtraData = GAMEMODE.roundExtraData or {}
+        end
+    else
+        crateJob.onPosFoundFunction = function( _, bestPosition )
+            local crate = GAMEMODE:NormalCrate( bestPosition )
+            if not IsValid( crate ) then return false end
+            hook.Run( "glee_proccrates_cratespawned", crate )
 
-            proceduralCratePlaces = GAMEMODE.roundExtraData.proceduralCratePlaces or 0
-            GAMEMODE.roundExtraData.proceduralCratePlaces = proceduralCratePlaces + 1
+            return true
 
-            local mod = GAMEMODE.roundExtraData.proceduralCratePlaces % 12
+        end
+    end
 
-            local crate
+    GAMEMODE:addProceduralSpawnJob( crateJob )
+    --print( "ADDED" )
+    --PrintTable( crateJob )
 
-            if mod == 10 and proceduralCratePlaces > 15 then
-                crate = GAMEMODE:ManhackCrate( spawnPos )
+    nextCrateSpawn = CurTime() + time
 
-            elseif ( mod == 9 and proceduralCratePlaces > 10 and #player.GetAll() <= 1 ) or staleAndNeedsAScreamer then
-                crate = GAMEMODE:ScreamingCrate( spawnPos )
-                staleAndNeedsAScreamer = nil
+end )
 
-            elseif ( mod == 6 and proceduralCratePlaces > 12 ) or ( mod == 3 and proceduralCratePlaces > 20 ) then
-                crate = GAMEMODE:WeaponsCrate( spawnPos )
+-- do this otherwise placedAlready doesnt get appeneded within the curoutine for some reason
+local function postPlaced( bestPosition )
+    local placedArea = GAMEMODE:getNearestNav( bestPosition, 500 )
+    if placedArea and placedArea.IsValid and placedArea:IsValid() then
+        placedAlready[ placedArea:GetID() ] = true
+        for _, area in ipairs( placedArea:GetAdjacentAreas() ) do
+            placedAlready[ area:GetID() ] = true
 
-            else
-                crate = GAMEMODE:NormalCrate( spawnPos )
-
-            end
-
-            if not crate then coroutine.yield( "done" ) return end
-
-            lastCrate = crate
-
-            -- spawn 3 crates then stop
-            if ( GAMEMODE.roundExtraData.proceduralCratePlaces % 4 ) ~= 0 then
-                time = 1
-
-            else
-                -- reset the crate that other crates spawn around
-                lastCrate = nil
-
-            end
-
-            -- spawn 6 crates really fast
-            if GAMEMODE.roundExtraData.proceduralCratePlaces < 6 then
-                time = 1
-
-            end
-
-            local placedArea = GAMEMODE:getNearestNav( spawnPos, 500 )
-            if placedArea and placedArea.IsValid and placedArea:IsValid() then
-                placedAlready[ placedArea:GetID() ] = true
-
-            end
-
-            nextCrateSpawn = CurTime() + time
-
-            coroutine.yield( "done" )
-
-        end )
+        end
     end
 end
+
+hook.Add( "glee_proccrates_cratespawned", "tracklastcrate", function( crate )
+    lastCrate = crate
+    postPlaced( crate:GetPos() )
+
+end )
 
 hook.Add( "terminator_spotenemy", "glee_trackifbots_needahint", function()
     nextCrateMixupSpawn = CurTime() + boringTimeNeededForScreamer
@@ -294,5 +205,7 @@ end )
 hook.Add( "huntersglee_round_into_active", "glee_resetboringtime", function()
     boringTimeNeededForScreamer = math.random( 240, 360 )
     nextCrateMixupSpawn = CurTime() + boringTimeNeededForScreamer
+
+    staleAndNeedsAScreamer = nil
 
 end )

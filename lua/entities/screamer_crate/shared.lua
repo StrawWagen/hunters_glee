@@ -1,3 +1,4 @@
+-- this is both screaming crate AND base entity for all placeables
 AddCSLuaFile()
 
 ENT.Type = "anim"
@@ -16,6 +17,7 @@ ENT.Model = "models/Items/item_item_crate.mdl"
 ENT.noPurchaseReason_NoRoom = "No room to place this."
 ENT.noPurchaseReason_OffNavmesh = "The hunters can't path to that spot."
 ENT.noPurchaseReason_TooPoor = "You're too poor."
+ENT.noPurchaseReason_InDebt = "You're in debt."
 
 ENT.placedItems = 0
 
@@ -106,6 +108,40 @@ if CLIENT then
         if not IsValid( LocalPlayer().ghostEnt ) then return end
 
         LocalPlayer().ghostEnt:DoHudStuff()
+
+    end )
+
+    hook.Add( "huntersglee_cl_displayhint_predeadhints", "placeables_hints", function( ply )
+        if not IsValid( ply.ghostEnt ) then return end
+
+        local hint = ""
+        local good
+
+        if ply:GetNW2Bool( "glee_placedundead", false ) ~= true then
+            local valid, translated = GAMEMODE:TranslatedBind( "+attack" )
+            if valid then
+                good = true
+                hint = hint .. "Press " .. translated .. " to place an undead item.\n"
+
+            else
+                ply:SetNW2Bool( "glee_placedundead", true )
+
+            end
+        end
+
+        if ply:GetNW2Bool( "glee_cancelledplacing", false ) ~= true then
+            local valid, translated = GAMEMODE:TranslatedBind( "+attack2" )
+            if valid then
+                good = true
+                hint = hint .. "Press " .. translated .. " to cancel the placing of an undead item."
+
+            else
+                ply:SetNW2Bool( "glee_cancelledplacing", true )
+
+            end
+        end
+
+        return good, hint
 
     end )
 
@@ -269,6 +305,18 @@ function ENT:bestPosToBe()
 
 end
 
+function ENT:TooPoorString()
+    local ply = self.player
+    local plysScore = ply:GetScore()
+    if plysScore < 0 then
+        return self.noPurchaseReason_InDebt
+
+    else
+        return self.noPurchaseReason_TooPoor
+
+    end
+end
+
 local vec15Z = Vector( 0,0,15 )
 
 function ENT:CalculateCanPlace()
@@ -276,7 +324,7 @@ function ENT:CalculateCanPlace()
 
     if IsHullTraceFull( checkPos, self.HullCheckSize, self ) then return false, self.noPurchaseReason_NoRoom end
     if getNearestNavFloor( checkPos ) == NULL then return false, self.noPurchaseReason_OffNavmesh end
-    if not self:HasEnoughToPurchase() then return false, self.noPurchaseReason_TooPoor end
+    if not self:HasEnoughToPurchase() then return false, self:TooPoorString() end
     return true
 
 end
@@ -429,6 +477,7 @@ function ENT:HandleKeys( ply, key )
     if key == IN_ATTACK then
         if self:GetCanPlace() then
             self:Place()
+            ply:SetNW2Bool( "glee_placedundead", true )
             self.placedItems = self.placedItems + 1
             ply.glee_ghostEntActionTime = CurTime()
 
@@ -441,6 +490,7 @@ function ENT:HandleKeys( ply, key )
 
     if key == IN_ATTACK2 then
         self:Cancel()
+        ply:SetNW2Bool( "glee_cancelledplacing", true )
         ply.glee_ghostEntActionTime = CurTime()
 
     end
@@ -496,6 +546,8 @@ local GM = GAMEMODE
 function GM:ScreamingCrate( pos )
     local crate = ents.Create( "item_item_crate" )
     crate:SetPos( pos )
+    local random = math.random( -4, 4 ) * 45
+    crate:SetAngles( Angle( 0, random, 0 ) )
     crate:SetKeyValue( "ItemClass", "dynamic_super_resupply_fake" ) -- has a good chance to spawn a strong weapon
     crate:SetKeyValue( "ItemCount", 8 )
     crate:Spawn()

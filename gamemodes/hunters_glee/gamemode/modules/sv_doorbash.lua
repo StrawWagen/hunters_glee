@@ -31,13 +31,19 @@ local function MakeDoor( referencePos, ent, dmg )
     prop:SetSkin( ski or 0 )
     prop:Spawn()
     prop:SetVelocity( vel )
-    prop:GetPhysicsObject():ApplyForceOffset( vel, referencePos )
+    local obj = prop:GetPhysicsObject()
+    if IsValid( obj ) then
+        obj:ApplyForceOffset( vel, referencePos )
+
+    end
     prop:SetPhysicsAttacker( dmg:GetAttacker() or game.GetWorld() )
     DoorHitSound( prop )
     BreakSound( prop )
 
     prop.isBustedDoor = true
     prop.bustedDoorHp = 400
+
+    terminator_Extras.SmartSleepEntity( prop, 20 )
 
 end
 

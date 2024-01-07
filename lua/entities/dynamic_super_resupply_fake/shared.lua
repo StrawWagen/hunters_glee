@@ -13,7 +13,7 @@ ENT.AdminOnly    = false
 
 function ENT:commonCreationOptions()
     local tbl = {
-        { class = "item_battery" },
+        { class = "item_battery", count = 1 },
         { class = "item_healthkit" },
         { class = "item_healthvial" }
 
@@ -28,6 +28,7 @@ ENT.rareCreationChance = 30
 
 function ENT:rareCreationOptions()
     local tbl = {
+        { class = "item_battery", count = 4 },
         { class = "weapon_frag", count = 4 },
         { class = "item_ammo_smg1_grenade", count = 3 },
         { class = "termhunt_score_pickup", count = 3 },

@@ -36,5 +36,5 @@ function EFFECT:Render()
     } )
 
     render.SetMaterial( Beamtwo )
-    render.DrawBeam( self.StartPos, self.EndPos, Lerp( ( self.EndTime - CurTime() ) / self.Delay, 0, 8 * self.Scayul ), 0, 0, Color( 100, 150, 255, 254 ) )
+    render.DrawBeam( self.StartPos, self.EndPos, Lerp( ( self.EndTime - CurTime() ) / self.Delay, 0, 8 * self.Scayul ), 0, 0, Color( 100, 150, 255, 255 ) )
 end

@@ -99,20 +99,23 @@ function GM:getDebugShopItemStructureTable()
         }
     }
     local theDescriptorTable = {
+        -- all fields should be identical on server/client
         [ "shopItemUniqueIdentifier" ] = {
-            name = "Printed name that players see",
-            desc = "Description. Accepts a function.",
-            cost = "Cost, negative to give player score when purchasing, Can be a function",
-            faleCost = "Optional. Whether to skip applying the cost within the purchasing system. Good if you want a shop item to more dynamically apply costs, but still show a cost.",
-            markup = "Optional. Price multipler to be applied when bought out of setup",
-            markupPerPurchase = "Optional. additional markup per player per purchase of item",
-            cooldown = "Optional. Cooldown between purchases, math.huge for one purchase per round. Can be a number, or a function.",
-            category = "What to place this with in the shop",
-            purchaseTimes = "When this allowed to be bought, eg GAMEMODE.ROUND_ACTIVE ( hunting ), GAMEMODE.ROUND_INACTIVE ( right before hunting )",
-            weight = "Optional. Where to order this relative to everything else in our category, accepts negative values.",
-            purchaseCheck = "Optional. Table of, or single function checked to see if this is purchasable, ran clientside on every item when shop is open. ran once serverside when purchased",
-            purchaseFunc = "What function to run when the item is bought, serverside",
-            canShowInShop = "Optional. table of funcs or single func. Can this be seen in the shop? also prevents purchases."
+            name =              "Printed name that players see",
+            desc =              "Description. Accepts a function or string.",
+            cost =              "Cost, negative to give player score when purchasing, Accepts a function.",
+            can_goindebt =      "Optional. Can this item be bought when the player has no score? Can force players to buy innate debuffs, etc.",
+            fakeCost =          "Optional. Whether to skip applying the cost within the purchasing system. Good if you want a shop item to more dynamically apply costs, but still show a cost.",
+            simpleCostDisplay = "Optional. Client. Skip the coloring + formatting of an item's cost in the shop.",
+            markup =            "Optional. Price multipler to be applied when bought during the hunt, motivates people buy when the round's setting up.",
+            markupPerPurchase = "Optional. Additional markup per player per purchase of item. Makes items less and less worth it.",
+            cooldown =          "Optional. Cooldown between purchases, math.huge for one purchase per round. Can be a number, or a function.",
+            category =          "What to place this with in the shop. Innate, Undead, etc.",
+            purchaseTimes =     "Item will only be purchasble in the round states specified by this table. Eg GAMEMODE.ROUND_ACTIVE ( hunting ).",
+            weight =            "Optional. Where to order this relative to everything else in our category, accepts negative values.",
+            purchaseCheck =     "Optional. Function or table of functions checked to see if this is purchasable, ran clientside on every item, every frame when shop is open. ran once serverside when purchased",
+            purchaseFunc =      "Server. What function to run when the item is bought.",
+            canShowInShop =     "Optional. Can this be seen in the shop? also prevents purchases. Accepts a single function, or a table of functions."
         }
     }
     return theItemTable, theDescriptorTable
@@ -134,9 +137,6 @@ function GM:addShopItem( shopItemIdentifier, shopItemData )
     if not shopItemData.category then addShopFail( shopItemIdentifier, "invalid .category, create a new category first?" ) return end
     if not shopItemData.purchaseTimes or table.Count( shopItemData.purchaseTimes ) <= 0 then addShopFail( shopItemIdentifier, ".purchaseTimes are not specified" ) return end
     if not shopItemData.purchaseFunc then addShopFail( shopItemIdentifier, "invalid .purchaseFunc" ) return end
-
-    -- if you reallllly want to override a shop item, fine!
-    if GAMEMODE.shopItems[shopItemIdentifier] ~= nil and hook.Run( "glee_canoverrideshopitem", shopItemIdentifier ) == nil then addShopFail( shopItemIdentifier, "Tried to add a shop item that already exists" ) return end
 
     GAMEMODE.shopItems[shopItemIdentifier] = shopItemData
 
@@ -369,6 +369,7 @@ end
 local REASON_ERROR = "ERROR"
 local REASON_INVALID = "That isn't a real thing for sale."
 local REASON_POOR = "You are too poor to afford this."
+local REASON_DEBT = "You can't buy this.\nYou're in Debt."
 
 -- shared!
 
@@ -418,11 +419,22 @@ function GM:canPurchase( ply, toPurchase )
         end
     end
 
-    local frags = ply:GetScore()
+    local score = ply:GetScore()
     local cost = GAMEMODE:shopItemCost( toPurchase, ply )
+    local canGoInDebt = dat.can_goindebt
 
     -- account for negative cost
-    if cost >= 0 and frags < cost and cost ~= 0 then return nil, REASON_POOR end
+    local costsTooMuch = score < cost and not canGoInDebt
+
+    if cost >= 0 and costsTooMuch and cost ~= 0 then
+        local cannotBuyReason = REASON_POOR
+        if score < 0 then
+            cannotBuyReason = REASON_DEBT
+
+        end
+        return nil, cannotBuyReason
+
+    end
 
     local nextPurchase = ply.shopItemCooldowns[toPurchase] or -20000
     local nextPurchasePresentable = math.Round( math.abs( nextPurchase - CurTime() ), 1 )
@@ -443,4 +455,5 @@ function GM:canPurchase( ply, toPurchase )
     if not goodTime then return nil, badTimeReasonTranslation( currState, times ) end
 
     return true, ""
+
 end

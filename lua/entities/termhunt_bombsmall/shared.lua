@@ -16,14 +16,18 @@ function ENT:Initialize()
 
     if not SERVER then return end
 
+    self:SetUseType( SIMPLE_USE )
     self:SetMoveType( MOVETYPE_VPHYSICS )
     self:PhysicsInit( SOLID_VPHYSICS )
     self:SetCollisionGroup( COLLISION_GROUP_WEAPON )
+
+    terminator_Extras.SmartSleepEntity( self, 20 )
 
     -- Wake up our physics object so we don't start asleep
     local phys = self:GetPhysicsObject()
     if IsValid( phys ) then
         phys:Wake()
+        phys:SetMaterial( "Watermelon" )
 
     end
 
@@ -52,6 +56,8 @@ function ENT:OnTakeDamage( dmg )
         local pit = math.random( 15, 25 ) + ( math.abs( self.fakeHealth - self.MaxHealth ) * 4 )
         self:EmitSound( "npc/headcrab_poison/ph_wallhit2.wav", 80, pit + 40 )
         self:EmitSound( "physics/flesh/flesh_squishy_impact_hard4.wav", 80, pit + 60 )
+
+        sound.EmitHint( SOUND_DANGER, self:GetPos(), 400, 3, self )
 
     end
 
@@ -95,4 +101,16 @@ function ENT:OnRemove()
 
     end )
 
+end
+
+function ENT:Use( user )
+    if not user:IsPlayer() then return end
+    if user:Health() <= 0 then return end
+    if user:IsPlayerHolding() then
+        DropObject( self )
+
+    else
+        user:PickupObject( self )
+
+    end
 end

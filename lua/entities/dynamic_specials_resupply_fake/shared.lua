@@ -6,7 +6,7 @@ ENT.Base = "dynamic_resupply_fake"
 ENT.Category    = "Other"
 ENT.PrintName   = "DynSupplies Specials"
 ENT.Author      = "StrawWagen"
-ENT.Purpose     = "Drops SMG nades, ar2 balls"
+ENT.Purpose     = "Drops SMG nades, ar2 balls, spawned rarely by 'normal' supplies"
 ENT.Spawnable    = true
 ENT.Category = "Hunter's Glee"
 ENT.AdminOnly    = false
@@ -15,8 +15,8 @@ function ENT:commonCreationOptions()
     local tbl = {
         { class = "item_ammo_smg1_grenade" },
         { class = "item_ammo_ar2_altfire" },
-        { class = "item_rpg_round" },
-        { class = "termhunt_score_pickup", count = 3 }
+        { class = "item_rpg_round", count = 2 },
+        { class = "termhunt_score_pickup", count = 3 },
 
     }
 
@@ -25,4 +25,13 @@ function ENT:commonCreationOptions()
 end
 
 
-ENT.rareCreationChance = -1
+ENT.rareCreationChance = 10
+
+function ENT:rareCreationOptions()
+    local tbl = {
+        { class = "item_battery", count = 2 },
+
+    }
+    return tbl
+
+end

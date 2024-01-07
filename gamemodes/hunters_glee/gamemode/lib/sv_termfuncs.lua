@@ -1,7 +1,5 @@
 local coroutine_running = coroutine.running
 
-local vec_zero = Vector( 0, 0, 0 )
-
 local minusFiveHundred = Vector( 0,0,-500 )
 local minusOne = Vector( 0,0,-500 )
 
@@ -9,7 +7,7 @@ function GM:getFloor( pos )
     local Dat = {
         start = pos,
         endpos = pos + minusFiveHundred,
-        mask = 131083
+        mask = MASK_NPCWORLDSTATIC
     }
     local Trace = util.TraceLine( Dat )
     if not Trace.HitWorld then return pos end
@@ -22,7 +20,7 @@ function GM:getNearestNav( pos, distance )
     local Dat = {
         start = pos,
         endpos = pos + minusFiveHundred,
-        mask = 131083
+        mask = MASK_NPCWORLDSTATIC
     }
     local Trace = util.TraceLine( Dat )
     if Trace.HitNonWorld then
@@ -44,7 +42,7 @@ function GM:getNearestNavFloor( pos, distance, dropDistance )
     local Dat = {
         start = pos,
         endpos = pos + offset,
-        mask = 131083
+        mask = MASK_NPCWORLDSTATIC
     }
     local Trace = util.TraceLine( Dat )
     if not Trace.HitWorld then return NULL end
@@ -486,6 +484,18 @@ function GM:returnAliveInTable( stuff )
 
 end
 
+function GM:returnDeadInTable( stuff )
+    local deadStuff = {}
+    for _, curr in ipairs( stuff ) do
+        if curr:Health() <= 0 then
+            table.insert( deadStuff, curr )
+
+        end
+    end
+    return deadStuff
+
+end
+
 function GM:returnWinnableInTable( stuff )
     local winnableStuff = {}
     for _, curr in pairs( stuff ) do
@@ -499,11 +509,26 @@ end
 
 function GM:anotherAlivePlayer( block )
     for _, ply in ipairs( player.GetAll() ) do
-        if ply:Alive() and ply ~= block then
+        if ply:Health() > 0 and ply ~= block then
             return ply
 
         end
     end
+end
+
+function GM:anAlivePlayer()
+    local plys = self:getAlivePlayers()
+    local randomPly = table.Random( plys )
+    return randomPly
+
+end
+
+function GM:getDeadPlayers()
+    local players = player.GetAll()
+    local deadPlayers = GAMEMODE:returnDeadInTable( players )
+
+    return deadPlayers
+
 end
 
 function GM:getAlivePlayers()
@@ -563,6 +588,19 @@ function GM:getNearestHunter( pos, hunters )
         return ADist < BDist
     end )
     return hunters[1]
+end
+
+function GM:aRandomHunter( hunters )
+    hunters = hunters or table.Copy( GAMEMODE.termHunt_hunters )
+
+    table.Shuffle( hunters )
+
+    for _, hunter in ipairs( hunters ) do
+        if IsValid( hunter ) and hunter:Health() > 0 then
+            return hunter
+
+        end
+    end
 end
 
 function GM:anyAreCloserThan( positions, checkPosition, closerThanDistance, zTolerance )

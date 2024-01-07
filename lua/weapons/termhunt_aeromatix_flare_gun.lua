@@ -19,10 +19,16 @@ SWEP.ViewModelFlip      = false
 SWEP.BounceWeaponIcon   = false
 
 SWEP.ViewModel          = "models/weapons/v_flaregun.mdl"
-SWEP.WorldModel         = "models/weapons/w_357.mdl"
+SWEP.WorldModel         = "models/weapons/w_dkflaregun.mdl"
 
 if CLIENT then
     language.Add( "GLEE_FLAREGUN_PLAYER_ammo", "Flare" )
+
+else
+    resource.AddFile( "materials/models/weapons/dk_flaregun/gm.vmt" )
+    resource.AddFile( "materials/models/weapons/dk_flaregun/gm_n.vtf" )
+    resource.AddFile( "models/weapons/v_flaregun.mdl" )
+    resource.AddFile( "models/weapons/w_dkflaregun.mdl" ) -- https://steamcommunity.com/sharedfiles/filedetails/?id=1623971250
 
 end
 

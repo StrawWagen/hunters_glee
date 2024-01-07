@@ -12,9 +12,9 @@ if SERVER then
 
         local exitTheProgressBar = function()
             if not IsValid( user ) then return end
-            user:SetNW2Bool( progressKey, nil )
-            user:SetNW2Int( progressKey, nil )
-            user:SetNW2Int( progressLastUpdateKey, nil )
+            user:SetNW2Bool( progressKey, false )
+            user:SetNW2Int( progressKey, false )
+            user:SetNW2Int( progressLastUpdateKey, false )
             timer.Remove( progressLastUpdateKey )
 
             user[ progressKey ] = nil
@@ -102,7 +102,7 @@ if CLIENT then
 
     hook.Add( "PostDrawHUD", "termhunt_coolgenericprogressbar", function()
         if not isProgressBar then cancelProgressBar() return end
-        if LocalPlayer():GetNW2Bool( progressBarId, nil ) ~= true then cancelProgressBar() return end
+        if LocalPlayer():GetNW2Bool( progressBarId, false ) ~= true then cancelProgressBar() return end
 
         local percent = LocalPlayer():GetNW2Int( progressBarId, 0 )
         percent = math.Clamp( percent, 0, 100 )

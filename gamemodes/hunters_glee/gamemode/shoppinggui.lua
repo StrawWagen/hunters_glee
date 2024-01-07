@@ -109,6 +109,8 @@ local scrollEndsOverlay = Color( 0, 0, 0, 100 )
 local notHoveredOverlay = Color( 0, 0, 0, 45 )
 local pressedItemOverlay = Color( 255, 255, 255, 25 )
 
+local lastScroll = 0
+
 local shopCategoryPanels = {}
 local MAINSCROLLNAME = "main_scroll_window"
 
@@ -202,12 +204,45 @@ function termHuntOpenTheShop()
         if pressed == clientsForwardKey then shopFrame:scrollUp() return end
         if pressed == clientsBackKey then shopFrame:scrollDown() return end
 
+        self:KeyScrollingThink()
+
+    end
+
+    function shopFrame:KeyScrollingThink()
         local hovered = vgui.GetHoveredPanel()
         if not hovered or not hovered.CoolerScroll then return end
+        local done
 
-        if pressed == clientsLeftKey then hovered:CoolerScroll( 1, 3 ) return end
-        if pressed == clientsRightKey then hovered:CoolerScroll( -1, 3 ) return end
+        if input.IsKeyDown( clientsLeftKey ) then
+            hovered:CoolerScroll( 1, 3 )
+            done = true
 
+        elseif input.IsKeyDown( clientsRightKey ) then
+            hovered:CoolerScroll( -1, 3 )
+            done = true
+
+        else
+            lastScroll = 0
+            return
+
+        end
+
+        if not done then return end
+
+        local scrollTime = 0.2
+        local since = CurTime() - lastScroll
+        if since < 0.3 then
+            scrollTime = 0.1
+
+        end
+
+        lastScroll = CurTime()
+
+        timer.Create( "glee_keyscrollshop", scrollTime, 1, function()
+            if not IsValid( shopFrame ) then return end
+            shopFrame:KeyScrollingThink()
+
+        end )
     end
 
     -- if pressed escape, uh, close the shop
@@ -699,7 +734,13 @@ function termHuntOpenTheShop()
                 self.oldScore = score
 
                 local cost = GAMEMODE:shopItemCost( identifierPaint, LocalPlayer() )
-                self.costString, self.costColor = GAMEMODE:translatedShopItemCost( LocalPlayer(), cost, identifierPaint )
+                if self.itemData.simpleCostDisplay then
+                    self.costString = tostring( cost )
+
+                else
+                    self.costString, self.costColor = GAMEMODE:translatedShopItemCost( LocalPlayer(), cost, identifierPaint )
+
+                end
 
                 -- markups applied
                 self.markupString = ""

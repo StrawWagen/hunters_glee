@@ -124,7 +124,7 @@ end
 function ENT:CalculateCanPlace()
     local canPlace, reason = self:CanPlaceNonScore()
     if not canPlace then return canPlace, reason end
-    if not self:HasEnoughToPurchase() then return false, self.noPurchaseReason_TooPoor end
+    if not self:HasEnoughToPurchase() then return false, self:TooPoorString() end
     return true
 
 end

@@ -39,7 +39,7 @@ SWEP.Secondary.DefaultClip = -1     -- Default number of bullets in a clip
 SWEP.Secondary.Automatic = false        -- Automatic/Semi Auto
 SWEP.Secondary.Ammo = ""
 
-if CLIENT then
+if SERVER then
     resource.AddFile( "materials/entities/termhunt_lockpick.png" )
 
 end

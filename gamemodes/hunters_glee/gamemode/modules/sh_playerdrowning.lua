@@ -3,8 +3,9 @@ CreateConVar( "huntersglee_players_cannot_swim", 1, bit.bor( FCVAR_NOTIFY, FCVAR
 CreateConVar( "huntersglee_cannotswim_graceperiod", 4.5, bit.bor( FCVAR_NOTIFY, FCVAR_ARCHIVE, FCVAR_REPLICATED ), "How long to let players swim for?.", 0, 64 )
 
 if SERVER then
-    function GM:managePlayerDrowning( players )
+    hook.Add( "glee_sv_validgmthink", "glee_playerdrowning", function( players )
         for _, ply in ipairs( players ) do
+            if ply:Health() <= 0 then continue end
             local wata = ply:WaterLevel()
             if wata >= 2 and ply:IsOnFire() then
                 ply:Extinguish()
@@ -37,8 +38,7 @@ if SERVER then
 
             end
         end
-    end
-
+    end )
 end
 
 local blockPlySwimmingCached
@@ -72,7 +72,7 @@ hook.Add( "SetupMove", "glee_unabletoswim", function( ply, mvd )
     if blockPlySwimming():GetBool() ~= true then return end
     local waterLvl = ply:WaterLevel()
     local cur = CurTime()
-    if waterLvl >= 2 and ply:Alive() and ply:GetMoveType() ~= MOVETYPE_NOCLIP then
+    if waterLvl >= 2 and ply:Health() > 0 and ply:GetMoveType() ~= MOVETYPE_NOCLIP then
         if SERVER then
             local nextWaterSound = ply.glee_nextWaterSound or 0
 

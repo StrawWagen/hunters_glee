@@ -26,6 +26,84 @@
 
 -- DO THESE!
 
+-- ignore locked doors have been proven as unpathable -done
+    -- build ignored list, whenever we bash a door, clear the list -DONE
+-- fix bot jumping when bashing doors - DONE
+-- polish bot handling wierd jumps - DONE
+-- make bot avoid where it was damaged - DONME 
+-- expect sweps to have a hint function - DONE
+    -- pre / post hint stack funcs? - DONE
+-- give all glee sweps hints -- DONE
+-- make conduit FUNNY! -- DONE
+    -- make it a PUNCHLINE
+    -- ( tighten it up )
+    -- turn zzarped plys into crispy skeletons -- done
+    -- overcharge terminator's speed? -- done
+    -- make them kill people, NOW! -- done
+
+-- chameleon gene makes you take 2x damage -done
+-- switch to generic procedural spawner -DONE
+-- replace killfeed -no
+
+-- SIMPLIFY RADIO!!! --DONE!
+-- make tab menu opaque when alive --DONE!
+-- same with kill feed -DONE
+
+-- true goal
+    -- skulls spawn when people die -- DONE
+    -- skulls persist thru rounds -- DONE
+    -- terminators drop metal skulls ( when not dissolved! ), worth 2x skulls -- DONE
+    -- if map has skulls in it, use those first -- DONE
+
+    -- highlight player with most skulls -- done
+    -- add sounds for finest prey stealing! -- DONE!
+    -- use score as tiebreaker in finest prey -- DONE
+    -- make skull hints not stupid -- DONE!
+    -- plys drop 10% of their skulls when they die as finest prey -- DONE!
+    -- each item can have an AND/OR skull cost, skull costs never mark up.
+
+-- charge system
+    -- use suit energy as battery -DONE
+    -- makes damage even scarier
+    -- spawn with 60 suit energy -DONE
+    -- remove flashlight, binoculars items -DONE
+    -- make them always work when you have suit energy instead -- DONE
+    -- radio uses suit battery -- DONE
+
+-- fov decrease with panic! -DONE!
+-- make radio only transmit when held in hand -NO!
+
+-- make nailer bit stronger- done
+
+-- make alive players not be able to see text chats from the dead --done
+
+-- revenge/friendly items
+-- curse, "Homicidal Glee" -DONE
+    -- undead player buys, can only place on people who killed them, makes them dance -DONE
+-- blessing
+    -- crappier version of immortality
+    -- but it lasts like minutes
+
+-- overcharge terminator undead item? -- DONE
+-- bear trap PASS -- DONE!!!
+
+-- linked hunter random spawn
+
+-- if bot kills player then sees another player, stand still and only move when they move
+
+-- spawn waves
+    -- only spawn terminators when all die or after 5 minutes
+
+-- make divine intervention placable 
+-- lock the crazier innate + item shop stuff behind trickle pickups around maps
+    -- makes ar2/rpg less boring
+    -- unlock conduit from this OR when people see it happen?
+    -- fixes information overload? 
+-- models/props_vehicles/tanker001a.mdl
+
+-- does bot over-predict when people juke it towards it
+-- bot avoid damaging ents idea, needs path building pass.
+-- bot placing of slams + beartrap
 -- radio draw channel instead of ammo
 -- give notifs when people break your crates/barrels?
 
@@ -123,6 +201,7 @@ local function beartrapPurchase( purchaser )
         timer.Simple( 0.1, function()
             if not IsValid( purchaser ) then return end
             weap = purchaser:GetWeapon( beartrap )
+            -- where weap
             if not IsValid( weap ) then return end
             weap:Charge()
             weap:Charge()
@@ -540,7 +619,7 @@ local function mimicMadnessPurchase( purchaser )
 
             end
 
-            if ply:Alive() then
+            if ply:Health() > 0 then
                 ply:UnSpectate()
                 ply:SetObserverMode( OBS_MODE_NONE )
 
@@ -584,7 +663,7 @@ local function mimicMadnessPurchase( purchaser )
         if purchaser.gleeIsMimic then
             nukeWeapon( purchaser )
 
-            if firstJump or not purchaser:Alive() or mimicWithBustedProp then
+            if firstJump or purchaser:Health() <= 0 or mimicWithBustedProp then
                 turnBackToPlayer( purchaser )
 
                 if mimicWithBustedProp then
@@ -683,7 +762,7 @@ local function temporalDiceRollPurchase( purchaser )
 
     timer.Create( timerName, 1, 8, function()
         if not IsValid( purchaser ) then timer.Remove( timerName ) return end
-        if not purchaser:Alive() then timer.Remove( timerName ) return end
+        if purchaser:Health() <= 0 then timer.Remove( timerName ) return end
         if not purchaser.hasTemporalDiceRoll then timer.Remove( timerName ) return end
 
         local countdown = timer.RepsLeft( timerName )
@@ -1372,6 +1451,23 @@ local function chameleonPurchase( purchaser )
 
     end )
 
+    local hookKey = "huntersglee_chameleonweakskin_" .. purchaser:GetCreationID()
+
+    hook.Add( "EntityTakeDamage", hookKey, function( target, dmg )
+        if not IsValid( purchaser ) then hook.Remove( "EntityTakeDamage", hookKey ) return end
+        if target ~= purchaser then return end
+        if not purchaser.hasChameleon then hook.Remove( "EntityTakeDamage", hookKey ) return end
+        if purchaser:Health() <= 0 then return end
+
+        dmg:ScaleDamage( 2 )
+        target:EmitSound( "Cardboard.Break" )
+        if target.glee_chameleonHint then return end
+        target.glee_chameleonHint = true
+
+        huntersGlee_Announce( { target }, 5, 10, "Ouch! Chameleon skin is weak!" )
+
+    end )
+
     chameleonColor( purchaser )
 
     purchaser.hasChameleon = true
@@ -1733,6 +1829,9 @@ net.Receive( "glee_witnesseddeathconfirm", function()
 
     if witnessing == LocalPlayer() then return end
 
+    if not LocalPlayer().GetShootPos then return end
+    if not witnessing.GetShootPos then return end
+
     if not posCanSee( LocalPlayer():GetShootPos(), witnessing:GetShootPos() ) then return end
 
     timer.Simple( 1.50, function()
@@ -1912,6 +2011,7 @@ if CLIENT then
 
     local armor = {}
     local slams = {}
+    local skulls = {}
     local medkits = {}
     local hunters = {}
     local players = {}
@@ -1932,10 +2032,11 @@ if CLIENT then
 
         -- big find!
         if nextCache < curTime then
-            nextCache = curTime + 5
+            nextCache = curTime + 2
 
             armor = ents.FindByClass( "item_battery" )
             slams = ents.FindByClass( "npc_tripmine" )
+            skulls = ents.FindByClass( "termhunt_skull_pickup" )
 
             medkits = ents.FindByClass( "item_healthkit" )
             table.Add( medkits, ents.FindByClass( "item_healthvial" ) )
@@ -1971,6 +2072,7 @@ if CLIENT then
 
             end
 
+            table.Add( sixthSenseStuff, skulls )
             table.Add( sixthSenseStuff, slams )
             table.Add( sixthSenseStuff, hunters )
             table.Add( sixthSenseStuff, players )
@@ -2207,84 +2309,49 @@ local function lockpickPurchase( purchaser )
 end
 
 
-hook.Add( "PlayerSpawn", "huntersglee_blockzoom", function( ply, _ )
-    local canZoom = false
-    if ply:GetNW2Bool( "huntersglee_canzoom", nil ) == true then
-        canZoom = true
-
-    end
-
-    ply:SetCanZoom( canZoom )
-
-end )
-
-local function zoomPurchase( purchaser )
-    local setCanZoom2 = function( user, canZoom )
-        if canZoom == false then
-            user:StopZooming()
-
-        end
-        user:SetCanZoom( canZoom )
-        user:SetNW2Bool( "huntersglee_canzoom", canZoom )
-
-    end
-
-    setCanZoom2( purchaser, true )
-
-    local undoInnate = function( respawner )
-        setCanZoom2( respawner, false )
-
-    end
-
-    GAMEMODE:PutInnateInProperCleanup( nil, undoInnate, purchaser )
-
-    loadoutConfirm( purchaser, 1 )
-
-end
-
-
-hook.Add( "PlayerSwitchFlashlight", "huntersglee_blockflashlight", function( ply, _ )
-    if ply:GetNW2Bool( "huntersglee_flashlight", nil ) ~= true then return false end
-    return true
-
-end )
-
-local function flashlightPurchase( purchaser )
-    local setFlashlight = function( user, flashbool )
-        if flashbool == false then
-            user:Flashlight( false )
-
-        end
-        user:SetNW2Bool( "huntersglee_flashlight", flashbool )
-
-    end
-
-    setFlashlight( purchaser, true )
-
-    local undoInnate = function( respawner )
-        setFlashlight( respawner, false )
-
-    end
-
-    GAMEMODE:PutInnateInProperCleanup( nil, undoInnate, purchaser )
-
-    loadoutConfirm( purchaser, 1 )
-
-end
-
-
 local function ar2Purchase( purchaser )
-
     local ar2 = purchaser:GetWeapon( "weapon_ar2" )
     if IsValid( ar2 ) then
-        purchaser:GiveAmmo( 4,    "AR2AltFire",         true )
-        purchaser:GiveAmmo( 156,   "AR2",         true )
+        purchaser:GiveAmmo( 6,    "AR2AltFire",         false )
+        purchaser:GiveAmmo( 156,   "AR2",         false )
 
     else
-        purchaser:GiveAmmo( 3,    "AR2AltFire",         true )
-        purchaser:GiveAmmo( 96,   "AR2",         true )
+        purchaser:GiveAmmo( 4,    "AR2AltFire",         false )
+        purchaser:GiveAmmo( 96,   "AR2",         false )
 
         purchaser:Give( "weapon_ar2" )
+
+    end
+
+    loadoutConfirm( purchaser, 1 )
+
+end
+
+
+local function canPurchaseSuitBattery( purchaser )
+    local new = purchaser:Armor() + 15
+    if new > purchaser:GetMaxArmor() then return false, "Your battery is full enough." end
+    return true
+
+end
+
+local function suitBatteryPurchase( purchaser )
+    local new = math.Clamp( purchaser:Armor() + 15, 0, purchaser:GetMaxArmor() )
+    purchaser:SetArmor( new )
+
+    purchaser:EmitSound( "ItemBattery.Touch" )
+
+end
+
+
+local function rpgPurchase( purchaser )
+    local rpg = purchaser:GetWeapon( "weapon_rpg" )
+    if IsValid( rpg ) then
+        purchaser:GiveAmmo( 6,    "RPG_Round",         false )
+
+    else
+        purchaser:GiveAmmo( 4,    "RPG_Round",         false )
+        purchaser:Give( "weapon_rpg" )
 
     end
 
@@ -2456,10 +2523,30 @@ local function immortalizerPurchase( purchaser, itemIdentifier )
 end
 
 local function presserPurchase( purchaser, itemIdentifier )
-    local immortalizer = ents.Create( "termhunt_presser" )
-    immortalizer.itemIdentifier = itemIdentifier
-    immortalizer:SetOwner( purchaser )
-    immortalizer:Spawn()
+    local presser = ents.Create( "termhunt_presser" )
+    presser.itemIdentifier = itemIdentifier
+    presser:SetOwner( purchaser )
+    presser:Spawn()
+
+    GAMEMODE:CloseShopOnPly( purchaser )
+
+end
+
+local function homicidalGleePurchase( purchaser, itemIdentifier )
+    local homicidalGlee = ents.Create( "termhunt_retribution" )
+    homicidalGlee.itemIdentifier = itemIdentifier
+    homicidalGlee:SetOwner( purchaser )
+    homicidalGlee:Spawn()
+
+    GAMEMODE:CloseShopOnPly( purchaser )
+
+end
+
+local function termOverchargerPurchase( purchaser, itemIdentifier )
+    local overcharger = ents.Create( "termhunt_overcharger" )
+    overcharger.itemIdentifier = itemIdentifier
+    overcharger:SetOwner( purchaser )
+    overcharger:Spawn()
 
     GAMEMODE:CloseShopOnPly( purchaser )
 
@@ -2564,9 +2651,7 @@ local function divineIntervention( purchaser )
         purchaser.unstuckOrigin = interventionPos
         purchaser:Resurrect()
 
-        sound.EmitHint( SOUND_COMBAT, interventionPos, 8000, 1, purchaser )
-
-        termHunt_ElectricalArcEffect( purchaser, interventionPos, Vector( 0, 0, 1 ), 4 )
+        termHunt_ElectricalArcEffect( purchaser, interventionPos, vector_up, 4 )
 
     end )
 
@@ -2628,8 +2713,10 @@ local function additionalHunter( purchaser )
 
 end
 
-local glee_scoretochosentimeoffset_divisor = CreateConVar( "huntersglee_scoretochosentimeoffset_divisor1", "-1", bit.bor( FCVAR_REPLICATED, FCVAR_ARCHIVE ), "-1 = default, smaller means grigori time goes up faster. bigger, means slower", 0, 100000 )
-local defaultDivisor = -10
+local glee_scoretochosentimeoffset_divisor = CreateConVar( "huntersglee_scoretochosentimeoffset_divisor1", "-1", bit.bor( FCVAR_REPLICATED, FCVAR_ARCHIVE ),
+"-1 = default, if set bigger, grigori can happen sooner, if smaller, happens later", 0, 100000 )
+
+local defaultDivisor = 10
 
 if SERVER then
     -- offset will update constantly, use nw2
@@ -2662,7 +2749,7 @@ end
 local function divineChosenCanPurchase( purchaser )
 
     -- damn it i dropped my spaghetti
-    local minutes = 10 + ( GetGlobal2Int( "glee_chosen_timeoffset", 0 ) / 60 )
+    local minutes = 8 + ( GetGlobal2Int( "glee_chosen_timeoffset", 0 ) / 60 )
     minutes = math.Clamp( minutes, 0, 20 )
     local offset = 60 * minutes
     local timeToAllow = GetGlobalInt( "huntersglee_round_begin_active" ) + offset
@@ -2677,7 +2764,8 @@ local function divineChosenCanPurchase( purchaser )
 
     end
 
-    if block then return nil, pt1 end
+    -- can pass this check if testing
+    if block then return isCheats(), pt1 end
 
     if SERVER then
         GAMEMODE.roundExtraData.divineChosenSpent = GAMEMODE.roundExtraData.divineChosenSpent or {}
@@ -2718,7 +2806,7 @@ if CLIENT then
         local me = LocalPlayer()
         if me:GetNW2Bool( "isdivinechosen", false ) ~= true then return end
         local chosenWeap = me:GetWeapon( "termhunt_divine_chosen" )
-        if not ( IsValid( chosenWeap ) or not me:Alive() ) then return end
+        if not ( IsValid( chosenWeap ) or me:Health() <= 0 ) then return end
 
         local noPatienceTime = GetGlobal2Int( "divineChosenPatienceEnds", 0 )
         if noPatienceTime == 0 or noPatienceTime == -2147483648 then return end
@@ -2873,17 +2961,13 @@ local function divineChosenPurchase( purchaser )
 
         -- lighting where they spawn
         timer.Simple( 0.1, function()
-            local placeholder = ents.Create( "prop_physics" )
-            placeholder:SetPos( randAreasCenter )
-            placeholder:SetModel( "models/Gibs/HGIBS.mdl" )
-            placeholder:Spawn()
-            placeholder:GetPhysicsObject():EnableMotion( false )
-            placeholder:SetNotSolid( true )
-            placeholder:SetNoDraw( true )
-            SafeRemoveEntityDelayed( placeholder, 0.1 )
 
             purchaser:GodEnable()
-            termHunt_PowafulLightning( owner, placeholder, randAreasCenter + vector_up * 10, 12 )
+            local lightning = ents.Create( "glee_lightning" )
+            lightning:SetOwner( purchaser )
+            lightning:SetPos( randAreasCenter )
+            lightning:SetPowa( 12 )
+            lightning:Spawn()
 
             timer.Simple( 0.5, function()
                 purchaser:GodDisable()
@@ -2933,13 +3017,12 @@ local function openAccountCost( purchaser )
     if canOpenAccount( purchaser ) then return 1000 end
 
     local existingAccount = purchaser:BankAccount()
-
     return existingAccount.funds
 
 end
 
 local function openAccountPurchase( purchaser )
-    timer.Simple( 0, function()
+    timer.Simple( 0.05, function()
         if not IsValid( purchaser ) then return end
         purchaser:BankOpenAccount()
 
@@ -2960,11 +3043,11 @@ local function bankDepositCost( purchaser )
 end
 
 local function bankDepositDescription()
-    local chargePeriod = func_BankChargePeriod()
+    local chargePeriod = gleefunc_BankChargePeriod()
     local chargePeriodDays = chargePeriod / 86400
     chargePeriodDays = math.Round( chargePeriodDays, 2 )
 
-    local periodCharge = func_BankChargePerPeriod()
+    local periodCharge = gleefunc_BankChargePerPeriod()
 
     local days = "days."
     if chargePeriodDays == 1 then
@@ -2986,14 +3069,14 @@ local function bankDepositPurchase( purchaser )
 end
 
 local function bankCanWithdraw( purchaser )
-    if not purchaser:BankCanDeposit( -100 ) then return false, "Your account is below the withdrawl threshold!!\nIt will be closed when the next idle fee is applied!!!" end
+    if not purchaser:BankCanDeposit( -gleefunc_BankMinFunds() ) then return false, "Your account is below the withdrawl threshold!!\nIt will be closed when the next idle fee is applied!!!" end
     return true
 
 end
 
 local function bankWithdrawPurchase( purchaser )
-    purchaser:BankDepositScore( -100 )
-    purchaser:GivePlayerScore( 100 )
+    purchaser:BankDepositScore( -gleefunc_BankMinFunds() )
+    purchaser:GivePlayerScore( gleefunc_BankMinFunds() )
 
 end
 
@@ -3063,7 +3146,7 @@ local defaultItems = {
     [ "flaregun" ] = {
         name = "Flaregun",
         desc = "Flaregun.\n+ 6 flares.",
-        cost = 80,
+        cost = 60,
         markup = 1.6,
         markupPerPurchase = 0.25,
         cooldown = 0.25,
@@ -3094,11 +3177,11 @@ local defaultItems = {
     -- terminator doesnt like taking damage from this, will save your ass
     [ "ar2" ] = {
         name = "Ar2",
-        desc = "Ar2 + Balls.\nAr2 balls can save you in a pinch.",
-        cost = 70,
-        markup = 1.75,
+        desc = "Ar2 + Balls.\nIt takes 3 AR2 balls to kill a terminator.",
+        cost = 125,
+        markup = 1.5,
         markupPerPurchase = 0.35,
-        cooldown = 0.25,
+        cooldown = 5,
         category = "Items",
         purchaseTimes = {
             GM.ROUND_INACTIVE,
@@ -3107,6 +3190,39 @@ local defaultItems = {
         weight = -150,
         purchaseCheck = unUndeadCheck,
         purchaseFunc = ar2Purchase,
+    },
+    -- lol you ran out of battery
+    [ "armor" ] = {
+        name = "Suit Battery",
+        desc = "15 Suit Battery.",
+        cost = 50,
+        markup = 4,
+        markupPerPurchase = 0.5,
+        cooldown = 5,
+        category = "Items",
+        purchaseTimes = {
+            GM.ROUND_INACTIVE,
+            GM.ROUND_ACTIVE,
+        },
+        weight = -150,
+        purchaseCheck = { unUndeadCheck, canPurchaseSuitBattery },
+        purchaseFunc = suitBatteryPurchase,
+    },
+    [ "rpg" ] = {
+        name = "RPG",
+        desc = "RPG + Rockets.\nRocketing a hunter can save you in a pinch.",
+        cost = 60,
+        markup = 1.5,
+        markupPerPurchase = 0.15,
+        cooldown = 0,
+        category = "Items",
+        purchaseTimes = {
+            GM.ROUND_INACTIVE,
+            GM.ROUND_ACTIVE,
+        },
+        weight = -140,
+        purchaseCheck = unUndeadCheck,
+        purchaseFunc = rpgPurchase,
     },
     [ "gravitygun" ] = {
         name = "Gravity Gun",
@@ -3156,37 +3272,6 @@ local defaultItems = {
         weight = 0,
         purchaseCheck = unUndeadCheck,
         purchaseFunc = beartrapPurchase,
-    },
-    -- make player comfort cost score
-    [ "flashlight" ] = {
-        name = "Flashlight",
-        desc = "Illuminate your world.",
-        cost = 10,
-        markup = 4,
-        cooldown = math.huge,
-        category = "Items",
-        purchaseTimes = {
-            GM.ROUND_INACTIVE,
-            GM.ROUND_ACTIVE,
-        },
-        weight = -90,
-        purchaseCheck = unUndeadCheck,
-        purchaseFunc = flashlightPurchase,
-    },
-    -- make player comfort cost score
-    [ "binoculars" ] = {
-        name = "Binoculars",
-        desc = "See things far away by pressing your Suit Zoom key.",
-        cost = 8,
-        markup = 4,
-        cooldown = math.huge,
-        category = "Items",
-        purchaseTimes = {
-            GM.ROUND_INACTIVE,
-            GM.ROUND_ACTIVE,
-        },
-        purchaseCheck = unUndeadCheck,
-        purchaseFunc = zoomPurchase,
     },
     -- heal jooce
     [ "healthkit" ] = {
@@ -3255,7 +3340,7 @@ local defaultItems = {
     [ "blindness" ] = {
         name = "Legally Blind.",
         desc = "Become unable to see more than a few feet ahead.",
-        cost = -150,
+        cost = -200,
         markup = 0.2,
         cooldown = math.huge,
         category = "Innate",
@@ -3269,7 +3354,7 @@ local defaultItems = {
     },
     -- flat downgrade
     [ "badknees" ] = {
-        name = "62 year old knees.",
+        name = "62 Year old Knees.",
         desc = "62 years of living a sedentary lifestyle.\nJumping hurts, and is relatively useless.\nFall damage is lethal.",
         cost = -120,
         markup = 0.25,
@@ -3302,7 +3387,7 @@ local defaultItems = {
     [ "cholesterol" ] = {
         name = "37 Years of Cholesterol.",
         desc = "Your body is weak, your heart, clogged...\nA lifetime of eating absolutely delicious food, has left you unprepared for The Hunt...\nYour heart beats much faster.\nBut you become succeptible to Heart Attacks.",
-        cost = -150,
+        cost = -120,
         markup = 0.25,
         cooldown = math.huge,
         category = "Innate",
@@ -3315,7 +3400,7 @@ local defaultItems = {
         purchaseFunc = cholesterolPurchase,
     },
     [ "deafness" ] = {
-        name = "Hard of hearing.",
+        name = "Hard of Hearing.",
         desc = "You can barely hear a thing!",
         cost = -65,
         markup = 0.25,
@@ -3442,7 +3527,7 @@ local defaultItems = {
     -- Risk vs reward.
     [ "invisserum" ] = {
         name = "Chameleon Gene",
-        desc = "Become nearly invisible, does not apply to your weapons, or flashlight.",
+        desc = "Become nearly invisible.\nYour chameleon skin can't take a beating, you take twice as much damage.\nYour weapons, and flashlight are still visible.",
         cost = 350,
         markup = 2,
         cooldown = math.huge,
@@ -3575,12 +3660,12 @@ local defaultItems = {
         purchaseTimes = {
             GM.ROUND_ACTIVE,
         },
-        weight = 1,
+        weight = -4,
         purchaseCheck = { undeadCheck, ghostCanPurchase },
         purchaseFunc = nonScreamerPurchase,
     },
     [ "weapcrate" ] = {
-        name = "Crate of weapons",
+        name = "Crate of Weapons",
         desc = "Supply crate with 4 weapons in it\nPlace indoors, and far away from players and other supplies, for more score.",
         cost = 0,
         markup = 1,
@@ -3594,7 +3679,7 @@ local defaultItems = {
         purchaseFunc = weaponsCratePurchase,
     },
     [ "manhackcrate" ] = {
-        name = "Crate With Manhacks",
+        name = "Crate with Manhacks",
         desc = "Supply crate with 5 manhacks in it.\nGives score when the manhacks damage stuff.",
         cost = 0,
         markup = 1,
@@ -3637,7 +3722,7 @@ local defaultItems = {
         purchaseFunc = barnaclePurchase,
     },
     [ "doorlocker" ] = {
-        name = "Door locker",
+        name = "Door Locker",
         desc = "Locks doors, you gain score when something uses it.\n150 score, default.\n250 score if a player fleeing a hunter uses it.\nDon't use your own locked doors.",
         cost = 5,
         markup = 1,
@@ -3652,7 +3737,7 @@ local defaultItems = {
     },
     -- lets dead people take the initiative
     [ "resurrection" ] = {
-        name = "Divine intervention",
+        name = "Divine Intervention",
         desc = "Resurrect yourself.\nYou will revive next to another living Player.",
         cost = divineInterventionCost,
         markup = 1,
@@ -3667,8 +3752,8 @@ local defaultItems = {
         purchaseFunc = divineIntervention,
     },
     -- lets dead people get a revive but they're fucked
-    [ "additionalhunter" ] = {
-        name = "Linked hunter",
+    [ "additionalterm" ] = {
+        name = "Linked Hunter",
         desc = "Spawn another hunter.\nThey will take on your appearance.\nIf you personally kill it, you will gain 350 score.\nThe newcomer will never lose you, if you regain your life...",
         cost = -150,
         markup = 1,
@@ -3680,6 +3765,36 @@ local defaultItems = {
         weight = -100,
         purchaseCheck = { undeadCheck, spawnAnotherHunterCheck },
         purchaseFunc = additionalHunter,
+    },
+    -- people who teamkill get funny consequence
+    [ "homicidalglee" ] = {
+        name = "Homicidal Glee.",
+        desc = "Place on players who have killed you.\nBrings their Homicidal Glee to the surface...\nCan only be placed every 30 seconds.",
+        cost = 0,
+        markup = 1,
+        cooldown = 5,
+        category = "Undead",
+        purchaseTimes = {
+            GM.ROUND_ACTIVE,
+        },
+        weight = 19,
+        purchaseCheck = { undeadCheck, ghostCanPurchase },
+        purchaseFunc = homicidalGleePurchase,
+    },
+    -- fun
+    [ "termovercharger" ] = {
+        name = "Overcharger.",
+        desc = "Overcharge a Terminator. Global 3 minute delay between Overcharges.",
+        cost = 0,
+        markup = 1,
+        cooldown = 5,
+        category = "Undead",
+        purchaseTimes = {
+            GM.ROUND_ACTIVE,
+        },
+        weight = 19,
+        purchaseCheck = { undeadCheck, ghostCanPurchase },
+        purchaseFunc = termOverchargerPurchase,
     },
     -- ultimate stalemate breaker
     [ "temporalinversion" ] = {
@@ -3712,7 +3827,7 @@ local defaultItems = {
     },
     -- crazy purchase
     [ "divineconduit" ] = {
-        name = "Divine conduit",
+        name = "Divine Conduit",
         desc = "Convey the will of the gods.\nCosts 450 to place.\nGlobal 4 minute delay between placing.",
         cost = 0,
         markup = 1,
@@ -3742,8 +3857,9 @@ local defaultItems = {
     },
     -- reason to rejoin
     [ "bankopenaccount" ] = {
-        name = "Bank account",
+        name = "Bank Account",
         desc = "Open a bank account.",
+        simpleCostDisplay = true,
         cost = openAccountCost,
         cooldown = 0,
         category = "Bank",
@@ -3783,7 +3899,7 @@ local defaultItems = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
         },
-        weight = 100,
+        weight = 150,
         purchaseCheck = { hasBankAccount, bankCanWithdraw },
         purchaseFunc = bankWithdrawPurchase,
     },

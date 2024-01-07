@@ -43,8 +43,17 @@ function ENT:Initialize()
     self:PhysicsInit( SOLID_VPHYSICS )
     self:SetMoveType( MOVETYPE_VPHYSICS )
     self:SetSolid( SOLID_VPHYSICS )
+
+    local dot = Vector( 0, 0, 1 ):Dot( self:GetUp() )
+
     if self:GetPhysicsObject():IsValid() then
-        self:GetPhysicsObject():EnableMotion( false )
+        if not ( dot > 0.55 and dot <= 1 ) then
+            self:GetPhysicsObject():Wake()
+
+        else
+            self:GetPhysicsObject():EnableMotion( false )
+
+        end
     end
 
     self:SetSequence( "ClosedIdle" )
@@ -96,6 +105,22 @@ local function DoBleed( ent )
 
 end
 
+function ENT:Hurt( toHurt, attacker )
+    local bearTrapDamage = DamageInfo()
+    bearTrapDamage:SetAttacker( attacker )
+    bearTrapDamage:SetInflictor( self )
+    bearTrapDamage:SetDamage( 6 )
+    bearTrapDamage:SetDamageType( DMG_SLASH )
+
+    toHurt:TakeDamageInfo( bearTrapDamage )
+    DoBleed( toHurt )
+
+    if GAMEMODE.GivePanic then
+        GAMEMODE:GivePanic( toHurt, 18 )
+
+    end
+end
+
 local keysToHurt = {
     IN_JUMP,
     IN_FORWARD,
@@ -109,7 +134,11 @@ function ENT:Touch( toucher )
     if not IsValid( toucher ) then return end
     if self:IsReadyToSpring() then
 
-        local attacker = self:GetCreator() or game.GetWorld()
+        local attacker = self:GetCreator()
+        if not IsValid( attacker ) then
+            attacker = self
+
+        end
         local toucherId = toucher:GetCreationID()
         local timerName = "termhunt_beartrap_damage_" .. toucherId
 
@@ -121,30 +150,16 @@ function ENT:Touch( toucher )
         end
 
         if toucher:IsPlayer() then
-
+            self:Hurt( toucher, attacker )
             self:Snap()
-
-            local dmg = DamageInfo()
-            dmg:SetAttacker( attacker )
-            dmg:SetInflictor( self )
-            dmg:SetDamage( 6 )
-            dmg:SetDamageType( DMG_SLASH )
 
             for _ = 1, 5 do
                 DoBleed( toucher )
             end
 
+            if self:GetPhysicsObject():IsMotionEnabled() then return end
+
             toucher.bearTrapped = true
-
-            local Hurt = function( toucher )
-                toucher:TakeDamageInfo( dmg )
-                DoBleed( toucher )
-
-                if GAMEMODE.GivePanic then
-                    GAMEMODE:GivePanic( toucher, 18 )
-
-                end
-            end
 
             timer.Create( timerName, 8, 0, function()
                 if not IsValid( toucher ) then timerObliterate() return end
@@ -152,7 +167,7 @@ function ENT:Touch( toucher )
                 if not toucher.bearTrapped then timerObliterate() return end
                 if toucher:Health() <= 0 then timerObliterate() return end
 
-                Hurt( toucher )
+                self:Hurt( toucher, attacker )
 
             end )
 
@@ -178,12 +193,23 @@ function ENT:Touch( toucher )
                 for _, keyThatCouldBeDown in ipairs( keysToHurt ) do
                     if moveData:KeyDown( keyThatCouldBeDown ) then
                         self.nextHurt = CurTime() + 0.25
-                        Hurt( toucher )
+                        self:Hurt( toucher, attacker )
                         break
                     end
                 end
             end )
         elseif toucher.isTerminatorHunterBased then
+            local dmg = DamageInfo()
+            dmg:SetAttacker( attacker )
+            dmg:SetInflictor( self )
+            dmg:SetDamage( 100 )
+            dmg:SetDamageType( DMG_SLASH )
+            toucher:TakeDamageInfo( dmg )
+
+            self:Snap()
+
+            if self:GetPhysicsObject():IsMotionEnabled() then return end
+
             toucher.terminatorStucker = self
 
             timer.Create( timerName, 0.05, 0, function()
@@ -195,21 +221,12 @@ function ENT:Touch( toucher )
 
             end )
 
-            self:Snap()
-
             timer.Simple( 4, function()
                 if not IsValid( self ) then return end
                 self:EmitSound( "doors/vent_open1.wav", 90, 110, 1, CHAN_STATIC )
                 self:PickUp()
 
             end )
-
-            local dmg = DamageInfo()
-            dmg:SetAttacker( attacker )
-            dmg:SetInflictor( self )
-            dmg:SetDamage( 100 )
-            dmg:SetDamageType( DMG_SLASH )
-            toucher:TakeDamageInfo( dmg )
 
         else
             self:Snap()
@@ -275,4 +292,18 @@ function ENT:OnTakeDamage( dmg )
         self:PickUp()
 
     end
+end
+
+function ENT:PhysicsCollide( data )
+    if data.HitSpeed:LengthSqr() < 75^2 then return end
+    if not self:IsReadyToSpring() then return end
+
+    local result = util.QuickTrace( self:WorldSpaceCenter(), self:GetUp() * 20, self )
+    self:Touch( result.Entity )
+    timer.Simple( 0, function()
+        if not IsValid( self ) then return end
+        if not self:IsReadyToSpring() then return end
+        self:Snap()
+
+    end )
 end

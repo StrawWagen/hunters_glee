@@ -39,6 +39,8 @@ function ENT:Initialize()
 
         self:SetCollisionGroup( COLLISION_GROUP_WEAPON )
 
+        terminator_Extras.SmartSleepEntity( self, 10 )
+
         local phys = self:GetPhysicsObject()
         if IsValid( phys ) then
             phys:SetBuoyancyRatio( 8 )
@@ -86,7 +88,6 @@ function ENT:ReflectScoreInAppearance()
 end
 
 function ENT:HandleScorePhysics()
-
     timer.Simple( 0, function()
         if not IsValid( self ) then return end
         local scale = self:GetScoreScaleMagicNum()

@@ -9,6 +9,7 @@ local airCheckHull = Vector( 17, 17, 1 )
 local restingBPMPermanent = 60 -- needs to match clientside var too
 
 local distNeededToBeOnArea = 25^2
+local distWayTooFarOffNavmesh = 250^2
 local posCanSeeComplex = terminator_Extras.PosCanSeeComplex
 
 -- manage the BPM of ppl HERE
@@ -18,7 +19,7 @@ function GM:calculateBPM( cur, players )
     local punishEscapingBool = punishEscaping:GetBool()
     local hunters = table.Copy( GAMEMODE.termHunt_hunters )
     for _, ply in ipairs( players ) do
-        if ply:Alive() then
+        if ply:Health() > 0 then
             local plyPos = ply:GetShootPos()
             local plysMoveType = ply:GetMoveType()
             local nearestHunter = GAMEMODE:getNearestHunter( plyPos, hunters )
@@ -122,18 +123,32 @@ function GM:calculateBPM( cur, players )
             local closeToGround = util.TraceHull( tDat ).Hit
             local onArea = nil
 
+            -- definitely not on the navmesh.
+            if directlyUnderneathArea and distToAreaSqr > distWayTooFarOffNavmesh then
+                onArea = false
+
             -- cheap
-            if directlyUnderneathArea and distToAreaSqr < distNeededToBeOnArea then
+            elseif directlyUnderneathArea and distToAreaSqr < distNeededToBeOnArea and directlyUnderneathArea:Contains( plyPos ) then
                 onArea = directlyUnderneathArea:IsValid()
 
             -- not cheap
             elseif directlyUnderneathArea and directlyUnderneathArea:IsValid() then
                 local plysShootPos = ply:GetShootPos()
-                -- only check horisontal, sometimes navareas end up underneath floors
+                -- only check horizontal, sometimes navareas end up underneath floors
                 local closestPos = directlyUnderneathArea:GetClosestPointOnArea( plysShootPos )
-                closestPos.z = plysShootPos.z
+                local highestZ = math.max( closestPos.z, plysShootPos.z )
+                local lowestZ = math.min( closestPos.z, plysShootPos.z )
+                closestPos.z = highestZ
+                plysShootPos.z = highestZ
 
-                onArea = posCanSeeComplex( plysShootPos, closestPos, ply, MASK_SOLID_BRUSHONLY )
+                local plyCanSeeArea = posCanSeeComplex( plysShootPos, closestPos, ply, MASK_SOLID_BRUSHONLY )
+
+                -- handle "directly under navmeshed displacement floor" edge case
+                closestPos.z = highestZ + 25
+                plysShootPos.z = lowestZ + 25
+
+                -- catch people behind displacements
+                onArea = plyCanSeeArea and posCanSeeComplex( closestPos, plysShootPos, ply, MASK_SOLID_BRUSHONLY )
 
             end
 
@@ -163,11 +178,6 @@ function GM:calculateBPM( cur, players )
             local speedAndScaredBPM = ( speedBPM + scaredBpm ) * nonRestingScale
             local idealBPM = restingBPM + speedAndScaredBPM
             idealBPM = math.Round( idealBPM )
-
-            if ply:Health() <= 0 then
-                ply.BPMHistoric = nil
-
-            end
 
             -- reward people who get high bpm with long-lasting bpm increase
             local BPMHistoric = ply.BPMHistoric or { idealBPM }
@@ -201,6 +211,7 @@ function GM:calculateBPM( cur, players )
 
             -- when ply is off navmesh, slowly sap their life
             if doBpmDecrease and punishEscapingBool then
+                local damaged
                 local exceptionMovement = plysMoveType == MOVETYPE_NOCLIP or ply:Health() <= 0 or ply:GetObserverMode() ~= OBS_MODE_NONE or ply:InVehicle()
                 if not exceptionMovement and hasNavmesh then
                     local BPMDecrease = ply.historicBPMDecrease or 0
@@ -229,7 +240,14 @@ function GM:calculateBPM( cur, players )
                         ply:TakeDamage( damage, game.GetWorld(), game.GetWorld() )
                         huntersGlee_Announce( { ply }, 100, 5, "Something is off.\nIt feels like you're somewhere wrong..." )
 
+                        damaged = true
+
                     end
+                end
+                -- simple fix!
+                if damaged and GAMEMODE:IsUnderDisplacementExtensive( plyPos ) then
+                    ply:BeginUnstuck()
+
                 end
             -- ramp down and then cleanup the decrease
             elseif ply.historicBPMDecrease then
@@ -308,7 +326,7 @@ end
 
 hook.Add( "huntersglee_givescore", "huntersglee_storealivescoring", function( scorer, addedscore )
     if not IsValid( scorer ) then return end
-    if not scorer:Alive() then return end
+    if scorer:Health() <= 0 then return end
     if addedscore < 1 then return end
     if GAMEMODE:RoundState() ~= 1 then return end
 
@@ -353,9 +371,9 @@ function GM:ensureNotSpectating( ply ) -- this is kinda redundant
     ply:SetNWBool( "termhunt_spectating", false )
     ply:UnSpectate()
 
-    if ply:Alive() then
-        ply:KillSilent()
-    end
+    if ply:Health() <= 0 then return end
+    ply:KillSilent()
+
 end
 
 local function isMovementKey( keyPressed )
@@ -463,7 +481,7 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
 
                 end
 
-                table.sort( sortedStuffToSpectate, function( a, b ) -- sort players by distance to pos
+                table.sort( sortedStuffToSpectate, function( a, b ) -- sort followable stuff by distance to pos
                     local ADist = a:GetShootPos():DistToSqr( sortPos )
                     local BDist = b:GetShootPos():DistToSqr( sortPos )
                     return ADist < BDist
@@ -600,70 +618,6 @@ hook.Add( "EntityTakeDamage", "termhunt_damagescalerattackerhook", function( _, 
 
 end )
 
-local teamPlaying = GM.TEAM_PLAYING
-local teamSpectating = GM.TEAM_SPECTATE
-local distToBlockProxy = 1250^2
-local distToStopHearingAlivePlayers = 1500^2
-
-local doProxChatCached = nil
-local _IsValid = IsValid
-
-hook.Add( "Think", "glee_cachedoproxchat", function()
-    doProxChatCached = GAMEMODE.doProxChat
-
-end )
-
-hook.Add( "PlayerCanHearPlayersVoice", "glee_voicechat_system", function( listener, talker )
-    if not doProxChatCached then return true, false end
-
-    local talkerTeam = talker.termHuntTeam
-    local listenerTeam = listener.termHuntTeam
-
-    local talkerIsSpectator = talkerTeam == teamSpectating
-    local talkerIsPlaying = talkerTeam == teamPlaying
-
-    local listenerIsSpectator = listenerTeam == teamSpectating
-    local listenerIsPlaying = listenerTeam == teamPlaying
-
-    if listenerIsSpectator then
-        if talkerIsPlaying and talker:GetPos():DistToSqr( listener:GetPos() ) < distToStopHearingAlivePlayers then
-            return true
-
-        elseif talkerIsSpectator then
-            return true
-
-        end
-        return false
-
-    elseif listenerIsPlaying then
-        if talkerIsPlaying then
-            if _IsValid( talker.termhuntRadio ) and _IsValid( listener.termhuntRadio ) and talker.glee_RadioChannel > 0 and listener.glee_RadioChannel > 0 then
-                local talkerChannel = talker.glee_RadioChannel
-                local listenerChannel = listener.glee_RadioChannel
-
-                local sameRadio = talkerChannel == listenerChannel
-                if sameRadio then
-                    return true
-
-                end
-            end
-            if talker:GetPos():DistToSqr( listener:GetPos() ) > distToBlockProxy then
-                return false
-
-            else
-                return true, true
-
-            end
-        elseif talkerIsSpectator then
-            if _IsValid( listener.termhuntRadio ) and listener.glee_RadioChannel == 666 then
-                return true
-
-            end
-            return false
-
-        end
-    end
-end )
 
 local spaceCheckUpOffset = Vector( 0,0,64 )
 local spaceCheckHull = Vector( 17, 17, 2 )
@@ -700,6 +654,7 @@ function GM:PlayerSpawn( pl, transiton )
                 if valid then
                     newPos = center
                     break
+
                 end
             end
         end
@@ -727,13 +682,16 @@ function GM:PlayerSpawn( pl, transiton )
         timer.Simple( engine.TickInterval(), function()
             if not IsValid( pl ) then return end
             pl:TeleportTo( offsettedNewPos )
+
         end )
+        -- look at other ply so its easy to find eachother
         timer.Simple( engine.TickInterval() * 2, function()
             if not IsValid( pl ) then return end
             if not IsValid( anotherAlivePlayer ) then return end
             local dirToMainPlayer = terminator_Extras.dirToPos( pl:GetShootPos(), anotherAlivePlayer:GetShootPos() )
             local ang = dirToMainPlayer:Angle()
             pl:SetEyeAngles( ang )
+
         end )
         -- dont put another player here!
         if area then
@@ -741,6 +699,7 @@ function GM:PlayerSpawn( pl, transiton )
             occupiedSpawnAreas[id] = true
             timer.Simple( 5, function()
                 occupiedSpawnAreas[id] = nil
+
             end )
         end
     end
@@ -766,6 +725,26 @@ function GM:PlayerSpawn( pl, transiton )
 
 end
 
+hook.Add( "PlayerDeath", "glee_dontspawnindeadspots", function( died, inflic, attacker )
+    if died == attacker then return end
+
+    local nearestNav = GAMEMODE:getNearestPosOnNav( died:GetPos(), 2000 )
+
+    if not nearestNav or not nearestNav.IsValid or not nearestNav:IsValid() then return end
+    local id = nearestNav:GetID()
+
+    occupiedSpawnAreas[id] = true
+    timer.Simple( 25, function()
+        occupiedSpawnAreas[id] = nil
+
+    end )
+end )
+
+function GM:IsSpawnpointSuitable()
+    return true
+
+end
+
 function GM:PlayerInitialSpawn( ply )
     player_manager.SetPlayerClass( ply, "player_termrunner" )
     ply.termHuntTeam = GAMEMODE.TEAM_PLAYING
@@ -774,7 +753,6 @@ end
 
 -- check if this map has all spawns in a separate room
 function GM:TeleportRoomCheck()
-
     if not GAMEMODE.biggestNavmeshGroups or not GAMEMODE.navmeshGroups then
         GAMEMODE.navmeshGroups = GAMEMODE:GetConnectedNavAreaGroups( navmesh.GetAllNavAreas() )
         GAMEMODE.biggestNavmeshGroups = GAMEMODE:FilterNavareaGroupsForGreaterThanPercent( GAMEMODE.navmeshGroups, GAMEMODE.biggestGroupsRatio or 0.4 )
@@ -784,6 +762,7 @@ function GM:TeleportRoomCheck()
     local doReset = nil
     local reason = ""
 
+    -- randomly force people to spawn on one of the other "big groups"
     local forceReset = #GAMEMODE.biggestNavmeshGroups > 1 and math.random( 0, 100 ) > ( 100 / #GAMEMODE.biggestNavmeshGroups )
 
     for _, ply in ipairs( player.GetAll() ) do
@@ -791,16 +770,16 @@ function GM:TeleportRoomCheck()
         local plysNearestNav = GAMEMODE:getNearestNav( ply:GetPos(), 200 )
         if forceReset then
             doReset = true
-            reason = "HUNTER'S GLEE: Map has other accommodating sections...\nRespawning..."
+            reason = "Map has other areas...\nShuffling..."
 
         elseif not plysNearestNav or not plysNearestNav.IsValid then
             doReset = true
-            reason = "HUNTER'S GLEE: Someone was off the navmesh...\nRespawning..."
+            reason = "Someone was off the navmesh...\nRespawning..."
 
         else
             if not GAMEMODE:NavAreaExistsInGroups( plysNearestNav, GAMEMODE.biggestNavmeshGroups ) then
                 doReset = true
-                reason = "HUNTER'S GLEE: Someone was/is outside the biggest parts of the map!\nReturning..."
+                reason = "Someone is outside the biggest parts of the map!\nReturning..."
             end
         end
         if doReset then
@@ -813,38 +792,11 @@ function GM:TeleportRoomCheck()
             plyGettinRespawned:KillSilent()
 
         end
-        PrintMessage( HUD_PRINTTALK, reason )
+        print( reason )
+        huntersGlee_Announce( player.GetAll(), 1, 5, reason )
 
     end
 end
-
-local nextSendAttempt = 0
-
-function GM:SendDeadPlayersToClients()
-    if nextSendAttempt > CurTime() then return end
-    local count = table.Count( GAMEMODE.deadPlayers )
-    nextSendAttempt = CurTime() + 0.05 + count * 0.05
-
-    count = 0
-
-    for _, currentDeadPlayerData in pairs( GAMEMODE.deadPlayers ) do
-        count = count + 1
-        timer.Simple( count * 0.05, function()
-            local ply = currentDeadPlayerData.ply
-            local pos = currentDeadPlayerData.pos
-            net.Start( "glee_storeresurrectpos" )
-            net.WriteEntity( ply )
-            net.WriteVector( pos )
-            net.Broadcast()
-        end )
-    end
-end
-
-hook.Add( "PlayerDeath", "saveResurrectPos", function( victim )
-    GAMEMODE.deadPlayers[victim:GetCreationID()] = { ply = victim, pos = victim:GetPos() }
-    GAMEMODE:SendDeadPlayersToClients()
-
-end )
 
 hook.Add( "PlayerDeath", "glee_DropScoreOnSuicide", function( victim, inflictor, attacker )
     if victim ~= inflictor or victim ~= attacker then return end-- not a suicide
@@ -942,15 +894,40 @@ hook.Add( "EntityTakeDamage", "huntersglee_makepvpreallybad", function( dmgTarg,
 
             end
         else
-            dmg:ScaleDamage( 0.25 )
+            dmg:ScaleDamage( 0.5 )
 
         end
     end
 end )
 
-function GM:CacheNavareas( players )
+
+hook.Add( "glee_sv_validgmthink", "glee_cachenavareas", function( players )
     for _, ply in ipairs( players ) do
         ply:CacheNavArea()
 
     end
+end )
+
+function GM:HasHomicided( homicider, homicided )
+    local allHomicides = GAMEMODE.roundExtraData.homicides or {}
+    local homicidersCides = allHomicides[ homicider:SteamID() ]
+    if not homicidersCides then return false end
+    if homicidersCides[ homicided:SteamID() ] then return true end
+
 end
+
+hook.Add( "PlayerDeath", "glee_storehomicides", function( died, _, attacker )
+    if not IsValid( attacker ) then return end
+    if attacker == died then return end
+    if not attacker:IsPlayer() then return end
+    local attackasId = attacker:SteamID()
+
+    if not GAMEMODE.roundExtraData.homicides then GAMEMODE.roundExtraData.homicides = {} end
+
+    local allHomicides = GAMEMODE.roundExtraData.homicides
+    local homicidersCides = allHomicides[ attackasId ] or {}
+    homicidersCides[ died:SteamID() ] = true
+
+    GAMEMODE.roundExtraData.homicides[ attackasId ] = homicidersCides
+
+end )

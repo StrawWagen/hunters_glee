@@ -63,6 +63,8 @@ if CLIENT then
 
     end
 
+    local greenReal = Color( 0, 255, 0 )
+    local redReal = Color( 255, 0, 0 )
     local green = { 0, 255, 0 }
     local red = { 255, 0, 0 }
 
@@ -72,6 +74,7 @@ if CLIENT then
     local cam_End3D = cam.End3D
 
     local playerOverrideMat = CreateMaterial( "CHAMSMATPLAYERSWAPPER1", "UnlitGeneric", { ["$basetexture"] = "lights/white001", ["$model"] = 1, ["$ignorez"] = 1 } )
+    local hintMatId = surface.GetTextureID( "effects/yellowflare" )
 
     function ENT:HighlightNearestTarget()
         if not IsValid( self:GetCurrTarget() ) then return end
@@ -105,6 +108,38 @@ if CLIENT then
                 materialOverride()
 
             cam_End3D();
+
+            if not self.DrawOriginHint then return end
+
+            local origin = self:GetCurrTarget():WorldSpaceCenter()
+            local pos2d = origin:ToScreen()
+
+            local size = 100
+
+            local width = size
+            local height = size
+
+            local halfWidth = width / 2
+            local halfHeight = height / 2
+
+            local colorOrigin = greenReal
+            if not self:GetCanPlace() then
+                colorOrigin = redReal
+
+            end
+
+            local texturedQuadStructure = {
+                texture = hintMatId,
+                color   = colorOrigin,
+                x 	= pos2d.x + -halfWidth,
+                y 	= pos2d.y + -halfHeight,
+                w 	= width,
+                h 	= height
+            }
+
+            cam.Start2D()
+                draw.TexturedQuad( texturedQuadStructure )
+            cam.End2D()
 
         end
     end
@@ -156,7 +191,7 @@ function ENT:GetFurthestTerminator()
     local myPos = self:GetPos()
 
     for _, thing in ipairs( ents.GetAll() ) do
-        if thing.isTerminatorHunterBased then
+        if thing.isTerminatorHunterBased and thing.isTerminatorHunterChummy then
             local distance = thing:GetPos():DistToSqr( myPos )
             if distance > furthestDistance then
                 furthestTerminator = thing
@@ -207,7 +242,7 @@ function ENT:CalculateCanPlace()
     if not IsValid( self:GetCurrTarget() ) then return false, "You need to be looking at a player." end
     if not IsValid( self:GetFurthestTerminator() ) then return false, "No hunters are currently spawned." end
     if GAMEMODE:isTemporaryTrueBool( "terhunt_player_swapper" ) then return false, "It's too soon for another inversion to begin." end
-    if not self:HasEnoughToPurchase() then return false, self.noPurchaseReason_TooPoor end
+    if not self:HasEnoughToPurchase() then return false, self:TooPoorString() end
     return true
 
 end
@@ -286,7 +321,7 @@ function ENT:Place()
         if not IsValid( plyToSwap ) then timer.Remove( timerName ) return end
         furthestTerminator = furthestTerminator or self:GetFurthestTerminator()
         if not IsValid( furthestTerminator ) then return end
-        if not plyToSwap:Alive() then
+        if plyToSwap:Health() <= 0 then
             self:SwapPlayerAndTerminator( plyToSwap, furthestTerminator )
             timer.Remove( timerName )
             return

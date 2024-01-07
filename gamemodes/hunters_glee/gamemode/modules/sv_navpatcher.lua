@@ -1,7 +1,6 @@
 
 local coroutine_yield = coroutine.yield
 
-
 function GM:DoGreedyPatch()
 
     local doors = ents.FindByClass( "prop_door_rotating" )
@@ -21,31 +20,31 @@ function GM:DoGreedyPatch()
 
     --glasss
     local glasss = ents.FindByClass( "func_breakable_surf" )
-    local potentialGlass = ents.FindByClass( "func_breakable" )
+    local breakables = ents.FindByClass( "func_breakable" )
 
-    glasss = table.Add( glasss, potentialGlass )
+    breakables = table.Add( breakables, glasss )
 
-    local glassPatches = 0
+    local breakablePatches = 0
 
-    for _, glass in ipairs( glasss ) do
+    for _, breakable in ipairs( breakables ) do
         coroutine_yield()
 
-        local glassNormal = GAMEMODE:seeIfGlassAndGetNormal( glass )
-        if not glassNormal then continue end
+        local breakableNormal = GAMEMODE:seeIfBreakableAndGetNormal( breakable )
+        if not breakableNormal then continue end
 
-        local tooSmall, zHeight = GAMEMODE:glassIsTooSmall( glass, glassNormal )
+        local tooSmall, zHeight = GAMEMODE:breakableIsTooSmall( breakable, breakableNormal )
         if tooSmall then continue end
 
-        local patched = GAMEMODE:patchGlass( glass, glassNormal, zHeight )
+        local patched = GAMEMODE:patchBreakable( breakable, breakableNormal, zHeight )
 
         if patched then
-            --debugoverlay.Cross( glass:WorldSpaceCenter(), 20, 10, color_white, true )
-            glassPatches = glassPatches + 1
+            --debugoverlay.Cross( breakable:WorldSpaceCenter(), 20, 10, color_white, true )
+            breakablePatches = breakablePatches + 1
 
         end
     end
 
-    GAMEMODE:speakAsHuntersGlee( "Made " .. glassPatches .. " New navareas in windows." )
+    GAMEMODE:speakAsHuntersGlee( "Made " .. breakablePatches .. " New navareas in breakable windows/brushes." )
 
     local navmeshGroups = GAMEMODE:GetConnectedNavAreaGroups( navmesh.GetAllNavAreas() )
 
@@ -65,10 +64,10 @@ function GM:DoGreedyPatch()
 
 end
 
-function GM:manageNavPatching( players )
+hook.Add( "glee_sv_validgmthink", "glee_managenavpatching", function( players )
     local playersToPatch = {}
     local addedPlayerCreationIds = {}
-    -- add players that are being targeted first
+    -- we should always patch people being chased if we can!
     for _, ply in ipairs( players ) do
         local lowCount = #playersToPatch < 4
         if lowCount and ply.huntersGleeHunterThatIsTargetingPly then
@@ -81,7 +80,7 @@ function GM:manageNavPatching( players )
         end
     end
 
-    -- if there is still room in the table, add other people
+    -- if there is still room in the table, add people not being chased
     if #playersToPatch < 4 then
         for _, ply in ipairs( players ) do
             local lowCount = #playersToPatch < 4
@@ -99,12 +98,13 @@ function GM:manageNavPatching( players )
         GAMEMODE:navPatchingThink( ply )
 
     end
-end
+end )
 
 -- patches gaps in navmesh, using players as a guide
 -- patches will never be ideal, but they will be better than nothing
 
 local tooFarDistSqr = 40^2
+local offGroundOffset = Vector( 0, 0, 20 )
 
 function GM:navPatchingThink( ply )
 
@@ -137,13 +137,31 @@ function GM:navPatchingThink( ply )
 
     if not terminator_Extras.posCanSee( plyPos2, currClosestPos, MASK_SOLID_BRUSHONLY ) then return end
 
+    local oldAreasCenter = oldArea:GetCenter()
+    local currAreasCenter = currArea:GetCenter()
+
+    -- dont create connections thru floors, specifcally a problem around elevators!
+    if math.abs( currAreasCenter.z - oldAreasCenter.z ) > 50 then
+        local check1Start = currAreasCenter + offGroundOffset
+        local check1End = Vector( currAreasCenter.x, currAreasCenter.y, oldAreasCenter.z + 20 )
+        local check1CanSee = terminator_Extras.posCanSee( check1Start, check1End, MASK_SOLID_BRUSHONLY )
+
+        local check2Start = oldAreasCenter + offGroundOffset
+        local check2End = Vector( oldAreasCenter.x, oldAreasCenter.y, currAreasCenter.z + 20 )
+        local check2CanSee = terminator_Extras.posCanSee( check2Start, check2End, MASK_SOLID_BRUSHONLY )
+
+        if not check1CanSee and not check2CanSee then return end
+
+    end
+
     self:smartConnectionThink( oldArea, currArea )
     self:smartConnectionThink( currArea, oldArea )
+
 end
 
 local _connDistance = GM.connectionDistance
 
--- see if the z of start area
+-- see if the z of start area, to the check areas, is less then criteria
 local function arePlanar( startArea, toCheckAreas, criteria )
     for _, currArea in ipairs( toCheckAreas ) do
         if startArea:IsConnected( currArea ) then
@@ -184,7 +202,7 @@ local function goodDist( distTo )
 
 end
 
--- do checks to see if connection from old area to curr area is a good idea
+-- do checks to see if connection from old area to curr area is a good idea, then connect it if so
 function GM:smartConnectionThink( oldArea, currArea, ignorePlanar )
     if oldArea:IsConnected( currArea ) then return end
 
@@ -195,14 +213,18 @@ function GM:smartConnectionThink( oldArea, currArea, ignorePlanar )
 
     local pos1 = oldArea:GetClosestPointOnArea( currAreasClosest )
     local pos2 = currArea:GetClosestPointOnArea( pos1 )
-    local criteria = math.abs( pos1.z - pos2.z ) + 50
+    local criteria = math.abs( pos1.z - pos2.z ) + 25
     --debugoverlay.Cross( pos1, 50, 10, color_white, true )
     --debugoverlay.Cross( pos2, 100, 10, Color( 255,0,0 ), true )
 
     local navDirTakenByConnection = oldArea:ComputeDirection( pos2 )
     local areasInNavDir = oldArea:GetAdjacentAreasAtSide( navDirTakenByConnection )
 
-    if not ignorePlanar and #areasInNavDir > 0 and arePlanar( currArea, areasInNavDir, criteria ) == true then return end
+    if not ignorePlanar then
+        local areasAtSameZ = #areasInNavDir > 0 and arePlanar( currArea, areasInNavDir, criteria ) == true
+        if areasAtSameZ then return end
+
+    end
 
     oldArea:ConnectTo( currArea )
 
@@ -386,12 +408,12 @@ end
 
 local down = Vector( 0,0,-1 )
 
-function GM:PlaceANavAreaUnderGlass( glass, glassForward, isCrouch )
-    local center = glass:WorldSpaceCenter()
+function GM:PlaceANavAreaUnderBreakable( breakable, breakableForward, isCrouch )
+    local center = breakable:WorldSpaceCenter()
     center = GAMEMODE:getFloor( center )
 
-    local forward = glassForward
-    local right = glassForward:Cross( down )
+    local forward = breakableForward
+    local right = breakableForward:Cross( down )
 
     local corner1 = center + ( forward * 10 ) + ( right * 15 )
     local corner2 = center + ( -forward * 10 ) + ( -right * 15 )
@@ -410,21 +432,21 @@ function GM:PlaceANavAreaUnderGlass( glass, glassForward, isCrouch )
 
 end
 
-function GM:patchGlass( glass, glassNormal, zHeight )
+function GM:patchBreakable( breakable, breakableNormal, zHeight )
 
-    local glassExtent = 10 -- find a path between areas thats simpler than this
+    local breakableExtent = 10 -- find a path between areas thats simpler than this
     local isCrouch = zHeight < 68
 
-    local _, behindNav, inFrontNav, navsWeCovered = GAMEMODE:doesEntDivideNavmesh( glass, glassNormal, glassExtent )
+    local _, behindNav, inFrontNav, navsWeCovered = GAMEMODE:doesEntDivideNavmesh( breakable, breakableNormal, breakableExtent )
 
     if not navsWeCovered then return end
 
-    local glassRight = glassNormal:Angle():Right()
-    local dividesNavmesh = GAMEMODE:noAreasThatCrossThis( glass:WorldSpaceCenter(), glassRight, glass, navsWeCovered )
+    local breakableRight = breakableNormal:Angle():Right()
+    local dividesNavmesh = GAMEMODE:noAreasThatCrossThis( breakable:WorldSpaceCenter(), breakableRight, breakable, navsWeCovered )
 
     if dividesNavmesh ~= true then return end
 
-    local patched, createdArea = GAMEMODE:PlaceANavAreaUnderGlass( glass, glassNormal, isCrouch )
+    local patched, createdArea = GAMEMODE:PlaceANavAreaUnderBreakable( breakable, breakableNormal, isCrouch )
     if not patched then return end
 
     -- ok we made the area, now double check to see if it overlaps any areas.
@@ -613,12 +635,12 @@ end
 
 local ang_zero = Angle()
 
-function GM:glassIsTooSmall( glass, glassForward )
-    local glassAng = glassForward:Angle()
-    local mins, maxs = glass:WorldSpaceAABB()
+function GM:breakableIsTooSmall( breakable, breakableForward )
+    local breakableAng = breakableForward:Angle()
+    local mins, maxs = breakable:WorldSpaceAABB()
 
-    mins = WorldToLocal( mins, ang_zero, glass:WorldSpaceCenter(), glassAng )
-    maxs = WorldToLocal( maxs, ang_zero, glass:WorldSpaceCenter(), glassAng )
+    mins = WorldToLocal( mins, ang_zero, breakable:WorldSpaceCenter(), breakableAng )
+    maxs = WorldToLocal( maxs, ang_zero, breakable:WorldSpaceCenter(), breakableAng )
 
     local yAdded = math.abs( mins.y ) + math.abs( maxs.y )
     local zAdded = math.abs( mins.z ) + math.abs( maxs.z )
@@ -639,8 +661,8 @@ local offsetsToCheck = {
     Vector( 0, 0, -100 ),
 }
 
-function GM:seeIfGlassAndGetNormal( glass )
-    local pos = glass:WorldSpaceCenter()
+function GM:seeIfBreakableAndGetNormal( breakable )
+    local pos = breakable:WorldSpaceCenter()
     for _, offset in ipairs( offsetsToCheck ) do
         local trStruct = {
             start = pos + offset,
@@ -652,10 +674,7 @@ function GM:seeIfGlassAndGetNormal( glass )
 
         if not traceResult.Hit then continue end
         if traceResult.StartSolid then continue end
-        if traceResult.Entity ~= glass then continue end
-
-        local matType = traceResult.MatType
-        if matType ~= MAT_GLASS then continue end
+        if traceResult.Entity ~= breakable then continue end
 
         return traceResult.HitNormal
 
