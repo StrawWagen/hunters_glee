@@ -12,6 +12,9 @@ gamemodes\hunters_glee\gamemode\modules\sh_playerdrowning.lua
 gamemodes\hunters_glee\gamemode\modules\sh_danceslowdown.lua
 gamemodes\hunters_glee\gamemode\modules\sh_detecthunterkills.lua
 
+gamemodes\hunters_glee\gamemode\player_class\player_termrunner.lua
+gamemodes\hunters_glee\gamemode\player_class\player_termrunnertaunt.lua
+
 gamemodes\hunters_glee\gamemode\modules\battery\cl_battery.lua
 gamemodes\hunters_glee\gamemode\modules\battery\sh_battery.lua
 
