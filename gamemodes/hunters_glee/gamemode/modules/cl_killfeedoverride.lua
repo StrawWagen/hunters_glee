@@ -204,7 +204,13 @@ local function DrawDeath( x, y, death, time )
 	death.color2.a = alpha
 
 	-- Draw Icon
-	killicon.Render( x - w / 2, y, death.icon, alpha )
+	if killicon.Render then
+		killicon.Render( x - w / 2, y, death.icon, alpha )
+
+	elseif killicon.Draw then
+		killicon.Draw( x - w / 2, y, death.icon, alpha )
+
+	end
 
 	-- Draw KILLER
 	if ( death.left ) then

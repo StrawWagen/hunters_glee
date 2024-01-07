@@ -286,6 +286,7 @@ end )
 
 hook.Add( "glee_plypickedupskull", "glee_skullpickupsinkillfeed", function( picker )
     local inflic = "glee_skullpickup"
+    if not GAMEMODE.SendDeathNotice then return end
     GAMEMODE:SendDeathNotice( picker, inflic, nil, 0 )
 
 end )
