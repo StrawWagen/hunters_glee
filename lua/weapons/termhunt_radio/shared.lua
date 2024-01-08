@@ -53,6 +53,7 @@ function SWEP:UpdateServersideChannel()
     local channel = self:GetChannelTranslated()
     local owner = self:GetOwner()
     if not IsValid( owner ) then return end
+    if not SERVER then return end
     owner.termhuntRadio = self
     owner:SetGleeRadioChannel( channel )
 

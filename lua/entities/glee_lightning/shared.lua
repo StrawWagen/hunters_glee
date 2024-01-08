@@ -19,7 +19,7 @@ if SERVER then
     resource.AddFile( "materials/vgui/hud/glee_lightning.vmt" )
 
 else
-    killicon.Add( "glee_lightning", "vgui/hud/glee_lightning" )
+    killicon.Add( "glee_lightning", "vgui/hud/glee_lightning", color_white )
 
 end
 

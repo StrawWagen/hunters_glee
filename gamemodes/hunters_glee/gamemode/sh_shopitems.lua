@@ -87,6 +87,9 @@
 -- overcharge terminator undead item? -- DONE
 -- bear trap PASS -- DONE!!!
 
+-- dont respawn next to people you have homicided
+-- nailing bottle crashes server?
+
 -- linked hunter random spawn
 
 -- if bot kills player then sees another player, stand still and only move when they move
@@ -3769,7 +3772,7 @@ local defaultItems = {
     -- people who teamkill get funny consequence
     [ "homicidalglee" ] = {
         name = "Homicidal Glee.",
-        desc = "Place on players who have killed you.\nBrings their Homicidal Glee to the surface...\nCan only be placed every 30 seconds.",
+        desc = "Place on players who have killed you.\nBrings their Homicidal Glee to the surface...\nCan only be placed every 10 seconds.",
         cost = 0,
         markup = 1,
         cooldown = 5,

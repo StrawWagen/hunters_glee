@@ -116,7 +116,7 @@ hook.Add( "InitPostEntity", "glee_setupsmartsleeping", function()
             if not IsValid( ent ) then return end
             if ent.glee_issmartsleeping then return end
             if ent:IsWeapon() or ent:GetClass() == "gib" then
-                terminator_Extras.SmartSleepEntity( ent, 50 )
+                terminator_Extras.SmartSleepEntity( ent, 20 )
 
             end
         end )
