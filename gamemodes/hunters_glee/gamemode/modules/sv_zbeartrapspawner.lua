@@ -15,6 +15,11 @@ local offsetFromGround = Vector( 0, 0, 25 )
 -- beartrapsPlacedAlready INTENTIONALLY persists thru rounds
 local beartrapsPlacedAlready = {}
 local mapBearTrapCount = math.random( 1, 6 )
+if math.random( 0, 100 ) < 25 then
+    mapBearTrapCount = 0
+
+end
+
 local vec_down = Vector( 0, 0, -1 )
 
 hook.Add( "Think", "glee_addbeartrapjobs", function()
