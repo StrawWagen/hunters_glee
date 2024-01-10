@@ -207,8 +207,9 @@ local function DrawDeath( x, y, death, time )
 	if killicon.Render then
 		killicon.Render( x - w / 2, y, death.icon, alpha )
 
+	-- TODO: remove stupid
 	elseif killicon.Draw then
-		killicon.Draw( x - w / 2, y, death.icon, alpha )
+		killicon.Draw( x, y + y / 2, death.icon, alpha )
 
 	end
 

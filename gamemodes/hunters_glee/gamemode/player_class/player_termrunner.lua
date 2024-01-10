@@ -408,7 +408,7 @@ if SERVER then
 
     function meta:CacheNavArea()
         local myPos = self:GetPos()
-        local area = navmesh.GetNearestNavArea( myPos, true, navCheckDist, false, true )
+        local area = navmesh.GetNearestNavArea( myPos, true, navCheckDist, true, true )
         self.CachedNavArea = area
         if area then
             self.SqrDistToCachedNavArea = myPos:DistToSqr( area:GetClosestPointOnArea( myPos ) )

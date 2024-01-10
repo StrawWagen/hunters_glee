@@ -385,6 +385,7 @@ function GM:GetNearbyWalkableArea( playerReference, start, count )
     local startArea = res.area
 
     if not ( startArea and startArea.IsValid and startArea:IsValid() ) then return end
+    local canBeUnderwater = startArea:IsUnderwater()
     local occupiedSpawnAreas = occupiedSpawnAreas or {}
 
     local scoreData = {}
@@ -395,6 +396,7 @@ function GM:GetNearbyWalkableArea( playerReference, start, count )
     local scoreFunction = function( scoreData, area1, area2 )
 
         if occupiedSpawnAreas[area2:GetID()] then return 0 end
+        if area2:IsUnderwater() and not canBeUnderwater then return 0 end
 
         local area2Center = area2:GetCenter()
         local distanceTravelled = area2Center:DistToSqr( scoreData.startPos )
@@ -890,8 +892,22 @@ function GM:GetGroupThatNavareaExistsIn( navArea, navAreaGroups )
     end
 end
 
+-- will return an underwater area if all of them are underwater
+local function areaThatIsntUnderwater( areas )
+    local bestArea = nil
+    local clone = table.Copy( areas )
+
+    for _ = 1, #clone do
+        bestArea = table.remove( clone, math.random( 1, #clone ) )
+        if not bestArea:IsUnderwater() then break end
+
+    end
+    return bestArea
+
+end
+
 -- get navarea to teleport to that isnt boring
-function GM:GetAreaInOccupiedBigGroupOrRandomBigGroup()
+function GM:GetAreaInOccupiedBigGroupOrRandomBigGroup( noUnderWater )
 
     local bigGroups = GAMEMODE.biggestNavmeshGroups
     local firstPly = GAMEMODE:anotherAlivePlayer()
@@ -907,7 +923,13 @@ function GM:GetAreaInOccupiedBigGroupOrRandomBigGroup()
     end
 
     if bigGroupThatSomeoneIsIn then
-        return bigGroupThatSomeoneIsIn[math.random( 1, #bigGroupThatSomeoneIsIn )], bigGroupThatSomeoneIsIn
+        local area = bigGroupThatSomeoneIsIn[math.random( 1, #bigGroupThatSomeoneIsIn )]
+
+        if noUnderWater and area:IsUnderwater() then
+            area = areaThatIsntUnderwater( bigGroupThatSomeoneIsIn )
+
+        end
+        return area, bigGroupThatSomeoneIsIn
 
     -- main person is not in a big group, just pick one with hunters in it
     else
@@ -924,7 +946,14 @@ function GM:GetAreaInOccupiedBigGroupOrRandomBigGroup()
 
         if not bigGroupThatHunterIsIn then goto getareainbigoroccupiedFail end
 
-        return bigGroupThatHunterIsIn[math.random( 1, #bigGroupThatHunterIsIn )], bigGroupThatHunterIsIn
+
+        local area = bigGroupThatHunterIsIn[math.random( 1, #bigGroupThatHunterIsIn )]
+
+        if noUnderWater and area:IsUnderwater() then
+            area = areaThatIsntUnderwater( bigGroupThatHunterIsIn )
+
+        end
+        return area, bigGroupThatHunterIsIn
 
     end
 
@@ -933,6 +962,11 @@ function GM:GetAreaInOccupiedBigGroupOrRandomBigGroup()
 
     local randBigGroup = bigGroups[ math.random( 1, #bigGroups ) ]
     local randAreaInRandGroup = randBigGroup[ math.random( 1, #randBigGroup ) ]
+
+    if noUnderWater and randAreaInRandGroup:IsUnderwater() then
+        randAreaInRandGroup = areaThatIsntUnderwater( randBigGroup )
+
+    end
 
     return randAreaInRandGroup, randBigGroup
 

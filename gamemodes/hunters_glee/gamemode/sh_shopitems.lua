@@ -2598,7 +2598,7 @@ local function divineInterventionCooldown( purchaser )
     end
 end
 
-local function divineInterventionPos()
+local function divineInterventionPos( purchaser )
     local plys = GAMEMODE:returnWinnableInTable( player.GetAll() )
 
     if #plys <= 0 then
@@ -2609,10 +2609,22 @@ local function divineInterventionPos()
 
     local randomValidPos = nil
     local chosenResurrectAnchor
-    for count = 1, 12 do
-        chosenResurrectAnchor = table.Random( plys )
-        randomValidPos = GAMEMODE:GetNearbyWalkableArea( chosenResurrectAnchor, chosenResurrectAnchor:GetPos(), count )
+    for _ = 1, #plys do
+        chosenResurrectAnchor = table.remove( plys, math.random( 1, #plys ) )
+        -- dont spawn them next to someone who they killed or they will kill.
+        local isChosen = chosenResurrectAnchor:GetNW2Bool( "isdivinechosen", false ) == true
+        if GAMEMODE:HasHomicided( purchaser, chosenResurrectAnchor ) or GAMEMODE:HasHomicided( chosenResurrectAnchor, purchaser ) or isChosen then
+            continue
 
+        end
+
+        for count = 1, 12 do
+            -- search nearby chosen player in increasing radius
+            randomValidPos = GAMEMODE:GetNearbyWalkableArea( chosenResurrectAnchor, chosenResurrectAnchor:GetPos(), count )
+
+            if randomValidPos then break end
+
+        end
         if randomValidPos then break end
 
     end
@@ -2621,7 +2633,8 @@ local function divineInterventionPos()
         return randomValidPos, chosenResurrectAnchor
 
     else
-        local randomNavArea = GAMEMODE:GetAreaInOccupiedBigGroupOrRandomBigGroup()
+        -- find area not underwater
+        local randomNavArea = GAMEMODE:GetAreaInOccupiedBigGroupOrRandomBigGroup( true )
         return randomNavArea:GetCenter()
 
     end
@@ -2644,7 +2657,7 @@ local function divineIntervention( purchaser )
 
         end
 
-        local interventionPos, anchor = divineInterventionPos()
+        local interventionPos, anchor = divineInterventionPos( purchaser )
 
         if IsValid( anchor ) then
             huntersGlee_Announce( { purchaser }, 20, 10, "Respawned next to " .. anchor:Name() )

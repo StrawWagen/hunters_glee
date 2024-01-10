@@ -129,6 +129,20 @@ function SWEP:ChannelSwitch( add )
 
         end
     end
+
+    if SERVER then
+        if newChannel == 1 then
+            huntersGlee_Announce( { owner }, 2, 1, "Global chat: Off" )
+
+        elseif newChannel == 2 then
+            huntersGlee_Announce( { owner }, 2, 1, "Global chat: On" )
+
+        elseif newChannel == 3 then
+            huntersGlee_Announce( { owner }, 2, 1, "Global chat: 666" )
+
+        end
+    end
+
     if newChannel > 1 and owner.GivePlayerBatteryCharge then
         owner:GivePlayerBatteryCharge( -radioPowerUse )
 

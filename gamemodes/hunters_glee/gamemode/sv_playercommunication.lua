@@ -8,6 +8,7 @@ hook.Add( "Think", "glee_cachedoproxchat", function()
 
 end )
 
+--[[
 local shouldChatCache = {}
 local needsRebuild = {}
 
@@ -27,69 +28,13 @@ local function vcCache( listener, talker, canHear, doProx )
     shouldChatCache[listener] = listenersCache
 
 
-    --[[
     local canOrCannot = " CANNOT BE HEARD BY "
     if canHear == true then
         canOrCannot = " CAN BE HEARD BY "
     end
 
     print( talker, canOrCannot, listener )
-    --]]
 
-end
-
-local function buildVCCache( listener, talker )
-    if not doProxChatCached then
-        vcCache( listener, talker, true, false )
-        return true
-
-    end
-
-    local talkersHealth = talker:Health()
-    local listenersHealth = listener:Health()
-
-    local talkerIsSpectator = talkersHealth <= 0
-    local talkerIsPlaying = talkersHealth > 0
-    local talkersChannel = talker:GetGleeRadioChannel()
-
-    local listenerIsSpectator = listenersHealth <= 0
-    local listenerIsPlaying = listenersHealth > 0
-    local listenersChannel = listener:GetGleeRadioChannel()
-
-    local radioLink = listenersChannel == talkersChannel
-    -- radios are off!
-    if radioLink and ( listenersChannel == 0 or talkersChannel == 0 ) then radioLink = false end 
-
-    if listenerIsSpectator then
-        -- hearing dead ply or alive with 666
-        if talkerIsSpectator or radioLink then
-            vcCache( listener, talker, true, false )
-            return true
-
-        -- hearing alive ply
-        else
-            vcCache( listener, talker, true, true )
-            return true
-
-        end
-    elseif listenerIsPlaying then
-        -- another ply with radio or dead ply and we have 666
-        if radioLink then
-            vcCache( listener, talker, true, false )
-            return true
-
-        -- alive ply and they are close enough for proxy
-        elseif talkerIsPlaying and listener:GetPos():DistToSqr( talker:GetPos() ) < distToBlockProxy then
-            vcCache( listener, talker, true, true )
-            return true
-
-        -- dead ply or they're too far
-        else
-            vcCache( listener, talker, false, false )
-            return true
-
-        end
-    end
 end
 
 local function getCache( listener, talker )
@@ -132,12 +77,6 @@ hook.Add( "huntersglee_round_into_active", "glee_restartvctimer", function()
 
 end )
 
-hook.Add( "PlayerCanHearPlayersVoice", "glee_voicechat_system", function( listener, talker )
-    local cache = getCache( listener, talker )
-    return cache[1], cache[2]
-
-end )
-
 hook.Add( "PlayerDeath", "glee_RebuildVoiceChat", function( dead )
     GAMEMODE:EarlyVoiceCache( dead )
 
@@ -145,6 +84,73 @@ end )
 
 hook.Add( "PlayerSpawn", "glee_RebuildVoiceChat", function( whoSpawned )
     GAMEMODE:EarlyVoiceCache( whoSpawned )
+
+end )
+
+--]]
+
+local function listenerCanHear( listener, talker )
+    if not doProxChatCached then
+        return true, false
+
+    end
+
+    local listenersHealth = listener:Health()
+    local talkersHealth = talker:Health()
+
+    local listenerIsSpectator = listenersHealth <= 0
+    local listenerIsPlaying = listenersHealth > 0
+    local listenersChannel = listener:GetGleeRadioChannel()
+
+    local talkerIsSpectator = talkersHealth <= 0
+    local talkerIsPlaying = talkersHealth > 0
+    local talkersChannel = talker:GetGleeRadioChannel()
+
+    -- radios are off!
+    local talkersRadioIsOff = talkersChannel == 0
+    -- same channel!
+    local radioLink = ( listenersChannel == talkersChannel ) and not talkersRadioIsOff
+    -- radio on talks to everyone
+    if talkersChannel == 1 and listenersChannel == 0 then radioLink = true end
+
+    if listenerIsSpectator then
+        -- hearing dead ply or alive with 666
+        if talkerIsSpectator or radioLink then
+            return true, false
+
+        -- hearing alive ply
+        elseif listener:GetPos():DistToSqr( talker:GetPos() ) < distToBlockProxy then
+            return true, true
+
+        end
+    elseif listenerIsPlaying then
+        -- another ply with radio or dead ply and we have 666
+        if radioLink then
+            return true, false
+
+        -- alive ply and they are close enough for proxy
+        elseif talkerIsPlaying and listener:GetPos():DistToSqr( talker:GetPos() ) < distToBlockProxy then
+            return true, true
+
+        -- dead ply or they're too far
+        else
+            return false, false
+
+        end
+    end
+end
+
+
+hook.Add( "PlayerCanHearPlayersVoice", "glee_voicechat_system", function( listener, talker )
+    local canHear, proxy = listenerCanHear( listener, talker )
+
+    --local canOrCannot = " DOESNT HEAR "
+    --if canHear == true then
+    --    canOrCannot = " HEARS "
+    --end
+    --print( listener, canOrCannot, talker, proxy )
+
+    return canHear, proxy
 
 end )
 

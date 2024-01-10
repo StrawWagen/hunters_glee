@@ -130,6 +130,8 @@ end
 
 function SWEP:Think()
     if CLIENT then
+        local owner = self:GetOwner()
+        if owner ~= LocalPlayer() then return end
         if not IsValid( self.beartrapGhost ) then
             self:DoGhost()
 
