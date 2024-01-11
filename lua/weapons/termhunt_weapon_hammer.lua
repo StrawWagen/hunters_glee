@@ -67,6 +67,7 @@ if SERVER then
 
     resource.AddFile( "models/weapons/w_buzzhammer.mdl" )
 
+    -- view model is also from barricade swep
     resource.AddFile( "models/weapons/c_barricadeswep.phy" )
 
     resource.AddFile( "materials/models/weapons/cade_hammer.vmt" )
@@ -171,7 +172,7 @@ end
 ----------------------------------------------------------------------------------------------------------------|
 function SWEP:Deploy()
     --self:EmitSound("")
-    self:SendWeaponAnim(ACT_VM_DRAW)
+    self:SendWeaponAnim( ACT_VM_DRAW )
 end
 ----------------------------------------------------------------------------------------------------------------|
 function SWEP:OnDrop()
@@ -184,12 +185,15 @@ function SWEP:Holster()
 end
 
 function SWEP:Miss()
+    self:SetNextPrimaryFire( CurTime() + self.Primary.Delay / 2 )
+    self:SendWeaponAnim( ACT_VM_MISSCENTER )
+    if not IsFirstTimePredicted() then return end
+
     local owner = self:GetOwner()
 
     self:EmitSound( self.SwingSound, 70, math.random( 90, 120 ) )
 
-    self:SetNextPrimaryFire( CurTime() + self.Primary.Delay / 2 )
-    self:SendWeaponAnim( ACT_VM_MISSCENTER )
+    if not SERVER then return end
     owner:SetAnimation( PLAYER_ATTACK1 )
 
     local rnda = self.Primary.Recoil * -0.5
@@ -200,11 +204,14 @@ function SWEP:Miss()
 end
 
 function SWEP:BadHit( tr )
-    if not SERVER then return end
-    local owner = self:GetOwner()
 
     self:SetNextPrimaryFire( CurTime() + self.Primary.Delay / 2 )
     self:SendWeaponAnim( ACT_VM_MISSCENTER )
+    if not IsFirstTimePredicted() then return end
+
+    local owner = self:GetOwner()
+
+    if not SERVER then return end
     owner:SetAnimation( PLAYER_ATTACK1 )
 
     local rnda = self.Primary.Recoil * -0.5
@@ -274,6 +281,8 @@ function SWEP:PrimaryAttack()
     local owner = self:GetOwner()
     self:SetNextPrimaryFire( CurTime() + self.Primary.Delay / 2 )
 
+    owner:LagCompensation( true )
+
     local trace = owner:GetEyeTrace()
 
     local whatWeHit = trace.Entity
@@ -302,77 +311,81 @@ function SWEP:PrimaryAttack()
     local trTwo = util.TraceLine( tr )
     local secondHit = trTwo.Entity
 
-    if IsFirstTimePredicted() then
-        bullet = {}
-        bullet.Num    = 1
-        bullet.Src    = owner:GetShootPos()
-        bullet.Dir    = owner:GetAimVector()
-        bullet.Spread = Vector( 0, 0, 0 )
-        bullet.Tracer = 0
-        bullet.Force  = 10
-        bullet.Distance = self.Primary.Distance
-        bullet.Damage = 0
-        owner:FireBullets( bullet )
+    local nearNails = ents.FindInSphere( trace.HitPos, nailTooCloseDist * 10 )
+    for _, nail in ipairs( nearNails ) do
+        if nail:GetClass() ~= "gmod_glee_nail" then continue end
+        local nailsPos = nail:GetPos() + nail:GetForward() * nail:GetModelRadius() / 2
+        if nailsPos:DistToSqr( trace.HitPos ) > nailTooCloseDist^2 then continue end
 
-        local nearNails = ents.FindInSphere( trace.HitPos, nailTooCloseDist * 10 )
-        for _, nail in ipairs( nearNails ) do
-            if nail:GetClass() ~= "gmod_glee_nail" then continue end
-            local nailsPos = nail:GetPos() + nail:GetForward() * nail:GetModelRadius() / 2
-            if nailsPos:DistToSqr( trace.HitPos ) > nailTooCloseDist^2 then continue end
+        self:BadHit( trace )
+        owner:LagCompensation( false )
+        return false
 
-            self:BadHit( trace )
-            return false
-
-        end
-
-        if not self:ValidEntityToNail( secondHit, trTwo.PhysicsBone ) then
-            if not IsValid( secondHit.Entity ) then
-                self:Miss()
-            else
-                self:BadHit( trace )
-            end
-            return false
-
-        end
-
-        owner:SetNW2Bool( "gleenailer_goodnailed", true )
-        self:SendWeaponAnim( ACT_VM_HITKILL )
-
-        self:EmitSound( self.NailedSound )
-
-        owner:SetAnimation( PLAYER_ATTACK1 )
-        self:SetNextPrimaryFire( CurTime() + self.Primary.Delay )
-
-        owner:ViewPunch( Angle( -10,-10,-10 ) )
-
-        -- Client can bail now
-        if ( CLIENT ) then return true end
-
-        local vOrigin = trace.HitPos - ( owner:GetAimVector() * 8.0 )
-        local vDirection = owner:GetAimVector():Angle()
-
-        vOrigin = whatWeHit:WorldToLocal( vOrigin )
-
-        -- Weld them!
-        local constraint, nail = MakeNail( whatWeHit, secondHit, trace.PhysicsBone, trTwo.PhysicsBone, 50000, vOrigin, vDirection )
-        if not constraint or not constraint:IsValid() then self:BadHit( trace ) return end
-
-        self:SetClip1( math.Clamp( self:Clip1() + -1, 0, math.huge ) )
-
-        if owner.AddCleanup then
-            undo.Create( "Nail" )
-            undo.AddEntity( constraint )
-            undo.AddEntity( nail )
-            undo.SetPlayer( owner )
-            undo.Finish()
-
-            owner:AddCleanup( "nails", constraint )
-            owner:AddCleanup( "nails", nail )
-
-        end
-
-        return true
     end
+
+    if not self:ValidEntityToNail( secondHit, trTwo.PhysicsBone ) then
+        if not IsValid( secondHit.Entity ) then
+            self:Miss()
+        else
+            self:BadHit( trace )
+        end
+        owner:LagCompensation( false )
+        return false
+
+    end
+
+    self:SetNextPrimaryFire( CurTime() + self.Primary.Delay )
+
+    bullet = {}
+    bullet.Num    = 1
+    bullet.Src    = owner:GetShootPos()
+    bullet.Dir    = owner:GetAimVector()
+    bullet.Spread = Vector( 0, 0, 0 )
+    bullet.Tracer = 0
+    bullet.Force  = 10
+    bullet.Distance = self.Primary.Distance
+    bullet.Damage = 0
+    owner:FireBullets( bullet )
+
+    self:SendWeaponAnim( ACT_VM_HITKILL )
+    if not IsFirstTimePredicted() then owner:LagCompensation( false ) return end
+
+    owner:SetAnimation( PLAYER_ATTACK1 )
+    self:EmitSound( self.NailedSound )
+
+    owner:ViewPunch( Angle( -10,-10,-10 ) )
+
+    -- for the hint
+    owner:SetNW2Bool( "gleenailer_goodnailed", true )
+
+    -- Client can bail now
+    if CLIENT then owner:LagCompensation( false ) return true end
+
+    local vOrigin = trace.HitPos - ( owner:GetAimVector() * 8.0 )
+    local vDirection = owner:GetAimVector():Angle()
+
+    vOrigin = whatWeHit:WorldToLocal( vOrigin )
+
+    -- Weld them!
+    local constraint, nail = MakeNail( whatWeHit, secondHit, trace.PhysicsBone, trTwo.PhysicsBone, 50000, vOrigin, vDirection )
+    if not constraint or not constraint:IsValid() then self:BadHit( trace ) owner:LagCompensation( false ) return end
+
+    self:SetClip1( math.Clamp( self:Clip1() + -1, 0, math.huge ) )
+
+    if owner.AddCleanup then
+        undo.Create( "Nail" )
+        undo.AddEntity( constraint )
+        undo.AddEntity( nail )
+        undo.SetPlayer( owner )
+        undo.Finish()
+
+        owner:AddCleanup( "nails", constraint )
+        owner:AddCleanup( "nails", nail )
+
+    end
+
+    owner:LagCompensation( false )
+    return true
 end
 
 function SWEP:SecondaryAttack()
