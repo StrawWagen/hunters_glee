@@ -183,7 +183,7 @@ elseif SERVER then
 
         end
 
-        local bite = panic / 5
+        local bite = panic / 10
         local maxFov = maxPanic
         maxFov = maxFov + -bite
         maxFov = math.Clamp( maxFov, 60, 100 )

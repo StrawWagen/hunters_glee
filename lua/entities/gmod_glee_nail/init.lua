@@ -131,10 +131,10 @@ hook.Add( "EntityTakeDamage", "nail_break_when_nailed_damaged", function( target
 
     end
 
-    local done = 100
+    local done = 0
 
     -- go thru all nails until all damage is absorbed
-    while damage > 0 and done < 100 do
+    while damage > 0 and done < 1000 do
         done = done + 1
         -- nail's health, breaks if this roll is less than damage
         local bite = math.random( 1, 160 )
