@@ -87,24 +87,24 @@
 -- overcharge terminator undead item? -- DONE
 -- bear trap PASS -- DONE!!!
 
--- dont respawn next to people you have homicided
--- nailing bottle crashes server?
-
--- linked hunter random spawn
-
--- if bot kills player then sees another player, stand still and only move when they move
-
 -- spawn waves
-    -- only spawn terminators when all die or after 5 minutes
+    -- only spawn terminators when all die or after x minutes --done
+    -- linked hunter random spawn --done!
+-- dont respawn next to people you have homicided -- DONE!
+-- does bot over-predict when people juke it towards it --no, done
+
+-- nailing bottle crashes server?
+-- fix bear trap last beartrap stupid
+-- fix prog bars
+-- if bot kills player then sees another player, stand still and only move when they move
 
 -- make divine intervention placable 
 -- lock the crazier innate + item shop stuff behind trickle pickups around maps
-    -- makes ar2/rpg less boring
+    -- makes ar2/rpg less boring/reliable
     -- unlock conduit from this OR when people see it happen?
     -- fixes information overload? 
 -- models/props_vehicles/tanker001a.mdl
 
--- does bot over-predict when people juke it towards it
 -- bot avoid damaging ents idea, needs path building pass.
 -- bot placing of slams + beartrap
 -- radio draw channel instead of ammo
