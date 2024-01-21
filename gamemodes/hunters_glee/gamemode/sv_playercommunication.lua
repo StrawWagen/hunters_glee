@@ -157,6 +157,7 @@ end )
 
 -- text chat isn't ever proxy, new logic needed
 hook.Add( "PlayerCanSeePlayersChat", "glee_chatblock", function( _, _, listener, talker )
+    if not IsValid( talker ) or not IsValid( listener ) then return end
     local talkersHealth = talker:Health()
     local listenersHealth = listener:Health()
 
