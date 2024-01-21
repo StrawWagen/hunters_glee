@@ -16,14 +16,14 @@ end
 
 local function updateBatteryInternal( ply, new )
     local old = batteryChargesLocal[ply] or 0
-    if old == 0 and new > 0 then
-        hook.Run( "glee_battery_onnotempty", ply )
-
-    end
 
     batteryChargesLocal[ply] = new
     ply:SetNW2Float( "glee_precicebatterycharge", new )
 
+    if old == 0 and new > 0 then
+        hook.Run( "glee_battery_onnotempty", ply )
+
+    end
 end
 
 local function armorFollowBatteryInternal( ply )
@@ -83,14 +83,14 @@ end
 
 
 local nextPowerUse = 0
-local flashlightPowerUse = 100 / ( 60 * 6 ) -- depletes 100 suit in X minutes
+local flashlightPowerUse = 100 / ( 60 * 5 ) -- depletes 100 suit in X minutes
 local zoomPowerUse = 100 / ( 60 * 4 )
 
 flashlightPowerUse = math.Round( flashlightPowerUse, 2 ) -- dont store all those decimals!
 zoomPowerUse = math.Round( zoomPowerUse, 2 )
 
 hook.Add( "glee_battery_think", "glee_flashlightdrain", function( ply, powerData )
-    if ply:FlashlightIsOn() then
+    if ply:Glee_FlashlightIsOn() then
         powerData[1] = powerData[1] + -flashlightPowerUse
 
     end
@@ -122,23 +122,42 @@ hook.Add( "glee_sv_validgmthink", "glee_depletebatteries", function( players, _,
     end
 end )
 
+local function checkFlashlightBrightness( ply )
+    local oldBright = ply.glee_FlashlightBrightness or 255
+    if ply:GetBatteryCharge() <= 0 then
+        if oldBright >= 35 then
+            ply:EmitSound( "buttons/lightswitch2.wav", 60, 120, 0.4 )
 
-hook.Add( "glee_battery_onempty", "disableflashlight", function( ply )
-    if not ply:FlashlightIsOn() then return end
-    ply:Flashlight( false )
+        end
+        ply:SetFlashlightBrightness( 20 + math.random( -15, 5 ) )
+        timer.Simple( math.Rand( 0.05, 0.25 ), function()
+            ply:SetFlashlightBrightness( 20 + math.random( -2, 2 ) )
 
-end )
-
-hook.Add( "PlayerSwitchFlashlight", "glee_battery_flashlight", function( ply, enabled ) 
-    if not ply:PlayerHasBatteryCharge() then
-        ply:BatteryNag( 0.5 )
-        return not enabled
+        end )
+    else
+        if oldBright == 255 then return end
+        ply:SetFlashlightBrightness( 255 )
+        ply:EmitSound( "buttons/lightswitch2.wav", 60, 150, 0.4 )
 
     end
-    -- check
-    if ply:FlashlightIsOn() then return end
-    ply:GivePlayerBatteryCharge( -( flashlightPowerUse / 2 ) )
+end
 
+hook.Add( "glee_battery_onempty", "disableflashlight", checkFlashlightBrightness )
+
+hook.Add( "glee_battery_onnotempty", "fixflashlight", checkFlashlightBrightness )
+
+hook.Add( "glee_PlayerSwitchFlashlight", "glee_battery_flashlight", function( ply, enabling )
+    local charged = ply:PlayerHasBatteryCharge()
+    if not charged and enabling then
+        ply:BatteryNag( 0.5 )
+
+    elseif charged then
+        -- check
+        checkFlashlightBrightness( ply )
+        if ply:Glee_FlashlightIsOn() then return end
+        ply:GivePlayerBatteryCharge( -( flashlightPowerUse / 2 ) )
+
+    end
 end )
 
 hook.Add( "glee_battery_onempty", "disablezoom", function( ply )

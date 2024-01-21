@@ -283,11 +283,11 @@ end
 
 function ENT:OnTakeDamage( dmg )
     self.dmg = self.dmg + dmg:GetDamage()
-    if self.dmg < 25 then return end
+    if self.dmg < 45 then return end
     if self:IsReadyToSpring() then
         self:Snap()
 
-    elseif self.dmg > 80 and dmg:IsDamageType( DMG_CLUB ) then
+    elseif self.dmg > 120 and dmg:IsDamageType( DMG_CLUB ) then
         self:EmitSound( "doors/vent_open1.wav", 90, 110, 1, CHAN_STATIC )
         self:PickUp()
 

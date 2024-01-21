@@ -186,6 +186,7 @@ end
 player_manager.RegisterClass( "player_termrunner", PLAYER, "player_default" )
 
 -- put this here instead of making new file for shared player stuff
+-- TODO: new shared file for player stuff....
 local meta = FindMetaTable( "Player" )
 
 function meta:GetScore()
@@ -227,6 +228,16 @@ if SERVER then
         self:SetPos( pos )
         self:unstuckFullHandle()
 
+        timer.Simple( 0.5, function()
+            if not IsValid( ply ) then return end
+            if ply:GetPos():DistToSqr( pos ) < 750^2 then return end
+
+            -- didnt teleport ply... try AGAIN!
+            self.unstuckOrigin = pos
+            self:SetPos( pos )
+            self:unstuckFullHandle()
+
+        end )
     end
 
     function meta:BeginUnstuck()
@@ -399,22 +410,29 @@ if SERVER then
     end
 
     function meta:GetNavAreaData()
-        if not self.CachedNavArea then
+        if not self.glee_CachedNavArea then
             self:CacheNavArea()
+
         end
-        return self.CachedNavArea, self.SqrDistToCachedNavArea
+        return self.glee_CachedNavArea, self.glee_SqrDistToCachedNavArea
 
     end
 
     function meta:CacheNavArea()
         local myPos = self:GetPos()
+        if not util.IsInWorld( myPos ) then
+            self.glee_CachedNavArea = nil
+            self.glee_SqrDistToCachedNavArea = math.huge
+            return
+
+        end
         local area = navmesh.GetNearestNavArea( myPos, true, navCheckDist, true, true )
-        self.CachedNavArea = area
+        self.glee_CachedNavArea = area
         if area then
-            self.SqrDistToCachedNavArea = myPos:DistToSqr( area:GetClosestPointOnArea( myPos ) )
+            self.glee_SqrDistToCachedNavArea = myPos:DistToSqr( area:GetClosestPointOnArea( myPos ) )
 
         else
-            self.SqrDistToCachedNavArea = math.huge
+            self.glee_SqrDistToCachedNavArea = math.huge
 
         end
     end

@@ -165,6 +165,7 @@ function ENT:Place()
         self.player.glee_ManhacksThatCanDamage = self.player.glee_ManhacksThatCanDamage or {}
         self.player.glee_ManhacksThatCanDamage[ crate:GetCreationID() ] = true
         self.player:GivePlayerScore( betrayalScore )
+        GAMEMODE:sendPurchaseConfirm( self.player, betrayalScore )
 
     end
     SafeRemoveEntity( self )

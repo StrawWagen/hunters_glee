@@ -183,22 +183,9 @@ elseif SERVER then
 
         end
 
-        local bite = panic / 10
-        local maxFov = maxPanic
-        maxFov = maxFov + -bite
-        maxFov = math.Clamp( maxFov, 60, 100 )
-
-        if not ply.glee_DefaultPanicFOV or bite == 0 then
-            ply.glee_DefaultPanicFOV = ply:GetFOV()
-
-        elseif bite > 0 and not ply:KeyDown( IN_ZOOM ) then
-            local fov = math.Clamp( ply.glee_DefaultPanicFOV, 0, maxFov )
-            ply:SetFOV( fov, 0.2 )
-
-        end
-
         panic = math.Clamp( panic + -0.5, 0, 1000 )
         -- we are adding decimals to ints, but it works for some reason?
+        -- changed to nwfloat
         ply:SetNWFloat( "huntersglee_panic", panic )
 
     end

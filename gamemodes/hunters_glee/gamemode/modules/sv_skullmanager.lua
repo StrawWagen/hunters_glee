@@ -175,6 +175,7 @@ hook.Add( "Think", "glee_addskulljobs", function()
         local skull = GAMEMODE:SpawnASkull( bestPosition, angle, rareTermSkull )
         if not IsValid( skull ) then return false end
 
+        skull:DropToFloor()
         hook.Run( "glee_procskulls_skullspawned", skull )
 
         -- remove skulls really far away from players
@@ -300,12 +301,17 @@ hook.Add( "glee_blockskullpickup", "glee_pickupwhenactive", function( picker )
 end )
 
 hook.Add( "OnEntityCreated", "glee_detectotherskulls", function( ent )
+    if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
+    local class = ent:GetClass()
+
+    if class == "termhunt_skull_pickup" then return end
+    if class == "glee_lightning" then return end
+
+    -- need to timer.simple all ents ugh
+    -- no model on the first tick they're created
     timer.Simple( 0, function()
         if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
         if not IsValid( ent ) then return end
-        local class = ent:GetClass()
-        if class == "termhunt_skull_pickup" then return end
-        if class == "glee_lightning" then return end
         if ent:GetModel() ~= "models/gibs/hgibs.mdl" then return end
 
         -- make barnacles not OP

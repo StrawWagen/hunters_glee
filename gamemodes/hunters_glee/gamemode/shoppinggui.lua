@@ -734,7 +734,13 @@ function termHuntOpenTheShop()
                 self.oldScore = score
 
                 local cost = GAMEMODE:shopItemCost( identifierPaint, LocalPlayer() )
-                if self.itemData.simpleCostDisplay then
+
+                -- "decorative" cost that isn't applied when purchased
+                local decorativeCost = itemData.costDecorative
+                if decorativeCost then
+                    self.costString = itemData.costDecorative
+
+                elseif itemData.simpleCostDisplay then
                     self.costString = tostring( cost )
 
                 else

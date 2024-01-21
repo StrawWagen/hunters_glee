@@ -53,7 +53,6 @@ elseif CLIENT then
 
     net.Receive( "glee_confirmpurchase", function()
         local cost = net.ReadFloat()
-        local itemId = net.ReadString()
         if cost > 0 then
             local pitch = 100 + math.abs( cost - 100 )
             LocalPlayer():EmitSound( purchaseSound, 60, pitch, 0.50 )
@@ -62,6 +61,12 @@ elseif CLIENT then
         elseif cost < 0 then
             LocalPlayer():EmitSound( getSound, 60, 120, 0.50 )
         end
+
+        local isId = net.ReadBool()
+        if not isId then return end
+
+        local itemId = net.ReadString()
+        if itemId == "" then return end
 
         hook.Run( "glee_cl_confirmedpurchase", LocalPlayer(), itemId )
         LocalPlayer().glee_DefinitelyPurchasedSomething = true

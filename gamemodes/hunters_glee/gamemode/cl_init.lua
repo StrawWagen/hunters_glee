@@ -9,6 +9,7 @@ include( "modules/cl_obfuscation.lua" )
 include( "modules/cl_killfeedoverride.lua" )
 include( "modules/cl_spectateflashlight.lua" )
 include( "modules/battery/cl_battery.lua" )
+include( "modules/thirdpersonflashlight/cl_flashlight.lua" )
 
 -- from https://github.com/Facepunch/garrysmod/blob/e189f14c088298ca800136fcfcfaf5d8535b6648/garrysmod/lua/includes/modules/killicon.lua#L202
 local killIconColor = Color( 255, 80, 0, 255 )

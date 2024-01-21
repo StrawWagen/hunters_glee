@@ -194,6 +194,7 @@ function ENT:Place()
 
     if self.player and self.player.GivePlayerScore and betrayalScore then
         self.player:GivePlayerScore( betrayalScore )
+        GAMEMODE:sendPurchaseConfirm( self.player, betrayalScore )
 
     end
 

@@ -60,7 +60,6 @@
     -- use score as tiebreaker in finest prey -- DONE
     -- make skull hints not stupid -- DONE!
     -- plys drop 10% of their skulls when they die as finest prey -- DONE!
-    -- each item can have an AND/OR skull cost, skull costs never mark up.
 
 -- charge system
     -- use suit energy as battery -DONE
@@ -93,6 +92,7 @@
 -- dont respawn next to people you have homicided -- DONE!
 -- does bot over-predict when people juke it towards it --no, done
 
+-- each item can have an AND/OR skull cost, skull costs never mark up.
 -- nailing bottle crashes server?
 -- fix bear trap last beartrap stupid
 -- fix prog bars
@@ -2579,11 +2579,11 @@ local function divineInterventionCost( purchaser )
             return 0
 
         elseif not isChosen then
-            return 200
+            return 300
 
         end
     end
-    return 100
+    return 150
 
 end
 
@@ -3133,7 +3133,7 @@ local defaultItems = {
     [ "lockpick" ] = {
         name = "Lockpick",
         desc = "Lockpick, for doors.\nCan also open things like crates,\n( relatively ) quietly.",
-        cost = 15,
+        cost = 20,
         markup = 6,
         cooldown = 10,
         category = "Items",
@@ -3147,7 +3147,7 @@ local defaultItems = {
     [ "slams" ] = {
         name = "Slams",
         desc = "Some slams, 17 to be exact.",
-        cost = 80,
+        cost = 60,
         markup = 2,
         markupPerPurchase = 0.25,
         cooldown = 0.25,
@@ -3162,8 +3162,8 @@ local defaultItems = {
     [ "flaregun" ] = {
         name = "Flaregun",
         desc = "Flaregun.\n+ 6 flares.",
-        cost = 60,
-        markup = 1.6,
+        cost = 45,
+        markup = 1.5,
         markupPerPurchase = 0.25,
         cooldown = 0.25,
         category = "Items",
@@ -3177,7 +3177,7 @@ local defaultItems = {
     [ "nailer" ] = {
         name = "Nailer",
         desc = "Nail things together!\nNailing is rather loud.",
-        cost = 40,
+        cost = 45,
         markup = 3,
         markupPerPurchase = 0.25,
         cooldown = 5,
@@ -3272,23 +3272,6 @@ local defaultItems = {
         purchaseFunc = revivePurchase,
         canShowInShop = hasMultiplePeople,
     },
-    -- funny bear trap
-    [ "beartrap" ] = {
-        name = "Six Beartraps",
-        desc = "Traps players, Terminators can easily overpower them.",
-        cost = 80,
-        markup = 2,
-        markupPerPurchase = 0.25,
-        cooldown = 0.25,
-        category = "Items",
-        purchaseTimes = {
-            GM.ROUND_INACTIVE,
-            GM.ROUND_ACTIVE,
-        },
-        weight = 0,
-        purchaseCheck = unUndeadCheck,
-        purchaseFunc = beartrapPurchase,
-    },
     -- heal jooce
     [ "healthkit" ] = {
         name = "Medkit",
@@ -3305,6 +3288,23 @@ local defaultItems = {
         weight = -100,
         purchaseCheck = unUndeadCheck,
         purchaseFunc = medkitPurchase,
+    },
+    -- funny bear trap
+    [ "beartrap" ] = {
+        name = "Six Beartraps",
+        desc = "Traps players, Terminators can easily overpower them.",
+        cost = 65,
+        markup = 2,
+        markupPerPurchase = 0.25,
+        cooldown = 0.25,
+        category = "Items",
+        purchaseTimes = {
+            GM.ROUND_INACTIVE,
+            GM.ROUND_ACTIVE,
+        },
+        weight = 0,
+        purchaseCheck = unUndeadCheck,
+        purchaseFunc = beartrapPurchase,
     },
     -- this is to give the noobs in a lobby a huge score boost, also it's cool
     [ "witnessme" ] = {
@@ -3326,7 +3326,7 @@ local defaultItems = {
     [ "screamingbackpack" ] = {
         name = "Beacon",
         desc = "A beacon.\nThe hunters will never lose you for long.",
-        cost = -100,
+        cost = -120,
         markup = 0.25,
         cooldown = math.huge,
         category = "Innate",
@@ -3356,7 +3356,7 @@ local defaultItems = {
     [ "blindness" ] = {
         name = "Legally Blind.",
         desc = "Become unable to see more than a few feet ahead.",
-        cost = -200,
+        cost = -220,
         markup = 0.2,
         cooldown = math.huge,
         category = "Innate",
@@ -3372,7 +3372,7 @@ local defaultItems = {
     [ "badknees" ] = {
         name = "62 Year old Knees.",
         desc = "62 years of living a sedentary lifestyle.\nJumping hurts, and is relatively useless.\nFall damage is lethal.",
-        cost = -120,
+        cost = -140,
         markup = 0.25,
         cooldown = math.huge,
         category = "Innate",
@@ -3388,7 +3388,7 @@ local defaultItems = {
     [ "greasyhands" ] = {
         name = "Greasy Hands.",
         desc = "Eating greasy food all your life,\nyour hands... adapted to their new, circumstances...\nUnder stress, the grease flows like a faucet.",
-        cost = -120,
+        cost = -140,
         markup = 0.25,
         cooldown = math.huge,
         category = "Innate",
@@ -3403,7 +3403,7 @@ local defaultItems = {
     [ "cholesterol" ] = {
         name = "37 Years of Cholesterol.",
         desc = "Your body is weak, your heart, clogged...\nA lifetime of eating absolutely delicious food, has left you unprepared for The Hunt...\nYour heart beats much faster.\nBut you become succeptible to Heart Attacks.",
-        cost = -120,
+        cost = -140,
         markup = 0.25,
         cooldown = math.huge,
         category = "Innate",
@@ -3668,7 +3668,7 @@ local defaultItems = {
     -- makes the map worth exploring
     [ "normcrate" ] = {
         name = "Supplies",
-        desc = "Supplies without a beacon.\nContains health or armour, and rarely a weapon, or some smg / ar2 grenades.\nPlace indoors, and far away from players and other supplies, for more score.",
+        desc = "Supplies without a beacon.\nContains health, armour, rarely a weapon, special ammunition.\nPlace indoors, and far away from players and other supplies, for more score.",
         cost = 0,
         markup = 1,
         cooldown = 10,
@@ -3682,7 +3682,7 @@ local defaultItems = {
     },
     [ "weapcrate" ] = {
         name = "Crate of Weapons",
-        desc = "Supply crate with 4 weapons in it\nPlace indoors, and far away from players and other supplies, for more score.",
+        desc = "Supply crate with 5 weapons in it\nPlace indoors, and far away from players and other supplies, for more score.",
         cost = 0,
         markup = 1,
         cooldown = 55,
@@ -3754,10 +3754,10 @@ local defaultItems = {
     -- lets dead people take the initiative
     [ "resurrection" ] = {
         name = "Divine Intervention",
-        desc = "Resurrect yourself.\nYou will revive next to another living Player.",
+        desc = "Resurrect yourself.\nYou will revive next to another living player.\nEven if they're about to die...",
         cost = divineInterventionCost,
         markup = 1,
-        markupPerPurchase = 0.25,
+        markupPerPurchase = 0.20,
         cooldown = divineInterventionCooldown,
         category = "Undead",
         purchaseTimes = {
@@ -3785,7 +3785,7 @@ local defaultItems = {
     -- people who teamkill get funny consequence
     [ "homicidalglee" ] = {
         name = "Homicidal Glee.",
-        desc = "Place on players who have killed you.\nBrings their Homicidal Glee to the surface...\nCan only be placed every 10 seconds.",
+        desc = "Place on players who have killed you.\nBrings their Homicidal Glee to the surface...\nCan only be placed every 15 seconds.",
         cost = 0,
         markup = 1,
         cooldown = 5,
@@ -3801,6 +3801,7 @@ local defaultItems = {
     [ "termovercharger" ] = {
         name = "Overcharger.",
         desc = "Overcharge a Terminator. Global 3 minute delay between Overcharges.",
+        costDecorative = "-400",
         cost = 0,
         markup = 1,
         cooldown = 5,
@@ -3815,7 +3816,8 @@ local defaultItems = {
     -- ultimate stalemate breaker
     [ "temporalinversion" ] = {
         name = "Temporal Inversion",
-        desc = "Swaps a player out for their most remote enemy.\nCosts 300 to place.\nGlobal 3 minute delay between placing.",
+        desc = "Swaps a player out for their most remote enemy.\nGlobal 3 minute delay between placing.",
+        costDecorative = "-300",
         cost = 0,
         markup = 1,
         cooldown = 5,
@@ -3830,6 +3832,7 @@ local defaultItems = {
     [ "immortalizer" ] = {
         name = "Gift of Immortality",
         desc = "Gift 15 seconds, of true Immortality.\nCosts 200 to gift to players, 100 to gift to hunters.",
+        costDecorative = "-100/-200",
         cost = 0,
         markup = 1,
         cooldown = 5,
@@ -3844,7 +3847,8 @@ local defaultItems = {
     -- crazy purchase
     [ "divineconduit" ] = {
         name = "Divine Conduit",
-        desc = "Convey the will of the gods.\nCosts 450 to place.\nGlobal 4 minute delay between placing.",
+        desc = "Convey the will of the gods.\nGlobal 4 minute delay between placing.",
+        costDecorative = "-450",
         cost = 0,
         markup = 1,
         cooldown = 0,

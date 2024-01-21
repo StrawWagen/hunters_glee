@@ -15,6 +15,9 @@ SWEP.ViewModel  = "models/stiffy360/c_beartrap.mdl"
 SWEP.WorldModel  = "models/stiffy360/beartrap.mdl"
 SWEP.UseHands    = true
 
+SWEP.AutoSwitchTo    = false
+SWEP.AutoSwitchFrom    = true
+
 SWEP.Spawnable        = true
 SWEP.AdminSpawnable    = false
 SWEP.Category = "Hunter's Glee"
@@ -132,6 +135,11 @@ function SWEP:Think()
     if CLIENT then
         local owner = self:GetOwner()
         if owner ~= LocalPlayer() then return end
+        if self:Clip1() <= 0 then
+            self:DeGhost()
+            return
+
+        end
         if not IsValid( self.beartrapGhost ) then
             self:DoGhost()
 
@@ -183,8 +191,11 @@ function SWEP:Think()
 
         if self:Clip1() > 0 then return end
 
-        self:GetOwner():SwitchToDefaultWeapon()
-        self:GetOwner():StripWeapon( self:GetClass() )
+        timer.Simple( 0.5, function()
+            self:GetOwner():SwitchToDefaultWeapon()
+            self:GetOwner():StripWeapon( self:GetClass() )
+
+        end )
     end
 end
 
@@ -196,6 +207,7 @@ end
 
 function SWEP:DeGhost()
     SafeRemoveEntity( self.beartrapGhost )
+
 end
 
 function SWEP:Holster()
@@ -206,5 +218,8 @@ function SWEP:Holster()
 end
 
 function SWEP:OnRemove()
-    self:DeGhost()
+    if CLIENT then
+        self:DeGhost()
+
+    end
 end

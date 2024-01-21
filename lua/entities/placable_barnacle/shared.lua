@@ -250,6 +250,7 @@ function ENT:Place()
 
     if self.player.GivePlayerScore and score then
         self.player:GivePlayerScore( score )
+        GAMEMODE:sendPurchaseConfirm( self.player, score )
 
     end
 

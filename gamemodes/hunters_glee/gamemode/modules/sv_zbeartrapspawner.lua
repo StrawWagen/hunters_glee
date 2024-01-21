@@ -70,6 +70,24 @@ hook.Add( "Think", "glee_addbeartrapjobs", function()
 
     end
     bearTrapJob.onPosFoundFunction = function( _, bestPosition )
+        local entsAtPos = ents.FindInSphere( bestPosition, 100 )
+
+        -- don't spawn a beartrap under props...
+        local blocked
+        for _, ent in ipairs( entsAtPos ) do
+            if IsValid( ent ) and IsValid( ent:GetPhysicsObject() ) and ent:NearestPoint( bestPosition ):Distance( bestPosition ) < 35 then
+                blocked = true
+                break
+
+            end
+        end
+
+        if blocked then
+            hook.Run( "glee_procbeartrap_blockbeartrapareas", bestPosition )
+            return false
+
+        end
+
         local result = util.QuickTrace( bestPosition, vec_down * 100 )
         local trapsPos = result.HitPos + result.HitNormal
         local trapsAng = result.HitNormal:Angle()
@@ -79,7 +97,7 @@ hook.Add( "Think", "glee_addbeartrapjobs", function()
         if not IsValid( bearTrap ) then return false end
 
         --debugoverlay.Cross( trapsPos, 100, 60, color_white, true )
-        hook.Run( "glee_procbeartrap_beartrapspawned", bearTrap )
+        hook.Run( "glee_procbeartrap_blockbeartrapareas", bearTrap:GetPos() )
 
         -- remove beartraps really far away from players
         local timerName = "glee_proceduralbeartraps_removestale_" .. bearTrap:GetCreationID()
@@ -119,7 +137,7 @@ local function postPlaced( bestPosition )
     end
 end
 
-hook.Add( "glee_procbeartrap_beartrapspawned", "tracklastbeartrap", function( bearTrap )
-    postPlaced( bearTrap:GetPos() )
+hook.Add( "glee_procbeartrap_blockbeartrapareas", "tracklastbeartrap", function( blockPos )
+    postPlaced( blockPos )
 
 end )

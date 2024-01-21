@@ -169,8 +169,12 @@ function SWEP:ResurrectPly( ply )
 
     ply.unstuckOrigin = self.toResurrectPos
 
-    owner:EmitSound( HealSound, 100, 90, 1, CHAN_STATIC )
-    owner:EmitSound( "ambiply/levels/labs/electric_explosion1.wav", 100, 120, 1, CHAN_STATIC, SND_NOFLAGS, 10 )
+    timer.Simple( 0, function()
+        if not IsValid( ply ) then return end
+        ply:EmitSound( HealSound, 100, 90, 1, CHAN_STATIC )
+        ply:EmitSound( "ambient/levels/labs/electric_explosion1.wav", 100, 120, 1, CHAN_STATIC, SND_NOFLAGS, 10 )
+
+    end )
 
     if owner.GivePlayerScore then
         local reward = 200
@@ -202,7 +206,6 @@ function SWEP:ResurrectPly( ply )
         reward = math.Clamp( reward + -rewardBite, 0, 200 )
         owner:GivePlayerScore( reward )
 
-        print( rewardBite )
         ply.glee_resurrectDecreasingScore = math.max( CurTime() + 60, ply.glee_resurrectDecreasingScore + 60 )
 
     end

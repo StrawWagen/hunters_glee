@@ -1,8 +1,8 @@
 local maxHuntersAtMinutes = {
     [0] = 2,
-    [4] = 4,
-    [10] = 6,
-    [20] = 7,
+    [math.Rand( 3, 5 )] = 4,
+    [math.Rand( 8, 12 )] = 6,
+    [math.Rand( 15, 25 )] = 7,
 
 }
 
@@ -62,10 +62,10 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters", function( _, _, cu
     wasAlive = not dead
 
     if nextWave < cur or deadAndWasAlive then
-        nextWave = cur + waveLength
+        nextWave = cur + waveLength + math.random( -20, 20 )
         local roundTime = GAMEMODE:getRemaining( GAMEMODE.termHunt_roundBegunTime, cur )
         local minutes = roundTime / 60
-        minutes = math.floor( minutes )
+        --print( minutes )
 
         for minutesNeeded, currMax in pairs( maxHuntersAtMinutes ) do
             if minutesNeeded <= minutes then

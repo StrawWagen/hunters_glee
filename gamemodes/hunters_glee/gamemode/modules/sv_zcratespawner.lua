@@ -27,6 +27,8 @@ local nextCrateMixupSpawn = 0
 local lastCrate = nil
 local anchorCrate = nil
 
+local canDoOpenSpaceCrates = math.random( 0, 100 ) < 25
+
 local nextCrateSpawn = 0
 local CurTime = CurTime
 
@@ -43,8 +45,6 @@ hook.Add( "Think", "glee_addcratejobs", function()
         staleAndNeedsAScreamer = true
 
     end
-
-    local time = math.random( 55 * 0.8, 55 * 1.2 )
 
     crates = ents.FindByClass( "item_item_crate" )
     if #crates > 30 then nextCrateSpawn = CurTime() + 10 return end
@@ -86,7 +86,7 @@ hook.Add( "Think", "glee_addcratejobs", function()
         local nookScore = terminator_Extras.GetNookScore( toCheckPos )
 
         -- if point is in a really really open spot, give a good score, leads to weird crates in the middle of roads and stuff.
-        if nookScore < 1.5 then -- we are in a very very open space
+        if canDoOpenSpaceCrates and nookScore < 1.5 then -- we are in a very very open space
             nookScore = 3 + math.abs( nookScore )
 
         end
@@ -111,23 +111,30 @@ hook.Add( "Think", "glee_addcratejobs", function()
     local mod = GAMEMODE.roundExtraData.proceduralCratePlaces % 12
 
     -- handle placing crates in groups
+    -- "anchor crate"
+    -- when anchor crate is valid, spawn crates next to the anchor crate
+    -- adds "strategy", when you find one crate, you know to look nearby for more
+
     if ( GAMEMODE.roundExtraData.proceduralCratePlaces % 4 ) == 0 or not IsValid( anchorCrate ) then
         anchorCrate = lastCrate
 
     elseif IsValid( anchorCrate ) then
         crateJob.posFindingOrigin = anchorCrate:GetPos()
         crateJob.sortForNearest = true
-        crateJob.spawnRadiusOverride = 3500
+        crateJob.spawnRadiusOverride = 1500
         crateJob.maxPositionsForScoring = 100
+        crateJob.posScoringBudget = 500
 
     end
 
-    if ( GAMEMODE.roundExtraData.proceduralCratePlaces % 4 ) ~= 3 then
-        time = 5
+    local time = math.random( 55 * 0.8, 55 * 1.2 )
+
+    if ( GAMEMODE.roundExtraData.proceduralCratePlaces % 4 ) ~= 0 then
+        time = 6
 
     end
     if GAMEMODE.roundExtraData.proceduralCratePlaces < 6 then
-        time = 1
+        time = 3
 
     end
 

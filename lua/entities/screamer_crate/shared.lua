@@ -19,6 +19,9 @@ ENT.noPurchaseReason_OffNavmesh = "The hunters can't path to that spot."
 ENT.noPurchaseReason_TooPoor = "You're too poor."
 ENT.noPurchaseReason_InDebt = "You're in debt."
 
+local beaconVecOffset = Vector( 6.94, -8.67, 25.83 )
+local beaconAngOffset = Angle( 0, -90, 0 )
+
 ENT.placedItems = 0
 
 sound.Add( {
@@ -545,6 +548,7 @@ local GM = GAMEMODE
 
 function GM:ScreamingCrate( pos )
     local crate = ents.Create( "item_item_crate" )
+    if not IsValid( crate ) then return end
     crate:SetPos( pos )
     local random = math.random( -4, 4 ) * 45
     crate:SetAngles( Angle( 0, random, 0 ) )
@@ -553,6 +557,29 @@ function GM:ScreamingCrate( pos )
     crate:Spawn()
     PlayRepeatingSound( crate, "horrific_crate_scream", 20 )
     crate:EmitSound( "npc/turret_floor/deploy.wav", 90, 120 )
+
+    local beaconOnCrate = ents.Create( "prop_physics" )
+    if IsValid( beaconOnCrate ) then
+        beaconOnCrate:SetModel( "models/props_lab/reciever01b.mdl" )
+        local beaconsPos = crate:LocalToWorld( beaconVecOffset )
+        local beaconsAng = crate:LocalToWorldAngles( beaconAngOffset )
+        beaconOnCrate:SetPos( beaconsPos )
+        beaconOnCrate:SetAngles( beaconsAng )
+        beaconOnCrate:SetCollisionGroup( COLLISION_GROUP_WEAPON )
+        beaconOnCrate:Spawn()
+        beaconOnCrate:SetParent( crate )
+
+        crate:CallOnRemove( "beaconedSuppliesBeaconFallOff", function( _, beacon )
+            local thePos = beacon:GetPos()
+            beacon:SetParent()
+            beacon:SetPos( thePos )
+            SafeRemoveEntityDelayed( beacon, 35 )
+            terminator_Extras.SmartSleepEntity( beacon, 3 )
+
+
+        end, beaconOnCrate )
+
+    end
 
     crate.terminatorHunterInnateReaction = function()
         return MEMORY_BREAKABLE
@@ -606,9 +633,11 @@ function ENT:Place()
     if self.player and self.player.GivePlayerScore then
         if crate.refundAndBonus > 0 then
             self.player:GivePlayerScore( initialCost )
+            GAMEMODE:sendPurchaseConfirm( self.player, initialCost )
 
         else
             self.player:GivePlayerScore( crate.refundAndBonus )
+            GAMEMODE:sendPurchaseConfirm( self.player, crate.refundAndBonus )
 
         end
     end

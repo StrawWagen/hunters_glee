@@ -8,22 +8,25 @@ local function isCheats()
 
 end
 
+-- job critically failed
 local function spawnJobErr( name, reason )
     if not isCheats() then return end
     ErrorNoHaltWithStack( name .. reason )
 
 end
+
+-- job failed for intended reason
 local function spawnJobInfo( name, reason )
     if not isCheats() then return end
-    print( name .. reason )
+    print( name .. " " .. reason )
 
 end
 
 local proceduralSpawnerJobs = {}
 local currJobCoroutine
 
-local defaultStepSize = 50
-local defaultMinAreas = 70
+local defaultStepSize = 50 * 3
+local defaultMinAreas = 60
 
 local function alivePlayers()
     local out = {}
@@ -67,21 +70,41 @@ function GM:addProceduralSpawnJob( job )
 
 end
 
+local maxPerf = 0.0008
+
+if game.IsDedicated() then
+    maxPerf = 0.001
+
+end
+
+local nextPrint = 0
+
 hook.Add( "glee_sv_validgmthink", "glee_proceduralspawner", function( _, currState, _ )
     if currState ~= GAMEMODE.ROUND_ACTIVE then return end
+
+    --[[if nextPrint < CurTime() then
+        nextPrint = CurTime() + 1
+        local count = #proceduralSpawnerJobs
+        print( count )
+        if count >= 1 then
+            print( proceduralSpawnerJobs[1].jobsName )
+
+        end
+    end]]--
 
     -- tackle current job
     if currJobCoroutine then
         local startTime = SysTime()
         local good, result = nil, nil
 
-        while math.abs( startTime - SysTime() ) < 0.0008 do
+        while math.abs( startTime - SysTime() ) < maxPerf do
             if coroutine.status( currJobCoroutine ) == "dead" then break end
             good, result = coroutine.resume( currJobCoroutine )
 
             if good == false then
                 ErrorNoHaltWithStack( result )
                 currJobCoroutine = nil
+                table.remove( proceduralSpawnerJobs, 1 )
                 break
 
             end
@@ -98,10 +121,11 @@ hook.Add( "glee_sv_validgmthink", "glee_proceduralspawner", function( _, currSta
     end
     if #proceduralSpawnerJobs <= 0 then return end
 
-    -- pull job from the table
+    -- pull job from the table, only remove it if the job errors, or completes
+    -- if job fails for an expected reason, we repeat it until it succeeds.
     currJob = proceduralSpawnerJobs[1]
 
-    if not currJob.jobsName then spawnJobErr( currJob.jobsName, "No jobsName" ) return end 
+    if not currJob.jobsName then spawnJobErr( currJob.jobsName, "No jobsName" ) return end
 
     if not currJob.posFindingOrigin then spawnJobErr( currJob.jobsName, "No posFindingOrigin" ) return end
     -- currJob.originIsDefinitive

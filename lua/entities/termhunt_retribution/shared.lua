@@ -77,7 +77,7 @@ function ENT:Place()
 
     if not dancer:TauntDance() then return end
 
-    self.player.glee_nextHomicidalGleePlace = CurTime() + 10
+    self.player.glee_nextHomicidalGleePlace = CurTime() + 15
 
     local plysToAlert = {}
     for _, thing in ipairs( ents.FindInPVS( dancer:GetShootPos() ) ) do
@@ -89,21 +89,4 @@ function ENT:Place()
 
     huntersGlee_Announce( { dancer }, 10, 10, "You can't help but dance as the HOMICIDAL GLEE\nof killing " .. self.player:Name() .. "\nflashes through your mind..." )
     huntersGlee_Announce( plysToAlert, 5, 8, dancer:Name() .. " is overcome by their Homicidal Glee." )
-
-    local score = self:GetGivenScore()
-
-    if self.player.GivePlayerScore and score then
-        self.player:GivePlayerScore( score )
-
-    end
-
-    self:TellPlyToClearHighlighter()
-
-    self.player.ghostEnt = nil
-
-    self.player = nil
-    self:SetOwner( NULL )
-
-    SafeRemoveEntity( self )
-
 end

@@ -7,6 +7,7 @@ AddCSLuaFile( "modules/cl_killfeedoverride.lua" )
 
 AddCSLuaFile( "modules/battery/cl_battery.lua" )
 AddCSLuaFile( "modules/cl_spectateflashlight.lua" )
+AddCSLuaFile( "modules/thirdpersonflashlight/cl_flashlight.lua" )
 
 AddCSLuaFile( "shoppinggui.lua" )
 AddCSLuaFile( "sh_shopshared.lua" )
@@ -37,6 +38,7 @@ include( "modules/sv_skullmanager.lua" )
 include( "modules/sv_zbeartrapspawner.lua" )
 include( "modules/sv_hunterspawner.lua" )
 include( "modules/battery/sv_battery.lua" )
+include( "modules/thirdpersonflashlight/sv_flashlight.lua" )
 
 util.AddNetworkString( "glee_witnesseddeathconfirm" )
 util.AddNetworkString( "glee_resetplayershopcooldowns" )
@@ -142,6 +144,7 @@ function GM:Think()
     -- see sv_zproceduralspawner
     -- see battery/sv_battery
     -- see sv_darknessfear
+    -- see sv_thirdpersonflashlight
     hook.Run( "glee_sv_validgmthink", players, currState, cur )
 
     local displayTime = nil
@@ -573,6 +576,7 @@ function GM:handleEmptyServer( currState, players )
         -- bots are expensive, save cpu power pls
         print( "Empty server!\nRemoving bots..." )
         GAMEMODE:roundEnd()
+        GAMEMODE:RemoveHunters()
         return true
 
     elseif #players == 0 then -- empty
@@ -598,6 +602,7 @@ function GM:handleGenerating( currState )
     elseif generating and currState == GAMEMODE.ROUND_ACTIVE then
         print( "Generating navmesh!\nRemoving bots..." )
         GAMEMODE:roundEnd()
+        GAMEMODE:RemoveHunters()
         GAMEMODE.biggestNavmeshGroups = nil
         return true
 
@@ -614,6 +619,16 @@ function GM:handleGenerating( currState )
     end
     return nil
 
+end
+
+function GM:RemoveHunters()
+    if GAMEMODE.termHunt_hunters then
+        for _, hunter in pairs( GAMEMODE.termHunt_hunters ) do
+            SafeRemoveEntity( hunter )
+        end
+        GAMEMODE.termHunt_hunters = {}
+
+    end
 end
 
 -- from where people can buy stuff with discounts, to the hunt
@@ -674,13 +689,7 @@ end
 
 -- from the part where finest prey & total score is displayed, into setup where people can buy stuff with discounts
 function GM:beginSetup()
-    if GAMEMODE.termHunt_hunters then
-        for _, hunter in pairs( GAMEMODE.termHunt_hunters ) do
-            SafeRemoveEntity( hunter )
-        end
-        GAMEMODE.termHunt_hunters = {}
-
-    end
+    GAMEMODE:RemoveHunters()
     for _, ply in ipairs( player.GetAll() ) do
         ply.realRespawn = true -- wipe all shop attributes
         ply.shopItemCooldowns = {} -- reset wep cooldowns

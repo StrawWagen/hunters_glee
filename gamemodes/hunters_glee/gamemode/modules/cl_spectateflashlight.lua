@@ -29,7 +29,7 @@ local function DoFlashlight( state )
                 dlight.g = 255
                 dlight.b = 150
                 dlight.brightness = 0.8
-                dlight.size = 2500
+                dlight.size = 1500
                 dlight.dietime = CurTime() + dieTime
 
             end

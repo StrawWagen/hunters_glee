@@ -1,4 +1,5 @@
 local coroutine_running = coroutine.running
+local coroutine_yield = coroutine.yield
 
 local minusFiveHundred = Vector( 0,0,-500 )
 local minusOne = Vector( 0,0,-500 )
@@ -875,7 +876,7 @@ function GM:GetGroupThatNavareaExistsIn( navArea, navAreaGroups )
     if istable( navAreaGroups ) then
         for _, group in ipairs( navAreaGroups ) do
             if coroutine_running() then
-                coroutine.yield()
+                coroutine_yield()
 
             end
             if istable( group ) then
@@ -983,9 +984,10 @@ function GM:GetNavmeshGroupsWithPlayers()
 
     for _, alivePly in ipairs( alivePlayers ) do
         if coroutine_running() then
-            coroutine.yield()
+            coroutine_yield()
 
         end
+        if not IsValid( alivePly ) then continue end
         local alivePlysNav, _ = alivePly:GetNavAreaData()
         if not IsValid( alivePlysNav ) then continue end
         local bigGroupThatSomeoneIsIn = GAMEMODE:GetGroupThatNavareaExistsIn( alivePlysNav, bigGroups )
