@@ -1,8 +1,9 @@
 local maxHuntersAtMinutes = {
     [0] = 2,
-    [math.Rand( 3, 5 )] = 4,
-    [math.Rand( 8, 12 )] = 6,
-    [math.Rand( 15, 25 )] = 7,
+    -- these cannot be math.Rand apparently, have to be .random
+    [math.random( 2, 5 )] = 4,
+    [math.random( 6, 10 )] = 6,
+    [math.random( 11, 20 )] = 7,
 
 }
 
@@ -42,7 +43,10 @@ local function waveIsDead()
 
 end
 
-local waveLength = math.random( 120, 180 )
+local waveLength = math.random( 100, 180 )
+
+local minutesAddedPerDeadWave = math.Rand( 1, 2.5 )
+local deadWaveMinutesAdded = 0
 
 local nextSpawnCheck = 0
 local amntToSpawn = 0
@@ -62,10 +66,18 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters", function( _, _, cu
     wasAlive = not dead
 
     if nextWave < cur or deadAndWasAlive then
+        -- if bots are getting owned, increase difficulty.
+        if deadAndWasAlive then
+            local added = minutesAddedPerDeadWave + math.Rand( -0.25, 0.25 )
+            deadWaveMinutesAdded = deadWaveMinutesAdded + added
+
+        end
+
         nextWave = cur + waveLength + math.random( -20, 20 )
+
         local roundTime = GAMEMODE:getRemaining( GAMEMODE.termHunt_roundBegunTime, cur )
         local minutes = roundTime / 60
-        --print( minutes )
+        minutes = minutes + deadWaveMinutesAdded
 
         for minutesNeeded, currMax in pairs( maxHuntersAtMinutes ) do
             if minutesNeeded <= minutes then
@@ -102,9 +114,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters", function( _, _, cu
 
         end
 
-        amntToSpawn = 0
-
-        amntToSpawn = amntToSpawn + waveSize
+        amntToSpawn = waveSize
 
     end
 
@@ -160,11 +170,15 @@ function GM:spawnHunter( classOverride )
 
 end
 
+local defaultRadius = 8000
+local maxRadius = 9000
+local minRadius = 500
+
 -- spawn a hunter as far away as possible from every player by inching a distance check around
+-- made to be really random/overcomplicated so you never really know where they'll spawn from
 function GM:getValidHunterPos()
-    local targetDistanceMin = 9000
     local dynamicTooCloseFailCounts = GAMEMODE.roundExtraData.dynamicTooCloseFailCounts or -2
-    local dynamicTooCloseDist = GAMEMODE.roundExtraData.dynamicTooCloseDist or targetDistanceMin
+    local dynamicTooCloseDist = GAMEMODE.roundExtraData.dynamicTooCloseDist or defaultRadius
 
     if not GAMEMODE.biggestNavmeshGroups then return nil, nil end
 
@@ -188,7 +202,7 @@ function GM:getValidHunterPos()
         local wasTooClose = nil
 
         for _, pos in ipairs( playerShootPositions ) do
-            local visible, visResult = terminator_Extras.posCanSee( pos, checkPos )
+            local visible, visResult = terminator_Extras.PosCanSee( pos, checkPos )
             local hitCloseBy = visResult.HitPos:DistToSqr( checkPos ) < 350^2
             if visible or hitCloseBy then
                 invalid = true
@@ -209,12 +223,12 @@ function GM:getValidHunterPos()
 
         end
 
-        -- random picked area was too close, decrease radius
+        -- random picked area was too close, decrease cutoff radius
         if wasTooClose then
             --debugoverlay.Cross( spawnPos, 10, 20, Color( 255,0,0 ), true )
             GAMEMODE.roundExtraData.dynamicTooCloseFailCounts = dynamicTooCloseFailCounts + 1
             dynamicTooCloseDist = dynamicTooCloseDist + ( -dynamicTooCloseFailCounts * 25 )
-            GAMEMODE.roundExtraData.dynamicTooCloseDist = dynamicTooCloseDist
+            GAMEMODE.roundExtraData.dynamicTooCloseDist = math.Clamp( dynamicTooCloseDist, minRadius, maxRadius )
 
         end
     end

@@ -124,7 +124,7 @@ local PLAYER_LINE = {
 
         local zPos = 0
         if self.NumScore then
-            zPos = zPos + -self.NumScore
+            zPos = zPos + -self.NumSkulls
 
         end
 

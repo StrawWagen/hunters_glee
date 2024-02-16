@@ -57,7 +57,21 @@ SWEP.SecSwingSound                = ""                           -- Sound we mak
 SWEP.SecWallSound                 = ""                           -- Sound when we hit something 
 ----------------------------------------------------------------------------------------------------------------|
 
-if SERVER then
+local className = "termhunt_weapon_hammer"
+if CLIENT then
+    language.Add( className, SWEP.PrintName )
+    killicon.Add( className, "vgui/hud/killicon/" .. className .. ".png" )
+
+    function SWEP:HintPostStack()
+        local owner = self:GetOwner()
+        if not owner:GetNW2Bool( "gleenailer_nailattempted", false ) then return true, "PRIMARY ATTACK to nail things together." end
+        if not owner:GetNW2Bool( "gleenailer_goodnailed", false ) then return true, "The nails have to go through something.\nYou can't nail a wall to itself, etc." end
+
+    end
+
+else
+    resource.AddSingleFile( "materials/vgui/hud/killicon/" .. className .. ".png" )
+
     -- these hit sounds are from barricade SWEP
     -- https://steamcommunity.com/sharedfiles/filedetails/?id=2953413221
     resource.AddFile( "sound/hammer/hit_nail01.wav" )
@@ -76,13 +90,6 @@ if SERVER then
 
     resource.AddFile( "materials/entities/termhunt_weapon_hammer.png" )
 
-else
-    function SWEP:HintPostStack()
-        local owner = self:GetOwner()
-        if not owner:GetNW2Bool( "gleenailer_nailattempted", false ) then return true, "PRIMARY ATTACK to nail things together." end
-        if not owner:GetNW2Bool( "gleenailer_goodnailed", false ) then return true, "The nails have to go through something.\nYou can't nail a wall to itself, etc." end
-
-    end
 end
 
 sound.Add( {
@@ -103,17 +110,16 @@ sound.Add( {
 local nailTooCloseDist = 4
 local yellow = Color( 255, 220, 0, a )
 
-function SWEP:DrawWeaponSelection(x,y,w,t,a)
+function SWEP:DrawWeaponSelection( x, y, w, t, a )
 
     draw.SimpleText( "C", "creditslogo", x + w / 2, y, yellow, TEXT_ALIGN_CENTER )
 
 end
 
 function SWEP:Initialize()
-    self:SetWeaponHoldType( self.HoldType )
+    self:SetHoldType( self.HoldType )
     self:SetMaterial( "models/weapons/hammer.vmt" )
     if SERVER then
-        self:SetWeaponHoldType( self.HoldType )
         self:SetClip1( 20 )
     end
 end
@@ -193,13 +199,13 @@ function SWEP:Miss()
 
     self:EmitSound( self.SwingSound, 70, math.random( 90, 120 ) )
 
-    if not SERVER then return end
     owner:SetAnimation( PLAYER_ATTACK1 )
+    if not SERVER then return end
 
     local rnda = self.Primary.Recoil * -0.5
-    local rndb = self.Primary.Recoil * math.Rand(-0.5, 1) 
+    local rndb = self.Primary.Recoil * math.Rand( -0.5, 1 )
 
-    owner:ViewPunch( Angle( rnda,rndb,rnda ) ) 
+    owner:ViewPunch( Angle( rnda,rndb,rnda ) )
 
 end
 
@@ -211,27 +217,21 @@ function SWEP:BadHit( tr )
 
     local owner = self:GetOwner()
 
-    if not SERVER then return end
-    owner:SetAnimation( PLAYER_ATTACK1 )
-
     local rnda = self.Primary.Recoil * -0.5
     local rndb = self.Primary.Recoil * math.Rand( -0.5, 1 )
 
-    if IsFirstTimePredicted() then
-        bullet = {}
-        bullet.Num    = 1
-        bullet.Src    = owner:GetShootPos()
-        bullet.Dir    = owner:GetAimVector()
-        bullet.Spread = Vector( 0, 0, 0 )
-        bullet.Tracer = 0
-        bullet.Force  = 10
-        bullet.Distance = self.Primary.Distance
-        bullet.Damage = math.random( 25, 35 )
-        owner:FireBullets( bullet )
+    bullet = {}
+    bullet.Num    = 1
+    bullet.Src    = owner:GetShootPos()
+    bullet.Dir    = owner:GetAimVector()
+    bullet.Spread = Vector( 0, 0, 0 )
+    bullet.Tracer = 0
+    bullet.Force  = 10
+    bullet.Distance = self.Primary.Distance
+    bullet.Damage = math.random( 25, 35 )
+    owner:FireBullets( bullet )
 
-    end
-
-    if tr.HitPos:Distance( owner:GetShootPos() ) < self.Primary.Distance then
+    if tr.HitPos:DistToSqr( owner:GetShootPos() ) < self.Primary.Distance^2 then
         local surfaceProperties = tr.SurfaceProps
         surfaceProperties = util.GetSurfaceData( surfaceProperties )
         if tr.Entity and surfaceProperties.material == MAT_FLESH then
@@ -245,8 +245,13 @@ function SWEP:BadHit( tr )
             owner:EmitSound( "physics/metal/metal_grenade_impact_hard1.wav", 70, math.random( 150, 160 ), 1, CHAN_STATIC )
 
         end
-    end
+    else
+        self:EmitSound( self.SwingSound, 70, math.random( 90, 120 ), 1 )
 
+    end
+    owner:SetAnimation( PLAYER_ATTACK1 )
+
+    if not SERVER then return end
     owner:ViewPunch( Angle( rnda,rndb,rnda ) )
 
 end
@@ -290,12 +295,13 @@ function SWEP:PrimaryAttack()
     owner:SetNW2Bool( "gleenailer_nailattempted", true )
 
     -- Bail if invalid
-    if whatWeHit:IsWorld() or self:Clip1() <= 0 or not self:ValidEntityToNail( whatWeHit, trace.PhysicsBone ) then
-        if not IsValid( whatWeHit ) then
+    if whatWeHit:IsWorld() or self:Clip1() <= 0 or trace.HitPos:DistToSqr( owner:GetShootPos() ) > self.Primary.Distance^2 or not self:ValidEntityToNail( whatWeHit, trace.PhysicsBone ) then
+        if not IsValid( whatWeHit ) and not ( whatWeHit and whatWeHit:IsWorld() ) then
             self:Miss()
         else
             self:BadHit( trace )
         end
+        owner:LagCompensation( false )
         return false
 
     end
@@ -324,11 +330,7 @@ function SWEP:PrimaryAttack()
     end
 
     if not self:ValidEntityToNail( secondHit, trTwo.PhysicsBone ) then
-        if not IsValid( secondHit.Entity ) then
-            self:Miss()
-        else
-            self:BadHit( trace )
-        end
+        self:BadHit( trace )
         owner:LagCompensation( false )
         return false
 
@@ -348,9 +350,9 @@ function SWEP:PrimaryAttack()
     owner:FireBullets( bullet )
 
     self:SendWeaponAnim( ACT_VM_HITKILL )
+    owner:SetAnimation( PLAYER_ATTACK1 )
     if not IsFirstTimePredicted() then owner:LagCompensation( false ) return end
 
-    owner:SetAnimation( PLAYER_ATTACK1 )
     self:EmitSound( self.NailedSound )
 
     owner:ViewPunch( Angle( -10,-10,-10 ) )
@@ -490,5 +492,6 @@ end
 duplicator.RegisterConstraint( "Nail", MakeNail, "Ent1", "Ent2", "Bone1", "Bone2", "forcelimit", "Pos", "Ang" )
 
 
-
-
+function SWEP:GetCapabilities()
+    return CAP_INNATE_MELEE_ATTACK1
+end

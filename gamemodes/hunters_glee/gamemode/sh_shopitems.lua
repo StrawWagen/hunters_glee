@@ -92,6 +92,9 @@
 -- dont respawn next to people you have homicided -- DONE!
 -- does bot over-predict when people juke it towards it --no, done
 
+-- pull nails rclick?
+-- do the los check for bot unstucker
+
 -- each item can have an AND/OR skull cost, skull costs never mark up.
 -- nailing bottle crashes server?
 -- fix bear trap last beartrap stupid
@@ -104,6 +107,8 @@
     -- unlock conduit from this OR when people see it happen?
     -- fixes information overload? 
 -- models/props_vehicles/tanker001a.mdl
+
+-- stupid slowdown on dm_bridge?
 
 -- bot avoid damaging ents idea, needs path building pass.
 -- bot placing of slams + beartrap
@@ -189,6 +194,7 @@ local function beartrapPurchase( purchaser )
     local hasWeap = IsValid( weap )
 
     if hasWeap then
+        -- give 6
         weap:Charge()
         weap:Charge()
         weap:Charge()
@@ -206,7 +212,7 @@ local function beartrapPurchase( purchaser )
             weap = purchaser:GetWeapon( beartrap )
             -- where weap
             if not IsValid( weap ) then return end
-            weap:Charge()
+            -- give 5
             weap:Charge()
             weap:Charge()
             weap:Charge()
@@ -1852,13 +1858,13 @@ local function witnessPurchase( purchaser )
         if not attacker or not gettingAttacked then return end
         if GAMEMODE.roundExtraData.witnessed == true then return end
         if attacker:GetEnemy() ~= gettingAttacked then return end
-        if not terminator_Extras.posCanSee( attacker:GetShootPos(), gettingAttacked:GetShootPos(), MASK_SOLID_BRUSHONLY ) then return end
+        if not terminator_Extras.PosCanSee( attacker:GetShootPos(), gettingAttacked:GetShootPos(), MASK_SOLID_BRUSHONLY ) then return end
 
         local count = 0
 
         local purchaseShootPos = gettingAttacked:GetShootPos()
         for _, ply in ipairs( player.GetAll() ) do
-            if terminator_Extras.posCanSee( ply:GetShootPos(), purchaseShootPos, MASK_SOLID_BRUSHONLY ) then
+            if terminator_Extras.PosCanSee( ply:GetShootPos(), purchaseShootPos, MASK_SOLID_BRUSHONLY ) then
                 count = count + 1
 
             end
@@ -1882,7 +1888,7 @@ local function witnessPurchase( purchaser )
 
         for _, ply in ipairs( player.GetAll() ) do
             if ply == gettingAttacked then continue end
-            if terminator_Extras.posCanSee( purchaseShootPos, ply:GetShootPos(), MASK_SOLID_BRUSHONLY ) then
+            if terminator_Extras.PosCanSee( purchaseShootPos, ply:GetShootPos(), MASK_SOLID_BRUSHONLY ) then
                 table.insert( witnessing, ply )
                 score = score + 250
                 GAMEMODE:GivePanic( ply, 50 ) -- terrifying
@@ -2404,10 +2410,11 @@ end
 
 local function flaregunPurchase( purchaser )
     if purchaser:HasWeapon( "termhunt_aeromatix_flare_gun" ) then
-        purchaser:GiveAmmo( 6,    "GLEE_FLAREGUN_PLAYER",         true )
+        purchaser:GiveAmmo( 8,    "GLEE_FLAREGUN_PLAYER",         true )
 
     else
         purchaser:Give( "termhunt_aeromatix_flare_gun" )
+        purchaser:GiveAmmo( 4,    "GLEE_FLAREGUN_PLAYER",         true )
 
     end
 
@@ -2572,6 +2579,7 @@ local function conduitPurchase( purchaser, itemIdentifier )
 end
 
 local function divineInterventionCost( purchaser )
+    local cost = 125
     local chosenHasArrived = GetGlobalBool( "chosenhasarrived", false ) == true
     if chosenHasArrived then
         local isChosen = purchaser:GetNW2Bool( "isdivinechosen", false ) == true
@@ -2579,11 +2587,11 @@ local function divineInterventionCost( purchaser )
             return 0
 
         elseif not isChosen then
-            return 300
+            return cost * 2
 
         end
     end
-    return 150
+    return cost
 
 end
 
@@ -2613,7 +2621,7 @@ local function divineInterventionPos( purchaser )
         chosenResurrectAnchor = table.remove( plys, math.random( 1, #plys ) )
         -- dont spawn them next to someone who they killed or they will kill.
         local isChosen = chosenResurrectAnchor:GetNW2Bool( "isdivinechosen", false ) == true
-        if GAMEMODE:HasHomicided( purchaser, chosenResurrectAnchor ) or GAMEMODE:HasHomicided( chosenResurrectAnchor, purchaser ) or isChosen then
+        if isChosen or GAMEMODE:HasHomicided( purchaser, chosenResurrectAnchor ) or GAMEMODE:HasHomicided( chosenResurrectAnchor, purchaser ) then
             continue
 
         end
@@ -2651,7 +2659,6 @@ local function divineIntervention( purchaser )
         if purchaser:Health() > 0 then return end
 
         if purchaser:GetNW2Bool( "isdivinechosen", false ) == true and purchaser.glee_divineChosenResurrect then
-
             purchaser:glee_divineChosenResurrect()
             return
 
@@ -3161,7 +3168,7 @@ local defaultItems = {
     },
     [ "flaregun" ] = {
         name = "Flaregun",
-        desc = "Flaregun.\n+ 6 flares.",
+        desc = "Flaregun.\n+ 8 flares.",
         cost = 45,
         markup = 1.5,
         markupPerPurchase = 0.25,
@@ -3258,7 +3265,7 @@ local defaultItems = {
     -- keeps the rounds going
     [ "revivekit" ] = {
         name = "Revive Kit",
-        desc = "Revives dead players.\nYou gain 175 score per resurrection.",
+        desc = "Revives dead players.\nYou gain 200 score per resurrection.",
         cost = 30,
         markup = 1.5,
         cooldown = 0.25,
@@ -3527,7 +3534,7 @@ local defaultItems = {
     --flat upgrade
     [ "channel666" ] = {
         name = "Channel 666.",
-        desc = "Your radio bridges life and death.\nSpeak to the dead.",
+        desc = "Your radio bridges life and death.\nYou can communicate with the dead, both ways.",
         cost = 50,
         cooldown = math.huge,
         category = "Innate",
@@ -3708,6 +3715,21 @@ local defaultItems = {
         purchaseCheck = { undeadCheck, ghostCanPurchase },
         purchaseFunc = manhackCratePurchase,
     },
+    -- people who teamkill get funny consequence
+    [ "homicidalglee" ] = {
+        name = "Homicidal Glee.",
+        desc = "Place on players who have killed you.\nBrings their Homicidal Glee to the surface...\nCan only be placed every 15 seconds.",
+        cost = 0,
+        markup = 1,
+        cooldown = 5,
+        category = "Undead",
+        purchaseTimes = {
+            GM.ROUND_ACTIVE,
+        },
+        weight = 0,
+        purchaseCheck = { undeadCheck, ghostCanPurchase },
+        purchaseFunc = homicidalGleePurchase,
+    },
     [ "barrels" ] = {
         name = "Barrels",
         desc = "6 Barrels",
@@ -3781,21 +3803,6 @@ local defaultItems = {
         weight = -100,
         purchaseCheck = { undeadCheck, spawnAnotherHunterCheck },
         purchaseFunc = additionalHunter,
-    },
-    -- people who teamkill get funny consequence
-    [ "homicidalglee" ] = {
-        name = "Homicidal Glee.",
-        desc = "Place on players who have killed you.\nBrings their Homicidal Glee to the surface...\nCan only be placed every 15 seconds.",
-        cost = 0,
-        markup = 1,
-        cooldown = 5,
-        category = "Undead",
-        purchaseTimes = {
-            GM.ROUND_ACTIVE,
-        },
-        weight = 19,
-        purchaseCheck = { undeadCheck, ghostCanPurchase },
-        purchaseFunc = homicidalGleePurchase,
     },
     -- fun
     [ "termovercharger" ] = {
@@ -3940,6 +3947,7 @@ function GM:SetupShopCatalouge()
     end
 
     for shopItemIdentifier, shopItemTbl in pairs( defaultItems ) do
+        -- this is the correct way to add shop items!
         GAMEMODE:addShopItem( shopItemIdentifier, shopItemTbl )
 
     end

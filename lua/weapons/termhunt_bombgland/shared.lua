@@ -31,7 +31,9 @@ SWEP.Secondary.Automatic   = false
 SWEP.Secondary.Ammo        = "none"
 
 if CLIENT then
-
+    language.Add( "termhunt_bombgland", SWEP.PrintName )
+    -- use big bomb's kill icon
+    killicon.Add( "termhunt_bombgland", "vgui/hud/killicon/termhunt_bombbig.png" )
     function SWEP:HintPostStack()
         local owner = self:GetOwner()
         local count = self:GetBombs()
@@ -56,6 +58,10 @@ function SWEP:Initialize()
     self.Bombs = 0
     self.BombTable = {}
 
+    if not GAMEMODE.ISHUNTERSGLEE then
+        self.Bombs = 100
+
+    end
 end
 
 function SWEP:DrawWorldModel()                          end
@@ -91,13 +97,25 @@ function SWEP:SetBombs( bombs )
 
 end
 
+function SWEP:DoAnimEvent( event )
+    timer.Simple( 0, function()
+        if not IsValid( self ) then return end
+        local owner = self:GetOwner()
+        if not IsValid( owner ) then return end
+        owner:DoAnimationEvent( event )
+
+    end )
+end
+
 function SWEP:PunchValid()
     self:GetOwner():ViewPunch( Angle( -2,0,0 ) )
+    self:DoAnimEvent( ACT_GMOD_GESTURE_ITEM_PLACE )
 
 end
 
 function SWEP:PunchInvalid()
     self:GetOwner():ViewPunch( Angle( 2,0,0 ) )
+    self:DoAnimEvent( ACT_FLINCH )
 
 end
 
@@ -110,6 +128,7 @@ function SWEP:Equip()
 
     local hookBreak = function()
         hook.Remove( "EntityTakeDamage", dmgHookName )
+
     end
 
     hook.Add( "EntityTakeDamage", dmgHookName, function( target, dmg )
@@ -118,11 +137,12 @@ function SWEP:Equip()
         if not IsValid( owner ) then hookBreak() return end
         if not IsValid( owner:GetWeapon( self:GetClass() ) ) then hookBreak() end
 
-        if target != owner then return end
+        if target ~= owner then return end
         if owner:Health() <= 0 then return end
 
         if dmg:GetDamage() >= owner:Health() then
             self:BoomUser()
+            hookBreak()
             return
 
         end
@@ -140,6 +160,7 @@ function SWEP:Equip()
 
         if self.Instability >= self.MaxInstability then
             self:BoomUser()
+            hookBreak()
             return
 
         end
@@ -155,7 +176,7 @@ function SWEP:Equip()
         if owner.glee_bombExplodeHint then return end
         owner.glee_bombExplodeHint = true
 
-        huntersGlee_Announce( { owner }, 5, 10, "I gotta be careful, my bombs can't take much damage..." )
+        huntersGlee_Announce( { owner }, 5, 10, "I gotta be careful, bomb gland is unstable..." )
 
     end )
 
@@ -186,10 +207,14 @@ end
 function SWEP:BoomUser()
 
     if self:GetBombs() < 1 then return end
+    -- stupid
+    if self.userBoomed then return end
+    self.userBoomed = true
 
     if GAMEMODE.Bleed then
         GAMEMODE:Bleed( self:GetOwner(), 50 )
         GAMEMODE:Bleed( self:GetOwner(), 50 )
+
     end
 
     local worldSpaceC = self:GetOwner():WorldSpaceCenter()
@@ -199,12 +224,8 @@ function SWEP:BoomUser()
 
     end
 
-    local explode = ents.Create( "env_explosion" )
-    explode:SetPos( Vector( worldSpaceC.x, worldSpaceC.y, worldSpaceC.z ) )
-    explode:SetOwner( self:GetOwner() )
-    explode:Spawn()
-    explode:SetKeyValue( "iMagnitude", math.Clamp( self:GetBombs(), 0, self.UnstableBombCount * 2 ) * 70 )
-    explode:Fire( "Explode", 0, 0 )
+    local dmg = math.Clamp( self:GetBombs(), 0, self.UnstableBombCount * 4 ) * 70
+    terminator_Extras.GleeFancySplode( worldSpaceC, dmg, dmg + 100, self:GetOwner(), self )
 
     self:SetBombs( 0 )
 
@@ -239,7 +260,7 @@ function SWEP:PrimaryAttack()
             GAMEMODE:Bleed( owner, 3 )
         end
         local small = ents.Create( "termhunt_bombsmall" )
-        small:SetCreator( ply )
+        small:SetCreator( owner )
         small:SetPos( owner:WorldSpaceCenter() )
         small:SetAngles( AngleRand() )
         small:Spawn()
@@ -283,7 +304,7 @@ function SWEP:Reload()
             GAMEMODE:Bleed( owner, 16 )
         end
         local big = ents.Create( "termhunt_bombbig" )
-        big:SetCreator( ply )
+        big:SetCreator( owner )
         big:SetPos( owner:WorldSpaceCenter() )
         big:SetAngles( AngleRand() )
         big:Spawn()
@@ -318,20 +339,23 @@ function SWEP:DetonateOldestBomb()
     if not SERVER then return end
     self:CleanupDetonationList()
     local oldestBomb = table.remove( self.BombTable, 1 )
+    local owner = self:GetOwner()
 
     if not IsValid( oldestBomb ) then
         self:PunchInvalid()
-        self:GetOwner():EmitSound( "physics/flesh/flesh_impact_hard5.wav", 55, 80 )
+        owner:EmitSound( "physics/flesh/flesh_impact_hard5.wav", 55, 80 )
         return
+
     end
 
     self:PunchValid()
-    self:GetOwner():EmitSound( "weapons/bugbait/bugbait_squeeze3.wav", 55, 140 )
+    owner:EmitSound( "weapons/bugbait/bugbait_squeeze3.wav", 55, 140 )
 
-    self:GetOwner():SetNW2Bool( "bombgland_detonated", true )
+    owner:SetNW2Bool( "bombgland_detonated", true )
 
     oldestBomb:Fire( "IgniteLifetime", 10 )
-    oldestBomb:TakeDamage( oldestBomb.MaxHealth / 1.5, self:GetOwner(), self )
+    oldestBomb:TakeDamage( oldestBomb.MaxHealth / 1.5, owner, self )
+    oldestBomb.glee_detonator = owner
 
 end
 

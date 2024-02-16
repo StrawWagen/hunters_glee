@@ -229,8 +229,8 @@ if SERVER then
         self:unstuckFullHandle()
 
         timer.Simple( 0.5, function()
-            if not IsValid( ply ) then return end
-            if ply:GetPos():DistToSqr( pos ) < 750^2 then return end
+            if not IsValid( self ) then return end
+            if self:GetPos():DistToSqr( pos ) < 750^2 then return end
 
             -- didnt teleport ply... try AGAIN!
             self.unstuckOrigin = pos

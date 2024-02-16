@@ -11,6 +11,17 @@ ENT.AdminOnly    = false
 ENT.Category = "Hunter's Glee"
 ENT.Model = "models/gibs/antlion_gib_large_3.mdl"
 
+local className = "termhunt_bombbig"
+if CLIENT then
+    language.Add( className, ENT.PrintName )
+    killicon.Add( className, "vgui/hud/killicon/" .. className .. ".png" )
+
+else
+    resource.AddSingleFile( "materials/vgui/hud/killicon/" .. className .. ".png" )
+
+end
+
+
 function ENT:Initialize()
     self:SetModel( self.Model )
 
@@ -45,6 +56,11 @@ function ENT:PhysicsCollide( data, _ )
 end
 
 function ENT:OnTakeDamage( dmg )
+    local attacker = dmg:GetAttacker()
+    if IsValid( attacker ) and ( attacker:IsPlayer() or attacker:IsNPC() ) then
+        self.glee_detonator = attacker
+
+    end
     self.fakeHealth = self.fakeHealth or self.MaxHealth
     if dmg:GetDamage() > 2 then
         self:Fire( "IgniteLifetime", 10 )
@@ -103,7 +119,11 @@ function ENT:OnRemove()
     util.ScreenShake( self:GetPos(), 30, 40, 1, 800 )
     util.ScreenShake( self:GetPos(), 5, 20, 3, 3000 )
 
-    local attacker = self:GetCreator()
+    local attacker = self.glee_detonator
+    if not IsValid( attacker ) then
+        attacker = self:GetCreator()
+
+    end
     if not IsValid( attacker ) then
         attacker = self:GetOwner()
 
@@ -113,20 +133,14 @@ function ENT:OnRemove()
 
     end
 
-    local explode = ents.Create( "env_explosion" )
-    explode:SetPos( Vector( worldSpaceC.x, worldSpaceC.y, worldSpaceC.z ) )
-    explode:SetOwner( attacker )
-    explode:Spawn()
-    explode:SetKeyValue( "iMagnitude", 4 * 115 )
-    explode:Fire( "Explode", 0, 0 )
-
+    terminator_Extras.GleeFancySplode( worldSpaceC, 3 * 115, 6 * 115, attacker, self )
     util.BlastDamage( self, attacker, worldSpaceC, 200, 200 )
 
-    for _ = 1, 8 do
+    for _ = 1, 20 do
         local grossSplat = EffectData()
         grossSplat:SetOrigin( self:GetPos() )
-        grossSplat:SetScale( 3.5 )
-        grossSplat:SetMagnitude( 20 )
+        grossSplat:SetScale( math.Rand( 1, 3.5 ) )
+        grossSplat:SetMagnitude( math.Rand( 10, 20 ) )
         grossSplat:SetNormal( VectorRand() )
 
         util.Effect( "StriderBlood", grossSplat )

@@ -28,14 +28,18 @@ end
 
 hook.Add( "OnTerminatorKilledRagdoll", "glee_dropterminatorskulls", function( died, _, _ )
     if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
-    GAMEMODE:SpawnASkull( died:GetShootPos(), died:GetAimVector():Angle(), true, died )
+    local newSkull = GAMEMODE:SpawnASkull( died:GetShootPos(), died:GetAimVector():Angle(), true, died )
+
+    newSkull.fromSomethingWitnessable = true
 
 end )
 
 hook.Add( "PlayerDeath", "glee_dropplayerskulls", function( died, _, attacker )
     if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
     if attacker == died then return end
-    GAMEMODE:SpawnASkull( died:GetShootPos(), died:GetAimVector():Angle(), nil, died )
+    local newSkull = GAMEMODE:SpawnASkull( died:GetShootPos(), died:GetAimVector():Angle(), nil, died )
+
+    newSkull.fromSomethingWitnessable = true
 
 end )
 

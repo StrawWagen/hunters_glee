@@ -1,6 +1,6 @@
 
 
-local distToBlockProxy = 1250^2
+local distToBlockProxy = 1500^2
 local doProxChatCached = nil
 
 hook.Add( "Think", "glee_cachedoproxchat", function()
@@ -111,16 +111,18 @@ local function listenerCanHear( listener, talker )
     -- same channel!
     local radioLink = ( listenersChannel == talkersChannel ) and not talkersRadioIsOff
     -- radio on talks to everyone
-    if talkersChannel == 1 and listenersChannel == 0 then radioLink = true end
 
     if listenerIsSpectator then
-        -- hearing dead ply or alive with 666
+        -- hearing dead talker or alive talker with 666
         if talkerIsSpectator or radioLink then
             return true, false
 
         -- hearing alive ply
         elseif listener:GetPos():DistToSqr( talker:GetPos() ) < distToBlockProxy then
             return true, true
+
+        else
+            return false, false
 
         end
     elseif listenerIsPlaying then

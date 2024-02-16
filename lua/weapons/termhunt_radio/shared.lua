@@ -42,7 +42,7 @@ if SERVER then
 end
 
 function SWEP:Initialize()
-    self:SetNWInt( "glee_radiochannel_index", 1 ) -- spawn off
+    self:SetNWInt( "glee_radiochannel_index", 2 )
     self.OldOwner = nil
     self.NextPrimaryFire = 0
     self.NextSecondaryFire = 0
@@ -56,38 +56,7 @@ function SWEP:UpdateServersideChannel()
     if not SERVER then return end
     owner.termhuntRadio = self
     owner:SetGleeRadioChannel( channel )
-
-end
-
-
-local radioPowerUse = 100 / ( 60 * 5 ) -- depletes 100 suit in X minutes
-radioPowerUse = math.Round( radioPowerUse, 2 ) -- dont store all those decimals!
-
-hook.Add( "glee_battery_think", "glee_radiodrain", function( ply, powerData )
-    if ply:GetGleeRadioChannel() > 0 then
-        powerData[1] = powerData[1] + -radioPowerUse
-
-    end
-end )
-
-function SWEP:Think()
-    if not SERVER then return end
-    local owner = self:GetOwner()
-    if not owner.PlayerHasBatteryCharge then return end
-    if owner:PlayerHasBatteryCharge() then return end
-
-    self:SetNWInt( "glee_radiochannel_index", 1 )
-
-end
-
-function SWEP:CannotSwitch()
-    local owner = self:GetOwner()
-    if not owner.PlayerHasBatteryCharge then return end
-    if owner:PlayerHasBatteryCharge() then return end
-    if CLIENT then return true end
-    owner:BatteryNag( 0.5 )
-
-    return true
+    owner.huntersglee_preferredradiochannel = self:GetChannelIndex()
 
 end
 
@@ -143,11 +112,6 @@ function SWEP:ChannelSwitch( add )
         end
     end
 
-    if newChannel > 1 and owner.GivePlayerBatteryCharge then
-        owner:GivePlayerBatteryCharge( -radioPowerUse )
-
-    end
-
     if not SERVER then return end
     self:SetNWInt( "glee_radiochannel_index", newChannel )
 
@@ -173,7 +137,6 @@ function SWEP:PrimaryAttack()
     self.NextPrimaryFire = CurTime() + 0.2
 
     if IsFirstTimePredicted() then
-        if self:CannotSwitch() then return end
         self:ChannelSwitch( 1 )
         local index = self:GetChannelIndex()
 
@@ -195,7 +158,6 @@ function SWEP:SecondaryAttack()
     self.NextSecondaryFire = CurTime() + 0.2
 
     if IsFirstTimePredicted() then
-        if self:CannotSwitch() then return end
         self:ChannelSwitch( -1 )
 
         local index = self:GetChannelIndex()
@@ -246,20 +208,16 @@ function SWEP:Equip()
     end )
     local preferredChannel = owner.huntersglee_preferredradiochannel
     if preferredChannel then
+        -- had 666, but not anymore!
         if preferredChannel == undeadChannel and not owner:GetNWBool( "glee_cantalk_tothedead", false ) then
-            self:SetNWInt( "glee_radiochannel_index", undeadChannel )
-            owner.huntersglee_preferredradiochannel = undeadChannel
+            self:SetNWInt( "glee_radiochannel_index", 2 )
+            owner.huntersglee_preferredradiochannel = 2
 
         else
             self:SetNWInt( "glee_radiochannel_index", preferredChannel )
 
         end
     end
-    self:UpdateServersideChannel()
-
-end
-
-function SWEP:OwnerChanged()
     self:UpdateServersideChannel()
 
 end
@@ -367,3 +325,8 @@ function SWEP:CustomAmmoDisplay()
     return self.AmmoDisplay
 
 end
+
+hook.Add( "PlayerInitialSpawn", "setdefaultradio", function( spawned )
+    spawned.huntersglee_preferredradiochannel = 2
+
+end ) 

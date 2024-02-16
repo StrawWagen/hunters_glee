@@ -433,7 +433,7 @@ function GM:GetNearbyWalkableArea( playerReference, start, count )
 
         end
 
-        -- debugoverlay.Text( area2:GetCenter(), math.Round( math.sqrt( score ) ), 5, false  )
+        --debugoverlay.Text( area2:GetCenter(), math.Round( math.sqrt( score ) ), 5, false  )
 
         return score
 

@@ -3,7 +3,7 @@
 
 local math_Clamp = math.Clamp
 
-local paddingFromEdge = glee_sizeScaled( nil, 26 )
+local paddingFromEdge = terminator_Extras.defaultHudPaddingFromEdge
 local screenHeight = ScrH()
 
 local materialSize = glee_sizeScaled( nil, 48 )
@@ -26,21 +26,16 @@ local paintGUIFullAlpha = 0
 local guiAlphaDefault = colorGUI.a
 local guiAlpha = 0
 local oldTexture
-
-local nextDontDrawCheck = 0
 local guiDead = 0
-local dontDraw
 
-hook.Add( "glee_aliveplyhud", "glee_drawbatterynotifs", function( ply, cur )
+local paddingJustHealth = glee_sizeScaled( nil, 260 )
+local paddingHpAndArmor = glee_sizeScaled( nil, 550 )
+local GAMEMODE = GAMEMODE or GM
+local dontDrawDefaultHud = GAMEMODE.DontDrawDefaultHud
 
-    if nextDontDrawCheck < cur then
-        dontDraw = nil
-        nextDontDrawCheck = cur + 1
-        if hook.Run( "HUDShouldDraw", "CHudHealth" ) == false then dontDraw = true return end
-        if hook.Run( "HUDShouldDraw", "CHudBattery" ) == false then dontDraw = true return end
+hook.Add( "glee_cl_aliveplyhud", "glee_drawbatterynotifs", function( ply, cur )
 
-    end
-    if dontDraw then return end
+    if dontDrawDefaultHud() then return end
 
     -- flash when first showing up
     if guiAlpha <= 0 then guiDead = 17 return end
@@ -61,11 +56,11 @@ hook.Add( "glee_aliveplyhud", "glee_drawbatterynotifs", function( ply, cur )
 
     end
 
-    local offsetX = paddingFromEdge + 260
+    local offsetX = paddingFromEdge + paddingJustHealth
     local texture = noBatteryTexture
     local hasBattery = ply:Armor() > 0
     if hasBattery then
-        offsetX = paddingFromEdge + 550
+        offsetX = paddingFromEdge + paddingHpAndArmor
         texture = drainingTexture
 
     end

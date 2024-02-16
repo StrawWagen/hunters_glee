@@ -159,7 +159,7 @@ local function pressableThink( panel, hovering )
         end
 
         if ( not panel.initialSetup ) or ( panel.itemData and not panel.purchasable ) then
-            -- do nothing
+            -- not setup yet, or not purchasable, do nothing
 
         elseif panel.hoveredOld then
             LocalPlayer():EmitSound( switchSound, 60, 80, 0.12 )

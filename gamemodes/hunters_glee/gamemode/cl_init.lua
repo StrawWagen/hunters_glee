@@ -1,6 +1,3 @@
-
-GM.HUDPaddingFromEdgeUnscaled = 54 -- dead on match for the "health" text
-
 include( "shared.lua" )
 include( "shoppinggui.lua" )
 include( "modules/cl_targetid.lua" )
@@ -8,7 +5,6 @@ include( "modules/cl_scoreboard.lua" )
 include( "modules/cl_obfuscation.lua" )
 include( "modules/cl_killfeedoverride.lua" )
 include( "modules/cl_spectateflashlight.lua" )
-include( "modules/battery/cl_battery.lua" )
 include( "modules/thirdpersonflashlight/cl_flashlight.lua" )
 
 -- from https://github.com/Facepunch/garrysmod/blob/e189f14c088298ca800136fcfcfaf5d8535b6648/garrysmod/lua/includes/modules/killicon.lua#L202
@@ -16,11 +12,31 @@ local killIconColor = Color( 255, 80, 0, 255 )
 killicon.Add( "glee_skullpickup", "vgui/hud/glee_skullpickup", killIconColor )
 
 local doHud = CreateClientConVar( "huntersglee_cl_showhud", 1, true, false, "Show the hud? Beats, score, round state...", 0, 1 )
-local paddingFromEdge = glee_sizeScaled( nil, GM.HUDPaddingFromEdgeUnscaled )
+local paddingFromEdge = terminator_Extras.defaultHudTextPaddingFromEdge
 local scoreDisplayPadding = glee_sizeScaled( nil, 60 )
 local scoreMaxShakeSize = glee_sizeScaled( nil, 2 )
 local skullDisplayPadding = glee_sizeScaled( nil, 96 )
 local hintPadding = glee_sizeScaled( nil, 156 )
+
+local nextDontDrawCheck = 0
+local dontDraw
+local CurTime = CurTime
+
+function GM:DontDrawDefaultHud()
+    local cur = CurTime()
+    if nextDontDrawCheck < cur then
+        dontDraw = nil
+        nextDontDrawCheck = cur + 1
+        if hook.Run( "HUDShouldDraw", "CHudHealth" ) == false then dontDraw = true return true end
+        if hook.Run( "HUDShouldDraw", "CHudBattery" ) == false then dontDraw = true return true end
+
+    end
+    if dontDraw then return true end
+
+end
+
+include( "modules/battery/cl_battery.lua" )
+include( "modules/bpm/cl_bpm.lua" )
 
 -- TIME
 local fontData = {
@@ -29,7 +45,7 @@ local fontData = {
     size = glee_sizeScaled( nil, 30 ),
     weight = 500,
     blursize = 0,
-    scanlines = 0,
+    scanlines = 1,
     antialias = true,
     underline = false,
     italic = false,
@@ -250,13 +266,16 @@ local function beatThink( ply, cur )
     local BPM = ply:GetNWInt( "termHuntPlyBPM" )
     local beatTime = math.Clamp( 60 / BPM, 0, 2 )
     local pitch = BPM
-    local volume = ( BPM / 240 ) + -0.1
+    local volume = ( BPM / 200 ) + -0.1
     nextBeat = cur + beatTime
 
     if ply:Health() > 0 then
         ply:EmitSound( "418788_name_heartbeat_single.wav", 100, pitch, volume )
 
     end
+
+    return true, beatTime
+
 end
 
 
@@ -746,45 +765,24 @@ local function paintTheDamnHint( _, theHint, cur )
 
 end
 
-local fadeRangeStart, fadeRangeEnd = BPMCriteria, BPMCriteria + 40
-local fadeRangeSize = math.abs( fadeRangeStart - fadeRangeEnd )
-local bpmTextAlpha = 30
-
-local function paintPlyBPM( ply )
-    if not GAMEMODE:CanShowDefaultHud() then return end
-    if not doHud:GetBool() then return end
-
-    local blockingScore = ply:GetNWBool( "termHuntBlockScoring" ) or ply:GetNWBool( "termHuntBlockScoring2" )
-    local BPM = ply:GetNWInt( "termHuntPlyBPM" )
-    local currBpmTextAlpha = bpmTextAlpha
-
-    if BPM > fadeRangeStart and not blockingScore then
-        local difference = math.Clamp( math.abs( BPM - fadeRangeEnd ), fadeRangeStart, fadeRangeEnd )
-        local constrainedDiff = difference + fadeRangeStart
-        local normalizedConstDiff = fadeRangeSize / constrainedDiff
-
-        currBpmTextAlpha = 20 + bpmTextAlpha + ( normalizedConstDiff * 150 )
-        currBpmTextAlpha = math.Clamp( currBpmTextAlpha, 0, 255 )
-
-    end
-
-    local BPMString = BPM
-
-    surface.drawShadowedTextBetter( BPMString, "termhuntBPMFont", Color( 255, 50, 50, currBpmTextAlpha ), screenMiddleW, screenMiddleH + 20 )
-
-end
+local totalScoreNameOffset = glee_sizeScaled( nil, -90 )
+local totalScoreOffset = glee_sizeScaled( nil, -40 )
 
 local function paintTotalScore()
     if not GAMEMODE:CanShowDefaultHud() then return end
 
     local Text = "Hunt's tally"
-    surface.drawShadowedTextBetter( Text, "termhuntTriumphantFont", color_white, screenMiddleW, screenMiddleH + -90 )
+    surface.drawShadowedTextBetter( Text, "termhuntTriumphantFont", color_white, screenMiddleW, screenMiddleH + totalScoreNameOffset )
 
     Text = GetGlobalInt( "termHuntTotalScore", 0 )
     Text = math.Round( Text )
-    surface.drawShadowedTextBetter( Text, "termhuntTriumphantFont", Color( 255, 0, 0 ), screenMiddleW, screenMiddleH + -40 )
+    surface.drawShadowedTextBetter( Text, "termhuntTriumphantFont", Color( 255, 0, 0 ), screenMiddleW, screenMiddleH + totalScoreOffset )
 
 end
+
+local preyTextOffset1 = glee_sizeScaled( nil, 64 )
+local preyTextOffset2 = glee_sizeScaled( nil, 50 )
+local preyTextOffset3 = glee_sizeScaled( nil, 50 )
 
 local function paintFinestPrey()
 
@@ -793,9 +791,9 @@ local function paintFinestPrey()
     local winner = GetGlobalEntity( "termHuntWinner", NULL )
     local winnerSkulls = GetGlobalInt( "termHuntWinnerSkulls", 0 )
 
-    local preyText1Y = screenMiddleH + 64
-    local preyText2Y = screenMiddleH + 64 + 50
-    local preyText3Y = screenMiddleH + 64 + 100
+    local preyText1Y = screenMiddleH + preyTextOffset1
+    local preyText2Y = preyText1Y + preyTextOffset2
+    local preyText3Y = preyText2Y + preyTextOffset3
 
     local Text = "Finest Prey"
     surface.drawShadowedTextBetter( Text, "termhuntTriumphantFont", color_white, screenMiddleW, preyText1Y )
@@ -887,12 +885,13 @@ function HUDPaint()
 
         else
             -- sounds
-            beatThink( ply, cur )
-            -- then display
-            paintPlyBPM( ply )
+            local didBeat, interval = beatThink( ply, cur )
 
-            hook.Run( "glee_aliveplyhud", ply, cur )
+            hook.Run( "glee_cl_aliveplyhud", ply, cur )
+            if didBeat then
+                hook.Run( "glee_cl_heartbeat", ply, interval )
 
+            end
         end
 
     end

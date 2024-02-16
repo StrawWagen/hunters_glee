@@ -90,6 +90,8 @@ function ENT:Initialize()
         -- allow skulls to have different hints if players see them spawn
         timer.Simple( 0, function()
             if not IsValid( self ) then return end
+            -- not from a just-dead term/player!
+            if not self.fromSomethingWitnessable then return end
             self:UpdateExplainability()
         end )
 
@@ -218,7 +220,7 @@ function ENT:UpdateExplainability()
         if ply:Health() <= 0 then continue end
         if ply:GetPos():DistToSqr( myPos ) > farEnoughToNeverNotice then continue end
         if not ply:TestPVS( self ) then continue end
-        if not terminator_Extras.posCanSee( self:WorldSpaceCenter(), ply:GetShootPos(), MASK_SOLID_BRUSHONLY ) then continue end
+        if not terminator_Extras.PosCanSee( self:WorldSpaceCenter(), ply:GetShootPos(), MASK_SOLID_BRUSHONLY ) then continue end
         local plysThatKnowOurOrigin = self.plysThatKnowOurOrigin or {}
 
         plysThatKnowOurOrigin[ply:GetCreationID()] = true

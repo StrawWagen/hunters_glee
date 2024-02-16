@@ -6,10 +6,12 @@ AddCSLuaFile( "modules/cl_obfuscation.lua" )
 AddCSLuaFile( "modules/cl_killfeedoverride.lua" )
 
 AddCSLuaFile( "modules/battery/cl_battery.lua" )
+AddCSLuaFile( "modules/bpm/cl_bpm.lua" )
 AddCSLuaFile( "modules/cl_spectateflashlight.lua" )
 AddCSLuaFile( "modules/thirdpersonflashlight/cl_flashlight.lua" )
 
 AddCSLuaFile( "shoppinggui.lua" )
+
 AddCSLuaFile( "sh_shopshared.lua" )
 AddCSLuaFile( "sh_shopitems.lua" )
 
@@ -20,12 +22,13 @@ AddCSLuaFile( "modules/sh_danceslowdown.lua" )
 AddCSLuaFile( "modules/sh_playerdrowning.lua" )
 AddCSLuaFile( "modules/battery/sh_battery.lua" )
 AddCSLuaFile( "modules/sh_detecthunterkills.lua" )
+AddCSLuaFile( "modules/sh_fallingwind.lua" )
 
 include( "lib/sv_termfuncs.lua" )
-include( "autorun/server/sv_wallkick.lua" )
 include( "shared.lua" )
 include( "sv_player.lua" )
 include( "sv_playercommunication.lua" )
+include( "modules/sv_wallkick.lua" )
 include( "modules/sv_speedhandler.lua" )
 include( "modules/sv_navpatcher.lua" )
 include( "modules/sv_doorbash.lua" )
@@ -52,6 +55,7 @@ util.AddNetworkString( "glee_stoppedspectating" )
 util.AddNetworkString( "glee_closetheshop" )
 
 resource.AddFile( "materials/vgui/hud/glee_skullpickup.vmt" )
+resource.AddFile( "materials/vgui/hud/heartbeat.png" )
 
 resource.AddSingleFile( "sound/53937_meutecee_trumpethit07.wav" )
 resource.AddSingleFile( "sound/418788_name_heartbeat_single.wav" )

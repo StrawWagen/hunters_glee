@@ -120,6 +120,16 @@ function SWEP:SecondaryAttack()
 
 end
 
+function SWEP:ShoveAnim()
+    timer.Simple( 0, function()
+        if not IsValid( self ) then return end
+        local owner = self:GetOwner()
+        if not IsValid( owner ) then return end
+        owner:DoAnimationEvent( ACT_GMOD_GESTURE_MELEE_SHOVE_2HAND )
+
+    end )
+end
+
 function SWEP:PrimaryAttack( firstMul )
     if not SERVER then return end
     if not self:CanPrimaryAttack() then return end
@@ -170,6 +180,7 @@ function SWEP:PrimaryAttack( firstMul )
 
             end
             owner:ViewPunch( Angle( -15, 0, 0 ) * firstMul )
+            self:ShoveAnim()
 
         else
             NoHit = true
@@ -183,6 +194,7 @@ function SWEP:PrimaryAttack( firstMul )
         self:ShoveSound( -15 + pitchAdded )
         owner:SetVelocity( ( owner:GetVelocity() * 0.4 ) + Force )
         owner:ViewPunch( Angle( -20, 0, 0 ) * firstMul )
+        self:ShoveAnim()
 
     else
         NoHit = true

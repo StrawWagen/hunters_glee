@@ -11,6 +11,16 @@ ENT.AdminOnly    = false
 ENT.Category = "Hunter's Glee"
 ENT.Model = "models/weapons/w_bugbait.mdl"
 
+local className = "termhunt_bombsmall"
+if CLIENT then
+    language.Add( className, ENT.PrintName )
+    killicon.Add( className, "vgui/hud/killicon/" .. className .. ".png" )
+
+else
+    resource.AddSingleFile( "materials/vgui/hud/killicon/" .. className .. ".png" )
+
+end
+
 function ENT:Initialize()
     self:SetModel( self.Model )
 
@@ -35,15 +45,22 @@ function ENT:Initialize()
     self:StartMotionController()
 
     self.MaxHealth = 10
+
 end
 
 function ENT:OnTakeDamage( dmg )
+    local attacker = dmg:GetAttacker()
+    if IsValid( attacker ) and ( attacker:IsPlayer() or attacker:IsNPC() ) then
+        self.glee_detonator = attacker
+
+    end
     self.fakeHealth = self.fakeHealth or self.MaxHealth
     if dmg:GetDamage() > 2 then
         self:Fire( "IgniteLifetime", 10 )
 
     end
 
+    -- dont chain explode in one tick!
     if dmg:IsExplosionDamage() then
         dmg:ScaleDamage( 0.005 )
 
@@ -87,12 +104,21 @@ function ENT:OnRemove()
 
     end
 
-    local explode = ents.Create( "env_explosion" )
-    explode:SetPos( Vector( worldSpaceC.x, worldSpaceC.y, worldSpaceC.z ) )
-    explode:SetOwner( self:GetCreator() or self )
-    explode:Spawn()
-    explode:SetKeyValue( "iMagnitude", 1 * 115 )
-    explode:Fire( "Explode", 0, 0 )
+    local attacker = self.glee_detonator
+    if not IsValid( attacker ) then
+        attacker = self:GetCreator()
+
+    end
+    if not IsValid( attacker ) then
+        attacker = self:GetOwner()
+
+    end
+    if not IsValid( attacker ) then
+        attacker = self
+
+    end
+
+    terminator_Extras.GleeFancySplode( worldSpaceC, 115, 115 + 100, attacker, self )
 
     local BloodPlaster = self.BloodPlaster
 
@@ -100,7 +126,6 @@ function ENT:OnRemove()
         BloodPlaster( self, worldSpaceC, 50 )
 
     end )
-
 end
 
 function ENT:Use( user )

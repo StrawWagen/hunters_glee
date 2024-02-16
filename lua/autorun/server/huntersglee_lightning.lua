@@ -72,7 +72,7 @@ function termHunt_ElectricalArcEffect( parent, startPos, targetDir, scale, initi
     local ToVector = targetDir
     local Dist = dist or 25000
     local WanderDirection = initialDir or targetDir
-    local NumPoints = 100
+    local NumPoints = 50
     local PointTable = {}
     local OldPoint = startPos
     local inWallCount = 0
@@ -114,7 +114,7 @@ function termHunt_ElectricalArcEffect( parent, startPos, targetDir, scale, initi
     -- pitoffs goes from 0 at 4 scale
     -- to +40 at 0 scale
 
-    local _, hitTr = terminator_Extras.posCanSee( lastNotInWall, OldPoint )
+    local _, hitTr = terminator_Extras.PosCanSee( lastNotInWall, OldPoint )
 
     if scale < 1 then return hitTr end
 
@@ -161,8 +161,6 @@ function termHunt_PowafulLightning( inflic, attacker, strikingPos, powa )
 
     sound.EmitHint( SOUND_COMBAT, strikingPos, 8000, 1, inflic )
 
-    termHunt_ElectricalArcEffect( inflic, strikingPos, vector_up, powa )
-
     for index = 1, powa * 2 do
         local size = index * 5
         local offset = Vector( math.random( -size, size ), math.random( -size, size ) )
@@ -174,13 +172,17 @@ function termHunt_PowafulLightning( inflic, attacker, strikingPos, powa )
     util.ScreenShake( strikingPos, 15, 20, 1.5, 1200 )
     util.ScreenShake( strikingPos, 1, 20, 1.5, 3000 )
 
-    local explode = ents.Create( "env_explosion" )
-    explode.glee_inflictingLightning = true
-    explode:SetPos( strikingPos )
-    explode:SetOwner( attacker )
-    explode:Spawn()
-    explode:SetKeyValue( "iMagnitude", powa * 55 )
-    explode:Fire( "Explode", 0, 0.05 )
+    timer.Simple( 0, function()
+        terminator_Extras.GleeFancySplode( strikingPos + vectorUp25, powa * 55, 100 + powa * 55, attacker, inflic )
+
+    end )
+
+    local flash = EffectData()
+    flash:SetScale( powa / 2 )
+    flash:SetOrigin( strikingPos + vector_up )
+    util.Effect( "eff_huntersglee_strikeeffect", flash )
+
+    termHunt_ElectricalArcEffect( inflic, strikingPos, vector_up, powa )
 
     for _, thing in ipairs( ents.FindInSphere( strikingPos, 400 ) ) do
         if not IsValid( thing ) then continue end
@@ -216,11 +218,6 @@ function termHunt_PowafulLightning( inflic, attacker, strikingPos, powa )
         inflic:EmitSound( "ambient/levels/labs/electric_explosion3.wav", 140, math.random( 80, 120 ) + -powa * 4, 0.8, CHAN_STATIC )
 
     end
-
-    local flash = EffectData()
-    flash:SetScale( powa / 2 )
-    flash:SetOrigin( strikingPos + vector_up )
-    util.Effect( "eff_huntersglee_strikeeffect", flash )
 
     if powa >= 5.5 then
 

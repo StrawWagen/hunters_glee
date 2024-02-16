@@ -24,24 +24,28 @@ function ENT:commonCreationOptions()
 end
 
 
-ENT.rareCreationChance = 30
+ENT.rareCreationChance = 35
 
 function ENT:rareCreationOptions()
     local tbl = {
-        { class = "item_battery", count = 4 },
         { class = "weapon_frag", count = 4 },
-        { class = "item_ammo_smg1_grenade", count = 3 },
+        { class = "weapon_slam", count = 4 },
+        { class = "termhunt_weapon_beartrap", count = 2 },
+        { class = "item_battery", count = 4 },
         { class = "termhunt_score_pickup", count = 3 },
-        { class = "weapon_slam", count = 2 },
+        { class = "item_ammo_smg1_grenade", count = 3 },
+        { class = "weapon_smg1" },
+        { class = "item_ammo_ar2_altfire", count = 3 },
+        { class = "weapon_ar2" },
         { class = "weapon_stunstick" },
-        { class = "termhunt_aeromatix_flare_gun" },
         { class = "weapon_shotgun" },
         { class = "weapon_rpg" },
-        { class = "weapon_pistol" }
-
+        { class = "item_rpg_round", count = 3 },
+        { class = "weapon_pistol" },
+        { class = "termhunt_aeromatix_flare_gun" },
     }
     return tbl
 
 end
 
-ENT.AmmoInsideWeaponsScale = 1.5
+ENT.AmmoInsideWeaponsScale = 2

@@ -11,6 +11,16 @@ ENT.AdminOnly    = false
 ENT.Category = "Hunter's Glee"
 ENT.Model = "models/hunter/plates/plate.mdl"
 
+local className = "termhunt_flare"
+if CLIENT then
+    language.Add( className, ENT.PrintName )
+    killicon.Add( className, "vgui/hud/killicon/" .. className .. ".png" )
+
+else
+    resource.AddSingleFile( "materials/vgui/hud/killicon/" .. className .. ".png" )
+
+end
+
 local invis = Color( 255, 255, 255, 0 )
 
 local lifetime = 20
@@ -119,13 +129,14 @@ function ENT:PhysicsCollide( colData, _ )
     hitEnt.glee_Flaregun_NextDealBurnDamage = CurTime() + 0.1
 
     local impactDamage = colData.Speed / 30
-    impactDamage = math.Clamp( impactDamage, 0, 25 )
+    impactDamage = math.Clamp( impactDamage, 0, 45 )
 
     if impactDamage >= 5 then
         local dmgInfo = DamageInfo()
         dmgInfo:SetDamage( impactDamage )
         dmgInfo:SetDamageType( DMG_BURN )
         dmgInfo:SetAttacker( self.MyOwner )
+        dmgInfo:SetInflictor( self )
         hitEnt:TakeDamageInfo( dmgInfo )
 
     end

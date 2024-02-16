@@ -135,7 +135,7 @@ function GM:navPatchingThink( ply )
     --debugoverlay.Line( plyPos2, currClosestPos, 5, Color(255,255,255), true )
     --print( plyPos2.z, currClosestPos.z, plyPos.z )
 
-    if not terminator_Extras.posCanSee( plyPos2, currClosestPos, MASK_SOLID_BRUSHONLY ) then return end
+    if not terminator_Extras.PosCanSee( plyPos2, currClosestPos, MASK_SOLID_BRUSHONLY ) then return end
 
     local oldAreasCenter = oldArea:GetCenter()
     local currAreasCenter = currArea:GetCenter()
@@ -144,11 +144,11 @@ function GM:navPatchingThink( ply )
     if math.abs( currAreasCenter.z - oldAreasCenter.z ) > 50 then
         local check1Start = currAreasCenter + offGroundOffset
         local check1End = Vector( currAreasCenter.x, currAreasCenter.y, oldAreasCenter.z + 20 )
-        local check1CanSee = terminator_Extras.posCanSee( check1Start, check1End, MASK_SOLID_BRUSHONLY )
+        local check1CanSee = terminator_Extras.PosCanSee( check1Start, check1End, MASK_SOLID_BRUSHONLY )
 
         local check2Start = oldAreasCenter + offGroundOffset
         local check2End = Vector( oldAreasCenter.x, oldAreasCenter.y, currAreasCenter.z + 20 )
-        local check2CanSee = terminator_Extras.posCanSee( check2Start, check2End, MASK_SOLID_BRUSHONLY )
+        local check2CanSee = terminator_Extras.PosCanSee( check2Start, check2End, MASK_SOLID_BRUSHONLY )
 
         if not check1CanSee and not check2CanSee then return end
 
@@ -323,7 +323,7 @@ local function connectionDataVisOffsetCheck( currentData )
 
     local visibleCount = 0
     for _, offset in ipairs( offsets ) do
-        if not terminator_Extras.posCanSee( area1Closest + offset, area2Closest + offset, MASK_SOLID ) then continue end
+        if not terminator_Extras.PosCanSee( area1Closest + offset, area2Closest + offset, MASK_SOLID ) then continue end
         --debugoverlay.Line( area1Closest + offset, area2Closest + offset, 120, Color( 255,255,255 ), true )
         visibleCount = visibleCount + 1
 

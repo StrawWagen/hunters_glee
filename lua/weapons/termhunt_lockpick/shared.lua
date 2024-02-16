@@ -39,7 +39,13 @@ SWEP.Secondary.DefaultClip = -1     -- Default number of bullets in a clip
 SWEP.Secondary.Automatic = false        -- Automatic/Semi Auto
 SWEP.Secondary.Ammo = ""
 
-if SERVER then
+local className = "termhunt_lockpick"
+if CLIENT then
+    language.Add( className, SWEP.PrintName )
+    killicon.Add( className, "vgui/hud/killicon/" .. className .. ".png" )
+
+else
+    resource.AddSingleFile( "materials/vgui/hud/killicon/" .. className .. ".png" )
     resource.AddFile( "materials/entities/termhunt_lockpick.png" )
 
 end

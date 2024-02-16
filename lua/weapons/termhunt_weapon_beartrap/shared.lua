@@ -18,6 +18,7 @@ SWEP.UseHands    = true
 SWEP.AutoSwitchTo    = false
 SWEP.AutoSwitchFrom    = true
 
+SWEP.Weight         = terminator_Extras.GoodWeight
 SWEP.Spawnable        = true
 SWEP.AdminSpawnable    = false
 SWEP.Category = "Hunter's Glee"
@@ -77,15 +78,17 @@ if SERVER then
 
 end
 
+SWEP.termPlace_PlacingRange = 150
+
 function SWEP:ValidPlace()
     local owner = self:GetOwner()
     local traceStruct = {
         start = owner:GetShootPos(),
-        endpos = owner:GetShootPos() + owner:GetAimVector() * 150,
+        endpos = owner:GetShootPos() + owner:GetAimVector() * self.termPlace_PlacingRange,
         filter = owner
     }
     local tr = util.TraceLine( traceStruct )
-    if not tr.HitWorld then return end
+    if not tr.Hit then return end
 
     return true, tr
 
@@ -120,9 +123,6 @@ function SWEP:CanPrimaryAttack()
 
 end
 
-function SWEP:PrimaryAttack()
-end
-
 util.PrecacheModel( "models/stiffy360/beartrap.mdl" )
 
 function SWEP:DoGhost()
@@ -132,6 +132,7 @@ function SWEP:DoGhost()
 end
 
 function SWEP:Think()
+    if self:Clip1() <= 0 then return end
     if CLIENT then
         local owner = self:GetOwner()
         if owner ~= LocalPlayer() then return end
@@ -163,7 +164,7 @@ function SWEP:Think()
 
         end
 
-        local step = 20
+        local step = 18
         local progBarStatus = generic_WaitForProgressBar( self:GetOwner(), "termhunt_weapon_beartrap_place", 0.25, step )
 
         if isnumber( progBarStatus ) and progBarStatus <= step and progBarStatus ~= self.oldplaceStatus then
@@ -174,29 +175,49 @@ function SWEP:Think()
 
         if progBarStatus < 100 then return end
 
-        self:SetNextPrimaryFire( CurTime() + 0.5 )
+        self:Place( tr )
 
-        local owner = self:GetOwner()
-        local ent = ents.Create( "termhunt_bear_trap" )
-        ent:SetPos( tr.HitPos + tr.HitNormal )
-        local ang = tr.HitNormal:Angle()
-        ang:RotateAroundAxis( ang:Right(), -90 )
-        ent:SetAngles( ang )
-        ent:SetCreator( owner )
-        ent:Spawn()
-
-        ent:EmitSound( "physics/metal/metal_solid_impact_hard5.wav", 65, 80 )
-
-        self:SetClip1( self:Clip1() + -1 )
-
-        if self:Clip1() > 0 then return end
-
-        timer.Simple( 0.5, function()
-            self:GetOwner():SwitchToDefaultWeapon()
-            self:GetOwner():StripWeapon( self:GetClass() )
-
-        end )
     end
+end
+
+function SWEP:PrimaryAttack()
+    local owner = self:GetOwner()
+    if not owner:IsNextBot() then return end
+    local canPlace, tr = self:ValidPlace()
+    if not canPlace then return end
+    self:SetClip1( 1 )
+    local placed = self:Place( tr )
+    placed.usedByTerm = true
+
+end
+
+function SWEP:Place( tr )
+    self:SetNextPrimaryFire( CurTime() + 0.5 )
+
+    local owner = self:GetOwner()
+    local ent = ents.Create( "termhunt_bear_trap" )
+    ent:SetPos( tr.HitPos + tr.HitNormal )
+    local ang = tr.HitNormal:Angle()
+    ang:RotateAroundAxis( ang:Right(), -90 )
+    ent:SetAngles( ang )
+    ent:SetCreator( owner )
+    ent:Spawn()
+
+    ent:EmitSound( "physics/metal/metal_solid_impact_hard5.wav", 65, 80 )
+
+    self:SetClip1( self:Clip1() + -1 )
+
+    if self:Clip1() > 0 then return ent end
+
+    timer.Simple( 0.5, function()
+        if not IsValid( self ) then return end
+        if not IsValid( self:GetOwner() ) then return end
+        self:GetOwner():SwitchToDefaultWeapon()
+        self:GetOwner():StripWeapon( self:GetClass() )
+
+    end )
+    return ent
+
 end
 
 function SWEP:SecondaryAttack()
@@ -222,4 +243,95 @@ function SWEP:OnRemove()
         self:DeGhost()
 
     end
+end
+
+
+local vec_up = Vector( 0, 0, 1 )
+SWEP.termPlace_MaxAreaSize = 100
+
+local nookDirections2dDirs = {
+    Vector( 1, 0, 0 ),
+    Vector( 0.5, 0.5, 0 ),
+    Vector( 0, 1, 0 ),
+    Vector( -0.5, 0.5, 0 ),
+    Vector( -1, 0, 0 ),
+    Vector( -0.5, -0.5, 0 ),
+    Vector( 0, -1, 0 ),
+    Vector( 0.5, -0.5, 0 ),
+}
+
+function SWEP:termPlace_ScoringFunc( owner, checkPos )
+    local nookScore = terminator_Extras.GetNookScore( checkPos, 100, nookDirections2dDirs )
+    local score = nookScore
+    score = score + math.Rand( -0.2, 0.2 )
+    if checkPos:DistToSqr( owner:GetPos() ) < 350^ 2 then
+        score = score + -1
+
+    end
+    --debugoverlay.Text( checkPos, tostring( score ), 5, false )
+    return score
+
+end
+
+local nookDirectionsPlace = {
+    Vector( 1, 0, -0.5 ),
+    Vector( 0.5, 0.5, -0.5 ),
+    Vector( 0, 1, -0.5 ),
+    Vector( -0.5, 0.5, -0.5 ),
+    Vector( -1, 0, -0.5 ),
+    Vector( -0.5, -0.5, -0.5 ),
+    Vector( 0, -1, -0.5 ),
+    Vector( 0.5, -0.5, -0.5 ),
+    Vector( 1, 0, -0.75 ),
+    Vector( 0.5, 0.5, -0.75 ),
+    Vector( 0, 1, -0.75 ),
+    Vector( -0.5, 0.5, -0.75 ),
+    Vector( -1, 0, -0.75 ),
+    Vector( -0.5, -0.5, -0.75 ),
+    Vector( 0, -1, -0.75 ),
+    Vector( 0.5, -0.5, -0.75 ),
+}
+
+function SWEP:termPlace_PlacingFunc( owner )
+    local _, hits = terminator_Extras.GetNookScore( owner:GetShootPos(), 500, nookDirectionsPlace )
+    local shortestIndex = 1
+    for fraction, tr in pairs( hits ) do
+        local dot = vec_up:Dot( tr.HitNormal )
+        if not ( dot > 0.55 and dot <= 1 ) then continue end
+
+        local foundArea = navmesh.GetNavArea( tr.HitPos, 250 )
+        if not foundArea then continue end
+        if math.max( foundArea:GetSizeX(), foundArea:GetSizeY() ) > self.termPlace_MaxAreaSize then continue end
+
+        -- find shortest tr
+        if fraction <= shortestIndex then shortestIndex = fraction end
+
+    end
+    if shortestIndex >= 1 then return owner:GetPos() + owner:GetAimVector() * 100 end
+    return hits[shortestIndex].HitPos
+
+end
+
+
+if not CLIENT then return end
+
+local posOffset = Vector( 0, 0, 0 )
+local angOffset = Angle( 0, -90, -90 )
+
+function SWEP:DrawWorldModel()
+    local owner = self:GetOwner()
+    if IsValid( owner ) then
+        local attachId = owner:LookupAttachment( "anim_attachment_RH" )
+        if attachId <= 0 then return end
+        local attachTbl = owner:GetAttachment( attachId )
+        local posOffsetW, angOffsetW = LocalToWorld( posOffset, angOffset, attachTbl.Pos, attachTbl.Ang )
+        self:SetPos( posOffsetW )
+        self:SetAngles( angOffsetW )
+
+    else
+        self:SetSequence( "ClosedIdle" )
+
+    end
+    self:DrawModel()
+
 end

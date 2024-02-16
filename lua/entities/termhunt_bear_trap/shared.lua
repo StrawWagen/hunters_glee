@@ -6,6 +6,16 @@ ENT.Spawnable = false
 ENT.AdminSpawnable = false
 ENT.AutomaticFrameAdvance = true
 
+local className = "termhunt_bear_trap"
+if CLIENT then
+    language.Add( className, ENT.PrintName )
+    killicon.Add( className, "vgui/hud/killicon/" .. className .. ".png" )
+
+else
+    resource.AddSingleFile( "materials/vgui/hud/killicon/" .. className .. ".png" )
+
+end
+
 function ENT:Think()
     self:NextThink( CurTime() )
     return true

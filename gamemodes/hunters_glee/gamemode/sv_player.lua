@@ -342,7 +342,8 @@ GM.TEAM_SPECTATE = 2
 function GM:spectatifyPlayer( ply )
     ply:SetNWBool( "termhunt_spectating", true )
     ply:Spectate( OBS_MODE_DEATHCAM )
-    ply.spectateDoFreecam = CurTime() + 4
+
+    ply.spectateDoFreecam = CurTime() + 6
     ply.spectateDoFreecamForced = CurTime() + 2
     ply.termHuntTeam = GAMEMODE.TEAM_SPECTATE
 
@@ -381,12 +382,28 @@ local function isMovementKey( keyPressed )
 
 end
 
-local function exitDeathCam( ply )
+local function shutDownDeathCam( ply )
     ply.spectateDoFreecam = math.huge
     ply.spectateDoFreecamForced = math.huge
-    ply:SetObserverMode( OBS_MODE_ROAMING )
 
 end
+
+local function spectateThing( ply, thing )
+    ply:SpectateEntity( thing )
+    ply:SetObserverMode( OBS_MODE_CHASE )
+    net.Start( "glee_followedsomething" )
+    net.Send( ply )
+
+end
+
+local function stopSpectatingThing( ply )
+    ply:SetObserverMode( OBS_MODE_ROAMING )
+    net.Start( "glee_stoppedspectating" )
+    net.Send( ply )
+
+end
+
+local nextSpectateIdleCheck = {}
 
 -- if placing
     -- if following player, unfollow
@@ -408,26 +425,35 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
     local followingThing = mode == OBS_MODE_CHASE or mode == OBS_MODE_IN_EYE
     local deathCamming = mode == OBS_MODE_DEATHCAM
 
+    nextSpectateIdleCheck[ply] = CurTime() + 0.1
 
     local placing = ply.ghostEnt
     local actionTime = ply.glee_ghostEntActionTime or 0
     local wasGhostEnting = actionTime + 0.25 > CurTime()
     if IsValid( placing ) or wasGhostEnting then return end
 
-
     local spectated = nil
+    local currentlySpectating = ply:GetObserverTarget()
 
     if deathCamming then
         if isMovementKey( key ) and ply.spectateDoFreecamForced < CurTime() then
-            exitDeathCam( ply )
-            net.Start( "glee_stoppedspectating" )
-            net.Send( ply )
+            shutDownDeathCam( ply )
+            stopSpectatingThing( ply )
 
         end
         if ply.spectateDoFreecam > CurTime() then return end
 
-        exitDeathCam( ply )
+        shutDownDeathCam( ply )
+        if ply.glee_KillerToSpectate then
+            spectated = ply.glee_KillerToSpectate
+            spectateThing( ply, spectated )
 
+            ply.glee_KillerToSpectate = nil
+
+        else
+            stopSpectatingThing( ply )
+
+        end
     elseif keyPressed == IN_ATTACK then
         local players = player.GetAll()
         local alivePlayers = GAMEMODE:returnAliveInTable( players )
@@ -436,7 +462,7 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
 
         local stuffToSpectate = {}
         for _, thing in ipairs( protoStuffToSpectate ) do
-            if IsValid( thing ) then
+            if IsValid( thing ) and thing:Health() >= 0 and thing ~= ply then
                 table.insert( stuffToSpectate, thing )
             end
         end
@@ -444,7 +470,6 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
         -- go to next player
         if followingThing then
             local thingToFollow = stuffToSpectate[1] -- default to first ply
-            local currentlySpectating = ply:GetObserverTarget()
             local hitTheCurrent
             for _, thing in ipairs( stuffToSpectate ) do
                 if hitTheCurrent then
@@ -460,7 +485,9 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
                 net.Start( "glee_followednexthing" )
                 net.Send( ply )
                 spectated = thingToFollow
+
                 ply:SpectateEntity( thingToFollow )
+                currentlySpectating = thingToFollow
 
             end
 
@@ -494,18 +521,13 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
 
             if thingToFollow then
                 spectated = thingToFollow
-                ply:SpectateEntity( thingToFollow )
-                ply:SetObserverMode( OBS_MODE_CHASE )
-                net.Start( "glee_followedsomething" )
-                net.Send( ply )
+                spectateThing( ply, spectated )
 
             end
         end
     elseif isMovementKey( keyPressed ) then
         if followingThing then
-            ply:SetObserverMode( OBS_MODE_ROAMING )
-            net.Start( "glee_stoppedspectating" )
-            net.Send( ply )
+            stopSpectatingThing( ply )
 
         end
     elseif keyPressed == IN_JUMP then
@@ -520,7 +542,11 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
 
             end
         end
+    elseif followingThing and currentlySpectating.Health and currentlySpectating:Health() <= 0 then
+        stopSpectatingThing( ply )
+
     end
+
     if IsValid( spectated ) then
         if spectated.Nick and isstring( spectated:Nick() ) then
             huntersGlee_Announce( { ply }, 1, 2, "Spectating " .. spectated:Nick() .. "." )
@@ -533,6 +559,16 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
 end
 
 hook.Add( "KeyPress", "glee_SwitchSpectateModes", DoKeyPressSpectateSwitch )
+
+hook.Add( "glee_sv_validgmthink", "glee_SwitchSpectateModes", function( players )
+    for _, ply in ipairs( players ) do
+        local nextIdle = nextSpectateIdleCheck[ply] or 0
+        if nextIdle < CurTime() then
+            DoKeyPressSpectateSwitch( ply, 0 )
+
+        end
+    end
+end )
 
 function GM:SpectateOverrides( ply, mode )
     local placing = ply.ghostEnt
@@ -571,10 +607,18 @@ end
 
 GM.waitForSomeoneToLive = nil
 
+hook.Add( "PlayerDeath", "glee_spectatedeadplayers", function( died, _, killer )
+    if not IsValid( killer ) then return end
+    if died == killer then return end
+    died.glee_KillerToSpectate = killer
+
+end )
+
 function GM:PlayerDeathThink( ply )
     if GAMEMODE.canRespawn == false then
         if ply.termHuntTeam ~= GAMEMODE.TEAM_SPECTATE then
             GAMEMODE:spectatifyPlayer( ply )
+
         end
     elseif GAMEMODE.canRespawn == true or ply.overrideSpawnAction then
         local lastForced = ply.nextForcedRespawn or 0
@@ -903,16 +947,21 @@ end )
 
 hook.Add( "glee_sv_validgmthink", "glee_cachenavareas", function( players )
     for _, ply in ipairs( players ) do
-        ply:CacheNavArea()
+        if ply:Health() > 0 then
+            ply:CacheNavArea()
 
+        end
     end
 end )
 
 function GM:HasHomicided( homicider, homicided )
     local allHomicides = GAMEMODE.roundExtraData.homicides or {}
+    -- breaks on bots!
+    -- all bots have same steamid!
     local homicidersCides = allHomicides[ homicider:SteamID() ]
     if not homicidersCides then return false end
     if homicidersCides[ homicided:SteamID() ] then return true end
+    return false
 
 end
 

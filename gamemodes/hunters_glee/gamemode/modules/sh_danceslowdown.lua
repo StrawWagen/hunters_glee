@@ -12,11 +12,10 @@ hook.Add( "StartCommand", "glee_dancingnoattack", function( ply, cmd )
 end )
 
 if SERVER then
-
     local plyMeta = FindMetaTable( "Player" )
 
     function plyMeta:IsPlayingTaunt2()
-        if not self:Alive() then return false end
+        if not self:Alive() then return end
         return self.glee_IsDancin or self:IsPlayingTaunt()
 
     end
@@ -53,7 +52,7 @@ else
     local plyMeta = FindMetaTable( "Player" )
 
     function plyMeta:IsPlayingTaunt2()
-        if not self:Alive() then return false end
+        if not self:Alive() then return end
         local isForcedDance = ( self:GetNW2Bool( "glee_isdancing", false ) and self:GetNW2Int( "glee_stopsdancing" ) > CurTime() )
         return isForcedDance or self:IsPlayingTaunt()
 

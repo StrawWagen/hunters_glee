@@ -39,7 +39,7 @@ function GM:paintNameAndHealth( trace )
     local y = MouseY
 
     x = x - w / 2
-    y = y + 100
+    y = y + 30
 
     surface.drawShadowedTextBetter( text, font, self:GetTeamColor( trace.Entity ), x, y, false )
 

@@ -1,4 +1,3 @@
--- PROBLEM: maps feel empty because you can't find other people
 
 DeriveGamemode( "base" )
 
@@ -11,21 +10,24 @@ GM.ROUND_LIMBO      = 3 -- just display winners
 
 GM.ISHUNTERSGLEE = true
 
-include( "player_class/player_termrunner.lua" )
-
-include( "sh_shopshared.lua" )
-include( "modules/sh_panic.lua" )
-include( "modules/sh_playerdrowning.lua" )
-include( "modules/sh_detecthunterkills.lua" )
-include( "modules/sh_tempbools.lua" )
-include( "modules/sh_banking.lua" )
-include( "modules/sh_danceslowdown.lua" )
-include( "modules/battery/sh_battery.lua" )
-
 GM.Name = "Hunter's Glee"
 GM.Author = "StrawWagen"
 GM.Email = "N/A"
 GM.Website = "N/A"
+
+include( "player_class/player_termrunner.lua" )
+
+include( "sh_shopshared.lua" )
+include( "sh_shopitems.lua" )
+
+include( "modules/sh_panic.lua" )
+include( "modules/sh_banking.lua" )
+include( "modules/sh_tempbools.lua" )
+include( "modules/sh_danceslowdown.lua" )
+include( "modules/sh_playerdrowning.lua" )
+include( "modules/battery/sh_battery.lua" )
+include( "modules/sh_detecthunterkills.lua" )
+include( "modules/sh_fallingwind.lua" )
 
 
 function GM:GetHuntersClass()

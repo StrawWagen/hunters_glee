@@ -26,11 +26,14 @@ local function manageFlashlight( flashlight, me )
         end
     end
 
-    local attData = parent:GetAttachment( flashlight:GetParentAttachment() )
+    local attId = flashlight:GetParentAttachment()
+    if attId <= 0 then return end
+
+    local attData = me:GetAttachment( attId )
     local theFlashlightPos = attData.Pos
     local shoot = me:GetShootPos()
 
-    local negative = -parent:WorldToLocal( theFlashlightPos ) -- this is a stupid hack
+    local negative = -me:WorldToLocal( theFlashlightPos ) -- this is a stupid hack
 
     local traceFromShootToPos = {
         start = shoot,

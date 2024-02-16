@@ -50,11 +50,12 @@ function ENT:GetNearestTarget()
 end
 
 function ENT:CalculateCanPlace()
-    if not IsValid( self:GetCurrTarget() ) then return false, "You have to find a vessel for Homicidal Glee." end
+    local currTarget = self:GetCurrTarget()
+    if not IsValid( currTarget ) then return false, "You have to find a vessel for Homicidal Glee." end
     if self:GetDanceSeq() < 0 then return false, "They're too boring to dance." end -- lol if this happens
-    if self:GetCurrTarget():IsPlayingTaunt2() then return false, "They're already dancing!" end
+    if currTarget:IsPlayingTaunt2() then return false, "They're already dancing!" end
     if self.player.glee_nextHomicidalGleePlace and self.player.glee_nextHomicidalGleePlace > CurTime() then return false, "Wait. It's too soon for you to surface one's Homicidal Glee." end
-    if GAMEMODE.HasHomicided and not GAMEMODE:HasHomicided( self:GetCurrTarget(), self.player ) then return false, "They haven't killed you!" end
+    if GAMEMODE.HasHomicided and not GAMEMODE:HasHomicided( currTarget, self.player ) then return false, "They haven't killed you!" end
     if not self:HasEnoughToPurchase() then return false, self:TooPoorString() end
     return true
 

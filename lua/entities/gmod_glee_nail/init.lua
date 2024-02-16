@@ -137,7 +137,7 @@ hook.Add( "EntityTakeDamage", "nail_break_when_nailed_damaged", function( target
     while damage > 0 and done < 1000 do
         done = done + 1
         -- nail's health, breaks if this roll is less than damage
-        local bite = math.random( 1, 160 )
+        local bite = math.random( 1, 170 )
         tempDamage = damage - bite
         if not target.huntersglee_breakablenails then
             break

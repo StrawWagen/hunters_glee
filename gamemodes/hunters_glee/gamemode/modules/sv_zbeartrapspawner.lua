@@ -118,7 +118,7 @@ hook.Add( "Think", "glee_addbeartrapjobs", function()
     --print( "ADDED" )
     --PrintTable( bearTrapJob )
 
-    nextBearTrapSpawnCheck = CurTime() + 40
+    nextBearTrapSpawnCheck = CurTime() + 60
 
     if mapBearTrapCount > 4 and #navmesh.GetAllNavAreas() < 4000 then
         mapBearTrapCount = math.random( 1, 4 )
