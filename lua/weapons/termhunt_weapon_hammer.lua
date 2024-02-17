@@ -60,7 +60,7 @@ SWEP.SecWallSound                 = ""                           -- Sound when w
 local className = "termhunt_weapon_hammer"
 if CLIENT then
     language.Add( className, SWEP.PrintName )
-    killicon.Add( className, "vgui/hud/killicon/" .. className .. ".png" )
+    killicon.Add( className, "vgui/hud/killicon/" .. className .. ".png", color_white )
 
     function SWEP:HintPostStack()
         local owner = self:GetOwner()

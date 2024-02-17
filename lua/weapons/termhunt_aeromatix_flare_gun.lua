@@ -24,7 +24,7 @@ SWEP.WorldModel         = "models/weapons/w_dkflaregun.mdl"
 local className = "termhunt_aeromatix_flare_gun"
 if CLIENT then
     language.Add( className, SWEP.PrintName )
-    killicon.Add( className, "vgui/hud/killicon/" .. className .. ".png" )
+    killicon.Add( className, "vgui/hud/killicon/" .. className .. ".png", color_white )
     language.Add( "GLEE_FLAREGUN_PLAYER_ammo", "Flare" )
 
 else

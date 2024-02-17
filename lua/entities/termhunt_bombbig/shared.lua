@@ -14,7 +14,7 @@ ENT.Model = "models/gibs/antlion_gib_large_3.mdl"
 local className = "termhunt_bombbig"
 if CLIENT then
     language.Add( className, ENT.PrintName )
-    killicon.Add( className, "vgui/hud/killicon/" .. className .. ".png" )
+    killicon.Add( className, "vgui/hud/killicon/" .. className .. ".png", color_white )
 
 else
     resource.AddSingleFile( "materials/vgui/hud/killicon/" .. className .. ".png" )
