@@ -60,7 +60,7 @@ SWEP.SecWallSound                 = ""                           -- Sound when w
 local className = "termhunt_weapon_hammer"
 if CLIENT then
     language.Add( className, SWEP.PrintName )
-    killicon.Add( className, "vgui/hud/killicon/" .. className .. ".png", color_white )
+    killicon.Add( className, "vgui/hud/killicon/" .. className .. ".vmt", color_white )
 
     function SWEP:HintPostStack()
         local owner = self:GetOwner()
@@ -70,7 +70,7 @@ if CLIENT then
     end
 
 else
-    resource.AddSingleFile( "materials/vgui/hud/killicon/" .. className .. ".png" )
+    resource.AddFile( "materials/vgui/hud/killicon/" .. className .. ".vmt" )
 
     -- these hit sounds are from barricade SWEP
     -- https://steamcommunity.com/sharedfiles/filedetails/?id=2953413221

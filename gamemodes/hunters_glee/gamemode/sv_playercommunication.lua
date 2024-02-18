@@ -117,12 +117,8 @@ local function listenerCanHear( listener, talker )
         if talkerIsSpectator or radioLink then
             return true, false
 
-        -- hearing alive ply
-        elseif listener:GetPos():DistToSqr( talker:GetPos() ) < distToBlockProxy then
-            return true, true
-
         else
-            return false, false
+            return true, false
 
         end
     elseif listenerIsPlaying then

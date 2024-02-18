@@ -1,0 +1,7 @@
+"UnlitGeneric"
+{
+	"$basetexture" "vgui/hud/killicon/termhunt_flare.vtf"
+	"$translucent" 1
+	"$vertexalpha" 1
+	"$vertexcolor" 1
+}

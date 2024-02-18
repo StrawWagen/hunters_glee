@@ -1,9 +1,9 @@
 local maxHuntersAtMinutes = {
     [0] = 2,
     -- these cannot be math.Rand apparently, have to be .random
-    [math.random( 2, 5 )] = 4,
-    [math.random( 6, 10 )] = 6,
-    [math.random( 11, 20 )] = 7,
+    [math.random( 3, 6 )] = 4,
+    [math.random( 7, 11 )] = 6,
+    [math.random( 12, 20 )] = 7,
 
 }
 
@@ -145,6 +145,12 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters", function( _, _, cu
             end
         end
     end
+end )
+
+hook.Add( "PostCleanupMap", "glee_resethunterspawnerstats", function()
+    wasAlive = false
+    -- don't reset minutes added
+
 end )
 
 function GM:spawnHunter( classOverride )

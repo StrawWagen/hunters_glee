@@ -545,6 +545,11 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
     elseif followingThing and currentlySpectating.Health and currentlySpectating:Health() <= 0 then
         stopSpectatingThing( ply )
 
+        if currentlySpectating.glee_KillerToSpectate then
+            spectated = currentlySpectating.glee_KillerToSpectate
+            spectateThing( ply, spectated )
+
+        end
     end
 
     if IsValid( spectated ) then
