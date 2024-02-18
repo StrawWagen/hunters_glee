@@ -33,7 +33,7 @@ SWEP.Secondary.Ammo        = "none"
 if CLIENT then
     language.Add( "termhunt_bombgland", SWEP.PrintName )
     -- use big bomb's kill icon
-    killicon.Add( "termhunt_bombgland", "vgui/hud/killicon/termhunt_bombbig.png", color_white )
+    killicon.Add( "termhunt_bombgland", "vgui/hud/killicon/termhunt_bombbig.vmt", color_white )
     function SWEP:HintPostStack()
         local owner = self:GetOwner()
         local count = self:GetBombs()
