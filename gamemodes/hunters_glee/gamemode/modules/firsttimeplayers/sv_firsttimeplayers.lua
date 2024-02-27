@@ -52,7 +52,7 @@ function GAMEMODE:WaitingForAFirstTimePlayer( players )
     end
 
     for _, ply in ipairs( nonKnowers ) do
-        print( "GLEE: Tutorializing " .. ply )
+        print( "GLEE: Tutorializing ", ply )
         if ply:Glee_FlashlightIsOn() then
             ply:Glee_Flashlight( false )
 
