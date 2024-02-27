@@ -92,7 +92,19 @@
 -- dont respawn next to people you have homicided -- DONE!
 -- does bot over-predict when people juke it towards it --no, done
 
--- pull nails rclick?
+-- pull nails rclick? --NO
+
+-- do intro if 1 player online and its their first time --DONE!
+
+-- fix balls infinite money
+
+-- server-based leaderboard
+-- quickest to 10 skulls
+-- most skulls
+-- flat, most hunter kills
+-- most skulls, additive ( all players skulls in one session, added up )
+
+-- check lag compensation on all npcs
 -- do the los check for bot unstucker
 
 -- each item can have an AND/OR skull cost, skull costs never mark up.
@@ -3111,7 +3123,7 @@ these are here for demonstration, they are defined in shared
 see sh_shopshared.lua for example that shows what every shopitem var does
 
 -- weird ones
-GM.INVALID          = -1 -- tell people to install a navmesh
+GM.ROUND_INVALID    = -1 -- tell people to install a navmesh
 GM.ROUND_SETUP      = 0 -- wait until the navmesh has definitely spawned
 
 -- normal ones

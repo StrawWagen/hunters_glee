@@ -426,7 +426,8 @@ if SERVER then
             return
 
         end
-        local area = navmesh.GetNearestNavArea( myPos, true, navCheckDist, true, true )
+        local area = navmesh.GetNearestNavArea( myPos, true, navCheckDist, false, true )
+
         self.glee_CachedNavArea = area
         if area then
             self.glee_SqrDistToCachedNavArea = myPos:DistToSqr( area:GetClosestPointOnArea( myPos ) )

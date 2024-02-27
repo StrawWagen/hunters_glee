@@ -129,10 +129,12 @@ hook.Add( "Think", "glee_addcratejobs", function()
 
     local time = math.random( 55 * 0.8, 55 * 1.2 )
 
+    -- 6s for the first, second, third, but not fourth crate!
     if ( GAMEMODE.roundExtraData.proceduralCratePlaces % 4 ) ~= 0 then
         time = 6
 
     end
+    -- spawn six crates at start of round
     if GAMEMODE.roundExtraData.proceduralCratePlaces < 6 then
         time = 3
 

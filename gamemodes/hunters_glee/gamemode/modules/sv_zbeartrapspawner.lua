@@ -60,6 +60,13 @@ hook.Add( "Think", "glee_addbeartrapjobs", function()
         -- get nook score, the more nooked the point is, the bigger the score.
         local nookScore = terminator_Extras.GetNookScore( toCheckPos )
 
+        local nearest, distSqr = GAMEMODE:nearestAlivePlayer( toCheckPos )
+        if nearest and distSqr < 750^2 then
+            nookScore = nookScore / 2
+
+        end
+
+        -- dont go in perfect spots!
         if nookScore > 5 then
             nookScore = 0
 

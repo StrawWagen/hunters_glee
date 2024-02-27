@@ -6,6 +6,7 @@ include( "modules/cl_obfuscation.lua" )
 include( "modules/cl_killfeedoverride.lua" )
 include( "modules/cl_spectateflashlight.lua" )
 include( "modules/thirdpersonflashlight/cl_flashlight.lua" )
+include( "modules/firsttimeplayers/cl_firsttimeplayers.lua" )
 
 -- from https://github.com/Facepunch/garrysmod/blob/e189f14c088298ca800136fcfcfaf5d8535b6648/garrysmod/lua/includes/modules/killicon.lua#L202
 local killIconColor = Color( 255, 80, 0, 255 )
@@ -692,7 +693,7 @@ local function genericHints()
             return true, "Death is not the end.\nPress \" " .. string.upper( phrase ) .. " \" to open the shop."
 
         elseif not me.glee_DefinitelyBoughtAnUndeadItem then
-            return true, "Purchase an 'Undead' item. If you earn enough, you can come back."
+            return true, "Purchase an 'Undead' item. If you earn enough, you can REVIVE YOURSELF!."
 
         elseif not me.glee_HasSpectatedSomeone then
             local valid, phrase = GAMEMODE:TranslatedBind( "+attack" )

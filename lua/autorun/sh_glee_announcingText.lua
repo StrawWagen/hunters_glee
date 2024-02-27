@@ -111,7 +111,7 @@ hook.Add( "HUDPaint", "huntersglee_paintannouncetext", function()
 
     end
 
-    -- only block drawing with this so that announcements dont just do nothing inbetween rounds
+    -- only block drawing with this so that announcements time out and stuff
     if GetGlobalBool( "termHuntDisplayWinners", false ) == true then return end
     surface.drawShadowedTextBetter( currAnnouncement, "huntersglee_announcingtext", announcementColor, screenMiddleW, screenMiddleH + -256 )
 

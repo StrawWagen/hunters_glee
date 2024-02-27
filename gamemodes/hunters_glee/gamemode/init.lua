@@ -9,6 +9,8 @@ AddCSLuaFile( "modules/battery/cl_battery.lua" )
 AddCSLuaFile( "modules/bpm/cl_bpm.lua" )
 AddCSLuaFile( "modules/cl_spectateflashlight.lua" )
 AddCSLuaFile( "modules/thirdpersonflashlight/cl_flashlight.lua" )
+AddCSLuaFile( "modules/battery/sh_battery.lua" )
+AddCSLuaFile( "modules/firsttimeplayers/cl_firsttimeplayers.lua" )
 
 AddCSLuaFile( "shoppinggui.lua" )
 
@@ -20,7 +22,6 @@ AddCSLuaFile( "modules/sh_banking.lua" )
 AddCSLuaFile( "modules/sh_tempbools.lua" )
 AddCSLuaFile( "modules/sh_danceslowdown.lua" )
 AddCSLuaFile( "modules/sh_playerdrowning.lua" )
-AddCSLuaFile( "modules/battery/sh_battery.lua" )
 AddCSLuaFile( "modules/sh_detecthunterkills.lua" )
 AddCSLuaFile( "modules/sh_fallingwind.lua" )
 
@@ -42,6 +43,7 @@ include( "modules/sv_zbeartrapspawner.lua" )
 include( "modules/sv_hunterspawner.lua" )
 include( "modules/battery/sv_battery.lua" )
 include( "modules/thirdpersonflashlight/sv_flashlight.lua" )
+include( "modules/firsttimeplayers/sv_firsttimeplayers.lua" )
 
 util.AddNetworkString( "glee_witnesseddeathconfirm" )
 util.AddNetworkString( "glee_resetplayershopcooldowns" )
@@ -153,7 +155,7 @@ function GM:Think()
 
     local displayTime = nil
     local displayName = nil
-    if currState == GAMEMODE.INVALID then
+    if currState == GAMEMODE.ROUND_INVALID then
         if not GAMEMODE.invalidStart then
             GAMEMODE.invalidStart = cur
 
@@ -182,6 +184,7 @@ function GM:Think()
         end
     end
     if currState == GAMEMODE.ROUND_INACTIVE then --round is waiting to begin
+
         if GAMEMODE.termHunt_roundStartTime < cur and GAMEMODE.HuntersGleeDoneTheGreedyPatch then
             GAMEMODE:roundStart() --
             GAMEMODE.isBadSingleplayer = nil --display that message once!
@@ -220,13 +223,14 @@ function GM:Think()
     end
     if currState == GAMEMODE.ROUND_ACTIVE then -- THE HUNT BEGINS
         local aliveCount = GAMEMODE:CountWinnablePlayers()
+        local waitingForAFirstTimePlayer = GAMEMODE:WaitingForAFirstTimePlayer( players )
 
         nobodyAlive = aliveCount == 0
 
         if nobodyAlive then
             GAMEMODE:roundEnd()
 
-        else
+        elseif not waitingForAFirstTimePlayer then
             GAMEMODE.blockpvp   = false
             GAMEMODE.doProxChat = true
             GAMEMODE.canRespawn = false
@@ -576,7 +580,7 @@ end
 
 -- nukes all the hunters if there's nobody to hunt
 function GM:handleEmptyServer( currState, players )
-    if #players == 0 and currState == GAMEMODE.ROUND_ACTIVE then
+    if #players == 0 and ( currState == GAMEMODE.ROUND_ACTIVE or currState == GAMEMODE.ROUND_LIMBO ) then
         -- bots are expensive, save cpu power pls
         print( "Empty server!\nRemoving bots..." )
         GAMEMODE:roundEnd()
@@ -750,7 +754,7 @@ function GM:setupFinish()
     GAMEMODE.termHunt_navmeshCheckTime = math.huge
     local HasNav = GAMEMODE:initDependenciesCheck()
     if HasNav ~= true then
-        GAMEMODE:SetRoundState( GAMEMODE.INVALID )
+        GAMEMODE:SetRoundState( GAMEMODE.ROUND_INVALID )
         GAMEMODE.startedNavmeshGeneration = nil
 
     else

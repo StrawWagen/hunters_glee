@@ -30,6 +30,7 @@ hook.Add( "OnTerminatorKilledRagdoll", "glee_dropterminatorskulls", function( di
     if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
     local newSkull = GAMEMODE:SpawnASkull( died:GetShootPos(), died:GetAimVector():Angle(), true, died )
 
+    -- makes "erm something must have died here" hints better
     newSkull.fromSomethingWitnessable = true
 
 end )
@@ -45,6 +46,7 @@ end )
 
 local persistientSkulls = {}
 
+-- skulls from dead players/terms stick around
 hook.Add( "PreCleanupMap", "glee_savepersistientskulls", function()
     table.Empty( persistientSkulls )
 
@@ -61,8 +63,8 @@ hook.Add( "PreCleanupMap", "glee_savepersistientskulls", function()
     end
 end )
 
--- restore skulls when hunt starts ( no cheeky skulls when setting up! )
 hook.Add( "huntersglee_round_into_active", "glee_loadpersistientskulls", function()
+    -- restore skulls when hunt starts ( no cheeky skulls when setting up! )
     for _, skullTbl in pairs( persistientSkulls ) do
         local skull = ents.Create( "termhunt_skull_pickup" )
         if not IsValid( skull ) then return end
@@ -86,6 +88,7 @@ hook.Add( "huntersglee_round_into_active", "glee_loadpersistientskulls", functio
         end )
     end
 
+    -- skull props!
     for _, skullProp in ipairs( ents.FindByModel( "models/Gibs/HGIBS.mdl" ) ) do
         local class = skullProp:GetClass()
         local goodClass = class == "prop_physics" or class == "prop_dynamic" or class == "gib"
@@ -97,6 +100,8 @@ hook.Add( "huntersglee_round_into_active", "glee_loadpersistientskulls", functio
         SafeRemoveEntity( skullProp )
 
     end
+
+    -- a body, with a skull...?
     for _, skullRagdoll in ipairs( ents.FindByClass( "prop_ragdoll" ) ) do
         local canSkull = glee_RagdollHasASkull( skullRagdoll )
         if canSkull then

@@ -118,6 +118,8 @@ function GM:navPatchingThink( ply )
     if not currArea or not currArea:IsValid() then return end
     -- cant be sure of areas further away than this!
     if distToArea > tooFarDistSqr then return end
+    -- cant see it!
+    if not currArea:IsVisible( plyPos ) then return end
 
     local oldArea = ply.oldPatchingArea
     ply.oldPatchingArea = currArea
@@ -262,8 +264,10 @@ function GM:FindPotentialLinkagesBetweenNavAreaGroups( groups, maxLinksPerGroup 
             if group1Id ~= group2Id and not alreadyDone then -- skip if checking the same group
                 local currGroupLinkages = {} -- create an array to store linkages for each group pair
                 for _, area1 in ipairs( group1 ) do
+                    if not area1:IsValid() then continue end
                     coroutine_yield()
                     for _, area2 in ipairs( group2 ) do
+                        if not area2:IsValid() then continue end
                         -- dont even bother, too far
                         if area1:GetCenter():DistToSqr( area2:GetCenter() ) > distanceToJustIgnore then continue end
                         local dist, checkPos1, checkPos2 = GAMEMODE:connectionDistance( area1, area2 )

@@ -66,6 +66,8 @@ local function TPF_SetupProjectedTexture( ply )
 		end
 		theLight:SetTransmitWithParent( true )
 
+		ply.glee_Thirdperson_Flashlight = theLight
+
 		timer.Simple( 0, function()
 			if not IsValid( ply ) then return end
 			if not ply:Alive() then return end
@@ -81,6 +83,8 @@ local function TPF_RemoveProjectedTexture( ply )
 		SafeRemoveEntity( thrPFlash[ ply ] )
 		thrPFlash[ ply ] = nil
 		if not IsValid( ply ) then return end
+
+		ply.glee_Thirdperson_Flashlight = nil
 
 		timer.Simple( 0, function()
 			if not IsValid( ply ) then return end
@@ -103,7 +107,7 @@ hook.Add( "PreCleanupMap", "glee_flashight_turnoff", function()
 	end
 end )
 
-hook.Add( "PlayerSwitchFlashlight", "TPF_HookFlashlightEnabled", function( ply, state )
+hook.Add( "PlayerSwitchFlashlight", "TPF_HookFlashlightEnabled", function( ply, _ )
 	if not ply:Alive() then return end
 
 	if not IsValid( thrPFlash[ ply ] ) then

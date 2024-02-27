@@ -90,6 +90,20 @@ fontData = {
 }
 surface.CreateFont( "termhuntShopItemSmallerFont", fontData )
 
+function GM:CreateScreenFillingPopup()
+    local filler = vgui.Create( "DFrame" )
+
+    local width, height = glee_sizeScaled( 1920, 1080 )
+
+    filler:SetSize( width, height )
+
+    filler:Center()
+    filler:MakePopup()
+    filler:SetTitle( "" )
+
+    return filler, width, height
+
+end
 
 local LocalPlayer = LocalPlayer
 local draw_RoundedBox = draw.RoundedBox
@@ -118,6 +132,7 @@ LocalPlayer().MAINSSHOPPANEL = LocalPlayer().MAINSSHOPPANEL or nil
 LocalPlayer().MAINSCROLLPANEL = LocalPlayer().MAINSCROLLPANEL or nil
 
 function termHuntCloseTheShop()
+    if not IsValid( LocalPlayer().MAINSSHOPPANEL ) then return end
     LocalPlayer():EmitSound( "doors/wood_stop1.wav", 50, 160, 0.25 )
     LocalPlayer().MAINSSHOPPANEL:Remove()
 
@@ -178,10 +193,27 @@ end
 function termHuntOpenTheShop()
     LocalPlayer():EmitSound( "physics/wood/wood_crate_impact_soft3.wav", 50, 200, 0.45 )
 
-    local shopFrame = vgui.Create( "DFrame" )
+    local shopFrame, _, height = GAMEMODE:CreateScreenFillingPopup()
     LocalPlayer().MAINSSHOPPANEL = shopFrame
 
-    local width, height = glee_sizeScaled( 1920, 1080 )
+
+    local bigTextPadding = height / 180
+    local leftPadding = height / 40
+
+    local whiteIdentifierLineWidth = height / 250 -- the white bar
+    local offsetNextToIdentifier = whiteIdentifierLineWidth * 4
+
+    local scrollWidth = height / 18
+    local shopCategoryWidth, shopCategoryHeight = glee_sizeScaled( 1920, 300 )
+
+
+    shopFrame.titleBarSize = scrollWidth
+    shopFrame.costString = ""
+    shopFrame.costColor = white
+
+    shopFrame:DockPadding( 0, shopFrame.titleBarSize, 0, 0 ) -- the little lighter bar at the top
+    shopFrame:ShowCloseButton( false )
+
 
     local clientsMenuKey = input.LookupBinding( "+menu" )
     clientsMenuKey = input.GetKeyCode( clientsMenuKey )
@@ -251,29 +283,6 @@ function termHuntOpenTheShop()
 
     end
 
-    shopFrame:ShowCloseButton( false )
-
-    local bigTextPadding = height / 180
-    local leftPadding = height / 40
-
-    local whiteIdentifierLineWidth = height / 250 -- the white bar
-    local offsetNextToIdentifier = whiteIdentifierLineWidth * 4
-
-    local scrollWidth = height / 18
-
-    local shopCategoryWidth, shopCategoryHeight = glee_sizeScaled( 1920, 300 )
-
-    shopFrame:SetSize( width, height )
-    shopFrame.titleBarSize = scrollWidth
-    shopFrame.costString = ""
-    shopFrame.costColor = white
-
-    shopFrame:DockPadding( 0, shopFrame.titleBarSize, 0, 0 ) -- the little lighter bar at the top
-
-    shopFrame:Center()
-    shopFrame:MakePopup()
-    shopFrame:SetTitle( "" ) -- it's a shop, what else could it be!
-
     shopFrame.Paint = function()
         draw_RoundedBox( 0, 0, 0, shopFrame:GetWide(), shopFrame:GetTall(), Color( 37, 37, 37, 240 ) )
         draw_RoundedBox( 0, 0, 0, shopFrame:GetWide(), shopFrame.titleBarSize, Color( 50, 50, 50, 180 ) )
@@ -305,6 +314,7 @@ function termHuntOpenTheShop()
         draw.DrawText( costString, "termhuntShopScoreFont", currentScoreW + initialPadding, 5, shopFrame.costColor )
 
     end
+
 
     local mainScrollPanel = vgui.Create( "DScrollPanel", shopFrame, MAINSCROLLNAME )
     LocalPlayer().MAINSCROLLPANEL = mainScrollPanel

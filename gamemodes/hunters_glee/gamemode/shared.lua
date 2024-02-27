@@ -2,7 +2,7 @@
 DeriveGamemode( "base" )
 
 -- GLOBALS!
-GM.INVALID          = -1 -- tell people to install a navmesh
+GM.ROUND_INVALID          = -1 -- tell people to install a navmesh
 GM.ROUND_SETUP      = 0 -- wait until the navmesh has definitely spawned
 GM.ROUND_ACTIVE     = 1 -- death has consequences and score can accumulate
 GM.ROUND_INACTIVE   = 2 -- let players run around and prevent death

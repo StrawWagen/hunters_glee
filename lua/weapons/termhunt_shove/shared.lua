@@ -8,7 +8,7 @@ SWEP.DrawCrosshair    = true
 SWEP.DrawWeaponInfoBox = false
 
 SWEP.SlotPos          = 1
-SWEP.Slot             = 1
+SWEP.Slot             = 0
 
 SWEP.Spawnable        = true
 SWEP.AdminSpawnable    = false

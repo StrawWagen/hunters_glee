@@ -1,4 +1,4 @@
-local function setDropWeapons( ply, attacker, _ )
+local function setDropWeapons( ply, _, _ )
     for _, wep in pairs( ply:GetWeapons() ) do
 
         if not ply:CanDropWeaponKeepAmmo( wep ) then continue end
