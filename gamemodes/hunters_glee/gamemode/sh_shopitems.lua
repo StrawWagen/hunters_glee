@@ -96,6 +96,7 @@
 
 -- do intro if 1 player online and its their first time --DONE!
 
+-- overcharged bots throw with sonic boom
 -- fix balls infinite money
 
 -- server-based leaderboard
