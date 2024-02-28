@@ -43,7 +43,7 @@ local function waveIsDead()
 
 end
 
-local waveLength = math.random( 100, 180 )
+local waveLength = math.random( 60, 100 )
 
 local minutesAddedPerDeadWave = math.Rand( 1, 2.5 )
 local deadWaveMinutesAdded = 0

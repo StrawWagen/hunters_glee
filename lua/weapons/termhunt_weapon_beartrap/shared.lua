@@ -212,7 +212,10 @@ function SWEP:Place( tr )
     timer.Simple( 0.5, function()
         if not IsValid( self ) then return end
         if not IsValid( self:GetOwner() ) then return end
+        --- AAAAAHH
+        if not self:GetOwner().SwitchToDefaultWeapon then return end
         self:GetOwner():SwitchToDefaultWeapon()
+        if not self:GetOwner().StripWeapon then return end
         self:GetOwner():StripWeapon( self:GetClass() )
 
     end )

@@ -96,6 +96,7 @@
 
 -- do intro if 1 player online and its their first time --DONE!
 
+-- check brutalist kfc doors
 -- overcharged bots throw with sonic boom
 -- fix balls infinite money
 
@@ -3792,7 +3793,7 @@ local defaultItems = {
         desc = "Resurrect yourself.\nYou will revive next to another living player.\nEven if they're about to die...",
         cost = divineInterventionCost,
         markup = 1,
-        markupPerPurchase = 0.20,
+        markupPerPurchase = 0.30,
         cooldown = divineInterventionCooldown,
         category = "Undead",
         purchaseTimes = {
