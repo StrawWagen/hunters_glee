@@ -585,7 +585,7 @@ function GM:handleEmptyServer( currState, players )
         -- bots are expensive, save cpu power pls
         print( "Empty server!\nRemoving bots..." )
         GAMEMODE:roundEnd()
-        GAMEMODE:RemoveHunters()
+        GAMEMODE:beginSetup()
         return true
 
     elseif #players == 0 then -- empty
@@ -611,7 +611,7 @@ function GM:handleGenerating( currState )
     elseif generating and currState == GAMEMODE.ROUND_ACTIVE then
         print( "Generating navmesh!\nRemoving bots..." )
         GAMEMODE:roundEnd()
-        GAMEMODE:RemoveHunters()
+        GAMEMODE:beginSetup()
         GAMEMODE.biggestNavmeshGroups = nil
         return true
 
