@@ -17,7 +17,19 @@ ENT.PosOffset = Vector( 0, 0, 10 )
 
 if CLIENT then
     function ENT:DoHudStuff()
-        -- no hud stuff
+        if not IsValid( self:GetCurrTarget() ) then return end
+        local screenMiddleW = ScrW() / 2
+        local screenMiddleH = ScrH() / 2
+        local scoreGained = math.Round( self:GetGivenScore() )
+        local scoreString = "They've killed you before.\nTheir Homicidal Glee costs nothing to surface!"
+        if scoreGained < 0 then
+            scoreString = "Cost: " .. tostring( scoreGained )
+
+        end
+
+        surface.SetFont( "scoreGainedOnPlaceFont" )
+        surface.drawShadowedTextBetter( scoreString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
+
     end
 end
 
@@ -55,7 +67,6 @@ function ENT:CalculateCanPlace()
     if self:GetDanceSeq() < 0 then return false, "They're too boring to dance." end -- lol if this happens
     if currTarget:IsPlayingTaunt2() then return false, "They're already dancing!" end
     if self.player.glee_nextHomicidalGleePlace and self.player.glee_nextHomicidalGleePlace > CurTime() then return false, "Wait. It's too soon for you to surface one's Homicidal Glee." end
-    if GAMEMODE.HasHomicided and not GAMEMODE:HasHomicided( currTarget, self.player ) then return false, "They haven't killed you!" end
     if not self:HasEnoughToPurchase() then return false, self:TooPoorString() end
     return true
 
@@ -64,9 +75,29 @@ end
 if not SERVER then return end
 
 function ENT:UpdateGivenScore()
-    if not IsValid( self:GetCurrTarget() ) then return end
-    return 0
+    local currTarget = self:GetCurrTarget()
+    if not IsValid( currTarget ) then return end
+    if GAMEMODE.HasHomicided and GAMEMODE:HasHomicided( currTarget, self.player ) then self:SetGivenScore( 0 ) return end
+
+    self:SetGivenScore( -100 )
+
 end
+
+local happyLines = {
+    "vo/npc/male01/fantastic01.wav",
+    "vo/npc/male01/fantastic02.wav",
+    "vo/npc/male01/finally.wav",
+    "vo/npc/male01/yeah02.wav",
+    "vo/npc/male01/yougotit02.wav",
+
+}
+local cheers = {
+    "vo/coast/odessa/male01/nlo_cheer01.wav",
+    "vo/coast/odessa/male01/nlo_cheer02.wav",
+    "vo/coast/odessa/male01/nlo_cheer03.wav",
+    "vo/coast/odessa/male01/nlo_cheer04.wav",
+
+}
 
 function ENT:Place()
     local dancer = self:GetCurrTarget()
@@ -78,6 +109,25 @@ function ENT:Place()
 
     if not dancer:TauntDance() then return end
 
+    dancer:EmitSound( happyLines[math.random( 1, #happyLines )], 75, math.random( 95, 105 ) )
+    timer.Simple( 1, function()
+        dancer:EmitSound( cheers[math.random( 1, #cheers )], 75, math.random( 95, 105 ) )
+
+    end )
+
+    local timerName = "homicidal_glee_cheering_" .. dancer:GetCreationID()
+
+    timer.Create( timerName, 3, 0, function()
+        -- rage quit!
+        if not IsValid( dancer ) then timer.Remove( timerName ) return end
+        -- F
+        if dancer:Health() < 0 then timer.Remove( timerName ) return end
+        if not dancer:IsPlayingTaunt2() then timer.Remove( timerName ) return end
+
+        dancer:EmitSound( cheers[math.random( 1, #cheers )], 75, math.random( 95, 105 ) )
+
+    end )
+
     self.player.glee_nextHomicidalGleePlace = CurTime() + 15
 
     local plysToAlert = {}
@@ -88,6 +138,28 @@ function ENT:Place()
         end
     end
 
-    huntersGlee_Announce( { dancer }, 10, 10, "You can't help but dance as the HOMICIDAL GLEE\nof killing " .. self.player:Name() .. "\nflashes through your mind..." )
-    huntersGlee_Announce( plysToAlert, 5, 8, dancer:Name() .. " is overcome by their Homicidal Glee." )
+    local score = self:GetGivenScore()
+
+    if self.player.GivePlayerScore and score then
+        self.player:GivePlayerScore( score )
+        GAMEMODE:sendPurchaseConfirm( self.player, score )
+
+    end
+
+    local reason = ""
+    local reasonGlobal = ""
+    if GAMEMODE:HasHomicided( dancer, self.player ) then
+        reason = "You can't help but dance as the HOMICIDAL GLEE\nof killing " .. self.player:Name() .. "\nflashes through your mind..."
+        reasonGlobal = dancer:Name() .. " is overcome by their Homicidal Glee."
+
+    else
+        reason = "You can't help but dance as " .. self.player:Name() .. "\nbrings your HOMICIDAL GLEE to the surface..."
+        reasonGlobal = dancer:Name() .. " is overcome with Homicidal Glee."
+
+    end
+
+
+    huntersGlee_Announce( { dancer }, 10, 10, reason )
+    huntersGlee_Announce( plysToAlert, 5, 8, reasonGlobal )
+
 end

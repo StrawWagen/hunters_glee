@@ -640,21 +640,99 @@ function GM:Bleed( player, extent )
 
 end
 
-function GM:connectionDistance( currArea, otherArea )
-    local currCenter = currArea:GetCenter()
+--funcs for making sure people dont fucking end up in "map teleport rooms"
 
-    local nearestInitial = otherArea:GetClosestPointOnArea( currCenter )
-    local nearestFinal   = currArea:GetClosestPointOnArea( nearestInitial )
-    nearestFinal.z = nearestInitial.z
-    local distTo   = nearestInitial:DistToSqr( nearestFinal )
-    return distTo, nearestFinal, nearestInitial
+local function compareCorners( area, old )
+    local appended
 
+    -- north westy
+    local NWCorner1 = old[0]
+    local NWCorner2 = area:GetCorner( 0 )
+
+    local NWCorner = NWCorner1
+    if NWCorner2.y < NWCorner.y then
+        NWCorner.y = NWCorner2.y
+        NWCorner.z = NWCorner2.z
+        appended = true
+
+    end
+    if NWCorner2.x < NWCorner.x then
+        NWCorner.x = NWCorner2.x
+        NWCorner.z = NWCorner2.z
+        appended = true
+
+    end
+
+    -- find most north easty corner
+    local NECorner1 = old[1]
+    local NECorner2 = area:GetCorner( 1 )
+
+    local NECorner = NECorner1
+    if NECorner2.y < NECorner.y then
+        NECorner.y = NECorner2.y
+        NECorner.z = NECorner2.z
+        appended = true
+
+    end
+    if NECorner2.x > NECorner.x then
+        NECorner.x = NECorner2.x
+        NECorner.z = NECorner2.z
+        appended = true
+
+    end
+
+    -- find most south easty corner
+    local SECorner1 = old[2]
+    local SECorner2 = area:GetCorner( 2 )
+
+    local SECorner = SECorner1
+    if SECorner2.y > SECorner.y then
+        SECorner.y = SECorner2.y
+        SECorner.z = SECorner2.z
+        appended = true
+
+    end
+    if SECorner2.x > SECorner.x then
+        SECorner.x = SECorner2.x
+        SECorner.z = SECorner2.z
+        appended = true
+
+    end
+
+    -- find most south westy corner
+    local SWCorner1 = old[3]
+    local SWCorner2 = area:GetCorner( 3 )
+
+    local SWCorner = SWCorner1
+    if SWCorner2.y > SWCorner.y then
+        SWCorner.y = SWCorner2.y
+        SWCorner.z = SWCorner2.z
+        appended = true
+
+    end
+    if SWCorner2.x < SWCorner.x then
+        SWCorner.x = SWCorner2.x
+        SWCorner.z = SWCorner2.z
+        appended = true
+
+    end
+
+    if appended then
+        local newCorners = {
+            [0] = NWCorner,
+            [1] = NECorner,
+            [2] = SECorner,
+            [3] = SWCorner
+
+        }
+        return true, newCorners
+
+    end
 end
-
---CHATGPT funcs for making sure people dont fucking end up in "map teleport rooms"
 
 function GM:GetConnectedNavAreaGroups( navAreas )
     local groups = {}
+    local groupCorners = {}
 
     -- create a table to keep track of which navareas have been visited
     local visited = {}
@@ -669,106 +747,63 @@ function GM:GetConnectedNavAreaGroups( navAreas )
             -- add the navarea to the group
             table.insert( group, navArea )
 
+            local defaultCorner = navArea:GetCenter()
+            local currBestCorners = {
+                [0] = defaultCorner,
+                [1] = defaultCorner,
+                [2] = defaultCorner,
+                [3] = defaultCorner
+
+            }
+
             -- mark the navarea as visited
             visited[navArea] = true
 
             -- find all connected navareas and add them to the group
             local queue = {}
             table.insert( queue, navArea )
+
             while #queue > 0 do
                 local currentNavArea = table.remove( queue, 1 )
-                for _, connectedNavArea in ipairs( currentNavArea:GetAdjacentAreas() ) do
+                local currentIsLadder = currentNavArea.GetTop
+                for _, connectedNavArea in ipairs( AreaOrLadderGetAdjacentAreas( currentNavArea ) ) do
                     if visited[connectedNavArea] then continue end
-                    local connectedBothWays = connectedNavArea:IsConnected( currentNavArea ) and currentNavArea:IsConnected( connectedNavArea )
-                    if not connectedBothWays then continue end
-                    local eitherIsUnderwater = currentNavArea:IsUnderwater() or connectedNavArea:IsUnderwater()
-                    if math.abs( currentNavArea:ComputeAdjacentConnectionHeightChange( connectedNavArea ) ) > 50 and not eitherIsUnderwater then continue end
-                    -- add the connected navarea to the group
-                    table.insert( group, connectedNavArea )
+                    local handlingLadder = currentIsLadder or connectedNavArea.GetTop
+
+                    if not handlingLadder then
+                        local connectedBothWays = connectedNavArea:IsConnected( currentNavArea ) and currentNavArea:IsConnected( connectedNavArea )
+                        if not connectedBothWays then continue end
+
+                        local eitherIsUnderwater = currentNavArea:IsUnderwater() or connectedNavArea:IsUnderwater()
+                        local tooFarVertical = math.abs( currentNavArea:ComputeAdjacentConnectionHeightChange( connectedNavArea ) ) > 50 and not eitherIsUnderwater
+                        if tooFarVertical then continue end
+
+                    end
 
                     -- mark the connected navarea as visited
                     visited[connectedNavArea] = true
-
                     -- add the connected navarea to the queue to be processed
                     table.insert( queue, connectedNavArea )
+
+                    -- ladders dont go in the groups, just connect them to eachother
+                    if connectedNavArea.GetTop then continue end
+
+                    local didAppend, newBestCorners = compareCorners( connectedNavArea, currBestCorners )
+                    if didAppend then currBestCorners = newBestCorners end
+
+                    -- add the connected navarea to the group
+                    table.insert( group, connectedNavArea )
+
                 end
             end
-
             -- add the group to the list of groups
             table.insert( groups, group )
+            table.insert( groupCorners, currBestCorners )
+
         end
     end
 
-    return groups
-
-end
-
--- loop thru all navarea groups to find the closest navarea to the current group, in every other group.
-  -- specifically...
-  -- for every navarea in every group, check the distance to navareas in every other group with navarea:GetClosestPointOnArea( otherAreasCenter )
-  -- if the distance between the areas is smaller than the last distance, we have the new best distance to return
-  -- at the end, the function should return a table of "navarea pairs" with this structure: linkageData = { linkageDistance = nil, linkageArea1 = nil, linkageArea2 = nil }
-
-function GM:FindPotentialLinkagesBetweenNavAreaGroups( groups, maxLinksPerGroup )
-    local doneGroupPairs = {}
-    local groupLinkages = {}
-    maxLinksPerGroup = maxLinksPerGroup or 5
-
-    local firstGroups = groups
-
-    local biggestGroup = GAMEMODE:GetLargestGroupOfNavareas( groups )
-    if #biggestGroup > 50000 then -- too fat, just do the biggest one
-        firstGroups = { biggestGroup }
-
-    end
-
-    for group1Id, group1 in ipairs( firstGroups ) do
-        for group2Id, group2 in ipairs( groups ) do
-            local biggestCompareGroup = group1Id
-            local smallestCompareGroup = group2Id
-            if #group2 > #group1 then
-                biggestCompareGroup = group2Id
-                smallestCompareGroup = group1Id
-            end
-
-            local key = biggestCompareGroup .. " " .. smallestCompareGroup
-            local alreadyDone = doneGroupPairs[key]
-
-            local quotaSquared = 2500^2
-
-            if group1Id ~= group2Id and not alreadyDone then -- skip if checking the same group
-                local currGroupLinkages = {} -- create an array to store linkages for each group pair
-                for _, area1 in ipairs( group1 ) do
-                    for _, area2 in ipairs( group2 ) do
-                        -- dont even bother, too far
-                        if area1:GetCenter():DistToSqr( area2:GetCenter() ) > quotaSquared then continue end
-                        local dist, checkPos1, checkPos2 = GAMEMODE:connectionDistance( area1, area2 )
-
-                        local linkage = { linkageDistance = dist, linkageArea1 = area1, linkageArea2 = area2, area1Closest = checkPos1, area2Closest = checkPos2 }
-                        table.insert( currGroupLinkages, linkage )
-
-                    end
-                end
-                -- sort linkages by distance in ascending order
-                table.sort( currGroupLinkages, function( a, b ) return a.linkageDistance < b.linkageDistance end )
-
-                local doneCount = 0
-
-                -- only keep the maxLinksPerGroup closest linkages
-                while #currGroupLinkages > maxLinksPerGroup and doneCount < 5000 do
-                    doneCount = doneCount + 1
-                    table.remove( currGroupLinkages )
-                end
-
-                table.Add( groupLinkages, currGroupLinkages )
-
-                doneGroupPairs[key] = true
-
-            end
-        end
-    end
-
-    return groupLinkages
+    return groups, groupCorners
 
 end
 

@@ -98,6 +98,8 @@ hook.Add( "PropBreak", "glee_spawn_rewarding_manhacks", function( _, broken )
         manhack:SetAngles( AngleRand() )
         manhack:Spawn()
 
+        manhack:SetLagCompensated( true )
+
         SafeRemoveEntityDelayed( manhack, 240 )
 
         if broken.glee_manhackcrate_player then

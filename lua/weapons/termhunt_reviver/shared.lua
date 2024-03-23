@@ -169,10 +169,12 @@ function SWEP:ResurrectPly( ply )
 
     ply.unstuckOrigin = self.toResurrectPos
 
-    timer.Simple( 0, function()
+    timer.Simple( 0.1, function()
         if not IsValid( ply ) then return end
-        ply:EmitSound( HealSound, 100, 90, 1, CHAN_STATIC )
-        ply:EmitSound( "ambient/levels/labs/electric_explosion1.wav", 100, 120, 1, CHAN_STATIC, SND_NOFLAGS, 10 )
+        local filterAllPlayers = RecipientFilter()
+        filterAllPlayers:AddAllPlayers()
+        ply:EmitSound( HealSound, 100, 90, 1, CHAN_STATIC, nil, nil, filterAllPlayers )
+        ply:EmitSound( "ambient/levels/labs/electric_explosion1.wav", 100, 120, 1, CHAN_STATIC, nil, 10, filterAllPlayers )
 
     end )
 
@@ -239,7 +241,6 @@ function SWEP:GetViewModelPosition( pos, ang )
 end
 
 function SWEP:Think()
-
     if SERVER then
         local nextRefresh = self.nextRefresh or 0
         if nextRefresh < CurTime() then
@@ -249,33 +250,37 @@ function SWEP:Think()
     end
 
     local resurrecting = self.resurrecting and IsValid( self.toResurrect )
+    local owner = self:GetOwner()
+
     if resurrecting then
         local ent = self.toResurrect
-        local tooFar = self.resurrectStartPos:DistToSqr( self:GetOwner():GetPos() ) > 75^2
-        local keyDown = self:GetOwner():KeyDown( IN_ATTACK )
+        local tooFar = self.resurrectStartPos:DistToSqr( owner:GetPos() ) > 75^2
+        local keyDown = owner:KeyDown( IN_ATTACK )
         local cancel = tooFar or not keyDown or self.toResurrect:Health() > 0
         local done = false
         if cancel then
             done = true
-            self:GetOwner():EmitSound( DenySound, 75, 80 )
-        elseif self.resurrectEnd < CurTime() then
-            self:ResurrectPly( ent )
-            done = true
+            owner:EmitSound( DenySound, 75, 80 )
+
         else
-            local nextSound = self.nextResurrectSound or 0
-            local InvertedDone = math.abs( ( self.resurrectEnd - CurTime() ) - self.ResTime )
+            local progress = generic_WaitForProgressBar( owner, "glee_resurrector", 0.1, 3, nil )
+            if progress >= 100 then
+                self:ResurrectPly( ent )
+                done = true
+            else
+                local nextSound = self.nextResurrectSound or 0
+                local InvertedDone = math.abs( progress - 100 )
 
-            if nextSound < CurTime() then
-                self.nextResurrectSound = CurTime() + math.Rand( 0.5, 0.8 )
-                local ampUp = math.abs( InvertedDone * self.ResTime )
-                local pitch = ampUp + math.random( 80, 90 )
-                self:GetOwner():EmitSound( "Flesh.ImpactSoft", 75, pitch )
+                if nextSound < CurTime() then
+                    self.nextResurrectSound = CurTime() + math.Rand( 0.5, 0.8 )
+                    local ampUp = math.abs( InvertedDone * self.ResTime )
+                    local pitch = ampUp + math.random( 80, 90 )
+                    owner:EmitSound( "Flesh.ImpactSoft", 75, pitch )
 
+                end
+                local PercentDone = InvertedDone / self.ResTime
+                PercentDone = math.Round( PercentDone * 100 )
             end
-            local PercentDone = InvertedDone / self.ResTime
-            PercentDone = math.Round( PercentDone * 100 )
-
-            self:SetNWInt( "RevivingPercent", PercentDone )
         end
         if done == true then
             self.resurrectingLoop:Stop()
@@ -288,7 +293,7 @@ function SWEP:Think()
         end
     end
     if not ( self.resurrecting and IsValid( self.toResurrect ) ) then
-        self:GetOwner().blockSwitchingWeaponsReviver = nil
+        owner.blockSwitchingWeaponsReviver = nil
     end
 end
 
@@ -368,7 +373,7 @@ local function PaintBoxOnPlayer( data )
 
     local max = 1000
     local alpha = math.abs( math.Clamp( data.pos:Distance( LocalPlayer():GetPos() ), 400, max ) - max ) * 0.8
-    alpha = math.Clamp( alpha, 100, 255 )
+    alpha = math.Clamp( alpha, 120, 255 )
     local newFadedRed = ColorAlpha( fadedRed, alpha )
     surface.SetDrawColor( newFadedRed )
     surface.DrawOutlinedRect( x, y, 100, 100, 10 )
@@ -397,51 +402,50 @@ if CLIENT then
     function SWEP:DrawHUD()
         local doingReviving = self:GetNWBool( "RevivingPly", false )
 
-        if doingReviving then
-            local revivePercent = self:GetNWInt( "RevivingPercent", -1 )
-            PaintProgressBar( revivePercent )
+        if doingReviving then return end
+        local ownerPos = self:GetOwner():GetPos()
+        local nearestDeadPly = nil
+        local deads = self:GetGamemodeDeadPlayerData()
+        table.sort( deads, function( a, b )
+            local dist1 = ownerPos:DistToSqr( a.pos )
+            local dist2 = ownerPos:DistToSqr( b.pos )
+            return dist1 < dist2
+        end )
+        for _, data in ipairs( deads ) do
+            if not IsValid( data.ply ) then continue end
+            if data.ply:Health() > 0 then continue end
+            if not data.pos then continue end
+            nearestDeadPly = data
+            break
 
-        else
-            local ownerPos = self:GetOwner():GetPos()
-            local nearestDeadPly = nil
-            local deads = self:GetGamemodeDeadPlayerData()
-            table.sort( deads, function( a, b )
-                local dist1 = ownerPos:DistToSqr( a.pos )
-                local dist2 = ownerPos:DistToSqr( b.pos )
-                return dist1 < dist2
-            end )
+        end
+        if nearestDeadPly then
+            PaintBoxOnPlayer( nearestDeadPly )
+
+        end
+
+        if not huntersGlee_PaintPlayer then return end
+        local nextPlayersCheck = self.nextPlayersCheck or 0
+        if nextPlayersCheck < CurTime() then
+            self.nextPlayersCheck = CurTime() + 1
+            self.validDeads = {}
+
             for _, data in ipairs( deads ) do
                 if not IsValid( data.ply ) then continue end
+                if data.ply == LocalPlayer() then continue end
                 if data.ply:Health() > 0 then continue end
-                if not data.pos then continue end
-                nearestDeadPly = data
-                break
+                table.insert( self.validDeads, data )
 
             end
-            if nearestDeadPly then
-                PaintBoxOnPlayer( nearestDeadPly )
+        end
+        if self.validDeads then
+            local bail = nil
+            for _, deadDat in ipairs( self.validDeads ) do
+                if bail then break end
+                -- draw one person far away
+                if deadDat.pos:DistToSqr( ownerPos ) > 1000^2 then bail = true end
+                huntersGlee_PaintPlayer( deadDat.ply, deadDat.pos )
 
-            end
-
-            if not huntersGlee_PaintPlayer then return end
-            local nextPlayersCheck = self.nextPlayersCheck or 0
-            if nextPlayersCheck < CurTime() then
-                self.nextPlayersCheck = CurTime() + 1
-                self.validDeads = {}
-
-                for _, data in ipairs( deads ) do
-                    if not IsValid( data.ply ) then continue end
-                    if data.ply == LocalPlayer() then continue end
-                    if data.ply:Health() > 0 then continue end
-                    table.insert( self.validDeads, data )
-
-                end
-            end
-            if self.validDeads then
-                for _, deadDat in ipairs( self.validDeads ) do
-                    huntersGlee_PaintPlayer( deadDat.ply, deadDat.pos )
-
-                end
             end
         end
     end

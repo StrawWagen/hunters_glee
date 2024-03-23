@@ -1,5 +1,5 @@
 
--- z in the filename so its last in alphabetical order lol
+local math_abs = math.abs
 
 local sv_cheats = GetConVar( "sv_cheats" )
 
@@ -80,12 +80,15 @@ if game.IsDedicated() then
 
 end
 
+local currJob
+
 --local nextPrint = 0
 
 hook.Add( "glee_sv_validgmthink", "glee_proceduralspawner", function( _, currState, _ )
     if currState ~= GAMEMODE.ROUND_ACTIVE then return end
 
-    --[[if nextPrint < CurTime() then
+    --[[
+    if nextPrint < CurTime() then
         nextPrint = CurTime() + 1
         local count = #proceduralSpawnerJobs
         print( count )
@@ -93,14 +96,15 @@ hook.Add( "glee_sv_validgmthink", "glee_proceduralspawner", function( _, currSta
             print( proceduralSpawnerJobs[1].jobsName )
 
         end
-    end]]--
+    end
+    ]]--
 
     -- tackle current job
     if currJobCoroutine then
         local startTime = SysTime()
         local good, result = nil, nil
 
-        while math.abs( startTime - SysTime() ) < maxPerf do
+        while math_abs( startTime - SysTime() ) < maxPerf do
             if coroutine.status( currJobCoroutine ) == "dead" then break end
             good, result = coroutine.resume( currJobCoroutine )
 
@@ -158,7 +162,17 @@ hook.Add( "glee_sv_validgmthink", "glee_proceduralspawner", function( _, currSta
     if not currJob.onPosFoundFunction then spawnJobErr( jobsName, "No onPosFoundFunction" ) return end
     -- final function, use to place like crates.
 
+    -- ran when spawn job failed
+    if not currJob.onFailed then currJob.onFailed = function() end end
+
     currJobCoroutine = coroutine.create( function()
+
+        local function failRoutine()
+            currJob:onFailed()
+            coroutine.yield( "done" )
+
+        end
+
         currJob.spawningOrigin = currJob.posFindingOrigin
         local hideFromPlayers = currJob.hideFromPlayers
         local overrideSpawnRadius = currJob.spawnRadius
@@ -185,10 +199,10 @@ hook.Add( "glee_sv_validgmthink", "glee_proceduralspawner", function( _, currSta
         if not navAreas or ( hideFromPlayers and ( #navAreas < defaultMinAreas ) ) then
             -- the job doesnt want us to do this!
             -- bail so the queue isnt held up!
-            if currJob.originIsDefinitive then coroutine.yield( "done" ) spawnJobInfo( jobsName, "Spawn job bailed, definitive origin was too small/invald." ) return end
+            if currJob.originIsDefinitive then failRoutine() spawnJobInfo( jobsName, "Spawn job bailed, definitive origin was too small/invald." ) return end
 
             local hunter = GAMEMODE:aRandomHunter()
-            if not IsValid( hunter ) then coroutine.yield( "done" ) spawnJobInfo( jobsName, "Spawn job bailed, no hunters for origin to fall back to." ) return end
+            if not IsValid( hunter ) then failRoutine() spawnJobInfo( jobsName, "Spawn job bailed, no hunters for origin to fall back to." ) return end
             currJob.spawningOrigin = hunter:GetPos()
 
             navAreas = navmesh.Find( currJob.spawningOrigin, spawnRadius, defaultStepSize, defaultStepSize )
@@ -196,7 +210,7 @@ hook.Add( "glee_sv_validgmthink", "glee_proceduralspawner", function( _, currSta
         end
 
         -- dont spawn off navmesh or in really small isolated rooms/rooftops
-        if not navAreas or ( hideFromPlayers and ( #navAreas < defaultMinAreas ) ) then coroutine.yield( "done" ) spawnJobInfo( jobsName, "Spawn job bailed, origin was too small/invalid." ) return end
+        if not navAreas or ( hideFromPlayers and ( #navAreas < defaultMinAreas ) ) then failRoutine() spawnJobInfo( jobsName, "Spawn job bailed, origin was too small/invalid." ) return end
 
         local areaDistances = {}
         for _, area in ipairs( navAreas ) do
@@ -243,7 +257,7 @@ hook.Add( "glee_sv_validgmthink", "glee_proceduralspawner", function( _, currSta
             end
         end
 
-        if #goodPositions <= 0 then coroutine.yield( "done" ) spawnJobInfo( jobsName, "Spawn job bailed, found no positions to score." ) return end
+        if #goodPositions <= 0 then failRoutine() spawnJobInfo( jobsName, "Spawn job bailed, found no positions to score." ) return end
 
         local scoringFunc = currJob.posScoringFunction
         local budget = currJob.posScoringBudget
@@ -261,16 +275,17 @@ hook.Add( "glee_sv_validgmthink", "glee_proceduralspawner", function( _, currSta
         local bestPositionKey = table.maxn( scoredPositions )
         local bestPosition = scoredPositions[ bestPositionKey ]
 
-        if not bestPosition then coroutine.yield( "done" ) spawnJobInfo( jobsName, "Spawn job bailed, found no best position." ) return end
+        if not bestPosition then failRoutine() spawnJobInfo( jobsName, "Spawn job bailed, found no best position." ) return end
 
-        if hideFromPlayers and aPlayerCanSeePos( bestPosition, false ) then coroutine.yield( "done" ) spawnJobInfo( jobsName, "Spawn job bailed, best pos found was visible to a player." ) return end
+        if hideFromPlayers and aPlayerCanSeePos( bestPosition, false ) then failRoutine() spawnJobInfo( jobsName, "Spawn job bailed, best pos found was visible to a player." ) return end
 
         local foundFunc = currJob.onPosFoundFunction
         local allGood = foundFunc( currJob, bestPosition )
-        if allGood == nil then coroutine.yield( "done" ) spawnJobErr( jobsName, "onPosFoundFunction NEEDS to return TRUE or FALSE to complete job." ) return end
+        if allGood == nil then failRoutine() spawnJobErr( jobsName, "onPosFoundFunction NEEDS to return TRUE or FALSE to complete job." ) return end
 
-        if allGood ~= true then coroutine.yield( "done" ) spawnJobInfo( jobsName, "onPosFoundFunction returned false" ) return end
+        if allGood ~= true then failRoutine() spawnJobInfo( jobsName, "onPosFoundFunction returned false" ) return end
         --debugoverlay.Cross( bestPosition, 100, 100, color_white, true )
+        spawnJobInfo( jobsName, "Spawn job success!" )
         coroutine.yield( "done" )
 
     end )

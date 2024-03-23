@@ -65,10 +65,10 @@ if not SERVER then return end
 function ENT:UpdateGivenScore()
     if not IsValid( self:GetCurrTarget() ) then return end
     if self:GetCurrTarget():IsPlayer() then
-        self:SetGivenScore( -200 )
+        self:SetGivenScore( -300 )
 
     elseif self:GetCurrTarget():IsNextBot() then
-        self:SetGivenScore( -100 )
+        self:SetGivenScore( -200 )
 
     end
 end
@@ -154,7 +154,7 @@ function ENT:Place()
 
     end )
 
-    timer.Create( timerName, 1, 16, function()
+    timer.Create( timerName, 1, 21, function()
         if not IsValid( plyToImmortal ) then immortCancel() return end
         if not plyToImmortal.glee_DamageResistant then immortCancel() return end
         if plyToImmortal:Health() <= 0 then immortCancel() return end

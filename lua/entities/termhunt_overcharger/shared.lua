@@ -65,7 +65,7 @@ if not SERVER then return end
 
 function ENT:UpdateGivenScore()
     if not IsValid( self:GetCurrTarget() ) then self:SetGivenScore( 0 ) return end
-    self:SetGivenScore( -400 )
+    self:SetGivenScore( -450 )
 end
 
 function ENT:Place()

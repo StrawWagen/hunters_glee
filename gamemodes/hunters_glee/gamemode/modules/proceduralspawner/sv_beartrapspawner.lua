@@ -22,9 +22,8 @@ end
 
 local vec_down = Vector( 0, 0, -1 )
 
-hook.Add( "Think", "glee_addbeartrapjobs", function()
+hook.Add( "glee_sv_validgmthink_active", "glee_addbeartrapjobs", function()
     if nextBearTrapSpawnCheck > CurTime() then return end
-    if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then nextBearTrapSpawnCheck = CurTime() + 15 return end
 
     local bearTraps = ents.FindByClass( "termhunt_bear_trap" )
     if #bearTraps >= mapBearTrapCount then nextBearTrapSpawnCheck = CurTime() + 60 return end
@@ -60,6 +59,7 @@ hook.Add( "Think", "glee_addbeartrapjobs", function()
         -- get nook score, the more nooked the point is, the bigger the score.
         local nookScore = terminator_Extras.GetNookScore( toCheckPos )
 
+        -- too close to players!
         local nearest, distSqr = GAMEMODE:nearestAlivePlayer( toCheckPos )
         if nearest and distSqr < 750^2 then
             nookScore = nookScore / 2

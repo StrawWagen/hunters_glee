@@ -1,5 +1,5 @@
 
-DeriveGamemode( "base" )
+DeriveGamemode( "sandbox" )
 
 -- GLOBALS!
 GM.ROUND_INVALID          = -1 -- tell people to install a navmesh
@@ -28,6 +28,7 @@ include( "modules/sh_playerdrowning.lua" )
 include( "modules/battery/sh_battery.lua" )
 include( "modules/sh_detecthunterkills.lua" )
 include( "modules/sh_fallingwind.lua" )
+include( "modules/unsandboxing/sh_unsandboxing.lua" )
 
 
 function GM:GetHuntersClass()

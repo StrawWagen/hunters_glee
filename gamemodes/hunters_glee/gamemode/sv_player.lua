@@ -918,7 +918,7 @@ hook.Add( "EntityTakeDamage", "huntersglee_makepvpreallybad", function( dmgTarg,
     local inflictor = dmg:GetInflictor()
     local areBothPlayers = dmgTarg:IsPlayer() and attacker:IsPlayer()
     local selfDamage = dmgTarg == attacker
-    if areBothPlayers and GAMEMODE.blockpvp == true then
+    if areBothPlayers and GAMEMODE.blockPvp == true then
         dmg:ScaleDamage( 0 )
 
     elseif areBothPlayers and not selfDamage and not dmg:IsExplosionDamage() then --lol explode

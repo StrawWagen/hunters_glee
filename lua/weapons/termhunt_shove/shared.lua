@@ -31,11 +31,25 @@ SWEP.Secondary.Automatic   = true
 SWEP.Secondary.Ammo        = "none"
 
 if CLIENT then
+    local shovedBefore = CreateClientConVar( "cl_huntersgleehint_hasshoved", 0, true, false, "Player has shoved before?", 0, 1 )
+    hook.Add( "InitPostEntity", "glee_clreadhints_shove", function()
+        LocalPlayer().glee_DefinitelyShoved = shovedBefore:GetBool()
+
+    end )
+
     function SWEP:HintPostStack()
         local owner = self:GetOwner()
 
-        if not owner:GetNW2Bool( "gleeshove_primaryattacked", false ) then return true, "Primary attack to do a big shove!" end
+        if owner.glee_DefinitelyShoved then return end
+        local nwBool = owner:GetNW2Bool( "gleeshove_primaryattacked", false )
+        if not nwBool then
+            return true, "Primary attack to do a big shove!"
 
+        elseif nwBool then
+            owner.glee_DefinitelyShoved = true
+            RunConsoleCommand( "cl_huntersgleehint_hasshoved", "1" )
+
+        end
     end
 else
     resource.AddFile( "materials/entities/termhunt_shove.png" )

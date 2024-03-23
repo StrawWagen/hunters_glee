@@ -46,11 +46,11 @@ function GM:DoGreedyPatch()
 
     GAMEMODE:speakAsHuntersGlee( "Made " .. breakablePatches .. " New navareas in breakable windows/brushes." )
 
-    local navmeshGroups = GAMEMODE:GetConnectedNavAreaGroups( navmesh.GetAllNavAreas() )
+    local navmeshGroups, groupCorners = GAMEMODE:GetConnectedNavAreaGroups( navmesh.GetAllNavAreas() )
 
     GAMEMODE:speakAsHuntersGlee( "Understanding navmesh..." )
 
-    local potentialLinkages = GAMEMODE:FindPotentialLinkagesBetweenNavAreaGroups( navmeshGroups, nil )
+    local potentialLinkages = GAMEMODE:FindPotentialLinkagesBetweenNavAreaGroups( navmeshGroups, groupCorners, nil )
 
     GAMEMODE:speakAsHuntersGlee( "Patching..." )
 
@@ -161,8 +161,6 @@ function GM:navPatchingThink( ply )
 
 end
 
-local _connDistance = GM.connectionDistance
-
 -- see if the z of start area, to the check areas, is less then criteria
 local function arePlanar( startArea, toCheckAreas, criteria )
     for _, currArea in ipairs( toCheckAreas ) do
@@ -204,14 +202,25 @@ local function goodDist( distTo )
 
 end
 
+local function connectionDistance( currArea, otherArea )
+    local currCenter = currArea:GetCenter()
+
+    local nearestInitial = otherArea:GetClosestPointOnArea( currCenter )
+    local nearestFinal   = currArea:GetClosestPointOnArea( nearestInitial )
+    nearestFinal.z = nearestInitial.z
+    local distToSqr   = nearestInitial:DistToSqr( nearestFinal )
+    return distToSqr, nearestFinal, nearestInitial
+
+end
+
 -- do checks to see if connection from old area to curr area is a good idea, then connect it if so
 function GM:smartConnectionThink( oldArea, currArea, ignorePlanar )
     if oldArea:IsConnected( currArea ) then return end
 
     -- get dist sqr and old area's closest point to curr area
-    local distTo, _, currAreasClosest = _connDistance( _, oldArea, currArea )
+    local distToSqr, _, currAreasClosest = connectionDistance( oldArea, currArea )
 
-    if distTo > 55^2 and not goodDist( distTo ) then return end
+    if distToSqr > 55^2 and not goodDist( distToSqr ) then return end
 
     local pos1 = oldArea:GetClosestPointOnArea( currAreasClosest )
     local pos2 = currArea:GetClosestPointOnArea( pos1 )
@@ -234,26 +243,181 @@ function GM:smartConnectionThink( oldArea, currArea, ignorePlanar )
 
 end
 
+local vec_zero = Vector( 0, 0, 0 )
+local IsValid = IsValid
+
 -- loop thru all navarea groups to find the closest navarea to the current group, in every other group.
   -- specifically...
   -- for every navarea in every group, check the distance to navareas in every other group with navarea:GetClosestPointOnArea( otherAreasCenter )
   -- if the distance between the areas is smaller than the last distance, we have the new best distance to return
   -- at the end, the function should return a table of "navarea pairs" with this structure: linkageData = { linkageDistance = nil, linkageArea1 = nil, linkageArea2 = nil }
 
+local distanceToJustIgnore = 750
+local distanceToJustIgnoreSqr = distanceToJustIgnore^2
+local groupDistToJustIgnore = ( distanceToJustIgnore * 2 )
+local boxSize = Vector( distanceToJustIgnore, distanceToJustIgnore, distanceToJustIgnore )
 
-local distanceToJustIgnore = 1000^2
+function GM:FindPotentialLinkagesBetweenNavAreaGroups( groups, groupCorners, maxLinksPerGroup )
 
-function GM:FindPotentialLinkagesBetweenNavAreaGroups( groups, maxLinksPerGroup )
-    local doneGroupPairs = {}
+    -- yay! caching!
+    local centers = {}
+    local function areasCenter( area )
+        local currCenter = centers[area]
+        if currCenter then return currCenter end
+        if not IsValid( area ) then return vec_zero end
+        currCenter = area:GetCenter()
+
+        centers[area] = currCenter
+        return currCenter
+
+    end
+
+    local groupCenters = {}
+    local function groupsCenter( groupsId, group )
+        local groupsAveragePos = groupCenters[ groupsId ]
+        if groupsAveragePos then return groupsAveragePos end
+
+        for _, area in ipairs( group ) do
+            if groupsAveragePos then
+                groupsAveragePos = groupsAveragePos + areasCenter( area )
+
+            else
+                groupsAveragePos = areasCenter( area )
+
+            end
+        end
+
+        if not groupsAveragePos then return vec_zero end
+        groupsAveragePos = groupsAveragePos / #group
+
+        groupCenters[ groupsId ] = groupsAveragePos
+        return groupsAveragePos
+
+    end
+
     local groupLinkages = {}
+    local distToQuitAtSqr = 30^2
+
+    local function addValidLinkages( group1, group2 )
+        local currGroupLinkages = {} -- the potential links to sift through, picks the best ones after
+        -- yahoo! caching!
+        local tooFarAreas = {}
+
+        for _, area1 in ipairs( group1 ) do
+            if not area1:IsValid() then continue end
+            coroutine_yield()
+            local perfectConnectionCount = 0
+
+            for _, area2 in ipairs( group2 ) do
+                if not area2:IsValid() then continue end
+                coroutine_yield()
+
+                local area2sId = area2:GetID()
+
+                -- was cached as too far
+                if tooFarAreas[ area2sId ] then continue end
+
+                local distBetweenSqr = areasCenter( area1 ):DistToSqr( areasCenter( area2 ) )
+
+                -- dont even bother, too far
+                if distBetweenSqr > distanceToJustIgnoreSqr then
+                    tooFarAreas[ area2sId ] = true
+                    local adjAreas = area2:GetAdjacentAreas()
+                    for _, adjArea in ipairs( adjAreas ) do
+                        tooFarAreas[ adjArea:GetID() ] = true
+
+                    end
+                    continue
+
+                end
+                local distToSqr, checkPos1, checkPos2 = connectionDistance( area1, area2 )
+
+                local linkage = { linkageDistance = distToSqr, linkageArea1 = area1, linkageArea2 = area2, area1Closest = checkPos1, area2Closest = checkPos2 }
+                table.insert( currGroupLinkages, linkage )
+
+                if distToSqr < distToQuitAtSqr then
+                    perfectConnectionCount = perfectConnectionCount + 1
+
+                end
+                if perfectConnectionCount > 10 then
+                    break
+
+                end
+            end
+        end
+
+        -- sort linkages by distance in ascending order, best ones first, worst ones last
+        table.sort( currGroupLinkages, function( a, b ) return a.linkageDistance < b.linkageDistance end )
+
+        local doneCount = 0
+
+        -- only keep the maxLinksPerGroup closest linkages
+        while #currGroupLinkages > maxLinksPerGroup and doneCount < 5000 do
+            doneCount = doneCount + 1
+            -- remove the worst linkage
+            local removed = table.remove( currGroupLinkages )
+            -- all the distances left are ideal, not pass
+            if removed.linkageDistance < distToQuitAtSqr then break end
+
+        end
+
+        --for _, link in ipairs( currGroupLinkages ) do
+            --debugoverlay.Line( link.area1Closest, link.area2Closest, 20, color_white, true )
+
+        --end
+
+        table.Add( groupLinkages, currGroupLinkages )
+
+    end
+
+    local doneGroupPairs = {}
+    local miniGroupSize = 15
+
     maxLinksPerGroup = maxLinksPerGroup or 5
 
     for group1Id, group1 in ipairs( groups ) do
+        local group1Size = #group1
+        -- small group! just check proximity, dont waste time checking every pair
+        if group1Size < miniGroupSize then
+            coroutine_yield()
+            local group1Ids = {}
+            for _, area in ipairs( group1 ) do
+                if not IsValid( area ) then continue end
+                group1Ids[ area:GetID() ] = true
+
+            end
+
+            local groups1Center = groupsCenter( group1Id, group1 )
+            local foundInTheBox = navmesh.FindInBox( groups1Center + boxSize, groups1Center - boxSize )
+            local fauxGroup2 = {}
+            for _, found in ipairs( foundInTheBox ) do
+                if not group1Ids[ found:GetID() ] then
+                    table.insert( fauxGroup2, found )
+
+                end
+            end
+
+            if #fauxGroup2 <= 0 then continue end
+
+            addValidLinkages( group1, fauxGroup2 )
+            --print( tostring( group1Id ) .. " " .. tostring( group1Size ), "mini" )
+            continue
+
+        end
+
         for group2Id, group2 in ipairs( groups ) do
             coroutine_yield()
+            -- cant connect a group to itself
+            if group1Id == group2Id then continue end
+
+            local group2Size = #group2
+
+            -- this was already handled, or will be handled!
+            if group2Size < miniGroupSize then continue end
+
             local biggestCompareGroup = group1Id
             local smallestCompareGroup = group2Id
-            if #group2 > #group1 then
+            if group2Size > group1Size then
                 biggestCompareGroup = group2Id
                 smallestCompareGroup = group1Id
             end
@@ -261,39 +425,42 @@ function GM:FindPotentialLinkagesBetweenNavAreaGroups( groups, maxLinksPerGroup 
             local key = biggestCompareGroup .. " " .. smallestCompareGroup
             local alreadyDone = doneGroupPairs[key]
 
-            if group1Id ~= group2Id and not alreadyDone then -- skip if checking the same group
-                local currGroupLinkages = {} -- create an array to store linkages for each group pair
-                for _, area1 in ipairs( group1 ) do
-                    if not area1:IsValid() then continue end
-                    coroutine_yield()
-                    for _, area2 in ipairs( group2 ) do
-                        if not area2:IsValid() then continue end
-                        -- dont even bother, too far
-                        if area1:GetCenter():DistToSqr( area2:GetCenter() ) > distanceToJustIgnore then continue end
-                        local dist, checkPos1, checkPos2 = GAMEMODE:connectionDistance( area1, area2 )
+             -- already checked this group pair!
+            if alreadyDone then continue end
 
-                        local linkage = { linkageDistance = dist, linkageArea1 = area1, linkageArea2 = area2, area1Closest = checkPos1, area2Closest = checkPos2 }
-                        table.insert( currGroupLinkages, linkage )
+            -- ignore groups if they're nowhere near eachother
+            local areCloseEnough
+            local group1sCenter = groupsCenter( group1Id, group1 )
+            local group2sCenter = groupsCenter( group2Id, group2 )
 
+            local group1sCorners = groupCorners[group1Id]
+            local group2sCorners = groupCorners[group2Id]
+            -- check if any two corners are close enough for us to patch these
+            for ind1 = 0, 3 do
+                local cornerOf1 = group1sCorners[ind1]
+                local corner1DistToCenter = cornerOf1:Distance( group1sCenter )
+                for ind2 = 0, 3 do
+                    local cornerOf2 = group2sCorners[ind2]
+                    local corner2DistToCenter = cornerOf2:Distance( group2sCenter )
+                    local distSqr = cornerOf1:DistToSqr( cornerOf2 )
+                    local distNeeded = groupDistToJustIgnore + ( corner1DistToCenter * 0.5 ) + ( corner2DistToCenter * 0.5 )
+                    if distSqr < distNeeded^2 then
+                        areCloseEnough = true
+                        break
                     end
                 end
-                -- sort linkages by distance in ascending order
-                table.sort( currGroupLinkages, function( a, b ) return a.linkageDistance < b.linkageDistance end )
-
-                local doneCount = 0
-
-                -- only keep the maxLinksPerGroup closest linkages
-                while #currGroupLinkages > maxLinksPerGroup and doneCount < 5000 do
-                    doneCount = doneCount + 1
-                    table.remove( currGroupLinkages )
-
+                if areCloseEnough then
+                    break
                 end
-
-                table.Add( groupLinkages, currGroupLinkages )
-
-                doneGroupPairs[key] = true
-
             end
+
+            if not areCloseEnough then continue end
+
+            --print( tostring( group1Id ) .. " " .. tostring( group1Size ), tostring( group2Id ) .. " " .. tostring( group2Size ) )
+            addValidLinkages( group1, group2 )
+
+            doneGroupPairs[key] = true
+
         end
     end
 

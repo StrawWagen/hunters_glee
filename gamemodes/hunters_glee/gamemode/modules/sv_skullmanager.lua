@@ -120,9 +120,8 @@ local offsetFromGround = Vector( 0, 0, 25 )
 local placedAlready = {}
 local mapSkullCount = 4
 
-hook.Add( "Think", "glee_addskulljobs", function()
+hook.Add( "glee_sv_validgmthink_active", "glee_addskulljobs", function()
     if nextSkullSpawnCheck > CurTime() then return end
-    if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then nextSkullSpawnCheck = CurTime() + 15 return end
 
     local skulls = ents.FindByClass( "termhunt_skull_pickup" )
     if #skulls >= mapSkullCount then nextSkullSpawnCheck = CurTime() + 15 return end

@@ -1,6 +1,3 @@
-
--- z in the filename so its last in alphabetical order lol
-
 local plysNeeded = CreateConVar( "huntersglee_proceduralcratesmaxplayers", 8, bit.bor( FCVAR_NOTIFY, FCVAR_ARCHIVE ), "Player count threshold to stop randomly spawning weapon crates", 0, 32 )
 
 
@@ -34,10 +31,9 @@ local CurTime = CurTime
 
 local crates = {}
 
-hook.Add( "Think", "glee_addcratejobs", function()
+hook.Add( "glee_sv_validgmthink_active", "glee_addcratejobs", function()
     if #player.GetAll() > plysNeeded:GetInt() then return end
     if nextCrateSpawn > CurTime() then return end
-    if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then nextCrateSpawn = CurTime() + 15 return end
 
     -- if nothing is happening, spawn a screamer crate early
     if nextCrateMixupSpawn < CurTime() then

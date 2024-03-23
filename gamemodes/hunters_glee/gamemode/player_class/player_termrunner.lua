@@ -308,6 +308,7 @@ if SERVER then
     function meta:checkIfPlyIsStuckAndHandle( overridePos )
 
         local unstuckOrigin = overridePos or self:GetPos()
+        local forward = self:GetAimVector()
         local thePos = nil
 
         local minBound, maxBound = self:GetCollisionBounds()
@@ -376,6 +377,28 @@ if SERVER then
             local traceUp = util.TraceHull( traceDataUp )
 
             if traceUp.Hit or traceUp.StartSolid then continue end
+
+
+            -- another check
+            local displaceCheck = {}
+            -- people tend to look out of the displacement when stuck in one
+            displaceCheck.start = endPos + ( forward * 40 )
+            displaceCheck.endpos = startPos
+            displaceCheck.filter = self
+            displaceCheck.mask = MASK_SOLID_BRUSHONLY
+            displaceCheck.mins = minBound
+            displaceCheck.maxs = maxBound
+
+            local displaceResult = util.TraceHull( displaceCheck )
+
+            if displaceResult.HitTexture == "**displacement**" or displaceResult.StartSolid then continue end
+
+            -- check behind player too
+            displaceCheck.start = endPos + ( -forward * 40 )
+            displaceResult = util.TraceHull( displaceCheck )
+
+            if displaceResult.HitTexture == "**displacement**" or displaceResult.StartSolid then continue end
+
 
             local finalClipCheck = {}
             finalClipCheck.start = unstuckOrigin + terminator_Extras.dirToPos( unstuckOrigin, potentiallyClearPos ) * 35
@@ -450,6 +473,7 @@ if SERVER then
                     ply.glee_basicStuckCount = 0
                     ply:unstuckFullHandle()
                     ply:EmitSound( "physics/rubber/rubber_tire_impact_hard2.wav", 65, math.random( 80, 100 ) )
+                    GAMEMODE:GivePanic( ply, 25 )
 
                     print( "GLEE: unstucking " .. ply:Name() )
 
@@ -458,6 +482,7 @@ if SERVER then
 
                     if basicStuckCount > 10 and not ply.glee_doneUnstuckWarn then
                         ply:EmitSound( "physics/cardboard/cardboard_box_impact_hard6.wav", 65, math.random( 50, 60 ) )
+                        GAMEMODE:GivePanic( ply, 15 )
                         ply.glee_doneUnstuckWarn = true
 
                     end

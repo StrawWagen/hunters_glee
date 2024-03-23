@@ -7,9 +7,9 @@ ENT.Category    = "Other"
 ENT.PrintName   = "DynSupplies Normal"
 ENT.Author      = "StrawWagen"
 ENT.Purpose     = "Drops either armor or medkits"
-ENT.Spawnable    = true
-ENT.Category = "Hunter's Glee"
-ENT.AdminOnly    = false
+ENT.Spawnable   = true
+ENT.Category    = "Hunter's Glee"
+ENT.AdminOnly   = false
 
 -- can't just set a table per-based entity, thanks garry
 function ENT:commonCreationOptions()
@@ -48,6 +48,8 @@ end
 
 ENT.AmmoInsideWeaponsScale = 2
 
+local upOffset = Vector( 0, 0, 5 )
+
 function ENT:Initialize()
     if SERVER then
         self:SetNoDraw( true )
@@ -65,9 +67,17 @@ function ENT:Initialize()
         local count = selected.count or 1
         local class = selected.class
 
-        for _ = 1, count do
+        local randPitch = math.random( -1, 1 ) * 45
+        local myPos = self:GetPos()
+
+        for index = 1, count do
+            local randYaw = math.random( -4, 4 ) * 45
+            local angle = Angle( randPitch, randYaw, 0 )
+            local pos = myPos + upOffset * index
+
             local item = ents.Create( class )
-            item:SetPos( self:GetPos() )
+            item:SetAngles( angle )
+            item:SetPos( pos )
             item:Spawn()
 
             if item:IsWeapon() and GAMEMODE.GiveWeaponClipsOfAmmo then

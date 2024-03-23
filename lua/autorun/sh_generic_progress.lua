@@ -5,13 +5,19 @@ if SERVER then
 
     util.AddNetworkString( "coolprogressbar_start" )
 
-    function generic_WaitForProgressBar( user, id, speed, rate )
+    function generic_WaitForProgressBar( user, id, speed, rate, data )
 
         local progressKey = "progressBar_" .. id .. user:GetCreationID()
         local progressLastUpdateKey = "progressBarUpd_" .. id .. user:GetCreationID()
 
         local exitTheProgressBar = function()
             if not IsValid( user ) then return end
+
+            if data and data.onEnd then
+                data.onEnd( user[ progressKey ] )
+
+            end
+
             user:SetNW2Bool( progressKey, false )
             user:SetNW2Int( progressKey, false )
             user:SetNW2Int( progressLastUpdateKey, 0 )
@@ -22,6 +28,7 @@ if SERVER then
 
         end
 
+        -- start
         if not user:GetNWBool( progressKey, nil ) then
             user:SetNW2Bool( progressKey, true )
 
@@ -43,6 +50,7 @@ if SERVER then
             end )
         end
 
+        -- progressing
         user:SetNW2Int( progressLastUpdateKey, CurTime() )
         local progress = user[ progressKey ] or 0
 

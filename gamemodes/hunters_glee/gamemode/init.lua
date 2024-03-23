@@ -1,3 +1,4 @@
+-- ADDCS
 AddCSLuaFile( "shared.lua" )
 AddCSLuaFile( "cl_init.lua" )
 AddCSLuaFile( "modules/cl_targetid.lua" )
@@ -9,7 +10,6 @@ AddCSLuaFile( "modules/battery/cl_battery.lua" )
 AddCSLuaFile( "modules/bpm/cl_bpm.lua" )
 AddCSLuaFile( "modules/cl_spectateflashlight.lua" )
 AddCSLuaFile( "modules/thirdpersonflashlight/cl_flashlight.lua" )
-AddCSLuaFile( "modules/battery/sh_battery.lua" )
 AddCSLuaFile( "modules/firsttimeplayers/cl_firsttimeplayers.lua" )
 
 AddCSLuaFile( "shoppinggui.lua" )
@@ -17,6 +17,7 @@ AddCSLuaFile( "shoppinggui.lua" )
 AddCSLuaFile( "sh_shopshared.lua" )
 AddCSLuaFile( "sh_shopitems.lua" )
 
+-- SHARED INCLUDES
 AddCSLuaFile( "modules/sh_panic.lua" )
 AddCSLuaFile( "modules/sh_banking.lua" )
 AddCSLuaFile( "modules/sh_tempbools.lua" )
@@ -24,7 +25,10 @@ AddCSLuaFile( "modules/sh_danceslowdown.lua" )
 AddCSLuaFile( "modules/sh_playerdrowning.lua" )
 AddCSLuaFile( "modules/sh_detecthunterkills.lua" )
 AddCSLuaFile( "modules/sh_fallingwind.lua" )
+AddCSLuaFile( "modules/battery/sh_battery.lua" )
+AddCSLuaFile( "modules/unsandboxing/sh_unsandboxing.lua" )
 
+-- SV
 include( "lib/sv_termfuncs.lua" )
 include( "shared.lua" )
 include( "sv_player.lua" )
@@ -35,16 +39,19 @@ include( "modules/sv_navpatcher.lua" )
 include( "modules/sv_doorbash.lua" )
 include( "modules/sv_goomba.lua" )
 include( "modules/sv_mapvote.lua" )
-include( "modules/sv_zcratespawner.lua" )
-include( "modules/sv_zproceduralspawner.lua" )
 include( "modules/sv_weapondropper.lua" )
 include( "modules/sv_seeding_rewarder.lua" )
 include( "modules/sv_skullmanager.lua" )
-include( "modules/sv_zbeartrapspawner.lua" )
 include( "modules/sv_hunterspawner.lua" )
+include( "modules/firsttimeplayers/sv_firsttimeplayers.lua" )
+
 include( "modules/battery/sv_battery.lua" )
 include( "modules/thirdpersonflashlight/sv_flashlight.lua" )
-include( "modules/firsttimeplayers/sv_firsttimeplayers.lua" )
+
+include( "modules/proceduralspawner/sv_proceduralspawner.lua" )
+include( "modules/proceduralspawner/sv_genericspawner.lua" )
+include( "modules/proceduralspawner/sv_cratespawner.lua" )
+include( "modules/proceduralspawner/sv_beartrapspawner.lua" )
 
 util.AddNetworkString( "glee_witnesseddeathconfirm" )
 util.AddNetworkString( "glee_resetplayershopcooldowns" )
@@ -68,6 +75,8 @@ resource.AddSingleFile( "sound/482735__copyc4t__cartoon-long-throw.wav" )
 resource.AddWorkshop( "2848253104" )
 resource.AddWorkshop( "2944078031" )
 
+local GM = GM or GAMEMODE
+
 GM.SpawnTypes = {
     "info_player_deathmatch",
     "info_player_combine",
@@ -84,53 +93,76 @@ GM.SpawnTypes = {
     "info_player_zombie",
 }
 
--- do greedy patch once per session
-GM.HuntersGleeDoneTheGreedyPatch = GM.HuntersGleeDoneTheGreedyPatch or nil
+GM.roundStartAfterNavCheck      = 40
+GM.roundStartNormal             = 40
+GM.IsReallyHuntersGlee          = true
 
-GM.IsReallyHuntersGlee = true
+validNavarea                    = validNavarea or NULL
+GM.startedNavmeshGeneration     = GM.startedNavmeshGeneration or nil
 
-GM.termHunt_roundStartTime = math.huge
-GM.termHunt_roundBegunTime = math.huge
-GM.termHunt_navmeshCheckTime = math.huge
-GM.termHunt_NextThink = math.huge
-validNavarea = validNavarea or NULL
+local CurTime = CurTime
 
-GM.doNotUseMapSpawns    = nil
-GM.hasNavmesh           = nil
-GM.blockpvp             = nil
-GM.canRespawn           = nil
-GM.canScore             = nil
-GM.doProxChat           = nil
-GM.termHunt_hunters     = {}
-GM.deadPlayers          = {}
-GM.roundScore           = {}
-GM.roundExtraData       = {}
+-- gamemode starts up, starts 5 second countdown to navmesh check.
+-- also happens after hard map cleanup
+function GM:TermHuntSetup()
+    -- do greedy patch once per session
+    self.HuntersGleeDoneTheGreedyPatch = self.HuntersGleeDoneTheGreedyPatch or nil
+    self.playerIsWaitingForPatch      = nil
 
-GM.roundStartAfterNavCheck  = 40
-GM.roundStartNormal         = 40
+    self.termHunt_roundStartTime      = math.huge
+    self.termHunt_roundBegunTime      = math.huge
+    self.termHunt_navmeshCheckTime    = math.huge
+    self.termHunt_NextThink           = CurTime()
 
-GM.nextStateTransmit = 0
-GM.startedNavmeshGeneration = nil
+    self.doNotUseMapSpawns            = nil -- used in sv_players
+    self.hasNavmesh                   = nil
+    self.blockPvp                     = nil
+    self.canRespawn                   = nil
+    self.canScore                     = nil
+    self.doProxChat                   = nil --used in playercomms
+    self.termHunt_hunters             = {}
+    self.deadPlayers                  = {}
+    self.roundScore                   = {}
+    self.roundExtraData               = {}
 
-local _CurTime = CurTime
+    self.nextStateTransmit            = 0
+
+    -- just in case!
+    hook.Remove( "Think", "glee_DoGreedyPatchThinkHook" )
+    SetGlobalBool( "termHuntDisplayWinners", false )
+    game.SetTimeScale( 1 )
+
+    for _, ply in ipairs( player.GetAll() ) do
+        ply:ResetScore()
+
+    end
+
+    print( "GLEE: init" )
+    self:SetRoundState( self.ROUND_SETUP )
+    self.termHunt_navmeshCheckTime = CurTime() + 5
+
+    hook.Run( "huntersglee_round_beginsetup" )
+
+end
+
 
 function GM:RoundStateRepeat() -- "fixes" problems with state syncing
-    if GAMEMODE.nextStateTransmit > _CurTime() then return end
+    if GAMEMODE.nextStateTransmit > CurTime() then return end
     GAMEMODE:SetRoundState( GAMEMODE:RoundState() )
-    GAMEMODE.nextStateTransmit = _CurTime() + 1
+    GAMEMODE.nextStateTransmit = CurTime() + 1
 
 end
 
 function GM:SetRoundState( state )
     SetGlobal2Int( "termhunt_roundstate", state )
-    GAMEMODE.nextStateTransmit = _CurTime() + 1
+    GAMEMODE.nextStateTransmit = CurTime() + 1
 
 end
 
 -- gamemode brains
 
 function GM:Think()
-    local cur = _CurTime()
+    local cur = CurTime()
     GAMEMODE:managePlayerSpectating()
     GAMEMODE:manageServersideCountOfBeats()
 
@@ -177,7 +209,7 @@ function GM:Think()
         else
             displayName = "--- "
             displayTime = 0
-            GAMEMODE.blockpvp   = true
+            GAMEMODE.blockPvp   = true
             GAMEMODE.doProxChat = false
             GAMEMODE.canRespawn = true
             GAMEMODE.canScore   = false
@@ -186,16 +218,25 @@ function GM:Think()
     end
     if currState == GAMEMODE.ROUND_INACTIVE then --round is waiting to begin
 
-        if GAMEMODE.termHunt_roundStartTime < cur and GAMEMODE.HuntersGleeDoneTheGreedyPatch then
-            GAMEMODE:roundStart() --
-            GAMEMODE.isBadSingleplayer = nil --display that message once!
+        local doPatchingText = nil
 
+        if GAMEMODE.termHunt_roundStartTime < cur then
+            if GAMEMODE.HuntersGleeDoneTheGreedyPatch then
+                GAMEMODE:roundStart() --
+                GAMEMODE.isBadSingleplayer = nil --display that message once!
+
+            else
+                -- let the patcher be a bit more laggy
+                GAMEMODE.playerIsWaitingForPatch = true
+                doPatchingText = true
+
+            end
         else
             if GAMEMODE.isBadSingleplayer then
                 huntersGlee_Announce( players, 1000, 1, "This gamemode is at it's best when started with at least 2 player slots.\nThat doesn't mean you need 2 people!\nJust click the green \"Single Player\" and choose another option!" )
 
             end
-            GAMEMODE.blockpvp   = true
+            GAMEMODE.blockPvp   = true
             GAMEMODE.doProxChat = false
             GAMEMODE.canRespawn = true
             GAMEMODE.canScore   = false
@@ -203,16 +244,22 @@ function GM:Think()
             hook.Run( "glee_sv_validgmthink_inactive", players, currState, cur )
 
         end
-        displayName = "Getting ready "
-        displayTime = GAMEMODE:getRemaining( GAMEMODE.termHunt_roundStartTime, cur )
+        if doPatchingText then
+            displayName = "Please wait, navmesh is being patched... "
+            displayTime = GAMEMODE:getRemaining( GAMEMODE.termHunt_roundStartTime, cur )
 
+        else
+            displayName = "Getting ready "
+            displayTime = GAMEMODE:getRemaining( GAMEMODE.termHunt_roundStartTime, cur )
+
+        end
     end
     if currState == GAMEMODE.ROUND_LIMBO then --look at what happened during the round
         if GAMEMODE.limboEnd < cur then
             GAMEMODE:beginSetup()
 
         else
-            GAMEMODE.blockpvp   = true
+            GAMEMODE.blockPvp   = true
             GAMEMODE.doProxChat = false
             GAMEMODE.canRespawn = false
             GAMEMODE.canScore   = false
@@ -232,7 +279,7 @@ function GM:Think()
             GAMEMODE:roundEnd()
 
         elseif not waitingForAFirstTimePlayer then
-            GAMEMODE.blockpvp   = false
+            GAMEMODE.blockPvp   = false
             GAMEMODE.doProxChat = true
             GAMEMODE.canRespawn = false
             GAMEMODE.canScore   = true
@@ -283,7 +330,7 @@ function GM:alivePlayersOrAll( plys )
 end
 
 function GM:plysRoundScore( ply )
-    return GAMEMODE.roundScore[ply:GetCreationID()] or 0
+    return self.roundScore[ply:GetCreationID()] or 0
 
 end
 
@@ -291,7 +338,7 @@ function GM:calculateTotalScore()
     local plyFinal = player.GetAll()
     local totalScore = 0
     for _, ply in ipairs( plyFinal ) do
-        local theirScore = GAMEMODE:plysRoundScore( ply )
+        local theirScore = self:plysRoundScore( ply )
         totalScore = totalScore + theirScore
 
     end
@@ -386,8 +433,8 @@ local groupsInPlay = {}
 local correctGroupsCor = nil
 
 local function huntersAreInCorrectGroupsFunc()
-    if getGroupsInPlayCheck < _CurTime() then
-        getGroupsInPlayCheck = _CurTime() + 15
+    if getGroupsInPlayCheck < CurTime() then
+        getGroupsInPlayCheck = CurTime() + 15
         table.Empty( groupsInPlay )
         groupsInPlay = GAMEMODE:GetNavmeshGroupsWithPlayers()
 
@@ -466,9 +513,6 @@ hook.Add( "glee_sv_validgmthink_active", "glee_checkhunters_areinvalidgroups", f
     end
 end )
 
--- remove this if file was saved
-hook.Remove( "Think", "doGreedyPatchThinkHook" )
-
 -- do the navmesh patching
 -- involves adding areas under doors, windows, and then finding sections of navmesh that are separate from the biggest section, then linking them back up to it.
 function GM:SetupTheLargestGroupsNStuff()
@@ -477,7 +521,7 @@ function GM:SetupTheLargestGroupsNStuff()
     self.biggestGroupsRatio = 0.4
     self.GreedyPatchCouroutine = nil
 
-    hook.Add( "Think", "doGreedyPatchThinkHook", function()
+    hook.Add( "Think", "glee_DoGreedyPatchThinkHook", function()
         local patchResult = nil
         if not self.HuntersGleeDoneTheGreedyPatch and not game.SinglePlayer() then
 
@@ -488,8 +532,18 @@ function GM:SetupTheLargestGroupsNStuff()
 
             self.GreedyPatchCouroutine = self.GreedyPatchCouroutine or coroutine.create( self.DoGreedyPatch )
 
+            local maxTime = 0.006
+            -- dedi server can eat the perf
+            if game.IsDedicated() then
+                maxTime = 0.02
+
+            elseif self.playerIsWaitingForPatch then
+                maxTime = 0.012
+
+            end
+
             local oldTime = SysTime()
-            while abs_Local( oldTime - SysTime() ) < 0.01 and self.GreedyPatchCouroutine and coroutine_status( self.GreedyPatchCouroutine ) ~= "dead" do
+            while abs_Local( oldTime - SysTime() ) < maxTime and self.GreedyPatchCouroutine and coroutine_status( self.GreedyPatchCouroutine ) ~= "dead" do
                 patchResult, curError = coroutine_resume( self.GreedyPatchCouroutine, self )
 
                 if curError and curError ~= "done" then ErrorNoHaltWithStack( curError ) break end
@@ -508,7 +562,7 @@ function GM:SetupTheLargestGroupsNStuff()
         -- fix maps with separate spawn rooms w/ teleporters
         self:TeleportRoomCheck()
 
-        hook.Remove( "Think", "doGreedyPatchThinkHook" )
+        hook.Remove( "Think", "glee_DoGreedyPatchThinkHook" )
 
     end )
 end
@@ -605,7 +659,7 @@ function GM:handleGenerating( currState )
     local generating = navmesh_IsGenerating()
 
     -- give the generator a bit of leeway
-    if not generating and navmeshMightBeGeneratingUntil and navmeshMightBeGeneratingUntil > _CurTime() then
+    if not generating and navmeshMightBeGeneratingUntil and navmeshMightBeGeneratingUntil > CurTime() then
         return true
 
     elseif generating and currState == GAMEMODE.ROUND_ACTIVE then
@@ -616,7 +670,7 @@ function GM:handleGenerating( currState )
         return true
 
     elseif generating then
-        navmeshMightBeGeneratingUntil = _CurTime() + 15
+        navmeshMightBeGeneratingUntil = CurTime() + 15
         return true
 
     end
@@ -643,7 +697,7 @@ end
 -- from where people can buy stuff with discounts, to the hunt
 function GM:roundStart()
     GAMEMODE.termHunt_roundStartTime = math.huge
-    GAMEMODE.termHunt_roundBegunTime = _CurTime()
+    GAMEMODE.termHunt_roundBegunTime = CurTime()
     GAMEMODE:SetRoundState( GAMEMODE.ROUND_ACTIVE )
     GAMEMODE.roundScore = nil
     GAMEMODE.roundScore = {}
@@ -659,7 +713,7 @@ function GM:roundStart()
 
     hook.Run( "huntersglee_round_into_active" )
 
-    SetGlobalInt( "huntersglee_round_begin_active", math.Round( _CurTime() ) )
+    SetGlobalInt( "huntersglee_round_begin_active", math.Round( CurTime() ) )
 
 end
 
@@ -667,7 +721,7 @@ end
 function GM:roundEnd()
     local plyCount = #player.GetAll()
     local timeAdd = math.Clamp( plyCount * 0.7, 1, 15 ) -- give time for discussion
-    GAMEMODE.limboEnd = _CurTime() + 18 + timeAdd
+    GAMEMODE.limboEnd = CurTime() + 18 + timeAdd
 
     GAMEMODE.deadPlayers = {}
     GAMEMODE:SetRoundState( GAMEMODE.ROUND_LIMBO )
@@ -713,39 +767,13 @@ function GM:beginSetup()
     GAMEMODE.blockCleanupSetup = nil
 
     SetGlobalBool( "termHuntDisplayWinners", false )
-    GAMEMODE.termHunt_roundStartTime = _CurTime() + GAMEMODE.roundStartNormal
+    GAMEMODE.termHunt_roundStartTime = CurTime() + GAMEMODE.roundStartNormal
     GAMEMODE:SetRoundState( GAMEMODE.ROUND_INACTIVE )
     timer.Simple( 2, function()
         GAMEMODE:TeleportRoomCheck()
     end )
 
     hook.Run( "huntersglee_round_into_inactive" )
-
-end
-
--- gamemode starts up, starts 5 second countdown to navmesh check.
-function GM:TermHuntSetup()
-    GAMEMODE.termHunt_roundStartTime = math.huge
-    GAMEMODE.termHunt_roundBegunTime = math.huge
-    GAMEMODE.termHunt_navmeshCheckTime = math.huge
-    GAMEMODE.termHunt_NextThink = _CurTime() + 0.1
-    GAMEMODE.termHunt_hunters = {}
-    GAMEMODE.roundScore = {}
-    GAMEMODE.roundExtraData = {}
-
-    SetGlobalBool( "termHuntDisplayWinners", false )
-
-    game.SetTimeScale( 1 )
-
-    for _, ply in ipairs( player.GetAll() ) do
-        ply:ResetScore()
-    end
-
-    print( "init" )
-    GAMEMODE:SetRoundState( GAMEMODE.ROUND_SETUP )
-    GAMEMODE.termHunt_navmeshCheckTime = _CurTime() + 5
-
-    hook.Run( "huntersglee_round_beginsetup" )
 
 end
 
@@ -775,11 +803,11 @@ function GM:setupFinish()
 
         end
 
-        GAMEMODE.termHunt_roundStartTime = _CurTime() + time
+        GAMEMODE.termHunt_roundStartTime = CurTime() + time
 
     end
     if game.SinglePlayer() then
-        GAMEMODE.termHunt_roundStartTime = _CurTime() + GAMEMODE.roundStartAfterNavCheck
+        GAMEMODE.termHunt_roundStartTime = CurTime() + GAMEMODE.roundStartAfterNavCheck
         GAMEMODE.isBadSingleplayer = true
 
     end

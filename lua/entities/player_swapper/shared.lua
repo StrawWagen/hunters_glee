@@ -29,10 +29,6 @@ if CLIENT then
         nextNoMoreInversion = CurTime() + 0.1
 
         local toWipe = net.ReadEntity()
-        if IsValid( toWipe ) then
-            toWipe:NukeHighlighter()
-
-        end
 
         if toWipe ~= LocalPlayer().ghostEnt then return end
 
@@ -58,11 +54,6 @@ if CLIENT then
 
     end
 
-    function ENT:NukeHighlighter()
-        SafeRemoveEntity( self.player.placableSnapHighligher )
-
-    end
-
     local greenReal = Color( 0, 255, 0 )
     local redReal = Color( 255, 0, 0 )
     local green = { 0, 255, 0 }
@@ -77,71 +68,55 @@ if CLIENT then
     local hintMatId = surface.GetTextureID( "effects/yellowflare" )
 
     function ENT:HighlightNearestTarget()
-        if not IsValid( self:GetCurrTarget() ) then return end
-        if not IsValid( self.player.placableSnapHighligher ) then
-            self.player.placableSnapHighligher = ClientsideModel( self:GetCurrTarget():GetModel() )
+        local currTarget = self:GetCurrTarget()
+        if not IsValid( currTarget ) then return end
+        cam_Start3D();
 
-            self.player.placableSnapHighligher:Spawn()
-
-        elseif self.lastNearestTarget ~= self:GetCurrTarget() then
-            self.lastNearestTarget = self:GetCurrTarget()
-            self:GetCurrTarget():EmitSound( self.SwapSound, 100, 200 )
-            self.player.placableSnapHighligher:SetParent( self:GetCurrTarget() )
-            self.player.placableSnapHighligher:SetModel( self:GetCurrTarget():GetModel() )
-            self.player.placableSnapHighligher:SetPos( self:GetCurrTarget():GetPos() )
-            self.player.placableSnapHighligher:SetAngles( self:GetCurrTarget():GetAngles() )
-
-        end
-        if IsValid( self.player.placableSnapHighligher ) then
-            cam_Start3D();
-                materialOverride( playerOverrideMat )
-
-                local color = green
-                if not self:GetCanPlace() then
-                    color = red
-
-                end
-
-                setColorModulation( color[1], color[2], color[3] )
-
-                self.player.placableSnapHighligher:DrawModel()
-                materialOverride()
-
-            cam_End3D();
-
-            if not self.DrawOriginHint then return end
-
-            local origin = self:GetCurrTarget():WorldSpaceCenter()
-            local pos2d = origin:ToScreen()
-
-            local size = 100
-
-            local width = size
-            local height = size
-
-            local halfWidth = width / 2
-            local halfHeight = height / 2
-
-            local colorOrigin = greenReal
+            local color = green
             if not self:GetCanPlace() then
-                colorOrigin = redReal
+                color = red
 
             end
 
-            local texturedQuadStructure = {
-                texture = hintMatId,
-                color   = colorOrigin,
-                x 	= pos2d.x + -halfWidth,
-                y 	= pos2d.y + -halfHeight,
-                w 	= width,
-                h 	= height
-            }
+            setColorModulation( color[1], color[2], color[3] )
+            materialOverride( playerOverrideMat )
 
-            cam.Start2D()
-                draw.TexturedQuad( texturedQuadStructure )
-            cam.End2D()
+            currTarget:DrawModel()
+            materialOverride()
+
+        cam_End3D();
+
+        if not self.DrawOriginHint then return end
+
+        local origin = currTarget:WorldSpaceCenter()
+        local pos2d = origin:ToScreen()
+
+        local size = 100
+
+        local width = size
+        local height = size
+
+        local halfWidth = width / 2
+        local halfHeight = height / 2
+
+        local colorOrigin = greenReal
+        if not self:GetCanPlace() then
+            colorOrigin = redReal
 
         end
+
+        local texturedQuadStructure = {
+            texture = hintMatId,
+            color   = colorOrigin,
+            x 	= pos2d.x + -halfWidth,
+            y 	= pos2d.y + -halfHeight,
+            w 	= width,
+            h 	= height
+        }
+
+        cam.Start2D()
+            draw.TexturedQuad( texturedQuadStructure )
+        cam.End2D()
     end
     function ENT:ClientThink()
         self:SetNoDraw( true )
@@ -265,10 +240,10 @@ function ENT:SetupPlayer()
     self.player.placableTargeted = self
     self.player.ghostEnt = self
     if CLIENT and LocalPlayer() == self.player then
-        hook.Add( "PostDrawOpaqueRenderables", "termHuntDrawNearestPlayerSwapper", function()
-            if not IsValid( self ) or not IsValid( self.player ) then hook.Remove( "PostDrawOpaqueRenderables", "termHuntDrawNearestPlayerSwapper" ) return end
-            if self.player ~= LocalPlayer() then hook.Remove( "PostDrawOpaqueRenderables", "termHuntDrawNearestPlayerSwapper" ) return end
-            if not self.player.placableTargeted then self:NukeHighlighter() hook.Remove( "PostDrawOpaqueRenderables", "termHuntDrawNearestPlayerSwapper" ) return end
+        hook.Add( "PostDrawTranslucentRenderables", "termHuntDrawNearestPlayerSwapper", function()
+            if not IsValid( self ) or not IsValid( self.player ) then hook.Remove( "PostDrawTranslucentRenderables", "termHuntDrawNearestPlayerSwapper" ) return end
+            if self.player ~= LocalPlayer() then hook.Remove( "PostDrawTranslucentRenderables", "termHuntDrawNearestPlayerSwapper" ) return end
+            if not self.player.placableTargeted then hook.Remove( "PostDrawTranslucentRenderables", "termHuntDrawNearestPlayerSwapper" ) return end
             self:HighlightNearestTarget()
         end )
     end
@@ -276,7 +251,6 @@ end
 
 function ENT:OnRemove()
     if not CLIENT then return end
-    self:NukeHighlighter()
 
 end
 
@@ -291,7 +265,7 @@ function ENT:TellPlyToClearHighlighter()
 end
 
 function ENT:UpdateGivenScore()
-    self:SetGivenScore( -300 )
+    self:SetGivenScore( -400 )
 
 end
 

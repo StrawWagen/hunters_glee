@@ -154,7 +154,7 @@ local function SparkEffect( SparkPos )
 end
 
 function ENT:UpdateGivenScore()
-    self:SetGivenScore( -450 )
+    self:SetGivenScore( -600 )
 
 end
 
@@ -269,9 +269,9 @@ function ENT:Place()
                 self:EmitSound( "LoudSpark", 90, 100, 1, CHAN_STATIC )
 
             end
-        -- start striking after 120
-        elseif ( divineIncrement > 90 ) and ( divineIncrement < max ) then
-            if math.random( 125, max ) < divineIncrement then return end
+        -- start striking after 80
+        elseif ( divineIncrement > 80 ) and ( divineIncrement < max ) then
+            if math.random( 110, max ) < divineIncrement then return end
             if math.random( 150, max ) < divineIncrement then return end
 
             if math.random( 0, 100 ) >= 40 then return end

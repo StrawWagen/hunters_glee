@@ -31,12 +31,17 @@ local stages = {
     [ 8 ] = "GIVE THEM GLEE!",
 }
 
-net.Receive( "glee_dothefirsttimemessage", function()
+local function doMessageIfWeCan()
+    if not IsValid( LocalPlayer() ) then return end -- erm
     -- double check!
-    if hasSeenMessage:GetBool() then return end
+    if hasSeenMessage:GetBool() then return true end
 
     termHuntCloseTheShop()
-    LocalPlayer():SetDSP( 15, true )
+    -- errored alot...
+    if LocalPlayer().SetDSP then
+        LocalPlayer():SetDSP( 15, true )
+
+    end
 
     local popup, width, height = GAMEMODE:CreateScreenFillingPopup()
 
@@ -47,7 +52,10 @@ net.Receive( "glee_dothefirsttimemessage", function()
 
     popup.oldRemove = popup.Remove
     popup.Remove = function( self )
-        LocalPlayer():SetDSP( 1 )
+        if LocalPlayer().SetDSP then
+            LocalPlayer():SetDSP( 1, true )
+
+        end
         self:oldRemove()
         RunConsoleCommand( "cl_huntersglee_firsttimetutorial", "1" )
 
@@ -143,4 +151,16 @@ net.Receive( "glee_dothefirsttimemessage", function()
         nextStage()
 
     end
+    return true
+
+end
+
+local timerName = "glee_dofirsttimemessage_ensured"
+
+net.Receive( "glee_dothefirsttimemessage", function()
+    timer.Create( timerName, 1, 0, function()
+        -- repeat this until LocalPlayer() is valid and the tutorial is started
+        if doMessageIfWeCan() == true then timer.Remove( timerName ) end
+
+    end )
 end )

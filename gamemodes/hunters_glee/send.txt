@@ -23,7 +23,9 @@ gamemodes\hunters_glee\gamemode\modules\bpm\cl_bpm.lua
 
 gamemodes\hunters_glee\gamemode\modules\thirdpersonflashlight\cl_flashlight.lua
 
-gamemodes\hunters_glee\gamemode\modules/firsttimeplayers/cl_firsttimeplayers.lua
+gamemodes\hunters_glee\gamemode\modules\firsttimeplayers\cl_firsttimeplayers.lua
+
+gamemodes\hunters_glee\gamemode\modules\unsandboxing\sh_unsandboxing.lua
 
 lua\autorun\client\cl_shadowedtextfunc.lua
 lua\autorun\sh_generic_progress.lua

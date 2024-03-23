@@ -79,9 +79,6 @@
 -- revenge/friendly items
 -- curse, "Homicidal Glee" -DONE
     -- undead player buys, can only place on people who killed them, makes them dance -DONE
--- blessing
-    -- crappier version of immortality
-    -- but it lasts like minutes
 
 -- overcharge terminator undead item? -- DONE
 -- bear trap PASS -- DONE!!!
@@ -95,8 +92,15 @@
 -- pull nails rclick? --NO
 
 -- do intro if 1 player online and its their first time --DONE!
+-- check brutalist kfc doors -- DONE
 
--- check brutalist kfc doors
+-- blessing
+    -- crappier version of immortality
+    -- but it lasts like minutes
+
+-- only withdraw/deposit when round is starting / player is dead --done
+-- make all undead evil items cost 2x --doneish
+
 -- overcharged bots throw with sonic boom
 -- fix balls infinite money
 
@@ -2335,11 +2339,11 @@ end
 local function ar2Purchase( purchaser )
     local ar2 = purchaser:GetWeapon( "weapon_ar2" )
     if IsValid( ar2 ) then
-        purchaser:GiveAmmo( 6,    "AR2AltFire",         false )
+        purchaser:GiveAmmo( 4,    "AR2AltFire",         false )
         purchaser:GiveAmmo( 156,   "AR2",         false )
 
     else
-        purchaser:GiveAmmo( 4,    "AR2AltFire",         false )
+        purchaser:GiveAmmo( 2,    "AR2AltFire",         false )
         purchaser:GiveAmmo( 96,   "AR2",         false )
 
         purchaser:Give( "weapon_ar2" )
@@ -2408,6 +2412,35 @@ local function nailerPurchase( purchaser )
 
     end
     loadoutConfirm( purchaser, 1 )
+
+end
+
+
+local loadoutLoadout = {
+    "weapon_pistol",
+    "weapon_shotgun",
+    "weapon_smg1",
+    "weapon_crossbow",
+    "weapon_357",
+
+}
+
+local function loadoutPurchase( purchaser )
+    for _, currWep in ipairs( loadoutLoadout ) do
+        local wep = purchaser:GetWeapon( currWep )
+        if not IsValid( wep ) then
+            wep = purchaser:Give( currWep )
+
+        end
+        if not IsValid( wep ) then continue end
+
+        local wepsAmmo = wep:GetPrimaryAmmoType()
+        local amountOfAmmo = wep:GetMaxClip1() or 1
+        amountOfAmmo = amountOfAmmo * 2
+        purchaser:GiveAmmo( amountOfAmmo, wepsAmmo, true )
+
+    end
+    loadoutConfirm( purchaser, #loadoutLoadout )
 
 end
 
@@ -3130,7 +3163,7 @@ GM.ROUND_SETUP      = 0 -- wait until the navmesh has definitely spawned
 
 -- normal ones
 GM.ROUND_ACTIVE     = 1 -- death has consequences and score can accumulate
-GM.ROUND_INACTIVE   = 2 -- let players run around and prevent death
+GM.ROUND_INACTIVE   = 2 -- let players run around, buy with discounts
 GM.ROUND_LIMBO      = 3 -- just display winners
 
 !!!!SEE sh_shopshared.lua FOR EXAMPLE THAT SHOWS EVERY ITEM VAR'S FUNCTIONALITY!!!!
@@ -3195,6 +3228,22 @@ local defaultItems = {
         purchaseCheck = unUndeadCheck,
         purchaseFunc = flaregunPurchase,
     },
+    [ "guns" ] = {
+        name = "Loadout",
+        desc = "Normal guns.\nNot very useful against metal...",
+        cost = 45,
+        markup = 2,
+        markupPerPurchase = 0.25,
+        cooldown = 5,
+        category = "Items",
+        purchaseTimes = {
+            GM.ROUND_INACTIVE,
+            GM.ROUND_ACTIVE,
+        },
+        weight = -95,
+        purchaseCheck = unUndeadCheck,
+        purchaseFunc = loadoutPurchase,
+    },
     [ "nailer" ] = {
         name = "Nailer",
         desc = "Nail things together!\nNailing is rather loud.",
@@ -3214,7 +3263,7 @@ local defaultItems = {
     -- terminator doesnt like taking damage from this, will save your ass
     [ "ar2" ] = {
         name = "Ar2",
-        desc = "Ar2 + Balls.\nIt takes 3 AR2 balls to kill a terminator.",
+        desc = "Ar2 + Balls.\nIt takes 2 AR2 balls to kill a terminator.",
         cost = 125,
         markup = 1.5,
         markupPerPurchase = 0.35,
@@ -3732,7 +3781,7 @@ local defaultItems = {
     -- people who teamkill get funny consequence
     [ "homicidalglee" ] = {
         name = "Homicidal Glee.",
-        desc = "Place on players who have killed you.\nBrings their Homicidal Glee to the surface...\nCan only be placed every 15 seconds.",
+        desc = "Brings a player's Homicidal Glee to the surface...\nCosts nothing to place, if the player killed you at least once before.\nCan only be placed every 15 seconds.",
         cost = 0,
         markup = 1,
         cooldown = 5,
@@ -3822,7 +3871,7 @@ local defaultItems = {
     [ "termovercharger" ] = {
         name = "Overcharger.",
         desc = "Overcharge a Terminator. Global 3 minute delay between Overcharges.",
-        costDecorative = "-400",
+        costDecorative = "-450",
         cost = 0,
         markup = 1,
         cooldown = 5,
@@ -3838,7 +3887,7 @@ local defaultItems = {
     [ "temporalinversion" ] = {
         name = "Temporal Inversion",
         desc = "Swaps a player out for their most remote enemy.\nGlobal 3 minute delay between placing.",
-        costDecorative = "-300",
+        costDecorative = "-400",
         cost = 0,
         markup = 1,
         cooldown = 5,
@@ -3852,8 +3901,8 @@ local defaultItems = {
     },
     [ "immortalizer" ] = {
         name = "Gift of Immortality",
-        desc = "Gift 15 seconds, of true Immortality.\nCosts 200 to gift to players, 100 to gift to hunters.",
-        costDecorative = "-100/-200",
+        desc = "Gift 20 seconds, of true Immortality.\nCosts 300 to gift to players, 200 to gift to hunters.",
+        costDecorative = "-200/-300",
         cost = 0,
         markup = 1,
         cooldown = 5,
@@ -3869,7 +3918,7 @@ local defaultItems = {
     [ "divineconduit" ] = {
         name = "Divine Conduit",
         desc = "Convey the will of the gods.\nGlobal 4 minute delay between placing.",
-        costDecorative = "-450",
+        costDecorative = "-600",
         cost = 0,
         markup = 1,
         cooldown = 0,
@@ -3885,7 +3934,7 @@ local defaultItems = {
     [ "divinechosen" ] = {
         name = "grigori",
         desc = "The ultimate sacrifice.\nThe gods gift you a fraction of their power, to end the hunt.\nRequires \"Patience\" to run dry.",
-        cost = 1500,
+        cost = 2000,
         markup = 1,
         cooldown = math.huge,
         category = "Undead",

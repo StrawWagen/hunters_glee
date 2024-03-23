@@ -317,7 +317,6 @@ local invisibleColor = Color( 0, 0, 0, 0 )
 local darkRed = Color( 200, 0, 0 )
 local brighterRed = Color( 255, 50, 50 )
 local superScoreColor = Color( 255, 255, 0 )
-local BPMCriteria = 60
 
 local function paintMyTotalScore( ply, cur )
     if not GAMEMODE:CanShowDefaultHud() then return end
@@ -381,7 +380,7 @@ local function paintMyTotalScore( ply, cur )
 
         ply.scoreColorOverride = overrideColor
         ply.resetScoreColorTime = math.max( cur + overrideColorTime, math.Clamp( resetTime + overrideColorTime, 0, cur + 10 ) )
-        ply.scoreDisplayShakeTime = math.max( cur + textShakeTime, scoreDisplayShakeTime + textShakeTime )
+        ply.scoreDisplayShakeTime = math.max( cur + textShakeTime, scoreDisplayShakeTime + textShakeTime / 2 )
         ply.oldDisplayScore = myTotalScore
 
         if difference > 0 then
