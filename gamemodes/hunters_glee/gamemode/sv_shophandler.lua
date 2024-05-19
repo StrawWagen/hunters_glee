@@ -21,6 +21,7 @@ function GM:purchaseItem( ply, toPurchase )
     --print( ply, toPurchase )
     local purchasable, notPurchasableReason = self:canPurchase( ply, toPurchase )
     if not purchasable then
+        if not notPurchasableReason then return end
         ply:PrintMessage( HUD_PRINTTALK, notPurchasableReason )
         return
     end
@@ -100,3 +101,8 @@ function GM:CloseShopOnPly( ply )
     net.Send( ply )
 
 end
+
+concommand.Add( "termhunt_purchase", function( ply, _, args, _ )
+    GAMEMODE:purchaseItem( ply, args[1] )
+
+end )

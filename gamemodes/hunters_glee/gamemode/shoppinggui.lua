@@ -968,7 +968,7 @@ function termHuntOpenTheShop()
             self.pressed = true
 
             if self.purchasable then -- purchasability is also checked on server! no cheesing!
-                RunConsoleCommand( "termhunt_purchase", self.itemIdentifier )
+                RunConsoleCommand( "cl_termhunt_purchase", self.itemIdentifier )
                 self.purchased = true
 
             else

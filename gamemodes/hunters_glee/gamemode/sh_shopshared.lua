@@ -72,6 +72,36 @@ elseif CLIENT then
         LocalPlayer().glee_DefinitelyPurchasedSomething = true
 
     end )
+
+    local function autoComplete( _, stringargs )
+        local items = table.GetKeys( GAMEMODE.shopItems )
+
+        --- Trim the arguments & make them lowercase.
+        stringargs = string.Trim( stringargs:lower() )
+
+        --- Create a new table.
+        local tbl = {}
+        for _, item in pairs( items ) do
+            if item:lower():find( stringargs ) then
+                --- Add the player's name into the auto-complete.
+                theComplete = "cl_termhunt_purchase \"" .. item .. "\""
+                table.insert( tbl, theComplete )
+
+            end
+        end
+        --- Return the table for auto-complete.
+        return tbl
+
+    end
+
+
+    -- ew ew gross formatting
+    concommand.Add( "cl_termhunt_purchase", function( _, _, args, _ )
+        RunConsoleCommand( "termhunt_purchase", args[1] )
+
+    end, autoComplete, "purchase an item" )
+    -- ew ew
+
 end
 
 -- all below is shared
@@ -379,6 +409,7 @@ local REASON_DEBT = "You can't buy this.\nYou're in Debt."
 -- shared!
 
 function GM:canPurchase( ply, toPurchase )
+    if not toPurchase or toPurchase == "" then return end
     local dat = GAMEMODE:GetShopItemData( toPurchase )
     if not dat then GAMEMODE:invalidateShopItem( _, toPurchase ) return false, REASON_INVALID end
 
@@ -462,34 +493,3 @@ function GM:canPurchase( ply, toPurchase )
     return true, ""
 
 end
-
-
-local function autoComplete( _, stringargs )
-    local items = table.GetKeys( GAMEMODE.shopItems )
-
-    --- Trim the arguments & make them lowercase.
-    stringargs = string.Trim( stringargs:lower() )
-
-    --- Create a new table.
-    local tbl = {}
-    for _, item in pairs( items ) do
-        if item:lower():find( stringargs ) then
-            --- Add the player's name into the auto-complete.
-            theComplete = "termhunt_purchase \"" .. item .. "\""
-            table.insert( tbl, theComplete )
-
-        end
-    end
-    --- Return the table for auto-complete.
-    return tbl
-
-end
-
-
--- ew ew gross formatting
-concommand.Add( "termhunt_purchase", function( ply, _, args, _ )
-    if not SERVER then return end
-    GAMEMODE:purchaseItem( ply, args[1] )
-
-end, autoComplete, "purchase an item", FCVAR_NONE )
--- ew ew
