@@ -488,6 +488,7 @@ end
 
 -- ew ew gross formatting
 concommand.Add( "termhunt_purchase", function( ply, _, args, _ )
+    if not SERVER then return end
     GAMEMODE:purchaseItem( ply, args[1] )
 
 end, autoComplete, "purchase an item", FCVAR_NONE )
