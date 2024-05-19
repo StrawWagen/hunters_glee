@@ -60,7 +60,7 @@ SWEP.SecWallSound                 = ""                           -- Sound when w
 local className = "termhunt_weapon_hammer"
 if CLIENT then
     language.Add( className, SWEP.PrintName )
-    killicon.Add( className, "vgui/hud/killicon/" .. className .. ".vmt", color_white )
+    killicon.Add( className, "vgui/hud/killicon/" .. className .. ".png", color_white )
 
     function SWEP:HintPostStack()
         local owner = self:GetOwner()
@@ -70,7 +70,7 @@ if CLIENT then
     end
 
 else
-    resource.AddFile( "materials/vgui/hud/killicon/" .. className .. ".vmt" )
+    resource.AddFile( "materials/vgui/hud/killicon/" .. className .. ".png" )
 
     -- these hit sounds are from barricade SWEP
     -- https://steamcommunity.com/sharedfiles/filedetails/?id=2953413221
@@ -363,13 +363,13 @@ function SWEP:PrimaryAttack()
     -- Client can bail now
     if CLIENT then owner:LagCompensation( false ) return true end
 
-    local vOrigin = trace.HitPos - ( owner:GetAimVector() * 8.0 )
+    local vOrigin = trace.HitPos - ( owner:GetAimVector() * math.random( 4, 6 ) )
     local vDirection = owner:GetAimVector():Angle()
 
     vOrigin = whatWeHit:WorldToLocal( vOrigin )
 
     -- Weld them!
-    local constraint, nail = MakeNail( whatWeHit, secondHit, trace.PhysicsBone, trTwo.PhysicsBone, 50000, vOrigin, vDirection )
+    local constraint, nail = MakeNail( whatWeHit, secondHit, trace.PhysicsBone, trTwo.PhysicsBone, 50000, vOrigin, whatWeHit:WorldToLocalAngles( vDirection ) )
     if not constraint or not constraint:IsValid() then self:BadHit( trace ) owner:LagCompensation( false ) return end
 
     self:SetClip1( math.Clamp( self:Clip1() + -1, 0, math.huge ) )
@@ -444,37 +444,20 @@ end
 
 
 ----------------------------------------------------------------------------------------------------------------|
-function MakeNail( Ent1, Ent2, Bone1, Bone2, forcelimit, Pos, Ang )
+function MakeNail( Ent1, Ent2, Bone1, Bone2, forcelimit, Pos, LocalAng )
 
-    local constraint = constraint.Weld( Ent1, Ent2, Bone1, Bone2, forcelimit, false )
+    local theConstraint = constraint.Weld( Ent1, Ent2, Bone1, Bone2, forcelimit, false )
 
-    if not constraint then return end
+    if not theConstraint then return end
 
-    constraint.Type = "Nail"
-    constraint.Pos = Pos
-    constraint.Ang = Ang
+    theConstraint.Type = "Glee_Nail"
+    theConstraint.Pos = Pos
+    theConstraint.Ang = LocalAng
 
     Pos = Ent1:LocalToWorld( Pos )
 
     local nail = ents.Create( "gmod_glee_nail" )
-    nail:Attach( Pos, Ang, Ent1, Bone1 )
-
-    nail.realConstraint = constraint
-    nail.mainEnt = Ent1
-    nail.secondEnt = Ent2
-
-    local constraintsNails = constraint.huntersGlee_nails or {}
-    table.insert( constraintsNails, nail )
-    constraint.huntersGlee_nails = constraintsNails
-
-    constraint:CallOnRemove( "constraint_removeallmynails", function()
-        if not constraint.huntersGlee_nails then return end
-        for _, currNail in ipairs( constraint.huntersGlee_nails ) do
-            if IsValid( currNail ) then
-                nail:Break()
-            end
-        end
-    end )
+    nail:Attach( Pos, Ent1:LocalToWorldAngles( LocalAng ), Ent1, Bone1, Ent2, theConstraint )
 
     nail:Spawn()
     nail:Activate()
@@ -485,11 +468,11 @@ function MakeNail( Ent1, Ent2, Bone1, Bone2, forcelimit, Pos, Ang )
 
     nail:UpdateConstraints()
 
-    return constraint, nail
+    return theConstraint, nail
 
 end
 
-duplicator.RegisterConstraint( "Nail", MakeNail, "Ent1", "Ent2", "Bone1", "Bone2", "forcelimit", "Pos", "Ang" )
+duplicator.RegisterConstraint( "Glee_Nail", MakeNail, "Ent1", "Ent2", "Bone1", "Bone2", "forcelimit", "Pos", "Ang" )
 
 
 function SWEP:GetCapabilities()

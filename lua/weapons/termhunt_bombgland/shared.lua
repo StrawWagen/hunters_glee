@@ -33,7 +33,7 @@ SWEP.Secondary.Ammo        = "none"
 if CLIENT then
     language.Add( "termhunt_bombgland", SWEP.PrintName )
     -- use big bomb's kill icon
-    killicon.Add( "termhunt_bombgland", "vgui/hud/killicon/termhunt_bombbig.vmt", color_white )
+    killicon.Add( "termhunt_bombgland", "vgui/hud/killicon/termhunt_bombbig.png", color_white )
     function SWEP:HintPostStack()
         local owner = self:GetOwner()
         local count = self:GetBombs()
@@ -176,7 +176,8 @@ function SWEP:Equip()
         if owner.glee_bombExplodeHint then return end
         owner.glee_bombExplodeHint = true
 
-        huntersGlee_Announce( { owner }, 5, 10, "I gotta be careful, bomb gland is unstable..." )
+        if dmg:GetDamage() > 40 then return end
+        huntersGlee_Announce( { owner }, 5, 10, "Ouch! My bombs can't take much more damage!" )
 
     end )
 

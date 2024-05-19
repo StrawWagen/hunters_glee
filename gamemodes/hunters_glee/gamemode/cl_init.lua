@@ -171,6 +171,8 @@ function GM:TranslatedBind( bind )
     if not lookedUp then return end
 
     local keyCode = input.GetKeyCode( lookedUp )
+    -- unbound
+    if not keyCode then return end
 
     local keyName = input.GetKeyName( keyCode )
     local phrase = language.GetPhrase( keyName )
@@ -670,6 +672,7 @@ local function genericHints()
             if not clientsMenuKey then me.openedHuntersGleeShop = true return end
 
             clientsMenuKey = input.GetKeyCode( clientsMenuKey )
+            if not clientsMenuKey then me.openedHuntersGleeShop = true return end
 
             local keyName = input.GetKeyName( clientsMenuKey )
             local phrase = language.GetPhrase( keyName )
@@ -870,7 +873,7 @@ function HUDPaint()
         paintRoundInfo( ply, cur )
         paintMyTotalScore( ply, cur )
         paintMyTotalSkulls( ply, cur )
-        paintFinestPreyEncouragement( ply, cur )
+        --paintFinestPreyEncouragement( ply, cur )
 
         local needsHints, hint = genericHints()
         if needsHints then
@@ -899,6 +902,25 @@ function HUDPaint()
 
 end
 hook.Add( "HUDPaint", "termhunt_playerdisplay", HUDPaint )
+
+-- flash the window on round state change!
+local oldState = nil
+local toFlash = {
+    [GAMEMODE.ROUND_ACTIVE]     = true,
+    [GAMEMODE.ROUND_INACTIVE]   = true,
+    [GAMEMODE.ROUND_LIMBO]      = true,
+}
+
+hook.Add( "Think", "termhunt_alertroundchange", function()
+    local currState = GAMEMODE:RoundState()
+    if oldState == currState then return end
+    oldState = currState
+
+    if not toFlash[currState] then return end
+    if system.HasFocus() then return end
+    system.FlashWindow()
+
+end )
 
 function GM:CanShowDefaultHud()
     local ply = LocalPlayer()

@@ -87,35 +87,6 @@ function GM:purchaseItem( ply, toPurchase )
     end
 end
 
-local function autoComplete( _, stringargs )
-    local items = table.GetKeys( GAMEMODE.shopItems )
-
-    --- Trim the arguments & make them lowercase.
-    stringargs = string.Trim( stringargs:lower() )
-
-    --- Create a new table.
-    local tbl = {}
-    for _, item in pairs( items ) do
-        if item:lower():find( stringargs ) then
-            --- Add the player's name into the auto-complete.
-            theComplete = "termhunt_purchase \"" .. item .. "\""
-            table.insert( tbl, theComplete )
-
-        end
-    end
-    --- Return the table for auto-complete.
-    return tbl
-
-end
-
-
--- ew ew gross formatting
-concommand.Add( "termhunt_purchase", function( ply, _, args, _ )
-    GAMEMODE:purchaseItem( ply, args[1] )
-
-end, autoComplete, "purchase an item", FCVAR_NONE )
--- ew ew
-
 function GM:RefundShopItemCooldown( ply, toPurchase )
     GAMEMODE:noShopCooldown( ply, toPurchase )
     net.Start( "glee_invalidateshopcooldown" )

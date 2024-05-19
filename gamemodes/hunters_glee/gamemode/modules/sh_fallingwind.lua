@@ -12,7 +12,7 @@ if SERVER then
         if not IsValid( ply ) or not ply:IsPlayer() then return end
         if not ply:InVehicle() or not IsValid( ply:GetVehicle() ) then return end
         -- print("sv - sending vehicle speed")
-        net.Start( "fallingwind_sendVehicleSpeed" )
+        net.Start( "glee_fallingwind_sendVehicleSpeed" )
             -- This gets compressed, but since it's a velocity,
             -- it shouldn't matter much
             net.WriteVector( ply:GetVehicle():GetVelocity() )

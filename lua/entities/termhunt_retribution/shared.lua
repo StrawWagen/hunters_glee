@@ -79,7 +79,7 @@ function ENT:UpdateGivenScore()
     if not IsValid( currTarget ) then return end
     if GAMEMODE.HasHomicided and GAMEMODE:HasHomicided( currTarget, self.player ) then self:SetGivenScore( 0 ) return end
 
-    self:SetGivenScore( -100 )
+    self:SetGivenScore( -200 )
 
 end
 

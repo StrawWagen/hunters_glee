@@ -1,18 +1,15 @@
+-- TODO: make this generic and not smelly hard coded
+
 local maxHuntersAtMinutes = {
     [0] = 2,
     -- these cannot be math.Rand apparently, have to be .random
-    [math.random( 3, 6 )] = 4,
-    [math.random( 7, 11 )] = 6,
-    [math.random( 12, 20 )] = 7,
+    [math.random( 6, 10 )] = 4,
+    [math.random( 10, 15 )] = 6,
+    [math.random( 15, 23 )] = 7,
 
 }
 
-local dopplegangerChanceAtMinutes = {
-    [0] = math.Rand( 0, 5 ),
-    [10] = math.Rand( 5, 10 ),
-    [20] = math.Rand( 10, 25 ),
-
-}
+local dopplegangerChance = math.Rand( 0, 2 )
 
 local overchargedChanceAtMinutes = {
     [0] = 0,
@@ -45,14 +42,18 @@ end
 
 local waveLength = math.random( 60, 100 )
 
-local minutesAddedPerDeadWave = math.Rand( 1, 2.5 )
+local minutesAddedPerDeadWave = 5
 local deadWaveMinutesAdded = 0
+
+if math.random( 0, 100 ) < 25 then
+    minutesAddedPerDeadWave = minutesAddedPerDeadWave * math.Rand( 1, 4 )
+
+end
 
 local nextSpawnCheck = 0
 local amntToSpawn = 0
 local nextWave = 0
 local waveSize = 0
-local dopplegangerChance = 0
 local overchargedChance = 0
 
 hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters", function( _, _, cur )
@@ -62,6 +63,8 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters", function( _, _, cu
 
     local dead = waveIsDead()
     local deadAndWasAlive = dead and wasAlive
+
+    local overrideCount = overrideCountVar:GetInt()
 
     wasAlive = not dead
 
@@ -89,16 +92,6 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters", function( _, _, cu
             end
         end
 
-        for minutesNeeded, currChance in pairs( dopplegangerChanceAtMinutes ) do
-            if minutesNeeded <= minutes then
-                dopplegangerChance = currChance
-
-            else
-                break
-
-            end
-        end
-
         for minutesNeeded, currChance in pairs( overchargedChanceAtMinutes ) do
             if minutesNeeded <= minutes then
                 overchargedChance = currChance
@@ -114,37 +107,39 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters", function( _, _, cu
 
         end
 
-        amntToSpawn = waveSize
+        if overrideCount > 0 then
+            amntToSpawn = overrideCount
+            waveSize = overrideCount
+
+        else
+            amntToSpawn = waveSize
+
+        end
 
     end
-
-    local overrideCount = overrideCountVar:GetInt()
 
     local hasSomeToSpawn = amntToSpawn > 0
-    local hasRoomToSpawn = aliveHuntersCount() < math.max( waveSize, overrideCount )
+    local hasRoomToSpawn = aliveHuntersCount() < waveSize
 
-    if hasSomeToSpawn and hasRoomToSpawn then
-        local classOverride = nil
-        if math.random( 0, 100 ) < dopplegangerChance then
-            classOverride = "sb_advanced_nextbot_terminator_hunter_snail_disguised"
+    if not hasSomeToSpawn or not hasRoomToSpawn then return end
+    local classOverride = nil
+    if math.random( 0, 100 ) < dopplegangerChance then
+        classOverride = "sb_advanced_nextbot_terminator_hunter_snail_disguised"
 
-        end
-        local spawned, theHunter = GAMEMODE:spawnHunter( classOverride )
-
-        if spawned and IsValid( theHunter ) then
-            amntToSpawn = math.Clamp( amntToSpawn + -1, 0, math.huge )
-
-            if math.random( 0, 100 ) < overchargedChance then
-                glee_Overcharge( theHunter )
-                local lightning = ents.Create( "glee_lightning" )
-                lightning:SetOwner( theHunter )
-                lightning:SetPos( theHunter:GetPos() )
-                lightning:SetPowa( 12 )
-                lightning:Spawn()
-
-            end
-        end
     end
+    local spawned, theHunter = GAMEMODE:spawnHunter( classOverride )
+
+    if not spawned or not IsValid( theHunter ) then return end
+    amntToSpawn = math.Clamp( amntToSpawn + -1, 0, math.huge )
+
+    if math.random( 0, 100 ) > overchargedChance then return end
+    glee_Overcharge( theHunter )
+    local lightning = ents.Create( "glee_lightning" )
+    lightning:SetOwner( theHunter )
+    lightning:SetPos( theHunter:GetPos() )
+    lightning:SetPowa( 12 )
+    lightning:Spawn()
+
 end )
 
 hook.Add( "PostCleanupMap", "glee_resethunterspawnerstats", function()

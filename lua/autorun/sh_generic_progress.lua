@@ -117,7 +117,7 @@ if CLIENT then
         if LocalPlayer():GetNW2Bool( progressBarId, false ) ~= true then cancelProgressBar() return end
 
         local percent = LocalPlayer():GetNW2Int( progressBarId, 0 )
-        local absed = math.abs( updateSpeed - 1 ) / 65
+        local absed = math.abs( updateSpeed - 1 ) / 50
         local lerped = Lerp( absed, oldPercent, percent + updateRate )
         oldPercent = lerped
         local percentFinal = math.Clamp( lerped, 0, 100 )

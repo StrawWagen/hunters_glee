@@ -138,12 +138,17 @@ function SWEP:Equip()
     end )
 
     hook.Add( "EntityTakeDamage", self.hookId, function( target,dmg )
-        if not IsValid( self ) then hook.Remove( hookId ) return end
-        if not IsValid( self:GetOwner() ) then hook.Remove( hookId ) return end
-        if self:GetOwner():Health() <= 0 then hook.Remove( hookId ) return end
+        if not IsValid( self ) then hook.Remove( "EntityTakeDamage", hookId ) return end
+        local owner = self:GetOwner()
+        if not IsValid( owner ) then hook.Remove( "EntityTakeDamage", hookId ) return end
+        if owner:Health() <= 0 then hook.Remove( "EntityTakeDamage", hookId ) return end
 
-        if target ~= self:GetOwner() then return end
-        local shockingSelf = ( dmg:IsDamageType( DMG_SHOCK ) or dmg:IsExplosionDamage() ) and dmg:GetAttacker() == self:GetOwner()
+        if target ~= owner then return end
+
+        local chosenWeap = owner:GetWeapon( "termhunt_divine_chosen" )
+        if not IsValid( chosenWeap ) then hook.Remove( "EntityTakeDamage", hookId ) return end
+
+        local shockingSelf = ( dmg:IsDamageType( DMG_SHOCK ) or dmg:IsExplosionDamage() ) and dmg:GetAttacker() == owner
         if not shockingSelf then return end
         dmg:ScaleDamage( 0.15 )
         dmg:SetDamageForce( dmg:GetDamageForce() * 40 )
@@ -484,7 +489,7 @@ end
 function SWEP:OnDrop()
     if not SERVER then return end
     self:ShutDown()
-    safeRemoveEntity( self )
+    SafeRemoveEntity( self )
 
 end
 

@@ -4,7 +4,6 @@ function ENT:Draw()
     self:DrawModel()
 end
 
-local nextRecieve = 0
 local SongNames = {
     [0] = "Nothing",
     [1] = "The Innsbruck Experiment",
@@ -60,6 +59,7 @@ local SongNames = {
     [51] = "CSS: Syrian Serenade"
 }
 
+local nextRecieve = 0
 local shopItemColor = Color( 73, 73, 73, 255 )
 
 net.Receive( "OpenSTRadioMenu", function()
@@ -89,10 +89,16 @@ net.Receive( "OpenSTRadioMenu", function()
     end
 
     local clientsMenuKey = input.LookupBinding( "+menu" )
-    clientsMenuKey = input.GetKeyCode( clientsMenuKey )
+    if clientsMenuKey then
+        clientsMenuKey = input.GetKeyCode( clientsMenuKey )
+
+    end
 
     local clientsUseKey = input.LookupBinding( "+use" )
-    clientsUseKey = input.GetKeyCode( clientsUseKey )
+    if clientsUseKey then
+        clientsUseKey = input.GetKeyCode( clientsUseKey )
+
+    end
 
     -- dont stick around!
     function Tuner:OnKeyCodePressed( pressed )

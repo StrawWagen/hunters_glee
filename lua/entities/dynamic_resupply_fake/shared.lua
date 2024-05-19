@@ -32,11 +32,15 @@ ENT.rareCreationChance = 5
 function ENT:rareCreationOptions()
     local tbl = {
         { class = "item_battery", count = 2 },
-        { class = "item_ammo_smg1_grenade", count = 3 },
+        { class = "item_ammo_smg1_grenade", count = 2 },
+        { class = "item_ammo_ar2_altfire" },
+        { class = "item_rpg_round", count = 2 },
+        { class = "termhunt_score_pickup", count = 3 },
         { class = "weapon_frag", count = 4 },
         { class = "weapon_slam", count = 2 },
         { class = "weapon_stunstick" },
         { class = "termhunt_aeromatix_flare_gun" },
+        { class = "termhunt_weapon_beartrap" },
         { class = "weapon_shotgun" },
         { class = "weapon_rpg" },
         { class = "weapon_pistol" }

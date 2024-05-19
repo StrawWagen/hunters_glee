@@ -496,7 +496,7 @@ local function frogLegsPurchase( purchaser )
 
 end
 
-local function mimicMadnessPurchase( purchaser )
+--[[local function mimicMadnessPurchase( purchaser )
     -- We'll use this variable to track whether the player owns the item
     purchaser.hasMimicMadness = true
     purchaser.originalMimicModel = purchaser:GetModel()
@@ -753,7 +753,7 @@ local function mimicMadnessPurchase( purchaser )
     -- The function works even if the var is nil
     GAMEMODE:PutInnateInProperCleanup( timerName, undoInnate, purchaser )
 
-end
+end--]]
 
 local function temporalDiceRollPurchase( purchaser )
     -- We'll use this variable to track whether the player owns the item
@@ -1071,7 +1071,7 @@ local function superiorMetabolismPurchase( purchaser )
 
 end
 
-
+--[[
 local function marathonRunnerPurchase( purchaser )
     local timerName = "marathonRunnerTimer_" .. purchaser:GetClass() .. purchaser:EntIndex()
 
@@ -1164,7 +1164,7 @@ local function marathonRunnerPurchase( purchaser )
     GAMEMODE:PutInnateInProperCleanup( timerName, undoInnate, purchaser )
 
 end
-
+]]--
 
 local function cholesterolPurchase( purchaser )
     local hookName1 = "glee_cholesterol_higherresting_" .. purchaser:GetCreationID()
@@ -1569,9 +1569,9 @@ local function juggernautPurchase( purchaser )
         util.ScreenShake( ply:GetPos(), velLeng / 150, 20, 0.6, velLeng * 1.5 )
 
         local pitch = 60 + ( velLeng / 30 )
-        local volume = 0.2 + ( velLeng / 400 )
+        local volume = 0.2 + ( velLeng / 600 )
         ply:EmitSound( stepSnd, 90, pitch, volume, CHAN_AUTO )
-        ply:EmitSound( "npc/headcrab_poison/ph_wallhit2.wav", 90, math.random( 70,90 ), 0.6, CHAN_STATIC )
+        ply:EmitSound( "npc/headcrab_poison/ph_wallhit2.wav", 90, math.random( 70,90 ), 0.2, CHAN_STATIC )
 
         return true
 
@@ -2626,7 +2626,7 @@ local function conduitPurchase( purchaser, itemIdentifier )
 end
 
 local function divineInterventionCost( purchaser )
-    local cost = 125
+    local cost = 300
     local chosenHasArrived = GetGlobalBool( "chosenhasarrived", false ) == true
     if chosenHasArrived then
         local isChosen = purchaser:GetNW2Bool( "isdivinechosen", false ) == true
@@ -2642,13 +2642,15 @@ local function divineInterventionCost( purchaser )
 
 end
 
+local minTimeBetweenResurrections = 30
+
 local function divineInterventionCooldown( purchaser )
     local isChosen = purchaser:GetNW2Bool( "isdivinechosen", false ) == true
     if isChosen then
         return 0
 
     else
-        return 30
+        return minTimeBetweenResurrections
 
     end
 end
@@ -2696,8 +2698,25 @@ local function divineInterventionPos( purchaser )
 
 end
 
-local function divineIntervention( purchaser )
+if SERVER then
+    hook.Add( "PlayerDeath", "glee_storelastdeathtime", function( died )
+        died:SetNW2Int( "glee_divineintervetion_lastdietime", math.ceil( CurTime() ) )
 
+    end )
+end
+
+local function divineInterventionDeathCooldown( purchaser )
+    local lastDeathTime = purchaser:GetNW2Int( "glee_divineintervetion_lastdietime", 0 )
+    local reviveTime = lastDeathTime + minTimeBetweenResurrections
+    local timeTillRevive = math.abs( reviveTime - CurTime() )
+    timeTillRevive = math.Round( timeTillRevive, 1 )
+
+    if reviveTime > CurTime() then return false, "Death cooldown.\nPurchasable in " .. tostring( timeTillRevive ) .. " seconds." end
+    return true
+
+end
+
+local function divineIntervention( purchaser )
     if not SERVER then return end
     if not purchaser.Resurrect then return end
 
@@ -3204,7 +3223,7 @@ local defaultItems = {
         cost = 60,
         markup = 2,
         markupPerPurchase = 0.25,
-        cooldown = 0.25,
+        cooldown = 0.5,
         category = "Items",
         purchaseTimes = {
             GM.ROUND_INACTIVE,
@@ -3219,7 +3238,7 @@ local defaultItems = {
         cost = 45,
         markup = 1.5,
         markupPerPurchase = 0.25,
-        cooldown = 0.25,
+        cooldown = 0.5,
         category = "Items",
         purchaseTimes = {
             GM.ROUND_INACTIVE,
@@ -3234,7 +3253,7 @@ local defaultItems = {
         cost = 45,
         markup = 2,
         markupPerPurchase = 0.25,
-        cooldown = 5,
+        cooldown = 0.5,
         category = "Items",
         purchaseTimes = {
             GM.ROUND_INACTIVE,
@@ -3250,7 +3269,7 @@ local defaultItems = {
         cost = 45,
         markup = 3,
         markupPerPurchase = 0.25,
-        cooldown = 5,
+        cooldown = 0.5,
         category = "Items",
         purchaseTimes = {
             GM.ROUND_INACTIVE,
@@ -3267,7 +3286,7 @@ local defaultItems = {
         cost = 125,
         markup = 1.5,
         markupPerPurchase = 0.35,
-        cooldown = 5,
+        cooldown = 0.5,
         category = "Items",
         purchaseTimes = {
             GM.ROUND_INACTIVE,
@@ -3300,7 +3319,7 @@ local defaultItems = {
         cost = 60,
         markup = 1.5,
         markupPerPurchase = 0.15,
-        cooldown = 0,
+        cooldown = 0.5,
         category = "Items",
         purchaseTimes = {
             GM.ROUND_INACTIVE,
@@ -3315,7 +3334,7 @@ local defaultItems = {
         desc = "Gravity Gun",
         cost = 60,
         markup = 2,
-        cooldown = 0.25,
+        cooldown = 0.5,
         category = "Items",
         purchaseTimes = {
             GM.ROUND_INACTIVE,
@@ -3328,10 +3347,10 @@ local defaultItems = {
     -- keeps the rounds going
     [ "revivekit" ] = {
         name = "Revive Kit",
-        desc = "Revives dead players.\nYou gain 200 score per resurrection.",
+        desc = "Revives dead players.\nYou gain 300 score per resurrection.",
         cost = 30,
         markup = 1.5,
-        cooldown = 0.25,
+        cooldown = 0.5,
         category = "Items",
         purchaseTimes = {
             GM.ROUND_INACTIVE,
@@ -3349,7 +3368,7 @@ local defaultItems = {
         cost = 80,
         markup = 2,
         markupPerPurchase = 0.15,
-        cooldown = 0.25,
+        cooldown = 0.5,
         category = "Items",
         purchaseTimes = {
             GM.ROUND_INACTIVE,
@@ -3366,7 +3385,7 @@ local defaultItems = {
         cost = 65,
         markup = 2,
         markupPerPurchase = 0.25,
-        cooldown = 0.25,
+        cooldown = 0.5,
         category = "Items",
         purchaseTimes = {
             GM.ROUND_INACTIVE,
@@ -3561,7 +3580,7 @@ local defaultItems = {
         purchaseCheck = unUndeadCheck,
         purchaseFunc = frogLegsPurchase,
     },
-    --flat upgrade
+    --[[--flat upgrade
     [ "mimicmadness" ] = {
         name = "Prop Hunt",
         desc = "When crouched, you mimic the closest nearby prop.\nThe terminators are fooled from far away but the illusion breaks down since you don't have collisions.",
@@ -3576,7 +3595,7 @@ local defaultItems = {
         weight = 120,
         purchaseCheck = unUndeadCheck,
         purchaseFunc = mimicMadnessPurchase,
-    },
+    },]]--
     --flat upgrade
     [ "temporaldiceroll" ] = {
         name = "Roll of the dice.",
@@ -3658,7 +3677,7 @@ local defaultItems = {
         purchaseCheck = { unUndeadCheck },
         purchaseFunc = superiorMetabolismPurchase,
     },
-    -- arguably worse version of cold blooded 
+    --[[-- arguably worse version of cold blooded 
     [ "marathonrunner" ] = {
         name = "Claustrophobic Marathonner.",
         desc = "You live to run, every day, a new marathon.\nYour body, a paragon of speed, your mind however...\nGoing indoors is alien, terrifying to you.\nThe interior spaces destroy your momentum, panic mounts, slowing you down.",
@@ -3673,7 +3692,7 @@ local defaultItems = {
         weight = 85,
         purchaseCheck = { unUndeadCheck },
         purchaseFunc = marathonRunnerPurchase,
-    },
+    },]]--
     -- wacky ass shit
     [ "bombgland" ] = {
         name = "Bomb Gland.",
@@ -3781,7 +3800,8 @@ local defaultItems = {
     -- people who teamkill get funny consequence
     [ "homicidalglee" ] = {
         name = "Homicidal Glee.",
-        desc = "Brings a player's Homicidal Glee to the surface...\nCosts nothing to place, if the player killed you at least once before.\nCan only be placed every 15 seconds.",
+        desc = "Bring a player's Homicidal Glee to the surface...\nCosts nothing to place, if the player killed you at least once before.\nCan only be placed every 15 seconds.",
+        costDecorative = "0 / -200",
         cost = 0,
         markup = 1,
         cooldown = 5,
@@ -3842,23 +3862,23 @@ local defaultItems = {
         desc = "Resurrect yourself.\nYou will revive next to another living player.\nEven if they're about to die...",
         cost = divineInterventionCost,
         markup = 1,
-        markupPerPurchase = 0.30,
+        markupPerPurchase = 0.5,
         cooldown = divineInterventionCooldown,
         category = "Undead",
         purchaseTimes = {
             GM.ROUND_ACTIVE,
         },
         weight = -200,
-        purchaseCheck = { undeadCheck },
+        purchaseCheck = { undeadCheck, divineInterventionDeathCooldown },
         purchaseFunc = divineIntervention,
     },
     -- lets dead people get a revive but they're fucked
     [ "additionalterm" ] = {
         name = "Linked Hunter",
         desc = "Spawn another hunter.\nThey will take on your appearance.\nIf you personally kill it, you will gain 350 score.\nThe newcomer will never lose you, if you regain your life...",
-        cost = -150,
+        cost = -300,
         markup = 1,
-        cooldown = 80,
+        cooldown = 90,
         category = "Undead",
         purchaseTimes = {
             GM.ROUND_ACTIVE,
@@ -3902,7 +3922,7 @@ local defaultItems = {
     [ "immortalizer" ] = {
         name = "Gift of Immortality",
         desc = "Gift 20 seconds, of true Immortality.\nCosts 300 to gift to players, 200 to gift to hunters.",
-        costDecorative = "-200/-300",
+        costDecorative = "-200 / -300",
         cost = 0,
         markup = 1,
         cooldown = 5,

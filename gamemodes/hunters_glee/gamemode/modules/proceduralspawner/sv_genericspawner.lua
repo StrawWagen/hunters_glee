@@ -211,7 +211,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawner_managegenericspawns", fun
         local maxCount = curr.maxCount
         local count = #created[className] + currentlySpawning[className]
         --print( count, maxCount, "AAAAAAAAAAAA" )
-        if count > maxCount then continue end
+        if count >= maxCount then continue end
 
         --print( "ADDED", className )
         addJob( curr )

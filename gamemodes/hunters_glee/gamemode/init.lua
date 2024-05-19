@@ -98,34 +98,34 @@ GM.roundStartNormal             = 40
 GM.IsReallyHuntersGlee          = true
 
 validNavarea                    = validNavarea or NULL
-GM.startedNavmeshGeneration     = GM.startedNavmeshGeneration or nil
 
 local CurTime = CurTime
 
 -- gamemode starts up, starts 5 second countdown to navmesh check.
 -- also happens after hard map cleanup
 function GM:TermHuntSetup()
+    self.waitingOnNavoptimizerGen       = nil
     -- do greedy patch once per session
-    self.HuntersGleeDoneTheGreedyPatch = self.HuntersGleeDoneTheGreedyPatch or nil
-    self.playerIsWaitingForPatch      = nil
+    self.HuntersGleeDoneTheGreedyPatch  = self.HuntersGleeDoneTheGreedyPatch or nil
+    self.playerIsWaitingForPatch        = nil
 
-    self.termHunt_roundStartTime      = math.huge
-    self.termHunt_roundBegunTime      = math.huge
-    self.termHunt_navmeshCheckTime    = math.huge
-    self.termHunt_NextThink           = CurTime()
+    self.termHunt_roundStartTime        = math.huge
+    self.termHunt_roundBegunTime        = math.huge
+    self.termHunt_navmeshCheckTime      = math.huge
+    self.termHunt_NextThink             = CurTime()
 
-    self.doNotUseMapSpawns            = nil -- used in sv_players
-    self.hasNavmesh                   = nil
-    self.blockPvp                     = nil
-    self.canRespawn                   = nil
-    self.canScore                     = nil
-    self.doProxChat                   = nil --used in playercomms
-    self.termHunt_hunters             = {}
-    self.deadPlayers                  = {}
-    self.roundScore                   = {}
-    self.roundExtraData               = {}
+    self.doNotUseMapSpawns              = nil -- used in sv_players
+    self.hasNavmesh                     = nil
+    self.blockPvp                       = nil
+    self.canRespawn                     = nil
+    self.canScore                       = nil
+    self.doProxChat                     = nil --used in playercomms
+    self.termHunt_hunters               = {}
+    self.deadPlayers                    = {}
+    self.roundScore                     = {}
+    self.roundExtraData                 = {}
 
-    self.nextStateTransmit            = 0
+    self.nextStateTransmit              = 0
 
     -- just in case!
     hook.Remove( "Think", "glee_DoGreedyPatchThinkHook" )
@@ -147,15 +147,15 @@ end
 
 
 function GM:RoundStateRepeat() -- "fixes" problems with state syncing
-    if GAMEMODE.nextStateTransmit > CurTime() then return end
-    GAMEMODE:SetRoundState( GAMEMODE:RoundState() )
-    GAMEMODE.nextStateTransmit = CurTime() + 1
+    if self.nextStateTransmit > CurTime() then return end
+    self:SetRoundState( self:RoundState() )
+    self.nextStateTransmit = CurTime() + 1
 
 end
 
 function GM:SetRoundState( state )
     SetGlobal2Int( "termhunt_roundstate", state )
-    GAMEMODE.nextStateTransmit = CurTime() + 1
+    self.nextStateTransmit = CurTime() + 1
 
 end
 
@@ -163,18 +163,18 @@ end
 
 function GM:Think()
     local cur = CurTime()
-    GAMEMODE:managePlayerSpectating()
-    GAMEMODE:manageServersideCountOfBeats()
+    self:managePlayerSpectating()
+    self:manageServersideCountOfBeats()
 
-    if GAMEMODE.termHunt_NextThink > cur then return end
-    GAMEMODE.termHunt_NextThink = cur + 0.1
+    if self.termHunt_NextThink > cur then return end
+    self.termHunt_NextThink = cur + 0.1
 
-    local currState = GAMEMODE:RoundState()
+    local currState = self:RoundState()
 
     local players = player.GetAll()
-    if GAMEMODE:handleEmptyServer( currState, players ) == true then return end
+    if self:handleEmptyServer( currState, players ) == true then return end
 
-    if GAMEMODE:handleGenerating( currState ) == true then return end
+    if self:handleGenerating( currState ) == true then return end
 
     -- see sv_player
     -- see sv_navpatcher
@@ -188,118 +188,154 @@ function GM:Think()
 
     local displayTime = nil
     local displayName = nil
-    if currState == GAMEMODE.ROUND_INVALID then
-        if not GAMEMODE.invalidStart then
-            GAMEMODE.invalidStart = cur
+    if currState == self.ROUND_INVALID then
+
+        if not self.invalidStart then
+            self.invalidStart = SysTime()
 
         end
 
-        if #players <= 1 and not game.IsDedicated() then
+        local dedi = game.IsDedicated()
+
+        if not dedi and NAVOPTIMIZER_tbl and superIncrementalGeneration then
+            local cheats = GetConVar( "sv_cheats" ):GetBool()
+            if cheats then
+                huntersGlee_Announce( player.GetAll(), 1000, 1, "Incrementally generating navmesh via Navmesh Optimizer..." )
+
+            else
+                huntersGlee_Announce( player.GetAll(), 100, 1, "NO NAVMESH.\nNavmesh Optimizer detected, run console command 'SV_CHEATS 1' for automatic navmesh generation." )
+
+            end
+
+            if cheats and not self.waitingOnNavoptimizerGen then
+                self.waitingOnNavoptimizerGen = true
+                timer.Simple( 1, function()
+                    superIncrementalGeneration( nil, true, true )
+                end )
+
+                -- when generation is done
+                hook.Add( "navoptimizer_done_gencheapexpanded", "glee_detectrealnavgenfinish", function()
+                    timer.Simple( 1, function()
+                        RunConsoleCommand( "navmesh_globalmerge_auto" )
+
+                    end )
+                    hook.Remove( "navoptimizer_done_gencheapexpanded", "glee_detectrealnavgenfinish" )
+
+                end )
+
+                -- when optimizing is done
+                hook.Add( "navoptimizer_done_globalmerge", "glee_detectrealnavgenfinish", function()
+                    hook.Remove( "navoptimizer_done_globalmerge", "glee_detectrealnavgenfinish" )
+
+                end )
+            end
+        elseif not dedi then
             huntersGlee_Announce( player.GetAll(), 1000, 1, "NO NAVMESH!\nInstall or generate yourself a navmesh!" )
 
         end
 
         displayName = "You have spent this long without a navmesh... "
-        displayTime = GAMEMODE:getRemaining( cur, GAMEMODE.invalidStart )
+        displayTime = self:getRemaining( SysTime(), self.invalidStart )
+
     end
-    if currState == GAMEMODE.ROUND_SETUP then -- wait like 5 seconds before the game session starts
-        if GAMEMODE.termHunt_navmeshCheckTime < cur then
-            GAMEMODE:setupFinish()
+    if currState == self.ROUND_SETUP then -- wait like 5 seconds before the game session starts
+        if self.termHunt_navmeshCheckTime < cur then
+            self:setupFinish()
 
         else
             displayName = "--- "
             displayTime = 0
-            GAMEMODE.blockPvp   = true
-            GAMEMODE.doProxChat = false
-            GAMEMODE.canRespawn = true
-            GAMEMODE.canScore   = false
+            self.blockPvp   = true
+            self.doProxChat = false
+            self.canRespawn = true
+            self.canScore   = false
 
         end
     end
-    if currState == GAMEMODE.ROUND_INACTIVE then --round is waiting to begin
+    if currState == self.ROUND_INACTIVE then --round is waiting to begin
 
         local doPatchingText = nil
 
-        if GAMEMODE.termHunt_roundStartTime < cur then
-            if GAMEMODE.HuntersGleeDoneTheGreedyPatch then
-                GAMEMODE:roundStart() --
-                GAMEMODE.isBadSingleplayer = nil --display that message once!
+        if self.termHunt_roundStartTime < cur then
+            if self.HuntersGleeDoneTheGreedyPatch then
+                self:roundStart() --
+                self.isBadSingleplayer = nil --display that message once!
 
             else
                 -- let the patcher be a bit more laggy
-                GAMEMODE.playerIsWaitingForPatch = true
+                self.playerIsWaitingForPatch = true
                 doPatchingText = true
 
             end
         else
-            if GAMEMODE.isBadSingleplayer then
+            if self.isBadSingleplayer then
                 huntersGlee_Announce( players, 1000, 1, "This gamemode is at it's best when started with at least 2 player slots.\nThat doesn't mean you need 2 people!\nJust click the green \"Single Player\" and choose another option!" )
 
             end
-            GAMEMODE.blockPvp   = true
-            GAMEMODE.doProxChat = false
-            GAMEMODE.canRespawn = true
-            GAMEMODE.canScore   = false
+            self.blockPvp   = true
+            self.doProxChat = false
+            self.canRespawn = true
+            self.canScore   = false
 
             hook.Run( "glee_sv_validgmthink_inactive", players, currState, cur )
 
         end
         if doPatchingText then
             displayName = "Please wait, navmesh is being patched... "
-            displayTime = GAMEMODE:getRemaining( GAMEMODE.termHunt_roundStartTime, cur )
+            displayTime = self:getRemaining( self.termHunt_roundStartTime, cur )
 
         else
             displayName = "Getting ready "
-            displayTime = GAMEMODE:getRemaining( GAMEMODE.termHunt_roundStartTime, cur )
+            displayTime = self:getRemaining( self.termHunt_roundStartTime, cur )
 
         end
     end
-    if currState == GAMEMODE.ROUND_LIMBO then --look at what happened during the round
-        if GAMEMODE.limboEnd < cur then
-            GAMEMODE:beginSetup()
+    if currState == self.ROUND_LIMBO then --look at what happened during the round
+        if self.limboEnd < cur then
+            self:beginSetup()
 
         else
-            GAMEMODE.blockPvp   = true
-            GAMEMODE.doProxChat = false
-            GAMEMODE.canRespawn = false
-            GAMEMODE.canScore   = false
+            self.blockPvp   = true
+            self.doProxChat = false
+            self.canRespawn = false
+            self.canScore   = false
 
         end
         displayName = "--- "
         displayTime = 0
 
     end
-    if currState == GAMEMODE.ROUND_ACTIVE then -- THE HUNT BEGINS
-        local aliveCount = GAMEMODE:CountWinnablePlayers()
-        local waitingForAFirstTimePlayer = GAMEMODE:WaitingForAFirstTimePlayer( players )
+    if currState == self.ROUND_ACTIVE then -- THE HUNT BEGINS
+        local aliveCount = self:CountWinnablePlayers()
+        local waitingForAFirstTimePlayer = self:WaitingForAFirstTimePlayer( players )
 
         nobodyAlive = aliveCount == 0
 
         if nobodyAlive then
-            GAMEMODE:roundEnd()
+            self:roundEnd()
 
         elseif not waitingForAFirstTimePlayer then
-            GAMEMODE.blockPvp   = false
-            GAMEMODE.doProxChat = true
-            GAMEMODE.canRespawn = false
-            GAMEMODE.canScore   = true
+            self.blockPvp   = false
+            self.doProxChat = true
+            self.canRespawn = false
+            self.canScore   = true
 
             hook.Run( "glee_sv_validgmthink_active", players, currState, cur )
 
         end
         displayName = "Hunting... "
-        displayTime = GAMEMODE:getRemaining( GAMEMODE.termHunt_roundBegunTime, cur )
+        displayTime = self:getRemaining( self.termHunt_roundBegunTime, cur )
 
     end
 
-    local newState = GAMEMODE:RoundState()
+    local newState = self:RoundState()
     if newState ~= currState then
         hook.Run( "glee_roundstatechanged", currState, newState )
 
     end
 
-    GAMEMODE:calculateBPM( cur, players )
-    GAMEMODE:RoundStateRepeat()
+    self:calculateBPM( cur, players )
+    self:RoundStateRepeat()
 
     if displayTime then
         SetGlobalInt( "TERMHUNTER_PLAYERTIMEVALUE", displayTime )
@@ -314,7 +350,7 @@ end
 
 function GM:alivePlayersOrAll( plys )
     local plyFinal = {}
-    if GAMEMODE:countAlive( plys ) > 0 then
+    if self:countAlive( plys ) > 0 then
         for _, ply in pairs( plys ) do
             if ply:Health() > 0 then
                 table.insert( plyFinal, ply )
@@ -390,10 +426,10 @@ end
 -- get navarea nearby a spawnpoint
 function GM:navmeshCheck()
     local out = NULL
-    for _, spawnClass in ipairs( GAMEMODE.SpawnTypes ) do
+    for _, spawnClass in ipairs( self.SpawnTypes ) do
         spawns = ents.FindByClass( spawnClass )
         for _, spawnEnt in ipairs( spawns ) do
-            local result = GAMEMODE:getNearestPosOnNav( spawnEnt:GetPos() )
+            local result = self:getNearestPosOnNav( spawnEnt:GetPos() )
             if result.area and result.area:IsValid() then
                 out = result.area
                 break
@@ -407,7 +443,7 @@ function GM:navmeshCheck()
     end
 
     if out == NULL then
-        local result = GAMEMODE:getNearestPosOnNav( vector_origin, 20000 )
+        local result = self:getNearestPosOnNav( vector_origin, 20000 )
         if result.area and result.area:IsValid() then
             out = result.area
 
@@ -419,11 +455,11 @@ function GM:navmeshCheck()
 end
 
 function GM:initDependenciesCheck()
-    validNavarea = GAMEMODE:navmeshCheck()
+    validNavarea = self:navmeshCheck()
 
     SetGlobalBool( "termHuntDisplayWinners", false )
-    GAMEMODE.hasNavmesh = validNavarea:IsValid() and navmesh.IsLoaded()
-    return GAMEMODE.hasNavmesh
+    self.hasNavmesh = validNavarea:IsValid() and navmesh.IsLoaded()
+    return self.hasNavmesh
 
 end
 
@@ -532,13 +568,13 @@ function GM:SetupTheLargestGroupsNStuff()
 
             self.GreedyPatchCouroutine = self.GreedyPatchCouroutine or coroutine.create( self.DoGreedyPatch )
 
-            local maxTime = 0.006
+            local maxTime = 0.01
             -- dedi server can eat the perf
             if game.IsDedicated() then
-                maxTime = 0.02
+                maxTime = 0.04
 
             elseif self.playerIsWaitingForPatch then
-                maxTime = 0.012
+                maxTime = 0.02
 
             end
 
@@ -573,13 +609,13 @@ function GM:removePorters() -- it was either do this, or make the terminator use
 
         -- do a bunch of checks to see if porter just teleports between the same, big navmesh group.
         local portersPos = porter:WorldSpaceCenter()
-        local portersArea = GAMEMODE:getNearestNav( portersPos, 1000 )
+        local portersArea = self:getNearestNav( portersPos, 1000 )
         if not portersArea or not portersArea.IsValid or not portersArea:IsValid() then SafeRemoveEntity( porter ) continue end
 
-        local portersPosFloored = GAMEMODE:getFloor( portersPos )
+        local portersPosFloored = self:getFloor( portersPos )
         if not portersArea:IsVisible( portersPosFloored ) then SafeRemoveEntity( porter ) continue end
 
-        local portersGroup = GAMEMODE:GetGroupThatNavareaExistsIn( portersArea, GAMEMODE.biggestNavmeshGroups )
+        local portersGroup = self:GetGroupThatNavareaExistsIn( portersArea, self.biggestNavmeshGroups )
         if not portersGroup then SafeRemoveEntity( porter ) continue end
 
         local portersVals = porter:GetKeyValues()
@@ -589,13 +625,13 @@ function GM:removePorters() -- it was either do this, or make the terminator use
         for _, dest in ipairs( destTbl ) do
             if not IsValid( dest ) then SafeRemoveEntity( porter ) break end
             local destPos = dest:WorldSpaceCenter()
-            local area = GAMEMODE:getNearestNav( destPos, 1000 )
+            local area = self:getNearestNav( destPos, 1000 )
             if not area or not area.IsValid or not area:IsValid() then SafeRemoveEntity( porter ) break end
 
-            local destPosFloored = GAMEMODE:getFloor( destPos )
+            local destPosFloored = self:getFloor( destPos )
             if not area:IsVisible( destPosFloored ) then SafeRemoveEntity( porter ) break end
 
-            local exitsGroup = GAMEMODE:GetGroupThatNavareaExistsIn( area, GAMEMODE.biggestNavmeshGroups )
+            local exitsGroup = self:GetGroupThatNavareaExistsIn( area, self.biggestNavmeshGroups )
             if not exitsGroup then SafeRemoveEntity( porter ) break end
 
             if exitsGroup ~= portersGroup then SafeRemoveEntity( porter ) break end
@@ -616,7 +652,7 @@ function GM:removeBlockers() -- mess up locked doors on door heavy maps
             if not util.doorIsUsable( door ) then continue end -- door is decor
 
             local areaIsBig = nil
-            local area = GAMEMODE:getNearestNavFloor( door:WorldSpaceCenter() )
+            local area = self:getNearestNavFloor( door:WorldSpaceCenter() )
 
             if area and area:IsValid() then
                 -- door is creating blocked flag, unlock it!
@@ -635,11 +671,11 @@ end
 
 -- nukes all the hunters if there's nobody to hunt
 function GM:handleEmptyServer( currState, players )
-    if #players == 0 and ( currState == GAMEMODE.ROUND_ACTIVE or currState == GAMEMODE.ROUND_LIMBO ) then
+    if #players == 0 and ( currState == self.ROUND_ACTIVE or currState == self.ROUND_LIMBO ) then
         -- bots are expensive, save cpu power pls
         print( "Empty server!\nRemoving bots..." )
-        GAMEMODE:roundEnd()
-        GAMEMODE:beginSetup()
+        self:roundEnd()
+        self:beginSetup()
         return true
 
     elseif #players == 0 then -- empty
@@ -656,27 +692,29 @@ local navmesh_IsGenerating = navmesh.IsGenerating
 local navmeshMightBeGeneratingUntil = nil
 
 function GM:handleGenerating( currState )
-    local generating = navmesh_IsGenerating()
+    local generating = self.waitingOnNavoptimizerGen or navmesh_IsGenerating()
 
     -- give the generator a bit of leeway
     if not generating and navmeshMightBeGeneratingUntil and navmeshMightBeGeneratingUntil > CurTime() then
         return true
 
-    elseif generating and currState == GAMEMODE.ROUND_ACTIVE then
+    elseif generating and ( currState == self.ROUND_ACTIVE or currState == self.ROUND_LIMBO ) then
         print( "Generating navmesh!\nRemoving bots..." )
-        GAMEMODE:roundEnd()
-        GAMEMODE:beginSetup()
-        GAMEMODE.biggestNavmeshGroups = nil
+        self:roundEnd()
+        self:beginSetup()
+        self.biggestNavmeshGroups = nil
         return true
 
     elseif generating then
-        navmeshMightBeGeneratingUntil = CurTime() + 15
+        navmeshMightBeGeneratingUntil = CurTime()
         return true
 
     end
+
+    -- got past, probably done
     if navmeshMightBeGeneratingUntil then
         navmeshMightBeGeneratingUntil = nil
-        GAMEMODE.HuntersGleeDoneTheGreedyPatch = nil
+        self.HuntersGleeDoneTheGreedyPatch = nil
         RunConsoleCommand( "gmod_admin_cleanup" )
 
     end
@@ -685,24 +723,24 @@ function GM:handleGenerating( currState )
 end
 
 function GM:RemoveHunters()
-    if GAMEMODE.termHunt_hunters then
-        for _, hunter in pairs( GAMEMODE.termHunt_hunters ) do
+    if self.termHunt_hunters then
+        for _, hunter in pairs( self.termHunt_hunters ) do
             SafeRemoveEntity( hunter )
         end
-        GAMEMODE.termHunt_hunters = {}
+        self.termHunt_hunters = {}
 
     end
 end
 
 -- from where people can buy stuff with discounts, to the hunt
 function GM:roundStart()
-    GAMEMODE.termHunt_roundStartTime = math.huge
-    GAMEMODE.termHunt_roundBegunTime = CurTime()
-    GAMEMODE:SetRoundState( GAMEMODE.ROUND_ACTIVE )
-    GAMEMODE.roundScore = nil
-    GAMEMODE.roundScore = {}
-    GAMEMODE.roundExtraData = nil
-    GAMEMODE.roundExtraData = {}
+    self.termHunt_roundStartTime = math.huge
+    self.termHunt_roundBegunTime = CurTime()
+    self:SetRoundState( self.ROUND_ACTIVE )
+    self.roundScore = nil
+    self.roundScore = {}
+    self.roundExtraData = nil
+    self.roundExtraData = {}
 
     SetGlobalEntity( "termHuntWinner", NULL )
     SetGlobalInt( "termHuntWinnerSkulls", 0 )
@@ -721,15 +759,15 @@ end
 function GM:roundEnd()
     local plyCount = #player.GetAll()
     local timeAdd = math.Clamp( plyCount * 0.7, 1, 15 ) -- give time for discussion
-    GAMEMODE.limboEnd = CurTime() + 18 + timeAdd
+    self.limboEnd = CurTime() + 18 + timeAdd
 
-    GAMEMODE.deadPlayers = {}
-    GAMEMODE:SetRoundState( GAMEMODE.ROUND_LIMBO )
+    self.deadPlayers = {}
+    self:SetRoundState( self.ROUND_LIMBO )
     timer.Simple( engine.TickInterval(), function()
         if plyCount <= 0 then return end
 
-        local winner = GAMEMODE:calculateWinner()
-        local totalScore = GAMEMODE:calculateTotalScore()
+        local winner = self:calculateWinner()
+        local totalScore = self:calculateTotalScore()
 
         SetGlobalBool( "termHuntDisplayWinners", true )
         SetGlobalInt( "termHuntTotalScore", math.Round( totalScore ) )
@@ -752,25 +790,25 @@ end
 
 -- from the part where finest prey & total score is displayed, into setup where people can buy stuff with discounts
 function GM:beginSetup()
-    GAMEMODE:RemoveHunters()
+    self:RemoveHunters()
     for _, ply in ipairs( player.GetAll() ) do
         ply.realRespawn = true -- wipe all shop attributes
         ply.shopItemCooldowns = {} -- reset wep cooldowns
         ply.isTerminatorHunterKiller = nil -- dont have this persist thru rounds
         ply:ResetSkulls()
-        GAMEMODE:ensureNotSpectating( ply )
+        self:ensureNotSpectating( ply )
 
     end
 
-    GAMEMODE.blockCleanupSetup = true -- no infinite loops please!
+    self.blockCleanupSetup = true -- no infinite loops please!
     game.CleanUpMap( false, { "env_fire", "entityflame", "_firesmoke" } )
-    GAMEMODE.blockCleanupSetup = nil
+    self.blockCleanupSetup = nil
 
     SetGlobalBool( "termHuntDisplayWinners", false )
-    GAMEMODE.termHunt_roundStartTime = CurTime() + GAMEMODE.roundStartNormal
-    GAMEMODE:SetRoundState( GAMEMODE.ROUND_INACTIVE )
+    self.termHunt_roundStartTime = CurTime() + self.roundStartNormal
+    self:SetRoundState( self.ROUND_INACTIVE )
     timer.Simple( 2, function()
-        GAMEMODE:TeleportRoomCheck()
+        self:TeleportRoomCheck()
     end )
 
     hook.Run( "huntersglee_round_into_inactive" )
@@ -780,35 +818,34 @@ end
 -- navmesh is not loaded at initialize so we wait
 -- from the 5 second countdown to the first buying period
 function GM:setupFinish()
-    GAMEMODE.termHunt_navmeshCheckTime = math.huge
-    local HasNav = GAMEMODE:initDependenciesCheck()
+    self.termHunt_navmeshCheckTime = math.huge
+    local HasNav = self:initDependenciesCheck()
     if HasNav ~= true then
-        GAMEMODE:SetRoundState( GAMEMODE.ROUND_INVALID )
-        GAMEMODE.startedNavmeshGeneration = nil
+        self:SetRoundState( self.ROUND_INVALID )
 
     else
-        GAMEMODE:SetupTheLargestGroupsNStuff()
+        self:SetupTheLargestGroupsNStuff()
         -- removeporters was moved to the above function
-        if GAMEMODE.biggestNavmeshGroups then
-            GAMEMODE:removePorters()
+        if self.biggestNavmeshGroups then
+            self:removePorters()
 
         end
-        GAMEMODE:removeBlockers()
-        GAMEMODE:SetRoundState( GAMEMODE.ROUND_INACTIVE )
+        self:removeBlockers()
+        self:SetRoundState( self.ROUND_INACTIVE )
 
         local var = GetConVar( "sv_cheats" )
-        local time = GAMEMODE.roundStartAfterNavCheck
+        local time = self.roundStartAfterNavCheck
         if var:GetBool() == true then
             time = time / 4
 
         end
 
-        GAMEMODE.termHunt_roundStartTime = CurTime() + time
+        self.termHunt_roundStartTime = CurTime() + time
 
     end
     if game.SinglePlayer() then
-        GAMEMODE.termHunt_roundStartTime = CurTime() + GAMEMODE.roundStartAfterNavCheck
-        GAMEMODE.isBadSingleplayer = true
+        self.termHunt_roundStartTime = CurTime() + self.roundStartAfterNavCheck
+        self.isBadSingleplayer = true
 
     end
 

@@ -14,10 +14,10 @@ ENT.Model = "models/gibs/antlion_gib_large_3.mdl"
 local className = "termhunt_bombbig"
 if CLIENT then
     language.Add( className, ENT.PrintName )
-    killicon.Add( className, "vgui/hud/killicon/" .. className .. ".vmt", color_white )
+    killicon.Add( className, "vgui/hud/killicon/" .. className .. ".png", color_white )
 
 else
-    resource.AddFile( "materials/vgui/hud/killicon/" .. className .. ".vmt" )
+    resource.AddFile( "materials/vgui/hud/killicon/" .. className .. ".png" )
 
 end
 
@@ -164,3 +164,8 @@ end
 function ENT:PhysicsSimulate( _, _ )
     return SIM_NOTHING
 end
+
+local GAMEMODE = GAMEMODE or GM
+if not GAMEMODE.RandomlySpawnEnt then return end
+
+GAMEMODE:RandomlySpawnEnt( className, 1, 2.5, 25 )

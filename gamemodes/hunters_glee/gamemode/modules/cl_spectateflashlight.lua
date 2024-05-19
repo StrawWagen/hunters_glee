@@ -53,6 +53,7 @@ hook.Add( "PlayerButtonDown", "glee_readflashlight", function( ply, button )
         flashlightBind = input.LookupBinding( "impulse 100", false )
         -- they unbound it
         if not flashlightBind then return end
+
         flashlightButtonCode = input.GetKeyCode( flashlightBind )
         return
 

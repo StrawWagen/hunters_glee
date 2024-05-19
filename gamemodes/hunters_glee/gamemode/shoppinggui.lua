@@ -10,90 +10,123 @@ local function shopCategoryName( identifier )
     return "termhunt_shopcategory_" .. identifier
 end
 
--- YOUR CURRENT SCORE
-local fontData = {
-    font = "Arial",
-    extended = false,
-    size = glee_sizeScaled( nil, 40 ),
-    weight = 500,
-    blursize = 0,
-    scanlines = 0,
-    antialias = true,
-    underline = false,
-    italic = false,
-    strikeout = false,
-    symbol = false,
-    rotary = false,
-    shadow = false,
-    additive = false,
-    outline = false,
-}
-surface.CreateFont( "termhuntShopScoreFont", fontData )
+local draw = draw
+local surface = surface
 
--- CATEGORY
-fontData = {
-    font = "Arial",
-    extended = false,
-    size = glee_sizeScaled( nil, 50 ),
-    weight = 500,
-    blursize = 0,
-    scanlines = 0,
-    antialias = true,
-    underline = false,
-    italic = false,
-    strikeout = false,
-    symbol = false,
-    rotary = false,
-    shadow = false,
-    additive = false,
-    outline = false,
-}
-surface.CreateFont( "termhuntShopCategoryFont", fontData )
+local defaultShpScale = 0.9
+local shopScaleVar = CreateClientConVar( "cl_huntersglee_shopscale", -1, true, false, "Shop scale. Below zero (-1) for default, " .. defaultShpScale , -1, 1 )
 
--- ITEMS
-fontData = {
-    font = "Arial",
-    extended = false,
-    size = glee_sizeScaled( nil, 25 ),
-    weight = 500,
-    blursize = 0,
-    scanlines = 0,
-    antialias = true,
-    underline = false,
-    italic = false,
-    strikeout = false,
-    symbol = false,
-    rotary = false,
-    shadow = false,
-    additive = false,
-    outline = false,
-}
-surface.CreateFont( "termhuntShopItemFont", fontData )
+local shpScale = nil
 
--- ITEMS
-fontData = {
-    font = "Arial",
-    extended = false,
-    size = glee_sizeScaled( nil, 22.5 ),
-    weight = 500,
-    blursize = 0,
-    scanlines = 0,
-    antialias = true,
-    underline = false,
-    italic = false,
-    strikeout = false,
-    symbol = false,
-    rotary = false,
-    shadow = false,
-    additive = false,
-    outline = false,
-}
-surface.CreateFont( "termhuntShopItemSmallerFont", fontData )
+local function doShopScale()
+    local currVar = shopScaleVar:GetFloat()
+    if currVar < 0 then
+        shpScale = defaultShpScale
 
-function GM:CreateScreenFillingPopup()
+    else
+        shpScale = currVar
+
+    end
+end
+
+doShopScale()
+
+local function setupShopFonts()
+    -- YOUR CURRENT SCORE
+    local fontData = {
+        font = "Arial",
+        extended = false,
+        size = glee_sizeScaled( nil, 50 * shpScale ),
+        weight = 500,
+        blursize = 0,
+        scanlines = 0,
+        antialias = true,
+        underline = false,
+        italic = false,
+        strikeout = false,
+        symbol = false,
+        rotary = false,
+        shadow = false,
+        additive = false,
+        outline = false,
+    }
+    surface.CreateFont( "termhuntShopScoreFont", fontData )
+
+    -- CATEGORY
+    fontData = {
+        font = "Arial",
+        extended = false,
+        size = glee_sizeScaled( nil, 50 * shpScale ),
+        weight = 500,
+        blursize = 0,
+        scanlines = 0,
+        antialias = true,
+        underline = false,
+        italic = false,
+        strikeout = false,
+        symbol = false,
+        rotary = false,
+        shadow = false,
+        additive = false,
+        outline = false,
+    }
+    surface.CreateFont( "termhuntShopCategoryFont", fontData )
+
+    -- ITEMS
+    fontData = {
+        font = "Arial",
+        extended = false,
+        size = glee_sizeScaled( nil, 30 * shpScale ),
+        weight = 500,
+        blursize = 0,
+        scanlines = 0,
+        antialias = true,
+        underline = false,
+        italic = false,
+        strikeout = false,
+        symbol = false,
+        rotary = false,
+        shadow = false,
+        additive = false,
+        outline = false,
+    }
+    surface.CreateFont( "termhuntShopItemFont", fontData )
+
+    -- ITEMS
+    fontData = {
+        font = "Arial",
+        extended = false,
+        size = glee_sizeScaled( nil, 25 * shpScale ),
+        weight = 500,
+        blursize = 0,
+        scanlines = 0,
+        antialias = true,
+        underline = false,
+        italic = false,
+        strikeout = false,
+        symbol = false,
+        rotary = false,
+        shadow = false,
+        additive = false,
+        outline = false,
+    }
+    surface.CreateFont( "termhuntShopItemSmallerFont", fontData )
+
+end
+
+setupShopFonts()
+
+cvars.AddChangeCallback( "cl_huntersglee_shopscale", function( _, _, _ )
+    doShopScale()
+    setupShopFonts()
+
+end, "glee_shoprescale" )
+
+function GM:CreateScreenFillingPopup( scaleMul )
+    scaleMul = scaleMul or 1
     local filler = vgui.Create( "DFrame" )
 
-    local width, height = glee_sizeScaled( 1920, 1080 )
+    local width, height = glee_sizeScaled( 1920 * scaleMul, 1080 * scaleMul )
 
     filler:SetSize( width, height )
 
@@ -191,20 +224,24 @@ local function pressableThink( panel, hovering )
 end
 
 function termHuntOpenTheShop()
-    LocalPlayer():EmitSound( "physics/wood/wood_crate_impact_soft3.wav", 50, 200, 0.45 )
 
-    local shopFrame, _, height = GAMEMODE:CreateScreenFillingPopup()
-    LocalPlayer().MAINSSHOPPANEL = shopFrame
+    local ply = LocalPlayer()
+    ply.oldScrollPositions = ply.oldScrollPositions or {}
+
+    ply:EmitSound( "physics/wood/wood_crate_impact_soft3.wav", 50, 200, 0.45 )
+
+    local shopFrame, _, height = GAMEMODE:CreateScreenFillingPopup( shpScale )
+    ply.MAINSSHOPPANEL = shopFrame
 
 
     local bigTextPadding = height / 180
-    local leftPadding = height / 40
+    local borderPadding = height / 40
 
     local whiteIdentifierLineWidth = height / 250 -- the white bar
     local offsetNextToIdentifier = whiteIdentifierLineWidth * 4
 
-    local scrollWidth = height / 18
-    local shopCategoryWidth, shopCategoryHeight = glee_sizeScaled( 1920, 300 )
+    local scrollWidth = height / 15
+    local shopCategoryWidth, shopCategoryHeight = glee_sizeScaled( 1920 * shpScale, 300 * shpScale )
 
 
     shopFrame.titleBarSize = scrollWidth
@@ -216,19 +253,34 @@ function termHuntOpenTheShop()
 
 
     local clientsMenuKey = input.LookupBinding( "+menu" )
-    clientsMenuKey = input.GetKeyCode( clientsMenuKey )
+    if clientsMenuKey then
+        clientsMenuKey = input.GetKeyCode( clientsMenuKey )
+
+    end
 
     local clientsForwardKey = input.LookupBinding( "+forward" )
-    clientsForwardKey = input.GetKeyCode( clientsForwardKey )
+    if clientsForwardKey then
+        clientsForwardKey = input.GetKeyCode( clientsForwardKey )
+
+    end
 
     local clientsBackKey = input.LookupBinding( "+back" )
-    clientsBackKey = input.GetKeyCode( clientsBackKey )
+    if clientsBackKey then
+        clientsBackKey = input.GetKeyCode( clientsBackKey )
+
+    end
 
     local clientsLeftKey = input.LookupBinding( "+moveleft" )
-    clientsLeftKey = input.GetKeyCode( clientsLeftKey )
+    if clientsLeftKey then
+        clientsLeftKey = input.GetKeyCode( clientsLeftKey )
+
+    end
 
     local clientsRightKey = input.LookupBinding( "+moveright" )
-    clientsRightKey = input.GetKeyCode( clientsRightKey )
+    if clientsRightKey then
+        clientsRightKey = input.GetKeyCode( clientsRightKey )
+
+    end
 
     -- if pressed button that opened shop, close the shop
     function shopFrame:OnKeyCodePressed( pressed )
@@ -285,16 +337,17 @@ function termHuntOpenTheShop()
 
     shopFrame.Paint = function()
         draw_RoundedBox( 0, 0, 0, shopFrame:GetWide(), shopFrame:GetTall(), Color( 37, 37, 37, 240 ) )
-        draw_RoundedBox( 0, 0, 0, shopFrame:GetWide(), shopFrame.titleBarSize, Color( 50, 50, 50, 180 ) )
+        draw_RoundedBox( 0, borderPadding, borderPadding, shopFrame:GetWide(), shopFrame.titleBarSize, Color( 50, 50, 50, 180 ) )
+        draw_RoundedBox( 0, borderPadding, borderPadding, whiteIdentifierLineWidth, shopFrame.titleBarSize, whiteFaded )
 
-        local score = LocalPlayer():GetScore()
+        local score = ply:GetScore()
 
         if shopFrame.scoreToAddFrame ~= shopFrame.oldScoreToAddFrame or shopFrame.oldScore ~= score then
             -- create copy
             local scoreToAddFrame = shopFrame.scoreToAddFrame or {}
-            local cost = GAMEMODE:shopItemCost( scoreToAddFrame.itemIdentifier, LocalPlayer() )
+            local cost = GAMEMODE:shopItemCost( scoreToAddFrame.itemIdentifier, ply )
 
-            shopFrame.costString, shopFrame.costColor = GAMEMODE:translatedShopItemCost( LocalPlayer(), cost, scoreToAddFrame.itemIdentifier )
+            shopFrame.costString, shopFrame.costColor = GAMEMODE:translatedShopItemCost( ply, cost, scoreToAddFrame.itemIdentifier )
 
         end
 
@@ -306,24 +359,23 @@ function termHuntOpenTheShop()
         local currentScoreAndBridge = score ..  " : "
 
         surface.SetFont( "termhuntShopScoreFont" )
-        local currentScoreW, _ = surface.GetTextSize( currentScoreAndBridge )
-        local initialPadding = bigTextPadding + leftPadding
+        local currentScoreW, currentScoreHeight = surface.GetTextSize( currentScoreAndBridge )
+        local initialPadding = borderPadding + offsetNextToIdentifier
 
-        draw.DrawText( currentScoreAndBridge, "termhuntShopScoreFont", initialPadding, 5, white )
-
-        draw.DrawText( costString, "termhuntShopScoreFont", currentScoreW + initialPadding, 5, shopFrame.costColor )
+        draw.DrawText( currentScoreAndBridge, "termhuntShopScoreFont", initialPadding, borderPadding + currentScoreHeight / 4, white )
+        draw.DrawText( costString, "termhuntShopScoreFont", currentScoreW + initialPadding, borderPadding + currentScoreHeight / 4, shopFrame.costColor )
 
     end
 
 
     local mainScrollPanel = vgui.Create( "DScrollPanel", shopFrame, MAINSCROLLNAME )
-    LocalPlayer().MAINSCROLLPANEL = mainScrollPanel
+    ply.MAINSCROLLPANEL = mainScrollPanel
 
     -- removing this doesnt seem to change anything, leaving it just in case
     -- definitely a HACK!
-    if not LocalPlayer().MAINSCROLLPANEL and not LocalPlayer().retriedShop then
+    if not ply.MAINSCROLLPANEL and not ply.retriedShop then
         timer.Simple( 0.1, function()
-            LocalPlayer().retriedShop = true
+            ply.retriedShop = true
             termHuntOpenTheShop()
         end )
         return
@@ -333,7 +385,7 @@ function termHuntOpenTheShop()
     mainScrollPanel.verticalScrollWidth = scrollWidth
     mainScrollPanel.verticalScrollWidthPadded = scrollWidth + height / 80
 
-    mainScrollPanel:DockMargin( leftPadding, 0, 0, 0 ) -- add negative right HERE when the shop has more than 3 categories!!! 
+    mainScrollPanel:DockMargin( borderPadding, borderPadding * 2, 0, borderPadding )
     mainScrollPanel:Dock( FILL )
 
     local scrollBar = mainScrollPanel:GetVBar()
@@ -388,17 +440,21 @@ function termHuntOpenTheShop()
     function scrollBar:SetScroll( newScroll )
         self:oldSetScroll( newScroll )
 
-        local lastScroll = self.lastScroll or 0
+        local vertLastScroll = self.vertLastScroll or 0
         local currScrollTrue = self:GetScroll()
 
-        if math.abs( lastScroll - currScrollTrue ) > scrollWidth then
-            local pitchOffset = ( lastScroll - currScrollTrue ) * 0.1
-            LocalPlayer():EmitSound( "physics/plastic/plastic_barrel_impact_soft5.wav", 60, 100 + pitchOffset, 0.2 )
+        ply.oldScrollPositions["shopvertical"] = currScrollTrue
 
-            self.lastScroll = currScrollTrue
+        if math.abs( vertLastScroll - currScrollTrue ) > scrollWidth then
+            local pitchOffset = ( vertLastScroll - currScrollTrue ) * 0.1
+            ply:EmitSound( "physics/plastic/plastic_barrel_impact_soft5.wav", 60, 100 + pitchOffset, 0.2 )
+
+            self.vertLastScroll = currScrollTrue
 
         end
     end
+
+    scrollBar:AnimateTo( ply.oldScrollPositions["shopvertical"] or 0, 0, 0, -1 )
 
     -- w and s are scrolling shortcuts
     function shopFrame:scrollUp()
@@ -423,17 +479,20 @@ function termHuntOpenTheShop()
 
     -- the scrollable things that hold shop items and have names like innate and undead
     for _, category in ipairs( sortedCategories ) do
-        local horisScroller = vgui.Create( "DHorizontalScroller", LocalPlayer().MAINSCROLLPANEL, shopCategoryName( category ) )
+        local horisScroller = vgui.Create( "DHorizontalScroller", ply.MAINSCROLLPANEL, shopCategoryName( category ) )
 
         --print( "createdcat " .. category .. " " .. tostring( horisScroller ) )
         shopCategoryPanels[ category ] = horisScroller
 
-        LocalPlayer().MAINSCROLLPANEL:AddItem( horisScroller )
+        ply.MAINSCROLLPANEL:AddItem( horisScroller )
 
         horisScroller:SetSize( shopCategoryWidth, shopCategoryHeight )
 
+        horisScroller.btnRight.Paint = function() end
+        horisScroller.btnLeft.Paint = function() end
+
         horisScroller.betweenCategorySpacing = height / 80
-        horisScroller.titleBarTall = LocalPlayer().MAINSCROLLPANEL.verticalScrollWidth -- same height as big scroll bar is wide
+        horisScroller.titleBarTall = ply.MAINSCROLLPANEL.verticalScrollWidth -- same height as big scroll bar is wide
         horisScroller.topMargin = horisScroller.titleBarTall + horisScroller.betweenCategorySpacing * 2
         horisScroller.breathingRoom = horisScroller.titleBarTall * 0.1
 
@@ -465,16 +524,23 @@ function termHuntOpenTheShop()
 
             local newOffset = self.OffsetX or 0
             if newOffset ~= oldOffset then -- dont do anything if we reach the end of the scroller
+                ply.oldScrollPositions[ category ] = newOffset
                 self:RemoveCoolTooltip()
                 local pitchOffset = ( oldOffset - newOffset ) * 0.1
                 pitchOffset = pitchOffset / stepScale
-                LocalPlayer():EmitSound( "physics/plastic/plastic_barrel_impact_soft2.wav", 60, 100 + pitchOffset, 0.2 * stepScale )
+                ply:EmitSound( "physics/plastic/plastic_barrel_impact_soft2.wav", 60, 100 + pitchOffset, 0.2 * stepScale )
 
             end
 
             return true
 
         end
+
+        timer.Simple( 0, function()
+            if not horisScroller then return end
+            horisScroller:SetScroll( ply.oldScrollPositions[ category ] or 0 )
+
+        end )
 
         horisScroller.OnMouseWheeled = function( self, delta )
             return self:CoolerScroll( delta, 1 )
@@ -541,8 +607,15 @@ function termHuntOpenTheShop()
 
             if self.purchased then
                 -- other half of the purchasing sounds are handled in sh_shopshared
-                LocalPlayer():EmitSound( switchSound, 60, 50, 0.24 )
+                ply:EmitSound( switchSound, 60, 50, 0.24 )
                 self.purchased = nil
+
+            elseif self.triedToPurchase then
+                if shopItem.coolTooltip then
+                    shopItem.coolTooltip.noPurchaseShakeTime = CurTime() + 1
+
+                end
+                self.triedToPurchase = nil
 
             end
             self.notDoneSetup = nil
@@ -550,9 +623,9 @@ function termHuntOpenTheShop()
         end
 
         -- tooltips!
-        shopItem.OnBeginHovering = function( self )
+        shopItem.OnBeginHovering = function()
             -- this is spaghetti
-            local coolTooltip = vgui.Create( "DSizeToContents", LocalPlayer().MAINSCROLLPANEL, shopPanelName( identifier ) .. "_cooltooltip" )
+            local coolTooltip = vgui.Create( "DSizeToContents", ply.MAINSCROLLPANEL, shopPanelName( identifier ) .. "_cooltooltip" )
             -- hide the jank setup bugs!
             coolTooltip.isSetupTime = CurTime() + 0.1
 
@@ -581,7 +654,7 @@ function termHuntOpenTheShop()
             coolTooltip.Think = function ( self )
 
                 -- this is kind of bad
-                if coolTooltip.descLabel and coolTooltip.noBuyLabel and IsValid( coolTooltip.descLabel ) and IsValid( coolTooltip.noBuyLabel ) and not coolTooltip.gettingRemoved then
+                if coolTooltip.descLabel and coolTooltip.markupLabel and coolTooltip.noBuyLabel and IsValid( coolTooltip.descLabel ) and IsValid( coolTooltip.markupLabel ) and IsValid( coolTooltip.noBuyLabel ) and not coolTooltip.gettingRemoved then
                     local description = shopItem.coolTooltipDescription
                     local descLabel = coolTooltip.descLabel
 
@@ -594,7 +667,26 @@ function termHuntOpenTheShop()
                     descLabel:SizeToContentsY()
                     local descSizeX, descSizeY = descLabel:GetSize()
 
-                    -- why you cant buy this, or markup info
+                    -- info on markups
+                    local markupInfo = shopItem.coolTooltipMarkup
+                    local markupLabel = coolTooltip.markupLabel
+
+                    if markupInfo ~= "" then
+                        markupLabel:SetTextInset( offsetNextToIdentifier, 0 )
+                        markupLabel:SetFont( "termhuntShopItemSmallerFont" )
+                        markupLabel:SetText( markupInfo )
+                        markupLabel:SetContentAlignment( 7 )
+                        markupLabel:SetWrap( true )
+                        markupLabel:SizeToContentsY()
+
+                    else
+                        markupLabel:SetText( "" )
+                        markupLabel:SetSize( myCategoryPanel.shopItemWidth, 0 )
+
+                    end
+                    local markupSizeX, markupSizeY = markupLabel:GetSize()
+
+                    -- why you cant buy this
                     local noPurchase = shopItem.coolTooltipNoPurchase
                     local noBuyLabel = coolTooltip.noBuyLabel
 
@@ -615,12 +707,14 @@ function termHuntOpenTheShop()
 
                     -- put them together with padding around the text
                     descLabel:SetSize( descSizeX + -offsetNextToIdentifier, descSizeY )
+                    markupLabel:SetSize( markupSizeX + -offsetNextToIdentifier, markupSizeY )
                     noBuyLabel:SetSize( noBSizeX + -offsetNextToIdentifier, noBSizeY + offsetNextToIdentifier )
-                    coolTooltip.fakeButton:SetSize( descSizeX + noBSizeX, descSizeY + noBSizeY + offsetNextToIdentifier )
+                    coolTooltip.fakeButton:SetSize( descSizeX + markupSizeX + noBSizeX, descSizeY + markupSizeY + noBSizeY + offsetNextToIdentifier )
 
                     if coolTooltip.hasSetup then
                         descLabel:SetTextColor( itemDescriptionColor )
                         noBuyLabel:SetTextColor( itemDescriptionColor )
+                        markupLabel:SetTextColor( itemDescriptionColor )
 
                     end
                 end
@@ -636,6 +730,20 @@ function termHuntOpenTheShop()
                         self:SetPos( tooltipsX, yPosUnder )
                         self.fakeButton:SetPos( tooltipsX, yPosAbove )
                     end
+                end
+
+                if coolTooltip.noBuyLabel:IsValid() then
+                    local shakeTime = self.noPurchaseShakeTime or 0
+                    local noPurchaseShake = 0
+                    if shakeTime > CurTime() then
+                        local absed = math.abs( self.noPurchaseShakeTime - CurTime() )
+                        noPurchaseShake = math.Rand( -absed, absed ) * 4
+                    end
+
+                    local noBuyLabel = coolTooltip.noBuyLabel
+                    noBuyLabel:DockMargin( 0, noPurchaseShake, 0, noPurchaseShake )
+                    noBuyLabel:Dock( TOP )
+
                 end
 
                 if self.isSetupTime > CurTime() then return end
@@ -693,6 +801,16 @@ function termHuntOpenTheShop()
             descLabel:Dock( TOP )
 
 
+            local markupLabel = vgui.Create( "DLabel", tooltipTopButton, shopPanelName( identifier ) .. "_cooltooltip_label" )
+
+            markupLabel:SetTextColor( invisibleColor )
+
+            coolTooltip.markupLabel = markupLabel
+
+            markupLabel:SetSize( myCategoryPanel.shopItemWidth )
+            markupLabel:Dock( TOP )
+
+
             local noBuyLabel = vgui.Create( "DLabel", tooltipTopButton, shopPanelName( identifier ) .. "_cooltooltip_label" )
 
             noBuyLabel:SetTextColor( invisibleColor )
@@ -704,11 +822,15 @@ function termHuntOpenTheShop()
 
         end
 
-        shopItem.RemoveCoolTooltip = function( self )
+        shopItem.RemoveCoolTooltip = function()
             local tooltip = shopItem.coolTooltip
             if not tooltip then return end
             if tooltip.descLabel then
                 tooltip.descLabel:Remove()
+
+            end
+            if tooltip.markupLabel then
+                tooltip.markupLabel:Remove()
 
             end
             if tooltip.noBuyLabel then
@@ -731,7 +853,7 @@ function termHuntOpenTheShop()
         -- paint the shop item!
         shopItem.Paint = function( self )
 
-            local score = LocalPlayer():GetScore()
+            local score = ply:GetScore()
 
             local nextBigCaching = self.nextBigCaching or 0
 
@@ -739,11 +861,18 @@ function termHuntOpenTheShop()
 
                 local identifierPaint = self.itemIdentifier
 
-                self.purchasable, self.notPurchasableReason = GAMEMODE:canPurchase( LocalPlayer(), identifierPaint )
+                self.purchasable, self.notPurchasableReason = GAMEMODE:canPurchase( ply, identifierPaint )
                 self.nextBigCaching = CurTime() + 0.1
                 self.oldScore = score
 
-                local cost = GAMEMODE:shopItemCost( identifierPaint, LocalPlayer() )
+                -- add newline before no buy reason
+                local noPurchaseReason = ""
+                if self.notPurchasableReason and self.notPurchasableReason ~= "" then
+                    noPurchaseReason = "\n" .. self.notPurchasableReason
+
+                end
+
+                local cost = GAMEMODE:shopItemCost( identifierPaint, ply )
 
                 -- "decorative" cost that isn't applied when purchased
                 local decorativeCost = itemData.costDecorative
@@ -754,20 +883,20 @@ function termHuntOpenTheShop()
                     self.costString = tostring( cost )
 
                 else
-                    self.costString, self.costColor = GAMEMODE:translatedShopItemCost( LocalPlayer(), cost, identifierPaint )
+                    self.costString, self.costColor = GAMEMODE:translatedShopItemCost( ply, cost, identifierPaint )
 
                 end
 
                 -- markups applied
                 self.markupString = ""
-                local currentMarkup = GAMEMODE:shopMarkup( LocalPlayer(), identifierPaint )
+                local currentMarkup = GAMEMODE:shopMarkup( ply, identifierPaint )
                 if currentMarkup ~= 1 then
                     self.markupString = "( " .. tostring( currentMarkup ) .. "x markup )"
                 end
 
                 -- handle tooltips
                 local description = ""
-                local descriptionReturned = GAMEMODE:translateShopItemDescription( LocalPlayer(), identifierPaint, self.itemData.desc )
+                local descriptionReturned = GAMEMODE:translateShopItemDescription( ply, identifierPaint, self.itemData.desc )
                 if descriptionReturned and descriptionReturned ~= "" then
                     description = descriptionReturned
 
@@ -776,7 +905,7 @@ function termHuntOpenTheShop()
                 local additionalMarkupStr = ""
                 local localizedMarkupPer = self.itemData.markupPerPurchase
                 if localizedMarkupPer and isnumber( localizedMarkupPer ) then
-                    local boughtCount = GAMEMODE:purchaseCount( LocalPlayer(), identifierPaint )
+                    local boughtCount = GAMEMODE:purchaseCount( ply, identifierPaint )
                     if boughtCount == 0 then
                         additionalMarkupStr = "\nCost is marked up +" .. localizedMarkupPer .. "x per purchase."
                     else
@@ -784,14 +913,9 @@ function termHuntOpenTheShop()
                     end
                 end
 
-                local noPurchaseReason = ""
-                if self.notPurchasableReason and self.notPurchasableReason ~= "" then
-                    noPurchaseReason = "\n" .. self.notPurchasableReason
-
-                end
-
                 self.coolTooltipDescription = description
-                self.coolTooltipNoPurchase = additionalMarkupStr .. noPurchaseReason
+                self.coolTooltipMarkup = additionalMarkupStr
+                self.coolTooltipNoPurchase = noPurchaseReason
 
                 -- check after all the potentially custom functions had a chance to run  
                 if GAMEMODE.invalidShopItems[ identifierPaint ] then self:Remove() return end
@@ -846,6 +970,9 @@ function termHuntOpenTheShop()
             if self.purchasable then -- purchasability is also checked on server! no cheesing!
                 RunConsoleCommand( "termhunt_purchase", self.itemIdentifier )
                 self.purchased = true
+
+            else
+                self.triedToPurchase = true
 
             end
         end

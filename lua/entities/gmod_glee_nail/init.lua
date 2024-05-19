@@ -18,11 +18,28 @@ function ENT:Initialize()
 
 end
 
-function ENT:Attach( pos, ang, ent, bone )
+function ENT:Attach( pos, ang, ent1, bone1, ent2, theConstraint )
     self:SetPos( pos )
     self:SetAngles( ang )
-    self:SetParentPhysNum( bone )
-    self:SetParent( ent )
+    self:SetParentPhysNum( bone1 )
+    self:SetParent( ent1 )
+
+    self.realConstraint = theConstraint
+    self.mainEnt = ent1
+    self.secondEnt = ent2
+
+    local constraintsNails = theConstraint.huntersGlee_nails or {}
+    table.insert( constraintsNails, self )
+    theConstraint.huntersGlee_nails = constraintsNails
+
+    theConstraint:CallOnRemove( "constraint_removeallmynails", function()
+        if not theConstraint.huntersGlee_nails then return end
+        for _, currNail in ipairs( theConstraint.huntersGlee_nails ) do
+            if IsValid( currNail ) then
+                self:Break()
+            end
+        end
+    end )
 
 end
 
@@ -127,7 +144,11 @@ hook.Add( "EntityTakeDamage", "nail_break_when_nailed_damaged", function( target
     local damage = dmg:GetDamage()
 
     if dmg:IsExplosionDamage() then
-        damage = damage * 4
+        damage = damage * 2
+
+    end
+    if dmg:IsDamageType( DMG_DISSOLVE ) then
+        damage = damage / 8
 
     end
 
@@ -137,7 +158,7 @@ hook.Add( "EntityTakeDamage", "nail_break_when_nailed_damaged", function( target
     while damage > 0 and done < 1000 do
         done = done + 1
         -- nail's health, breaks if this roll is less than damage
-        local bite = math.random( 1, 170 )
+        local bite = math.random( 1, 190 )
         tempDamage = damage - bite
         if not target.huntersglee_breakablenails then
             break

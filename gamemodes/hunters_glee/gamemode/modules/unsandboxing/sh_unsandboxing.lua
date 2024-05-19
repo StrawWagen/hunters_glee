@@ -5,6 +5,13 @@ function GM:CanProperty()
 
 end
 
+hook.Add( "PlayerNoClip", "glee_blocknoclip", function( _, wantsToEnter )
+    if wantsToEnter then
+        return false
+
+    end
+end )
+
 if CLIENT then
     local LocalPlayer = LocalPlayer
     function GM:SpawnMenuEnabled()

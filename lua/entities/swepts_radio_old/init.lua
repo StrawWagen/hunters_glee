@@ -81,12 +81,12 @@ function ENT:Initialize()
     self.takenDamageTimes = 0
     self.nextTakeDamageTime = 0
     self.audioDSP = 0
+    self.audioPitch = 100
+    self.nextSoundHint = 0
 
     self.nextResetGuiCreated = 0
 
 end
-
-hook.Add( "glee_genericprogress_exit" )
 
 function ENT:Use( _, caller )
     if not caller:IsPlayer() then return end
@@ -108,6 +108,17 @@ function ENT:Use( _, caller )
 end
 
 function ENT:Think()
+    if self.ActiveSong > 0 and self.nextSoundHint < CurTime() then
+        self.nextSoundHint = CurTime() + 5
+        local radius = 200
+        if self.RadioBroken then
+            radius = 100
+
+        end
+        sound.EmitHint( SOUND_COMBAT, self:GetPos(), radius, 1, self )
+
+    end
+
     if self.nextResetGuiCreated > CurTime() then return end
     self.nextResetGuiCreated = math.huge
     self.createdGUI = nil
@@ -118,17 +129,76 @@ local nextRecieve = 0
 
 net.Receive( "PlaySTRadioSong", function()
     if nextRecieve > CurTime() then return end
-    nextRecieve = CurTime() + 0.01
+    nextRecieve = CurTime() + 0.005
 
     local selfEnt = net.ReadEntity()
     local songIndex = net.ReadUInt( 16 )
-    selfEnt:EmitSound( selfEnt.Songs[math.Round( songIndex )], 75, 100, 1, CHAN_ITEM, nil, selfEnt.audioDSP )
+
+    if not IsValid( selfEnt ) then nextRecieve = CurTime() + 0.1 return end
+
+    selfEnt.spammingHints = true
+
+    local lvl = 75
+    if selfEnt.RadioBroken then
+        lvl = 70
+
+    end
+
+    local filterAllPlayers = RecipientFilter()
+    filterAllPlayers:AddAllPlayers()
+
+    selfEnt:EmitSound( selfEnt.Songs[math.Round( songIndex )], lvl, selfEnt.audioPitch, 1, CHAN_ITEM, nil, selfEnt.audioDSP, filterAllPlayers )
     selfEnt.ActiveSong = math.Round( songIndex )
 
 end )
 
 function ENT:OnRemove()
-    self:EmitSound( "ambient/_period.wav", 75, 100, 1, CHAN_ITEM )
+    local filterAllPlayers = RecipientFilter()
+    filterAllPlayers:AddAllPlayers()
+
+    self:EmitSound( "ambient/_period.wav", 75, 100, 1, CHAN_ITEM, nil, self.audioDSP, filterAllPlayers )
+
+end
+
+function ENT:TakeDamageRandomizeSong()
+    local rand = math.random( 1, 51 )
+
+    local lvl = 75
+    if self.RadioBroken then
+        lvl = 70
+
+    end
+
+    local filterAllPlayers = RecipientFilter()
+    filterAllPlayers:AddAllPlayers()
+
+    self:EmitSound( self.Songs[rand], lvl, self.audioPitch, 1, CHAN_ITEM, nil, self.audioDSP, filterAllPlayers )
+    self.ActiveSong = rand
+
+    self:EmitSound( "ambient/energy/spark" .. math.random( 1, 6 ) .. ".wav" )
+    self.takenDamageTimes = self.takenDamageTimes + 1
+
+    if self.takenDamageTimes < 15 then return end
+    if self.takenDamageTimes == 15 then
+        self.RadioBroken = true
+        self:EmitSound( "ambient/energy/zap" .. math.random( 5, 6 ) .. ".wav", 75, 100, CHAN_STATIC )
+
+    end
+    self:EmitSound( "ambient/energy/zap" .. math.random( 1, 3 ) .. ".wav", 75, 100, CHAN_STATIC )
+    local target = 55 + ( self.takenDamageTimes % 5 )
+    self.audioDSP = target
+    self.audioPitch = math.random( 98, 102 )
+
+end
+
+function ENT:PhysicsCollide( data )
+    if data.Speed < 500 then return end
+    if self:IsPlayerHolding() then return end
+
+    if self.nextTakeDamageTime > CurTime() then return end
+    self.nextTakeDamageTime = CurTime() + 1
+
+    self:TakeDamageRandomizeSong()
 
 end
 
@@ -138,25 +208,11 @@ function ENT:OnTakeDamage( dmg )
     if self.nextTakeDamageTime > CurTime() then return end
     self.nextTakeDamageTime = CurTime() + 0.1
 
-    local rand = math.random( 1, 51 )
-    self:EmitSound( "ambient/energy/spark" .. math.random( 1, 6 ) .. ".wav" )
-    self:EmitSound( self.Songs[rand], 75, 100, 1, CHAN_ITEM, nil, self.audioDSP )
-    self.ActiveSong = rand
-
-    self.takenDamageTimes = self.takenDamageTimes + 1
-
-    if self.takenDamageTimes < 15 then return end
-    if self.takenDamageTimes == 15 then
-        self:EmitSound( "ambient/energy/zap" .. math.random( 5, 6 ) .. ".wav", 75, 100, CHAN_STATIC )
-
-    end
-    self:EmitSound( "ambient/energy/zap" .. math.random( 1, 3 ) .. ".wav", 75, 100, CHAN_STATIC )
-    local target = 55 + ( self.takenDamageTimes % 5 )
-    self.audioDSP = target
+    self:TakeDamageRandomizeSong()
 
 end
 
 local GAMEMODE = GAMEMODE or GM
 if not GAMEMODE.RandomlySpawnEnt then return end
 
-GAMEMODE:RandomlySpawnEnt( "swepts_radio_old", 1, 100, 25 )
+GAMEMODE:RandomlySpawnEnt( "swepts_radio_old", 1, 50, 25 )

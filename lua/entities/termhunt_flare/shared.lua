@@ -14,10 +14,10 @@ ENT.Model = "models/hunter/plates/plate.mdl"
 local className = "termhunt_flare"
 if CLIENT then
     language.Add( className, ENT.PrintName )
-    killicon.Add( className, "vgui/hud/killicon/" .. className .. ".vmt", color_white )
+    killicon.Add( className, "vgui/hud/killicon/" .. className .. ".png", color_white )
 
 else
-    resource.AddFile( "materials/vgui/hud/killicon/" .. className .. ".vmt" )
+    resource.AddFile( "materials/vgui/hud/killicon/" .. className .. ".png" )
 
 end
 
@@ -135,7 +135,7 @@ function ENT:PhysicsCollide( colData, _ )
         local dmgInfo = DamageInfo()
         dmgInfo:SetDamage( impactDamage )
         dmgInfo:SetDamageType( DMG_BURN )
-        dmgInfo:SetAttacker( self.MyOwner )
+        dmgInfo:SetAttacker( self.MyOwner or self )
         dmgInfo:SetInflictor( self )
         hitEnt:TakeDamageInfo( dmgInfo )
 

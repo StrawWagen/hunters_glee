@@ -79,8 +79,9 @@ local function TPF_SetupProjectedTexture( ply )
 end
 
 local function TPF_RemoveProjectedTexture( ply )
-	if IsValid( thrPFlash[ ply ] ) then
-		SafeRemoveEntity( thrPFlash[ ply ] )
+	local theirFlash = thrPFlash[ ply ] or ply.glee_Thirdperson_Flashlight
+	if IsValid( theirFlash ) then
+		SafeRemoveEntity( theirFlash )
 		thrPFlash[ ply ] = nil
 		if not IsValid( ply ) then return end
 

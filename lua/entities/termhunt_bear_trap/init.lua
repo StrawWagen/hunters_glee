@@ -255,7 +255,7 @@ function ENT:Use( user )
     if user:IsPlayer() and user:GetEyeTrace().Entity == self then
         local step = 40
         if self:IsReadyToSpring() or user.bearTrapped then
-            step = 7
+            step = 5
         end
         local progBarStatus = generic_WaitForProgressBar( user, "termhunt_weapon_beartrap_disarm", 0.25, step )
 

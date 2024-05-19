@@ -207,6 +207,8 @@ hook.Add( "terminator_spotenemy", "glee_trackifbots_needahint", function()
 
 end )
 
+boringTimeNeededForScreamer = math.random( 240, 360 )
+
 hook.Add( "huntersglee_round_into_active", "glee_resetboringtime", function()
     boringTimeNeededForScreamer = math.random( 240, 360 )
     nextCrateMixupSpawn = CurTime() + boringTimeNeededForScreamer

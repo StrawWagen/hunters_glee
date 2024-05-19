@@ -164,26 +164,33 @@ function ENT:DoScore( reciever )
     end )
 
     if self.obviousOrigin then return end
-    if self:GetIsTerminatorSkull() and not reciever.glee_terminatorskullhint then
-        reciever.glee_terminatorskullhint = true
-        if self:CanHintPly( reciever ) then
-            huntersGlee_Announce( { reciever }, 10, 12, "You found a metal skull.\nMust have been quite a fight to bring one of those down..." )
+    if self:GetIsTerminatorSkull() then
+        if not reciever.glee_terminatorskullhint then
+            reciever.glee_terminatorskullhint = true
+            if self:CanHintPly( reciever ) then
+                huntersGlee_Announce( { reciever }, 10, 12, "You found a metal skull.\nMust have been quite a fight to bring one of those down..." )
 
-        else
-            huntersGlee_Announce( { reciever }, 10, 12, "It's skull...\nSolid metal." )
+            else
+                huntersGlee_Announce( { reciever }, 10, 12, "It's skull...\nSolid metal." )
 
+            end
         end
+    elseif not reciever.glee_selfskullhinted and self.skullSteamId and self.skullSteamId == reciever:SteamID64() then
+        reciever.glee_selfskullhinted = true
+        reciever.glee_skullhinted = true
+        huntersGlee_Announce( { reciever }, 10, 12, "My skull...\nWhy did I come back here?" )
+        GAMEMODE:GivePanic( purchaser, 80 )
+
+    elseif not reciever.glee_skullhinted and self:CanHintPly( reciever ) then
+        reciever.glee_skullhinted = true
+        huntersGlee_Announce( { reciever }, 10, 12, "You found a skull.\nSomeone must have died here..." )
+        GAMEMODE:GivePanic( purchaser, 40 )
+
     elseif not reciever.glee_skullhinted then
         reciever.glee_skullhinted = true
-        if self:CanHintPly( reciever ) then
-            huntersGlee_Announce( { reciever }, 10, 12, "You found a skull.\nSomeone must have died here..." )
-            GAMEMODE:GivePanic( purchaser, 20 )
+        huntersGlee_Announce( { reciever }, 10, 12, "That's their skull..." )
+        GAMEMODE:GivePanic( purchaser, 60 )
 
-        else
-            huntersGlee_Announce( { reciever }, 10, 12, "That's their skull..." )
-            GAMEMODE:GivePanic( purchaser, 40 )
-
-        end
     end
 end
 

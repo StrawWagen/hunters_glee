@@ -1,4 +1,6 @@
 
+local GAMEMODE = GAMEMODE or GM
+
 function GM:SpawnASkull( pos, ang, termSkull, parent )
     local skull = ents.Create( "termhunt_skull_pickup" )
     if not IsValid( skull ) then return end
@@ -40,15 +42,16 @@ hook.Add( "PlayerDeath", "glee_dropplayerskulls", function( died, _, attacker )
     if attacker == died then return end
     local newSkull = GAMEMODE:SpawnASkull( died:GetShootPos(), died:GetAimVector():Angle(), nil, died )
 
+    newSkull.skullSteamId = died:SteamID64()
     newSkull.fromSomethingWitnessable = true
 
 end )
 
-local persistientSkulls = {}
+GM.persistientSkulls = {}
 
 -- skulls from dead players/terms stick around
 hook.Add( "PreCleanupMap", "glee_savepersistientskulls", function()
-    table.Empty( persistientSkulls )
+    table.Empty( GAMEMODE.persistientSkulls )
 
     for _, skull in ipairs( ents.FindByClass( "termhunt_skull_pickup" ) ) do
         if not skull.persistientSkull then continue end
@@ -57,21 +60,23 @@ hook.Add( "PreCleanupMap", "glee_savepersistientskulls", function()
         skullTbl.ang = skull:GetAngles()
         skullTbl.persist = true
         skullTbl.termSkull = skull:GetIsTerminatorSkull()
+        skullTbl.skullSteamId = skull.skullSteamId
 
-        table.insert( persistientSkulls, skullTbl )
+        table.insert( GAMEMODE.persistientSkulls, skullTbl )
 
     end
 end )
 
 hook.Add( "huntersglee_round_into_active", "glee_loadpersistientskulls", function()
     -- restore skulls when hunt starts ( no cheeky skulls when setting up! )
-    for _, skullTbl in pairs( persistientSkulls ) do
+    for _, skullTbl in pairs( GAMEMODE.persistientSkulls ) do
         local skull = ents.Create( "termhunt_skull_pickup" )
         if not IsValid( skull ) then return end
         if skullTbl.persist then
             skull.persistientSkull = true
 
         end
+        skull.skullSteamId = skullTbl.skullSteamId
         skull:SetPos( skullTbl.pos )
         skull:SetAngles( skullTbl.ang )
         if skullTbl.termSkull == true then

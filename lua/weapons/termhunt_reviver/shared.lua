@@ -31,11 +31,6 @@ SWEP.ViewOffset = Vector( 0 )
 local HealSound = Sound( "items/medshot4.wav" )
 local DenySound = Sound( "items/medshotno1.wav" )
 
-if SERVER then
-    resource.AddFile( "materials/entities/termhunt_reviver.png" )
-
-end
-
 function SWEP:Initialize()
 
     self:SetHoldType( "slam" )
@@ -179,18 +174,16 @@ function SWEP:ResurrectPly( ply )
     end )
 
     if owner.GivePlayerScore then
-        local reward = 200
+        local reward = 300
         -- dont give as much score if owner killed who they reviving
         if GAMEMODE:HasHomicided( owner, ply ) then
-            reward = 100
+            reward = 150
             if not owner.glee_HomicideReviveHint then
                 owner.glee_HomicideReviveHint = true
                 huntersGlee_Announce( { owner }, 5, 8, "Half score for reviving, since you killed this person earlier." )
 
             end
-        end
-
-        if not owner.glee_revivemoneyhint then
+        elseif not owner.glee_revivemoneyhint then
             owner.glee_revivemoneyhint = true
             huntersGlee_Announce( { owner }, 4, 8, "+" .. tostring( reward ) .. " score!" )
 
@@ -205,27 +198,14 @@ function SWEP:ResurrectPly( ply )
 
         end
 
-        reward = math.Clamp( reward + -rewardBite, 0, 200 )
+        reward = math.Clamp( reward + -rewardBite, 0, 300 )
         owner:GivePlayerScore( reward )
 
         ply.glee_resurrectDecreasingScore = math.max( CurTime() + 60, ply.glee_resurrectDecreasingScore + 60 )
 
     end
 
-    if ply.Resurrect then
-        ply:Resurrect()
-
-        return true
-    end
-
-    ply:Spawn()
-    timer.Simple( 0, function()
-        if not IsValid( ply ) then return end
-        ply:SetPos( ply.unstuckOrigin )
-        ply.unstuckOrigin = nil
-    end )
-
-    self:AttackAnim()
+    ply:Resurrect()
     return true
 
 end
@@ -263,7 +243,7 @@ function SWEP:Think()
             owner:EmitSound( DenySound, 75, 80 )
 
         else
-            local progress = generic_WaitForProgressBar( owner, "glee_resurrector", 0.1, 3, nil )
+            local progress = generic_WaitForProgressBar( owner, "glee_resurrector", 0.1, 1.5, nil )
             if progress >= 100 then
                 self:ResurrectPly( ent )
                 done = true
@@ -377,18 +357,6 @@ local function PaintBoxOnPlayer( data )
     local newFadedRed = ColorAlpha( fadedRed, alpha )
     surface.SetDrawColor( newFadedRed )
     surface.DrawOutlinedRect( x, y, 100, 100, 10 )
-
-end
-
-local function PaintProgressBar( percent )
-    local PosX = ScrW() / 2
-    local PosY = ScrH() / 2
-
-    local x = PosX + -200
-    local y = PosY + 110
-
-    surface.SetDrawColor( resurrectBar )
-    surface.DrawRect( x, y, percent * 4, 50 )
 
 end
 
