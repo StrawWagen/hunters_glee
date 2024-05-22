@@ -245,21 +245,9 @@ function SWEP:Think()
         else
             local progress = generic_WaitForProgressBar( owner, "glee_resurrector", 0.1, 1.5, nil )
             if progress >= 100 then
+                generic_KillProgressBar( owner, "glee_resurrector" )
                 self:ResurrectPly( ent )
                 done = true
-            else
-                local nextSound = self.nextResurrectSound or 0
-                local InvertedDone = math.abs( progress - 100 )
-
-                if nextSound < CurTime() then
-                    self.nextResurrectSound = CurTime() + math.Rand( 0.5, 0.8 )
-                    local ampUp = math.abs( InvertedDone * self.ResTime )
-                    local pitch = ampUp + math.random( 80, 90 )
-                    owner:EmitSound( "Flesh.ImpactSoft", 75, pitch )
-
-                end
-                local PercentDone = InvertedDone / self.ResTime
-                PercentDone = math.Round( PercentDone * 100 )
             end
         end
         if done == true then
@@ -335,7 +323,6 @@ function SWEP:AddResurrect()
 end
 
 
-local resurrectBar = Color( 240, 240, 240, 200 )
 local fadedRed = Color( 255, 25, 25 )
 
 local function PaintBoxOnPlayer( data )

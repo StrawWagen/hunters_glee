@@ -122,6 +122,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters", function( _, _, cu
     local hasRoomToSpawn = aliveHuntersCount() < waveSize
 
     if not hasSomeToSpawn or not hasRoomToSpawn then return end
+
     local classOverride = nil
     if math.random( 0, 100 ) < dopplegangerChance then
         classOverride = "sb_advanced_nextbot_terminator_hunter_snail_disguised"
@@ -144,7 +145,11 @@ end )
 
 hook.Add( "PostCleanupMap", "glee_resethunterspawnerstats", function()
     wasAlive = false
-    -- don't reset minutes added
+    nextWave = 0
+    amntToSpawn = 0
+    waveSize = 0
+    overchargedChance = 0
+    -- don't reset minutes added, so maps that kill lots of terms get harder and harder
 
 end )
 
@@ -217,7 +222,15 @@ function GM:getValidHunterPos()
             end
         end
 
+        if randomArea:IsUnderwater() then
+            -- make it a bit closer
+            dynamicTooCloseDist = dynamicTooCloseDist - 100
+            GAMEMODE.roundExtraData.dynamicTooCloseDist = math.Clamp( dynamicTooCloseDist, minRadius, maxRadius )
+
+        end
+
         if not invalid then
+            -- good spawnpoint, spawn here
             --debugoverlay.Cross( spawnPos, 100, 20, color_white, true )
             GAMEMODE.roundExtraData.dynamicTooCloseFailCounts = -2
             return spawnPos, true

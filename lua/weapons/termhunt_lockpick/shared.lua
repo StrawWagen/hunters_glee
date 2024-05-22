@@ -195,6 +195,7 @@ function SWEP:Think()
     if not IsValid( ent ) or ent ~= self:GetLockpickEnt() or trace.HitPos:DistToSqr( self:GetOwner():GetShootPos() ) > 100^2 then
         self:Fail()
     elseif status >= 100 then
+        generic_KillProgressBar( self:GetOwner(), "termhunt_weapon_lockpick_picking" )
         self:Succeed()
     end
 end

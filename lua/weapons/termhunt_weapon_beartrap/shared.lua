@@ -175,6 +175,7 @@ function SWEP:Think()
 
         if progBarStatus < 100 then return end
 
+        generic_KillProgressBar( self:GetOwner(), "termhunt_weapon_beartrap_place" )
         self:Place( tr )
 
     end
@@ -195,19 +196,15 @@ function SWEP:Place( tr )
     self:SetNextPrimaryFire( CurTime() + 0.5 )
 
     local owner = self:GetOwner()
-    local ent = ents.Create( "termhunt_bear_trap" )
-    ent:SetPos( tr.HitPos + tr.HitNormal )
-    local ang = tr.HitNormal:Angle()
-    ang:RotateAroundAxis( ang:Right(), -90 )
-    ent:SetAngles( ang )
-    ent:SetCreator( owner )
-    ent:Spawn()
+    local beartrap = GAMEMODE:SpawnABearTrap( tr.HitPos, tr )
+    beartrap:SetCreator( owner )
+    beartrap:Spawn()
 
-    ent:EmitSound( "physics/metal/metal_solid_impact_hard5.wav", 65, 80 )
+    beartrap:EmitSound( "physics/metal/metal_solid_impact_hard5.wav", 65, 80 )
 
     self:SetClip1( self:Clip1() + -1 )
 
-    if self:Clip1() > 0 then return ent end
+    if self:Clip1() > 0 then return beartrap end
 
     timer.Simple( 0.5, function()
         if not IsValid( self ) then return end
@@ -219,7 +216,7 @@ function SWEP:Place( tr )
         self:GetOwner():StripWeapon( self:GetClass() )
 
     end )
-    return ent
+    return beartrap
 
 end
 

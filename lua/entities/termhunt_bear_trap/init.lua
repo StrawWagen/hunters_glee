@@ -44,16 +44,9 @@ function ENT:Initialize()
     self:SetMoveType( MOVETYPE_VPHYSICS )
     self:SetSolid( SOLID_VPHYSICS )
 
-    local dot = Vector( 0, 0, 1 ):Dot( self:GetUp() )
-
     if self:GetPhysicsObject():IsValid() then
-        if not ( dot > 0.55 and dot <= 1 ) then
-            self:GetPhysicsObject():Wake()
+        self:GetPhysicsObject():EnableMotion( false )
 
-        else
-            self:GetPhysicsObject():EnableMotion( false )
-
-        end
     end
 
     self:SetSequence( "ClosedIdle" )
@@ -80,7 +73,8 @@ function ENT:IsReadyToSpring()
 
 end
 
-function ENT:Snap()
+function ENT:Snap( snapped )
+    hook.Run( "glee_beartrap_snapped", self, snapped )
     self:SetPlaybackRate( 1 )
     self:SetCycle( 0 )
     self:SetSequence( "Snap" )
@@ -132,6 +126,7 @@ local keysToHurt = {
 
 function ENT:Touch( toucher )
     if not IsValid( toucher ) then return end
+    if not toucher:IsSolid() then return end
     if self:IsReadyToSpring() then
 
         local toucherInt = toucher
@@ -153,7 +148,7 @@ function ENT:Touch( toucher )
 
         if toucherInt:IsPlayer() then
             self:Hurt( toucherInt, attacker )
-            self:Snap()
+            self:Snap( toucherInt )
 
             for _ = 1, 5 do
                 DoBleed( toucherInt )
@@ -212,7 +207,7 @@ function ENT:Touch( toucher )
 
             toucherInt:memorizeEntAs( self, 64 ) -- MEMORY_DAMAGING
 
-            self:Snap()
+            self:Snap( toucherInt )
 
             if self:GetPhysicsObject():IsMotionEnabled() then return end
 
@@ -229,13 +224,15 @@ function ENT:Touch( toucher )
 
             timer.Simple( 4, function()
                 if not IsValid( self ) then return end
+                if not IsValid( toucherInt ) then return end
+                if toucherInt:Health() <= 0 then return end
                 self:EmitSound( "doors/vent_open1.wav", 90, 110, 1, CHAN_STATIC )
                 self:PickUp()
 
             end )
 
         else
-            self:Snap()
+            self:Snap( toucherInt )
 
             local dmg = DamageInfo()
             dmg:SetAttacker( attacker )
@@ -266,6 +263,8 @@ function ENT:Use( user )
         self.oldplaceStatus = progBarStatus
 
         if progBarStatus < 100 then return end
+
+        generic_KillProgressBar( user, "termhunt_weapon_beartrap_disarm" )
 
         self:PickUp()
     end
@@ -301,7 +300,8 @@ function ENT:OnTakeDamage( dmg )
 end
 
 function ENT:PhysicsCollide( data )
-    if data.HitSpeed:LengthSqr() < 75^2 then return end
+    local delta = ( data.OurOldVelocity - data.OurNewVelocity ):Length()
+    if delta < 80 then return end
     if not self:IsReadyToSpring() then return end
 
     local result = util.QuickTrace( self:WorldSpaceCenter(), self:GetUp() * 20, self )
@@ -312,4 +312,45 @@ function ENT:PhysicsCollide( data )
         self:Snap()
 
     end )
+end
+
+
+local downOffset = Vector( 0, 0, -50 )
+
+function GAMEMODE:SpawnABearTrap( pos, tr )
+    if not tr then
+        tr = util.QuickTrace( pos, downOffset, self )
+
+    end
+    local trapsPos = pos
+    local trapsAng = Angle( 0, math.random( -180, 180 ), 0 )
+    if tr.Hit then
+        trapsPos = tr.HitPos + tr.HitNormal
+        trapsAng = tr.HitNormal:Angle()
+        trapsAng:RotateAroundAxis( trapsAng:Right(), -90 )
+        trapsAng:RotateAroundAxis( trapsAng:Up(), math.random( -180, 180 ) )
+
+    end
+
+    local bearTrap = ents.Create( "termhunt_bear_trap" )
+    if not IsValid( bearTrap ) then return end
+    bearTrap:SetPos( trapsPos )
+    bearTrap:SetAngles( trapsAng )
+    bearTrap:Spawn()
+
+    local dot = Vector( 0, 0, 1 ):Dot( bearTrap:GetUp() )
+    local goodAng = ( dot > 0.55 and dot <= 1 )
+
+    if bearTrap:GetPhysicsObject():IsValid() and ( not tr.Hit or not goodAng ) then
+        timer.Simple( 0, function()
+            if not IsValid( bearTrap ) then return end
+            if not IsValid( bearTrap:GetPhysicsObject() ) then return end
+            bearTrap:GetPhysicsObject():EnableMotion( true )
+            bearTrap:GetPhysicsObject():Wake()
+
+        end )
+    end
+
+    return bearTrap
+
 end

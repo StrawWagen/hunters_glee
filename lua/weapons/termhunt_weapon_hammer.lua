@@ -107,7 +107,7 @@ sound.Add( {
     }
 } )
 
-local nailTooCloseDist = 4
+local nailTooCloseDist = 3
 local yellow = Color( 255, 220, 0, a )
 
 function SWEP:DrawWeaponSelection( x, y, w, t, a )
@@ -281,6 +281,36 @@ function SWEP:ValidEntityToNail( ent, physBone )
 
 end
 
+function SWEP:CanNailPos( owner, trace, hitting )
+    local whatWeHit = trace.Entity
+
+    -- Bail if invalid
+    if whatWeHit:IsWorld() or self:Clip1() <= 0 or trace.HitPos:DistToSqr( owner:GetShootPos() ) > self.Primary.Distance^2 or not self:ValidEntityToNail( whatWeHit, trace.PhysicsBone ) then
+        if hitting and not IsValid( whatWeHit ) and not ( whatWeHit and whatWeHit:IsWorld() ) then
+            self:Miss()
+        elseif hitting then
+            self:BadHit( trace )
+        end
+        return false
+
+    end
+
+    local currOffset = ( owner:GetAimVector() * math.random( 4, 6 ) )
+    local vOrigin = trace.HitPos - currOffset
+
+    local nearNails = ents.FindInSphere( vOrigin, nailTooCloseDist * 10 )
+    for _, nail in ipairs( nearNails ) do
+        if nail:GetClass() ~= "gmod_glee_nail" then continue end
+        local nailsPos = nail:GetPos()
+        if nailsPos:DistToSqr( vOrigin ) > nailTooCloseDist^2 then continue end
+        return false
+
+    end
+    return true, vOrigin
+
+end
+
+
 ----------------------------------------------------------------------------------------------------------------|
 function SWEP:PrimaryAttack()
     local owner = self:GetOwner()
@@ -290,44 +320,29 @@ function SWEP:PrimaryAttack()
 
     local trace = owner:GetEyeTrace()
 
-    local whatWeHit = trace.Entity
-
     owner:SetNW2Bool( "gleenailer_nailattempted", true )
 
-    -- Bail if invalid
-    if whatWeHit:IsWorld() or self:Clip1() <= 0 or trace.HitPos:DistToSqr( owner:GetShootPos() ) > self.Primary.Distance^2 or not self:ValidEntityToNail( whatWeHit, trace.PhysicsBone ) then
-        if not IsValid( whatWeHit ) and not ( whatWeHit and whatWeHit:IsWorld() ) then
-            self:Miss()
-        else
-            self:BadHit( trace )
-        end
-        owner:LagCompensation( false )
-        return false
+    local can, vOrigin = self:CanNailPos( owner, trace, true )
 
-    end
-
-    local tr = {}
-    tr.start = trace.HitPos
-    tr.endpos = trace.HitPos + ( owner:GetAimVector() * 20.0 )
-    tr.filter = { owner, whatWeHit }
-
-    local nails = whatWeHit.huntersglee_breakablenails or {}
-    table.Add( whatWeHit.filter, nails )
-
-    local trTwo = util.TraceLine( tr )
-    local secondHit = trTwo.Entity
-
-    local nearNails = ents.FindInSphere( trace.HitPos, nailTooCloseDist * 10 )
-    for _, nail in ipairs( nearNails ) do
-        if nail:GetClass() ~= "gmod_glee_nail" then continue end
-        local nailsPos = nail:GetPos() + nail:GetForward() * nail:GetModelRadius() / 2
-        if nailsPos:DistToSqr( trace.HitPos ) > nailTooCloseDist^2 then continue end
-
+    if not can then
         self:BadHit( trace )
         owner:LagCompensation( false )
         return false
 
     end
+
+    local whatWeHit = trace.Entity
+
+    local tr = {}
+    tr.start = trace.HitPos
+    tr.endpos = trace.HitPos + ( owner:GetAimVector() * 20.0 )
+
+    tr.filter = { owner, whatWeHit }
+    local nails = whatWeHit.huntersglee_breakablenails or {}
+    table.Add( tr.filter, nails )
+
+    local trTwo = util.TraceLine( tr )
+    local secondHit = trTwo.Entity
 
     if not self:ValidEntityToNail( secondHit, trTwo.PhysicsBone ) then
         self:BadHit( trace )
@@ -363,7 +378,6 @@ function SWEP:PrimaryAttack()
     -- Client can bail now
     if CLIENT then owner:LagCompensation( false ) return true end
 
-    local vOrigin = trace.HitPos - ( owner:GetAimVector() * math.random( 4, 6 ) )
     local vDirection = owner:GetAimVector():Angle()
 
     vOrigin = whatWeHit:WorldToLocal( vOrigin )

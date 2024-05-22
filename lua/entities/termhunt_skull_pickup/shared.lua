@@ -243,7 +243,7 @@ function ENT:Crumble()
     end
     self:EmitSound( "hunters_glee/bones/skullcrush.wav", 76, 80 )
 
-    util.ScreenShake( self:GetPos(), 0.2, 20, 0.2, 600 )
+    util.ScreenShake( self:GetPos(), 0.2, 20, 0.2, 600, true )
 
     local crush = EffectData()
     crush:SetScale( 0.25 )

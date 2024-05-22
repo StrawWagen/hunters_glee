@@ -775,7 +775,7 @@ local function temporalDiceRollPurchase( purchaser )
 
         local beamEnd = ply:WorldSpaceCenter()
 
-        util.ScreenShake( randomPos, 10, 20, 4, 1000 )
+        util.ScreenShake( randomPos, 10, 20, 4, 1000, true )
 
         local beam = EffectData()
         beam:SetStart( beamStart )
@@ -1937,7 +1937,7 @@ local function witnessPurchase( purchaser )
         gettingAttacked.preWitnessDamageMult = gettingAttacked.termhuntDamageMult
         gettingAttacked.termhuntDamageMult = 0
 
-        util.ScreenShake( gettingAttacked:GetPos(), 0.5, 20, 3, 5000 )
+        util.ScreenShake( gettingAttacked:GetPos(), 0.5, 20, 3, 5000, true )
         gettingAttacked:EmitSound( "ambient/machines/thumper_hit.wav", 150, 40, 0.5 )
         game.SetTimeScale( 0.2 )
 
@@ -1952,7 +1952,7 @@ local function witnessPurchase( purchaser )
 
             gettingAttacked.termhuntDamageMult = 100
             game.SetTimeScale( 0.4 )
-            util.ScreenShake( gettingAttacked:GetPos(), 10, 0.1, 3, 5000 )
+            util.ScreenShake( gettingAttacked:GetPos(), 10, 0.1, 3, 5000, true )
             for _ = 0, 4 do
                 playRandomSound( gettingAttacked, thwaps, 150, math.random( 20, 40 ) )
 
@@ -2501,6 +2501,17 @@ end
 
 local function weaponsCratePurchase( purchaser, itemIdentifier )
     local crate = ents.Create( "termhunt_weapon_crate" )
+    crate.itemIdentifier = itemIdentifier
+    crate:SetOwner( purchaser )
+    crate:Spawn()
+
+    GAMEMODE:CloseShopOnPly( purchaser )
+
+end
+
+
+local function undeadBearTrapPurchase( purchaser, itemIdentifier )
+    local crate = ents.Create( "termhunt_undead_beartrap" )
     crate.itemIdentifier = itemIdentifier
     crate:SetOwner( purchaser )
     crate:Spawn()
@@ -3202,6 +3213,18 @@ local defaultItems = {
         purchaseFunc = function() end,
         canShowInShop = isCheats,
     },
+    [ "scoreundead" ] = {
+        name = "Score",
+        desc = "Free score, Cheat!",
+        cost = -1000,
+        category = "Gifts",
+        purchaseTimes = {
+            GM.ROUND_INACTIVE,
+            GM.ROUND_ACTIVE,
+        },
+        purchaseFunc = function() end,
+        canShowInShop = isCheats,
+    },
     -- lets people mess with locked rooms
     [ "lockpick" ] = {
         name = "Lockpick",
@@ -3732,27 +3755,13 @@ local defaultItems = {
         cost = 0,
         markup = 1,
         cooldown = 60,
-        category = "Undead",
+        category = "Sacrifices",
         purchaseTimes = {
             GM.ROUND_ACTIVE,
         },
         weight = -5,
         purchaseCheck = { undeadCheck, ghostCanPurchase },
         purchaseFunc = screamerPurchase,
-    },
-    [ "presser" ] = {
-        name = "Presser",
-        desc = "Press things on the map.\nThe more a thing is pressed, the higher it's cost climbs...",
-        cost = 0,
-        markup = 1,
-        cooldown = 5,
-        category = "Undead",
-        purchaseTimes = {
-            GM.ROUND_ACTIVE,
-        },
-        weight = -4,
-        purchaseCheck = { undeadCheck, ghostCanPurchase },
-        purchaseFunc = presserPurchase,
     },
     -- makes the map worth exploring
     [ "normcrate" ] = {
@@ -3761,7 +3770,7 @@ local defaultItems = {
         cost = 0,
         markup = 1,
         cooldown = 10,
-        category = "Undead",
+        category = "Sacrifices",
         purchaseTimes = {
             GM.ROUND_ACTIVE,
         },
@@ -3775,7 +3784,7 @@ local defaultItems = {
         cost = 0,
         markup = 1,
         cooldown = 55,
-        category = "Undead",
+        category = "Sacrifices",
         purchaseTimes = {
             GM.ROUND_ACTIVE,
         },
@@ -3789,7 +3798,7 @@ local defaultItems = {
         cost = 0,
         markup = 1,
         cooldown = 80,
-        category = "Undead",
+        category = "Sacrifices",
         purchaseTimes = {
             GM.ROUND_ACTIVE,
         },
@@ -3797,21 +3806,19 @@ local defaultItems = {
         purchaseCheck = { undeadCheck, ghostCanPurchase },
         purchaseFunc = manhackCratePurchase,
     },
-    -- people who teamkill get funny consequence
-    [ "homicidalglee" ] = {
-        name = "Homicidal Glee.",
-        desc = "Bring a player's Homicidal Glee to the surface...\nCosts nothing to place, if the player killed you at least once before.\nCan only be placed every 15 seconds.",
-        costDecorative = "0 / -200",
+    [ "undeadbeartrap" ] = {
+        name = "Beartrap.",
+        desc = "Beartrap.\nWhen a player, hunter, steps on it, you get a reward.\nCosts more to place it near the living, and intersecting objects.",
         cost = 0,
         markup = 1,
         cooldown = 5,
-        category = "Undead",
+        category = "Sacrifices",
         purchaseTimes = {
             GM.ROUND_ACTIVE,
         },
-        weight = 0,
+        weight = 1,
         purchaseCheck = { undeadCheck, ghostCanPurchase },
-        purchaseFunc = homicidalGleePurchase,
+        purchaseFunc = undeadBearTrapPurchase,
     },
     [ "barrels" ] = {
         name = "Barrels",
@@ -3819,7 +3826,7 @@ local defaultItems = {
         cost = 0,
         markup = 1,
         cooldown = 2,
-        category = "Undead",
+        category = "Sacrifices",
         purchaseTimes = {
             GM.ROUND_ACTIVE,
         },
@@ -3834,7 +3841,7 @@ local defaultItems = {
         cost = 5,
         markup = 1,
         cooldown = 0.5,
-        category = "Undead",
+        category = "Sacrifices",
         purchaseTimes = {
             GM.ROUND_ACTIVE,
         },
@@ -3848,13 +3855,58 @@ local defaultItems = {
         cost = 5,
         markup = 1,
         cooldown = 0.5,
-        category = "Undead",
+        category = "Sacrifices",
         purchaseTimes = {
             GM.ROUND_ACTIVE,
         },
         weight = 10,
         purchaseCheck = { undeadCheck, ghostCanPurchase },
         purchaseFunc = doorLockerPurchase,
+    },
+    -- money but you're fucked if you revive
+    [ "additionalterm" ] = {
+        name = "Linked Hunter",
+        desc = "Spawn another hunter.\nThey will take on your appearance.\nIf you personally kill it, you will gain 350 score.\nThe newcomer will never lose you, if you regain your life...",
+        cost = -150,
+        markup = 1,
+        cooldown = 90,
+        category = "Sacrifices",
+        purchaseTimes = {
+            GM.ROUND_ACTIVE,
+        },
+        weight = -100,
+        purchaseCheck = { undeadCheck, spawnAnotherHunterCheck },
+        purchaseFunc = additionalHunter,
+    },
+    [ "presser" ] = {
+        name = "Presser",
+        desc = "Press things on the map.\nThe more a thing is pressed, the higher it's cost climbs...",
+        cost = 0,
+        markup = 1,
+        cooldown = 5,
+        category = "Gifts",
+        purchaseTimes = {
+            GM.ROUND_ACTIVE,
+        },
+        weight = -4,
+        purchaseCheck = { undeadCheck, ghostCanPurchase },
+        purchaseFunc = presserPurchase,
+    },
+    -- people who teamkill get funny consequence
+    [ "homicidalglee" ] = {
+        name = "Homicidal Glee.",
+        desc = "Bring a player's Homicidal Glee to the surface...\nCosts nothing to place, if the player killed you at least once before.\nCan only be placed every 15 seconds.",
+        costDecorative = "0 / -200",
+        cost = 0,
+        markup = 1,
+        cooldown = 5,
+        category = "Gifts",
+        purchaseTimes = {
+            GM.ROUND_ACTIVE,
+        },
+        weight = 0,
+        purchaseCheck = { undeadCheck, ghostCanPurchase },
+        purchaseFunc = homicidalGleePurchase,
     },
     -- lets dead people take the initiative
     [ "resurrection" ] = {
@@ -3864,28 +3916,13 @@ local defaultItems = {
         markup = 1,
         markupPerPurchase = 0.5,
         cooldown = divineInterventionCooldown,
-        category = "Undead",
+        category = "Gifts",
         purchaseTimes = {
             GM.ROUND_ACTIVE,
         },
         weight = -200,
         purchaseCheck = { undeadCheck, divineInterventionDeathCooldown },
         purchaseFunc = divineIntervention,
-    },
-    -- lets dead people get a revive but they're fucked
-    [ "additionalterm" ] = {
-        name = "Linked Hunter",
-        desc = "Spawn another hunter.\nThey will take on your appearance.\nIf you personally kill it, you will gain 350 score.\nThe newcomer will never lose you, if you regain your life...",
-        cost = -300,
-        markup = 1,
-        cooldown = 90,
-        category = "Undead",
-        purchaseTimes = {
-            GM.ROUND_ACTIVE,
-        },
-        weight = -100,
-        purchaseCheck = { undeadCheck, spawnAnotherHunterCheck },
-        purchaseFunc = additionalHunter,
     },
     -- fun
     [ "termovercharger" ] = {
@@ -3895,7 +3932,7 @@ local defaultItems = {
         cost = 0,
         markup = 1,
         cooldown = 5,
-        category = "Undead",
+        category = "Gifts",
         purchaseTimes = {
             GM.ROUND_ACTIVE,
         },
@@ -3911,7 +3948,7 @@ local defaultItems = {
         cost = 0,
         markup = 1,
         cooldown = 5,
-        category = "Undead",
+        category = "Gifts",
         purchaseTimes = {
             GM.ROUND_ACTIVE,
         },
@@ -3926,7 +3963,7 @@ local defaultItems = {
         cost = 0,
         markup = 1,
         cooldown = 5,
-        category = "Undead",
+        category = "Gifts",
         purchaseTimes = {
             GM.ROUND_ACTIVE,
         },
@@ -3942,7 +3979,7 @@ local defaultItems = {
         cost = 0,
         markup = 1,
         cooldown = 0,
-        category = "Undead",
+        category = "Gifts",
         purchaseTimes = {
             GM.ROUND_ACTIVE,
         },
@@ -3957,7 +3994,7 @@ local defaultItems = {
         cost = 2000,
         markup = 1,
         cooldown = math.huge,
-        category = "Undead",
+        category = "Gifts",
         purchaseTimes = {
             GM.ROUND_ACTIVE,
         },
@@ -4016,11 +4053,12 @@ local defaultItems = {
 }
 
 function GM:SetupShopCatalouge()
-    local defaultCategories = { -- sorted by numbers stored in indexes
-        [ "Items" ] = 1,
-        [ "Innate" ] = 2,
-        [ "Undead" ] = 3,
-        [ "Bank" ] = 4,
+    local defaultCategories = { -- sorted by order
+        [ "Items" ] = { order = 1, canShowInShop = unUndeadCheck },
+        [ "Innate" ] = { order = 2, canShowInShop = unUndeadCheck },
+        [ "Sacrifices" ] = { order = 3, canShowInShop = undeadCheck },
+        [ "Gifts" ] = { order = 4, canShowInShop = undeadCheck },
+        [ "Bank" ] = { order = 5 },
 
     }
 

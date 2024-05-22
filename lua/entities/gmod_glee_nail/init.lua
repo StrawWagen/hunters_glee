@@ -118,13 +118,13 @@ function ENT:Break()
     if IsValid( self.mainEnt ) then
         self:unregister( self.mainEnt )
         self:EmitSound( "physics/metal/metal_box_impact_hard" .. math.random( 1, 3 ) .. ".wav", 80, math.random( 70, 90 ), 1, CHAN_STATIC )
-        util.ScreenShake( self:GetPos(), 10, 20, 0.1, 700 )
+        util.ScreenShake( self:GetPos(), 10, 20, 0.1, 700, true )
 
     end
     if IsValid( self.secondEnt ) then
         self:unregister( self.secondEnt )
         self:EmitSound( "physics/metal/metal_box_impact_hard" .. math.random( 1, 3 ) .. ".wav", 80, math.random( 70, 90 ), 1, CHAN_STATIC )
-        util.ScreenShake( self:GetPos(), 10, 20, 0.1, 700 )
+        util.ScreenShake( self:GetPos(), 10, 20, 0.1, 700, true )
 
     end
 

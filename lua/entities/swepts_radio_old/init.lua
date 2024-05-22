@@ -96,6 +96,8 @@ function ENT:Use( _, caller )
 
     if progBarStatus < 100 then return end
 
+    generic_KillProgressBar( caller, "termhunt_radio_use" )
+
     if self.createdGUI then return end
     self.createdGUI = true
 

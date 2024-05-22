@@ -184,6 +184,8 @@ local slowSpeed = 10^2
 
 hook.Add( "RenderScreenspaceEffects", "glee_predraw_fogpiercing_flares", function()
 
+    if #flaresThatPierceFog <= 0 then return end
+
     local me = LocalPlayer()
     local myShootPos = me:GetShootPos()
 

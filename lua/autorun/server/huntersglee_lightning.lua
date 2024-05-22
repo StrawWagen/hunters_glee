@@ -169,8 +169,8 @@ function termHunt_PowafulLightning( inflic, attacker, strikingPos, powa )
 
     end
 
-    util.ScreenShake( strikingPos, 15, 20, 1.5, 1200 )
-    util.ScreenShake( strikingPos, 1, 20, 1.5, 3000 )
+    util.ScreenShake( strikingPos, 15, 20, 1.5, 1200, true )
+    util.ScreenShake( strikingPos, 1, 20, 1.5, 3000, true )
 
     timer.Simple( 0, function()
         terminator_Extras.GleeFancySplode( strikingPos + vectorUp25, powa * 55, 100 + powa * 55, attacker, inflic )

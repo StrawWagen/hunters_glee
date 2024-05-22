@@ -60,5 +60,7 @@ else
     hook.Add( "CanArmDupe", "glee_unsandboxify", no )
     hook.Add( "CanDrive", "glee_unsandboxify", no )
     hook.Add( "CanTool", "glee_unsandboxify", no )
+    hook.Add( "CanCreateUndo", "glee_unsandboxify", no )
+    hook.Add( "CanUndo", "glee_unsandboxify", no )
 
 end

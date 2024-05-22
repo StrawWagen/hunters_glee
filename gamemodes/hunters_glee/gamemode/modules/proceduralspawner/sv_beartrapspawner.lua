@@ -1,15 +1,3 @@
-
-function GM:SpawnABearTrap( pos, ang )
-    local bearTrap = ents.Create( "termhunt_bear_trap" )
-    if not IsValid( bearTrap ) then return end
-    bearTrap:SetPos( pos )
-    bearTrap:SetAngles( ang )
-    bearTrap:Spawn()
-
-    return bearTrap
-
-end
-
 local nextBearTrapSpawnCheck = 0
 local offsetFromGround = Vector( 0, 0, 25 )
 -- beartrapsPlacedAlready INTENTIONALLY persists thru rounds
@@ -19,8 +7,6 @@ if math.random( 0, 100 ) < 25 then
     mapBearTrapCount = 0
 
 end
-
-local vec_down = Vector( 0, 0, -1 )
 
 hook.Add( "glee_sv_validgmthink_active", "glee_addbeartrapjobs", function()
     if nextBearTrapSpawnCheck > CurTime() then return end
@@ -95,12 +81,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_addbeartrapjobs", function()
 
         end
 
-        local result = util.QuickTrace( bestPosition, vec_down * 100 )
-        local trapsPos = result.HitPos + result.HitNormal
-        local trapsAng = result.HitNormal:Angle()
-        trapsAng:RotateAroundAxis( trapsAng:Right(), -90 )
-
-        local bearTrap = GAMEMODE:SpawnABearTrap( trapsPos, trapsAng )
+        local bearTrap = GAMEMODE:SpawnABearTrap( bestPosition )
         if not IsValid( bearTrap ) then return false end
 
         --debugoverlay.Cross( trapsPos, 100, 60, color_white, true )

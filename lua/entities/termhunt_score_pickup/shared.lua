@@ -304,7 +304,7 @@ function ENT:SoundThink( volume )
 
         end
         self.impactSound:PlayEx( volume, pit )
-        util.ScreenShake( self:GetPos(), 0.2, 20, 0.2, 600 )
+        util.ScreenShake( self:GetPos(), 0.2, 20, 0.2, 600, true )
 
     end
 end

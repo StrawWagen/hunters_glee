@@ -182,8 +182,8 @@ function ENT:SwapPlayerAndTerminator( player, terminator )
     local playerPos = player:GetPos()
     local terminatorPos = terminator:GetPos()
 
-    util.ScreenShake( terminatorPos, 10, 20, 4, 1000 )
-    util.ScreenShake( playerPos, 10, 20, 4, 1000 )
+    util.ScreenShake( terminatorPos, 10, 20, 4, 1000, true )
+    util.ScreenShake( playerPos, 10, 20, 4, 1000, true )
 
     local beam = EffectData()
     beam:SetStart( playerPos )

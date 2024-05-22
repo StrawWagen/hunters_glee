@@ -1,5 +1,3 @@
-print( "GOOEY" )
-
 local glee_sizeScaled = glee_sizeScaled
 
 local function shopPanelName( identifier )
@@ -157,8 +155,6 @@ local notHoveredOverlay = Color( 0, 0, 0, 45 )
 local pressedItemOverlay = Color( 255, 255, 255, 25 )
 
 local lastScroll = 0
-
-local shopCategoryPanels = {}
 local MAINSCROLLNAME = "main_scroll_window"
 
 LocalPlayer().MAINSSHOPPANEL = LocalPlayer().MAINSSHOPPANEL or nil
@@ -385,7 +381,7 @@ function termHuntOpenTheShop()
     mainScrollPanel.verticalScrollWidth = scrollWidth
     mainScrollPanel.verticalScrollWidthPadded = scrollWidth + height / 80
 
-    mainScrollPanel:DockMargin( borderPadding, borderPadding * 2, 0, borderPadding )
+    mainScrollPanel:DockMargin( borderPadding, borderPadding * 2, borderPadding, borderPadding )
     mainScrollPanel:Dock( FILL )
 
     local scrollBar = mainScrollPanel:GetVBar()
@@ -471,14 +467,17 @@ function termHuntOpenTheShop()
 
     end
 
-
     local canvas = mainScrollPanel:GetCanvas()
     canvas:DockPadding( 0, 0, 0, 0 )
 
-    local sortedCategories = table.SortByKey( GAMEMODE.shopCategories, true )
+    local shopCategoriesBlocked = {}
+    local shopCategoryPanels = {}
+    local categories = table.Copy( GAMEMODE.shopCategories )
 
     -- the scrollable things that hold shop items and have names like innate and undead
-    for _, category in ipairs( sortedCategories ) do
+    for category, stuff in SortedPairsByMemberValue( categories, "order", false ) do
+        if stuff.canShowInShop and not stuff.canShowInShop( ply ) then shopCategoriesBlocked[ category ] = true continue end
+
         local horisScroller = vgui.Create( "DHorizontalScroller", ply.MAINSCROLLPANEL, shopCategoryName( category ) )
 
         --print( "createdcat " .. category .. " " .. tostring( horisScroller ) )
@@ -497,7 +496,7 @@ function termHuntOpenTheShop()
         horisScroller.breathingRoom = horisScroller.titleBarTall * 0.1
 
         horisScroller.shopItemHeight = horisScroller:GetTall() + -horisScroller.topMargin
-        horisScroller.shopItemWidth = ( whiteIdentifierLineWidth * 2 ) + ( horisScroller.shopItemHeight * 1.5 )
+        horisScroller.shopItemWidth = ( whiteIdentifierLineWidth * 2.5 ) + ( horisScroller.shopItemHeight * 1.5 )
 
         horisScroller.titleBarWide = horisScroller.shopItemWidth * 1.5
 
@@ -536,11 +535,12 @@ function termHuntOpenTheShop()
 
         end
 
-        timer.Simple( 0, function()
-            if not horisScroller then return end
-            horisScroller:SetScroll( ply.oldScrollPositions[ category ] or 0 )
+        horisScroller.Think = function( self )
+            if self.fixedScroll then return end
+            self.fixedScroll = nil
+            self:SetScroll( ply.oldScrollPositions[ category ] or 0 )
 
-        end )
+        end
 
         horisScroller.OnMouseWheeled = function( self, delta )
             return self:CoolerScroll( delta, 1 )
@@ -561,10 +561,13 @@ function termHuntOpenTheShop()
 
     -- shop items
     for identifier, itemData in SortedPairsByMemberValue( GAMEMODE.shopItems, "weight", false ) do
-        local myCategoryPanel = shopCategoryPanels[ itemData.category ]
-        if not myCategoryPanel then ErrorNoHaltWithStack( "tried to add item " .. identifier .. " to invalid category, " .. itemData.category ) continue end
+        local myCategory = itemData.category
+        if shopCategoriesBlocked[ myCategory ] then continue end
 
-        if itemData.canShowInShop and not itemData.canShowInShop() then continue end
+        local myCategoryPanel = shopCategoryPanels[ myCategory ]
+        if not myCategoryPanel then ErrorNoHaltWithStack( "tried to add item " .. identifier .. " to invalid category, " .. myCategory ) continue end
+
+        if itemData.canShowInShop and not itemData.canShowInShop( ply ) then continue end
 
         local shopItem = vgui.Create( "DButton", myCategoryPanel, shopPanelName( identifier ) )
 
@@ -638,6 +641,7 @@ function termHuntOpenTheShop()
             local tooltipsY = itemsY + categorysY
             local tooltipsX = itemsX + -myCategoryPanel.OffsetX
             coolTooltip.xPos, coolTooltip.yPos = tooltipsX, tooltipsY
+            -- pos under the text, not under the item
             local yPosUnder = tooltipsY + shopItem.shopItemNameHPadded * 3.5
 
             coolTooltip:SetSize( myCategoryPanel.shopItemWidth, myCategoryPanel.shopItemHeight )
@@ -721,7 +725,7 @@ function termHuntOpenTheShop()
 
                 local _, scaledSizeY = self:GetSize()
                 if scaledSizeY ~= 0 then
-                    local bottomOfTip = yPosUnder + scaledSizeY + height / 10
+                    local bottomOfTip = yPosUnder + scaledSizeY + height / 5
                     if bottomOfTip > height then
                         yPosAbove = tooltipsY + -scaledSizeY
                         self:SetPos( tooltipsX, yPosAbove )
@@ -1011,8 +1015,19 @@ end
 LocalPlayer().openedHuntersGleeShop = nil
 local nextShopOpen = 0
 
+local enableShopVar = GetConVar( "huntersglee_enableshop" )
+
 function GM:ShowShop()
     if nextShopOpen > CurTime() then return end
+    if not enableShopVar:GetBool() then
+        if not doneDisabledHint then
+            doneDisabledHint = true
+            LocalPlayer():PrintMessage( HUD_PRINTTALK, "Shop was disabled via \"huntersglee_enableshop 0\"" )
+
+        end
+        return
+
+    end
     if self:CanShowDefaultHud() then
         LocalPlayer().openedHuntersGleeShop = true
         termHuntOpenTheShop()

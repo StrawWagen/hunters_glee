@@ -50,7 +50,7 @@ end
 
 function ENT:PhysicsCollide( data, _ )
     if data.Speed < 40 then return end
-    util.ScreenShake( self:GetPos(), data.Speed / 40, 20, 0.5, 800 )
+    util.ScreenShake( self:GetPos(), data.Speed / 40, 20, 0.5, 800, true )
     self:EmitSound( "Flesh.ImpactHard" )
 
 end
@@ -116,8 +116,8 @@ function ENT:OnRemove()
 
     self:EmitSound( "ambient/machines/thumper_hit.wav", 100, 120, 1, CHAN_STATIC )
 
-    util.ScreenShake( self:GetPos(), 30, 40, 1, 800 )
-    util.ScreenShake( self:GetPos(), 5, 20, 3, 3000 )
+    util.ScreenShake( self:GetPos(), 30, 40, 1, 800, true )
+    util.ScreenShake( self:GetPos(), 5, 20, 3, 3000, true )
 
     local attacker = self.glee_detonator
     if not IsValid( attacker ) then

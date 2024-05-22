@@ -116,7 +116,7 @@ end
 -- yes, you can just add shop items!
 function GM:getDebugShopItemStructureTable()
     -- example item
-    local theItemTable = { 
+    local theItemTable = {
         [ "slams" ] = {
             name = "Slams",
             desc = "Some slams, 17 to be exact.",
@@ -185,13 +185,19 @@ function GM:invalidateShopItem( identifier )
     end
 end
 
-function GM:addShopCategory( shopCategoryName, shopCategoryPriority )
-    GAMEMODE.shopCategories[shopCategoryName] = shopCategoryPriority
+function GM:addShopCategory( shopCategoryName, shopCategoryData )
+    GAMEMODE.shopCategories[shopCategoryName] = shopCategoryData
 
 end
 
 function GM:GetShopItemData( identifier )
     local dat = GAMEMODE.shopItems[ identifier ]
+    if not istable( dat ) then return end
+    return dat
+
+end
+function GM:GetShopCategoryData( identifier )
+    local dat = GAMEMODE.shopCategories[ identifier ]
     if not istable( dat ) then return end
     return dat
 
@@ -413,6 +419,29 @@ function GM:canPurchase( ply, toPurchase )
     local dat = GAMEMODE:GetShopItemData( toPurchase )
     if not dat then GAMEMODE:invalidateShopItem( _, toPurchase ) return false, REASON_INVALID end
 
+    local catData = GAMEMODE:GetShopCategoryData( dat.category )
+    if not catData then return false, REASON_INVALID end
+
+    local categoryCanShow = catData.canShowInShop
+    if isfunction( categoryCanShow ) then
+        categoryCanShow = { categoryCanShow }
+
+    end
+    if istable( categoryCanShow ) then
+        for _, theCurrentShowFunc in ipairs( categoryCanShow ) do
+            local noErrors, returned = xpcall( theCurrentShowFunc, errorCatchingMitt, ply )
+            if noErrors == false then
+                GAMEMODE:invalidateShopItem( toPurchase )
+                print( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s canShowInShop function errored!!!!!!!!!!!" )
+                return nil, REASON_ERROR
+
+            else
+                if returned ~= true then return nil, "that shop item isn't for sale!" end
+
+            end
+        end
+    end
+
     local canEvenShow = dat.canShowInShop
     if isfunction( canEvenShow ) then
         canEvenShow = { canEvenShow }
@@ -481,7 +510,7 @@ function GM:canPurchase( ply, toPurchase )
 
     if nextPurchase > CurTime() then return nil, cooldownReason end
 
-    local hookResult, notPurchasableReason = hook.Run( "glee_canpurchaseitem", ply, self.itemIdentifier )
+    local hookResult, notPurchasableReason = hook.Run( "glee_blockpurchaseitem", ply, self.itemIdentifier )
 
     if hookResult then return nil, notPurchasableReason end
 
@@ -493,3 +522,10 @@ function GM:canPurchase( ply, toPurchase )
     return true, ""
 
 end
+
+local shopEnabled = CreateConVar( "huntersglee_enableshop", 1, FCVAR_REPLICATED, "Enables the shop.", 0, 1 )
+
+hook.Add( "glee_blockpurchaseitem", "glee_shopdisable", function()
+    if not shopEnabled:GetBool() then return true, "The shop is disabled." end
+
+end )

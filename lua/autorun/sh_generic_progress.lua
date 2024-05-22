@@ -5,26 +5,34 @@ if SERVER then
 
     util.AddNetworkString( "coolprogressbar_start" )
 
-    function generic_WaitForProgressBar( user, id, speed, rate, data )
+    function generic_KillProgressBar( user, id )
+        if not IsValid( user ) then return end
+
+        local progressKey = "progressBar_" .. id .. user:GetCreationID()
+        local progressLastUpdateKey = "progressBarUpd_" .. id .. user:GetCreationID()
+
+        if data and data.onEnd then
+            data.onEnd( user[ progressKey ] )
+
+        end
+
+        user:SetNW2Bool( progressKey, false )
+        user:SetNW2Int( progressKey, false )
+        user:SetNW2Int( progressLastUpdateKey, 0 )
+        timer.Remove( progressLastUpdateKey )
+
+        user[ progressKey ] = nil
+        user[ progressLastUpdateKey ] = nil
+
+    end
+
+    function generic_WaitForProgressBar( user, id, speed, rate )
 
         local progressKey = "progressBar_" .. id .. user:GetCreationID()
         local progressLastUpdateKey = "progressBarUpd_" .. id .. user:GetCreationID()
 
         local exitTheProgressBar = function()
-            if not IsValid( user ) then return end
-
-            if data and data.onEnd then
-                data.onEnd( user[ progressKey ] )
-
-            end
-
-            user:SetNW2Bool( progressKey, false )
-            user:SetNW2Int( progressKey, false )
-            user:SetNW2Int( progressLastUpdateKey, 0 )
-            timer.Remove( progressLastUpdateKey )
-
-            user[ progressKey ] = nil
-            user[ progressLastUpdateKey ] = nil
+            generic_KillProgressBar( user, id )
 
         end
 
@@ -41,7 +49,8 @@ if SERVER then
 
             end )
 
-            timer.Create( progressLastUpdateKey, speed, 0, function()
+            -- tear it down when updates stop
+            timer.Create( progressLastUpdateKey, speed + 0.25, 0, function()
                 if not IsValid( user ) then exitTheProgressBar() return end
                 local lastUpdate = user:GetNWInt( progressLastUpdateKey, nil )
                 if not lastUpdate then exitTheProgressBar() return end
@@ -117,7 +126,7 @@ if CLIENT then
         if LocalPlayer():GetNW2Bool( progressBarId, false ) ~= true then cancelProgressBar() return end
 
         local percent = LocalPlayer():GetNW2Int( progressBarId, 0 )
-        local absed = math.abs( updateSpeed - 1 ) / 50
+        local absed = math.abs( updateSpeed - 1 ) / 40
         local lerped = Lerp( absed, oldPercent, percent + updateRate )
         oldPercent = lerped
         local percentFinal = math.Clamp( lerped, 0, 100 )

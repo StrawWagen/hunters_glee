@@ -26,13 +26,21 @@
         }
         3
         {
+            "name"        "huntersglee_enableshop"
+            "text"        "Enable shop."
+            "help"        "Enables the shop."
+            "type"        "CheckBox"
+            "default"     "1"
+        }
+        4
+        {
             "name"        "termhunter_modeloverride"
             "text"        "Model override"
             "help"        "The model of the terminator"
             "type"        "Text"
             "default"     "models/terminator/player/arnold/arnold.mdl"
         }
-        4
+        5
         {
             "name"        "huntersglee_spawneroverridecount"
             "text"        "Override terminator count."
@@ -40,7 +48,7 @@
             "type"        "Numeric"
             "default"     "0"
         }
-        5
+        6
         {
             "name"        "huntersglee_proceduralcratesmaxplayers"
             "text"        "Player num, to stop crates."

@@ -111,7 +111,7 @@ function ENT:Place()
     plyToImmortal:EmitSound( "physics/concrete/boulder_impact_hard3.wav", 90, 80, 1, CHAN_STATIC )
     plyToImmortal:EmitSound( "physics/concrete/boulder_impact_hard3.wav", 90, 120, 1, CHAN_STATIC )
 
-    util.ScreenShake( plyToImmortal:GetPos(), 40, 20, 1.5, 1500 )
+    util.ScreenShake( plyToImmortal:GetPos(), 40, 20, 1.5, 1500, true )
 
     local immortCancel = function()
         timer.Remove( timerName )
@@ -148,7 +148,7 @@ function ENT:Place()
         damage:SetDamageForce( damage:GetDamageForce() * damageDealt )
         damage:ScaleDamage( 0 )
 
-        util.ScreenShake( plyToImmortal:GetPos(), damageDealt / 2, 20, damageDealt / 1000, 1500 )
+        util.ScreenShake( plyToImmortal:GetPos(), damageDealt / 2, 20, damageDealt / 1000, 1500, true )
 
         return true
 
