@@ -82,30 +82,7 @@ net.Receive( "OpenSTRadioMenu", function()
         draw.RoundedBox( 0, 0, 0, w, h, shopItemColor )
     end
 
-    -- escape the tuner!
-    function Tuner:Think()
-        if input.IsKeyDown( KEY_ESCAPE ) then Tuner:Remove() return end
-
-    end
-
-    local clientsMenuKey = input.LookupBinding( "+menu" )
-    if clientsMenuKey then
-        clientsMenuKey = input.GetKeyCode( clientsMenuKey )
-
-    end
-
-    local clientsUseKey = input.LookupBinding( "+use" )
-    if clientsUseKey then
-        clientsUseKey = input.GetKeyCode( clientsUseKey )
-
-    end
-
-    -- dont stick around!
-    function Tuner:OnKeyCodePressed( pressed )
-        if pressed == clientsMenuKey then Tuner:Remove() return end
-        if pressed == clientsUseKey then Tuner:Remove() return end
-
-    end
+    terminator_Extras.easyClosePanel( Tuner )
 
     local SongSlider = vgui.Create( "DNumSlider", Tuner )
     local margin = glee_sizeScaled( 15 )

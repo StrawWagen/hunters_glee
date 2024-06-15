@@ -149,7 +149,8 @@ end
 if not SERVER then return end
 
 
-local tooCloseToPlayer = 1000
+local tooCloseToPlayer = 500
+local sortaCloseToPlayers = 1500
 local barnaclePunishmentDist = 1000
 
 function ENT:UpdateGivenScore()
@@ -171,7 +172,7 @@ function ENT:UpdateGivenScore()
 
     for _, currentBarnacle in ipairs( ents.FindByClass( "npc_barnacle" ) ) do
         if currentBarnacle.barnacleCreator == self then continue end
-        local distToCurrentBarnacleSqr = self:GetPos():DistToSqr( currentBarnacle:GetPos() )
+        local distToCurrentBarnacleSqr = self:GetPos():Distance2DSqr( currentBarnacle:GetPos() )
         if distToCurrentBarnacleSqr < smallestPunishmentDist then
             tooCloseCount = tooCloseCount + 1
             if tooCloseCount < 2 then continue end
@@ -191,8 +192,13 @@ function ENT:UpdateGivenScore()
     local playerPenalty = 0
 
     if smallestDistLinear < tooCloseToPlayer then
+        playerPenalty = -200
+        scoreGiven = scoreGiven + playerPenalty
+
+    elseif smallestDistLinear < sortaCloseToPlayers then
         playerPenalty = -50
         scoreGiven = scoreGiven + playerPenalty
+
     end
 
     scoreGiven = scoreGiven + -punishmentGiven
@@ -235,13 +241,13 @@ function ENT:Place()
         end
         local enemy = barnacle:GetEnemy()
         if IsValid( enemy ) and enemy:IsPlayer() and IsValid( barnacle.barnacleOwner ) and barnacle.barnacleOwner ~= enemy then
-            local scoreToGive = 45
+            local scoreToGive = 15
             if not barnacle.hasGivenHugeScoreBump then
                 barnacle.hasGivenHugeScoreBump = true
                 scoreToGive = 100
             end
             barnacle.barnacleOwner:GivePlayerScore( scoreToGive )
-            huntersGlee_Announce( { barnacle.barnacleOwner }, 5, 10, "One of your barnacles has grabbed a player!" )
+            huntersGlee_Announce( { barnacle.barnacleOwner }, 5, 8, "One of your barnacles has grabbed a player!" )
 
         end
     end )

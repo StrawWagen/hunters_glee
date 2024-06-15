@@ -159,6 +159,7 @@ function termHunt_PowafulLightning( inflic, attacker, strikingPos, powa )
     --HACK!
     inflic.glee_inflictingLightning = true
 
+    -- call the hunters
     sound.EmitHint( SOUND_COMBAT, strikingPos, 8000, 1, inflic )
 
     for index = 1, powa * 2 do

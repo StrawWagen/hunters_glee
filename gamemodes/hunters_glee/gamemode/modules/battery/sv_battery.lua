@@ -91,7 +91,13 @@ zoomPowerUse = math.Round( zoomPowerUse, 2 )
 
 hook.Add( "glee_battery_think", "glee_flashlightdrain", function( ply, powerData )
     if ply:Glee_FlashlightIsOn() then
-        powerData[1] = powerData[1] + -flashlightPowerUse
+        local currUse = flashlightPowerUse
+        local returnedPowerUse = hook.Run( "glee_flashlight_poweruse", ply, currUse )
+        if returnedPowerUse then
+            currUse = returnedPowerUse
+
+        end
+        powerData[1] = powerData[1] + -currUse
 
     end
 end )
@@ -155,7 +161,13 @@ hook.Add( "glee_PlayerSwitchFlashlight", "glee_battery_flashlight", function( pl
         -- check
         checkFlashlightBrightness( ply )
         if ply:Glee_FlashlightIsOn() then return end
-        ply:GivePlayerBatteryCharge( -( flashlightPowerUse / 2 ) )
+        local currUse = flashlightPowerUse
+        local returnedPowerUse = hook.Run( "glee_flashlight_poweruse", ply, currUse )
+        if returnedPowerUse then
+            currUse = returnedPowerUse
+
+        end
+        ply:GivePlayerBatteryCharge( -( currUse / 2 ) )
 
     end
 end )

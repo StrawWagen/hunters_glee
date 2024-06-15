@@ -1,3 +1,6 @@
+
+AddCSLuaFile()
+
 local uiScaleVert = ScrH() / 1080
 local uiScaleHoris = ScrW() / 1920
 

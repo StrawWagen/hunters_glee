@@ -216,7 +216,7 @@ end
 function ENT:CalculateCanPlace()
     if not IsValid( self:GetCurrTarget() ) then return false, "You need to be looking at a player." end
     if not IsValid( self:GetFurthestTerminator() ) then return false, "No hunters are currently spawned." end
-    if GAMEMODE:isTemporaryTrueBool( "terhunt_player_swapper" ) then return false, "It's too soon for another inversion to begin." end
+    if GAMEMODE:isTemporaryTrueBool( "termhunt_player_swapper" ) then return false, "It's too soon for another inversion to begin." end
     if not self:HasEnoughToPurchase() then return false, self:TooPoorString() end
     return true
 
@@ -269,19 +269,33 @@ function ENT:UpdateGivenScore()
 
 end
 
+local interval = 180
+
 function ENT:Place()
     local plyToSwap = self:GetCurrTarget()
     local furthestTerminator = self:GetFurthestTerminator()
 
     if not IsValid( plyToSwap ) or not IsValid( furthestTerminator ) then return end
 
+    local checkPos = plyToSwap:GetShootPos()
     local plysToAlert = {}
-    for _, thing in ipairs( ents.FindInPVS( plyToSwap:GetShootPos() ) ) do
+    local inserted = {}
+    for _, thing in ipairs( ents.FindInPVS( checkPos ) ) do
         if thing:IsPlayer() then
+            inserted[thing] = true
             table.insert( plysToAlert, thing )
 
         end
     end
+    local dist = 1500^2
+    for _, ply in player.Iterator() do
+        if not inserted[ply] and ply:DistToSqr( checkPos ) < dist then
+            inserted[ply] = true
+            table.insert( plysToAlert, ply )
+
+        end
+    end
+
 
     huntersGlee_Announce( plysToAlert, 5, 10, self.player:Name() .. " has begun a temporal inversion...\nGET AWAY FROM " .. plyToSwap:Name() .. "!" )
     plyToSwap:EmitSound( "buttons/combine_button3.wav", 100, 100 )
@@ -351,6 +365,12 @@ function ENT:Place()
     self.player = nil
     self:SetOwner( NULL )
 
-    GAMEMODE:setTemporaryTrueBool( "terhunt_player_swapper", 180 + steps )
+    GAMEMODE:setTemporaryTrueBool( "termhunt_player_swapper", interval + steps )
 
 end
+
+hook.Add( "huntersglee_round_into_active", "player_swapper_initialwait", function()
+    GAMEMODE:setTemporaryTrueBool( "termhunt_player_swapper", interval )
+    GAMEMODE:setTemporaryTrueBool( "termhunt_player_swapper_initial", interval )
+
+end )

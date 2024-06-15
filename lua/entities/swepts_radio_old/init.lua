@@ -90,16 +90,14 @@ end
 
 function ENT:Use( _, caller )
     if not caller:IsPlayer() then return end
+    if self.createdGUI then return end
 
     local progBarStatus = generic_WaitForProgressBar( caller, "termhunt_radio_use", 0.05, 20 )
-    self.nextResetGuiCreated = CurTime() + 0.15
 
     if progBarStatus < 100 then return end
 
-    generic_KillProgressBar( caller, "termhunt_radio_use" )
-
-    if self.createdGUI then return end
     self.createdGUI = true
+    self.nextResetGuiCreated = CurTime() + 0.15
 
     net.Start( "OpenSTRadioMenu" )
         net.WriteUInt( self:EntIndex(), 16 )

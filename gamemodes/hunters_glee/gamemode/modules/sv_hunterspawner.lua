@@ -125,7 +125,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters", function( _, _, cu
 
     local classOverride = nil
     if math.random( 0, 100 ) < dopplegangerChance then
-        classOverride = "sb_advanced_nextbot_terminator_hunter_snail_disguised"
+        classOverride = "terminator_nextbot_disguised"
 
     end
     local spawned, theHunter = GAMEMODE:spawnHunter( classOverride )
@@ -179,6 +179,7 @@ end
 local defaultRadius = 8000
 local maxRadius = 9000
 local minRadius = 500
+local fails = 0
 
 -- spawn a hunter as far away as possible from every player by inching a distance check around
 -- made to be really random/overcomplicated so you never really know where they'll spawn from
@@ -208,12 +209,17 @@ function GM:getValidHunterPos()
         local wasTooClose = nil
 
         for _, pos in ipairs( playerShootPositions ) do
-            local visible, visResult = terminator_Extras.PosCanSee( pos, checkPos )
-            local hitCloseBy = visResult.HitPos:DistToSqr( checkPos ) < 350^2
+            local visible, visResult
+            local hitCloseBy
+            if not invalid then
+                visible, visResult = terminator_Extras.PosCanSee( pos, checkPos )
+                hitCloseBy = visResult.HitPos:DistToSqr( checkPos ) < 350^2
+
+            end
             if visible or hitCloseBy then
                 invalid = true
-                break
 
+            -- always check for this
             elseif pos:DistToSqr( checkPos ) < dynamicTooCloseDist^2 then -- dist check!
                 invalid = true
                 wasTooClose = true
@@ -229,13 +235,16 @@ function GM:getValidHunterPos()
 
         end
 
-        if not invalid then
+        if not invalid or ( fails > 2000 and not wasTooClose ) then
+            fails = 0
             -- good spawnpoint, spawn here
             --debugoverlay.Cross( spawnPos, 100, 20, color_white, true )
             GAMEMODE.roundExtraData.dynamicTooCloseFailCounts = -2
             return spawnPos, true
 
         end
+
+        fails = fails + 1
 
         -- random picked area was too close, decrease cutoff radius
         if wasTooClose then

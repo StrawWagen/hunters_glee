@@ -1,4 +1,5 @@
 local IsValid = IsValid
+local util_IsInWorld = util.IsInWorld
 
 local punishEscaping = CreateConVar( "huntersglee_punish_navmesh_escapers", 1, bit.bor( FCVAR_NOTIFY, FCVAR_ARCHIVE ), "Should the life of players who tread off the navmesh be sapped away?.", 0, 32 )
 
@@ -11,6 +12,48 @@ local restingBPMPermanent = 60 -- needs to match clientside var too
 local distNeededToBeOnArea = 25^2
 local distWayTooFarOffNavmesh = 250^2
 local posCanSeeComplex = terminator_Extras.PosCanSeeComplex
+
+
+local meta = FindMetaTable( "Player" )
+
+function meta:GetNavAreaData()
+    if not self.glee_CachedNavArea then
+        self:CacheNavArea()
+
+    end
+    return self.glee_CachedNavArea, self.glee_SqrDistToCachedNavArea
+
+end
+
+function meta:CacheNavArea()
+    local myPos = self:GetPos()
+    if not util_IsInWorld( myPos ) then
+        self.glee_CachedNavArea = nil
+        self.glee_SqrDistToCachedNavArea = math.huge
+        return
+
+    end
+    local area = navmesh.GetNearestNavArea( myPos, true, navCheckDist, false, true )
+
+    self.glee_CachedNavArea = area
+    if area then
+        self.glee_SqrDistToCachedNavArea = myPos:DistToSqr( area:GetClosestPointOnArea( myPos ) )
+
+        local oldArea = self.glee_CachedOldNavArea
+        if oldArea and oldArea ~= area then
+            hook.Run( "glee_ply_changednavareas", self, oldArea, newArea )
+            self.glee_CachedOldNavArea = area
+
+        elseif not oldArea then
+            self.glee_CachedOldNavArea = area
+
+        end
+    else
+        self.glee_SqrDistToCachedNavArea = math.huge
+
+    end
+end
+
 
 -- manage the BPM of ppl HERE
 
@@ -323,7 +366,6 @@ function GM:manageServersideCountOfBeats()
 end
 
 
-
 hook.Add( "huntersglee_givescore", "huntersglee_storealivescoring", function( scorer, addedscore )
     if not IsValid( scorer ) then return end
     if scorer:Health() <= 0 then return end
@@ -620,12 +662,13 @@ hook.Add( "PlayerDeath", "glee_spectatedeadplayers", function( died, _, killer )
 end )
 
 function GM:PlayerDeathThink( ply )
-    if GAMEMODE.canRespawn == false then
+    local hasHp = ply:Health() > 0
+    if GAMEMODE.canRespawn == false and not hasHp then
         if ply.termHuntTeam ~= GAMEMODE.TEAM_SPECTATE then
             GAMEMODE:spectatifyPlayer( ply )
 
         end
-    elseif GAMEMODE.canRespawn == true or ply.overrideSpawnAction then
+    elseif GAMEMODE.canRespawn == true or ply.overrideSpawnAction or hasHp then
         local lastForced = ply.nextForcedRespawn or 0
 
         if lastForced < CurTime() then
@@ -774,6 +817,7 @@ function GM:PlayerSpawn( pl, transiton )
 
 end
 
+-- dont spawn players in spots that people died.
 hook.Add( "PlayerDeath", "glee_dontspawnindeadspots", function( died, inflic, attacker )
     if died == attacker then return end
 
@@ -798,53 +842,6 @@ function GM:PlayerInitialSpawn( ply )
     player_manager.SetPlayerClass( ply, "player_termrunner" )
     ply.termHuntTeam = GAMEMODE.TEAM_PLAYING
 
-end
-
--- check if this map has all spawns in a separate room
-function GM:TeleportRoomCheck()
-    if not GAMEMODE.biggestNavmeshGroups or not GAMEMODE.navmeshGroups then
-        GAMEMODE.navmeshGroups = GAMEMODE:GetConnectedNavAreaGroups( navmesh.GetAllNavAreas() )
-        GAMEMODE.biggestNavmeshGroups = GAMEMODE:FilterNavareaGroupsForGreaterThanPercent( GAMEMODE.navmeshGroups, GAMEMODE.biggestGroupsRatio or 0.4 )
-
-    end
-
-    local doReset = nil
-    local reason = ""
-
-    -- randomly force people to spawn on one of the other "big groups"
-    local forceReset = #GAMEMODE.biggestNavmeshGroups > 1 and math.random( 0, 100 ) > ( 100 / #GAMEMODE.biggestNavmeshGroups )
-
-    for _, ply in ipairs( player.GetAll() ) do
-        -- dont use cache here because its rarely called
-        local plysNearestNav = GAMEMODE:getNearestNav( ply:GetPos(), 200 )
-        if forceReset then
-            doReset = true
-            reason = "Map has other areas...\nShuffling..."
-
-        elseif not plysNearestNav or not plysNearestNav.IsValid then
-            doReset = true
-            reason = "Someone was off the navmesh...\nRespawning..."
-
-        else
-            if not GAMEMODE:NavAreaExistsInGroups( plysNearestNav, GAMEMODE.biggestNavmeshGroups ) then
-                doReset = true
-                reason = "Someone is outside the biggest parts of the map!\nReturning..."
-            end
-        end
-        if doReset then
-            break
-        end
-    end
-    if doReset then
-        GAMEMODE.doNotUseMapSpawns = true
-        for _, plyGettinRespawned in ipairs( player.GetAll() ) do
-            plyGettinRespawned:KillSilent()
-
-        end
-        print( reason )
-        huntersGlee_Announce( player.GetAll(), 1, 5, reason )
-
-    end
 end
 
 hook.Add( "PlayerDeath", "glee_DropScoreOnSuicide", function( victim, inflictor, attacker )

@@ -63,4 +63,17 @@ else
     hook.Add( "CanCreateUndo", "glee_unsandboxify", no )
     hook.Add( "CanUndo", "glee_unsandboxify", no )
 
+    local string_find = string.find
+    local old_MsgAll = MsgAll
+
+    function MsgAll( ... )
+        for _, arg in ipairs( { ... } ) do
+            if string_find( arg, "suicide" ) or string_find( arg, "killed" ) then
+                return
+
+            end
+        end
+        old_MsgAll( ... )
+
+    end
 end

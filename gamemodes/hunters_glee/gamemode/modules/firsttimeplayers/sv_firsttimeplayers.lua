@@ -80,5 +80,6 @@ hook.Add( "SetupMove", "glee_FullLoadTrigger", function( ply, _, cmd )
 
     loadQueue[ply] = nil
     spawned[ply] = true
+    ply.glee_FullLoaded = true
 
 end )

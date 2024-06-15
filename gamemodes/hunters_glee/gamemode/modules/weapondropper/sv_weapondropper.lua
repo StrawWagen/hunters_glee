@@ -78,14 +78,14 @@ function plyMeta:CanDropWeaponKeepAmmo( wep )
 
 end
 
-function plyMeta:DropActiveWeaponKeepAmmo()
+function plyMeta:DropActiveWeaponKeepAmmo( force )
     local wep = self:GetActiveWeapon()
     if not self:CanDropWeaponKeepAmmo( wep ) then return end
-    self:DropWeaponKeepAmmo( wep )
+    self:DropWeaponKeepAmmo( wep, force )
 
 end
 
-function plyMeta:DropWeaponKeepAmmo( wep )
+function plyMeta:DropWeaponKeepAmmo( wep, force )
     local newWep = wep
     self:DropWeapon( wep )
     newWep.glee_ammoInside = {}
@@ -119,10 +119,18 @@ function plyMeta:DropWeaponKeepAmmo( wep )
 
         local newWepObj = newWep:GetPhysicsObject()
         if not newWepObj or not newWepObj.IsValid or not newWepObj:IsValid() then return end
-        newWepObj:ApplyForceCenter( forceDir * newWepObj:GetMass() * math.random( 150, 300 ) )
+
+        force = force or math.random( 150, 300 )
+        newWepObj:ApplyForceCenter( forceDir * newWepObj:GetMass() * force )
 
     end )
 
     return newWep
 
 end
+
+net.Receive( "glee_dropcurrentweapon", function( _, ply )
+    if not ply:CanDropWeaponKeepAmmo( wep ) then huntersGlee_Announce( { ply }, 1, 2, "Can't drop that." ) return end
+    ply:DropActiveWeaponKeepAmmo( 15 )
+
+end )

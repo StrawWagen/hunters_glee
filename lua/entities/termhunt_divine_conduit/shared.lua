@@ -164,13 +164,13 @@ function ENT:CalculateCanPlace()
     if IsHullTraceFull( checkPos, self.HullCheckSize, self ) then return false, self.noPurchaseReason_NoRoom end
     if getNearestNavFloor( checkPos ) == NULL then return false, self.noPurchaseReason_OffNavmesh end
     if not GAMEMODE:IsUnderSky( checkPos ) then return false, "Needs to be placed under the sky." end
-    if GAMEMODE:isTemporaryTrueBool( "terhunt_divine_conduit" ) then return false, "It's too soon for another conduit to form." end
+    if GAMEMODE:isTemporaryTrueBool( "termhunt_divine_conduit" ) then return false, "It's too soon for another conduit to form." end
     if not self:HasEnoughToPurchase() then return false, self:TooPoorString() end
     return true
 
 end
 
-ENT.radius = 1200
+ENT.radius = 1050
 
 function ENT:DoCircle()
     local circle = ClientsideModel( "models/hunter/tubes/tube2x2x025.mdl", RENDERGROUP_OPAQUE )
@@ -186,6 +186,7 @@ end
 
 local flatten = Vector( 1,1,0 )
 local tinyUpOffset = Vector( 0,0,20 )
+local interval = 60 * 4
 
 function ENT:Place()
 
@@ -227,7 +228,7 @@ function ENT:Place()
     end
 
     local plys = player.GetAll()
-    local warningDist = self.radius * 2
+    local warningDist = self.radius * 4
     local softwarnPlayers = {}
     local hardwarnPlayers = {}
     for _, ply in ipairs( plys ) do
@@ -283,7 +284,7 @@ function ENT:Place()
 
                 if not GAMEMODE:IsUnderSky( strikingPos ) then return end
 
-                local powa = 6
+                local powa = math.random( 1, 4 )
                 if not self.firstPowafulStrike then
                     self.firstPowafulStrike = true
                     powa = 7
@@ -321,6 +322,12 @@ function ENT:Place()
     self.player = nil
     self:SetOwner( NULL )
 
-    GAMEMODE:setTemporaryTrueBool( "terhunt_divine_conduit", 240 )
+    GAMEMODE:setTemporaryTrueBool( "termhunt_divine_conduit", interval )
 
 end
+
+hook.Add( "huntersglee_round_into_active", "divine_conduit_initialwait", function()
+    GAMEMODE:setTemporaryTrueBool( "termhunt_divine_conduit_initial", interval )
+    GAMEMODE:setTemporaryTrueBool( "termhunt_divine_conduit", interval )
+
+end )

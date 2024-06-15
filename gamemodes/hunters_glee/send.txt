@@ -1,9 +1,13 @@
-gamemodes\hunters_glee\gamemode\shoppinggui.lua
+gamemodes\hunters_glee\gamemode\cl_shopstandards.lua
+gamemodes\hunters_glee\gamemode\cl_shoppinggui.lua
+
 gamemodes\hunters_glee\gamemode\modules\cl_targetid.lua
 gamemodes\hunters_glee\gamemode\modules\cl_scoreboard.lua
 gamemodes\hunters_glee\gamemode\modules\cl_obfuscation.lua
 gamemodes\hunters_glee\gamemode\modules\cl_killfeedoverride.lua
 gamemodes\hunters_glee\gamemode\modules\cl_spectateflashlight.lua
+
+gamemodes\hunters_glee\gamemode\sh_player.lua
 
 gamemodes\hunters_glee\gamemode\modules\sh_panic.lua
 gamemodes\hunters_glee\gamemode\modules\sh_banking.lua
@@ -12,6 +16,8 @@ gamemodes\hunters_glee\gamemode\modules\sh_playerdrowning.lua
 gamemodes\hunters_glee\gamemode\modules\sh_danceslowdown.lua
 gamemodes\hunters_glee\gamemode\modules\sh_detecthunterkills.lua
 gamemodes\hunters_glee\gamemode\modules\sh_fallingwind.lua
+
+gamemodes\hunters_glee\gamemode\modules\signalstrength\cl_signalstrength.lua
 
 gamemodes\hunters_glee\gamemode\player_class\player_termrunner.lua
 gamemodes\hunters_glee\gamemode\player_class\player_termrunnertaunt.lua
@@ -28,5 +34,6 @@ gamemodes\hunters_glee\gamemode\modules\firsttimeplayers\cl_firsttimeplayers.lua
 gamemodes\hunters_glee\gamemode\modules\unsandboxing\sh_unsandboxing.lua
 
 lua\autorun\client\cl_shadowedtextfunc.lua
+lua\autorun\cl_gleemisc.lua
 lua\autorun\sh_generic_progress.lua
 lua\autorun\sh_glee_announcingText.lua

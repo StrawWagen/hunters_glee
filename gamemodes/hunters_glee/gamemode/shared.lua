@@ -17,6 +17,7 @@ GM.Website = "N/A"
 
 include( "player_class/player_termrunner.lua" )
 
+include( "sh_player.lua" )
 include( "sh_shopshared.lua" )
 include( "sh_shopitems.lua" )
 
@@ -32,12 +33,8 @@ include( "modules/unsandboxing/sh_unsandboxing.lua" )
 
 
 function GM:GetHuntersClass()
-    return "sb_advanced_nextbot_terminator_hunter_snail"
+    return "terminator_nextbot_snail"
 
-end
-
-function GM:RoundState()
-    return GetGlobal2Int( "termhunt_roundstate", 0 )
 end
 
 function GM:SharedSetup()

@@ -1,7 +1,8 @@
 
 local coroutine_yield = coroutine.yield
+local GAMEMODE = GAMEMODE or GM
 
-function GM:DoGreedyPatch()
+function GAMEMODE:DoGreedyPatch()
 
     local doors = ents.FindByClass( "prop_door_rotating" )
     local doorPatches = 0
@@ -20,8 +21,10 @@ function GM:DoGreedyPatch()
 
     --glasss
     local glasss = ents.FindByClass( "func_breakable_surf" )
+    local ventCovers = ents.FindByModel( "models/props_junk/vent001.mdl" )
     local breakables = ents.FindByClass( "func_breakable" )
 
+    breakables = table.Add( breakables, ventCovers )
     breakables = table.Add( breakables, glasss )
 
     local breakablePatches = 0
@@ -32,7 +35,7 @@ function GM:DoGreedyPatch()
         local breakableNormal = GAMEMODE:seeIfBreakableAndGetNormal( breakable )
         if not breakableNormal then continue end
 
-        local tooSmall, zHeight = GAMEMODE:breakableIsTooSmall( breakable, breakableNormal )
+        local tooSmall, width, zHeight = GAMEMODE:breakableIsTooSmall( breakable, breakableNormal )
         if tooSmall then continue end
 
         local patched = GAMEMODE:patchBreakable( breakable, breakableNormal, zHeight )
@@ -58,7 +61,7 @@ function GM:DoGreedyPatch()
 
     GAMEMODE:speakAsHuntersGlee( "Greedy navpatcher is... DONE!" )
 
-    GAMEMODE.HuntersGleeDoneTheGreedyPatch = true
+    GAMEMODE.HuntersGleeDoneTheGreedyPatch = #navmesh.GetAllNavAreas()
 
     coroutine_yield( "done" )
 
@@ -106,7 +109,7 @@ end )
 local tooFarDistSqr = 40^2
 local offGroundOffset = Vector( 0, 0, 20 )
 
-function GM:navPatchingThink( ply )
+function GAMEMODE:navPatchingThink( ply )
 
     local badMovement = ply:GetMoveType() == MOVETYPE_NOCLIP or ply:Health() <= 0 or ply:GetObserverMode() ~= OBS_MODE_NONE or ply:InVehicle()
 
@@ -214,7 +217,7 @@ local function connectionDistance( currArea, otherArea )
 end
 
 -- do checks to see if connection from old area to curr area is a good idea, then connect it if so
-function GM:smartConnectionThink( oldArea, currArea, ignorePlanar )
+function GAMEMODE:smartConnectionThink( oldArea, currArea, ignorePlanar )
     if oldArea:IsConnected( currArea ) then return end
 
     -- get dist sqr and old area's closest point to curr area
@@ -257,7 +260,7 @@ local distanceToJustIgnoreSqr = distanceToJustIgnore^2
 local groupDistToJustIgnore = ( distanceToJustIgnore * 2 )
 local boxSize = Vector( distanceToJustIgnore, distanceToJustIgnore, distanceToJustIgnore )
 
-function GM:FindPotentialLinkagesBetweenNavAreaGroups( groups, groupCorners, maxLinksPerGroup )
+function GAMEMODE:FindPotentialLinkagesBetweenNavAreaGroups( groups, groupCorners, maxLinksPerGroup )
 
     -- yay! caching!
     local centers = {}
@@ -506,7 +509,7 @@ local function connectionDataVisOffsetCheck( currentData )
 
 end
 
-function GM:TakePotentialLinkagesAndLinkTheValidOnes( groupLinkages )
+function GAMEMODE:TakePotentialLinkagesAndLinkTheValidOnes( groupLinkages )
 
     local linkedCount = 0
 
@@ -532,7 +535,7 @@ function GM:TakePotentialLinkagesAndLinkTheValidOnes( groupLinkages )
 
 end
 
-function GM:PlaceANavAreaUnderDoor( door )
+function GAMEMODE:PlaceANavAreaUnderDoor( door )
     local center = door:WorldSpaceCenter()
     local forward = door:GetForward()
     local right = door:GetRight()
@@ -552,7 +555,7 @@ function GM:PlaceANavAreaUnderDoor( door )
 
 end
 
-function GM:patchDoor( door )
+function GAMEMODE:patchDoor( door )
     local dividesNavmesh, behindNav, inFrontNav, navsWeCovered = GAMEMODE:doesDoorNeedANewNavArea( door )
     if dividesNavmesh then
         local patched, createdArea = GAMEMODE:PlaceANavAreaUnderDoor( door )
@@ -582,7 +585,7 @@ end
 
 local down = Vector( 0,0,-1 )
 
-function GM:PlaceANavAreaUnderBreakable( breakable, breakableForward, isCrouch )
+function GAMEMODE:PlaceANavAreaUnderBreakable( breakable, breakableForward, isCrouch )
     local center = breakable:WorldSpaceCenter()
     center = GAMEMODE:getFloor( center )
 
@@ -606,7 +609,7 @@ function GM:PlaceANavAreaUnderBreakable( breakable, breakableForward, isCrouch )
 
 end
 
-function GM:patchBreakable( breakable, breakableNormal, zHeight )
+function GAMEMODE:patchBreakable( breakable, breakableNormal, zHeight )
 
     local breakableExtent = 10 -- find a path between areas thats simpler than this
     local isCrouch = zHeight < 68
@@ -659,7 +662,7 @@ end
 
 local searchDist = 4
 
-function GM:doesEntDivideNavmesh( ent, entNormal, maxConnectionExtent )
+function GAMEMODE:doesEntDivideNavmesh( ent, entNormal, maxConnectionExtent )
     -- check if there's a navarea directly under the ent's world space center
     local center = ent:WorldSpaceCenter()
 
@@ -731,7 +734,7 @@ function GM:doesEntDivideNavmesh( ent, entNormal, maxConnectionExtent )
     end
 end
 
-function GM:noAreasThatCrossThis( pos, right, reference, navsToCheck )
+function GAMEMODE:noAreasThatCrossThis( pos, right, reference, navsToCheck )
 
     -- navareas are often not exactly aligned to the center of the thing
     local doorPos1 = pos + right * 10
@@ -760,7 +763,7 @@ function GM:noAreasThatCrossThis( pos, right, reference, navsToCheck )
 
 end
 
-function GM:anyAreasOverlapStrict( crossArea, navsToCheck )
+function GAMEMODE:anyAreasOverlapStrict( crossArea, navsToCheck )
     local reference = crossArea:GetCenter()
 
     for _, checkNav in ipairs( navsToCheck ) do
@@ -786,7 +789,7 @@ function GM:anyAreasOverlapStrict( crossArea, navsToCheck )
 
 end
 
-function GM:doesDoorNeedANewNavArea( door )
+function GAMEMODE:doesDoorNeedANewNavArea( door )
     if not util.doorIsUsable( door ) then return end
     -- assume door divides navmesh
 
@@ -809,7 +812,7 @@ end
 
 local ang_zero = Angle()
 
-function GM:breakableIsTooSmall( breakable, breakableForward )
+function GAMEMODE:breakableIsTooSmall( breakable, breakableForward )
     local breakableAng = breakableForward:Angle()
     local mins, maxs = breakable:WorldSpaceAABB()
 
@@ -820,9 +823,9 @@ function GM:breakableIsTooSmall( breakable, breakableForward )
     local zAdded = math.abs( mins.z ) + math.abs( maxs.z )
 
     local tooThin = yAdded < 32
-    local tooShort = zAdded < 45
+    local tooShort = zAdded < 40
     local isBad = tooThin or tooShort
-    return isBad, zAdded
+    return isBad, yAdded, zAdded
 
 end
 
@@ -835,7 +838,7 @@ local offsetsToCheck = {
     Vector( 0, 0, -100 ),
 }
 
-function GM:seeIfBreakableAndGetNormal( breakable )
+function GAMEMODE:seeIfBreakableAndGetNormal( breakable )
     local pos = breakable:WorldSpaceCenter()
     for _, offset in ipairs( offsetsToCheck ) do
         local trStruct = {
@@ -854,3 +857,32 @@ function GM:seeIfBreakableAndGetNormal( breakable )
 
     end
 end
+
+GAMEMODE.isSkyOnMap = GAMEMODE.isSkyOnMap or nil
+GAMEMODE.highestZ = GAMEMODE.highestZ or nil
+GAMEMODE.areasUnderSky = GAMEMODE.areasUnderSky or nil
+
+local function reset()
+    GAMEMODE.isSkyOnMap = false
+    GAMEMODE.areasUnderSky = {}
+    GAMEMODE.highestZ = -math.huge
+
+end
+
+hook.Add( "glee_connectedgroups_begin", "glee_resetsignalstrength", reset )
+
+local centerOffset = Vector( 0, 0, 25 )
+
+hook.Add( "glee_connectedgroups_visit", "glee_precachesignalstrength", function( area )
+    local underSky, hitPos = GAMEMODE:IsUnderSky( area:GetCenter() + centerOffset )
+    if underSky then
+        GAMEMODE.isSkyOnMap = true
+        GAMEMODE.areasUnderSky[ area ] = true
+
+    end
+    local currZ = hitPos.z
+    if currZ > GAMEMODE.highestZ then
+        GAMEMODE.highestZ = currZ
+
+    end
+end )

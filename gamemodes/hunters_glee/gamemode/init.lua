@@ -12,8 +12,10 @@ AddCSLuaFile( "modules/cl_spectateflashlight.lua" )
 AddCSLuaFile( "modules/thirdpersonflashlight/cl_flashlight.lua" )
 AddCSLuaFile( "modules/firsttimeplayers/cl_firsttimeplayers.lua" )
 
-AddCSLuaFile( "shoppinggui.lua" )
+AddCSLuaFile( "cl_shopstandards.lua" )
+AddCSLuaFile( "cl_shoppinggui.lua" )
 
+AddCSLuaFile( "sh_player.lua" )
 AddCSLuaFile( "sh_shopshared.lua" )
 AddCSLuaFile( "sh_shopitems.lua" )
 
@@ -27,19 +29,21 @@ AddCSLuaFile( "modules/sh_detecthunterkills.lua" )
 AddCSLuaFile( "modules/sh_fallingwind.lua" )
 AddCSLuaFile( "modules/battery/sh_battery.lua" )
 AddCSLuaFile( "modules/unsandboxing/sh_unsandboxing.lua" )
+AddCSLuaFile( "modules/signalstrength/cl_signalstrength.lua" )
 
 -- SV
 include( "lib/sv_termfuncs.lua" )
 include( "shared.lua" )
 include( "sv_player.lua" )
 include( "sv_playercommunication.lua" )
+include( "modules/sv_unstucker.lua" )
 include( "modules/sv_wallkick.lua" )
 include( "modules/sv_speedhandler.lua" )
+include( "modules/sv_navmeshgroups.lua" )
 include( "modules/sv_navpatcher.lua" )
 include( "modules/sv_doorbash.lua" )
 include( "modules/sv_goomba.lua" )
 include( "modules/sv_mapvote.lua" )
-include( "modules/sv_weapondropper.lua" )
 include( "modules/sv_seeding_rewarder.lua" )
 include( "modules/sv_skullmanager.lua" )
 include( "modules/sv_hunterspawner.lua" )
@@ -53,6 +57,9 @@ include( "modules/proceduralspawner/sv_genericspawner.lua" )
 include( "modules/proceduralspawner/sv_cratespawner.lua" )
 include( "modules/proceduralspawner/sv_beartrapspawner.lua" )
 
+include( "modules/weapondropper/sv_weapondropper.lua" )
+include( "modules/signalstrength/sv_signalstrength.lua" )
+
 util.AddNetworkString( "glee_witnesseddeathconfirm" )
 util.AddNetworkString( "glee_resetplayershopcooldowns" )
 util.AddNetworkString( "glee_sendshopcooldowntoplayer" )
@@ -62,7 +69,9 @@ util.AddNetworkString( "glee_followedsomething" )
 util.AddNetworkString( "glee_followednexthing" )
 util.AddNetworkString( "glee_switchedspectatemodes" )
 util.AddNetworkString( "glee_stoppedspectating" )
+util.AddNetworkString( "glee_dropcurrentweapon" )
 util.AddNetworkString( "glee_closetheshop" )
+util.AddNetworkString( "glee_roundstate" )
 
 resource.AddFile( "materials/vgui/hud/glee_skullpickup.vmt" )
 resource.AddFile( "materials/vgui/hud/heartbeat.png" )
@@ -94,7 +103,7 @@ GM.SpawnTypes = {
 }
 
 GM.roundStartAfterNavCheck      = 40
-GM.roundStartNormal             = 40
+GM.roundStartNormal             = 60
 GM.IsReallyHuntersGlee          = true
 
 validNavarea                    = validNavarea or NULL
@@ -146,16 +155,25 @@ function GM:TermHuntSetup()
 end
 
 
-function GM:RoundStateRepeat() -- "fixes" problems with state syncing
+function GM:RoundStateRepeat() -- make sure this doesnt get too out of sync
     if self.nextStateTransmit > CurTime() then return end
-    self:SetRoundState( self:RoundState() )
-    self.nextStateTransmit = CurTime() + 1
+    local currState = self:RoundState() or GM.ROUND_INVALID
+    self:SetRoundState( currState )
+    self.nextStateTransmit = CurTime() + 0.25
 
 end
 
 function GM:SetRoundState( state )
-    SetGlobal2Int( "termhunt_roundstate", state )
-    self.nextStateTransmit = CurTime() + 1
+    SetGlobalInt( "glee_roundstate", state )
+
+    net.Start( "glee_roundstate", false )
+        net.WriteInt( state, 8 )
+    net.Send( player.GetAll() )
+
+end
+
+function GM:RoundState()
+    return GetGlobalInt( "glee_roundstate", 0 )
 
 end
 
@@ -200,7 +218,7 @@ function GM:Think()
         if not dedi and NAVOPTIMIZER_tbl and superIncrementalGeneration then
             local cheats = GetConVar( "sv_cheats" ):GetBool()
             if cheats then
-                huntersGlee_Announce( player.GetAll(), 1000, 1, "Incrementally generating navmesh via Navmesh Optimizer..." )
+                huntersGlee_Announce( player.GetAll(), 1000, 5, "Incrementally generating navmesh via Navmesh Optimizer..." )
 
             else
                 huntersGlee_Announce( player.GetAll(), 100, 1, "NO NAVMESH.\nNavmesh Optimizer detected, run console command 'SV_CHEATS 1' for automatic navmesh generation." )
@@ -215,6 +233,7 @@ function GM:Think()
 
                 -- when generation is done
                 hook.Add( "navoptimizer_done_gencheapexpanded", "glee_detectrealnavgenfinish", function()
+                    huntersGlee_Announce( player.GetAll(), 1001, 5, "Navmesh generation complete, optimizing..." )
                     timer.Simple( 1, function()
                         RunConsoleCommand( "navmesh_globalmerge_auto" )
 
@@ -603,6 +622,8 @@ function GM:SetupTheLargestGroupsNStuff()
     end )
 end
 
+local upOffset = Vector( 0, 0, 25 )
+
 function GM:removePorters() -- it was either do this, or make the terminator use teleporters, this is easier. 
     local teleporters = ents.FindByClass( "trigger_teleport" )
     for _, porter in ipairs( teleporters ) do
@@ -613,7 +634,7 @@ function GM:removePorters() -- it was either do this, or make the terminator use
         if not portersArea or not portersArea.IsValid or not portersArea:IsValid() then SafeRemoveEntity( porter ) continue end
 
         local portersPosFloored = self:getFloor( portersPos )
-        if not portersArea:IsVisible( portersPosFloored ) then SafeRemoveEntity( porter ) continue end
+        if not portersArea:IsVisible( portersPosFloored + upOffset ) then SafeRemoveEntity( porter ) continue end
 
         local portersGroup = self:GetGroupThatNavareaExistsIn( portersArea, self.biggestNavmeshGroups )
         if not portersGroup then SafeRemoveEntity( porter ) continue end
@@ -629,7 +650,7 @@ function GM:removePorters() -- it was either do this, or make the terminator use
             if not area or not area.IsValid or not area:IsValid() then SafeRemoveEntity( porter ) break end
 
             local destPosFloored = self:getFloor( destPos )
-            if not area:IsVisible( destPosFloored ) then SafeRemoveEntity( porter ) break end
+            if not area:IsVisible( destPosFloored + upOffset ) then SafeRemoveEntity( porter ) break end
 
             local exitsGroup = self:GetGroupThatNavareaExistsIn( area, self.biggestNavmeshGroups )
             if not exitsGroup then SafeRemoveEntity( porter ) break end
@@ -692,6 +713,7 @@ local navmesh_IsGenerating = navmesh.IsGenerating
 local navmeshMightBeGeneratingUntil = nil
 
 function GM:handleGenerating( currState )
+
     local generating = self.waitingOnNavoptimizerGen or navmesh_IsGenerating()
 
     -- give the generator a bit of leeway
@@ -699,14 +721,14 @@ function GM:handleGenerating( currState )
         return true
 
     elseif generating and ( currState == self.ROUND_ACTIVE or currState == self.ROUND_LIMBO ) then
-        print( "Generating navmesh!\nRemoving bots..." )
+        print( "Navmesh generation detected, rebuilding." )
         self:roundEnd()
         self:beginSetup()
         self.biggestNavmeshGroups = nil
         return true
 
     elseif generating then
-        navmeshMightBeGeneratingUntil = CurTime()
+        navmeshMightBeGeneratingUntil = CurTime() + 10
         return true
 
     end
@@ -825,11 +847,6 @@ function GM:setupFinish()
 
     else
         self:SetupTheLargestGroupsNStuff()
-        -- removeporters was moved to the above function
-        if self.biggestNavmeshGroups then
-            self:removePorters()
-
-        end
         self:removeBlockers()
         self:SetRoundState( self.ROUND_INACTIVE )
 

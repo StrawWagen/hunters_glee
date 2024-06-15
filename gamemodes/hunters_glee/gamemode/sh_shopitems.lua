@@ -94,15 +94,30 @@
 -- do intro if 1 player online and its their first time --DONE!
 -- check brutalist kfc doors -- DONE
 
--- blessing
-    -- crappier version of immortality
-    -- but it lasts like minutes
-
 -- only withdraw/deposit when round is starting / player is dead --done
 -- make all undead evil items cost 2x --doneish
 
--- overcharged bots throw with sonic boom
+-- check lag compensation on all npcs -- done
+-- do the los check for bot unstucker --done
+
+-- overcharged bots throw with sonic boom --done
+-- bot avoid damaging ents idea, needs path building pass. -- done
+-- bot placing of slams + beartrap --done
+
+-- Replace stupid temp bools with ints, polish conduit/inversion cooldowns
+-- fix stupid visual immortalizer bug
+
+-- blessing
+    -- crappier version of immortality
+    -- but it lasts like minutes
 -- fix balls infinite money
+
+-- effigy
+-- pushes dead people away, makes them look away
+-- steals their money when they get close, or aim near it
+-- make homicidal glee cost more
+
+-- loan
 
 -- server-based leaderboard
 -- quickest to 10 skulls
@@ -110,26 +125,6 @@
 -- flat, most hunter kills
 -- most skulls, additive ( all players skulls in one session, added up )
 
--- check lag compensation on all npcs
--- do the los check for bot unstucker
-
--- each item can have an AND/OR skull cost, skull costs never mark up.
--- nailing bottle crashes server?
--- fix bear trap last beartrap stupid
--- fix prog bars
--- if bot kills player then sees another player, stand still and only move when they move
-
--- make divine intervention placable 
--- lock the crazier innate + item shop stuff behind trickle pickups around maps
-    -- makes ar2/rpg less boring/reliable
-    -- unlock conduit from this OR when people see it happen?
-    -- fixes information overload? 
--- models/props_vehicles/tanker001a.mdl
-
--- stupid slowdown on dm_bridge?
-
--- bot avoid damaging ents idea, needs path building pass.
--- bot placing of slams + beartrap
 -- radio draw channel instead of ammo
 -- give notifs when people break your crates/barrels?
 
@@ -1071,100 +1066,6 @@ local function superiorMetabolismPurchase( purchaser )
 
 end
 
---[[
-local function marathonRunnerPurchase( purchaser )
-    local timerName = "marathonRunnerTimer_" .. purchaser:GetClass() .. purchaser:EntIndex()
-
-    local doRunnerThink = function()
-        local myCenter = purchaser:WorldSpaceCenter()
-        local calustrophobiaNookScore = 1
-        local nooking = terminator_Extras.GetNookScore( myCenter )
-
-        if nooking < 3.2 then
-            calustrophobiaNookScore = nooking / 200
-
-        else
-            calustrophobiaNookScore = nooking / 2
-
-        end
-
-        purchaser.calustrophobiaNookScore = calustrophobiaNookScore
-        local panicToGive = 0
-        local doGive
-
-        if ( purchaser.nextClaustrophobiaInc or 0 ) < CurTime() then
-            purchaser.nextClaustrophobiaInc = CurTime() + 1
-
-            doGive = true
-
-        end
-
-        if nooking > 5.2 then
-            panicToGive = panicToGive + 12
-
-        elseif nooking > 4.5 then
-            panicToGive = panicToGive + 8
-
-        elseif nooking >= 3 then
-            panicToGive = panicToGive + 3 -- don't decrease!
-
-        elseif nooking < 3 then
-            panicToGive = panicToGive + -1
-
-        elseif nooking < 2.5 then
-            panicToGive = panicToGive + -5
-
-        end
-
-        if doGive then
-            GAMEMODE:GivePanic( purchaser, panicToGive )
-
-        end
-        -- end claustrophobia
-
-        local speedBoost = 100
-        speedBoost = math.Clamp( speedBoost + -( panicToGive * 40 ), -150, 150 )
-        purchaser:doSpeedModifier( "marathonrunner", speedBoost )
-
-    end
-
-    local hookName = tostring( purchaser:GetCreationID() ) .. "claustrophobiainnate"
-    hook.Add( "termhunt_scaleaddedbpm", hookName, function( plyGettinBPM, lastScale )
-
-        if plyGettinBPM ~= purchaser then return end
-
-        if not purchaser.calustrophobiaNookScore then return end
-
-        return lastScale * purchaser.calustrophobiaNookScore
-
-    end )
-
-    -- Set the timer to repeat the sound
-    timer.Create( timerName, 0.05, 0, function()
-        if IsValid( purchaser ) then
-            if purchaser:Health() <= 0 then return end
-            doRunnerThink()
-
-        else
-            -- If the entity is no longer valid, stop the timer
-            timer.Remove( timerName )
-
-        end
-    end )
-
-    local undoInnate = function( _ )
-        timer.Remove( timerName )
-        purchaser:doSpeedModifier( "marathonrunner", nil )
-        hook.Remove( "termhunt_scaleaddedbpm", hookName )
-        purchaser.nextClaustrophobiaInc = nil
-        purchaser.calustrophobiaNookScore = nil --calus strophobia moment
-
-    end
-
-    GAMEMODE:PutInnateInProperCleanup( timerName, undoInnate, purchaser )
-
-end
-]]--
 
 local function cholesterolPurchase( purchaser )
     local hookName1 = "glee_cholesterol_higherresting_" .. purchaser:GetCreationID()
@@ -1215,7 +1116,7 @@ local function cholesterolPurchase( purchaser )
         else
             heartAttackScore = heartAttackScore + -2
             if not ply.glee_HasHeartAttackWarned then
-                huntersGlee_Announce( { ply }, 5, 8, "You feel a deep, sharp pain..." )
+                huntersGlee_Announce( { ply }, 5, 6, "You feel a deep, sharp pain..." )
                 GAMEMODE:GivePanic( ply, 50 )
                 ply.glee_HasHeartAttackWarned = true
 
@@ -1292,6 +1193,94 @@ local function cholesterolPurchase( purchaser )
     end
 
     GAMEMODE:PutInnateInProperCleanup( timerName, undoInnate, purchaser )
+
+end
+
+
+local function signalRelayPurchase( purchaser )
+
+    local hookKey = "huntersglee_signalrelay_" .. purchaser:GetCreationID()
+
+    hook.Add( "glee_signalstrength_used", hookKey, function( ply )
+        if not IsValid( purchaser ) then hook.Remove( "glee_signalstrength_used", hookKey ) return end
+        if ply ~= purchaser then return end
+        if not purchaser.hasSignalBoost then hook.Remove( "glee_signalstrength_used", hookKey ) return end
+
+        if purchaser:Health() <= 0 then return end
+        if purchaser:Armor() <= 0 then ply:BatteryNag( 1.25 ) return end
+
+        ply:GivePlayerBatteryCharge( -0.25 )
+
+    end )
+
+    hook.Add( "glee_signalstrength_update", hookKey, function( ply, strength, static )
+        if not IsValid( purchaser ) then hook.Remove( "glee_signalstrength_update", hookKey ) return end
+        if ply ~= purchaser then return end
+        if not purchaser.hasSignalBoost then hook.Remove( "glee_signalstrength_update", hookKey ) return end
+
+        if purchaser:Health() <= 0 then return end
+        if purchaser:Armor() <= 0 then return end
+
+        return strength + math.random( 35, 45 ), math.Clamp( static, 0, 5 )
+
+    end )
+
+    purchaser.hasSignalBoost = true
+
+    local undoInnate = function( respawner )
+        respawner.hasSignalBoost = nil
+
+    end
+
+    GAMEMODE:PutInnateInProperCleanup( nil, undoInnate, purchaser )
+
+end
+
+
+local function ultraLumenFlashlightPurchase( purchaser )
+
+    local hookKey = "huntersglee_ultralumen_" .. purchaser:GetCreationID()
+
+    local function tearDown()
+        hook.Remove( "glee_flashlight_poweruse", hookKey )
+        hook.Remove( "glee_flashlightstats", hookKey )
+        if not IsValid( purchaser ) then return end
+
+        purchaser.hasUltraLumen = nil
+
+    end
+
+    hook.Add( "glee_flashlight_poweruse", hookKey, function( ply, use )
+        if not IsValid( purchaser ) then tearDown() return end
+        if ply ~= purchaser then return end
+        if not purchaser.hasUltraLumen then tearDown() return end
+
+        return use * 2
+
+    end )
+
+    hook.Add( "glee_flashlightstats", hookKey, function( ply, alpha, farz, fov )
+        if not IsValid( purchaser ) then tearDown() return end
+        if ply ~= purchaser then return end
+        if not purchaser.hasUltraLumen then tearDown() return end
+        if alpha ~= 255 then return end
+
+        farz = farz * 3
+        fov = 120
+        return farz, fov
+
+    end )
+
+    purchaser.hasUltraLumen = true
+    purchaser:Glee_Flashlight( false )
+
+    local undoInnate = function( respawner )
+        respawner.hasUltraLumen = nil
+        tearDown()
+
+    end
+
+    GAMEMODE:PutInnateInProperCleanup( nil, undoInnate, purchaser )
 
 end
 
@@ -1409,6 +1398,7 @@ local function susPurchase( purchaser )
 
 end
 
+
 local speedBoostBeginsAt = 95
 local bpmToSpeedScale = 4
 
@@ -1491,7 +1481,7 @@ local function chameleonPurchase( purchaser )
         if target.glee_chameleonHint then return end
         target.glee_chameleonHint = true
 
-        huntersGlee_Announce( { target }, 5, 10, "Ouch! Chameleon skin is weak!" )
+        huntersGlee_Announce( { target }, 15, 6, "Ouch! Chameleon skin is weak!" )
 
     end )
 
@@ -1913,7 +1903,7 @@ local function witnessPurchase( purchaser )
             end
         end
 
-        huntersGlee_Announce( witnessing, 10, 15, "YOU WITNESS " .. string.upper( gettingAttacked:Name() ) )
+        huntersGlee_Announce( witnessing, 20, 15, "YOU WITNESS " .. string.upper( gettingAttacked:Name() ) )
 
         -- s OR not s
         SorNotS = ""
@@ -1924,7 +1914,7 @@ local function witnessPurchase( purchaser )
             SorNotSOpp = ""
 
         end
-        huntersGlee_Announce( { gettingAttacked }, 15, 15, #witnessing .. " SOUL" .. SorNotS .. " BARE" .. SorNotSOpp .. " WITNESS TO YOUR FATE" )
+        huntersGlee_Announce( { gettingAttacked }, 25, 15, #witnessing .. " SOUL" .. SorNotS .. " BARE" .. SorNotSOpp .. " WITNESS TO YOUR FATE" )
 
         score = math.Clamp( score, 0, math.huge )
 
@@ -2069,7 +2059,7 @@ if CLIENT then
             table.Add( medkits, ents.FindByClass( "item_healthvial" ) )
 
             players = ents.FindByClass( "player" )
-            hunters = ents.FindByClass( "sb_advanced_nextbot_terminator_hunter_*" )
+            hunters = ents.FindByClass( "terminator_nextbot*" )
 
             ar2Balls = ents.FindByClass( "item_ammo_ar2_altfire" )
 
@@ -2277,7 +2267,7 @@ local function sixthSensePurchase( purchaser )
                 purchaser:EmitSound( "plats/rackstop1.wav", 75, 70, 0.6, CHAN_STATIC )
                 GAMEMODE:GivePanic( purchaser, 40 )
 
-                huntersGlee_Announce( { purchaser }, 5, 10, "MOVE!" )
+                huntersGlee_Announce( { purchaser }, 10, 10, "MOVE!" )
 
             end
 
@@ -2565,7 +2555,8 @@ local function doorLockerPurchase( purchaser, itemIdentifier )
 end
 
 local function inversionCanPurchase( _ )
-    if GAMEMODE:isTemporaryTrueBool( "terhunt_player_swapper" ) then return nil, "It is too soon for another inversion to begin." end
+    if GAMEMODE:isTemporaryTrueBool( "termhunt_player_swapper_initial" ) then return nil, "Not unlocked yet." end
+    if GAMEMODE:isTemporaryTrueBool( "termhunt_player_swapper" ) then return nil, "It is too soon for another inversion to begin." end
     return true, nil
 
 end
@@ -2621,7 +2612,8 @@ local function termOverchargerPurchase( purchaser, itemIdentifier )
 end
 
 local function conduitCanPurchase( _ )
-    if GAMEMODE:isTemporaryTrueBool( "terhunt_divine_conduit" ) then return nil, "It is too soon for another conduit to be opened." end
+    if GAMEMODE:isTemporaryTrueBool( "termhunt_divine_conduit_initial" ) then return nil, "Not unlocked yet." end
+    if GAMEMODE:isTemporaryTrueBool( "termhunt_divine_conduit" ) then return nil, "It is too soon for another conduit to be opened." end
     return true, nil
 
 end
@@ -2785,7 +2777,7 @@ local function additionalHunter( purchaser )
     local timerKey = "spawnExtraHunter_" .. purchaser:GetCreationID()
     timer.Create( timerKey, 0.2, 0, function()
 
-        local spawned, hunter = GAMEMODE:spawnHunter( "sb_advanced_nextbot_terminator_hunter_snail_disguised" )
+        local spawned, hunter = GAMEMODE:spawnHunter( "terminator_nextbot_snail_disguised" )
         if spawned ~= true then return end
 
         if hunter.MimicPlayer then
@@ -3155,7 +3147,6 @@ local function bankDepositDescription()
 
     end
     return "Deposit score for another time.\nThe bank has a 10% procesing fee when depositing.\nIdle fees of \"" .. periodCharge .. "\"% of your entire balance, will apply every \"" .. chargePeriodDays .. "\" real-time " .. days
-
 
 end
 
@@ -3668,11 +3659,27 @@ local defaultItems = {
         purchaseCheck = { unUndeadCheck, chameleonCanPurchase },
         purchaseFunc = chameleonPurchase,
     },
+    -- signal boost
+    [ "signalrelay" ] = {
+        name = "Signal Relay.",
+        desc = "Boosts your signal\nConsumes Suit Armor.",
+        cost = 50,
+        markup = 2,
+        cooldown = math.huge,
+        category = "Innate",
+        purchaseTimes = {
+            GM.ROUND_INACTIVE,
+            GM.ROUND_ACTIVE,
+        },
+        weight = 80,
+        purchaseCheck = { unUndeadCheck },
+        purchaseFunc = signalRelayPurchase,
+    },
     -- flat upgrade
     [ "coldblooded" ] = {
         name = "Cold Blooded.",
         desc = "Your top speed is linked to your heartrate.",
-        cost = 175,
+        cost = 150,
         markup = 2,
         cooldown = math.huge,
         category = "Innate",
@@ -3688,7 +3695,7 @@ local defaultItems = {
     [ "superiormetabolism" ] = {
         name = "Superior Metabolism.",
         desc = "You've always been different than those around you.\nWhat would hospitalize others for weeks, passed over you in days.\nYou regenerate health as your heart beats.",
-        cost = 225,
+        cost = 200,
         markup = 2,
         cooldown = math.huge,
         category = "Innate",
@@ -3700,22 +3707,6 @@ local defaultItems = {
         purchaseCheck = { unUndeadCheck },
         purchaseFunc = superiorMetabolismPurchase,
     },
-    --[[-- arguably worse version of cold blooded 
-    [ "marathonrunner" ] = {
-        name = "Claustrophobic Marathonner.",
-        desc = "You live to run, every day, a new marathon.\nYour body, a paragon of speed, your mind however...\nGoing indoors is alien, terrifying to you.\nThe interior spaces destroy your momentum, panic mounts, slowing you down.",
-        cost = 100,
-        markup = 2,
-        cooldown = math.huge,
-        category = "Innate",
-        purchaseTimes = {
-            GM.ROUND_INACTIVE,
-            GM.ROUND_ACTIVE,
-        },
-        weight = 85,
-        purchaseCheck = { unUndeadCheck },
-        purchaseFunc = marathonRunnerPurchase,
-    },]]--
     -- wacky ass shit
     [ "bombgland" ] = {
         name = "Bomb Gland.",
@@ -3731,6 +3722,21 @@ local defaultItems = {
         weight = 85,
         purchaseCheck = { unUndeadCheck },
         purchaseFunc = bombGlandPurchase,
+    },
+    [ "ultralumen" ] = {
+        name = "Ultra Lumen 3000.",
+        desc = "Scared of the dark?\nWhat if the dark feared YOU!\nThe Ultra Lumen 3000 is perfect for anyone that can't stand darkness, a fraction of the sun's power, in your hands!\nMay increase battery consumption.",
+        cost = 50,
+        markup = 2,
+        cooldown = math.huge,
+        category = "Innate",
+        purchaseTimes = {
+            GM.ROUND_INACTIVE,
+            GM.ROUND_ACTIVE,
+        },
+        weight = 90,
+        purchaseCheck = { unUndeadCheck },
+        purchaseFunc = ultraLumenFlashlightPurchase,
     },
     -- flat upgrade
     [ "susimpostor" ] = {
@@ -3811,7 +3817,7 @@ local defaultItems = {
         desc = "Beartrap.\nWhen a player, hunter, steps on it, you get a reward.\nCosts more to place it near the living, and intersecting objects.",
         cost = 0,
         markup = 1,
-        cooldown = 5,
+        cooldown = 15,
         category = "Sacrifices",
         purchaseTimes = {
             GM.ROUND_ACTIVE,
@@ -3943,7 +3949,7 @@ local defaultItems = {
     -- ultimate stalemate breaker
     [ "temporalinversion" ] = {
         name = "Temporal Inversion",
-        desc = "Swaps a player out for their most remote enemy.\nGlobal 3 minute delay between placing.",
+        desc = "Swaps a player out for their most remote enemy.\nUnlocks after 3 minutes, then a global 3 minute cooldown between uses.",
         costDecorative = "-400",
         cost = 0,
         markup = 1,
@@ -3974,7 +3980,7 @@ local defaultItems = {
     -- crazy purchase
     [ "divineconduit" ] = {
         name = "Divine Conduit",
-        desc = "Convey the will of the gods.\nGlobal 4 minute delay between placing.",
+        desc = "Convey the will of the gods.\nUnlocks after 4 minutes, then a global 4 minute cooldown between uses.",
         costDecorative = "-600",
         cost = 0,
         markup = 1,

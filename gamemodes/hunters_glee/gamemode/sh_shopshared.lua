@@ -505,7 +505,7 @@ function GM:canPurchase( ply, toPurchase )
     local nextPurchasePresentable = math.Round( math.abs( nextPurchase - CurTime() ), 1 )
     local cooldownReason = "Cooldown, Purchasable in " .. tostring( nextPurchasePresentable )
     if nextPurchase == math.huge then
-        cooldownReason = "This is only purchasable once per round."
+        cooldownReason = "You've already bought this."
     end
 
     if nextPurchase > CurTime() then return nil, cooldownReason end

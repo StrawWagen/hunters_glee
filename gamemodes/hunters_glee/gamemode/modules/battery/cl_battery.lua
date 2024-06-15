@@ -31,11 +31,21 @@ local guiDead = 0
 local paddingJustHealth = glee_sizeScaled( nil, 260 )
 local paddingHpAndArmor = glee_sizeScaled( nil, 550 )
 local GAMEMODE = GAMEMODE or GM
-local dontDrawDefaultHud = GAMEMODE.DontDrawDefaultHud
+local dontDrawDefaultHud
 
 hook.Add( "glee_cl_aliveplyhud", "glee_drawbatterynotifs", function( ply, cur )
 
-    if dontDrawDefaultHud() then return end
+    if not dontDrawDefaultHud then
+        if GAMEMODE.DontDrawDefaultHud then
+            dontDrawDefaultHud = GAMEMODE.DontDrawDefaultHud
+
+        end
+        return
+
+    elseif dontDrawDefaultHud() then
+        return
+
+    end
 
     -- flash when first showing up
     if guiAlpha <= 0 then guiDead = 17 return end

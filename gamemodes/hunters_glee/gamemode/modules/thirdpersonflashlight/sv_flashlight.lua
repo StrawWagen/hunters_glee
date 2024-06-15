@@ -21,13 +21,24 @@ local function checkLight( ply, theLight )
 	ply.glee_FlashlightColorDefault = newColor
 
 	local farz = alpha * 2
-	-- min 200 farz
+	-- min 125 farz
 	farz = farz + 125
-	theLight:SetKeyValue( "farz", farz )
 
 	local fov = alpha / 3.4
 	fov = math.Clamp( fov, 60, 80 )
+
+	local farzReturned, fovReturned = hook.Run( "glee_flashlightstats", ply, alpha, farz, fov )
+	if fovReturned then
+		fov = fovReturned
+
+	end
+	if farzReturned then
+		farz = farzReturned
+
+	end
+
 	theLight:SetKeyValue( "lightfov", fov )
+	theLight:SetKeyValue( "farz", farz )
 
 	theLight:SetKeyValue( "lightcolor", formatted )
 	theLight.flashlight_OldColor = formatted

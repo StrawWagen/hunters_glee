@@ -4,9 +4,9 @@ ENT.Type = "anim"
 ENT.Base = "screamer_crate"
 
 ENT.Category    = "Other"
-ENT.PrintName   = "Weapons crate"
+ENT.PrintName   = "Beartrap Spawner"
 ENT.Author      = "StrawWagen"
-ENT.Purpose     = "Weapon item crate spawner"
+ENT.Purpose     = "Spawns beartraps."
 ENT.Spawnable    = true
 ENT.AdminOnly    = false
 ENT.Category = "Hunter's Glee"
@@ -68,7 +68,6 @@ function ENT:UpdateGivenScore()
         maxs = IntersectingHull,
         ignoreworld = true,
     }
-    debugoverlay.SweptBox( trStruc.start, trStruc.endpos, trStruc.mins, trStruc.maxs, Angle( 0,0,0 ), 1, color_white )
     local result = util.TraceHull( trStruc )
     local isUnderSomething = result.Hit
 

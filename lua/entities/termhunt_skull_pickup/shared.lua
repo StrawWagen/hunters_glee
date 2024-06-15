@@ -329,6 +329,7 @@ function glee_RagdollHasASkull( ragdoll )
 
     if IsValid( ragdoll.glee_skullpickup ) then return false end
     if string.find( model, "zombie_soldier" ) then ragdoll.glee_skulldecapitated = true return end
+    if string.find( model, "headcrab" ) then ragdoll.glee_skulldecapitated = true return end
 
     local ragdollsSkull
     local isSkeleton

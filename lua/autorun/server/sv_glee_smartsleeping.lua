@@ -191,6 +191,17 @@ local function setupOnCreateHook()
                 local radius = ent:GetModelRadius()
                 if not radius or radius >= 25 then return end
 
+                local nearSubstantialCount = 0
+                local near = ents.FindInSphere( ent:GetPos(), radius * 3 )
+                for _, curr in ipairs( near ) do
+                    local obj = curr:GetPhysicsObject()
+                    if IsValid( obj ) and obj:IsMotionEnabled() then
+                        nearSubstantialCount = nearSubstantialCount + 1
+
+                    end
+                end
+                if nearSubstantialCount <= 5 then return end
+
                 terminator_Extras.SmartSleepEntity( ent, 20 )
 
             end )

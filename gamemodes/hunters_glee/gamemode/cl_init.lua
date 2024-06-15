@@ -1,12 +1,19 @@
 include( "shared.lua" )
-include( "shoppinggui.lua" )
+include( "cl_shopstandards.lua" )
+include( "cl_shoppinggui.lua" )
 include( "modules/cl_targetid.lua" )
 include( "modules/cl_scoreboard.lua" )
 include( "modules/cl_obfuscation.lua" )
 include( "modules/cl_killfeedoverride.lua" )
 include( "modules/cl_spectateflashlight.lua" )
+include( "modules/signalstrength/cl_signalstrength.lua" )
 include( "modules/thirdpersonflashlight/cl_flashlight.lua" )
 include( "modules/firsttimeplayers/cl_firsttimeplayers.lua" )
+
+include( "modules/battery/cl_battery.lua" )
+include( "modules/bpm/cl_bpm.lua" )
+
+local GAMEMODE = GM
 
 -- from https://github.com/Facepunch/garrysmod/blob/e189f14c088298ca800136fcfcfaf5d8535b6648/garrysmod/lua/includes/modules/killicon.lua#L202
 local killIconColor = Color( 255, 80, 0, 255 )
@@ -19,25 +26,7 @@ local scoreMaxShakeSize = glee_sizeScaled( nil, 2 )
 local skullDisplayPadding = glee_sizeScaled( nil, 96 )
 local hintPadding = glee_sizeScaled( nil, 156 )
 
-local nextDontDrawCheck = 0
-local dontDraw
 local CurTime = CurTime
-
-function GM:DontDrawDefaultHud()
-    local cur = CurTime()
-    if nextDontDrawCheck < cur then
-        dontDraw = nil
-        nextDontDrawCheck = cur + 1
-        if hook.Run( "HUDShouldDraw", "CHudHealth" ) == false then dontDraw = true return true end
-        if hook.Run( "HUDShouldDraw", "CHudBattery" ) == false then dontDraw = true return true end
-
-    end
-    if dontDraw then return true end
-
-end
-
-include( "modules/battery/cl_battery.lua" )
-include( "modules/bpm/cl_bpm.lua" )
 
 -- TIME
 local fontData = {
@@ -160,13 +149,38 @@ fontData = {
 surface.CreateFont( "termhuntTriumphantFont", fontData )
 
 local nextBeat = 0
-
 local screenMiddleW = ScrW() / 2
 local screenMiddleH = ScrH() / 2
 
-local GAMEMODE = GM
+local nextDontDrawCheck = 0
+local dontDraw
 
-function GM:TranslatedBind( bind )
+function GAMEMODE:DontDrawDefaultHud()
+    local cur = CurTime()
+    if nextDontDrawCheck < cur then
+        dontDraw = nil
+        nextDontDrawCheck = cur + 1
+        if hook.Run( "HUDShouldDraw", "CHudHealth" ) == false then dontDraw = true return true end
+        if hook.Run( "HUDShouldDraw", "CHudBattery" ) == false then dontDraw = true return true end
+
+    end
+    if dontDraw then return true end
+
+end
+
+GAMEMODE.currRoundState = GAMEMODE.currRoundState or GAMEMODE.ROUND_SETUP
+
+function GAMEMODE:RoundState()
+    return GAMEMODE.currRoundState
+
+end
+
+net.Receive( "glee_roundstate", function()
+    GAMEMODE.currRoundState = net.ReadInt( 8 )
+
+end )
+
+function GAMEMODE:TranslatedBind( bind )
     local lookedUp = input.LookupBinding( bind )
     if not lookedUp then return end
 
@@ -922,12 +936,12 @@ hook.Add( "Think", "termhunt_alertroundchange", function()
 
 end )
 
-function GM:CanShowDefaultHud()
+function GAMEMODE:CanShowDefaultHud()
     local ply = LocalPlayer()
 
-    if not ply.MAINSCROLLPANEL then return true end
-    if not IsValid( ply.MAINSCROLLPANEL ) then return true end
-    if ply.MAINSCROLLPANEL:IsMouseInputEnabled() then return nil end
+    if not ply.MAINSSHOPPANEL then return true end
+    if not IsValid( ply.MAINSSHOPPANEL ) then return true end
+    if ply.MAINSSHOPPANEL:IsMouseInputEnabled() then return nil end
 
     return true
 
@@ -994,3 +1008,24 @@ hook.Add( "CalcView", "glee_override_spectating_angles", function( ply, _, ang, 
 
     end
 end )
+
+--binds
+-- yoinked from darkrp so we do it right
+local FKeyBinds = {
+    ["+menu"] = "ShowShop",
+    ["noclip"] = "DropCurrentWeapon",
+
+}
+
+function GM:PlayerBindPress( _, bind, _ )
+    if FKeyBinds[bind] then
+        hook.Call( FKeyBinds[bind], GAMEMODE )
+
+    end
+end
+
+function GM:DropCurrentWeapon()
+    net.Start( "glee_dropcurrentweapon" )
+    net.SendToServer()
+
+end

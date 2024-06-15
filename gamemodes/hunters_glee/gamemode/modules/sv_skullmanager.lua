@@ -28,14 +28,18 @@ function GM:SpawnASkull( pos, ang, termSkull, parent )
 
 end
 
-hook.Add( "OnTerminatorKilledRagdoll", "glee_dropterminatorskulls", function( died, _, _ )
+local function spawnTermSkull( died, _, _ )
     if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
     local newSkull = GAMEMODE:SpawnASkull( died:GetShootPos(), died:GetAimVector():Angle(), true, died )
 
     -- makes "erm something must have died here" hints better
     newSkull.fromSomethingWitnessable = true
 
-end )
+end
+
+hook.Add( "OnTerminatorKilledRagdoll", "glee_dropterminatorskulls", spawnTermSkull )
+
+hook.Add( "OnTerminatorKilledDissolve", "glee_dropterminatorskulls", spawnTermSkull )
 
 hook.Add( "PlayerDeath", "glee_dropplayerskulls", function( died, _, attacker )
     if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end

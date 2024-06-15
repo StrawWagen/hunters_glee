@@ -1,6 +1,6 @@
 
 local GAMEMODE = GAMEMODE or GM
-local dontDrawDefaultHud = GAMEMODE.DontDrawDefaultHud
+local dontDrawDefaultHud
 
 local math_Clamp = math.Clamp
 local CurTime = CurTime
@@ -37,7 +37,17 @@ local imageAlpha = 0
 
 hook.Add( "glee_cl_aliveplyhud", "glee_drawbpmcooler", function( ply, cur )
 
-    if dontDrawDefaultHud() then return end
+    if not dontDrawDefaultHud then
+        if GAMEMODE.DontDrawDefaultHud then
+            dontDrawDefaultHud = GAMEMODE.DontDrawDefaultHud
+
+        end
+        return
+
+    elseif dontDrawDefaultHud() then
+        return
+
+    end
 
     local noHeartBeats
 
