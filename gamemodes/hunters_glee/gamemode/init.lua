@@ -75,6 +75,9 @@ util.AddNetworkString( "glee_roundstate" )
 
 resource.AddFile( "materials/vgui/hud/glee_skullpickup.vmt" )
 resource.AddFile( "materials/vgui/hud/heartbeat.png" )
+resource.AddFile( "materials/vgui/hud/data_base.png" )
+resource.AddFile( "materials/vgui/hud/data_nodata.png" )
+resource.AddFile( "materials/vgui/hud/deadshopicon.png" )
 
 resource.AddSingleFile( "sound/53937_meutecee_trumpethit07.wav" )
 resource.AddSingleFile( "sound/418788_name_heartbeat_single.wav" )
