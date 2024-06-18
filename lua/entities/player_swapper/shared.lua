@@ -289,7 +289,7 @@ function ENT:Place()
     end
     local dist = 1500^2
     for _, ply in player.Iterator() do
-        if not inserted[ply] and ply:DistToSqr( checkPos ) < dist then
+        if not inserted[ply] and ply:GetPos():DistToSqr( checkPos ) < dist then
             inserted[ply] = true
             table.insert( plysToAlert, ply )
 

@@ -37,8 +37,8 @@ local switchSound = Sound( "buttons/lightswitch2.wav" )
 local lastScroll = 0
 local MAINSCROLLNAME = "main_scroll_window"
 
-local noDataMateiral = Material( "vgui/hud/data_nodata.png", "noclamp" )
-local dataMaterial = Material( "vgui/hud/data_base.png", "noclamp smooth" )
+local noDataMateiral = Material( "vgui/hud/gleenodata.png", "noclamp" )
+local dataMaterial = Material( "vgui/hud/gleefulldata.png", "noclamp smooth" )
 local deadDataMaterial = Material( "vgui/hud/deadshopicon.png", "noclamp smooth" )
 
 LocalPlayer().MAINSSHOPPANEL = LocalPlayer().MAINSSHOPPANEL or nil
