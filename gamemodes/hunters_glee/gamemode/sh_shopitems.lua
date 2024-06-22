@@ -2121,7 +2121,7 @@ if CLIENT then
             local unknownAlphaBite = 0 -- make stuff have less alpha when we dont see it for a while
             local oldPos = sensed.sixthSenseOldPos or sensedPos
             local randomScale = distance / 50
-            if sensed:IsDormant() then
+            if sensed:IsDormant() or ( sensed.IsHomeless and not sensed:IsSolid() ) then
                 sensed.glee_sixthsense_wasdormant = true
                 sensedPos = oldPos
                 randomScale = randomScale * 0.75

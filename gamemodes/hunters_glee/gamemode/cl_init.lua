@@ -918,10 +918,10 @@ end
 hook.Add( "HUDPaint", "termhunt_playerdisplay", HUDPaint )
 
 -- flash the window on round state change!
+-- only flash when round ends, and goes into active
 local oldState = nil
 local toFlash = {
     [GAMEMODE.ROUND_ACTIVE]     = true,
-    [GAMEMODE.ROUND_INACTIVE]   = true,
     [GAMEMODE.ROUND_LIMBO]      = true,
 }
 
@@ -1017,15 +1017,20 @@ local FKeyBinds = {
 
 }
 
-function GM:PlayerBindPress( _, bind, _ )
+function GM:PlayerBindPress( _, bind, _, code )
     if FKeyBinds[bind] then
-        hook.Call( FKeyBinds[bind], GAMEMODE )
+        hook.Call( FKeyBinds[bind], GAMEMODE, code )
 
     end
 end
 
-function GM:DropCurrentWeapon()
-    net.Start( "glee_dropcurrentweapon" )
-    net.SendToServer()
+function GM:DropCurrentWeapon( keyCode )
+    if not keyCode then return end
+    local name = "glee_dropweaponhold"
+    timer.Create( name, 0.05, 0, function()
+        if not input.IsButtonDown( keyCode ) then timer.Remove( name ) return end
+        net.Start( "glee_dropcurrentweapon" )
+        net.SendToServer()
 
+    end )
 end

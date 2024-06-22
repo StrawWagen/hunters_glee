@@ -130,7 +130,15 @@ function plyMeta:DropWeaponKeepAmmo( wep, force )
 end
 
 net.Receive( "glee_dropcurrentweapon", function( _, ply )
-    if not ply:CanDropWeaponKeepAmmo( wep ) then huntersGlee_Announce( { ply }, 1, 2, "Can't drop that." ) return end
+    if ply:Health() <= 0 then return end
+    if not ply:CanDropWeaponKeepAmmo( ply:GetActiveWeapon() ) then return end
+    if ply:GetMoveType() == MOVETYPE_NOCLIP then return end
+    local progress = generic_WaitForProgressBar( ply, "glee_weapondropper_wait", 0.05, 10, { progInfo = "Dropping weapon..." } )
+
+    if progress < 100 then return end
+
+    generic_KillProgressBar( ply, "glee_weapondropper_wait" )
+    ply:EmitSound( "common/wpn_select.wav", 65, 120, 0.5, CHAN_ITEM )
     ply:DropActiveWeaponKeepAmmo( 15 )
 
 end )

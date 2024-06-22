@@ -146,9 +146,11 @@ function ENT:DoScore( reciever )
 
     if self:GetIsTerminatorSkull() then
         reciever:EmitSound( "physics/metal/metal_canister_impact_hard2.wav", 72, math.random( 110, 120 ) )
+        util.ScreenShake( self:GetPos(), 5, 20, 0.75, 500 )
 
     else
         reciever:EmitSound( "physics/cardboard/cardboard_cup_impact_hard2.wav", 72, math.random( 75, 85 ) )
+        util.ScreenShake( self:GetPos(), 1, 20, 0.5, 500 )
 
     end
 
@@ -300,14 +302,23 @@ end
 function ENT:PhysicsCollide( colData, _ )
     self:DoScore( colData.HitEntity )
     if colData.Speed < 30 then return end
-    self:SoundThink( colData.Speed / 100 )
 
-end
+    local volume = colData.Speed / 100
 
-function ENT:SoundThink( volume )
     local sndPath = "physics/cardboard/cardboard_cup_impact_hard2.wav"
     if self:GetIsTerminatorSkull() then
         sndPath = "physics/metal/metal_canister_impact_soft1.wav"
+
+        local effScale = colData.Speed / 500
+        effScale = math.max( effScale, math.Rand( 0, 0.5 ) )
+
+        local Sparks = EffectData()
+        Sparks:SetOrigin( colData.HitPos )
+        Sparks:SetNormal( colData.HitNormal )
+        Sparks:SetMagnitude( effScale )
+        Sparks:SetScale( effScale )
+        Sparks:SetRadius( effScale )
+        util.Effect( "Sparks", Sparks )
 
     end
 

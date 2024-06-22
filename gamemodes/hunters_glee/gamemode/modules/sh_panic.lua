@@ -65,9 +65,15 @@ elseif SERVER then
 
     function GM:PanicThinkSV( ply )
         local panic = GAMEMODE:GetPanic( ply )
+        local panicDrain = 0.5
 
-        if ply:Health() <= 0 then
+        local plysHealth = ply:Health()
+
+        if plysHealth <= 0 then
             panic = 0
+
+        elseif plysHealth <= 20 then
+            panicDrain = 0.25
 
         end
 
@@ -183,7 +189,7 @@ elseif SERVER then
 
         end
 
-        panic = math.Clamp( panic + -0.5, 0, 1000 )
+        panic = math.Clamp( panic + -panicDrain, 0, 1000 )
         -- we are adding decimals to ints, but it works for some reason?
         -- changed to nwfloat
         ply:SetNWFloat( "huntersglee_panic", panic )
@@ -213,6 +219,18 @@ elseif SERVER then
         GAMEMODE:SetPanic( victim, 0 )
         if victim.huntersglee_panicSound == nil or not victim.huntersglee_panicSound:IsPlaying() then return end
         victim.huntersglee_panicSound:Stop()
+
+    end )
+
+    hook.Add( "PostEntityTakeDamage", "glee_paniconplydamage", function( victim, damage, took )
+        if not took then return end
+        if not victim:IsPlayer() then return end
+        local panic = damage:GetDamage() / 10
+        if victim:Health() < 25 then
+            panic = math.Clamp( panic, 35, 100 )
+
+        end
+        GAMEMODE:GivePanic( victim, panic )
 
     end )
 end

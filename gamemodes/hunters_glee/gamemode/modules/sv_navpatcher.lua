@@ -2,6 +2,9 @@
 local coroutine_yield = coroutine.yield
 local GAMEMODE = GAMEMODE or GM
 
+local vec_zero = Vector( 0, 0, 0 )
+local IsValid = IsValid
+
 function GAMEMODE:DoGreedyPatch()
 
     local doors = ents.FindByClass( "prop_door_rotating" )
@@ -67,6 +70,171 @@ function GAMEMODE:DoGreedyPatch()
 
 end
 
+
+local function connectionDistance( currArea, otherArea )
+    local currCenter = currArea:GetCenter()
+
+    local nearestInitial = otherArea:GetClosestPointOnArea( currCenter )
+    local nearestFinal   = currArea:GetClosestPointOnArea( nearestInitial )
+    nearestFinal.z = nearestInitial.z
+    local distTo   = nearestInitial:Distance( nearestFinal )
+    return distTo, nearestFinal, nearestInitial
+
+end
+
+local function distanceEdge( currArea, otherArea )
+    local currCenter = currArea:GetCenter()
+
+    local nearestInitial    = otherArea:GetClosestPointOnArea( currCenter )
+    local nearestFinal      = currArea:GetClosestPointOnArea( nearestInitial )
+    local distTo            = nearestInitial:Distance( nearestFinal )
+    return distTo
+
+end
+
+local function goodDist( distTo )
+    local distQuota = 75
+    local minCheck = -1
+    local maxCheck = 1
+
+    while distQuota < 400 do
+        local min = distQuota + minCheck
+        local max = distQuota + maxCheck
+
+        if distTo > min and distTo < max then return true end
+        distQuota = distQuota + 25
+
+    end
+
+    return nil
+
+end
+
+local upOffset = Vector( 0, 0, 25 )
+
+-- do checks to see if connection from old area to curr area is a good idea
+local function smartConnectionThink( oldArea, currArea, simple )
+    if oldArea:IsConnected( currArea ) then return end
+
+    -- get dist flat, no z component
+    local distTo = connectionDistance( oldArea, currArea )
+
+    if distTo > 55 and not goodDist( distTo ) then return end
+
+    -- check if there's a simple-ish way from oldArea to currArea
+    -- dont create a new connection if there is
+    local returnAreas = { [currArea] = true }
+    local incomingAreas = currArea:GetIncomingConnections()
+    if #incomingAreas > 0 then
+        for _, area in ipairs( incomingAreas ) do
+            returnAreas[area] = true
+
+        end
+    end
+
+    if not simple then
+        local currsNearest = currArea:GetClosestPointOnArea( oldArea:GetCenter() ) + upOffset
+        local tolerance = distTo + -5
+
+        local doneAlready = {}
+        for _, firstLayer in ipairs( oldArea:GetAdjacentAreas() ) do
+            if returnAreas[firstLayer] then return end
+            doneAlready[firstLayer] = true
+            if firstLayer:IsVisible( currsNearest ) and distanceEdge( firstLayer, currArea ) < tolerance then return end
+
+            for _, secondLayer in ipairs( firstLayer:GetAdjacentAreas() ) do
+                if doneAlready[secondLayer] then continue end
+                doneAlready[secondLayer] = true
+                if returnAreas[secondLayer] then return end
+                if secondLayer:IsVisible( currsNearest ) and distanceEdge( secondLayer, currArea ) < tolerance then return end
+
+                for _, thirdLayer in ipairs( secondLayer:GetAdjacentAreas() ) do
+                    if doneAlready[thirdLayer] then continue end
+                    doneAlready[thirdLayer] = true
+                    if returnAreas[thirdLayer] then return end
+                    if thirdLayer:IsVisible( currsNearest ) and distanceEdge( thirdLayer, currArea ) < tolerance then return end
+
+                end
+            end
+        end
+    end
+
+    oldArea:ConnectTo( currArea )
+
+    return true
+
+end
+
+-- patches gaps in navmesh, using players as a guide
+-- patches will never be ideal, but they will be better than nothing
+
+local tooFarDistSqr = 40^2
+
+local function navPatchingThink( ply )
+
+    local badMovement = ply:GetMoveType() == MOVETYPE_NOCLIP or ply:Health() <= 0 or ply:GetObserverMode() ~= OBS_MODE_NONE or ply:InVehicle()
+
+    if badMovement then ply.oldPatchingArea = nil return end
+
+    local currArea, distToArea = ply:GetNavAreaData()
+    if not IsValid( currArea ) then return end
+
+    -- cant be sure of areas further away from the player than this!
+    if distToArea > tooFarDistSqr then return end
+
+    local oldArea = ply.oldPatchingArea
+    if not IsValid( oldArea ) then
+        oldArea = currArea
+        ply.oldPatchingArea = oldArea
+
+    end
+
+    local patchData = ply.patchingData
+    if not patchData then
+        patchData = {}
+        ply.patchingData = patchData
+
+    end
+    if not ply:IsOnGround() then patchData.wasOffGround = true end
+
+    if currArea == oldArea then return end
+
+    patchData = table.Copy( patchData )
+
+    ply.patchingData = nil
+    ply.oldPatchingArea = currArea
+
+    if oldArea:IsConnected( currArea ) and currArea:IsConnected( oldArea ) then return end
+
+    local plysCenter = ply:WorldSpaceCenter()
+
+    local currClosestPos = currArea:GetClosestPointOnArea( plysCenter )
+    local oldClosestPos = oldArea:GetClosestPointOnArea( plysCenter )
+    local highestHeight = math.max( plysCenter.z, oldClosestPos.z + 25, currClosestPos.z + 25 )
+
+    local plysCenter2 = Vector( plysCenter.x, plysCenter.y, highestHeight ) -- yuck
+    local currClosestPosInAir = Vector( currClosestPos.x, currClosestPos.y, highestHeight )
+    local oldClosestPosInAir = Vector( oldClosestPos.x, oldClosestPos.y, highestHeight )
+
+    -- needs terminator nextbot addon!
+    --debugoverlay.Line( currClosestPos, currClosestPosInAir, 5, color_white, true )
+    --debugoverlay.Line( currClosestPosInAir, plysCenter2, 5, color_white, true )
+    --debugoverlay.Line( plysCenter2, oldClosestPosInAir, 5, color_white, true )
+    --debugoverlay.Line( oldClosestPos, oldClosestPosInAir, 5, color_white, true )
+    -- goes from last area, to the highest height, then back down to the current area
+    if not terminator_Extras.PosCanSee( currClosestPos, currClosestPosInAir, MASK_SOLID_BRUSHONLY ) then return end
+    if not terminator_Extras.PosCanSee( currClosestPosInAir, plysCenter2, MASK_SOLID_BRUSHONLY ) then return end
+    if not terminator_Extras.PosCanSee( plysCenter2, oldClosestPosInAir, MASK_SOLID_BRUSHONLY ) then return end
+    if not terminator_Extras.PosCanSee( oldClosestPos, oldClosestPosInAir, MASK_SOLID_BRUSHONLY ) then return end
+
+    -- if ply was on the ground the entire time, we can skip all the anti-krangle stuff
+    local skipBigChecks = not patchData.wasOffGround
+
+    smartConnectionThink( oldArea, currArea, skipBigChecks )
+    smartConnectionThink( currArea, oldArea, skipBigChecks )
+
+end
+
 hook.Add( "glee_sv_validgmthink", "glee_managenavpatching", function( players )
     local playersToPatch = {}
     local addedPlayerCreationIds = {}
@@ -98,156 +266,10 @@ hook.Add( "glee_sv_validgmthink", "glee_managenavpatching", function( players )
     end
 
     for _, ply in ipairs( playersToPatch ) do
-        GAMEMODE:navPatchingThink( ply )
+        navPatchingThink( ply )
 
     end
 end )
-
--- patches gaps in navmesh, using players as a guide
--- patches will never be ideal, but they will be better than nothing
-
-local tooFarDistSqr = 40^2
-local offGroundOffset = Vector( 0, 0, 20 )
-
-function GAMEMODE:navPatchingThink( ply )
-
-    local badMovement = ply:GetMoveType() == MOVETYPE_NOCLIP or ply:Health() <= 0 or ply:GetObserverMode() ~= OBS_MODE_NONE or ply:InVehicle()
-
-    if badMovement then ply.oldPatchingArea = nil return end
-
-    local plyPos = ply:GetPos()
-
-    local currArea, distToArea = ply:GetNavAreaData()
-    if not currArea or not currArea:IsValid() then return end
-    -- cant be sure of areas further away than this!
-    if distToArea > tooFarDistSqr then return end
-    -- cant see it!
-    if not currArea:IsVisible( plyPos ) then return end
-
-    local oldArea = ply.oldPatchingArea
-    ply.oldPatchingArea = currArea
-
-    if not oldArea or not oldArea:IsValid() then return end
-    if currArea == oldArea then return end
-
-    local currClosestPos = currArea:GetClosestPointOnArea( plyPos )
-    local oldClosestPos = oldArea:GetClosestPointOnArea( plyPos )
-    local zOverride = math.max( plyPos.z, oldClosestPos.z + 10, currClosestPos.z + 10 ) + 10 -- just check walls
-
-    local plyPos2 = Vector( plyPos.x, plyPos.y, zOverride ) -- yuck
-    currClosestPos.z = zOverride
-
-    --debugoverlay.Line( plyPos2, currClosestPos, 5, Color(255,255,255), true )
-    --print( plyPos2.z, currClosestPos.z, plyPos.z )
-
-    if not terminator_Extras.PosCanSee( plyPos2, currClosestPos, MASK_SOLID_BRUSHONLY ) then return end
-
-    local oldAreasCenter = oldArea:GetCenter()
-    local currAreasCenter = currArea:GetCenter()
-
-    -- dont create connections thru floors, specifcally a problem around elevators!
-    if math.abs( currAreasCenter.z - oldAreasCenter.z ) > 50 then
-        local check1Start = currAreasCenter + offGroundOffset
-        local check1End = Vector( currAreasCenter.x, currAreasCenter.y, oldAreasCenter.z + 20 )
-        local check1CanSee = terminator_Extras.PosCanSee( check1Start, check1End, MASK_SOLID_BRUSHONLY )
-
-        local check2Start = oldAreasCenter + offGroundOffset
-        local check2End = Vector( oldAreasCenter.x, oldAreasCenter.y, currAreasCenter.z + 20 )
-        local check2CanSee = terminator_Extras.PosCanSee( check2Start, check2End, MASK_SOLID_BRUSHONLY )
-
-        if not check1CanSee and not check2CanSee then return end
-
-    end
-
-    self:smartConnectionThink( oldArea, currArea )
-    self:smartConnectionThink( currArea, oldArea )
-
-end
-
--- see if the z of start area, to the check areas, is less then criteria
-local function arePlanar( startArea, toCheckAreas, criteria )
-    for _, currArea in ipairs( toCheckAreas ) do
-        if startArea:IsConnected( currArea ) then
-            local height = math.abs( startArea:ComputeAdjacentConnectionHeightChange( currArea ) )
-            if height < criteria then return true end
-
-        end
-
-        local startAreaClosest = startArea:GetClosestPointOnArea( currArea:GetCenter() )
-        local currAreaClosest = currArea:GetClosestPointOnArea( startAreaClosest )
-
-        height = currAreaClosest.z - startAreaClosest.z
-        height = math.abs( height )
-
-        if height < criteria then return true end
-
-    end
-    return false
-end
-
-local function goodDist( distTo )
-    local distQuota = 75
-    local minCheck = -1
-    local maxCheck = 1
-
-    while distQuota < 400 do
-        local min = distQuota + minCheck
-        local max = distQuota + maxCheck
-        min = min^2
-        max = max^2
-
-        if distTo > min and distTo < max then return true end
-        distQuota = distQuota + 25
-
-    end
-
-    return nil
-
-end
-
-local function connectionDistance( currArea, otherArea )
-    local currCenter = currArea:GetCenter()
-
-    local nearestInitial = otherArea:GetClosestPointOnArea( currCenter )
-    local nearestFinal   = currArea:GetClosestPointOnArea( nearestInitial )
-    nearestFinal.z = nearestInitial.z
-    local distToSqr   = nearestInitial:DistToSqr( nearestFinal )
-    return distToSqr, nearestFinal, nearestInitial
-
-end
-
--- do checks to see if connection from old area to curr area is a good idea, then connect it if so
-function GAMEMODE:smartConnectionThink( oldArea, currArea, ignorePlanar )
-    if oldArea:IsConnected( currArea ) then return end
-
-    -- get dist sqr and old area's closest point to curr area
-    local distToSqr, _, currAreasClosest = connectionDistance( oldArea, currArea )
-
-    if distToSqr > 55^2 and not goodDist( distToSqr ) then return end
-
-    local pos1 = oldArea:GetClosestPointOnArea( currAreasClosest )
-    local pos2 = currArea:GetClosestPointOnArea( pos1 )
-    local criteria = math.abs( pos1.z - pos2.z ) + 25
-    --debugoverlay.Cross( pos1, 50, 10, color_white, true )
-    --debugoverlay.Cross( pos2, 100, 10, Color( 255,0,0 ), true )
-
-    local navDirTakenByConnection = oldArea:ComputeDirection( pos2 )
-    local areasInNavDir = oldArea:GetAdjacentAreasAtSide( navDirTakenByConnection )
-
-    if not ignorePlanar then
-        local areasAtSameZ = #areasInNavDir > 0 and arePlanar( currArea, areasInNavDir, criteria ) == true
-        if areasAtSameZ then return end
-
-    end
-
-    oldArea:ConnectTo( currArea )
-
-    return true
-
-end
-
-local vec_zero = Vector( 0, 0, 0 )
-local IsValid = IsValid
 
 -- loop thru all navarea groups to find the closest navarea to the current group, in every other group.
   -- specifically...
@@ -299,7 +321,7 @@ function GAMEMODE:FindPotentialLinkagesBetweenNavAreaGroups( groups, groupCorner
     end
 
     local groupLinkages = {}
-    local distToQuitAtSqr = 30^2
+    local distToQuitAt = 30
 
     local function addValidLinkages( group1, group2 )
         local currGroupLinkages = {} -- the potential links to sift through, picks the best ones after
@@ -333,12 +355,12 @@ function GAMEMODE:FindPotentialLinkagesBetweenNavAreaGroups( groups, groupCorner
                     continue
 
                 end
-                local distToSqr, checkPos1, checkPos2 = connectionDistance( area1, area2 )
+                local distTo, checkPos1, checkPos2 = connectionDistance( area1, area2 )
 
-                local linkage = { linkageDistance = distToSqr, linkageArea1 = area1, linkageArea2 = area2, area1Closest = checkPos1, area2Closest = checkPos2 }
+                local linkage = { linkageDistance = distTo, linkageArea1 = area1, linkageArea2 = area2, area1Closest = checkPos1, area2Closest = checkPos2 }
                 table.insert( currGroupLinkages, linkage )
 
-                if distToSqr < distToQuitAtSqr then
+                if distTo < distToQuitAt then
                     perfectConnectionCount = perfectConnectionCount + 1
 
                 end
@@ -360,7 +382,7 @@ function GAMEMODE:FindPotentialLinkagesBetweenNavAreaGroups( groups, groupCorner
             -- remove the worst linkage
             local removed = table.remove( currGroupLinkages )
             -- all the distances left are ideal, not pass
-            if removed.linkageDistance < distToQuitAtSqr then break end
+            if removed.linkageDistance < distToQuitAt then break end
 
         end
 
@@ -521,11 +543,11 @@ function GAMEMODE:TakePotentialLinkagesAndLinkTheValidOnes( groupLinkages )
         if connectionDataVisOffsetCheck( currentData ) <= 3 then continue end
         --debugoverlay.Line( currentData.area1Closest, currentData.area2Closest, 120, Color( 255,255,255 ), true )
 
-        if GAMEMODE:smartConnectionThink( currentData.linkageArea1, currentData.linkageArea2 ) then
+        if smartConnectionThink( currentData.linkageArea1, currentData.linkageArea2 ) then
             linkedCount = linkedCount + 1
 
         end
-        if GAMEMODE:smartConnectionThink( currentData.linkageArea2, currentData.linkageArea1 ) then
+        if smartConnectionThink( currentData.linkageArea2, currentData.linkageArea1 ) then
             linkedCount = linkedCount + 1
 
         end
@@ -572,11 +594,11 @@ function GAMEMODE:patchDoor( door )
 
         if not createdArea or not createdArea.IsValid or not createdArea:IsValid() then return end
 
-        self:smartConnectionThink( createdArea, behindNav, true )
-        self:smartConnectionThink( behindNav, createdArea, true )
+        smartConnectionThink( createdArea, behindNav, true )
+        smartConnectionThink( behindNav, createdArea, true )
 
-        self:smartConnectionThink( createdArea, inFrontNav, true )
-        self:smartConnectionThink( inFrontNav, createdArea, true )
+        smartConnectionThink( createdArea, inFrontNav, true )
+        smartConnectionThink( inFrontNav, createdArea, true )
 
         return patched
 
@@ -641,11 +663,11 @@ function GAMEMODE:patchBreakable( breakable, breakableNormal, zHeight )
 
     if not createdArea or not createdArea.IsValid or not createdArea:IsValid() then return end
 
-    self:smartConnectionThink( createdArea, behindNav, true )
-    self:smartConnectionThink( behindNav, createdArea, true )
+    smartConnectionThink( createdArea, behindNav, true )
+    smartConnectionThink( behindNav, createdArea, true )
 
-    self:smartConnectionThink( createdArea, inFrontNav, true )
-    self:smartConnectionThink( inFrontNav, createdArea, true )
+    smartConnectionThink( createdArea, inFrontNav, true )
+    smartConnectionThink( inFrontNav, createdArea, true )
 
     return patched
 
@@ -858,6 +880,8 @@ function GAMEMODE:seeIfBreakableAndGetNormal( breakable )
     end
 end
 
+-- sky data, used by signal strength
+
 GAMEMODE.isSkyOnMap = GAMEMODE.isSkyOnMap or nil
 GAMEMODE.highestZ = GAMEMODE.highestZ or nil
 GAMEMODE.areasUnderSky = GAMEMODE.areasUnderSky or nil
@@ -869,11 +893,11 @@ local function reset()
 
 end
 
-hook.Add( "glee_connectedgroups_begin", "glee_resetsignalstrength", reset )
+hook.Add( "glee_connectedgroups_begin", "glee_resetskydata", reset )
 
 local centerOffset = Vector( 0, 0, 25 )
 
-hook.Add( "glee_connectedgroups_visit", "glee_precachesignalstrength", function( area )
+hook.Add( "glee_connectedgroups_visit", "glee_precacheskydata", function( area )
     local underSky, hitPos = GAMEMODE:IsUnderSky( area:GetCenter() + centerOffset )
     if underSky then
         GAMEMODE.isSkyOnMap = true

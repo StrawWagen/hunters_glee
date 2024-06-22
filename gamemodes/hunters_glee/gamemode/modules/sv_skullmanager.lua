@@ -34,6 +34,7 @@ local function spawnTermSkull( died, _, _ )
 
     -- makes "erm something must have died here" hints better
     newSkull.fromSomethingWitnessable = true
+    newSkull.nextPickup = CurTime() + 1
 
 end
 
@@ -46,6 +47,7 @@ hook.Add( "PlayerDeath", "glee_dropplayerskulls", function( died, _, attacker )
     if attacker == died then return end
     local newSkull = GAMEMODE:SpawnASkull( died:GetShootPos(), died:GetAimVector():Angle(), nil, died )
 
+    newSkull.nextPickup = CurTime() + 1
     newSkull.skullSteamId = died:SteamID64()
     newSkull.fromSomethingWitnessable = true
 
