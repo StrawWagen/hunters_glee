@@ -100,7 +100,7 @@ function meta:checkIfPlyIsStuckAndHandle( overridePos )
     local randomOffset = Vector( 0, 0, 0 )
     -- lots of traces for 1 tick lol
     local max = 1500
-    local doBigCheck = max * 0.5
+    local doBigCheck = max * 0.75
 
     for index = 0, max do
 
@@ -242,4 +242,13 @@ hook.Add( "glee_sv_validgmthink", "glee_manageunstucking", function( players )
             end
         end
     end
+end )
+
+hook.Add( "PlayerLeaveVehicle", "glee_unstuckvehicleexiters", function( leaver )
+    timer.Simple( 0.05, function()
+        if not IsValid( leaver ) then return end
+        if not leaver:IsStuckBasic() then return end
+        ply.glee_basicStuckCount = 20
+
+    end )
 end )

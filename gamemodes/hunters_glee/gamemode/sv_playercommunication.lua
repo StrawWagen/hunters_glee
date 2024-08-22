@@ -117,6 +117,16 @@ local function listenerCanHear( listener, talker )
         if talkerIsSpectator or radioLink then
             return true, false
 
+        -- dead ply listening to alive player with prox chat on
+        elseif talkerIsPlaying and talkersRadioIsOff then
+            if listener:GetPos():DistToSqr( talker:GetPos() ) < distToBlockProxy then
+                return true, true
+
+            else
+                return false, false
+
+            end
+        -- dead ply hearing alive ply with their radio on
         else
             return true, false
 

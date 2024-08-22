@@ -7,7 +7,8 @@ local navCheckDist = 150
 local belowOffset = Vector( 0, 0, -navCheckDist )
 local tStartOffset = Vector( 0, 0, -2 )
 local airCheckHull = Vector( 17, 17, 1 )
-local restingBPMPermanent = 60 -- needs to match clientside var too
+local restingBPMPermanent = 55 -- needs to match clientside var too
+local defaultHeartAttackBpm = 250
 
 local distNeededToBeOnArea = 25^2
 local distWayTooFarOffNavmesh = 250^2
@@ -133,8 +134,8 @@ function GM:calculateBPM( cur, players )
             local mentosBPM = 0
             if mentosDist < 2000 then
                 -- magic numbers that make distance to hunter bpm feel good
-                local rawScalar = math.abs( mentosDist - 2000 ) / 42
-                local bpmRampup = math.Clamp( rawScalar, 15, 50 )
+                local rawScalar = math.abs( mentosDist - 2000 ) / 40
+                local bpmRampup = math.Clamp( rawScalar, 15, 55 )
                 mentosBPM = 10 + bpmRampup
 
             end
@@ -143,7 +144,7 @@ function GM:calculateBPM( cur, players )
             local canSeeBPM = 0
 
             if canSee then
-                canSeeBPM = 10
+                canSeeBPM = 12
             end
             if targetted then
                 targettedBPM = 8
@@ -165,6 +166,7 @@ function GM:calculateBPM( cur, players )
             tDat.mins = -airCheckHull
             local closeToGround = util.TraceHull( tDat ).Hit
             local onArea = nil
+            local plysShootPos = ply:GetShootPos()
 
             -- definitely not on the navmesh.
             if directlyUnderneathArea and distToAreaSqr > distWayTooFarOffNavmesh then
@@ -176,7 +178,6 @@ function GM:calculateBPM( cur, players )
 
             -- not cheap
             elseif directlyUnderneathArea and directlyUnderneathArea:IsValid() then
-                local plysShootPos = ply:GetShootPos()
                 -- only check horizontal, sometimes navareas end up underneath floors
                 local closestPos = directlyUnderneathArea:GetClosestPointOnArea( plysShootPos )
                 local highestZ = math.max( closestPos.z, plysShootPos.z )
@@ -190,28 +191,40 @@ function GM:calculateBPM( cur, players )
                 closestPos.z = highestZ + 25
                 plysShootPos.z = lowestZ + 25
 
-                -- catch people behind displacements
+                -- dont count people behind displacements
                 onArea = plyCanSeeArea and posCanSeeComplex( closestPos, plysShootPos, ply, MASK_SOLID_BRUSHONLY )
 
             end
 
             local onLadder = plysMoveType == MOVETYPE_LADDER
+            local noclipping = plysMoveType == MOVETYPE_NOCLIP and not IsValid( ply:GetVehicle() )
             local doBpmDecrease = false
             local blockScore = false
 
             -- if there's no valid area AND we are on the ground, then block
-            if ( not onArea ) and closeToGround then
+            if not util.IsInWorld( plysShootPos ) then
+                onArea = false
+                blockScore = true
+                doBpmDecrease = true
+                local vehicle = ply:GetVehicle()
+                if IsValid( vehicle ) then
+                    ply:ExitVehicle()
+                    ply:EmitSound( "Player.FallDamage" )
+                    ply:TakeDamage( 10, vehicle, vehicle )
+                    ply:ViewPunch( AngleRand() * 4 )
+
+                end
+            elseif ( not onArea ) and closeToGround then
+                blockScore = true
+                doBpmDecrease = true
+
+            elseif onLadder then
                 blockScore = true
                 doBpmDecrease = true
 
             end
-            if onLadder then
-                blockScore = true
-                doBpmDecrease = true
 
-            end
-
-            local bpmPerSpeed = 0.05 * speedBPMMul
+            local bpmPerSpeed = 0.07 * speedBPMMul
             local speedBPM = ply:GetVelocity():Length() * bpmPerSpeed
 
             local initialScale = 1
@@ -225,7 +238,7 @@ function GM:calculateBPM( cur, players )
             -- reward people who get high bpm with long-lasting bpm increase
             local BPMHistoric = ply.BPMHistoric or { idealBPM }
             table.insert( BPMHistoric, idealBPM )
-            local historySize = 120
+            local historySize = 150
             if table.Count( BPMHistoric ) > historySize then
                 -- munch
                 for _ = 1, math.abs( table.Count( BPMHistoric ) - historySize ) do
@@ -241,13 +254,16 @@ function GM:calculateBPM( cur, players )
                 additive = additive + curHistoricBPM
             end
 
-            -- if we have panic then bpm matches the panic
+            -- if our current BPM jumped alot, because we're scared etc, always respect that
             local activitySpikeBPM = ( idealBPM / 2 ) + scaredBpm
+
+            -- use panic as a floor
             local panicBpmComponent = math.Clamp( GAMEMODE:GetPanic( ply ), 0, 110 )
             activitySpikeBPM = math.Clamp( activitySpikeBPM, panicBpmComponent, math.huge )
 
             -- start out with historic bpm
             local BPM = additive / extent
+
             -- then bring it up to the activity spike
             BPM = math.Round( math.Clamp( BPM, activitySpikeBPM, math.huge ) )
             ply.BPMHistoric = BPMHistoric
@@ -255,7 +271,9 @@ function GM:calculateBPM( cur, players )
             -- when ply is off navmesh, slowly sap their life
             if doBpmDecrease and punishEscapingBool then
                 local damaged
-                local exceptionMovement = plysMoveType == MOVETYPE_NOCLIP or ply:Health() <= 0 or ply:GetObserverMode() ~= OBS_MODE_NONE or ply:InVehicle()
+                local doingVehicle = ply:InVehicle()
+                local vehicleException = doingVehicle and onArea
+                local exceptionMovement = noclipping or ply:Health() <= 0 or ply:GetObserverMode() ~= OBS_MODE_NONE or vehicleException
                 if not exceptionMovement and hasNavmesh then
                     local BPMDecrease = ply.historicBPMDecrease or 0
                     local added = 2
@@ -306,6 +324,12 @@ function GM:calculateBPM( cur, players )
 
             ply:SetNWInt( "termHuntPlyBPM", BPM )
             ply:SetNWBool( "termHuntBlockScoring", blockScore )
+
+            local heartAttackScore = ply.glee_HeartAttackScore or 0
+            if heartAttackScore > 0 then
+                GAMEMODE:DoHeartAttackThink( ply )
+
+            end
 
         else
             if istable( ply.BPMHistoric ) then
@@ -358,7 +382,7 @@ function GM:manageServersideCountOfBeats()
                 local oldBeats = ply.realHeartBeats or 0
                 ply.realHeartBeats = oldBeats + 1
 
-                hook.Run( "huntersglee_heartbeat_beat", ply )
+                hook.Run( "huntersglee_heartbeat_beat", ply, RealBPMClamped )
 
             end
         end
@@ -374,6 +398,89 @@ hook.Add( "huntersglee_givescore", "huntersglee_storealivescoring", function( sc
 
     local oldPlyScore = GAMEMODE.roundScore[ scorer:GetCreationID() ] or 0
     GAMEMODE.roundScore[ scorer:GetCreationID() ] = oldPlyScore + addedscore
+
+end )
+
+
+function GM:DoHeartAttackThink( ply )
+    if not IsValid( ply ) then return end
+    local nextThink = ply.glee_NextHeartAttackThink or 0
+    if nextThink > CurTime() then return end
+    ply.glee_NextHeartAttackThink = CurTime() + math.Rand( 0.4, 0.6 )
+
+    if ply:Health() <= 0 then
+        if ply.glee_HeartAttackScore then
+            ply.glee_HeartAttackScore = nil
+
+        end
+        return
+
+    end
+    local heartAttackScore = ply.glee_HeartAttackScore or 0
+    local threshold = GAMEMODE:GetHeartAttackThreshold( ply )
+
+    -- you're done
+    if heartAttackScore > threshold then
+        heartAttackScore = heartAttackScore + 50
+
+        local damage = ( ply:GetMaxHealth() / 10 ) + ( heartAttackScore / threshold )
+
+        local world = game.GetWorld()
+        ply:TakeDamage( damage, world, world )
+        if math.random( 0, 100 ) < 50 then
+            ply:SetNWInt( "termHuntPlyBPM", 0 )
+
+        end
+        GAMEMODE:GivePanic( ply, 50 )
+
+    elseif heartAttackScore > threshold * 0.533 then
+        heartAttackScore = heartAttackScore + 4
+        GAMEMODE:GivePanic( ply, 12 )
+
+    elseif heartAttackScore > threshold * math.Rand( 0.3, 0.4 ) then
+        heartAttackScore = heartAttackScore + -0.5
+        GAMEMODE:GivePanic( ply, 6 )
+
+    else
+        heartAttackScore = heartAttackScore + -2
+        if not ply.glee_HasHeartAttackWarned then
+            huntersGlee_Announce( { ply }, 5, 6, "You feel a deep, sharp pain..." )
+            GAMEMODE:GivePanic( ply, 50 )
+            ply.glee_HasHeartAttackWarned = true
+
+        end
+    end
+end
+
+function GM:GetHeartAttackThreshold( ply )
+    local heartAttackBpm = defaultHeartAttackBpm
+    local hookHeartAttackBpm = hook.Run( "huntersglee_getheartattackbpm", ply )
+    if isnumber( hookHeartAttackBpm ) then
+        heartAttackBpm = hookHeartAttackBpm
+
+    end
+
+    return heartAttackBpm
+
+end
+
+hook.Add( "huntersglee_heartbeat_beat", "glee_heartattack_think", function( ply, BPM )
+    local threshold = GAMEMODE:GetHeartAttackThreshold( ply )
+    if BPM > threshold then
+        local added = math.abs( BPM - threshold )
+        added = added / 4
+        local oldScore = ply.glee_HeartAttackScore or 0
+        ply.glee_HeartAttackScore = oldScore + added
+
+    end
+end )
+
+
+hook.Add( "PlayerDeath", "glee_resetbeatstuff", function( ply )
+    ply.BPMHistoric = nil
+    ply:SetNWInt( "termHuntPlyBPM", restingBPMPermanent )
+    ply.glee_HasHeartAttackWarned = nil
+    ply.glee_HeartAttackScore = 0
 
 end )
 

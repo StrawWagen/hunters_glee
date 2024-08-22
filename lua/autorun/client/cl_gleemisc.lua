@@ -4,11 +4,16 @@ terminator_Extras = terminator_Extras or {}
 local input_IsKeyDown = input.IsKeyDown
 local input_IsMouseDown = input.IsMouseDown
 
-local justTabbedIn = false
+terminator_Extras.easyClosers = terminator_Extras.easyClosers or {}
+
+local function catch( err )
+    ErrorNoHaltWithStack( err )
+
+end
 
 local function ShutDownPanel( pnl )
     if pnl.glee_easyCloseFirst then
-        pnl.glee_easyCloseFirst()
+        xpcall( pnl.glee_easyCloseFirst, catch, pnl )
 
     end
     if not IsValid( pnl ) then return end
@@ -16,16 +21,30 @@ local function ShutDownPanel( pnl )
 
 end
 
+local clientsMenuKey = input.LookupBinding( "+menu" )
+if clientsMenuKey then
+    clientsMenuKey = input.GetKeyCode( clientsMenuKey )
+end
+
+local clientsUseKey = input.LookupBinding( "+use" )
+if clientsUseKey then
+    clientsUseKey = input.GetKeyCode( clientsUseKey )
+end
+
 function terminator_Extras.easyClosePanel( pnl, callFirst )
-    local clientsMenuKey = input.LookupBinding( "+menu" )
-    if clientsMenuKey then
-        clientsMenuKey = input.GetKeyCode( clientsMenuKey )
+    -- if we already did all the fun stuff, just override the shutdown func
+    if pnl.easyClosing then
+        pnl.glee_easyCloseFirst = callFirst
+        return
+
     end
 
-    local clientsUseKey = input.LookupBinding( "+use" )
-    if clientsUseKey then
-        clientsUseKey = input.GetKeyCode( clientsUseKey )
-    end
+    table.insert( terminator_Extras.easyClosers, pnl )
+
+    pnl.glee_easyCloseFirst = callFirst
+    pnl.easyClosing = true
+
+    pnl.justTabbedIn = nil
 
     pnl.keyWasDown = {
         [clientsUseKey] = true,
@@ -33,65 +52,65 @@ function terminator_Extras.easyClosePanel( pnl, callFirst )
 
     }
 
-    pnl.gleeOld_Think = pnl.Think
+end
 
-    pnl.glee_easyCloseFirst = callFirst
+-- dont give these damn panels any chances
+hook.Add( "Think", "glee_shutdownallpanels", function()
+    if #terminator_Extras.easyClosers <= 0 then return end
 
-    function pnl:Think()
+    for index, panel in ipairs( terminator_Extras.easyClosers ) do
+        if not IsValid( panel ) then table.remove( terminator_Extras.easyClosers, index ) continue end
+
+        if input_IsKeyDown( KEY_ESCAPE ) then ShutDownPanel( panel ) end
         if not system.HasFocus() then
-            justTabbedIn = true
-            self:gleeOld_Think()
-            return
+            panel.justTabbedIn = true
+            continue
 
         end
         -- bail if they open any menu, or press use
-        if input_IsKeyDown( KEY_ESCAPE ) then ShutDownPanel( self ) return end
         if input_IsKeyDown( clientsUseKey ) then
-            if not pnl.keyWasDown[clientsUseKey] then
-                ShutDownPanel( self )
-                return
+            if not panel.keyWasDown[clientsUseKey] then
+                ShutDownPanel( panel )
+                continue
 
             else
-                pnl.keyWasDown[clientsUseKey] = true
+                panel.keyWasDown[clientsUseKey] = true
 
             end
         else
-            pnl.keyWasDown[clientsUseKey] = nil
+            panel.keyWasDown[clientsUseKey] = nil
 
         end
 
         if input_IsKeyDown( clientsMenuKey ) then
-            if not pnl.keyWasDown[clientsMenuKey] then
-                ShutDownPanel( self )
-                return
+            if not panel.keyWasDown[clientsMenuKey] then
+                ShutDownPanel( panel )
+                continue
 
             else
-                pnl.keyWasDown[clientsMenuKey] = true
+                panel.keyWasDown[clientsMenuKey] = true
 
             end
         else
-            pnl.keyWasDown[clientsMenuKey] = nil
+            panel.keyWasDown[clientsMenuKey] = nil
 
         end
 
         if not input_IsMouseDown( MOUSE_LEFT ) and not input_IsMouseDown( MOUSE_RIGHT ) then
-            self:gleeOld_Think()
-            justTabbedIn = nil
-            return
+            panel.justTabbedIn = nil
+            continue
 
         end
 
-        if justTabbedIn then return end
+        if panel.justTabbedIn then continue end
 
         -- close when clicking off menu
-        local myX, myY = self:GetPos()
-        local myWidth, myHeight = self:GetSize()
+        local myX, myY = panel:GetPos()
+        local myWidth, myHeight = panel:GetSize()
         local mouseX, mouseY = input.GetCursorPos()
 
-        if mouseX < myX or mouseX > myX + myWidth then ShutDownPanel( self ) return end
-        if mouseY < myY or mouseY > myY + myHeight then ShutDownPanel( self ) return end
-
-        self:gleeOld_Think()
+        if mouseX < myX or mouseX > myX + myWidth then ShutDownPanel( panel ) continue end
+        if mouseY < myY or mouseY > myY + myHeight then ShutDownPanel( panel ) continue end
 
     end
-end
+end )

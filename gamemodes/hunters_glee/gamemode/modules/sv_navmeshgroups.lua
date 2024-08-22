@@ -1,7 +1,4 @@
 local GAMEMODE = GAMEMODE or GM
-GAMEMODE.isSkyOnMap = GAMEMODE.isSkyOnMap or nil
-GAMEMODE.highestZ = GAMEMODE.highestZ or nil
-GAMEMODE.areasUnderSky = GAMEMODE.areasUnderSky or nil
 
 local coroutine_running = coroutine.running
 local coroutine_yield = coroutine.yield
@@ -261,6 +258,8 @@ function GM:FindValidNavAreaCenter( navAreaGroups )
         -- choose a random navarea from the group
         local navArea = group[ math.random( #group ) ]
 
+        if not IsValid( navArea ) then GAMEMODE:ForceGreedyPatch() return end
+
         if navArea:IsUnderwater() then continue end
 
         -- add the center of the navarea to the array
@@ -477,6 +476,12 @@ function GM:TeleportRoomCheck()
     end
 end
 
+
+-- sky data, used by signal strength
+GAMEMODE.isSkyOnMap = GAMEMODE.isSkyOnMap or nil
+GAMEMODE.highestZ = GAMEMODE.highestZ or nil
+GAMEMODE.highestAreaZ = GAMEMODE.highestAreaZ or nil
+GAMEMODE.areasUnderSky = GAMEMODE.areasUnderSky or nil
 
 -- sky understanding stuff
 local function reset()
