@@ -342,11 +342,11 @@ function GAMEMODE:TakePotentialLinkagesAndLinkTheValidOnes( groupLinkages )
         if connectionDataVisOffsetCheck( currentData ) <= 3 then continue end
         --debugoverlay.Line( currentData.area1Closest, currentData.area2Closest, 120, Color( 255,255,255 ), true )
 
-        if smartConnectionThink( currentData.linkageArea1, currentData.linkageArea2 ) then
+        if terminator_Extras.smartConnectionThink( currentData.linkageArea1, currentData.linkageArea2 ) then
             linkedCount = linkedCount + 1
 
         end
-        if smartConnectionThink( currentData.linkageArea2, currentData.linkageArea1 ) then
+        if terminator_Extras.smartConnectionThink( currentData.linkageArea2, currentData.linkageArea1 ) then
             linkedCount = linkedCount + 1
 
         end
@@ -393,11 +393,11 @@ function GAMEMODE:patchDoor( door )
 
         if not createdArea or not createdArea.IsValid or not createdArea:IsValid() then return end
 
-        smartConnectionThink( createdArea, behindNav, true )
-        smartConnectionThink( behindNav, createdArea, true )
+        terminator_Extras.smartConnectionThink( createdArea, behindNav, true )
+        terminator_Extras.smartConnectionThink( behindNav, createdArea, true )
 
-        smartConnectionThink( createdArea, inFrontNav, true )
-        smartConnectionThink( inFrontNav, createdArea, true )
+        terminator_Extras.smartConnectionThink( createdArea, inFrontNav, true )
+        terminator_Extras.smartConnectionThink( inFrontNav, createdArea, true )
 
         return patched
 
@@ -462,11 +462,11 @@ function GAMEMODE:patchBreakable( breakable, breakableNormal, zHeight )
 
     if not createdArea or not createdArea.IsValid or not createdArea:IsValid() then return end
 
-    smartConnectionThink( createdArea, behindNav, true )
-    smartConnectionThink( behindNav, createdArea, true )
+    terminator_Extras.smartConnectionThink( createdArea, behindNav, true )
+    terminator_Extras.smartConnectionThink( behindNav, createdArea, true )
 
-    smartConnectionThink( createdArea, inFrontNav, true )
-    smartConnectionThink( inFrontNav, createdArea, true )
+    terminator_Extras.smartConnectionThink( createdArea, inFrontNav, true )
+    terminator_Extras.smartConnectionThink( inFrontNav, createdArea, true )
 
     return patched
 
