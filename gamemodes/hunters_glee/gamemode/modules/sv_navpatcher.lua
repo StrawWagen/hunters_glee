@@ -709,3 +709,10 @@ hook.Add( "glee_connectedgroups_visit", "glee_precacheskydata", function( area )
 
     end
 end )
+
+hook.Add( "terminator_areapatcher_doneapatch", "glee_invalidate_greedypatch", function( _areasMade, areaCount )
+    if areaCount >= 1 then
+        GAMEMODE.HuntersGleeNeedsRepatching = true
+
+    end
+end ) 

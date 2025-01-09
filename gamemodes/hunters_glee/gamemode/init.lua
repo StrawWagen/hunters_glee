@@ -579,6 +579,12 @@ function GM:SetupTheLargestGroupsNStuff()
     self.biggestGroupsRatio = 0.4
     self.GreedyPatchCouroutine = nil
 
+    if self.HuntersGleeNeedsRepatching then
+        self.HuntersGleeDoneTheGreedyPatch = nil
+        self.HuntersGleeNeedsRepatching = nil
+
+    end
+
     hook.Add( "Think", "glee_DoGreedyPatchThinkHook", function()
         local patchResult = nil
         if not self.HuntersGleeDoneTheGreedyPatch and not game.SinglePlayer() then
@@ -739,7 +745,7 @@ function GM:handleGenerating( currState )
     -- got past, probably done
     if navmeshMightBeGeneratingUntil then
         navmeshMightBeGeneratingUntil = nil
-        self.HuntersGleeDoneTheGreedyPatch = nil
+        self.HuntersGleeNeedsRepatching = true
         RunConsoleCommand( "gmod_admin_cleanup" )
 
     end
