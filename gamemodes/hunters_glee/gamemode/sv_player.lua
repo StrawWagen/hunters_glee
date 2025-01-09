@@ -17,7 +17,7 @@ local posCanSeeComplex = terminator_Extras.PosCanSeeComplex
 local meta = FindMetaTable( "Player" )
 
 function meta:GetNavAreaData()
-    if not self.glee_CachedNavArea then
+    if not IsValid( self.glee_CachedNavArea ) then
         self:CacheNavArea()
 
     end

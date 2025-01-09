@@ -238,6 +238,7 @@ hook.Add( "glee_sv_validgmthink", "glee_proceduralspawner", function( _, currSta
 
         for _, area in ipairs( navAreas ) do
             coroutine.yield()
+            if not IsValid( area ) then continue end
             if filteringFunc( currJob, area ) then
                 local toCheck = posDerivingFunc( currJob, area )
                 if not toCheck then continue end

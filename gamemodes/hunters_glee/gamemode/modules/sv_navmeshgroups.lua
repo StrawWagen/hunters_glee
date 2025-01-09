@@ -260,6 +260,7 @@ function GM:FindValidNavAreaCenter( navAreaGroups )
         if #navAreaCenters > 30 then break end
         -- choose a random navarea from the group
         local navArea = group[ math.random( #group ) ]
+        if not IsValid( navArea ) then continue end
 
         if navArea:IsUnderwater() then continue end
 
