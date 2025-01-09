@@ -37,11 +37,21 @@ local onFinishLoading = function( shopHolder )
     local wasUnlockedItem
     local wasLockedItem
 
-    for identifier, data in SortedPairsByMemberValue( shopItems, "skullCost", false ) do
-        local unlocked = plyHasUnlockedItem( GAMEMODE, ply, identifier, data )
-        unlockedCache[identifier] = unlocked
+    for identifier, itemData in SortedPairsByMemberValue( shopItems, "skullCost", false ) do
 
-        table.insert( sortedItems, identifier )
+        local skullIdentifier
+        if itemData.unlockMirror then
+            skullIdentifier = itemData.unlockMirror
+            itemData = nil
+
+        else
+            skullIdentifier = identifier
+
+        end
+        local unlocked = plyHasUnlockedItem( GAMEMODE, ply, skullIdentifier, itemData )
+        unlockedCache[skullIdentifier] = unlocked
+
+        table.insert( sortedItems, skullIdentifier )
 
         if unlocked then
             wasUnlockedItem = true

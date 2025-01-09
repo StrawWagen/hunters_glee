@@ -378,7 +378,7 @@ function GM:toggleUnlockedItem( ply, toUnlock )
     local dat = self.shopItems[toUnlock]
     if not dat then return end
 
-    local skullUnlockData = ply.SkullUnlockData
+    local skullUnlockData = ply.SkullUnlockData -- is data cached?
     if not skullUnlockData then
         skullUnlockData = plyUnlocksThink( ply )
 

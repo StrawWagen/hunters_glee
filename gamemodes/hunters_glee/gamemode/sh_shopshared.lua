@@ -207,7 +207,7 @@ function GM:getDebugShopItemStructureTable()
             markup =            "Optional: Price multipler to be applied when bought during the hunt, motivates people buy when the round's setting up.",
             markupPerPurchase = "Optional: Additional markup per player per purchase of item. Makes items less and less worth it.",
             cooldown =          "Optional: Cooldown between purchases, math.huge for one purchase per round. Can be a number, or a function.",
-            category =          "What to place this with in the shop. Innate, Undead, etc.",
+            category =          "Table of categories to place this in. Innate, Undead, etc.",
             purchaseTimes =     "Item will only be purchasble in the round states specified by this table. Eg GAMEMODE.ROUND_ACTIVE ( hunting ).",
             weight =            "Optional: Where to order this relative to everything else in our category, accepts negative values.",
             purchaseCheck =     "Optional: Function or table of functions checked to see if this is purchasable, ran clientside on every item, every frame when shop is open. ran once serverside when purchased",
@@ -233,8 +233,8 @@ function GM:addShopItem( shopItemIdentifier, shopItemData )
     if not shopItemData.name then addShopFail( shopItemIdentifier, "invalid .name" ) return end
     if not shopItemData.desc then addShopFail( shopItemIdentifier, "invalid .desc ( description )" ) return end
     if not shopItemData.cost then addShopFail( shopItemIdentifier, "invalid .cost" ) return end
-    if not shopItemData.skullCost then addShopFail( shopItemIdentifier, "invalid .skullCost" ) return end
-    if not shopItemData.category then addShopFail( shopItemIdentifier, "invalid .category, create a new category first?" ) return end
+    if not ( shopItemData.skullCost or shopItemData.unlockMirror ) then addShopFail( shopItemIdentifier, "invalid .skullCost" ) return end
+    if not shopItemData.category then addShopFail( shopItemIdentifier, "invalid .category" ) return end
     if not shopItemData.purchaseTimes or table.Count( shopItemData.purchaseTimes ) <= 0 then addShopFail( shopItemIdentifier, ".purchaseTimes are not specified" ) return end
     if not shopItemData.purchaseFunc then addShopFail( shopItemIdentifier, "invalid .purchaseFunc" ) return end
 
@@ -262,9 +262,22 @@ function GM:GetShopItemData( identifier )
 
 end
 function GM:GetShopCategoryData( identifier )
-    local dat = GAMEMODE.shopCategories[ identifier ]
-    if not istable( dat ) then return end
-    return dat
+    local identifiers
+    if istable( identifier ) then
+        identifiers = identifier
+    else
+        identifier = { identifier }
+    end
+    local outTbl
+    for _, currIdentifier in ipairs( identifiers ) do
+        local dat = GAMEMODE.shopCategories[ currIdentifier ]
+        if not istable( dat ) then continue end
+
+        outTbl = outTbl or {}
+        outTbl[currIdentifier] = dat
+
+    end
+    return outTbl -- returns nil if invalid category
 
 end
 

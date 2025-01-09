@@ -162,7 +162,7 @@ function GM:TermHuntSetup()
 end
 
 local function newGreedyPatch()
-    GAMEMODE.HuntersGleeDoneTheGreedyPatch = nil
+    GAMEMODE.HuntersGleeNeedsRepatching = true
     print( "a greedy patch will be ran when the map is cleaned" )
 
 end
@@ -170,7 +170,7 @@ end
 concommand.Add( "glee_sv_newgreedypatch", newGreedyPatch, nil, "Debug, request another greedy patch", FCVAR_CHEAT )
 
 function GM:ForceGreedyPatch()
-    GAMEMODE.HuntersGleeDoneTheGreedyPatch = nil
+    GAMEMODE.HuntersGleeNeedsRepatching = true
     GAMEMODE:TermHuntSetup()
 
 end
@@ -298,7 +298,7 @@ function GM:Think()
 
         if self.termHunt_roundStartTime < cur then
             if self.HuntersGleeDoneTheGreedyPatch then
-                self:roundStart() --
+                self:roundStart()
                 self.isBadSingleplayer = nil --display that message once!
 
             else
@@ -596,6 +596,11 @@ function GM:SetupTheLargestGroupsNStuff()
     -- navmesh groups need to be at least 40% the size of the largest one to be considered "playable"
     self.biggestGroupsRatio = 0.4
     self.GreedyPatchCouroutine = nil
+
+    if self.HuntersGleeNeedsRepatching then
+        self.HuntersGleeDoneTheGreedyPatch = nil
+
+    end
 
     hook.Add( "Think", "glee_DoGreedyPatchThinkHook", function()
         local patchResult = nil

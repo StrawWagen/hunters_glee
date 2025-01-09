@@ -468,6 +468,7 @@ function GM:TeleportRoomCheck()
         GAMEMODE.doNotUseMapSpawns = true
         for _, plyGettinRespawned in ipairs( player.GetAll() ) do
             plyGettinRespawned:KillSilent()
+            plyGettinRespawned.glee_DrownSoundOnSpawn = true
 
         end
         print( reason )
@@ -475,6 +476,17 @@ function GM:TeleportRoomCheck()
 
     end
 end
+
+hook.Add( "PlayerSpawn", "glee_notify_spawnlocations", function( ply )
+    if not ply.glee_DrownSoundOnSpawn then return end
+    local filterNotSpawned = RecipientFilter()
+    filterNotSpawned:AddAllPlayers()
+    filterNotSpawned:RemovePlayer( ply )
+    ply:EmitSound( "player/pl_drown1.wav", 75, math.random( 90, 110 ), 1, CHAN_STATIC, SND_NOFLAGS, 0, filterNotSpawned )
+
+    ply.glee_DrownSoundOnSpawn = nil
+
+end )
 
 
 -- sky data, used by signal strength

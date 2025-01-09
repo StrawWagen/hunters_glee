@@ -2186,6 +2186,21 @@ local function suitBatteryPurchase( purchaser )
 
 end
 
+local function canPurchaseBigSuitBattery( purchaser )
+    local new = purchaser:Armor() + 50
+    if new > purchaser:GetMaxArmor() then return false, "Your battery is full enough." end
+    return true
+
+end
+
+local function bigSuitBatteryPurchase( purchaser )
+    local new = math.Clamp( purchaser:Armor() + 50, 0, purchaser:GetMaxArmor() )
+    purchaser:SetArmor( new )
+
+    purchaser:EmitSound( "ItemBattery.Touch" )
+
+end
+
 
 local function rpgPurchase( purchaser )
     local rpg = purchaser:GetWeapon( "weapon_rpg" )
@@ -3022,20 +3037,7 @@ local defaultItems = {
         name = "Score",
         desc = "Free score, Cheat!",
         cost = -1000,
-        category = "Innate",
-        purchaseTimes = {
-            GM.ROUND_INACTIVE,
-            GM.ROUND_ACTIVE,
-        },
-        purchaseFunc = function() end,
-        canShowInShop = isCheats,
-        skullCost = 0,
-    },
-    [ "scoreundead" ] = {
-        name = "Score",
-        desc = "Free score, Cheat!",
-        cost = -1000,
-        category = "Gifts",
+        category = { "Innate", "Gifts" },
         purchaseTimes = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
@@ -3051,7 +3053,7 @@ local defaultItems = {
         cost = 20,
         markup = 6,
         cooldown = 10,
-        category = "Items",
+        category = { "Items" },
         purchaseTimes = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
@@ -3067,7 +3069,7 @@ local defaultItems = {
         markup = 2,
         markupPerPurchase = 0.25,
         cooldown = 0.5,
-        category = "Items",
+        category = { "Items" },
         purchaseTimes = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
@@ -3083,7 +3085,7 @@ local defaultItems = {
         markup = 1.5,
         markupPerPurchase = 0.25,
         cooldown = 0.5,
-        category = "Items",
+        category = { "Items" },
         purchaseTimes = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
@@ -3099,7 +3101,7 @@ local defaultItems = {
         markup = 2,
         markupPerPurchase = 0.25,
         cooldown = 0.5,
-        category = "Items",
+        category = { "Items" },
         purchaseTimes = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
@@ -3116,7 +3118,7 @@ local defaultItems = {
         markup = 3,
         markupPerPurchase = 0.25,
         cooldown = 0.5,
-        category = "Items",
+        category = { "Items" },
         purchaseTimes = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
@@ -3134,7 +3136,7 @@ local defaultItems = {
         markup = 1.5,
         markupPerPurchase = 0.35,
         cooldown = 0.5,
-        category = "Items",
+        category = { "Items" },
         purchaseTimes = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
@@ -3146,13 +3148,13 @@ local defaultItems = {
     },
     -- lol you ran out of battery
     [ "armor" ] = {
-        name = "Suit Battery",
+        name = "15 Suit Battery",
         desc = "15 Suit Battery.",
         cost = 50,
         markup = 2,
         markupPerPurchase = 0.25,
         cooldown = 5,
-        category = "Items",
+        category = { "Items" },
         purchaseTimes = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
@@ -3160,6 +3162,24 @@ local defaultItems = {
         weight = -150,
         purchaseCheck = { unUndeadCheck, canPurchaseSuitBattery },
         purchaseFunc = suitBatteryPurchase,
+        skullCost = 1,
+    },
+    -- lol you ran out of battery
+    [ "armorbig" ] = {
+        name = "50 Suit Battery",
+        desc = "50 Suit Battery.",
+        cost = 200,
+        markup = 2,
+        markupPerPurchase = 0.25,
+        cooldown = 5,
+        category = { "Items" },
+        purchaseTimes = {
+            GM.ROUND_INACTIVE,
+            GM.ROUND_ACTIVE,
+        },
+        weight = -150,
+        purchaseCheck = { unUndeadCheck, canPurchaseBigSuitBattery },
+        purchaseFunc = bigSuitBatteryPurchase,
         skullCost = 8,
     },
     [ "rpg" ] = {
@@ -3169,7 +3189,7 @@ local defaultItems = {
         markup = 1.5,
         markupPerPurchase = 0.15,
         cooldown = 0.5,
-        category = "Items",
+        category = { "Items" },
         purchaseTimes = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
@@ -3185,7 +3205,7 @@ local defaultItems = {
         cost = 60,
         markup = 2,
         cooldown = 0.5,
-        category = "Items",
+        category = { "Items" },
         purchaseTimes = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
@@ -3202,7 +3222,7 @@ local defaultItems = {
         cost = 30,
         markup = 1.5,
         cooldown = 0.5,
-        category = "Items",
+        category = { "Items" },
         purchaseTimes = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
@@ -3221,7 +3241,7 @@ local defaultItems = {
         markup = 2,
         markupPerPurchase = 0.15,
         cooldown = 0.5,
-        category = "Items",
+        category = { "Items" },
         purchaseTimes = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
@@ -3232,14 +3252,15 @@ local defaultItems = {
         skullCost = 1,
     },
     -- funny bear trap
-    [ "beartrap" ] = {
+    [ "beartraps" ] = {
         name = "Six Beartraps",
         desc = "Traps players, Terminators can easily overpower them.",
         cost = 65,
         markup = 2,
         markupPerPurchase = 0.25,
         cooldown = 0.5,
-        category = "Items",
+        category = { "Items" },
+        skullDesc = placeWhenDeadTxt .. "Will randomly spawn near you, if you're alive.",
         purchaseTimes = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
@@ -3247,7 +3268,7 @@ local defaultItems = {
         weight = 0,
         purchaseCheck = unUndeadCheck,
         purchaseFunc = beartrapPurchase,
-        skullCost = 4,
+        skullCost = 6,
     },
     -- this is to give the noobs in a lobby a huge score boost, also it's cool
     [ "witnessme" ] = {
@@ -3256,7 +3277,7 @@ local defaultItems = {
         cost = 0,
         markup = 2,
         cooldown = math.huge,
-        category = "Innate",
+        category = { "Innate" },
         purchaseTimes = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
@@ -3273,7 +3294,7 @@ local defaultItems = {
         cost = -140,
         markup = 0.25,
         cooldown = math.huge,
-        category = "Innate",
+        category = { "Innate" },
         purchaseTimes = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
@@ -3289,7 +3310,7 @@ local defaultItems = {
         desc = "Donate blood for score.",
         cost = bloodDonorCost,
         cooldown = math.huge,
-        category = "Innate",
+        category = { "Innate" },
         purchaseTimes = {
             GM.ROUND_ACTIVE,
         },
@@ -3305,7 +3326,7 @@ local defaultItems = {
         cost = -240,
         markup = 0.2,
         cooldown = math.huge,
-        category = "Innate",
+        category = { "Innate" },
         purchaseTimes = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
@@ -3322,7 +3343,7 @@ local defaultItems = {
         cost = -150,
         markup = 0.25,
         cooldown = math.huge,
-        category = "Innate",
+        category = { "Innate" },
         purchaseTimes = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
@@ -3339,7 +3360,7 @@ local defaultItems = {
         cost = -160,
         markup = 0.25,
         cooldown = math.huge,
-        category = "Innate",
+        category = { "Innate" },
         purchaseTimes = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
@@ -3355,7 +3376,7 @@ local defaultItems = {
         cost = -140,
         markup = 0.25,
         cooldown = math.huge,
-        category = "Innate",
+        category = { "Innate" },
         purchaseTimes = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
@@ -3371,7 +3392,7 @@ local defaultItems = {
         cost = -65,
         markup = 0.25,
         cooldown = math.huge,
-        category = "Innate",
+        category = { "Innate" },
         purchaseTimes = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
@@ -3387,7 +3408,7 @@ local defaultItems = {
         cost = 175,
         markup = 2,
         cooldown = math.huge,
-        category = "Innate",
+        category = { "Innate" },
         purchaseTimes = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
@@ -3404,7 +3425,7 @@ local defaultItems = {
         cost = 250,
         markup = 2,
         cooldown = math.huge,
-        category = "Innate",
+        category = { "Innate" },
         purchaseTimes = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
@@ -3421,7 +3442,7 @@ local defaultItems = {
         cost = 250,
         markup = 2,
         cooldown = math.huge,
-        category = "Innate",
+        category = { "Innate" },
         purchaseTimes = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
@@ -3439,7 +3460,7 @@ local defaultItems = {
         markup = 1.5,
         markupPerPurchase = 1,
         cooldown = 90,
-        category = "Innate",
+        category = { "Innate" },
         purchaseTimes = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
@@ -3455,7 +3476,7 @@ local defaultItems = {
         desc = "Your radio bridges life and death.\nYou can communicate with the dead, both ways.",
         cost = 50,
         cooldown = math.huge,
-        category = "Innate",
+        category = { "Innate" },
         purchaseTimes = {
             GM.ROUND_ACTIVE,
 
@@ -3473,7 +3494,7 @@ local defaultItems = {
         cost = 300,
         markup = 2,
         cooldown = math.huge,
-        category = "Innate",
+        category = { "Innate" },
         purchaseTimes = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
@@ -3490,7 +3511,7 @@ local defaultItems = {
         cost = 50,
         markup = 2,
         cooldown = math.huge,
-        category = "Innate",
+        category = { "Innate" },
         purchaseTimes = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
@@ -3507,7 +3528,7 @@ local defaultItems = {
         cost = 100,
         markup = 2,
         cooldown = math.huge,
-        category = "Innate",
+        category = { "Innate" },
         purchaseTimes = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
@@ -3524,7 +3545,7 @@ local defaultItems = {
         cost = 100,
         markup = 2,
         cooldown = math.huge,
-        category = "Innate",
+        category = { "Innate" },
         purchaseTimes = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
@@ -3541,7 +3562,7 @@ local defaultItems = {
         cost = 50,
         markup = 2,
         cooldown = math.huge,
-        category = "Innate",
+        category = { "Innate" },
         purchaseTimes = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
@@ -3557,7 +3578,7 @@ local defaultItems = {
         cost = 50,
         markup = 2,
         cooldown = math.huge,
-        category = "Innate",
+        category = { "Innate" },
         purchaseTimes = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
@@ -3574,7 +3595,7 @@ local defaultItems = {
         cost = 50,
         markup = 3,
         cooldown = math.huge,
-        category = "Innate",
+        category = { "Innate" },
         purchaseTimes = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
@@ -3591,7 +3612,7 @@ local defaultItems = {
         cost = 0,
         markup = 1,
         cooldown = 60,
-        category = "Sacrifices",
+        category = { "Sacrifices" },
         skullDesc = placeWhenDeadTxt .. "Will randomly spawn near you, if you're alive.",
         purchaseTimes = {
             GM.ROUND_ACTIVE,
@@ -3609,7 +3630,7 @@ local defaultItems = {
         cost = 0,
         markup = 1,
         cooldown = 10,
-        category = "Sacrifices",
+        category = { "Sacrifices" },
         purchaseTimes = {
             GM.ROUND_ACTIVE,
         },
@@ -3625,7 +3646,7 @@ local defaultItems = {
         cost = 0,
         markup = 1,
         cooldown = 55,
-        category = "Sacrifices",
+        category = { "Sacrifices" },
         purchaseTimes = {
             GM.ROUND_ACTIVE,
         },
@@ -3641,7 +3662,7 @@ local defaultItems = {
         cost = 0,
         markup = 1,
         cooldown = 80,
-        category = "Sacrifices",
+        category = { "Sacrifices" },
         purchaseTimes = {
             GM.ROUND_ACTIVE,
         },
@@ -3655,18 +3676,17 @@ local defaultItems = {
         name = "Beartrap.",
         desc = "Beartrap.\nWhen a player, hunter, steps on it, you get a reward.\nCosts more to place it near the living, and intersecting objects.",
         skullDesc = placeWhenDeadTxt,
-        unlockMirror = "beartrap",
         cost = 0,
         markup = 1,
         cooldown = 15,
-        category = "Sacrifices",
+        category = { "Sacrifices" },
         purchaseTimes = {
             GM.ROUND_ACTIVE,
         },
         weight = 1,
         purchaseCheck = { undeadCheck, ghostCanPurchase },
         purchaseFunc = undeadBearTrapPurchase,
-        skullCost = 4,
+        unlockMirror = "beartraps",
     },
     [ "barrels" ] = {
         name = "Barrels",
@@ -3675,7 +3695,7 @@ local defaultItems = {
         cost = 0,
         markup = 1,
         cooldown = 2,
-        category = "Sacrifices",
+        category = { "Sacrifices" },
         purchaseTimes = {
             GM.ROUND_ACTIVE,
         },
@@ -3692,7 +3712,7 @@ local defaultItems = {
         cost = 5,
         markup = 1,
         cooldown = 0.5,
-        category = "Sacrifices",
+        category = { "Sacrifices" },
         purchaseTimes = {
             GM.ROUND_ACTIVE,
         },
@@ -3708,7 +3728,7 @@ local defaultItems = {
         cost = 5,
         markup = 1,
         cooldown = 0.5,
-        category = "Sacrifices",
+        category = { "Sacrifices" },
         purchaseTimes = {
             GM.ROUND_ACTIVE,
         },
@@ -3725,7 +3745,7 @@ local defaultItems = {
         cost = -150,
         markup = 1,
         cooldown = 90,
-        category = "Sacrifices",
+        category = { "Sacrifices" },
         purchaseTimes = {
             GM.ROUND_ACTIVE,
         },
@@ -3741,7 +3761,7 @@ local defaultItems = {
         cost = 0,
         markup = 1,
         cooldown = 5,
-        category = "Gifts",
+        category = { "Gifts" },
         purchaseTimes = {
             GM.ROUND_ACTIVE,
         },
@@ -3759,7 +3779,7 @@ local defaultItems = {
         cost = 0,
         markup = 1,
         cooldown = 5,
-        category = "Gifts",
+        category = { "Gifts" },
         purchaseTimes = {
             GM.ROUND_ACTIVE,
         },
@@ -3777,7 +3797,7 @@ local defaultItems = {
         markup = 1,
         markupPerPurchase = 0.5,
         cooldown = divineInterventionCooldown,
-        category = "Gifts",
+        category = { "Gifts" },
         purchaseTimes = {
             GM.ROUND_ACTIVE,
         },
@@ -3795,7 +3815,7 @@ local defaultItems = {
         cost = 0,
         markup = 1,
         cooldown = 5,
-        category = "Gifts",
+        category = { "Gifts" },
         purchaseTimes = {
             GM.ROUND_ACTIVE,
         },
@@ -3813,7 +3833,7 @@ local defaultItems = {
         cost = 0,
         markup = 1,
         cooldown = 5,
-        category = "Gifts",
+        category = { "Gifts" },
         purchaseTimes = {
             GM.ROUND_ACTIVE,
         },
@@ -3830,7 +3850,7 @@ local defaultItems = {
         cost = 0,
         markup = 1,
         cooldown = 5,
-        category = "Gifts",
+        category = { "Gifts" },
         purchaseTimes = {
             GM.ROUND_ACTIVE,
         },
@@ -3848,7 +3868,7 @@ local defaultItems = {
         cost = 0,
         markup = 1,
         cooldown = 0,
-        category = "Gifts",
+        category = { "Gifts" },
         purchaseTimes = {
             GM.ROUND_ACTIVE,
         },
@@ -3865,7 +3885,7 @@ local defaultItems = {
         cost = 2000,
         markup = 1,
         cooldown = math.huge,
-        category = "Gifts",
+        category = { "Gifts" },
         purchaseTimes = {
             GM.ROUND_ACTIVE,
         },
@@ -3882,7 +3902,7 @@ local defaultItems = {
         simpleCostDisplay = true,
         cost = openAccountCost,
         cooldown = 0,
-        category = "Bank",
+        category = { "Bank" },
         purchaseTimes = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
@@ -3899,7 +3919,7 @@ local defaultItems = {
         fakeCost = true, -- score removal is handled in purchasefunc
         cost = bankDepositCost,
         cooldown = 0.5,
-        category = "Bank",
+        category = { "Bank" },
         purchaseTimes = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
@@ -3917,7 +3937,7 @@ local defaultItems = {
         fakeCost = true,
         cost = -100,
         cooldown = 0.5,
-        category = "Bank",
+        category = { "Bank" },
         purchaseTimes = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,

@@ -141,7 +141,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_addcratejobs", function()
     local weaponCrate = ( mod == 6 and proceduralCratePlaces > 12 ) or ( mod == 3 and proceduralCratePlaces > 20 ) and GAMEMODE:SomeoneHasEnabled( "weapcrate" )
     local normCrate = GAMEMODE:SomeoneHasEnabled( "normcrate" )
 
-    if not hackCrate or screamCrate or weaponCrate or normCrate then time = 20 return end
+    if not ( hackCrate or screamCrate or weaponCrate or normCrate ) then time = 20 return end
 
     if hackCrate then
         crateJob.onPosFoundFunction = function( _, bestPosition )
