@@ -758,7 +758,11 @@ function GM:GenerateANavmeshPls()
     -- when optimizing is done
     hook.Add( "navoptimizer_done_globalmerge", "glee_detectrealnavgenfinish", function()
         hook.Remove( "navoptimizer_done_globalmerge", "glee_detectrealnavgenfinish" )
+        if game.IsDedicated() then
+            navmesh.Save()
+            print( "GLEE: Saved navmesh." )
 
+        end
     end )
 end
 
