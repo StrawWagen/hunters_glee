@@ -689,7 +689,8 @@ function GM:handleEmptyServer( currState, players )
         self:beginSetup()
         return true
 
-    elseif empt and game.IsDedicated() and not self.waitingOnNavoptimizerGen and navmesh.GetNavAreaCount() <= 0 and GetConVar( "sv_cheats" ):GetBool() then
+    elseif empt and game.IsDedicated() and not self.waitingOnNavoptimizerGen and navmesh.GetNavAreaCount() <= 0 and NAVOPTIMIZER_tbl and GetConVar( "sv_cheats" ):GetBool() then
+        print( "GLEE: Automatically generating navmesh & optimizing with Navmesh Optimizer" )
         self:GenerateANavmeshPls()
 
     elseif empt then -- empty
