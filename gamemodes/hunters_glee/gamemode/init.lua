@@ -229,27 +229,7 @@ function GM:Think()
             end
 
             if cheats and not self.waitingOnNavoptimizerGen then
-                self.waitingOnNavoptimizerGen = true
-                timer.Simple( 1, function()
-                    superIncrementalGeneration( nil, true, true )
-                end )
-
-                -- when generation is done
-                hook.Add( "navoptimizer_done_gencheapexpanded", "glee_detectrealnavgenfinish", function()
-                    huntersGlee_Announce( player.GetAll(), 1001, 5, "Navmesh generation complete, optimizing..." )
-                    timer.Simple( 1, function()
-                        RunConsoleCommand( "navmesh_globalmerge_auto" )
-
-                    end )
-                    hook.Remove( "navoptimizer_done_gencheapexpanded", "glee_detectrealnavgenfinish" )
-
-                end )
-
-                -- when optimizing is done
-                hook.Add( "navoptimizer_done_globalmerge", "glee_detectrealnavgenfinish", function()
-                    hook.Remove( "navoptimizer_done_globalmerge", "glee_detectrealnavgenfinish" )
-
-                end )
+                self:GenerateANavmeshPls()
             end
         elseif not dedi then
             huntersGlee_Announce( player.GetAll(), 1000, 1, "NO NAVMESH!\nInstall or generate yourself a navmesh!" )
@@ -701,14 +681,18 @@ end
 
 -- nukes all the hunters if there's nobody to hunt
 function GM:handleEmptyServer( currState, players )
-    if #players == 0 and ( currState == self.ROUND_ACTIVE or currState == self.ROUND_LIMBO ) then
+    local empt = #players == 0
+    if empt and ( currState == self.ROUND_ACTIVE or currState == self.ROUND_LIMBO ) then
         -- bots are expensive, save cpu power pls
         print( "Empty server!\nRemoving bots..." )
         self:roundEnd()
         self:beginSetup()
         return true
 
-    elseif #players == 0 then -- empty
+    elseif empt and game.IsDedicated() and not self.waitingOnNavoptimizerGen and navmesh.GetNavAreaCount() <= 0 and GetConVar( "sv_cheats" ):GetBool() then
+        self:GenerateANavmeshPls()
+
+    elseif empt then -- empty
         hook.Run( "huntersglee_emptyserver" )
         return true
 
@@ -751,6 +735,30 @@ function GM:handleGenerating( currState )
     end
     return nil
 
+end
+
+function GM:GenerateANavmeshPls()
+    self.waitingOnNavoptimizerGen = true
+    timer.Simple( 1, function()
+        superIncrementalGeneration( nil, true, true )
+    end )
+
+    -- when generation is done
+    hook.Add( "navoptimizer_done_gencheapexpanded", "glee_detectrealnavgenfinish", function()
+        huntersGlee_Announce( player.GetAll(), 1001, 5, "Navmesh generation complete, optimizing..." )
+        timer.Simple( 1, function()
+            RunConsoleCommand( "navmesh_globalmerge_auto" )
+
+        end )
+        hook.Remove( "navoptimizer_done_gencheapexpanded", "glee_detectrealnavgenfinish" )
+
+    end )
+
+    -- when optimizing is done
+    hook.Add( "navoptimizer_done_globalmerge", "glee_detectrealnavgenfinish", function()
+        hook.Remove( "navoptimizer_done_globalmerge", "glee_detectrealnavgenfinish" )
+
+    end )
 end
 
 function GM:RemoveHunters()
