@@ -48,8 +48,8 @@ local function aPlayerCanSeePos( toCheck, yield )
     local visible = nil
 
     for _, visPly in ipairs( alivePlayers() ) do
-        if not IsValid( visPly ) then continue end
         if yield then coroutine.yield() end
+        if not IsValid( visPly ) then continue end
 
         local firstChecksShootPos = visPly:GetShootPos()
         local vis, visTr = terminator_Extras.PosCanSeeComplex( toCheck, firstChecksShootPos, visPly )
