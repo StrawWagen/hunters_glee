@@ -2,10 +2,11 @@
 
 local maxHuntersAtMinutes = {
     [0] = 2,
+    [math.random( 1, 3 )] = 3,
     -- these cannot be math.Rand apparently, have to be .random
-    [math.random( 6, 10 )] = 4,
-    [math.random( 10, 15 )] = 6,
-    [math.random( 15, 23 )] = 7,
+    [math.random( 3, 6 )] = 4,
+    [math.random( 6, 11 )] = 6,
+    [math.random( 11, 16 )] = 8,
 
 }
 
@@ -13,9 +14,9 @@ local dopplegangerChance = math.Rand( 0, 2 )
 
 local overchargedChanceAtMinutes = {
     [0] = 0,
-    [10] = math.Rand( 0, 1 ),
-    [30] = math.Rand( 5, 25 ),
-    [60] = math.Rand( 50, 100 ),
+    [5] = math.Rand( 0, 1 ),
+    [15] = math.Rand( 5, 25 ),
+    [30] = math.Rand( 50, 100 ),
 
 }
 
@@ -176,8 +177,8 @@ function GM:spawnHunter( classOverride )
 
 end
 
-local defaultRadius = 8000
-local maxRadius = 9000
+local defaultRadius = 7000
+local maxRadius = 8000
 local minRadius = 500
 local fails = 0
 

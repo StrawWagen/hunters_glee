@@ -148,11 +148,13 @@ function SWEP:PrimaryAttack( firstMul )
     if not SERVER then return end
     if not self:CanPrimaryAttack() then return end
 
+    local owner = self:GetOwner()
+    if IsValid( owner ) and owner:InVehicle() then return end
+
     firstMul = firstMul or 1
 
     local pitchAdded = math.abs( firstMul - 1 ) * 5
 
-    local owner = self:GetOwner()
     local NoHit = nil
     local AimVector = owner:GetAimVector()
     local ShootPos = owner:GetShootPos()
