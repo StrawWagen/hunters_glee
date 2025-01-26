@@ -928,6 +928,11 @@ end
 
 hook.Add( "Think", "termhunt_clthink", ClThink )
 
+hook.Add( "PreDrawViewModel", "glee_dontdrawviewmodelsWHENDEAD", function( _vm, ply )
+    if ply:Health() <= 0 then return true end -- DONT DRAW
+
+end )
+
 -- flash the window on round state change!
 -- only flash when round ends, and goes into active
 local oldState = nil
