@@ -149,7 +149,7 @@ function SWEP:PrimaryAttack( firstMul )
     if not self:CanPrimaryAttack() then return end
 
     local owner = self:GetOwner()
-    if owner:InVehicle() then return end
+    if IsValid( owner ) and owner:InVehicle() then return end
 
     firstMul = firstMul or 1
 
