@@ -661,6 +661,26 @@ hook.Add( "PlayerDeath", "glee_spectatedeadplayers", function( died, _, killer )
 
 end )
 
+hook.Add( "PlayerDeath", "glee_viewmodelhackfix", function( died )
+    for ind = 0, 2 do
+        local vm = died:GetViewModel( ind )
+        if IsValid( vm ) then
+            died:DrawViewModel( false, ind )
+            vm.glee_DeathHackHidden = true
+        end
+    end
+end )
+
+hook.Add( "PlayerSpawn", "glee_viewmodelhackfix", function( died )
+    for ind = 0, 2 do
+        local vm = died:GetViewModel( ind )
+        if IsValid( vm ) and vm.glee_DeathHackHidden then
+            died:DrawViewModel( true, ind )
+            vm.glee_DeathHackHidden = nil
+        end
+    end
+end )
+
 function GM:PlayerDeathThink( ply )
     local hasHp = ply:Health() > 0
     if GAMEMODE.canRespawn == false and not hasHp then
