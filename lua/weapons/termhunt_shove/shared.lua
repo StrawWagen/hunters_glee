@@ -172,6 +172,7 @@ function SWEP:PrimaryAttack( firstMul )
     local Hit = Trace.Entity
 
     local Force = AimVector
+    local selfPush
 
     if IsValid( Hit ) then
         hook.Run( "glee_shover_shove", Hit )
@@ -182,7 +183,7 @@ function SWEP:PrimaryAttack( firstMul )
             if Hit:IsPlayer() then
                 Force = Force * 500
                 Hit:SetVelocity( ( Hit:GetVelocity() * 0.5 ) + Force * firstMul )
-                owner:SetVelocity( owner:GetVelocity() + -( Force * 0.25 ) * firstMul )
+                selfPush = owner:GetVelocity() + ( -( Force * 0.25 ) * firstMul )
                 self:SetNextPrimaryFire( CurTime() + 1 )
 
             else
@@ -190,7 +191,7 @@ function SWEP:PrimaryAttack( firstMul )
                 Force = Force * math.Clamp( Phys:GetMass() / 400, 0.25, 1 )
                 Force = Force * 40000
                 Phys:ApplyForceOffset( Force * firstMul, Trace.HitPos )
-                owner:SetVelocity( owner:GetVelocity() + PlyForce * firstMul )
+                selfPush = owner:GetVelocity() + ( PlyForce * firstMul )
 
                 self:SetNextPrimaryFire( CurTime() + 0.8 )
 
@@ -208,7 +209,7 @@ function SWEP:PrimaryAttack( firstMul )
         mul = mul * ( owner.parkourForce or 0.3 )
         Force = Force * mul * firstMul
         self:ShoveSound( -15 + pitchAdded )
-        owner:SetVelocity( ( owner:GetVelocity() * 0.4 ) + Force )
+        selfPush = ( owner:GetVelocity() * 0.4 ) + Force
         owner:ViewPunch( Angle( -20, 0, 0 ) * firstMul )
         self:ShoveAnim()
 
@@ -229,6 +230,11 @@ function SWEP:PrimaryAttack( firstMul )
             owner:SetNW2Bool( "gleeshove_secondaryattacked", true )
 
         end
+    end
+
+    if selfPush and not owner:InVehicle() then
+        owner:SetVelocity( selfPush )
+
     end
 end
 

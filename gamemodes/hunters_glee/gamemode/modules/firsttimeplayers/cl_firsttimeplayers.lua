@@ -36,7 +36,7 @@ local function doMessageIfWeCan()
     -- double check!
     if hasSeenMessage:GetBool() then return true end
 
-    termHuntCloseTheShop()
+    GAMEMODE:termHuntCloseShopHolder()
     -- errored alot...
     if LocalPlayer().SetDSP then
         LocalPlayer():SetDSP( 15, true )
@@ -47,7 +47,7 @@ local function doMessageIfWeCan()
 
     popup:SetDraggable( false )
 
-    LocalPlayer().MAINSCROLLPANEL = popup
+    LocalPlayer().HOLDERSCROLLPANEL = popup
     popup.Paint = function() end
 
     popup.oldRemove = popup.Remove

@@ -129,7 +129,7 @@ local nextSkullSpawnCheck = 0
 local offsetFromGround = Vector( 0, 0, 25 )
 -- placedalready INTENTIONALLY persists thru rounds
 local placedAlready = {}
-local mapSkullCount = 4
+local mapSkullCount = 6
 
 hook.Add( "glee_sv_validgmthink_active", "glee_addskulljobs", function()
     if nextSkullSpawnCheck > CurTime() then return end
@@ -221,8 +221,8 @@ hook.Add( "glee_sv_validgmthink_active", "glee_addskulljobs", function()
 
     nextSkullSpawnCheck = CurTime() + 20
 
-    if mapSkullCount <= 4 and #navmesh.GetAllNavAreas() > 4000 then
-        mapSkullCount = 8
+    if mapSkullCount <= 6 and #navmesh.GetAllNavAreas() > 4000 then
+        mapSkullCount = 12
 
     end
 end )

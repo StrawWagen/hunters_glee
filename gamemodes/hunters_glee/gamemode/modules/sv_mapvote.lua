@@ -11,11 +11,11 @@ local mapVoteIncrement = 0
 local doingMapVote = nil
 
 local function startTheMapVoteTimer()
-    timer.Create( "glee_mapvote_think", 1, 0, function()
+    timer.Create( "glee_mapvote_think", 10, 0, function()
         if not doingMapVote then
             if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
 
-            mapVoteIncrement = mapVoteIncrement + 1
+            mapVoteIncrement = mapVoteIncrement + 10
             local lessThanVar = mapVoteIncrement <= ( mapvoteVar:GetInt() * 60 )
             if lessThanVar then return end
 
@@ -28,7 +28,7 @@ local function startTheMapVoteTimer()
             if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_INACTIVE then return end
 
             if not MapVote.state then return end
-            if MapVote.state.isInProgress then return end
+            if MapVote.state.isInProgress then timer.Remove( "glee_mapvote_think" ) return end
             MapVote.Start()
 
             mapVoteIncrement = 0

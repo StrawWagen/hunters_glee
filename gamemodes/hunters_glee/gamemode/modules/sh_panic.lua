@@ -114,7 +114,9 @@ elseif SERVER then
                 local screamSound = table.remove( ply.screamPanicSounds, 1 )
                 ply:ViewPunch( AngleRand() * 0.3 )
                 if not underwater then
-                    ply:EmitSound( screamSound, 130, math.Rand( 99, 106 ), 1, CHAN_STATIC )
+                    ply.glee_PanicScream = CreateSound( ply, screamSound )
+                    ply.glee_PanicScream:SetSoundLevel( 130 )
+                    ply.glee_PanicScream:PlayEx( 1, math.Rand( 99, 106 ) )
 
                 end
                 panicSpeedPenaltyMul = 2
@@ -122,7 +124,10 @@ elseif SERVER then
             elseif panic >= 75 and increasing then
                 local screamSound = "vo/npc/male01/pain0" .. math.random( 7, 9 ) .. ".wav"
                 if not underwater then
-                    ply:EmitSound( screamSound, 88, 100, 1, CHAN_STATIC )
+                    ply.glee_PanicScream = CreateSound( ply, screamSound )
+                    ply.glee_PanicScream:SetSoundLevel( 88 )
+                    ply.glee_PanicScream:PlayEx( 1, math.Rand( 99, 101 ) )
+
 
                 end
                 ply:ViewPunch( AngleRand() * 0.01 )
@@ -217,8 +222,18 @@ elseif SERVER then
 
     hook.Add( "PlayerDeath", "glee_panic_stopbreathingsnd", function( victim )
         GAMEMODE:SetPanic( victim, 0 )
-        if victim.huntersglee_panicSound == nil or not victim.huntersglee_panicSound:IsPlaying() then return end
-        victim.huntersglee_panicSound:Stop()
+        if victim.huntersglee_panicSound and victim.huntersglee_panicSound:IsPlaying() then
+            victim.huntersglee_panicSound:Stop()
+
+        end
+        if victim.glee_PanicScream and victim.glee_PanicScream:IsPlaying() then
+            victim.glee_PanicScream:Stop()
+
+        end
+    end )
+
+    hook.Add( "PlayerSpawn", "glee_panic_stopbreathingsnd", function( victim )
+        GAMEMODE:SetPanic( victim, 0 )
 
     end )
 

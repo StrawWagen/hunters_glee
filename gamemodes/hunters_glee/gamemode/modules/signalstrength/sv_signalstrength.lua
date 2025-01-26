@@ -11,7 +11,15 @@ function meta:GetSignalStrength( area )
 
     end
 
-    if not area then return 5, 50 end
+    if not area then
+        if GAMEMODE:IsUnderSky( self:WorldSpaceCenter() ) then
+            return 100, 50
+
+        else
+            return 5, 50
+
+        end
+    end
 
     local pos = area:GetCenter() + centerOffset
 
@@ -20,8 +28,8 @@ function meta:GetSignalStrength( area )
 
     if not GAMEMODE.isSkyOnMap then
         local distToHighest = GAMEMODE.highestAreaZ - pos.z
-        signalFinal =  25 - ( distToHighest / 1000 )
-        staticFinal = ( area:GetID() % 30 ) + 20
+        signalFinal =  50 - ( distToHighest / 100 )
+        staticFinal = ( area:GetID() % 40 ) + 20 + ( distToHighest / 100 )
 
     elseif not GAMEMODE.areasUnderSky[ area ] then
         local neighborCount = 0
@@ -112,3 +120,18 @@ net.Receive( "glee_updatesignalstrength", function( _, ply )
     ply:UpdateSignalStrength()
 
 end )
+
+local function printData( caller )
+    if caller and not caller:IsAdmin() then return end
+    print( GAMEMODE.isSkyOnMap )
+    print( GAMEMODE.highestZ )
+    print( GAMEMODE.highestAreaZ )
+    PrintTable( GAMEMODE.areasUnderSky )
+
+    for _, ply in player.Iterator() do
+        print( ply, ply:GetSignalStrength() )
+
+    end
+end
+
+concommand.Add( "glee_sv_printsignaldata", printData, nil, "Debug, print signal data", FCVAR_NONE )
