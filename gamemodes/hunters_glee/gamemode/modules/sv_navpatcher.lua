@@ -70,7 +70,6 @@ function GAMEMODE:DoGreedyPatch()
 
 end
 
-
 -- loop thru all navarea groups to find the closest navarea to the current group, in every other group.
   -- specifically...
   -- for every navarea in every group, check the distance to navareas in every other group with navarea:GetClosestPointOnArea( otherAreasCenter )
@@ -125,8 +124,7 @@ function GAMEMODE:FindPotentialLinkagesBetweenNavAreaGroups( groups, groupCorner
 
     local function addValidLinkages( group1, group2 )
         local currGroupLinkages = {} -- the potential links to sift through, picks the best ones after
-
-        -- caching so we can skip some distance comparisons
+        -- yahoo! caching!
         local tooFarAreas = {}
 
         for _, area1 in ipairs( group1 ) do
@@ -135,7 +133,7 @@ function GAMEMODE:FindPotentialLinkagesBetweenNavAreaGroups( groups, groupCorner
             local perfectConnectionCount = 0
 
             for _, area2 in ipairs( group2 ) do
-                if not IsValid( area2 ) then continue end
+                if not area2:IsValid() then continue end
                 coroutine_yield()
 
                 local area2sId = area2:GetID()
@@ -198,27 +196,13 @@ function GAMEMODE:FindPotentialLinkagesBetweenNavAreaGroups( groups, groupCorner
 
     local doneGroupPairs = {}
     local miniGroupSize = 15
-    local alwaysMini
 
     maxLinksPerGroup = maxLinksPerGroup or 5
 
     for group1Id, group1 in ipairs( groups ) do
         local group1Size = #group1
-
-        local oversized = group1Size > 20000
-
-        if oversized then
-            if not alwaysMini then
-                GAMEMODE:speakAsHuntersGlee( "Navmesh detected as OVERSIZE, patching cheap..." )
-
-            end
-            alwaysMini = true
-            continue
-
-        end
-
         -- small group! just check proximity, dont waste time checking every pair
-        if group1Size < miniGroupSize or alwaysMini then
+        if group1Size < miniGroupSize then
             coroutine_yield()
             local group1Ids = {}
             for _, area in ipairs( group1 ) do
@@ -240,7 +224,7 @@ function GAMEMODE:FindPotentialLinkagesBetweenNavAreaGroups( groups, groupCorner
             if #fauxGroup2 <= 0 then continue end
 
             addValidLinkages( group1, fauxGroup2 )
-            --[[print( "mini " .. tostring( group1Id ) .. " " .. tostring( group1Size ) )]]
+            --print( tostring( group1Id ) .. " " .. tostring( group1Size ), "mini" )
             continue
 
         end
@@ -248,12 +232,12 @@ function GAMEMODE:FindPotentialLinkagesBetweenNavAreaGroups( groups, groupCorner
         for group2Id, group2 in ipairs( groups ) do
             coroutine_yield()
             -- cant connect a group to itself
-            if group1Id == group2Id then --[[print( "same group", tostring( group1Id ), tostring( group2Id ) )]] continue end
+            if group1Id == group2Id then continue end
 
             local group2Size = #group2
 
             -- this was already handled, or will be handled!
-            if group2Size < miniGroupSize then --[[print( "other one is too small", tostring( group1Id ), tostring( group2Id ) )]] continue end
+            if group2Size < miniGroupSize then continue end
 
             local biggestCompareGroup = group1Id
             local smallestCompareGroup = group2Id
@@ -266,7 +250,7 @@ function GAMEMODE:FindPotentialLinkagesBetweenNavAreaGroups( groups, groupCorner
             local alreadyDone = doneGroupPairs[key]
 
              -- already checked this group pair!
-            if alreadyDone then --[[print( "already done", tostring( group1Id ), tostring( group2Id ) )]] continue end
+            if alreadyDone then continue end
 
             -- ignore groups if they're nowhere near eachother
             local areCloseEnough
@@ -294,9 +278,9 @@ function GAMEMODE:FindPotentialLinkagesBetweenNavAreaGroups( groups, groupCorner
                 end
             end
 
-            if not areCloseEnough then --[[print( "too far", tostring( group1Id ), tostring( group2Id ) )]] continue end
+            if not areCloseEnough then continue end
 
-            --print( "big " .. tostring( group1Id ) .. " " .. tostring( group1Size ), tostring( group2Id ) .. " " .. tostring( group2Size ) )
+            --print( tostring( group1Id ) .. " " .. tostring( group1Size ), tostring( group2Id ) .. " " .. tostring( group2Size ) )
             addValidLinkages( group1, group2 )
 
             doneGroupPairs[key] = true
@@ -329,8 +313,8 @@ local function connectionDataVisOffsetCheck( currentData )
 
     --debugoverlay.Line( area1Closest, area2Closest, 120, Color( 255,255,255 ), true )
 
-    if not IsValid( currentData.linkageArea1 ) then GAMEMODE:ForceGreedyPatch() return false end
-    if not IsValid( currentData.linkageArea2 ) then GAMEMODE:ForceGreedyPatch() return false end
+    if not currentData.linkageArea1 then return end
+    if not currentData.linkageArea2 then return end
 
     area1Closest.z = currentData.linkageArea1:GetClosestPointOnArea( currentData.area2Closest ).z
     area2Closest.z = currentData.linkageArea2:GetClosestPointOnArea( currentData.area1Closest ).z
@@ -355,9 +339,7 @@ function GAMEMODE:TakePotentialLinkagesAndLinkTheValidOnes( groupLinkages )
         if currentData.linkageDistance > powTwo200 then continue end -- discard linkages that are definitely too far
         if math.abs( currentData.linkageArea1:GetCenter().z - currentData.linkageArea1:GetCenter().z ) > 400 then continue end
 
-        local amountClear = connectionDataVisOffsetCheck( currentData )
-        if amountClear == false then GAMEMODE:ForceGreedyPatch() return end
-        if amountClear <= 3 then continue end
+        if connectionDataVisOffsetCheck( currentData ) <= 3 then continue end
         --debugoverlay.Line( currentData.area1Closest, currentData.area2Closest, 120, Color( 255,255,255 ), true )
 
         if terminator_Extras.smartConnectionThink( currentData.linkageArea1, currentData.linkageArea2 ) then
@@ -696,6 +678,37 @@ function GAMEMODE:seeIfBreakableAndGetNormal( breakable )
 
     end
 end
+
+-- sky data, used by signal strength
+
+GAMEMODE.isSkyOnMap = GAMEMODE.isSkyOnMap or nil
+GAMEMODE.highestZ = GAMEMODE.highestZ or nil
+GAMEMODE.areasUnderSky = GAMEMODE.areasUnderSky or nil
+
+local function reset()
+    GAMEMODE.isSkyOnMap = false
+    GAMEMODE.areasUnderSky = {}
+    GAMEMODE.highestZ = -math.huge
+
+end
+
+hook.Add( "glee_connectedgroups_begin", "glee_resetskydata", reset )
+
+local centerOffset = Vector( 0, 0, 25 )
+
+hook.Add( "glee_connectedgroups_visit", "glee_precacheskydata", function( area )
+    local underSky, hitPos = GAMEMODE:IsUnderSky( area:GetCenter() + centerOffset )
+    if underSky then
+        GAMEMODE.isSkyOnMap = true
+        GAMEMODE.areasUnderSky[ area ] = true
+
+    end
+    local currZ = hitPos.z
+    if currZ > GAMEMODE.highestZ then
+        GAMEMODE.highestZ = currZ
+
+    end
+end )
 
 hook.Add( "terminator_areapatcher_doneapatch", "glee_invalidate_greedypatch", function( _areasMade, areaCount )
     if areaCount >= 1 then

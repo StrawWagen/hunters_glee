@@ -136,14 +136,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_addcratejobs", function()
 
     end
 
-    local hackCrate = mod == 10 and proceduralCratePlaces > 15 and GAMEMODE:SomeoneHasEnabled( "manhackcrate" )
-    local screamCrate = ( ( mod == 9 and proceduralCratePlaces > 10 and #GAMEMODE:getDeadPlayers() <= 0 ) or staleAndNeedsAScreamer ) and GAMEMODE:SomeoneHasEnabled( "screamcrate" )
-    local weaponCrate = ( mod == 6 and proceduralCratePlaces > 12 ) or ( mod == 3 and proceduralCratePlaces > 20 ) and GAMEMODE:SomeoneHasEnabled( "weapcrate" )
-    local normCrate = GAMEMODE:SomeoneHasEnabled( "normcrate" )
-
-    if not ( hackCrate or screamCrate or weaponCrate or normCrate ) then time = 20 return end
-
-    if hackCrate then
+    if mod == 10 and proceduralCratePlaces > 15 then
         crateJob.onPosFoundFunction = function( _, bestPosition )
             local crate = GAMEMODE:ManhackCrate( bestPosition )
             if not IsValid( crate ) then return false end
@@ -152,7 +145,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_addcratejobs", function()
             return true
 
         end
-    elseif screamCrate then
+    elseif ( mod == 9 and proceduralCratePlaces > 10 and #GAMEMODE:getDeadPlayers() <= 0 ) or staleAndNeedsAScreamer then
         staleAndNeedsAScreamer = nil
         crateJob.onPosFoundFunction = function( _, bestPosition )
             local crate = GAMEMODE:ScreamingCrate( bestPosition )
@@ -163,7 +156,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_addcratejobs", function()
 
         end
         crateJob.spawnRadiusOverride = 3500
-    elseif weaponCrate then
+    elseif ( mod == 6 and proceduralCratePlaces > 12 ) or ( mod == 3 and proceduralCratePlaces > 20 ) then
         crateJob.onPosFoundFunction = function( _, bestPosition )
             local crate = GAMEMODE:WeaponsCrate( bestPosition )
             if not IsValid( crate ) then return false end
@@ -172,7 +165,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_addcratejobs", function()
             return true
 
         end
-    elseif normCrate then
+    else
         crateJob.onPosFoundFunction = function( _, bestPosition )
             local crate = GAMEMODE:NormalCrate( bestPosition )
             if not IsValid( crate ) then return false end

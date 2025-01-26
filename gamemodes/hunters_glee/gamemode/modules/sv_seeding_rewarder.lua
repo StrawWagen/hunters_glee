@@ -46,7 +46,7 @@ local function seedingIsEnabledFunc()
 end
 -- check static stuff
 local function isSeedableSession()
-    --if not game.IsDedicated() then return end
+    if not game.IsDedicated() then return end
     if not seedingIsEnabledFunc() then return end
 
     return true
@@ -56,7 +56,7 @@ end
 local timerName = "glee_resetSeedsTimer"
 timer.Remove( timerName )
 
-local serverStartedGracePeriod = 5 * 60
+local serverStartedGracePeriod = 10 * 60
 local mapStartedGracePeriod = 2 * 60
 
 local function mapJustChanged()
@@ -108,8 +108,6 @@ function GM:SeedPlayerThink( ply )
     if mapJustChanged() then return end
 
     local maxSeeds = maxSeedingPlayersFunc()
-
-    -- too many players, check again later
     if table.Count( GAMEMODE.seedPlayers ) > maxSeeds then GAMEMODE:ResetSeedCapTime() return end
     if player.GetCount() > maxSeeds then GAMEMODE:ResetSeedCapTime() return end
 
@@ -152,8 +150,7 @@ end )
 -- replace OnBecomeSeedPlayer and RewardSeedPly if you want to steal my code ( GIVE CREDIT! ) :)
 
 local maxReward = 600
--- divide remaining reward by this amount, then remove this from the reward
-local dropOffDivisor = 15
+local dropOffDivisor = 10
 GM.SEED_RewardedIds = GM.SEED_RewardedIds or {}
 GM.SEED_SeedPlysReward = GM.SEED_SeedPlysReward or {}
 

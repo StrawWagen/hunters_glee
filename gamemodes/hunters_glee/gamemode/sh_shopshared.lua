@@ -1,10 +1,5 @@
 include( "sh_shopitems.lua" )
 
-local function errorCatchingMitt( errMessage )
-    ErrorNoHaltWithStack( errMessage )
-
-end
-
 if SERVER then
     include( "sv_shophandler.lua" )
 
@@ -78,8 +73,7 @@ elseif CLIENT then
 
     end )
 
-
-    local function autoCompletePurchase( _, stringargs )
+    local function autoComplete( _, stringargs )
         local items = table.GetKeys( GAMEMODE.shopItems )
 
         --- Trim the arguments & make them lowercase.
@@ -100,69 +94,13 @@ elseif CLIENT then
 
     end
 
+
     -- ew ew gross formatting
     concommand.Add( "cl_termhunt_purchase", function( _, _, args, _ )
         RunConsoleCommand( "termhunt_purchase", args[1] )
 
-    end, autoCompletePurchase, "purchase an item" )
+    end, autoComplete, "purchase an item" )
     -- ew ew
-
-
-
-    local function autoCompleteUnlock( _, stringargs )
-        local items = table.GetKeys( GAMEMODE.shopItems )
-
-        --- Trim the arguments & make them lowercase.
-        stringargs = string.Trim( stringargs:lower() )
-
-        --- Create a new table.
-        local tbl = {}
-        for _, item in pairs( items ) do
-            if item:lower():find( stringargs ) then
-                --- Add the player's name into the auto-complete.
-                theComplete = "cl_termhunt_unlock \"" .. item .. "\""
-                table.insert( tbl, theComplete )
-
-            end
-        end
-        --- Return the table for auto-complete.
-        return tbl
-
-    end
-
-    -- ew ew gross formatting
-    concommand.Add( "cl_termhunt_unlock", function( _, _, args, _ )
-        RunConsoleCommand( "termhunt_unlock", args[1] )
-
-    end, autoCompleteUnlock, "unlock an item" )
-
-
-    local function autoCompleteEnableToggle( _, stringargs )
-        local items = table.GetKeys( GAMEMODE.shopItems )
-
-        --- Trim the arguments & make them lowercase.
-        stringargs = string.Trim( stringargs:lower() )
-
-        --- Create a new table.
-        local tbl = {}
-        for _, item in pairs( items ) do
-            if item:lower():find( stringargs ) then
-                --- Add the player's name into the auto-complete.
-                theComplete = "cl_termhunt_enabletoggle \"" .. item .. "\""
-                table.insert( tbl, theComplete )
-
-            end
-        end
-        --- Return the table for auto-complete.
-        return tbl
-
-    end
-
-    -- ew ew gross formatting
-    concommand.Add( "cl_termhunt_enabletoggle", function( _, _, args, _ )
-        RunConsoleCommand( "termhunt_enabletoggle", args[1] )
-
-    end, autoCompleteEnableToggle, "enable/disable an unlocked item" )
 
 end
 
@@ -200,21 +138,19 @@ function GM:getDebugShopItemStructureTable()
         [ "shopItemUniqueIdentifier" ] = {
             name =              "Printed name that players see",
             desc =              "Description. Accepts a function or string.",
-            cost =              "Cost, negative to give player score when purchasing, If a function, return the calculated cost, and info about the cost, for the skullshop",
-            can_goindebt =      "Optional: Can this item be bought when the player has no score? Can force players to buy innate debuffs, etc.",
-            fakeCost =          "Optional: Whether to skip applying the cost within the purchasing system. Good if you want a shop item to more dynamically apply costs, but still show a cost.",
-            simpleCostDisplay = "Optional. Client: Skip the coloring + formatting of an item's cost in the shop.",
-            markup =            "Optional: Price multipler to be applied when bought during the hunt, motivates people buy when the round's setting up.",
-            markupPerPurchase = "Optional: Additional markup per player per purchase of item. Makes items less and less worth it.",
-            cooldown =          "Optional: Cooldown between purchases, math.huge for one purchase per round. Can be a number, or a function.",
-            category =          "Table of categories to place this in. Innate, Undead, etc.",
+            cost =              "Cost, negative to give player score when purchasing, Accepts a function.",
+            can_goindebt =      "Optional. Can this item be bought when the player has no score? Can force players to buy innate debuffs, etc.",
+            fakeCost =          "Optional. Whether to skip applying the cost within the purchasing system. Good if you want a shop item to more dynamically apply costs, but still show a cost.",
+            simpleCostDisplay = "Optional. Client. Skip the coloring + formatting of an item's cost in the shop.",
+            markup =            "Optional. Price multipler to be applied when bought during the hunt, motivates people buy when the round's setting up.",
+            markupPerPurchase = "Optional. Additional markup per player per purchase of item. Makes items less and less worth it.",
+            cooldown =          "Optional. Cooldown between purchases, math.huge for one purchase per round. Can be a number, or a function.",
+            category =          "What to place this with in the shop. Innate, Undead, etc.",
             purchaseTimes =     "Item will only be purchasble in the round states specified by this table. Eg GAMEMODE.ROUND_ACTIVE ( hunting ).",
-            weight =            "Optional: Where to order this relative to everything else in our category, accepts negative values.",
-            purchaseCheck =     "Optional: Function or table of functions checked to see if this is purchasable, ran clientside on every item, every frame when shop is open. ran once serverside when purchased",
-            purchaseFunc =      "Server: What function to run when the item is bought.",
-            canShowInShop =     "Optional: Can this be seen in the shop? also prevents purchases. Accepts a single function, or a table of functions.",
-            skullCost =         "Cost to unlock this in the skull shop, 0 = always unlocked.",
-            unlockMirror =      "Determine if this is unlocked, enabled, via another item.",
+            weight =            "Optional. Where to order this relative to everything else in our category, accepts negative values.",
+            purchaseCheck =     "Optional. Function or table of functions checked to see if this is purchasable, ran clientside on every item, every frame when shop is open. ran once serverside when purchased",
+            purchaseFunc =      "Server. What function to run when the item is bought.",
+            canShowInShop =     "Optional. Can this be seen in the shop? also prevents purchases. Accepts a single function, or a table of functions."
         }
     }
     return theItemTable, theDescriptorTable
@@ -226,15 +162,14 @@ local function addShopFail( shopItemIdentifier, reason )
 
 end
 
--- add shop items VIA this function!
+-- add VIA this function!
 function GM:addShopItem( shopItemIdentifier, shopItemData )
     -- check all the non-optional stuff
     if not istable( shopItemData ) then addShopFail( shopItemIdentifier, "data table is not a table" ) return end
     if not shopItemData.name then addShopFail( shopItemIdentifier, "invalid .name" ) return end
     if not shopItemData.desc then addShopFail( shopItemIdentifier, "invalid .desc ( description )" ) return end
     if not shopItemData.cost then addShopFail( shopItemIdentifier, "invalid .cost" ) return end
-    if not ( shopItemData.skullCost or shopItemData.unlockMirror ) then addShopFail( shopItemIdentifier, "invalid .skullCost" ) return end
-    if not shopItemData.category then addShopFail( shopItemIdentifier, "invalid .category" ) return end
+    if not shopItemData.category then addShopFail( shopItemIdentifier, "invalid .category, create a new category first?" ) return end
     if not shopItemData.purchaseTimes or table.Count( shopItemData.purchaseTimes ) <= 0 then addShopFail( shopItemIdentifier, ".purchaseTimes are not specified" ) return end
     if not shopItemData.purchaseFunc then addShopFail( shopItemIdentifier, "invalid .purchaseFunc" ) return end
 
@@ -262,22 +197,9 @@ function GM:GetShopItemData( identifier )
 
 end
 function GM:GetShopCategoryData( identifier )
-    local identifiers
-    if istable( identifier ) then
-        identifiers = identifier
-    else
-        identifier = { identifier }
-    end
-    local outTbl
-    for _, currIdentifier in ipairs( identifiers ) do
-        local dat = GAMEMODE.shopCategories[ currIdentifier ]
-        if not istable( dat ) then continue end
-
-        outTbl = outTbl or {}
-        outTbl[currIdentifier] = dat
-
-    end
-    return outTbl -- returns nil if invalid category
+    local dat = GAMEMODE.shopCategories[ identifier ]
+    if not istable( dat ) then return end
+    return dat
 
 end
 
@@ -356,6 +278,11 @@ function GM:shopMarkup( purchaser, toPurchase )
         end
     end
     return 1
+end
+
+local function errorCatchingMitt( errMessage )
+    ErrorNoHaltWithStack( errMessage )
+
 end
 
 function GM:shopItemCost( toPurchase, purchaser )
@@ -535,9 +462,7 @@ function GM:canPurchase( ply, toPurchase )
         end
     end
 
-    local skullCost = dat.skullCost
-    if skullCost > 0 and not GAMEMODE:plyHasUnlockedItem( ply, toPurchase ) then return nil, "You haven't unlocked this yet." end
-
+    -- do this first
     local checkFunc = dat.purchaseCheck
     if isfunction( checkFunc ) then
         checkFunc = { checkFunc }
@@ -585,7 +510,7 @@ function GM:canPurchase( ply, toPurchase )
 
     if nextPurchase > CurTime() then return nil, cooldownReason end
 
-    local hookResult, notPurchasableReason = hook.Run( "glee_blockpurchaseitem", ply, toPurchase )
+    local hookResult, notPurchasableReason = hook.Run( "glee_blockpurchaseitem", ply, self.itemIdentifier )
 
     if hookResult then return nil, notPurchasableReason end
 
@@ -593,55 +518,6 @@ function GM:canPurchase( ply, toPurchase )
     local times = dat.purchaseTimes
     local goodTime = table.HasValue( times, currState )
     if not goodTime then return nil, badTimeReasonTranslation( currState, times ) end
-
-    return true, ""
-
-end
-
-local UNLOCK_REASON_INVALID = "That isn't a real thing for sale."
-local UNLOCK_REASON_POOR = "You don't have enough Skulls to unlock this."
-
--- shared!
-function GM:canUnlock( ply, toPurchase )
-    if not toPurchase or toPurchase == "" then return end
-    local dat = GAMEMODE:GetShopItemData( toPurchase )
-    if not dat then GAMEMODE:invalidateShopItem( _, toPurchase ) return false, UNLOCK_REASON_INVALID end
-
-    local canEvenShow = dat.canShowInShop
-    if isfunction( canEvenShow ) then
-        canEvenShow = { canEvenShow }
-
-    end
-    if istable( canEvenShow ) then
-        for _, theCurrentShowFunc in ipairs( canEvenShow ) do
-            local noErrors, returned = xpcall( theCurrentShowFunc, errorCatchingMitt, ply )
-            if noErrors == false then
-                GAMEMODE:invalidateShopItem( toPurchase )
-                print( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s canShowInShop function errored!!!!!!!!!!!" )
-                return nil, REASON_ERROR
-
-            else
-                if returned ~= true then return nil, "that shop item isn't for sale!" end
-
-            end
-        end
-    end
-
-    local skullCost = dat.skullCost
-    if skullCost <= 0 then return nil, "That item is always unlocked." end
-    if GAMEMODE:plyHasUnlockedItem( ply, toPurchase ) then return nil, "You've already unlocked that." end
-
-    local skulls = ply:GetSkulls()
-
-    local costsTooMuch = skulls < skullCost
-
-    if costsTooMuch then
-        return nil, UNLOCK_REASON_POOR
-
-    end
-
-    local hookResult, notPurchasableReason = hook.Run( "glee_blockunlockitem", ply, toPurchase )
-    if hookResult then return nil, notPurchasableReason end
 
     return true, ""
 

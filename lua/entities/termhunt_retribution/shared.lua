@@ -77,7 +77,7 @@ if not SERVER then return end
 function ENT:UpdateGivenScore()
     local currTarget = self:GetCurrTarget()
     if not IsValid( currTarget ) then return end
-    if GAMEMODE.HasHomicided and GAMEMODE:HasHomicided( currTarget, self.player ) then self:SetGivenScore( 25 ) return end
+    if GAMEMODE.HasHomicided and GAMEMODE:HasHomicided( currTarget, self.player ) then self:SetGivenScore( 0 ) return end
 
     self:SetGivenScore( -200 )
 
@@ -128,7 +128,7 @@ function ENT:Place()
 
     end )
 
-    self.player.glee_nextHomicidalGleePlace = CurTime() + 25
+    self.player.glee_nextHomicidalGleePlace = CurTime() + 15
 
     local plysToAlert = {}
     for _, thing in ipairs( ents.FindInPVS( dancer:GetShootPos() ) ) do

@@ -14,8 +14,6 @@ hook.Add( "glee_sv_validgmthink_active", "glee_addbeartrapjobs", function()
     local bearTraps = ents.FindByClass( "termhunt_bear_trap" )
     if #bearTraps >= mapBearTrapCount then nextBearTrapSpawnCheck = CurTime() + 60 return end
 
-    if not GAMEMODE:SomeoneHasEnabled( "beartraps" ) then nextBearTrapSpawnCheck = CurTime() + 20 return end
-
     local livePly = GAMEMODE:anAlivePlayer()
     if not IsValid( livePly ) then return end
 

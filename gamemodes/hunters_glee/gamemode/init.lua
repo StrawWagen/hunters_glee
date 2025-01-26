@@ -14,7 +14,6 @@ AddCSLuaFile( "modules/firsttimeplayers/cl_firsttimeplayers.lua" )
 
 AddCSLuaFile( "cl_shopstandards.lua" )
 AddCSLuaFile( "cl_shoppinggui.lua" )
-AddCSLuaFile( "cl_skullshopgui.lua" )
 
 AddCSLuaFile( "sh_player.lua" )
 AddCSLuaFile( "sh_shopshared.lua" )
@@ -71,9 +70,7 @@ util.AddNetworkString( "glee_followednexthing" )
 util.AddNetworkString( "glee_switchedspectatemodes" )
 util.AddNetworkString( "glee_stoppedspectating" )
 util.AddNetworkString( "glee_dropcurrentweapon" )
-util.AddNetworkString( "glee_closeshopholders" )
-util.AddNetworkString( "glee_askforunlockedupdate" )
-util.AddNetworkString( "glee_unlockedupdate" )
+util.AddNetworkString( "glee_closetheshop" )
 util.AddNetworkString( "glee_roundstate" )
 
 resource.AddFile( "materials/vgui/hud/glee_skullpickup.vmt" )
@@ -81,7 +78,6 @@ resource.AddFile( "materials/vgui/hud/heartbeat.png" )
 resource.AddFile( "materials/vgui/hud/gleefulldata.png" )
 resource.AddFile( "materials/vgui/hud/gleenodata.png" )
 resource.AddFile( "materials/vgui/hud/deadshopicon.png" )
-resource.AddFile( "materials/vgui/hud/skullshopicon.png" )
 
 resource.AddSingleFile( "sound/53937_meutecee_trumpethit07.wav" )
 resource.AddSingleFile( "sound/418788_name_heartbeat_single.wav" )
@@ -158,20 +154,6 @@ function GM:TermHuntSetup()
     self.termHunt_navmeshCheckTime = CurTime() + 5
 
     hook.Run( "huntersglee_round_beginsetup" )
-
-end
-
-local function newGreedyPatch()
-    GAMEMODE.HuntersGleeNeedsRepatching = true
-    print( "a greedy patch will be ran when the map is cleaned" )
-
-end
-
-concommand.Add( "glee_sv_newgreedypatch", newGreedyPatch, nil, "Debug, request another greedy patch", FCVAR_CHEAT )
-
-function GM:ForceGreedyPatch()
-    GAMEMODE.HuntersGleeNeedsRepatching = true
-    GAMEMODE:TermHuntSetup()
 
 end
 
@@ -278,7 +260,7 @@ function GM:Think()
 
         if self.termHunt_roundStartTime < cur then
             if self.HuntersGleeDoneTheGreedyPatch then
-                self:roundStart()
+                self:roundStart() --
                 self.isBadSingleplayer = nil --display that message once!
 
             else

@@ -1,4 +1,7 @@
 local GAMEMODE = GAMEMODE or GM
+GAMEMODE.isSkyOnMap = GAMEMODE.isSkyOnMap or nil
+GAMEMODE.highestZ = GAMEMODE.highestZ or nil
+GAMEMODE.areasUnderSky = GAMEMODE.areasUnderSky or nil
 
 local coroutine_running = coroutine.running
 local coroutine_yield = coroutine.yield
@@ -259,8 +262,6 @@ function GM:FindValidNavAreaCenter( navAreaGroups )
         local navArea = group[ math.random( #group ) ]
         if not IsValid( navArea ) then continue end
 
-        if not IsValid( navArea ) then GAMEMODE:ForceGreedyPatch() return end
-
         if navArea:IsUnderwater() then continue end
 
         -- add the center of the navarea to the array
@@ -469,7 +470,6 @@ function GM:TeleportRoomCheck()
         GAMEMODE.doNotUseMapSpawns = true
         for _, plyGettinRespawned in ipairs( player.GetAll() ) do
             plyGettinRespawned:KillSilent()
-            plyGettinRespawned.glee_DrownSoundOnSpawn = true
 
         end
         print( reason )
@@ -478,23 +478,6 @@ function GM:TeleportRoomCheck()
     end
 end
 
-hook.Add( "PlayerSpawn", "glee_notify_spawnlocations", function( ply )
-    if not ply.glee_DrownSoundOnSpawn then return end
-    local filterNotSpawned = RecipientFilter()
-    filterNotSpawned:AddAllPlayers()
-    filterNotSpawned:RemovePlayer( ply )
-    ply:EmitSound( "player/pl_drown1.wav", 75, math.random( 90, 110 ), 1, CHAN_STATIC, SND_NOFLAGS, 0, filterNotSpawned )
-
-    ply.glee_DrownSoundOnSpawn = nil
-
-end )
-
-
--- sky data, used by signal strength
-GAMEMODE.isSkyOnMap = GAMEMODE.isSkyOnMap or nil
-GAMEMODE.highestZ = GAMEMODE.highestZ or nil
-GAMEMODE.highestAreaZ = GAMEMODE.highestAreaZ or nil
-GAMEMODE.areasUnderSky = GAMEMODE.areasUnderSky or nil
 
 -- sky understanding stuff
 local function reset()

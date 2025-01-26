@@ -1,5 +1,4 @@
 -- copied falling wind, fixed style + a bug with spectating
--- CREDIT https://steamcommunity.com/sharedfiles/filedetails/?id=2816536934
 
 if SERVER then
     resource.AddFile( "sound/fallingwind/glee_woosh0.wav" )
@@ -8,46 +7,17 @@ if SERVER then
 
     util.AddNetworkString( "glee_fallingwind_requestVehicleSpeed" )
     util.AddNetworkString( "glee_fallingwind_sendVehicleSpeed" )
-    util.AddNetworkString( "glee_fallingwind_fallingfast" )
 
     net.Receive( "glee_fallingwind_requestVehicleSpeed", function( _, ply )
-        if not IsValid( ply ) then return end
-        local vehicle = ply:GetVehicle()
-        if not ply:InVehicle() or not IsValid( vehicle ) then return end
-
-        for _ = 1, 15 do
-            local parent = vehicle:GetParent()
-            if IsValid( parent ) then
-                vehicle = parent
-
-            else
-                break
-
-            end
-        end
-
+        if not IsValid( ply ) or not ply:IsPlayer() then return end
+        if not ply:InVehicle() or not IsValid( ply:GetVehicle() ) then return end
         -- print("sv - sending vehicle speed")
         net.Start( "glee_fallingwind_sendVehicleSpeed" )
             -- This gets compressed, but since it's a velocity,
             -- it shouldn't matter much
-            net.WriteVector( vehicle:GetVelocity() )
+            net.WriteVector( ply:GetVehicle():GetVelocity() )
 
         net.Send( ply )
-    end )
-
-    -- panic when falling fast!
-    net.Receive( "glee_fallingwind_fallingfast", function( _, ply )
-        if not IsValid( ply ) then return end
-        local nextPanic = ply.glee_NextVelPanic or 0
-        if nextPanic > CurTime() then return end
-        ply.glee_NextVelPanic = CurTime() + 0.1
-
-        local vel = ply:GetVelocity()
-        local leng = vel:Length()
-
-        if math.abs( vel.z ) <= 400 then return end
-        GAMEMODE:GivePanic( ply, leng / 50 )
-
     end )
 end
 
@@ -60,16 +30,14 @@ if CLIENT then
     glee_FallingWind.StopVehicle    = CreateClientConVar( "cl_fallingwind_stop_in_vehicle", "0", true, false, "", 0, 1 )
     glee_FallingWind.DoShake        = CreateClientConVar( "cl_fallingwind_shake", "1", true, false, "", 0, 1 )
     glee_FallingWind.Volume         = CreateClientConVar( "cl_fallingwind_volume", "0.75", true, false, "", 0, 1 )
-    glee_FallingWind.MinThreshold   = 526 -- exact number that mp_falldamage 1 starts damaging at
+    glee_FallingWind.MinThreshold   = CreateClientConVar( "cl_fallingwind_minthreshold", "650", true, false, "", 0, nil )
     glee_FallingWind.MaxThreshold   = CreateClientConVar( "cl_fallingwind_maxthreshold", "1500", true, false, "", 1, nil )
     glee_FallingWind.VelXFactor     = CreateClientConVar( "cl_fallingwind_vfactorx", "1", true, false, "", 0, 1 )
     glee_FallingWind.VelYFactor     = CreateClientConVar( "cl_fallingwind_vfactory", "1", true, false, "", 0, 1 )
     glee_FallingWind.VelZFactor     = CreateClientConVar( "cl_fallingwind_vfactorz", "1", true, false, "", 0, 1 )
     glee_FallingWind.LocalPlayer_VehicleCache = true
-    glee_FallingWind.LocalPlayer_VehicleSpeedCache = nil
+    glee_FallingWind.LocalPlayer_VehicleSpeedCache = Vector( 0, 0, 0 )
     glee_FallingWind.VelFactorCache = nil
-
-    local nextSend = 0
 
     net.Receive( "glee_fallingwind_sendVehicleSpeed", function()
         local vehicleSpeed = net.ReadVector()
@@ -163,7 +131,6 @@ if CLIENT then
             end
         elseif myObserverMode == OBS_MODE_CHASE and IsValid( me:GetObserverTarget() ) then
             Velocity = me:GetObserverTarget():GetVelocity()
-
         elseif myObserverMode == OBS_MODE_ROAMING then
             Velocity = Velocity * 0.5
 
@@ -171,20 +138,14 @@ if CLIENT then
         elseif me:InVehicle() and IsValid( me:GetVehicle() ) then
             glee_FallingWind.LocalPlayer_VehicleCache = true
 
-            local nextOne = glee_FallingWind.nextCacheRequest or 0
-            if nextOne < CurTime() then
-                glee_FallingWind.nextCacheRequest = CurTime() + 0.1
-                -- Request velocity of the vehicle to the server
-                net.Start( "glee_fallingwind_requestVehicleSpeed" )
-                -- print("cl - requesting vehicle speed")
-                net.SendToServer()
-
-            end
+            -- Request velocity of the vehicle to the server
+            net.Start( "glee_fallingwind_requestVehicleSpeed" )
+            -- print("cl - requesting vehicle speed")
+            net.SendToServer()
 
             -- Only use the velocity after we get it
-            if glee_FallingWind.LocalPlayer_VehicleSpeedCache then
+            if ( glee_FallingWind.LocalPlayer_VehicleSpeedCache ~= vector_origin ) then
                 Velocity = glee_FallingWind.LocalPlayer_VehicleSpeedCache
-
             end
         end
 
@@ -192,27 +153,20 @@ if CLIENT then
             -- If the player exists the vehicle at high speed, that speed will be stored
             -- when they enter another vehicle, causing a bit of the sound to be heard
             glee_FallingWind.LocalPlayer_VehicleCache = false
-            glee_FallingWind.LocalPlayer_VehicleSpeedCache = nil
-
+            glee_FallingWind.LocalPlayer_VehicleSpeedCache = vector_origin
         end
 
         local VelocityValueSqr =  ( Velocity * glee_FallingWind.VelFactorCache ):LengthSqr()
+
         local VelocityProgress = 0
-
-        if ( VelocityValueSqr > glee_FallingWind.MinThreshold * glee_FallingWind.MinThreshold ) then
-            if nextSend < CurTime() then
-                nextSend = CurTime() + 0.25
-                net.Start( "glee_fallingwind_fallingfast" )
-                net.SendToServer()
-
-            end
+        if ( VelocityValueSqr > glee_FallingWind.MinThreshold:GetInt() * glee_FallingWind.MinThreshold:GetInt() ) then
 
             if not ( glee_FallingWind.Sound:IsPlaying() ) then
                 glee_FallingWind.Sound:PlayEx( 0, 100 )
             end
             local VelocityValue = ( Velocity * glee_FallingWind.VelFactorCache ):Length()
 
-            VelocityProgress = ( VelocityValue - glee_FallingWind.MinThreshold ) / glee_FallingWind.MaxThreshold:GetInt()
+            VelocityProgress = ( VelocityValue - glee_FallingWind.MinThreshold:GetInt() ) / glee_FallingWind.MaxThreshold:GetInt()
 
             util.ScreenShake( me:GetPos(), VelocityProgress, 25, 0.125, 0, true )
         end

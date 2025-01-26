@@ -1,7 +1,6 @@
 include( "shared.lua" )
 include( "cl_shopstandards.lua" )
 include( "cl_shoppinggui.lua" )
-include( "cl_skullshopgui.lua" )
 include( "modules/cl_targetid.lua" )
 include( "modules/cl_scoreboard.lua" )
 include( "modules/cl_obfuscation.lua" )
@@ -951,9 +950,9 @@ end )
 function GAMEMODE:CanShowDefaultHud()
     local ply = LocalPlayer()
 
-    if not ply.MAINSHOPHOLDER then return true end
-    if not IsValid( ply.MAINSHOPHOLDER ) then return true end
-    if ply.MAINSHOPHOLDER:IsMouseInputEnabled() then return nil end
+    if not ply.MAINSSHOPPANEL then return true end
+    if not IsValid( ply.MAINSSHOPPANEL ) then return true end
+    if ply.MAINSSHOPPANEL:IsMouseInputEnabled() then return nil end
 
     return true
 
@@ -1003,14 +1002,7 @@ hook.Add( "CalcView", "glee_override_spectating_angles", function( ply, _, ang, 
     if not isTerm then return end
 
     if mode == OBS_MODE_IN_EYE then
-        local termAng
-        if spectateTarget.GetEyeAngles then
-            termAng = spectateTarget:GetEyeAngles()
-
-        else
-            termAng = spectateTarget:GetAngles()
-
-        end
+        local termAng = spectateTarget:GetEyeAngles()
         local forward = termAng:Forward()
 
         if not spectateTarget.GetShootPos then return end
@@ -1032,8 +1024,7 @@ end )
 -- yoinked from darkrp so we do it right
 local FKeyBinds = {
     ["+menu"] = "ShowShop",
-    ["noclip"] = "ShowSkullShop",
-    ["undo"] = "DropCurrentWeapon",
+    ["noclip"] = "DropCurrentWeapon",
 
 }
 

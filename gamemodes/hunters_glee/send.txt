@@ -1,6 +1,5 @@
 gamemodes\hunters_glee\gamemode\cl_shopstandards.lua
 gamemodes\hunters_glee\gamemode\cl_shoppinggui.lua
-gamemodes\hunters_glee\gamemode\cl_skullshopgui.lua
 
 gamemodes\hunters_glee\gamemode\modules\cl_targetid.lua
 gamemodes\hunters_glee\gamemode\modules\cl_scoreboard.lua
