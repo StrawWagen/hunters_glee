@@ -58,6 +58,7 @@ end
 
 
 function PLAYER:Loadout()
+    self.Player:Give( "gmod_camera" )
     self.Player:Give( "termhunt_shove" )
     self.Player:Give( "termhunt_radio" )
     self.Player:Give( "weapon_crowbar" )

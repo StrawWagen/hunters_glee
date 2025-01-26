@@ -901,14 +901,8 @@ function HUDPaint()
             paintOtherPlayers( ply )
 
         else
-            -- sounds
-            local didBeat, interval = beatThink( ply, cur )
-
             hook.Run( "glee_cl_aliveplyhud", ply, cur )
-            if didBeat then
-                hook.Run( "glee_cl_heartbeat", ply, interval )
 
-            end
         end
 
     end
@@ -916,6 +910,23 @@ function HUDPaint()
 
 end
 hook.Add( "HUDPaint", "termhunt_playerdisplay", HUDPaint )
+
+local function ClThink()
+    local ply = LocalPlayer()
+    local cur = UnPredictedCurTime()
+    local spectating = ply:Health() <= 0
+
+    if spectating then return end
+
+    -- sounds
+    local didBeat, interval = beatThink( ply, cur )
+    if didBeat then
+        hook.Run( "glee_cl_heartbeat", ply, interval )
+
+    end
+end
+
+hook.Add( "Think", "termhunt_clthink", ClThink )
 
 -- flash the window on round state change!
 -- only flash when round ends, and goes into active
