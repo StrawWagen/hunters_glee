@@ -1642,7 +1642,7 @@ local function greasyHandsPurchase( purchaser )
     end )
 
     local undoInnate = function( respawner )
-        hook.Remove( hookKey1 )
+        hook.Remove( "PlayerSwitchWeapon", hookKey1 )
         timer.Stop( timerName )
         respawner.glee_hasGreasyHands = nil
         respawner.glee_greasyhands_queuedDrop = nil
