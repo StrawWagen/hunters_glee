@@ -19,17 +19,18 @@ local function DoFlashlight( state )
             end
 
             -- need this to stop a super terrible flashing effect
-            local dieTime = me:Ping() / 300
-            dieTime = math.max( 0.1, dieTime )
+            local dieTime = me:Ping() / 150
+            dieTime = math.max( 0.5, dieTime )
 
-            local dlight = DynamicLight( me:EntIndex() )
+            local dlight = DynamicLight( me:EntIndex() + player.GetCount() )
             if dlight then
+                me.glee_spectateflashlight = dlight
                 dlight.pos = lightPos
-                dlight.r = 150
+                dlight.r = 190
                 dlight.g = 255
-                dlight.b = 150
+                dlight.b = 190
                 dlight.brightness = 0.8
-                dlight.size = 1500
+                dlight.size = 2000
                 dlight.dietime = CurTime() + dieTime
 
             end
@@ -38,6 +39,7 @@ local function DoFlashlight( state )
     else
         timer.Remove( timerName )
         me:EmitSound( "HL2Player.FlashLightOff" )
+        me.glee_spectateflashlight.dietime = 0
 
     end
 end

@@ -176,22 +176,21 @@ function GM:calculateBPM( cur, players )
 
             -- not cheap
             elseif directlyUnderneathArea and directlyUnderneathArea:IsValid() then
-                local plysShootPos = ply:GetShootPos()
                 -- only check horizontal, sometimes navareas end up underneath floors
-                local closestPos = directlyUnderneathArea:GetClosestPointOnArea( plysShootPos )
-                local highestZ = math.max( closestPos.z, plysShootPos.z )
-                local lowestZ = math.min( closestPos.z, plysShootPos.z )
+                local closestPos = directlyUnderneathArea:GetClosestPointOnArea( plyPos )
+                local highestZ = math.max( closestPos.z, plyPos.z )
+                local lowestZ = math.min( closestPos.z, plyPos.z )
                 closestPos.z = highestZ
-                plysShootPos.z = highestZ
+                plyPos.z = highestZ
 
-                local plyCanSeeArea = posCanSeeComplex( plysShootPos, closestPos, ply, MASK_SOLID_BRUSHONLY )
+                local plyCanSeeArea = posCanSeeComplex( plyPos, closestPos, ply, MASK_SOLID_BRUSHONLY )
 
                 -- handle "directly under navmeshed displacement floor" edge case
                 closestPos.z = highestZ + 25
-                plysShootPos.z = lowestZ + 25
+                plyPos.z = lowestZ + 25
 
                 -- catch people behind displacements
-                onArea = plyCanSeeArea and posCanSeeComplex( closestPos, plysShootPos, ply, MASK_SOLID_BRUSHONLY )
+                onArea = plyCanSeeArea and posCanSeeComplex( closestPos, plyPos, ply, MASK_SOLID_BRUSHONLY )
 
             end
 
@@ -203,7 +202,10 @@ function GM:calculateBPM( cur, players )
             if ( not onArea ) and closeToGround then
                 blockScore = true
                 doBpmDecrease = true
+                if not terminator_Extras.IsLivePatching then
+                    terminator_Extras.dynamicallyPatchPos( ply:GetPos() )
 
+                end
             end
             if onLadder then
                 blockScore = true
@@ -366,6 +368,7 @@ function GM:manageServersideCountOfBeats()
 end
 
 
+-- used by hunts tally
 hook.Add( "huntersglee_givescore", "huntersglee_storealivescoring", function( scorer, addedscore )
     if not IsValid( scorer ) then return end
     if scorer:Health() <= 0 then return end
@@ -419,9 +422,21 @@ function GM:ensureNotSpectating( ply ) -- this is kinda redundant
 
 end
 
-local function isMovementKey( keyPressed )
-    if keyPressed == IN_ATTACK2 or keyPressed == IN_FORWARD or keyPressed == IN_BACK or keyPressed == IN_MOVELEFT or keyPressed == IN_MOVERIGHT then return true end
+local isMovementKey
 
+do
+    local movementKeys = {
+        [IN_ATTACK] = true,
+        [IN_FORWARD] = true,
+        [IN_BACK] = true,
+        [IN_MOVELEFT] = true,
+        [IN_MOVERIGHT] = true,
+    }
+
+    isMovementKey = function( keyPressed )
+        return movementKeys[keyPressed]
+
+    end
 end
 
 local function shutDownDeathCam( ply )
@@ -617,7 +632,7 @@ hook.Add( "glee_sv_validgmthink", "glee_SwitchSpectateModes", function( players 
     end
 end )
 
-function GM:SpectateOverrides( ply, mode )
+function GM:SpectateOverrides( ply, mode, deadPlayers )
     local placing = ply.ghostEnt
 
     local isPlacing = IsValid( placing )
@@ -627,7 +642,7 @@ function GM:SpectateOverrides( ply, mode )
         return
 
     end
-    if isPlacing and mode ~= OBS_MODE_ROAMING then
+    if isPlacing and mode ~= OBS_MODE_ROAMING then -- stop following something, they're placing stuff!
         ply:SetObserverMode( OBS_MODE_ROAMING )
 
     end
@@ -639,14 +654,27 @@ function GM:SpectateOverrides( ply, mode )
 
         end
     end
+
+    local pos = ply:GetPos()
+
+    net.Start( "glee_sendtruesoullocations", true )
+        net.WriteEntity( ply )
+        net.WriteVector( pos )
+        net.WriteAngle( ply:EyeAngles() )
+        net.WriteInt( mode, 6 )
+        net.WriteEntity( ply:GetObserverTarget() )
+    net.Send( deadPlayers )
+
 end
 
 function GM:managePlayerSpectating()
-    for _, ply in ipairs( player.GetAll() ) do
-        local mode = ply:GetObserverMode()
+    local deadPlayers = self:getDeadListeners()
+    for _, ply in player.Iterator() do
+        local newMode = ply:GetObserverMode()
+
         if ply.termHuntTeam == GAMEMODE.TEAM_SPECTATE then
-            GAMEMODE:SpectateOverrides( ply, mode )
-        elseif mode > 0 and not ply.gleeIsMimic then -- ply is spectating but their team doesnt match!
+            GAMEMODE:SpectateOverrides( ply, newMode, deadPlayers )
+        elseif newMode > 0 and not ply.gleeIsMimic then -- ply is spectating but their team doesnt match!
             GAMEMODE:ensureNotSpectating( ply )
         end
     end

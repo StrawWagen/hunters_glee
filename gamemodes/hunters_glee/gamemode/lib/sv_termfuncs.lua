@@ -499,6 +499,18 @@ function GM:returnDeadInTable( stuff )
 
 end
 
+function GM:returnDeadListenersInTable( stuff )
+    local deadStuff = {}
+    for _, curr in ipairs( stuff ) do
+        if curr:Health() <= 0 or curr:GetNWInt( "glee_radiochannel", 0 ) == 666 then
+            table.insert( deadStuff, curr )
+
+        end
+    end
+    return deadStuff
+
+end
+
 function GM:returnWinnableInTable( stuff )
     local winnableStuff = {}
     for _, curr in pairs( stuff ) do
@@ -529,6 +541,14 @@ end
 function GM:getDeadPlayers()
     local players = player.GetAll()
     local deadPlayers = GAMEMODE:returnDeadInTable( players )
+
+    return deadPlayers
+
+end
+
+function GM:getDeadListeners()
+    local players = player.GetAll()
+    local deadPlayers = GAMEMODE:returnDeadListenersInTable( players )
 
     return deadPlayers
 

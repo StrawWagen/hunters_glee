@@ -1,6 +1,7 @@
 include( "shared.lua" )
 include( "cl_shopstandards.lua" )
 include( "cl_shoppinggui.lua" )
+include( "modules/cl_souls.lua" )
 include( "modules/cl_targetid.lua" )
 include( "modules/cl_scoreboard.lua" )
 include( "modules/cl_obfuscation.lua" )

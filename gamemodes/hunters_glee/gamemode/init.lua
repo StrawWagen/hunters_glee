@@ -1,6 +1,7 @@
 -- ADDCS
 AddCSLuaFile( "shared.lua" )
 AddCSLuaFile( "cl_init.lua" )
+AddCSLuaFile( "modules/cl_souls.lua" )
 AddCSLuaFile( "modules/cl_targetid.lua" )
 AddCSLuaFile( "modules/cl_scoreboard.lua" )
 AddCSLuaFile( "modules/cl_obfuscation.lua" )
@@ -72,6 +73,7 @@ util.AddNetworkString( "glee_stoppedspectating" )
 util.AddNetworkString( "glee_dropcurrentweapon" )
 util.AddNetworkString( "glee_closetheshop" )
 util.AddNetworkString( "glee_roundstate" )
+util.AddNetworkString( "glee_sendtruesoullocations" )
 
 resource.AddFile( "materials/vgui/hud/glee_skullpickup.vmt" )
 resource.AddFile( "materials/vgui/hud/heartbeat.png" )
