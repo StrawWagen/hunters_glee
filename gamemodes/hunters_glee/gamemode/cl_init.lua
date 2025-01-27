@@ -709,7 +709,7 @@ local function genericHints()
             return true, "Death is not the end.\nPress \" " .. string.upper( phrase ) .. " \" to open the shop."
 
         elseif not me.glee_DefinitelyBoughtAnUndeadItem then
-            return true, "Purchase an 'Undead' item. If you earn enough, you can REVIVE YOURSELF!."
+            return true, "Are you broke? Purchase 'gifts' to make money while dead."
 
         elseif not me.glee_HasSpectatedSomeone then
             local valid, phrase = GAMEMODE:TranslatedBind( "+attack" )
@@ -929,7 +929,10 @@ end
 hook.Add( "Think", "termhunt_clthink", ClThink )
 
 hook.Add( "PreDrawViewModel", "glee_dontdrawviewmodelsWHENDEAD", function( _vm, ply )
-    if ply:Health() <= 0 then return true end -- DONT DRAW
+    if ply:Health() > 0 then return end -- they are alive
+    if ( ply:GetObserverMode() == OBS_MODE_IN_EYE ) and IsValid( ply:GetObserverTarget() ) then return end -- spectating another player
+
+    return true -- dont draw vm
 
 end )
 
@@ -1007,7 +1010,15 @@ hook.Add( "CalcView", "glee_override_spectating_angles", function( ply, _, ang, 
     if not isTerm then return end
 
     if mode == OBS_MODE_IN_EYE then
-        local termAng = spectateTarget:GetEyeAngles()
+        local termAng
+        if spectateTarget.GetEyeAngles then
+            termAng = spectateTarget:GetEyeAngles()
+
+        else
+            termAng = spectateTarget:GetAngles()
+
+        end
+
         local forward = termAng:Forward()
 
         if not spectateTarget.GetShootPos then return end

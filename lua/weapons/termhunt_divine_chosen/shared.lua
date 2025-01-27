@@ -537,6 +537,7 @@ function SWEP:DrawWorldModel()
     local owner = self:GetOwner()
 
     if not IsValid( owner ) then return end
+    if LocalPlayer():GetObserverMode() == OBS_MODE_IN_EYE and LocalPlayer():GetObserverTarget() == owner then return end
 
     if not mat then mat = Material( "sprites/glow04_noz.vmt" ) end
 
