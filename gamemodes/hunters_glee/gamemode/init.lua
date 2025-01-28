@@ -86,8 +86,8 @@ resource.AddSingleFile( "sound/418788_name_heartbeat_single.wav" )
 resource.AddSingleFile( "sound/209578_zott820_cash-register-purchase.wav" )
 resource.AddSingleFile( "sound/482735__copyc4t__cartoon-long-throw.wav" )
 
-resource.AddWorkshop( "2848253104" )
-resource.AddWorkshop( "2944078031" )
+resource.AddWorkshop( "2848253104" ) -- gamemode
+resource.AddWorkshop( "2944078031" ) -- bot/model
 
 local GM = GM or GAMEMODE
 

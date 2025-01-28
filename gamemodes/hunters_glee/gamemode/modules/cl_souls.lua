@@ -245,7 +245,6 @@ local function soulThink( ply )
             if data.mode == OBS_MODE_ROAMING then
                 if not IsValid( soul ) or ( soul:GetModel() ~= ply:GetModel() ) then
                     createSoul( ply )
-                    print( "create", ply )
 
                 else
                     followPly( soul, ply, data )
@@ -295,6 +294,8 @@ hook.Add( "Tick", "glee_souls", function()
     if nextThink > cur then return end
 
     local me = LocalPlayer()
+    if not IsValid( me ) then nextThink = cur + 5 return end -- spawning in
+
     local seesDeadPeople = ( me:Health() <= 0 or me:GetNWInt( "glee_radiochannel", 0 ) == 666 )
     if not seesDeadPeople then
         nextThink = cur + 5
