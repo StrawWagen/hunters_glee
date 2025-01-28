@@ -388,7 +388,7 @@ function GM:spectatifyPlayer( ply )
     ply:SetNWBool( "termhunt_spectating", true )
     ply:Spectate( OBS_MODE_DEATHCAM )
 
-    ply.spectateDoFreecam = CurTime() + 6
+    ply.spectateDoFreecam = CurTime() + 8
     ply.spectateDoFreecamForced = CurTime() + 2
     ply.termHuntTeam = GAMEMODE.TEAM_SPECTATE
 
@@ -671,7 +671,6 @@ function GM:managePlayerSpectating()
     local deadPlayers = self:getDeadListeners()
     for _, ply in player.Iterator() do
         local newMode = ply:GetObserverMode()
-
         if ply.termHuntTeam == GAMEMODE.TEAM_SPECTATE then
             GAMEMODE:SpectateOverrides( ply, newMode, deadPlayers )
         elseif newMode > 0 and not ply.gleeIsMimic then -- ply is spectating but their team doesnt match!

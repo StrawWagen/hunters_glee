@@ -1,5 +1,6 @@
 
 local doSoulRagdolls = CreateClientConVar( "huntersglee_cl_dosoulragdolls", 1, true, false, "Enable funny client ragdolls on dead players", 0, 1 )
+local doOwnSoul = CreateClientConVar( "huntersglee_cl_seeownsoul", 1, true, false, "See your own soul?", 0, 1 )
 
 local LocalPlayer = LocalPlayer
 local IsValid = IsValid
@@ -15,6 +16,11 @@ local function inWall( pos )
 
 end
 
+local function boneCountFixed( soul ) -- "Entity:GetPhysicsObjectNum - Out of bounds physics object - max 14, got 15 (x28)"
+    return soul:GetPhysicsObjectCount() + -1
+
+end
+
 local function stopShowing( soul )
     if not IsValid( soul ) then return end
 
@@ -26,7 +32,7 @@ local function stopShowing( soul )
 
     -- dont remove instantly so we never create permanent ragdoll sounds
     soul:SetNoDraw( true )
-    for bone = 0, soul:GetPhysicsObjectCount() do
+    for bone = 0, boneCountFixed( soul ) do
         local soulsObj = soul:GetPhysicsObjectNum( bone )
         if IsValid( soulsObj ) then
             soulsObj:EnableMotion( false )
@@ -43,7 +49,7 @@ local function updateDisplayPos( ply, pos )
 end
 
 local function soulSetPosSimple( soul, pos )
-    for bone = 0, soul:GetPhysicsObjectCount() do
+    for bone = 0, boneCountFixed( soul ) do
         local soulsObj = soul:GetPhysicsObjectNum( bone )
         if IsValid( soulsObj ) then
             soulsObj:SetPos( pos, true )
@@ -58,7 +64,7 @@ local function soulSetup( soul )
     local insideEnt = owner.glee_LastInsideEnt
     local anInsideEnt = IsValid( insideEnt )
     if IsValid( rag ) and not anInsideEnt then
-        for bone = 0, rag:GetPhysicsObjectCount() do
+        for bone = 0, boneCountFixed( soul ) do
             local ragsObj = rag:GetPhysicsObjectNum( bone )
             local soulsObj = soul:GetPhysicsObjectNum( bone )
             if IsValid( ragsObj ) and IsValid( soulsObj ) then
@@ -77,7 +83,7 @@ local function soulSetup( soul )
         end
         soulSetPosSimple( soul, pos )
     end
-    for bone = 0, soul:GetPhysicsObjectCount() do
+    for bone = 0, boneCountFixed( soul ) do
         local soulsObj = soul:GetPhysicsObjectNum( bone )
         if IsValid( soulsObj ) then
             soulsObj:SetMass( 1 )
@@ -86,24 +92,28 @@ local function soulSetup( soul )
     end
 
     local headPhysBoneId = fallbackHeadBone
-    local addedRotation
+    local headBoneId
 
     local eyes = soul:LookupAttachment( "eyes" )
     if eyes > 0 then
         local attachDat = soul:GetAttachment( eyes )
-        headPhysBoneId = soul:TranslateBoneToPhysBone( attachDat.Bone )
-        addedRotation = attachDat.Ang
+        headBoneId = attachDat.Bone
+        headPhysBoneId = soul:TranslateBoneToPhysBone( headBoneId )
 
     end
 
     local headPhysBone = soul:GetPhysicsObjectNum( headPhysBoneId )
     if not IsValid( headPhysBone ) then return end
 
+    if owner == LocalPlayer() then
+        soul:ManipulateBoneScale( headBoneId, vec_zero )
+
+    end
+
     headPhysBone:SetMass( headPhysBone:GetMass() * 10000 ) -- so it pulls the other bones along
 
     soul.glee_HeadPhysBoneId = headPhysBoneId
     soul.glee_HeadPhysBone = headPhysBone
-    soul.glee_AddedRotation = addedRotation
 
 end
 
@@ -149,11 +159,10 @@ local function createSoul( ply )
         render.SetBlend( 1 )
 
     end
-
 end
 
-local tooFarWake = 50^2
-local tooFarNocollide = 150^2
+local tooFarWake = 25^2
+local tooFarNocollide = 50^2
 local tooFarSetpos = 2000^2
 
 local function soulGotoPos( soul, pos, ang )
@@ -162,35 +171,48 @@ local function soulGotoPos( soul, pos, ang )
 
     local obj = soul:GetPhysicsObject()
 
-    local dist = soul:GetPos():DistToSqr( pos )
-    if dist > tooFarSetpos then
-        if obj:IsCollisionEnabled() then
-            obj:EnableCollisions( false )
+    local collisionsDesired
 
-        end
-        local dir = soul:GetPos() - pos
+    local soulsPos = soul:GetPos()
+    local dist = soulsPos:DistToSqr( pos )
+    if dist > tooFarSetpos then
+        collisionsDesired = false
+
+        local dir = soulsPos - pos
         dir:Normalize()
         soulSetPosSimple( soul, pos + dir * 1500 )
-        soul:EmitSound( "weapons/mortar/mortar_shell_incomming1.wav", 75, math.random( 150, 175 ), 1, CHAN_STATIC )
-
-    elseif dist > tooFarNocollide then
-        if obj:IsCollisionEnabled() then
-            obj:EnableCollisions( false )
+        if not soul.glee_DoneIncoming then
+            soul:EmitSound( "weapons/mortar/mortar_shell_incomming1.wav", 75, math.random( 150, 175 ), 1, CHAN_STATIC )
+            soul.glee_DoneIncoming = true
 
         end
+    elseif dist > tooFarNocollide then
+        collisionsDesired = false
+
     elseif dist > tooFarWake then
         if IsValid( obj ) and obj:IsAsleep() then
             obj:EnableMotion( true )
             obj:Wake()
 
         end
-    elseif not obj:IsCollisionEnabled() and not inWall( pos ) then
-        obj:EnableCollisions( true )
+    elseif not inWall( pos ) and not inWall( soulsPos ) then
+        collisionsDesired = true
 
     end
 
+    if collisionsDesired ~= nil and collisionsDesired ~= obj:IsCollisionEnabled() then
+        if collisionsDesired then
+            obj:EnableCollisions( true )
+            soul.glee_DoneIncoming = nil
+
+        else
+            obj:EnableCollisions( false )
+
+        end
+    end
+
     headBone:SetPos( pos )
-    headBone:SetAngles( ang + rotator )
+    headBone:SetAngles( ang + rotator ) -- the angles are wrong but w/e
 
     return headBone
 
@@ -310,8 +332,10 @@ hook.Add( "Tick", "glee_souls", function()
         return
     end
 
+    local doOwn = doOwnSoul:GetBool()
+
     for _, ply in player.Iterator() do
-        if ply ~= me then
+        if doOwn or ply ~= me then
             soulThink( ply )
 
         end
