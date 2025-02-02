@@ -9,8 +9,8 @@ local set = {
     name = "nextbot_brainrot", -- unique name
     prettyName = "PNG Nextbot Brainrot",
     description = "Sanic, and/or Obunga.\nObjectively shallower gameplay.\nYou happy now?",
-    difficultyPerMin = 50 / 10, -- difficulty per minute
-    waveInterval = "default", -- time between spawn waves
+    difficultyPerMin = { 200 / 10, 500 / 10 }, -- difficulty per minute
+    waveInterval = { 30, 90 }, -- time between spawn waves
     diffBumpWhenWaveKilled = "default", -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
     startingBudget = "default", -- so budget isnt 0
     spawnCountPerDifficulty = { 0.05 },
