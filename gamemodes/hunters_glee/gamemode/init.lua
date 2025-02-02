@@ -110,7 +110,7 @@ GM.SpawnTypes = {
     "info_player_zombie",
 }
 
-GM.roundStartAfterNavCheck      = 90
+GM.roundStartAfterNavCheck      = 75
 GM.roundStartNormal             = 60
 GM.IsReallyHuntersGlee          = true
 
