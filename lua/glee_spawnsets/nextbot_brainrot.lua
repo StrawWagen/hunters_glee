@@ -9,7 +9,7 @@ local set = {
     name = "nextbot_brainrot", -- unique name
     prettyName = "PNG Nextbot Brainrot",
     description = "Sanic, and/or Obunga.\nObjectively shallower gameplay.\nYou happy now?",
-    difficultyPerMin = { 200 / 10, 500 / 10 }, -- difficulty per minute
+    difficultyPerMin = { 500 / 10, 1000 / 10 }, -- difficulty per minute
     waveInterval = { 30, 90 }, -- time between spawn waves
     diffBumpWhenWaveKilled = "default", -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
     startingBudget = "default", -- so budget isnt 0
@@ -21,6 +21,17 @@ local set = {
 }
 
 if hasSanic then
+
+    local function randomizeVar()
+        local dist = math.random( 2500, 6000 )
+        if math.random( 0, 100 ) < 50 then
+            dist = dist * math.random( 1, 10 )
+
+        end
+        RunConsoleCommand( "npc_sanic_acquire_distance", dist )
+
+    end
+
     local npc = {
         hardRandomChance = { 15, 75 }, -- chance this is even checked
         name = "brainrot_sanic",
@@ -31,30 +42,39 @@ if hasSanic then
         countClass = "npc_sanic",
         minCount = { 0 },
         maxCount = { 50 },
+        postSpawnedFuncs = { randomizeVar }, -- this can be nil
     }
     table.insert( set.spawns, npc )
     table.insert( set.resourcesAdded, "174117071" )
     RunConsoleCommand( "npc_sanic_force_download", 0 ) -- nuh uh
-    RunConsoleCommand( "npc_sanic_acquire_distance", 99999 )
 
 end
 
 if hasObunga then
+    local function randomizeVar()
+        local dist = math.random( 2500, 6000 )
+        if math.random( 0, 100 ) < 50 then
+            dist = dist * math.random( 1, 10 )
+
+        end
+        RunConsoleCommand( "npc_obunga_acquire_distance", dist )
+
+    end
     local npc = {
         hardRandomChance = { 15, 75 }, -- chance this is even checked
         name = "brainrot_obunga",
         prettyName = "An Obunga",
         class = "npc_obunga",
         spawnType = "hunter",
-        difficultyCost = { 10 },
+        difficultyCost = { 15 },
         countClass = "npc_obunga",
         minCount = { 0 },
         maxCount = { 50 },
+        postSpawnedFuncs = { randomizeVar }, -- this can be nil
     }
     table.insert( set.spawns, npc )
     table.insert( set.resourcesAdded, "2803406998" )
     RunConsoleCommand( "npc_obunga_force_download", 0 )
-    RunConsoleCommand( "npc_obunga_acquire_distance", 99999 )
 
 end
 

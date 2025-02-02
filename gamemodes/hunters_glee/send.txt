@@ -34,6 +34,7 @@ gamemodes\hunters_glee\gamemode\modules\firsttimeplayers\cl_firsttimeplayers.lua
 gamemodes\hunters_glee\gamemode\modules\unsandboxing\sh_unsandboxing.lua
 
 gamemodes\hunters_glee\gamemode\modules\spawnset\cl_spawnsetvote.lua
+gamemodes\hunters_glee\gamemode\modules\spawnset\sh_spawnpoolutil.lua
 gamemodes\hunters_glee\gamemode\modules\spawnset\sh_spawnsetcontent.lua
 
 lua\autorun\client\cl_shadowedtextfunc.lua

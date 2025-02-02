@@ -2764,7 +2764,7 @@ local function spawnAnotherHunterCheck( _ )
 end
 
 local function spawnAnotherHunterCanShow()
-    return GAMEMODE:GetSpawnSetName() == "hunters_glee"
+    return GAMEMODE:ClassIsInSpawnPool( "terminator_nextbot_snail_disguised" )
 
 end
 

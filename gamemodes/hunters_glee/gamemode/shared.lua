@@ -29,6 +29,7 @@ include( "modules/sh_danceslowdown.lua" )
 include( "modules/sh_playerdrowning.lua" )
 include( "modules/battery/sh_battery.lua" )
 include( "modules/sh_detecthunterkills.lua" )
+include( "modules/spawnset/sh_spawnpoolutil.lua" )
 include( "modules/spawnset/sh_spawnsetcontent.lua" )
 include( "modules/unsandboxing/sh_unsandboxing.lua" )
 

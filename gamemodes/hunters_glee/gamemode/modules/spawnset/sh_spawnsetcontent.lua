@@ -11,7 +11,7 @@ if SERVER then
 
     end
 
-    local function updateContent()
+    local function updateContent( plysIn )
         local contentTbl = content()
         if not contentTbl then return end
 
@@ -24,6 +24,7 @@ if SERVER then
             plys = { plysIn }
 
         end
+        PrintTable( plys )
         net.Start( "glee_spawnsetcontent_asker", false )
             for _, contentStr in ipairs( contentTbl ) do
                 net.WriteString( contentStr )
@@ -38,6 +39,7 @@ if SERVER then
         SetGlobalInt( "GLEE_SpawnSet_ContentCount", #spawnSet.resourcesAdded )
 
         timer.Simple( 1, function()
+            updateContent( player.GetAll() )
             hook.Add( "huntersglee_round_into_active", "glee_update_spawnset_content", function()
                 if not content() then hook.Remove( "huntersglee_round_into_active", "glee_update_spawnset_content" ) return end
                 updateContent( player.GetAll() )

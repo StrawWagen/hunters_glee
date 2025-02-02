@@ -12,7 +12,7 @@ if SERVER then
         if not IsValid( ply ) or not ply:IsPlayer() then return end
         if not ply:InVehicle() or not IsValid( ply:GetVehicle() ) then return end
         -- print("sv - sending vehicle speed")
-        net.Start( "glee_fallingwind_sendVehicleSpeed" )
+        net.Start( "glee_fallingwind_sendVehicleSpeed", true )
             -- This gets compressed, but since it's a velocity,
             -- it shouldn't matter much
             net.WriteVector( ply:GetVehicle():GetVelocity() )
@@ -138,10 +138,16 @@ if CLIENT then
         elseif me:InVehicle() and IsValid( me:GetVehicle() ) then
             glee_FallingWind.LocalPlayer_VehicleCache = true
 
-            -- Request velocity of the vehicle to the server
-            net.Start( "glee_fallingwind_requestVehicleSpeed" )
-            -- print("cl - requesting vehicle speed")
-            net.SendToServer()
+            local nextRequest = glee_FallingWind.nextVehicleSpeedAsk or 0
+            if nextRequest < CurTime() then
+                glee_FallingWind.nextVehicleSpeedAsk = CurTime() + math.Rand( 0.05, 0.15 )
+
+                -- Request velocity of the vehicle to the server
+                net.Start( "glee_fallingwind_requestVehicleSpeed", true )
+                -- print("cl - requesting vehicle speed")
+                net.SendToServer()
+
+            end
 
             -- Only use the velocity after we get it
             if ( glee_FallingWind.LocalPlayer_VehicleSpeedCache ~= vector_origin ) then

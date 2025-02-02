@@ -1,7 +1,10 @@
 local defaultDuration = CreateConVar( "hunterslglee_modevote_duration", 20, FCVAR_ARCHIVE, "Default duration of the mode vote" )
 local defaultMaxOptions = CreateConVar( "hunterslglee_modevote_maxoptions", 5, FCVAR_ARCHIVE, "Amount of options that show up in the mode vote", 2, 9 )
 
-local spawnSetVote = {}
+local GM = GM or GAMEMODE
+
+local spawnSetVote = GM.glee_SpawnSetVote or {}
+GM.glee_SpawnSetVote = spawnSetVote
 
 util.AddNetworkString( "glee_begin_spawnsetvote" )
 
@@ -180,3 +183,5 @@ concommand.Add( "glee_spawnset_startvote", function( ply, _, args, _ )
     spawnSetVote:BeginVote( args[1] )
 
 end )
+
+include( "sv_rtm.lua" )

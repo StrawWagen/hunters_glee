@@ -30,6 +30,15 @@ end
 
 local function spawnTermSkull( died, _, _ )
     if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
+
+    local maxHealth = died:GetMaxHealth()
+    if died.IsFodder and maxHealth <= terminator_Extras.healthDefault then -- fodder bots drop less
+        local rand = math.Rand( 0, 1 )
+        local ratio = maxHealth / terminator_Extras.healthDefault
+        if rand > ratio then return end
+
+    end
+
     local newSkull = GAMEMODE:SpawnASkull( died:GetShootPos(), died:GetAimVector():Angle(), died.DoMetallicDamage, died )
 
     -- makes "erm something must have died here" hints better
