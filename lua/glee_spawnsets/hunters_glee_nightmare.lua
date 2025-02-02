@@ -2,7 +2,8 @@
 local overchargedChanceAtMinutes = {
     [0] = math.Rand( 0, 1 ),
     [5] = math.Rand( 5, 25 ),
-    [15] = math.Rand( 50, 100 )
+    [10] = math.Rand( 25, 75 ),
+    [15] = 100,
 
 }
 local function postSpawnedOvercharge( spawnDat, spawned )
@@ -28,22 +29,21 @@ local function postSpawnedOvercharge( spawnDat, spawned )
 
     if overchargedChance >= 5 and not GAMEMODE.roundExtraData.overchargedWarning then
         GAMEMODE.roundExtraData.overchargedWarning = true
+        huntersGlee_Announce( player.GetAll(), 100, 10, "The nightmare has begun..." )
 
     end
 end
 
--- see jerma985 nextbot for example of how to modify this
-
 local set = {
     name = "hunters_glee_nightmare", -- unique name
-    prettyName = "Nightmare on glee street.",
+    prettyName = "Nightmare on glee street",
     description = "Nightmare on glee street.\nMore hunters, sooner, and they're probably overcharged",
-    difficultyPerMin = "default", -- difficulty per minute
+    difficultyPerMin = 50 / 10, -- difficulty per minute
     waveInterval = "default", -- time between spawn waves
     diffBumpWhenWaveKilled = { 25, 50 }, -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
     startingBudget = "default", -- so budget isnt 0
-    spawnCountPerDifficulty = { 0.15, 0.2 },
-    startingSpawnCount = { 1, 3 },
+    spawnCountPerDifficulty = { 0.25, 0.5 },
+    startingSpawnCount = { 1, 4 },
     maxSpawnCount = { 15 }, -- hard cap on count
     spawns = {
         {
@@ -52,10 +52,10 @@ local set = {
             prettyName = "A Terminator",
             class = "terminator_nextbot_snail", -- class spawned
             spawnType = "hunter",
-            difficultyCost = { 10, 20 },
+            difficultyCost = 5,
             countClass = "terminator_nextbot_snail*", -- class COUNTED, uses findbyclass
             minCount = { 0 }, -- will ALWAYS maintain this count
-            maxCount = { 10 }, -- will never exceed this count, uses findbycount
+            maxCount = { 15 }, -- will never exceed this count, uses findbycount
             postSpawnedFuncs = { postSpawnedOvercharge }, -- this can be nil
         },
         {
@@ -64,10 +64,10 @@ local set = {
             prettyName = "Terminator Doppleganger",
             class = "terminator_nextbot_snail_disguised",
             spawnType = "hunter",
-            difficultyCost = { 20 },
+            difficultyCost = 10,
             countClass = "terminator_nextbot_snail*",
             minCount = { 2 },
-            maxCount = { 10 },
+            maxCount = { 15 },
             postSpawnedFuncs = { postSpawnedOvercharge },
         }
     }

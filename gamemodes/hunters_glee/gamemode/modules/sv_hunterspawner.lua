@@ -310,7 +310,7 @@ function GM:SpawnWaveSpawnIn()
         if IsValid( hunter ) then
             if currSpawn.postSpawnedFuncs then
                 for _, func in ipairs( currSpawn.postSpawnedFuncs ) do
-                    ProtectedCall( function() func( currSpawn, hunter ) end )
+                    ProtectedCall( function( _currSpawn, _hunter ) func( _currSpawn, _hunter ) end, currSpawn, hunter )
 
                 end
             end

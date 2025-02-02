@@ -100,16 +100,18 @@ function spawnSetVote:OnVoteEnd()
 
     end
 
-    local winner = spawnSetVote:GetWinningKey( voteCounts )
+    spawnSetVote.winner = spawnSetVote:GetWinningKey( voteCounts )
 
-    if winner == GAMEMODE:GetSpawnSet() then
-        huntersGlee_Announce( player.GetAll(), 1001, 5, "Mode will remain " .. GAMEMODE:GetPrettyNameOfSpawnSet( winner ) .. "..." )
+    if spawnSetVote.winner == GAMEMODE:GetSpawnSet() then
+        huntersGlee_Announce( player.GetAll(), 1001, 5, "Mode will remain " .. GAMEMODE:GetPrettyNameOfSpawnSet( spawnSetVote.winner ) .. "..." )
         return
 
     end
 
     local function setSpawnSet( set )
         hook.Remove( "huntersglee_round_into_inactive", "glee_setvotedspawnset" )
+        hook.Remove( "MapVote_VoteStarted", "glee_setvotedspawnset" )
+        hook.Remove( "ShutDown", "glee_setvotedspawnset" )
         game.ConsoleCommand( "huntersglee_spawnset " .. set .. "\n" )
         huntersGlee_Announce( player.GetAll(), 150, 3, "Setting mode..." )
         timer.Simple( 2, function()
@@ -119,13 +121,21 @@ function spawnSetVote:OnVoteEnd()
     end
 
     if GAMEMODE:RoundState() == GAMEMODE.ROUND_ACTIVE then
-        huntersGlee_Announce( player.GetAll(), 1001, 5, "Mode will be changed to " .. GAMEMODE:GetPrettyNameOfSpawnSet( winner ) .. "\n on round end." )
+        huntersGlee_Announce( player.GetAll(), 1001, 15, "Mode will be changed to " .. GAMEMODE:GetPrettyNameOfSpawnSet( spawnSetVote.winner ) .. "\n on round end." )
         hook.Add( "huntersglee_round_into_inactive", "glee_setvotedspawnset", function()
-            setSpawnSet( winner )
+            setSpawnSet( spawnSetVote.winner )
+
+        end )
+        hook.Add( "ShutDown", "glee_setvotedspawnset", function()
+            setSpawnSet( spawnSetVote.winner )
+
+        end )
+        hook.Add( "MapVote_VoteStarted", "glee_setvotedspawnset", function()
+            setSpawnSet( spawnSetVote.winner )
 
         end )
     else
-        setSpawnSet( winner )
+        setSpawnSet( spawnSetVote.winner )
 
     end
 

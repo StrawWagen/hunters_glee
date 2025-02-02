@@ -1,5 +1,3 @@
--- see jerma985 nextbot for example of how to modify this
-
 local set = {
     name = "hunters_glee_easy", -- unique name
     prettyName = "Baby's first Glee",
@@ -22,7 +20,7 @@ local set = {
             difficultyCost = { 15, 25 },
             countClass = "terminator_nextbot_snail*", -- class COUNTED, uses findbyclass
             minCount = { 1 }, -- will ALWAYS maintain this count
-            maxCount = { 10 }, -- will never exceed this count, uses findbycount
+            maxCount = { 5 }, -- will never exceed this count, uses findbycount
         },
         {
             hardRandomChance = { 0, 2 }, -- chance this is even checked
@@ -33,7 +31,7 @@ local set = {
             difficultyCost = { 20 },
             countClass = "terminator_nextbot_snail*",
             minCount = { 2 },
-            maxCount = { 10 },
+            maxCount = { 5 },
         }
     }
 }

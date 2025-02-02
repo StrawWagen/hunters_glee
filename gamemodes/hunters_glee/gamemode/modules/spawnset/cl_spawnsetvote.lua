@@ -48,9 +48,32 @@ function spawnSetVote:CreateVotePanel()
     local notHoveredOverlay =   GAMEMODE.shopStandards.notHoveredOverlay
     local pressedItemOverlay =  GAMEMODE.shopStandards.pressedItemOverlay
 
+    local hasAllTheVoteKeys = true
     local keyToVote = input.LookupBinding( holdToVote )
     if keyToVote then
         keyToVote = input.GetKeyCode( keyToVote )
+        if keyToVote and keyToVote > 0 then
+            for _, cmd in ipairs( voters ) do
+                local clientsSlotKey = input.LookupBinding( cmd )
+                if clientsSlotKey then
+                    clientsSlotKey = input.GetKeyCode( clientsSlotKey )
+                    if not clientsSlotKey or clientsSlotKey <= 0 then
+                        hasAllTheVoteKeys = false
+                        break
+
+                    end
+                else
+                    hasAllTheVoteKeys = false
+                    break
+
+                end
+            end
+        else
+            hasAllTheVoteKeys = false
+
+        end
+    else
+        hasAllTheVoteKeys = false
 
     end
 
@@ -91,14 +114,14 @@ function spawnSetVote:CreateVotePanel()
 
         end
 
-        if input.IsKeyDown( keyToVote ) then
+        if keyToVote and input.IsKeyDown( keyToVote ) then
             for ind, cmd in ipairs( voters ) do
                 local clientsSlotKey = input.LookupBinding( cmd )
                 if clientsSlotKey then
                     clientsSlotKey = input.GetKeyCode( clientsSlotKey )
 
                 end
-                if input.IsKeyDown( clientsSlotKey ) and IsValid( self.voteOptions[ind] ) then
+                if clientsSlotKey and input.IsKeyDown( clientsSlotKey ) and IsValid( self.voteOptions[ind] ) then
                     if not self.pressedToVote then
                         self.voteOptions[ind]:Vote()
                         self.pressedToVote = true
@@ -283,7 +306,7 @@ function spawnSetVote:CreateVotePanel()
         local hintStart = "Open chat"
         local hintEnd = " to vote."
         local valid, phrase = GAMEMODE:TranslatedBind( holdToVote )
-        if keyToVote and valid then -- some doofus is gonna have this unbound
+        if hasAllTheVoteKeys and valid then -- some doofus is gonna have this unbound
             hint = hintStart .. " or press a number while holding " .. string.upper( phrase ) .. " " .. hintEnd
 
         else
