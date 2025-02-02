@@ -2785,8 +2785,8 @@ local function additionalHunter( purchaser )
     local timerKey = "spawnExtraHunter_" .. purchaser:GetCreationID()
     timer.Create( timerKey, 0.2, 0, function()
 
-        local spawned, hunter = GAMEMODE:SpawnHunter( "terminator_nextbot_snail_disguised" )
-        if spawned ~= true then return end
+        local hunter = GAMEMODE:SpawnHunter( "terminator_nextbot_snail_disguised" )
+        if not IsValid( hunter ) then return end
 
         if hunter.MimicPlayer then
             hunter:MimicPlayer( purchaser )

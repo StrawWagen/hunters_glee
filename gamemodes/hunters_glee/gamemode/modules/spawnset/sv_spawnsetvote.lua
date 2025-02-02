@@ -166,7 +166,7 @@ concommand.Add( "glee_spawnset_castvote", function( ply, _, args, _ )
 
 end )
 concommand.Add( "glee_spawnset_startvote", function( ply, _, args, _ )
-    if not ply:IsAdmin() then return end
+    if IsValid( ply ) and not ply:IsAdmin() then return end
     spawnSetVote:BeginVote( args[1] )
 
 end )
