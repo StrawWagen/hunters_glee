@@ -42,7 +42,7 @@ local set = {
     waveInterval = "default", -- time between spawn waves
     diffBumpWhenWaveKilled = { 25, 50 }, -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
     startingBudget = "default", -- so budget isnt 0
-    spawnCountPerDifficulty = { 0.25, 0.5 },
+    spawnCountPerDifficulty = { 0.15, 0.25 },
     startingSpawnCount = { 1, 4 },
     maxSpawnCount = { 15 }, -- hard cap on count
     spawns = {
