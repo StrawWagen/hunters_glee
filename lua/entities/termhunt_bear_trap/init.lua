@@ -218,8 +218,13 @@ function ENT:Touch( toucher )
                 if not IsValid( self ) then timerObliterate() return end
                 if toucherInt:Health() <= 0 then timerObliterate() return end
                 if toucherInt:GetPos():DistToSqr( self:GetPos() ) < 10^2 then return end
-                toucherInt:SetPos( self:GetPos() )
+                if toucherInt.SetPosNoTeleport then
+                    toucherInt:SetPosNoTeleport( self:GetPos() )
 
+                else
+                    toucherInt:SetPos( self:GetPos() )
+
+                end
             end )
 
             timer.Simple( 4, function()
