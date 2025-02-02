@@ -32,8 +32,6 @@ end
 local LocalPlayer = LocalPlayer
 local draw_RoundedBox = draw.RoundedBox
 
-local switchSound = Sound( "buttons/lightswitch2.wav" )
-
 local lastScroll = 0
 local MAINSCROLLNAME = "main_scroll_window"
 
@@ -55,78 +53,31 @@ function termHuntCloseTheShop()
     end
 end
 
-local function isHovered( panel )
-    local tooltipHovered = nil
-    if panel.coolTooltip then
-        tooltipHovered = panel.coolTooltip:IsHovered()
-
-    end
-    local hoveredCooler = nil
-    local hovered = nil
-    if panel.IsHoveredCooler then
-        hoveredCooler = panel:IsHoveredCooler()
-
-    else
-        hovered = panel:IsHovered()
-
-    end
-
-    local hovering = hoveredCooler or tooltipHovered or hovered
-
-    return hovering
-
-end
-
-local function pressableThink( panel, hovering )
-    hovering = hovering or isHovered( panel )
-
-    if hovering ~= panel.hoveredOld then
-
-        if not panel.hoveredOld and panel.OnBeginHovering then
-            panel:OnBeginHovering()
-
-        elseif panel.hoveredOld and panel.RemoveCoolTooltip then
-            panel:RemoveCoolTooltip()
-
-        end
-
-        if ( not panel.initialSetup ) or ( panel.itemData and not panel.purchasable ) then
-            -- not setup yet, or not purchasable, do nothing
-
-        elseif panel.hoveredOld then
-            LocalPlayer():EmitSound( switchSound, 60, 80, 0.12 )
-
-        elseif not panel.hoveredOld then
-            LocalPlayer():EmitSound( switchSound, 60, 90, 0.12 )
-
-        end
-        panel.hoveredOld = hovering
-
-    end
-    panel.initialSetup = true
-
-end
-
 function termHuntOpenTheShop()
 
-    local white =               GAMEMODE.defaultColors.white
-    local whiteFaded =          GAMEMODE.defaultColors.whiteFaded
+    local pressableThink = GAMEMODE.shopStandards.pressableThink
+    local isHovered = GAMEMODE.shopStandards.isHovered
 
-    local backgroundColor =     GAMEMODE.defaultColors.backgroundColor
-    local invisibleColor =      GAMEMODE.defaultColors.invisibleColor
-    local shopItemColor =       GAMEMODE.defaultColors.shopItemColor
-    local cantAffordOverlay =   GAMEMODE.defaultColors.cantAffordOverlay
-    local scrollEndsOverlay =   GAMEMODE.defaultColors.scrollEndsOverlay
-    local notHoveredOverlay =   GAMEMODE.defaultColors.notHoveredOverlay
-    local pressedItemOverlay =  GAMEMODE.defaultColors.pressedItemOverlay
-    local markupTextColor =     GAMEMODE.defaultColors.markupTextColor
+    local white =               GAMEMODE.shopStandards.white
+    local whiteFaded =          GAMEMODE.shopStandards.whiteFaded
+
+    local backgroundColor =     GAMEMODE.shopStandards.backgroundColor
+    local invisibleColor =      GAMEMODE.shopStandards.invisibleColor
+    local shopItemColor =       GAMEMODE.shopStandards.shopItemColor
+    local cantAffordOverlay =   GAMEMODE.shopStandards.cantAffordOverlay
+    local scrollEndsOverlay =   GAMEMODE.shopStandards.scrollEndsOverlay
+    local notHoveredOverlay =   GAMEMODE.shopStandards.notHoveredOverlay
+    local pressedItemOverlay =  GAMEMODE.shopStandards.pressedItemOverlay
+    local markupTextColor =     GAMEMODE.shopStandards.markupTextColor
+
+    local switchSound =         GAMEMODE.shopStandards.switchSound
 
     local ply = LocalPlayer()
     ply.oldScrollPositions = ply.oldScrollPositions or {}
 
     ply:EmitSound( "physics/wood/wood_crate_impact_soft3.wav", 50, 200, 0.45 )
 
-    local scale = GAMEMODE.defaultColors.shpScale
+    local scale = GAMEMODE.shopStandards.shpScale
 
     local shopFrame, width, height = GAMEMODE:CreateScreenFillingPopup( scale )
     ply.MAINSSHOPPANEL = shopFrame
@@ -137,11 +88,11 @@ function termHuntOpenTheShop()
     local bigTextPadding = height / 180
     local borderPadding = height / 40
 
-    local whiteIdentifierLineWidth = height / 250 -- the white bar
+    local whiteIdentifierLineWidth = height / GAMEMODE.shopStandards.whiteIdentifierLineWidthDiv -- the white bar
     local offsetNextToIdentifier = whiteIdentifierLineWidth * 4
 
     local scrollWidth = height / 15
-    local shopCategoryWidth, shopCategoryHeight = glee_sizeScaled( 1920 * scale, 300 * scale )
+    local shopCategoryWidth, shopCategoryHeight = glee_sizeScaled( 1920 * scale, GAMEMODE.shopStandards.shopCategoryHeight * scale )
 
 
     shopFrame.titleBarSize = scrollWidth
@@ -619,7 +570,6 @@ function termHuntOpenTheShop()
                 if not hovering then hovering = false end
 
                 pressableThink( self, hovering )
-
                 if hovering ~= self.hovered then
                     if not self.hoveredScoreDisplay and hovering then
                         shopFrame.scoreToAddFrame = self
@@ -997,6 +947,11 @@ function termHuntOpenTheShop()
                 if keyCode ~= MOUSE_LEFT then return end
                 self.pressed = true
 
+            end
+
+            shopItem.OnMouseReleased = function( self, keyCode )
+                if keyCode ~= MOUSE_LEFT then return end
+                self.pressed = nil
                 if self.purchasable then -- purchasability is also checked on server! no cheesing!
                     RunConsoleCommand( "cl_termhunt_purchase", self.itemIdentifier )
                     self.purchased = true
@@ -1005,11 +960,6 @@ function termHuntOpenTheShop()
                     self.triedToPurchase = true
 
                 end
-            end
-
-            shopItem.OnMouseReleased = function( self, keyCode )
-                if keyCode ~= MOUSE_LEFT then return end
-                self.pressed = nil
             end
 
             shopItem.CoolerScroll = function( _, delta, stepScale )

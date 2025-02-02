@@ -60,7 +60,7 @@ end
 function GM:calculateBPM( cur, players )
     local hasNavmesh = GAMEMODE.hasNavmesh
     local punishEscapingBool = punishEscaping:GetBool()
-    local hunters = table.Copy( GAMEMODE.termHunt_hunters )
+    local hunters = table.Copy( GAMEMODE.glee_Hunters )
     for _, ply in ipairs( players ) do
         if ply:Health() > 0 then
             local plyPos = ply:GetShootPos()
@@ -78,12 +78,12 @@ function GM:calculateBPM( cur, players )
             ply.huntersGleeHunterThatCanSeePly = nil
             ply.huntersGleeNearestHunterToPly = nil
 
-            if IsValid( nearestHunter ) then
+            if IsValid( nearestHunter ) and nearestHunter.TerminatorNextBot then
 
                 ply.huntersGleeNearestHunterToPly = nearestHunter
 
                 -- is player inside mentos shaped volume?????
-                local mentosShapedDistance = nearestHunter:GetShootPos() - plyPos
+                local mentosShapedDistance = nearestHunter:EyePos() - plyPos
                 mentosShapedDistance.z = mentosShapedDistance.z / 2
 
                 mentosDist = mentosShapedDistance:Length()
@@ -493,7 +493,7 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
     local currentlySpectating = ply:GetObserverTarget()
 
     if deathCamming then
-        if isMovementKey( key ) and ply.spectateDoFreecamForced < CurTime() then
+        if isMovementKey( keyPressed ) and ply.spectateDoFreecamForced < CurTime() then
             shutDownDeathCam( ply )
             stopSpectatingThing( ply )
 
@@ -515,7 +515,7 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
         local players = player.GetAll()
         local alivePlayers = GAMEMODE:returnAliveInTable( players )
         local protoStuffToSpectate = alivePlayers
-        table.Add( protoStuffToSpectate, table.Copy( GAMEMODE.termHunt_hunters ) )
+        table.Add( protoStuffToSpectate, table.Copy( GAMEMODE.glee_Hunters ) )
 
         local stuffToSpectate = {}
         for _, thing in ipairs( protoStuffToSpectate ) do
@@ -566,8 +566,8 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
                 end
 
                 table.sort( sortedStuffToSpectate, function( a, b ) -- sort followable stuff by distance to pos
-                    local ADist = a:GetShootPos():DistToSqr( sortPos )
-                    local BDist = b:GetShootPos():DistToSqr( sortPos )
+                    local ADist = a:EyePos():DistToSqr( sortPos )
+                    local BDist = b:EyePos():DistToSqr( sortPos )
                     return ADist < BDist
 
                 end )
@@ -612,6 +612,9 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
     if IsValid( spectated ) then
         if spectated.Nick and isstring( spectated:Nick() ) then
             huntersGlee_Announce( { ply }, 1, 2, "Spectating " .. spectated:Nick() .. "." )
+
+        elseif spectated.glee_PrettyName then
+            huntersGlee_Announce( { ply }, 1, 2, "Spectating " .. spectated.glee_PrettyName .. "." )
 
         else
             huntersGlee_Announce( { ply }, 1, 2, "Spectating a Terminator." )

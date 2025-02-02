@@ -1,5 +1,6 @@
 local minusFiveHundred = Vector( 0,0,-500 )
 local minusOne = Vector( 0,0,-500 )
+local IsValid = IsValid
 
 function GM:getFloor( pos )
     local Dat = {
@@ -602,19 +603,19 @@ function GM:allPlayerShootPositions()
 end
 
 function GM:getNearestHunter( pos, hunters )
-    hunters = hunters or table.Copy( GAMEMODE.termHunt_hunters )
+    hunters = hunters or table.Copy( GAMEMODE.glee_Hunters )
     table.sort( hunters, function( a, b ) -- sort HUNTERS by distance to pos
         if not IsValid( a ) then return false end
         if not IsValid( b ) then return true end
-        local ADist = a:GetShootPos():DistToSqr( pos )
-        local BDist = b:GetShootPos():DistToSqr( pos )
+        local ADist = a:EyePos():DistToSqr( pos )
+        local BDist = b:EyePos():DistToSqr( pos )
         return ADist < BDist
     end )
     return hunters[1]
 end
 
 function GM:aRandomHunter( hunters )
-    hunters = hunters or table.Copy( GAMEMODE.termHunt_hunters )
+    hunters = hunters or table.Copy( GAMEMODE.glee_Hunters )
 
     table.Shuffle( hunters )
 

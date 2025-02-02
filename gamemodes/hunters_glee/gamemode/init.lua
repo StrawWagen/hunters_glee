@@ -29,6 +29,8 @@ AddCSLuaFile( "modules/sh_playerdrowning.lua" )
 AddCSLuaFile( "modules/sh_detecthunterkills.lua" )
 AddCSLuaFile( "modules/sh_fallingwind.lua" )
 AddCSLuaFile( "modules/battery/sh_battery.lua" )
+AddCSLuaFile( "modules/spawnset/cl_spawnsetvote.lua" )
+AddCSLuaFile( "modules/spawnset/sh_spawnsetcontent.lua" )
 AddCSLuaFile( "modules/unsandboxing/sh_unsandboxing.lua" )
 AddCSLuaFile( "modules/signalstrength/cl_signalstrength.lua" )
 
@@ -48,6 +50,7 @@ include( "modules/sv_mapvote.lua" )
 include( "modules/sv_seeding_rewarder.lua" )
 include( "modules/sv_skullmanager.lua" )
 include( "modules/sv_hunterspawner.lua" )
+include( "modules/spawnset/sv_spawnsetvote.lua" )
 include( "modules/firsttimeplayers/sv_firsttimeplayers.lua" )
 
 include( "modules/battery/sv_battery.lua" )
@@ -111,8 +114,6 @@ GM.roundStartAfterNavCheck      = 40
 GM.roundStartNormal             = 60
 GM.IsReallyHuntersGlee          = true
 
-validNavarea                    = validNavarea or NULL
-
 local CurTime = CurTime
 
 -- gamemode starts up, starts 5 second countdown to navmesh check.
@@ -122,6 +123,7 @@ function GM:TermHuntSetup()
     -- do greedy patch once per session
     self.HuntersGleeDoneTheGreedyPatch  = self.HuntersGleeDoneTheGreedyPatch or nil
     self.playerIsWaitingForPatch        = nil
+    self.ValidNavarea                   = self.ValidNavarea or NULL
 
     self.termHunt_roundStartTime        = math.huge
     self.termHunt_roundBegunTime        = math.huge
@@ -134,7 +136,7 @@ function GM:TermHuntSetup()
     self.canRespawn                     = nil
     self.canScore                       = nil
     self.doProxChat                     = nil --used in playercomms
-    self.termHunt_hunters               = {}
+    self.glee_Hunters               = {}
     self.deadPlayers                    = {}
     self.roundScore                     = {}
     self.roundExtraData                 = {}
@@ -459,10 +461,10 @@ function GM:navmeshCheck()
 end
 
 function GM:initDependenciesCheck()
-    validNavarea = self:navmeshCheck()
+    self.ValidNavarea = self:navmeshCheck()
 
     SetGlobalBool( "termHuntDisplayWinners", false )
-    self.hasNavmesh = validNavarea:IsValid() and navmesh.IsLoaded()
+    self.hasNavmesh = self.ValidNavarea:IsValid() and navmesh.IsLoaded()
     return self.hasNavmesh
 
 end
@@ -483,7 +485,7 @@ local function huntersAreInCorrectGroupsFunc()
     if #groupsInPlay <= 0 then coroutine.yield( "done" ) return end
 
     local hunters = {}
-    for _, hunter in ipairs( GAMEMODE.termHunt_hunters ) do
+    for _, hunter in ipairs( GAMEMODE.glee_Hunters ) do
         if IsValid( hunter ) and hunter:Health() > 0 then
             table.insert( hunters, hunter )
 
@@ -494,7 +496,7 @@ local function huntersAreInCorrectGroupsFunc()
     for _, hunter in ipairs( hunters ) do
         coroutine.yield()
         if not IsValid( hunter ) then continue end
-        local huntersNav = hunter:GetTrueCurrentNavArea() or hunter:GetCurrentNavArea()
+        local huntersNav = hunter.TerminatorNextBot and hunter:GetTrueCurrentNavArea() or GAMEMODE:getNearestNav( hunter:GetPos(), 1000 )
 
         if not GAMEMODE:GetGroupThatNavareaExistsIn( huntersNav, groupsInPlay ) then
             table.insert( huntersNotInPlay, hunter )
@@ -506,8 +508,8 @@ local function huntersAreInCorrectGroupsFunc()
         local incorrectGroupCount = hunterNotInPlay.glee_IncorrectGroupCount or 0
         if not IsValid( hunterNotInPlay ) then continue end
 
-        local battling = hunterNotInPlay.GetEnemy and IsValid( hunterNotInPlay:GetEnemy() )
-        local pathing = hunterNotInPlay:GetPath() and hunterNotInPlay:GetPath():GetLength() > 500
+        local battling = hunterNotInPlay.TerminatorNextBot and IsValid( hunterNotInPlay:GetEnemy() )
+        local pathing = hunterNotInPlay.TerminatorNextBot and hunterNotInPlay:GetPath() and hunterNotInPlay:GetPath():GetLength() > 500
         if battling or pathing then
             hunterNotInPlay.glee_IncorrectGroupCount = nil
 
@@ -769,17 +771,19 @@ function GM:GenerateANavmeshPls()
 end
 
 function GM:RemoveHunters()
-    if self.termHunt_hunters then
-        for _, hunter in pairs( self.termHunt_hunters ) do
+    if self.glee_Hunters then
+        for _, hunter in ipairs( self.glee_Hunters ) do
             SafeRemoveEntity( hunter )
         end
-        self.termHunt_hunters = {}
+        self.glee_Hunters = {}
 
     end
 end
 
 -- from where people can buy stuff with discounts, to the hunt
 function GM:roundStart()
+    hook.Run( "huntersglee_round_pre_into_active" )
+
     self.termHunt_roundStartTime = math.huge
     self.termHunt_roundBegunTime = CurTime()
     self:SetRoundState( self.ROUND_ACTIVE )

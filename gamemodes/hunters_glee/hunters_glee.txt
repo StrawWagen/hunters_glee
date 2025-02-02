@@ -42,13 +42,21 @@
         }
         5
         {
+            "name"        "huntersglee_spawnset"
+            "text"        "Spawn Set"
+            "help"        "What spawnset to use, eg. hunters_glee, jermas_glee"
+            "type"        "Text"
+            "default"     "hunters_glee"
+        }
+        6
+        {
             "name"        "huntersglee_spawneroverridecount"
             "text"        "Override terminator count."
             "help"        "Overrides how many terminators will spawn, 0 for dynamic count. Above 4 WILL lag."
             "type"        "Numeric"
             "default"     "0"
         }
-        6
+        7
         {
             "name"        "huntersglee_proceduralcratesmaxplayers"
             "text"        "Player num, to stop crates."

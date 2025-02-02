@@ -30,7 +30,7 @@ end
 
 local function spawnTermSkull( died, _, _ )
     if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
-    local newSkull = GAMEMODE:SpawnASkull( died:GetShootPos(), died:GetAimVector():Angle(), true, died )
+    local newSkull = GAMEMODE:SpawnASkull( died:GetShootPos(), died:GetAimVector():Angle(), died.DoMetallicDamage, died )
 
     -- makes "erm something must have died here" hints better
     newSkull.fromSomethingWitnessable = true

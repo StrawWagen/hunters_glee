@@ -17,8 +17,11 @@ function meta:GetSignalStrength( area )
 
     local signalFinal = 0
     local staticFinal = 0
+    if not GAMEMODE.highestAreaZ then
+        signalFinal = 45
+        staticFinal = ( area:GetID() % 30 ) + 20
 
-    if not GAMEMODE.isSkyOnMap then
+    elseif not GAMEMODE.isSkyOnMap then
         local distToHighest = GAMEMODE.highestAreaZ - pos.z
         signalFinal =  25 - ( distToHighest / 1000 )
         staticFinal = ( area:GetID() % 30 ) + 20

@@ -2347,7 +2347,7 @@ end
 
 local function canPurchaseSuitBattery( purchaser )
     local new = purchaser:Armor() + 15
-    if new > purchaser:GetMaxArmor() then return false, "Your battery is full enough." end
+    if new > purchaser:GetMaxArmor() then return false, "Your battery is full." end
     return true
 
 end
@@ -2447,11 +2447,11 @@ end
 
 local function flaregunPurchase( purchaser )
     if purchaser:HasWeapon( "termhunt_aeromatix_flare_gun" ) then
-        purchaser:GiveAmmo( 8,    "GLEE_FLAREGUN_PLAYER",         true )
+        purchaser:GiveAmmo( 6,    "GLEE_FLAREGUN_PLAYER",         true )
 
     else
         purchaser:Give( "termhunt_aeromatix_flare_gun" )
-        purchaser:GiveAmmo( 4,    "GLEE_FLAREGUN_PLAYER",         true )
+        purchaser:GiveAmmo( 2,    "GLEE_FLAREGUN_PLAYER",         true )
 
     end
 
@@ -2630,9 +2630,9 @@ end
 
 local function divineInterventionCost( purchaser )
     local cost = 300
-    local chosenHasArrived = GetGlobalBool( "chosenhasarrived", false ) == true
+    local chosenHasArrived = GetGlobalBool( "chosenhasarrived", false )
     if chosenHasArrived then
-        local isChosen = purchaser:GetNW2Bool( "isdivinechosen", false ) == true
+        local isChosen = purchaser:GetNW2Bool( "isdivinechosen", false )
         if isChosen then
             return 0
 
@@ -2648,7 +2648,7 @@ end
 local minTimeBetweenResurrections = 30
 
 local function divineInterventionCooldown( purchaser )
-    local isChosen = purchaser:GetNW2Bool( "isdivinechosen", false ) == true
+    local isChosen = purchaser:GetNW2Bool( "isdivinechosen", false )
     if isChosen then
         return 0
 
@@ -2709,6 +2709,9 @@ if SERVER then
 end
 
 local function divineInterventionDeathCooldown( purchaser )
+    local isChosen = purchaser:GetNW2Bool( "isdivinechosen", false )
+    if isChosen then return true end
+
     local lastDeathTime = purchaser:GetNW2Int( "glee_divineintervetion_lastdietime", 0 )
     local reviveTime = lastDeathTime + minTimeBetweenResurrections
     local timeTillRevive = math.abs( reviveTime - CurTime() )
@@ -2760,6 +2763,11 @@ local function spawnAnotherHunterCheck( _ )
 
 end
 
+local function spawnAnotherHunterCanShow()
+    return GAMEMODE:GetSpawnSetName() == "hunters_glee"
+
+end
+
 hook.Add( "huntersglee_plykilledhunter", "glee_rewardLinkedKills", function( killer, hunter )
     if not hunter.linkedPlayer then return end
     if killer ~= hunter.linkedPlayer then return end
@@ -2777,7 +2785,7 @@ local function additionalHunter( purchaser )
     local timerKey = "spawnExtraHunter_" .. purchaser:GetCreationID()
     timer.Create( timerKey, 0.2, 0, function()
 
-        local spawned, hunter = GAMEMODE:spawnHunter( "terminator_nextbot_snail_disguised" )
+        local spawned, hunter = GAMEMODE:SpawnHunter( "terminator_nextbot_snail_disguised" )
         if spawned ~= true then return end
 
         if hunter.MimicPlayer then
@@ -3248,11 +3256,11 @@ local defaultItems = {
     },
     [ "flaregun" ] = {
         name = "Flaregun",
-        desc = "Flaregun.\n+ 8 flares.",
+        desc = "Flaregun.\n+ 4 flares.",
         cost = 45,
-        markup = 1.5,
-        markupPerPurchase = 0.25,
-        cooldown = 0.5,
+        markup = 1.25,
+        markupPerPurchase = 0.15,
+        cooldown = 1,
         category = "Items",
         purchaseTimes = {
             GM.ROUND_INACTIVE,
@@ -3265,9 +3273,9 @@ local defaultItems = {
         name = "Loadout",
         desc = "Normal guns.\nNot very useful against metal...",
         cost = 45,
-        markup = 2,
+        markup = 1.5,
         markupPerPurchase = 0.25,
-        cooldown = 0.5,
+        cooldown = 1,
         category = "Items",
         purchaseTimes = {
             GM.ROUND_INACTIVE,
@@ -3314,10 +3322,10 @@ local defaultItems = {
     [ "armor" ] = {
         name = "Suit Battery",
         desc = "15 Suit Battery.",
-        cost = 50,
-        markup = 4,
+        cost = 15,
+        markup = 6,
         markupPerPurchase = 0.5,
-        cooldown = 5,
+        cooldown = 0.5,
         category = "Items",
         purchaseTimes = {
             GM.ROUND_INACTIVE,
@@ -3459,7 +3467,7 @@ local defaultItems = {
     [ "blindness" ] = {
         name = "Legally Blind.",
         desc = "Become unable to see more than a few feet ahead.",
-        cost = -220,
+        cost = -240,
         markup = 0.2,
         cooldown = math.huge,
         category = "Innate",
@@ -3491,7 +3499,7 @@ local defaultItems = {
     [ "greasyhands" ] = {
         name = "Greasy Hands.",
         desc = "Eating greasy food all your life,\nyour hands... adapted to their new, circumstances...\nUnder stress, the grease flows like a faucet.",
-        cost = -140,
+        cost = -160,
         markup = 0.25,
         cooldown = math.huge,
         category = "Innate",
@@ -3521,7 +3529,7 @@ local defaultItems = {
     [ "deafness" ] = {
         name = "Hard of Hearing.",
         desc = "You can barely hear a thing!",
-        cost = -65,
+        cost = -75,
         markup = 0.25,
         cooldown = math.huge,
         category = "Innate",
@@ -3883,6 +3891,7 @@ local defaultItems = {
         weight = -100,
         purchaseCheck = { undeadCheck, spawnAnotherHunterCheck },
         purchaseFunc = additionalHunter,
+        canShowInShop = spawnAnotherHunterCanShow,
     },
     [ "presser" ] = {
         name = "Presser",

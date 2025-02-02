@@ -19,7 +19,33 @@ if CLIENT then
 
     end
 
-    local function doContextMenuOnly()
+    local function supressHints()
+        local toSupress = {
+            "OpeningMenu",
+            "Annoy1",
+            "Annoy2",
+            "OpeningContext",
+            "EditingSpawnlists",
+            "EditingSpawnlistsSave",
+        }
+
+        for _, str in ipairs( toSupress ) do
+            GAMEMODE:SuppressHint( str )
+        end
+
+        GAMEMODE.glee_OldAddHint = GAMEMODE.glee_OldAddHint or GAMEMODE.AddHint
+        function GAMEMODE:GleeAddHint( ... )
+            self:glee_OldAddHint( ... )
+        end
+
+        function GAMEMODE:AddHint() -- no extra hints
+            return
+        end
+    end
+
+    local function postLoaded()
+        supressHints()
+
         -- kill menubar for non-admins
         menubar.glee_oldMenuBarInit = menubar.glee_oldMenuBarInit or menubar.Init
         menubar.Init = function()
@@ -40,7 +66,7 @@ if CLIENT then
 
     end
 
-    hook.Add( "OnGamemodeLoaded", "Glee_CreateSpawnMenu", doContextMenuOnly )
+    hook.Add( "OnGamemodeLoaded", "Glee_CreateSpawnMenu", postLoaded )
 
 else
     local no = function()

@@ -1,6 +1,7 @@
 
 local doSoulRagdolls = CreateClientConVar( "huntersglee_cl_dosoulragdolls", 1, true, false, "Enable funny client ragdolls on dead players", 0, 1 )
 local doOwnSoul = CreateClientConVar( "huntersglee_cl_seeownsoul", 1, true, false, "See your own soul?", 0, 1 )
+local ownSoulNearFade = CreateClientConVar( "huntersglee_cl_ownsoul_nearfade", 0.1, true, false, "How transparent should your own soul be when it's near you?", 0, 1 )
 
 local LocalPlayer = LocalPlayer
 local IsValid = IsValid
@@ -63,7 +64,8 @@ local function soulSetup( soul )
     local rag = owner:GetRagdollEntity()
     local insideEnt = owner.glee_LastInsideEnt
     local anInsideEnt = IsValid( insideEnt )
-    if IsValid( rag ) and not anInsideEnt then
+    local comeOutOfTheirCorpse = IsValid( rag ) and not anInsideEnt
+    if comeOutOfTheirCorpse then
         for bone = 0, boneCountFixed( soul ) do
             local ragsObj = rag:GetPhysicsObjectNum( bone )
             local soulsObj = soul:GetPhysicsObjectNum( bone )
@@ -72,7 +74,12 @@ local function soulSetup( soul )
                 local ang = ragsObj:GetAngles()
                 soulsObj:SetPos( pos )
                 soulsObj:SetAngles( ang )
+                soulsObj:EnableMotion( false )
+                timer.Simple( math.Rand( 0, 4 ), function()
+                    if not IsValid( soulsObj ) then return end
+                    soulsObj:EnableMotion( true )
 
+                end )
             end
         end
     else
@@ -136,6 +143,7 @@ local function createSoul( ply )
     ply.glee_soul = soul
 
     soulSetup( soul )
+    ply.glee_LastInsideEnt = nil
 
     local bodyGroups = ply:GetBodyGroups()
 
@@ -153,8 +161,12 @@ local function createSoul( ply )
     soul:SetNoDraw( false )
 
     function soul.RenderOverride( self )
+        local blend = 0.5
+        if soul:GetPos():DistToSqr( LocalPlayer():GetShootPos() ) < 50^2 then
+            blend = ownSoulNearFade:GetFloat()
 
-        render.SetBlend( 0.5 )
+        end
+        render.SetBlend( blend )
         self:DrawModel()
         render.SetBlend( 1 )
 
@@ -221,6 +233,11 @@ end
 local function followPly( soul, ply, data )
     local pos = data and data.pos or ply:GetPos()
     local ang = data and data.ang or ply:GetAngles()
+
+    if ply == LocalPlayer() then
+        pos = ply:GetShootPos()
+
+    end
 
     updateDisplayPos( soul:GetOwner(), soul:GetPos() )
     soulGotoPos( soul, pos, ang )

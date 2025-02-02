@@ -61,6 +61,7 @@ local SongNames = {
 
 local nextRecieve = 0
 local shopItemColor = Color( 73, 73, 73, 255 )
+local Tuner
 
 net.Receive( "OpenSTRadioMenu", function()
     if nextRecieve > CurTime() then return end
@@ -69,7 +70,12 @@ net.Receive( "OpenSTRadioMenu", function()
     local selfEnt = Entity( net.ReadUInt( 16 ) )
     local activeSong = net.ReadUInt( 16 )
 
-    local Tuner = vgui.Create( "DFrame" )
+    if Tuner and IsValid( Tuner ) then
+        Tuner:Close()
+
+    end
+
+    Tuner = vgui.Create( "DFrame" )
     Tuner:SetSize( glee_sizeScaled( 500, 75 ) )
     Tuner:SetTitle( "" )
     Tuner:SetVisible( true )

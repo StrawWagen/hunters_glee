@@ -1,5 +1,5 @@
 include( "shared.lua" )
-include( "cl_shopstandards.lua" )
+include( "cl_shopstandards.lua" ) -- has to load almost first
 include( "cl_shoppinggui.lua" )
 include( "modules/cl_souls.lua" )
 include( "modules/cl_targetid.lua" )
@@ -7,6 +7,7 @@ include( "modules/cl_scoreboard.lua" )
 include( "modules/cl_obfuscation.lua" )
 include( "modules/cl_killfeedoverride.lua" )
 include( "modules/cl_spectateflashlight.lua" )
+include( "modules/spawnset/cl_spawnsetvote.lua" )
 include( "modules/signalstrength/cl_signalstrength.lua" )
 include( "modules/thirdpersonflashlight/cl_flashlight.lua" )
 include( "modules/firsttimeplayers/cl_firsttimeplayers.lua" )
@@ -298,6 +299,7 @@ end
 
 
 local function paintRoundInfo( ply, cur )
+    local typeVal = GetGlobalString( "GLEE_SpawnSetPrettyName", "Hunter's Glee" )
     local timeVal = GetGlobalInt( "TERMHUNTER_PLAYERTIMEVALUE", 0 )
     local infoVal = GetGlobalString( "TERMHUNTER_PLAYERVALUENAME", "---" )
     local infoColor = Color( 255, 255, 255 )
@@ -314,6 +316,11 @@ local function paintRoundInfo( ply, cur )
     end
 
     local combinedString = infoVal .. string.ToMinutesSeconds( timeVal )
+
+    if typeVal ~= "Hunter's Glee" then
+        combinedString = typeVal .. " : " .. combinedString
+
+    end
 
     if ply.oldInfo ~= infoVal then
         ply.oldInfo = infoVal
@@ -710,7 +717,7 @@ local function genericHints()
             return true, "Death is not the end.\nPress \" " .. string.upper( phrase ) .. " \" to open the shop."
 
         elseif not me.glee_DefinitelyBoughtAnUndeadItem then
-            return true, "Are you broke? Purchase 'gifts' to make money while dead."
+            return true, "Purchase 'gifts' to make score while dead. You can even revive yourself."
 
         elseif not me.glee_HasSpectatedSomeone then
             local valid, phrase = GAMEMODE:TranslatedBind( "+attack" )

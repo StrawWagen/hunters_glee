@@ -58,7 +58,11 @@ end
 
 
 function PLAYER:Loadout()
-    self.Player:Give( "gmod_camera" )
+    local camera = self.Player:Give( "gmod_camera" )
+    function camera:AllowsAutoSwitchTo() -- annoying
+        return false
+
+    end
     self.Player:Give( "termhunt_shove" )
     self.Player:Give( "termhunt_radio" )
     self.Player:Give( "weapon_crowbar" )

@@ -24,11 +24,12 @@ include( "sh_shopitems.lua" )
 include( "modules/sh_panic.lua" )
 include( "modules/sh_banking.lua" )
 include( "modules/sh_tempbools.lua" )
+include( "modules/sh_fallingwind.lua" )
 include( "modules/sh_danceslowdown.lua" )
 include( "modules/sh_playerdrowning.lua" )
 include( "modules/battery/sh_battery.lua" )
 include( "modules/sh_detecthunterkills.lua" )
-include( "modules/sh_fallingwind.lua" )
+include( "modules/spawnset/sh_spawnsetcontent.lua" )
 include( "modules/unsandboxing/sh_unsandboxing.lua" )
 
 
@@ -133,4 +134,9 @@ function GM:ResetShopItemCooldowns()
     else
         LocalPlayer().shopItemCooldowns = {}
     end
+end
+
+function GM:GetSpawnSetName()
+    return GetGlobalString( "GLEE_SpawnSetName", "N/A" ), GetGlobalString( "GLEE_SpawnSetPrettyName", "N/A" )
+
 end

@@ -360,9 +360,10 @@ function GM:GetAreaInOccupiedBigGroupOrRandomBigGroup( noUnderWater )
     -- main person is not in a big group, just pick one with hunters in it
     else
         local hunterRef
-        for _, hunter in ipairs( GAMEMODE.termHunt_hunters ) do
+        for _, hunter in ipairs( GAMEMODE.glee_Hunters ) do
             if IsValid( hunter ) then
                 hunterRef = hunter
+                break
 
             end
         end
