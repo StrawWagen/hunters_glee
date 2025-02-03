@@ -1069,60 +1069,8 @@ end
 
 local function cholesterolPurchase( purchaser )
     local hookName1 = "glee_cholesterol_higherresting_" .. purchaser:GetCreationID()
-    local hookName2 = "glee_cholesterol_heartattack_" .. purchaser:GetCreationID()
     local hookName3 = "glee_cholesterol_heartattackblockpanic_" .. purchaser:GetCreationID()
-    local timerName = "glee_cholesterol_heartattacktimer_" .. purchaser:GetCreationID()
-
-    -- bpm above this is bad
-    local threshold = 150
-
-    local function doHeartAttackManage( ply )
-        if not IsValid( ply ) then return end
-        if ply:Health() <= 0 then
-            if ply.glee_HeartAttackScore then
-                ply.glee_HeartAttackScore = nil
-
-            end
-            return
-
-        end
-        local heartAttackScore = ply.glee_HeartAttackScore or 0
-
-        if heartAttackScore <= 0 then
-            if ply.glee_HasHeartAttackWarned then ply.glee_HasHeartAttackWarned = nil end
-            return
-
-        end
-
-        -- you're done
-        if heartAttackScore > 150 then
-            heartAttackScore = heartAttackScore + 50
-            local world = game.GetWorld()
-            ply:TakeDamage( ply:GetMaxHealth() / 10, world, world )
-            if math.random( 0, 100 ) < 50 then
-                ply:SetNWInt( "termHuntPlyBPM", 0 )
-
-            end
-            GAMEMODE:GivePanic( ply, 50 )
-
-        elseif heartAttackScore > 80 then
-            heartAttackScore = heartAttackScore + 4
-            GAMEMODE:GivePanic( ply, 12 )
-
-        elseif heartAttackScore > math.random( 50, 60 ) then
-            heartAttackScore = heartAttackScore + -0.5
-            GAMEMODE:GivePanic( ply, 6 )
-
-        else
-            heartAttackScore = heartAttackScore + -2
-            if not ply.glee_HasHeartAttackWarned then
-                huntersGlee_Announce( { ply }, 5, 6, "You feel a deep, sharp pain..." )
-                GAMEMODE:GivePanic( ply, 50 )
-                ply.glee_HasHeartAttackWarned = true
-
-            end
-        end
-    end
+    local hookName4 = "glee_cholesterol_heartattacksooner_" .. purchaser:GetCreationID()
 
     local sendCholesterolDefine = function( purchaser, bool )
         if bool == nil then return end
@@ -1138,19 +1086,6 @@ local function cholesterolPurchase( purchaser )
                     return 1.85
 
                 end
-
-            end )
-            hook.Add( "huntersglee_heartbeat_beat", hookName2, function( ply )
-                if not IsValid( purchaser ) then return end
-                if ply ~= purchaser then return end
-                local currBpm = ply:GetNWInt( "termHuntPlyBPM" )
-                if currBpm > threshold then
-                    local added = math.abs( currBpm - threshold )
-                    added = added / 4
-                    local oldScore = ply.glee_HeartAttackScore or 0
-                    ply.glee_HeartAttackScore = oldScore + added
-
-                end
             end )
             hook.Add( "huntersglee_blockpanicreset", hookName3, function( ply )
                 if not IsValid( purchaser ) then return end
@@ -1161,29 +1096,20 @@ local function cholesterolPurchase( purchaser )
 
                 end
             end )
+            hook.Add( "huntersglee_getheartattackbpm", hookName4, function( ply )
+                if not IsValid( purchaser ) then return end
+                if ply ~= purchaser then return end
+                return 150
+
+            end )
 
         elseif bool == false then
             hook.Remove( "huntersglee_restingbpmscale", hookName1 )
-            hook.Remove( "huntersglee_heartbeat_beat", hookName2 )
             hook.Remove( "huntersglee_blockpanicreset", hookName3 )
-            timer.Remove( timerName )
-            purchaser.glee_HeartAttackScore = nil
-            purchaser.glee_HasHeartAttackWarned = nil
+            hook.Remove( "huntersglee_getheartattackbpm", hookName4 )
 
         end
     end
-
-    -- Set the timer to repeat the sound
-    timer.Create( timerName, 0.5, 0, function()
-        if IsValid( purchaser ) then
-            doHeartAttackManage( purchaser )
-
-        else
-            -- If the entity is no longer valid, stop the timer
-            timer.Remove( timerName )
-
-        end
-    end )
 
     sendCholesterolDefine( purchaser, true )
 
