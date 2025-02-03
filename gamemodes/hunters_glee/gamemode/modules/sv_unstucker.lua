@@ -51,6 +51,8 @@ function meta:unstuckFullHandle()
 
         -- they are stuck
         if result == true then
+            local old = self.glee_UnstuckFails or 0
+            self.glee_UnstuckFails = old + 1
             -- recursive yay
             self:unstuckFullHandle()
 
@@ -61,6 +63,7 @@ function meta:unstuckFullHandle()
 
             end
             self.glee_Unstucking = nil
+            self.glee_UnstuckFails = nil
             shouldBeValid = true
 
         end
@@ -89,6 +92,9 @@ function meta:checkIfPlyIsStuckAndHandle( overridePos )
     local forward = self:GetAimVector()
     local thePos = nil
 
+    local unstuckFails = self.glee_UnstuckFails or 0
+    local overFailed = unstuckFails >= 2
+
     local minBound, maxBound = self:GetCollisionBounds()
     minBound = minBound * 1.1
     maxBound = maxBound * 1.1
@@ -99,7 +105,7 @@ function meta:checkIfPlyIsStuckAndHandle( overridePos )
     maxBound.z = 4
     local randomOffset = Vector( 0, 0, 0 )
     -- lots of traces for 1 tick lol
-    local max = 1500
+    local max = 500 -- bigger this is, the closer ply ends up to where they're stuck at, but it's also laggier...
     local doBigCheck = max * 0.5
 
     for index = 0, max do
@@ -110,6 +116,11 @@ function meta:checkIfPlyIsStuckAndHandle( overridePos )
             scalar = math.Rand( 0.5, 4 )
 
         end
+        -- go crazy instead of holding up the entire session
+        if overFailed then
+            scalar = scalar + math.Rand( 0, unstuckFails )
+
+        end
 
         local randomOffsetScale = index * scalar
         local randomDirection = VectorRand( -1, 1 )
@@ -117,7 +128,7 @@ function meta:checkIfPlyIsStuckAndHandle( overridePos )
         local potentiallyClearPos = unstuckOrigin + randomOffset
 
         local contents = util.PointContents( potentiallyClearPos )
-        local isSolidOrClipped = bit.band( contents, CONTENTS_SOLID ) ~= 0 or bit.band( contents, CONTENTS_PLAYERCLIP ) ~= 0
+        local isSolidOrClipped = ( bit.band( contents, CONTENTS_SOLID ) ~= 0 ) or ( bit.band( contents, CONTENTS_PLAYERCLIP ) ~= 0 )
 
         if isSolidOrClipped then continue end
 
@@ -136,8 +147,7 @@ function meta:checkIfPlyIsStuckAndHandle( overridePos )
 
         if trace.Hit or trace.StartSolid or GAMEMODE:IsUnderDisplacementExtensive( potentiallyClearPos ) then continue end
 
-        if index == 0 then
-            -- ply is not stuck
+        if index == 0 then -- first check is always directly ontop of player, if it's clear, then ply is not stuck
             return false
 
         end
@@ -177,6 +187,14 @@ function meta:checkIfPlyIsStuckAndHandle( overridePos )
 
         if displaceResult.HitTexture == "**displacement**" or displaceResult.StartSolid then continue end
 
+        local originPlyClipped = bit.band( util.PointContents( unstuckOrigin ), CONTENTS_PLAYERCLIP ) ~= 0
+        local clearPlyClipped = bit.band( util.PointContents( potentiallyClearPos ), CONTENTS_PLAYERCLIP ) ~= 0
+        if originPlyClipped and not clearPlyClipped then -- if player somehow ends up inside a playerclip, let them out!
+            -- we were stuck and this spot will set us free
+            thePos = potentiallyClearPos
+            break
+
+        end
 
         local finalClipCheck = {}
         finalClipCheck.start = unstuckOrigin + terminator_Extras.dirToPos( unstuckOrigin, potentiallyClearPos ) * 35
@@ -188,7 +206,8 @@ function meta:checkIfPlyIsStuckAndHandle( overridePos )
         local finalClipCheckResult = util.TraceHull( finalClipCheck )
 
         -- this pos would send us through a player clip ( just a sanity check, will fail if eg, a corner exists )
-        if finalClipCheckResult.Hit then continue end
+        local sendUsThruPlyClip = finalClipCheckResult.Hit
+        if sendUsThruPlyClip then continue end
 
         -- we were stuck and this spot will set us free
         thePos = potentiallyClearPos
@@ -240,6 +259,11 @@ hook.Add( "glee_sv_validgmthink", "glee_manageunstucking", function( players )
                 ply.glee_doneUnstuckWarn = nil
 
             end
+        elseif ply.glee_Unstucking then -- broke
+            ply.glee_Unstucking = nil
+            ply.glee_doneUnstuckWarn = nil
+            ply.glee_basicStuckCount = nil
+
         end
     end
 end )

@@ -89,7 +89,10 @@ function RTM.Start()
 
     PrintMessage( HUD_PRINTTALK, "The vote has been rocked, glee mode vote imminent" )
     GAMEMODE.glee_SpawnSetVote:BeginVote()
-    RTM.ResetVotes()
+    timer.Simple( 0.5, function()
+        RTM.ResetVotes()
+
+    end )
 end
 
 function RTM.ResetVotes()
@@ -102,7 +105,7 @@ function RTM.AddVote( ply )
     ply.RTMVoted = true
     ply.RTMVotedTime = CurTime()
 
-    timer.Simple( 0, function()
+    timer.Simple( 0.01, function() -- not 0 because this LOVES to print 0/whatever
         if not ply:IsValid() then return end
         MsgN( ply:Nick() .. " has voted to change the glee mode." )
         local threshold = RTM.GetThreshold()
@@ -173,3 +176,16 @@ function RTM.HandleUnRTMCommand( ply )
     ply.RTMVoted = false
     ply:PrintMessage( HUD_PRINTTALK, "Your glee mode vote has been removed!" )
 end
+
+local rounds = 0
+local printed
+hook.Add( "huntersglee_round_into_inactive", "glee_rockthemode_hint", function()
+    rounds = rounds + 1
+    if rounds < math.random( 2, 4 ) then return end --dont print too much.
+
+    if printed then return end
+    printed = true -- one time per map
+
+    PrintMessage( HUD_PRINTTALK, "GLEE: Type !rtm to start a mode vote" )
+
+end )

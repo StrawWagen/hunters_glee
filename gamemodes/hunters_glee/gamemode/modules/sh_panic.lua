@@ -227,10 +227,16 @@ elseif SERVER then
         if not victim:IsPlayer() then return end
         local panic = damage:GetDamage() / 10
         if victim:Health() < 25 then
+            panic = panic * 2
             panic = math.Clamp( panic, 35, 100 )
 
         end
         GAMEMODE:GivePanic( victim, panic )
+
+    end )
+
+    hook.Add( "termhunt_plyescapestuck", "glee_unstuck_panic", function( ply, stuckPos, freedPos ) -- lol
+        GAMEMODE:GivePanic( ply, stuckPos:Distance( freedPos ) / 3 )
 
     end )
 end

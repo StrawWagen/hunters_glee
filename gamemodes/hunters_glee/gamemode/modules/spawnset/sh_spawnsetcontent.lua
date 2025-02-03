@@ -60,7 +60,7 @@ if SERVER then
 else
     local nextThink = 0
 
-    local maxTries = 5
+    local maxTries = 1
 
     local contentTries = {}
     local contentConfirmed = {}

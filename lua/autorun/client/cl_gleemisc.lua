@@ -17,21 +17,19 @@ local function ShutDownPanel( pnl )
 end
 
 function terminator_Extras.easyClosePanel( pnl, callFirst )
+    pnl.keyWasDown = {}
+
     local clientsMenuKey = input.LookupBinding( "+menu" )
     if clientsMenuKey then
         clientsMenuKey = input.GetKeyCode( clientsMenuKey )
+        pnl.keyWasDown[clientsMenuKey] = true
     end
 
     local clientsUseKey = input.LookupBinding( "+use" )
     if clientsUseKey then
         clientsUseKey = input.GetKeyCode( clientsUseKey )
+        pnl.keyWasDown[clientsUseKey] = true
     end
-
-    pnl.keyWasDown = {
-        [clientsUseKey] = true,
-        [clientsMenuKey] = true,
-
-    }
 
     pnl.gleeOld_Think = pnl.Think
 
