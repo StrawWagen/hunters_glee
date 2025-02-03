@@ -181,7 +181,9 @@ function SWEP:PrimaryAttack( firstMul )
             self:ShoveSound( pitchAdded )
             if Hit:IsPlayer() then
                 Force = Force * 500
-                Hit:SetVelocity( ( Hit:GetVelocity() * 0.5 ) + Force * firstMul )
+                if not Hit:InVehicle() then
+                    Hit:SetVelocity( ( Hit:GetVelocity() * 0.5 ) + Force * firstMul )
+                end
                 owner:SetVelocity( owner:GetVelocity() + -( Force * 0.25 ) * firstMul )
                 self:SetNextPrimaryFire( CurTime() + 1 )
 
@@ -202,7 +204,7 @@ function SWEP:PrimaryAttack( firstMul )
             NoHit = true
 
         end
-    elseif Hit:IsWorld() and not Trace.HitSky and owner:GetEyeTrace().HitWorld then -- make sure we dont do the 5 sec cooldown when they just missed an entity
+    elseif Hit:IsWorld() and not Trace.HitSky and owner:GetEyeTrace().HitWorld then -- check eyetrace too, make sure we dont do the 5 sec cooldown when they just barely missed an entity
         self:SetNextPrimaryFire( CurTime() + 2.2 )
         local mul = -150
         mul = mul * ( owner.parkourForce or 0.3 )

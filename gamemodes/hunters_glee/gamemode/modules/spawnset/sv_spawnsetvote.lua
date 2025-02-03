@@ -107,6 +107,8 @@ function spawnSetVote:OnVoteEnd()
 
     if spawnSetVote.winner == GAMEMODE:GetSpawnSet() then
         huntersGlee_Announce( player.GetAll(), 1001, 5, "Mode will remain " .. GAMEMODE:GetPrettyNameOfSpawnSet( spawnSetVote.winner ) .. "..." )
+        spawnSetVote.currVote = nil
+
         return
 
     end

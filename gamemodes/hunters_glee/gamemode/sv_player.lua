@@ -12,7 +12,7 @@ local restingBPMPermanent = 60 -- needs to match clientside var too
 local distNeededToBeOnArea = 25^2
 local distWayTooFarOffNavmesh = 250^2
 local posCanSeeComplex = terminator_Extras.PosCanSeeComplex
-local defaultHeartAttackBpm = 250
+local defaultHeartAttackBpm = 200
 
 
 local meta = FindMetaTable( "Player" )
