@@ -12,6 +12,7 @@ local restingBPMPermanent = 60 -- needs to match clientside var too
 local distNeededToBeOnArea = 25^2
 local distWayTooFarOffNavmesh = 250^2
 local posCanSeeComplex = terminator_Extras.PosCanSeeComplex
+local defaultHeartAttackBpm = 250
 
 
 local meta = FindMetaTable( "Player" )
@@ -309,6 +310,12 @@ function GM:calculateBPM( cur, players )
             ply:SetNWInt( "termHuntPlyBPM", BPM )
             ply:SetNWBool( "termHuntBlockScoring", blockScore )
 
+            local heartAttackScore = ply.glee_HeartAttackScore or 0
+            if heartAttackScore > 0 then
+                GAMEMODE:DoHeartAttackThink( ply )
+
+            end
+
         else
             if istable( ply.BPMHistoric ) then
                 ply.BPMHistoric = nil
@@ -377,6 +384,87 @@ hook.Add( "huntersglee_givescore", "huntersglee_storealivescoring", function( sc
 
     local oldPlyScore = GAMEMODE.roundScore[ scorer:GetCreationID() ] or 0
     GAMEMODE.roundScore[ scorer:GetCreationID() ] = oldPlyScore + addedscore
+
+end )
+function GM:DoHeartAttackThink( ply )
+    if not IsValid( ply ) then return end
+    local nextThink = ply.glee_NextHeartAttackThink or 0
+    if nextThink > CurTime() then return end
+    ply.glee_NextHeartAttackThink = CurTime() + math.Rand( 0.4, 0.6 )
+
+    if ply:Health() <= 0 then
+        if ply.glee_HeartAttackScore then
+            ply.glee_HeartAttackScore = nil
+
+        end
+        return
+
+    end
+    local heartAttackScore = ply.glee_HeartAttackScore or 0
+    local threshold = GAMEMODE:GetHeartAttackThreshold( ply )
+
+    -- you're done
+    if heartAttackScore > threshold then
+        heartAttackScore = heartAttackScore + 50
+
+        local damage = ( ply:GetMaxHealth() / 10 ) + ( heartAttackScore / threshold )
+
+        local world = game.GetWorld()
+        ply:TakeDamage( damage, world, world )
+        if math.random( 0, 100 ) < 50 then
+            ply:SetNWInt( "termHuntPlyBPM", 0 )
+
+        end
+        GAMEMODE:GivePanic( ply, 50 )
+
+    elseif heartAttackScore > threshold * 0.533 then
+        heartAttackScore = heartAttackScore + 4
+        GAMEMODE:GivePanic( ply, 12 )
+
+    elseif heartAttackScore > threshold * math.Rand( 0.3, 0.4 ) then
+        heartAttackScore = heartAttackScore + -0.5
+        GAMEMODE:GivePanic( ply, 6 )
+
+    else
+        heartAttackScore = heartAttackScore + -2
+        if not ply.glee_HasHeartAttackWarned then
+            huntersGlee_Announce( { ply }, 5, 6, "You feel a deep, sharp pain..." )
+            GAMEMODE:GivePanic( ply, 50 )
+            ply.glee_HasHeartAttackWarned = true
+
+        end
+    end
+end
+
+function GM:GetHeartAttackThreshold( ply )
+    local heartAttackBpm = defaultHeartAttackBpm
+    local hookHeartAttackBpm = hook.Run( "huntersglee_getheartattackbpm", ply )
+    if isnumber( hookHeartAttackBpm ) then
+        heartAttackBpm = hookHeartAttackBpm
+
+    end
+
+    return heartAttackBpm
+
+end
+
+hook.Add( "huntersglee_heartbeat_beat", "glee_heartattack_think", function( ply, BPM )
+    local threshold = GAMEMODE:GetHeartAttackThreshold( ply )
+    if BPM > threshold then
+        local added = math.abs( BPM - threshold )
+        added = added / 4
+        local oldScore = ply.glee_HeartAttackScore or 0
+        ply.glee_HeartAttackScore = oldScore + added
+
+    end
+end )
+
+
+hook.Add( "PlayerDeath", "glee_resetbeatstuff", function( ply )
+    ply.BPMHistoric = nil
+    ply:SetNWInt( "termHuntPlyBPM", restingBPMPermanent )
+    ply.glee_HasHeartAttackWarned = nil
+    ply.glee_HeartAttackScore = 0
 
 end )
 
