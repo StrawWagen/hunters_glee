@@ -10,6 +10,7 @@ local set = {
     startingSpawnCount = 1,
     maxSpawnCount = 5, -- hard cap on count
     themeSound = "default",
+    maxSpawnDist = "default",
     spawns = {
         {
             hardRandomChance = nil,

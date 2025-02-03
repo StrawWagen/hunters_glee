@@ -16,8 +16,9 @@ local set = {
     spawnCountPerDifficulty = { 0.05 },
     startingSpawnCount = { 0, 2 },
     maxSpawnCount = 50, -- hard cap on count
+    maxSpawnDist = "default",
     resourcesAdded = {},
-    spawns = {}
+    spawns = {},
 }
 
 if hasSanic then

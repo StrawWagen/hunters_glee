@@ -45,6 +45,7 @@ local set = {
     spawnCountPerDifficulty = { 0.2, 0.35 },
     startingSpawnCount = { 1, 4 },
     maxSpawnCount = { 15 }, -- hard cap on count
+    maxSpawnDist = "default",
     spawns = {
         {
             hardRandomChance = nil,

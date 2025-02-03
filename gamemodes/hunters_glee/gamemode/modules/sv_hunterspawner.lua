@@ -34,6 +34,7 @@ local defaults = {
     spawnCountPerDifficulty = { 0.08, 0.1 },
     startingSpawnCount = { 1.8, 2 },
     maxSpawnCount = 10,
+    maxSpawnDist = { 5500, 6500 },
 }
 
 local function asNum( toParse, name )
@@ -147,6 +148,8 @@ function GM:SetSpawnSet( setName )
 
         end
     end
+
+    spawnSet.defaultRadius = spawnSet.maxSpawnDist * 0.9
 
     self.CurrSpawnSetName = setName
     self.CurrSpawnSet = spawnSet
@@ -347,16 +350,15 @@ function GM:SpawnHunter( class )
 
 end
 
-local defaultRadius = 7000
-local maxRadius = 8000
 local minRadius = 500
 local fails = 0
 
 -- spawn a hunter as far away as possible from every player by inching a distance check around
 -- made to be really random/overcomplicated so you never really know where they'll spawn from
 function GM:getValidHunterPos()
-    local dynamicTooCloseFailCounts = self.roundExtraData.dynamicTooCloseFailCounts or -2
-    local dynamicTooCloseDist = self.roundExtraData.dynamicTooCloseDist or defaultRadius
+    local _, spawnSet = self:GetSpawnSet()
+    local dynamicTooCloseFailCounts = spawnSet.dynamicTooCloseFailCounts or -2
+    local dynamicTooCloseDist = spawnSet.dynamicTooCloseDist or spawnSet.defaultRadius
 
     if not self.biggestNavmeshGroups then return nil, nil end
 
@@ -402,7 +404,7 @@ function GM:getValidHunterPos()
         if randomArea:IsUnderwater() then
             -- make it a bit closer
             dynamicTooCloseDist = dynamicTooCloseDist - 100
-            self.roundExtraData.dynamicTooCloseDist = math.Clamp( dynamicTooCloseDist, minRadius, maxRadius )
+            spawnSet.dynamicTooCloseDist = math.Clamp( dynamicTooCloseDist, minRadius, spawnSet.maxSpawnDist )
 
         end
 
@@ -410,7 +412,7 @@ function GM:getValidHunterPos()
             fails = 0
             -- good spawnpoint, spawn here
             --debugoverlay.Cross( spawnPos, 100, 20, color_white, true )
-            self.roundExtraData.dynamicTooCloseFailCounts = -2
+            spawnSet.dynamicTooCloseFailCounts = -2
             return spawnPos, true
 
         end
@@ -420,9 +422,9 @@ function GM:getValidHunterPos()
         -- random picked area was too close, decrease cutoff radius
         if wasTooClose then
             --debugoverlay.Cross( spawnPos, 10, 20, Color( 255,0,0 ), true )
-            self.roundExtraData.dynamicTooCloseFailCounts = dynamicTooCloseFailCounts + 1
+            spawnSet.dynamicTooCloseFailCounts = dynamicTooCloseFailCounts + 1
             dynamicTooCloseDist = dynamicTooCloseDist + ( -dynamicTooCloseFailCounts * 25 )
-            self.roundExtraData.dynamicTooCloseDist = math.Clamp( dynamicTooCloseDist, minRadius, maxRadius )
+            spawnSet.dynamicTooCloseDist = math.Clamp( dynamicTooCloseDist, minRadius, spawnSet.maxSpawnDist )
 
         end
     end

@@ -47,6 +47,7 @@ local defaultSpawnSet = {
     spawnCountPerDifficulty = "default", -- max of ten at 10 minutes
     startingSpawnCount = "default",
     maxSpawnCount = "default", -- hard cap on count
+    maxSpawnDist = "default",
     spawns = {
         {
             hardRandomChance = nil,

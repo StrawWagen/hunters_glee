@@ -158,12 +158,29 @@ function GM:calculateBPM( cur, players )
 
             end
 
-            local tDat = {}
-            tDat.start = plyPos + tStartOffset
-            tDat.endpos = plyPos + belowOffset
-            tDat.mask = MASK_NPCWORLDSTATIC
-            tDat.maxs = airCheckHull
-            tDat.mins = -airCheckHull
+            local plyVel = ply:GetVelocity()
+            local plySpeed = plyVel:Length()
+            local fallingForever = plySpeed > 2000
+            if fallingForever then
+                local foreverTr = {
+                    start = plyPos,
+                    endpos = plyPos + plyVel * 1000,
+                    mask = MASK_NPCWORLDSTATIC,
+                    maxs = airCheckHull,
+                    mins = -airCheckHull,
+                }
+                local foreverResult = util.TraceHull( foreverTr )
+                fallingForever = not foreverResult.hit
+
+            end
+
+            local tDat = {
+                start = plyPos + tStartOffset,
+                endpos = plyPos + belowOffset,
+                mask = MASK_NPCWORLDSTATIC,
+                maxs = airCheckHull,
+                mins = -airCheckHull,
+            }
             local closeToGround = util.TraceHull( tDat ).Hit
             local onArea = nil
 
@@ -200,7 +217,10 @@ function GM:calculateBPM( cur, players )
             local blockScore = false
 
             -- if there's no valid area AND we are on the ground, then block
-            if ( not onArea ) and closeToGround then
+            local somewhereWrong = ( not onArea ) and closeToGround
+            somewhereWrong = somewhereWrong or fallingForever
+
+            if somewhereWrong then
                 blockScore = true
                 doBpmDecrease = true
                 if not terminator_Extras.IsLivePatching then
@@ -215,7 +235,7 @@ function GM:calculateBPM( cur, players )
             end
 
             local bpmPerSpeed = 0.05 * speedBPMMul
-            local speedBPM = ply:GetVelocity():Length() * bpmPerSpeed
+            local speedBPM = plySpeed * bpmPerSpeed
 
             local initialScale = 1
             local nonRestingScale = hook.Run( "termhunt_scaleaddedbpm", ply, initialScale ) or initialScale
@@ -263,7 +283,11 @@ function GM:calculateBPM( cur, players )
                     local BPMDecrease = ply.historicBPMDecrease or 0
                     local added = 2
                     if onLadder then
-                        added = 1
+                        added = 0.5
+
+                    elseif fallingForever then
+                        added = 8
+                        GAMEMODE:GivePanic( ply, 25 )
 
                     end
                     ply.historicBPMDecrease = BPMDecrease + added

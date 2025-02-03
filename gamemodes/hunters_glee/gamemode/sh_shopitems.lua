@@ -181,6 +181,16 @@ local function hasMultiplePeople()
 
 end
 
+local function terminatorInSpawnPool()
+    return GAMEMODE:PartialClassIsInSpawnPool( "terminator_nextbot" )
+
+end
+
+local function multiplePeopleAndTerm()
+    return hasMultiplePeople() and terminatorInSpawnPool()
+
+end
+
 local reviver = "termhunt_reviver"
 
 local function revivePurchase( purchaser )
@@ -3358,7 +3368,7 @@ local defaultItems = {
         weight = -100,
         purchaseCheck = unUndeadCheck,
         purchaseFunc = witnessPurchase,
-        canShowInShop = hasMultiplePeople,
+        canShowInShop = multiplePeopleAndTerm,
     },
     [ "screamingbackpack" ] = {
         name = "Beacon",
@@ -3374,6 +3384,7 @@ local defaultItems = {
         weight = -90,
         purchaseCheck = unUndeadCheck,
         purchaseFunc = screamingBackpackPurchase,
+        canShowInShop = terminatorInSpawnPool,
     },
     -- Risk vs reward.
     [ "blooddonor" ] = {
