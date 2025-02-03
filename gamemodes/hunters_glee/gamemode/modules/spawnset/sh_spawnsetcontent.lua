@@ -24,7 +24,6 @@ if SERVER then
             plys = { plysIn }
 
         end
-        PrintTable( plys )
         net.Start( "glee_spawnsetcontent_asker", false )
             for _, contentStr in ipairs( contentTbl ) do
                 net.WriteString( contentStr )
