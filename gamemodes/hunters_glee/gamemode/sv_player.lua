@@ -367,7 +367,7 @@ function GM:manageServersideCountOfBeats()
                 local oldBeats = ply.realHeartBeats or 0
                 ply.realHeartBeats = oldBeats + 1
 
-                hook.Run( "huntersglee_heartbeat_beat", ply )
+                hook.Run( "huntersglee_heartbeat_beat", ply, RealBPMClamped )
 
             end
         end
