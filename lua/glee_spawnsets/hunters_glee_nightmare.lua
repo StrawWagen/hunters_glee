@@ -18,6 +18,7 @@ local function postSpawnedOvercharge( spawnDat, spawned )
         end
     end
 
+    print( overchargedChance )
     if math.random( 0, 100 ) > overchargedChance then return end
     glee_Overcharge( spawned )
 
@@ -46,6 +47,8 @@ local set = {
     startingSpawnCount = { 1, 4 },
     maxSpawnCount = { 15 }, -- hard cap on count
     maxSpawnDist = "default",
+    roundEndSound = "default",
+    roundStartSound = "default",
     spawns = {
         {
             hardRandomChance = nil,
@@ -55,7 +58,6 @@ local set = {
             spawnType = "hunter",
             difficultyCost = 5,
             countClass = "terminator_nextbot_snail*", -- class COUNTED, uses findbyclass
-            minCount = { 0 }, -- will ALWAYS maintain this count
             maxCount = { 15 }, -- will never exceed this count, uses findbycount
             postSpawnedFuncs = { postSpawnedOvercharge }, -- this can be nil
         },
@@ -67,7 +69,6 @@ local set = {
             spawnType = "hunter",
             difficultyCost = 10,
             countClass = "terminator_nextbot_snail*",
-            minCount = { 2 },
             maxCount = { 15 },
             postSpawnedFuncs = { postSpawnedOvercharge },
         }

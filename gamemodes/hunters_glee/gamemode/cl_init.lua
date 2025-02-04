@@ -859,7 +859,6 @@ function HUDPaint()
         local pit = 90
 
         if ply.displayedWinners ~= displayWinners then -- define curtime for dramatic text
-            ply:EmitSound( "53937_meutecee_trumpethit07.wav", 120, 100 )
             ply.winnerDisplayedStart     = cur
             ply.displayTotalScoreTime     = cur + 4
             ply.displayFinestPrey         = cur + 4 + 4

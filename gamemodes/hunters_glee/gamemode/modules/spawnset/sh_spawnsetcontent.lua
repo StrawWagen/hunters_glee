@@ -59,39 +59,50 @@ if SERVER then
 
 else
     local nextThink = 0
+    local contentTried = {}
+    local contentTodo = {}
+    local thinking
 
-    local maxTries = 1
+    local function tryDoingContent()
+        if thinking then return end
+        if #contentTodo <= 0 then return true end -- all done
 
-    local contentTries = {}
-    local contentConfirmed = {}
+        local currContent = table.remove( contentTodo, 1 )
+        if not currContent or not isstring( currContent ) then return end -- just in case
+
+        if contentTried[currContent] then return end
+
+        contentTried[currContent] = true
+        thinking = true
+
+        MsgN( "GLEE: mounting " .. currContent )
+        steamworks.DownloadUGC( currContent, function( path )
+            thinking = nil
+            if not path then return end
+            local succeed = game.MountGMA( path )
+
+            if not succeed then return end
+            MsgN( "GLEE: successfully mounted " .. currContent )
+
+        end )
+    end
 
     net.Receive( "glee_spawnsetcontent_asker", function()
         if nextThink > CurTime() then return end
-        nextThink = CurTime() + 5
+        nextThink = CurTime() + 0.5
 
         local count = GetGlobalInt( "GLEE_SpawnSet_ContentCount", 0 )
         if count <= 0 then return end
 
-        local contentTodo = {}
         for _ = 1, count do
             local currContent = net.ReadString()
-            contentTodo[currContent] = true
+            table.insert( contentTodo, currContent )
 
         end
-        for content, _ in pairs( contentTodo ) do
-            if contentConfirmed[content] then continue end
+        hook.Add( "Think", "glee_spawnset_getcontent", function() 
+            local allDone = tryDoingContent()
+            if allDone then hook.Remove( "Think", "glee_spawnset_getcontent" ) return end
 
-            local tries = contentTries[content] or 0
-            if tries >= maxTries then continue end
-            contentTries[content] = tries + 1
-
-            steamworks.DownloadUGC( content, function( path )
-                if not path then return end
-                local succeed = game.MountGMA( path )
-                if not succeed then return end
-                contentConfirmed[content] = true
-
-            end )
-        end
+        end )
     end )
 end

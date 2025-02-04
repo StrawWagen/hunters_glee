@@ -1,5 +1,14 @@
 
+local isnumber = isnumber
+local isstring = isstring
+local isfunction = isfunction
 local GAMEMODE = GAMEMODE or GM
+
+local function errorCatchingMitt( errMessage )
+    ErrorNoHaltWithStack( errMessage )
+
+end
+
 
 local debuggingVar = CreateConVar( "huntersglee_debug_spawner", 0 )
 local function debugPrint( ... )
@@ -26,7 +35,7 @@ GAMEMODE.RegisteredSpawnSets = GAMEMODE.RegisteredSpawnSets or {}
 
 local minute = 60
 
-local defaults = {
+local setDefaults = {
     difficultyPerMin = 100 / 10, -- 100% diff at 10 mins
     waveInterval = { minute, minute * 1.6 },
     diffBumpWhenWaveKilled = { 10, 20 },
@@ -35,32 +44,39 @@ local defaults = {
     startingSpawnCount = { 1.8, 2 },
     maxSpawnCount = 10,
     maxSpawnDist = { 5500, 6500 },
+    roundEndSound = "53937_meutecee_trumpethit07.wav",
+    roundStartSound = "", -- no sound for glee
 }
 
-local function asNum( toParse, name )
-    if isstring( toParse ) then
-        if toParse == "default" and defaults[name] then
-            toParse = defaults[name]
+local spawnDefaults = {
+    minCount = -1, -- makes it ignore these
+    maxCount = -1, -- respects maxSpawnCount tho
+}
 
-        else
-            return
+local function asParsed( toParse, name, defaultsTbl )
+    local default = defaultsTbl[name]
+    if default then
+        if not toParse then -- fallback,
+            print( name, default )
+            toParse = default
+
+        elseif isstring( toParse ) and toParse == "default" then -- explicit default
+            toParse = default
 
         end
     end
 
     if isnumber( toParse ) then return toParse end
+    if isfunction( toParse ) then return toParse end
+
+    if isstring( default ) and isstring( toParse ) then
+        return toParse
+
+    end
+
     if #toParse <= 1 and isnumber( toParse[1] ) then return toParse[1] end
     if #toParse <= 2 and isnumber( toParse[1] ) and isnumber( toParse[2] ) then return math.Rand( toParse[1], toParse[2] ) end
 
-end
-
-local function parse( tbl, name )
-    local toParse = tbl[name]
-    local parsed = asNum( toParse, name )
-    if isnumber( parsed ) then
-        tbl[name] = parsed
-
-    end
 end
 
 local function yapErr( spawnSet, yapStr )
@@ -81,8 +97,8 @@ function GM:IsValidSpawnSet( spawnSet )
     if not isstring( spawnSet.prettyName ) then yapErr( spawnSet, "has invalid .prettyName" ) return end
     if not isstring( spawnSet.description ) then yapErr( spawnSet, "has invalid .description" ) return end
 
-    for name, _ in pairs( defaults ) do
-        if not asNum( spawnSet[name], name ) then
+    for name, _ in pairs( setDefaults ) do
+        if not asParsed( spawnSet[name], name, setDefaults ) then
             yapErr( spawnSet, "has invalid ." .. name )
             return
 
@@ -104,13 +120,89 @@ function GM:IsValidSpawnSet( spawnSet )
         if not isstring( spawn.class ) then yapErr( spawnSet, ".spawns " .. name .. " invalid .class" ) return end
         if not isstring( spawn.countClass ) then yapErr( spawnSet, ".spawns " .. name .. " invalid .countClass" ) return end
 
-        if not asNum( spawn.difficultyCost, "difficultyCost" ) then yapErr( spawnSet, ".spawns " .. name .. " invalid .difficultyCost" ) return end
-        if not asNum( spawn.minCount, "minCount" ) then yapErr( spawnSet, ".spawns " .. name .. " invalid .minCount" ) return end
-        if not asNum( spawn.maxCount, "maxCount" ) then yapErr( spawnSet, ".spawns " .. name .. " invalid .maxCount" ) return end
+        if not asParsed( spawn.difficultyCost, "difficultyCost", spawnDefaults ) then yapErr( spawnSet, ".spawns " .. name .. " invalid .difficultyCost" ) return end
+        if not asParsed( spawn.minCount, "minCount", spawnDefaults ) then yapErr( spawnSet, ".spawns " .. name .. " invalid .minCount" ) return end
+        if not asParsed( spawn.maxCount, "maxCount", spawnDefaults ) then yapErr( spawnSet, ".spawns " .. name .. " invalid .maxCount" ) return end
 
     end
 
     return true
+end
+
+local function parse( tbl, name, defaultsTbl, spawnSet )
+    local toParse = tbl[name]
+    local parsed = asParsed( toParse, name, defaultsTbl )
+
+    print( spawnSet.name, name, parsed )
+
+    if isfunction( parsed ) then
+        -- it accepts functions!!!!!!
+        --[[ eg,
+            .maxCount = function( spawnSet )
+                return spawnset.maxSpawnCount
+            end,
+        --]]
+        local noErrors, returned = xpcall( toParse, errorCatchingMitt, spawnSet )
+        if noErrors == false then
+            yapErr( spawnSet, " ." .. name .. " function errored! " )
+            return
+
+        end
+
+        returned = asParsed( returned, name, defaultsTbl ) -- parse the result too...
+        if not returned then yapErr( spawnSet, " invalid return from ." .. name ) return end
+
+        tbl[name] = returned
+
+    elseif isnumber( parsed ) or isstring( parsed ) then
+        tbl[name] = parsed
+
+    end
+end
+
+-- set spawnset
+function GM:SetSpawnSet( setName )
+    local asRegistered = self.RegisteredSpawnSets[setName]
+    if not asRegistered then ErrorNoHaltWithStack( "GLEE: Tried to enable invalid spawnset " .. setName ) return end
+
+    local spawnSet = table.Copy( asRegistered )
+
+    local setParsed = {}
+    for name, _ in pairs( spawnSet ) do
+        parse( spawnSet, name, setDefaults, spawnSet )
+        setParsed[name] = true
+
+    end
+    for name, _ in pairs( setDefaults ) do -- get the nil defaults
+        if setParsed[name] then continue end
+        parse( spawnSet, name, setDefaults, spawnSet )
+
+    end
+
+    for _, currSpawn in ipairs( spawnSet.spawns ) do
+        local spawnParsed = {}
+        for name, _ in pairs( currSpawn ) do
+            parse( currSpawn, name, spawnDefaults, spawnSet )
+            spawnParsed[name] = true
+
+        end
+        for name, _ in pairs( spawnDefaults ) do -- get the nil defaults
+            if spawnParsed[name] then continue end
+            parse( currSpawn, name, spawnDefaults, spawnSet )
+
+        end
+    end
+
+    spawnSet.defaultRadius = spawnSet.maxSpawnDist * 0.9
+
+    self.CurrSpawnSetName = setName
+    self.CurrSpawnSet = spawnSet
+
+    SetGlobalString( "GLEE_SpawnSetName", setName )
+    SetGlobalString( "GLEE_SpawnSetPrettyName", spawnSet.prettyName )
+
+    hook.Run( "glee_post_set_spawnset", setName, spawnSet )
+
 end
 
 function GM:RegisterSpawnSet( spawnSet )
@@ -127,37 +219,6 @@ end
 
 function GM:GetSpawnSets()
     return self.RegisteredSpawnSets
-
-end
-
--- set spawnset
-function GM:SetSpawnSet( setName )
-    local asRegistered = self.RegisteredSpawnSets[setName]
-    if not asRegistered then ErrorNoHaltWithStack( "GLEE: Tried to enable invalid spawnset " .. setName ) return end
-
-    local spawnSet = table.Copy( asRegistered )
-
-    for name, _ in pairs( spawnSet ) do
-        parse( spawnSet, name )
-
-    end
-
-    for _, currSpawn in ipairs( spawnSet.spawns ) do
-        for name, _ in pairs( currSpawn ) do
-            parse( currSpawn, name )
-
-        end
-    end
-
-    spawnSet.defaultRadius = spawnSet.maxSpawnDist * 0.9
-
-    self.CurrSpawnSetName = setName
-    self.CurrSpawnSet = spawnSet
-
-    SetGlobalString( "GLEE_SpawnSetName", setName )
-    SetGlobalString( "GLEE_SpawnSetPrettyName", spawnSet.prettyName )
-
-    hook.Run( "glee_post_set_spawnset", setName, spawnSet )
 
 end
 
@@ -241,8 +302,16 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
 
                     end
 
-                    local minutesNeeded = currSpawn.minutesNeeded
-                    if minutesNeeded and minutes < minutesNeeded then
+                    -- for when you dont want this to spawn early
+                    -- default is 100% difficulty at 10 minutes
+                    local difficultyNeeded = currSpawn.difficultyNeeded
+                    if difficultyNeeded and difficulty < difficultyNeeded then
+                        continue
+
+                    end
+                    -- for when you want it to stop spawning after some time
+                    local difficultyStopAfter = currSpawn.difficultyStopAfter
+                    if difficultyStopAfter and difficulty > difficultyStopAfter then
                         continue
 
                     end
@@ -250,14 +319,21 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
                     local countClass = currSpawn.countClass or currSpawn.class
                     local count = classCounts[countClass]
                     if not count then
-                        count = #ents.FindByClass( countClass )
+                        count = #ents.FindByClass( countClass ) -- cache it
                         debugPrint( count, countClass )
                         classCounts[countClass] = count
 
                     end
 
-                    local good = currSpawn.difficultyCost <= budget or count < currSpawn.minCount
-                    good = good and count < currSpawn.maxCount
+                    local good = currSpawn.difficultyCost <= budget
+                    if currSpawn.minCount > -1 then -- minCount bypasses budget
+                        good = good or count < currSpawn.minCount
+
+                    end
+                    if currSpawn.maxCount > -1 then
+                        good = good and count < currSpawn.maxCount
+
+                    end
                     if good then
                         addedOne = true
                         budget = budget - currSpawn.difficultyCost
@@ -406,9 +482,7 @@ function GM:getValidHunterPos()
             dynamicTooCloseDist = dynamicTooCloseDist - 100
             spawnSet.dynamicTooCloseDist = math.Clamp( dynamicTooCloseDist, minRadius, spawnSet.maxSpawnDist )
 
-        end
-
-        if not invalid or ( fails > 2000 and not wasTooClose ) then
+        elseif not invalid or ( fails > 2000 and not wasTooClose ) then
             fails = 0
             -- good spawnpoint, spawn here
             --debugoverlay.Cross( spawnPos, 100, 20, color_white, true )
@@ -484,6 +558,13 @@ function GM:SpawnSetThink()
 end
 
 hook.Add( "huntersglee_round_firstsetup", "glee_spawnset_think", function() GAMEMODE:SpawnSetThink() end )
+
+-- let people joining the server have the default glee experience
+hook.Add( "huntersglee_emptyserver", "glee_reset_spawnset", function( wasEmpty )
+    if wasEmpty then return end -- only run this if there were people online, and are no longer people online
+    RunConsoleCommand( "huntersglee_spawnset", defaultSpawnSetName )
+
+end )
 
 -----------------------------------------
 -- TEMPLATE IN

@@ -48,6 +48,8 @@ local defaultSpawnSet = {
     startingSpawnCount = "default",
     maxSpawnCount = "default", -- hard cap on count
     maxSpawnDist = "default",
+    roundEndSound = "default",
+    roundStartSound = "default",
     spawns = {
         {
             hardRandomChance = nil,
@@ -69,8 +71,7 @@ local defaultSpawnSet = {
             spawnType = "hunter",
             difficultyCost = { 15, 25 },
             countClass = "terminator_nextbot_snail*", -- class COUNTED, uses findbyclass
-            minutesNeeded = { 4, 5 },
-            minCount = { 0 }, -- will ALWAYS maintain this count
+            minutesNeeded = { 4, 6 },
             maxCount = { 10 }, -- will never exceed this count, uses findbycount
             postSpawnedFuncs = { postSpawnedOvercharge }, -- this can be nil
         },

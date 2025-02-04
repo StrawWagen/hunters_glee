@@ -52,6 +52,7 @@ include( "modules/sv_seeding_rewarder.lua" )
 include( "modules/sv_skullmanager.lua" )
 include( "modules/sv_hunterspawner.lua" )
 include( "modules/spawnset/sv_spawnsetvote.lua" )
+include( "modules/spawnset/sv_spawnsetsounds.lua" )
 include( "modules/firsttimeplayers/sv_firsttimeplayers.lua" )
 
 include( "modules/battery/sv_battery.lua" )
@@ -684,27 +685,34 @@ function GM:removeBlockers() -- mess up locked doors on door heavy maps
     end
 end
 
--- nukes all the hunters if there's nobody to hunt
-function GM:handleEmptyServer( currState, players )
-    local empt = #players == 0
-    if empt and ( currState == self.ROUND_ACTIVE or currState == self.ROUND_LIMBO ) then
-        -- bots are expensive, save cpu power pls
-        print( "Empty server!\nRemoving bots..." )
-        self:roundEnd()
-        self:beginSetup()
-        return true
 
-    elseif empt and game.IsDedicated() and not self.waitingOnNavoptimizerGen and navmesh.GetNavAreaCount() <= 0 and NAVOPTIMIZER_tbl and GetConVar( "sv_cheats" ):GetBool() then
-        print( "GLEE: Automatically generating navmesh & optimizing with Navmesh Optimizer" )
-        self:GenerateANavmeshPls()
+do
+    local wasEmpty = true
 
-    elseif empt then -- empty
-        hook.Run( "huntersglee_emptyserver" )
-        return true
+    -- nukes all the hunters if there's nobody to hunt
+    function GM:handleEmptyServer( currState, players )
+        local empt = #players == 0
+        if empt and ( currState == self.ROUND_ACTIVE or currState == self.ROUND_LIMBO ) then
+            -- bots are expensive, save cpu power pls
+            print( "Empty server!\nRemoving bots..." )
+            self:roundEnd()
+            self:beginSetup()
+            return true
 
+        elseif empt and game.IsDedicated() and not self.waitingOnNavoptimizerGen and navmesh.GetNavAreaCount() <= 0 and NAVOPTIMIZER_tbl and GetConVar( "sv_cheats" ):GetBool() then
+            print( "GLEE: Automatically generating navmesh & optimizing with Navmesh Optimizer" )
+            self:GenerateANavmeshPls()
+
+        elseif empt then -- empty
+            hook.Run( "huntersglee_emptyserver", wasEmpty )
+            wasEmpty = true
+            return true
+
+        end
+        wasEmpty = false
+
+        return nil
     end
-    return nil
-
 end
 
 -- nukes all the hunters if navmesh is generating

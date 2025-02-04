@@ -9,7 +9,7 @@ local set = {
     name = "nextbot_brainrot", -- unique name
     prettyName = "PNG Nextbot Brainrot",
     description = "Sanic, and/or Obunga.\nObjectively shallower gameplay.\nYou happy now?",
-    difficultyPerMin = { 500 / 10, 1000 / 10 }, -- difficulty per minute
+    difficultyPerMin = { 100 / 10, 1000 / 10 }, -- difficulty per minute
     waveInterval = { 30, 90 }, -- time between spawn waves
     diffBumpWhenWaveKilled = "default", -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
     startingBudget = "default", -- so budget isnt 0
@@ -17,6 +17,8 @@ local set = {
     startingSpawnCount = { 0, 2 },
     maxSpawnCount = 50, -- hard cap on count
     maxSpawnDist = "default",
+    roundEndSound = "default",
+    roundStartSound = "default",
     resourcesAdded = {},
     spawns = {},
 }
@@ -41,7 +43,6 @@ if hasSanic then
         spawnType = "hunter",
         difficultyCost = { 10 },
         countClass = "npc_sanic",
-        minCount = { 0 },
         maxCount = { 50 },
         postSpawnedFuncs = { randomizeVar }, -- this can be nil
     }
@@ -69,7 +70,6 @@ if hasObunga then
         spawnType = "hunter",
         difficultyCost = { 15 },
         countClass = "npc_obunga",
-        minCount = { 0 },
         maxCount = { 50 },
         postSpawnedFuncs = { randomizeVar }, -- this can be nil
     }

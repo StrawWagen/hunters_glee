@@ -261,6 +261,8 @@ local function soulGoInto( soul, goInto )
     soulGotoPos( soul, toPos, goInto:GetAngles() )
 
     local obj = soul:GetPhysicsObject()
+    if not IsValid( obj ) then return end
+
     obj:EnableCollisions( false )
 
 end

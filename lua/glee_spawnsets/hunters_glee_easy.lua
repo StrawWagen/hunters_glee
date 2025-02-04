@@ -9,8 +9,9 @@ local set = {
     spawnCountPerDifficulty = "default", -- max of ten at 10 minutes
     startingSpawnCount = 1,
     maxSpawnCount = 5, -- hard cap on count
-    themeSound = "default",
     maxSpawnDist = "default",
+    roundEndSound = "default",
+    roundStartSound = "default",
     spawns = {
         {
             hardRandomChance = nil,
@@ -21,7 +22,6 @@ local set = {
             difficultyCost = { 15, 25 },
             countClass = "terminator_nextbot_snail*", -- class COUNTED, uses findbyclass
             minCount = { 1 }, -- will ALWAYS maintain this count
-            maxCount = { 5 }, -- will never exceed this count, uses findbycount
         },
         {
             hardRandomChance = { 0, 2 }, -- chance this is even checked
@@ -31,8 +31,6 @@ local set = {
             spawnType = "hunter",
             difficultyCost = { 20 },
             countClass = "terminator_nextbot_snail*",
-            minCount = { 2 },
-            maxCount = { 5 },
         }
     }
 }

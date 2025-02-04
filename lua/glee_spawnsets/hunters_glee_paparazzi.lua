@@ -15,6 +15,8 @@ local set = {
     startingSpawnCount = "default",
     maxSpawnCount = { 25 }, -- hard cap on count
     maxSpawnDist = "default",
+    roundEndSound = "default",
+    roundStartSound = "default",
     spawns = {
         {
             hardRandomChance = nil,

@@ -660,3 +660,12 @@ function GM:Bleed( player, extent )
     end
 
 end
+
+function GM:PlaySoundOnEveryPlayer( path, pitch, vol )
+    for _, ply in player.Iterator() do
+        local filterJustThem = RecipientFilter()
+        filterJustThem:AddPlayer( ply )
+        ply:EmitSound( path, 75, pitch, vol, CHAN_STATIC, 0, 0, filterJustThem )
+
+    end
+end
