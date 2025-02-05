@@ -210,6 +210,8 @@ function ENT:Touch( toucher )
             self:Snap( toucherInt )
 
             if self:GetPhysicsObject():IsMotionEnabled() then return end
+            if toucherInt:GetMaxHealth() > terminator_Extras.healthDefault * math.Rand( 2, 5 ) then return end -- STRONG stuf doesnt get beartrapped
+            if toucherInt:GetModelScale() > math.Rand( 1.2, 1.4 ) then return end -- big stuff too
 
             toucherInt.terminatorStucker = self
 

@@ -51,6 +51,7 @@ if SERVER then
         for poolClass, _ in pairs( spawnSet.spawnPool ) do
             if string.find( poolClass, partialClass ) then
                 isIn = true
+                break
 
             end
         end

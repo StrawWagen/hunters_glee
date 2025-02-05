@@ -480,26 +480,34 @@ function GM:TeleportRoomCheck()
 end
 
 
--- sky understanding stuff
+local function areasSurfaceArea( area )
+    return area:GetSizeX() * area:GetSizeY()
+
+end
+
+-- navmesh understanding stuff
 local function reset()
     GAMEMODE.isSkyOnMap = false
     GAMEMODE.areasUnderSky = {}
     GAMEMODE.highestZ = -math.huge
     GAMEMODE.highestAreaZ = -math.huge
+    GAMEMODE.navmeshTotalSurfaceArea = 0
+    GAMEMODE.navmeshUnderSkySurfaceArea = 0
 
 end
-hook.Add( "InitPostEntity", "glee_baselineskydata", reset )
+hook.Add( "InitPostEntity", "glee_baseline_navdata", reset )
 
-hook.Add( "glee_connectedgroups_begin", "glee_resetskydata", reset )
+hook.Add( "glee_connectedgroups_begin", "glee_reset_navdata", reset )
 
 local centerOffset = Vector( 0, 0, 25 )
 
-hook.Add( "glee_connectedgroups_visit", "glee_precacheskydata", function( area )
+hook.Add( "glee_connectedgroups_visit", "glee_precache_skydata", function( area )
     local areasCenter = area:GetCenter()
     local underSky, hitPos = GAMEMODE:IsUnderSky( areasCenter + centerOffset )
     if underSky then
         GAMEMODE.isSkyOnMap = true
         GAMEMODE.areasUnderSky[ area ] = true
+        GAMEMODE.navmeshUnderSkySurfaceArea = GAMEMODE.navmeshUnderSkySurfaceArea + areasSurfaceArea( area )
 
     end
 
@@ -514,4 +522,10 @@ hook.Add( "glee_connectedgroups_visit", "glee_precacheskydata", function( area )
         GAMEMODE.highestAreaZ = currAreaZ
 
     end
+end )
+
+hook.Add( "glee_connectedgroups_visit", "glee_precache_navsurfacearea", function( area )
+    local areasSurface = areasSurfaceArea( area )
+    GAMEMODE.navmeshTotalSurfaceArea = GAMEMODE.navmeshTotalSurfaceArea + areasSurface
+
 end )

@@ -21,7 +21,6 @@ function spawnSetVote:BeginVote( duration, maxOptions )
     spawnSetVote.currVote = currVote
 
     currVote.voteEnd = CurTime() + duration
-
     currVote.votes = {}
 
     local options = {}
@@ -35,10 +34,14 @@ function spawnSetVote:BeginVote( duration, maxOptions )
     local toAdd = { ["hunters_glee"] = toBrowse["hunters_glee"] } -- always include default
     toBrowse["hunters_glee"] = nil
 
-    for _ = 1, maxOptions - 1 do
+    while table.Count( toBrowse ) > 0 do
+        if ( #toAdd + 1 ) >= maxOptions then break end
+
         local option, key = table.Random( toBrowse )
-        table.insert( toAdd, option )
         toBrowse[key] = nil
+
+        if isnumber( option.chanceToBeVotable ) and option.chanceToBeVotable > math.random( 0, 100 ) then continue end
+        table.insert( toAdd, option )
 
     end
 

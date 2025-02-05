@@ -21,6 +21,7 @@ local set = {
     roundStartSound = "default",
     resourcesAdded = {},
     spawns = {},
+    chanceToBeVotable = 15,
 }
 
 if hasSanic then

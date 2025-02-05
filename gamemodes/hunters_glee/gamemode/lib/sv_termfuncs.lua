@@ -603,15 +603,16 @@ function GM:allPlayerShootPositions()
 end
 
 function GM:getNearestHunter( pos, hunters )
-    hunters = hunters or table.Copy( GAMEMODE.glee_Hunters )
-    table.sort( hunters, function( a, b ) -- sort HUNTERS by distance to pos
+    hunters = hunters or GAMEMODE.glee_Hunters
+    local huntersCopy = table.Copy( hunters )
+    table.sort( huntersCopy, function( a, b ) -- sort HUNTERS by distance to pos
         if not IsValid( a ) then return false end
         if not IsValid( b ) then return true end
         local ADist = a:EyePos():DistToSqr( pos )
         local BDist = b:EyePos():DistToSqr( pos )
         return ADist < BDist
     end )
-    return hunters[1]
+    return huntersCopy[1], huntersCopy
 end
 
 function GM:aRandomHunter( hunters )

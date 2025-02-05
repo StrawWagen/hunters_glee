@@ -43,7 +43,7 @@ local setDefaults = {
     spawnCountPerDifficulty = { 0.08, 0.1 },
     startingSpawnCount = { 1.8, 2 },
     maxSpawnCount = 10,
-    maxSpawnDist = { 5500, 6500 },
+    maxSpawnDist = { 6500, 8500 },
     roundEndSound = "53937_meutecee_trumpethit07.wav",
     roundStartSound = "", -- no sound for glee
 }
@@ -190,7 +190,8 @@ function GM:SetSpawnSet( setName )
         end
     end
 
-    spawnSet.defaultRadius = spawnSet.maxSpawnDist * 0.9
+    spawnSet.dynamicTooCloseDist = spawnSet.maxSpawnDist * 0.5
+    spawnSet.dynamicTooFarDist = spawnSet.maxSpawnDist
 
     self.CurrSpawnSetName = setName
     self.CurrSpawnSet = spawnSet
@@ -260,106 +261,111 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
 
     end
 
-    if GAMEMODE.nextSpawnWave < cur and not GAMEMODE.currentSpawnWave then
-        local roundTime = GAMEMODE:getRemaining( GAMEMODE.termHunt_roundBegunTime, cur )
-        local minutes = roundTime / minute
+    if GAMEMODE.nextSpawnWave > cur or GAMEMODE.currentSpawnWave then return end
 
-        local diffPerMin = spawnSet.difficultyPerMin
-        local difficulty = diffPerMin * minutes
-        difficulty = difficulty + GAMEMODE.deadWaveDiffBump
+    local roundTime = GAMEMODE:getRemaining( GAMEMODE.termHunt_roundBegunTime, cur )
+    local minutes = roundTime / minute
 
-        local countWanted
-        local overrideCount = overrideCountVar:GetInt()
-        if overrideCount > 0 then
-            countWanted = overrideCount
+    local diffPerMin = spawnSet.difficultyPerMin
+    local difficulty = diffPerMin * minutes
+    difficulty = difficulty + GAMEMODE.deadWaveDiffBump
 
-        else
-            countWanted = spawnSet.spawnCountPerDifficulty * difficulty
-            countWanted = countWanted + spawnSet.startingSpawnCount
-            countWanted = math.min( countWanted, spawnSet.maxSpawnCount )
-            countWanted = math.floor( countWanted )
+    local countWanted
+    local overrideCount = overrideCountVar:GetInt()
+    if overrideCount > 0 then
+        countWanted = overrideCount
 
-        end
+    else
+        countWanted = spawnSet.spawnCountPerDifficulty * difficulty
+        countWanted = countWanted + spawnSet.startingSpawnCount
+        countWanted = math.min( countWanted, spawnSet.maxSpawnCount )
+        countWanted = math.floor( countWanted )
 
-        if aliveCount < countWanted then
+    end
 
-            local budget = difficulty + spawnSet.startingBudget
-            local classCounts = {}
-            local pickedSpawns = {}
-            local spawns = spawnSet.spawns
+    if aliveCount < countWanted then
+        local budget = difficulty + spawnSet.startingBudget
+        local classCounts = {}
+        local pickedSpawns = {}
+        local spawns = spawnSet.spawns
 
-            while budget > 0 do
-                addedOne = nil
-                for _, currSpawn in SortedPairsByMemberValue( spawns, "difficultyCost", true ) do -- go from most to least cost
-                    if ( aliveCount + #pickedSpawns ) >= countWanted then break end
+        while budget > 0 do
+            local addedOne
+            local freebie
 
-                    local hardRandomChance = currSpawn.hardRandomChance
-                    if hardRandomChance and math.Rand( 0, 100 ) > hardRandomChance then
-                        continue
+            for _, currSpawn in SortedPairsByMemberValue( spawns, "difficultyCost", true ) do -- go from most to least cost
+                if ( aliveCount + #pickedSpawns ) >= countWanted then break end
 
-                    end
+                local hardRandomChance = currSpawn.hardRandomChance
+                if hardRandomChance and math.Rand( 0, 100 ) > hardRandomChance then
+                    continue
 
-                    -- for when you dont want this to spawn early
-                    -- default is 100% difficulty at 10 minutes
-                    local difficultyNeeded = currSpawn.difficultyNeeded
-                    if difficultyNeeded and difficulty < difficultyNeeded then
-                        continue
+                end
 
-                    end
-                    -- for when you want it to stop spawning after some time
-                    local difficultyStopAfter = currSpawn.difficultyStopAfter
-                    if difficultyStopAfter and difficulty > difficultyStopAfter then
-                        continue
+                -- for when you dont want this to spawn early
+                -- default is 100% difficulty at 10 minutes
+                local difficultyNeeded = currSpawn.difficultyNeeded
+                if difficultyNeeded and difficulty < difficultyNeeded then
+                    continue
 
-                    end
+                end
+                -- for when you want it to stop spawning after some time
+                local difficultyStopAfter = currSpawn.difficultyStopAfter
+                if difficultyStopAfter and difficulty > difficultyStopAfter then
+                    continue
 
-                    local countClass = currSpawn.countClass or currSpawn.class
-                    local count = classCounts[countClass]
-                    if not count then
-                        count = #ents.FindByClass( countClass ) -- cache it
-                        debugPrint( count, countClass )
-                        classCounts[countClass] = count
+                end
 
-                    end
+                local countClass = currSpawn.countClass or currSpawn.class
+                local count = classCounts[countClass]
+                if not count then
+                    count = #ents.FindByClass( countClass ) -- cache it
+                    debugPrint( count, countClass )
+                    classCounts[countClass] = count
 
-                    local good = currSpawn.difficultyCost <= budget
-                    if currSpawn.minCount > -1 then -- minCount bypasses budget
-                        good = good or count < currSpawn.minCount
+                end
 
-                    end
-                    if currSpawn.maxCount > -1 then
-                        good = good and count < currSpawn.maxCount
+                local good = currSpawn.difficultyCost <= budget
+                if currSpawn.minCount > -1 and not good then -- minCount bypasses budget
+                    good = count < currSpawn.minCount
+                    freebie = true
 
-                    end
-                    if good then
-                        addedOne = true
+                end
+                if currSpawn.maxCount > -1 then
+                    good = good and count < currSpawn.maxCount
+
+                end
+                if good then
+                    addedOne = true
+                    if not freebie then
                         budget = budget - currSpawn.difficultyCost
-                        currSpawn.minutesWhenAdded = minutes
-                        table.insert( pickedSpawns, currSpawn )
-                        classCounts[countClass] = count + 1
-                        debugPrint( "added", currSpawn.prettyName )
-                        break
 
                     end
-                end
-                if not addedOne then break end
-
-            end
-            if #pickedSpawns >= 1 then
-                if not GAMEMODE.currentSpawnWave then
-                    GAMEMODE.currentSpawnWave = {}
-                    hook.Add( "glee_sv_validgmthink_active", "glee_spawnawave", function() GAMEMODE:SpawnWaveSpawnIn() end )
+                    currSpawn.minutesWhenAdded = minutes
+                    table.insert( pickedSpawns, currSpawn )
+                    classCounts[countClass] = count + 1
+                    debugPrint( "added", currSpawn.prettyName )
+                    break
 
                 end
-                table.Add( GAMEMODE.currentSpawnWave, pickedSpawns )
-                GAMEMODE.nextSpawnWave = cur + spawnSet.waveInterval
-
             end
-        else
-            -- dont spam checks
-            GAMEMODE.nextSpawnWave = cur + ( spawnSet.waveInterval / 20 )
+            if not addedOne then break end
 
         end
+        if #pickedSpawns >= 1 then
+            if not GAMEMODE.currentSpawnWave then
+                GAMEMODE.currentSpawnWave = {}
+                hook.Add( "glee_sv_validgmthink_active", "glee_spawnawave", function() GAMEMODE:SpawnWaveSpawnIn() end )
+
+            end
+            table.Add( GAMEMODE.currentSpawnWave, pickedSpawns )
+            GAMEMODE.nextSpawnWave = cur + spawnSet.waveInterval
+
+        end
+    else
+        -- dont spam checks
+        GAMEMODE.nextSpawnWave = cur + ( spawnSet.waveInterval / 20 )
+
     end
 end )
 
@@ -406,6 +412,8 @@ hook.Add( "PostCleanupMap", "glee_resethunterspawnerstats", function()
 
 end )
 
+local minRadius = 500 -- hardcoded num, if you spawn closer than this, it feels unfair
+
 function GM:SpawnHunter( class )
     local spawnPos, valid = self:getValidHunterPos()
     if not valid then return end
@@ -417,21 +425,74 @@ function GM:SpawnHunter( class )
     hunter:Spawn()
     table.insert( self.glee_Hunters, hunter )
 
-    print( hunter ) -- i like this print, you cannot make me remove it 
+    print( hunter ) -- i like this print, you cannot make me remove it
 
+    if hunter.IsFodder or not hunter.TerminatorNextBot then -- prune fodder hunters if they're being boring
+        hunter.glee_FodderNoEnemyCount = math.random( -30, -15 )
+
+        local timerName = "glee_fodderhunter_removestale_" .. hunter:GetCreationID()
+        timer.Create( timerName, math.Rand( 0.5, 2 ), 0, function()
+            if not IsValid( hunter ) then timer.Remove( timerName ) return end
+            local maxHp = hunter:GetMaxHealth()
+            local enemy = hunter:GetEnemy()
+            local oldCount = hunter.glee_FodderNoEnemyCount
+            if IsValid( enemy ) then
+                hunter.glee_FodderNoEnemyCount = math.min( 0, oldCount )
+
+            elseif oldCount >= maxHp * 0.35 then -- booring
+                local _, spawnSet = GAMEMODE:GetSpawnSet()
+                if spawnSet then -- make the spawner spawn npcs closer if fodder hunters aren't finding enemies
+                    GAMEMODE:AdjustDynamicTooCloseCutoff( -maxHp, spawnSet )
+                    GAMEMODE:AdjustDynamicTooFarCutoff( -maxHp * 1.5, spawnSet )
+
+                end
+                SafeRemoveEntity( hunter )
+
+            else
+                hunter.glee_FodderNoEnemyCount = oldCount + 1
+
+            end
+        end )
+    end
     return hunter
 
 end
 
-local minRadius = 500
 local fails = 0
+
+-- OVERCOMPLICATED!!!!!!
+function GM:AdjustDynamicTooCloseCutoff( adjust, spawnSet )
+    if not spawnSet then
+        _, spawnSet = self:GetSpawnSet()
+
+    end
+    local new = spawnSet.dynamicTooCloseDist + adjust
+    local min = minRadius
+    local max = spawnSet.maxSpawnDist
+    spawnSet.dynamicTooCloseDist = math.Clamp( new, min, max )
+
+end
+
+function GM:AdjustDynamicTooFarCutoff( adjust, spawnSet )
+    if not spawnSet then
+        _, spawnSet = self:GetSpawnSet()
+
+    end
+    local new = spawnSet.dynamicTooFarDist + adjust
+    local min = spawnSet.dynamicTooCloseDist + 1000
+    local max = math.max( spawnSet.maxSpawnDist, spawnSet.dynamicTooCloseDist + 2000 )
+    spawnSet.dynamicTooFarDist = math.Clamp( new, min, max )
+
+end
 
 -- spawn a hunter as far away as possible from every player by inching a distance check around
 -- made to be really random/overcomplicated so you never really know where they'll spawn from
+-- RAAAGH WHY DID I MAKE THIS SO OVERCOMPLCATED
 function GM:getValidHunterPos()
     local _, spawnSet = self:GetSpawnSet()
     local dynamicTooCloseFailCounts = spawnSet.dynamicTooCloseFailCounts or -2
-    local dynamicTooCloseDist = spawnSet.dynamicTooCloseDist or spawnSet.defaultRadius
+    local dynamicTooCloseDist = spawnSet.dynamicTooCloseDist
+    local dynamicTooFarDist = spawnSet.dynamicTooFarDist
 
     if not self.biggestNavmeshGroups then return nil, nil end
 
@@ -450,39 +511,52 @@ function GM:getValidHunterPos()
         if not isvector( spawnPos ) then continue end
         spawnPos = spawnPos + Vector( 0,0,20 )
 
-        local checkPos = spawnPos + Vector( 0,0,50 )
-        local invalid = nil
-        local wasTooClose = nil
+        if randomArea:IsUnderwater() then
+            -- make it a bit closer
+            GAMEMODE:AdjustDynamicTooCloseCutoff( -150, spawnSet ) -- make it get closer
+            GAMEMODE:AdjustDynamicTooFarCutoff( -50, spawnSet ) -- closer here too
+            continue
+
+        end
+
+        local checkPos = spawnPos + Vector( 0, 0, 50 )
+        local visibleToAPly
+        local tooClose
+        local tooFar
 
         for _, pos in ipairs( playerShootPositions ) do
             local visible, visResult
             local hitCloseBy
-            if not invalid then
+            if not visibleToAPly then
                 visible, visResult = terminator_Extras.PosCanSee( pos, checkPos )
                 hitCloseBy = visResult.HitPos:DistToSqr( checkPos ) < 350^2
 
             end
             if visible or hitCloseBy then
-                invalid = true
+                visibleToAPly = true
 
-            -- always check for this
-            elseif pos:DistToSqr( checkPos ) < dynamicTooCloseDist^2 then -- dist check!
-                invalid = true
-                wasTooClose = true
-                break
+            end
+
+            local distSqr = pos:DistToSqr( checkPos )
+            if distSqr < dynamicTooCloseDist^2 then -- dist check!
+                tooClose = true
+                break -- only break here so the justSpawnSomething doesnt spawn stuff next to people!!!!!
+
+            elseif distSqr > dynamicTooFarDist^2 then
+                tooFar = true
 
             end
         end
 
-        if randomArea:IsUnderwater() then
-            -- make it a bit closer
-            dynamicTooCloseDist = dynamicTooCloseDist - 100
-            spawnSet.dynamicTooCloseDist = math.Clamp( dynamicTooCloseDist, minRadius, spawnSet.maxSpawnDist )
+        local goodConventional = not visibleToAPly and not tooClose and not tooFar
+        local justSpawnSomething = fails > 2000 and not tooClose
 
-        elseif not invalid or ( fails > 2000 and not wasTooClose ) then
-            fails = 0
+        if goodConventional or justSpawnSomething then
+            GAMEMODE:AdjustDynamicTooCloseCutoff( 50, spawnSet ) -- make it get further
+            GAMEMODE:AdjustDynamicTooFarCutoff( 100, spawnSet ) -- let it get further next time
+
             -- good spawnpoint, spawn here
-            --debugoverlay.Cross( spawnPos, 100, 20, color_white, true )
+            fails = 0
             spawnSet.dynamicTooCloseFailCounts = -2
             return spawnPos, true
 
@@ -490,12 +564,9 @@ function GM:getValidHunterPos()
 
         fails = fails + 1
 
-        -- random picked area was too close, decrease cutoff radius
-        if wasTooClose then
-            --debugoverlay.Cross( spawnPos, 10, 20, Color( 255,0,0 ), true )
+        if tooClose then
             spawnSet.dynamicTooCloseFailCounts = dynamicTooCloseFailCounts + 1
-            dynamicTooCloseDist = dynamicTooCloseDist + ( -dynamicTooCloseFailCounts * 25 )
-            spawnSet.dynamicTooCloseDist = math.Clamp( dynamicTooCloseDist, minRadius, spawnSet.maxSpawnDist )
+            GAMEMODE:AdjustDynamicTooCloseCutoff( -( dynamicTooCloseFailCounts * 5 ), spawnSet ) -- let it get closer next time
 
         end
     end
@@ -562,6 +633,7 @@ hook.Add( "huntersglee_emptyserver", "glee_reset_spawnset", function( wasEmpty )
     local name = GAMEMODE:GetSpawnSet()
     if name == defaultSpawnSetName then return end
     RunConsoleCommand( "huntersglee_spawnset", defaultSpawnSetName )
+    print( "GLEE: reset spawnset on empty server" )
 
 end )
 

@@ -43,6 +43,7 @@ function ENT:rareCreationOptions()
         { class = "termhunt_weapon_beartrap" },
         { class = "weapon_shotgun" },
         { class = "weapon_rpg" },
+        { class = "termhunt_skull_pickup" },
         { class = "weapon_pistol" }
 
     }
@@ -85,14 +86,14 @@ function ENT:Initialize()
             item:Spawn()
 
             if item:IsWeapon() and GAMEMODE.GiveWeaponClipsOfAmmo then
-                local clipsToGive = math.Rand( 0.5, 1.5 )
+                local clipsToGive = math.Rand( 0.5, 3 )
                 if math.random( 0, 100 ) < 15 then
                     clipsToGive = math.max( clipsToGive, 1 )
-                    clipsToGive = clipsToGive * math.Rand( 3, 6 )
+                    clipsToGive = clipsToGive * math.Rand( 4, 8 )
 
                 elseif math.random( 0, 100 ) < 50 then
                     clipsToGive = math.max( clipsToGive, 1 )
-                    clipsToGive = clipsToGive * math.Rand( 1, 2 )
+                    clipsToGive = clipsToGive * math.Rand( 1, 4 )
 
                 end
                 clipsToGive = clipsToGive * self.AmmoInsideWeaponsScale

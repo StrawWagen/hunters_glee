@@ -213,7 +213,7 @@ function ENT:Touch( touched )
 
     if self:GetIsTerminatorSkull() then return end
     -- just like in tha movie goyss!!!!
-    if touched.isTerminatorHunterChummy and touched:GetPos():DistToSqr( self:WorldSpaceCenter() ) < closeEnoughToStepOn then
+    if touched.isTerminatorHunterChummy and touched.ReallyHeavy and touched:GetPos():DistToSqr( self:WorldSpaceCenter() ) < closeEnoughToStepOn then
         if self.nextCrushRoll > CurTime() then return end
         self.nextCrushRoll = CurTime() + 10
         if math.random( 1, 100 ) < 75 then return end

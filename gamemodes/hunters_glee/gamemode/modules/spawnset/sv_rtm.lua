@@ -68,7 +68,7 @@ function RTM.GetThreshold()
 end
 
 function RTM.ShouldChange()
-    if GAMEMODE.glee_SpawnSetVote.currVote then return end
+    if GAMEMODE.glee_SpawnSetVote.currVote and GAMEMODE.glee_SpawnSetVote.currVote.voteEnd > CurTime() then return end
 
     local totalVotes = RTM.GetVoteCount()
     local totalPlayers = RTM.GetPlayerCount()
@@ -131,7 +131,7 @@ function RTM.CanVote( ply )
                 RTM.GetThreshold() )
     end
 
-    if GAMEMODE.glee_SpawnSetVote.currVote then
+    if GAMEMODE.glee_SpawnSetVote.currVote and GAMEMODE.glee_SpawnSetVote.currVote.voteEnd > CurTime() then
         return false,
             "There is already a glee mode vote in progress"
     end

@@ -2111,6 +2111,11 @@ if CLIENT then
 
                 randomScale = randomScale + overwhelmingTerror / 18
                 spriteSize = 150 + overwhelmingTerror
+
+                local scaryness = GAMEMODE:GetBotScaryness( me, sensed ) -- makes blobs bigger/smaller when low health, or when enemy is really weak
+                randomScale = randomScale * scaryness
+                spriteSize = spriteSize * scaryness
+
                 if suspicious then
                     sensed.glee_sixthsense_revealed = true
 
@@ -2186,22 +2191,25 @@ local function sixthSensePurchase( purchaser )
             local nextSound = purchaser.glee_nextSixthSenseSpottedSound or 0
             if nextSound > CurTime() then return end
 
+            local scaryness = GAMEMODE:GetBotScaryness( purchaser, term )
+            if scaryness < 0.7 then return end -- not scary
+
             purchaser.glee_nextSixthSenseSpottedSound = CurTime() + 30
 
             local distance = purchaser:GetPos():Distance( term:GetPos() )
 
-            if distance > 800 then
+            if distance > 800 * scaryness then
                 purchaser:EmitSound( "physics/metal/metal_barrel_impact_hard3.wav", 75, 80, 0.6, CHAN_STATIC )
                 purchaser:EmitSound( "ambient/atmosphere/city_truckpass1.wav", 75, 70, 1, CHAN_STATIC )
 
-                GAMEMODE:GivePanic( purchaser, 15 )
+                GAMEMODE:GivePanic( purchaser, 15 * scaryness )
 
                 huntersGlee_Announce( { purchaser }, 5, 10, "Your sixth sense strains... Something is terribly wrong..." )
 
             else
                 purchaser:EmitSound( "physics/wood/wood_plank_impact_hard5.wav", 75, 50, 0.6, CHAN_STATIC )
                 purchaser:EmitSound( "plats/rackstop1.wav", 75, 70, 0.6, CHAN_STATIC )
-                GAMEMODE:GivePanic( purchaser, 40 )
+                GAMEMODE:GivePanic( purchaser, 40 * scaryness )
 
                 huntersGlee_Announce( { purchaser }, 10, 10, "MOVE!" )
 
@@ -2213,24 +2221,27 @@ local function sixthSensePurchase( purchaser )
             if theThingWhoIsEnemy ~= purchaser then return end
             if not theThingWhoIsEnemy.glee_hasSixthSense then shopItemRemove() return end
 
-            local nextSound = theThingWhoIsEnemy.glee_nextSixthSenseSpottedSound or 0
-            if nextSound > CurTime() then -- keep increasing this so that the sound hit isn't spammed during chases
-                theThingWhoIsEnemy.glee_nextSixthSenseSpottedSound = CurTime() + 10
-
-            end
-
             local nextSixthSenseTrackingPanic = theThingWhoIsEnemy.glee_nextSixthSenseTrackingPanic or 0
             if nextSixthSenseTrackingPanic > CurTime() then return end
 
             theThingWhoIsEnemy.glee_nextSixthSenseTrackingPanic = CurTime() + 1
 
             local distance = term:GetPos():Distance( theThingWhoIsEnemy:GetPos() )
+            local scaryness = GAMEMODE:GetBotScaryness( theThingWhoIsEnemy, term )
+
+            if scaryness >= 0.7 then
+                local nextSound = theThingWhoIsEnemy.glee_nextSixthSenseSpottedSound or 0
+                if nextSound > CurTime() then -- keep increasing this so that the sound hit isn't spammed during chases
+                    theThingWhoIsEnemy.glee_nextSixthSenseSpottedSound = CurTime() + 15
+
+                end
+            end
 
             if distance < 500 then
-                GAMEMODE:GivePanic( theThingWhoIsEnemy, 16 )
+                GAMEMODE:GivePanic( theThingWhoIsEnemy, 16 * scaryness )
 
             elseif distance < 1000 or term.IsSeeEnemy then
-                GAMEMODE:GivePanic( theThingWhoIsEnemy, 8 )
+                GAMEMODE:GivePanic( theThingWhoIsEnemy, 8 * scaryness )
 
             end
         end )
@@ -2362,7 +2373,7 @@ local function loadoutPurchase( purchaser )
 
         local wepsAmmo = wep:GetPrimaryAmmoType()
         local amountOfAmmo = wep:GetMaxClip1() or 1
-        amountOfAmmo = amountOfAmmo * 2
+        amountOfAmmo = amountOfAmmo * 4
         purchaser:GiveAmmo( amountOfAmmo, wepsAmmo, true )
 
     end
@@ -3207,7 +3218,7 @@ local defaultItems = {
     },
     [ "guns" ] = {
         name = "Loadout",
-        desc = "Normal guns.\nNot very useful against metal...",
+        desc = "Normal guns.\n& Ammo!\nNot very useful against metal...",
         cost = 45,
         markup = 1.5,
         markupPerPurchase = 0.25,

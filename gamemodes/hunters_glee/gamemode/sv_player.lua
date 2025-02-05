@@ -1,5 +1,6 @@
 local IsValid = IsValid
 local util_IsInWorld = util.IsInWorld
+local math = math
 
 local punishEscaping = CreateConVar( "huntersglee_punish_navmesh_escapers", 1, bit.bor( FCVAR_NOTIFY, FCVAR_ARCHIVE ), "Should the life of players who tread off the navmesh be sapped away?.", 0, 32 )
 
@@ -12,7 +13,8 @@ local restingBPMPermanent = 60 -- needs to match clientside var too
 local distNeededToBeOnArea = 25^2
 local distWayTooFarOffNavmesh = 250^2
 local posCanSeeComplex = terminator_Extras.PosCanSeeComplex
-local defaultHeartAttackBpm = 200
+local defaultHeartAttackBpm = 290
+local bpmStartScreamingLikeCrazy = 200
 
 
 local meta = FindMetaTable( "Player" )
@@ -59,20 +61,21 @@ end
 -- manage the BPM of ppl HERE
 
 function GM:calculateBPM( cur, players )
-    local hasNavmesh = GAMEMODE.hasNavmesh
+    local hasNavmesh = self.hasNavmesh
     local punishEscapingBool = punishEscaping:GetBool()
-    local hunters = table.Copy( GAMEMODE.glee_Hunters )
+    local hunters = self.glee_Hunters
     for _, ply in ipairs( players ) do
         if ply:Health() > 0 then
             local plyPos = ply:GetShootPos()
             local plysMoveType = ply:GetMoveType()
-            local nearestHunter = GAMEMODE:getNearestHunter( plyPos, hunters )
+            local nearestHunter = self:getNearestHunter( plyPos, hunters )
             local nextDistancePosSave = ply.nextDistancePosSave or 0
             local directlyUnderneathArea, distToAreaSqr = ply:GetNavAreaData()
 
             local canSee = nil
             local targetted = nil
             local mentosDist = math.huge
+            local nearestHunterScaryness = 0
 
             -- fun variables
             ply.huntersGleeHunterThatIsTargetingPly = nil
@@ -84,8 +87,11 @@ function GM:calculateBPM( cur, players )
                 ply.huntersGleeNearestHunterToPly = nearestHunter
 
                 -- is player inside mentos shaped volume?????
+                -- means less score if ply is simply above enemy
                 local mentosShapedDistance = nearestHunter:EyePos() - plyPos
                 mentosShapedDistance.z = mentosShapedDistance.z / 2
+
+                nearestHunterScaryness = self:GetBotScaryness( ply, nearestHunter )
 
                 mentosDist = mentosShapedDistance:Length()
                 canSee = nearestHunter.IsSeeEnemy
@@ -97,7 +103,6 @@ function GM:calculateBPM( cur, players )
                 end
                 if canSee then
                     ply.huntersGleeHunterThatCanSeePly = nearestHunter
-
                 end
             end
 
@@ -137,6 +142,7 @@ function GM:calculateBPM( cur, players )
                 local rawScalar = math.abs( mentosDist - 2000 ) / 42
                 local bpmRampup = math.Clamp( rawScalar, 15, 50 )
                 mentosBPM = 10 + bpmRampup
+                mentosBPM = mentosBPM * nearestHunterScaryness
 
             end
 
@@ -144,10 +150,10 @@ function GM:calculateBPM( cur, players )
             local canSeeBPM = 0
 
             if canSee then
-                canSeeBPM = 10
+                canSeeBPM = 10 * nearestHunterScaryness
             end
             if targetted then
-                targettedBPM = 8
+                targettedBPM = 8 * nearestHunterScaryness
             end
 
             -- here's the check that stops free bpm for running in circles
@@ -266,7 +272,7 @@ function GM:calculateBPM( cur, players )
 
             -- if we have panic then bpm matches the panic
             local activitySpikeBPM = ( idealBPM / 2 ) + scaredBpm
-            local panicBpmComponent = math.Clamp( GAMEMODE:GetPanic( ply ), 0, 110 )
+            local panicBpmComponent = math.Clamp( self:GetPanic( ply ), 0, 110 )
             activitySpikeBPM = math.Clamp( activitySpikeBPM, panicBpmComponent, math.huge )
 
             -- start out with historic bpm
@@ -287,7 +293,7 @@ function GM:calculateBPM( cur, players )
 
                     elseif fallingForever then
                         added = 8
-                        GAMEMODE:GivePanic( ply, 25 )
+                        self:GivePanic( ply, 25 )
 
                     end
                     ply.historicBPMDecrease = BPMDecrease + added
@@ -296,7 +302,7 @@ function GM:calculateBPM( cur, players )
                     BPM = math.Round( BPM )
 
                     if BPM < restingBPMPermanent then
-                        GAMEMODE:GivePanic( ply, 3 )
+                        self:GivePanic( ply, 3 )
 
                     end
                     if BPM < restingBPMPermanent and BPMDecrease > restingBPMPermanent * 2 then
@@ -315,7 +321,7 @@ function GM:calculateBPM( cur, players )
                     end
                 end
                 -- simple fix!
-                if damaged and GAMEMODE:IsUnderDisplacementExtensive( plyPos ) then
+                if damaged and self:IsUnderDisplacementExtensive( plyPos ) then
                     ply:BeginUnstuck()
 
                 end
@@ -336,7 +342,7 @@ function GM:calculateBPM( cur, players )
 
             local heartAttackScore = ply.glee_HeartAttackScore or 0
             if heartAttackScore > 0 then
-                GAMEMODE:DoHeartAttackThink( ply )
+                self:DoHeartAttackThink( ply )
 
             end
 
@@ -479,6 +485,10 @@ hook.Add( "huntersglee_heartbeat_beat", "glee_heartattack_think", function( ply,
         added = added / 4
         local oldScore = ply.glee_HeartAttackScore or 0
         ply.glee_HeartAttackScore = oldScore + added
+        GAMEMODE:GivePanic( ply, ply.glee_HeartAttackScore )
+
+    elseif BPM > bpmStartScreamingLikeCrazy then
+        GAMEMODE:GivePanic( ply, 5 )
 
     end
 end )

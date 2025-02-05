@@ -1,3 +1,45 @@
+
+local healthDefault = terminator_Extras.healthDefault
+hook.Add( "InitPostEntity", "glee_sv_player_cache_healthdefault", function()
+    healthDefault = terminator_Extras.healthDefault
+
+end )
+
+function GM:GetBotScaryness( ply, bot ) -- AAH
+    local minScaryness = 0.15
+    local plysHealth = ply:Health()
+    if plysHealth <= 50 then
+        minScaryness = 0.35
+
+    elseif plysHealth <= 35 then
+        minScaryness = 0.75
+
+    elseif plysHealth <= 15 then
+        minScaryness = 1.15
+
+    elseif plysHealth <= 5 then
+        minScaryness = 1.5
+
+    end
+
+    local velLeng = bot:GetVelocity():Length()
+    local scaryNum = bot:GetMaxHealth() + ( velLeng / 2 ) -- fast things are scary!
+
+    local scaryness = scaryNum / healthDefault
+
+    if scaryness > 1.25 then -- let scaryness go crazy but not too crazy
+        scaryness = scaryness - 1
+        scaryness = scaryness / 6
+        scaryness = scaryness + 1
+
+    end
+
+    scaryness = math.Clamp( scaryness, minScaryness, 2.5 ) -- clamp with the mins after the above
+
+    return scaryness
+
+end
+
 local meta = FindMetaTable( "Player" )
 
 function meta:GetScore()

@@ -243,7 +243,7 @@ function SWEP:Think()
             owner:EmitSound( DenySound, 75, 80 )
 
         else
-            local progress = generic_WaitForProgressBar( owner, "glee_resurrector", 0.1, 1.5, nil )
+            local progress = generic_WaitForProgressBar( owner, "glee_resurrector", 0.1, 2, nil )
             if progress >= 100 then
                 generic_KillProgressBar( owner, "glee_resurrector" )
                 self:ResurrectPly( ent )

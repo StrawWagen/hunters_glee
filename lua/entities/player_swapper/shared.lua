@@ -165,12 +165,23 @@ function ENT:GetFurthestTerminator()
     local furthestDistance = 0
     local myPos = self:GetPos()
 
+    local wasOneWithGoodHealth
+
     for _, thing in ipairs( ents.GetAll() ) do
-        if thing.isTerminatorHunterBased and thing.isTerminatorHunterChummy then
+        if thing.TerminatorNextBot then
             local distance = thing:GetPos():DistToSqr( myPos )
-            if distance > furthestDistance then
+            local hasGoodHealth = thing:GetMaxHealth() >= terminator_Extras.healthDefault
+
+            local better = distance > furthestDistance
+            if wasOneWithGoodHealth and not hasGoodHealth then -- invert STRONG enemies PLS
+                better = false
+
+            end
+            if better then
                 furthestTerminator = thing
                 furthestDistance = distance
+                wasOneWithGoodHealth = hasGoodHealth
+
             end
         end
     end
@@ -198,7 +209,14 @@ function ENT:SwapPlayerAndTerminator( player, terminator )
     util.Effect( "eff_huntersglee_dicebeam", beam, true )
 
     player:TeleportTo( terminatorPos )
-    terminator:SetPos( playerPos )
+
+    if terminator.SetPosNoTeleport then
+        terminator:SetPosNoTeleport( playerPos )
+
+    else
+        terminator:SetPos( playerPos )
+
+    end
 
     player:unstuckFullHandle()
 
