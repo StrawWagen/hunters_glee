@@ -57,7 +57,6 @@ local function asParsed( toParse, name, defaultsTbl )
     local default = defaultsTbl[name]
     if default then
         if not toParse then -- fallback,
-            print( name, default )
             toParse = default
 
         elseif isstring( toParse ) and toParse == "default" then -- explicit default
@@ -132,8 +131,6 @@ end
 local function parse( tbl, name, defaultsTbl, spawnSet )
     local toParse = tbl[name]
     local parsed = asParsed( toParse, name, defaultsTbl )
-
-    print( spawnSet.name, name, parsed )
 
     if isfunction( parsed ) then
         -- it accepts functions!!!!!!
