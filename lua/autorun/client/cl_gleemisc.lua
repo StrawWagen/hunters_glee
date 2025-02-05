@@ -44,32 +44,36 @@ function terminator_Extras.easyClosePanel( pnl, callFirst )
         end
         -- bail if they open any menu, or press use
         if input_IsKeyDown( KEY_ESCAPE ) then ShutDownPanel( self ) return end
-        if input_IsKeyDown( clientsUseKey ) then
-            if not pnl.keyWasDown[clientsUseKey] then
-                ShutDownPanel( self )
-                return
+        if clientsUseKey then
+            if input_IsKeyDown( clientsUseKey ) then
+                if not pnl.keyWasDown[clientsUseKey] then
+                    ShutDownPanel( self )
+                    return
 
+                else
+                    pnl.keyWasDown[clientsUseKey] = true
+
+                end
             else
-                pnl.keyWasDown[clientsUseKey] = true
+                pnl.keyWasDown[clientsUseKey] = nil
 
             end
-        else
-            pnl.keyWasDown[clientsUseKey] = nil
-
         end
 
-        if input_IsKeyDown( clientsMenuKey ) then
-            if not pnl.keyWasDown[clientsMenuKey] then
-                ShutDownPanel( self )
-                return
+        if clientsMenuKey then
+            if input_IsKeyDown( clientsMenuKey ) then
+                if not pnl.keyWasDown[clientsMenuKey] then
+                    ShutDownPanel( self )
+                    return
 
+                else
+                    pnl.keyWasDown[clientsMenuKey] = true
+
+                end
             else
-                pnl.keyWasDown[clientsMenuKey] = true
+                pnl.keyWasDown[clientsMenuKey] = nil
 
             end
-        else
-            pnl.keyWasDown[clientsMenuKey] = nil
-
         end
 
         if not input_IsMouseDown( MOUSE_LEFT ) and not input_IsMouseDown( MOUSE_RIGHT ) then
