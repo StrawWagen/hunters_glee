@@ -439,7 +439,7 @@ function GM:SpawnHunter( class )
             if IsValid( enemy ) then
                 hunter.glee_FodderNoEnemyCount = math.min( 0, oldCount )
 
-            elseif oldCount >= maxHp * 0.35 then -- booring
+            elseif oldCount >= maxHp * 0.75 then -- booring
                 local _, spawnSet = GAMEMODE:GetSpawnSet()
                 if spawnSet then -- make the spawner spawn npcs closer if fodder hunters aren't finding enemies
                     GAMEMODE:AdjustDynamicTooCloseCutoff( -maxHp, spawnSet )
