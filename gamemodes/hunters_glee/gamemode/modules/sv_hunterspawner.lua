@@ -562,6 +562,8 @@ hook.Add( "huntersglee_round_firstsetup", "glee_spawnset_think", function() GAME
 -- let people joining the server have the default glee experience
 hook.Add( "huntersglee_emptyserver", "glee_reset_spawnset", function( wasEmpty )
     if wasEmpty then return end -- only run this if there were people online, and are no longer people online
+    local name = GAMEMODE:GetSpawnSet()
+    if name == defaultSpawnSetName then return end
     RunConsoleCommand( "huntersglee_spawnset", defaultSpawnSetName )
 
 end )
