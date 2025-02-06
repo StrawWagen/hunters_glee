@@ -107,6 +107,11 @@ function ENT:Place()
     local danceSeq = self:GetDanceSeq()
     if danceSeq < 0 then return end
 
+    if player:InVehicle() then
+        player:ExitVehicle()
+
+    end
+
     if not dancer:TauntDance() then return end
 
     dancer:EmitSound( happyLines[math.random( 1, #happyLines )], 75, math.random( 95, 105 ) )

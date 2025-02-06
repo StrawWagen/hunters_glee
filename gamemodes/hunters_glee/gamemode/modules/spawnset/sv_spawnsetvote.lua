@@ -40,7 +40,7 @@ function spawnSetVote:BeginVote( duration, maxOptions )
         local option, key = table.Random( toBrowse )
         toBrowse[key] = nil
 
-        if isnumber( option.chanceToBeVotable ) and option.chanceToBeVotable > math.random( 0, 100 ) then continue end
+        if isnumber( option.chanceToBeVotable ) and option.chanceToBeVotable < math.random( 0, 100 ) then continue end
         table.insert( toAdd, option )
 
     end

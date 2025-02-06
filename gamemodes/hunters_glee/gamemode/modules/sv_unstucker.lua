@@ -3,6 +3,10 @@ local meta = FindMetaTable( "Player" )
 
 function meta:TeleportTo( pos )
     self.unstuckOrigin = pos
+    if self:InVehicle() then
+        self:ExitVehicle()
+
+    end
     self:SetPos( pos )
     self:unstuckFullHandle()
 
