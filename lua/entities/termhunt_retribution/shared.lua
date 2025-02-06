@@ -107,8 +107,8 @@ function ENT:Place()
     local danceSeq = self:GetDanceSeq()
     if danceSeq < 0 then return end
 
-    if player:InVehicle() then
-        player:ExitVehicle()
+    if dancer:InVehicle() then
+        dancer:ExitVehicle()
 
     end
 
