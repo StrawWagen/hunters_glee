@@ -627,9 +627,7 @@ end
 
 
 local defaultSpawnSetName = "hunters_glee"
-
-local spawnSetVar = CreateConVar( "huntersglee_spawnset", defaultSpawnSetName, { FCVAR_ARCHIVE, FCVAR_REPLICATED, FCVAR_NOTIFY }, "What spawnset the gamemode should use." )
-cvars.AddChangeCallback( "huntersglee_spawnset", function( _, _old, new )
+local function postSetSpawnset( new )
     if not GAMEMODE:IsValidSpawnSet( new ) then
         if GAMEMODE:IsValidSpawnSet( defaultSpawnSetName ) then
             RunConsoleCommand( "huntersglee_spawnset", defaultSpawnSetName )
@@ -643,6 +641,22 @@ cvars.AddChangeCallback( "huntersglee_spawnset", function( _, _old, new )
         GAMEMODE:SetSpawnSet( new )
 
     end
+end
+
+
+local spawnSetVar = CreateConVar( "huntersglee_spawnset", defaultSpawnSetName, { FCVAR_ARCHIVE, FCVAR_REPLICATED, FCVAR_NOTIFY }, "What spawnset the gamemode should use." )
+cvars.AddChangeCallback( "huntersglee_spawnset", function( _, _, new )
+    if not GAMEMODE.GobbledSpawnsets then -- wait until spawnsets are valid
+        hook.Add( "glee_post_spawnsetgobble", "glee_validatecvar_delayed", function()
+            postSetSpawnset( new )
+            hook.Remove( "glee_post_spawnsetgobble", "glee_validatecvar_delayed" )
+
+        end )
+    else
+        postSetSpawnset( new )
+
+    end
+
 end, "glee_notifyinvalidspawnsets" )
 
 
@@ -663,6 +677,9 @@ function GM:SpawnSetThink()
     end
     print( "GLEE: Gobbled " .. count .. " spawnsets..." )
     GLEE_SPAWNSETS = {}
+
+    GAMEMODE.GobbledSpawnsets = true
+    hook.Run( "glee_post_spawnsetgobble" )
 
     local spawnSetPicked = spawnSetVar:GetString()
     if not self:IsValidSpawnSet( spawnSetPicked ) then
