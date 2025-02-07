@@ -514,6 +514,10 @@ function GM:AdjustDynamicTooCloseCutoff( adjust, spawnSet )
     local max = spawnSet.maxSpawnDist
     spawnSet.dynamicTooCloseDist = math.Clamp( new, min, max )
 
+    if debuggingVar:GetBool() then
+        print( "tooCLOSE_adjust", adjust, "\nnow", new )
+
+    end
 end
 
 function GM:AdjustDynamicTooFarCutoff( adjust, spawnSet )
@@ -526,6 +530,10 @@ function GM:AdjustDynamicTooFarCutoff( adjust, spawnSet )
     local max = math.max( spawnSet.maxSpawnDist, spawnSet.dynamicTooCloseDist + 2000 )
     spawnSet.dynamicTooFarDist = math.Clamp( new, min, max )
 
+    if debuggingVar:GetBool() then
+        print( "tooFAR_adjust", adjust, "\nnow", new )
+
+    end
 end
 
 -- spawn a hunter as far away as possible from every player by inching a distance check around
