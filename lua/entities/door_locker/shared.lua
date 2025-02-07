@@ -139,7 +139,7 @@ local function DoorOnUsedInitial( _, thingUsingTheDoor, currentlyProcessingPlaye
     elseif thingUsingTheDoor:IsNextBot() then
         -- give the player a bit less score
         currentlyProcessingPlayer:GivePlayerScore( 80 )
-        msg = "A terminator has used one of your locked doors, you gain 80 score!"
+        msg = GAMEMODE:GetNameOfBot( thingUsingTheDoor ) .. " has used one of your locked doors, you gain 80 score!"
 
     end
     huntersGlee_Announce( { currentlyProcessingPlayer }, 5, 8, msg )

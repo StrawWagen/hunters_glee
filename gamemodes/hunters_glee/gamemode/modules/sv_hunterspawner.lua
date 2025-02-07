@@ -10,12 +10,14 @@ local function errorCatchingMitt( errMessage )
 end
 
 
-local debuggingVar = CreateConVar( "huntersglee_debug_spawner", 0 )
+local debuggingVar = CreateConVar( "huntersglee_debug_hunterspawner", 0 )
 local function debugPrint( ... )
     if not debuggingVar:GetBool() then return end
     print( ... )
 
 end
+
+local speedVar = CreateConVar( "huntersglee_debug_hunterspawner_speedoverride", 1, { FCVAR_CHEAT }, "Increase the speed at which the hunter spawner thinks time is passing.", 0, 999 )
 
 local overrideCountVar = CreateConVar( "huntersglee_spawneroverridecount", 0, bit.bor( FCVAR_NOTIFY, FCVAR_ARCHIVE ), "Overrides how many terminators will spawn, 0 for automatic count. Above 5 WILL lag.", 0, 32 )
 local function aliveHuntersCount()
@@ -263,7 +265,11 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
 
     if GAMEMODE.nextSpawnWave > cur or GAMEMODE.currentSpawnWave then return end
 
+    local speedOverride = speedVar:GetFloat()
+
     local roundTime = GAMEMODE:getRemaining( GAMEMODE.termHunt_roundBegunTime, cur )
+    roundTime = roundTime * speedOverride
+
     local minutes = roundTime / minute
 
     local diffPerMin = spawnSet.difficultyPerMin
@@ -359,12 +365,12 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
 
             end
             table.Add( GAMEMODE.currentSpawnWave, pickedSpawns )
-            GAMEMODE.nextSpawnWave = cur + spawnSet.waveInterval
+            GAMEMODE.nextSpawnWave = cur + spawnSet.waveInterval / speedOverride
 
         end
     else
         -- dont spam checks
-        GAMEMODE.nextSpawnWave = cur + ( spawnSet.waveInterval / 20 )
+        GAMEMODE.nextSpawnWave = cur + ( spawnSet.waveInterval / 20 ) / speedOverride
 
     end
 end )
@@ -414,6 +420,60 @@ end )
 
 local minRadius = 500 -- hardcoded num, if you spawn closer than this, it feels unfair
 
+local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they want, remove them and march the spawn distances smaller if they're being boring
+    hunter.glee_FodderNoEnemyCount = math.random( -30, -15 )
+
+    hook.Add( "glee_hunter_nearbyaply", hunter, function( me, nearestHunter ) -- so they dont delete when they're nearby a ply, eg, they bought chameleon 
+        if me ~= nearestHunter then return end
+        local new = nearestHunter.glee_FodderNoEnemyCount + -1
+        new = math.Clamp( new, 0, math.huge )
+
+        nearestHunter.glee_FodderNoEnemyCount = new
+
+    end )
+
+    local timerName = "glee_fodderhunter_removestale_" .. hunter:GetCreationID()
+    timer.Create( timerName, math.Rand( 0.5, 2 ), 0, function()
+        if not IsValid( hunter ) then timer.Remove( timerName ) return end
+        if hunter.terminator_OverCharged then timer.Remove( timerName ) return end
+        local maxHp = hunter:GetMaxHealth()
+        local enemy = hunter:GetEnemy()
+        local oldCount = hunter.glee_FodderNoEnemyCount
+
+        if IsValid( enemy ) and enemy.isTerminatorHunterChummy ~= hunter.isTerminatorHunterChummy then
+            hunter.glee_FodderNoEnemyCount = math.min( 0, oldCount + -1 )
+            return
+
+        end
+
+        if oldCount >= maxHp * 0.75 then -- booring enem
+            local _, spawnSet = GAMEMODE:GetSpawnSet()
+            if spawnSet then -- make the spawner spawn npcs closer if fodder hunters aren't finding enemies
+                local tooFarDist = spawnSet.dynamicTooFarDist
+                local bite = -maxHp
+
+                local _, nearestDistSqr = GAMEMODE:nearestAlivePlayer( hunter:GetPos() )
+                local nearestDist = math.sqrt( nearestDistSqr )
+                if nearestDist > tooFarDist * 4 then
+                    bite = bite * 4
+
+                elseif nearestDist > tooFarDist * 2 then
+                    bite = bite * 2
+
+                end
+                GAMEMODE:AdjustDynamicTooCloseCutoff( bite, spawnSet )
+                GAMEMODE:AdjustDynamicTooFarCutoff( bite * 1.5, spawnSet )
+
+            end
+            SafeRemoveEntity( hunter )
+            return
+
+        end
+        hunter.glee_FodderNoEnemyCount = oldCount + 1
+
+    end )
+end
+
 function GM:SpawnHunter( class )
     local spawnPos, valid = self:getValidHunterPos()
     if not valid then return end
@@ -428,31 +488,7 @@ function GM:SpawnHunter( class )
     print( hunter ) -- i like this print, you cannot make me remove it
 
     if hunter.IsFodder or not hunter.TerminatorNextBot then -- prune fodder hunters if they're being boring
-        hunter.glee_FodderNoEnemyCount = math.random( -30, -15 )
-
-        local timerName = "glee_fodderhunter_removestale_" .. hunter:GetCreationID()
-        timer.Create( timerName, math.Rand( 0.5, 2 ), 0, function()
-            if not IsValid( hunter ) then timer.Remove( timerName ) return end
-            local maxHp = hunter:GetMaxHealth()
-            local enemy = hunter:GetEnemy()
-            local oldCount = hunter.glee_FodderNoEnemyCount
-            if IsValid( enemy ) then
-                hunter.glee_FodderNoEnemyCount = math.min( 0, oldCount )
-
-            elseif oldCount >= maxHp * 0.75 then -- booring
-                local _, spawnSet = GAMEMODE:GetSpawnSet()
-                if spawnSet then -- make the spawner spawn npcs closer if fodder hunters aren't finding enemies
-                    GAMEMODE:AdjustDynamicTooCloseCutoff( -maxHp, spawnSet )
-                    GAMEMODE:AdjustDynamicTooFarCutoff( -maxHp * 1.5, spawnSet )
-
-                end
-                SafeRemoveEntity( hunter )
-
-            else
-                hunter.glee_FodderNoEnemyCount = oldCount + 1
-
-            end
-        end )
+        manageIfStale( hunter )
     end
     return hunter
 

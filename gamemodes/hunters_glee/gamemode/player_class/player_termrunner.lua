@@ -63,6 +63,8 @@ function PLAYER:Loadout()
         return false
 
     end
+    camera.AutoSwitchTo = false
+
     self.Player:Give( "termhunt_shove" )
     self.Player:Give( "termhunt_radio" )
     self.Player:Give( "weapon_crowbar" )

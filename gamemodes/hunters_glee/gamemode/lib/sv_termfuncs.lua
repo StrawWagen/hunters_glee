@@ -670,3 +670,30 @@ function GM:PlaySoundOnEveryPlayer( path, pitch, vol )
 
     end
 end
+
+do
+    local string = string
+
+    function GM:GetNameOfBot( bot )
+        local name
+        if bot.Nick and isfunction( bot.Nick ) then
+            return bot:Nick()
+
+        elseif bot.glee_PrettyName then
+            name = bot.glee_PrettyName
+
+        else
+            name = bot.PrintName
+
+            local nameLower = string.lower( name )
+            nameLower = string.Trim( nameLower )
+            if not ( string.StartsWith( nameLower, "a " ) or string.StartsWith( nameLower, "the " ) ) then
+                name = "A " .. name
+
+            end
+        end
+        return name
+
+    end
+end
+

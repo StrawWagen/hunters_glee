@@ -85,6 +85,7 @@ function GM:calculateBPM( cur, players )
             if IsValid( nearestHunter ) and nearestHunter.TerminatorNextBot then
 
                 ply.huntersGleeNearestHunterToPly = nearestHunter
+                hook.Run( "glee_hunter_nearbyaply", nearestHunter, ply )
 
                 -- is player inside mentos shaped volume?????
                 -- means less score if ply is simply above enemy
@@ -735,11 +736,8 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
         if spectated.Nick and isstring( spectated:Nick() ) then
             huntersGlee_Announce( { ply }, 1, 2, "Spectating " .. spectated:Nick() .. "." )
 
-        elseif spectated.glee_PrettyName then
-            huntersGlee_Announce( { ply }, 1, 2, "Spectating " .. spectated.glee_PrettyName .. "." )
-
         else
-            huntersGlee_Announce( { ply }, 1, 2, "Spectating a Terminator." )
+            huntersGlee_Announce( { ply }, 1, 2, "Spectating " .. GAMEMODE:GetNameOfBot( spectated ) )
 
         end
     end

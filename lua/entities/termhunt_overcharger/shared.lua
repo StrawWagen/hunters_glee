@@ -53,8 +53,10 @@ function ENT:GetNearestTarget()
 end
 
 function ENT:CalculateCanPlace()
-    if not IsValid( self:GetCurrTarget() ) then return false, "You can't overcharge nothing." end
-    if self:GetCurrTarget().terminator_OverCharged then return false, "It's already overcharged." end
+    local currTarg = self:GetCurrTarget()
+    if not IsValid( currTarg ) then return false, "You can't overcharge nothing." end
+    if currTarg.terminator_OverCharged then return false, "It's already overcharged." end
+    if not glee_CanOvercharge( currTarg ) then return false, "That's too weak to overcharge..." end
     if GAMEMODE:isTemporaryTrueBool( "glee_playerplaced_termovercharger" ) then return false, "It's too soon for another terminator to be overcharged." end
     if not self:HasEnoughToPurchase() then return false, self:TooPoorString() end
     return true
@@ -77,7 +79,7 @@ function ENT:Place()
     glee_Overcharge( targ )
     GAMEMODE:setTemporaryTrueBool( "glee_playerplaced_termovercharger", 180 )
 
-    huntersGlee_Announce( player.GetAll(), 80, 15, self.player:Nick() .. " has overcharged a Terminator..." )
+    huntersGlee_Announce( player.GetAll(), 80, 15, self.player:Nick() .. " has overcharged " .. GAMEMODE:GetNameOfBot( targ ) ..  "..." )
 
     local score = self:GetGivenScore()
 

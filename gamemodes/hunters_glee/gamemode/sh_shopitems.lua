@@ -2710,9 +2710,14 @@ local function spawnAnotherHunterCheck( _ )
 
 end
 
-local function spawnAnotherHunterCanShow()
-    return GAMEMODE:ClassIsInSpawnPool( "terminator_nextbot_snail_disguised" )
+local function spawnAnotherHunterCost()
+    if GAMEMODE:ClassIsInSpawnPool( "terminator_nextbot_snail_disguised" ) then
+        return -150
 
+    else
+        return 200
+
+    end
 end
 
 hook.Add( "huntersglee_plykilledhunter", "glee_rewardLinkedKills", function( killer, hunter )
@@ -3829,7 +3834,7 @@ local defaultItems = {
     [ "additionalterm" ] = {
         name = "Linked Hunter",
         desc = "Spawn another hunter.\nThey will take on your appearance.\nIf you personally kill it, you will gain 350 score.\nThe newcomer will never lose you, if you regain your life...",
-        cost = -150,
+        cost = spawnAnotherHunterCost,
         markup = 1,
         cooldown = 90,
         category = "Sacrifices",
@@ -3890,7 +3895,7 @@ local defaultItems = {
     -- fun
     [ "termovercharger" ] = {
         name = "Overcharger.",
-        desc = "Overcharge a Terminator. Global 3 minute delay between Overcharges.",
+        desc = "Overcharge a Hunter. Global 3 minute delay between Overcharges.",
         costDecorative = "-450",
         cost = 0,
         markup = 1,

@@ -7,7 +7,7 @@ end )
 
 function GM:GetBotScaryness( ply, bot ) -- AAH
     local minScaryness = 0.15
-    local maxScaryness = 1.15
+    local maxScaryness = 1.25
 
     local plysHealth = ply:Health()
     if plysHealth <= 50 then
@@ -24,8 +24,8 @@ function GM:GetBotScaryness( ply, bot ) -- AAH
 
     end
 
-    if bot.IsEldritch then
-        maxScaryness = 2
+    if bot.IsEldritch then -- scary!
+        maxScaryness = math.Rand( 2, 4 )
 
     end
 

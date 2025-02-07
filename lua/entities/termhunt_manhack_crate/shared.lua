@@ -145,7 +145,7 @@ hook.Add( "EntityTakeDamage", "glee_rewarding_manhacks_reward", function ( targe
         end
     elseif target:IsNextBot() then
         owner:GivePlayerScore( 25 )
-        huntersGlee_Announce( { owner }, 5, 10, "The manhacks have damaged a terminator. You only gain 25 score." )
+        huntersGlee_Announce( { owner }, 5, 10, "The manhacks have damaged " .. GAMEMODE:GetNameOfBot( target ) .. ". You only gain 25 score." )
 
     end
 end )

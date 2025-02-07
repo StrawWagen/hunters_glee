@@ -96,7 +96,7 @@ function ENT:Place()
         huntersGlee_Announce( { plyToImmortal }, 10, 10, "Something's off, you feel strong, you feel... Immortal.\n" .. self.player:Name() .. " has gifted you temporary Immortality." )
 
     else
-        huntersGlee_Announce( plysToAlert, 5, 8, "You feel an imposing presence..\n" .. self.player:Name() .. " has gifted immortality to a Terminator." )
+        huntersGlee_Announce( plysToAlert, 5, 8, "You feel an imposing presence..\n" .. self.player:Name() .. " has gifted immortality to " .. GAMEMODE:GetNameOfBot( plyToImmortal ) )
 
     end
 

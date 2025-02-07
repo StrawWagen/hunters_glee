@@ -9,6 +9,13 @@ sound.Add( {
     sound = "397952_kinoton_thunder-clap-and-rumble-1.wav"
 } )
 
+function glee_CanOvercharge( target )
+    if target.DoMetallicDamage then return true end
+    if target:GetMaxHealth() < terminator_Extras.healthDefault * 0.75 then return false end
+    return true
+
+end
+
 function glee_Overcharge( target )
     target:Overcharge()
     target:ReallyAnger( 120 )

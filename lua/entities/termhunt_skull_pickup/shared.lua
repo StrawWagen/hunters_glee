@@ -190,9 +190,15 @@ function ENT:DoScore( reciever )
 
     elseif not reciever.glee_skullhinted then
         reciever.glee_skullhinted = true
-        huntersGlee_Announce( { reciever }, 10, 12, "That's their skull..." )
-        GAMEMODE:GivePanic( purchaser, 60 )
+        if self.skullSteamId then
+            huntersGlee_Announce( { reciever }, 10, 12, "That's their skull..." )
+            GAMEMODE:GivePanic( purchaser, 60 )
 
+        else
+            huntersGlee_Announce( { reciever }, 10, 12, "That's it's skull..." )
+            GAMEMODE:GivePanic( purchaser, 50 )
+
+        end
     end
 end
 

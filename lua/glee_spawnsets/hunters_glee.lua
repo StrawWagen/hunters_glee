@@ -1,24 +1,25 @@
 -- overcharged hunters, dont have to copy this
 local overchargedChanceAtMinutes = {
     [0] = 0,
-    [5] = math.Rand( 0, 1 ),
-    [15] = math.Rand( 5, 25 ),
-    [30] = math.Rand( 50, 100 ),
+    [10] = math.Rand( 0, 1 ),
+    [20] = math.Rand( 1, 5 ),
+    [30] = math.Rand( 5, 15 ),
+    [45] = math.Rand( 15, 25 ),
+    [60] = 100
 
 }
+
 local function postSpawnedOvercharge( spawnDat, spawned )
+    local overchargedChance = 0
     local minutesWhenAdded = spawnDat.minutesWhenAdded
     for minutesNeeded, currChance in pairs( overchargedChanceAtMinutes ) do
-        if minutesNeeded <= minutesWhenAdded then
+        if minutesNeeded <= minutesWhenAdded and currChance >= overchargedChance then
             overchargedChance = currChance
-
-        else
-            break
 
         end
     end
 
-    if math.random( 0, 100 ) > overchargedChance then return end
+    if math.Rand( 0, 100 ) > overchargedChance then return end
     glee_Overcharge( spawned )
 
     local lightning = ents.Create( "glee_lightning" )
@@ -65,7 +66,7 @@ local defaultSpawnSet = {
         },
         {
             hardRandomChance = nil,
-            name = "terminator", -- unique name
+            name = "terminator_MORE", -- unique name
             prettyName = "A Terminator",
             class = "terminator_nextbot_snail", -- class spawned
             spawnType = "hunter",
@@ -78,7 +79,7 @@ local defaultSpawnSet = {
         {
             hardRandomChance = { 0, 2 }, -- chance this is even checked
             name = "terminator_doppleganger",
-            prettyName = "Terminator Doppleganger",
+            prettyName = "A Terminator Doppleganger",
             class = "terminator_nextbot_snail_disguised",
             spawnType = "hunter",
             difficultyCost = { 20 },

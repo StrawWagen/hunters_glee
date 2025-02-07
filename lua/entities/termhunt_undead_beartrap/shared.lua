@@ -132,7 +132,7 @@ hook.Add( "glee_beartrap_snapped", "trackundeadbeartraps", function( trap, snapp
         elseif snapped:IsNextBot() then
             -- give the player a bit less score
             placer:GivePlayerScore( 40 )
-            msg = "You've damaged a terminator, 40 score."
+            msg = "You've damaged " .. GAMEMODE:GetNameOfBot( snapped ) .. ", 40 score."
 
         end
     else
@@ -158,7 +158,7 @@ hook.Add( "glee_beartrap_snapped", "trackundeadbeartraps", function( trap, snapp
         elseif snapped:IsNextBot() then
             -- give the player a bit less score
             placer:GivePlayerScore( 80 )
-            msg = "You've trapped a terminator, you gain 80 score!"
+            msg = "You've trapped " .. GAMEMODE:GetNameOfBot( snapped ) .. ", you gain 80 score!"
 
         end
     end
