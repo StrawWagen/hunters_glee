@@ -419,9 +419,11 @@ hook.Add( "PostCleanupMap", "glee_resethunterspawnerstats", function()
 end )
 
 local minRadius = 500 -- hardcoded num, if you spawn closer than this, it feels unfair
+local defaultStaleRatio = 0.75
 
 local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they want, remove them and march the spawn distances smaller if they're being boring
     hunter.glee_FodderNoEnemyCount = math.random( -30, -15 )
+    hunter.glee_FodderNoEnemyRatio = defaultStaleRatio
 
     hook.Add( "glee_hunter_nearbyaply", hunter, function( me, nearestHunter ) -- so they dont delete when they're nearby a ply, eg, they bought chameleon 
         if me ~= nearestHunter then return end
@@ -446,7 +448,7 @@ local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they 
 
         end
 
-        if oldCount >= maxHp * 0.75 then -- booring enem
+        if oldCount >= maxHp * hunter.glee_FodderNoEnemyRatio then -- booring enem
             local _, spawnSet = GAMEMODE:GetSpawnSet()
             if spawnSet then -- make the spawner spawn npcs closer if fodder hunters aren't finding enemies
                 local tooFarDist = spawnSet.dynamicTooFarDist
@@ -454,16 +456,21 @@ local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they 
 
                 local _, nearestDistSqr = GAMEMODE:nearestAlivePlayer( hunter:GetPos() )
                 local nearestDist = math.sqrt( nearestDistSqr )
-                if nearestDist > tooFarDist * 4 then
+                if nearestDist > tooFarDist * 5 then
                     bite = bite * 4
 
-                elseif nearestDist > tooFarDist * 2 then
+                elseif nearestDist > tooFarDist * 2.5 then
                     bite = bite * 2
 
                 end
                 GAMEMODE:AdjustDynamicTooCloseCutoff( bite, spawnSet )
                 GAMEMODE:AdjustDynamicTooFarCutoff( bite * 1.5, spawnSet )
 
+                if nearestDist < tooFarDist * 0.75 and hunter.glee_FodderNoEnemyRatio == defaultStaleRatio then -- bot is close, give it a second chance, but still bite the cutoffs
+                    hunter.glee_FodderNoEnemyRatio = 2
+                    return
+
+                end
             end
             SafeRemoveEntity( hunter )
             return
