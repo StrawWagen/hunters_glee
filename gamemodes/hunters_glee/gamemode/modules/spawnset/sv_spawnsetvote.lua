@@ -70,7 +70,9 @@ function spawnSetVote:BeginVote( duration, maxOptions )
         end
     net.Send( player.GetAll() )
 
-    timer.Create( "glee_spawnsetvote_end", duration, 1, function()
+    print( "GLEE: A mode vote has begun" )
+
+    timer.Create( "glee_spawnsetvote_end", duration, 1, function() -- one timername
         spawnSetVote:OnVoteEnd()
 
     end )
@@ -130,6 +132,8 @@ function spawnSetVote:OnVoteEnd()
 
         end )
     end
+
+    print( "GLEE: Mode vote is over, winner is, " .. spawnSetVote.winner )
 
     if GAMEMODE:RoundState() == GAMEMODE.ROUND_ACTIVE and GAMEMODE:getRemaining( GAMEMODE.termHunt_roundBegunTime, CurTime() ) > 60 then -- if round has properly started
         huntersGlee_Announce( player.GetAll(), 1001, 15, "Mode will be changed to " .. GAMEMODE:GetPrettyNameOfSpawnSet( spawnSetVote.winner ) .. "\n on round end." )

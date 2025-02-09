@@ -202,6 +202,7 @@ function GM:SetSpawnSet( setName )
     SetGlobalString( "GLEE_SpawnSetPrettyName", spawnSet.prettyName )
 
     hook.Run( "glee_post_set_spawnset", setName, spawnSet )
+    print( "GLEE: Mode set to, " .. setName )
 
 end
 

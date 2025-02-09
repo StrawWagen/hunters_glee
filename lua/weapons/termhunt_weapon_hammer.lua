@@ -433,6 +433,7 @@ function SWEP:SecondaryAttack()
     local smallestDistSqr = nailFindDist^2
     local nearestNail
     for _, nail in ipairs( nearNails ) do
+        if nail:GetClass() ~= "gmod_glee_nail" then continue end
         local distSqr = nail:GetPos():DistToSqr( vOrigin )
         if distSqr < smallestDistSqr then
             nearestNail = nail
