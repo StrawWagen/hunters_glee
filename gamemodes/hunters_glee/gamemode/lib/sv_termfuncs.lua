@@ -684,6 +684,15 @@ do
 
         else
             name = bot.PrintName
+            if not name then
+                if bot:IsNPC() then
+                    name = "A NPC"
+                elseif bot:IsNextBot() then
+                    name = "A Nextbot"
+                else
+                    name = "Something"
+                end
+            end
 
             local nameLower = string.lower( name )
             nameLower = string.Trim( nameLower )
