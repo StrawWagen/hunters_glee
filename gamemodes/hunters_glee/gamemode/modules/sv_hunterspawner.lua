@@ -503,7 +503,7 @@ function GM:SpawnHunter( class, currSpawn )
     local hunter = ents.Create( class )
     if not IsValid( hunter ) then return end
 
-    if currSpawn.preSpawnedFuncs then
+    if currSpawn and currSpawn.preSpawnedFuncs then
         for _, func in ipairs( currSpawn.preSpawnedFuncs ) do
             ProtectedCall( function( _currSpawn, _hunter ) func( _currSpawn, _hunter ) end, currSpawn, hunter )
 
