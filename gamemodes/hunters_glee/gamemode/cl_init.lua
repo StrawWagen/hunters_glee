@@ -749,7 +749,7 @@ local function genericHints()
         end
 
         if not me.glee_HasDoneSpectateFlashlight and render.GetLightColor( me:GetPos() ):LengthSqr() < 0.005 then
-            me.flashlightAdditive = me.flashlightAdditive + 1
+            me.flashlightAdditive = ( me.flashlightAdditive or 0 ) + 1
 
         else
             me.flashlightAdditive = 0
