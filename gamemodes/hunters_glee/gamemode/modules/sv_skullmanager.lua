@@ -200,7 +200,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_addskulljobs", function()
         angle.z = 0
         angle = angle:Angle()
         local chance = 1
-        if GAMEMODE:ClassIsInSpawnPool( "terminator_nextbot" ) then
+        if GAMEMODE:ClassIsInSpawnPool( "terminator_nextbot_snail" ) then
             chance = 15
 
         end
