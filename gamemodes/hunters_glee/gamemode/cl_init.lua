@@ -737,7 +737,7 @@ local function genericHints()
 
             return true, "Press " .. phrase .. " to stop following stuff!"
 
-        elseif not me.glee_HasDoneSpectateFlashlight and ( me.flashlightAdditive or 0 ) >= 10 and render.GetLightColor( me:GetPos() ):LengthSqr() < 0.008 then
+        elseif not me.glee_HasDoneSpectateFlashlight and ( me.flashlightAdditive or 0 ) >= 100 and render.GetLightColor( me:GetPos() ):LengthSqr() < 0.008 then
             local valid, phrase = GAMEMODE:TranslatedBind( "+impulse 100" )
             if not valid then me.glee_HasDoneSpectateFlashlight = true return end
 
