@@ -11,7 +11,7 @@ sound.Add( {
 
 function glee_CanOvercharge( target )
     if target.DoMetallicDamage then return true end
-    if target:GetMaxHealth() < terminator_Extras.healthDefault * 0.65 then return false end
+    if target:GetMaxHealth() < terminator_Extras.healthDefault * 0.5 then return false end
     return true
 
 end
