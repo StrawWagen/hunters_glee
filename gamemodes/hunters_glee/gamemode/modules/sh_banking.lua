@@ -20,7 +20,7 @@ function gleefunc_BankChargePerPeriod()
 end
 
 local glee_BankChargePeriod = CreateConVar( "huntersglee_bank_chargeperiod", "-1", { FCVAR_ARCHIVE, FCVAR_REPLICATED }, "Period that the player's bank account is charged, in seconds. -1 for default, 86400, 1 day.", -1, 999999999999 )
-local default_BankChargePeriod = 86400
+local default_BankChargePeriod = 172800
 function gleefunc_BankChargePeriod()
     local theVal = glee_BankChargePeriod:GetFloat()
     if theVal ~= -1 then
