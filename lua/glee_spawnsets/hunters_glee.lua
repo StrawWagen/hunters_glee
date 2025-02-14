@@ -51,6 +51,7 @@ local defaultSpawnSet = {
     maxSpawnDist = "default",
     roundEndSound = "default",
     roundStartSound = "default",
+    genericSpawnerRate = "default",
     spawns = {
         {
             hardRandomChance = nil,

@@ -144,7 +144,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_addskulljobs", function()
     if nextSkullSpawnCheck > CurTime() then return end
 
     local skulls = ents.FindByClass( "termhunt_skull_pickup" )
-    if #skulls >= mapSkullCount then nextSkullSpawnCheck = CurTime() + 15 return end
+    if #skulls >= mapSkullCount then nextSkullSpawnCheck = CurTime() + GAMEMODE:GenSpawnAdjusted( 15 ) return end
 
     local skullJob = {}
     skullJob.jobsName = "skull"
@@ -199,7 +199,12 @@ hook.Add( "glee_sv_validgmthink_active", "glee_addskulljobs", function()
         local angle = VectorRand()
         angle.z = 0
         angle = angle:Angle()
-        local rareTermSkull = math.random( 1, 100 ) <= 15
+        local chance = 1
+        if GAMEMODE:ClassIsInSpawnPool( "terminator_nextbot" ) then
+            chance = 15
+
+        end
+        local rareTermSkull = math.random( 1, 100 ) <= chance
         local skull = GAMEMODE:SpawnASkull( bestPosition, angle, rareTermSkull )
         if not IsValid( skull ) then return false end
 
@@ -228,7 +233,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_addskulljobs", function()
     --print( "ADDED" )
     --PrintTable( skullJob )
 
-    nextSkullSpawnCheck = CurTime() + 20
+    nextSkullSpawnCheck = CurTime() + GAMEMODE:GenSpawnAdjusted( 20 )
 
     if mapSkullCount <= 4 and #navmesh.GetAllNavAreas() > 4000 then
         mapSkullCount = 8

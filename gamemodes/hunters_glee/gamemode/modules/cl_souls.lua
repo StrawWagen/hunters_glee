@@ -184,11 +184,13 @@ local function soulGotoPos( soul, pos, ang )
     local obj = soul:GetPhysicsObject()
 
     local collisionsDesired
+    local tryWake
 
     local soulsPos = soul:GetPos()
     local dist = soulsPos:DistToSqr( pos )
     if dist > tooFarSetpos then
         collisionsDesired = false
+        tryWake = true
 
         local dir = soulsPos - pos
         dir:Normalize()
@@ -200,13 +202,10 @@ local function soulGotoPos( soul, pos, ang )
         end
     elseif dist > tooFarNocollide then
         collisionsDesired = false
+        tryWake = true
 
     elseif dist > tooFarWake then
-        if IsValid( obj ) and obj:IsAsleep() then
-            obj:EnableMotion( true )
-            obj:Wake()
-
-        end
+        tryWake = true
     elseif not inWall( pos ) and not inWall( soulsPos ) then
         collisionsDesired = true
 
@@ -221,6 +220,10 @@ local function soulGotoPos( soul, pos, ang )
             obj:EnableCollisions( false )
 
         end
+    elseif tryWake and IsValid( obj ) and obj:IsAsleep() then
+        obj:EnableMotion( true )
+        obj:Wake()
+
     end
 
     headBone:SetPos( pos )

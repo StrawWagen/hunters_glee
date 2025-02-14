@@ -737,7 +737,7 @@ local function genericHints()
 
             return true, "Press " .. phrase .. " to stop following stuff!"
 
-        elseif not me.glee_HasDoneSpectateFlashlight and render.GetLightColor( me:GetPos() ):LengthSqr() < 0.005 then
+        elseif not me.glee_HasDoneSpectateFlashlight and ( me.flashlightAdditive or 0 ) >= 10 and render.GetLightColor( me:GetPos() ):LengthSqr() < 0.008 then
             local valid, phrase = GAMEMODE:TranslatedBind( "+impulse 100" )
             if not valid then me.glee_HasDoneSpectateFlashlight = true return end
 
@@ -745,6 +745,14 @@ local function genericHints()
 
         elseif not me.glee_HasBoughtDivineIntervention and myScore >= GAMEMODE:shopItemCost( "resurrection", me ) then
             return true, "Buy Divine Intervention in the shop to resurrect yourself."
+
+        end
+
+        if not me.glee_HasDoneSpectateFlashlight and render.GetLightColor( me:GetPos() ):LengthSqr() < 0.005 then
+            me.flashlightAdditive = me.flashlightAdditive + 1
+
+        else
+            me.flashlightAdditive = 0
 
         end
 

@@ -12,7 +12,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_addbeartrapjobs", function()
     if nextBearTrapSpawnCheck > CurTime() then return end
 
     local bearTraps = ents.FindByClass( "termhunt_bear_trap" )
-    if #bearTraps >= mapBearTrapCount then nextBearTrapSpawnCheck = CurTime() + 60 return end
+    if #bearTraps >= mapBearTrapCount then nextBearTrapSpawnCheck = CurTime() + GAMEMODE:GenSpawnAdjusted( 60 ) return end
 
     local livePly = GAMEMODE:anAlivePlayer()
     if not IsValid( livePly ) then return end
@@ -106,7 +106,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_addbeartrapjobs", function()
     --print( "ADDED" )
     --PrintTable( bearTrapJob )
 
-    nextBearTrapSpawnCheck = CurTime() + 60
+    nextBearTrapSpawnCheck = CurTime() + GAMEMODE:GenSpawnAdjusted( 60 )
 
     if mapBearTrapCount > 4 and #navmesh.GetAllNavAreas() < 4000 then
         mapBearTrapCount = math.random( 1, 4 )

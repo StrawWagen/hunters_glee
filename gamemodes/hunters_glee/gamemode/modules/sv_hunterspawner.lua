@@ -48,6 +48,7 @@ local setDefaults = {
     maxSpawnDist = { 6500, 8500 },
     roundEndSound = "53937_meutecee_trumpethit07.wav",
     roundStartSound = "", -- no sound for glee
+    genericSpawnerRate = 1,
 }
 
 local spawnDefaults = {
@@ -228,6 +229,14 @@ function GM:GetSpawnSet()
 
 end
 
+function GM:GenSpawnAdjusted( var )
+    local set = self.CurrSpawnSet
+    if not set then return var end
+
+    return var * set.genericSpawnerRate
+
+end
+
 function GM:GetPrettyNameOfSpawnSet( setName )
     local asRegistered = GAMEMODE.RegisteredSpawnSets[setName]
     if not asRegistered then return "" end
@@ -368,6 +377,10 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
             table.Add( GAMEMODE.currentSpawnWave, pickedSpawns )
             GAMEMODE.nextSpawnWave = cur + spawnSet.waveInterval / speedOverride
 
+        else
+            -- dont spam checks
+            GAMEMODE.nextSpawnWave = cur + ( spawnSet.waveInterval / 20 ) / speedOverride
+
         end
     else
         -- dont spam checks
@@ -395,7 +408,8 @@ function GM:SpawnWaveSpawnIn()
     end
 
     if currSpawn.spawnType == "hunter" then
-        local hunter = self:SpawnHunter( currSpawn.class )
+        debugPrint( "spawning", currSpawn.name, currSpawn.prettyName )
+        local hunter = self:SpawnHunter( currSpawn.class, currSpawn )
         if IsValid( hunter ) then
             if currSpawn.postSpawnedFuncs then
                 for _, func in ipairs( currSpawn.postSpawnedFuncs ) do
@@ -482,12 +496,19 @@ local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they 
     end )
 end
 
-function GM:SpawnHunter( class )
+function GM:SpawnHunter( class, currSpawn )
     local spawnPos, valid = self:getValidHunterPos()
     if not valid then return end
 
     local hunter = ents.Create( class )
     if not IsValid( hunter ) then return end
+
+    if currSpawn.preSpawnFuncs then
+        for _, func in ipairs( currSpawn.preSpawnFuncs ) do
+            ProtectedCall( function( _currSpawn, _hunter ) func( _currSpawn, _hunter ) end, currSpawn, hunter )
+
+        end
+    end
 
     hunter:SetPos( spawnPos )
     hunter:Spawn()

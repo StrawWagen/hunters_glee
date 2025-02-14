@@ -112,6 +112,8 @@ hook.Add( "PlayerDisconnected", "TPF_HookPlayerDisconnects", TPF_RemoveProjected
 
 hook.Add( "PlayerDeath", "glee_flashight_turnoff", TPF_RemoveProjectedTexture )
 
+hook.Add( "PlayerEnteredVehicle", "glee_flashight_turnoff", TPF_RemoveProjectedTexture )
+
 hook.Add( "PreCleanupMap", "glee_flashight_turnoff", function()
 	for _, currPly in ipairs( player.GetAll() ) do
 		TPF_RemoveProjectedTexture( currPly )
