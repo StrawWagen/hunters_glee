@@ -73,6 +73,7 @@ function ENT:Initialize()
     local phys = self:GetPhysicsObject()
     if IsValid( phys ) then
         phys:Wake()
+        phys:SetMass( 25 )
 
     end
 
@@ -138,7 +139,7 @@ net.Receive( "PlaySTRadioSong", function()
 
     selfEnt.spammingHints = true
 
-    local lvl = 75
+    local lvl = 80
     if selfEnt.RadioBroken then
         lvl = 70
 

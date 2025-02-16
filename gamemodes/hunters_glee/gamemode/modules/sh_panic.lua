@@ -228,7 +228,7 @@ elseif SERVER then
         local panic = damage:GetDamage() / 10
         if victim:Health() < 25 then
             panic = panic * 2
-            panic = math.Clamp( panic, 35, 100 )
+            panic = math.Clamp( panic, 45, 100 )
 
         end
         GAMEMODE:GivePanic( victim, panic )

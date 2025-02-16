@@ -131,6 +131,7 @@ end
 
 net.Receive( "glee_dropcurrentweapon", function( _, ply )
     if ply:Health() <= 0 then return end
+    if ply.nextDropWeaponThink and ply.nextDropWeaponThink > CurTime() then return end
     if not ply:CanDropWeaponKeepAmmo( ply:GetActiveWeapon() ) then return end
     if ply:GetMoveType() == MOVETYPE_NOCLIP then return end
     local progress = generic_WaitForProgressBar( ply, "glee_weapondropper_wait", 0.05, 10, { progInfo = "Dropping weapon..." } )
@@ -140,5 +141,6 @@ net.Receive( "glee_dropcurrentweapon", function( _, ply )
     generic_KillProgressBar( ply, "glee_weapondropper_wait" )
     ply:EmitSound( "common/wpn_select.wav", 65, 120, 0.5, CHAN_ITEM )
     ply:DropActiveWeaponKeepAmmo( 15 )
+    ply.nextDropWeaponThink = CurTime() + 0.5
 
 end )
