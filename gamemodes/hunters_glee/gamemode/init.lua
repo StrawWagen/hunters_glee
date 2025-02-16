@@ -301,6 +301,7 @@ function GM:Think()
     end
     if currState == self.ROUND_LIMBO then --look at what happened during the round
         if self.limboEnd < cur then
+            hook.Run( "huntersglee_round_leave_limbo" )
             self:beginSetup()
 
         else

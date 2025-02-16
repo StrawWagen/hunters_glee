@@ -160,11 +160,7 @@ local function parse( tbl, name, defaultsTbl, spawnSet )
     end
 end
 
--- set spawnset
-function GM:SetSpawnSet( setName )
-    local asRegistered = self.RegisteredSpawnSets[setName]
-    if not asRegistered then ErrorNoHaltWithStack( "GLEE: Tried to enable invalid spawnset " .. setName ) return end
-
+function GM:ParsedSpawnSet( asRegistered )
     local spawnSet = table.Copy( asRegistered )
 
     local setParsed = {}
@@ -196,15 +192,32 @@ function GM:SetSpawnSet( setName )
     spawnSet.dynamicTooCloseDist = spawnSet.maxSpawnDist * 0.5
     spawnSet.dynamicTooFarDist = spawnSet.maxSpawnDist
 
+    return spawnSet
+
+end
+
+-- set spawnset
+function GM:SetSpawnSet( setName )
+
+    local oldSetName = self.CurrSpawnSetName
+    -- local oldSet = self.CurrSpawnSet
+
+    local asRegistered = self.RegisteredSpawnSets[setName]
+    if not asRegistered then ErrorNoHaltWithStack( "GLEE: Tried to enable invalid spawnset " .. setName ) return end
+
+    local spawnSet = self:ParsedSpawnSet( asRegistered )
+
     self.CurrSpawnSetName = setName
     self.CurrSpawnSet = spawnSet
 
     SetGlobalString( "GLEE_SpawnSetName", setName )
     SetGlobalString( "GLEE_SpawnSetPrettyName", spawnSet.prettyName )
 
-    hook.Run( "glee_post_set_spawnset", setName, spawnSet )
-    print( "GLEE: Mode set to, " .. setName )
+    if oldSetName ~= setName then
+        hook.Run( "glee_post_set_spawnset", setName, spawnSet )
+        print( "GLEE: Mode set to, " .. setName )
 
+    end
 end
 
 function GM:RegisterSpawnSet( spawnSet )
@@ -741,7 +754,7 @@ cvars.AddChangeCallback( "huntersglee_spawnset", function( _, _, new )
 end, "glee_notifyinvalidspawnsets" )
 
 
-function GM:SpawnSetThink()
+function GM:SpawnSetInitialThink()
     GLEE_SPAWNSETS = {}
 
     local spawnsetFiles = file.Find( "glee_spawnsets/*.lua", "LUA" )
@@ -774,7 +787,12 @@ function GM:SpawnSetThink()
 
 end
 
-hook.Add( "huntersglee_round_firstsetup", "glee_spawnset_think", function() GAMEMODE:SpawnSetThink() end )
+-- gobble all the custom spawnsets
+hook.Add( "huntersglee_round_firstsetup", "glee_spawnset_think", function() GAMEMODE:SpawnSetInitialThink() end )
+
+-- re-parse the spawnset when a new round is started
+-- so each round gets a different roll of all the random fields in the spawnsets
+hook.Add( "huntersglee_round_leave_limbo", "glee_spawnset_reparse", function() GAMEMODE:SetSpawnSet( spawnSetVar:GetString() ) end )
 
 -- let people joining the server have the default glee experience
 hook.Add( "huntersglee_emptyserver", "glee_reset_spawnset", function( wasEmpty )
