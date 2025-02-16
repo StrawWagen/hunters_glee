@@ -14,7 +14,7 @@ local distNeededToBeOnArea = 25^2
 local distWayTooFarOffNavmesh = 250^2
 local posCanSeeComplex = terminator_Extras.PosCanSeeComplex
 local defaultHeartAttackBpm = 290
-local bpmStartScreamingLikeCrazy = 200
+local bpmStartScreamingLikeCrazy = 225
 
 
 local meta = FindMetaTable( "Player" )

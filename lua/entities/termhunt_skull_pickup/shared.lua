@@ -272,7 +272,13 @@ function ENT:OnTakeDamage( dmg )
     if IsValid( parent ) then
         local _, ragdollsSkull, isSkeleton = glee_RagdollHasASkull( parent )
 
-        self.neckHealth = self.neckHealth + -dmg:GetDamage()
+        local dealt = dmg:GetDamage()
+        if parent.homeless_Awakened then -- they're awake
+            dealt = dealt / 100
+
+        end
+
+        self.neckHealth = self.neckHealth + -dealt
         local pit = 120 + -( self.neckHealth / 4 ) + math.random( -5, 5 )
 
         if not isSkeleton then

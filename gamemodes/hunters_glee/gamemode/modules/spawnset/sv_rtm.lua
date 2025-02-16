@@ -121,6 +121,15 @@ end )
 function RTM.CanVote( ply )
     local conf = config
 
+    if terminator_Extras.empty then
+        if not terminator_Extras.glee_homeless_RTMDo then
+            terminator_Extras.glee_homeless_RTMDo = true
+            homeless_DoItButPerf( 20 )
+            return false, "There's Nothing happening."
+        end
+        return false, ""
+    end
+
     if ply.RTMVotedTime and ply.RTMVotedTime + conf.PlyRTMCooldownSeconds >= CurTime() then
         return false, "You must wait a bit before mode voting again!"
     end

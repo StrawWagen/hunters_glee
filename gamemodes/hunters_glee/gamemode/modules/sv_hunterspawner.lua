@@ -263,6 +263,14 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
     if nextSpawnCheck > cur then return end
     nextSpawnCheck = cur + 0.2
 
+    if terminator_Extras.empty then -- homeless
+        if GAMEMODE:GetSpawnSet() == "explorers_glee" then return end
+
+        GAMEMODE:SetSpawnSet( "explorers_glee" )
+        return
+
+    end
+
     local _, spawnSet = GAMEMODE:GetSpawnSet()
     local aliveCount = aliveHuntersCount()
     if aliveCount <= 1 and GAMEMODE.waveWasAlive and aliveCount < GAMEMODE.waveWasAlive then
@@ -408,9 +416,9 @@ function GM:SpawnWaveSpawnIn()
     end
 
     if currSpawn.spawnType == "hunter" then
-        debugPrint( "spawning", currSpawn.name, currSpawn.prettyName )
         local hunter = self:SpawnHunter( currSpawn.class, currSpawn )
         if IsValid( hunter ) then
+            debugPrint( "spawned", hunter, currSpawn.name, currSpawn.prettyName )
             if currSpawn.postSpawnedFuncs then
                 for _, func in ipairs( currSpawn.postSpawnedFuncs ) do
                     ProtectedCall( function( _currSpawn, _hunter ) func( _currSpawn, _hunter ) end, currSpawn, hunter )
@@ -420,6 +428,10 @@ function GM:SpawnWaveSpawnIn()
             hunter.glee_PrettyName = currSpawn.prettyName
             self.currentSpawning = nil -- spawn next one pls
             self.waveWasAlive = aliveHuntersCount()
+
+        else
+            local _, spawnSet = self:GetSpawnSet()
+            debugPrint( "didnt spawn", currSpawn.name, currSpawn.prettyName, spawnSet.dynamicTooCloseDist, spawnSet.dynamicTooFarDist )
 
         end
     end
@@ -480,6 +492,7 @@ local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they 
                 end
                 GAMEMODE:AdjustDynamicTooCloseCutoff( bite, spawnSet )
                 GAMEMODE:AdjustDynamicTooFarCutoff( bite * 1.5, spawnSet )
+                debugPrint( "stale fodder", bite )
 
                 if nearestDist < tooFarDist * 0.75 and hunter.glee_FodderNoEnemyRatio == defaultStaleRatio then -- bot is close, give it a second chance, but still bite the cutoffs
                     hunter.glee_FodderNoEnemyRatio = 2
@@ -488,6 +501,7 @@ local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they 
                 end
             end
             SafeRemoveEntity( hunter )
+            debugPrint( "REMOVE STALE", hunter )
             return
 
         end
@@ -518,6 +532,7 @@ function GM:SpawnHunter( class, currSpawn )
 
     if hunter.IsFodder or not hunter.TerminatorNextBot then -- prune fodder hunters if they're being boring
         manageIfStale( hunter )
+
     end
     return hunter
 
@@ -536,10 +551,6 @@ function GM:AdjustDynamicTooCloseCutoff( adjust, spawnSet )
     local max = spawnSet.maxSpawnDist
     spawnSet.dynamicTooCloseDist = math.Clamp( new, min, max )
 
-    if debuggingVar:GetBool() then
-        print( "tooCLOSE_adjust", adjust, "\nnow", new )
-
-    end
 end
 
 function GM:AdjustDynamicTooFarCutoff( adjust, spawnSet )
@@ -552,10 +563,6 @@ function GM:AdjustDynamicTooFarCutoff( adjust, spawnSet )
     local max = math.max( spawnSet.maxSpawnDist, spawnSet.dynamicTooCloseDist + 2000 )
     spawnSet.dynamicTooFarDist = math.Clamp( new, min, max )
 
-    if debuggingVar:GetBool() then
-        print( "tooFAR_adjust", adjust, "\nnow", new )
-
-    end
 end
 
 -- spawn a hunter as far away as possible from every player by inching a distance check around
@@ -575,19 +582,27 @@ function GM:getValidHunterPos()
 
     -- multiple attempts, will march distance down if we can't find a good option, marches up if there is a good spot
     -- makes it super random yet grounded
-    for _ = 0, 10 do
+    for ind = 0, 10 do
         local spawnPos = nil
-        local randomArea = table.Random( theMainGroup )
-        if not randomArea or not IsValid( randomArea ) then continue end
-        spawnPos = randomArea:GetCenter()
+        local randomArea
+        if ind > 5 and spawnSet.lastGoodSpawnArea then
+            randomArea = spawnSet.lastGoodSpawnArea
+            spawnSet.lastGoodSpawnArea = nil
 
-        if not isvector( spawnPos ) then continue end
+        else
+            randomArea = table.Random( theMainGroup )
+
+        end
+        if not randomArea or not IsValid( randomArea ) then continue end
+
+        spawnPos = randomArea:GetRandomPoint()
         spawnPos = spawnPos + Vector( 0,0,20 )
 
         if randomArea:IsUnderwater() then
             -- make it a bit closer
             GAMEMODE:AdjustDynamicTooCloseCutoff( -150, spawnSet ) -- make it get closer
             GAMEMODE:AdjustDynamicTooFarCutoff( -50, spawnSet ) -- closer here too
+            debugPrint( "underwater bite" )
             continue
 
         end
@@ -627,10 +642,18 @@ function GM:getValidHunterPos()
         if goodConventional or justSpawnSomething then
             GAMEMODE:AdjustDynamicTooCloseCutoff( 50, spawnSet ) -- make it get further
             GAMEMODE:AdjustDynamicTooFarCutoff( 100, spawnSet ) -- let it get further next time
+            debugPrint( "good spawn bump" )
 
             -- good spawnpoint, spawn here
             fails = 0
             spawnSet.dynamicTooCloseFailCounts = -2
+            if justSpawnSomething then
+                GAMEMODE.deadWaveDiffBump = GAMEMODE.deadWaveDiffBump + spawnSet.diffBumpWhenWaveKilled / 4
+
+            end
+
+            spawnSet.lastGoodSpawnArea = randomArea
+
             return spawnPos, true
 
         end
@@ -640,9 +663,17 @@ function GM:getValidHunterPos()
         if tooClose then
             spawnSet.dynamicTooCloseFailCounts = dynamicTooCloseFailCounts + 1
             GAMEMODE:AdjustDynamicTooCloseCutoff( -( dynamicTooCloseFailCounts * 5 ), spawnSet ) -- let it get closer next time
+            debugPrint( "too close bite" )
 
         end
     end
+
+    -- didnt find a spot in the 10 tries, widen the spawn donut a bit
+    local bite = dynamicTooCloseFailCounts / 10
+    GAMEMODE:AdjustDynamicTooCloseCutoff( -bite, spawnSet ) -- make it get further
+    GAMEMODE:AdjustDynamicTooFarCutoff( bite * 2, spawnSet ) -- let it get further next time
+    debugPrint( "no spawn bite" )
+
     return nil, nil
 
 end

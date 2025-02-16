@@ -84,3 +84,8 @@ hook.Add( "SetupMove", "glee_FullLoadTrigger", function( ply, _, cmd )
     hook.Run( "glee_full_load", ply )
 
 end )
+
+for _, ply in player.Iterator() do -- auhto re fresh
+    ply.glee_FullLoaded = true
+
+end
