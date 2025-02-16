@@ -466,7 +466,14 @@ local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they 
         if not IsValid( hunter ) then timer.Remove( timerName ) return end
         if hunter.terminator_OverCharged then timer.Remove( timerName ) return end
         local maxHp = hunter:GetMaxHealth()
-        local enemy = hunter:GetEnemy()
+        local enemy
+        if hunter.GetEnemy then
+            enemy = hunter:GetEnemy()
+
+        elseif hunter.GetTarget then
+            enemy = hunter:GetTarget()
+
+        end
         local oldCount = hunter.glee_FodderNoEnemyCount
 
         if IsValid( enemy ) and enemy.isTerminatorHunterChummy ~= hunter.isTerminatorHunterChummy then
@@ -509,6 +516,27 @@ local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they 
 
     end )
 end
+
+hook.Add( "PlayerDeath", "glee_fodderenemy_catchkrangled", function( _, inflic, attacker )
+    local oldCount
+    local killer
+
+    if IsValid( inflic ) then
+        oldCount = inflic.glee_FodderNoEnemyCount
+        killer = inflic
+
+    end
+    if not oldCount and IsValid( attacker ) then
+        oldCount = attacker.glee_FodderNoEnemyCount
+        killer = attacker
+
+    end
+
+    if not oldCount then return end
+
+    killer.glee_FodderNoEnemyCount = math.min( 0, oldCount + -5 )
+
+end )
 
 function GM:SpawnHunter( class, currSpawn )
     local spawnPos, valid = self:getValidHunterPos()
