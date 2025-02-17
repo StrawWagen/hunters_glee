@@ -4,6 +4,7 @@ gamemodes\hunters_glee\gamemode\cl_shoppinggui.lua
 gamemodes\hunters_glee\gamemode\modules\cl_targetid.lua
 gamemodes\hunters_glee\gamemode\modules\cl_scoreboard.lua
 gamemodes\hunters_glee\gamemode\modules\cl_obfuscation.lua
+gamemodes\hunters_glee\gamemode\modules\cl_fallingwind.lua
 gamemodes\hunters_glee\gamemode\modules\cl_killfeedoverride.lua
 gamemodes\hunters_glee\gamemode\modules\cl_spectateflashlight.lua
 
@@ -15,7 +16,6 @@ gamemodes\hunters_glee\gamemode\modules\sh_tempbools.lua
 gamemodes\hunters_glee\gamemode\modules\sh_playerdrowning.lua
 gamemodes\hunters_glee\gamemode\modules\sh_danceslowdown.lua
 gamemodes\hunters_glee\gamemode\modules\sh_detecthunterkills.lua
-gamemodes\hunters_glee\gamemode\modules\sh_fallingwind.lua
 
 gamemodes\hunters_glee\gamemode\modules\signalstrength\cl_signalstrength.lua
 

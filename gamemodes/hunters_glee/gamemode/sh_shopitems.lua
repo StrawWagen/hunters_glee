@@ -2101,7 +2101,7 @@ if CLIENT then
                 spriteSize = terror
 
             -- baad thing!
-            elseif sensed:IsNPC() or sensed:IsNextBot() and not ( suspicious and not sensed.glee_sixthsense_revealed and math.random( 0, 300 ) < distance ) then
+            elseif sensed:IsNPC() or sensed:IsNextBot() or sensed:GetNW2Bool( "glee_IsHunter", false ) and not ( suspicious and not sensed.glee_sixthsense_revealed and math.random( 0, 300 ) < distance ) then
                 if sensed:Health() <= 0 then continue end
                 sixthSenseColor = sixthSenseHunter
 

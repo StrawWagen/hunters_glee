@@ -589,7 +589,7 @@ function termHuntOpenTheShop()
                     self.purchased = nil
 
                 elseif self.triedToPurchase then
-                    if shopItem.coolTooltip then
+                    if IsValid( shopItem.coolTooltip ) then
                         local oldTime = shopItem.coolTooltip.noPurchaseShakeTime or 0
                         shopItem.coolTooltip.noPurchaseShakeTime = math.max( CurTime() + 0.5, oldTime + 0.1 )
 

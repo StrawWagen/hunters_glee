@@ -6,7 +6,7 @@ hook.Add( "InitPostEntity", "glee_sv_player_cache_healthdefault", function()
 end )
 
 function GM:GetBotScaryness( ply, bot ) -- AAH
-    if bot:IsSilentStepping() then return 0 end
+    if bot.IsSilentStepping and bot:IsSilentStepping() then return 0 end
 
     local minScaryness = 0.15
     local maxScaryness = 1.25

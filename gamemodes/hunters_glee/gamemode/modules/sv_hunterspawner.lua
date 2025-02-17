@@ -217,6 +217,9 @@ function GM:SetSpawnSet( setName )
         hook.Run( "glee_post_set_spawnset", setName, spawnSet )
         print( "GLEE: Mode set to, " .. setName )
 
+    else
+        hook.Run( "glee_post_refresh_spawnset", setName, spawnSet )
+
     end
 end
 
@@ -477,7 +480,7 @@ local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they 
 
     if krangled then
         startingCount = startingCount * 2
-        noEnemyToRemove = math.min( noEnemyToRemove, 100 * staleRatio ) -- floor this
+        noEnemyToRemove = math.max( noEnemyToRemove, 100 * staleRatio ) -- floor this
 
     end
 
@@ -515,7 +518,7 @@ local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they 
         end
         local oldCount = hunter.glee_FodderNoEnemyCount
 
-        if IsValid( enemy ) and enemy.isTerminatorHunterChummy ~= hunter.isTerminatorHunterChummy then
+        if ( hunter.glee_SeeEnemy or 0 ) > CurTime() or IsValid( enemy ) and enemy.isTerminatorHunterChummy ~= hunter.isTerminatorHunterChummy then
             hunter.glee_FodderNoEnemyCount = math.min( 0, oldCount + -1 )
             return
 
@@ -525,7 +528,7 @@ local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they 
             local _, spawnSet = GAMEMODE:GetSpawnSet()
             if spawnSet then -- make the spawner spawn npcs closer if fodder hunters aren't finding enemies
                 local tooFarDist = spawnSet.dynamicTooFarDist
-                local bite = -maxHp
+                local bite = -hunter.glee_FodderNoEnemyToRemove
 
                 local _, nearestDistSqr = GAMEMODE:nearestAlivePlayer( hunter:GetPos() )
                 local nearestDist = math.sqrt( nearestDistSqr )
@@ -596,6 +599,7 @@ function GM:SpawnHunter( class, currSpawn )
     hunter:SetPos( spawnPos )
     hunter:Spawn()
     table.insert( self.glee_Hunters, hunter )
+    hunter:SetNW2Bool( "glee_IsHunter", true )
 
     print( hunter ) -- i like this print, you cannot make me remove it
 

@@ -82,8 +82,7 @@ function GM:calculateBPM( cur, players )
             ply.huntersGleeHunterThatCanSeePly = nil
             ply.huntersGleeNearestHunterToPly = nil
 
-            if IsValid( nearestHunter ) and nearestHunter.TerminatorNextBot then
-
+            if IsValid( nearestHunter ) then
                 ply.huntersGleeNearestHunterToPly = nearestHunter
                 hook.Run( "glee_hunter_nearbyaply", nearestHunter, ply )
 
@@ -95,14 +94,22 @@ function GM:calculateBPM( cur, players )
                 nearestHunterScaryness = self:GetBotScaryness( ply, nearestHunter )
 
                 mentosDist = mentosShapedDistance:Length()
-                canSee = nearestHunter.IsSeeEnemy
-                targetted = nearestHunter:GetEnemy() == ply
+
+                if nearestHunter.TerminatorNextBot then
+                    canSee = nearestHunter.IsSeeEnemy
+                    targetted = nearestHunter:GetEnemy() == ply
+                else
+                    canSee = terminator_Extras.PosCanSee( nearestHunter:EyePos(), plyPos )
+                    targetted = canSee
+
+                end
 
                 if targetted then
                     ply.huntersGleeHunterThatIsTargetingPly = nearestHunter
 
                 end
                 if canSee then
+                    nearestHunter.glee_SeeEnemy = cur + 1
                     ply.huntersGleeHunterThatCanSeePly = nearestHunter
                 end
             end
@@ -634,7 +641,15 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
             stopSpectatingThing( ply )
 
         end
-    elseif keyPressed == IN_ATTACK then
+    elseif keyPressed == IN_ATTACK or keyPressed == IN_ATTACK2 then
+        local direction
+        if keyPressed == IN_ATTACK then
+            direction = 1
+
+        elseif keyPressed == IN_ATTACK2 then
+            direction = -1
+
+        end
         local players = player.GetAll()
         local alivePlayers = GAMEMODE:returnAliveInTable( players )
         local protoStuffToSpectate = alivePlayers
@@ -649,9 +664,19 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
 
         -- go to next player
         if followingThing then
-            local thingToFollow = stuffToSpectate[1] -- default to first ply
+            local toSpectateCheck = table.Copy( stuffToSpectate )
+            local start
+            if direction == 1 then
+                start = 1
+
+            else
+                toSpectateCheck = table.Reverse( stuffToSpectate )
+                start = #toSpectateCheck
+
+            end
+            local thingToFollow = toSpectateCheck[start] -- default to first ply
             local hitTheCurrent
-            for _, thing in ipairs( stuffToSpectate ) do
+            for _, thing in ipairs( toSpectateCheck ) do
                 if hitTheCurrent then
                     thingToFollow = thing
                     break
@@ -676,7 +701,7 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
             local thingToFollow = nil
             local eyeTrace = ply:GetEyeTrace()
             local eyeTraceHit = eyeTrace.Entity
-            if IsValid( eyeTraceHit ) and eyeTraceHit:IsPlayer() or eyeTraceHit:IsNextBot() then
+            if IsValid( eyeTraceHit ) and eyeTraceHit:IsPlayer() or eyeTraceHit:IsNextBot() or eyeTraceHit:IsNPC() then
                 thingToFollow = eyeTraceHit
 
             else
@@ -725,11 +750,31 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
     elseif followingThing and currentlySpectating.Health and currentlySpectating:Health() <= 0 then
         stopSpectatingThing( ply )
 
+        local toWatch
+        local time
+
         if currentlySpectating.glee_KillerToSpectate then
-            spectated = currentlySpectating.glee_KillerToSpectate
-            spectateThing( ply, spectated )
+            toWatch = currentlySpectating.glee_KillerToSpectate
+            time = 2
+
+        else
+            time = math.random( 10, 15 )
 
         end
+
+        local afkCheckPos = ply:GetPos()
+
+        timer.Simple( time, function()
+            if not IsValid( ply ) then return end -- lol ragequit
+            if ply:Health() > 0 then return end
+            if ply:GetPos():Distance( afkCheckPos ) > 25 then return end
+
+            toWatch = IsValid( toWatch ) and toWatch or GAMEMODE:anotherAlivePlayer( ply )
+            if not IsValid( toWatch ) then return end -- everyone is dead
+
+            spectateThing( ply, toWatch )
+
+        end )
     end
 
     if IsValid( spectated ) then

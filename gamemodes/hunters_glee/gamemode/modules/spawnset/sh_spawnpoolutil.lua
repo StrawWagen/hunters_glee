@@ -17,7 +17,7 @@ if SERVER then
 
     end
 
-    hook.Add( "glee_post_set_spawnset", "glee_spawnset_sync", function( _, spawnSet )
+    local function syncFunc( _, spawnSet )
         spawnSet.spawnPool = {}
         spawnSet.partialClassCache = {}
         for _, spawn in ipairs( spawnSet.spawns ) do
@@ -26,7 +26,10 @@ if SERVER then
 
         sendPoolTo( spawnSet, player.GetAll() )
 
-    end )
+    end
+
+    hook.Add( "glee_post_set_spawnset", "glee_spawnset_sync", syncFunc )
+    hook.Add( "glee_post_refresh_spawnset", "glee_spawnset_sync", syncFunc )
 
     hook.Add( "glee_full_load", "glee_spawnset_sync", function( ply )
         local _, spawnSet = GAMEMODE:GetSpawnSet()

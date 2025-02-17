@@ -5,6 +5,7 @@ include( "modules/cl_souls.lua" )
 include( "modules/cl_targetid.lua" )
 include( "modules/cl_scoreboard.lua" )
 include( "modules/cl_obfuscation.lua" )
+include( "modules/cl_fallingwind.lua" )
 include( "modules/cl_killfeedoverride.lua" )
 include( "modules/cl_spectateflashlight.lua" )
 include( "modules/spawnset/cl_spawnsetvote.lua" )
@@ -231,7 +232,17 @@ function huntersGlee_PaintPlayer( player, posOverride )
         --text = trace.Entity:GetClass()
     end
 
-    local pos = posOverride or player:GetPos()
+    local pos
+    if posOverride then
+        pos = posOverride
+
+    elseif player.glee_SoulDisplayPosTime and player.glee_SoulDisplayPosTime > CurTime() then
+        pos = player.glee_SoulDisplayPos
+
+    else
+        pos = player:GetPos()
+
+    end
 
     local OnScreenDat = pos:ToScreen()
     if not OnScreenDat.visible then return end

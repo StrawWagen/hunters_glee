@@ -45,7 +45,8 @@ local function stopShowing( soul )
 end
 
 local function updateDisplayPos( ply, pos )
-    ply:SetPos( pos ) --update player name display
+    ply.glee_SoulDisplayPos = pos
+    ply.glee_SoulDisplayPosTime = CurTime() + 1
 
 end
 
@@ -162,7 +163,8 @@ local function createSoul( ply )
 
     function soul.RenderOverride( self )
         local blend = 0.5
-        if soul:GetPos():DistToSqr( LocalPlayer():GetShootPos() ) < 50^2 then
+        local me = LocalPlayer()
+        if soul:GetOwner() == me and soul:GetPos():DistToSqr( me:GetShootPos() ) < 50^2 then
             blend = ownSoulNearFade:GetFloat()
 
         end
@@ -173,7 +175,7 @@ local function createSoul( ply )
     end
 end
 
-local tooFarWake = 25^2
+local tooFarWake = 35^2
 local tooFarNocollide = 50^2
 local tooFarSetpos = 2000^2
 

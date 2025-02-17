@@ -11,7 +11,7 @@ local set = {
     description = "Sanic, and/or Obunga.\nObjectively shallower gameplay.\nYou happy now?",
     difficultyPerMin = { 100 / 10, 1000 / 10 }, -- difficulty per minute
     waveInterval = { 30, 90 }, -- time between spawn waves
-    diffBumpWhenWaveKilled = "default", -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
+    diffBumpWhenWaveKilled = 50, -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
     startingBudget = "default", -- so budget isnt 0
     spawnCountPerDifficulty = { 0.05 },
     startingSpawnCount = { 0, 2 },
