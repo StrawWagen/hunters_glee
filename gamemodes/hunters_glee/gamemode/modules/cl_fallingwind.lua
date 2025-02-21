@@ -10,19 +10,11 @@ local function getVelocityBulletproof( ent, entTbl )
     local currTime = CurTime()
     local oldPos
     local oldTime
-    if ent:Alive() then -- no woosh when players spawn pls
-        oldPos = entTbl.GLEE_AliveOldVelocityPos
-        oldTime = entTbl.GLEE_AliveLastVelCheckTime
-        entTbl.GLEE_AliveOldVelocityPos = currPos
-        entTbl.GLEE_AliveLastVelCheckTime = currTime
 
-    else
-        oldPos = entTbl.GLEE_DeadOldVelocityPos
-        oldTime = entTbl.GLEE_DeadLastVelCheckTime
-        entTbl.GLEE_DeadOldVelocityPos = currPos
-        entTbl.GLEE_DeadLastVelCheckTime = currTime
-
-    end
+    oldPos = entTbl.GLEE_OldVelocityPos
+    oldTime = entTbl.GLEE_LastVelCheckTime
+    entTbl.GLEE_OldVelocityPos = currPos
+    entTbl.GLEE_LastVelCheckTime = currTime
 
     if not ( oldPos and oldTime ) then return end
 
@@ -32,6 +24,13 @@ local function getVelocityBulletproof( ent, entTbl )
     vel = vel / deltaTime -- anchors vel to time, wont blow up when there's lag or anything
 
     return vel
+
+end
+
+local function resetVelocityBulletproof( entTbl )
+    entTbl.GLEE_OldVelocityPos = nil
+    entTbl.GLEE_LastVelCheckTime = nil
+
 end
 
 glee_FallingWind = {}
@@ -54,19 +53,37 @@ hook.Add( "InitPostEntity", "glee_InitPostEntity_fallingwind", function()
 
 end )
 
+local LocalPlayer = LocalPlayer
+
+local wasAlive
 local nextThink = 0
 local vel_Averages = {}
 local average_Extent = 5
 local averagedVelocity = Vector()
 
 hook.Add( "Think", "glee_Think_fallingwind", function()
-
     local cur = CurTime()
-    if nextThink > cur then return end
-    nextThink = cur + math.Rand( 0.005, 0.01 )
-
     local me = LocalPlayer()
     local myTbl = me:GetTable()
+
+    local alive = me:Alive()
+
+    if wasAlive ~= alive then
+        wasAlive = alive
+        if alive then
+            resetVelocityBulletproof( myTbl )
+            nextThink = cur + 0.01
+            vel_Averages = {}
+
+            if glee_FallingWind.Sound then
+                glee_FallingWind.Sound:ChangeVolume( 0 )
+
+            end
+        end
+    end
+
+    if nextThink > cur then return end
+    nextThink = cur + math.Rand( 0.005, 0.01 )
 
     if not glee_FallingWind.Enable:GetBool() or not IsValid( me ) then return end
 
@@ -198,7 +215,8 @@ hook.Add( "Think", "glee_Think_fallingwind", function()
 
         velocityProgress = ( velocityValue - glee_FallingWind.MinThreshold:GetInt() ) / glee_FallingWind.MaxThreshold:GetInt()
 
-        util.ScreenShake( me:GetPos(), velocityProgress, 25, 0.125, 0, true )
+        local shake = math.Clamp( velocityProgress, 0, 25 )
+        util.ScreenShake( me:GetPos(), shake, 25, 0.125, 0, true )
 
     end
 

@@ -67,6 +67,8 @@ end
 
 function ENT:Initialize()
     self:SetModel( self.Model )
+    self:SetCanPlace( false ) -- wait for it to check this
+
     if SERVER then
         self:SetRenderMode( RENDERMODE_TRANSCOLOR )
         self:SetNoDraw( false )
@@ -105,6 +107,8 @@ if CLIENT then
         outline = false,
     }
     surface.CreateFont( "scoreGainedOnPlaceFont", fontData )
+
+    local LocalPlayer = LocalPlayer
 
     hook.Add( "HUDPaint", "glee_placablestuff_hudthink", function()
         if not GAMEMODE.CanShowDefaultHud or not GAMEMODE:CanShowDefaultHud() then return end
@@ -174,8 +178,9 @@ if CLIENT then
     end
 end
 
-function ENT:GetPos2()
+function ENT:OffsettedPlacingPos()
     return self:GetPos() + self.PosOffset
+
 end
 
 local function IsHullTraceFull( startPos, hullMaxs, ignoreEnt )
@@ -225,7 +230,7 @@ local function PlayRepeatingSound( self, soundPath, soundDuration )
 
         if self.player and self.player.GivePlayerScore and self.refundAndBonus and self.refundAndBonus > 0 then
             self.player:GivePlayerScore( self.refundAndBonus )
-            huntersGlee_Announce( { self.player }, 5, 15, "The beacon survives, you profit " .. self.refundAndBonus + -placingCost .. " score." )
+            huntersGlee_Announce( { self.player }, 5, 10, "The beacon survives, you profit " .. self.refundAndBonus + -placingCost .. " score." )
             self.refundAndBonus = nil
 
         end
@@ -268,7 +273,7 @@ local function PlayRepeatingSound( self, soundPath, soundDuration )
             self:doSoundComprehensive()
 
         else
-            -- If the entity is no longer valid, stop the timer
+            -- If the entity is no longer valid, stop the timer ( ai slop comment )
             timer.Remove( timerName )
 
         end
@@ -292,13 +297,13 @@ function ENT:HasEnoughToPurchase()
 end
 
 function ENT:ManageMyPos()
-    local theNewBestPos = self:bestPosToBe()
+    local theNewBestPos = self:BestPosToBe()
     if not theNewBestPos then return end
     self:SetPos( theNewBestPos )
 
 end
 
-function ENT:bestPosToBe()
+function ENT:BestPosToBe()
     local radius = self:GetModelRadius()
     local offset = radius * self.player:GetEyeTrace().HitNormal
     offset.z = math.Clamp( offset.z, -radius, radius * 0.1 )
@@ -323,7 +328,7 @@ end
 local vec15Z = Vector( 0,0,15 )
 
 function ENT:CalculateCanPlace()
-    local checkPos = self:GetPos2() + vec15Z
+    local checkPos = self:OffsettedPlacingPos() + vec15Z
 
     if IsHullTraceFull( checkPos, self.HullCheckSize, self ) then return false, self.noPurchaseReason_NoRoom end
     if getNearestNavFloor( checkPos ) == NULL then return false, self.noPurchaseReason_OffNavmesh end
@@ -591,7 +596,7 @@ end
 
 function ENT:Place()
 
-    local crate = GAMEMODE:ScreamingCrate( self:GetPos2() )
+    local crate = GAMEMODE:ScreamingCrate( self:OffsettedPlacingPos() )
     crate:EmitSound( "items/ammocrate_open.wav", 75 )
     crate.player = self.player
 

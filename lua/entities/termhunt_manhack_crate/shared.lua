@@ -136,16 +136,16 @@ hook.Add( "EntityTakeDamage", "glee_rewarding_manhacks_reward", function ( targe
     owner.glee_ManhacksThatCanDamage[ attacker.glee_ManhackCrateDamagingId ] = nil
     if target:IsPlayer() then
         if target == owner then
-            huntersGlee_Announce( { owner }, 5, 10, "You've been damaged by your own manhacks..." )
+            huntersGlee_Announce( { owner }, 5, 8, "You've been damaged by your own manhacks..." )
 
         else
             owner:GivePlayerScore( 75 )
-            huntersGlee_Announce( { owner }, 5, 10, "The manhacks have damaged a player! You gain 75 score!" )
+            huntersGlee_Announce( { owner }, 5, 8, "The manhacks have damaged a player! You gain 75 score!" )
 
         end
     elseif target:IsNextBot() then
         owner:GivePlayerScore( 25 )
-        huntersGlee_Announce( { owner }, 5, 10, "The manhacks have damaged " .. GAMEMODE:GetNameOfBot( target ) .. ". You only gain 25 score." )
+        huntersGlee_Announce( { owner }, 5, 8, "The manhacks have damaged " .. GAMEMODE:GetNameOfBot( target ) .. ". You only gain 25 score." )
 
     end
 end )
@@ -160,7 +160,7 @@ end )
 function ENT:Place()
 
     local betrayalScore = self:GetGivenScore()
-    local crate = GM:ManhackCrate( self:GetPos2() )
+    local crate = GM:ManhackCrate( self:OffsettedPlacingPos() )
 
     if self.player and self.player.GivePlayerScore and betrayalScore then
         crate.glee_manhackcrate_player = self.player

@@ -17,7 +17,7 @@ if SERVER then
 
     end
 
-    local function syncFunc( _, spawnSet )
+    local function resetPool( _, spawnSet )
         spawnSet.spawnPool = {}
         spawnSet.partialClassCache = {}
         for _, spawn in ipairs( spawnSet.spawns ) do
@@ -25,11 +25,10 @@ if SERVER then
         end
 
         sendPoolTo( spawnSet, player.GetAll() )
-
     end
 
-    hook.Add( "glee_post_set_spawnset", "glee_spawnset_sync", syncFunc )
-    hook.Add( "glee_post_refresh_spawnset", "glee_spawnset_sync", syncFunc )
+    hook.Add( "glee_post_set_spawnset", "glee_spawnset_sync", resetPool )
+    hook.Add( "glee_post_refresh_spawnset", "glee_spawnset_sync", resetPool )
 
     hook.Add( "glee_full_load", "glee_spawnset_sync", function( ply )
         local _, spawnSet = GAMEMODE:GetSpawnSet()
@@ -87,7 +86,8 @@ elseif CLIENT then
         partialClassCache = {}
         local count = net.ReadInt( 16 )
         for _ = 1, count do
-            spawnPool[net.ReadString()] = true
+            local class = net.ReadString()
+            spawnPool[class] = true
 
         end
     end )

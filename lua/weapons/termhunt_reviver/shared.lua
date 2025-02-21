@@ -180,12 +180,12 @@ function SWEP:ResurrectPly( ply )
             reward = 150
             if not owner.glee_HomicideReviveHint then
                 owner.glee_HomicideReviveHint = true
-                huntersGlee_Announce( { owner }, 5, 8, "Half score for reviving, since you killed this person earlier." )
+                huntersGlee_Announce( { owner }, 5, 6, "Half score for reviving, since you killed this person earlier." )
 
             end
         elseif not owner.glee_revivemoneyhint then
             owner.glee_revivemoneyhint = true
-            huntersGlee_Announce( { owner }, 4, 8, "+" .. tostring( reward ) .. " score!" )
+            huntersGlee_Announce( { owner }, 4, 6, "+" .. tostring( reward ) .. " score!" )
 
         end
 

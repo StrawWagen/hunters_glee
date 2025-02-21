@@ -115,7 +115,7 @@ end
 
 function ENT:Place()
     local betrayalScore = self:GetGivenScore()
-    local crate = GAMEMODE:WeaponsCrate( self:GetPos2() )
+    local crate = GAMEMODE:WeaponsCrate( self:OffsettedPlacingPos() )
 
     crate:EmitSound( "items/ammocrate_open.wav", 75, 100 )
 

@@ -17,8 +17,6 @@ ENT.PosOffset = Vector( 0, 0, 10 )
 
 ENT.placeCount = 6
 
-local termhunt_barrels_spawned = {}
-
 if CLIENT then
     function ENT:DoHudStuff()
         local screenMiddleW = ScrW() / 2
@@ -68,12 +66,16 @@ function ENT:BarrelRandomize()
 
 end
 
+if not SERVER then return end
+
+local termhunt_barrels_spawned = {}
+
 function ENT:GetBarrels()
     local potentialBarrels = ents.FindByClass( "prop_physics" )
 
     termhunt_barrels_spawned = {}
 
-    potentialBarrels = table.Add( potentialBarrels, potentialBarrels2 )
+    potentialBarrels = table.Add( potentialBarrels )
 
     for _, barrel in ipairs( potentialBarrels ) do
         if barrel:GetNWBool( "placedbybarrel" ) == true then
@@ -88,19 +90,6 @@ function ENT:PostInitializeFunc()
 
 end
 
-local nextCountCheck = 0
-
-function ENT:ClientThink()
-    if nextCountCheck > CurTime() then return end
-
-    nextCountCheck = CurTime() + 0.5
-
-    self:GetBarrels()
-
-end
-
-if not SERVER then return end
-
 local MEMORY_VOLATILE = 8
 local barrelPunishmentDist = 1250
 
@@ -114,15 +103,18 @@ function ENT:UpdateGivenScore()
 
     local myPos = self:GetPos()
     local nearestPly, nearestPlyDistSqr
+    local roundCostPermanent
 
     if GAMEMODE.ISHUNTERSGLEE then
         nearestPly, nearestPlyDistSqr = GAMEMODE:nearestAlivePlayer( myPos )
+        roundCostPermanent = GAMEMODE.roundExtraData.BarrelPlacedCount or 0
+        roundCostPermanent = roundCostPermanent / 20 -- so barrels eventually always become unprofitable on super super long rounds
 
     end
 
     if termhunt_barrels_spawned then
         for _, currentBarrel in ipairs( termhunt_barrels_spawned ) do
-            if not IsValid( currentBarrel ) then continue end
+            if not IsValid( currentBarrel ) then continue end -- table is validated elsewhere
             local distToCurrentBarrelSqr = myPos:DistToSqr( currentBarrel:GetPos() )
 
             if distToCurrentBarrelSqr < smallestPunishmentDist then
@@ -158,10 +150,11 @@ function ENT:UpdateGivenScore()
 
     end
 
-    local scoreGiven = 40 - barrelCount
+    local scoreGiven = 40 - barrelCount -- 40 score if 0 barrels, 0 score if 40
+    scoreGiven = scoreGiven + -roundCostPermanent -- always cost more, the more barrels placed
     scoreGiven = scoreGiven + -punishmentGiven
-    scoreGiven = math.Clamp( scoreGiven, -75, 10 )
-    scoreGiven = scoreGiven + terminator_Extras.GetNookScore( myPos ) * 2
+    scoreGiven = math.Clamp( scoreGiven, -75, 15 )
+    scoreGiven = scoreGiven + ( terminator_Extras.GetNookScore( myPos ) * 2 ) -- flat add if placed in nooks
 
     self:SetGivenScore( scoreGiven )
 
@@ -169,7 +162,7 @@ end
 
 function ENT:Place()
     local barrel = ents.Create( "prop_physics" )
-    barrel:SetPos( self:GetPos2() )
+    barrel:SetPos( self:OffsettedPlacingPos() )
     barrel:SetModel( self:GetModel() )
     barrel:SetAngles( self:GetAngles() )
     barrel:SetSkin( self:GetSkin() )
@@ -180,7 +173,6 @@ function ENT:Place()
     self:GetBarrels()
 
     barrel:SetNWBool( "placedbybarrel", true )
-
     barrel:EmitSound( "Metal_Barrel.ImpactHard", 75, 100 + -( self.placeCount * 10 ) )
 
     if barrel:Health() > 0 then
@@ -195,6 +187,8 @@ function ENT:Place()
     if self.player and self.player.GivePlayerScore and betrayalScore then
         self.player:GivePlayerScore( betrayalScore )
         GAMEMODE:sendPurchaseConfirm( self.player, betrayalScore )
+
+        GAMEMODE.roundExtraData.BarrelPlacedCount = ( GAMEMODE.roundExtraData.BarrelPlacedCount or 0 ) + 1
 
     end
 

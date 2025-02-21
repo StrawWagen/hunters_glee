@@ -58,6 +58,7 @@ local function getDrowningGracePeriod()
 
     end
     return gracePeriodLengthCached
+
 end
 
 local function RemoveKeys( data, keys )
@@ -68,7 +69,6 @@ local function RemoveKeys( data, keys )
 end
 
 hook.Add( "SetupMove", "glee_unabletoswim", function( ply, mvd )
-    if not blockPlySwimming() then return end
     if blockPlySwimming():GetBool() ~= true then return end
     local waterLvl = ply:WaterLevel()
     local cur = CurTime()
@@ -108,10 +108,11 @@ hook.Add( "SetupMove", "glee_unabletoswim", function( ply, mvd )
                 ply.glee_drowning = ply.glee_drowning + -0.003
 
             end
-            if noswimming_briefrespite < cur then
+            if noswimming_briefrespite < cur then -- give them a couple seconds of swimming
                 local timeItTakesToLoseSwim = getDrowningGracePeriod():GetFloat()
                 local swimmingStrengthNormalized = timeSinceFreeFromWater / timeItTakesToLoseSwim
                 local maxTheyCanGoUp = -swimmingStrengthNormalized * 400
+
                 maxTheyCanGoUp = maxTheyCanGoUp + 400
                 if maxTheyCanGoUp > 0 and SERVER then
                     -- warn ply

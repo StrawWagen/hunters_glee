@@ -159,7 +159,7 @@ function ENT:UpdateGivenScore()
 end
 
 function ENT:CalculateCanPlace()
-    local checkPos = self:GetPos2() + Vector( 0,0,15 )
+    local checkPos = self:OffsettedPlacingPos() + Vector( 0,0,15 )
 
     if IsHullTraceFull( checkPos, self.HullCheckSize, self ) then return false, self.noPurchaseReason_NoRoom end
     if getNearestNavFloor( checkPos ) == NULL then return false, self.noPurchaseReason_OffNavmesh end
@@ -187,6 +187,7 @@ end
 local flatten = Vector( 1,1,0 )
 local tinyUpOffset = Vector( 0,0,20 )
 local interval = 60 * 4
+local tallOblong = Vector( 1, 1, 1.75 )
 
 function ENT:Place()
 
@@ -232,9 +233,13 @@ function ENT:Place()
     local softwarnPlayers = {}
     local hardwarnPlayers = {}
     for _, ply in ipairs( plys ) do
-        if ply:Health() > 0 and ply:GetPos():DistToSqr( strikePos ) < warningDist^2 then
-            table.insert( softwarnPlayers, ply )
+        if ply:Health() > 0 then
+            local subtProduct = ply:GetPos() - strikePos
+            subtProduct = subtProduct * tallOblong
+            if subtProduct:LengthSqr() < warningDist then
+                table.insert( softwarnPlayers, ply )
 
+            end
         elseif ply:Health() <= 0 then
             table.insert( hardwarnPlayers, ply )
 

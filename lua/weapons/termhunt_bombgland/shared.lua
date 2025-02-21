@@ -177,7 +177,7 @@ function SWEP:Equip()
         owner.glee_bombExplodeHint = true
 
         if dmg:GetDamage() > 40 then return end
-        huntersGlee_Announce( { owner }, 5, 10, "Ouch! My bombs can't take much more damage!" )
+        huntersGlee_Announce( { owner }, 5, 8, "Ouch! My bombs can't take much more damage!" )
 
     end )
 

@@ -473,7 +473,7 @@ function GM:TeleportRoomCheck()
             plyGettinRespawned:KillSilent()
 
         end
-        print( reason )
+        print( reason ) -- log it
         huntersGlee_Announce( player.GetAll(), 1, 5, reason )
 
     end

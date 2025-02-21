@@ -1,15 +1,29 @@
 
+local OBS_MODE_IN_EYE = OBS_MODE_IN_EYE
+
 local function DoFlashlight( state )
     local me = LocalPlayer()
     local timerName = "glee_spectateflashlight" .. LocalPlayer():EntIndex()
     --turn on the light!
     if state == false then
-        me.glee_HasDoneSpectateFlashlight = true
+        me.glee_HasDoneSpectateFlashlight = true -- hint
         me:EmitSound( "HL2Player.FlashLightOn" )
         timer.Create( timerName, 0, 0, function()
             if me:Health() > 0 then timer.Remove( timerName ) return end
-            local dir = me:GetAimVector()
-            local start = me:GetShootPos()
+            local obsMode = me:GetObserverMode()
+            local obsTarg = me:GetObserverTarget()
+
+            local dir
+            local start
+            if obsMode == OBS_MODE_IN_EYE then
+                start = obsTarg.GetShootPos and obsTarg:GetShootPos() or obsTarg:WorldSpaceCenter()
+                dir = obsTarg:EyeAngles():Forward()
+
+            else
+                dir = me:GetAimVector()
+                start = me:GetShootPos()
+
+            end
             local trResult = util.QuickTrace( start, dir * 150, me:GetObserverTarget() )
 
             local lightPos = trResult.HitPos + ( -dir * 50 )

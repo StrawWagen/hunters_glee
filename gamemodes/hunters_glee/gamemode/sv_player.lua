@@ -322,7 +322,7 @@ function GM:calculateBPM( cur, players )
                         end
                         local damage = math.ceil( ply:GetMaxHealth() / divisor )
                         ply:TakeDamage( damage, game.GetWorld(), game.GetWorld() )
-                        huntersGlee_Announce( { ply }, 100, 5, "Something is off.\nIt feels like you're somewhere wrong..." )
+                        huntersGlee_Announce( { ply }, 100, 2.5, "Something is off.\nIt feels like you're somewhere wrong..." )
 
                         damaged = true
 
@@ -466,7 +466,7 @@ function GM:DoHeartAttackThink( ply )
     else
         heartAttackScore = heartAttackScore + -2
         if not ply.glee_HasHeartAttackWarned then
-            huntersGlee_Announce( { ply }, 5, 6, "You feel a deep, sharp pain..." )
+            huntersGlee_Announce( { ply }, 5, 5, "You feel a deep, sharp pain..." )
             GAMEMODE:GivePanic( ply, 50 )
             ply.glee_HasHeartAttackWarned = true
 
@@ -779,10 +779,10 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
 
     if IsValid( spectated ) then
         if spectated.Nick and isstring( spectated:Nick() ) then
-            huntersGlee_Announce( { ply }, 1, 2, "Spectating " .. spectated:Nick() .. "." )
+            huntersGlee_Announce( { ply }, 1, 1.5, "Spectating " .. spectated:Nick() .. "." )
 
         else
-            huntersGlee_Announce( { ply }, 1, 2, "Spectating " .. GAMEMODE:GetNameOfBot( spectated ) )
+            huntersGlee_Announce( { ply }, 1, 1.5, "Spectating " .. GAMEMODE:GetNameOfBot( spectated ) )
 
         end
     end
@@ -856,6 +856,11 @@ hook.Add( "PlayerDeath", "glee_spectatedeadplayers", function( died, _, killer )
 
 end )
 
+hook.Add( "PlayerDeath", "glee_default_waittospawn", function( ply )
+    ply.nextForcedRespawn = CurTime() + 0.25
+
+end )
+
 function GM:PlayerDeathThink( ply )
     local hasHp = ply:Health() > 0
     if GAMEMODE.canRespawn == false and not hasHp then
@@ -888,22 +893,12 @@ function GM:PlayerDeathThink( ply )
             else
                 ply:Spawn()
                 ply.overrideSpawnAction = nil
-                ply.nextForcedRespawn = CurTime() + math.Rand( 3, 5 )
                 GAMEMODE.waitForSomeoneToLive = nil
 
             end
         end
     end
 end
-
--- dumber
-hook.Add( "EntityTakeDamage", "termhunt_damagescalerattackerhook", function( _, damageInfo )
-    local attacker = damageInfo:GetAttacker()
-    if not attacker.termhuntDamageAttackingMult then return end
-    local damage = damageInfo:GetDamage()
-    damageInfo:SetDamage( damage * attacker.termhuntDamageAttackingMult )
-
-end )
 
 
 local spaceCheckUpOffset = Vector( 0,0,64 )

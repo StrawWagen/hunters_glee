@@ -315,7 +315,7 @@ function ENT:Place()
     end
 
 
-    huntersGlee_Announce( plysToAlert, 5, 10, self.player:Name() .. " has begun a temporal inversion...\nGET AWAY FROM " .. plyToSwap:Name() .. "!" )
+    huntersGlee_Announce( plysToAlert, 5, 8, self.player:Name() .. " has begun a temporal inversion...\nGET AWAY FROM " .. plyToSwap:Name() .. "!" )
     plyToSwap:EmitSound( "buttons/combine_button3.wav", 100, 100 )
     plyToSwap:EmitSound( "hl1/ambience/port_suckin1.wav", 100, 80 )
 

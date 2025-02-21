@@ -164,7 +164,7 @@ function ENT:Place()
     end
 
 
-    huntersGlee_Announce( { dancer }, 10, 10, reason )
-    huntersGlee_Announce( plysToAlert, 5, 8, reasonGlobal )
+    huntersGlee_Announce( { dancer }, 10, 8, reason )
+    huntersGlee_Announce( plysToAlert, 5, 6, reasonGlobal )
 
 end

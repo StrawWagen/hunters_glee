@@ -170,32 +170,32 @@ function ENT:DoScore( reciever )
         if not reciever.glee_terminatorskullhint then
             reciever.glee_terminatorskullhint = true
             if self:CanHintPly( reciever ) then
-                huntersGlee_Announce( { reciever }, 10, 12, "You found a metal skull.\nMust have been quite a fight to bring one of those down..." )
+                huntersGlee_Announce( { reciever }, 10, 10, "You found a metal skull.\nMust have been quite a fight to bring one of those down..." )
 
             else
-                huntersGlee_Announce( { reciever }, 10, 12, "It's skull...\nSolid metal." )
+                huntersGlee_Announce( { reciever }, 10, 10, "It's skull...\nSolid metal." )
 
             end
         end
     elseif not reciever.glee_selfskullhinted and self.skullSteamId and self.skullSteamId == reciever:SteamID64() then
         reciever.glee_selfskullhinted = true
         reciever.glee_skullhinted = true
-        huntersGlee_Announce( { reciever }, 10, 12, "My skull...\nWhy did I come back here?" )
+        huntersGlee_Announce( { reciever }, 10, 10, "My skull...\nWhy did I come back here?" )
         GAMEMODE:GivePanic( purchaser, 80 )
 
     elseif not reciever.glee_skullhinted and self:CanHintPly( reciever ) then
         reciever.glee_skullhinted = true
-        huntersGlee_Announce( { reciever }, 10, 12, "You found a skull.\nSomeone must have died here..." )
+        huntersGlee_Announce( { reciever }, 10, 10, "You found a skull.\nSomeone must have died here..." )
         GAMEMODE:GivePanic( purchaser, 40 )
 
     elseif not reciever.glee_skullhinted then
         reciever.glee_skullhinted = true
         if self.skullSteamId then
-            huntersGlee_Announce( { reciever }, 10, 12, "That's their skull..." )
+            huntersGlee_Announce( { reciever }, 10, 10, "That's their skull..." )
             GAMEMODE:GivePanic( purchaser, 60 )
 
         else
-            huntersGlee_Announce( { reciever }, 10, 12, "That's it's skull..." )
+            huntersGlee_Announce( { reciever }, 10, 10, "That's it's skull..." )
             GAMEMODE:GivePanic( purchaser, 50 )
 
         end
@@ -213,7 +213,7 @@ function ENT:Touch( touched )
 
     elseif touched:IsPlayer() and touched.glee_skullhinted and not touched.glee_skullInBodyHint then
         touched.glee_skullInBodyHint = true
-        huntersGlee_Announce( { touched }, 11, 12, "A body...\nWith a skull...?" )
+        huntersGlee_Announce( { touched }, 11, 10, "A body...\nWith a skull...?" )
 
     end
 

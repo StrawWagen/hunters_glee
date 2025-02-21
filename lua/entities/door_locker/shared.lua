@@ -142,7 +142,7 @@ local function DoorOnUsedInitial( _, thingUsingTheDoor, currentlyProcessingPlaye
         msg = GAMEMODE:GetNameOfBot( thingUsingTheDoor ) .. " has used one of your locked doors, you gain 80 score!"
 
     end
-    huntersGlee_Announce( { currentlyProcessingPlayer }, 5, 8, msg )
+    huntersGlee_Announce( { currentlyProcessingPlayer }, 5, 6, msg )
 
 end
 

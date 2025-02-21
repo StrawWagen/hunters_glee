@@ -129,7 +129,7 @@ function ENT:CalculateCanPlace()
 
 end
 
-function ENT:bestPosToBe()
+function ENT:BestPosToBe()
     local bestPos = nil
     local canPlaceNonScore = self:CanPlaceNonScore()
     local placeTraceResult, eyePos = self:BarnacleTrace()
@@ -221,8 +221,8 @@ function ENT:Place()
     barnacle:Spawn()
     barnacle:Activate()
 
+    barnacle.glee_PlacedBarnacle = true
     barnacle.barnacleCreator = self
-    barnacle.termhuntDamageAttackingMult = 4
     barnacle.barnacleOwner = self.player
 
     local timerName = "SoundTimer_" .. self:GetClass() .. self:EntIndex()
@@ -247,7 +247,7 @@ function ENT:Place()
                 scoreToGive = 100
             end
             barnacle.barnacleOwner:GivePlayerScore( scoreToGive )
-            huntersGlee_Announce( { barnacle.barnacleOwner }, 5, 8, "One of your barnacles has grabbed a player!" )
+            huntersGlee_Announce( { barnacle.barnacleOwner }, 5, 6, "One of your barnacles has grabbed a player!" )
 
         end
     end )
@@ -263,3 +263,13 @@ function ENT:Place()
     SafeRemoveEntity( self )
 
 end
+
+local IsValid = IsValid
+
+hook.Add( "EntityTakeDamage", "glee_placedbarnacle_extradamage", function( _, dmg )
+    local attacker = dmg:GetAttacker()
+    if not IsValid( attacker ) or not attacker.glee_PlacedBarnacle then return end
+
+    dmg:ScaleDamage( 4 )
+
+end )

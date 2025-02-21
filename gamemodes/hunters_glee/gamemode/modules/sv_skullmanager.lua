@@ -302,7 +302,7 @@ hook.Add( "PlayerDeath", "glee_winnerdropsskulls", function( victim )
         sIfMultiple = "s"
 
     end
-    huntersGlee_Announce( { victim }, 1, 5, "You've died as the finest prey.\nDropping " .. skullsToDrop .. " extra skull" .. sIfMultiple .. "..." )
+    huntersGlee_Announce( { victim }, 1, 5, "You've died with too many skulls.\nDropping " .. skullsToDrop .. " extra skull" .. sIfMultiple .. "..." )
 
     while skullsToDrop > 0 do
         skullsToDrop = skullsToDrop + -1
@@ -337,7 +337,7 @@ hook.Add( "OnEntityCreated", "glee_detectotherskulls", function( ent )
     if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
     local class = ent:GetClass()
 
-    if class == "termhunt_skull_pickup" then return end
+    if class == "termhunt_skull_pickup" then return end -- erm
     if class == "glee_lightning" then return end
 
     -- need to timer.simple all ents ugh

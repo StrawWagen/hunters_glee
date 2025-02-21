@@ -1417,7 +1417,7 @@ local function chameleonPurchase( purchaser )
         if target.glee_chameleonHint then return end
         target.glee_chameleonHint = true
 
-        huntersGlee_Announce( { target }, 15, 6, "Ouch! Chameleon skin is weak!" )
+        huntersGlee_Announce( { target }, 15, 4, "Ouch! Chameleon skin is weak!" )
 
     end )
 
@@ -1820,7 +1820,7 @@ local function witnessPurchase( purchaser )
             gettingAttacked.nextInvalidWitness = CurTime() + 1
             gettingAttacked:EmitSound( "ambient/machines/thumper_hit.wav", 90, 80, 0.5 )
             gettingAttacked:EmitSound( "weapons/fx/nearmiss/bulletltor07.wav", 90, 80, 0.3 )
-            huntersGlee_Announce( { gettingAttacked }, 5, 5, "There is nobody to witness your fate..." )
+            huntersGlee_Announce( { gettingAttacked }, 5, 4, "There is nobody to witness your fate..." )
             return
 
         end
@@ -1839,7 +1839,7 @@ local function witnessPurchase( purchaser )
             end
         end
 
-        huntersGlee_Announce( witnessing, 20, 15, "YOU WITNESS " .. string.upper( gettingAttacked:Name() ) )
+        huntersGlee_Announce( witnessing, 20, 10, "YOU WITNESS " .. string.upper( gettingAttacked:Name() ) )
 
         -- s OR not s
         SorNotS = ""
@@ -2204,14 +2204,14 @@ local function sixthSensePurchase( purchaser )
 
                 GAMEMODE:GivePanic( purchaser, 15 * scaryness )
 
-                huntersGlee_Announce( { purchaser }, 5, 10, "Your sixth sense strains... Something is terribly wrong..." )
+                huntersGlee_Announce( { purchaser }, 5, 8, "Your sixth sense strains... Something is terribly wrong..." )
 
             else
                 purchaser:EmitSound( "physics/wood/wood_plank_impact_hard5.wav", 75, 50, 0.6, CHAN_STATIC )
                 purchaser:EmitSound( "plats/rackstop1.wav", 75, 70, 0.6, CHAN_STATIC )
                 GAMEMODE:GivePanic( purchaser, 40 * scaryness )
 
-                huntersGlee_Announce( { purchaser }, 10, 10, "MOVE!" )
+                huntersGlee_Announce( { purchaser }, 10, 8, "MOVE!" )
 
             end
 
@@ -2686,7 +2686,7 @@ local function divineIntervention( purchaser )
         local interventionPos, anchor = divineInterventionPos( purchaser )
 
         if IsValid( anchor ) then
-            huntersGlee_Announce( { purchaser }, 20, 10, "Respawned next to " .. anchor:Name() )
+            huntersGlee_Announce( { purchaser }, 20, 5, "Respawned next to " .. anchor:Name() )
 
         end
 
@@ -2726,7 +2726,7 @@ hook.Add( "huntersglee_plykilledhunter", "glee_rewardLinkedKills", function( kil
     local reward = 350
     killer:GivePlayerScore( reward )
 
-    huntersGlee_Announce( { killer }, 50, 15, "You feel at peace, a weight has been lifted.\nThe doppleganger is dead...\n+" .. reward .. " score." )
+    huntersGlee_Announce( { killer }, 50, 10, "You feel at peace, a weight has been lifted.\nThe doppleganger is dead...\n+" .. reward .. " score." )
 
 end )
 
@@ -2905,7 +2905,7 @@ local function divineChosenPurchase( purchaser )
     SetGlobalBool( "chosenhasarrived", true )
     purchaser.glee_IsDivineChosen = true
 
-    huntersGlee_Announce( player.GetAll(), 500, 35, "The ultimate sacrifice has been made.\nBEWARE OF " .. string.upper( purchaser:Name() ) )
+    huntersGlee_Announce( player.GetAll(), 500, 15, "The ultimate sacrifice has been made.\nBEWARE OF " .. string.upper( purchaser:Name() ) )
 
     local maintainChosenWeapTimer = "divineChosenTimer_" .. purchaser:GetCreationID()
 
@@ -3257,9 +3257,9 @@ local defaultItems = {
     [ "ar2" ] = {
         name = "Ar2",
         desc = "Ar2 + Balls.\nIt takes 2 AR2 balls to kill a terminator.",
-        cost = 125,
-        markup = 1.5,
-        markupPerPurchase = 0.35,
+        cost = 75,
+        markup = 2,
+        markupPerPurchase = 0.4,
         cooldown = 0.5,
         category = "Items",
         purchaseTimes = {

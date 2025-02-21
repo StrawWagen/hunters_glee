@@ -162,6 +162,6 @@ hook.Add( "glee_beartrap_snapped", "trackundeadbeartraps", function( trap, snapp
 
         end
     end
-    huntersGlee_Announce( { placer }, 5, 10, msg )
+    huntersGlee_Announce( { placer }, 5, 8, msg )
 
 end )

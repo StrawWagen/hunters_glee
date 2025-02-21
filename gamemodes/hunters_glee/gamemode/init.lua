@@ -138,11 +138,11 @@ function GM:TermHuntSetup()
     self.blockPvp                       = nil
     self.canRespawn                     = nil
     self.canScore                       = nil
-    self.doProxChat                     = nil --used in playercomms
-    self.glee_Hunters               = {}
+    self.doProxChat                     = nil -- used in playercomms
+    self.glee_Hunters                   = {}
     self.deadPlayers                    = {}
     self.roundScore                     = {}
-    self.roundExtraData                 = {}
+    self.roundExtraData                 = {} -- helper tbl that is reset on round end
 
     self.nextStateTransmit              = 0
 
