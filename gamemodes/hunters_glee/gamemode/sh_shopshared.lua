@@ -214,14 +214,21 @@ local sadGreen = Color( 106,190,9 )
 -- so cost -50 would be '+50' and yellow because it would give players 50 score for buying
 -- cost 50 would be '-50' and depending on whether player can afford, green or red.
 -- it reverses the number i know, it's stupid
-function GM:translatedShopItemCost( purchaser, cost, identifier )
+function GM:translatedShopItemCost( purchaser, cost, compareType, identifier )
 
     if not cost then return "", white end
 
     local color = white
     local preTextSymbol = ""
     local theCost = ""
-    local purchasersScore = purchaser:GetScore()
+    local compareVal
+    if compareType == "score" then
+        compareVal = purchaser:GetScore()
+
+    elseif compareType == "skull" then
+        compareVal = purchaser:GetSkulls()
+
+    end
 
     -- add difference between "not enough money" and "you bought this already"
     if identifier and purchaser and purchaser.shopItemCooldowns[ identifier ] == math.huge then
@@ -233,7 +240,7 @@ function GM:translatedShopItemCost( purchaser, cost, identifier )
         preTextSymbol = "-"
         theCost = tostring( math.abs( cost ) )
 
-        canAfford = ( purchasersScore + -cost ) >= 0
+        canAfford = ( compareVal + -cost ) >= 0
 
         if not canAfford then
             color = red
@@ -314,6 +321,37 @@ function GM:shopItemCost( toPurchase, purchaser )
 
     cost = cost * GAMEMODE:shopMarkup( purchaser, toPurchase )
     return math.Round( cost )
+
+end
+
+function GM:shopItemSkullCost( toPurchase, purchaser )
+    if not toPurchase then return end
+    local dat = GAMEMODE:GetShopItemData( toPurchase )
+    if not dat then return end
+    local skullCostRaw = dat.skullCost
+    if not skullCostRaw then return end
+    local skullCost = nil
+
+    if isfunction( skullCostRaw ) then
+        local noErrors, returned = xpcall( skullCostRaw, errorCatchingMitt, purchaser )
+        if noErrors == false then
+            GAMEMODE:invalidateShopItem( toPurchase )
+            print( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s SKULL cost function errored!!!!!!!!!!!" )
+            return 0
+
+        else
+            skullCost = returned
+
+        end
+    else
+        skullCost = skullCostRaw
+
+    end
+
+    if not skullCost then return end
+
+    skullCost = skullCost * GAMEMODE:shopMarkup( purchaser, toPurchase )
+    return math.Round( skullCost )
 
 end
 
@@ -411,6 +449,8 @@ local REASON_ERROR = "ERROR"
 local REASON_INVALID = "That isn't a real thing for sale."
 local REASON_POOR = "You are too poor to afford this."
 local REASON_DEBT = "You can't buy this.\nYou're in Debt."
+local REASON_SKULLPOOR = "You need more skulls to buy this."
+local REASON_SKULLDEBT = "You can't buy this, You're in Skull debt."
 
 -- shared!
 
@@ -484,6 +524,9 @@ function GM:canPurchase( ply, toPurchase )
         end
     end
 
+    local nextPurchase = ply.shopItemCooldowns[toPurchase] or -20000
+    if nextPurchase == math.huge then return nil, "You've already bought this." end
+
     local score = ply:GetScore()
     local cost = GAMEMODE:shopItemCost( toPurchase, ply )
     local canGoInDebt = dat.can_goindebt
@@ -501,14 +544,27 @@ function GM:canPurchase( ply, toPurchase )
 
     end
 
-    local nextPurchase = ply.shopItemCooldowns[toPurchase] or -20000
-    local nextPurchasePresentable = math.Round( math.abs( nextPurchase - CurTime() ), 1 )
-    local cooldownReason = "Cooldown, Purchasable in " .. tostring( nextPurchasePresentable )
-    if nextPurchase == math.huge then
-        cooldownReason = "You've already bought this."
+    local skullCost = GAMEMODE:shopItemSkullCost( toPurchase, ply )
+    if skullCost then
+        local skulls = ply:GetSkulls()
+        local skullCostsTooMuch = skulls < skullCost and not canGoInDebt
+        if skullCost >= 0 and skullCostsTooMuch and skullCost ~= 0 then
+            local cannotBuySkullsReason = REASON_SKULLPOOR
+            if score < 0 then
+                cannotBuySkullsReason = REASON_SKULLDEBT
+
+            end
+            return nil, cannotBuySkullsReason
+
+        end
     end
 
-    if nextPurchase > CurTime() then return nil, cooldownReason end
+    if nextPurchase > CurTime() then
+        local nextPurchasePresentable = math.Round( math.abs( nextPurchase - CurTime() ), 1 )
+        local cooldownReason = "Cooldown, Purchasable in " .. tostring( nextPurchasePresentable )
+        return nil, cooldownReason
+
+    end
 
     local hookResult, notPurchasableReason = hook.Run( "glee_blockpurchaseitem", ply, self.itemIdentifier )
 

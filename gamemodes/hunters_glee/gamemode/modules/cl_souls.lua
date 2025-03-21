@@ -235,14 +235,27 @@ local function soulGotoPos( soul, pos, ang )
 
 end
 
+local myMaxVolume = 0.05
+
 local function followPly( soul, ply, data )
     local pos = data and data.pos or ply:GetPos()
     local ang = data and data.ang or ply:GetAngles()
+
+    local volume = ply:VoiceVolume()
 
     if ply == LocalPlayer() then
         pos = ply:GetShootPos()
 
     end
+
+    myMaxVolume = math.max( myMaxVolume, volume )
+    volume = volume / myMaxVolume
+
+    local scaled = volume * 35
+    scaled = math.Clamp( scaled, 0, 50 )
+
+    local yapJitter = VectorRand() * scaled
+    pos = pos + yapJitter
 
     updateDisplayPos( soul:GetOwner(), soul:GetPos() )
     soulGotoPos( soul, pos, ang )
@@ -335,6 +348,11 @@ end
 
 local nextThink = 0
 
+function glee_SoulsThinkNOW()
+    nextThink = 0
+
+end
+
 hook.Add( "Tick", "glee_souls", function()
     local cur = CurTime()
     if nextThink > cur then return end
@@ -342,9 +360,9 @@ hook.Add( "Tick", "glee_souls", function()
     local me = LocalPlayer()
     if not IsValid( me ) then nextThink = cur + 5 return end -- spawning in
 
-    local seesDeadPeople = ( me:Health() <= 0 or me:GetNWInt( "glee_radiochannel", 0 ) == 666 )
+    local seesDeadPeople = me:SeesDeadPeople()
     if not seesDeadPeople then
-        nextThink = cur + 5
+        nextThink = cur + math.Rand( 2.5, 5 )
         for _, ply in player.Iterator() do
             local soul = ply.glee_soul
             if soul then

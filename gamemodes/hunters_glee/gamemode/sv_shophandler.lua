@@ -74,6 +74,12 @@ function GM:purchaseItem( ply, toPurchase )
 
         end
 
+        local skullCost = self:shopItemSkullCost( toPurchase, ply )
+        if skullCost then
+            ply:GivePlayerSkulls( -skullCost )
+
+        end
+
         -- increment purchase count.. AFTER the cost is calculated...
         local name = "huntersglee_purchasecount_" .. toPurchase
         -- use nw2 because this will never be set when player is not valid clientside

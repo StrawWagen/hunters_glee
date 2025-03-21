@@ -240,7 +240,7 @@ function termHuntOpenTheShop()
                 local scoreToAddFrame = shopFrame.scoreToAddFrame or {}
                 local cost = GAMEMODE:shopItemCost( scoreToAddFrame.itemIdentifier, ply )
 
-                shopFrame.costString, shopFrame.costColor = GAMEMODE:translatedShopItemCost( ply, cost, scoreToAddFrame.itemIdentifier )
+                shopFrame.costString, shopFrame.costColor = GAMEMODE:translatedShopItemCost( ply, cost, "score", scoreToAddFrame.itemIdentifier )
 
             end
 
@@ -555,6 +555,10 @@ function termHuntOpenTheShop()
             shopItem:SetSize( myCategoryPanel.shopItemWidth, myCategoryPanel.shopItemHeight )
             shopItem:SetText( "" )
 
+            shopItem.costString = ""
+            shopItem.costColor = white
+            shopItem.markupString = ""
+
             shopItem.IsHoveredCooler = function( self )
                 local tooltipHovered = nil
                 if self.coolTooltip and self.coolTooltip.fakeButton then
@@ -833,75 +837,6 @@ function termHuntOpenTheShop()
             -- paint the shop item!
             shopItem.Paint = function( self )
 
-                local score = ply:GetScore()
-
-                local nextBigCaching = self.nextBigCaching or 0
-
-                if nextBigCaching < CurTime() or score ~= self.oldScore then
-
-                    local identifierPaint = self.itemIdentifier
-
-                    self.purchasable, self.notPurchasableReason = GAMEMODE:canPurchase( ply, identifierPaint )
-                    self.nextBigCaching = CurTime() + 0.1
-                    self.oldScore = score
-
-                    -- add newline before no buy reason
-                    local noPurchaseReason = ""
-                    if self.notPurchasableReason and self.notPurchasableReason ~= "" then
-                        noPurchaseReason = "\n" .. self.notPurchasableReason
-
-                    end
-
-                    local cost = GAMEMODE:shopItemCost( identifierPaint, ply )
-
-                    -- "decorative" cost that isn't applied when purchased
-                    local decorativeCost = itemData.costDecorative
-                    if decorativeCost then
-                        self.costString = itemData.costDecorative
-
-                    elseif itemData.simpleCostDisplay then
-                        self.costString = tostring( cost )
-
-                    else
-                        self.costString, self.costColor = GAMEMODE:translatedShopItemCost( ply, cost, identifierPaint )
-
-                    end
-
-                    -- markups applied
-                    self.markupString = ""
-                    local currentMarkup = GAMEMODE:shopMarkup( ply, identifierPaint )
-                    if currentMarkup ~= 1 then
-                        self.markupString = "( " .. tostring( currentMarkup ) .. "x markup )"
-                    end
-
-                    -- handle tooltips
-                    local description = ""
-                    local descriptionReturned = GAMEMODE:translateShopItemDescription( ply, identifierPaint, self.itemData.desc )
-                    if descriptionReturned and descriptionReturned ~= "" then
-                        description = descriptionReturned
-
-                    end
-
-                    local additionalMarkupStr = ""
-                    local localizedMarkupPer = self.itemData.markupPerPurchase
-                    if localizedMarkupPer and isnumber( localizedMarkupPer ) then
-                        local boughtCount = GAMEMODE:purchaseCount( ply, identifierPaint )
-                        if boughtCount == 0 then
-                            additionalMarkupStr = "\nCost is marked up +" .. localizedMarkupPer .. "x per purchase."
-                        else
-                            additionalMarkupStr = "\nBought " .. boughtCount .. ". Additional markup is +" .. localizedMarkupPer * boughtCount .. "x"
-                        end
-                    end
-
-                    self.coolTooltipDescription = description
-                    self.coolTooltipMarkup = additionalMarkupStr
-                    self.coolTooltipNoPurchase = noPurchaseReason
-
-                    -- check after all the potentially custom functions had a chance to run  
-                    if GAMEMODE.invalidShopItems[ identifierPaint ] then self:Remove() return end
-
-                end
-
                 local hovered = self:IsHoveredCooler()
 
                 if hovered then
@@ -940,6 +875,85 @@ function termHuntOpenTheShop()
                     draw_RoundedBox( 0, 0, 0, self:GetWide(), self:GetTall(), self.myOverlayColor )
 
                 end
+
+                local score = ply:GetScore()
+
+                local nextBigCaching = self.nextBigCaching or 0
+                if nextBigCaching > CurTime() and score == self.oldScore then return end
+
+                local identifierPaint = self.itemIdentifier
+                -- check after all the potentially custom functions had a chance to run  
+                if GAMEMODE.invalidShopItems[ identifierPaint ] then self:Remove() return end
+
+                self.purchasable, self.notPurchasableReason = GAMEMODE:canPurchase( ply, identifierPaint )
+                self.nextBigCaching = CurTime() + 0.1
+                self.oldScore = score
+
+                -- add newline before no buy reason
+                local noPurchaseReason = ""
+                if self.notPurchasableReason and self.notPurchasableReason ~= "" then
+                    noPurchaseReason = "\n" .. self.notPurchasableReason
+
+                end
+
+                local cost = GAMEMODE:shopItemCost( identifierPaint, ply )
+                local skullCost = GAMEMODE:shopItemSkullCost( identifierPaint, ply )
+                self.costString = ""
+                self.costColor = white
+
+                if skullCost and skullCost >= 0 then
+                    self.costString, self.costColor = GAMEMODE:translatedShopItemCost( ply, skullCost, "skull", identifierPaint )
+                    local sOrNoS = "s"
+                    if skullCost <= 1 then
+                        sOrNoS = ""
+                        self.costString = self.costString .. " Skull" .. sOrNoS .. "\n"
+
+                    end
+                else
+                    -- "decorative" cost that isn't applied when purchased
+                    local decorativeCost = itemData.costDecorative
+                    if decorativeCost then
+                        self.costString = itemData.costDecorative
+
+                    elseif itemData.simpleCostDisplay then
+                        self.costString = tostring( cost )
+
+                    else
+                        self.costString, self.costColor = GAMEMODE:translatedShopItemCost( ply, cost, "score", identifierPaint )
+
+                    end
+                end
+
+                -- markups applied
+                self.markupString = ""
+                local currentMarkup = GAMEMODE:shopMarkup( ply, identifierPaint )
+                if currentMarkup ~= 1 then
+                    self.markupString = "( " .. tostring( currentMarkup ) .. "x markup )"
+                end
+
+                -- handle tooltips
+                local description = ""
+                local descriptionReturned = GAMEMODE:translateShopItemDescription( ply, identifierPaint, self.itemData.desc )
+                if descriptionReturned and descriptionReturned ~= "" then
+                    description = descriptionReturned
+
+                end
+
+                local additionalMarkupStr = ""
+                local localizedMarkupPer = self.itemData.markupPerPurchase
+                if localizedMarkupPer and isnumber( localizedMarkupPer ) then
+                    local boughtCount = GAMEMODE:purchaseCount( ply, identifierPaint )
+                    if boughtCount == 0 then
+                        additionalMarkupStr = "\nCost is marked up +" .. localizedMarkupPer .. "x per purchase."
+                    else
+                        additionalMarkupStr = "\nBought " .. boughtCount .. ". Additional markup is +" .. localizedMarkupPer * boughtCount .. "x"
+                    end
+                end
+
+                self.coolTooltipDescription = description
+                self.coolTooltipMarkup = additionalMarkupStr
+                self.coolTooltipNoPurchase = noPurchaseReason
+
             end
 
             -- buy the item!

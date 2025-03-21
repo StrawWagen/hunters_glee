@@ -500,10 +500,10 @@ function GM:returnDeadInTable( stuff )
 
 end
 
-function GM:returnDeadListenersInTable( stuff )
+function GM:returnDeadListenersInTable( stuff ) -- people who can hear/see dead people
     local deadStuff = {}
     for _, curr in ipairs( stuff ) do
-        if curr:Health() <= 0 or curr:GetNWInt( "glee_radiochannel", 0 ) == 666 then
+        if curr:SeesDeadPeople() then
             table.insert( deadStuff, curr )
 
         end

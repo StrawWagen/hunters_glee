@@ -142,6 +142,7 @@ function SWEP:PrimaryAttack()
 
         if index == undeadChannel then
             self:SwitchedTo666Snd()
+            if CLIENT then glee_SoulsThinkNOW() end
 
         elseif index == 1 then
             self:SwitchedToNoChannelSnd()
@@ -164,6 +165,7 @@ function SWEP:SecondaryAttack()
 
         if index == undeadChannel then
             self:SwitchedTo666Snd()
+            if CLIENT then glee_SoulsThinkNOW() end
 
         elseif index == 1 then
             self:SwitchedToNoChannelSnd()

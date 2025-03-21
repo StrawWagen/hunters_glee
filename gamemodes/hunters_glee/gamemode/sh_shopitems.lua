@@ -845,16 +845,6 @@ hook.Add( "PreCleanupMap", "glee_shop_resetchannel666quota", function()
     end
 end )
 
-function channel666Check( purchaser )
-    if not purchaser:GetNW2Bool( "glee_canpurchase_666", false ) then
-        return false, "Pure souls cannot purchase this.\nYou must sin...\nMurder when it lasts, will suffice."
-
-    end
-
-    return true
-
-end
-
 function channel666Purchase( purchaser )
     purchaser:SetNWBool( "glee_cantalk_tothedead", true )
 
@@ -3592,7 +3582,8 @@ local defaultItems = {
     [ "channel666" ] = {
         name = "Channel 666.",
         desc = "Your radio bridges life and death.\nYou can communicate with the dead, both ways.",
-        cost = 50,
+        cost = 0,
+        skullCost = 1,
         cooldown = math.huge,
         category = "Innate",
         purchaseTimes = {
@@ -3600,7 +3591,7 @@ local defaultItems = {
 
         },
         weight = 125,
-        purchaseCheck = { unUndeadCheck, channel666Check },
+        purchaseCheck = { unUndeadCheck },
         purchaseFunc = channel666Purchase,
         canShowInShop = hasMultiplePeople,
     },

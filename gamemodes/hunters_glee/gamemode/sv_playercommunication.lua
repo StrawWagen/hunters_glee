@@ -89,14 +89,18 @@ end )
 
 --]]
 
+local entMeta = FindMetaTable( "Entity" )
+local ent_Health = entMeta.Health
+local ent_GetPos = entMeta.GetPos
+
 local function listenerCanHear( listener, talker )
     if not doProxChatCached then
         return true, false
 
     end
 
-    local listenersHealth = listener:Health()
-    local talkersHealth = talker:Health()
+    local listenersHealth = ent_Health( listener )
+    local talkersHealth = ent_Health( talker )
 
     local listenerIsSpectator = listenersHealth <= 0
     local listenerIsPlaying = listenersHealth > 0
@@ -110,15 +114,18 @@ local function listenerCanHear( listener, talker )
     local talkersRadioIsOff = talkersChannel == 0
     -- same channel!
     local radioLink = ( listenersChannel == talkersChannel ) and not talkersRadioIsOff
-    -- radio on talks to everyone
 
     if listenerIsSpectator then
         -- hearing dead talker or alive talker with 666
         if talkerIsSpectator or radioLink then
             return true, false
 
+        -- alive talker, but we're dead. play them in prox.
+        elseif talkerIsPlaying and ent_GetPos( listener ):DistToSqr( ent_GetPos( talker ) ) < distToBlockProxy then
+            return true, true
+
         else
-            return true, false
+            return false, false
 
         end
     elseif listenerIsPlaying then
@@ -127,7 +134,7 @@ local function listenerCanHear( listener, talker )
             return true, false
 
         -- alive ply and they are close enough for proxy
-        elseif talkerIsPlaying and listener:GetPos():DistToSqr( talker:GetPos() ) < distToBlockProxy then
+        elseif talkerIsPlaying and ent_GetPos( listener ):DistToSqr( ent_GetPos( talker ) ) < distToBlockProxy then
             return true, true
 
         -- dead ply or they're too far
@@ -153,7 +160,7 @@ hook.Add( "PlayerCanHearPlayersVoice", "glee_voicechat_system", function( listen
 end )
 
 
--- text chat isn't ever proxy, new logic needed
+-- text chat is always global
 hook.Add( "PlayerCanSeePlayersChat", "glee_chatblock", function( _, _, listener, talker )
     if not IsValid( talker ) or not IsValid( listener ) then return end
     local talkersHealth = talker:Health()
@@ -164,6 +171,7 @@ hook.Add( "PlayerCanSeePlayersChat", "glee_chatblock", function( _, _, listener,
 
     local listenerIsSpectator = listenersHealth <= 0
 
+    -- dead people conditional message seeing
     if talkerIsSpectator then
         local listenersChannel = listener:GetGleeRadioChannel()
         local talkersChannel = talker:GetGleeRadioChannel()
@@ -177,6 +185,7 @@ hook.Add( "PlayerCanSeePlayersChat", "glee_chatblock", function( _, _, listener,
             return false
 
         end
+    -- everyone can see messages from alive people
     elseif talkerIsPlaying then
         return true
 

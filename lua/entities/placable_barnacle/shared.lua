@@ -149,9 +149,9 @@ end
 if not SERVER then return end
 
 
-local tooCloseToPlayer = 500
-local sortaCloseToPlayers = 1500
-local barnaclePunishmentDist = 1000
+local tooCloseToPlayer = 350
+local sortaCloseToPlayers = 1000
+local barnaclePunishmentDist = 750
 
 function ENT:UpdateGivenScore()
     local plys = player.GetAll()
@@ -192,11 +192,11 @@ function ENT:UpdateGivenScore()
     local playerPenalty = 0
 
     if smallestDistLinear < tooCloseToPlayer then
-        playerPenalty = -200
+        playerPenalty = -125
         scoreGiven = scoreGiven + playerPenalty
 
     elseif smallestDistLinear < sortaCloseToPlayers then
-        playerPenalty = -50
+        playerPenalty = -40
         scoreGiven = scoreGiven + playerPenalty
 
     end
