@@ -250,7 +250,7 @@ function SWEP:ShutDown()
 
     end
     if self.hookId then
-        hook.Remove( self.hookId )
+        hook.Remove( "EntityTakeDamage", self.hookId )
 
     end
 end

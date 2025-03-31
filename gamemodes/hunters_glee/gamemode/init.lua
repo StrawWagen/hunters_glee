@@ -517,7 +517,7 @@ local function huntersAreInCorrectGroupsFunc()
         if battling or pathing then
             hunterNotInPlay.glee_IncorrectGroupCount = nil
 
-        elseif incorrectGroupCount > 100 then
+        elseif incorrectGroupCount > 50 then
             SafeRemoveEntity( hunterNotInPlay )
 
         else
@@ -536,10 +536,15 @@ local SysTime = SysTime
 local abs_Local = math.abs
 local coroutine_status = coroutine.status
 local coroutine_resume = coroutine.resume
+local nextGroupCheckStart = 0
 
 hook.Add( "glee_sv_validgmthink_active", "glee_checkhunters_areinvalidgroups", function()
     if not correctGroupsCor then
-        correctGroupsCor = coroutine.create( huntersAreInCorrectGroupsFunc )
+        if nextGroupCheckStart < CurTime() then
+            correctGroupsCor = coroutine.create( huntersAreInCorrectGroupsFunc )
+            nextGroupCheckStart = CurTime() + 5
+
+        end
 
     elseif coroutine_status( correctGroupsCor ) ~= "dead" then
         local oldTime = SysTime()

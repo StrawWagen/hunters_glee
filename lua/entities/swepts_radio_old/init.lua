@@ -164,7 +164,7 @@ end
 function ENT:TakeDamageRandomizeSong()
     local rand = math.random( 1, 51 )
 
-    local lvl = 75
+    local lvl = 80
     if self.RadioBroken then
         lvl = 70
 
