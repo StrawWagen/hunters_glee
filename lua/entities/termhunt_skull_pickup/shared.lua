@@ -7,7 +7,7 @@ ENT.Category    = "Other"
 ENT.PrintName   = "Skull Pickup"
 ENT.Author      = "StrawWagen"
 ENT.Spawnable    = true
-ENT.AdminOnly    = false
+ENT.AdminOnly    = game.IsDedicated()
 ENT.Category = "Hunter's Glee"
 
 local IsValid = IsValid

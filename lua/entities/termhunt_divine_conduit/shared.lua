@@ -8,7 +8,7 @@ ENT.PrintName   = "Divine Conduit"
 ENT.Author      = "StrawWagen"
 ENT.Purpose     = "Begins a divine conduit"
 ENT.Spawnable    = true
-ENT.AdminOnly    = false
+ENT.AdminOnly    = game.IsDedicated()
 ENT.Category = "Hunter's Glee"
 ENT.Model = "models/hunter/tubes/tube1x1x2.mdl"
 
@@ -109,7 +109,7 @@ end
 
 function ENT:PostInitializeFunc()
     if not GAMEMODE.ISHUNTERSGLEE then SafeRemoveEntity( self ) return end
-    self:SetMaterial( "lights/white001" )
+    self:SetMaterial( "lights/white002" )
 
 end
 
@@ -174,7 +174,7 @@ ENT.radius = 1050
 
 function ENT:DoCircle()
     local circle = ClientsideModel( "models/hunter/tubes/tube2x2x025.mdl", RENDERGROUP_OPAQUE )
-    circle:SetMaterial( "lights/white001" )
+    circle:SetMaterial( "lights/white002" )
     circle:SetPos( self:GetPos() )
     circle:SetParent( self )
     self:CallOnRemove( "removeradiusthing", function()

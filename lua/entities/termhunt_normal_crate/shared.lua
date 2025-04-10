@@ -8,7 +8,7 @@ ENT.PrintName   = "Normal crate"
 ENT.Author      = "StrawWagen"
 ENT.Purpose     = "Normal item crate spawner"
 ENT.Spawnable    = true
-ENT.AdminOnly    = false
+ENT.AdminOnly    = game.IsDedicated()
 ENT.Category = "Hunter's Glee"
 ENT.Model = "models/Items/item_item_crate.mdl"
 

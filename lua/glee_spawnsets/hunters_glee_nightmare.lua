@@ -47,6 +47,7 @@ local set = {
     maxSpawnDist = "default",
     roundEndSound = "default",
     roundStartSound = "default",
+    chanceToBeVotable = 40,
     spawns = {
         {
             hardRandomChance = nil,

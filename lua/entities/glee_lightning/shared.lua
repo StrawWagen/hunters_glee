@@ -7,8 +7,8 @@ ENT.Category    = "Other"
 ENT.PrintName   = "Lightning"
 ENT.Author      = "StrawWagen"
 ENT.Spawnable    = true
-ENT.Category = "Hunter's Glee"
 ENT.AdminOnly    = true
+ENT.Category = "Hunter's Glee"
 
 ENT.powa = 1
 

@@ -8,7 +8,7 @@ ENT.PrintName   = "Homicidal Glee"
 ENT.Author      = "StrawWagen"
 ENT.Purpose     = "Makes a player immortal"
 ENT.Spawnable    = false
-ENT.AdminOnly    = false
+ENT.AdminOnly    = game.IsDedicated()
 ENT.Category = "Hunter's Glee"
 ENT.Model = "models/Items/item_item_crate.mdl"
 

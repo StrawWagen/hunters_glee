@@ -7,7 +7,7 @@ ENT.PrintName   = "Small Bomb Gland Bomb"
 ENT.Author      = "StrawWagen"
 ENT.Purpose     = "Explodes"
 ENT.Spawnable    = true
-ENT.AdminOnly    = false
+ENT.AdminOnly    = game.IsDedicated()
 ENT.Category = "Hunter's Glee"
 ENT.Model = "models/weapons/w_bugbait.mdl"
 

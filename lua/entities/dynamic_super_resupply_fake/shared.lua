@@ -8,8 +8,8 @@ ENT.PrintName   = "DynSupplies Super"
 ENT.Author      = "StrawWagen"
 ENT.Purpose     = "Drops either armor or medkits, chance to spawn weapon is much higher, Used in screaming/beacon crate"
 ENT.Spawnable    = true
+ENT.AdminOnly    = game.IsDedicated()
 ENT.Category = "Hunter's Glee"
-ENT.AdminOnly    = false
 
 function ENT:commonCreationOptions()
     local tbl = {

@@ -8,7 +8,7 @@ ENT.PrintName   = "Door Locker"
 ENT.Author      = "StrawWagen"
 ENT.Purpose     = "Locks doors"
 ENT.Spawnable    = true
-ENT.AdminOnly    = false
+ENT.AdminOnly    = game.IsDedicated()
 ENT.Category = "Hunter's Glee"
 ENT.Model = "models/Items/item_item_crate.mdl"
 

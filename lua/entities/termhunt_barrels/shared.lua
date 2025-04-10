@@ -8,7 +8,7 @@ ENT.PrintName   = "Barrels"
 ENT.Author      = "StrawWagen"
 ENT.Purpose     = "Random barrel spawner"
 ENT.Spawnable    = true
-ENT.AdminOnly    = false
+ENT.AdminOnly    = game.IsDedicated()
 ENT.Category = "Hunter's Glee"
 ENT.Model = "models/props_c17/oildrum001_explosive.mdl"
 

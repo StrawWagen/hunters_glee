@@ -8,7 +8,7 @@ ENT.PrintName   = "Score Pickup"
 ENT.Author      = "StrawWagen"
 ENT.Purpose     = "Locks doors"
 ENT.Spawnable    = true
-ENT.AdminOnly    = false
+ENT.AdminOnly    = game.IsDedicated()
 ENT.Category = "Hunter's Glee"
 
 function ENT:SetupDataTables()

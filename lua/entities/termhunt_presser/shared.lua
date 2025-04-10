@@ -8,7 +8,7 @@ ENT.PrintName   = "Thing Presser"
 ENT.Author      = "StrawWagen"
 ENT.Purpose     = "Presses stuff."
 ENT.Spawnable    = false
-ENT.AdminOnly    = false
+ENT.AdminOnly    = game.IsDedicated()
 ENT.Category = "Hunter's Glee"
 ENT.Model = "models/Items/item_item_crate.mdl"
 

@@ -8,8 +8,8 @@ ENT.PrintName   = "DynSupplies Normal"
 ENT.Author      = "StrawWagen"
 ENT.Purpose     = "Drops either armor or medkits"
 ENT.Spawnable   = true
+ENT.AdminOnly    = game.IsDedicated()
 ENT.Category    = "Hunter's Glee"
-ENT.AdminOnly   = false
 
 -- can't just set a table per-based entity, thanks garry
 function ENT:commonCreationOptions()

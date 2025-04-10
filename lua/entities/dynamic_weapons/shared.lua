@@ -8,8 +8,8 @@ ENT.PrintName   = "DynSupplies Weapons"
 ENT.Author      = "StrawWagen"
 ENT.Purpose     = "Spawns random weapons"
 ENT.Spawnable    = true
+ENT.AdminOnly    = game.IsDedicated()
 ENT.Category = "Hunter's Glee"
-ENT.AdminOnly    = false
 
 function ENT:commonCreationOptions()
     local tbl = {

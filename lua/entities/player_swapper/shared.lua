@@ -8,7 +8,7 @@ ENT.PrintName   = "Player Swapper"
 ENT.Author      = "StrawWagen"
 ENT.Purpose     = "Swaps players with terminators"
 ENT.Spawnable    = true
-ENT.AdminOnly    = false
+ENT.AdminOnly    = game.IsDedicated()
 ENT.Category = "Hunter's Glee"
 ENT.Model = "models/Items/item_item_crate.mdl"
 
@@ -64,7 +64,7 @@ if CLIENT then
     local cam_Start3D = cam.Start3D
     local cam_End3D = cam.End3D
 
-    local playerOverrideMat = CreateMaterial( "CHAMSMATPLAYERSWAPPER1", "UnlitGeneric", { ["$basetexture"] = "lights/white001", ["$model"] = 1, ["$ignorez"] = 1 } )
+    local playerOverrideMat = CreateMaterial( "CHAMSMATPLAYERSWAPPER1", "UnlitGeneric", { ["$basetexture"] = "lights/white002", ["$model"] = 1, ["$ignorez"] = 1 } )
     local hintMatId = surface.GetTextureID( "effects/yellowflare" )
 
     function ENT:HighlightNearestTarget()

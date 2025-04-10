@@ -95,7 +95,7 @@ function ENT:BarnacleTrace()
     local eyePos = trace.HitPos
     local traceData = {
         start = eyePos + Vector( 0,0,10 ),
-        endpos = eyePos + Vector( 0,0,1000 ),
+        endpos = eyePos + Vector( 0,0,2500 ),
         mask = MASK_SOLID_BRUSHONLY,
 
     }

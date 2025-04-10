@@ -8,8 +8,8 @@ ENT.PrintName   = "DynSupplies Specials"
 ENT.Author      = "StrawWagen"
 ENT.Purpose     = "Drops SMG nades, ar2 balls, spawned rarely by 'normal' supplies"
 ENT.Spawnable    = true
+ENT.AdminOnly    = game.IsDedicated()
 ENT.Category = "Hunter's Glee"
-ENT.AdminOnly    = false
 
 function ENT:commonCreationOptions()
     local tbl = {

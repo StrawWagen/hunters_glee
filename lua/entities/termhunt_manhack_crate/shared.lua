@@ -8,7 +8,7 @@ ENT.PrintName   = "Box Of Manhacks"
 ENT.Author      = "StrawWagen"
 ENT.Purpose     = ""
 ENT.Spawnable    = true
-ENT.AdminOnly    = false
+ENT.AdminOnly    = game.IsDedicated()
 ENT.Category = "Hunter's Glee"
 ENT.Model = "models/Items/item_item_crate.mdl"
 

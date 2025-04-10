@@ -11,19 +11,11 @@ if SERVER then
 
     end
 
-    local function updateContent( plysIn )
+    local function updateContent( plys )
         local contentTbl = content()
         if not contentTbl then return end
 
         SetGlobalInt( "GLEE_SpawnSet_ContentCount", #contentTbl )
-        local plys
-        if istable( plysIn ) then
-            plys = plysIn
-
-        else
-            plys = { plysIn }
-
-        end
         net.Start( "glee_spawnsetcontent_asker", false )
             for _, contentStr in ipairs( contentTbl ) do
                 net.WriteString( contentStr )
@@ -46,7 +38,7 @@ if SERVER then
             end )
             hook.Add( "glee_full_load", "glee_update_spawnset_content", function( ply )
                 if not content() then hook.Remove( "glee_full_load", "glee_update_spawnset_content" ) return end
-                updateContent( ply )
+                updateContent( { ply } )
 
             end )
             timer.Create( "glee_contentbackup", 60, 0, function() -- putting this here because im especially worried about GlobalInt not working right, it often doesn't
@@ -80,7 +72,7 @@ else
         MsgN( "GLEE: mounting " .. currContent )
         steamworks.DownloadUGC( currContent, function( path )
             thinking = nil
-            nextThink = CurTime() + 0.5
+            nextThink = CurTime() + 1
 
             if not path then return end
             local succeed = game.MountGMA( path )

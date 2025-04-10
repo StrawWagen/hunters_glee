@@ -330,18 +330,18 @@ local function soulThink( ply )
                 end
             end
         end
-    elseif IsValid( soul ) then -- they alive now, their soul has a place
-        soulGoInto( soul, ply )
+        if IsValid( targetParent ) then
+            local currParent = ply:GetParent()
+            if not ( IsValid( currParent ) and currParent == targetParent ) then
+                ply:SetParent( targetParent )
 
-    end
-    if IsValid( targetParent ) then
-        local currParent = ply:GetParent()
-        if not ( IsValid( currParent ) and currParent == targetParent ) then
-            ply:SetParent( targetParent )
+            end
+        else
+            ply:SetParent()
 
         end
-    else
-        ply:SetParent()
+    elseif IsValid( soul ) then -- they alive now, their soul has a place
+        soulGoInto( soul, ply )
 
     end
 end

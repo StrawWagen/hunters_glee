@@ -8,7 +8,7 @@ ENT.PrintName   = "Beartrap Spawner"
 ENT.Author      = "StrawWagen"
 ENT.Purpose     = "Spawns beartraps."
 ENT.Spawnable    = true
-ENT.AdminOnly    = false
+ENT.AdminOnly    = game.IsDedicated()
 ENT.Category = "Hunter's Glee"
 ENT.Model = "models/stiffy360/beartrap.mdl"
 
@@ -44,7 +44,7 @@ if not SERVER then return end
 
 local IntersectingHull = Vector( 50, 50, 10 )
 local maxScoreDist = 4000
-local tooCloseToPlayer = 800
+local tooCloseToPlayer = 600
 
 function ENT:UpdateGivenScore()
     local plys = player.GetAll()

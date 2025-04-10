@@ -3,7 +3,7 @@ ENT.Base = "base_anim"
 ENT.PrintName = ""
 ENT.Author = "Loures"
 ENT.Spawnable = false
-ENT.AdminSpawnable = false
+ENT.AdminOnly    = game.IsDedicated()
 ENT.AutomaticFrameAdvance = true
 
 local className = "termhunt_bear_trap"

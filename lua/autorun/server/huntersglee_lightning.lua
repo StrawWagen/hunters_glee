@@ -217,7 +217,7 @@ function termHunt_PowafulLightning( inflic, attacker, strikingPos, powa )
         damage:SetDamageForce( dir * 1000 )
         thing:TakeDamageInfo( damage )
 
-        if thing ~= attacker and thing:IsSolid() then
+        if thing ~= attacker and thing:IsSolid() and not ( thing:IsWeapon() and IsValid( thing:GetOwner() ) and thing:GetOwner():IsPlayer() ) then
             thing:Fire( "IgniteLifetime", powa * 5 )
 
         end
@@ -228,7 +228,6 @@ function termHunt_PowafulLightning( inflic, attacker, strikingPos, powa )
     end
 
     if powa >= 5.5 then
-
         local bigHit = CreateSound( inflic, "hunters_glee/wizardry_thunderimpact.wav", recipFilterEveryone )
         bigHit:SetSoundLevel( 150 )
         bigHit:ChangeVolume( 1 )

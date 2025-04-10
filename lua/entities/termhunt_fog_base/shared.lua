@@ -8,7 +8,7 @@ ENT.PrintName   = "Fog emitter"
 ENT.Author      = "StrawWagen"
 ENT.Purpose     = "Heavy fog that sticks to the floor"
 ENT.Spawnable    = true
-ENT.AdminOnly    = false
+ENT.AdminOnly    = game.IsDedicated()
 ENT.Category = "Hunter's Glee"
 
 ENT.fogAreasManaging = {}

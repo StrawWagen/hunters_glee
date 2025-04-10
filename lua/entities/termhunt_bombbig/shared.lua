@@ -7,7 +7,7 @@ ENT.PrintName   = "Big Bomb Gland Bomb"
 ENT.Author      = "StrawWagen"
 ENT.Purpose     = "Explodes"
 ENT.Spawnable    = true
-ENT.AdminOnly    = false
+ENT.AdminOnly    = game.IsDedicated()
 ENT.Category = "Hunter's Glee"
 ENT.Model = "models/gibs/antlion_gib_large_3.mdl"
 
