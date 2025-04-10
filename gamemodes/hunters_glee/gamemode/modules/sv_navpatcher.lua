@@ -313,8 +313,8 @@ local function connectionDataVisOffsetCheck( currentData )
 
     --debugoverlay.Line( area1Closest, area2Closest, 120, Color( 255,255,255 ), true )
 
-    if not currentData.linkageArea1 then return end
-    if not currentData.linkageArea2 then return end
+    if not IsValid( currentData.linkageArea1 ) then return end
+    if not IsValid( currentData.linkageArea2 ) then return end
 
     area1Closest.z = currentData.linkageArea1:GetClosestPointOnArea( currentData.area2Closest ).z
     area2Closest.z = currentData.linkageArea2:GetClosestPointOnArea( currentData.area1Closest ).z
