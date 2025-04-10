@@ -53,6 +53,8 @@ local function DoFlashlight( state )
     else
         timer.Remove( timerName )
         me:EmitSound( "HL2Player.FlashLightOff" )
+
+        if not me.glee_spectateflashlight then return end
         me.glee_spectateflashlight.dietime = 0
 
     end
