@@ -40,6 +40,10 @@ include( "lib/sv_termfuncs.lua" )
 include( "shared.lua" )
 include( "sv_player.lua" )
 include( "sv_playercommunication.lua" )
+
+include( "modules/sv_modelspeaking.lua" )
+include( "modules/sv_deathsounds.lua" )
+
 include( "modules/sv_unstucker.lua" )
 include( "modules/sv_wallkick.lua" )
 include( "modules/sv_speedhandler.lua" )
