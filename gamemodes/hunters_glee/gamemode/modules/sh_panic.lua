@@ -86,34 +86,26 @@ elseif SERVER then
             if panic >= maxPanic then
                 local hookResult = hook.Run( "huntersglee_blockpanicreset", ply, panic )
                 local canResetPanic = not underwater and hookResult ~= true
+                local didScream
 
-                -- keeps building
-                if canResetPanic then
-                    panic = 50
-
-                else
-                    panic = panic + -25
-
-                end
-
-                -- silly way to vary the sound between max panics
-                -- sounded repetitive to have the same sound play over and over and over
-                if ply.screamMaxPanicSounds and #ply.screamMaxPanicSounds < 1 then
-                    ply.screamMaxPanicSounds = nil
-
-                end
-                ply.screamMaxPanicSounds = ply.screamMaxPanicSounds or table.Copy( self:GetCorrectSoundsForModel( ply, "panicReleaseScreams" ) )
-
+                -- sounds that play when player is chased by scary enemy, in a group of other players
                 if ply.screamMaxPanicFleeSounds and #ply.screamMaxPanicFleeSounds < 1 then
                     ply.screamMaxPanicFleeSounds = nil
 
                 end
                 ply.screamMaxPanicFleeSounds = ply.screamMaxPanicFleeSounds or table.Copy( self:GetCorrectSoundsForModel( ply, "panicReleaseScreamsChased" ) )
 
+                -- play these otherwise
+                if ply.screamMaxPanicSounds and #ply.screamMaxPanicSounds < 1 then
+                    ply.screamMaxPanicSounds = nil
+
+                end
+                ply.screamMaxPanicSounds = ply.screamMaxPanicSounds or table.Copy( self:GetCorrectSoundsForModel( ply, "panicReleaseScreams" ) )
+
                 local screamSound
 
                 local chaser = ply.huntersGleeHunterThatCanSeePly
-                local doFleeSound = IsValid( chaser ) and ( ply.nextFleePanicSound or 0 ) < CurTime() and self:GetBotScaryness( ply, chaser ) >= 0.95
+                local doFleeSound = #ply.screamMaxPanicFleeSounds >= 1 and IsValid( chaser ) and ( ply.nextFleePanicSound or 0 ) < CurTime() and self:GetBotScaryness( ply, chaser ) >= 0.95
                 local fleeingGroup
 
                 if doFleeSound then
@@ -134,22 +126,43 @@ elseif SERVER then
 
                 end
                 if doFleeSound then
+                    -- sillier way
                     screamSound = table.remove( ply.screamMaxPanicFleeSounds, 1 )
                     ply.nextFleePanicSound = CurTime() + math.random( 5, 10 )
                     for _, fleeingPly in ipairs( fleeingGroup ) do
                         fleeingPly.nextFleePanicSound = CurTime() + math.random( 10, 5 )
 
                     end
-                else
+                    didScream = true
+
+                elseif #ply.screamMaxPanicSounds >= 1 then
+                    -- silly way to vary the sound between max panics
                     screamSound = table.remove( ply.screamMaxPanicSounds, 1 )
                     ply.nextFleePanicSound = CurTime() + math.random( 5, 10 )
 
-                end
-                ply:ViewPunch( AngleRand() * 0.3 )
-                ply:DoAnimationEvent( ACT_FLINCH_PHYSICS )
-                if not underwater then
-                    ply:EmitSound( self:GenderizeSound( ply, screamSound ), 130, math.Rand( 99, 106 ), 1, CHAN_VOICE )
+                    didScream = true
 
+                end
+                if didScream then
+                    ply:ViewPunch( AngleRand() * 0.3 )
+                    ply:DoAnimationEvent( ACT_FLINCH_PHYSICS )
+
+                    if canResetPanic then -- reset panic with a scream
+                        panic = 50
+                        ply:EmitSound( self:GenderizeSound( ply, screamSound ), 130, math.Rand( 99, 106 ), 1, CHAN_VOICE )
+
+                    else -- let panic get overflown, we just take little bites
+                        panic = panic + -25
+
+                    end
+                else
+                    if canResetPanic then -- screaming releases panic better than this
+                        panic = panic - ( panic / 3 )
+
+                    else
+                        panic = panic + -25
+
+                    end
                 end
                 panicSpeedPenaltyMul = 2
 
@@ -160,13 +173,16 @@ elseif SERVER then
                 end
 
                 ply.screamPanicSounds = ply.screamPanicSounds or table.Copy( self:GetCorrectSoundsForModel( ply, "panicBuildingScreams" ) )
+                if #ply.screamPanicSounds >= 1 then
+                    local screamSound = table.remove( ply.screamPanicSounds, math.random( 1, #ply.screamPanicSounds ) )
+                    if screamSound and not underwater then
+                        ply:EmitSound( self:GenderizeSound( ply, screamSound ), 88, 100, 1, CHAN_VOICE )
 
-                local screamSound = table.remove( ply.screamPanicSounds, math.random( 1, #ply.screamPanicSounds ) )
-                if screamSound and not underwater then
-                    ply:EmitSound( self:GenderizeSound( ply, screamSound ), 88, 100, 1, CHAN_VOICE )
+                    end
+                    ply:ViewPunch( AngleRand() * 0.01 )
+                    panic = panic + -10
 
                 end
-                ply:ViewPunch( AngleRand() * 0.01 )
                 panicSpeedPenaltyMul = 0.6
 
             end
@@ -180,7 +196,7 @@ elseif SERVER then
 
             elseif panic >= 25 and not increasing then
                 doPanicSound = true
-                panicSoundHitch = true
+                panicSoundHitch = true -- hitch when going from increasing to not increasing
                 panicSoundPitch = 80
 
                 panicSpeedPenaltyMul = 0.25

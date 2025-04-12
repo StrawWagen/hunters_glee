@@ -358,7 +358,10 @@ if CLIENT then
         local doingReviving = self:GetNWBool( "RevivingPly", false )
 
         if doingReviving then return end
-        local ownerPos = self:GetOwner():GetPos()
+        local owner = self:GetOwner()
+
+        if not IsValid( owner ) then return end
+        local ownerPos = owner:GetPos()
         local nearestDeadPly = nil
         local deads = self:GetGamemodeDeadPlayerData()
         table.sort( deads, function( a, b )
