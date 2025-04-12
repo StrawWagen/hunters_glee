@@ -56,6 +56,93 @@ function GM:AddModelSoundAlias( alias, aliasOf )
 
 end
 
+
+local yapped = {}
+local function yap( key, ... )
+    if yapped[key] then return end
+    yapped[key] = true
+    print( ... )
+
+end
+
+local genericStr = "generic"
+local cachedCategories = {}
+
+function GM:GetCorrectSoundsForModel( ply, category )
+    local allSounds = self.allModelSounds
+
+    local plysModelPart = genericStr
+    local theGenericCategories = allSounds[plysModelPart]
+    local theGenericSounds = theGenericCategories[category]
+    if not theGenericSounds then yap( plysModelPart, "GLEE: Tried to get invalid sound category " .. category ) return end
+
+    local plysMdl = string_lower( GetModel( ply ) )
+    local cache = cachedCategories[plysMdl]
+    if not cache then
+        for partName, _ in pairs( allSounds ) do
+            if string.find( plysMdl, partName ) then
+                plysModelPart = partName
+                break
+
+            end
+        end
+        if plysModelPart == genericStr then
+            local aliases = self.modelSoundAliases
+            for alias, aliasOf in pairs( aliases ) do
+                if string.find( plysMdl, alias ) then
+                    plysModelPart = aliasOf
+                    break
+
+                end
+            end
+        end
+
+        local categories = allSounds[plysModelPart]
+        local sounds = categories[category]
+
+        if not sounds then
+            sounds = theGenericSounds
+
+        end
+        cache = sounds
+        cachedCategories[plysMdl] = cache
+        return cache
+
+    else
+        return cache
+
+    end
+end
+
+local hardcodedFemale = {
+    ["models/player/p2_chell.mdl"] = true,
+    ["models/player/mossman.mdl"] = true,
+
+}
+
+function GM:GenderizeSound( ply, snd )
+    if not string_find( snd, "male" ) then return snd end
+
+    local plyModel = GetModel( ply )
+    if hardcodedFemale[ plyModel ] or string_find( string_lower( plyModel ), "fem" ) then
+        return string_replace( snd, "male", "female" )
+
+    end
+    return snd
+
+end
+
+function GM:GetRandModelLine( ply, category )
+    local sounds = self:GetCorrectSoundsForModel( ply, category )
+    if #sounds <= 0 then return end
+    local snd = sounds[math.random( 1, #sounds )]
+    return self:GenderizeSound( ply, snd )
+
+end
+
+
+
+
 local silent = {
     death = {
     },
@@ -432,88 +519,3 @@ local grigori = {
     }
 }
 GM:AddModelSounds( "monk", grigori )
-
-
-local yapped = {}
-local function yap( key, ... )
-    if yapped[key] then return end
-    yapped[key] = true
-    print( ... )
-
-end
-
-local genericStr = "generic"
-local cachedCategories = {}
-
-function GM:GetCorrectSoundsForModel( ply, category )
-    local allSounds = self.allModelSounds
-
-    local plysModelPart = genericStr
-    local theGenericCategories = allSounds[plysModelPart]
-    local theGenericSounds = theGenericCategories[category]
-    if not theGenericSounds then yap( plysModelPart, "GLEE: Tried to get invalid sound category " .. category ) return end
-
-    local plysMdl = string_lower( GetModel( ply ) )
-    local cache = cachedCategories[plysMdl]
-    if not cache then
-        for partName, _ in pairs( allSounds ) do
-            if string.find( plysMdl, partName ) then
-                plysModelPart = partName
-                break
-
-            end
-        end
-        if plysModelPart == genericStr then
-            local aliases = self.modelSoundAliases
-            for alias, aliasOf in pairs( aliases ) do
-                if string.find( plysMdl, alias ) then
-                    plysModelPart = aliasOf
-                    break
-
-                end
-            end
-        end
-
-        local categories = allSounds[plysModelPart]
-        local sounds = categories[category]
-
-        if not sounds then
-            sounds = theGenericSounds
-
-        end
-        cache = sounds
-        cachedCategories[plysMdl] = cache
-        return cache
-
-    else
-        return cache
-
-    end
-end
-
-local hardcodedFemale = {
-    ["models/player/p2_chell.mdl"] = true,
-    ["models/player/mossman.mdl"] = true,
-
-}
-
-function GM:GenderizeSound( ply, snd )
-    if not string_find( snd, "male" ) then return snd end
-
-    local plyModel = GetModel( ply )
-    if hardcodedFemale[ plyModel ] or string_find( string_lower( plyModel ), "fem" ) then
-        return string_replace( snd, "male", "female" )
-
-    end
-    return snd
-
-end
-
-
-function GM:GetRandModelLine( ply, category )
-    local sounds = self:GetCorrectSoundsForModel( ply, category )
-    if #sounds <= 0 then return end
-    local snd = sounds[math.random( 1, #sounds )]
-    return self:GenderizeSound( ply, snd )
-
-end
