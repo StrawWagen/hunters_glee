@@ -727,7 +727,7 @@ function SWEP:EpicnessThink()
     if inHighIntensity < CurTime() and epic >= 100 then
         if epic >= 225 then
             -- once we do this line, activate a period of faster regen, and ranting
-            huntersGlee_Announce( { self:GetOwner() }, 100, 8, "SHOW THEM." )
+            huntersGlee_Announce( { self:GetOwner() }, 500, 8, "SHOW THEM." )
             local result = table.Random( superHighIntensity )
             theSound = result[1]
             self.nextEpicLine = CurTime() + result[2]

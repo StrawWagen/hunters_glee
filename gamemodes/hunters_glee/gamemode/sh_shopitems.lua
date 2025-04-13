@@ -2574,7 +2574,7 @@ local function divineInterventionCost( purchaser )
             return 0
 
         elseif not isChosen then
-            return cost * 2
+            return cost * 1.25
 
         end
     end
