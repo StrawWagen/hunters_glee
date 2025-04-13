@@ -19,7 +19,7 @@ end
 
 local speedVar = CreateConVar( "huntersglee_debug_hunterspawner_speedoverride", 1, { FCVAR_CHEAT }, "Increase the speed at which the hunter spawner thinks time is passing.", 0, 999 )
 
-local overrideCountVar = CreateConVar( "huntersglee_spawneroverridecount", 0, bit.bor( FCVAR_NOTIFY, FCVAR_ARCHIVE ), "Overrides how many terminators will spawn, 0 for automatic count. Above 5 WILL lag.", 0, 32 )
+local overrideCountVar = CreateConVar( "huntersglee_spawneroverridecount", 0, { FCVAR_NOTIFY, FCVAR_ARCHIVE }, "Overrides how many terminators will spawn, 0 for automatic count. Above 5 WILL lag.", 0, 32 )
 local function aliveHuntersCount()
     local aliveTermsCount = 0
     local hunters = GAMEMODE.glee_Hunters
@@ -32,6 +32,8 @@ local function aliveHuntersCount()
     return aliveTermsCount
 
 end
+
+local maxSpawnedVar = CreateConVar( "huntersglee_spawnermax", 0, { FCVAR_NOTIFY, FCVAR_ARCHIVE }, "Puts an upper limit on max hunters that can spawn. 0 to disable.", 0, 10000 )
 
 GAMEMODE.RegisteredSpawnSets = GAMEMODE.RegisteredSpawnSets or {}
 
@@ -320,6 +322,12 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
         countWanted = countWanted + spawnSet.startingSpawnCount
         countWanted = math.min( countWanted, spawnSet.maxSpawnCount )
         countWanted = math.floor( countWanted )
+
+    end
+
+    local maxAllowed = maxSpawnedVar:GetInt()
+    if maxAllowed > 0 then
+        countWanted = math.min( countWanted, maxAllowed )
 
     end
 

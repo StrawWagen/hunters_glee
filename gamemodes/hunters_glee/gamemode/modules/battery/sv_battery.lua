@@ -128,16 +128,18 @@ hook.Add( "glee_sv_validgmthink", "glee_depletebatteries", function( players, _,
     end
 end )
 
+local noBatteryBright = 40
+
 local function checkFlashlightBrightness( ply )
     local oldBright = ply.glee_FlashlightBrightness or 255
     if ply:GetBatteryCharge() <= 0 then
-        if oldBright >= 35 then
+        if oldBright >= noBatteryBright + 15 then
             ply:EmitSound( "buttons/lightswitch2.wav", 60, 120, 0.4 )
 
         end
-        ply:SetFlashlightBrightness( 20 + math.random( -15, 5 ) )
+        ply:SetFlashlightBrightness( noBatteryBright + math.random( -15, 10 ) )
         timer.Simple( math.Rand( 0.05, 0.25 ), function()
-            ply:SetFlashlightBrightness( 20 + math.random( -2, 2 ) )
+            ply:SetFlashlightBrightness( noBatteryBright + math.random( -2, 2 ) )
 
         end )
     else

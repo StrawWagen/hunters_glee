@@ -24,8 +24,8 @@ local function checkLight( ply, theLight )
 	-- min 125 farz
 	farz = farz + 125
 
-	local fov = alpha / 3.4
-	fov = math.Clamp( fov, 60, 80 )
+	local fov = alpha / 3
+	fov = math.Clamp( fov, 60, 90 )
 
 	local farzReturned, fovReturned = hook.Run( "glee_flashlightstats", ply, alpha, farz, fov )
 	if fovReturned then
@@ -60,10 +60,14 @@ local function TPF_SetupProjectedTexture( ply )
 			theFlashlightAngles = attachDat.Ang
 
 		end
+
+		theFlashlightPos = theFlashlightPos + theFlashlightAngles:Forward() * 15
+
 		theLight:SetPos( theFlashlightPos )
 		theLight:SetAngles( theFlashlightAngles )
 
-		theLight:SetKeyValue( "enableshadows", 0 )
+		theLight:SetKeyValue( "enableshadows", 1 )
+		theLight:SetKeyValue( "shadowquality", 0 )
 		theLight:SetKeyValue( "nearz", 10 )
 		checkLight( ply, theLight )
 		theLight:Spawn()

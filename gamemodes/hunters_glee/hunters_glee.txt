@@ -51,12 +51,20 @@
         6
         {
             "name"        "huntersglee_spawneroverridecount"
-            "text"        "Override terminator count."
-            "help"        "Overrides how many terminators will spawn, 0 for dynamic count. Above 4 WILL lag."
+            "text"        "Override hunter count?"
+            "help"        "Overrides how many hunters will spawn, 0 for dynamic count. Above 8 WILL lag."
             "type"        "Numeric"
             "default"     "0"
         }
         7
+        {
+            "name"        "huntersglee_spawnermax"
+            "text"        "Hard cap on hunter count?."
+            "help"        "Puts a hard cap on how many hunters will spawn."
+            "type"        "Numeric"
+            "default"     "0"
+        }
+        8
         {
             "name"        "huntersglee_proceduralcratesmaxplayers"
             "text"        "Player num, to stop crates."

@@ -6,13 +6,15 @@ local flashlights = {}
 local badFlashlights = {}
 local ourFlashlight
 
-local dist = 75
-local notInWorldHull = Vector( 20, 20, 20 )
+local notInWorldHull = Vector( 10, 10, 10 )
+local operationAngle = Angle( 0, 0, 0 )
 
 local function manageFlashlight( flashlight, me )
     if not IsValid( flashlight ) then return end
+
     local notOurs = badFlashlights[flashlight]
     if notOurs then return true end
+
     local parent = flashlight:GetParent()
     if flashlight ~= ourFlashlight then
         if not IsValid( parent ) then return true end
@@ -29,14 +31,19 @@ local function manageFlashlight( flashlight, me )
     local attId = flashlight:GetParentAttachment()
     if attId <= 0 then return end
 
+    local obsMode = me:GetObserverMode()
+    if obsMode ~= OBS_MODE_NONE then return end -- third person?
+
     local attData = me:GetAttachment( attId )
+    if not attData then return end -- ???
+
+    local boxCWorld = me:WorldSpaceCenter()
     local theFlashlightPos = attData.Pos
-    local shoot = me:GetShootPos()
 
-    local negative = -me:WorldToLocal( theFlashlightPos ) -- this is a stupid hack
+    local negative = -WorldToLocal( theFlashlightPos, operationAngle, me:GetPos(), operationAngle ) -- this is a stupid hack
 
-    local traceFromShootToPos = {
-        start = shoot,
+    local traceFromCToFlashPos = {
+        start = boxCWorld,
         endpos = theFlashlightPos,
         mins = -notInWorldHull,
         maxs = notInWorldHull,
@@ -44,39 +51,13 @@ local function manageFlashlight( flashlight, me )
 
     }
 
-    local res = util.TraceHull( traceFromShootToPos )
-    if res.StartSolid then
-        theFlashlightPos = shoot
+    local result = util.TraceHull( traceFromCToFlashPos )
 
-    elseif res.Hit then
-        theFlashlightPos = res.HitPos
+    if result.Hit then
+        theFlashlightPos = result.HitPos
 
     end
-
-    local checkDir = attData.Ang:Forward()
-    local trForwardStruc = {
-        start = theFlashlightPos,
-        endpos = theFlashlightPos + checkDir * dist,
-        mins = -notInWorldHull / 2,
-        maxs = notInWorldHull / 2,
-        filter = me,
-
-    }
-
-    local tooCloseToWallsTr = util.TraceHull( trForwardStruc )
-
-    if tooCloseToWallsTr.Hit then
-        local traceDist = ( tooCloseToWallsTr.Fraction * dist ) - dist
-        if tooCloseToWallsTr.StartSolid then
-            traceDist = -dist
-
-        end
-        local offset = checkDir * traceDist
-        theFlashlightPos = theFlashlightPos + offset
-
-    end
-
-    flashlight:SetPos( theFlashlightPos + negative )
+    flashlight:SetPos( theFlashlightPos + negative ) -- stupid stupid hack
 
     return true
 
