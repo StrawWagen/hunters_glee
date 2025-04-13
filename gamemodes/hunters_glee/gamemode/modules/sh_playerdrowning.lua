@@ -41,9 +41,15 @@ if SERVER then
     end )
 end
 
+hook.Add( "PlayerDeath", "glee_resetdrowning", function( ply )
+    ply.glee_drowning_damagecount = nil
+    ply.glee_drowning = nil
+
+end )
+
 local blockPlySwimmingCached
 
-local function blockPlySwimming()
+local function blockPlySwimming() -- TODO; JUST GET THE RETURN OF CREATECONVAR WTF IS THIS OLD CODE
     if not blockPlySwimmingCached then
         blockPlySwimmingCached = GetConVar( "huntersglee_players_cannot_swim" )
 
@@ -51,6 +57,8 @@ local function blockPlySwimming()
     return blockPlySwimmingCached
 
 end
+
+local gracePeriodLengthCached
 
 local function getDrowningGracePeriod()
     if not gracePeriodLengthCached then

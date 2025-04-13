@@ -5,7 +5,6 @@ local string_find = string.find
 local string_lower = string.lower
 local string_replace = string.Replace
 
-GM.modelSoundAliases = {}
 GM.allModelSounds = {}
 
 function GM:AddModelSounds( partName, newSounds )
@@ -44,6 +43,8 @@ function GM:AddModelSounds( partName, newSounds )
     end
 end
 
+GM.modelSoundAliases = {}
+
 function GM:AddModelSoundAlias( alias, aliasOf )
     local aliases = self.modelSoundAliases
     if not aliases then
@@ -66,52 +67,45 @@ local function yap( key, ... )
 end
 
 local genericStr = "generic"
-local cachedCategories = {}
+local cachedPartResults = {}
 
 function GM:GetCorrectSoundsForModel( ply, category )
     local allSounds = self.allModelSounds
 
-    local plysModelPart = genericStr
-    local theGenericCategories = allSounds[plysModelPart]
+    local theGenericCategories = allSounds[genericStr]
     local theGenericSounds = theGenericCategories[category]
-    if not theGenericSounds then yap( plysModelPart, "GLEE: Tried to get invalid sound category " .. category ) return end
+    if not theGenericSounds then yap( category, "GLEE: Tried to get invalid sound category " .. category ) return end
 
     local plysMdl = string_lower( GetModel( ply ) )
-    local cache = cachedCategories[plysMdl]
-    if not cache then
+    local finalModelPartStr = cachedPartResults[plysMdl]
+
+    if not finalModelPartStr then
+        finalModelPartStr = genericStr
+
         for partName, _ in pairs( allSounds ) do
             if string.find( plysMdl, partName ) then
-                plysModelPart = partName
+                finalModelPartStr = partName
                 break
 
             end
         end
-        if plysModelPart == genericStr then
+        if finalModelPartStr == genericStr then
             local aliases = self.modelSoundAliases
             for alias, aliasOf in pairs( aliases ) do
                 if string.find( plysMdl, alias ) then
-                    plysModelPart = aliasOf
+                    finalModelPartStr = aliasOf
                     break
 
                 end
             end
         end
-
-        local categories = allSounds[plysModelPart]
-        local sounds = categories[category]
-
-        if not sounds then
-            sounds = theGenericSounds
-
-        end
-        cache = sounds
-        cachedCategories[plysMdl] = cache
-        return cache
-
-    else
-        return cache
+        cachedPartResults[plysMdl] = finalModelPartStr
 
     end
+    local categories = allSounds[finalModelPartStr]
+    local sounds = categories[category]
+    return sounds
+
 end
 
 local hardcodedFemale = {

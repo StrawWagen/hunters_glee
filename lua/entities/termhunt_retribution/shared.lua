@@ -154,12 +154,12 @@ function ENT:Place()
     local reason = ""
     local reasonGlobal = ""
     if GAMEMODE:HasHomicided( dancer, self.player ) then
-        reason = "You can't help but dance as the HOMICIDAL GLEE\nof killing " .. self.player:Name() .. "\nflashes through your mind..."
-        reasonGlobal = dancer:Name() .. " is overcome by their Homicidal Glee."
+        reason = "You can't help but dance as the HOMICIDAL GLEE\nof killing " .. self.player:Nick() .. "\nflashes through your mind..."
+        reasonGlobal = dancer:Nick() .. " is overcome by their Homicidal Glee."
 
     else
-        reason = "You can't help but dance as " .. self.player:Name() .. "\nbrings your HOMICIDAL GLEE to the surface..."
-        reasonGlobal = dancer:Name() .. " is overcome with Homicidal Glee."
+        reason = "You can't help but dance as " .. self.player:Nick() .. "\nbrings your HOMICIDAL GLEE to the surface..."
+        reasonGlobal = dancer:Nick() .. " is overcome with Homicidal Glee."
 
     end
 

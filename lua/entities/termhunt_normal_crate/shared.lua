@@ -38,6 +38,7 @@ local MEMORY_BREAKABLE = 4
 local maxScoreDist = 3000
 local tooCloseToPlayer = 2000
 local cratePunishmentDist = 950
+local maxInProximity = 4
 
 function ENT:UpdateGivenScore()
     local plys = player.GetAll()
@@ -60,8 +61,8 @@ function ENT:UpdateGivenScore()
         local distToCurrentCrateSqr = myPos:DistToSqr( currentCrate:GetPos() )
         if distToCurrentCrateSqr < closestCrateDist then
             tooCloseCount = tooCloseCount + 1
-            -- if we ever go above 3 crates in proximity, the proximity cost starts racking up
-            if tooCloseCount < 3 then continue end
+            -- if we ever go above maxInProximity crates in proximity, the proximity cost starts racking up
+            if tooCloseCount < maxInProximity then continue end
             punishmentCount = tooCloseCount
             closestCrateDist = distToCurrentCrateSqr
         end

@@ -228,9 +228,9 @@ local function PlayRepeatingSound( self, soundPath, soundDuration )
 
         self:doSoundComprehensive()
 
-        if self.player and self.player.GivePlayerScore and self.refundAndBonus and self.refundAndBonus > 0 then
-            self.player:GivePlayerScore( self.refundAndBonus )
-            huntersGlee_Announce( { self.player }, 5, 10, "The beacon survives, you profit " .. self.refundAndBonus + -placingCost .. " score." )
+        if self.glee_player and self.glee_player.GivePlayerScore and self.refundAndBonus and self.refundAndBonus > 0 then
+            self.glee_player:GivePlayerScore( self.refundAndBonus )
+            huntersGlee_Announce( { self.glee_player }, 5, 10, "The beacon survives, you profit " .. self.refundAndBonus + -placingCost .. " score." )
             self.refundAndBonus = nil
 
         end
@@ -554,6 +554,7 @@ local GM = GAMEMODE
 function GM:ScreamingCrate( pos )
     local crate = ents.Create( "item_item_crate" )
     if not IsValid( crate ) then return end
+
     crate:SetPos( pos )
     local random = math.random( -4, 4 ) * 45
     crate:SetAngles( Angle( 0, random, 0 ) )
@@ -598,7 +599,7 @@ function ENT:Place()
 
     local crate = GAMEMODE:ScreamingCrate( self:OffsettedPlacingPos() )
     crate:EmitSound( "items/ammocrate_open.wav", 75 )
-    crate.player = self.player
+    crate.glee_player = self.player
 
     crate.refundAndBonus = math.Round( self:GetGivenScore() )
 
@@ -608,27 +609,27 @@ function ENT:Place()
         local hookName = "huntersglee_screamigcrate_recorddamage_" .. crate:GetCreationID()
         hook.Add( "EntityTakeDamage", hookName, function( target, dmg )
             if not IsValid( crate ) then hook.Remove( "EntityTakeDamage", hookName ) return end
-            if not crate.refundAndBonus then hook.Remove( "EntityTakeDamage", hookName ) return end
             if crate ~= target then return end
 
             local attacker = dmg:GetAttacker()
 
             if not attacker:IsPlayer() then return end
             crate.lastAttacker = attacker
+            print( attacker, crate )
 
         end )
-        crate:CallOnRemove( "identifyifscore", function( removingCrate )
-            if removingCrate.refundAndBonus and IsValid( removingCrate.player ) then
+        crate:CallOnRemove( "glee_identifyifscore", function( removingCrate )
+            if removingCrate.refundAndBonus and IsValid( removingCrate.glee_player ) then
                 if IsValid( removingCrate.lastAttacker ) and removingCrate.lastAttacker:IsPlayer() then
-                    huntersGlee_Announce( { self.player }, 5, 10, "Someone beat the beacon, they took the deposit." )
-                    huntersGlee_Announce( { removingCrate.lastAttacker }, 5, 10, "You've recieved " .. placingCost .. " for beating the beacon." )
+                    huntersGlee_Announce( { removingCrate.lastAttacker }, 5, 11, "You've recieved " .. placingCost .. " for beating the beacon." )
+                    huntersGlee_Announce( { removingCrate.glee_player }, 5, 10, removingCrate.lastAttacker:Nick() .. " beat the beacon, they took the deposit." )
 
                     if removingCrate.lastAttacker.GivePlayerScore then
                         removingCrate.lastAttacker:GivePlayerScore( placingCost )
 
                     end
                 else
-                    huntersGlee_Announce( { removingCrate.player }, 5, 10, "Your crate was broken early, you are left poorer than before." )
+                    huntersGlee_Announce( { removingCrate.glee_player }, 5, 10, "Your crate was broken early, you are left poorer than before." )
 
                 end
             end

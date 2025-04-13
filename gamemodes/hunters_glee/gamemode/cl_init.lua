@@ -853,7 +853,7 @@ local function paintFinestPrey()
 
     end
 
-    local Text2 = winner:Name()
+    local Text2 = winner:Nick()
     surface.drawShadowedTextBetter( Text2, "termhuntTriumphantFont", color_white, screenMiddleW, preyText2Y )
 
     local sIfMultiple = ""

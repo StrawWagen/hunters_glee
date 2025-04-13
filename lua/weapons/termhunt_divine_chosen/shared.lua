@@ -44,8 +44,6 @@ if CLIENT then
 
     end
 else
-    resource.AddFile( "materials/entities/termhunt_divine_chosen.png" )
-
     -- https://freesound.org/people/nlux/sounds/620497/
     resource.AddFile( "sound/620497__nlux__choir-of-weeping-angels-loop.mp3" )
 
@@ -172,6 +170,16 @@ function SWEP:Equip()
             local clip = chosenWeap:Clip1()
             local removed = clip - 30
 
+            local upSpeed = 150
+            if ply:WaterLevel() >= 1 then
+                upSpeed = upSpeed * 2
+                owner.glee_noswimming_briefrespite = CurTime() + 0.8 -- HACK to allow swimming
+                owner.glee_noswimming_lastlandlubbering = CurTime()
+
+                removed = clip - 5
+
+            end
+
             if removed < 0 then return end
 
             chosenWeap:SetClip1( removed )
@@ -184,7 +192,7 @@ function SWEP:Equip()
             forward.z = 0
             forward = forward:GetNormalized()
 
-            ply:SetVelocity( ( vector_up * 150 ) + ( forward * 100 ) )
+            ply:SetVelocity( ( vector_up * upSpeed ) + ( forward * 100 ) )
 
             local velLen = ply:GetVelocity():Length()
             local punch = velLen / 200

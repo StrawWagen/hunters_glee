@@ -48,7 +48,7 @@ net.Receive( "PlayerKilledByPlayer", function()
 	if ( !IsValid( attacker ) ) then return end
 	if ( !IsValid( victim ) ) then return end
 
-	hook.Run( "AddDeathNotice", attacker:Name(), attacker:Team(), inflictor, victim:Name(), victim:Team(), 0 )
+	hook.Run( "AddDeathNotice", attacker:Nick(), attacker:Team(), inflictor, victim:Nick(), victim:Team(), 0 )
 
 end )
 
@@ -57,7 +57,7 @@ net.Receive( "PlayerKilledSelf", function()
 	local victim = net.ReadEntity()
 	if ( !IsValid( victim ) ) then return end
 
-	hook.Run( "AddDeathNotice", nil, 0, "suicide", victim:Name(), victim:Team(), 0 )
+	hook.Run( "AddDeathNotice", nil, 0, "suicide", victim:Nick(), victim:Team(), 0 )
 
 end )
 
@@ -69,7 +69,7 @@ net.Receive( "PlayerKilled", function()
 	local inflictor = net.ReadString()
 	local attacker = net.ReadString()
 
-	hook.Run( "AddDeathNotice", "#" .. attacker, -1, inflictor, victim:Name(), victim:Team(), 0 )
+	hook.Run( "AddDeathNotice", "#" .. attacker, -1, inflictor, victim:Nick(), victim:Team(), 0 )
 
 end )
 
@@ -84,7 +84,7 @@ net.Receive( "PlayerKilledNPC", function()
 	--
 	if ( !IsValid( attacker ) ) then return end
 
-	hook.Run( "AddDeathNotice", attacker:Name(), attacker:Team(), inflictor, "#" .. victimtype, -1, 0 )
+	hook.Run( "AddDeathNotice", attacker:Nick(), attacker:Team(), inflictor, "#" .. victimtype, -1, 0 )
 
 	local bIsLocalPlayer = ( IsValid( attacker ) && attacker == LocalPlayer() )
 
@@ -146,8 +146,8 @@ net.Receive( "DeathNoticeEvent", function()
 	local team_v = -1
 	if ( bit.band( flags, DEATH_NOTICE_FRIENDLY_VICTIM ) != 0 ) then team_v = -2 end
 	if ( bit.band( flags, DEATH_NOTICE_FRIENDLY_ATTACKER ) != 0 ) then team_a = -2 end
-	if ( isentity( attacker ) && attacker.Team ) then team_a = attacker:Team() attacker = attacker:Name() end
-	if ( isentity( victim ) && victim.Team ) then team_v = victim:Team() victim = victim:Name()  end
+	if ( isentity( attacker ) && attacker.Team ) then team_a = attacker:Team() attacker = attacker:Nick() end
+	if ( isentity( victim ) && victim.Team ) then team_v = victim:Team() victim = victim:Nick()  end
 
 	hook.Run( "AddDeathNotice", attacker, team_a, inflictor, victim, team_v, flags )
 

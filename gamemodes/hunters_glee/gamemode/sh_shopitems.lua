@@ -1118,7 +1118,7 @@ local function cholesterolPurchase( purchaser )
 
     end
 
-    GAMEMODE:PutInnateInProperCleanup( timerName, undoInnate, purchaser )
+    GAMEMODE:PutInnateInProperCleanup( nil, undoInnate, purchaser )
 
 end
 
@@ -1829,7 +1829,7 @@ local function witnessPurchase( purchaser )
             end
         end
 
-        huntersGlee_Announce( witnessing, 20, 10, "YOU WITNESS " .. string.upper( gettingAttacked:Name() ) )
+        huntersGlee_Announce( witnessing, 20, 10, "YOU WITNESS " .. string.upper( gettingAttacked:Nick() ) )
 
         -- s OR not s
         SorNotS = ""
@@ -2676,7 +2676,7 @@ local function divineIntervention( purchaser )
         local interventionPos, anchor = divineInterventionPos( purchaser )
 
         if IsValid( anchor ) then
-            huntersGlee_Announce( { purchaser }, 20, 5, "Respawned next to " .. anchor:Name() )
+            huntersGlee_Announce( { purchaser }, 20, 5, "Respawned next to " .. anchor:Nick() )
 
         end
 
@@ -2766,6 +2766,8 @@ if SERVER then
     local nextTimeOffsetNetwork = 0
 
     hook.Add( "huntersglee_givescore", "glee_chosentrackscore", function( _, scoreGivenRaw )
+        if GAMEMODE.roundExtraData.grigoriWasPurchased then return end -- grigori was purchased, patience is OVER
+
         local scoreGiven = math.abs( scoreGivenRaw )
         local divisor = glee_scoretochosentimeoffset_divisor:GetFloat()
         if divisor <= 0 then
@@ -2785,12 +2787,11 @@ if SERVER then
 
         end
     end )
-
 end
 
 local function divineChosenCanPurchase( purchaser )
 
-    -- damn it i dropped my spaghetti
+    -- damn it i dropped my spaghetti ( basically makes sure grigori happens sooner if nobodys buying anything )
     local minutes = 8 + ( GetGlobal2Int( "glee_chosen_timeoffset", 0 ) / 60 )
     minutes = math.Clamp( minutes, 0, 20 )
     local offset = 60 * minutes
@@ -2893,9 +2894,12 @@ local function divineChosenPurchase( purchaser )
 
     purchaser:SetNW2Bool( "isdivinechosen", true )
     SetGlobalBool( "chosenhasarrived", true )
+
+    GAMEMODE.roundExtraData.grigoriWasPurchased = true -- allow chosen patience to stop counting up now
+
     purchaser.glee_IsDivineChosen = true
 
-    huntersGlee_Announce( player.GetAll(), 500, 15, "The ultimate sacrifice has been made.\nBEWARE OF " .. string.upper( purchaser:Name() ) )
+    huntersGlee_Announce( player.GetAll(), 500, 15, "The ultimate sacrifice has been made.\nBEWARE OF " .. string.upper( purchaser:Nick() ) )
 
     local maintainChosenWeapTimer = "divineChosenTimer_" .. purchaser:GetCreationID()
 

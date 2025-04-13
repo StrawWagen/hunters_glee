@@ -247,7 +247,7 @@ hook.Add( "glee_sv_validgmthink", "glee_manageunstucking", function( players )
                 ply:EmitSound( "physics/rubber/rubber_tire_impact_hard2.wav", 65, math.random( 80, 100 ) )
                 GAMEMODE:GivePanic( ply, 25 )
 
-                print( "GLEE: unstucking " .. ply:Name() )
+                print( "GLEE: unstucking " .. ply:Nick() )
 
             elseif ply:IsStuckBasic() then
                 ply.glee_basicStuckCount = basicStuckCount + 1

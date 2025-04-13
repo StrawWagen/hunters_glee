@@ -150,7 +150,7 @@ function SWEP:StartResurrect( ent, resurrectPos )
     self.resurrectingLoop = CreateSound( self:GetOwner(), "items/medcharge4.wav", recip )
     self.resurrectingLoop:Play()
 
-    huntersGlee_Announce( { self.toResurrect }, 5, 5, "You are being revived by " .. self:GetOwner():Name() )
+    huntersGlee_Announce( { self.toResurrect }, 5, 5, "You are being revived by " .. self:GetOwner():Nick() )
 
 end
 
