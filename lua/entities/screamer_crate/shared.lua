@@ -615,7 +615,6 @@ function ENT:Place()
 
             if not attacker:IsPlayer() then return end
             crate.lastAttacker = attacker
-            print( attacker, crate )
 
         end )
         crate:CallOnRemove( "glee_identifyifscore", function( removingCrate )

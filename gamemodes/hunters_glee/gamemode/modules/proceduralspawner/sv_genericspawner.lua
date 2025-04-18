@@ -50,7 +50,8 @@ local created = {}
 
 local function onJobSuccced( spawned, className )
     --print( spawned, "AAAAAAAAAAAA" )
-    currentlySpawning[className] = currentlySpawning[className] + -1
+    local oldSpawning = currentlySpawning[className] or 0
+    currentlySpawning[className] = math.max( oldSpawning + -1, 0 )
     local spawnedOfClass = created[className] or {}
     table_insert( spawnedOfClass, spawned )
 

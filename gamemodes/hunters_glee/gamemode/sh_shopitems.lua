@@ -1181,7 +1181,7 @@ local function ultraLumenFlashlightPurchase( purchaser )
         if ply ~= purchaser then return end
         if not purchaser.hasUltraLumen then tearDown() return end
 
-        return use * 2
+        return use * 1.5
 
     end )
 

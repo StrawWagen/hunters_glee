@@ -105,7 +105,8 @@ elseif SERVER then
                 local screamSound
 
                 local chaser = ply.huntersGleeHunterThatCanSeePly
-                local doFleeSound = #ply.screamMaxPanicFleeSounds >= 1 and IsValid( chaser ) and ( ply.nextFleePanicSound or 0 ) < CurTime() and self:GetBotScaryness( ply, chaser ) >= 0.95
+                local validScreamFleeSounds = ply.screamMaxPanicFleeSounds and #ply.screamMaxPanicFleeSounds >= 1
+                local doFleeSound = validScreamFleeSounds and IsValid( chaser ) and ( ply.nextFleePanicSound or 0 ) < CurTime() and self:GetBotScaryness( ply, chaser ) >= 0.95
                 local fleeingGroup
 
                 if doFleeSound then
@@ -173,7 +174,8 @@ elseif SERVER then
                 end
 
                 ply.screamPanicSounds = ply.screamPanicSounds or table.Copy( self:GetCorrectSoundsForModel( ply, "panicBuildingScreams" ) )
-                if #ply.screamPanicSounds >= 1 then
+                local validScreamPanicSounds = ply.screamPanicSounds and #ply.screamPanicSounds >= 1
+                if validScreamPanicSounds then
                     local screamSound = table.remove( ply.screamPanicSounds, math.random( 1, #ply.screamPanicSounds ) )
                     if screamSound and not underwater then
                         ply:EmitSound( self:GenderizeSound( ply, screamSound ), 88, 100, 1, CHAN_VOICE )

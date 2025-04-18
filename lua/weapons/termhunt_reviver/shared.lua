@@ -83,9 +83,8 @@ function SWEP:PrimaryAttack()
 
     if self:Clip1() <= 0 then self:OnEmpty() return end
 
-    if self:GetOwner():IsPlayer() then
-        self:GetOwner():LagCompensation( true )
-    end
+    if not self:GetOwner():IsPlayer() then return end
+    self:GetOwner():LagCompensation( true )
 
     local tr = util.TraceLine( {
         start = self:GetOwner():GetShootPos(),
