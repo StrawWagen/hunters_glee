@@ -584,9 +584,10 @@ local function spectateThing( ply, thing )
 end
 
 local function stopSpectatingThing( ply )
+    local target = ply:GetObserverTarget()
     ply:SetObserverMode( OBS_MODE_ROAMING )
-    if thing.GetShootPos then
-        ply:SetPos( thing:GetShootPos() )
+    if IsValid( target ) and target.GetShootPos then
+        ply:SetPos( target:GetShootPos() )
 
     end
     local oldAng = ply:GetAngles()
