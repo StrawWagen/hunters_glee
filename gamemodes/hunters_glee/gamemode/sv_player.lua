@@ -585,6 +585,10 @@ end
 
 local function stopSpectatingThing( ply )
     ply:SetObserverMode( OBS_MODE_ROAMING )
+    if thing.GetShootPos then
+        ply:SetPos( thing:GetShootPos() )
+
+    end
     local oldAng = ply:GetAngles()
     ply:SetAngles( Angle( oldAng.p, oldAng.y, 0 ) )
     net.Start( "glee_stoppedspectating" )

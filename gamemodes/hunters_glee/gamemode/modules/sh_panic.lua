@@ -103,6 +103,7 @@ elseif SERVER then
                 ply.screamMaxPanicSounds = ply.screamMaxPanicSounds or table.Copy( self:GetCorrectSoundsForModel( ply, "panicReleaseScreams" ) )
 
                 local screamSound
+                local validScreamSounds = ply.screamMaxPanicSounds and #ply.screamMaxPanicSounds >= 1
 
                 local chaser = ply.huntersGleeHunterThatCanSeePly
                 local validScreamFleeSounds = ply.screamMaxPanicFleeSounds and #ply.screamMaxPanicFleeSounds >= 1
@@ -136,7 +137,7 @@ elseif SERVER then
                     end
                     didScream = true
 
-                elseif #ply.screamMaxPanicSounds >= 1 then
+                elseif validScreamSounds then
                     -- silly way to vary the sound between max panics
                     screamSound = table.remove( ply.screamMaxPanicSounds, 1 )
                     ply.nextFleePanicSound = CurTime() + math.random( 5, 10 )
