@@ -16,7 +16,7 @@ local zambieSpawnSet = {
     spawns = {
         {
             hardRandomChance = nil,
-            name = "zambie_godcrab",
+            name = "theOneTerminator",
             prettyName = "The Terminator",
             class = "terminator_nextbot_snail",
             spawnType = "hunter",
