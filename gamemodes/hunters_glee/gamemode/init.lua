@@ -198,7 +198,8 @@ function GM:Think()
     self:managePlayerSpectating()
     self:manageServersideCountOfBeats()
 
-    if self.termHunt_NextThink > cur then return end
+    local nextThink = self.termHunt_NextThink or 0
+    if nextThink > cur then return end
     self.termHunt_NextThink = cur + 0.1
 
     local currState = self:RoundState()

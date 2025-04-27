@@ -270,6 +270,6 @@ hook.Add( "EntityTakeDamage", "glee_placedbarnacle_extradamage", function( _, dm
     local attacker = dmg:GetAttacker()
     if not IsValid( attacker ) or not attacker.glee_PlacedBarnacle then return end
 
-    dmg:ScaleDamage( 4 )
+    dmg:ScaleDamage( 2 )
 
 end )
