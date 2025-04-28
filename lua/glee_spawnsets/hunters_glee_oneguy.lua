@@ -1,4 +1,4 @@
-local zambieSpawnSet = {
+local set = {
     name = "hunters_glee_oneguy", -- unique name
     prettyName = "One Gleeful Hunter",
     description = "One Terminator, he'll always be back.",
@@ -27,4 +27,4 @@ local zambieSpawnSet = {
     }
 }
 
-table.insert( GLEE_SPAWNSETS, zambieSpawnSet )
+table.insert( GLEE_SPAWNSETS, set )

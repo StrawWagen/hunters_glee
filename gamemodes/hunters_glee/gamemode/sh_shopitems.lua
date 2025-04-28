@@ -434,7 +434,7 @@ local function frogLegsPurchase( purchaser )
 
         end
 
-        dmg = dmg * 1.5 -- if we get past the check, punish player
+        dmg = dmg * 2 -- if we get past the check, punish player
 
         return dmg
 
