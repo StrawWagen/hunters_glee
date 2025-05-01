@@ -1,3 +1,4 @@
+
 -- yes, this is my ideas file too
 
 -- officially announce modding support
@@ -2313,7 +2314,7 @@ local function rpgPurchase( purchaser )
 
 end
 
-local function grenadePurchase( purchaser )
+local function fragPurchase( purchaser )
     local frag = purchaser:GetWeapon( "weapon_frag" )
     if IsValid( frag ) then
         purchaser:GiveAmmo( 3,    "Grenade",         false )
@@ -2383,6 +2384,21 @@ local function loadoutPurchase( purchaser )
 
     end
     loadoutConfirm( purchaser, #loadoutLoadout )
+
+end
+
+local function rpgPurchase( purchaser )
+    local rpg = purchaser:GetWeapon( "weapon_frag" )
+    if IsValid( rpg ) then
+        purchaser:GiveAmmo( 6,    "Grenade",         false )
+
+    else
+        purchaser:GiveAmmo( 4,    "Grenade",         false )
+        purchaser:Give( "weapon_frag" )
+
+    end
+
+    loadoutConfirm( purchaser, 1 )
 
 end
 
@@ -3214,6 +3230,21 @@ local defaultItems = {
         },
         purchaseCheck = unUndeadCheck,
         purchaseFunc = slamsPurchase,
+    },
+    [ "frag" ] = {
+        name = "Grenades",
+        desc = "Grenades \n+ 3 grenades, very useful for hordes!",
+        cost = 60,
+        markup = 2,
+        markupPerPurchase = 0.25,
+        cooldown = 0.5,
+        category = "Items",
+        purchaseTimes = {
+            GM.ROUND_INACTIVE,
+            GM.ROUND_ACTIVE,
+        },
+        purchaseCheck = unUndeadCheck,
+        purchaseFunc = fragPurchase,
     },
     [ "flaregun" ] = {
         name = "Flaregun",
