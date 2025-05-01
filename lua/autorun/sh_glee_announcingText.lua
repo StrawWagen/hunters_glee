@@ -47,9 +47,6 @@ end
 
 if not CLIENT then return end
 
-include( "autorun/client/cl_gleescalingfunc.lua" )
-
-
 local fontData = {
     font = "Arial",
     extended = false,
