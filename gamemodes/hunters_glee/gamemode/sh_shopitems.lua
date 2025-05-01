@@ -2295,10 +2295,10 @@ end
 local function fragPurchase( purchaser )
     local frag = purchaser:GetWeapon( "weapon_frag" )
     if IsValid( frag ) then
-        purchaser:GiveAmmo( 3,    "Grenades",         false )
+        purchaser:GiveAmmo( 7,    "Grenades",         false )
 
     else
-        purchaser:GiveAmmo( 4,    "Grenades",         false )
+        purchaser:GiveAmmo( 8,    "Grenades",         false )
         purchaser:Give( "weapon_frag" )
 
     end
@@ -3030,9 +3030,9 @@ local defaultItems = {
     [ "frag" ] = {
         name = "Grenades",
         desc = "Grenade \nSimple explosives, useful for hordes!",
-        cost = 45,
-        markup = 2.5,
-        markupPerPurchase = 0.45,
+        cost = 75,
+        markup = 2,
+        markupPerPurchase = 0.25,
         cooldown = 0.5,
         category = "Items",
         purchaseTimes = {
