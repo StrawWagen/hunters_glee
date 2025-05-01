@@ -3041,7 +3041,7 @@ local defaultItems = {
         },
         weight = -90,
         purchaseCheck = unUndeadCheck,
-        purchaseFunc = grenadePurchase,
+        purchaseFunc = fragPurchase,
     },
     -- terminator doesnt like taking damage from this, will save your ass
     [ "ar2" ] = {
