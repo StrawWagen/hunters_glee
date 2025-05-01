@@ -2292,6 +2292,20 @@ local function ar2Purchase( purchaser )
 
 end
 
+local function fragPurchase( purchaser )
+    local frag = purchaser:GetWeapon( "weapon_frag" )
+    if IsValid( frag ) then
+        purchaser:GiveAmmo( 3,    "Grenades",         false )
+
+    else
+        purchaser:GiveAmmo( 4,    "Grenades",         false )
+        purchaser:Give( "weapon_frag" )
+
+    end
+
+    loadoutConfirm( purchaser, 1 )
+
+end
 
 local function gravityGunCanPurchase( purchaser )
     local gravgun = purchaser:GetWeapon( "weapon_physcannon" )
@@ -3012,6 +3026,22 @@ local defaultItems = {
         weight = -90,
         purchaseCheck = unUndeadCheck,
         purchaseFunc = nailerPurchase,
+    },
+    [ "frag" ] = {
+        name = "Grenades",
+        desc = "Grenade \nSimple explosives, useful for hordes!",
+        cost = 45,
+        markup = 2.5,
+        markupPerPurchase = 0.45,
+        cooldown = 0.5,
+        category = "Items",
+        purchaseTimes = {
+            GM.ROUND_INACTIVE,
+            GM.ROUND_ACTIVE,
+        },
+        weight = -90,
+        purchaseCheck = unUndeadCheck,
+        purchaseFunc = fragPurchase,
     },
     -- terminator doesnt like taking damage from this, will save your ass
     [ "ar2" ] = {
