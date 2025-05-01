@@ -2295,10 +2295,10 @@ end
 local function fragPurchase( purchaser )
     local frag = purchaser:GetWeapon( "weapon_frag" )
     if IsValid( frag ) then
-        purchaser:GiveAmmo( 7,    "Grenades",         false )
+        purchaser:GiveAmmo( 8,    "Grenades",         false )
 
     else
-        purchaser:GiveAmmo( 8,    "Grenades",         false )
+        purchaser:GiveAmmo( 7,    "Grenades",         false )
         purchaser:Give( "weapon_frag" )
 
     end
