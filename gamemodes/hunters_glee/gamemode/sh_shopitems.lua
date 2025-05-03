@@ -378,6 +378,84 @@ local function badkneesPurchase( purchaser )
 
 end
 
+-- broad fart 0
+local function ocularinimicaphobiaPurchase(purchaser)
+    purchaser.hasOcularInimicaphobia = true
+
+    local timerName = "ocularinimicaphobia_think_" .. purchaser:GetCreationID()
+    
+    -- long
+    local spoopyTerminators = {
+        "terminator_nextbot_jerminator",
+        "terminator_nextbot_jerminator_scared",
+        "terminator_nextbot_jerminator_realistic",
+        "terminator_nextbot_jerminatorwraith",
+        "terminator_nextbot_jerminatorhuge",
+        "terminator_nextbot_jerminatorsmol",
+        "terminator_nextbot_jerminatorwide",
+        "terminator_nextbot_fakeply",
+        "terminator_nextbot_snail",
+        "terminator_nextbot_snail_disguised",
+        "terminator_nextbot_slower",
+        "terminator_nextbot",
+        "terminator_nextbot",
+        "terminator_nextbot_supercop",
+        "terminator_nextbot_zambiebigheadcrab",
+        "terminator_nextbot_zambiecop",
+        "terminator_nextbot_zambiebiggerheadcrab",
+        "terminator_nextbot_zambie",
+        "terminator_nextbot_zambieacid",
+        "terminator_nextbot_zambieacidfast",
+        "terminator_nextbot_zambieberserk",
+        "terminator_nextbot_zambiefast",
+        "terminator_nextbot_zambiefastgrunt",
+        "terminator_nextbot_zambieflame",
+        "terminator_nextbot_zambiegrunt",
+        "terminator_nextbot_zambiegruntelite",
+        "terminator_nextbot_zambienecro",
+        "terminator_nextbot_zambie_slow",
+        "terminator_nextbot_zambietank",
+        "terminator_nextbot_zambietorso",
+        "terminator_nextbot_zambietorsofast",
+        "terminator_nextbot_zambietorsowraith",
+        "terminator_nextbot_zambiewraith",
+        "terminator_nextbot_zambiewraithelite",
+        "terminator_nextbot_homeless"
+    }
+
+    timer.Create(timerName, 0.1, 0, function()
+        if not IsValid(purchaser) or not purchaser.hasOcularInimicaphobia or purchaser:Health() <= 0 then
+            timer.Remove(timerName)
+            return
+        end
+
+        for _, class in ipairs(spoopyTerminators) do
+            for _, ent in ipairs(ents.FindByClass(class)) do
+                if IsValid(ent) and ent:Health() > 0 then
+                    local trace = util.TraceLine({
+                        start = purchaser:GetShootPos(),
+                        endpos = ent:GetShootPos(),
+                        filter = purchaser,
+                        mask = MASK_SOLID_BRUSHONLY
+                    })
+                    
+                    if not trace.Hit then 
+                        GAMEMODE:GivePanic(purchaser, 10)
+                        return
+                    end
+                end
+            end
+        end
+    end)
+
+    local function undoOcularInimicaphobia(respawner)
+        respawner.hasOcularInimicaphobia = nil
+        timer.Remove(timerName)
+    end
+
+    GAMEMODE:PutInnateInProperCleanup(timerName, undoOcularInimicaphobia, purchaser)
+end
+
 -- put here so we are not rebuilding a static table
 local frogLegsJumpSounds = {
     "npc/barnacle/barnacle_tongue_pull1.wav",
@@ -3263,7 +3341,7 @@ local defaultItems = {
     },
     [ "frag" ] = {
         name = "Grenades",
-        desc = "Grenade \nSimple explosives, useful for hordes!",
+        desc = "Throw it to blow up groups of enemies. works best on weak enemies, Don't stand too close.",
         cost = 75,
         markup = 2,
         markupPerPurchase = 0.25,
@@ -3455,6 +3533,23 @@ local defaultItems = {
         weight = -90,
         purchaseCheck = { unUndeadCheck },
         purchaseFunc = blindnessPurchase,
+    },
+    -- annoying flat downgrade but that score tho...
+    [ "ocularinimicaphobia" ] = {
+        name = "Ocular Inimicaphobia",
+        desc = "Fear the hunter’s eye, the moment it meets yours. Pray they never look… and you never see theirs",                                                           
+        cost = -170,
+        markup = 0.2,
+        cooldown = math.huge,
+        category = "Innate",
+        purchaseTimes = {
+            GM.ROUND_INACTIVE,
+            GM.ROUND_ACTIVE,
+        },
+        weight = 90,
+        purchaseCheck = { unUndeadCheck },
+        purchaseFunc = ocularinimicaphobiaPurchase,
+        canShowInShop = terminatorInSpawnPool,
     },
     -- flat downgrade
     [ "badknees" ] = {
@@ -3693,6 +3788,22 @@ local defaultItems = {
         purchaseCheck = { unUndeadCheck },
         purchaseFunc = superiorMetabolismPurchase,
     },
+    [ "ocularinimicaphobia" ] = {
+        name = "Ocular Inimicaphobia",
+        desc = "Fear the hunter’s eye, the moment it meets yours. Pray they never look… and you never see theirs",                                                           
+        cost = -170,
+        markup = 0.2,
+        cooldown = math.huge,
+        category = "Innate",
+        purchaseTimes = {
+            GM.ROUND_INACTIVE,
+            GM.ROUND_ACTIVE,
+        },
+        weight = 90,
+        purchaseCheck = { unUndeadCheck },
+        purchaseFunc = ocularinimicaphobiaPurchase,
+        canShowInShop = terminatorInSpawnPool,
+    },
     -- wacky ass shit
     [ "bombgland" ] = {
         name = "Bomb Gland.",
@@ -3724,7 +3835,6 @@ local defaultItems = {
         purchaseCheck = { unUndeadCheck },
         purchaseFunc = ultraLumenFlashlightPurchase,
     },
-    -- flat upgrade
     [ "susimpostor" ] = {
         name = "HVAC Specialist.",
         desc = "From a young age, vents have fascinated you.\nThe \"portals between rooms\", as you call them, have practically raised you.\nYou are scared of the normal world, crouching brings confort, and vents bring freedom from panic.\nYou move very fast while crouching. Even faster in vents.\nYou don't even notice the musty vent smell anymore.",
