@@ -267,6 +267,26 @@ local function badkneesPurchase( purchaser )
 
 end
 
+-- :steamhappy: hopefully this will meet your expectaions straw pretty sure it's like 17-16 lines of code
+local function ocularinimicaphobiaPurchase(purchaser)
+    local timerName = "ocular_"..purchaser:EntIndex()
+    
+    timer.Create(timerName, 0.1, 0, function()
+        if !IsValid(purchaser) then return end
+        for _,ent in ipairs(ents.GetAll()) do
+            if (ent:IsNPC() || ent:IsNextBot()) && 
+               (ent:IsLineOfSightClear(purchaser) || purchaser:IsLineOfSightClear(ent)) then
+                GAMEMODE:GivePanic(purchaser, 8)
+            end
+        end
+    end)
+    
+    GAMEMODE:PutInnateInProperCleanup(timerName, function()
+        if IsValid(purchaser) then purchaser.ocularPanic = nil end
+    end, purchaser)
+end
+
+
 -- put here so we are not rebuilding a static table
 local frogLegsJumpSounds = {
     "npc/barnacle/barnacle_tongue_pull1.wav",
@@ -3220,6 +3240,22 @@ local defaultItems = {
         weight = -90,
         purchaseCheck = { unUndeadCheck },
         purchaseFunc = greasyHandsPurchase,
+    },
+    [ "ocularinimicaphobia" ] = {
+        name = "Ocular Inimicaphobia",
+        desc = "You panic when the hunter’s eyes feels you, hope they never look, and you never see theirs,",                                                           
+        cost = -170,
+        markup = 0.2,
+        cooldown = math.huge,
+        category = "Innate",
+        purchaseTimes = {
+            GM.ROUND_INACTIVE,
+            GM.ROUND_ACTIVE,
+        },
+        weight = 80,
+        purchaseCheck = { unUndeadCheck },
+        purchaseFunc = ocularinimicaphobiaPurchase,
+        canShowInShop = terminatorInSpawnPool,
     },
     [ "cholesterol" ] = {
         name = "37 Years of Cholesterol.",
