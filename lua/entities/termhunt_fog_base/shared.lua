@@ -8,7 +8,7 @@ ENT.PrintName   = "Fog emitter"
 ENT.Author      = "StrawWagen"
 ENT.Purpose     = "Heavy fog that sticks to the floor"
 ENT.Spawnable    = true
-ENT.AdminOnly    = false
+ENT.AdminOnly    = game.IsDedicated()
 ENT.Category = "Hunter's Glee"
 
 ENT.fogAreasManaging = {}
@@ -328,7 +328,7 @@ local function doFogEntThink( self, evaporationRate, spreadingMultipler )
         local globalLevel = self:GetFogLevels( currArea )
         local pos = currArea:GetCenter()
         pos.z = globalLevel
-        debugoverlay.Cross( pos, 5, 1, Color( 255,255,255 ), true )
+        --debugoverlay.Cross( pos, 5, 1, Color( 255,255,255 ), true )
 
         currLocalFogLevel = currLocalFogLevel + -evaporationRate
 

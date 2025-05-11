@@ -1,0 +1,13 @@
+"VertexLitGeneric"
+{
+	"$baseTexture" "models\weapons\DK_FlareGun\GM"
+	"$halflambert" 1
+	"$bumpmap" "models\weapons\DK_FlareGun\GM_N"
+
+	// Original shader: VertexLitTexture
+	"$phong" "1"
+	"$phongboost" "4"
+	"$phongexponent" "10"
+	"$phongalbedotint" "1"										
+	"$phongfresnelranges"	"[.01 .4 1]"
+}

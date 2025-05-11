@@ -39,7 +39,13 @@ SWEP.Secondary.DefaultClip = -1     -- Default number of bullets in a clip
 SWEP.Secondary.Automatic = false        -- Automatic/Semi Auto
 SWEP.Secondary.Ammo = ""
 
+local className = "termhunt_lockpick"
 if CLIENT then
+    language.Add( className, SWEP.PrintName )
+    killicon.Add( className, "vgui/hud/killicon/" .. className .. ".png", color_white )
+
+else
+    resource.AddFile( "materials/vgui/hud/killicon/" .. className .. ".png" )
     resource.AddFile( "materials/entities/termhunt_lockpick.png" )
 
 end
@@ -189,6 +195,7 @@ function SWEP:Think()
     if not IsValid( ent ) or ent ~= self:GetLockpickEnt() or trace.HitPos:DistToSqr( self:GetOwner():GetShootPos() ) > 100^2 then
         self:Fail()
     elseif status >= 100 then
+        generic_KillProgressBar( self:GetOwner(), "termhunt_weapon_lockpick_picking" )
         self:Succeed()
     end
 end

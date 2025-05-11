@@ -115,7 +115,7 @@ function GM:SeedPlayerThink( ply )
     local timeNeededToReset = minutesToResetFunc() * 60
     if ( lastHitSeedCap + timeNeededToReset ) > CurTime() then return end
 
-    local plysSteamId = ply:SteamID()
+    local plysSteamId = ply:SteamID64()
     if not GAMEMODE.seedPlayers[ plysSteamId ] then
         GAMEMODE.seedPlayers[plysSteamId] = ply
         GAMEMODE:OnBecomeSeedPlayer( ply, GAMEMODE.seedPlayers )
@@ -155,14 +155,14 @@ GM.SEED_RewardedIds = GM.SEED_RewardedIds or {}
 GM.SEED_SeedPlysReward = GM.SEED_SeedPlysReward or {}
 
 function GM:OnBecomeSeedPlayer( seedPly, seedPlysTable )
-    local seedPlysId = seedPly:SteamID()
+    local seedPlysId = seedPly:SteamID64()
     GAMEMODE.SEED_SeedPlysReward[ seedPlysId ] = maxReward / table.Count( seedPlysTable )
 
 end
 
 function GM:RewardSeedPly( seedPly, plyThatJoined )
-    local seedPlysId = seedPly:SteamID()
-    local joinedPlysId = plyThatJoined:SteamID()
+    local seedPlysId = seedPly:SteamID64()
+    local joinedPlysId = plyThatJoined:SteamID64()
     local big = nil
 
     if not GAMEMODE.SEED_RewardedIds[ seedPlysId ] then

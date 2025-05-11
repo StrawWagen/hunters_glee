@@ -30,6 +30,29 @@ SWEP.HealAmount = 20 -- Maximum heal amount per use
 SWEP.MaxAmmo = math.huge -- Maxumum ammo
 
 if CLIENT then
+    function SWEP:HintPostStack()
+        local owner = self:GetOwner()
+        if not owner:GetNW2Bool( "gleemedkit_healedself", false ) and owner:Health() < owner:GetMaxHealth() then return true, "Secondary attack to heal yourself!" end
+        if not owner:GetNW2Bool( "gleemedkit_healedother", false ) and #player.GetAll() > 1 then
+            local players = player.GetAll()
+            local canHeal
+            for _, ply in ipairs( players ) do
+                if ply == owner then continue end
+                local theirHp = ply:Health()
+                if theirHp <= 0 then continue end
+                if theirHp >= ply:GetMaxHealth() then continue end
+                if ply:GetPos():DistToSqr( owner:GetPos() ) > 300^2 then continue end
+
+                canHeal = true
+
+            end
+            if canHeal then
+                return true, "Primary attack to heal others!\nIt's much faster than healing yourself."
+
+            end
+        end
+    end
+else
     resource.AddFile( "materials/entities/termhunt_medkit.png" )
 
 end
@@ -91,6 +114,8 @@ function SWEP:PrimaryAttack()
 
         end
 
+        self:GetOwner():SetNW2Bool( "gleemedkit_healedother", true )
+
         -- Even though the viewmodel has looping IDLE anim at all times, we need this to make fire animation work in multiplayer
         timer.Create( "weapon_idle" .. self:EntIndex(), self:SequenceDuration(), 1, function() if ( IsValid( self ) ) then self:SendWeaponAnim( ACT_VM_IDLE ) end end )
 
@@ -113,6 +138,8 @@ function SWEP:SecondaryAttack()
     if IsValid( ent ) then need = math.min( ent:GetMaxHealth() - ent:Health(), self.OwnerHealAmount ) end
 
     if IsValid( ent ) and self:Clip1() >= need and ent:Health() < ent:GetMaxHealth() then
+
+        self:GetOwner():SetNW2Bool( "gleemedkit_healedself", true )
 
         self:TakePrimaryAmmo( need )
 

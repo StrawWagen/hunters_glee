@@ -21,6 +21,8 @@ function GM:paintNameAndHealth( trace )
         end
     end
 
+    if not text or text == "" then return end
+
     surface.SetFont( font )
     local w, h = surface.GetTextSize( text )
 
@@ -37,7 +39,7 @@ function GM:paintNameAndHealth( trace )
     local y = MouseY
 
     x = x - w / 2
-    y = y + 100
+    y = y + 30
 
     surface.drawShadowedTextBetter( text, font, self:GetTeamColor( trace.Entity ), x, y, false )
 

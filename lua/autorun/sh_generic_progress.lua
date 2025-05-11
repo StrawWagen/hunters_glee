@@ -3,83 +3,171 @@ AddCSLuaFile()
 
 if SERVER then
 
-    util.AddNetworkString( "coolprogressbar_start" )
+    util.AddNetworkString( "coolprogressbar_maintain" )
 
-    function generic_WaitForProgressBar( user, id, speed, rate )
+    function generic_KillProgressBar( user, id )
+        if not IsValid( user ) then return end
 
-        local progressKey = "progressBar_" .. id
-        local progressLastUpdateKey = "progressBarUpd_" .. id
+        local progressKey = "progressBar_" .. id .. user:GetCreationID()
+        local progressLastUpdateKey = "progressBarUpd_" .. id .. user:GetCreationID()
+
+        user:SetNW2Bool( progressKey, false )
+        user:SetNW2Float( progressLastUpdateKey, 0 )
+        timer.Remove( progressLastUpdateKey )
+
+        user[progressKey] = nil
+        user[progressLastUpdateKey] = nil
+
+    end
+
+    -- speed is how often it networks
+    -- chunkSize is how much percent is gained every "speed" seconds
+    function generic_WaitForProgressBar( user, id, speed, chunkSize, data )
+
+        data = data or {}
+        local progInfo = data.progInfo or ""
+
+        local progressKey = "progressBar_" .. id .. user:GetCreationID()
+        local progressLastUpdateKey = "progressBarUpd_" .. id .. user:GetCreationID()
 
         local exitTheProgressBar = function()
-            if not IsValid( user ) then return end
-            user:SetNW2Bool( progressKey, nil )
-            user:SetNW2Int( progressKey, nil )
-            user:SetNW2Int( progressLastUpdateKey, nil )
-            timer.Remove( progressLastUpdateKey )
-
-            user[ progressKey ] = nil
-            user[ progressLastUpdateKey ] = nil
+            generic_KillProgressBar( user, id )
 
         end
 
-        if not user:GetNWBool( progressKey, nil ) then
+        -- start
+        if not user:GetNW2Bool( progressKey, nil ) then
             user:SetNW2Bool( progressKey, true )
 
-            timer.Simple( 0, function()
-                net.Start( "coolprogressbar_start" )
-                    net.WriteString( progressKey )
-                net.Send( user )
-
-            end )
-
-            timer.Create( progressLastUpdateKey, speed, 0, function()
+            -- tear it down when updates stop
+            timer.Create( progressLastUpdateKey, speed + 0.25, 0, function()
                 if not IsValid( user ) then exitTheProgressBar() return end
-                local lastUpdate = user:GetNWInt( progressLastUpdateKey, nil )
+                if user:GetNW2Bool( progressKey, false ) ~= true then exitTheProgressBar() return end
+                local lastUpdate = user:GetNW2Float( progressLastUpdateKey, nil )
                 if not lastUpdate then exitTheProgressBar() return end
-                if ( lastUpdate + 1 ) < CurTime() then exitTheProgressBar() return end
+                if ( lastUpdate + 0.5 ) < CurTime() then exitTheProgressBar() return end
 
             end )
         end
 
-        user:SetNW2Int( progressLastUpdateKey, CurTime() )
-        local progress = user[ progressKey ] or 0
+        -- progressing
+        local progress = user[progressKey] or 0
+        local oldProgress = progress
+
+        user:SetNW2Float( progressLastUpdateKey, CurTime() )
 
         if ( user[progressLastUpdateKey] or 0 ) < CurTime() then
+            net.Start( "coolprogressbar_maintain" )
+                net.WriteString( progressKey )
+                net.WriteString( progInfo )
+                net.WriteFloat( progress )
+                net.WriteFloat( speed )
+                net.WriteFloat( chunkSize )
+            net.Send( user )
+
             user[progressLastUpdateKey] = CurTime() + speed
 
-            progress = progress + rate
-            user[ progressKey ] = progress
+            progress = progress + chunkSize
+            user[progressKey] = progress
 
         end
 
-        user:SetNW2Int( progressKey, progress )
-
-        return progress
+        return progress, oldProgress
 
     end
 
 end
 if CLIENT then
-    local resurrectBar = Color( 255, 255, 255, 200 )
 
-    local function PaintProgressBar( percent )
-        local PosX = ScrW() / 2
-        local PosY = ScrH() / 2
+    include( "autorun/client/cl_gleescalingfunc.lua" )
 
-        local x = PosX + -200
-        local y = PosY + 110
+    local fontData = {
+        font = "Arial",
+        extended = false,
+        size = glee_sizeScaled( nil, 30 ),
+        weight = 500,
+        blursize = 0,
+        scanlines = 0,
+        antialias = true,
+        underline = false,
+        italic = false,
+        strikeout = false,
+        symbol = false,
+        rotary = false,
+        shadow = true,
+        additive = false,
+        outline = false,
+    }
+    surface.CreateFont( "huntersglee_barinfo", fontData )
 
-        surface.SetDrawColor( resurrectBar )
-        surface.DrawRect( x, y, percent * 4, 50 )
+    local barColor = Color( 255, 255, 255, 255 )
+    local barBackground = Color( 50, 50, 50, 100 )
+
+    local function PaintProgressBar( percent, info )
+        local xOffs, yOffs = glee_sizeScaled( -200, 110 )
+        local barWidth, barHeight = glee_sizeScaled( 400, 20 )
+        barWidth = barWidth / 100
+
+        local posX = ScrW() / 2
+        local posY = ScrH() / 2
+
+        local x = posX + xOffs
+        local y = posY + yOffs
+
+        if info and info ~= "" then
+            surface.drawShadowedTextBetter( info, "huntersglee_barinfo", barColor, posX, y + 20, true )
+
+        end
+
+        surface.SetDrawColor( barBackground )
+        surface.DrawRect( x, y, 100 * barWidth, barHeight )
+
+        surface.SetDrawColor( barColor )
+        surface.DrawRect( x, y, percent * barWidth, barHeight )
 
     end
 
-    local isProgressBar = nil
-    local progressBarId = nil
+    local isProgressBar
+    local progressBarId
+    local progressInfo
+    local progressLastRecieved = 0
+    local updateSpeed = 0
+    local updateChunkSize = 0
+    local progBarHookName = "termhunt_coolgenericprogressbar"
 
     local nextRecieve = 0
 
-    net.Receive( "coolprogressbar_start", function()
+    local function cancelProgressBar()
+        isProgressBar = nil
+        progressBarId = nil
+        progressInfo = nil
+        progressLastRecieved = 0
+        updateSpeed = 0
+        updateChunkSize = 0
+        hook.Remove( "PostDrawHUD", progBarHookName )
+
+    end
+    hook.Remove( "PostDrawHUD", progBarHookName )
+
+    local function progBarDraw()
+        if not isProgressBar then cancelProgressBar() return end
+        local localPly = LocalPlayer()
+
+        if localPly:GetNW2Bool( progressBarId, false ) ~= true then cancelProgressBar() return end
+
+        local tillNextPredicted = ( nextUpdatePredictedTime - CurTime() ) / updateSpeed
+        tillNextPredicted = math.Clamp( tillNextPredicted, 0, 1 )
+
+        local predictedDest = progressLastRecieved + updateChunkSize
+
+        local percentPredicting = Lerp( 1 - tillNextPredicted, progressLastRecieved, predictedDest )
+
+        local clamped = math.Clamp( percentPredicting, 0, 100 )
+        PaintProgressBar( clamped, progressInfo )
+
+    end
+
+    net.Receive( "coolprogressbar_maintain", function()
         if nextRecieve > CurTime() then return end
         nextRecieve = CurTime() + 0.01
         local idWeCanFindStuffAt = net.ReadString()
@@ -92,22 +180,16 @@ if CLIENT then
         isProgressBar = true
         progressBarId = idWeCanFindStuffAt
 
-    end )
+        progressInfo = net.ReadString()
 
-    local function cancelProgressBar()
-        isProgressBar = nil
-        progressBarId = nil
+        progressLastRecieved = net.ReadFloat()
 
-    end
+        updateSpeed = net.ReadFloat()
+        nextUpdatePredictedTime = CurTime() + updateSpeed
 
-    hook.Add( "PostDrawHUD", "termhunt_coolgenericprogressbar", function()
-        if not isProgressBar then cancelProgressBar() return end
-        if LocalPlayer():GetNW2Bool( progressBarId, nil ) ~= true then cancelProgressBar() return end
+        updateChunkSize = net.ReadFloat()
 
-        local percent = LocalPlayer():GetNW2Int( progressBarId, 0 )
-        percent = math.Clamp( percent, 0, 100 )
-
-        PaintProgressBar( percent )
+        hook.Add( "PostDrawHUD", progBarHookName, progBarDraw )
 
     end )
 end

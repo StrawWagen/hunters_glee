@@ -53,7 +53,6 @@ elseif CLIENT then
 
     net.Receive( "glee_confirmpurchase", function()
         local cost = net.ReadFloat()
-        local itemId = net.ReadString()
         if cost > 0 then
             local pitch = 100 + math.abs( cost - 100 )
             LocalPlayer():EmitSound( purchaseSound, 60, pitch, 0.50 )
@@ -63,10 +62,46 @@ elseif CLIENT then
             LocalPlayer():EmitSound( getSound, 60, 120, 0.50 )
         end
 
+        local isId = net.ReadBool()
+        if not isId then return end
+
+        local itemId = net.ReadString()
+        if itemId == "" then return end
+
         hook.Run( "glee_cl_confirmedpurchase", LocalPlayer(), itemId )
         LocalPlayer().glee_DefinitelyPurchasedSomething = true
 
     end )
+
+    local function autoComplete( _, stringargs )
+        local items = table.GetKeys( GAMEMODE.shopItems )
+
+        --- Trim the arguments & make them lowercase.
+        stringargs = string.Trim( stringargs:lower() )
+
+        --- Create a new table.
+        local tbl = {}
+        for _, item in pairs( items ) do
+            if item:lower():find( stringargs ) then
+                --- Add the player's name into the auto-complete.
+                theComplete = "cl_termhunt_purchase \"" .. item .. "\""
+                table.insert( tbl, theComplete )
+
+            end
+        end
+        --- Return the table for auto-complete.
+        return tbl
+
+    end
+
+
+    -- ew ew gross formatting
+    concommand.Add( "cl_termhunt_purchase", function( _, _, args, _ )
+        RunConsoleCommand( "termhunt_purchase", args[1] )
+
+    end, autoComplete, "purchase an item" )
+    -- ew ew
+
 end
 
 -- all below is shared
@@ -81,7 +116,7 @@ end
 -- yes, you can just add shop items!
 function GM:getDebugShopItemStructureTable()
     -- example item
-    local theItemTable = { 
+    local theItemTable = {
         [ "slams" ] = {
             name = "Slams",
             desc = "Some slams, 17 to be exact.",
@@ -99,19 +134,23 @@ function GM:getDebugShopItemStructureTable()
         }
     }
     local theDescriptorTable = {
+        -- all fields should be identical on server/client
         [ "shopItemUniqueIdentifier" ] = {
-            name = "Printed name that players see",
-            desc = "Description",
-            cost = "Cost, negative to give player score when purchasing, Can be a function",
-            markup = "Optional. Price multipler to be applied when bought out of setup",
-            markupPerPurchase = "Optional. additional markup per player per purchase of item",
-            cooldown = "Optional. Cooldown between purchases, math.huge for one purchase per round",
-            category = "What to place this with in the shop",
-            purchaseTimes = "When this allowed to be bought, eg GAMEMODE.ROUND_ACTIVE ( hunting ), GAMEMODE.ROUND_INACTIVE ( right before hunting )",
-            weight = "Optional. Where to order this relative to everything else in our category, accepts negative values.",
-            purchaseCheck = "Optional. Table of, or single function checked to see if this is purchasable, ran clientside on every item when shop is open. ran once serverside when purchased",
-            purchaseFunc = "What function to run when the item is bought, serverside",
-            canShowInShop = "Optional. table of funcs or single func. Can this be seen in the shop? also prevents purchases."
+            name =              "Printed name that players see",
+            desc =              "Description. Accepts a function or string.",
+            cost =              "Cost, negative to give player score when purchasing, Accepts a function.",
+            can_goindebt =      "Optional. Can this item be bought when the player has no score? Can force players to buy innate debuffs, etc.",
+            fakeCost =          "Optional. Whether to skip applying the cost within the purchasing system. Good if you want a shop item to more dynamically apply costs, but still show a cost.",
+            simpleCostDisplay = "Optional. Client. Skip the coloring + formatting of an item's cost in the shop.",
+            markup =            "Optional. Price multipler to be applied when bought during the hunt, motivates people buy when the round's setting up.",
+            markupPerPurchase = "Optional. Additional markup per player per purchase of item. Makes items less and less worth it.",
+            cooldown =          "Optional. Cooldown between purchases, math.huge for one purchase per round. Can be a number, or a function.",
+            category =          "What to place this with in the shop. Innate, Undead, etc.",
+            purchaseTimes =     "Item will only be purchasble in the round states specified by this table. Eg GAMEMODE.ROUND_ACTIVE ( hunting ).",
+            weight =            "Optional. Where to order this relative to everything else in our category, accepts negative values.",
+            purchaseCheck =     "Optional. Function or table of functions checked to see if this is purchasable, ran clientside on every item, every frame when shop is open. ran once serverside when purchased",
+            purchaseFunc =      "Server. What function to run when the item is bought.",
+            canShowInShop =     "Optional. Can this be seen in the shop? also prevents purchases. Accepts a single function, or a table of functions."
         }
     }
     return theItemTable, theDescriptorTable
@@ -127,15 +166,12 @@ end
 function GM:addShopItem( shopItemIdentifier, shopItemData )
     -- check all the non-optional stuff
     if not istable( shopItemData ) then addShopFail( shopItemIdentifier, "data table is not a table" ) return end
-    if not shopItemData.name then addShopFail( shopItemIdentifier, "invalid name" ) return end
-    if not shopItemData.desc then addShopFail( shopItemIdentifier, "invalid desc ( description )" ) return end
-    if not shopItemData.cost then addShopFail( shopItemIdentifier, "invalid cost" ) return end
-    if not shopItemData.category then addShopFail( shopItemIdentifier, "invalid category, create a new category first" ) return end
-    if not shopItemData.purchaseTimes or table.Count( shopItemData.purchaseTimes ) <= 0 then addShopFail( shopItemIdentifier, "purchaseTimes are not specified" ) return end
-    if not shopItemData.purchaseFunc then addShopFail( shopItemIdentifier, "invalid purchaseFunc" ) return end
-
-    -- if you reallllly want to override a shop item, fine!
-    if GAMEMODE.shopItems[shopItemIdentifier] ~= nil and hook.Run( "glee_canoverrideshopitem", shopItemIdentifier ) == nil then addShopFail( shopItemIdentifier, "Tried to add a shop item that already exists" ) return end
+    if not shopItemData.name then addShopFail( shopItemIdentifier, "invalid .name" ) return end
+    if not shopItemData.desc then addShopFail( shopItemIdentifier, "invalid .desc ( description )" ) return end
+    if not shopItemData.cost then addShopFail( shopItemIdentifier, "invalid .cost" ) return end
+    if not shopItemData.category then addShopFail( shopItemIdentifier, "invalid .category, create a new category first?" ) return end
+    if not shopItemData.purchaseTimes or table.Count( shopItemData.purchaseTimes ) <= 0 then addShopFail( shopItemIdentifier, ".purchaseTimes are not specified" ) return end
+    if not shopItemData.purchaseFunc then addShopFail( shopItemIdentifier, "invalid .purchaseFunc" ) return end
 
     GAMEMODE.shopItems[shopItemIdentifier] = shopItemData
 
@@ -143,19 +179,25 @@ end
 
 function GM:invalidateShopItem( identifier )
     GAMEMODE.invalidShopItems[identifier] = true
-    if SERVER then
+    if SERVER then --????
 
 
     end
 end
 
-function GM:addShopCategory( shopCategoryName, shopCategoryPriority )
-    GAMEMODE.shopCategories[shopCategoryName] = shopCategoryPriority
+function GM:addShopCategory( shopCategoryName, shopCategoryData )
+    GAMEMODE.shopCategories[shopCategoryName] = shopCategoryData
 
 end
 
 function GM:GetShopItemData( identifier )
     local dat = GAMEMODE.shopItems[ identifier ]
+    if not istable( dat ) then return end
+    return dat
+
+end
+function GM:GetShopCategoryData( identifier )
+    local dat = GAMEMODE.shopCategories[ identifier ]
     if not istable( dat ) then return end
     return dat
 
@@ -172,14 +214,21 @@ local sadGreen = Color( 106,190,9 )
 -- so cost -50 would be '+50' and yellow because it would give players 50 score for buying
 -- cost 50 would be '-50' and depending on whether player can afford, green or red.
 -- it reverses the number i know, it's stupid
-function GM:translatedShopItemCost( purchaser, cost, identifier )
+function GM:translatedShopItemCost( purchaser, cost, compareType, identifier )
 
     if not cost then return "", white end
 
     local color = white
     local preTextSymbol = ""
     local theCost = ""
-    local purchasersScore = purchaser:GetScore()
+    local compareVal
+    if compareType == "score" then
+        compareVal = purchaser:GetScore()
+
+    elseif compareType == "skull" then
+        compareVal = purchaser:GetSkulls()
+
+    end
 
     -- add difference between "not enough money" and "you bought this already"
     if identifier and purchaser and purchaser.shopItemCooldowns[ identifier ] == math.huge then
@@ -191,7 +240,7 @@ function GM:translatedShopItemCost( purchaser, cost, identifier )
         preTextSymbol = "-"
         theCost = tostring( math.abs( cost ) )
 
-        canAfford = ( purchasersScore + -cost ) >= 0
+        canAfford = ( compareVal + -cost ) >= 0
 
         if not canAfford then
             color = red
@@ -275,6 +324,37 @@ function GM:shopItemCost( toPurchase, purchaser )
 
 end
 
+function GM:shopItemSkullCost( toPurchase, purchaser )
+    if not toPurchase then return end
+    local dat = GAMEMODE:GetShopItemData( toPurchase )
+    if not dat then return end
+    local skullCostRaw = dat.skullCost
+    if not skullCostRaw then return end
+    local skullCost = nil
+
+    if isfunction( skullCostRaw ) then
+        local noErrors, returned = xpcall( skullCostRaw, errorCatchingMitt, purchaser )
+        if noErrors == false then
+            GAMEMODE:invalidateShopItem( toPurchase )
+            print( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s SKULL cost function errored!!!!!!!!!!!" )
+            return 0
+
+        else
+            skullCost = returned
+
+        end
+    else
+        skullCost = skullCostRaw
+
+    end
+
+    if not skullCost then return end
+
+    skullCost = skullCost * GAMEMODE:shopMarkup( purchaser, toPurchase )
+    return math.Round( skullCost )
+
+end
+
 function GM:translateShopItemCooldown( ply, toPurchase, cooldownRaw )
     if not cooldownRaw then return end
     local cooldown = 0
@@ -288,12 +368,44 @@ function GM:translateShopItemCooldown( ply, toPurchase, cooldownRaw )
             print( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s cooldown function errored!!!!!!!!!!!" )
             return
 
+        elseif not isnumber( returned ) and returned ~= nil then -- can be nil for no cooldown
+            GAMEMODE:invalidateShopItem( toPurchase )
+            print( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s cooldown function returned a non-number!!!!!!!!!!!" )
+            return
+
         else
             cooldown = returned
 
         end
     end
     return cooldown
+
+end
+
+function GM:translateShopItemDescription( ply, toPurchase, descriptionRaw )
+    if not descriptionRaw then return end
+    local description = ""
+    if isstring( descriptionRaw ) then
+        description = descriptionRaw
+
+    elseif isfunction( descriptionRaw ) then
+        local noErrors, returned = xpcall( descriptionRaw, errorCatchingMitt, ply )
+        if noErrors == false then
+            GAMEMODE:invalidateShopItem( toPurchase )
+            print( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s description function errored!!!!!!!!!!!" )
+            return
+
+        elseif not isstring( returned ) then -- description cannot be nil.
+            GAMEMODE:invalidateShopItem( toPurchase )
+            print( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s description function returned a non-string!!!!!!!!!!!" )
+            return
+
+        else
+            description = returned
+
+        end
+    end
+    return description
 
 end
 
@@ -336,12 +448,39 @@ end
 local REASON_ERROR = "ERROR"
 local REASON_INVALID = "That isn't a real thing for sale."
 local REASON_POOR = "You are too poor to afford this."
+local REASON_DEBT = "You can't buy this.\nYou're in Debt."
+local REASON_SKULLPOOR = "You need more skulls to buy this."
+local REASON_SKULLDEBT = "You can't buy this, You're in Skull debt."
 
 -- shared!
 
 function GM:canPurchase( ply, toPurchase )
+    if not toPurchase or toPurchase == "" then return end
     local dat = GAMEMODE:GetShopItemData( toPurchase )
     if not dat then GAMEMODE:invalidateShopItem( _, toPurchase ) return false, REASON_INVALID end
+
+    local catData = GAMEMODE:GetShopCategoryData( dat.category )
+    if not catData then return false, REASON_INVALID end
+
+    local categoryCanShow = catData.canShowInShop
+    if isfunction( categoryCanShow ) then
+        categoryCanShow = { categoryCanShow }
+
+    end
+    if istable( categoryCanShow ) then
+        for _, theCurrentShowFunc in ipairs( categoryCanShow ) do
+            local noErrors, returned = xpcall( theCurrentShowFunc, errorCatchingMitt, ply )
+            if noErrors == false then
+                GAMEMODE:invalidateShopItem( toPurchase )
+                print( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s canShowInShop function errored!!!!!!!!!!!" )
+                return nil, REASON_ERROR
+
+            else
+                if returned ~= true then return nil, "that shop item isn't for sale!" end
+
+            end
+        end
+    end
 
     local canEvenShow = dat.canShowInShop
     if isfunction( canEvenShow ) then
@@ -385,22 +524,49 @@ function GM:canPurchase( ply, toPurchase )
         end
     end
 
-    local frags = ply:GetScore()
+    local nextPurchase = ply.shopItemCooldowns[toPurchase] or -20000
+    if nextPurchase == math.huge then return nil, "You've already bought this." end
+
+    local score = ply:GetScore()
     local cost = GAMEMODE:shopItemCost( toPurchase, ply )
+    local canGoInDebt = dat.can_goindebt
 
     -- account for negative cost
-    if cost >= 0 and frags < cost and cost ~= 0 then return nil, REASON_POOR end
+    local costsTooMuch = score < cost and not canGoInDebt
 
-    local nextPurchase = ply.shopItemCooldowns[toPurchase] or -20000
-    local nextPurchasePresentable = math.Round( math.abs( nextPurchase - CurTime() ), 1 )
-    local cooldownReason = "Cooldown, Purchasable in " .. tostring( nextPurchasePresentable )
-    if nextPurchase == math.huge then
-        cooldownReason = "This is only purchasable once per round."
+    if cost >= 0 and costsTooMuch and cost ~= 0 then
+        local cannotBuyReason = REASON_POOR
+        if score < 0 then
+            cannotBuyReason = REASON_DEBT
+
+        end
+        return nil, cannotBuyReason
+
     end
 
-    if nextPurchase > CurTime() then return nil, cooldownReason end
+    local skullCost = GAMEMODE:shopItemSkullCost( toPurchase, ply )
+    if skullCost then
+        local skulls = ply:GetSkulls()
+        local skullCostsTooMuch = skulls < skullCost and not canGoInDebt
+        if skullCost >= 0 and skullCostsTooMuch and skullCost ~= 0 then
+            local cannotBuySkullsReason = REASON_SKULLPOOR
+            if score < 0 then
+                cannotBuySkullsReason = REASON_SKULLDEBT
 
-    local hookResult, notPurchasableReason = hook.Run( "glee_canpurchaseitem", ply, self.itemIdentifier )
+            end
+            return nil, cannotBuySkullsReason
+
+        end
+    end
+
+    if nextPurchase > CurTime() then
+        local nextPurchasePresentable = math.Round( math.abs( nextPurchase - CurTime() ), 1 )
+        local cooldownReason = "Cooldown, Purchasable in " .. tostring( nextPurchasePresentable )
+        return nil, cooldownReason
+
+    end
+
+    local hookResult, notPurchasableReason = hook.Run( "glee_blockpurchaseitem", ply, self.itemIdentifier )
 
     if hookResult then return nil, notPurchasableReason end
 
@@ -410,4 +576,12 @@ function GM:canPurchase( ply, toPurchase )
     if not goodTime then return nil, badTimeReasonTranslation( currState, times ) end
 
     return true, ""
+
 end
+
+local shopEnabled = CreateConVar( "huntersglee_enableshop", 1, FCVAR_REPLICATED, "Enables the shop.", 0, 1 )
+
+hook.Add( "glee_blockpurchaseitem", "glee_shopdisable", function()
+    if not shopEnabled:GetBool() then return true, "The shop is disabled." end
+
+end )

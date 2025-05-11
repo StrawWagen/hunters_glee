@@ -95,7 +95,7 @@ function ENT:BarnacleTrace()
     local eyePos = trace.HitPos
     local traceData = {
         start = eyePos + Vector( 0,0,10 ),
-        endpos = eyePos + Vector( 0,0,1000 ),
+        endpos = eyePos + Vector( 0,0,2500 ),
         mask = MASK_SOLID_BRUSHONLY,
 
     }
@@ -124,12 +124,12 @@ end
 function ENT:CalculateCanPlace()
     local canPlace, reason = self:CanPlaceNonScore()
     if not canPlace then return canPlace, reason end
-    if not self:HasEnoughToPurchase() then return false, self.noPurchaseReason_TooPoor end
+    if not self:HasEnoughToPurchase() then return false, self:TooPoorString() end
     return true
 
 end
 
-function ENT:bestPosToBe()
+function ENT:BestPosToBe()
     local bestPos = nil
     local canPlaceNonScore = self:CanPlaceNonScore()
     local placeTraceResult, eyePos = self:BarnacleTrace()
@@ -149,8 +149,9 @@ end
 if not SERVER then return end
 
 
-local tooCloseToPlayer = 1000
-local barnaclePunishmentDist = 1000
+local tooCloseToPlayer = 350
+local sortaCloseToPlayers = 1000
+local barnaclePunishmentDist = 750
 
 function ENT:UpdateGivenScore()
     local plys = player.GetAll()
@@ -171,7 +172,7 @@ function ENT:UpdateGivenScore()
 
     for _, currentBarnacle in ipairs( ents.FindByClass( "npc_barnacle" ) ) do
         if currentBarnacle.barnacleCreator == self then continue end
-        local distToCurrentBarnacleSqr = self:GetPos():DistToSqr( currentBarnacle:GetPos() )
+        local distToCurrentBarnacleSqr = self:GetPos():Distance2DSqr( currentBarnacle:GetPos() )
         if distToCurrentBarnacleSqr < smallestPunishmentDist then
             tooCloseCount = tooCloseCount + 1
             if tooCloseCount < 2 then continue end
@@ -191,8 +192,13 @@ function ENT:UpdateGivenScore()
     local playerPenalty = 0
 
     if smallestDistLinear < tooCloseToPlayer then
-        playerPenalty = -50
+        playerPenalty = -125
         scoreGiven = scoreGiven + playerPenalty
+
+    elseif smallestDistLinear < sortaCloseToPlayers then
+        playerPenalty = -40
+        scoreGiven = scoreGiven + playerPenalty
+
     end
 
     scoreGiven = scoreGiven + -punishmentGiven
@@ -215,8 +221,8 @@ function ENT:Place()
     barnacle:Spawn()
     barnacle:Activate()
 
+    barnacle.glee_PlacedBarnacle = true
     barnacle.barnacleCreator = self
-    barnacle.termhuntDamageAttackingMult = 4
     barnacle.barnacleOwner = self.player
 
     local timerName = "SoundTimer_" .. self:GetClass() .. self:EntIndex()
@@ -235,13 +241,13 @@ function ENT:Place()
         end
         local enemy = barnacle:GetEnemy()
         if IsValid( enemy ) and enemy:IsPlayer() and IsValid( barnacle.barnacleOwner ) and barnacle.barnacleOwner ~= enemy then
-            local scoreToGive = 45
+            local scoreToGive = 15
             if not barnacle.hasGivenHugeScoreBump then
                 barnacle.hasGivenHugeScoreBump = true
                 scoreToGive = 100
             end
             barnacle.barnacleOwner:GivePlayerScore( scoreToGive )
-            huntersGlee_Announce( { barnacle.barnacleOwner }, 5, 10, "One of your barnacles has grabbed a player!" )
+            huntersGlee_Announce( { barnacle.barnacleOwner }, 5, 6, "One of your barnacles has grabbed a player!" )
 
         end
     end )
@@ -250,9 +256,20 @@ function ENT:Place()
 
     if self.player.GivePlayerScore and score then
         self.player:GivePlayerScore( score )
+        GAMEMODE:sendPurchaseConfirm( self.player, score )
 
     end
 
     SafeRemoveEntity( self )
 
 end
+
+local IsValid = IsValid
+
+hook.Add( "EntityTakeDamage", "glee_placedbarnacle_extradamage", function( _, dmg )
+    local attacker = dmg:GetAttacker()
+    if not IsValid( attacker ) or not attacker.glee_PlacedBarnacle then return end
+
+    dmg:ScaleDamage( 2 )
+
+end )

@@ -19,10 +19,20 @@ SWEP.ViewModelFlip      = false
 SWEP.BounceWeaponIcon   = false
 
 SWEP.ViewModel          = "models/weapons/v_flaregun.mdl"
-SWEP.WorldModel         = "models/weapons/w_357.mdl"
+SWEP.WorldModel         = "models/weapons/w_dkflaregun.mdl"
 
+local className = "termhunt_aeromatix_flare_gun"
 if CLIENT then
+    language.Add( className, SWEP.PrintName )
+    killicon.Add( className, "vgui/hud/killicon/" .. className .. ".png", color_white )
     language.Add( "GLEE_FLAREGUN_PLAYER_ammo", "Flare" )
+
+else
+    resource.AddFile( "materials/vgui/hud/killicon/" .. className .. ".png" )
+    resource.AddFile( "materials/models/weapons/dk_flaregun/gm.vmt" )
+    resource.AddFile( "materials/models/weapons/dk_flaregun/gm_n.vtf" )
+    resource.AddFile( "models/weapons/v_flaregun.mdl" )
+    resource.AddFile( "models/weapons/w_dkflaregun.mdl" ) -- https://steamcommunity.com/sharedfiles/filedetails/?id=1623971250
 
 end
 
@@ -42,7 +52,7 @@ SWEP.Primary.Sound = Sound( "weapons/flaregun/fire.wav" )
 SWEP.Primary.Ammo            = "GLEE_FLAREGUN_PLAYER"
 SWEP.Primary.NumShots = 1
 SWEP.Primary.ClipSize =  1
-SWEP.Primary.DefaultClip =  2
+SWEP.Primary.DefaultClip =  4
 SWEP.Primary.Automatic = false
 SWEP.Primary.Delay = 1
 
@@ -143,9 +153,6 @@ function SWEP:Initialize()
     end
 end
 
-function SWEP:Equip()
-end
-
 function SWEP:OwnerChanged()
 end
 
@@ -172,15 +179,22 @@ function SWEP:GetCapabilities()
     return CAP_WEAPON_RANGE_ATTACK1
 end
 
-function SWEP:DrawWorldModel()
-end
-
-
 if not CLIENT then return end
-local red = Color( 255, 50, 50, 255 )
+
+local posOffset = Vector( 4, 0, 3 )
+local angOffset = Angle( 0, 180, -90 )
 
 function SWEP:DrawWorldModel()
-    self:SetColor( red )
+    local owner = self:GetOwner()
+    if IsValid( owner ) then
+        local attachId = owner:LookupAttachment( "anim_attachment_RH" )
+        if attachId <= 0 then return end
+        local attachTbl = owner:GetAttachment( attachId )
+        local posOffsetW, angOffsetW = LocalToWorld( posOffset, angOffset, attachTbl.Pos, attachTbl.Ang )
+        self:SetPos( posOffsetW )
+        self:SetAngles( angOffsetW )
+
+    end
     self:DrawModel()
 
 end

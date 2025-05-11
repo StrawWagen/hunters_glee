@@ -8,7 +8,7 @@ ENT.PrintName   = "Score Pickup"
 ENT.Author      = "StrawWagen"
 ENT.Purpose     = "Locks doors"
 ENT.Spawnable    = true
-ENT.AdminOnly    = false
+ENT.AdminOnly    = game.IsDedicated()
 ENT.Category = "Hunter's Glee"
 
 function ENT:SetupDataTables()
@@ -26,7 +26,8 @@ function ENT:Initialize()
     if SERVER then
         self.nextAllowedMerge = CurTime() + 1
         self.nextScoreDecay = CurTime() + 30
-        self.canBePickedUpTime = CurTime() + 0.5
+        self.canBePickedUpTime = CurTime() + 0.1
+        self.nextScoreClick = CurTime() + 3
         self.DoNotDuplicate = true
         if self:GetScore() == 0 then
             self:SetScore( 15 )
@@ -38,6 +39,8 @@ function ENT:Initialize()
         self:ReflectScoreInAppearance()
 
         self:SetCollisionGroup( COLLISION_GROUP_WEAPON )
+
+        terminator_Extras.SmartSleepEntity( self, 10 )
 
         local phys = self:GetPhysicsObject()
         if IsValid( phys ) then
@@ -86,7 +89,6 @@ function ENT:ReflectScoreInAppearance()
 end
 
 function ENT:HandleScorePhysics()
-
     timer.Simple( 0, function()
         if not IsValid( self ) then return end
         local scale = self:GetScoreScaleMagicNum()
@@ -105,19 +107,26 @@ function ENT:HandleScorePhysics()
     end )
 end
 
+function ENT:DoClicking()
+    if self.nextScoreClick > CurTime() then return end
+
+    self:SoundThink( 1 )
+    local flash = EffectData()
+    flash:SetScale( 0.25 )
+    flash:SetOrigin( self:WorldSpaceCenter() )
+    util.Effect( "eff_huntersglee_scoreball_flash", flash )
+
+    self.nextScoreClick = CurTime() + 3 + math.Rand( -0.1, 0.1 )
+
+end
+
 function ENT:Think()
     if CLIENT then
-        if not IsValid( self ) then return end
-        self:SoundThink( 1 )
-        local flash = EffectData()
-        flash:SetScale( 0.25 )
-        flash:SetOrigin( self:WorldSpaceCenter() )
-        util.Effect( "eff_huntersglee_scoreball_flash", flash )
-
-        self:SetNextClientThink( CurTime() + 3 + math.Rand( -0.1, 0.1 ) )
+        self:SetNextClientThink( CurTime() + 1100101010 )
         return true
 
     else
+        self:DoClicking()
         -- slowly lose score
         if self.nextScoreDecay > CurTime() then return end
         if self.nextAllowedMerge > CurTime() then return end
@@ -259,7 +268,13 @@ end
 function ENT:PhysicsCollide( colData, _ )
     self:DoScore( colData.HitEntity )
     if colData.HitEntity:GetClass() == "termhunt_score_pickup" then
-        self:MergeWith( colData.HitEntity )
+        local toMerge = colData.HitEntity
+        timer.Simple( 0, function()
+            if not IsValid( self ) then return end
+            if not IsValid( toMerge ) then return end
+            self:MergeWith( toMerge )
+
+        end )
         return
 
     end
@@ -289,7 +304,7 @@ function ENT:SoundThink( volume )
 
         end
         self.impactSound:PlayEx( volume, pit )
-        util.ScreenShake( self:GetPos(), 0.2, 20, 0.2, 600 )
+        util.ScreenShake( self:GetPos(), 0.2, 20, 0.2, 600, true )
 
     end
 end

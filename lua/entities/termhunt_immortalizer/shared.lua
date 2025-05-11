@@ -55,7 +55,7 @@ end
 function ENT:CalculateCanPlace()
     if not IsValid( self:GetCurrTarget() ) then return false, "Nothing to immortalize." end
     if self:GetCurrTarget().glee_DamageResistant then return false, "That's already immortal." end
-    if not self:HasEnoughToPurchase() then return false, self.noPurchaseReason_TooPoor end
+    if not self:HasEnoughToPurchase() then return false, self:TooPoorString() end
     return true
 
 end
@@ -65,10 +65,10 @@ if not SERVER then return end
 function ENT:UpdateGivenScore()
     if not IsValid( self:GetCurrTarget() ) then return end
     if self:GetCurrTarget():IsPlayer() then
-        self:SetGivenScore( -200 )
+        self:SetGivenScore( -300 )
 
     elseif self:GetCurrTarget():IsNextBot() then
-        self:SetGivenScore( -100 )
+        self:SetGivenScore( -200 )
 
     end
 end
@@ -92,11 +92,11 @@ function ENT:Place()
     end
 
     if plyToImmortal:IsPlayer() then
-        huntersGlee_Announce( plysToAlert, 5, 8, "You feel an imposing presence..\n" .. self.player:Name() .. " has gifted immortality to...\n" .. plyToImmortal:Name() )
-        huntersGlee_Announce( { plyToImmortal }, 10, 10, "Something's off, you feel strong, you feel... Immortal.\n" .. self.player:Name() .. " has gifted you temporary Immortality." )
+        huntersGlee_Announce( plysToAlert, 5, 6, "You feel an imposing presence..\n" .. self.player:Nick() .. " has gifted immortality to...\n" .. plyToImmortal:Nick() )
+        huntersGlee_Announce( { plyToImmortal }, 10, 10, "Something's off, you feel strong, you feel... Immortal.\n" .. self.player:Nick() .. " has gifted you temporary Immortality." )
 
     else
-        huntersGlee_Announce( plysToAlert, 5, 8, "You feel an imposing presence..\n" .. self.player:Name() .. " has gifted immortality to a Terminator." )
+        huntersGlee_Announce( plysToAlert, 5, 6, "You feel an imposing presence..\n" .. self.player:Nick() .. " has gifted immortality to " .. GAMEMODE:GetNameOfBot( plyToImmortal ) )
 
     end
 
@@ -111,7 +111,7 @@ function ENT:Place()
     plyToImmortal:EmitSound( "physics/concrete/boulder_impact_hard3.wav", 90, 80, 1, CHAN_STATIC )
     plyToImmortal:EmitSound( "physics/concrete/boulder_impact_hard3.wav", 90, 120, 1, CHAN_STATIC )
 
-    util.ScreenShake( plyToImmortal:GetPos(), 40, 20, 1.5, 1500 )
+    util.ScreenShake( plyToImmortal:GetPos(), 40, 20, 1.5, 1500, true )
 
     local immortCancel = function()
         timer.Remove( timerName )
@@ -148,13 +148,13 @@ function ENT:Place()
         damage:SetDamageForce( damage:GetDamageForce() * damageDealt )
         damage:ScaleDamage( 0 )
 
-        util.ScreenShake( plyToImmortal:GetPos(), damageDealt / 2, 20, damageDealt / 1000, 1500 )
+        util.ScreenShake( plyToImmortal:GetPos(), damageDealt / 2, 20, damageDealt / 1000, 1500, true )
 
         return true
 
     end )
 
-    timer.Create( timerName, 1, 16, function()
+    timer.Create( timerName, 1, 21, function()
         if not IsValid( plyToImmortal ) then immortCancel() return end
         if not plyToImmortal.glee_DamageResistant then immortCancel() return end
         if plyToImmortal:Health() <= 0 then immortCancel() return end
@@ -168,7 +168,7 @@ function ENT:Place()
 
         end
         if message and plyToImmortal:IsPlayer() then
-            huntersGlee_Announce( { plyToImmortal }, 10, 1, message )
+            huntersGlee_Announce( { plyToImmortal }, 10, 1.5, message )
 
         end
 
@@ -186,6 +186,7 @@ function ENT:Place()
 
     if self.player.GivePlayerScore and score then
         self.player:GivePlayerScore( score )
+        GAMEMODE:sendPurchaseConfirm( self.player, score )
 
     end
 

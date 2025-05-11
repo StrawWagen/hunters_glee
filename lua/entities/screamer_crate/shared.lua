@@ -1,3 +1,4 @@
+-- this is both screaming crate AND base entity for all placeables
 AddCSLuaFile()
 
 ENT.Type = "anim"
@@ -8,7 +9,7 @@ ENT.PrintName   = "Screaming crate"
 ENT.Author      = "StrawWagen"
 ENT.Purpose     = "Screaming item crate spawner"
 ENT.Spawnable    = true
-ENT.AdminOnly    = false
+ENT.AdminOnly    = game.IsDedicated()
 ENT.RenderGroup = RENDERGROUP_BOTH
 ENT.Category = "Hunter's Glee"
 ENT.Model = "models/Items/item_item_crate.mdl"
@@ -16,6 +17,10 @@ ENT.Model = "models/Items/item_item_crate.mdl"
 ENT.noPurchaseReason_NoRoom = "No room to place this."
 ENT.noPurchaseReason_OffNavmesh = "The hunters can't path to that spot."
 ENT.noPurchaseReason_TooPoor = "You're too poor."
+ENT.noPurchaseReason_InDebt = "You're in debt."
+
+local beaconVecOffset = Vector( 6.94, -8.67, 25.83 )
+local beaconAngOffset = Angle( 0, -90, 0 )
 
 ENT.placedItems = 0
 
@@ -62,6 +67,8 @@ end
 
 function ENT:Initialize()
     self:SetModel( self.Model )
+    self:SetCanPlace( false ) -- wait for it to check this
+
     if SERVER then
         self:SetRenderMode( RENDERMODE_TRANSCOLOR )
         self:SetNoDraw( false )
@@ -101,11 +108,47 @@ if CLIENT then
     }
     surface.CreateFont( "scoreGainedOnPlaceFont", fontData )
 
+    local LocalPlayer = LocalPlayer
+
     hook.Add( "HUDPaint", "glee_placablestuff_hudthink", function()
         if not GAMEMODE.CanShowDefaultHud or not GAMEMODE:CanShowDefaultHud() then return end
         if not IsValid( LocalPlayer().ghostEnt ) then return end
 
         LocalPlayer().ghostEnt:DoHudStuff()
+
+    end )
+
+    hook.Add( "huntersglee_cl_displayhint_predeadhints", "placeables_hints", function( ply )
+        if not IsValid( ply.ghostEnt ) then return end
+
+        local hint = ""
+        local good
+
+        if ply:GetNW2Bool( "glee_placedundead", false ) ~= true then
+            local valid, translated = GAMEMODE:TranslatedBind( "+attack" )
+            if valid then
+                good = true
+                hint = hint .. "Press " .. translated .. " to place an undead item.\n"
+
+            else
+                ply:SetNW2Bool( "glee_placedundead", true )
+
+            end
+        end
+
+        if ply:GetNW2Bool( "glee_cancelledplacing", false ) ~= true then
+            local valid, translated = GAMEMODE:TranslatedBind( "+attack2" )
+            if valid then
+                good = true
+                hint = hint .. "Press " .. translated .. " to cancel the placing of an undead item."
+
+            else
+                ply:SetNW2Bool( "glee_cancelledplacing", true )
+
+            end
+        end
+
+        return good, hint
 
     end )
 
@@ -135,8 +178,9 @@ if CLIENT then
     end
 end
 
-function ENT:GetPos2()
+function ENT:OffsettedPlacingPos()
     return self:GetPos() + self.PosOffset
+
 end
 
 local function IsHullTraceFull( startPos, hullMaxs, ignoreEnt )
@@ -184,9 +228,9 @@ local function PlayRepeatingSound( self, soundPath, soundDuration )
 
         self:doSoundComprehensive()
 
-        if self.player and self.player.GivePlayerScore and self.refundAndBonus and self.refundAndBonus > 0 then
-            self.player:GivePlayerScore( self.refundAndBonus )
-            huntersGlee_Announce( { self.player }, 5, 15, "The beacon survives, you profit " .. self.refundAndBonus + -placingCost .. " score." )
+        if self.glee_player and self.glee_player.GivePlayerScore and self.refundAndBonus and self.refundAndBonus > 0 then
+            self.glee_player:GivePlayerScore( self.refundAndBonus )
+            huntersGlee_Announce( { self.glee_player }, 5, 10, "The beacon survives, you profit " .. self.refundAndBonus + -placingCost .. " score." )
             self.refundAndBonus = nil
 
         end
@@ -229,7 +273,7 @@ local function PlayRepeatingSound( self, soundPath, soundDuration )
             self:doSoundComprehensive()
 
         else
-            -- If the entity is no longer valid, stop the timer
+            -- If the entity is no longer valid, stop the timer ( ai slop comment )
             timer.Remove( timerName )
 
         end
@@ -253,13 +297,13 @@ function ENT:HasEnoughToPurchase()
 end
 
 function ENT:ManageMyPos()
-    local theNewBestPos = self:bestPosToBe()
+    local theNewBestPos = self:BestPosToBe()
     if not theNewBestPos then return end
     self:SetPos( theNewBestPos )
 
 end
 
-function ENT:bestPosToBe()
+function ENT:BestPosToBe()
     local radius = self:GetModelRadius()
     local offset = radius * self.player:GetEyeTrace().HitNormal
     offset.z = math.Clamp( offset.z, -radius, radius * 0.1 )
@@ -269,14 +313,26 @@ function ENT:bestPosToBe()
 
 end
 
+function ENT:TooPoorString()
+    local ply = self.player
+    local plysScore = ply:GetScore()
+    if plysScore < 0 then
+        return self.noPurchaseReason_InDebt
+
+    else
+        return self.noPurchaseReason_TooPoor
+
+    end
+end
+
 local vec15Z = Vector( 0,0,15 )
 
 function ENT:CalculateCanPlace()
-    local checkPos = self:GetPos2() + vec15Z
+    local checkPos = self:OffsettedPlacingPos() + vec15Z
 
     if IsHullTraceFull( checkPos, self.HullCheckSize, self ) then return false, self.noPurchaseReason_NoRoom end
     if getNearestNavFloor( checkPos ) == NULL then return false, self.noPurchaseReason_OffNavmesh end
-    if not self:HasEnoughToPurchase() then return false, self.noPurchaseReason_TooPoor end
+    if not self:HasEnoughToPurchase() then return false, self:TooPoorString() end
     return true
 
 end
@@ -429,6 +485,7 @@ function ENT:HandleKeys( ply, key )
     if key == IN_ATTACK then
         if self:GetCanPlace() then
             self:Place()
+            ply:SetNW2Bool( "glee_placedundead", true )
             self.placedItems = self.placedItems + 1
             ply.glee_ghostEntActionTime = CurTime()
 
@@ -441,6 +498,7 @@ function ENT:HandleKeys( ply, key )
 
     if key == IN_ATTACK2 then
         self:Cancel()
+        ply:SetNW2Bool( "glee_cancelledplacing", true )
         ply.glee_ghostEntActionTime = CurTime()
 
     end
@@ -495,12 +553,39 @@ local GM = GAMEMODE
 
 function GM:ScreamingCrate( pos )
     local crate = ents.Create( "item_item_crate" )
+    if not IsValid( crate ) then return end
+
     crate:SetPos( pos )
+    local random = math.random( -4, 4 ) * 45
+    crate:SetAngles( Angle( 0, random, 0 ) )
     crate:SetKeyValue( "ItemClass", "dynamic_super_resupply_fake" ) -- has a good chance to spawn a strong weapon
     crate:SetKeyValue( "ItemCount", 8 )
     crate:Spawn()
     PlayRepeatingSound( crate, "horrific_crate_scream", 20 )
     crate:EmitSound( "npc/turret_floor/deploy.wav", 90, 120 )
+
+    local beaconOnCrate = ents.Create( "prop_physics" )
+    if IsValid( beaconOnCrate ) then
+        beaconOnCrate:SetModel( "models/props_lab/reciever01b.mdl" )
+        local beaconsPos = crate:LocalToWorld( beaconVecOffset )
+        local beaconsAng = crate:LocalToWorldAngles( beaconAngOffset )
+        beaconOnCrate:SetPos( beaconsPos )
+        beaconOnCrate:SetAngles( beaconsAng )
+        beaconOnCrate:SetCollisionGroup( COLLISION_GROUP_WEAPON )
+        beaconOnCrate:Spawn()
+        beaconOnCrate:SetParent( crate )
+
+        crate:CallOnRemove( "beaconedSuppliesBeaconFallOff", function( _, beacon )
+            local thePos = beacon:GetPos()
+            beacon:SetParent()
+            beacon:SetPos( thePos )
+            SafeRemoveEntityDelayed( beacon, 35 )
+            terminator_Extras.SmartSleepEntity( beacon, 3 )
+
+
+        end, beaconOnCrate )
+
+    end
 
     crate.terminatorHunterInnateReaction = function()
         return MEMORY_BREAKABLE
@@ -512,9 +597,9 @@ end
 
 function ENT:Place()
 
-    local crate = GAMEMODE:ScreamingCrate( self:GetPos2() )
+    local crate = GAMEMODE:ScreamingCrate( self:OffsettedPlacingPos() )
     crate:EmitSound( "items/ammocrate_open.wav", 75 )
-    crate.player = self.player
+    crate.glee_player = self.player
 
     crate.refundAndBonus = math.Round( self:GetGivenScore() )
 
@@ -524,7 +609,6 @@ function ENT:Place()
         local hookName = "huntersglee_screamigcrate_recorddamage_" .. crate:GetCreationID()
         hook.Add( "EntityTakeDamage", hookName, function( target, dmg )
             if not IsValid( crate ) then hook.Remove( "EntityTakeDamage", hookName ) return end
-            if not crate.refundAndBonus then hook.Remove( "EntityTakeDamage", hookName ) return end
             if crate ~= target then return end
 
             local attacker = dmg:GetAttacker()
@@ -533,18 +617,18 @@ function ENT:Place()
             crate.lastAttacker = attacker
 
         end )
-        crate:CallOnRemove( "identifyifscore", function( removingCrate )
-            if removingCrate.refundAndBonus and IsValid( removingCrate.player ) then
+        crate:CallOnRemove( "glee_identifyifscore", function( removingCrate )
+            if removingCrate.refundAndBonus and IsValid( removingCrate.glee_player ) then
                 if IsValid( removingCrate.lastAttacker ) and removingCrate.lastAttacker:IsPlayer() then
-                    huntersGlee_Announce( { self.player }, 5, 10, "Someone beat the beacon, they took the deposit." )
-                    huntersGlee_Announce( { removingCrate.lastAttacker }, 5, 10, "You've recieved " .. placingCost .. " for beating the beacon." )
+                    huntersGlee_Announce( { removingCrate.lastAttacker }, 5, 11, "You've recieved " .. placingCost .. " for beating the beacon." )
+                    huntersGlee_Announce( { removingCrate.glee_player }, 5, 10, removingCrate.lastAttacker:Nick() .. " beat the beacon, they took the deposit." )
 
                     if removingCrate.lastAttacker.GivePlayerScore then
                         removingCrate.lastAttacker:GivePlayerScore( placingCost )
 
                     end
                 else
-                    huntersGlee_Announce( { removingCrate.player }, 5, 10, "Your crate was broken early, you are left poorer than before." )
+                    huntersGlee_Announce( { removingCrate.glee_player }, 5, 10, "Your crate was broken early, you are left poorer than before." )
 
                 end
             end
@@ -554,9 +638,11 @@ function ENT:Place()
     if self.player and self.player.GivePlayerScore then
         if crate.refundAndBonus > 0 then
             self.player:GivePlayerScore( initialCost )
+            GAMEMODE:sendPurchaseConfirm( self.player, initialCost )
 
         else
             self.player:GivePlayerScore( crate.refundAndBonus )
+            GAMEMODE:sendPurchaseConfirm( self.player, crate.refundAndBonus )
 
         end
     end

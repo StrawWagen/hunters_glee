@@ -18,11 +18,28 @@ function ENT:Initialize()
 
 end
 
-function ENT:Attach( pos, ang, ent, bone )
+function ENT:Attach( pos, ang, ent1, bone1, ent2, theConstraint )
     self:SetPos( pos )
     self:SetAngles( ang )
-    self:SetParentPhysNum( bone )
-    self:SetParent( ent )
+    self:SetParentPhysNum( bone1 )
+    self:SetParent( ent1 )
+
+    self.realConstraint = theConstraint
+    self.mainEnt = ent1
+    self.secondEnt = ent2
+
+    local constraintsNails = theConstraint.huntersGlee_nails or {}
+    table.insert( constraintsNails, self )
+    theConstraint.huntersGlee_nails = constraintsNails
+
+    theConstraint:CallOnRemove( "constraint_removeallmynails", function()
+        if not theConstraint.huntersGlee_nails then return end
+        for _, currNail in ipairs( theConstraint.huntersGlee_nails ) do
+            if IsValid( currNail ) then
+                self:Break()
+            end
+        end
+    end )
 
 end
 
@@ -101,7 +118,13 @@ function ENT:Break()
     if IsValid( self.mainEnt ) then
         self:unregister( self.mainEnt )
         self:EmitSound( "physics/metal/metal_box_impact_hard" .. math.random( 1, 3 ) .. ".wav", 80, math.random( 70, 90 ), 1, CHAN_STATIC )
-        util.ScreenShake( self:GetPos(), 10, 20, 0.1, 700 )
+        util.ScreenShake( self:GetPos(), 10, 20, 0.1, 700, true )
+
+    end
+    if IsValid( self.secondEnt ) then
+        self:unregister( self.secondEnt )
+        self:EmitSound( "physics/metal/metal_box_impact_hard" .. math.random( 1, 3 ) .. ".wav", 80, math.random( 70, 90 ), 1, CHAN_STATIC )
+        util.ScreenShake( self:GetPos(), 10, 20, 0.1, 700, true )
 
     end
 
@@ -112,9 +135,7 @@ function ENT:Break()
 end
 
 hook.Add( "EntityTakeDamage", "nail_break_when_nailed_damaged", function( target, dmg )
-    local nails = target.huntersglee_breakablenails
-
-    if not nails then return end
+    if not target.huntersglee_breakablenails then return end
 
     -- stupid bug, bot crushes off all nails at once
     if dmg:IsDamageType( DMG_CRUSH ) and IsValid( dmg:GetAttacker() ) and dmg:GetAttacker().isTerminatorHunterBased and IsValid( dmg:GetInflictor() ) and dmg:GetInflictor().isTerminatorHunterBased then return end
@@ -123,14 +144,27 @@ hook.Add( "EntityTakeDamage", "nail_break_when_nailed_damaged", function( target
     local damage = dmg:GetDamage()
 
     if dmg:IsExplosionDamage() then
-        damage = damage * 4
+        damage = damage * 2
+
+    end
+    if dmg:IsDamageType( DMG_DISSOLVE ) then
+        damage = damage / 8
 
     end
 
-    while damage > 0 do
-        local bite = math.random( 1, 150 )
+    local done = 0
+
+    -- go thru all nails until all damage is absorbed
+    while damage > 0 and done < 1000 do
+        done = done + 1
+        -- nail's health, breaks if this roll is less than damage
+        local bite = math.random( 1, 190 )
         tempDamage = damage - bite
-        local randNail, nailsKey = table.Random( nails )
+        if not target.huntersglee_breakablenails then
+            break
+
+        end
+        local randNail, nailsKey = table.Random( target.huntersglee_breakablenails )
         if IsValid( randNail ) then
             if tempDamage > 0 then
                 randNail:Break()
@@ -144,8 +178,8 @@ hook.Add( "EntityTakeDamage", "nail_break_when_nailed_damaged", function( target
 
             end
         else
-            if table.Count( nails ) > 0 then
-                table.remove( nails, nailsKey )
+            if table.Count( target.huntersglee_breakablenails ) > 0 then
+                target.huntersglee_breakablenails[ nailsKey ] = nil
 
             else
                 target.huntersglee_breakablenails = nil

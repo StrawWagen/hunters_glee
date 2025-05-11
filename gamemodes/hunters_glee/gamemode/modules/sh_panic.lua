@@ -1,5 +1,8 @@
 if CLIENT then
-    -- cache panic so we aren't calling getnwint
+
+    local LocalPlayer = LocalPlayer
+
+    -- cache panic so we aren't calling getnwfloat
     local clPanic = nil
     function doPanicDistort( scale )
         local refractAmount = scale / 12000
@@ -18,41 +21,54 @@ if CLIENT then
 
     local panicTimer = "huntersglee_panicmanagethinkclient" -- no backup for restarting this
     timer.Create( panicTimer, 0.2, 0, function()
-        clPanic = LocalPlayer():GetNWInt( "huntersglee_panic", 0 )
+        local ply = LocalPlayer()
+        if not IsValid( ply ) then return end
+        clPanic = ply:GetNWFloat( "huntersglee_panic", 0 )
 
     end )
 
 elseif SERVER then
-    local defaultPanicSounds = {
-        "vo/npc/male01/pain07.wav",
-        "vo/npc/male01/no01.wav",
-        "vo/npc/male01/no02.wav",
-
-    }
-
     function GM:GetPanic( ply )
         if not IsValid( ply ) then return 0 end
-        return ply:GetNWInt( "huntersglee_panic", 0 )
+        return ply:GetNWFloat( "huntersglee_panic", 0 )
 
     end
     function GM:GivePanic( ply, newPanic )
         if not newPanic or newPanic == 0 then return end
         if not IsValid( ply ) then return end
 
-        local panic = GAMEMODE:GetPanic( ply )
+        local panic = self:GetPanic( ply )
         panic = math.Clamp( panic + newPanic, 0, 1000 )
 
-        ply:SetNWInt( "huntersglee_panic", panic )
+        ply:SetNWFloat( "huntersglee_panic", panic )
+
+        return true
+
+    end
+    function GM:SetPanic( ply, newPanic )
+        if not newPanic then return end
+        if not IsValid( ply ) then return end
+        ply:SetNWFloat( "huntersglee_panic", newPanic )
 
         return true
 
     end
 
-    function GM:PanicThinkSV( ply )
-        local panic = GAMEMODE:GetPanic( ply )
+    local fleeDist = 1500
+    local maxPanic = 100
 
-        if ply:Health() <= 0 then
+    function GM:PanicThinkSV( ply )
+        local panic = self:GetPanic( ply )
+        local panicDrain = 0.5
+
+        local plysHealth = ply:Health()
+
+        if plysHealth <= 0 then
             panic = 0
+
+        elseif plysHealth <= 20 then
+            panicDrain = 0.25
+
         end
 
         local underwater = ply:WaterLevel() >= 3
@@ -67,43 +83,109 @@ elseif SERVER then
             local panicSoundPitch = nil
             local panicSoundHitch = nil
 
-            if panic >= 100 then
+            if panic >= maxPanic then
                 local hookResult = hook.Run( "huntersglee_blockpanicreset", ply, panic )
                 local canResetPanic = not underwater and hookResult ~= true
+                local didScream
 
-                -- keeps building
-                if canResetPanic then
-                    panic = 50
-
-                else
-                    panic = panic + -25
+                -- sounds that play when player is chased by scary enemy, in a group of other players
+                if ply.screamMaxPanicFleeSounds and #ply.screamMaxPanicFleeSounds < 1 then
+                    ply.screamMaxPanicFleeSounds = nil
 
                 end
+                ply.screamMaxPanicFleeSounds = ply.screamMaxPanicFleeSounds or table.Copy( self:GetCorrectSoundsForModel( ply, "panicReleaseScreamsChased" ) )
 
-                -- silly way to vary the sound between max panics
-                -- sounded repetitive to have the same sound play over and over and over
+                -- play these otherwise
+                if ply.screamMaxPanicSounds and #ply.screamMaxPanicSounds < 1 then
+                    ply.screamMaxPanicSounds = nil
+
+                end
+                ply.screamMaxPanicSounds = ply.screamMaxPanicSounds or table.Copy( self:GetCorrectSoundsForModel( ply, "panicReleaseScreams" ) )
+
+                local screamSound
+                local validScreamSounds = ply.screamMaxPanicSounds and #ply.screamMaxPanicSounds >= 1
+
+                local chaser = ply.huntersGleeHunterThatCanSeePly
+                local validScreamFleeSounds = ply.screamMaxPanicFleeSounds and #ply.screamMaxPanicFleeSounds >= 1
+                local doFleeSound = validScreamFleeSounds and IsValid( chaser ) and ( ply.nextFleePanicSound or 0 ) < CurTime() and self:GetBotScaryness( ply, chaser ) >= 0.95
+                local fleeingGroup
+
+                if doFleeSound then
+                    local myPos = ply:GetShootPos()
+                    local theirDistToMe = chaser:GetPos():Distance( myPos )
+                    doFleeSound = theirDistToMe < fleeDist
+                    local cutoff = math.max( theirDistToMe, 750 )
+
+                    fleeingGroup = {}
+                    for _, nearPly in player.Iterator() do
+                        if nearPly == ply then continue end
+                        if nearPly:Health() <= 0 then continue end
+                        if nearPly:GetShootPos():Distance( myPos ) > cutoff then continue end
+                        table.insert( fleeingGroup, nearPly )
+
+                    end
+                    doFleeSound = #fleeingGroup >= math.random( 1, 4 )
+
+                end
+                if doFleeSound then
+                    -- sillier way
+                    screamSound = table.remove( ply.screamMaxPanicFleeSounds, 1 )
+                    ply.nextFleePanicSound = CurTime() + math.random( 5, 10 )
+                    for _, fleeingPly in ipairs( fleeingGroup ) do
+                        fleeingPly.nextFleePanicSound = CurTime() + math.random( 10, 5 )
+
+                    end
+                    didScream = true
+
+                elseif validScreamSounds then
+                    -- silly way to vary the sound between max panics
+                    screamSound = table.remove( ply.screamMaxPanicSounds, 1 )
+                    ply.nextFleePanicSound = CurTime() + math.random( 5, 10 )
+
+                    didScream = true
+
+                end
+                if didScream then
+                    ply:ViewPunch( AngleRand() * 0.3 )
+                    ply:DoAnimationEvent( ACT_FLINCH_PHYSICS )
+
+                    if canResetPanic then -- reset panic with a scream
+                        panic = 50
+                        ply:EmitSound( self:GenderizeSound( ply, screamSound ), 130, math.Rand( 99, 106 ), 1, CHAN_VOICE )
+
+                    else -- let panic get overflown, we just take little bites
+                        panic = panic + -25
+
+                    end
+                else
+                    if canResetPanic then -- screaming releases panic better than this
+                        panic = panic - ( panic / 3 )
+
+                    else
+                        panic = panic + -25
+
+                    end
+                end
+                panicSpeedPenaltyMul = 2
+
+            elseif panic >= 75 and increasing then
                 if ply.screamPanicSounds and #ply.screamPanicSounds < 1 then
                     ply.screamPanicSounds = nil
 
                 end
 
-                ply.screamPanicSounds = ply.screamPanicSounds or table.Copy( defaultPanicSounds )
+                ply.screamPanicSounds = ply.screamPanicSounds or table.Copy( self:GetCorrectSoundsForModel( ply, "panicBuildingScreams" ) )
+                local validScreamPanicSounds = ply.screamPanicSounds and #ply.screamPanicSounds >= 1
+                if validScreamPanicSounds then
+                    local screamSound = table.remove( ply.screamPanicSounds, math.random( 1, #ply.screamPanicSounds ) )
+                    if screamSound and not underwater then
+                        ply:EmitSound( self:GenderizeSound( ply, screamSound ), 88, 100, 1, CHAN_VOICE )
 
-                local screamSound = table.remove( ply.screamPanicSounds, 1 )
-                ply:ViewPunch( AngleRand() * 0.3 )
-                if not underwater then
-                    ply:EmitSound( screamSound, 130, math.Rand( 99, 106 ), 1, CHAN_STATIC )
-
-                end
-                panicSpeedPenaltyMul = 2
-
-            elseif panic >= 75 and increasing then
-                local screamSound = "vo/npc/male01/pain0" .. math.random( 7, 9 ) .. ".wav"
-                if not underwater then
-                    ply:EmitSound( screamSound, 88, 100, 1, CHAN_STATIC )
+                    end
+                    ply:ViewPunch( AngleRand() * 0.01 )
+                    panic = panic + -10
 
                 end
-                ply:ViewPunch( AngleRand() * 0.01 )
                 panicSpeedPenaltyMul = 0.6
 
             end
@@ -117,7 +199,7 @@ elseif SERVER then
 
             elseif panic >= 25 and not increasing then
                 doPanicSound = true
-                panicSoundHitch = true
+                panicSoundHitch = true -- hitch when going from increasing to not increasing
                 panicSoundPitch = 80
 
                 panicSpeedPenaltyMul = 0.25
@@ -167,9 +249,10 @@ elseif SERVER then
 
         end
 
-        panic = math.Clamp( panic + -0.5, 0, 1000 )
+        panic = math.Clamp( panic + -panicDrain, 0, 1000 )
         -- we are adding decimals to ints, but it works for some reason?
-        ply:SetNWInt( "huntersglee_panic", panic )
+        -- changed to nwfloat
+        ply:SetNWFloat( "huntersglee_panic", panic )
 
     end
 
@@ -177,7 +260,7 @@ elseif SERVER then
     function GM:DoPanicThinkTimer( timerName )
         timer.Create( timerName, 0.2, 0, function()
             for _, ply in ipairs( player.GetAll() ) do
-                GAMEMODE:PanicThinkSV( ply )
+                self:PanicThinkSV( ply )
 
             end
         end )
@@ -193,8 +276,56 @@ elseif SERVER then
     end )
 
     hook.Add( "PlayerDeath", "glee_panic_stopbreathingsnd", function( victim )
+        GAMEMODE:SetPanic( victim, 0 )
         if victim.huntersglee_panicSound == nil or not victim.huntersglee_panicSound:IsPlaying() then return end
         victim.huntersglee_panicSound:Stop()
+        victim:EmitSound( "common/null.wav", 75, 100, 1, CHAN_VOICE )
+        victim.nextFleePanicSound = nil
 
+    end )
+
+    hook.Add( "PostEntityTakeDamage", "glee_paniconplydamage", function( victim, damage, took )
+        if not took then return end
+        if not victim:IsPlayer() then return end
+        local panic = damage:GetDamage() / 10
+        if victim:Health() < 25 then
+            panic = panic * 2
+            panic = math.Clamp( panic, 45, 100 )
+
+        end
+        GAMEMODE:GivePanic( victim, panic )
+
+    end )
+
+    hook.Add( "termhunt_plyescapestuck", "glee_unstuck_panic", function( ply, stuckPos, freedPos ) -- lol
+        GAMEMODE:GivePanic( ply, stuckPos:Distance( freedPos ) / 3 )
+
+    end )
+
+    local function resetPanicSounds( ply, hardReset )
+        timer.Simple( 0, function()
+            if not IsValid( ply ) then return end
+            local model = ply:GetModel()
+            local oldModel = ply.glee_Panic_OldModel
+            if hardReset or ( oldModel and model ~= oldModel ) then
+                ply.screamMaxPanicFleeSounds = nil
+                ply.screamMaxPanicSounds = nil
+                ply.screamPanicSounds = nil
+
+            end
+            ply.glee_Panic_OldModel = model
+
+        end )
+    end
+
+    hook.Add( "PreCleanupMap", "glee_panic_resetsounds", function()
+        for _, ply in player.Iterator() do
+            resetPanicSounds( ply, hardReset )
+
+        end
+    end )
+
+    hook.Add( "PlayerSpawn", "glee_panic_resetsounds", function( ply )
+        resetPanicSounds( ply )
     end )
 end

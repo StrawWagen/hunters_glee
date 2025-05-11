@@ -26,21 +26,45 @@
         }
         3
         {
+            "name"        "huntersglee_enableshop"
+            "text"        "Enable shop."
+            "help"        "Enables the shop."
+            "type"        "CheckBox"
+            "default"     "1"
+        }
+        4
+        {
             "name"        "termhunter_modeloverride"
             "text"        "Model override"
             "help"        "The model of the terminator"
             "type"        "Text"
             "default"     "models/terminator/player/arnold/arnold.mdl"
         }
-        4
+        5
+        {
+            "name"        "huntersglee_spawnset"
+            "text"        "Spawn Set"
+            "help"        "What spawnset to use, eg. hunters_glee, jermas_glee"
+            "type"        "Text"
+            "default"     "hunters_glee"
+        }
+        6
         {
             "name"        "huntersglee_spawneroverridecount"
-            "text"        "Override terminator count."
-            "help"        "Overrides how many terminators will spawn, 0 for dynamic count. Above 4 WILL lag."
+            "text"        "Override hunter count?"
+            "help"        "Overrides how many hunters will spawn, 0 for dynamic count. Above 8 WILL lag."
             "type"        "Numeric"
             "default"     "0"
         }
-        5
+        7
+        {
+            "name"        "huntersglee_spawnermax"
+            "text"        "Hard cap on hunter count?."
+            "help"        "Puts a hard cap on how many hunters will spawn."
+            "type"        "Numeric"
+            "default"     "0"
+        }
+        8
         {
             "name"        "huntersglee_proceduralcratesmaxplayers"
             "text"        "Player num, to stop crates."

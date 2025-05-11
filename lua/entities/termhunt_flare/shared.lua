@@ -7,9 +7,19 @@ ENT.PrintName   = "Flare"
 ENT.Author      = "StrawWagen"
 ENT.Purpose     = "Flares"
 ENT.Spawnable    = true
-ENT.AdminOnly    = false
+ENT.AdminOnly    = game.IsDedicated()
 ENT.Category = "Hunter's Glee"
 ENT.Model = "models/hunter/plates/plate.mdl"
+
+local className = "termhunt_flare"
+if CLIENT then
+    language.Add( className, ENT.PrintName )
+    killicon.Add( className, "vgui/hud/killicon/" .. className .. ".png", color_white )
+
+else
+    resource.AddFile( "materials/vgui/hud/killicon/" .. className .. ".png" )
+
+end
 
 local invis = Color( 255, 255, 255, 0 )
 
@@ -119,13 +129,14 @@ function ENT:PhysicsCollide( colData, _ )
     hitEnt.glee_Flaregun_NextDealBurnDamage = CurTime() + 0.1
 
     local impactDamage = colData.Speed / 30
-    impactDamage = math.Clamp( impactDamage, 0, 25 )
+    impactDamage = math.Clamp( impactDamage, 0, 45 )
 
     if impactDamage >= 5 then
         local dmgInfo = DamageInfo()
         dmgInfo:SetDamage( impactDamage )
         dmgInfo:SetDamageType( DMG_BURN )
-        dmgInfo:SetAttacker( self.MyOwner )
+        dmgInfo:SetAttacker( self.MyOwner or self )
+        dmgInfo:SetInflictor( self )
         hitEnt:TakeDamageInfo( dmgInfo )
 
     end
@@ -172,6 +183,8 @@ local flareColor = Color( 255, 255, 255 )
 local slowSpeed = 10^2
 
 hook.Add( "RenderScreenspaceEffects", "glee_predraw_fogpiercing_flares", function()
+
+    if #flaresThatPierceFog <= 0 then return end
 
     local me = LocalPlayer()
     local myShootPos = me:GetShootPos()

@@ -8,16 +8,16 @@
 ----------------------------------------------------------------------------------------------------------------|
 ------------------------------// General Settings \\------------------------------------------------------------|
 SWEP.Author             = "Buzzofwar + Straw W Wagen"                           -- Your name.
-SWEP.Contact             = "1318285072"                          -- How People could contact you.
+SWEP.Contact             = "1318285072"                         -- How People could contact you.
 SWEP.Base                 = "weapon_base"                       -- What base should the swep be based on.
-SWEP.ViewModel             = "models/weapons/v_crowbar.mdl"     -- The viewModel, the model you see when you are holding it.
+SWEP.ViewModel             = "models/weapons/c_barricadeswep.mdl" -- The viewModel, the model you see when you are holding it. FROM BARRICADE SWEP
 SWEP.WorldModel         = "models/weapons/w_buzzhammer.mdl"     -- The world model, The model you when it's down on the ground.
 SWEP.HoldType             = "melee"                             -- How the swep is hold Pistol smg grenade melee.
 SWEP.PrintName             = "Nailer"                           -- your sweps name.
 SWEP.Category             = "Hunter's Glee"                     -- Make your own category for the swep.
 SWEP.Instructions         = "Nail stuff together!"              -- How do people use your swep.
 SWEP.Purpose             = ""                                   -- What is the purpose with this.
-SWEP.ViewModelFlip         = true                               -- If the model should be flipped when you see it.
+SWEP.ViewModelFlip         = false                               -- If the model should be flipped when you see it.
 SWEP.UseHands            = true                                 -- Weather the player model should use its hands.
 SWEP.AutoSwitchTo         = true                                -- when someone walks over the swep, should it automatically change to your swep.
 SWEP.Spawnable             = true                               -- Can everybody spawn this swep.
@@ -25,8 +25,7 @@ SWEP.AutoSwitchFrom     = true                                  -- Does the weap
 SWEP.FiresUnderwater     = true                                 -- Does your swep fire under water.
 SWEP.DrawCrosshair         = true                               -- Do you want it to have a crosshair.
 SWEP.DrawAmmo             = true                                -- Does the ammo show up when you are using it.
-SWEP.ViewModelFOV         = 0                                   -- How much of the weapon do you see.
-SWEP.Weight             = 10                                     -- Chose the weight of the Swep.
+SWEP.Weight             = 10                                    -- Chose the weight of the Swep.
 SWEP.SlotPos             = 2                                    -- Decide which slot you want your swep do be in.
 SWEP.Slot                 = 1                                   -- Decide which slot you want your swep do be in.
 ------------------------------\\ General Settings //------------------------------------------------------------|
@@ -58,7 +57,21 @@ SWEP.SecSwingSound                = ""                           -- Sound we mak
 SWEP.SecWallSound                 = ""                           -- Sound when we hit something 
 ----------------------------------------------------------------------------------------------------------------|
 
-if SERVER then
+local className = "termhunt_weapon_hammer"
+if CLIENT then
+    language.Add( className, SWEP.PrintName )
+    killicon.Add( className, "vgui/hud/killicon/" .. className .. ".png", color_white )
+
+    function SWEP:HintPostStack()
+        local owner = self:GetOwner()
+        if not owner:GetNW2Bool( "gleenailer_nailattempted", false ) then return true, "PRIMARY ATTACK to nail things together." end
+        if not owner:GetNW2Bool( "gleenailer_goodnailed", false ) then return true, "The nails have to go through something.\nYou can't nail a wall to itself, etc." end
+
+    end
+
+else
+    resource.AddFile( "materials/vgui/hud/killicon/" .. className .. ".png" )
+
     -- these hit sounds are from barricade SWEP
     -- https://steamcommunity.com/sharedfiles/filedetails/?id=2953413221
     resource.AddFile( "sound/hammer/hit_nail01.wav" )
@@ -66,19 +79,14 @@ if SERVER then
     resource.AddFile( "sound/hammer/hit_nail03.wav" )
     resource.AddFile( "sound/hammer/hit_nail04.wav" )
 
-    resource.AddFile( "models/weapons/w_buzzhammer.dx80.vtx" )
-    resource.AddFile( "models/weapons/w_buzzhammer.dx90.vtx" )
     resource.AddFile( "models/weapons/w_buzzhammer.mdl" )
-    resource.AddFile( "models/weapons/w_buzzhammer.phy" )
-    resource.AddFile( "models/weapons/w_buzzhammer.sw.vtx" )
-    resource.AddFile( "models/weapons/w_buzzhammer.vvd" )
+
+    -- view model is also from barricade swep
+    resource.AddFile( "models/weapons/c_barricadeswep.phy" )
 
     resource.AddFile( "materials/models/weapons/cade_hammer.vmt" )
-    resource.AddFile( "materials/models/weapons/cade_hammer.vtf" )
     resource.AddFile( "materials/models/weapons/hammer.vmt" )
-    resource.AddFile( "materials/models/weapons/hammer.vtf" )
     resource.AddFile( "materials/models/weapons/hammer2.vmt" )
-    resource.AddFile( "materials/models/weapons/hammer2.vtf" )
 
     resource.AddFile( "materials/entities/termhunt_weapon_hammer.png" )
 
@@ -99,19 +107,20 @@ sound.Add( {
     }
 } )
 
-local nailTooCloseDist = 4
+local nailTooCloseDist = 3
+local nailFindDist = nailTooCloseDist * 5
 local yellow = Color( 255, 220, 0, a )
 
-function SWEP:DrawWeaponSelection(x,y,w,t,a)
+function SWEP:DrawWeaponSelection( x, y, w, t, a )
 
     draw.SimpleText( "C", "creditslogo", x + w / 2, y, yellow, TEXT_ALIGN_CENTER )
 
 end
 
 function SWEP:Initialize()
-    self:SetWeaponHoldType( self.HoldType )
+    self:SetHoldType( self.HoldType )
+    self:SetMaterial( "models/weapons/hammer.vmt" )
     if SERVER then
-        self:SetWeaponHoldType( self.HoldType )
         self:SetClip1( 20 )
     end
 end
@@ -169,9 +178,8 @@ function SWEP:OnRemove()
 end
 ----------------------------------------------------------------------------------------------------------------|
 function SWEP:Deploy()
-    self:GetOwner():DrawViewModel(false)
     --self:EmitSound("")
-    self:SendWeaponAnim(ACT_VM_DRAW)
+    self:SendWeaponAnim( ACT_VM_DRAW )
 end
 ----------------------------------------------------------------------------------------------------------------|
 function SWEP:OnDrop()
@@ -184,37 +192,50 @@ function SWEP:Holster()
 end
 
 function SWEP:Miss()
+    self:SetNextPrimaryFire( CurTime() + self.Primary.Delay / 2 )
+    self:SendWeaponAnim( ACT_VM_MISSCENTER )
+    if not IsFirstTimePredicted() then return end
+
     local owner = self:GetOwner()
 
     self:EmitSound( self.SwingSound, 70, math.random( 90, 120 ) )
 
-    self:SetNextPrimaryFire( CurTime() + self.Primary.Delay / 2 )
-    self:SendWeaponAnim(ACT_VM_MISSCENTER)
     owner:SetAnimation( PLAYER_ATTACK1 )
+    if not SERVER then return end
 
     local rnda = self.Primary.Recoil * -0.5
-    local rndb = self.Primary.Recoil * math.Rand(-0.5, 1) 
+    local rndb = self.Primary.Recoil * math.Rand( -0.5, 1 )
 
-    owner:ViewPunch( Angle( rnda,rndb,rnda ) ) 
+    owner:ViewPunch( Angle( rnda,rndb,rnda ) )
 
 end
 
 function SWEP:BadHit( tr )
-    if not SERVER then return end
-    local owner = self:GetOwner()
 
     self:SetNextPrimaryFire( CurTime() + self.Primary.Delay / 2 )
-    self:SendWeaponAnim(ACT_VM_MISSCENTER)
-    owner:SetAnimation( PLAYER_ATTACK1 )
+    self:SendWeaponAnim( ACT_VM_MISSCENTER )
+    if not IsFirstTimePredicted() then return end
+
+    local owner = self:GetOwner()
 
     local rnda = self.Primary.Recoil * -0.5
-    local rndb = self.Primary.Recoil * math.Rand(-0.5, 1) 
+    local rndb = self.Primary.Recoil * math.Rand( -0.5, 1 )
 
-    if tr.HitPos:Distance( owner:GetShootPos() ) < self.Primary.Distance then
+    bullet = {}
+    bullet.Num    = 1
+    bullet.Src    = owner:GetShootPos()
+    bullet.Dir    = owner:GetAimVector()
+    bullet.Spread = Vector( 0, 0, 0 )
+    bullet.Tracer = 0
+    bullet.Force  = 10
+    bullet.Distance = self.Primary.Distance
+    bullet.Damage = math.random( 25, 35 )
+    owner:FireBullets( bullet )
+
+    if tr.HitPos:DistToSqr( owner:GetShootPos() ) < self.Primary.Distance^2 then
         local surfaceProperties = tr.SurfaceProps
         surfaceProperties = util.GetSurfaceData( surfaceProperties )
         if tr.Entity and surfaceProperties.material == MAT_FLESH then
-            tr.Entity:TakeDamage( math.random( 25, 35 ), owner, self )
             tr.Entity:EmitSound( "Weapon_Crowbar.Melee_Hit", 75 )
             owner:EmitSound( "npc/zombie/claw_strike3.wav", 75, math.random( 120, 140 ), 1, CHAN_STATIC )
 
@@ -225,8 +246,13 @@ function SWEP:BadHit( tr )
             owner:EmitSound( "physics/metal/metal_grenade_impact_hard1.wav", 70, math.random( 150, 160 ), 1, CHAN_STATIC )
 
         end
-    end
+    else
+        self:EmitSound( self.SwingSound, 70, math.random( 90, 120 ), 1 )
 
+    end
+    owner:SetAnimation( PLAYER_ATTACK1 )
+
+    if not SERVER then return end
     owner:ViewPunch( Angle( rnda,rndb,rnda ) )
 
 end
@@ -256,124 +282,186 @@ function SWEP:ValidEntityToNail( ent, physBone )
 
 end
 
-----------------------------------------------------------------------------------------------------------------|
-function SWEP:PrimaryAttack()
-    local owner = self:GetOwner()
-    self:SetNextPrimaryFire( CurTime() + self.Primary.Delay / 2 )
-    if self:Clip1() <= 0 then
-        if IsFirstTimePredicted() then
-            owner:EmitSound( "weapons/pistol/pistol_empty.wav", 70 )
+function SWEP:GetNailPos( owner, trace )
+    local currOffset = ( owner:GetAimVector() * math.random( 4, 6 ) )
+    return trace.HitPos - currOffset
 
-        end
-        return false
-    end
+end
 
-    local trace = owner:GetEyeTrace()
-    self:SendWeaponAnim( ACT_VM_HITCENTER )
+function SWEP:FindNails( pos )
+    return ents.FindInSphere( pos, nailFindDist )
 
+end
+
+function SWEP:CanNailPos( owner, trace, hitting )
     local whatWeHit = trace.Entity
 
     -- Bail if invalid
-    if whatWeHit:IsWorld() or not self:ValidEntityToNail( whatWeHit, trace.PhysicsBone ) then
-        if not IsValid( whatWeHit ) then
+    if whatWeHit:IsWorld() or self:Clip1() <= 0 or trace.HitPos:DistToSqr( owner:GetShootPos() ) > self.Primary.Distance^2 or not self:ValidEntityToNail( whatWeHit, trace.PhysicsBone ) then
+        if hitting and not IsValid( whatWeHit ) and not ( whatWeHit and whatWeHit:IsWorld() ) then
             self:Miss()
-        else
+        elseif hitting then
             self:BadHit( trace )
         end
         return false
 
     end
+
+    local vOrigin = self:GetNailPos( owner, trace )
+    local nearNails = self:FindNails( vOrigin )
+
+    for _, nail in ipairs( nearNails ) do -- dont nail when there's already a nail there
+        if nail:GetClass() ~= "gmod_glee_nail" then continue end
+        local nailsPos = nail:GetPos()
+        if nailsPos:DistToSqr( vOrigin ) > nailTooCloseDist^2 then continue end
+        return false
+
+    end
+    return true, vOrigin
+
+end
+
+
+function SWEP:Swing( owner, noNail )
+    owner:LagCompensation( true )
+
+    self:SetNextPrimaryFire( CurTime() + self.Primary.Delay / 2 ) -- always do half delay
+
+    local trace = owner:GetEyeTrace()
+
+    owner:SetNW2Bool( "gleenailer_nailattempted", true )
+
+    local can, vOrigin = self:CanNailPos( owner, trace, false )
+
+    if not can then -- just damage it
+        self:BadHit( trace )
+        owner:LagCompensation( false )
+        return false
+
+    end
+
+    local whatWeHit = trace.Entity
 
     local tr = {}
     tr.start = trace.HitPos
     tr.endpos = trace.HitPos + ( owner:GetAimVector() * 20.0 )
-    tr.filter = { owner, whatWeHit }
 
+    tr.filter = { owner, whatWeHit }
     local nails = whatWeHit.huntersglee_breakablenails or {}
-    table.Add( whatWeHit.filter, nails )
+    table.Add( tr.filter, nails )
 
     local trTwo = util.TraceLine( tr )
     local secondHit = trTwo.Entity
 
-    if IsFirstTimePredicted() then
+    if noNail or not self:ValidEntityToNail( secondHit, trTwo.PhysicsBone ) then -- just damage it
+        self:BadHit( trace )
+        owner:LagCompensation( false )
+        return false
 
-        bullet = {}
-        bullet.Num    = 1
-        bullet.Src    = owner:GetShootPos()
-        bullet.Dir    = owner:GetAimVector()
-        bullet.Spread = Vector( 0, 0, 0 )
-        bullet.Tracer = 0
-        bullet.Force  = 10
-        bullet.Distance = self.Primary.Distance
-        bullet.Damage = 0
-        owner:FireBullets( bullet )
-
-        local nearNails = ents.FindInSphere( trace.HitPos, nailTooCloseDist * 10 )
-        for _, nail in ipairs( nearNails ) do
-            if nail:GetClass() ~= "gmod_glee_nail" then continue end
-            local nailsPos = nail:GetPos() + nail:GetForward() * nail:GetModelRadius() / 2
-            if nailsPos:DistToSqr( trace.HitPos ) > nailTooCloseDist^2 then continue end
-
-            self:BadHit( trace )
-            return false
-
-        end
-
-        if not self:ValidEntityToNail( secondHit, trTwo.PhysicsBone ) then
-            if not IsValid( secondHit.Entity ) then
-                self:Miss()
-            else
-                self:BadHit( trace )
-            end
-            return false
-
-        end
-
-        self:EmitSound( self.NailedSound )
-
-        owner:SetAnimation( PLAYER_ATTACK1 )
-        self:SetNextPrimaryFire( CurTime() + self.Primary.Delay )
-
-        local rnda = self.Primary.Recoil * -2 
-        local rndb = self.Primary.Recoil * math.random(-2, 3) 
-        owner:ViewPunch( Angle( rnda,rndb,rnda ) )
-
-        -- Client can bail now
-        if ( CLIENT ) then return true end
-
-        local vOrigin = trace.HitPos - ( owner:GetAimVector() * 8.0 )
-        local vDirection = owner:GetAimVector():Angle()
-
-        vOrigin = whatWeHit:WorldToLocal( vOrigin )
-
-        -- Weld them!
-        local constraint, nail = MakeNail( whatWeHit, secondHit, trace.PhysicsBone, trTwo.PhysicsBone, 50000, vOrigin, vDirection )
-        if not constraint or not constraint:IsValid() then self:BadHit( trace ) return end
-
-        self:SetClip1( math.Clamp( self:Clip1() + -1, 0, math.huge ) )
-
-        if owner.AddCleanup then
-            undo.Create( "Nail" )
-            undo.AddEntity( constraint )
-            undo.AddEntity( nail )
-            undo.SetPlayer( owner )
-            undo.Finish()
-
-            owner:AddCleanup( "nails", constraint )
-            owner:AddCleanup( "nails", nail )
-
-        end
-
-        return true
     end
+
+    self:SetNextPrimaryFire( CurTime() + self.Primary.Delay )
+
+    bullet = {}
+    bullet.Num    = 1
+    bullet.Src    = owner:GetShootPos()
+    bullet.Dir    = owner:GetAimVector()
+    bullet.Spread = Vector( 0, 0, 0 )
+    bullet.Tracer = 0
+    bullet.Force  = 10
+    bullet.Distance = self.Primary.Distance
+    bullet.Damage = 0
+    owner:FireBullets( bullet )
+
+    self:SendWeaponAnim( ACT_VM_HITKILL )
+    owner:SetAnimation( PLAYER_ATTACK1 )
+    if not IsFirstTimePredicted() then owner:LagCompensation( false ) return end
+
+    self:EmitSound( self.NailedSound )
+
+    owner:ViewPunch( Angle( -10,-10,-10 ) )
+
+    -- for the hint
+    owner:SetNW2Bool( "gleenailer_goodnailed", true )
+
+    -- Client can bail now
+    if CLIENT then owner:LagCompensation( false ) return true end
+
+    local vDirection = owner:GetAimVector():Angle()
+
+    vOrigin = whatWeHit:WorldToLocal( vOrigin )
+
+    -- Weld them!
+    local constraint, nail = MakeNail( whatWeHit, secondHit, trace.PhysicsBone, trTwo.PhysicsBone, 50000, vOrigin, whatWeHit:WorldToLocalAngles( vDirection ) )
+    if not constraint or not constraint:IsValid() then self:BadHit( trace ) owner:LagCompensation( false ) return end
+
+    self:SetClip1( math.Clamp( self:Clip1() + -1, 0, math.huge ) )
+
+    if owner.AddCleanup then
+        undo.Create( "Nail" )
+        undo.AddEntity( constraint )
+        undo.AddEntity( nail )
+        undo.SetPlayer( owner )
+        undo.Finish()
+
+        owner:AddCleanup( "nails", constraint )
+        owner:AddCleanup( "nails", nail )
+
+    end
+
+    owner:LagCompensation( false )
+    return true
+
+end
+
+function SWEP:PrimaryAttack( noNail )
+    local owner = self:GetOwner()
+    self:Swing( owner, noNail )
+
 end
 
 function SWEP:SecondaryAttack()
+    if not self:CanPrimaryAttack() then return end
+    if self:GetNextPrimaryFire() > CurTime() then return end
+
+    local owner = self:GetOwner()
+
+    local trace = owner:GetEyeTrace()
+    local vOrigin = self:GetNailPos( owner, trace )
+    local nearNails = self:FindNails( vOrigin )
+
+    local smallestDistSqr = nailFindDist^2
+    local nearestNail
+    for _, nail in ipairs( nearNails ) do
+        if nail:GetClass() ~= "gmod_glee_nail" then continue end
+        local distSqr = nail:GetPos():DistToSqr( vOrigin )
+        if distSqr < smallestDistSqr then
+            nearestNail = nail
+            smallestDistSqr = distSqr
+
+        end
+    end
+
+    if not IsValid( nearestNail ) then self:Swing( owner, true ) return end
+
+    owner:LagCompensation( true )
+    if SERVER then
+        nearestNail:Break()
+
+    end
+
+    self:SendWeaponAnim( ACT_VM_HITKILL )
+    owner:SetAnimation( PLAYER_ATTACK1 )
+    owner:LagCompensation( false )
+    return true
 
 end
 
 local function nailUnregister( nail, ent )
     local creationId = nail:GetCreationID()
+
+    if not IsValid( ent ) then return end
+
     -- idk how this is gonna end up with a nil value but whatever
     local nails = ent.huntersglee_breakablenails or {}
     if nails[ creationId ] then
@@ -381,13 +469,11 @@ local function nailUnregister( nail, ent )
 
     end
 
-    if not IsValid( ent ) then return end
-
     if table.Count( nails ) <= 0 then
         ent.huntersglee_breakablenails = nil
         local class = ent:GetClass()
         -- only unlock doors!
-        if class ==  "prop_door_rotating" then
+        if class == "prop_door_rotating" then
             ent:Fire( "unlock", "", .01 )
 
         end
@@ -421,37 +507,20 @@ end
 
 
 ----------------------------------------------------------------------------------------------------------------|
-function MakeNail( Ent1, Ent2, Bone1, Bone2, forcelimit, Pos, Ang )
+function MakeNail( Ent1, Ent2, Bone1, Bone2, forcelimit, Pos, LocalAng )
 
-    local constraint = constraint.Weld( Ent1, Ent2, Bone1, Bone2, forcelimit, false )
+    local theConstraint = constraint.Weld( Ent1, Ent2, Bone1, Bone2, forcelimit, false )
 
-    if not constraint then return end
+    if not theConstraint then return end
 
-    constraint.Type = "Nail"
-    constraint.Pos = Pos
-    constraint.Ang = Ang
+    theConstraint.Type = "Glee_Nail"
+    theConstraint.Pos = Pos
+    theConstraint.Ang = LocalAng
 
     Pos = Ent1:LocalToWorld( Pos )
 
     local nail = ents.Create( "gmod_glee_nail" )
-    nail:Attach( Pos, Ang, Ent1, Bone1 )
-
-    nail.realConstraint = constraint
-    nail.mainEnt = Ent1
-    nail.secondEnt = Ent2
-
-    local constraintsNails = constraint.huntersGlee_nails or {}
-    table.insert( constraintsNails, nail )
-    constraint.huntersGlee_nails = constraintsNails
-
-    constraint:CallOnRemove( "constraint_removeallmynails", function()
-        if not constraint.huntersGlee_nails then return end
-        for _, currNail in ipairs( constraint.huntersGlee_nails ) do
-            if IsValid( currNail ) then
-                nail:Break()
-            end
-        end
-    end )
+    nail:Attach( Pos, Ent1:LocalToWorldAngles( LocalAng ), Ent1, Bone1, Ent2, theConstraint )
 
     nail:Spawn()
     nail:Activate()
@@ -462,12 +531,13 @@ function MakeNail( Ent1, Ent2, Bone1, Bone2, forcelimit, Pos, Ang )
 
     nail:UpdateConstraints()
 
-    return constraint, nail
+    return theConstraint, nail
 
 end
 
-duplicator.RegisterConstraint( "Nail", MakeNail, "Ent1", "Ent2", "Bone1", "Bone2", "forcelimit", "Pos", "Ang" )
+duplicator.RegisterConstraint( "Glee_Nail", MakeNail, "Ent1", "Ent2", "Bone1", "Bone2", "forcelimit", "Pos", "Ang" )
 
 
-
-
+function SWEP:GetCapabilities()
+    return CAP_INNATE_MELEE_ATTACK1
+end

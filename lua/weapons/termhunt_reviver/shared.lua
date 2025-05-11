@@ -57,13 +57,19 @@ hook.Add( "PlayerDeath", "reviverfallbackremoveblockswitch", function( victim )
 end )
 
 hook.Add( "PlayerSwitchWeapon", "blockswitchingfromreviver", function( ply, _, _ )
-    if ply.blockSwitchingWeaponsReviver then return true end
+    if not ply.blockSwitchingWeaponsReviver then return end
+    local wep = ply:GetActiveWeapon()
+    if not IsValid( wep ) then return end
+    if wep:GetClass() ~= "termhunt_reviver" then return end
+    if wep.resurrecting then return true end
+
 end )
 
 function SWEP:GetGamemodeDeadPlayerData()
     if GAMEMODE.deadPlayers then return GAMEMODE.deadPlayers end
     if not CLIENT then return {} end
     return potentialResurrectionData or {}
+
 end
 
 function SWEP:OnEmpty()
@@ -77,9 +83,8 @@ function SWEP:PrimaryAttack()
 
     if self:Clip1() <= 0 then self:OnEmpty() return end
 
-    if self:GetOwner():IsPlayer() then
-        self:GetOwner():LagCompensation( true )
-    end
+    if not self:GetOwner():IsPlayer() then return end
+    self:GetOwner():LagCompensation( true )
 
     local tr = util.TraceLine( {
         start = self:GetOwner():GetShootPos(),
@@ -109,13 +114,11 @@ function SWEP:PrimaryAttack()
 
 
     if IsValid( ent ) then
-
         self:StartResurrect( ent, resurrectPos )
 
-        self:SetNextPrimaryFire( CurTime() + self:SequenceDuration() + 0.5 )
+        self:SetNextPrimaryFire( CurTime() + 0.5 )
 
     else
-
         self:GetOwner():EmitSound( DenySound, 75, 80 )
         self:SetNextPrimaryFire( CurTime() + 0.5 )
 
@@ -146,41 +149,62 @@ function SWEP:StartResurrect( ent, resurrectPos )
     self.resurrectingLoop = CreateSound( self:GetOwner(), "items/medcharge4.wav", recip )
     self.resurrectingLoop:Play()
 
-    huntersGlee_Announce( { self.toResurrect }, 5, 5, "You are being revived by " .. self:GetOwner():Name() )
+    huntersGlee_Announce( { self.toResurrect }, 5, 5, "You are being revived by " .. self:GetOwner():Nick() )
 
 end
 
-function SWEP:ResurrectPly( ent )
-    if not IsValid( ent ) then return end
+function SWEP:ResurrectPly( ply )
+    if not IsValid( ply ) then return end
     if not IsValid( self ) then return end
-    if self:GetOwner():Health() <= 0 then return end
+    local owner = self:GetOwner()
+    if owner:Health() <= 0 then return end
 
     self:TakePrimaryAmmo( 1 )
 
-    ent.unstuckOrigin = self.toResurrectPos
+    ply.unstuckOrigin = self.toResurrectPos
 
-    self:GetOwner():EmitSound( HealSound, 100, 90, 1, CHAN_STATIC )
-    self:GetOwner():EmitSound( "ambient/levels/labs/electric_explosion1.wav", 100, 120, 1, CHAN_STATIC, SND_NOFLAGS, 10 )
+    timer.Simple( 0.1, function()
+        if not IsValid( ply ) then return end
+        local filterAllPlayers = RecipientFilter()
+        filterAllPlayers:AddAllPlayers()
+        ply:EmitSound( HealSound, 100, 90, 1, CHAN_STATIC, nil, nil, filterAllPlayers )
+        ply:EmitSound( "ambient/levels/labs/electric_explosion1.wav", 100, 120, 1, CHAN_STATIC, nil, 10, filterAllPlayers )
 
-    if self:GetOwner().GivePlayerScore then
-        self:GetOwner():GivePlayerScore( 200 )
-
-    end
-
-    if ent.Resurrect then
-        ent:Resurrect()
-
-        return true
-    end
-
-    ent:Spawn()
-    timer.Simple( 0, function()
-        if not IsValid( ent ) then return end
-        ent:SetPos( ent.unstuckOrigin )
-        ent.unstuckOrigin = nil
     end )
 
-    self:AttackAnim()
+    if owner.GivePlayerScore then
+        local reward = 300
+        -- dont give as much score if owner killed who they reviving
+        if GAMEMODE:HasHomicided( owner, ply ) then
+            reward = 150
+            if not owner.glee_HomicideReviveHint then
+                owner.glee_HomicideReviveHint = true
+                huntersGlee_Announce( { owner }, 5, 6, "Half score for reviving, since you killed this person earlier." )
+
+            end
+        elseif not owner.glee_revivemoneyhint then
+            owner.glee_revivemoneyhint = true
+            huntersGlee_Announce( { owner }, 4, 6, "+" .. tostring( reward ) .. " score!" )
+
+        end
+
+        ply.glee_resurrectDecreasingScore = ply.glee_resurrectDecreasingScore or 0
+
+        -- dont just resuurect the same person over and over!
+        local rewardBite = ply.glee_resurrectDecreasingScore - CurTime()
+        if rewardBite < 0 then
+            rewardBite = 0
+
+        end
+
+        reward = math.Clamp( reward + -rewardBite, 0, 300 )
+        owner:GivePlayerScore( reward )
+
+        ply.glee_resurrectDecreasingScore = math.max( CurTime() + 60, ply.glee_resurrectDecreasingScore + 60 )
+
+    end
+
+    ply:Resurrect()
     return true
 
 end
@@ -196,7 +220,6 @@ function SWEP:GetViewModelPosition( pos, ang )
 end
 
 function SWEP:Think()
-
     if SERVER then
         local nextRefresh = self.nextRefresh or 0
         if nextRefresh < CurTime() then
@@ -206,33 +229,25 @@ function SWEP:Think()
     end
 
     local resurrecting = self.resurrecting and IsValid( self.toResurrect )
+    local owner = self:GetOwner()
+
     if resurrecting then
         local ent = self.toResurrect
-        local tooFar = self.resurrectStartPos:DistToSqr( self:GetOwner():GetPos() ) > 75^2
-        local keyDown = self:GetOwner():KeyDown( IN_ATTACK )
+        local tooFar = self.resurrectStartPos:DistToSqr( owner:GetPos() ) > 75^2
+        local keyDown = owner:KeyDown( IN_ATTACK )
         local cancel = tooFar or not keyDown or self.toResurrect:Health() > 0
         local done = false
         if cancel then
             done = true
-            self:GetOwner():EmitSound( DenySound, 75, 80 )
-        elseif self.resurrectEnd < CurTime() then
-            self:ResurrectPly( ent )
-            done = true
+            owner:EmitSound( DenySound, 75, 80 )
+
         else
-            local nextSound = self.nextResurrectSound or 0
-            local InvertedDone = math.abs( ( self.resurrectEnd - CurTime() ) - self.ResTime )
-
-            if nextSound < CurTime() then
-                self.nextResurrectSound = CurTime() + math.Rand( 0.5, 0.8 )
-                local ampUp = math.abs( InvertedDone * self.ResTime )
-                local pitch = ampUp + math.random( 80, 90 )
-                self:GetOwner():EmitSound( "Flesh.ImpactSoft", 75, pitch )
-
+            local progress = generic_WaitForProgressBar( owner, "glee_resurrector", 0.1, 2, nil )
+            if progress >= 100 then
+                generic_KillProgressBar( owner, "glee_resurrector" )
+                self:ResurrectPly( ent )
+                done = true
             end
-            local PercentDone = InvertedDone / self.ResTime
-            PercentDone = math.Round( PercentDone * 100 )
-
-            self:SetNWInt( "RevivingPercent", PercentDone )
         end
         if done == true then
             self.resurrectingLoop:Stop()
@@ -245,7 +260,7 @@ function SWEP:Think()
         end
     end
     if not ( self.resurrecting and IsValid( self.toResurrect ) ) then
-        self:GetOwner().blockSwitchingWeaponsReviver = nil
+        owner.blockSwitchingWeaponsReviver = nil
     end
 end
 
@@ -307,7 +322,6 @@ function SWEP:AddResurrect()
 end
 
 
-local resurrectBar = Color( 240, 240, 240, 200 )
 local fadedRed = Color( 255, 25, 25 )
 
 local function PaintBoxOnPlayer( data )
@@ -325,41 +339,28 @@ local function PaintBoxOnPlayer( data )
 
     local max = 1000
     local alpha = math.abs( math.Clamp( data.pos:Distance( LocalPlayer():GetPos() ), 400, max ) - max ) * 0.8
-    alpha = math.Clamp( alpha, 100, 255 )
+    alpha = math.Clamp( alpha, 120, 255 )
     local newFadedRed = ColorAlpha( fadedRed, alpha )
     surface.SetDrawColor( newFadedRed )
     surface.DrawOutlinedRect( x, y, 100, 100, 10 )
 
 end
 
-local function PaintProgressBar( percent )
-    local PosX = ScrW() / 2
-    local PosY = ScrH() / 2
-
-    local x = PosX + -200
-    local y = PosY + 110
-
-    surface.SetDrawColor( resurrectBar )
-    surface.DrawRect( x, y, percent * 4, 50 )
-
-end
-
 function SWEP:Deploy()
     if SERVER and GAMEMODE.SendDeadPlayersToClients then
         GAMEMODE:SendDeadPlayersToClients()
+
     end
 end
+if CLIENT then
+    function SWEP:DrawHUD()
+        local doingReviving = self:GetNWBool( "RevivingPly", false )
 
-local paintDeadOverride = Color( 100,250,250 )
+        if doingReviving then return end
+        local owner = self:GetOwner()
 
-function SWEP:DrawHUD()
-
-    local doingReviving = self:GetNWBool( "RevivingPly", false )
-    if doingReviving then
-        local revivePercent = self:GetNWInt( "RevivingPercent", -1 )
-        PaintProgressBar( revivePercent )
-    else
-        local ownerPos = self:GetOwner():GetPos()
+        if not IsValid( owner ) then return end
+        local ownerPos = owner:GetPos()
         local nearestDeadPly = nil
         local deads = self:GetGamemodeDeadPlayerData()
         table.sort( deads, function( a, b )
@@ -395,10 +396,66 @@ function SWEP:DrawHUD()
             end
         end
         if self.validDeads then
+            local bail = nil
             for _, deadDat in ipairs( self.validDeads ) do
+                if bail then break end
+                -- draw one person far away
+                if deadDat.pos:DistToSqr( ownerPos ) > 1000^2 then bail = true end
                 huntersGlee_PaintPlayer( deadDat.ply, deadDat.pos )
 
             end
         end
     end
+
+    potentialResurrectionData = {}
+    local nextResurrectRecieve = 0
+
+    net.Receive( "glee_storeresurrectpos", function()
+        if nextResurrectRecieve > CurTime() then return end
+        nextResurrectRecieve = CurTime() + 0.01
+        local ply = net.ReadEntity()
+        local pos = net.ReadVector()
+        local data = { ply = ply, pos = pos }
+        for ind, overlapData in ipairs( potentialResurrectionData ) do -- remove old resurrect pos
+            if overlapData.ply ~= ply then continue end
+            table.remove( potentialResurrectionData, ind )
+
+        end
+        table.insert( potentialResurrectionData, data )
+
+    end )
 end
+
+if not SERVER then return end
+
+if not GAMEMODE.ISHUNTERSGLEE then return end
+
+util.AddNetworkString( "glee_storeresurrectpos" )
+
+local nextSendAttempt = 0
+
+function GAMEMODE:SendDeadPlayersToClients()
+    if nextSendAttempt > CurTime() then return end
+    local count = table.Count( GAMEMODE.deadPlayers )
+    nextSendAttempt = CurTime() + 0.05 + count * 0.05
+
+    count = 0
+
+    for _, currentDeadPlayerData in pairs( GAMEMODE.deadPlayers ) do
+        count = count + 1
+        timer.Simple( count * 0.05, function()
+            local ply = currentDeadPlayerData.ply
+            local pos = currentDeadPlayerData.pos
+            net.Start( "glee_storeresurrectpos" )
+            net.WriteEntity( ply )
+            net.WriteVector( pos )
+            net.Broadcast()
+        end )
+    end
+end
+
+hook.Add( "PlayerDeath", "saveResurrectPos", function( victim )
+    GAMEMODE.deadPlayers[victim:GetCreationID()] = { ply = victim, pos = victim:GetPos() }
+    GAMEMODE:SendDeadPlayersToClients()
+
+end )

@@ -8,7 +8,7 @@ ENT.PrintName   = "Normal crate"
 ENT.Author      = "StrawWagen"
 ENT.Purpose     = "Normal item crate spawner"
 ENT.Spawnable    = true
-ENT.AdminOnly    = false
+ENT.AdminOnly    = game.IsDedicated()
 ENT.Category = "Hunter's Glee"
 ENT.Model = "models/Items/item_item_crate.mdl"
 
@@ -38,6 +38,7 @@ local MEMORY_BREAKABLE = 4
 local maxScoreDist = 3000
 local tooCloseToPlayer = 2000
 local cratePunishmentDist = 950
+local maxInProximity = 4
 
 function ENT:UpdateGivenScore()
     local plys = player.GetAll()
@@ -60,8 +61,8 @@ function ENT:UpdateGivenScore()
         local distToCurrentCrateSqr = myPos:DistToSqr( currentCrate:GetPos() )
         if distToCurrentCrateSqr < closestCrateDist then
             tooCloseCount = tooCloseCount + 1
-            -- if we ever go above 3 crates in proximity, the proximity cost starts racking up
-            if tooCloseCount < 3 then continue end
+            -- if we ever go above maxInProximity crates in proximity, the proximity cost starts racking up
+            if tooCloseCount < maxInProximity then continue end
             punishmentCount = tooCloseCount
             closestCrateDist = distToCurrentCrateSqr
         end
@@ -108,6 +109,8 @@ function GM:NormalCrate( pos )
 
     local crate = ents.Create( "item_item_crate" )
     crate:SetPos( pos )
+    local random = math.random( -4, 4 ) * 45
+    crate:SetAngles( Angle( 0, random, 0 ) )
     crate:SetKeyValue( "ItemClass", itemToSpawn )
     crate:SetKeyValue( "ItemCount", count )
     crate:Spawn()
@@ -122,12 +125,13 @@ end
 
 function ENT:Place()
     local betrayalScore = self:GetGivenScore()
-    local crate = GAMEMODE:NormalCrate( self:GetPos2() )
+    local crate = GAMEMODE:NormalCrate( self:OffsettedPlacingPos() )
 
     crate:EmitSound( "items/ammocrate_open.wav", 75, 100 + -( self.placeCount * 10 ) )
 
     if self.player and self.player.GivePlayerScore and betrayalScore then
         self.player:GivePlayerScore( betrayalScore )
+        GAMEMODE:sendPurchaseConfirm( self.player, betrayalScore )
 
     end
 

@@ -3,8 +3,9 @@ CreateConVar( "huntersglee_players_cannot_swim", 1, bit.bor( FCVAR_NOTIFY, FCVAR
 CreateConVar( "huntersglee_cannotswim_graceperiod", 4.5, bit.bor( FCVAR_NOTIFY, FCVAR_ARCHIVE, FCVAR_REPLICATED ), "How long to let players swim for?.", 0, 64 )
 
 if SERVER then
-    function GM:managePlayerDrowning( players )
+    hook.Add( "glee_sv_validgmthink", "glee_playerdrowning", function( players )
         for _, ply in ipairs( players ) do
+            if ply:Health() <= 0 then continue end
             local wata = ply:WaterLevel()
             if wata >= 2 and ply:IsOnFire() then
                 ply:Extinguish()
@@ -37,13 +38,18 @@ if SERVER then
 
             end
         end
-    end
-
+    end )
 end
+
+hook.Add( "PlayerDeath", "glee_resetdrowning", function( ply )
+    ply.glee_drowning_damagecount = nil
+    ply.glee_drowning = nil
+
+end )
 
 local blockPlySwimmingCached
 
-local function blockPlySwimming()
+local function blockPlySwimming() -- TODO; JUST GET THE RETURN OF CREATECONVAR WTF IS THIS OLD CODE
     if not blockPlySwimmingCached then
         blockPlySwimmingCached = GetConVar( "huntersglee_players_cannot_swim" )
 
@@ -52,29 +58,29 @@ local function blockPlySwimming()
 
 end
 
+local gracePeriodLengthCached
+
 local function getDrowningGracePeriod()
     if not gracePeriodLengthCached then
         gracePeriodLengthCached = GetConVar( "huntersglee_cannotswim_graceperiod" )
 
     end
     return gracePeriodLengthCached
+
 end
 
-local CMoveData = FindMetaTable( "CMoveData" )
-
-function CMoveData:RemoveKeys( keys )
+local function RemoveKeys( data, keys )
     -- Using bitwise operations to clear the key bits.
-    local newbuttons = bit.band( self:GetButtons(), bit.bnot( keys ) )
-    self:SetButtons( newbuttons )
+    local newbuttons = bit.band( data:GetButtons(), bit.bnot( keys ) )
+    data:SetButtons( newbuttons )
 
 end
 
 hook.Add( "SetupMove", "glee_unabletoswim", function( ply, mvd )
-    if not blockPlySwimming() then return end
     if blockPlySwimming():GetBool() ~= true then return end
     local waterLvl = ply:WaterLevel()
     local cur = CurTime()
-    if waterLvl >= 2 and ply:Alive() and ply:GetMoveType() ~= MOVETYPE_NOCLIP then
+    if waterLvl >= 2 and ply:Health() > 0 and ply:GetMoveType() ~= MOVETYPE_NOCLIP then
         if SERVER then
             local nextWaterSound = ply.glee_nextWaterSound or 0
 
@@ -110,10 +116,11 @@ hook.Add( "SetupMove", "glee_unabletoswim", function( ply, mvd )
                 ply.glee_drowning = ply.glee_drowning + -0.003
 
             end
-            if noswimming_briefrespite < cur then
+            if noswimming_briefrespite < cur then -- give them a couple seconds of swimming
                 local timeItTakesToLoseSwim = getDrowningGracePeriod():GetFloat()
                 local swimmingStrengthNormalized = timeSinceFreeFromWater / timeItTakesToLoseSwim
                 local maxTheyCanGoUp = -swimmingStrengthNormalized * 400
+
                 maxTheyCanGoUp = maxTheyCanGoUp + 400
                 if maxTheyCanGoUp > 0 and SERVER then
                     -- warn ply
@@ -128,7 +135,7 @@ hook.Add( "SetupMove", "glee_unabletoswim", function( ply, mvd )
                 mvd:SetVelocity( vel )
 
                 if mvd:KeyDown( IN_JUMP ) then
-                    mvd:RemoveKeys( IN_JUMP )
+                    RemoveKeys( mvd, IN_JUMP )
 
                 end
             end

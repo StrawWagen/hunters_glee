@@ -8,7 +8,7 @@ ENT.PrintName   = "Box Of Manhacks"
 ENT.Author      = "StrawWagen"
 ENT.Purpose     = ""
 ENT.Spawnable    = true
-ENT.AdminOnly    = false
+ENT.AdminOnly    = game.IsDedicated()
 ENT.Category = "Hunter's Glee"
 ENT.Model = "models/Items/item_item_crate.mdl"
 
@@ -66,6 +66,8 @@ function GM:ManhackCrate( pos )
     local crate = ents.Create( "prop_physics" )
     crate:SetModel( "models/Items/item_item_crate.mdl" )
     crate:SetPos( pos )
+    local random = math.random( -4, 4 ) * 45
+    crate:SetAngles( Angle( 0, random, 0 ) )
     crate:Spawn()
 
     crate.glee_IsManhackCrate = true
@@ -95,6 +97,8 @@ hook.Add( "PropBreak", "glee_spawn_rewarding_manhacks", function( _, broken )
         manhack:SetPos( creationPos )
         manhack:SetAngles( AngleRand() )
         manhack:Spawn()
+
+        manhack:SetLagCompensated( true )
 
         SafeRemoveEntityDelayed( manhack, 240 )
 
@@ -132,16 +136,16 @@ hook.Add( "EntityTakeDamage", "glee_rewarding_manhacks_reward", function ( targe
     owner.glee_ManhacksThatCanDamage[ attacker.glee_ManhackCrateDamagingId ] = nil
     if target:IsPlayer() then
         if target == owner then
-            huntersGlee_Announce( { owner }, 5, 10, "You've been damaged by your own manhacks..." )
+            huntersGlee_Announce( { owner }, 5, 8, "You've been damaged by your own manhacks..." )
 
         else
             owner:GivePlayerScore( 75 )
-            huntersGlee_Announce( { owner }, 5, 10, "The manhacks have damaged a player! You gain 75 score!" )
+            huntersGlee_Announce( { owner }, 5, 8, "The manhacks have damaged a player! You gain 75 score!" )
 
         end
     elseif target:IsNextBot() then
         owner:GivePlayerScore( 25 )
-        huntersGlee_Announce( { owner }, 5, 10, "The manhacks have damaged a terminator. You only gain 25 score." )
+        huntersGlee_Announce( { owner }, 5, 8, "The manhacks have damaged " .. GAMEMODE:GetNameOfBot( target ) .. ". You only gain 25 score." )
 
     end
 end )
@@ -156,13 +160,14 @@ end )
 function ENT:Place()
 
     local betrayalScore = self:GetGivenScore()
-    local crate = GM:ManhackCrate( self:GetPos2() )
+    local crate = GM:ManhackCrate( self:OffsettedPlacingPos() )
 
     if self.player and self.player.GivePlayerScore and betrayalScore then
         crate.glee_manhackcrate_player = self.player
         self.player.glee_ManhacksThatCanDamage = self.player.glee_ManhacksThatCanDamage or {}
         self.player.glee_ManhacksThatCanDamage[ crate:GetCreationID() ] = true
         self.player:GivePlayerScore( betrayalScore )
+        GAMEMODE:sendPurchaseConfirm( self.player, betrayalScore )
 
     end
     SafeRemoveEntity( self )

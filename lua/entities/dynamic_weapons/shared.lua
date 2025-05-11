@@ -8,12 +8,12 @@ ENT.PrintName   = "DynSupplies Weapons"
 ENT.Author      = "StrawWagen"
 ENT.Purpose     = "Spawns random weapons"
 ENT.Spawnable    = true
+ENT.AdminOnly    = game.IsDedicated()
 ENT.Category = "Hunter's Glee"
-ENT.AdminOnly    = false
 
 function ENT:commonCreationOptions()
     local tbl = {
-        { class = "weapon_slam", count = 3 },
+        { class = "weapon_slam", count = 4 },
         { class = "weapon_frag", count = 4 },
         { class = "weapon_shotgun" },
         { class = "weapon_rpg" },
@@ -22,6 +22,7 @@ function ENT:commonCreationOptions()
         { class = "weapon_357" },
         { class = "weapon_stunstick" },
         { class = "termhunt_aeromatix_flare_gun" },
+        { class = "termhunt_weapon_beartrap", count = 2 },
         { class = "weapon_crossbow" }
 
     }
@@ -32,4 +33,4 @@ end
 
 
 ENT.rareCreationChance = 0
-ENT.AmmoInsideWeaponsScale = 1
+ENT.AmmoInsideWeaponsScale = 2

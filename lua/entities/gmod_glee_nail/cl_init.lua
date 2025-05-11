@@ -1,7 +1,4 @@
 
-ENT.Spawnable			= false
-ENT.AdminSpawnable		= false
-
 /*---------------------------------------------------------
    Name: Draw
    Desc: Draw it!

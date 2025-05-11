@@ -30,11 +30,21 @@ SWEP.Secondary.DefaultClip = -1
 SWEP.Secondary.Automatic   = false
 SWEP.Secondary.Ammo        = "none"
 
--- https://freesound.org/people/nlux/sounds/620497/
-resource.AddSingleFile( "sound/620497__nlux__choir-of-weeping-angels-loop.mp3" )
 
 if CLIENT then
-    resource.AddFile( "materials/entities/termhunt_divine_chosen.png" )
+    function SWEP:HintPreStack()
+        local owner = self:GetOwner()
+
+        if not owner:GetNW2Bool( "divinechosen_singlestrike", false ) then return true, "PRIMARY ATTACK to summon a bolt of lightning." end
+        if not owner:GetNW2Bool( "divinechosen_strikechained", false ) then return true, "HOLD DOWN PRIMARY ATTACK to create a chain of lightning." end
+
+        if not owner:GetNW2Bool( "divinechosen_secondarystrike", false ) then return true, "RIGHT CLICK to charge a lightning strike of unrivaled power." end
+        if not owner:GetNW2Bool( "divinechosen_jumpinmidair", false ) then return true, "JUMP IN MIDAIR to fly..." end
+        if not owner:GetNW2Bool( "divinechosen_dropinmidair", false ) then return true, "hold CROUCH IN MIDAIR to fall..." end
+
+    end
+else
+    -- https://freesound.org/people/nlux/sounds/620497/
     resource.AddFile( "sound/620497__nlux__choir-of-weeping-angels-loop.mp3" )
 
 end
@@ -126,15 +136,20 @@ function SWEP:Equip()
     end )
 
     hook.Add( "EntityTakeDamage", self.hookId, function( target,dmg )
-        if not IsValid( self ) then hook.Remove( hookId ) return end
-        if not IsValid( self:GetOwner() ) then hook.Remove( hookId ) return end
-        if self:GetOwner():Health() <= 0 then hook.Remove( hookId ) return end
+        if not IsValid( self ) then hook.Remove( "EntityTakeDamage", hookId ) return end
+        local owner = self:GetOwner()
+        if not IsValid( owner ) then hook.Remove( "EntityTakeDamage", hookId ) return end
+        if owner:Health() <= 0 then hook.Remove( "EntityTakeDamage", hookId ) return end
 
-        if target ~= self:GetOwner() then return end
-        local shockingSelf = ( dmg:GetDamageType() == DMG_SHOCK or dmg:IsExplosionDamage() ) and dmg:GetAttacker() == self:GetOwner()
+        if target ~= owner then return end
+
+        local chosenWeap = owner:GetWeapon( "termhunt_divine_chosen" )
+        if not IsValid( chosenWeap ) then hook.Remove( "EntityTakeDamage", hookId ) return end
+
+        local shockingSelf = ( dmg:IsDamageType( DMG_SHOCK ) or dmg:IsExplosionDamage() ) and dmg:GetAttacker() == owner
         if not shockingSelf then return end
-        dmg:ScaleDamage( 0.25 )
-        dmg:SetDamageForce( dmg:GetDamageForce() * 4 )
+        dmg:ScaleDamage( 0.15 )
+        dmg:SetDamageForce( dmg:GetDamageForce() * 40 )
 
     end )
 
@@ -145,28 +160,52 @@ function SWEP:Equip()
         if not IsValid( owner ) then hook.Remove( "KeyPress", hookName ) return end
         if not IsValid( self ) then hook.Remove( "KeyPress", hookName ) return end
         if ply ~= owner then return end
-        if key ~= IN_JUMP then return end
 
         local chosenWeap = ply:GetWeapon( "termhunt_divine_chosen" )
-
         if not IsValid( chosenWeap ) then hook.Remove( "KeyPress", hookName ) return end
-        if ply:OnGround() then return end
 
-        local clip = chosenWeap:Clip1()
-        local removed = clip - 30
+        if key == IN_JUMP then
+            if ply:OnGround() then return end
 
-        if removed < 0 then return end
+            local clip = chosenWeap:Clip1()
+            local removed = clip - 30
 
-        chosenWeap:SetClip1( removed )
+            local upSpeed = 150
+            if ply:WaterLevel() >= 1 then
+                upSpeed = upSpeed * 2
+                owner.glee_noswimming_briefrespite = CurTime() + 0.8 -- HACK to allow swimming
+                owner.glee_noswimming_lastlandlubbering = CurTime()
 
-        self:DoEpicness( 10 )
+                removed = clip - 5
 
-        local forward = ply:GetAimVector()
-        forward.z = 0
-        forward = forward:GetNormalized()
+            end
 
-        ply:SetVelocity( ( vector_up * 150 ) + ( forward * 100 ) )
+            if removed < 0 then return end
 
+            chosenWeap:SetClip1( removed )
+
+            owner:SetNW2Bool( "divinechosen_jumpinmidair", true )
+
+            self:DoEpicness( 10 )
+
+            local forward = ply:GetAimVector()
+            forward.z = 0
+            forward = forward:GetNormalized()
+
+            ply:SetVelocity( ( vector_up * upSpeed ) + ( forward * 100 ) )
+
+            local velLen = ply:GetVelocity():Length()
+            local punch = velLen / 200
+            local level = 75 + math.Clamp( velLen / 100, 75, 150 )
+            local pitch = 130 + -( velLen / 50 )
+
+            self:GetOwner():ViewPunch( Angle( 0.1,punch,math.random( -punch, punch ) ) )
+
+            ply:EmitSound( "weapons/underwater_explode" .. math.random( 3, 4 ) .. ".wav", level, pitch )
+
+            util.ScreenShake( owner:GetPos(), 20, 20, 0.5, 2000, true )
+
+        end
     end )
 
     owner:EmitSound( "music/hl2_song10.mp3", 75, math.random( 90, 110 ), 1, CHAN_STATIC )
@@ -203,7 +242,7 @@ function SWEP:ShutDown()
 
     owner.glee_isUndead = nil
 
-    if self.modifiedMaxHp and owner and owner:GetMaxHealth() == self.maxHpModifedTo and owner:Alive() then
+    if self.modifiedMaxHp and owner and owner:GetMaxHealth() == self.maxHpModifedTo and owner:Health() > 0 then
         owner:SetMaxHealth( 100 )
         owner:SetHealth( owner:GetMaxHealth() )
 
@@ -219,7 +258,7 @@ function SWEP:ShutDown()
 
     end
     if self.hookId then
-        hook.Remove( self.hookId )
+        hook.Remove( "EntityTakeDamage", self.hookId )
 
     end
 end
@@ -233,9 +272,10 @@ function SWEP:ChosenThink()
         self:GetOwner():SetMaxHealth( 200 )
 
     end
-    if owner:Alive() and self.nextHealthRegen < CurTime() and owner:Health() < maxHp then
+    local ownersHealth = owner:Health() 
+    if ownersHealth > 0 and self.nextHealthRegen < CurTime() and ownersHealth < maxHp then
         self.nextHealthRegen = CurTime() + 0.05
-        owner:SetHealth( math.Clamp( owner:Health() + 4, 0, maxHp ) )
+        owner:SetHealth( math.Clamp( ownersHealth + 4, 0, maxHp ) )
     end
 end
 
@@ -303,6 +343,24 @@ function SWEP:Think()
 
     local owner = self:GetOwner()
 
+    if owner:KeyDown( IN_DUCK ) then
+
+        if owner:OnGround() then return end
+
+        owner.chosen_CrouchedInMidairCount = ( owner.chosen_CrouchedInMidairCount or 0 ) + 1
+        if owner.chosen_CrouchedInMidairCount <= 35 then
+            owner:SetNW2Bool( "divinechosen_dropinmidair", true )
+
+        end
+
+        local forward = owner:GetAimVector()
+        forward.z = 0
+        forward = forward:GetNormalized()
+
+        owner:SetVelocity( ( -vector_up * 8 ) + ( forward * 5 ) )
+
+    end
+
     if owner:KeyDown( IN_ATTACK ) then
         if not self.lineOfStrikes then
             self.primaryHits = {}
@@ -320,9 +378,11 @@ function SWEP:Think()
             self.oldPrimaryHit = hit
             SparkEffect( hit )
             table.insert( self.primaryHits, hit )
-            sound.EmitHint( SOUND_DANGER, hit, 400, 2, self:GetOwner() )
+            sound.EmitHint( SOUND_DANGER, hit, 400, 2, owner )
 
-            self:GetOwner():ViewPunch( Angle( 0.1,0,math.random( -1, 1 ) ) )
+            owner:SetNW2Bool( "divinechosen_singlestrike", true )
+
+            owner:ViewPunch( Angle( 0.1,0,math.random( -1, 1 ) ) )
 
             self:DoEpicness( 1 )
 
@@ -334,19 +394,18 @@ function SWEP:Think()
         self:DoEpicness( #self.primaryHits )
 
         for step, hit in ipairs( self.primaryHits ) do
-            timer.Simple( 0.5 + step * math.Rand( 0.06, 0.08 ), function()
-                if not IsValid( self ) then return end
-                local placeholder = ents.Create( "prop_physics" )
-                placeholder:SetPos( hit )
-                placeholder:SetModel( "models/Gibs/HGIBS.mdl" )
-                placeholder:Spawn()
-                placeholder:GetPhysicsObject():EnableMotion( false )
-                placeholder:SetNotSolid( true )
-                placeholder:SetNoDraw( true )
-                SafeRemoveEntityDelayed( placeholder, 0.1 )
+            if step > 8 then
+                owner:SetNW2Bool( "divinechosen_strikechained", true )
 
-                local powa = 1.25
-                termHunt_PowafulLightning( owner, placeholder, hit + ( vector_up * 10 ), powa )
+            end
+            timer.Simple( 0.4 + step * math.Rand( 0.06, 0.08 ), function()
+                if not IsValid( self ) then return end
+
+                local lightning = ents.Create( "glee_lightning" )
+                lightning:SetOwner( owner )
+                lightning:SetPos( hit )
+                lightning:SetPowa( 1.25 )
+                lightning:Spawn()
 
             end )
         end
@@ -380,7 +439,7 @@ function SWEP:Think()
 
             self:SetClip1( self:Clip1() + -2 )
             local punch = self.superStrikeCharge / 400 * math.random( -5, 5 )
-            self:GetOwner():ViewPunch( Angle( 0,-punch,punch ) )
+            owner:ViewPunch( Angle( 0,-punch,punch ) )
 
             self:DoEpicness( 1 )
 
@@ -393,7 +452,7 @@ function SWEP:Think()
                 SparkEffect( eyeHitPos + VectorRand() * self.superStrikeCharge )
 
             end
-            sound.EmitHint( SOUND_DANGER, eyeHitPos, self.superStrikeCharge * 20, 6, self:GetOwner() )
+            sound.EmitHint( SOUND_DANGER, eyeHitPos, self.superStrikeCharge * 20, 6, owner )
 
         end
     elseif self.superStrike and self.superStrikeCharge and self.superStrikeCharge > 0 then
@@ -401,25 +460,24 @@ function SWEP:Think()
         self.nextSuperStrikeWarn = nil
 
         local eyeTrace = owner:GetEyeTrace()
-        local hit = eyeTrace.HitPos + ( vector_up * 10 )
         local powa = self.superStrikeCharge / 8
-        self:GetOwner():ViewPunch( Angle( -powa * 2,powa * math.Rand( -1, 1 ),0 ) )
+        owner:ViewPunch( Angle( -powa * 2,powa * math.Rand( -1, 1 ),0 ) )
+
+        if powa > 8 then
+            owner:SetNW2Bool( "divinechosen_secondarystrike", true )
+
+        end
 
         timer.Simple( 0.25, function() -- effect ONLY FUCKING WORKS if i put it in a SIMPLE TIMER - the code literally proceeds fine all the way to util.Effect in the lighting folder but then it just DOESNT create the effect
             if not IsValid( self ) then return end
 
-            local placeholder = ents.Create( "prop_physics" )
-            placeholder:SetPos( eyeTrace.HitPos )
-            placeholder:SetModel( "models/Gibs/HGIBS.mdl" )
-            placeholder:Spawn()
-            placeholder:GetPhysicsObject():EnableMotion( false )
-            placeholder:SetNotSolid( true )
-            placeholder:SetNoDraw( true )
-            SafeRemoveEntityDelayed( placeholder, 0.1 )
+            local lightning = ents.Create( "glee_lightning" )
+            lightning:SetOwner( owner )
+            lightning:SetPos( eyeTrace.HitPos )
+            lightning:SetPowa( powa )
+            lightning:Spawn()
 
-            termHunt_PowafulLightning( owner, placeholder, hit, powa )
-
-            self:GetOwner():ViewPunch( Angle( powa * 4,powa * math.Rand( -1, 1 ),0 ) )
+            owner:ViewPunch( Angle( powa * 4, powa * math.Rand( -1, 1 ), 0 ) )
             self:DoEpicness( self.superStrikeCharge )
             self.superStrikeCharge = nil
 
@@ -439,7 +497,7 @@ end
 function SWEP:OnDrop()
     if not SERVER then return end
     self:ShutDown()
-    safeRemoveEntity( self )
+    SafeRemoveEntity( self )
 
 end
 
@@ -470,6 +528,36 @@ function SWEP:DrawHUD()
             huntersGlee_PaintPlayer( ply )
 
         end
+    end
+end
+
+local spriteOffsets = {
+    Vector( 0,4,0 ),
+    Vector( 0,-4,0 ),
+
+}
+
+local white = Color( 255, 255, 255 )
+local mat
+
+function SWEP:DrawWorldModel()
+
+    local owner = self:GetOwner()
+
+    if not IsValid( owner ) then return end
+    if LocalPlayer():GetObserverMode() == OBS_MODE_IN_EYE and LocalPlayer():GetObserverTarget() == owner then return end
+
+    if not mat then mat = Material( "sprites/glow04_noz.vmt" ) end
+
+    local eyeId = owner:LookupAttachment( "eyes" )
+
+    local eyes = owner:GetAttachment( eyeId )
+
+    for _, offset in ipairs( spriteOffsets ) do
+        cam.Start3D( EyePos(), EyeAngles(), nil, 0, 0, ScrW(), ScrH(), nil, nil )
+            render.SetMaterial( mat )
+            render.DrawSprite( eyes.Pos + offset, 100, 100, white )
+        cam.End3D()
     end
 end
 
@@ -604,6 +692,19 @@ function SWEP:DoEpicness( amount )
         flash:SetEntity( owner )
         util.Effect( "eff_huntersglee_divinelight", flash, true, filter )
 
+        local nextEpicZzarp = self.nextEpicZzarp or 0
+        if nextEpicZzarp > CurTime() then return end
+        self.nextEpicZzarp = CurTime() + math.Rand( .1, .5 )
+
+        local startingDir = vector_up + VectorRand()
+        startingDir:Normalize()
+
+        local hitTr = termHunt_ElectricalArcEffect( owner, owner:WorldSpaceCenter(), -vector_up, math.Rand( 0.5, 1 ), startingDir, 1000 )
+        local zzarpedEnt = hitTr.Entity
+
+        if not IsValid( zzarpedEnt ) then return end
+        zzarpedEnt:Fire( "IgniteLifetime", 1 )
+
     end )
 end
 
@@ -624,9 +725,9 @@ function SWEP:EpicnessThink()
 
     local theSound = ""
     if inHighIntensity < CurTime() and epic >= 100 then
-        if epic >= 250 then
+        if epic >= 225 then
             -- once we do this line, activate a period of faster regen, and ranting
-            huntersGlee_Announce( { self:GetOwner() }, 100, 8, "SHOW THEM." )
+            huntersGlee_Announce( { self:GetOwner() }, 500, 8, "SHOW THEM." )
             local result = table.Random( superHighIntensity )
             theSound = result[1]
             self.nextEpicLine = CurTime() + result[2]
@@ -661,7 +762,16 @@ function SWEP:EpicnessThink()
 
     end
 
-    if theSound == self.oldSpokenLine then return end
+    local owner = self:GetOwner()
+
+    self:SpeakLine( theSound, self, owner )
+
+    self.epicness = targetEpicness
+
+end
+
+function SWEP:SpeakLine( theLine, speaker, speakerEcho )
+    if theLine == self.oldSpokenLine then return end
 
     if self.epicSound1 then
         self.epicSound1:Stop()
@@ -672,61 +782,65 @@ function SWEP:EpicnessThink()
 
     end
 
-    local owner = self:GetOwner()
-
     filterEveryone:AddAllPlayers()
 
     local pitch = math.random( 85, 95 )
 
     -- normal dsp
-    self.epicSound1 = CreateSound( self, theSound, filterClose )
+    self.epicSound1 = CreateSound( speaker, theLine, filterEveryone )
     self.epicSound1:SetSoundLevel( 95 )
     self.epicSound1:PlayEx( 1, pitch )
 
     -- w/echo DSP and 150 levl
     timer.Simple( 0.08, function()
-        self.epicSound2 = CreateSound( owner, theSound, filterFar )
-        self.epicSound2:SetDSP( 10 )
-        self.epicSound2:SetSoundLevel( 150 )
-        self.epicSound2:PlayEx( 0.3, pitch + -10 )
+        if not IsValid( speakerEcho ) then return end
+        local emitter = self
+        if not IsValid( self ) then
+            emitter = speakerEcho
+
+        end
+        emitter.epicSound2 = CreateSound( speakerEcho, theLine, filterEveryone )
+        emitter.epicSound2:SetDSP( 25 )
+        emitter.epicSound2:SetSoundLevel( 150 )
+        emitter.epicSound2:PlayEx( 0.4, pitch + -10 )
 
     end )
 
-    self.oldSpokenLine = theSound
+    self.oldSpokenLine = theLine
 
-    self.epicness = targetEpicness
-
-end
-
-local spriteOffsets = {
-    Vector( 0,4,0 ),
-    Vector( 0,-4,0 ),
-
-}
-
-local white = Color( 255, 255, 255 )
-
-function SWEP:DrawWorldModel( flags )
-
-    self:DrawModel( flags )
-
-    local owner = self:GetOwner()
-
-    if not IsValid( owner ) then return end
-
-    local eyeId = owner:LookupAttachment( "eyes" )
-
-    local eyes = owner:GetAttachment( eyeId )
-
-    for _, offset in ipairs( spriteOffsets ) do
-        cam.Start3D( EyePos(), EyeAngles(), nil, 0, 0, ScrW(), ScrH(), nil, nil )
-            render.SetMaterial( "sprites/glow04_noz.vmt" )
-            render.DrawSprite( eyes.Pos + offset, 100, 100, white )
-        cam.End3D()
-    end
 end
 
 hook.Add( "OnDamagedByExplosion", "ChosenNoRinging", function( ply )
     if ply:HasWeapon( "termhunt_divine_chosen" ) then return true end
+
+end )
+
+hook.Add( "PlayerDeath", "glee_chosendeathsound", function( ply )
+    local theWep = ply:GetWeapon( "termhunt_divine_chosen" )
+    if not IsValid( theWep ) then return end
+
+    theWep:ShutDown()
+
+    if theWep.epicness < 50 then return end
+
+    local placeholder = ents.Create( "prop_physics" )
+    placeholder:SetPos( ply:GetPos() )
+    placeholder:SetModel( "models/Gibs/HGIBS.mdl" )
+    placeholder:Spawn()
+    placeholder:GetPhysicsObject():EnableMotion( false )
+    placeholder:SetNotSolid( true )
+    placeholder:SetNoDraw( true )
+    SafeRemoveEntityDelayed( placeholder, 10 )
+
+    local placeholderEcho = ents.Create( "prop_physics" )
+    placeholderEcho:SetPos( ply:GetPos() )
+    placeholderEcho:SetModel( "models/Gibs/HGIBS.mdl" )
+    placeholderEcho:Spawn()
+    placeholderEcho:GetPhysicsObject():EnableMotion( false )
+    placeholderEcho:SetNotSolid( true )
+    placeholderEcho:SetNoDraw( true )
+    SafeRemoveEntityDelayed( placeholderEcho, 10 )
+
+    theWep:SpeakLine( "vo/ravenholm/monk_death07.wav", placeholder, placeholderEcho )
 
 end )

@@ -35,11 +35,6 @@ if SERVER then
                 if ply:GetNWString( "glee_announcement_theannounce" ) ~= announcement then return end
                 ply.glee_Announcement_Priority = -math.huge -- any priority!
 
-                net.Start( "glee_clean_announcement" )
-                net.WriteFloat( 0 )
-                net.WriteString( "" )
-                net.Send( ply )
-
             end )
         end
     end
@@ -71,7 +66,9 @@ surface.CreateFont( "huntersglee_announcingtext", fontData )
 
 local currAnnouncement = nil
 local expireTime = 0
-local me = LocalPlayer()
+local LocalPlayer = LocalPlayer
+local alpha = 0
+local announcementColor = Color( 255, 255, 255, 255 )
 
 local screenMiddleW = ScrW() / 2
 local screenMiddleH = ScrH() / 2
@@ -93,13 +90,31 @@ end )
 
 hook.Add( "HUDPaint", "huntersglee_paintannouncetext", function()
     if not currAnnouncement then return end
-    if expireTime < CurTime() then return end
-    local glee_BlockGenericAnnouncements = me.glee_BlockGenericAnnouncements or 0
+    local glee_BlockGenericAnnouncements = LocalPlayer().glee_BlockGenericAnnouncements or 0
     if glee_BlockGenericAnnouncements > CurTime() then return end
 
-    if GetGlobalBool( "termHuntDisplayWinners", false ) == true then return end
+    -- fade out
+    if expireTime < CurTime() then
+        alpha = math.Clamp( alpha + -10, 0, 255 )
 
-    surface.drawShadowedTextBetter( currAnnouncement, "huntersglee_announcingtext", color_white, screenMiddleW, screenMiddleH + -256 )
+    else
+        alpha = 255
+
+    end
+
+    if alpha <= 0 then
+        currAnnouncement = nil
+        expireTime = nil
+        return
+
+    else
+        announcementColor.a = alpha
+
+    end
+
+    -- only block drawing with this so that announcements time out and stuff
+    if GetGlobalBool( "termHuntDisplayWinners", false ) == true then return end
+    surface.drawShadowedTextBetter( currAnnouncement, "huntersglee_announcingtext", announcementColor, screenMiddleW, screenMiddleH + -256 )
 
 end )
 

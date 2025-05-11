@@ -1,4 +1,6 @@
 local IsValid = IsValid
+local util_IsInWorld = util.IsInWorld
+local math = math
 
 local punishEscaping = CreateConVar( "huntersglee_punish_navmesh_escapers", 1, bit.bor( FCVAR_NOTIFY, FCVAR_ARCHIVE ), "Should the life of players who tread off the navmesh be sapped away?.", 0, 32 )
 
@@ -9,25 +11,71 @@ local airCheckHull = Vector( 17, 17, 1 )
 local restingBPMPermanent = 60 -- needs to match clientside var too
 
 local distNeededToBeOnArea = 25^2
+local distWayTooFarOffNavmesh = 250^2
 local posCanSeeComplex = terminator_Extras.PosCanSeeComplex
+local defaultHeartAttackBpm = 290
+local bpmStartScreamingLikeCrazy = 225
+
+
+local meta = FindMetaTable( "Player" )
+
+function meta:GetNavAreaData()
+    if not IsValid( self.glee_CachedNavArea ) then
+        self:CacheNavArea()
+
+    end
+    return self.glee_CachedNavArea, self.glee_SqrDistToCachedNavArea
+
+end
+
+function meta:CacheNavArea()
+    local myPos = self:GetPos()
+    if not util_IsInWorld( myPos ) then
+        self.glee_CachedNavArea = nil
+        self.glee_SqrDistToCachedNavArea = math.huge
+        return
+
+    end
+    local area = navmesh.GetNearestNavArea( myPos, true, navCheckDist, false, true )
+
+    self.glee_CachedNavArea = area
+    if area then
+        self.glee_SqrDistToCachedNavArea = myPos:DistToSqr( area:GetClosestPointOnArea( myPos ) )
+
+        local oldArea = self.glee_CachedOldNavArea
+        if oldArea and oldArea ~= area then
+            hook.Run( "glee_ply_changednavareas", self, oldArea, newArea )
+            self.glee_CachedOldNavArea = area
+
+        elseif not oldArea then
+            self.glee_CachedOldNavArea = area
+
+        end
+    else
+        self.glee_SqrDistToCachedNavArea = math.huge
+
+    end
+end
+
 
 -- manage the BPM of ppl HERE
 
 function GM:calculateBPM( cur, players )
-    local hasNavmesh = GAMEMODE.hasNavmesh
+    local hasNavmesh = self.hasNavmesh
     local punishEscapingBool = punishEscaping:GetBool()
-    local hunters = table.Copy( GAMEMODE.termHunt_hunters )
+    local hunters = self.glee_Hunters
     for _, ply in ipairs( players ) do
-        if ply:Alive() then
+        if ply:Health() > 0 then
             local plyPos = ply:GetShootPos()
             local plysMoveType = ply:GetMoveType()
-            local nearestHunter = GAMEMODE:getNearestHunter( plyPos, hunters )
+            local nearestHunter = self:getNearestHunter( plyPos, hunters )
             local nextDistancePosSave = ply.nextDistancePosSave or 0
             local directlyUnderneathArea, distToAreaSqr = ply:GetNavAreaData()
 
             local canSee = nil
             local targetted = nil
             local mentosDist = math.huge
+            local nearestHunterScaryness = 0
 
             -- fun variables
             ply.huntersGleeHunterThatIsTargetingPly = nil
@@ -35,24 +83,34 @@ function GM:calculateBPM( cur, players )
             ply.huntersGleeNearestHunterToPly = nil
 
             if IsValid( nearestHunter ) then
-
                 ply.huntersGleeNearestHunterToPly = nearestHunter
+                hook.Run( "glee_hunter_nearbyaply", nearestHunter, ply )
 
                 -- is player inside mentos shaped volume?????
-                local mentosShapedDistance = nearestHunter:GetShootPos() - plyPos
+                -- means less score if ply is simply above enemy
+                local mentosShapedDistance = nearestHunter:EyePos() - plyPos
                 mentosShapedDistance.z = mentosShapedDistance.z / 2
 
+                nearestHunterScaryness = self:GetBotScaryness( ply, nearestHunter )
+
                 mentosDist = mentosShapedDistance:Length()
-                canSee = nearestHunter.IsSeeEnemy
-                targetted = nearestHunter:GetEnemy() == ply
+
+                if nearestHunter.TerminatorNextBot then
+                    canSee = nearestHunter.IsSeeEnemy
+                    targetted = nearestHunter:GetEnemy() == ply
+                else
+                    canSee = terminator_Extras.PosCanSee( nearestHunter:EyePos(), plyPos )
+                    targetted = canSee
+
+                end
 
                 if targetted then
                     ply.huntersGleeHunterThatIsTargetingPly = nearestHunter
 
                 end
                 if canSee then
+                    nearestHunter.glee_SeeEnemy = cur + 1
                     ply.huntersGleeHunterThatCanSeePly = nearestHunter
-
                 end
             end
 
@@ -92,6 +150,7 @@ function GM:calculateBPM( cur, players )
                 local rawScalar = math.abs( mentosDist - 2000 ) / 42
                 local bpmRampup = math.Clamp( rawScalar, 15, 50 )
                 mentosBPM = 10 + bpmRampup
+                mentosBPM = mentosBPM * nearestHunterScaryness
 
             end
 
@@ -99,10 +158,10 @@ function GM:calculateBPM( cur, players )
             local canSeeBPM = 0
 
             if canSee then
-                canSeeBPM = 10
+                canSeeBPM = 10 * nearestHunterScaryness
             end
             if targetted then
-                targettedBPM = 8
+                targettedBPM = 8 * nearestHunterScaryness
             end
 
             -- here's the check that stops free bpm for running in circles
@@ -113,27 +172,57 @@ function GM:calculateBPM( cur, players )
 
             end
 
-            local tDat = {}
-            tDat.start = plyPos + tStartOffset
-            tDat.endpos = plyPos + belowOffset
-            tDat.mask = MASK_NPCWORLDSTATIC
-            tDat.maxs = airCheckHull
-            tDat.mins = -airCheckHull
+            local plyVel = ply:GetVelocity()
+            local plySpeed = plyVel:Length()
+            local fallingForever = plySpeed > 2000
+            if fallingForever then
+                local foreverTr = {
+                    start = plyPos,
+                    endpos = plyPos + plyVel * 1000,
+                    mask = MASK_NPCWORLDSTATIC,
+                    maxs = airCheckHull,
+                    mins = -airCheckHull,
+                }
+                local foreverResult = util.TraceHull( foreverTr )
+                fallingForever = not foreverResult.hit
+
+            end
+
+            local tDat = {
+                start = plyPos + tStartOffset,
+                endpos = plyPos + belowOffset,
+                mask = MASK_NPCWORLDSTATIC,
+                maxs = airCheckHull,
+                mins = -airCheckHull,
+            }
             local closeToGround = util.TraceHull( tDat ).Hit
             local onArea = nil
 
+            -- definitely not on the navmesh.
+            if directlyUnderneathArea and distToAreaSqr > distWayTooFarOffNavmesh then
+                onArea = false
+
             -- cheap
-            if directlyUnderneathArea and distToAreaSqr < distNeededToBeOnArea then
+            elseif directlyUnderneathArea and distToAreaSqr < distNeededToBeOnArea and directlyUnderneathArea:Contains( plyPos ) then
                 onArea = directlyUnderneathArea:IsValid()
 
             -- not cheap
             elseif directlyUnderneathArea and directlyUnderneathArea:IsValid() then
-                local plysShootPos = ply:GetShootPos()
-                -- only check horisontal, sometimes navareas end up underneath floors
-                local closestPos = directlyUnderneathArea:GetClosestPointOnArea( plysShootPos )
-                closestPos.z = plysShootPos.z
+                -- only check horizontal, sometimes navareas end up underneath floors
+                local closestPos = directlyUnderneathArea:GetClosestPointOnArea( plyPos )
+                local highestZ = math.max( closestPos.z, plyPos.z )
+                local lowestZ = math.min( closestPos.z, plyPos.z )
+                closestPos.z = highestZ
+                plyPos.z = highestZ
 
-                onArea = posCanSeeComplex( plysShootPos, closestPos, ply, MASK_SOLID_BRUSHONLY )
+                local plyCanSeeArea = posCanSeeComplex( plyPos, closestPos, ply, MASK_SOLID_BRUSHONLY )
+
+                -- handle "directly under navmeshed displacement floor" edge case
+                closestPos.z = highestZ + 25
+                plyPos.z = lowestZ + 25
+
+                -- catch people behind displacements
+                onArea = plyCanSeeArea and posCanSeeComplex( closestPos, plyPos, ply, MASK_SOLID_BRUSHONLY )
 
             end
 
@@ -142,10 +231,16 @@ function GM:calculateBPM( cur, players )
             local blockScore = false
 
             -- if there's no valid area AND we are on the ground, then block
-            if ( not onArea ) and closeToGround then
+            local somewhereWrong = ( not onArea ) and closeToGround
+            somewhereWrong = somewhereWrong or fallingForever
+
+            if somewhereWrong then
                 blockScore = true
                 doBpmDecrease = true
+                if not terminator_Extras.IsLivePatching then
+                    terminator_Extras.dynamicallyPatchPos( ply:GetPos() )
 
+                end
             end
             if onLadder then
                 blockScore = true
@@ -154,7 +249,7 @@ function GM:calculateBPM( cur, players )
             end
 
             local bpmPerSpeed = 0.05 * speedBPMMul
-            local speedBPM = ply:GetVelocity():Length() * bpmPerSpeed
+            local speedBPM = plySpeed * bpmPerSpeed
 
             local initialScale = 1
             local nonRestingScale = hook.Run( "termhunt_scaleaddedbpm", ply, initialScale ) or initialScale
@@ -163,11 +258,6 @@ function GM:calculateBPM( cur, players )
             local speedAndScaredBPM = ( speedBPM + scaredBpm ) * nonRestingScale
             local idealBPM = restingBPM + speedAndScaredBPM
             idealBPM = math.Round( idealBPM )
-
-            if ply:Health() <= 0 then
-                ply.BPMHistoric = nil
-
-            end
 
             -- reward people who get high bpm with long-lasting bpm increase
             local BPMHistoric = ply.BPMHistoric or { idealBPM }
@@ -190,7 +280,7 @@ function GM:calculateBPM( cur, players )
 
             -- if we have panic then bpm matches the panic
             local activitySpikeBPM = ( idealBPM / 2 ) + scaredBpm
-            local panicBpmComponent = math.Clamp( GAMEMODE:GetPanic( ply ), 0, 110 )
+            local panicBpmComponent = math.Clamp( self:GetPanic( ply ), 0, 110 )
             activitySpikeBPM = math.Clamp( activitySpikeBPM, panicBpmComponent, math.huge )
 
             -- start out with historic bpm
@@ -201,12 +291,17 @@ function GM:calculateBPM( cur, players )
 
             -- when ply is off navmesh, slowly sap their life
             if doBpmDecrease and punishEscapingBool then
+                local damaged
                 local exceptionMovement = plysMoveType == MOVETYPE_NOCLIP or ply:Health() <= 0 or ply:GetObserverMode() ~= OBS_MODE_NONE or ply:InVehicle()
                 if not exceptionMovement and hasNavmesh then
                     local BPMDecrease = ply.historicBPMDecrease or 0
                     local added = 2
                     if onLadder then
-                        added = 1
+                        added = 0.5
+
+                    elseif fallingForever then
+                        added = 8
+                        self:GivePanic( ply, 25 )
 
                     end
                     ply.historicBPMDecrease = BPMDecrease + added
@@ -215,7 +310,7 @@ function GM:calculateBPM( cur, players )
                     BPM = math.Round( BPM )
 
                     if BPM < restingBPMPermanent then
-                        GAMEMODE:GivePanic( ply, 3 )
+                        self:GivePanic( ply, 3 )
 
                     end
                     if BPM < restingBPMPermanent and BPMDecrease > restingBPMPermanent * 2 then
@@ -227,9 +322,16 @@ function GM:calculateBPM( cur, players )
                         end
                         local damage = math.ceil( ply:GetMaxHealth() / divisor )
                         ply:TakeDamage( damage, game.GetWorld(), game.GetWorld() )
-                        huntersGlee_Announce( { ply }, 100, 5, "Something is off.\nIt feels like you're somewhere wrong..." )
+                        huntersGlee_Announce( { ply }, 100, 2.5, "Something is off.\nIt feels like you're somewhere wrong..." )
+
+                        damaged = true
 
                     end
+                end
+                -- simple fix!
+                if damaged and self:IsUnderDisplacementExtensive( plyPos ) then
+                    ply:BeginUnstuck()
+
                 end
             -- ramp down and then cleanup the decrease
             elseif ply.historicBPMDecrease then
@@ -245,6 +347,12 @@ function GM:calculateBPM( cur, players )
 
             ply:SetNWInt( "termHuntPlyBPM", BPM )
             ply:SetNWBool( "termHuntBlockScoring", blockScore )
+
+            local heartAttackScore = ply.glee_HeartAttackScore or 0
+            if heartAttackScore > 0 then
+                self:DoHeartAttackThink( ply )
+
+            end
 
         else
             if istable( ply.BPMHistoric ) then
@@ -297,7 +405,7 @@ function GM:manageServersideCountOfBeats()
                 local oldBeats = ply.realHeartBeats or 0
                 ply.realHeartBeats = oldBeats + 1
 
-                hook.Run( "huntersglee_heartbeat_beat", ply )
+                hook.Run( "huntersglee_heartbeat_beat", ply, RealBPMClamped )
 
             end
         end
@@ -305,15 +413,100 @@ function GM:manageServersideCountOfBeats()
 end
 
 
-
+-- used by hunts tally
 hook.Add( "huntersglee_givescore", "huntersglee_storealivescoring", function( scorer, addedscore )
     if not IsValid( scorer ) then return end
-    if not scorer:Alive() then return end
+    if scorer:Health() <= 0 then return end
     if addedscore < 1 then return end
     if GAMEMODE:RoundState() ~= 1 then return end
 
     local oldPlyScore = GAMEMODE.roundScore[ scorer:GetCreationID() ] or 0
     GAMEMODE.roundScore[ scorer:GetCreationID() ] = oldPlyScore + addedscore
+
+end )
+function GM:DoHeartAttackThink( ply )
+    if not IsValid( ply ) then return end
+    local nextThink = ply.glee_NextHeartAttackThink or 0
+    if nextThink > CurTime() then return end
+    ply.glee_NextHeartAttackThink = CurTime() + math.Rand( 0.4, 0.6 )
+
+    if ply:Health() <= 0 then
+        if ply.glee_HeartAttackScore then
+            ply.glee_HeartAttackScore = nil
+
+        end
+        return
+
+    end
+    local heartAttackScore = ply.glee_HeartAttackScore or 0
+    local threshold = GAMEMODE:GetHeartAttackThreshold( ply )
+
+    -- you're done
+    if heartAttackScore > threshold then
+        heartAttackScore = heartAttackScore + 50
+
+        local damage = ( ply:GetMaxHealth() / 10 ) + ( heartAttackScore / threshold )
+
+        local world = game.GetWorld()
+        ply:TakeDamage( damage, world, world )
+        if math.random( 0, 100 ) < 50 then
+            ply:SetNWInt( "termHuntPlyBPM", 0 )
+
+        end
+        GAMEMODE:GivePanic( ply, 50 )
+
+    elseif heartAttackScore > threshold * 0.533 then
+        heartAttackScore = heartAttackScore + 4
+        GAMEMODE:GivePanic( ply, 12 )
+
+    elseif heartAttackScore > threshold * math.Rand( 0.3, 0.4 ) then
+        heartAttackScore = heartAttackScore + -0.5
+        GAMEMODE:GivePanic( ply, 6 )
+
+    else
+        heartAttackScore = heartAttackScore + -2
+        if not ply.glee_HasHeartAttackWarned then
+            huntersGlee_Announce( { ply }, 5, 5, "You feel a deep, sharp pain..." )
+            GAMEMODE:GivePanic( ply, 50 )
+            ply.glee_HasHeartAttackWarned = true
+
+        end
+    end
+end
+
+function GM:GetHeartAttackThreshold( ply )
+    local heartAttackBpm = defaultHeartAttackBpm
+    local hookHeartAttackBpm = hook.Run( "huntersglee_getheartattackbpm", ply )
+    if isnumber( hookHeartAttackBpm ) then
+        heartAttackBpm = hookHeartAttackBpm
+
+    end
+
+    return heartAttackBpm
+
+end
+
+hook.Add( "huntersglee_heartbeat_beat", "glee_heartattack_think", function( ply, BPM )
+    local threshold = GAMEMODE:GetHeartAttackThreshold( ply )
+    if BPM > threshold then
+        local added = math.abs( BPM - threshold )
+        added = added / 4
+        local oldScore = ply.glee_HeartAttackScore or 0
+        ply.glee_HeartAttackScore = oldScore + added
+        GAMEMODE:GivePanic( ply, ply.glee_HeartAttackScore )
+
+    elseif BPM > bpmStartScreamingLikeCrazy then
+        GAMEMODE:GivePanic( ply, 5 )
+
+    end
+end )
+
+
+hook.Add( "PlayerDeath", "glee_resetbeatstuff", function( ply )
+    ply.BPMHistoric = nil
+    ply:SetNWInt( "termHuntPlyBPM", restingBPMPermanent )
+    ply.glee_HasHeartAttackWarned = nil
+    ply.glee_HeartAttackScore = 0
 
 end )
 
@@ -324,7 +517,8 @@ GM.TEAM_SPECTATE = 2
 function GM:spectatifyPlayer( ply )
     ply:SetNWBool( "termhunt_spectating", true )
     ply:Spectate( OBS_MODE_DEATHCAM )
-    ply.spectateDoFreecam = CurTime() + 4
+
+    ply.spectateDoFreecam = CurTime() + 8
     ply.spectateDoFreecamForced = CurTime() + 2
     ply.termHuntTeam = GAMEMODE.TEAM_SPECTATE
 
@@ -353,22 +547,57 @@ function GM:ensureNotSpectating( ply ) -- this is kinda redundant
     ply:SetNWBool( "termhunt_spectating", false )
     ply:UnSpectate()
 
-    if ply:Alive() then
-        ply:KillSilent()
+    if ply:Health() <= 0 then return end
+    ply:KillSilent()
+
+end
+
+local isMovementKey
+
+do
+    local movementKeys = {
+        [IN_ATTACK] = true,
+        [IN_FORWARD] = true,
+        [IN_BACK] = true,
+        [IN_MOVELEFT] = true,
+        [IN_MOVERIGHT] = true,
+    }
+
+    isMovementKey = function( keyPressed )
+        return movementKeys[keyPressed]
+
     end
 end
 
-local function isMovementKey( keyPressed )
-    if keyPressed == IN_ATTACK2 or keyPressed == IN_FORWARD or keyPressed == IN_BACK or keyPressed == IN_MOVELEFT or keyPressed == IN_MOVERIGHT then return true end
-
-end
-
-local function exitDeathCam( ply )
+local function shutDownDeathCam( ply )
     ply.spectateDoFreecam = math.huge
     ply.spectateDoFreecamForced = math.huge
-    ply:SetObserverMode( OBS_MODE_ROAMING )
 
 end
+
+local function spectateThing( ply, thing )
+    ply:SpectateEntity( thing )
+    ply:SetObserverMode( OBS_MODE_CHASE )
+    net.Start( "glee_followedsomething" )
+    net.Send( ply )
+
+end
+
+local function stopSpectatingThing( ply )
+    local target = ply:GetObserverTarget()
+    ply:SetObserverMode( OBS_MODE_ROAMING )
+    if IsValid( target ) and target.GetShootPos then
+        ply:SetPos( target:GetShootPos() )
+
+    end
+    local oldAng = ply:GetAngles()
+    ply:SetAngles( Angle( oldAng.p, oldAng.y, 0 ) )
+    net.Start( "glee_stoppedspectating" )
+    net.Send( ply )
+
+end
+
+local nextSpectateIdleCheck = {}
 
 -- if placing
     -- if following player, unfollow
@@ -390,45 +619,71 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
     local followingThing = mode == OBS_MODE_CHASE or mode == OBS_MODE_IN_EYE
     local deathCamming = mode == OBS_MODE_DEATHCAM
 
+    nextSpectateIdleCheck[ply] = CurTime() + 0.1
 
     local placing = ply.ghostEnt
     local actionTime = ply.glee_ghostEntActionTime or 0
     local wasGhostEnting = actionTime + 0.25 > CurTime()
     if IsValid( placing ) or wasGhostEnting then return end
 
-
     local spectated = nil
+    local currentlySpectating = ply:GetObserverTarget()
 
     if deathCamming then
-        if isMovementKey( key ) and ply.spectateDoFreecamForced < CurTime() then
-            exitDeathCam( ply )
-            net.Start( "glee_stoppedspectating" )
-            net.Send( ply )
+        if isMovementKey( keyPressed ) and ply.spectateDoFreecamForced < CurTime() then
+            shutDownDeathCam( ply )
+            stopSpectatingThing( ply )
 
         end
         if ply.spectateDoFreecam > CurTime() then return end
 
-        exitDeathCam( ply )
+        shutDownDeathCam( ply )
+        if ply.glee_KillerToSpectate then
+            spectated = ply.glee_KillerToSpectate
+            spectateThing( ply, spectated )
 
-    elseif keyPressed == IN_ATTACK then
+            ply.glee_KillerToSpectate = nil
+
+        else
+            stopSpectatingThing( ply )
+
+        end
+    elseif keyPressed == IN_ATTACK or keyPressed == IN_ATTACK2 then
+        local direction
+        if keyPressed == IN_ATTACK then
+            direction = 1
+
+        elseif keyPressed == IN_ATTACK2 then
+            direction = -1
+
+        end
         local players = player.GetAll()
         local alivePlayers = GAMEMODE:returnAliveInTable( players )
         local protoStuffToSpectate = alivePlayers
-        table.Add( protoStuffToSpectate, table.Copy( GAMEMODE.termHunt_hunters ) )
+        table.Add( protoStuffToSpectate, table.Copy( GAMEMODE.glee_Hunters ) )
 
         local stuffToSpectate = {}
         for _, thing in ipairs( protoStuffToSpectate ) do
-            if IsValid( thing ) then
+            if IsValid( thing ) and thing:Health() >= 0 and thing ~= ply then
                 table.insert( stuffToSpectate, thing )
             end
         end
 
         -- go to next player
         if followingThing then
-            local thingToFollow = stuffToSpectate[1] -- default to first ply
-            local currentlySpectating = ply:GetObserverTarget()
+            local toSpectateCheck = table.Copy( stuffToSpectate )
+            local start
+            if direction == 1 then
+                start = 1
+
+            else
+                toSpectateCheck = table.Reverse( stuffToSpectate )
+                start = #toSpectateCheck
+
+            end
+            local thingToFollow = toSpectateCheck[start] -- default to first ply
             local hitTheCurrent
-            for _, thing in ipairs( stuffToSpectate ) do
+            for _, thing in ipairs( toSpectateCheck ) do
                 if hitTheCurrent then
                     thingToFollow = thing
                     break
@@ -442,7 +697,9 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
                 net.Start( "glee_followednexthing" )
                 net.Send( ply )
                 spectated = thingToFollow
+
                 ply:SpectateEntity( thingToFollow )
+                currentlySpectating = thingToFollow
 
             end
 
@@ -451,7 +708,7 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
             local thingToFollow = nil
             local eyeTrace = ply:GetEyeTrace()
             local eyeTraceHit = eyeTrace.Entity
-            if IsValid( eyeTraceHit ) and eyeTraceHit:IsPlayer() or eyeTraceHit:IsNextBot() then
+            if IsValid( eyeTraceHit ) and eyeTraceHit:IsPlayer() or eyeTraceHit:IsNextBot() or eyeTraceHit:IsNPC() then
                 thingToFollow = eyeTraceHit
 
             else
@@ -463,9 +720,9 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
 
                 end
 
-                table.sort( sortedStuffToSpectate, function( a, b ) -- sort players by distance to pos
-                    local ADist = a:GetShootPos():DistToSqr( sortPos )
-                    local BDist = b:GetShootPos():DistToSqr( sortPos )
+                table.sort( sortedStuffToSpectate, function( a, b ) -- sort followable stuff by distance to pos
+                    local ADist = a:EyePos():DistToSqr( sortPos )
+                    local BDist = b:EyePos():DistToSqr( sortPos )
                     return ADist < BDist
 
                 end )
@@ -476,18 +733,13 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
 
             if thingToFollow then
                 spectated = thingToFollow
-                ply:SpectateEntity( thingToFollow )
-                ply:SetObserverMode( OBS_MODE_CHASE )
-                net.Start( "glee_followedsomething" )
-                net.Send( ply )
+                spectateThing( ply, spectated )
 
             end
         end
     elseif isMovementKey( keyPressed ) then
         if followingThing then
-            ply:SetObserverMode( OBS_MODE_ROAMING )
-            net.Start( "glee_stoppedspectating" )
-            net.Send( ply )
+            stopSpectatingThing( ply )
 
         end
     elseif keyPressed == IN_JUMP then
@@ -502,13 +754,42 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
 
             end
         end
-    end
-    if IsValid( spectated ) then
-        if spectated.Nick and isstring( spectated:Nick() ) then
-            huntersGlee_Announce( { ply }, 1, 2, "Spectating " .. spectated:Nick() .. "." )
+    elseif followingThing and currentlySpectating.Health and currentlySpectating:Health() <= 0 then
+        stopSpectatingThing( ply )
+
+        local toWatch
+        local time
+
+        if currentlySpectating.glee_KillerToSpectate then
+            toWatch = currentlySpectating.glee_KillerToSpectate
+            time = 2
 
         else
-            huntersGlee_Announce( { ply }, 1, 2, "Spectating a Terminator." )
+            time = math.random( 10, 15 )
+
+        end
+
+        local afkCheckPos = ply:GetPos()
+
+        timer.Simple( time, function()
+            if not IsValid( ply ) then return end -- lol ragequit
+            if ply:Health() > 0 then return end
+            if ply:GetPos():Distance( afkCheckPos ) > 25 then return end
+
+            toWatch = IsValid( toWatch ) and toWatch or GAMEMODE:anotherAlivePlayer( ply )
+            if not IsValid( toWatch ) then return end -- everyone is dead
+
+            spectateThing( ply, toWatch )
+
+        end )
+    end
+
+    if IsValid( spectated ) then
+        if spectated.Nick and isstring( spectated:Nick() ) then
+            huntersGlee_Announce( { ply }, 1, 1.5, "Spectating " .. spectated:Nick() .. "." )
+
+        else
+            huntersGlee_Announce( { ply }, 1, 1.5, "Spectating " .. GAMEMODE:GetNameOfBot( spectated ) )
 
         end
     end
@@ -516,7 +797,17 @@ end
 
 hook.Add( "KeyPress", "glee_SwitchSpectateModes", DoKeyPressSpectateSwitch )
 
-function GM:SpectateOverrides( ply, mode )
+hook.Add( "glee_sv_validgmthink", "glee_SwitchSpectateModes", function( players )
+    for _, ply in ipairs( players ) do
+        local nextIdle = nextSpectateIdleCheck[ply] or 0
+        if nextIdle < CurTime() then
+            DoKeyPressSpectateSwitch( ply, 0 )
+
+        end
+    end
+end )
+
+function GM:SpectateOverrides( ply, mode, deadPlayers )
     local placing = ply.ghostEnt
 
     local isPlacing = IsValid( placing )
@@ -526,7 +817,7 @@ function GM:SpectateOverrides( ply, mode )
         return
 
     end
-    if isPlacing and mode ~= OBS_MODE_ROAMING then
+    if isPlacing and mode ~= OBS_MODE_ROAMING then -- stop following something, they're placing stuff!
         ply:SetObserverMode( OBS_MODE_ROAMING )
 
     end
@@ -538,14 +829,26 @@ function GM:SpectateOverrides( ply, mode )
 
         end
     end
+
+    local pos = ply:GetPos()
+
+    net.Start( "glee_sendtruesoullocations", true )
+        net.WriteEntity( ply )
+        net.WriteVector( pos )
+        net.WriteAngle( ply:EyeAngles() )
+        net.WriteInt( mode, 6 )
+        net.WriteEntity( ply:GetObserverTarget() )
+    net.Send( deadPlayers )
+
 end
 
 function GM:managePlayerSpectating()
-    for _, ply in ipairs( player.GetAll() ) do
-        local mode = ply:GetObserverMode()
+    local deadPlayers = self:getDeadListeners()
+    for _, ply in player.Iterator() do
+        local newMode = ply:GetObserverMode()
         if ply.termHuntTeam == GAMEMODE.TEAM_SPECTATE then
-            GAMEMODE:SpectateOverrides( ply, mode )
-        elseif mode > 0 and not ply.gleeIsMimic then -- ply is spectating but their team doesnt match!
+            GAMEMODE:SpectateOverrides( ply, newMode, deadPlayers )
+        elseif newMode > 0 and not ply.gleeIsMimic then -- ply is spectating but their team doesnt match!
             GAMEMODE:ensureNotSpectating( ply )
         end
     end
@@ -553,12 +856,26 @@ end
 
 GM.waitForSomeoneToLive = nil
 
+hook.Add( "PlayerDeath", "glee_spectatedeadplayers", function( died, _, killer )
+    if not IsValid( killer ) then return end
+    if died == killer then return end
+    died.glee_KillerToSpectate = killer
+
+end )
+
+hook.Add( "PlayerDeath", "glee_default_waittospawn", function( ply )
+    ply.nextForcedRespawn = CurTime() + 0.25
+
+end )
+
 function GM:PlayerDeathThink( ply )
-    if GAMEMODE.canRespawn == false then
+    local hasHp = ply:Health() > 0
+    if GAMEMODE.canRespawn == false and not hasHp then
         if ply.termHuntTeam ~= GAMEMODE.TEAM_SPECTATE then
             GAMEMODE:spectatifyPlayer( ply )
+
         end
-    elseif GAMEMODE.canRespawn == true or ply.overrideSpawnAction then
+    elseif GAMEMODE.canRespawn == true or ply.overrideSpawnAction or hasHp then
         local lastForced = ply.nextForcedRespawn or 0
 
         if lastForced < CurTime() then
@@ -583,7 +900,6 @@ function GM:PlayerDeathThink( ply )
             else
                 ply:Spawn()
                 ply.overrideSpawnAction = nil
-                ply.nextForcedRespawn = CurTime() + math.Rand( 3, 5 )
                 GAMEMODE.waitForSomeoneToLive = nil
 
             end
@@ -591,79 +907,6 @@ function GM:PlayerDeathThink( ply )
     end
 end
 
--- dumber
-hook.Add( "EntityTakeDamage", "termhunt_damagescalerattackerhook", function( _, damageInfo )
-    local attacker = damageInfo:GetAttacker()
-    if not attacker.termhuntDamageAttackingMult then return end
-    local damage = damageInfo:GetDamage()
-    damageInfo:SetDamage( damage * attacker.termhuntDamageAttackingMult )
-
-end )
-
-local teamPlaying = GM.TEAM_PLAYING
-local teamSpectating = GM.TEAM_SPECTATE
-local distToBlockProxy = 1250^2
-local distToStopHearingAlivePlayers = 1500^2
-
-local doProxChatCached = nil
-local _IsValid = IsValid
-
-hook.Add( "Think", "glee_cachedoproxchat", function()
-    doProxChatCached = GAMEMODE.doProxChat
-
-end )
-
-hook.Add( "PlayerCanHearPlayersVoice", "glee_voicechat_system", function( listener, talker )
-    if not doProxChatCached then return true, false end
-
-    local talkerTeam = talker.termHuntTeam
-    local listenerTeam = listener.termHuntTeam
-
-    local talkerIsSpectator = talkerTeam == teamSpectating
-    local talkerIsPlaying = talkerTeam == teamPlaying
-
-    local listenerIsSpectator = listenerTeam == teamSpectating
-    local listenerIsPlaying = listenerTeam == teamPlaying
-
-    if listenerIsSpectator then
-        if talkerIsPlaying and talker:GetPos():DistToSqr( listener:GetPos() ) < distToStopHearingAlivePlayers then
-            return true
-
-        elseif talkerIsSpectator then
-            return true
-
-        end
-        return false
-
-    elseif listenerIsPlaying then
-        if talkerIsPlaying then
-            if _IsValid( talker.termhuntRadio ) and _IsValid( listener.termhuntRadio ) and talker.glee_RadioChannel > 0 and listener.glee_RadioChannel > 0 then
-                local talkerChannel = talker.glee_RadioChannel
-                local listenerChannel = listener.glee_RadioChannel
-
-                local sameRadio = talkerChannel == listenerChannel
-                if sameRadio then
-                    return true
-
-                end
-            end
-            if talker:GetPos():DistToSqr( listener:GetPos() ) > distToBlockProxy then
-                return false
-
-            else
-                return true, true
-
-            end
-        elseif talkerIsSpectator then
-            if _IsValid( listener.termhuntRadio ) and listener.glee_RadioChannel == 666 then
-                return true
-
-            end
-            return false
-
-        end
-    end
-end )
 
 local spaceCheckUpOffset = Vector( 0,0,64 )
 local spaceCheckHull = Vector( 17, 17, 2 )
@@ -700,6 +943,7 @@ function GM:PlayerSpawn( pl, transiton )
                 if valid then
                     newPos = center
                     break
+
                 end
             end
         end
@@ -727,13 +971,16 @@ function GM:PlayerSpawn( pl, transiton )
         timer.Simple( engine.TickInterval(), function()
             if not IsValid( pl ) then return end
             pl:TeleportTo( offsettedNewPos )
+
         end )
+        -- look at other ply so its easy to find eachother
         timer.Simple( engine.TickInterval() * 2, function()
             if not IsValid( pl ) then return end
             if not IsValid( anotherAlivePlayer ) then return end
             local dirToMainPlayer = terminator_Extras.dirToPos( pl:GetShootPos(), anotherAlivePlayer:GetShootPos() )
             local ang = dirToMainPlayer:Angle()
             pl:SetEyeAngles( ang )
+
         end )
         -- dont put another player here!
         if area then
@@ -741,6 +988,7 @@ function GM:PlayerSpawn( pl, transiton )
             occupiedSpawnAreas[id] = true
             timer.Simple( 5, function()
                 occupiedSpawnAreas[id] = nil
+
             end )
         end
     end
@@ -766,85 +1014,32 @@ function GM:PlayerSpawn( pl, transiton )
 
 end
 
+-- dont spawn players in spots that people died.
+hook.Add( "PlayerDeath", "glee_dontspawnindeadspots", function( died, inflic, attacker )
+    if died == attacker then return end
+
+    local nearestNav = GAMEMODE:getNearestPosOnNav( died:GetPos(), 2000 )
+
+    if not nearestNav or not nearestNav.IsValid or not nearestNav:IsValid() then return end
+    local id = nearestNav:GetID()
+
+    occupiedSpawnAreas[id] = true
+    timer.Simple( 25, function()
+        occupiedSpawnAreas[id] = nil
+
+    end )
+end )
+
+function GM:IsSpawnpointSuitable()
+    return true
+
+end
+
 function GM:PlayerInitialSpawn( ply )
     player_manager.SetPlayerClass( ply, "player_termrunner" )
     ply.termHuntTeam = GAMEMODE.TEAM_PLAYING
 
 end
-
--- check if this map has all spawns in a separate room
-function GM:TeleportRoomCheck()
-
-    if not GAMEMODE.biggestNavmeshGroups or not GAMEMODE.navmeshGroups then
-        GAMEMODE.navmeshGroups = GAMEMODE:GetConnectedNavAreaGroups( navmesh.GetAllNavAreas() )
-        GAMEMODE.biggestNavmeshGroups = GAMEMODE:FilterNavareaGroupsForGreaterThanPercent( GAMEMODE.navmeshGroups, GAMEMODE.biggestGroupsRatio or 0.4 )
-
-    end
-
-    local doReset = nil
-    local reason = ""
-
-    local forceReset = #GAMEMODE.biggestNavmeshGroups > 1 and math.random( 0, 100 ) > ( 100 / #GAMEMODE.biggestNavmeshGroups )
-
-    for _, ply in ipairs( player.GetAll() ) do
-        -- dont use cache here because its rarely called
-        local plysNearestNav = GAMEMODE:getNearestNav( ply:GetPos(), 200 )
-        if forceReset then
-            doReset = true
-            reason = "HUNTER'S GLEE: Map has other accommodating sections...\nRespawning..."
-
-        elseif not plysNearestNav or not plysNearestNav.IsValid then
-            doReset = true
-            reason = "HUNTER'S GLEE: Someone was off the navmesh...\nRespawning..."
-
-        else
-            if not GAMEMODE:NavAreaExistsInGroups( plysNearestNav, GAMEMODE.biggestNavmeshGroups ) then
-                doReset = true
-                reason = "HUNTER'S GLEE: Someone was/is outside the biggest parts of the map!\nReturning..."
-            end
-        end
-        if doReset then
-            break
-        end
-    end
-    if doReset then
-        GAMEMODE.doNotUseMapSpawns = true
-        for _, plyGettinRespawned in ipairs( player.GetAll() ) do
-            plyGettinRespawned:KillSilent()
-
-        end
-        PrintMessage( HUD_PRINTTALK, reason )
-
-    end
-end
-
-local nextSendAttempt = 0
-
-function GM:SendDeadPlayersToClients()
-    if nextSendAttempt > CurTime() then return end
-    local count = table.Count( GAMEMODE.deadPlayers )
-    nextSendAttempt = CurTime() + 0.05 + count * 0.05
-
-    count = 0
-
-    for _, currentDeadPlayerData in pairs( GAMEMODE.deadPlayers ) do
-        count = count + 1
-        timer.Simple( count * 0.05, function()
-            local ply = currentDeadPlayerData.ply
-            local pos = currentDeadPlayerData.pos
-            net.Start( "glee_storeresurrectpos" )
-            net.WriteEntity( ply )
-            net.WriteVector( pos )
-            net.Broadcast()
-        end )
-    end
-end
-
-hook.Add( "PlayerDeath", "saveResurrectPos", function( victim )
-    GAMEMODE.deadPlayers[victim:GetCreationID()] = { ply = victim, pos = victim:GetPos() }
-    GAMEMODE:SendDeadPlayersToClients()
-
-end )
 
 hook.Add( "PlayerDeath", "glee_DropScoreOnSuicide", function( victim, inflictor, attacker )
     if victim ~= inflictor or victim ~= attacker then return end-- not a suicide
@@ -917,7 +1112,7 @@ hook.Add( "EntityTakeDamage", "huntersglee_makepvpreallybad", function( dmgTarg,
     local inflictor = dmg:GetInflictor()
     local areBothPlayers = dmgTarg:IsPlayer() and attacker:IsPlayer()
     local selfDamage = dmgTarg == attacker
-    if areBothPlayers and GAMEMODE.blockpvp == true then
+    if areBothPlayers and GAMEMODE.blockPvp == true then
         dmg:ScaleDamage( 0 )
 
     elseif areBothPlayers and not selfDamage and not dmg:IsExplosionDamage() then --lol explode
@@ -942,15 +1137,45 @@ hook.Add( "EntityTakeDamage", "huntersglee_makepvpreallybad", function( dmgTarg,
 
             end
         else
-            dmg:ScaleDamage( 0.25 )
+            dmg:ScaleDamage( 0.5 )
 
         end
     end
 end )
 
-function GM:CacheNavareas( players )
-    for _, ply in ipairs( players ) do
-        ply:CacheNavArea()
 
+hook.Add( "glee_sv_validgmthink", "glee_cachenavareas", function( players )
+    for _, ply in ipairs( players ) do
+        if ply:Health() > 0 then
+            ply:CacheNavArea()
+
+        end
     end
+end )
+
+function GM:HasHomicided( homicider, homicided )
+    local allHomicides = GAMEMODE.roundExtraData.homicides or {}
+    -- breaks on bots!
+    -- all bots have same steamid!
+    local homicidersCides = allHomicides[ homicider:SteamID() ]
+    if not homicidersCides then return false end
+    if homicidersCides[ homicided:SteamID() ] then return true end
+    return false
+
 end
+
+hook.Add( "PlayerDeath", "glee_storehomicides", function( died, _, attacker )
+    if not IsValid( attacker ) then return end
+    if attacker == died then return end
+    if not attacker:IsPlayer() then return end
+    local attackasId = attacker:SteamID()
+
+    if not GAMEMODE.roundExtraData.homicides then GAMEMODE.roundExtraData.homicides = {} end
+
+    local allHomicides = GAMEMODE.roundExtraData.homicides
+    local homicidersCides = allHomicides[ attackasId ] or {}
+    homicidersCides[ died:SteamID() ] = true
+
+    GAMEMODE.roundExtraData.homicides[ attackasId ] = homicidersCides
+
+end )

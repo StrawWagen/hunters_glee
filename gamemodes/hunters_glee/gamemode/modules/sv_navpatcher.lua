@@ -1,8 +1,11 @@
 
 local coroutine_yield = coroutine.yield
+local GAMEMODE = GAMEMODE or GM
 
+local vec_zero = Vector( 0, 0, 0 )
+local IsValid = IsValid
 
-function GM:DoGreedyPatch()
+function GAMEMODE:DoGreedyPatch()
 
     local doors = ents.FindByClass( "prop_door_rotating" )
     local doorPatches = 0
@@ -21,37 +24,39 @@ function GM:DoGreedyPatch()
 
     --glasss
     local glasss = ents.FindByClass( "func_breakable_surf" )
-    local potentialGlass = ents.FindByClass( "func_breakable" )
+    local ventCovers = ents.FindByModel( "models/props_junk/vent001.mdl" )
+    local breakables = ents.FindByClass( "func_breakable" )
 
-    glasss = table.Add( glasss, potentialGlass )
+    breakables = table.Add( breakables, ventCovers )
+    breakables = table.Add( breakables, glasss )
 
-    local glassPatches = 0
+    local breakablePatches = 0
 
-    for _, glass in ipairs( glasss ) do
+    for _, breakable in ipairs( breakables ) do
         coroutine_yield()
 
-        local glassNormal = GAMEMODE:seeIfGlassAndGetNormal( glass )
-        if not glassNormal then continue end
+        local breakableNormal = GAMEMODE:seeIfBreakableAndGetNormal( breakable )
+        if not breakableNormal then continue end
 
-        local tooSmall, zHeight = GAMEMODE:glassIsTooSmall( glass, glassNormal )
+        local tooSmall, width, zHeight = GAMEMODE:breakableIsTooSmall( breakable, breakableNormal )
         if tooSmall then continue end
 
-        local patched = GAMEMODE:patchGlass( glass, glassNormal, zHeight )
+        local patched = GAMEMODE:patchBreakable( breakable, breakableNormal, zHeight )
 
         if patched then
-            --debugoverlay.Cross( glass:WorldSpaceCenter(), 20, 10, color_white, true )
-            glassPatches = glassPatches + 1
+            --debugoverlay.Cross( breakable:WorldSpaceCenter(), 20, 10, color_white, true )
+            breakablePatches = breakablePatches + 1
 
         end
     end
 
-    GAMEMODE:speakAsHuntersGlee( "Made " .. glassPatches .. " New navareas in windows." )
+    GAMEMODE:speakAsHuntersGlee( "Made " .. breakablePatches .. " New navareas in breakable windows/brushes." )
 
-    local navmeshGroups = GAMEMODE:GetConnectedNavAreaGroups( navmesh.GetAllNavAreas() )
+    local navmeshGroups, groupCorners = GAMEMODE:GetConnectedNavAreaGroups( navmesh.GetAllNavAreas() )
 
     GAMEMODE:speakAsHuntersGlee( "Understanding navmesh..." )
 
-    local potentialLinkages = GAMEMODE:FindPotentialLinkagesBetweenNavAreaGroups( navmeshGroups, nil )
+    local potentialLinkages = GAMEMODE:FindPotentialLinkagesBetweenNavAreaGroups( navmeshGroups, groupCorners, nil )
 
     GAMEMODE:speakAsHuntersGlee( "Patching..." )
 
@@ -59,154 +64,9 @@ function GM:DoGreedyPatch()
 
     GAMEMODE:speakAsHuntersGlee( "Greedy navpatcher is... DONE!" )
 
-    GAMEMODE.HuntersGleeDoneTheGreedyPatch = true
+    GAMEMODE.HuntersGleeDoneTheGreedyPatch = #navmesh.GetAllNavAreas()
 
     coroutine_yield( "done" )
-
-end
-
-function GM:manageNavPatching( players )
-    local playersToPatch = {}
-    local addedPlayerCreationIds = {}
-    -- add players that are being targeted first
-    for _, ply in ipairs( players ) do
-        local lowCount = #playersToPatch < 4
-        if lowCount and ply.huntersGleeHunterThatIsTargetingPly then
-            table.insert( playersToPatch, ply )
-            addedPlayerCreationIds[ ply:GetCreationID() ] = true
-
-        elseif not lowCount then
-            break
-
-        end
-    end
-
-    -- if there is still room in the table, add other people
-    if #playersToPatch < 4 then
-        for _, ply in ipairs( players ) do
-            local lowCount = #playersToPatch < 4
-            if lowCount and not addedPlayerCreationIds[ ply:GetCreationID() ] then
-                table.insert( playersToPatch, ply )
-
-            elseif not lowCount then
-                break
-
-            end
-        end
-    end
-
-    for _, ply in ipairs( playersToPatch ) do
-        GAMEMODE:navPatchingThink( ply )
-
-    end
-end
-
--- patches gaps in navmesh, using players as a guide
--- patches will never be ideal, but they will be better than nothing
-
-local tooFarDistSqr = 40^2
-
-function GM:navPatchingThink( ply )
-
-    local badMovement = ply:GetMoveType() == MOVETYPE_NOCLIP or ply:Health() <= 0 or ply:GetObserverMode() ~= OBS_MODE_NONE or ply:InVehicle()
-
-    if badMovement then ply.oldPatchingArea = nil return end
-
-    local plyPos = ply:GetPos()
-
-    local currArea, distToArea = ply:GetNavAreaData()
-    if not currArea or not currArea:IsValid() then return end
-    -- cant be sure of areas further away than this!
-    if distToArea > tooFarDistSqr then return end
-
-    local oldArea = ply.oldPatchingArea
-    ply.oldPatchingArea = currArea
-
-    if not oldArea or not oldArea:IsValid() then return end
-    if currArea == oldArea then return end
-
-    local currClosestPos = currArea:GetClosestPointOnArea( plyPos )
-    local oldClosestPos = oldArea:GetClosestPointOnArea( plyPos )
-    local zOverride = math.max( plyPos.z, oldClosestPos.z + 10, currClosestPos.z + 10 ) + 10 -- just check walls
-
-    local plyPos2 = Vector( plyPos.x, plyPos.y, zOverride ) -- yuck
-    currClosestPos.z = zOverride
-
-    --debugoverlay.Line( plyPos2, currClosestPos, 5, Color(255,255,255), true )
-    --print( plyPos2.z, currClosestPos.z, plyPos.z )
-
-    if not terminator_Extras.posCanSee( plyPos2, currClosestPos, MASK_SOLID_BRUSHONLY ) then return end
-
-    self:smartConnectionThink( oldArea, currArea )
-    self:smartConnectionThink( currArea, oldArea )
-end
-
-local _connDistance = GM.connectionDistance
-
--- see if the z of start area
-local function arePlanar( startArea, toCheckAreas, criteria )
-    for _, currArea in ipairs( toCheckAreas ) do
-        if startArea:IsConnected( currArea ) then
-            local height = math.abs( startArea:ComputeAdjacentConnectionHeightChange( currArea ) )
-            if height < criteria then return true end
-
-        end
-
-        local startAreaClosest = startArea:GetClosestPointOnArea( currArea:GetCenter() )
-        local currAreaClosest = currArea:GetClosestPointOnArea( startAreaClosest )
-
-        height = currAreaClosest.z - startAreaClosest.z
-        height = math.abs( height )
-
-        if height < criteria then return true end
-
-    end
-    return false
-end
-
-local function goodDist( distTo )
-    local distQuota = 75
-    local minCheck = -1
-    local maxCheck = 1
-
-    while distQuota < 400 do
-        local min = distQuota + minCheck
-        local max = distQuota + maxCheck
-        min = min^2
-        max = max^2
-
-        if distTo > min and distTo < max then return true end
-        distQuota = distQuota + 25
-
-    end
-
-    return nil
-
-end
-
--- do checks to see if connection from old area to curr area is a good idea
-function GM:smartConnectionThink( oldArea, currArea, ignorePlanar )
-    if oldArea:IsConnected( currArea ) then return end
-
-    -- get dist sqr and old area's closest point to curr area
-    local distTo, _, currAreasClosest = _connDistance( _, oldArea, currArea )
-
-    if distTo > 55^2 and not goodDist( distTo ) then return end
-
-    local pos1 = oldArea:GetClosestPointOnArea( currAreasClosest )
-    local pos2 = currArea:GetClosestPointOnArea( pos1 )
-    local criteria = math.abs( pos1.z - pos2.z ) + 50
-    --debugoverlay.Cross( pos1, 50, 10, color_white, true )
-    --debugoverlay.Cross( pos2, 100, 10, Color( 255,0,0 ), true )
-
-    local navDirTakenByConnection = oldArea:ComputeDirection( pos2 )
-    local areasInNavDir = oldArea:GetAdjacentAreasAtSide( navDirTakenByConnection )
-
-    if not ignorePlanar and #areasInNavDir > 0 and arePlanar( currArea, areasInNavDir, criteria ) == true then return end
-
-    oldArea:ConnectTo( currArea )
-
-    return true
 
 end
 
@@ -216,20 +76,172 @@ end
   -- if the distance between the areas is smaller than the last distance, we have the new best distance to return
   -- at the end, the function should return a table of "navarea pairs" with this structure: linkageData = { linkageDistance = nil, linkageArea1 = nil, linkageArea2 = nil }
 
+local distanceToJustIgnore = 750
+local distanceToJustIgnoreSqr = distanceToJustIgnore^2
+local groupDistToJustIgnore = ( distanceToJustIgnore * 2 )
+local boxSize = Vector( distanceToJustIgnore, distanceToJustIgnore, distanceToJustIgnore )
 
-local distanceToJustIgnore = 1000^2
+function GAMEMODE:FindPotentialLinkagesBetweenNavAreaGroups( groups, groupCorners, maxLinksPerGroup )
 
-function GM:FindPotentialLinkagesBetweenNavAreaGroups( groups, maxLinksPerGroup )
-    local doneGroupPairs = {}
+    -- yay! caching!
+    local centers = {}
+    local function areasCenter( area )
+        local currCenter = centers[area]
+        if currCenter then return currCenter end
+        if not IsValid( area ) then return vec_zero end
+        currCenter = area:GetCenter()
+
+        centers[area] = currCenter
+        return currCenter
+
+    end
+
+    local groupCenters = {}
+    local function groupsCenter( groupsId, group )
+        local groupsAveragePos = groupCenters[ groupsId ]
+        if groupsAveragePos then return groupsAveragePos end
+
+        for _, area in ipairs( group ) do
+            if groupsAveragePos then
+                groupsAveragePos = groupsAveragePos + areasCenter( area )
+
+            else
+                groupsAveragePos = areasCenter( area )
+
+            end
+        end
+
+        if not groupsAveragePos then return vec_zero end
+        groupsAveragePos = groupsAveragePos / #group
+
+        groupCenters[ groupsId ] = groupsAveragePos
+        return groupsAveragePos
+
+    end
+
     local groupLinkages = {}
+    local distToQuitAt = 30
+
+    local function addValidLinkages( group1, group2 )
+        local currGroupLinkages = {} -- the potential links to sift through, picks the best ones after
+        -- yahoo! caching!
+        local tooFarAreas = {}
+
+        for _, area1 in ipairs( group1 ) do
+            if not area1:IsValid() then continue end
+            coroutine_yield()
+            local perfectConnectionCount = 0
+
+            for _, area2 in ipairs( group2 ) do
+                if not area2:IsValid() then continue end
+                coroutine_yield()
+
+                local area2sId = area2:GetID()
+
+                -- was cached as too far
+                if tooFarAreas[ area2sId ] then continue end
+
+                local distBetweenSqr = areasCenter( area1 ):DistToSqr( areasCenter( area2 ) )
+
+                -- dont even bother, too far
+                if distBetweenSqr > distanceToJustIgnoreSqr then
+                    tooFarAreas[ area2sId ] = true
+                    local adjAreas = area2:GetAdjacentAreas()
+                    for _, adjArea in ipairs( adjAreas ) do
+                        tooFarAreas[ adjArea:GetID() ] = true
+
+                    end
+                    continue
+
+                end
+                local distTo, checkPos1, checkPos2 = terminator_Extras.connectionDistance( area1, area2 )
+
+                local linkage = { linkageDistance = distTo, linkageArea1 = area1, linkageArea2 = area2, area1Closest = checkPos1, area2Closest = checkPos2 }
+                table.insert( currGroupLinkages, linkage )
+
+                if distTo < distToQuitAt then
+                    perfectConnectionCount = perfectConnectionCount + 1
+
+                end
+                if perfectConnectionCount > 10 then
+                    break
+
+                end
+            end
+        end
+
+        -- sort linkages by distance in ascending order, best ones first, worst ones last
+        table.sort( currGroupLinkages, function( a, b ) return a.linkageDistance < b.linkageDistance end )
+
+        local doneCount = 0
+
+        -- only keep the maxLinksPerGroup closest linkages
+        while #currGroupLinkages > maxLinksPerGroup and doneCount < 5000 do
+            doneCount = doneCount + 1
+            -- remove the worst linkage
+            local removed = table.remove( currGroupLinkages )
+            -- all the distances left are ideal, not pass
+            if removed.linkageDistance < distToQuitAt then break end
+
+        end
+
+        --for _, link in ipairs( currGroupLinkages ) do
+            --debugoverlay.Line( link.area1Closest, link.area2Closest, 20, color_white, true )
+
+        --end
+
+        table.Add( groupLinkages, currGroupLinkages )
+
+    end
+
+    local doneGroupPairs = {}
+    local miniGroupSize = 15
+
     maxLinksPerGroup = maxLinksPerGroup or 5
 
     for group1Id, group1 in ipairs( groups ) do
+        local group1Size = #group1
+        -- small group! just check proximity, dont waste time checking every pair
+        if group1Size < miniGroupSize then
+            coroutine_yield()
+            local group1Ids = {}
+            for _, area in ipairs( group1 ) do
+                if not IsValid( area ) then continue end
+                group1Ids[ area:GetID() ] = true
+
+            end
+
+            local groups1Center = groupsCenter( group1Id, group1 )
+            local foundInTheBox = navmesh.FindInBox( groups1Center + boxSize, groups1Center - boxSize )
+            local fauxGroup2 = {}
+            for _, found in ipairs( foundInTheBox ) do
+                if not group1Ids[ found:GetID() ] then
+                    table.insert( fauxGroup2, found )
+
+                end
+            end
+
+            if #fauxGroup2 <= 0 then continue end
+
+            addValidLinkages( group1, fauxGroup2 )
+            --print( tostring( group1Id ) .. " " .. tostring( group1Size ), "mini" )
+            continue
+
+        end
+
         for group2Id, group2 in ipairs( groups ) do
             coroutine_yield()
+            -- cant connect a group to itself
+            if group1Id == group2Id then continue end
+
+            local group2Size = #group2
+
+            -- this was already handled, or will be handled!
+            if group2Size < miniGroupSize then continue end
+
             local biggestCompareGroup = group1Id
             local smallestCompareGroup = group2Id
-            if #group2 > #group1 then
+            if group2Size > group1Size then
                 biggestCompareGroup = group2Id
                 smallestCompareGroup = group1Id
             end
@@ -237,37 +249,42 @@ function GM:FindPotentialLinkagesBetweenNavAreaGroups( groups, maxLinksPerGroup 
             local key = biggestCompareGroup .. " " .. smallestCompareGroup
             local alreadyDone = doneGroupPairs[key]
 
-            if group1Id ~= group2Id and not alreadyDone then -- skip if checking the same group
-                local currGroupLinkages = {} -- create an array to store linkages for each group pair
-                for _, area1 in ipairs( group1 ) do
-                    coroutine_yield()
-                    for _, area2 in ipairs( group2 ) do
-                        -- dont even bother, too far
-                        if area1:GetCenter():DistToSqr( area2:GetCenter() ) > distanceToJustIgnore then continue end
-                        local dist, checkPos1, checkPos2 = GAMEMODE:connectionDistance( area1, area2 )
+             -- already checked this group pair!
+            if alreadyDone then continue end
 
-                        local linkage = { linkageDistance = dist, linkageArea1 = area1, linkageArea2 = area2, area1Closest = checkPos1, area2Closest = checkPos2 }
-                        table.insert( currGroupLinkages, linkage )
+            -- ignore groups if they're nowhere near eachother
+            local areCloseEnough
+            local group1sCenter = groupsCenter( group1Id, group1 )
+            local group2sCenter = groupsCenter( group2Id, group2 )
 
+            local group1sCorners = groupCorners[group1Id]
+            local group2sCorners = groupCorners[group2Id]
+            -- check if any two corners are close enough for us to patch these
+            for ind1 = 0, 3 do
+                local cornerOf1 = group1sCorners[ind1]
+                local corner1DistToCenter = cornerOf1:Distance( group1sCenter )
+                for ind2 = 0, 3 do
+                    local cornerOf2 = group2sCorners[ind2]
+                    local corner2DistToCenter = cornerOf2:Distance( group2sCenter )
+                    local distSqr = cornerOf1:DistToSqr( cornerOf2 )
+                    local distNeeded = groupDistToJustIgnore + ( corner1DistToCenter * 0.5 ) + ( corner2DistToCenter * 0.5 )
+                    if distSqr < distNeeded^2 then
+                        areCloseEnough = true
+                        break
                     end
                 end
-                -- sort linkages by distance in ascending order
-                table.sort( currGroupLinkages, function( a, b ) return a.linkageDistance < b.linkageDistance end )
-
-                local doneCount = 0
-
-                -- only keep the maxLinksPerGroup closest linkages
-                while #currGroupLinkages > maxLinksPerGroup and doneCount < 5000 do
-                    doneCount = doneCount + 1
-                    table.remove( currGroupLinkages )
-
+                if areCloseEnough then
+                    break
                 end
-
-                table.Add( groupLinkages, currGroupLinkages )
-
-                doneGroupPairs[key] = true
-
             end
+
+            if not areCloseEnough then continue end
+
+            --print( tostring( group1Id ) .. " " .. tostring( group1Size ), tostring( group2Id ) .. " " .. tostring( group2Size ) )
+            addValidLinkages( group1, group2 )
+
+            doneGroupPairs[key] = true
+
         end
     end
 
@@ -296,12 +313,15 @@ local function connectionDataVisOffsetCheck( currentData )
 
     --debugoverlay.Line( area1Closest, area2Closest, 120, Color( 255,255,255 ), true )
 
+    if not IsValid( currentData.linkageArea1 ) then return end
+    if not IsValid( currentData.linkageArea2 ) then return end
+
     area1Closest.z = currentData.linkageArea1:GetClosestPointOnArea( currentData.area2Closest ).z
     area2Closest.z = currentData.linkageArea2:GetClosestPointOnArea( currentData.area1Closest ).z
 
     local visibleCount = 0
     for _, offset in ipairs( offsets ) do
-        if not terminator_Extras.posCanSee( area1Closest + offset, area2Closest + offset, MASK_SOLID ) then continue end
+        if not terminator_Extras.PosCanSee( area1Closest + offset, area2Closest + offset, MASK_SOLID ) then continue end
         --debugoverlay.Line( area1Closest + offset, area2Closest + offset, 120, Color( 255,255,255 ), true )
         visibleCount = visibleCount + 1
 
@@ -310,7 +330,7 @@ local function connectionDataVisOffsetCheck( currentData )
 
 end
 
-function GM:TakePotentialLinkagesAndLinkTheValidOnes( groupLinkages )
+function GAMEMODE:TakePotentialLinkagesAndLinkTheValidOnes( groupLinkages )
 
     local linkedCount = 0
 
@@ -322,11 +342,11 @@ function GM:TakePotentialLinkagesAndLinkTheValidOnes( groupLinkages )
         if connectionDataVisOffsetCheck( currentData ) <= 3 then continue end
         --debugoverlay.Line( currentData.area1Closest, currentData.area2Closest, 120, Color( 255,255,255 ), true )
 
-        if GAMEMODE:smartConnectionThink( currentData.linkageArea1, currentData.linkageArea2 ) then
+        if terminator_Extras.smartConnectionThink( currentData.linkageArea1, currentData.linkageArea2 ) then
             linkedCount = linkedCount + 1
 
         end
-        if GAMEMODE:smartConnectionThink( currentData.linkageArea2, currentData.linkageArea1 ) then
+        if terminator_Extras.smartConnectionThink( currentData.linkageArea2, currentData.linkageArea1 ) then
             linkedCount = linkedCount + 1
 
         end
@@ -336,7 +356,7 @@ function GM:TakePotentialLinkagesAndLinkTheValidOnes( groupLinkages )
 
 end
 
-function GM:PlaceANavAreaUnderDoor( door )
+function GAMEMODE:PlaceANavAreaUnderDoor( door )
     local center = door:WorldSpaceCenter()
     local forward = door:GetForward()
     local right = door:GetRight()
@@ -356,7 +376,7 @@ function GM:PlaceANavAreaUnderDoor( door )
 
 end
 
-function GM:patchDoor( door )
+function GAMEMODE:patchDoor( door )
     local dividesNavmesh, behindNav, inFrontNav, navsWeCovered = GAMEMODE:doesDoorNeedANewNavArea( door )
     if dividesNavmesh then
         local patched, createdArea = GAMEMODE:PlaceANavAreaUnderDoor( door )
@@ -373,11 +393,11 @@ function GM:patchDoor( door )
 
         if not createdArea or not createdArea.IsValid or not createdArea:IsValid() then return end
 
-        self:smartConnectionThink( createdArea, behindNav, true )
-        self:smartConnectionThink( behindNav, createdArea, true )
+        terminator_Extras.smartConnectionThink( createdArea, behindNav, true )
+        terminator_Extras.smartConnectionThink( behindNav, createdArea, true )
 
-        self:smartConnectionThink( createdArea, inFrontNav, true )
-        self:smartConnectionThink( inFrontNav, createdArea, true )
+        terminator_Extras.smartConnectionThink( createdArea, inFrontNav, true )
+        terminator_Extras.smartConnectionThink( inFrontNav, createdArea, true )
 
         return patched
 
@@ -386,12 +406,12 @@ end
 
 local down = Vector( 0,0,-1 )
 
-function GM:PlaceANavAreaUnderGlass( glass, glassForward, isCrouch )
-    local center = glass:WorldSpaceCenter()
+function GAMEMODE:PlaceANavAreaUnderBreakable( breakable, breakableForward, isCrouch )
+    local center = breakable:WorldSpaceCenter()
     center = GAMEMODE:getFloor( center )
 
-    local forward = glassForward
-    local right = glassForward:Cross( down )
+    local forward = breakableForward
+    local right = breakableForward:Cross( down )
 
     local corner1 = center + ( forward * 10 ) + ( right * 15 )
     local corner2 = center + ( -forward * 10 ) + ( -right * 15 )
@@ -410,21 +430,21 @@ function GM:PlaceANavAreaUnderGlass( glass, glassForward, isCrouch )
 
 end
 
-function GM:patchGlass( glass, glassNormal, zHeight )
+function GAMEMODE:patchBreakable( breakable, breakableNormal, zHeight )
 
-    local glassExtent = 10 -- find a path between areas thats simpler than this
+    local breakableExtent = 10 -- find a path between areas thats simpler than this
     local isCrouch = zHeight < 68
 
-    local _, behindNav, inFrontNav, navsWeCovered = GAMEMODE:doesEntDivideNavmesh( glass, glassNormal, glassExtent )
+    local _, behindNav, inFrontNav, navsWeCovered = GAMEMODE:doesEntDivideNavmesh( breakable, breakableNormal, breakableExtent )
 
     if not navsWeCovered then return end
 
-    local glassRight = glassNormal:Angle():Right()
-    local dividesNavmesh = GAMEMODE:noAreasThatCrossThis( glass:WorldSpaceCenter(), glassRight, glass, navsWeCovered )
+    local breakableRight = breakableNormal:Angle():Right()
+    local dividesNavmesh = GAMEMODE:noAreasThatCrossThis( breakable:WorldSpaceCenter(), breakableRight, breakable, navsWeCovered )
 
     if dividesNavmesh ~= true then return end
 
-    local patched, createdArea = GAMEMODE:PlaceANavAreaUnderGlass( glass, glassNormal, isCrouch )
+    local patched, createdArea = GAMEMODE:PlaceANavAreaUnderBreakable( breakable, breakableNormal, isCrouch )
     if not patched then return end
 
     -- ok we made the area, now double check to see if it overlaps any areas.
@@ -442,11 +462,11 @@ function GM:patchGlass( glass, glassNormal, zHeight )
 
     if not createdArea or not createdArea.IsValid or not createdArea:IsValid() then return end
 
-    self:smartConnectionThink( createdArea, behindNav, true )
-    self:smartConnectionThink( behindNav, createdArea, true )
+    terminator_Extras.smartConnectionThink( createdArea, behindNav, true )
+    terminator_Extras.smartConnectionThink( behindNav, createdArea, true )
 
-    self:smartConnectionThink( createdArea, inFrontNav, true )
-    self:smartConnectionThink( inFrontNav, createdArea, true )
+    terminator_Extras.smartConnectionThink( createdArea, inFrontNav, true )
+    terminator_Extras.smartConnectionThink( inFrontNav, createdArea, true )
 
     return patched
 
@@ -463,7 +483,7 @@ end
 
 local searchDist = 4
 
-function GM:doesEntDivideNavmesh( ent, entNormal, maxConnectionExtent )
+function GAMEMODE:doesEntDivideNavmesh( ent, entNormal, maxConnectionExtent )
     -- check if there's a navarea directly under the ent's world space center
     local center = ent:WorldSpaceCenter()
 
@@ -535,7 +555,7 @@ function GM:doesEntDivideNavmesh( ent, entNormal, maxConnectionExtent )
     end
 end
 
-function GM:noAreasThatCrossThis( pos, right, reference, navsToCheck )
+function GAMEMODE:noAreasThatCrossThis( pos, right, reference, navsToCheck )
 
     -- navareas are often not exactly aligned to the center of the thing
     local doorPos1 = pos + right * 10
@@ -564,7 +584,7 @@ function GM:noAreasThatCrossThis( pos, right, reference, navsToCheck )
 
 end
 
-function GM:anyAreasOverlapStrict( crossArea, navsToCheck )
+function GAMEMODE:anyAreasOverlapStrict( crossArea, navsToCheck )
     local reference = crossArea:GetCenter()
 
     for _, checkNav in ipairs( navsToCheck ) do
@@ -590,7 +610,7 @@ function GM:anyAreasOverlapStrict( crossArea, navsToCheck )
 
 end
 
-function GM:doesDoorNeedANewNavArea( door )
+function GAMEMODE:doesDoorNeedANewNavArea( door )
     if not util.doorIsUsable( door ) then return end
     -- assume door divides navmesh
 
@@ -613,20 +633,20 @@ end
 
 local ang_zero = Angle()
 
-function GM:glassIsTooSmall( glass, glassForward )
-    local glassAng = glassForward:Angle()
-    local mins, maxs = glass:WorldSpaceAABB()
+function GAMEMODE:breakableIsTooSmall( breakable, breakableForward )
+    local breakableAng = breakableForward:Angle()
+    local mins, maxs = breakable:WorldSpaceAABB()
 
-    mins = WorldToLocal( mins, ang_zero, glass:WorldSpaceCenter(), glassAng )
-    maxs = WorldToLocal( maxs, ang_zero, glass:WorldSpaceCenter(), glassAng )
+    mins = WorldToLocal( mins, ang_zero, breakable:WorldSpaceCenter(), breakableAng )
+    maxs = WorldToLocal( maxs, ang_zero, breakable:WorldSpaceCenter(), breakableAng )
 
     local yAdded = math.abs( mins.y ) + math.abs( maxs.y )
     local zAdded = math.abs( mins.z ) + math.abs( maxs.z )
 
     local tooThin = yAdded < 32
-    local tooShort = zAdded < 45
+    local tooShort = zAdded < 40
     local isBad = tooThin or tooShort
-    return isBad, zAdded
+    return isBad, yAdded, zAdded
 
 end
 
@@ -639,8 +659,8 @@ local offsetsToCheck = {
     Vector( 0, 0, -100 ),
 }
 
-function GM:seeIfGlassAndGetNormal( glass )
-    local pos = glass:WorldSpaceCenter()
+function GAMEMODE:seeIfBreakableAndGetNormal( breakable )
+    local pos = breakable:WorldSpaceCenter()
     for _, offset in ipairs( offsetsToCheck ) do
         local trStruct = {
             start = pos + offset,
@@ -652,12 +672,47 @@ function GM:seeIfGlassAndGetNormal( glass )
 
         if not traceResult.Hit then continue end
         if traceResult.StartSolid then continue end
-        if traceResult.Entity ~= glass then continue end
-
-        local matType = traceResult.MatType
-        if matType ~= MAT_GLASS then continue end
+        if traceResult.Entity ~= breakable then continue end
 
         return traceResult.HitNormal
 
     end
 end
+
+-- sky data, used by signal strength
+
+GAMEMODE.isSkyOnMap = GAMEMODE.isSkyOnMap or nil
+GAMEMODE.highestZ = GAMEMODE.highestZ or nil
+GAMEMODE.areasUnderSky = GAMEMODE.areasUnderSky or nil
+
+local function reset()
+    GAMEMODE.isSkyOnMap = false
+    GAMEMODE.areasUnderSky = {}
+    GAMEMODE.highestZ = -math.huge
+
+end
+
+hook.Add( "glee_connectedgroups_begin", "glee_resetskydata", reset )
+
+local centerOffset = Vector( 0, 0, 25 )
+
+hook.Add( "glee_connectedgroups_visit", "glee_precacheskydata", function( area )
+    local underSky, hitPos = GAMEMODE:IsUnderSky( area:GetCenter() + centerOffset )
+    if underSky then
+        GAMEMODE.isSkyOnMap = true
+        GAMEMODE.areasUnderSky[ area ] = true
+
+    end
+    local currZ = hitPos.z
+    if currZ > GAMEMODE.highestZ then
+        GAMEMODE.highestZ = currZ
+
+    end
+end )
+
+hook.Add( "terminator_areapatcher_doneapatch", "glee_invalidate_greedypatch", function( _areasMade, areaCount )
+    if areaCount >= 1 then
+        GAMEMODE.HuntersGleeNeedsRepatching = true
+
+    end
+end ) 

@@ -1,15 +1,12 @@
-local coroutine_running = coroutine.running
-
-local vec_zero = Vector( 0, 0, 0 )
-
 local minusFiveHundred = Vector( 0,0,-500 )
 local minusOne = Vector( 0,0,-500 )
+local IsValid = IsValid
 
 function GM:getFloor( pos )
     local Dat = {
         start = pos,
         endpos = pos + minusFiveHundred,
-        mask = 131083
+        mask = MASK_NPCWORLDSTATIC
     }
     local Trace = util.TraceLine( Dat )
     if not Trace.HitWorld then return pos end
@@ -22,7 +19,7 @@ function GM:getNearestNav( pos, distance )
     local Dat = {
         start = pos,
         endpos = pos + minusFiveHundred,
-        mask = 131083
+        mask = MASK_NPCWORLDSTATIC
     }
     local Trace = util.TraceLine( Dat )
     if Trace.HitNonWorld then
@@ -44,7 +41,7 @@ function GM:getNearestNavFloor( pos, distance, dropDistance )
     local Dat = {
         start = pos,
         endpos = pos + offset,
-        mask = 131083
+        mask = MASK_NPCWORLDSTATIC
     }
     local Trace = util.TraceLine( Dat )
     if not Trace.HitWorld then return NULL end
@@ -273,6 +270,9 @@ function GM:IsUnderSky( pos )
     elseif not skyTraceResult.Hit then
         return true, skyTraceResult.HitPos
 
+    else
+        return nil, skyTraceResult.HitPos
+
     end
 end
 
@@ -387,6 +387,7 @@ function GM:GetNearbyWalkableArea( playerReference, start, count )
     local startArea = res.area
 
     if not ( startArea and startArea.IsValid and startArea:IsValid() ) then return end
+    local canBeUnderwater = startArea:IsUnderwater()
     local occupiedSpawnAreas = occupiedSpawnAreas or {}
 
     local scoreData = {}
@@ -397,6 +398,7 @@ function GM:GetNearbyWalkableArea( playerReference, start, count )
     local scoreFunction = function( scoreData, area1, area2 )
 
         if occupiedSpawnAreas[area2:GetID()] then return 0 end
+        if area2:IsUnderwater() and not canBeUnderwater then return 0 end
 
         local area2Center = area2:GetCenter()
         local distanceTravelled = area2Center:DistToSqr( scoreData.startPos )
@@ -432,7 +434,7 @@ function GM:GetNearbyWalkableArea( playerReference, start, count )
 
         end
 
-        -- debugoverlay.Text( area2:GetCenter(), math.Round( math.sqrt( score ) ), 5, false  )
+        --debugoverlay.Text( area2:GetCenter(), math.Round( math.sqrt( score ) ), 5, false  )
 
         return score
 
@@ -486,6 +488,30 @@ function GM:returnAliveInTable( stuff )
 
 end
 
+function GM:returnDeadInTable( stuff )
+    local deadStuff = {}
+    for _, curr in ipairs( stuff ) do
+        if curr:Health() <= 0 then
+            table.insert( deadStuff, curr )
+
+        end
+    end
+    return deadStuff
+
+end
+
+function GM:returnDeadListenersInTable( stuff ) -- people who can hear/see dead people
+    local deadStuff = {}
+    for _, curr in ipairs( stuff ) do
+        if curr:SeesDeadPeople() then
+            table.insert( deadStuff, curr )
+
+        end
+    end
+    return deadStuff
+
+end
+
 function GM:returnWinnableInTable( stuff )
     local winnableStuff = {}
     for _, curr in pairs( stuff ) do
@@ -499,11 +525,34 @@ end
 
 function GM:anotherAlivePlayer( block )
     for _, ply in ipairs( player.GetAll() ) do
-        if ply:Alive() and ply ~= block then
+        if ply:Health() > 0 and ply ~= block then
             return ply
 
         end
     end
+end
+
+function GM:anAlivePlayer()
+    local plys = self:getAlivePlayers()
+    local randomPly = table.Random( plys )
+    return randomPly
+
+end
+
+function GM:getDeadPlayers()
+    local players = player.GetAll()
+    local deadPlayers = GAMEMODE:returnDeadInTable( players )
+
+    return deadPlayers
+
+end
+
+function GM:getDeadListeners()
+    local players = player.GetAll()
+    local deadPlayers = GAMEMODE:returnDeadListenersInTable( players )
+
+    return deadPlayers
+
 end
 
 function GM:getAlivePlayers()
@@ -534,7 +583,7 @@ end
 function GM:CountWinnablePlayers()
     local aliveCount = 0
     for _, curr in pairs( player.GetAll() ) do
-        if curr:Health() > 0 and not curr.glee_isUndead then
+        if curr:Health() > 0 and not curr.glee_isUndead and curr.glee_FullLoaded then
             aliveCount = aliveCount + 1
 
         end
@@ -554,15 +603,29 @@ function GM:allPlayerShootPositions()
 end
 
 function GM:getNearestHunter( pos, hunters )
-    hunters = hunters or table.Copy( GAMEMODE.termHunt_hunters )
-    table.sort( hunters, function( a, b ) -- sort HUNTERS by distance to pos
+    hunters = hunters or GAMEMODE.glee_Hunters
+    local huntersCopy = table.Copy( hunters )
+    table.sort( huntersCopy, function( a, b ) -- sort HUNTERS by distance to pos
         if not IsValid( a ) then return false end
         if not IsValid( b ) then return true end
-        local ADist = a:GetShootPos():DistToSqr( pos )
-        local BDist = b:GetShootPos():DistToSqr( pos )
+        local ADist = a:EyePos():DistToSqr( pos )
+        local BDist = b:EyePos():DistToSqr( pos )
         return ADist < BDist
     end )
-    return hunters[1]
+    return huntersCopy[1], huntersCopy
+end
+
+function GM:aRandomHunter( hunters )
+    hunters = hunters or table.Copy( GAMEMODE.glee_Hunters )
+
+    table.Shuffle( hunters )
+
+    for _, hunter in ipairs( hunters ) do
+        if IsValid( hunter ) and hunter:Health() > 0 then
+            return hunter
+
+        end
+    end
 end
 
 function GM:anyAreCloserThan( positions, checkPosition, closerThanDistance, zTolerance )
@@ -599,333 +662,47 @@ function GM:Bleed( player, extent )
 
 end
 
-function GM:connectionDistance( currArea, otherArea )
-    local currCenter = currArea:GetCenter()
+function GM:PlaySoundOnEveryPlayer( path, pitch, vol )
+    for _, ply in player.Iterator() do
+        local filterJustThem = RecipientFilter()
+        filterJustThem:AddPlayer( ply )
+        ply:EmitSound( path, 75, pitch, vol, CHAN_STATIC, 0, 0, filterJustThem )
 
-    local nearestInitial = otherArea:GetClosestPointOnArea( currCenter )
-    local nearestFinal   = currArea:GetClosestPointOnArea( nearestInitial )
-    nearestFinal.z = nearestInitial.z
-    local distTo   = nearestInitial:DistToSqr( nearestFinal )
-    return distTo, nearestFinal, nearestInitial
-
+    end
 end
 
---CHATGPT funcs for making sure people dont fucking end up in "map teleport rooms"
+do
+    local string = string
 
-function GM:GetConnectedNavAreaGroups( navAreas )
-    local groups = {}
+    function GM:GetNameOfBot( bot )
+        local name
+        if bot.Nick and isfunction( bot.Nick ) then
+            return bot:Nick()
 
-    -- create a table to keep track of which navareas have been visited
-    local visited = {}
+        elseif bot.glee_PrettyName then
+            name = bot.glee_PrettyName
 
-    -- iterate over each navarea in the array
-    for _, navArea in ipairs( navAreas ) do
-        -- check if the navarea has been visited
-        if not visited[navArea] then
-            -- the navarea has not been visited, so create a new group for it
-            local group = {}
-
-            -- add the navarea to the group
-            table.insert( group, navArea )
-
-            -- mark the navarea as visited
-            visited[navArea] = true
-
-            -- find all connected navareas and add them to the group
-            local queue = {}
-            table.insert( queue, navArea )
-            while #queue > 0 do
-                local currentNavArea = table.remove( queue, 1 )
-                for _, connectedNavArea in ipairs( currentNavArea:GetAdjacentAreas() ) do
-                    if visited[connectedNavArea] then continue end
-                    local connectedBothWays = connectedNavArea:IsConnected( currentNavArea ) and currentNavArea:IsConnected( connectedNavArea )
-                    if not connectedBothWays then continue end
-                    local eitherIsUnderwater = currentNavArea:IsUnderwater() or connectedNavArea:IsUnderwater()
-                    if math.abs( currentNavArea:ComputeAdjacentConnectionHeightChange( connectedNavArea ) ) > 50 and not eitherIsUnderwater then continue end
-                    -- add the connected navarea to the group
-                    table.insert( group, connectedNavArea )
-
-                    -- mark the connected navarea as visited
-                    visited[connectedNavArea] = true
-
-                    -- add the connected navarea to the queue to be processed
-                    table.insert( queue, connectedNavArea )
+        else
+            name = bot.PrintName
+            if not name then
+                if bot:IsNPC() then
+                    name = "A NPC"
+                elseif bot:IsNextBot() then
+                    name = "A Nextbot"
+                else
+                    name = "Something"
                 end
             end
 
-            -- add the group to the list of groups
-            table.insert( groups, group )
-        end
-    end
-
-    return groups
-
-end
-
--- loop thru all navarea groups to find the closest navarea to the current group, in every other group.
-  -- specifically...
-  -- for every navarea in every group, check the distance to navareas in every other group with navarea:GetClosestPointOnArea( otherAreasCenter )
-  -- if the distance between the areas is smaller than the last distance, we have the new best distance to return
-  -- at the end, the function should return a table of "navarea pairs" with this structure: linkageData = { linkageDistance = nil, linkageArea1 = nil, linkageArea2 = nil }
-
-function GM:FindPotentialLinkagesBetweenNavAreaGroups( groups, maxLinksPerGroup )
-    local doneGroupPairs = {}
-    local groupLinkages = {}
-    maxLinksPerGroup = maxLinksPerGroup or 5
-
-    local firstGroups = groups
-
-    local biggestGroup = GAMEMODE:GetLargestGroupOfNavareas( groups )
-    if #biggestGroup > 50000 then -- too fat, just do the biggest one
-        firstGroups = { biggestGroup }
-
-    end
-
-    for group1Id, group1 in ipairs( firstGroups ) do
-        for group2Id, group2 in ipairs( groups ) do
-            local biggestCompareGroup = group1Id
-            local smallestCompareGroup = group2Id
-            if #group2 > #group1 then
-                biggestCompareGroup = group2Id
-                smallestCompareGroup = group1Id
-            end
-
-            local key = biggestCompareGroup .. " " .. smallestCompareGroup
-            local alreadyDone = doneGroupPairs[key]
-
-            local quotaSquared = 2500^2
-
-            if group1Id ~= group2Id and not alreadyDone then -- skip if checking the same group
-                local currGroupLinkages = {} -- create an array to store linkages for each group pair
-                for _, area1 in ipairs( group1 ) do
-                    for _, area2 in ipairs( group2 ) do
-                        -- dont even bother, too far
-                        if area1:GetCenter():DistToSqr( area2:GetCenter() ) > quotaSquared then continue end
-                        local dist, checkPos1, checkPos2 = GAMEMODE:connectionDistance( area1, area2 )
-
-                        local linkage = { linkageDistance = dist, linkageArea1 = area1, linkageArea2 = area2, area1Closest = checkPos1, area2Closest = checkPos2 }
-                        table.insert( currGroupLinkages, linkage )
-
-                    end
-                end
-                -- sort linkages by distance in ascending order
-                table.sort( currGroupLinkages, function( a, b ) return a.linkageDistance < b.linkageDistance end )
-
-                local doneCount = 0
-
-                -- only keep the maxLinksPerGroup closest linkages
-                while #currGroupLinkages > maxLinksPerGroup and doneCount < 5000 do
-                    doneCount = doneCount + 1
-                    table.remove( currGroupLinkages )
-                end
-
-                table.Add( groupLinkages, currGroupLinkages )
-
-                doneGroupPairs[key] = true
+            local nameLower = string.lower( name )
+            nameLower = string.Trim( nameLower )
+            if not ( string.StartsWith( nameLower, "a " ) or string.StartsWith( nameLower, "the " ) ) then
+                name = "A " .. name
 
             end
         end
-    end
+        return name
 
-    return groupLinkages
-
-end
-
--- take the return of GM:FindPotentialLinkagesBetweenNavAreaGroups( groups, maxLinksPerGroup ) as an input
--- go thru all potential links and link the valid ones
-    -- valid links are less than 200 squared apart
-
-function GM:GetLargestGroupOfNavareas( groups )
-    local largestGroup = nil
-
-    for _, group in ipairs( groups ) do
-        if largestGroup == nil or #group > #largestGroup then
-            largestGroup = group
-
-        end
-    end
-    return largestGroup
-
-end
-
-function GM:FilterNavareaGroupsForGreaterThanPercent( groups, targetPercent )
-    -- find the largest group
-    local largestGroup = GAMEMODE:GetLargestGroupOfNavareas( groups )
-
-    -- discard groups that are less than targetPercent the size of the largest group
-    local finalGroups = {}
-    for _, group in ipairs( groups ) do
-        if #group >= targetPercent * #largestGroup then
-            table.insert( finalGroups, group )
-        end
-    end
-
-    return finalGroups
-end
-
-
--- find a navarea center that is on biggest navmesh groups, and is close ish to a spawnpoint.
-
-function GM:FindValidNavAreaCenter( navAreaGroups )
-    -- create an array to store the navarea centers
-    local navAreaCenters = {}
-    -- all this to pick a random spawn to sort to
-    local spawns = {}
-    for _, spawnEntClass in ipairs( GAMEMODE.SpawnTypes ) do
-        local currentSpawns = ents.FindByClass( spawnEntClass )
-        if #currentSpawns <= 0 then continue end
-        for _, spawn in ipairs( currentSpawns ) do
-            table.insert( spawns, spawn )
-        end
-    end
-    -- find a random spawnpoint
-    local randomSpawn
-    local randomSpawnInd = math.random( 1, #spawns )
-    for _ = 1, 10 do
-        randomSpawn = spawns[ randomSpawnInd ]
-        if IsValid( randomSpawn ) then break end
-
-    end
-
-    -- choose a random navarea group
-    local group = navAreaGroups[ math.random( #navAreaGroups ) ]
-
-    -- add a random sample of 30 navarea centers to the array
-    for _ = 1, 150 do
-        if #navAreaCenters > 30 then break end
-        -- choose a random navarea from the group
-        local navArea = group[ math.random( #group ) ]
-
-        if navArea:IsUnderwater() then continue end
-
-        -- add the center of the navarea to the array
-        table.insert( navAreaCenters, navArea:GetCenter() )
-    end
-
-    -- sort the navarea centers using their distance to the confirmed walkable navarea
-    -- this way people should very rarely end up behind playerclips 
-    table.sort( navAreaCenters, function( a, b )
-        return a:DistToSqr( randomSpawn:GetPos() ) < b:DistToSqr( randomSpawn:GetPos() )
-    end )
-
-    return navAreaCenters[1]
-end
-
--- used for checking if player is in big groups
-function GM:NavAreaExistsInGroups( navArea, navAreaGroups )
-    -- iterate over each navarea group
-    for _, group in ipairs( navAreaGroups ) do
-        -- check if the navarea is in the group
-        for _, navAreaInGroup in ipairs( group ) do
-            if navAreaInGroup == navArea then
-                -- the navarea is in the group, so return true
-                return true
-
-            end
-        end
-    end
-    -- the navarea is not in any of the groups, so return false
-    return false
-
-end
-
--- used for finding out WHICH group player is in
-function GM:GetGroupThatNavareaExistsIn( navArea, navAreaGroups )
-    -- iterate over each navarea group
-    if istable( navAreaGroups ) then
-        for _, group in ipairs( navAreaGroups ) do
-            if coroutine_running() then
-                coroutine.yield()
-
-            end
-            if istable( group ) then
-                -- check if the navarea is in the group
-                for _, navAreaInGroup in ipairs( group ) do
-                    if navAreaInGroup == navArea then
-                        -- the navarea is in the group, so return true
-                        return group
-
-                    end
-                end
-            end
-        end
     end
 end
 
--- get navarea to teleport to that isnt boring
-function GM:GetAreaInOccupiedBigGroupOrRandomBigGroup()
-
-    local bigGroups = GAMEMODE.biggestNavmeshGroups
-    local firstPly = GAMEMODE:anotherAlivePlayer()
-    local firstPlysNavarea
-    local bigGroupThatSomeoneIsIn
-
-    -- dont do any group people are in, just pick one group
-    if IsValid( firstPly ) then
-        -- big check, don't use cache
-        firstPlysNavarea = navmesh.GetNearestNavArea( firstPly:GetPos(), false, 8000, false, true, -2 )
-        bigGroupThatSomeoneIsIn = GAMEMODE:GetGroupThatNavareaExistsIn( firstPlysNavarea, bigGroups )
-
-    end
-
-    if bigGroupThatSomeoneIsIn then
-        return bigGroupThatSomeoneIsIn[math.random( 1, #bigGroupThatSomeoneIsIn )], bigGroupThatSomeoneIsIn
-
-    -- main person is not in a big group, just pick one with hunters in it
-    else
-        local hunterRef
-        for _, hunter in ipairs( GAMEMODE.termHunt_hunters ) do
-            if IsValid( hunter ) then
-                hunterRef = hunter
-
-            end
-        end
-        if not hunterRef then goto getareainbigoroccupiedFail end
-        local firstHuntersArea = navmesh.GetNearestNavArea( hunterRef:GetPos(), false, 8000, false, true, -2 )
-        local bigGroupThatHunterIsIn = GAMEMODE:GetGroupThatNavareaExistsIn( firstHuntersArea, bigGroups )
-
-        if not bigGroupThatHunterIsIn then goto getareainbigoroccupiedFail end
-
-        return bigGroupThatHunterIsIn[math.random( 1, #bigGroupThatHunterIsIn )], bigGroupThatHunterIsIn
-
-    end
-
-    -- nope, hunters aren't in big groups either, just a random area in a random big group
-    ::getareainbigoroccupiedFail::
-
-    local randBigGroup = bigGroups[ math.random( 1, #bigGroups ) ]
-    local randAreaInRandGroup = randBigGroup[ math.random( 1, #randBigGroup ) ]
-
-    return randAreaInRandGroup, randBigGroup
-
-end
-
-function GM:GetNavmeshGroupsWithPlayers()
-    local bigGroups = GAMEMODE.biggestNavmeshGroups
-    local alivePlayers = GAMEMODE:getAlivePlayers()
-
-    if #alivePlayers <= 0 then return end
-
-    local groupsWithPlayers = {}
-    local doneGroups = {}
-
-    for _, alivePly in ipairs( alivePlayers ) do
-        if coroutine_running() then
-            coroutine.yield()
-
-        end
-        local alivePlysNav, _ = alivePly:GetNavAreaData()
-        if not IsValid( alivePlysNav ) then continue end
-        local bigGroupThatSomeoneIsIn = GAMEMODE:GetGroupThatNavareaExistsIn( alivePlysNav, bigGroups )
-
-        if not bigGroupThatSomeoneIsIn then continue end
-        if doneGroups[ #bigGroupThatSomeoneIsIn ] then continue end
-
-        -- this can theoretically break, but i know it's very, very unlikely
-        doneGroups[ #bigGroupThatSomeoneIsIn ] = true
-        table.insert( groupsWithPlayers, bigGroupThatSomeoneIsIn )
-
-    end
-    return groupsWithPlayers
-
-end

@@ -8,7 +8,7 @@ ENT.PrintName   = "Player Swapper"
 ENT.Author      = "StrawWagen"
 ENT.Purpose     = "Swaps players with terminators"
 ENT.Spawnable    = true
-ENT.AdminOnly    = false
+ENT.AdminOnly    = game.IsDedicated()
 ENT.Category = "Hunter's Glee"
 ENT.Model = "models/Items/item_item_crate.mdl"
 
@@ -29,10 +29,6 @@ if CLIENT then
         nextNoMoreInversion = CurTime() + 0.1
 
         local toWipe = net.ReadEntity()
-        if IsValid( toWipe ) then
-            toWipe:NukeHighlighter()
-
-        end
 
         if toWipe ~= LocalPlayer().ghostEnt then return end
 
@@ -58,11 +54,8 @@ if CLIENT then
 
     end
 
-    function ENT:NukeHighlighter()
-        SafeRemoveEntity( self.player.placableSnapHighligher )
-
-    end
-
+    local greenReal = Color( 0, 255, 0 )
+    local redReal = Color( 255, 0, 0 )
     local green = { 0, 255, 0 }
     local red = { 255, 0, 0 }
 
@@ -71,42 +64,59 @@ if CLIENT then
     local cam_Start3D = cam.Start3D
     local cam_End3D = cam.End3D
 
-    local playerOverrideMat = CreateMaterial( "CHAMSMATPLAYERSWAPPER1", "UnlitGeneric", { ["$basetexture"] = "lights/white001", ["$model"] = 1, ["$ignorez"] = 1 } )
+    local playerOverrideMat = CreateMaterial( "CHAMSMATPLAYERSWAPPER1", "UnlitGeneric", { ["$basetexture"] = "lights/white002", ["$model"] = 1, ["$ignorez"] = 1 } )
+    local hintMatId = surface.GetTextureID( "effects/yellowflare" )
 
     function ENT:HighlightNearestTarget()
-        if not IsValid( self:GetCurrTarget() ) then return end
-        if not IsValid( self.player.placableSnapHighligher ) then
-            self.player.placableSnapHighligher = ClientsideModel( self:GetCurrTarget():GetModel() )
+        local currTarget = self:GetCurrTarget()
+        if not IsValid( currTarget ) then return end
+        cam_Start3D();
 
-            self.player.placableSnapHighligher:Spawn()
+            local color = green
+            if not self:GetCanPlace() then
+                color = red
 
-        elseif self.lastNearestTarget ~= self:GetCurrTarget() then
-            self.lastNearestTarget = self:GetCurrTarget()
-            self:GetCurrTarget():EmitSound( self.SwapSound, 100, 200 )
-            self.player.placableSnapHighligher:SetParent( self:GetCurrTarget() )
-            self.player.placableSnapHighligher:SetModel( self:GetCurrTarget():GetModel() )
-            self.player.placableSnapHighligher:SetPos( self:GetCurrTarget():GetPos() )
-            self.player.placableSnapHighligher:SetAngles( self:GetCurrTarget():GetAngles() )
+            end
+
+            setColorModulation( color[1], color[2], color[3] )
+            materialOverride( playerOverrideMat )
+
+            currTarget:DrawModel()
+            materialOverride()
+
+        cam_End3D();
+
+        if not self.DrawOriginHint then return end
+
+        local origin = currTarget:WorldSpaceCenter()
+        local pos2d = origin:ToScreen()
+
+        local size = 100
+
+        local width = size
+        local height = size
+
+        local halfWidth = width / 2
+        local halfHeight = height / 2
+
+        local colorOrigin = greenReal
+        if not self:GetCanPlace() then
+            colorOrigin = redReal
 
         end
-        if IsValid( self.player.placableSnapHighligher ) then
-            cam_Start3D();
-                materialOverride( playerOverrideMat )
 
-                local color = green
-                if not self:GetCanPlace() then
-                    color = red
+        local texturedQuadStructure = {
+            texture = hintMatId,
+            color   = colorOrigin,
+            x 	= pos2d.x + -halfWidth,
+            y 	= pos2d.y + -halfHeight,
+            w 	= width,
+            h 	= height
+        }
 
-                end
-
-                setColorModulation( color[1], color[2], color[3] )
-
-                self.player.placableSnapHighligher:DrawModel()
-                materialOverride()
-
-            cam_End3D();
-
-        end
+        cam.Start2D()
+            draw.TexturedQuad( texturedQuadStructure )
+        cam.End2D()
     end
     function ENT:ClientThink()
         self:SetNoDraw( true )
@@ -155,12 +165,23 @@ function ENT:GetFurthestTerminator()
     local furthestDistance = 0
     local myPos = self:GetPos()
 
+    local wasOneWithGoodHealth
+
     for _, thing in ipairs( ents.GetAll() ) do
-        if thing.isTerminatorHunterBased then
+        if thing.TerminatorNextBot then
             local distance = thing:GetPos():DistToSqr( myPos )
-            if distance > furthestDistance then
+            local hasGoodHealth = thing:GetMaxHealth() >= terminator_Extras.healthDefault
+
+            local better = distance > furthestDistance
+            if wasOneWithGoodHealth and not hasGoodHealth then -- invert STRONG enemies PLS
+                better = false
+
+            end
+            if better then
                 furthestTerminator = thing
                 furthestDistance = distance
+                wasOneWithGoodHealth = hasGoodHealth
+
             end
         end
     end
@@ -172,8 +193,8 @@ function ENT:SwapPlayerAndTerminator( player, terminator )
     local playerPos = player:GetPos()
     local terminatorPos = terminator:GetPos()
 
-    util.ScreenShake( terminatorPos, 10, 20, 4, 1000 )
-    util.ScreenShake( playerPos, 10, 20, 4, 1000 )
+    util.ScreenShake( terminatorPos, 10, 20, 4, 1000, true )
+    util.ScreenShake( playerPos, 10, 20, 4, 1000, true )
 
     local beam = EffectData()
     beam:SetStart( playerPos )
@@ -188,7 +209,14 @@ function ENT:SwapPlayerAndTerminator( player, terminator )
     util.Effect( "eff_huntersglee_dicebeam", beam, true )
 
     player:TeleportTo( terminatorPos )
-    terminator:SetPos( playerPos )
+
+    if terminator.SetPosNoTeleport then
+        terminator:SetPosNoTeleport( playerPos )
+
+    else
+        terminator:SetPos( playerPos )
+
+    end
 
     player:unstuckFullHandle()
 
@@ -206,8 +234,8 @@ end
 function ENT:CalculateCanPlace()
     if not IsValid( self:GetCurrTarget() ) then return false, "You need to be looking at a player." end
     if not IsValid( self:GetFurthestTerminator() ) then return false, "No hunters are currently spawned." end
-    if GAMEMODE:isTemporaryTrueBool( "terhunt_player_swapper" ) then return false, "It's too soon for another inversion to begin." end
-    if not self:HasEnoughToPurchase() then return false, self.noPurchaseReason_TooPoor end
+    if GAMEMODE:isTemporaryTrueBool( "termhunt_player_swapper" ) then return false, "It's too soon for another inversion to begin." end
+    if not self:HasEnoughToPurchase() then return false, self:TooPoorString() end
     return true
 
 end
@@ -230,10 +258,10 @@ function ENT:SetupPlayer()
     self.player.placableTargeted = self
     self.player.ghostEnt = self
     if CLIENT and LocalPlayer() == self.player then
-        hook.Add( "PostDrawOpaqueRenderables", "termHuntDrawNearestPlayerSwapper", function()
-            if not IsValid( self ) or not IsValid( self.player ) then hook.Remove( "PostDrawOpaqueRenderables", "termHuntDrawNearestPlayerSwapper" ) return end
-            if self.player ~= LocalPlayer() then hook.Remove( "PostDrawOpaqueRenderables", "termHuntDrawNearestPlayerSwapper" ) return end
-            if not self.player.placableTargeted then self:NukeHighlighter() hook.Remove( "PostDrawOpaqueRenderables", "termHuntDrawNearestPlayerSwapper" ) return end
+        hook.Add( "PostDrawTranslucentRenderables", "termHuntDrawNearestPlayerSwapper", function()
+            if not IsValid( self ) or not IsValid( self.player ) then hook.Remove( "PostDrawTranslucentRenderables", "termHuntDrawNearestPlayerSwapper" ) return end
+            if self.player ~= LocalPlayer() then hook.Remove( "PostDrawTranslucentRenderables", "termHuntDrawNearestPlayerSwapper" ) return end
+            if not self.player.placableTargeted then hook.Remove( "PostDrawTranslucentRenderables", "termHuntDrawNearestPlayerSwapper" ) return end
             self:HighlightNearestTarget()
         end )
     end
@@ -241,7 +269,6 @@ end
 
 function ENT:OnRemove()
     if not CLIENT then return end
-    self:NukeHighlighter()
 
 end
 
@@ -256,9 +283,11 @@ function ENT:TellPlyToClearHighlighter()
 end
 
 function ENT:UpdateGivenScore()
-    self:SetGivenScore( -300 )
+    self:SetGivenScore( -400 )
 
 end
+
+local interval = 180
 
 function ENT:Place()
     local plyToSwap = self:GetCurrTarget()
@@ -266,15 +295,27 @@ function ENT:Place()
 
     if not IsValid( plyToSwap ) or not IsValid( furthestTerminator ) then return end
 
+    local checkPos = plyToSwap:GetShootPos()
     local plysToAlert = {}
-    for _, thing in ipairs( ents.FindInPVS( plyToSwap:GetShootPos() ) ) do
+    local inserted = {}
+    for _, thing in ipairs( ents.FindInPVS( checkPos ) ) do
         if thing:IsPlayer() then
+            inserted[thing] = true
             table.insert( plysToAlert, thing )
 
         end
     end
+    local dist = 1500^2
+    for _, ply in player.Iterator() do
+        if not inserted[ply] and ply:GetPos():DistToSqr( checkPos ) < dist then
+            inserted[ply] = true
+            table.insert( plysToAlert, ply )
 
-    huntersGlee_Announce( plysToAlert, 5, 10, self.player:Name() .. " has begun a temporal inversion...\nGET AWAY FROM " .. plyToSwap:Name() .. "!" )
+        end
+    end
+
+
+    huntersGlee_Announce( plysToAlert, 5, 8, self.player:Nick() .. " has begun a temporal inversion...\nGET AWAY FROM " .. plyToSwap:Nick() .. "!" )
     plyToSwap:EmitSound( "buttons/combine_button3.wav", 100, 100 )
     plyToSwap:EmitSound( "hl1/ambience/port_suckin1.wav", 100, 80 )
 
@@ -286,7 +327,7 @@ function ENT:Place()
         if not IsValid( plyToSwap ) then timer.Remove( timerName ) return end
         furthestTerminator = furthestTerminator or self:GetFurthestTerminator()
         if not IsValid( furthestTerminator ) then return end
-        if not plyToSwap:Alive() then
+        if plyToSwap:Health() <= 0 then
             self:SwapPlayerAndTerminator( plyToSwap, furthestTerminator )
             timer.Remove( timerName )
             return
@@ -330,6 +371,7 @@ function ENT:Place()
 
     if self.player.GivePlayerScore and score then
         self.player:GivePlayerScore( score )
+        GAMEMODE:sendPurchaseConfirm( self.player, score )
 
     end
 
@@ -341,6 +383,12 @@ function ENT:Place()
     self.player = nil
     self:SetOwner( NULL )
 
-    GAMEMODE:setTemporaryTrueBool( "terhunt_player_swapper", 180 + steps )
+    GAMEMODE:setTemporaryTrueBool( "termhunt_player_swapper", interval + steps )
 
 end
+
+hook.Add( "huntersglee_round_into_active", "player_swapper_initialwait", function()
+    GAMEMODE:setTemporaryTrueBool( "termhunt_player_swapper", interval )
+    GAMEMODE:setTemporaryTrueBool( "termhunt_player_swapper_initial", interval )
+
+end )
