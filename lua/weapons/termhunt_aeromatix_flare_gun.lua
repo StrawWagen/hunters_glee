@@ -92,6 +92,7 @@ function SWEP:PrimaryAttack()
         return
 
     end
+    
     self:SetNextPrimaryFire( CurTime() + self.Primary.Delay )
     self:SetNextSecondaryFire( CurTime() + self.Secondary.Delay )
     self:ShootFlare()
@@ -99,7 +100,11 @@ function SWEP:PrimaryAttack()
     self:SendWeaponAnim( ACT_VM_PRIMARYATTACK )
 
     if self:Clip1() == 0 then
-        self:DefaultReload( ACT_VM_RELOAD )
+        timer.Simple( 0.25, function()
+            if IsValid( self ) then
+                self:DefaultReload( ACT_VM_RELOAD )
+            end
+        end )
     end
 end
 
