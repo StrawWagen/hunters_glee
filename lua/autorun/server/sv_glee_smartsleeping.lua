@@ -13,7 +13,7 @@ local slowEnoughToFreeze = 20^2
 -- likely will majorly decrease lag on big glee sessions
 -- call terminator_Extras.SmartSleepEntity( ent, checkinterval ) to add ent to system
 
-local function handleSleep( ent, curTime )
+local function handleSleep( ent, curTime ) -- think func
     if not IsValid( ent ) then return end
     if not ent.glee_issmartsleeping then return end
     if ent.glee_nextsmartsleepcheck > curTime then return end
@@ -44,7 +44,7 @@ local function handleSleep( ent, curTime )
     end
 end
 
-hook.Add( "Think", "glee_dynamicfreezing_think", function()
+hook.Add( "Think", "glee_dynamicfreezing_think", function() -- calls the thinker on all sleepy ents
     local curTime = CurTime()
     if nextPass > curTime then return end
     nextPass = curTime + 1
@@ -79,7 +79,7 @@ terminator_Extras.SmartSleepEntity = function( ent, interval )
 
 end
 
-local function unchainSleeper( sleeper )
+local function unchainSleeper( sleeper ) -- wakes stuff up
     if not IsValid( sleeper ) then return end
     if not sleeper.glee_issmartsleeping then return end
     if sleeper.huntersglee_breakablenails then return end
@@ -152,7 +152,9 @@ end )
 
 local fastSleepClasses = {
     gib = true,
+    npc_satchel = true,
     item_healthvial = true,
+
 }
 
 local function setupOnCreateHook()

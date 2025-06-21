@@ -72,15 +72,15 @@ local cachedPartResults = {}
 function GM:GetCorrectSoundsForModel( ply, category )
     local allSounds = self.allModelSounds
 
-    local theGenericCategories = allSounds[genericStr]
+    local theGenericCategories = allSounds[genericStr] -- would this category even have sounds?
     local theGenericSounds = theGenericCategories[category]
     if not theGenericSounds then yap( category, "GLEE: Tried to get invalid sound category " .. category ) return end
 
     local plysMdl = string_lower( GetModel( ply ) )
-    local finalModelPartStr = cachedPartResults[plysMdl]
+    local finalModelPartStr = cachedPartResults[plysMdl] -- check the cache
 
-    if not finalModelPartStr then
-        finalModelPartStr = genericStr
+    if not finalModelPartStr then -- not in cache yet
+        finalModelPartStr = genericStr -- assume generic if we dont find anything below
 
         for partName, _ in pairs( allSounds ) do
             if string.find( plysMdl, partName ) then
@@ -89,7 +89,8 @@ function GM:GetCorrectSoundsForModel( ply, category )
 
             end
         end
-        if finalModelPartStr == genericStr then
+
+        if finalModelPartStr == genericStr then -- couldnt find anything, check aliases
             local aliases = self.modelSoundAliases
             for alias, aliasOf in pairs( aliases ) do
                 if string.find( plysMdl, alias ) then
@@ -99,11 +100,30 @@ function GM:GetCorrectSoundsForModel( ply, category )
                 end
             end
         end
+
+        if finalModelPartStr == genericStr then -- still generic, check for the part in the player manager's keys for our model
+            local allValidModels = player_manager.AllValidModels()
+            local toCheck = table.KeyFromValue( allValidModels, plysMdl )
+            if toCheck then
+                for partName, _ in pairs( allSounds ) do
+                    if string.find( toCheck, partName ) then
+                        finalModelPartStr = partName
+                        break
+
+                    end
+                end
+            end
+        end
+
         cachedPartResults[plysMdl] = finalModelPartStr
 
     end
     local categories = allSounds[finalModelPartStr]
     local sounds = categories[category]
+    if not sounds then
+        return theGenericSounds
+
+    end
     return sounds
 
 end
@@ -127,8 +147,11 @@ function GM:GenderizeSound( ply, snd )
 end
 
 function GM:GetRandModelLine( ply, category )
+    if hook.Run( "glee_block_modellines", ply, category ) == true then return end
+
     local sounds = self:GetCorrectSoundsForModel( ply, category )
     if #sounds <= 0 then return end
+
     local snd = sounds[math.random( 1, #sounds )]
     return self:GenderizeSound( ply, snd )
 
@@ -166,6 +189,8 @@ local skeleton = {
 GM:AddModelSounds( "skeleton", skeleton )
 
 local generic = {
+    onRoundStart = {
+    },
     death = {
         "player/death1.wav",
         "player/death2.wav",
@@ -513,3 +538,60 @@ local grigori = {
     }
 }
 GM:AddModelSounds( "monk", grigori )
+
+local css = {
+    onRoundStart = {
+        "bot/this_is_my_house.wav",
+        "bot/oh_yea2.wav",
+        "bot/sounds_like_a_plan.wav",
+        "bot/target_acquired.wav",
+        "bot/way_to_be_team.wav",
+        "bot/whos_the_man.wav",
+        "bot/you_heard_the_man_lets_go.wav",
+        "bot/yea_baby.wav",
+
+    },
+    death = {
+        "bot/aah.wav",
+        "bot/help.wav",
+        "bot/noo.wav",
+        "bot/ouch.wav",
+        "bot/ow.wav",
+        "bot/pain2.wav",
+        "bot/pain4.wav",
+        "bot/pain5.wav",
+        "bot/pain8.wav",
+        "bot/pain9.wav",
+        "bot/pain10.wav",
+        "bot/yikes.wav",
+
+    },
+    panicBuildingScreams = {
+        "bot/oh_boy2.wav",
+        "bot/oh_no.wav",
+        "bot/cover_me.wav",
+        "bot/cover_me2.wav",
+        "bot/im_in_trouble.wav",
+        "bot/need_help.wav",
+
+    },
+    panicReleaseScreams = {
+        "bot/help.wav",
+        "bot/need_help2.wav",
+        "bot/i_could_use_some_help.wav",
+        "bot/i_could_use_some_help_over_here.wav",
+
+    },
+    panicReleaseScreamsChased = {
+        "bot/uh_oh.wav",
+        "bot/thats_not_good.wav",
+        "bot/oh_my_god.wav",
+        "bot/too_many2.wav",
+        "bot/taking_fire_need_assistance2.wav",
+        "bot/theres_too_many_of_them.wav",
+        "bot/theres_too_many.wav",
+        "bot/theyre_all_over_the_place2.wav",
+
+    }
+}
+GM:AddModelSounds( "css_", css )

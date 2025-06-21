@@ -1,8 +1,9 @@
--- this is both screaming crate AND base entity for all placeables
 AddCSLuaFile()
 
 ENT.Type = "anim"
 ENT.Base = "base_anim"
+
+-- this is both screaming crate AND base entity for all placeables
 
 ENT.Category    = "Other"
 ENT.PrintName   = "Screaming crate"

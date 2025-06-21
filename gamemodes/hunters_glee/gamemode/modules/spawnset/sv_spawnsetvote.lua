@@ -1,5 +1,5 @@
 local defaultDuration = CreateConVar( "hunterslglee_modevote_duration", 20, FCVAR_ARCHIVE, "Default duration of the mode vote" )
-local defaultMaxOptions = CreateConVar( "hunterslglee_modevote_maxoptions", 5, FCVAR_ARCHIVE, "Amount of options that show up in the mode vote", 2, 9 )
+local defaultMaxOptions = CreateConVar( "hunterslglee_modevote_maxoptions", 6, FCVAR_ARCHIVE, "Amount of options that show up in the mode vote", 2, 9 )
 
 local GM = GM or GAMEMODE
 

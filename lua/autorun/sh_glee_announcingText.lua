@@ -19,10 +19,16 @@ if SERVER then
 
             ply.glee_Announcement_Priority = priority
 
-            net.Start( "glee_clean_announcement" )
-            net.WriteFloat( length )
-            net.WriteString( announcement )
-            net.Send( ply )
+            if ply:IsBot() then -- for easier debugging
+                print( "GLEEBOTANNOUNCE ", ply, announcement )
+
+            else
+                net.Start( "glee_clean_announcement" )
+                    net.WriteFloat( length )
+                    net.WriteString( announcement )
+                net.Send( ply )
+
+            end
 
             local timerName = "glee_genericannouncement_cancel_" .. ply:GetCreationID() .. "_" .. string.sub( announcement, 1, 8 )
 

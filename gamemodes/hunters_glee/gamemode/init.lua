@@ -25,6 +25,7 @@ AddCSLuaFile( "sh_shopitems.lua" )
 AddCSLuaFile( "modules/sh_panic.lua" )
 AddCSLuaFile( "modules/sh_banking.lua" )
 AddCSLuaFile( "modules/sh_tempbools.lua" )
+AddCSLuaFile( "modules/sh_deathsounds.lua" )
 AddCSLuaFile( "modules/sh_danceslowdown.lua" )
 AddCSLuaFile( "modules/sh_playerdrowning.lua" )
 AddCSLuaFile( "modules/sh_detecthunterkills.lua" )
@@ -42,7 +43,6 @@ include( "sv_player.lua" )
 include( "sv_playercommunication.lua" )
 
 include( "modules/sv_modelspeaking.lua" )
-include( "modules/sv_deathsounds.lua" )
 
 include( "modules/sv_unstucker.lua" )
 include( "modules/sv_wallkick.lua" )
@@ -118,7 +118,7 @@ GM.SpawnTypes = {
 }
 
 GM.roundStartAfterNavCheck      = 75
-GM.roundStartNormal             = 60
+GM.roundStartNormal             = 30
 GM.IsReallyHuntersGlee          = true
 
 local CurTime = CurTime
@@ -818,6 +818,8 @@ function GM:roundStart()
 
     for _, ply in ipairs( player.GetAll() ) do
         ply:SetDeaths( 0 )
+        hook.Run( "huntersglee_player_into_active", ply )
+
     end
 
     hook.Run( "huntersglee_round_into_active" )
@@ -862,12 +864,13 @@ end
 -- from the part where finest prey & total score is displayed, into setup where people can buy stuff with discounts
 function GM:beginSetup()
     self:RemoveHunters()
-    for _, ply in ipairs( player.GetAll() ) do
+    for _, ply in player.Iterator() do
         ply.realRespawn = true -- wipe all shop attributes
         ply.shopItemCooldowns = {} -- reset wep cooldowns
         ply.isTerminatorHunterKiller = nil -- dont have this persist thru rounds
         ply:ResetSkulls()
         self:ensureNotSpectating( ply )
+        hook.Run( "huntersglee_player_reset", ply )
 
     end
 
@@ -918,6 +921,10 @@ function GM:setupFinish()
     hook.Run( "huntersglee_round_into_inactive" )
     hook.Run( "huntersglee_round_firstsetup" )
 
+    for _, ply in player.Iterator() do
+        hook.Run( "huntersglee_player_reset", ply )
+
+    end
 end
 
 function GM:concmdSetup()
@@ -926,9 +933,3 @@ function GM:concmdSetup()
     RunConsoleCommand( "ai_ignoreplayers", "0" )
 
 end
-
---[[
-function GM:PlayerUse( ply, ent )
-    print( ent:GetClass() )
-end
---]]

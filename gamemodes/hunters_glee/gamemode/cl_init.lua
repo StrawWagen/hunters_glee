@@ -524,6 +524,7 @@ local function paintMyTotalSkulls( ply, cur )
 end
 
 
+--[[
 local additionalString = ""
 local defaultFont = "termhuntShopHintFont"
 local theFont = defaultFont
@@ -620,6 +621,7 @@ local function paintFinestPreyEncouragement( ply, cur )
     surface.drawShadowedTextBetter( theText, theFont, finestPreyColor, screenMiddleW, paddingFromEdge, true )
 
 end
+--]]
 
 
 -- oops i dropped my spaghetti
@@ -728,7 +730,7 @@ local function genericHints()
             return true, "Death is not the end.\nPress \" " .. string.upper( phrase ) .. " \" to open the shop."
 
         elseif not me.glee_DefinitelyBoughtAnUndeadItem then
-            return true, "Purchase 'gifts' to make score while dead. You can even revive yourself."
+            return true, "Purchase 'sacrifices' to make score while dead!"
 
         elseif not me.glee_HasSpectatedSomeone then
             local valid, phrase = GAMEMODE:TranslatedBind( "+attack" )
@@ -755,7 +757,7 @@ local function genericHints()
             return true, "Press " .. phrase .. " to toggle the spectate flashlight!"
 
         elseif not me.glee_HasBoughtDivineIntervention and myScore >= GAMEMODE:shopItemCost( "resurrection", me ) then
-            return true, "Buy Divine Intervention in the shop to resurrect yourself."
+            return true, "Buy Divine Intervention in the shop to resurrect yourself..."
 
         end
 

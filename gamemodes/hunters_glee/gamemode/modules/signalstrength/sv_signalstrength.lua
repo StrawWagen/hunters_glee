@@ -11,22 +11,31 @@ function meta:GetSignalStrength( area )
 
     end
 
-    if not area then return 5, 50 end
+    if not area then -- edge case
+        local plysShoot = self:GetShootPos()
+        if GAMEMODE:IsUnderSky( plysShoot ) then
+            return 75, 50 -- under sky, good signal
+
+        else
+            return 5, 50 -- no area, terrible signal
+
+        end
+    end
 
     local pos = area:GetCenter() + centerOffset
 
     local signalFinal = 0
     local staticFinal = 0
-    if not GAMEMODE.highestAreaZ then
+    if not GAMEMODE.highestAreaZ then -- edge case
         signalFinal = 45
         staticFinal = ( area:GetID() % 30 ) + 20
 
-    elseif not GAMEMODE.isSkyOnMap then
+    elseif not GAMEMODE.isSkyOnMap then -- no sky anywhere, more score higher up
         local distToHighest = GAMEMODE.highestAreaZ - pos.z
         signalFinal =  25 - ( distToHighest / 1000 )
         staticFinal = ( area:GetID() % 30 ) + 20
 
-    elseif not GAMEMODE.areasUnderSky[ area ] then
+    elseif not GAMEMODE.areasUnderSky[ area ] then -- not under sky, check neighbors
         local neighborCount = 0
         local exposedScore = 0
         local checked = {}
@@ -55,14 +64,14 @@ function meta:GetSignalStrength( area )
         signalFinal = base - ( distToHighest / 1000 )
         staticFinal = area:GetID() % 10
 
-    else
+    else -- under sky
         local distToHighest = GAMEMODE.highestZ - pos.z
         signalFinal = 100 - ( distToHighest / 1000 )
         staticFinal = area:GetID() % 5
 
     end
 
-    local returnedSignal, returnedStatic = hook.Run( "glee_signalstrength_update", self, signalFinal, staticFinal )
+    local returnedSignal, returnedStatic = hook.Run( "glee_signalstrength_update", self, signalFinal, staticFinal ) -- used by signal relay
     if returnedSignal then
         signalFinal = returnedSignal
 

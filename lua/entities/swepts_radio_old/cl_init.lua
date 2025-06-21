@@ -62,6 +62,7 @@ local SongNames = {
 local nextRecieve = 0
 local shopItemColor = Color( 73, 73, 73, 255 )
 local Tuner
+local nextSend = 0
 
 net.Receive( "OpenSTRadioMenu", function()
     if nextRecieve > CurTime() then return end
@@ -100,6 +101,9 @@ net.Receive( "OpenSTRadioMenu", function()
     SongSlider:SetValue( activeSong )
     SongSlider:SetText( "▶ " .. SongNames[math.Round( activeSong )] )
     SongSlider.OnValueChanged = function( _, val )
+        if nextSend > CurTime() then return end
+        nextSend = CurTime() + 0.01
+
         SongSlider:SetText( "▶ " .. SongNames[math.Round( val )] )
         net.Start( "PlaySTRadioSong" )
             net.WriteEntity( selfEnt )

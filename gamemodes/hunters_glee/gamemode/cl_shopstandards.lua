@@ -128,7 +128,7 @@ local function setupShopFonts()
     fontData = {
         font = "Arial",
         extended = false,
-        size = glee_sizeScaled( nil, 30 * GAMEMODE.shopStandards.shpScale ),
+        size = glee_sizeScaled( nil, 28 * GAMEMODE.shopStandards.shpScale ),
         weight = 500,
         blursize = 0,
         scanlines = 0,
@@ -151,7 +151,7 @@ local function setupShopFonts()
     fontData = {
         font = "Arial",
         extended = false,
-        size = glee_sizeScaled( nil, 25 * GAMEMODE.shopStandards.shpScale ),
+        size = glee_sizeScaled( nil, 24 * GAMEMODE.shopStandards.shpScale ),
         weight = 500,
         blursize = 0,
         scanlines = 0,
@@ -191,4 +191,4 @@ GAMEMODE.shopStandards.pressedItemOverlay = Color( 255, 255, 255, 25 )
 GAMEMODE.shopStandards.markupTextColor = Color( 140, 140, 140, 255 )
 
 GAMEMODE.shopStandards.whiteIdentifierLineWidthDiv = 250
-GAMEMODE.shopStandards.shopCategoryHeight = 300
+GAMEMODE.shopStandards.shopCategoryHeight = 275

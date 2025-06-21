@@ -253,6 +253,13 @@ function SWEP:ShutDown()
 
     end
 
+    timer.Simple( 0, function()
+        if not IsValid( owner ) then return end
+        if owner:Health() <= 0 then return end
+        owner:EmitSound( "ambient/levels/citadel/portal_beam_shoot3.wav", 90, math.random( 110, 120 ), 1, CHAN_STATIC )
+
+    end )
+
     if self.timerId then
         timer.Remove( self.timerId )
 
@@ -266,16 +273,25 @@ end
 function SWEP:ChosenThink()
     local owner = self:GetOwner()
     local maxHp = owner:GetMaxHealth()
+    local maxArmor = owner:GetMaxArmor()
     if maxHp < 200 then
         self.modifiedMaxHp = true
         self.maxHpModifedTo = 200
         self:GetOwner():SetMaxHealth( 200 )
 
     end
-    local ownersHealth = owner:Health() 
-    if ownersHealth > 0 and self.nextHealthRegen < CurTime() and ownersHealth < maxHp then
+    local ownersHealth = owner:Health()
+    local ownersArmor = owner:Armor()
+    if ownersHealth > 0 and self.nextHealthRegen < CurTime() then
         self.nextHealthRegen = CurTime() + 0.05
-        owner:SetHealth( math.Clamp( ownersHealth + 4, 0, maxHp ) )
+        if ownersHealth < maxHp then
+            owner:SetHealth( math.Clamp( ownersHealth + 4, 0, maxHp ) )
+
+        end
+        if ownersArmor < maxArmor then
+            owner:SetArmor( math.Clamp( ownersArmor + 1, 0, maxArmor ) )
+
+        end
     end
 end
 

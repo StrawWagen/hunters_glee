@@ -3,6 +3,8 @@ AddCSLuaFile()
 ENT.Type = "anim"
 ENT.Base = "player_swapper"
 
+-- base ent for stuff that snaps to players and bots
+
 ENT.Category    = "Other"
 ENT.PrintName   = "Player Immortalizer"
 ENT.Author      = "StrawWagen"
@@ -31,7 +33,7 @@ if CLIENT then
 end
 
 function ENT:GetNearestTarget()
-    local nearestPly = nil
+    local nearest = nil
     local nearestDistance = math.huge
     local myPos = self:GetPos()
 
@@ -42,14 +44,14 @@ function ENT:GetNearestTarget()
             -- Calculate the distance between the ply and the entity
             local distance = myPos:DistToSqr( thing:GetPos() )
             if distance < nearestDistance then
-                nearestPly = thing
+                nearest = thing
                 nearestDistance = distance
 
             end
         end
     end
 
-    return nearestPly
+    return nearest
 end
 
 function ENT:CalculateCanPlace()
@@ -78,62 +80,66 @@ local rics = {
     "weapons/fx/rics/ric5.wav",
 }
 
-function ENT:Place()
-    local plyToImmortal = self:GetCurrTarget()
+local immortalTime = 21 -- seconds
+local immortalTimeBackup = 40 -- in case the timer errors
 
-    if not IsValid( plyToImmortal ) then return end
+function ENT:Place()
+    local target = self:GetCurrTarget()
+
+    if not IsValid( target ) then return end
 
     local plysToAlert = {}
-    for _, thing in ipairs( ents.FindInPVS( plyToImmortal:GetShootPos() ) ) do
-        if thing:IsPlayer() and thing ~= plyToImmortal then
-            table.insert( plysToAlert, thing )
+    for _, thing in ipairs( ents.FindInPVS( target:GetShootPos() ) ) do
+        if not thing:IsPlayer() then continue end
+        if thing == target then continue end
 
-        end
+        table.insert( plysToAlert, thing )
+
     end
 
-    if plyToImmortal:IsPlayer() then
-        huntersGlee_Announce( plysToAlert, 5, 6, "You feel an imposing presence..\n" .. self.player:Nick() .. " has gifted immortality to...\n" .. plyToImmortal:Nick() )
-        huntersGlee_Announce( { plyToImmortal }, 10, 10, "Something's off, you feel strong, you feel... Immortal.\n" .. self.player:Nick() .. " has gifted you temporary Immortality." )
+    if target:IsPlayer() then
+        huntersGlee_Announce( plysToAlert, 5, 6, "You feel an imposing presence..\n" .. self.player:Nick() .. " has gifted immortality to...\n" .. target:Nick() )
+        huntersGlee_Announce( { target }, 10, 10, "Something's off, you feel strong, you feel... Immortal.\n" .. self.player:Nick() .. " has gifted you temporary Immortality." )
 
     else
-        huntersGlee_Announce( plysToAlert, 5, 6, "You feel an imposing presence..\n" .. self.player:Nick() .. " has gifted immortality to " .. GAMEMODE:GetNameOfBot( plyToImmortal ) )
+        huntersGlee_Announce( plysToAlert, 5, 6, "You feel an imposing presence..\n" .. self.player:Nick() .. " has gifted immortality to " .. GAMEMODE:GetNameOfBot( target ) )
 
     end
 
-    local timerName = "glee_immortality_timer_" .. tostring( plyToImmortal:GetCreationID() )
-    local hookName = "glee_immortality_hook" .. tostring( plyToImmortal:GetCreationID() )
+    local timerName = "glee_immortality_timer_" .. tostring( target:GetCreationID() )
+    local hookName = "glee_immortality_hook" .. tostring( target:GetCreationID() )
 
-    plyToImmortal.glee_DamageResistant = true
-    plyToImmortal.glee_DamageResistantExpires = CurTime() + 40 -- backup if timer errors
+    target.glee_DamageResistant = true
+    target.glee_DamageResistantExpires = CurTime() + immortalTimeBackup -- backup if timer errors
 
-    plyToImmortal:EmitSound( "physics/metal/metal_canister_impact_hard3.wav", 90, 60, 1, CHAN_STATIC )
-    plyToImmortal:EmitSound( "physics/concrete/boulder_impact_hard3.wav", 90, 60, 1, CHAN_STATIC )
-    plyToImmortal:EmitSound( "physics/concrete/boulder_impact_hard3.wav", 90, 80, 1, CHAN_STATIC )
-    plyToImmortal:EmitSound( "physics/concrete/boulder_impact_hard3.wav", 90, 120, 1, CHAN_STATIC )
+    target:EmitSound( "physics/metal/metal_canister_impact_hard3.wav", 90, 60, 1, CHAN_STATIC )
+    target:EmitSound( "physics/concrete/boulder_impact_hard3.wav", 90, 60, 1, CHAN_STATIC )
+    target:EmitSound( "physics/concrete/boulder_impact_hard3.wav", 90, 80, 1, CHAN_STATIC )
+    target:EmitSound( "physics/concrete/boulder_impact_hard3.wav", 90, 120, 1, CHAN_STATIC )
 
-    util.ScreenShake( plyToImmortal:GetPos(), 40, 20, 1.5, 1500, true )
+    util.ScreenShake( target:GetPos(), 40, 20, 1.5, 1500, true )
 
     local immortCancel = function()
         timer.Remove( timerName )
         hook.Remove( "EntityTakeDamage", hookName )
 
-        if not IsValid( plyToImmortal ) then return end
+        if not IsValid( target ) then return end
 
-        plyToImmortal.glee_DamageResistant = nil
-        plyToImmortal.glee_DamageResistantExpires = nil
+        target.glee_DamageResistant = nil
+        target.glee_DamageResistantExpires = nil
 
     end
 
     hook.Add( "EntityTakeDamage", hookName, function( victim, damage )
-        if not IsValid( plyToImmortal ) then immortCancel() return end
-        if victim ~= plyToImmortal then return end
-        if plyToImmortal:Health() <= 0 then immortCancel() return end
-        if not plyToImmortal.glee_DamageResistant then immortCancel() return end
-        if not plyToImmortal.glee_DamageResistantExpires then immortCancel() return end
-        if plyToImmortal.glee_DamageResistantExpires < CurTime() then immortCancel() return end
+        if not IsValid( target ) then immortCancel() return end
+        if victim ~= target then return end
+        if target:Health() <= 0 then immortCancel() return end
+        if not target.glee_DamageResistant then immortCancel() return end
+        if not target.glee_DamageResistantExpires then immortCancel() return end
+        if target.glee_DamageResistantExpires < CurTime() then immortCancel() return end
 
         if damage:IsBulletDamage() then
-            plyToImmortal:EmitSound( table.Random( rics ), 75, math.random( 92, 100 ), 1, CHAN_STATIC )
+            target:EmitSound( table.Random( rics ), 75, math.random( 92, 100 ), 1, CHAN_STATIC )
 
         end
 
@@ -141,43 +147,45 @@ function ENT:Place()
 
         local path = "physics/metal/metal_barrel_impact_hard" .. math.random( 5, 7 ) .. ".wav"
         local pit = 120 + ( -damageDealt / 10 )
-        plyToImmortal:EmitSound( path, 85, pit, 1, CHAN_STATIC )
+        target:EmitSound( path, 85, pit, 1, CHAN_STATIC )
 
-        GAMEMODE:GivePanic( plyToImmortal, damageDealt / 4 )
+        GAMEMODE:GivePanic( target, damageDealt / 4 )
 
         damage:SetDamageForce( damage:GetDamageForce() * damageDealt )
         damage:ScaleDamage( 0 )
 
-        util.ScreenShake( plyToImmortal:GetPos(), damageDealt / 2, 20, damageDealt / 1000, 1500, true )
+        util.ScreenShake( target:GetPos(), damageDealt / 2, 20, damageDealt / 1000, 1500, true )
 
         return true
 
     end )
 
-    timer.Create( timerName, 1, 21, function()
-        if not IsValid( plyToImmortal ) then immortCancel() return end
-        if not plyToImmortal.glee_DamageResistant then immortCancel() return end
-        if plyToImmortal:Health() <= 0 then immortCancel() return end
+    timer.Create( timerName, 1, immortalTime, function()
+        if not IsValid( target ) then immortCancel() return end
+        if not target.glee_DamageResistant then immortCancel() return end
+        if target:Health() <= 0 then immortCancel() return end
 
         local timeLeft = timer.RepsLeft( timerName )
         timeLeft = timeLeft + -1
 
+        local message
+
         if timeLeft <= 8 and timeLeft > 0 then
             message = "You feel your mortality returning...\n" .. tostring( timeLeft ) .. "."
-            plyToImmortal:EmitSound( "physics/metal/metal_canister_impact_hard3.wav", 80, 80 + timeLeft * 2, 1, CHAN_STATIC )
+            target:EmitSound( "physics/metal/metal_canister_impact_hard3.wav", 80, 80 + timeLeft * 2, 1, CHAN_STATIC )
 
         end
-        if message and plyToImmortal:IsPlayer() then
-            huntersGlee_Announce( { plyToImmortal }, 10, 1.5, message )
+        if message and target:IsPlayer() then
+            huntersGlee_Announce( { target }, 10, 1.5, message )
 
         end
 
         if timeLeft < 0 then
             immortCancel()
-            plyToImmortal:EmitSound( "physics/metal/metal_canister_impact_hard3.wav", 90, 60, 1, CHAN_STATIC )
-            plyToImmortal:EmitSound( "physics/concrete/boulder_impact_hard3.wav", 90, 40, 1, CHAN_STATIC )
-            plyToImmortal:EmitSound( "physics/concrete/boulder_impact_hard3.wav", 90, 60, 1, CHAN_STATIC )
-            plyToImmortal:EmitSound( "physics/concrete/boulder_impact_hard3.wav", 90, 80, 1, CHAN_STATIC )
+            target:EmitSound( "physics/metal/metal_canister_impact_hard3.wav", 90, 60, 1, CHAN_STATIC )
+            target:EmitSound( "physics/concrete/boulder_impact_hard3.wav", 90, 40, 1, CHAN_STATIC )
+            target:EmitSound( "physics/concrete/boulder_impact_hard3.wav", 90, 60, 1, CHAN_STATIC )
+            target:EmitSound( "physics/concrete/boulder_impact_hard3.wav", 90, 80, 1, CHAN_STATIC )
 
         end
     end )

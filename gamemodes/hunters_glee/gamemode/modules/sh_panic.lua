@@ -55,7 +55,7 @@ elseif SERVER then
     end
 
     local fleeDist = 1500
-    local maxPanic = 100
+    local maxPanic = 115
 
     function GM:PanicThinkSV( ply )
         local panic = self:GetPanic( ply )
@@ -83,7 +83,7 @@ elseif SERVER then
             local panicSoundPitch = nil
             local panicSoundHitch = nil
 
-            if panic >= maxPanic then
+            if panic >= maxPanic then -- scream loud, resets panic
                 local hookResult = hook.Run( "huntersglee_blockpanicreset", ply, panic )
                 local canResetPanic = not underwater and hookResult ~= true
                 local didScream
@@ -168,7 +168,7 @@ elseif SERVER then
                 end
                 panicSpeedPenaltyMul = 2
 
-            elseif panic >= 75 and increasing then
+            elseif panic >= 75 and increasing then -- scream softly, removes a bit of panic
                 if ply.screamPanicSounds and #ply.screamPanicSounds < 1 then
                     ply.screamPanicSounds = nil
 
@@ -182,7 +182,7 @@ elseif SERVER then
                         ply:EmitSound( self:GenderizeSound( ply, screamSound ), 88, 100, 1, CHAN_VOICE )
 
                     end
-                    ply:ViewPunch( AngleRand() * 0.01 )
+                    ply:ViewPunch( AngleRand() * 0.05 )
                     panic = panic + -10
 
                 end
@@ -190,14 +190,14 @@ elseif SERVER then
 
             end
 
-            if panic >= 25 and increasing then
+            if panic >= 25 and increasing then -- breathing sound
                 doPanicSound = true
                 panicSoundPitch = 90 + ( panic * 0.4 )
                 ply:ViewPunch( AngleRand() * 0.005 )
 
                 panicSpeedPenaltyMul = 0.45
 
-            elseif panic >= 25 and not increasing then
+            elseif panic >= 25 and not increasing then -- trigger the hitch/lower pitch breathing sound
                 doPanicSound = true
                 panicSoundHitch = true -- hitch when going from increasing to not increasing
                 panicSoundPitch = 80

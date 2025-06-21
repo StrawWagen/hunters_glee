@@ -36,7 +36,7 @@ local function DoFlashlight( state )
             local dieTime = me:Ping() / 150
             dieTime = math.max( 0.5, dieTime )
 
-            local dlight = DynamicLight( me:EntIndex() + player.GetCount() )
+            local dlight = DynamicLight( me:EntIndex() + player.GetCount() * 1000 )
             if dlight then
                 me.glee_spectateflashlight = dlight
                 dlight.pos = lightPos

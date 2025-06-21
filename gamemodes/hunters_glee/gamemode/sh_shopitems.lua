@@ -54,12 +54,13 @@
     -- skulls persist thru rounds -- DONE
     -- terminators drop metal skulls ( when not dissolved! ), worth 2x skulls -- DONE
     -- if map has skulls in it, use those first -- DONE
+    -- plys drop 10% of their skulls when they die as finest prey -- DONE!
 
     -- highlight player with most skulls -- done
     -- add sounds for finest prey stealing! -- DONE!
     -- use score as tiebreaker in finest prey -- DONE
     -- make skull hints not stupid -- DONE!
-    -- plys drop 10% of their skulls when they die as finest prey -- DONE!
+    -- above undone
 
 -- charge system
     -- use suit energy as battery -DONE
@@ -69,10 +70,10 @@
     -- make them always work when you have suit energy instead -- DONE
     -- radio uses suit battery -- DONE
 
--- fov decrease with panic! -DONE!
+-- fov decrease with panic! -DONE! -- undone
 -- make radio only transmit when held in hand -NO!
 
--- make nailer bit stronger- done
+-- make nailer bit stronger -done
 
 -- make alive players not be able to see text chats from the dead --done
 
@@ -105,12 +106,14 @@
 -- bot placing of slams + beartrap --done
 
 -- Replace stupid temp bools with ints, polish conduit/inversion cooldowns
--- fix stupid visual immortalizer bug
+-- fix stupid visual immortalizer bug -- done?
 
--- blessing
+-- blessing -- done
     -- crappier version of immortality
     -- but it lasts like minutes
--- fix balls infinite money
+-- fix balls infinite money --no
+-- give notifs when people break your crates/barrels? --no
+-- PULL ALL SPECTATORS TO GRIGORI -- done
 
 -- effigy
 -- pushes dead people away, makes them look away
@@ -126,7 +129,11 @@
 -- most skulls, additive ( all players skulls in one session, added up )
 
 -- radio draw channel instead of ammo
--- give notifs when people break your crates/barrels?
+
+-- ghostly wind undead item
+-- ttt button replacement
+-- barrels scoring confusing
+
 
 local thwaps = {
     Sound( "physics/body/body_medium_impact_hard3.wav" ),
@@ -2417,95 +2424,67 @@ local function ghostCanPurchase( purchaser )
 
 end
 
-
-local function screamerPurchase( purchaser, itemIdentifier )
-    local crate = ents.Create( "screamer_crate" )
-    crate.itemIdentifier = itemIdentifier
-    crate:SetOwner( purchaser )
-    crate:Spawn()
+local function setupPlacable( class, purchaser, itemIdentifier )
+    local thing = ents.Create( class )
+    thing.itemIdentifier = itemIdentifier
+    thing:SetOwner( purchaser )
+    thing:Spawn()
 
     GAMEMODE:CloseShopOnPly( purchaser )
+
+    return thing
+
+end
+
+
+local function screamerPurchase( purchaser, itemIdentifier )
+    setupPlacable( "screamer_crate", purchaser, itemIdentifier )
 
 end
 
 
 local function nonScreamerPurchase( purchaser, itemIdentifier )
-    local crate = ents.Create( "termhunt_normal_crate" )
-    crate.itemIdentifier = itemIdentifier
-    crate:SetOwner( purchaser )
-    crate:Spawn()
-
-    GAMEMODE:CloseShopOnPly( purchaser )
+    setupPlacable( "termhunt_normal_crate", purchaser, itemIdentifier )
 
 end
 
 
 local function weaponsCratePurchase( purchaser, itemIdentifier )
-    local crate = ents.Create( "termhunt_weapon_crate" )
-    crate.itemIdentifier = itemIdentifier
-    crate:SetOwner( purchaser )
-    crate:Spawn()
-
-    GAMEMODE:CloseShopOnPly( purchaser )
+    setupPlacable( "termhunt_weapon_crate", purchaser, itemIdentifier )
 
 end
 
 
 local function undeadBearTrapPurchase( purchaser, itemIdentifier )
-    local crate = ents.Create( "termhunt_undead_beartrap" )
-    crate.itemIdentifier = itemIdentifier
-    crate:SetOwner( purchaser )
-    crate:Spawn()
-
-    GAMEMODE:CloseShopOnPly( purchaser )
+    setupPlacable( "termhunt_undead_beartrap", purchaser, itemIdentifier )
 
 end
 
 
 local function manhackCratePurchase( purchaser, itemIdentifier )
-    local crate = ents.Create( "termhunt_manhack_crate" )
-    crate.itemIdentifier = itemIdentifier
-    crate:SetOwner( purchaser )
-    crate:Spawn()
-
-    GAMEMODE:CloseShopOnPly( purchaser )
+    setupPlacable( "termhunt_manhack_crate", purchaser, itemIdentifier )
 
 end
 
 
 local function barrelsPurchase( purchaser, itemIdentifier )
-    local barrels = ents.Create( "termhunt_barrels" )
-    barrels.itemIdentifier = itemIdentifier
-    barrels:SetOwner( purchaser )
-    barrels:Spawn()
-
-    GAMEMODE:CloseShopOnPly( purchaser )
+    setupPlacable( "termhunt_barrels", purchaser, itemIdentifier )
 
 end
 
 
 local function barnaclePurchase( purchaser, itemIdentifier )
-    local barnacle = ents.Create( "placable_barnacle" )
-    barnacle.itemIdentifier = itemIdentifier
-    barnacle:SetOwner( purchaser )
-    barnacle:Spawn()
-
-    GAMEMODE:CloseShopOnPly( purchaser )
+    setupPlacable( "placable_barnacle", purchaser, itemIdentifier )
 
 end
 
 
 local function doorLockerPurchase( purchaser, itemIdentifier )
-    local doorLocker = ents.Create( "door_locker" )
-    doorLocker.itemIdentifier = itemIdentifier
-    doorLocker:SetOwner( purchaser )
-    doorLocker:Spawn()
-
-    GAMEMODE:CloseShopOnPly( purchaser )
+    setupPlacable( "door_locker", purchaser, itemIdentifier )
 
 end
 
-local function inversionCanPurchase( _ )
+local function inversionCanPurchase()
     if GAMEMODE:isTemporaryTrueBool( "termhunt_player_swapper_initial" ) then return nil, "Not unlocked yet." end
     if GAMEMODE:isTemporaryTrueBool( "termhunt_player_swapper" ) then return nil, "It is too soon for another inversion to begin." end
     return true, nil
@@ -2513,52 +2492,32 @@ local function inversionCanPurchase( _ )
 end
 
 local function plySwapperPurchase( purchaser, itemIdentifier )
-    local playerSwapper = ents.Create( "player_swapper" )
-    playerSwapper.itemIdentifier = itemIdentifier
-    playerSwapper:SetOwner( purchaser )
-    playerSwapper:Spawn()
-
-    GAMEMODE:CloseShopOnPly( purchaser )
+    setupPlacable( "player_swapper", purchaser, itemIdentifier )
 
 end
 
 local function immortalizerPurchase( purchaser, itemIdentifier )
-    local immortalizer = ents.Create( "termhunt_immortalizer" )
-    immortalizer.itemIdentifier = itemIdentifier
-    immortalizer:SetOwner( purchaser )
-    immortalizer:Spawn()
+    setupPlacable( "termhunt_immortalizer", purchaser, itemIdentifier )
 
-    GAMEMODE:CloseShopOnPly( purchaser )
+end
+
+local function blessingPurchase( purchaser, itemIdentifier )
+    setupPlacable( "termhunt_blessing", purchaser, itemIdentifier )
 
 end
 
 local function presserPurchase( purchaser, itemIdentifier )
-    local presser = ents.Create( "termhunt_presser" )
-    presser.itemIdentifier = itemIdentifier
-    presser:SetOwner( purchaser )
-    presser:Spawn()
-
-    GAMEMODE:CloseShopOnPly( purchaser )
+    setupPlacable( "termhunt_presser", purchaser, itemIdentifier )
 
 end
 
 local function homicidalGleePurchase( purchaser, itemIdentifier )
-    local homicidalGlee = ents.Create( "termhunt_retribution" )
-    homicidalGlee.itemIdentifier = itemIdentifier
-    homicidalGlee:SetOwner( purchaser )
-    homicidalGlee:Spawn()
-
-    GAMEMODE:CloseShopOnPly( purchaser )
+    setupPlacable( "termhunt_retribution", purchaser, itemIdentifier )
 
 end
 
 local function termOverchargerPurchase( purchaser, itemIdentifier )
-    local overcharger = ents.Create( "termhunt_overcharger" )
-    overcharger.itemIdentifier = itemIdentifier
-    overcharger:SetOwner( purchaser )
-    overcharger:Spawn()
-
-    GAMEMODE:CloseShopOnPly( purchaser )
+    setupPlacable( "termhunt_overcharger", purchaser, itemIdentifier )
 
 end
 
@@ -2570,12 +2529,7 @@ local function conduitCanPurchase( _ )
 end
 
 local function conduitPurchase( purchaser, itemIdentifier )
-    local conduit = ents.Create( "termhunt_divine_conduit" )
-    conduit.itemIdentifier = itemIdentifier
-    conduit:SetOwner( purchaser )
-    conduit:Spawn()
-
-    GAMEMODE:CloseShopOnPly( purchaser )
+    setupPlacable( "termhunt_divine_conduit", purchaser, itemIdentifier )
 
 end
 
@@ -2803,19 +2757,23 @@ if SERVER then
     end )
 end
 
+local minGrigoriMinutes = 5
+
 local function divineChosenCanPurchase( purchaser )
 
     -- damn it i dropped my spaghetti ( basically makes sure grigori happens sooner if nobodys buying anything )
-    local minutes = 8 + ( GetGlobal2Int( "glee_chosen_timeoffset", 0 ) / 60 )
-    minutes = math.Clamp( minutes, 0, 20 )
-    local offset = 60 * minutes
-    local timeToAllow = GetGlobalInt( "huntersglee_round_begin_active" ) + offset
-    local remaining = timeToAllow - CurTime()
+    local addedBySpending = GetGlobal2Int( "glee_chosen_timeoffset", 0 ) / 60
+    local minutes = minGrigoriMinutes + addedBySpending
+    minutes = math.Clamp( minutes, minGrigoriMinutes, 20 ) -- 20 minutes can be real boring
+
+    local offset = 60 * minutes -- get actual offset
+    local allowTime = GetGlobalInt( "huntersglee_round_begin_active" ) + offset
+    local remaining = allowTime - CurTime()
     local formatted = string.FormattedTime( remaining, "%02i:%02i" )
 
     local pt1 = "Their patience has ended."
     local block
-    if timeToAllow > CurTime() then
+    if allowTime > CurTime() then
         pt1 = "Presently, their patience lasts " .. formatted .. "."
         block = true
 
@@ -2902,6 +2860,14 @@ if CLIENT then
             end
         end
     end )
+
+    hook.Add( "huntersglee_cl_displayhint_predeadhints", "glee_chosen_respawnhint", function( me ) -- tell people that respawning is free as grigori
+        if not me:GetNW2Bool( "isdivinechosen", false ) then return end
+        if me:GetNW2Int( "glee_divineintervetion_respawncount", 0 ) >= 3 then return end
+
+        return true, "Stop wasting time, RESPAWN YOURSELF.\nYou are true DIVINE INTERVENTION."
+
+    end )
 end
 
 local function divineChosenPurchase( purchaser )
@@ -2920,7 +2886,7 @@ local function divineChosenPurchase( purchaser )
     purchaser.divineChosenThink = function()
         local chosenWeap = purchaser:GetWeapon( "termhunt_divine_chosen" )
 
-        GAMEMODE:GivePanic( ply, -25 )
+        GAMEMODE:GivePanic( purchaser, -25 )
 
         if not IsValid( chosenWeap ) then
             purchaser.glee_IsDivineChosen = true
@@ -2952,6 +2918,16 @@ local function divineChosenPurchase( purchaser )
         return true
 
     end
+
+    local mdlLineBlockerName = "glee_chosen_blockmodellines_" .. purchaser:GetCreationID()
+    hook.Add( "glee_block_modellines", mdlLineBlockerName, function( ply )
+        if not IsValid( purchaser ) then hook.Remove( "glee_block_modellines", mdlLineBlockerName ) return end
+        if ply ~= purchaser then return end
+        if not purchaser.glee_IsDivineChosen then hook.Remove( "glee_block_modellines", mdlLineBlockerName ) return end
+
+        return true
+
+    end )
 
     local blockSpawningNearPlayersHook = "huntersglee_chosen_blocknearply"
 
@@ -3019,6 +2995,10 @@ local function divineChosenPurchase( purchaser )
 
         purchaser:Resurrect()
 
+        local oldCount = purchaser:GetNW2Int( "glee_divineintervention_respawncount", 0 )
+        local newCount = oldCount + 1
+        purchaser:SetNW2Int( "glee_divineintervention_respawncount", newCount )
+
         -- lighting where they spawn
         timer.Simple( 0.1, function()
 
@@ -3036,13 +3016,30 @@ local function divineChosenPurchase( purchaser )
         end )
     end
 
-    purchaser:glee_divineChosenResurrect()
+    purchaser:glee_divineChosenResurrect() -- resurrect them immediately
+
+    if not GAMEMODE.roundExtraData.divineChosenSnapped then
+        GAMEMODE.roundExtraData.divineChosenSnapped = true
+
+        timer.Simple( 0.5, function() -- make all spectators watch the first chosen 
+            if not IsValid( purchaser ) then return end
+            for _, ply in player.Iterator() do
+                if not IsValid( ply ) then continue end
+                if ply:Health() > 0 then continue end
+
+                GAMEMODE:SpectateThing( ply, purchaser )
+
+            end
+        end )
+    end
 
     local function undoInnate()
         purchaser.glee_IsDivineChosen = nil
         purchaser.glee_divineChosenResurrect = nil
         purchaser:SetNW2Bool( "isdivinechosen", false )
         SetGlobalBool( "chosenhasarrived", false )
+
+        purchaser:SetNW2Int( "glee_divineintervention_respawncount", 0 )
 
         -- cleanup wep stuff
         timer.Remove( maintainChosenWeapTimer )
@@ -3951,7 +3948,7 @@ local defaultItems = {
     },
     [ "immortalizer" ] = {
         name = "Gift of Immortality",
-        desc = "Gift 20 seconds, of true Immortality.\nCosts 300 to gift to players, 200 to gift to hunters.",
+        desc = "Gift 20 seconds, of true Immortality.\nCosts 200 to gift to hunters, 300 to gift to players.",
         costDecorative = "-200 / -300",
         cost = 0,
         markup = 1,
@@ -3963,6 +3960,21 @@ local defaultItems = {
         weight = 20,
         purchaseCheck = { undeadCheck, ghostCanPurchase },
         purchaseFunc = immortalizerPurchase,
+    },
+    [ "blessing" ] = {
+        name = "A Blessing",
+        desc = "2 minutes of health regeneration, and Calm.\nCosts 50 to gift to hunters, 100 to gift to players.",
+        costDecorative = "-50 / -100",
+        cost = 0,
+        markup = 1,
+        cooldown = 5,
+        category = "Gifts",
+        purchaseTimes = {
+            GM.ROUND_ACTIVE,
+        },
+        weight = 20,
+        purchaseCheck = { undeadCheck, ghostCanPurchase },
+        purchaseFunc = blessingPurchase,
     },
     -- crazy purchase
     [ "divineconduit" ] = {

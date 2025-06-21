@@ -511,6 +511,23 @@ hook.Add( "PlayerDeath", "glee_resetbeatstuff", function( ply )
 end )
 
 
+hook.Add( "huntersglee_player_into_active", "glee_yaponroundstart", function( ply )
+    if math.random( 0, 100 ) > 100 then return end -- 25% chance to play a line
+    if player.GetCount() < 5 then return end -- only when it's PACKED!
+    if GAMEMODE:GetPanic( ply ) > 25 then return end
+
+    local line = GAMEMODE:GetRandModelLine( ply, "onRoundStart" )
+    if not line then return end
+
+    timer.Simple( math.Rand( 5, 15 ), function()
+        if not IsValid( ply ) then return end
+        if ply:Health() <= 0 then return end
+        ply:EmitSound( line, 75, math.random( 99, 101 ), 1, CHAN_AUTO )
+
+    end )
+end )
+
+
 GM.TEAM_PLAYING = 1
 GM.TEAM_SPECTATE = 2
 
@@ -575,7 +592,7 @@ local function shutDownDeathCam( ply )
 
 end
 
-local function spectateThing( ply, thing )
+function GM:SpectateThing( ply, thing )
     ply:SpectateEntity( thing )
     ply:SetObserverMode( OBS_MODE_CHASE )
     net.Start( "glee_followedsomething" )
@@ -583,7 +600,7 @@ local function spectateThing( ply, thing )
 
 end
 
-local function stopSpectatingThing( ply )
+function GM:StopSpectatingThing( ply )
     local target = ply:GetObserverTarget()
     ply:SetObserverMode( OBS_MODE_ROAMING )
     if IsValid( target ) and target.GetShootPos then
@@ -632,7 +649,7 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
     if deathCamming then
         if isMovementKey( keyPressed ) and ply.spectateDoFreecamForced < CurTime() then
             shutDownDeathCam( ply )
-            stopSpectatingThing( ply )
+            GAMEMODE:StopSpectatingThing( ply )
 
         end
         if ply.spectateDoFreecam > CurTime() then return end
@@ -640,12 +657,12 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
         shutDownDeathCam( ply )
         if ply.glee_KillerToSpectate then
             spectated = ply.glee_KillerToSpectate
-            spectateThing( ply, spectated )
+            GAMEMODE:SpectateThing( ply, spectated )
 
             ply.glee_KillerToSpectate = nil
 
         else
-            stopSpectatingThing( ply )
+            GAMEMODE:StopSpectatingThing( ply )
 
         end
     elseif keyPressed == IN_ATTACK or keyPressed == IN_ATTACK2 then
@@ -672,18 +689,13 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
         -- go to next player
         if followingThing then
             local toSpectateCheck = table.Copy( stuffToSpectate )
-            local start
-            if direction == 1 then
-                start = 1
-
-            else
+            if direction == -1 then
                 toSpectateCheck = table.Reverse( stuffToSpectate )
-                start = #toSpectateCheck
 
             end
-            local thingToFollow = toSpectateCheck[start] -- default to first ply
+            local thingToFollow = toSpectateCheck[1] -- default to first in list
             local hitTheCurrent
-            for _, thing in ipairs( toSpectateCheck ) do
+            for _, thing in ipairs( toSpectateCheck ) do -- find after current thing
                 if hitTheCurrent then
                     thingToFollow = thing
                     break
@@ -733,13 +745,13 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
 
             if thingToFollow then
                 spectated = thingToFollow
-                spectateThing( ply, spectated )
+                GAMEMODE:SpectateThing( ply, spectated )
 
             end
         end
     elseif isMovementKey( keyPressed ) then
         if followingThing then
-            stopSpectatingThing( ply )
+            GAMEMODE:StopSpectatingThing( ply )
 
         end
     elseif keyPressed == IN_JUMP then
@@ -755,7 +767,7 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
             end
         end
     elseif followingThing and currentlySpectating.Health and currentlySpectating:Health() <= 0 then
-        stopSpectatingThing( ply )
+        GAMEMODE:StopSpectatingThing( ply )
 
         local toWatch
         local time
@@ -779,7 +791,7 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
             toWatch = IsValid( toWatch ) and toWatch or GAMEMODE:anotherAlivePlayer( ply )
             if not IsValid( toWatch ) then return end -- everyone is dead
 
-            spectateThing( ply, toWatch )
+            GAMEMODE:SpectateThing( ply, toWatch )
 
         end )
     end

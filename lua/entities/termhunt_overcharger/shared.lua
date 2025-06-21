@@ -78,6 +78,13 @@ function ENT:Place()
 
     -- see autorun/server/huntersglee_lightning
     glee_Overcharge( targ )
+
+    if targ.DoMetallicDamage then
+        local newHealth = math.min( targ:Health() + 500, targ:GetMaxHealth() )
+        targ:SetHealth( newHealth )
+
+    end
+
     GAMEMODE:setTemporaryTrueBool( "glee_playerplaced_termovercharger", 180 )
 
     huntersGlee_Announce( player.GetAll(), 80, 8, self.player:Nick() .. " has overcharged " .. GAMEMODE:GetNameOfBot( targ ) ..  "..." )

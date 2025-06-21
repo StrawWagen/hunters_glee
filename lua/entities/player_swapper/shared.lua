@@ -3,6 +3,8 @@ AddCSLuaFile()
 ENT.Type = "anim"
 ENT.Base = "screamer_crate"
 
+-- base for all ents that snap to stuff
+
 ENT.Category    = "Other"
 ENT.PrintName   = "Player Swapper"
 ENT.Author      = "StrawWagen"
@@ -211,8 +213,18 @@ function ENT:SwapPlayerAndTerminator( player, terminator )
     player:TeleportTo( terminatorPos )
 
     if terminator.SetPosNoTeleport then
+        terminator:KillAllTasksWith( "movement" )
         terminator:SetPosNoTeleport( playerPos )
+        local timerName = "glee_playerswapper_makesuretheygetthere_" .. tostring( terminator:GetCreationID() )
 
+        -- since bots are coroutined they could be in the middle of something that's gonna set them to an outdated pos, make sure they get there
+        timer.Create( timerName, 0.1, 20, function()
+            if not IsValid( terminator ) then timer.Remove( timerName ) return end
+            if terminator:GetPos():Distance2DSqr( playerPos ) > 500^2 then
+                terminator:SetPosNoTeleport( playerPos )
+
+            end
+        end )
     else
         terminator:SetPos( playerPos )
 
