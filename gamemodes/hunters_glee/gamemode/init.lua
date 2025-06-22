@@ -487,7 +487,7 @@ local function huntersAreInCorrectGroupsFunc()
     if getGroupsInPlayCheck < CurTime() then
         getGroupsInPlayCheck = CurTime() + 15
         table.Empty( groupsInPlay )
-        groupsInPlay = GAMEMODE:GetNavmeshGroupsWithPlayers()
+        groupsInPlay = GAMEMODE:GetNavmeshGroupsWithPlayers( true )
 
     end
 
