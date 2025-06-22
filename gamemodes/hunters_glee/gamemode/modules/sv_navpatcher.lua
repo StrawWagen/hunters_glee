@@ -64,7 +64,7 @@ function GAMEMODE:DoGreedyPatch()
 
     GAMEMODE:speakAsHuntersGlee( "Greedy navpatcher is... DONE!" )
 
-    GAMEMODE.HuntersGleeDoneTheGreedyPatch = #navmesh.GetAllNavAreas()
+    GAMEMODE.HuntersGleeDoneTheGreedyPatch = navmesh.GetNavAreaCount()
 
     coroutine_yield( "done" )
 

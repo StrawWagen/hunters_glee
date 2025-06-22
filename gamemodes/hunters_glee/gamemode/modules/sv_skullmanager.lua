@@ -246,7 +246,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_addskulljobs", function()
 
     nextSkullSpawnCheck = CurTime() + GAMEMODE:GenSpawnAdjusted( 20 )
 
-    if mapSkullCount <= 4 and #navmesh.GetAllNavAreas() > 4000 then
+    if mapSkullCount <= 4 and navmesh.GetNavAreaCount() > 4000 then
         mapSkullCount = 8
 
     end

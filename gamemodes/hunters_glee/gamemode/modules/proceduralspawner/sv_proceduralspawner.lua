@@ -185,7 +185,7 @@ hook.Add( "glee_sv_validgmthink", "glee_proceduralspawner", function( _, currSta
         else
             spawnRadius = 4000
 
-            if #navmesh.GetAllNavAreas() > 4000 then
+            if navmesh.GetNavAreaCount() > 4000 then
                 spawnRadius = 8000
 
             end

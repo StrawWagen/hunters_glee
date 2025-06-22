@@ -108,7 +108,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_addbeartrapjobs", function()
 
     nextBearTrapSpawnCheck = CurTime() + GAMEMODE:GenSpawnAdjusted( 60 )
 
-    if mapBearTrapCount > 4 and #navmesh.GetAllNavAreas() < 4000 then
+    if mapBearTrapCount > 4 and navmesh.GetNavAreaCount() < 4000 then
         mapBearTrapCount = math.random( 1, 4 )
 
     end
