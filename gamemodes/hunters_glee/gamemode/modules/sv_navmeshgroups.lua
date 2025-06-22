@@ -25,92 +25,76 @@ local function AreaOrLadderGetAdjacentAreas( areaOrLadder )
 end
 
 --funcs for making sure people dont fucking end up in "map teleport rooms"
-local function compareCorners( area, old )
-    local appended
+local function updateCorners( area, corners )
+
+    local id
 
     -- north westy
-    local NWCorner1 = old[0]
-    local NWCorner2 = area:GetCorner( 0 )
+    id = 0
+    local NWCorner = corners[id]
+    local NWCorner2 = area:GetCorner( id )
 
-    local NWCorner = NWCorner1
     if NWCorner2.y < NWCorner.y then
-        NWCorner.y = NWCorner2.y
-        NWCorner.z = NWCorner2.z
-        appended = true
+        corners[id].y = NWCorner2.y
+        corners[id].z = NWCorner2.z
 
     end
     if NWCorner2.x < NWCorner.x then
-        NWCorner.x = NWCorner2.x
-        NWCorner.z = NWCorner2.z
-        appended = true
+        corners[id].x = NWCorner2.x
+        corners[id].z = NWCorner2.z
 
     end
 
     -- find most north easty corner
-    local NECorner1 = old[1]
-    local NECorner2 = area:GetCorner( 1 )
+    id = 1
+    local NECorner = corners[id]
+    local NECorner2 = area:GetCorner( id )
 
-    local NECorner = NECorner1
     if NECorner2.y < NECorner.y then
-        NECorner.y = NECorner2.y
-        NECorner.z = NECorner2.z
-        appended = true
+        corners[id].y = NECorner2.y
+        corners[id].z = NECorner2.z
 
     end
     if NECorner2.x > NECorner.x then
-        NECorner.x = NECorner2.x
-        NECorner.z = NECorner2.z
-        appended = true
+        corners[id].x = NECorner2.x
+        corners[id].z = NECorner2.z
 
     end
 
     -- find most south easty corner
-    local SECorner1 = old[2]
-    local SECorner2 = area:GetCorner( 2 )
+    id = 2
+    local SECorner = corners[id]
+    local SECorner2 = area:GetCorner( id )
 
-    local SECorner = SECorner1
     if SECorner2.y > SECorner.y then
-        SECorner.y = SECorner2.y
-        SECorner.z = SECorner2.z
-        appended = true
+        corners[id].y = SECorner2.y
+        corners[id].z = SECorner2.z
 
     end
     if SECorner2.x > SECorner.x then
-        SECorner.x = SECorner2.x
-        SECorner.z = SECorner2.z
-        appended = true
+        corners[id].x = SECorner2.x
+        corners[id].z = SECorner2.z
 
     end
 
     -- find most south westy corner
-    local SWCorner1 = old[3]
-    local SWCorner2 = area:GetCorner( 3 )
+    id = 3
+    local SWCorner = corners[id]
+    local SWCorner2 = area:GetCorner( id )
 
-    local SWCorner = SWCorner1
     if SWCorner2.y > SWCorner.y then
-        SWCorner.y = SWCorner2.y
-        SWCorner.z = SWCorner2.z
-        appended = true
+        corners[id].y = SWCorner2.y
+        corners[id].z = SWCorner2.z
 
     end
     if SWCorner2.x < SWCorner.x then
-        SWCorner.x = SWCorner2.x
-        SWCorner.z = SWCorner2.z
-        appended = true
+        corners[id].x = SWCorner2.x
+        corners[id].z = SWCorner2.z
 
     end
 
-    if appended then
-        local newCorners = {
-            [0] = NWCorner,
-            [1] = NECorner,
-            [2] = SECorner,
-            [3] = SWCorner
+    return true
 
-        }
-        return true, newCorners
-
-    end
 end
 
 function GM:GetConnectedNavAreaGroups( navAreas )
@@ -136,10 +120,10 @@ function GM:GetConnectedNavAreaGroups( navAreas )
 
             local defaultCorner = navArea:GetCenter()
             local currBestCorners = {
-                [0] = defaultCorner,
-                [1] = defaultCorner,
-                [2] = defaultCorner,
-                [3] = defaultCorner
+                [0] = Vector( defaultCorner.x, defaultCorner.y, defaultCorner.z ), -- these just being defaultCorner caused so many problems, i love vectors! 
+                [1] = Vector( defaultCorner.x, defaultCorner.y, defaultCorner.z ),
+                [2] = Vector( defaultCorner.x, defaultCorner.y, defaultCorner.z ),
+                [3] = Vector( defaultCorner.x, defaultCorner.y, defaultCorner.z )
 
             }
 
@@ -175,8 +159,7 @@ function GM:GetConnectedNavAreaGroups( navAreas )
                     -- ladders dont go in the groups, just connect them to eachother
                     if connectedNavArea.GetTop then continue end
 
-                    local didAppend, newBestCorners = compareCorners( connectedNavArea, currBestCorners )
-                    if didAppend then currBestCorners = newBestCorners end
+                    updateCorners( connectedNavArea, currBestCorners )
 
                     -- add the connected navarea to the group
                     table.insert( group, connectedNavArea )
@@ -187,8 +170,22 @@ function GM:GetConnectedNavAreaGroups( navAreas )
             table.insert( groups, group )
             table.insert( groupCorners, currBestCorners )
 
+            --[[
+                local red = Color( 255, 0, 0 )
+                debugoverlay.Line( currBestCorners[0], currBestCorners[1], 5, red, true )
+                debugoverlay.Line( currBestCorners[1], currBestCorners[2], 5, red, true )
+                debugoverlay.Line( currBestCorners[2], currBestCorners[3], 5, red, true )
+                debugoverlay.Line( currBestCorners[3], currBestCorners[0], 5, red, true )
+            --]]
+
         end
     end
+
+    -- finally, sort all the groups by size, smallest first
+    table.sort( groups, function( a, b )
+        return #a < #b
+
+    end )
 
     hook.Run( "glee_connectedgroups_end", navAreas )
 
@@ -296,11 +293,11 @@ function GM:NavAreaExistsInGroups( navArea, navAreaGroups )
 end
 
 -- used for finding out WHICH group player is in
-function GM:GetGroupThatNavareaExistsIn( navArea, navAreaGroups )
+function GM:GetGroupThatNavareaExistsIn( navArea, navAreaGroups, yieldable )
     -- iterate over each navarea group
     if istable( navAreaGroups ) then
         for _, group in ipairs( navAreaGroups ) do
-            if coroutine_running() then
+            if yieldable then
                 coroutine_yield()
 
             end
@@ -399,7 +396,7 @@ function GM:GetAreaInOccupiedBigGroupOrRandomBigGroup( noUnderWater )
 
 end
 
-function GM:GetNavmeshGroupsWithPlayers()
+function GM:GetNavmeshGroupsWithPlayers( yieldable )
     local bigGroups = GAMEMODE.biggestNavmeshGroups
     local alivePlayers = GAMEMODE:getAlivePlayers()
 
@@ -409,7 +406,7 @@ function GM:GetNavmeshGroupsWithPlayers()
     local doneGroups = {}
 
     for _, alivePly in ipairs( alivePlayers ) do
-        if coroutine_running() then
+        if yieldable then
             coroutine_yield()
 
         end

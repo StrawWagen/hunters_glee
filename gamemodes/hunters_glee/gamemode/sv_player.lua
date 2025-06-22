@@ -16,10 +16,11 @@ local posCanSeeComplex = terminator_Extras.PosCanSeeComplex
 local defaultHeartAttackBpm = 290
 local bpmStartScreamingLikeCrazy = 225
 
+local entMeta = FindMetaTable( "Entity" )
 
-local meta = FindMetaTable( "Player" )
+local plyMeta = FindMetaTable( "Player" )
 
-function meta:GetNavAreaData()
+function plyMeta:GetNavAreaData()
     if not IsValid( self.glee_CachedNavArea ) then
         self:CacheNavArea()
 
@@ -28,7 +29,7 @@ function meta:GetNavAreaData()
 
 end
 
-function meta:CacheNavArea()
+function plyMeta:CacheNavArea()
     local myPos = self:GetPos()
     if not util_IsInWorld( myPos ) then
         self.glee_CachedNavArea = nil
@@ -65,296 +66,8 @@ function GM:calculateBPM( cur, players )
     local punishEscapingBool = punishEscaping:GetBool()
     local hunters = self.glee_Hunters
     for _, ply in ipairs( players ) do
-        if ply:Health() > 0 then
-            local plyPos = ply:GetShootPos()
-            local plysMoveType = ply:GetMoveType()
-            local nearestHunter = self:getNearestHunter( plyPos, hunters )
-            local nextDistancePosSave = ply.nextDistancePosSave or 0
-            local directlyUnderneathArea, distToAreaSqr = ply:GetNavAreaData()
-
-            local canSee = nil
-            local targetted = nil
-            local mentosDist = math.huge
-            local nearestHunterScaryness = 0
-
-            -- fun variables
-            ply.huntersGleeHunterThatIsTargetingPly = nil
-            ply.huntersGleeHunterThatCanSeePly = nil
-            ply.huntersGleeNearestHunterToPly = nil
-
-            if IsValid( nearestHunter ) then
-                ply.huntersGleeNearestHunterToPly = nearestHunter
-                hook.Run( "glee_hunter_nearbyaply", nearestHunter, ply )
-
-                -- is player inside mentos shaped volume?????
-                -- means less score if ply is simply above enemy
-                local mentosShapedDistance = nearestHunter:EyePos() - plyPos
-                mentosShapedDistance.z = mentosShapedDistance.z / 2
-
-                nearestHunterScaryness = self:GetBotScaryness( ply, nearestHunter )
-
-                mentosDist = mentosShapedDistance:Length()
-
-                if nearestHunter.TerminatorNextBot then
-                    canSee = nearestHunter.IsSeeEnemy
-                    targetted = nearestHunter:GetEnemy() == ply
-                else
-                    canSee = terminator_Extras.PosCanSee( nearestHunter:EyePos(), plyPos )
-                    targetted = canSee
-
-                end
-
-                if targetted then
-                    ply.huntersGleeHunterThatIsTargetingPly = nearestHunter
-
-                end
-                if canSee then
-                    nearestHunter.glee_SeeEnemy = cur + 1
-                    ply.huntersGleeHunterThatCanSeePly = nearestHunter
-                end
-            end
-
-            -- don't give movement score if player is walking in tight circles
-            if nextDistancePosSave < cur then
-                ply.nextDistancePosSave = cur + 1
-                local plyPositions = ply.plyPositions or {}
-                table.insert( plyPositions, plyPos )
-
-                if #plyPositions >= 25 then -- x second delay
-                    --debugoverlay.Cross( plyPositions[1], 5, 5, Color( 255,255,255 ), true )
-                    ply.oldDistanceToOldPosition = plyPositions[1]:Distance( plyPos ) -- laggy :distance()!
-                    --print( distanceToOldPosition )
-                    table.remove( plyPositions, 1 )
-
-                end
-
-                ply.plyPositions = plyPositions
-
-            end
-
-            distanceToOldPosition = ply.oldDistanceToOldPosition or math.huge
-
-            local nextBPMCalc = ply.nextBPMCalc or 0
-
-            if nextBPMCalc > cur then return end
-
-            ply.nextBPMCalc = cur + math.random( 0.15, 0.25 )
-
-            -- make resting bpm bigger
-            local restingBpmScale = hook.Run( "huntersglee_restingbpmscale", ply ) or 1
-
-            local restingBPM = restingBPMPermanent * restingBpmScale
-            local mentosBPM = 0
-            if mentosDist < 2000 then
-                -- magic numbers that make distance to hunter bpm feel good
-                local rawScalar = math.abs( mentosDist - 2000 ) / 42
-                local bpmRampup = math.Clamp( rawScalar, 15, 50 )
-                mentosBPM = 10 + bpmRampup
-                mentosBPM = mentosBPM * nearestHunterScaryness
-
-            end
-
-            local targettedBPM = 0
-            local canSeeBPM = 0
-
-            if canSee then
-                canSeeBPM = 10 * nearestHunterScaryness
-            end
-            if targetted then
-                targettedBPM = 8 * nearestHunterScaryness
-            end
-
-            -- here's the check that stops free bpm for running in circles
-            local coveringNewGround = distanceToOldPosition > 2000
-            local speedBPMMul = 1
-            if not coveringNewGround then
-                speedBPMMul = 0.05
-
-            end
-
-            local plyVel = ply:GetVelocity()
-            local plySpeed = plyVel:Length()
-            local fallingForever = plySpeed > 2000
-            if fallingForever then
-                local foreverTr = {
-                    start = plyPos,
-                    endpos = plyPos + plyVel * 1000,
-                    mask = MASK_NPCWORLDSTATIC,
-                    maxs = airCheckHull,
-                    mins = -airCheckHull,
-                }
-                local foreverResult = util.TraceHull( foreverTr )
-                fallingForever = not foreverResult.hit
-
-            end
-
-            local tDat = {
-                start = plyPos + tStartOffset,
-                endpos = plyPos + belowOffset,
-                mask = MASK_NPCWORLDSTATIC,
-                maxs = airCheckHull,
-                mins = -airCheckHull,
-            }
-            local closeToGround = util.TraceHull( tDat ).Hit
-            local onArea = nil
-
-            -- definitely not on the navmesh.
-            if directlyUnderneathArea and distToAreaSqr > distWayTooFarOffNavmesh then
-                onArea = false
-
-            -- cheap
-            elseif directlyUnderneathArea and distToAreaSqr < distNeededToBeOnArea and directlyUnderneathArea:Contains( plyPos ) then
-                onArea = directlyUnderneathArea:IsValid()
-
-            -- not cheap
-            elseif directlyUnderneathArea and directlyUnderneathArea:IsValid() then
-                -- only check horizontal, sometimes navareas end up underneath floors
-                local closestPos = directlyUnderneathArea:GetClosestPointOnArea( plyPos )
-                local highestZ = math.max( closestPos.z, plyPos.z )
-                local lowestZ = math.min( closestPos.z, plyPos.z )
-                closestPos.z = highestZ
-                plyPos.z = highestZ
-
-                local plyCanSeeArea = posCanSeeComplex( plyPos, closestPos, ply, MASK_SOLID_BRUSHONLY )
-
-                -- handle "directly under navmeshed displacement floor" edge case
-                closestPos.z = highestZ + 25
-                plyPos.z = lowestZ + 25
-
-                -- catch people behind displacements
-                onArea = plyCanSeeArea and posCanSeeComplex( closestPos, plyPos, ply, MASK_SOLID_BRUSHONLY )
-
-            end
-
-            local onLadder = plysMoveType == MOVETYPE_LADDER
-            local doBpmDecrease = false
-            local blockScore = false
-
-            -- if there's no valid area AND we are on the ground, then block
-            local somewhereWrong = ( not onArea ) and closeToGround
-            somewhereWrong = somewhereWrong or fallingForever
-
-            if somewhereWrong then
-                blockScore = true
-                doBpmDecrease = true
-                if not terminator_Extras.IsLivePatching then
-                    terminator_Extras.dynamicallyPatchPos( ply:GetPos() )
-
-                end
-            end
-            if onLadder then
-                blockScore = true
-                doBpmDecrease = true
-
-            end
-
-            local bpmPerSpeed = 0.05 * speedBPMMul
-            local speedBPM = plySpeed * bpmPerSpeed
-
-            local initialScale = 1
-            local nonRestingScale = hook.Run( "termhunt_scaleaddedbpm", ply, initialScale ) or initialScale
-
-            local scaredBpm = mentosBPM + canSeeBPM + targettedBPM
-            local speedAndScaredBPM = ( speedBPM + scaredBpm ) * nonRestingScale
-            local idealBPM = restingBPM + speedAndScaredBPM
-            idealBPM = math.Round( idealBPM )
-
-            -- reward people who get high bpm with long-lasting bpm increase
-            local BPMHistoric = ply.BPMHistoric or { idealBPM }
-            table.insert( BPMHistoric, idealBPM )
-            local historySize = 120
-            if table.Count( BPMHistoric ) > historySize then
-                -- munch
-                for _ = 1, math.abs( table.Count( BPMHistoric ) - historySize ) do
-                    table.remove( BPMHistoric, 1 )
-                end
-            end
-
-            local extent = 0
-            local additive = 0
-            -- add up historic bpm for math later
-            for _, curHistoricBPM in ipairs( BPMHistoric ) do
-                extent = extent + 1
-                additive = additive + curHistoricBPM
-            end
-
-            -- if we have panic then bpm matches the panic
-            local activitySpikeBPM = ( idealBPM / 2 ) + scaredBpm
-            local panicBpmComponent = math.Clamp( self:GetPanic( ply ), 0, 110 )
-            activitySpikeBPM = math.Clamp( activitySpikeBPM, panicBpmComponent, math.huge )
-
-            -- start out with historic bpm
-            local BPM = additive / extent
-            -- then bring it up to the activity spike
-            BPM = math.Round( math.Clamp( BPM, activitySpikeBPM, math.huge ) )
-            ply.BPMHistoric = BPMHistoric
-
-            -- when ply is off navmesh, slowly sap their life
-            if doBpmDecrease and punishEscapingBool then
-                local damaged
-                local exceptionMovement = plysMoveType == MOVETYPE_NOCLIP or ply:Health() <= 0 or ply:GetObserverMode() ~= OBS_MODE_NONE or ply:InVehicle()
-                if not exceptionMovement and hasNavmesh then
-                    local BPMDecrease = ply.historicBPMDecrease or 0
-                    local added = 2
-                    if onLadder then
-                        added = 0.5
-
-                    elseif fallingForever then
-                        added = 8
-                        self:GivePanic( ply, 25 )
-
-                    end
-                    ply.historicBPMDecrease = BPMDecrease + added
-
-                    BPM = math.Clamp( BPM + -BPMDecrease, 0, math.huge )
-                    BPM = math.Round( BPM )
-
-                    if BPM < restingBPMPermanent then
-                        self:GivePanic( ply, 3 )
-
-                    end
-                    if BPM < restingBPMPermanent and BPMDecrease > restingBPMPermanent * 2 then
-                        local divisor = 100
-                        if BPMDecrease > restingBPMPermanent * 4 then
-                            divisor = 10
-                        elseif BPMDecrease > restingBPMPermanent * 3 then
-                            divisor = 50
-                        end
-                        local damage = math.ceil( ply:GetMaxHealth() / divisor )
-                        ply:TakeDamage( damage, game.GetWorld(), game.GetWorld() )
-                        huntersGlee_Announce( { ply }, 100, 2.5, "Something is off.\nIt feels like you're somewhere wrong..." )
-
-                        damaged = true
-
-                    end
-                end
-                -- simple fix!
-                if damaged and self:IsUnderDisplacementExtensive( plyPos ) then
-                    ply:BeginUnstuck()
-
-                end
-            -- ramp down and then cleanup the decrease
-            elseif ply.historicBPMDecrease then
-                local BPMDecrease = ply.historicBPMDecrease
-                if BPMDecrease and BPMDecrease > 0 then
-                    ply.historicBPMDecrease = ply.historicBPMDecrease + -1
-
-                elseif BPMDecrease and BPMDecrease <= 0 then
-                    ply.historicBPMDecrease = nil
-
-                end
-            end
-
-            ply:SetNWInt( "termHuntPlyBPM", BPM )
-            ply:SetNWBool( "termHuntBlockScoring", blockScore )
-
-            local heartAttackScore = ply.glee_HeartAttackScore or 0
-            if heartAttackScore > 0 then
-                self:DoHeartAttackThink( ply )
-
-            end
-
-        else
+        local plyHealth = ply:Health()
+        if plyHealth <= 0 then
             if istable( ply.BPMHistoric ) then
                 ply.BPMHistoric = nil
 
@@ -364,6 +77,313 @@ function GM:calculateBPM( cur, players )
 
             end
             ply:SetNWInt( "termHuntPlyBPM", 0 )
+
+            return
+
+        end
+
+        local plyPos = ply:GetShootPos()
+        local plysMoveType = ply:GetMoveType()
+        local nearestHunter = self:getNearestHunter( plyPos, hunters )
+        local nextDistancePosSave = ply.nextDistancePosSave or 0
+        local directlyUnderneathArea, distToAreaSqr = ply:GetNavAreaData()
+
+        local canSee = nil
+        local targetted = nil
+        local mentosDist = math.huge
+        local nearestHunterScaryness = 0
+
+        -- fun variables
+        ply.huntersGleeHunterThatIsTargetingPly = nil
+        ply.huntersGleeHunterThatCanSeePly = nil
+        ply.huntersGleeNearestHunterToPly = nil
+
+        if IsValid( nearestHunter ) then
+            ply.huntersGleeNearestHunterToPly = nearestHunter
+            hook.Run( "glee_hunter_nearbyaply", nearestHunter, ply )
+
+            -- is player inside mentos shaped volume?????
+            -- means less score if ply is simply above enemy
+            local mentosShapedDistance = nearestHunter:EyePos() - plyPos
+            mentosShapedDistance.z = mentosShapedDistance.z / 2
+
+            nearestHunterScaryness = self:GetBotScaryness( ply, nearestHunter )
+
+            mentosDist = mentosShapedDistance:Length()
+
+            if nearestHunter.TerminatorNextBot then
+                canSee = nearestHunter.IsSeeEnemy
+                targetted = nearestHunter:GetEnemy() == ply
+            else
+                canSee = terminator_Extras.PosCanSee( nearestHunter:EyePos(), plyPos )
+                targetted = canSee
+
+            end
+
+            if targetted then
+                ply.huntersGleeHunterThatIsTargetingPly = nearestHunter
+
+            end
+            if canSee then
+                nearestHunter.glee_SeeEnemy = cur + 1
+                ply.huntersGleeHunterThatCanSeePly = nearestHunter
+            end
+        end
+
+        -- don't give movement score if player is walking in tight circles
+        if nextDistancePosSave < cur then
+            ply.nextDistancePosSave = cur + 1
+            local plyPositions = ply.plyPositions or {}
+            table.insert( plyPositions, plyPos )
+
+            if #plyPositions >= 25 then -- x second delay
+                --debugoverlay.Cross( plyPositions[1], 5, 5, Color( 255,255,255 ), true )
+                ply.oldDistanceToOldPosition = plyPositions[1]:Distance( plyPos ) -- laggy :distance()!
+                --print( distanceToOldPosition )
+                table.remove( plyPositions, 1 )
+
+            end
+
+            ply.plyPositions = plyPositions
+
+        end
+
+        distanceToOldPosition = ply.oldDistanceToOldPosition or math.huge
+
+        local nextBPMCalc = ply.nextBPMCalc or 0
+
+        if nextBPMCalc > cur then return end
+
+        ply.nextBPMCalc = cur + math.random( 0.15, 0.25 )
+
+        local restingBPM = restingBPMPermanent
+
+        -- for making resting bpm bigger
+        local restingBpmScale = hook.Run( "huntersglee_restingbpmscale", ply ) or 1
+        restingBPM = restingBPM * restingBpmScale
+
+        local mentosBPM = 0
+        if mentosDist < 2000 then
+            -- magic numbers that make distance to hunter bpm feel good
+            local rawScalar = math.abs( mentosDist - 2000 ) / 42
+            local bpmRampup = math.Clamp( rawScalar, 15, 50 )
+            mentosBPM = 10 + bpmRampup
+            mentosBPM = mentosBPM * nearestHunterScaryness
+
+        end
+
+        local targettedBPM = 0
+        local canSeeBPM = 0
+
+        if canSee then
+            canSeeBPM = 10 * nearestHunterScaryness
+        end
+        if targetted then
+            targettedBPM = 8 * nearestHunterScaryness
+        end
+
+        -- here's the check that stops free bpm for running in circles
+        local coveringNewGround = distanceToOldPosition > 2000
+        local speedBPMMul = 1
+        if not coveringNewGround then
+            speedBPMMul = 0.05
+
+        end
+
+        local plyVel = ply:GetVelocity()
+        local plySpeed = plyVel:Length()
+        local fallingForever = plySpeed > 2000
+        if fallingForever then
+            local foreverTr = {
+                start = plyPos,
+                endpos = plyPos + plyVel * 1000,
+                mask = MASK_NPCWORLDSTATIC,
+                maxs = airCheckHull,
+                mins = -airCheckHull,
+            }
+            local foreverResult = util.TraceHull( foreverTr )
+            fallingForever = not foreverResult.hit
+
+        end
+
+        local tDat = {
+            start = plyPos + tStartOffset,
+            endpos = plyPos + belowOffset,
+            mask = MASK_NPCWORLDSTATIC,
+            maxs = airCheckHull,
+            mins = -airCheckHull,
+        }
+        local closeToGround = util.TraceHull( tDat ).Hit
+        local onArea = nil
+
+        -- definitely not on the navmesh.
+        if directlyUnderneathArea and distToAreaSqr > distWayTooFarOffNavmesh then
+            onArea = false
+
+        -- cheap
+        elseif directlyUnderneathArea and distToAreaSqr < distNeededToBeOnArea and directlyUnderneathArea:Contains( plyPos ) then
+            onArea = directlyUnderneathArea:IsValid()
+
+        -- not cheap
+        elseif directlyUnderneathArea and directlyUnderneathArea:IsValid() then
+            -- only check horizontal, sometimes navareas end up underneath floors
+            local closestPos = directlyUnderneathArea:GetClosestPointOnArea( plyPos )
+            local highestZ = math.max( closestPos.z, plyPos.z )
+            local lowestZ = math.min( closestPos.z, plyPos.z )
+            closestPos.z = highestZ
+            plyPos.z = highestZ
+
+            local plyCanSeeArea = posCanSeeComplex( plyPos, closestPos, ply, MASK_SOLID_BRUSHONLY )
+
+            -- handle "directly under navmeshed displacement floor" edge case
+            closestPos.z = highestZ + 25
+            plyPos.z = lowestZ + 25
+
+            -- catch people behind displacements
+            onArea = plyCanSeeArea and posCanSeeComplex( closestPos, plyPos, ply, MASK_SOLID_BRUSHONLY )
+
+        end
+
+        local onLadder = plysMoveType == MOVETYPE_LADDER
+        local doBpmDecrease = false
+        local blockScore = false
+
+        -- if there's no valid area AND we are on the ground, then block
+        local somewhereWrong = ( not onArea ) and closeToGround
+        somewhereWrong = somewhereWrong or fallingForever
+
+        if somewhereWrong then
+            blockScore = true
+            doBpmDecrease = true
+            if not terminator_Extras.IsLivePatching then
+                terminator_Extras.dynamicallyPatchPos( ply:GetPos() )
+
+            end
+        end
+        if onLadder then
+            blockScore = true
+            doBpmDecrease = true
+
+        end
+
+        local bpmPerSpeed = 0.05 * speedBPMMul
+        local speedBPM = plySpeed * bpmPerSpeed
+
+        local initialScale = 1
+        local nonRestingScale = hook.Run( "termhunt_scaleaddedbpm", ply, initialScale ) or initialScale
+
+        local scaredBpm = mentosBPM + canSeeBPM + targettedBPM
+        local speedAndScaredBPM = ( speedBPM + scaredBpm ) * nonRestingScale
+
+        local minBPMHealth = 0
+        if plyHealth <= 1 then
+            minBPMHealth = 35
+
+        elseif plyHealth <= 5 then
+            minBPMHealth = 10
+
+        elseif plyHealth <= 15 then
+            minBPMHealth = 5
+
+        end
+        speedAndScaredBPM = math.Clamp( speedAndScaredBPM, minBPMHealth, math.huge )
+
+        local idealBPM = restingBPM + speedAndScaredBPM
+        idealBPM = math.Round( idealBPM )
+
+        -- reward people who get high bpm with long-lasting bpm increase
+        local BPMHistoric = ply.BPMHistoric or { idealBPM }
+        table.insert( BPMHistoric, idealBPM )
+        local historySize = 120
+        if table.Count( BPMHistoric ) > historySize then
+            -- munch
+            for _ = 1, math.abs( table.Count( BPMHistoric ) - historySize ) do
+                table.remove( BPMHistoric, 1 )
+            end
+        end
+
+        local extent = 0
+        local additive = 0
+        -- add up historic bpm for math later
+        for _, curHistoricBPM in ipairs( BPMHistoric ) do
+            extent = extent + 1
+            additive = additive + curHistoricBPM
+        end
+
+        -- if we have panic then bpm matches the panic
+        local activitySpikeBPM = ( idealBPM / 2 ) + scaredBpm
+        local panicBpmComponent = math.Clamp( self:GetPanic( ply ), 0, 110 )
+        activitySpikeBPM = math.Clamp( activitySpikeBPM, panicBpmComponent, math.huge )
+
+        -- start out with historic bpm
+        local BPM = additive / extent
+        -- then bring it up to the activity spike
+        BPM = math.Round( math.Clamp( BPM, activitySpikeBPM, math.huge ) )
+        ply.BPMHistoric = BPMHistoric
+
+        -- when ply is off navmesh, slowly sap their life
+        if doBpmDecrease and punishEscapingBool then
+            local damaged
+            local exceptionMovement = plysMoveType == MOVETYPE_NOCLIP or plyHealth <= 0 or ply:GetObserverMode() ~= OBS_MODE_NONE or ply:InVehicle()
+            if not exceptionMovement and hasNavmesh then
+                local BPMDecrease = ply.historicBPMDecrease or 0
+                local added = 2
+                if onLadder then
+                    added = 0.5
+
+                elseif fallingForever then
+                    added = 8
+                    self:GivePanic( ply, 25 )
+
+                end
+                ply.historicBPMDecrease = BPMDecrease + added
+
+                BPM = math.Clamp( BPM + -BPMDecrease, 0, math.huge )
+                BPM = math.Round( BPM )
+
+                if BPM < restingBPMPermanent then
+                    self:GivePanic( ply, 3 )
+
+                end
+                if BPM < restingBPMPermanent and BPMDecrease > restingBPMPermanent * 2 then
+                    local divisor = 100
+                    if BPMDecrease > restingBPMPermanent * 4 then
+                        divisor = 10
+                    elseif BPMDecrease > restingBPMPermanent * 3 then
+                        divisor = 50
+                    end
+                    local damage = math.ceil( ply:GetMaxHealth() / divisor )
+                    ply:TakeDamage( damage, game.GetWorld(), game.GetWorld() )
+                    huntersGlee_Announce( { ply }, 100, 2.5, "Something is off.\nIt feels like you're somewhere wrong..." )
+
+                    damaged = true
+
+                end
+            end
+            -- simple fix!
+            if damaged and self:IsUnderDisplacementExtensive( plyPos ) then
+                ply:BeginUnstuck()
+
+            end
+        -- ramp down and then cleanup the decrease
+        elseif ply.historicBPMDecrease then
+            local BPMDecrease = ply.historicBPMDecrease
+            if BPMDecrease and BPMDecrease > 0 then
+                ply.historicBPMDecrease = ply.historicBPMDecrease + -1
+
+            elseif BPMDecrease and BPMDecrease <= 0 then
+                ply.historicBPMDecrease = nil
+
+            end
+        end
+
+        ply:SetNWInt( "termHuntPlyBPM", BPM )
+        ply:SetNWBool( "termHuntBlockScoring", blockScore )
+
+        local heartAttackScore = ply.glee_HeartAttackScore or 0
+        if heartAttackScore > 0 then
+            self:DoHeartAttackThink( ply )
+
         end
     end
 end
@@ -371,19 +391,20 @@ end
 function GM:manageServersideCountOfBeats()
     local players = player.GetAll()
     for _, ply in ipairs( players ) do
+        local plysTbl = entMeta.GetTable( ply )
         -- scoring
-        local BPM = ply:GetNWInt( "termHuntPlyBPM" )
+        local BPM = entMeta.GetNWInt( ply, "termHuntPlyBPM" )
         -- block score, eg player is not on navmesh, or is on ladder
-        local blockingScore = ply:Health() <= 0 or ply:GetNWBool( "termHuntBlockScoring" ) or ply:GetNWBool( "termHuntBlockScoring2" ) -- wow 2 of them
+        local blockingScore = entMeta.Health( ply ) <= 0 or entMeta.GetNWBool( ply, "termHuntBlockScoring" ) or entMeta.GetNWBool( ply, "termHuntBlockScoring2" ) -- wow 2 of them
         if BPM > 1 and not blockingScore then
 
             -- get when we should do the next beat, it's this way instead of a timer so that if bpm gets super fast super quick, the actual new time between beats is respected
             local beatTime = math.Clamp( 60 / BPM, 0, math.huge )
-            local lastBeat = ply.lastBeatTime or 0
+            local lastBeat = plysTbl.lastBeatTime or 0
             local doServersideBeat = ( lastBeat + beatTime ) < CurTime()
 
             if doServersideBeat and GAMEMODE.canScore then
-                ply.lastBeatTime = CurTime()
+                plysTbl.lastBeatTime = CurTime()
                 local scoreGiven = 1
                 ply:GivePlayerScore( scoreGiven )
 
@@ -397,13 +418,13 @@ function GM:manageServersideCountOfBeats()
 
         if RealBPMClamped > 1 then
             local realBeatTime = math.Clamp( 60 / RealBPMClamped, 0, math.huge )
-            local realLastBeat = ply.lastRealBeatTime or 0
+            local realLastBeat = plysTbl.lastRealBeatTime or 0
             local doServersideRealBeat = ( realLastBeat + realBeatTime ) < CurTime()
 
             if doServersideRealBeat then
-                ply.lastRealBeatTime = CurTime()
-                local oldBeats = ply.realHeartBeats or 0
-                ply.realHeartBeats = oldBeats + 1
+                plysTbl.lastRealBeatTime = CurTime()
+                local oldBeats = plysTbl.realHeartBeats or 0
+                plysTbl.realHeartBeats = oldBeats + 1
 
                 hook.Run( "huntersglee_heartbeat_beat", ply, RealBPMClamped )
 
@@ -507,6 +528,11 @@ hook.Add( "PlayerDeath", "glee_resetbeatstuff", function( ply )
     ply:SetNWInt( "termHuntPlyBPM", restingBPMPermanent )
     ply.glee_HasHeartAttackWarned = nil
     ply.glee_HeartAttackScore = 0
+
+end )
+
+hook.Add( "PlayerSpawn", "glee_resetheartattackscore", function( ply )
+    ply.glee_HeartAttackScore = -5
 
 end )
 
@@ -1189,5 +1215,32 @@ hook.Add( "PlayerDeath", "glee_storehomicides", function( died, _, attacker )
     homicidersCides[ died:SteamID() ] = true
 
     GAMEMODE.roundExtraData.homicides[ attackasId ] = homicidersCides
+
+end )
+
+
+-- maps that spawn players high up....
+local hasGrace = {}
+hook.Add( "PlayerSpawn", "glee_firstfallgrace", function( ply )
+    hasGrace[ply] = true
+
+end )
+
+hook.Add( "OnPlayerHitGround", "glee_firstfallgrace", function( ply )
+    if not hasGrace[ply] then return end
+    timer.Simple( 0, function()
+        hasGrace[ply] = nil
+
+    end )
+end )
+
+hook.Add( "EntityTakeDamage", "glee_firstfallgrace", function( victim, dmg )
+    if not dmg:IsFallDamage() then return end
+    if not hasGrace[victim] then return end
+
+    local maxDamage = victim:Health() + -1
+    if dmg:GetDamage() < maxDamage then return end
+    dmg:SetDamage( maxDamage )
+    GAMEMODE:GivePanic( victim, maxDamage )
 
 end )

@@ -21,7 +21,7 @@ local function DoFlashlight( state )
 
             else
                 dir = me:GetAimVector()
-                start = me:GetShootPos()
+                start = EyePos()
 
             end
             local trResult = util.QuickTrace( start, dir * 150, me:GetObserverTarget() )

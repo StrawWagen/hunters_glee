@@ -84,26 +84,33 @@ end )
 
 hook.Add( "huntersglee_round_into_active", "glee_loadpersistientskulls", function()
     -- restore skulls when hunt starts ( no cheeky skulls when setting up! )
-    for _, skullTbl in pairs( GAMEMODE.persistientSkulls ) do
-        local skull = ents.Create( "termhunt_skull_pickup" )
-        if not IsValid( skull ) then return end
-        if skullTbl.persist then
-            skull.persistientSkull = true
+    for i, skullTbl in pairs( GAMEMODE.persistientSkulls ) do
+        local timerName = "glee_persistient_skullrespawn_" .. i
+        timer.Create( timerName, 1, 0, function()
+            if terminator_Extras.posIsInterrupting( skullTbl.pos ) then return end -- wait!
 
-        end
-        skull.skullSteamId = skullTbl.skullSteamId
-        skull:SetPos( skullTbl.pos )
-        skull:SetAngles( skullTbl.ang )
-        if skullTbl.termSkull == true then
-            skull:SetIsTerminatorSkull( true )
+            local skull = ents.Create( "termhunt_skull_pickup" )
+            if not IsValid( skull ) then timer.Remove( timerName ) return end
+            if skullTbl.persist then
+                skull.persistientSkull = true
 
-        end
+            end
+            skull.skullSteamId = skullTbl.skullSteamId
+            skull:SetPos( skullTbl.pos )
+            skull:SetAngles( skullTbl.ang )
+            if skullTbl.termSkull == true then
+                skull:SetIsTerminatorSkull( true )
 
-        skull:Spawn()
-        timer.Simple( 0, function()
-            if not IsValid( skull ) then return end
-            if not IsValid( parent ) then return end
-            skull:GetPhysicsObject():EnableMotion( false )
+            end
+
+            skull:Spawn()
+            timer.Simple( 0, function()
+                if not IsValid( skull ) then return end
+                skull:GetPhysicsObject():EnableMotion( false )
+
+            end )
+
+            timer.Remove( timerName )
 
         end )
     end
@@ -113,7 +120,11 @@ hook.Add( "huntersglee_round_into_active", "glee_loadpersistientskulls", functio
         local class = skullProp:GetClass()
         local goodClass = class == "prop_physics" or class == "prop_dynamic" or class == "gib"
         if not goodClass then continue end
-        GAMEMODE:SpawnASkull( skullProp:GetPos(), skullProp:GetAngles() )
+        local skull = GAMEMODE:SpawnASkull( skullProp:GetPos(), skullProp:GetAngles() )
+
+        if not IsValid( skull ) then continue end
+        skull:SetColor( skullProp:GetColor() )
+        skull:SetMaterial( skullProp:GetMaterial() )
 
         --debugoverlay.Cross( skullProp:GetPos(), 100, 60, color_white, true )
 

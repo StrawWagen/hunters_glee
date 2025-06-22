@@ -79,9 +79,10 @@ end
 local distanceToJustIgnore = 750
 local distanceToJustIgnoreSqr = distanceToJustIgnore^2
 local groupDistToJustIgnore = ( distanceToJustIgnore * 2 )
-local boxSize = Vector( distanceToJustIgnore, distanceToJustIgnore, distanceToJustIgnore )
 
 function GAMEMODE:FindPotentialLinkagesBetweenNavAreaGroups( groups, groupCorners, maxLinksPerGroup )
+
+    local AreasHaveAnyOverlap = terminator_Extras.AreasHaveAnyOverlap
 
     -- yay! caching!
     local centers = {}
@@ -122,10 +123,10 @@ function GAMEMODE:FindPotentialLinkagesBetweenNavAreaGroups( groups, groupCorner
     local groupLinkages = {}
     local distToQuitAt = 30
 
-    local function addValidLinkages( group1, group2 )
+    local function addValidLinkages( group1, group2 ) -- add potenitally valid linkages between two groups
         local currGroupLinkages = {} -- the potential links to sift through, picks the best ones after
         -- yahoo! caching!
-        local tooFarAreas = {}
+        local tooFarAreas = {} -- only for this current group pair!
 
         for _, area1 in ipairs( group1 ) do
             if not area1:IsValid() then continue end
@@ -140,6 +141,7 @@ function GAMEMODE:FindPotentialLinkagesBetweenNavAreaGroups( groups, groupCorner
 
                 -- was cached as too far
                 if tooFarAreas[ area2sId ] then continue end
+                if not AreasHaveAnyOverlap( area1, area2 ) then continue end
 
                 local distBetweenSqr = areasCenter( area1 ):DistToSqr( areasCenter( area2 ) )
 
@@ -194,13 +196,30 @@ function GAMEMODE:FindPotentialLinkagesBetweenNavAreaGroups( groups, groupCorner
 
     end
 
+    local biggestGroupSize = 0
+    for _, group in ipairs( groups ) do
+        local groupSize = #group
+        if groupSize > biggestGroupSize then
+            biggestGroupSize = groupSize
+
+        end
+    end
+
     local doneGroupPairs = {}
-    local miniGroupSize = 15
+    local miniGroupSize = math.max( 150, biggestGroupSize / 10 )
 
     maxLinksPerGroup = maxLinksPerGroup or 5
 
+    local stillGoingInterval = 25
+    local nextStillGoingHint = CurTime() + stillGoingInterval
+
     for group1Id, group1 in ipairs( groups ) do
         local group1Size = #group1
+        if nextStillGoingHint < CurTime() then
+            nextStillGoingHint = CurTime() + stillGoingInterval
+            GAMEMODE:speakAsHuntersGlee( "Understanding navarea group #" .. group1Id .. " of " .. #groups .. "..." )
+
+        end
         -- small group! just check proximity, dont waste time checking every pair
         if group1Size < miniGroupSize then
             coroutine_yield()
@@ -211,10 +230,16 @@ function GAMEMODE:FindPotentialLinkagesBetweenNavAreaGroups( groups, groupCorner
 
             end
 
-            local groups1Center = groupsCenter( group1Id, group1 )
-            local foundInTheBox = navmesh.FindInBox( groups1Center + boxSize, groups1Center - boxSize )
+            local myCorners = groupCorners[group1Id]
+            local nwCorner = myCorners[0]
+            local seCorner = myCorners[2]
+            local cornerSmall = Vector( nwCorner.x - distanceToJustIgnore, nwCorner.y - distanceToJustIgnore, nwCorner.z - distanceToJustIgnore )
+            local cornerBig = Vector( seCorner.x + distanceToJustIgnore, seCorner.y + distanceToJustIgnore, seCorner.z + distanceToJustIgnore )
+
+            local foundInTheBox = navmesh.FindInBox( cornerSmall, cornerBig )
             local fauxGroup2 = {}
             for _, found in ipairs( foundInTheBox ) do
+                coroutine_yield()
                 if not group1Ids[ found:GetID() ] then
                     table.insert( fauxGroup2, found )
 
@@ -224,7 +249,7 @@ function GAMEMODE:FindPotentialLinkagesBetweenNavAreaGroups( groups, groupCorner
             if #fauxGroup2 <= 0 then continue end
 
             addValidLinkages( group1, fauxGroup2 )
-            --print( tostring( group1Id ) .. " " .. tostring( group1Size ), "mini" )
+            --print( tostring( group1Id ) .. " " .. tostring( group1Size ), "mini", cornerSmall, cornerBig )
             continue
 
         end
@@ -280,7 +305,7 @@ function GAMEMODE:FindPotentialLinkagesBetweenNavAreaGroups( groups, groupCorner
 
             if not areCloseEnough then continue end
 
-            --print( tostring( group1Id ) .. " " .. tostring( group1Size ), tostring( group2Id ) .. " " .. tostring( group2Size ) )
+            --print( "1id," .. tostring( group1Id ) .. " 1size," .. tostring( group1Size ), "2id," .. tostring( group2Id ) .. " 2size," .. tostring( group2Size ) )
             addValidLinkages( group1, group2 )
 
             doneGroupPairs[key] = true
@@ -337,9 +362,9 @@ function GAMEMODE:TakePotentialLinkagesAndLinkTheValidOnes( groupLinkages )
     for _, currentData in ipairs( groupLinkages ) do
         if not currentData then continue end
         if currentData.linkageDistance > powTwo200 then continue end -- discard linkages that are definitely too far
-        if math.abs( currentData.linkageArea1:GetCenter().z - currentData.linkageArea1:GetCenter().z ) > 400 then continue end
+        if math.abs( currentData.linkageArea1:GetCenter().z - currentData.linkageArea1:GetCenter().z ) > 800 then continue end
 
-        if connectionDataVisOffsetCheck( currentData ) <= 3 then continue end
+        if connectionDataVisOffsetCheck( currentData ) <= 3 then continue end -- areas can't see eachother
         --debugoverlay.Line( currentData.area1Closest, currentData.area2Closest, 120, Color( 255,255,255 ), true )
 
         if terminator_Extras.smartConnectionThink( currentData.linkageArea1, currentData.linkageArea2 ) then

@@ -213,17 +213,19 @@ function ENT:SwapPlayerAndTerminator( player, terminator )
     player:TeleportTo( terminatorPos )
 
     if terminator.SetPosNoTeleport then
-        terminator:KillAllTasksWith( "movement" )
-        terminator:SetPosNoTeleport( playerPos )
         local timerName = "glee_playerswapper_makesuretheygetthere_" .. tostring( terminator:GetCreationID() )
+        terminator:SetPosNoTeleport( playerPos )
 
-        -- since bots are coroutined they could be in the middle of something that's gonna set them to an outdated pos, make sure they get there
-        timer.Create( timerName, 0.1, 20, function()
+        -- since bots are coroutined they could be in the middle of something that's gonna set them to an outdated pos, so we have to make sure they get there
+        local reps = 0
+        timer.Create( timerName, 0, 40, function()
             if not IsValid( terminator ) then timer.Remove( timerName ) return end
-            if terminator:GetPos():Distance2DSqr( playerPos ) > 500^2 then
-                terminator:SetPosNoTeleport( playerPos )
+            local dist = 500 + reps
+            reps = reps + 1
+            if terminator:GetPos():Distance2DSqr( playerPos ) < dist^2 then return end
 
-            end
+            terminator:SetPosNoTeleport( playerPos )
+
         end )
     else
         terminator:SetPos( playerPos )

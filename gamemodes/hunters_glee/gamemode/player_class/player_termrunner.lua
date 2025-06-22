@@ -15,8 +15,9 @@ PLAYER.TauntCam = GLEE_TauntCamera()
 -- See gamemodes/base/player_class/player_default.lua for all overridable variables
 --
 PLAYER.SlowWalkSpeed        = 100
-PLAYER.WalkSpeed             = 200 * 0.75 -- was 0.9
-PLAYER.RunSpeed                = 400 * 0.75 -- was 0.85, then was 0.75, back to 0.85, back to 0.75
+PLAYER.WalkSpeed            = 200 * 0.75 -- was 0.9
+PLAYER.RunSpeed             = 400 * 0.75 -- was 0.85, then was 0.75, back to 0.85, back to 0.75
+PLAYER.CrouchedWalkSpeed    = 0.5 -- was 0.3, now 0.5
 
 
 function PLAYER:SetupPlayerFuncsCheck()

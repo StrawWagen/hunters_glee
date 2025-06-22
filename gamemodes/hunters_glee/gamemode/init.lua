@@ -507,7 +507,7 @@ local function huntersAreInCorrectGroupsFunc()
         if not IsValid( hunter ) then continue end
         local huntersNav = hunter.TerminatorNextBot and hunter:GetTrueCurrentNavArea() or GAMEMODE:getNearestNav( hunter:GetPos(), 1000 )
 
-        if not GAMEMODE:GetGroupThatNavareaExistsIn( huntersNav, groupsInPlay ) then
+        if not GAMEMODE:GetGroupThatNavareaExistsIn( huntersNav, groupsInPlay, true ) then
             table.insert( huntersNotInPlay, hunter )
 
         end

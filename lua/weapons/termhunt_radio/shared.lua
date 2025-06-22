@@ -14,6 +14,8 @@ SWEP.ViewModelFOV = 54
 SWEP.UseHands = true
 SWEP.Weight = 1
 
+local entMeta = FindMetaTable( "Entity" )
+
 -- have internal channel inside radio, and have what we show to plys/other code
 local legalChannels = {
     [1] = 0,
@@ -204,7 +206,9 @@ function SWEP:Equip()
     local name = self:GetCreationID() .. "staticmanagertimer"
 
     timer.Create( name, 0, 0, function()
-        if not IsValid( self ) or not IsValid( self:GetOwner() ) or self:GetOwner():Health() <= 0 or not IsValid( self:GetOwner():GetActiveWeapon() ) then timer.Stop( name ) return end
+        if not IsValid( self ) then timer.Stop( name ) return end
+        owner = entMeta.GetOwner( self )
+        if not IsValid( owner ) or entMeta.Health( owner ) <= 0 or not IsValid( owner:GetActiveWeapon() ) then timer.Stop( name ) return end
         self:ManageSound()
 
     end )
@@ -246,35 +250,36 @@ end
 
 function SWEP:ManageSound()
     if not SERVER then return end
-    if not IsValid( self.sound_static ) or not self.sound_static:IsPlaying() then
-        local index = self:GetChannelIndex()
-        self.sound_static = self.sound_static or CreateSound( self:GetOwner(), "ambient/levels/prison/radio_random1.wav" )
+    local myTbl = entMeta.GetTable( self )
+    local owner = entMeta.GetOwner( self )
+    local index = myTbl.GetChannelIndex( self )
+    if not IsValid( myTbl.sound_static ) or not myTbl.sound_static:IsPlaying() then
+        myTbl.sound_static = myTbl.sound_static or CreateSound( owner, "ambient/levels/prison/radio_random1.wav" )
 
-        if self == self:GetOwner():GetActiveWeapon() and self:GetOwner():Health() > 0 and index ~= 1 and index ~= undeadChannel then
-            self.doneFadeOut = nil
-            self.sound_static:PlayEx( 0.8, self:GetStaticPitch() )
+        if index ~= 1 and index ~= undeadChannel and self == owner:GetActiveWeapon() and owner:Health() > 0 then
+            myTbl.doneFadeOut = nil
+            myTbl.sound_static:PlayEx( 0.8, self:GetStaticPitch() )
 
         else
-            if not self.doneFadeOut then
-                self.doneFadeOut = true
-                self.sound_static:FadeOut( 0.25 )
+            if not myTbl.doneFadeOut then
+                myTbl.doneFadeOut = true
+                myTbl.sound_static:FadeOut( 0.25 )
 
             end
         end
     end
 
-    if not IsValid( self.sound_screams ) or not self.sound_screams:IsPlaying() then
-        local index = self:GetChannelIndex()
-        self.sound_screams = self.sound_screams or CreateSound( self:GetOwner(), "ambient/levels/citadel/citadel_ambient_voices1.wav" )
-        if self == self:GetOwner():GetActiveWeapon() and self:GetOwner():Health() > 0 and index == undeadChannel then
-            self.doneScreamsFadeOut = nil
-            self.sound_screams:SetSoundLevel( 65 )
-            self.sound_screams:PlayEx( 0.6, self:GetStaticPitch() )
+    if not IsValid( myTbl.sound_screams ) or not myTbl.sound_screams:IsPlaying() then
+        myTbl.sound_screams = myTbl.sound_screams or CreateSound( owner, "ambient/levels/citadel/citadel_ambient_voices1.wav" )
+        if index == undeadChannel and self == owner:GetActiveWeapon() and owner:Health() > 0 then
+            myTbl.doneScreamsFadeOut = nil
+            myTbl.sound_screams:SetSoundLevel( 65 )
+            myTbl.sound_screams:PlayEx( 0.6, self:GetStaticPitch() )
 
         else
-            if not self.doneScreamsFadeOut then
-                self.doneScreamsFadeOut = true
-                self.sound_screams:FadeOut( 0.25 )
+            if not myTbl.doneScreamsFadeOut then
+                myTbl.doneScreamsFadeOut = true
+                myTbl.sound_screams:FadeOut( 0.25 )
 
             end
         end
