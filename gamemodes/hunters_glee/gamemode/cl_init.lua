@@ -16,6 +16,8 @@ include( "modules/firsttimeplayers/cl_firsttimeplayers.lua" )
 include( "modules/battery/cl_battery.lua" )
 include( "modules/bpm/cl_bpm.lua" )
 
+local entMeta = FindMetaTable( "Entity" )
+
 local GAMEMODE = GM
 
 -- from https://github.com/Facepunch/garrysmod/blob/e189f14c088298ca800136fcfcfaf5d8535b6648/garrysmod/lua/includes/modules/killicon.lua#L202
@@ -283,11 +285,16 @@ function huntersGlee_PaintPlayer( player, posOverride )
 end
 
 local function paintOtherPlayers( localPlayer )
+    local inEye = localPlayer:GetObserverMode() == OBS_MODE_IN_EYE
     for _, ply in ipairs( player.GetAll() ) do
-        if ply ~= localPlayer then
-            huntersGlee_PaintPlayer( ply )
+        if ply == localPlayer then continue end
+        if inEye then -- when spectating in eye
+            if entMeta.Health( ply ) <= 0 then continue end -- dont show dead people's names
+            if not terminator_Extras.PosCanSee( localPlayer:WorldSpaceCenter(), ply:GetShootPos(), MASK_SOLID_BRUSHONLY ) then continue end -- dont show names behind walls
 
         end
+        huntersGlee_PaintPlayer( ply )
+
     end
 end
 
@@ -684,7 +691,7 @@ local function genericHints()
     local me = LocalPlayer()
 
     local wep = me:GetActiveWeapon()
-    if not IsValid( wep ) then
+    if not IsValid( wep ) and IsValid( me.ghostEnt ) then
         wep = me.ghostEnt
 
     end
@@ -1064,10 +1071,45 @@ hook.Add( "CalcView", "glee_override_spectating_angles", function( ply, _, ang, 
     end
 end )
 
---binds
+
+function GM:OnSpawnMenuOpen() -- when +menu is pressed
+    local shouldShop
+    local shouldSpawnMenu
+    local localPly = LocalPlayer()
+
+    if not localPly:IsAdmin() then
+        shouldShop = true
+
+    else
+        local canSpawnMenu = hook.Call( "SpawnMenuOpen", self )
+        -- q+shift+ctrl to open spawnmenu
+        if canSpawnMenu and localPly:KeyDown( IN_DUCK ) and localPly:KeyDown( IN_SPEED ) then
+            shouldShop = false
+            shouldSpawnMenu = true
+
+        else
+            shouldShop = true
+
+        end
+    end
+    if shouldShop then
+        self:ShowShop()
+
+    end
+    if shouldSpawnMenu then
+        if ( IsValid( g_SpawnMenu ) ) then
+            g_SpawnMenu:Open()
+            menubar.ParentTo( g_SpawnMenu )
+        end
+
+        hook.Call( "SpawnMenuOpened", self )
+
+    end
+end
+
+-- misc binds
 -- yoinked from darkrp so we do it right
 local FKeyBinds = {
-    ["+menu"] = "ShowShop",
     ["noclip"] = "DropCurrentWeapon",
 
 }

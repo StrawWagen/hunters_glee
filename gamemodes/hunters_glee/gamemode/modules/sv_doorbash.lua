@@ -2,6 +2,8 @@
 hook.Add( "PostCleanupMap", "huntersglee_makeallthedoorsbashable", function()
     for _, door in ipairs( ents.FindByClass( "prop_door_rotating" ) ) do
         local doorDamageListener = ents.Create( "prop_physics" )
+        if not IsValid( doorDamageListener ) then continue end
+
         doorDamageListener.isDoorDamageListener = true
         doorDamageListener.terminatorIgnoreEnt = true
 

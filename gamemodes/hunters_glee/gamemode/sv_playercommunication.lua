@@ -163,6 +163,10 @@ end )
 -- text chat is always global
 hook.Add( "PlayerCanSeePlayersChat", "glee_chatblock", function( _, _, listener, talker )
     if not IsValid( talker ) or not IsValid( listener ) then return end
+    if not doProxChatCached then
+        return true
+
+    end
     local talkersHealth = talker:Health()
     local listenersHealth = listener:Health()
 

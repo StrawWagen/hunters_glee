@@ -23,6 +23,9 @@ ENT.noPurchaseReason_InDebt = "You're in debt."
 local beaconVecOffset = Vector( 6.94, -8.67, 25.83 )
 local beaconAngOffset = Angle( 0, -90, 0 )
 
+local beepInterval = 20
+local beepsPerCrate = 20
+
 ENT.placedItems = 0
 
 sound.Add( {
@@ -214,7 +217,7 @@ local function getNearestNavFloor( pos )
 
 end
 
-local function PlayRepeatingSound( self, soundPath, soundDuration )
+local function PlayRepeatingSound( self, soundPath )
 
     local crateEveryoneFilter = RecipientFilter()
     crateEveryoneFilter:AddAllPlayers()
@@ -224,7 +227,7 @@ local function PlayRepeatingSound( self, soundPath, soundDuration )
     -- Create a unique timer name for this entity
     local timerName = "SoundTimer_" .. self:GetClass() .. self:EntIndex()
 
-    timer.Simple( soundDuration * 0.35, function()
+    timer.Simple( beepInterval * 0.35, function()
         if not IsValid( self ) then return end
 
         self:doSoundComprehensive()
@@ -268,7 +271,7 @@ local function PlayRepeatingSound( self, soundPath, soundDuration )
     --self:doSound( soundPath )
 
     -- Set the timer to repeat the sound
-    timer.Create( timerName, soundDuration, 0, function()
+    timer.Create( timerName, beepInterval, beepsPerCrate, function()
         if IsValid( self ) then
             -- Only play the sound if the entity is still valid
             self:doSoundComprehensive()
@@ -562,7 +565,7 @@ function GM:ScreamingCrate( pos )
     crate:SetKeyValue( "ItemClass", "dynamic_super_resupply_fake" ) -- has a good chance to spawn a strong weapon
     crate:SetKeyValue( "ItemCount", 8 )
     crate:Spawn()
-    PlayRepeatingSound( crate, "horrific_crate_scream", 20 )
+    PlayRepeatingSound( crate, "horrific_crate_scream" )
     crate:EmitSound( "npc/turret_floor/deploy.wav", 90, 120 )
 
     local beaconOnCrate = ents.Create( "prop_physics" )

@@ -252,7 +252,7 @@ function GM:Think()
         displayTime = self:getRemaining( SysTime(), self.invalidStart )
 
     end
-    if currState == self.ROUND_SETUP then -- wait like 5 seconds before the game session starts
+    if currState == self.ROUND_SETUP then -- wait like 5 seconds before the game session starts, so navmesh is loaded
         if self.termHunt_navmeshCheckTime < cur then
             self:setupFinish()
 
@@ -921,7 +921,7 @@ function GM:setupFinish()
     hook.Run( "huntersglee_round_into_inactive" )
     hook.Run( "huntersglee_round_firstsetup" )
 
-    for _, ply in player.Iterator() do
+    for _, ply in player.Iterator() do -- autorefresh
         hook.Run( "huntersglee_player_reset", ply )
 
     end

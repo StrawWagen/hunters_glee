@@ -776,7 +776,7 @@ local function temporalDiceRollPurchase( purchaser )
 
         local beamStart = ply:WorldSpaceCenter()
 
-        local randomNavArea = GAMEMODE:GetAreaInOccupiedBigGroupOrRandomBigGroup()
+        local randomNavArea = GAMEMODE:GetAreaInOccupiedBigGroupOrRandomBigGroup( true )
         local randomPos = randomNavArea:GetCenter()
 
         ply:TeleportTo( randomPos )

@@ -87,11 +87,16 @@ function ENT:Place()
     local timerName = "glee_blessing_timer_" .. tostring( target:GetCreationID() )
     local hookName = "glee_blessing_reset" .. tostring( target:GetCreationID() )
 
+    if not target:IsPlayer() then
+        target.glee_InterestingHunter = true
+
+    end
+
     target.glee_Blessed = true
     target.glee_BlessedExpires = CurTime() + blessTimeBackup -- backup if timer errors
     target.glee_BlessRegen = 10
 
-    target:EmitSound( "music/hl2_song10.mp3", 70, math.random( 60, 70 ), 1, CHAN_STATIC )
+    target:EmitSound( "music/hl2_song10.mp3", 70, math.random( 60, 70 ), 0.5, CHAN_STATIC )
     target:EmitSound( "items/smallmedkit1.wav", 75, math.random( 50, 60 ), 1, CHAN_STATIC )
 
     util.ScreenShake( targetsPos, 5, 20, 1.5, 1500, true )

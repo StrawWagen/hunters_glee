@@ -69,6 +69,31 @@ if CLIENT then
     local playerOverrideMat = CreateMaterial( "CHAMSMATPLAYERSWAPPER1", "UnlitGeneric", { ["$basetexture"] = "lights/white002", ["$model"] = 1, ["$ignorez"] = 1 } )
     local hintMatId = surface.GetTextureID( "effects/yellowflare" )
 
+    function ENT:HighlightPoint( pos, pointColor )
+        local pos2d = pos:ToScreen()
+
+        local size = 100
+
+        local width = size
+        local height = size
+
+        local halfWidth = width / 2
+        local halfHeight = height / 2
+
+        local texturedQuadStructure = {
+            texture = hintMatId,
+            color   = pointColor,
+            x 	= pos2d.x + -halfWidth,
+            y 	= pos2d.y + -halfHeight,
+            w 	= width,
+            h 	= height
+        }
+
+        cam.Start2D()
+            draw.TexturedQuad( texturedQuadStructure )
+        cam.End2D()
+    end
+
     function ENT:HighlightNearestTarget()
         local currTarget = self:GetCurrTarget()
         if not IsValid( currTarget ) then return end
@@ -90,35 +115,15 @@ if CLIENT then
 
         if not self.DrawOriginHint then return end
 
-        local origin = currTarget:WorldSpaceCenter()
-        local pos2d = origin:ToScreen()
-
-        local size = 100
-
-        local width = size
-        local height = size
-
-        local halfWidth = width / 2
-        local halfHeight = height / 2
-
-        local colorOrigin = greenReal
+        local pointColor = greenReal
         if not self:GetCanPlace() then
-            colorOrigin = redReal
+            pointColor = redReal
 
         end
 
-        local texturedQuadStructure = {
-            texture = hintMatId,
-            color   = colorOrigin,
-            x 	= pos2d.x + -halfWidth,
-            y 	= pos2d.y + -halfHeight,
-            w 	= width,
-            h 	= height
-        }
+        local origin = currTarget:WorldSpaceCenter()
+        self:HighlightPoint( origin, pointColor )
 
-        cam.Start2D()
-            draw.TexturedQuad( texturedQuadStructure )
-        cam.End2D()
     end
     function ENT:ClientThink()
         self:SetNoDraw( true )

@@ -77,6 +77,7 @@ function GM:calculateBPM( cur, players )
 
             end
             ply:SetNWInt( "termHuntPlyBPM", 0 )
+            ply:SetNWBool( "termHuntBlockScoring", false )
 
             return
 
@@ -125,8 +126,9 @@ function GM:calculateBPM( cur, players )
 
             end
             if canSee then
-                nearestHunter.glee_SeeEnemy = cur + 1
+                nearestHunter.glee_SeeEnemy = cur + 2
                 ply.huntersGleeHunterThatCanSeePly = nearestHunter
+
             end
         end
 
@@ -388,7 +390,7 @@ function GM:calculateBPM( cur, players )
     end
 end
 
-function GM:manageServersideCountOfBeats()
+function GM:manageServersideCountOfBeats() -- actual firing, beating of beats, do the calculations for "beats per minute", slowly and above
     local players = player.GetAll()
     for _, ply in ipairs( players ) do
         local plysTbl = entMeta.GetTable( ply )
@@ -531,11 +533,6 @@ hook.Add( "PlayerDeath", "glee_resetbeatstuff", function( ply )
 
 end )
 
-hook.Add( "PlayerSpawn", "glee_resetheartattackscore", function( ply )
-    ply.glee_HeartAttackScore = -5
-
-end )
-
 
 hook.Add( "huntersglee_player_into_active", "glee_yaponroundstart", function( ply )
     if math.random( 0, 100 ) > 100 then return end -- 25% chance to play a line
@@ -618,10 +615,18 @@ local function shutDownDeathCam( ply )
 
 end
 
-function GM:SpectateThing( ply, thing )
+function GM:SpectateThing( ply, thing, msg )
     ply:SpectateEntity( thing )
-    ply:SetObserverMode( OBS_MODE_CHASE )
-    net.Start( "glee_followedsomething" )
+    local newMode = OBS_MODE_CHASE
+    if ply:GetObserverMode() == OBS_MODE_IN_EYE then
+        newMode = OBS_MODE_IN_EYE
+
+    end
+    ply:SetObserverMode( newMode )
+    ply:SetParent( thing )
+    ply:SetPos( thing:WorldSpaceCenter() )
+    msg = msg or "glee_followedsomething"
+    net.Start( msg )
     net.Send( ply )
 
 end
@@ -630,14 +635,19 @@ function GM:StopSpectatingThing( ply )
     local target = ply:GetObserverTarget()
     ply:SetObserverMode( OBS_MODE_ROAMING )
     if IsValid( target ) and target.GetShootPos then
+        ply:SetParent( NULL )
         ply:SetPos( target:GetShootPos() )
 
     end
-    local oldAng = ply:GetAngles()
-    ply:SetAngles( Angle( oldAng.p, oldAng.y, 0 ) )
+
     net.Start( "glee_stoppedspectating" )
     net.Send( ply )
 
+    local oldAng = ply:GetAngles()
+    timer.Simple( 0.0, function()
+        if not IsValid( ply ) then return end
+        ply:SetAngles( Angle( oldAng.p, oldAng.y, 0 ) )
+    end )
 end
 
 local nextSpectateIdleCheck = {}
@@ -732,11 +742,8 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
                 end
             end
             if thingToFollow then
-                net.Start( "glee_followednexthing" )
-                net.Send( ply )
+                GAMEMODE:SpectateThing( ply, thingToFollow, "glee_followednexthing" )
                 spectated = thingToFollow
-
-                ply:SpectateEntity( thingToFollow )
                 currentlySpectating = thingToFollow
 
             end

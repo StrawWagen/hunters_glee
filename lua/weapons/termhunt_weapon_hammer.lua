@@ -64,6 +64,7 @@ if CLIENT then
 
     function SWEP:HintPostStack()
         local owner = self:GetOwner()
+        if not IsValid( owner ) then return end
         if not owner:GetNW2Bool( "gleenailer_nailattempted", false ) then return true, "PRIMARY ATTACK to nail things together." end
         if not owner:GetNW2Bool( "gleenailer_goodnailed", false ) then return true, "The nails have to go through something.\nYou can't nail a wall to itself, etc." end
 

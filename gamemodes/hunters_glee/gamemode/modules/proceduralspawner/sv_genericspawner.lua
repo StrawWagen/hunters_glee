@@ -238,7 +238,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawner_managegenericspawns", fun
         if isEnabled == false then continue end
 
         local maxCount = curr.maxCount
-        local count = #created[className] + currentlySpawning[className]
+        local count = created[className] and #created[className] + currentlySpawning[className] or 0
         --print( count, maxCount, "AAAAAAAAAAAA" )
         if count >= maxCount then continue end
 
@@ -281,6 +281,12 @@ end )
 -- if you want to do something cooler, see the beartrap, crate, skull spawner for functioning examples
 
 function GM:RandomlySpawnEnt( className, maxCount, chance, minAreaSize, radius, preSpawnedFunc, postSpawnedFunc )
+    local spawnTables = GAMEMODE.genericSpawnTables
+    if not spawnTables then
+        spawnTables = {}
+        GAMEMODE.genericSpawnTables = spawnTables
+
+    end
     local curr = {
         className = className,
         chance = chance,
@@ -291,7 +297,7 @@ function GM:RandomlySpawnEnt( className, maxCount, chance, minAreaSize, radius, 
         postSpawnedFunc = postSpawnedFunc,
 
     }
-    GAMEMODE.genericSpawnTables[className] = curr
+    spawnTables[className] = curr
 
 end
 

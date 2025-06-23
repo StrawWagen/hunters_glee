@@ -47,7 +47,7 @@ local setDefaults = {
     spawnCountPerDifficulty = { 0.08, 0.1 },
     startingSpawnCount = { 1.8, 2 },
     maxSpawnCount = 10,
-    maxSpawnDist = { 6500, 8500 },
+    maxSpawnDist = { 4500, 6500 },
     roundEndSound = "53937_meutecee_trumpethit07.wav",
     roundStartSound = "", -- no sound for glee
     genericSpawnerRate = 1,
@@ -470,7 +470,12 @@ hook.Add( "PostCleanupMap", "glee_resethunterspawnerstats", function()
 end )
 
 local minRadius = 500 -- hardcoded num, if you spawn closer than this, it feels unfair
-local staleRatio = 0.75
+
+-- how many times the hunter's max health it needs to be without an enemy before it gets removed
+-- 0.5 ratio means, 100 hp hunter needs to be without an enemy for 50 seconds before it gets removed
+local staleRatio = 0.5
+
+local staleRatioMinHp = 100 -- dont remove npcs below this hp too fast! 
 
 local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they want, remove them and march the spawn distances smaller if they're being boring
     local maxHp = hunter:GetMaxHealth()
@@ -488,7 +493,12 @@ local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they 
 
     if krangled then
         startingCount = startingCount * 2
-        noEnemyToRemove = math.max( noEnemyToRemove, 100 * staleRatio ) -- floor this
+        noEnemyToRemove = math.max( noEnemyToRemove, staleRatioMinHp * staleRatio ) -- floor this
+
+    end
+    local goodHunter = hunter.isTerminatorHunterBased and not hunter.IsFodder
+    if goodHunter then -- good enemy, give it more leeway
+        noEnemyToRemove = noEnemyToRemove * 2
 
     end
 
@@ -506,13 +516,14 @@ local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they 
 
     local timerAdjusted
     local timerName = "glee_fodderhunter_removestale_" .. hunter:GetCreationID()
-    timer.Create( timerName, math.Rand( 0.5, 2 ), 0, function()
+    timer.Create( timerName, math.Rand( 0.75, 1.25 ), 0, function()
         if not IsValid( hunter ) then timer.Remove( timerName ) return end
-        if hunter.terminator_OverCharged then timer.Remove( timerName ) return end -- someone likes this guy
+        if hunter.glee_InterestingHunter then timer.Remove( timerName ) return end -- someone likes this guy
 
         if not timerAdjusted and ( hunter.glee_FodderKills or 0 ) >= 1 then -- it killed a player, it's doing its job!
             timerAdjusted = true
             timer.Adjust( timerName, 4, 0 ) -- dont count this guy up fast at all
+            hunter.glee_FodderNoEnemyCount = startingCount -- and reset the count
 
         end
 
@@ -526,32 +537,41 @@ local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they 
         end
         local oldCount = hunter.glee_FodderNoEnemyCount
 
-        if ( hunter.glee_SeeEnemy or 0 ) > CurTime() or IsValid( enemy ) and enemy.isTerminatorHunterChummy ~= hunter.isTerminatorHunterChummy then
-            hunter.glee_FodderNoEnemyCount = math.min( 0, oldCount + -1 )
+        local seesEnemy = ( hunter.glee_SeeEnemy or 0 ) > CurTime()
+        local goodEnemy = IsValid( enemy ) and enemy.isTerminatorHunterChummy ~= hunter.isTerminatorHunterChummy
+
+        if seesEnemy or goodEnemy then
+            hunter.glee_FodderNoEnemyCount = math.min( 0, oldCount + -1 ) -- good enemy, march count down
             return
 
         end
 
-        if oldCount >= hunter.glee_FodderNoEnemyToRemove then -- booring enem
+        local removalTime = oldCount >= hunter.glee_FodderNoEnemyToRemove
+
+        if removalTime then -- booring enem
             local _, spawnSet = GAMEMODE:GetSpawnSet()
             if spawnSet then -- make the spawner spawn npcs closer if fodder hunters aren't finding enemies
                 local tooFarDist = spawnSet.dynamicTooFarDist
                 local bite = -hunter.glee_FodderNoEnemyToRemove
 
+                debugPrint( "stale" )
+
                 local _, nearestDistSqr = GAMEMODE:nearestAlivePlayer( hunter:GetPos() )
                 local nearestDist = math.sqrt( nearestDistSqr )
                 if nearestDist > tooFarDist * 5 then -- way too far
-                    bite = bite * 4
+                    bite = bite * 6
+                    debugPrint( "way too far" )
 
                 elseif nearestDist > tooFarDist * 2.5 then -- too far
-                    bite = bite * 2
+                    bite = bite * 3
+                    debugPrint( "too far" )
 
                 end
                 GAMEMODE:AdjustDynamicTooCloseCutoff( bite, spawnSet )
                 GAMEMODE:AdjustDynamicTooFarCutoff( bite * 1.5, spawnSet )
-                debugPrint( "stale fodder", bite )
 
                 if nearestDist < tooFarDist * 0.75 and not hunter.glee_FodderWasNearPlayerAtLeast then -- bot is close, give it a second chance, but still bite the cutoffs above
+                    debugPrint( "FORGIVE STALE", hunter )
                     hunter.glee_FodderWasNearPlayerAtLeast = true
                     hunter.glee_FodderNoEnemyToRemove = hunter.glee_FodderNoEnemyToRemove * 2 -- still remove eventually
                     return
@@ -563,7 +583,8 @@ local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they 
             return
 
         end
-        hunter.glee_FodderNoEnemyCount = oldCount + 1
+
+        hunter.glee_FodderNoEnemyCount = oldCount + 1 -- boring
 
     end )
 end
@@ -610,11 +631,14 @@ function GM:SpawnHunter( class, currSpawn )
     hunter:SetNW2Bool( "glee_IsHunter", true )
 
     print( hunter ) -- i like this print, you cannot make me remove it
-
-    if hunter.IsFodder or not hunter.TerminatorNextBot then -- prune fodder hunters if they're being boring
-        manageIfStale( hunter )
+    if debuggingVar:GetBool() then
+        local nearestPly = self:nearestAlivePlayer( spawnPos )
+        debugoverlay.Line( spawnPos, nearestPly:GetShootPos() + nearestPly:GetAimVector() * 50, 10, color_white, true )
 
     end
+
+    manageIfStale( hunter )
+
     return hunter
 
 end
@@ -717,8 +741,8 @@ function GM:getValidHunterPos()
             end
         end
 
-        local goodConventional = not visibleToAPly and not tooClose and not tooFar
-        local justSpawnSomething = fails > 2000 and not tooClose
+        local goodConventional = not visibleToAPly and not tooClose and not tooFar -- great spot to spawn!
+        local justSpawnSomething = fails > 2000 and not tooClose -- fallback, map has no great spots to spawn
 
         if goodConventional or justSpawnSomething then
             GAMEMODE:AdjustDynamicTooCloseCutoff( 50, spawnSet ) -- make it get further

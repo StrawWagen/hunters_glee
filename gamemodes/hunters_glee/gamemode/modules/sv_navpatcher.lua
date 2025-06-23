@@ -74,6 +74,7 @@ end
   -- specifically...
   -- for every navarea in every group, check the distance to navareas in every other group with navarea:GetClosestPointOnArea( otherAreasCenter )
   -- if the distance between the areas is smaller than the last distance, we have the new best distance to return
+  -- !!!!!!!!!!!!navmesh.FindInBox was added and made this overcomplicated mess much simpler
   -- at the end, the function should return a table of "navarea pairs" with this structure: linkageData = { linkageDistance = nil, linkageArea1 = nil, linkageArea2 = nil }
 
 local distanceToJustIgnore = 750
@@ -362,6 +363,8 @@ function GAMEMODE:TakePotentialLinkagesAndLinkTheValidOnes( groupLinkages )
     for _, currentData in ipairs( groupLinkages ) do
         if not currentData then continue end
         if currentData.linkageDistance > powTwo200 then continue end -- discard linkages that are definitely too far
+        if not IsValid( currentData.linkageArea1 ) then continue end
+        if not IsValid( currentData.linkageArea2 ) then continue end
         if math.abs( currentData.linkageArea1:GetCenter().z - currentData.linkageArea1:GetCenter().z ) > 800 then continue end
 
         if connectionDataVisOffsetCheck( currentData ) <= 3 then continue end -- areas can't see eachother

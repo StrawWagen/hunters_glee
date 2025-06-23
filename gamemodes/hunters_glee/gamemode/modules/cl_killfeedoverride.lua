@@ -252,7 +252,7 @@ function GM:DrawDeathNotice( x, y )
 	y = y * ScrH()
 
 	-- Draw
-	for k, Death in ipairs( Deaths ) do
+	for _, Death in ipairs( Deaths ) do
 
 		if ( Death.time + time > CurTime() ) then
 

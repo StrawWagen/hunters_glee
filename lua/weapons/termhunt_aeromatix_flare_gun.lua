@@ -74,7 +74,8 @@ end
 function SWEP:CanPrimaryAttack()
     local owner = self:GetOwner()
     if owner:IsPlayer() then return true end
-    if not terminator_Extras.PosCanSeeComplex( owner:GetShootPos(), self:GetProjectileOffset(), self, MASK_SOLID ) then return end
+    local startPos = owner.GetShootPos and owner:GetShootPos() or owner:WorldSpaceCenter()
+    if not terminator_Extras.PosCanSeeComplex( startPos, self:GetProjectileOffset(), self, MASK_SOLID ) then return end
 
     if not owner.NothingOrBreakableBetweenEnemy then return end
 
@@ -92,7 +93,7 @@ function SWEP:PrimaryAttack()
         return
 
     end
-    
+
     self:SetNextPrimaryFire( CurTime() + self.Primary.Delay )
     self:SetNextSecondaryFire( CurTime() + self.Secondary.Delay )
     self:ShootFlare()

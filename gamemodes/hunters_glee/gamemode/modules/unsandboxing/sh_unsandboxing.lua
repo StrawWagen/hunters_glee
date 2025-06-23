@@ -12,10 +12,39 @@ hook.Add( "PlayerNoClip", "glee_blocknoclip", function( _, wantsToEnter )
     end
 end )
 
+local LocalPlayer = LocalPlayer
+local function canSpawnMenu( ply )
+    if not IsValid( ply ) then
+        if SERVER then
+            return false
+
+        else
+            ply = LocalPlayer()
+
+        end
+    end
+    if not IsValid( ply ) then return false end
+    if not ply:IsAdmin() then return false end
+    return true
+
+end
+
 if CLIENT then
-    local LocalPlayer = LocalPlayer
+    -- will fail on first creation because of invalid localplayer
     function GM:SpawnMenuEnabled()
-        return false
+        return canSpawnMenu()
+
+    end
+
+    -- we then call it again when localplayer is valid
+    hook.Add( "InitPostEntity", "glee_CreateSpawnMenu", function()
+        if not canSpawnMenu() then return end
+        RunConsoleCommand( "spawnmenu_reload" ) -- calls CreateSpawnMenu
+
+    end )
+
+    function GM:SpawnMenuOpen()
+        return canSpawnMenu()
 
     end
 
@@ -49,16 +78,14 @@ if CLIENT then
         -- kill menubar for non-admins
         menubar.glee_oldMenuBarInit = menubar.glee_oldMenuBarInit or menubar.Init
         menubar.Init = function()
-            if not IsValid( LocalPlayer() ) then return end
-            if not LocalPlayer():IsAdmin() then return end
+            if not canSpawnMenu() then return end
             menubar.glee_oldMenuBarInit()
 
         end
 
         menubar.glee_oldMenuParentTo = menubar.glee_oldMenuParentTo or menubar.ParentTo
         menubar.ParentTo = function( to )
-            if not IsValid( LocalPlayer() ) then return end
-            if not LocalPlayer():IsAdmin() then return end
+            if not canSpawnMenu() then return end
             menubar.glee_oldMenuParentTo( to )
 
         end
@@ -69,26 +96,22 @@ if CLIENT then
     hook.Add( "OnGamemodeLoaded", "Glee_CreateSpawnMenu", postLoaded )
 
 else
-    local no = function()
-        return false
+    hook.Add( "PlayerSpawnObject", "glee_unsandboxify", canSpawnMenu )
+    hook.Add( "PlayerSpawnEffect", "glee_unsandboxify", canSpawnMenu )
+    hook.Add( "PlayerSpawnNPC", "glee_unsandboxify", canSpawnMenu )
+    hook.Add( "PlayerSpawnProp", "glee_unsandboxify", canSpawnMenu )
+    hook.Add( "PlayerSpawnRagdoll", "glee_unsandboxify", canSpawnMenu )
+    hook.Add( "PlayerSpawnSENT", "glee_unsandboxify", canSpawnMenu )
+    hook.Add( "PlayerSpawnSWEP", "glee_unsandboxify", canSpawnMenu )
+    hook.Add( "PlayerSpawnVehicle", "glee_unsandboxify", canSpawnMenu )
+    hook.Add( "PlayerGiveSWEP", "glee_unsandboxify", canSpawnMenu )
+    hook.Add( "CanArmDupe", "glee_unsandboxify", canSpawnMenu )
+    hook.Add( "CanDrive", "glee_unsandboxify", canSpawnMenu )
+    hook.Add( "CanTool", "glee_unsandboxify", canSpawnMenu )
+    hook.Add( "CanCreateUndo", "glee_unsandboxify", canSpawnMenu )
+    hook.Add( "CanUndo", "glee_unsandboxify", canSpawnMenu )
 
-    end
-
-    hook.Add( "PlayerSpawnObject", "glee_unsandboxify", no )
-    hook.Add( "PlayerSpawnEffect", "glee_unsandboxify", no )
-    hook.Add( "PlayerSpawnNPC", "glee_unsandboxify", no )
-    hook.Add( "PlayerSpawnProp", "glee_unsandboxify", no )
-    hook.Add( "PlayerSpawnRagdoll", "glee_unsandboxify", no )
-    hook.Add( "PlayerSpawnSENT", "glee_unsandboxify", no )
-    hook.Add( "PlayerSpawnSWEP", "glee_unsandboxify", no )
-    hook.Add( "PlayerSpawnVehicle", "glee_unsandboxify", no )
-    hook.Add( "PlayerGiveSWEP", "glee_unsandboxify", no )
-    hook.Add( "CanArmDupe", "glee_unsandboxify", no )
-    hook.Add( "CanDrive", "glee_unsandboxify", no )
-    hook.Add( "CanTool", "glee_unsandboxify", no )
-    hook.Add( "CanCreateUndo", "glee_unsandboxify", no )
-    hook.Add( "CanUndo", "glee_unsandboxify", no )
-
+    -- stop player was killed by x console messages
     local string_find = string.find
     local old_MsgAll = MsgAll
 
