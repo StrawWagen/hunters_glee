@@ -623,7 +623,7 @@ function GM:SpectateThing( ply, thing, msg )
 
     end
     ply:SetObserverMode( newMode )
-    ply:SetParent( thing )
+    ply:SetParent( thing ) -- fixes alot of flashing light visual bugs
     ply:SetPos( thing:WorldSpaceCenter() )
     msg = msg or "glee_followedsomething"
     net.Start( msg )
@@ -958,6 +958,11 @@ local spaceCheckHull = Vector( 17, 17, 2 )
 local occupiedSpawnAreas = {}
 
 function GM:PlayerSpawn( pl, transiton )
+
+    if IsValid( pl:GetParent() ) then
+        pl:SetParent( NULL )
+
+    end
 
     local anotherAlivePlayer = GAMEMODE:anotherAlivePlayer( pl )
     local newPos = nil
