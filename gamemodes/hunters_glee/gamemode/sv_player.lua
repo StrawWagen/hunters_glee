@@ -863,14 +863,14 @@ function GM:SpectateOverrides( ply, mode, deadPlayers )
 
     end
     if isPlacing and mode ~= OBS_MODE_ROAMING then -- stop following something, they're placing stuff!
-        ply:SetObserverMode( OBS_MODE_ROAMING )
+        self:StopSpectatingThing( ply )
 
     end
     local followingThing = mode == OBS_MODE_CHASE or mode == OBS_MODE_IN_EYE
     if followingThing then
         local target = ply:GetObserverTarget()
         if not IsValid( target ) then
-            ply:SetObserverMode( OBS_MODE_ROAMING )
+            self:StopSpectatingThing( ply )
 
         end
     end
