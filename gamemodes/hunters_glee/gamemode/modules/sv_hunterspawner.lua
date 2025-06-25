@@ -58,6 +58,9 @@ local spawnDefaults = {
     maxCount = -1, -- respects maxSpawnCount tho
 }
 
+local minRadius = 500 -- hardcoded num, if you spawn closer than this, it feels unfair
+local tooFarWhoCares = 5000^2 -- dont check visibility farther than this, leads to more spawns on big maps
+
 local function asParsed( toParse, name, defaultsTbl )
     local default = defaultsTbl[name]
     if default then
@@ -469,8 +472,6 @@ hook.Add( "PostCleanupMap", "glee_resethunterspawnerstats", function()
 
 end )
 
-local minRadius = 500 -- hardcoded num, if you spawn closer than this, it feels unfair
-
 -- how many times the hunter's max health it needs to be without an enemy before it gets removed
 -- 0.5 ratio means, 100 hp hunter needs to be without an enemy for 50 seconds before it gets removed
 local staleRatio = 0.5
@@ -670,6 +671,10 @@ function GM:AdjustDynamicTooFarCutoff( adjust, spawnSet )
 
 end
 
+local up20 = Vector( 0, 0, 20 )
+local up50 = Vector( 0, 0, 50 )
+local tries = 20
+
 -- spawn a hunter as far away as possible from every player by inching a distance check around
 -- made to be really random/overcomplicated so you never really know where they'll spawn from
 -- RAAAGH WHY DID I MAKE THIS SO OVERCOMPLCATED
@@ -681,38 +686,55 @@ function GM:getValidHunterPos()
 
     if not self.biggestNavmeshGroups then return nil, nil end
 
-    local _, theMainGroup = self:GetAreaInOccupiedBigGroupOrRandomBigGroup()
+    local areas
+    if fails > 150 and math.random( 0, 100 ) < 50 then -- too many fails? map is probably too big, just get areas near a player!
+        local alivePlayer = self:anAlivePlayer()
+        if IsValid( alivePlayer ) then
+            local maxs = Vector( dynamicTooCloseDist, dynamicTooCloseDist, dynamicTooCloseDist / 2 )
+            local pos = alivePlayer:GetPos()
+            local pos1 = pos + maxs
+            local pos2 = pos - maxs
+            areas = navmesh.FindInBox( pos1, pos2 )
+
+        end
+    end
+    if not areas or #areas <= 0 then
+        _, areas = self:GetAreaInOccupiedBigGroupOrRandomBigGroup()
+
+    end
 
     local playerShootPositions = self:allPlayerShootPositions()
 
     -- multiple attempts, will march distance down if we can't find a good option, marches up if there is a good spot
     -- makes it super random yet grounded
-    for ind = 0, 10 do
-        local spawnPos = nil
+    local cost = 0
+    while cost < tries do
+        cost = cost + 0.1
         local randomArea
-        if ind > 5 and spawnSet.lastGoodSpawnArea then
+        if cost > 5 and spawnSet.lastGoodSpawnArea then -- if we have a good spawn area, use it NOW!
             randomArea = spawnSet.lastGoodSpawnArea
             spawnSet.lastGoodSpawnArea = nil
 
         else
-            randomArea = table.Random( theMainGroup )
+            randomArea = areas[math.random( 1, #areas )] -- pick a random area
 
         end
-        if not randomArea or not IsValid( randomArea ) then continue end
+        if not randomArea or not IsValid( randomArea ) then continue end -- outdated
 
-        spawnPos = randomArea:GetRandomPoint()
-        spawnPos = spawnPos + Vector( 0,0,20 )
+        local spawnPos = randomArea:GetRandomPoint()
+        spawnPos = spawnPos + up20
 
-        if randomArea:IsUnderwater() then
+        if randomArea:IsUnderwater() then -- underwater spawning is lame
             -- make it a bit closer
             GAMEMODE:AdjustDynamicTooCloseCutoff( -150, spawnSet ) -- make it get closer
             GAMEMODE:AdjustDynamicTooFarCutoff( -50, spawnSet ) -- closer here too
             debugPrint( "underwater bite" )
+            cost = cost + 0.1
             continue
 
         end
 
-        local checkPos = spawnPos + Vector( 0, 0, 50 )
+        local checkPos = spawnPos + up50
         local visibleToAPly
         local tooClose
         local tooFar
@@ -720,7 +742,12 @@ function GM:getValidHunterPos()
         for _, pos in ipairs( playerShootPositions ) do
             local visible, visResult
             local hitCloseBy
-            if not visibleToAPly then
+
+            local distSqr = pos:DistToSqr( checkPos )
+
+            -- dont check too far away, means nothing spawns on big maps
+            -- and dont check if we already know a player can see it
+            if distSqr < tooFarWhoCares and not visibleToAPly then
                 visible, visResult = terminator_Extras.PosCanSee( pos, checkPos )
                 hitCloseBy = visResult.HitPos:DistToSqr( checkPos ) < 350^2
 
@@ -730,7 +757,6 @@ function GM:getValidHunterPos()
 
             end
 
-            local distSqr = pos:DistToSqr( checkPos )
             if distSqr < dynamicTooCloseDist^2 then -- dist check!
                 tooClose = true
                 break -- only break here so the justSpawnSomething doesnt spawn stuff next to people!!!!!
@@ -741,22 +767,26 @@ function GM:getValidHunterPos()
             end
         end
 
+        cost = cost + 1
+
         local goodConventional = not visibleToAPly and not tooClose and not tooFar -- great spot to spawn!
         local justSpawnSomething = fails > 2000 and not tooClose -- fallback, map has no great spots to spawn
 
         if goodConventional or justSpawnSomething then
             GAMEMODE:AdjustDynamicTooCloseCutoff( 50, spawnSet ) -- make it get further
-            GAMEMODE:AdjustDynamicTooFarCutoff( 100, spawnSet ) -- let it get further next time
+            GAMEMODE:AdjustDynamicTooFarCutoff( 100, spawnSet )
             debugPrint( "good spawn bump" )
 
             -- good spawnpoint, spawn here
             fails = 0
             spawnSet.dynamicTooCloseFailCounts = -2
             if justSpawnSomething then
-                GAMEMODE.deadWaveDiffBump = GAMEMODE.deadWaveDiffBump + spawnSet.diffBumpWhenWaveKilled / 4
+                GAMEMODE.deadWaveDiffBump = GAMEMODE.deadWaveDiffBump + spawnSet.diffBumpWhenWaveKilled / 4 -- blast difficulty up
 
             end
 
+            -- found a good spawn area, save it if we get stuck on the next spawn
+            -- also leads to hordes spawning in one spot
             spawnSet.lastGoodSpawnArea = randomArea
 
             return spawnPos, true
@@ -773,10 +803,10 @@ function GM:getValidHunterPos()
         end
     end
 
-    -- didnt find a spot in the 10 tries, fatten the spawn donut a bit
-    local bite = fails / 10
-    GAMEMODE:AdjustDynamicTooCloseCutoff( -bite, spawnSet ) -- make it get further
-    GAMEMODE:AdjustDynamicTooFarCutoff( bite * 2, spawnSet ) -- let it get further next time
+    -- didnt find a spot in the x tries, fatten the spawn donut a bit
+    local bite = fails / tries
+    GAMEMODE:AdjustDynamicTooCloseCutoff( -bite, spawnSet )
+    GAMEMODE:AdjustDynamicTooFarCutoff( bite * 2, spawnSet )
     debugPrint( "no spawn bite", bite )
 
     return nil, nil
@@ -785,7 +815,7 @@ end
 
 
 local defaultSpawnSetName = "hunters_glee"
-local function postSetSpawnset( new )
+local function postSetSpawnset( new ) -- validate the spawnset cvar
     if not GAMEMODE:IsValidSpawnSet( new ) then
         if GAMEMODE:IsValidSpawnSet( defaultSpawnSetName ) then
             RunConsoleCommand( "huntersglee_spawnset", defaultSpawnSetName )
@@ -869,6 +899,6 @@ hook.Add( "huntersglee_emptyserver", "glee_reset_spawnset", function( wasEmpty )
 end )
 
 -----------------------------------------
--- TEMPLATE IN
+-- SPAWNSET TEMPLATE IN
 -- lua/glee_spawnsets/hunters_glee.lua
 -----------------------------------------

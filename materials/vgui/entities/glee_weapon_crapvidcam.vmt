@@ -1,0 +1,7 @@
+UnlitGeneric
+{ 
+	$basetexture		"vgui/entities/glee_weapon_crapvidcam"
+	$vertexcolor 		1
+	$vertexalpha 		1
+	$nolod 				1
+} 

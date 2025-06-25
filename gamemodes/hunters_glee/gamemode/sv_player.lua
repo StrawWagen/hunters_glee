@@ -453,14 +453,6 @@ function GM:DoHeartAttackThink( ply )
     if nextThink > CurTime() then return end
     ply.glee_NextHeartAttackThink = CurTime() + math.Rand( 0.4, 0.6 )
 
-    if ply:Health() <= 0 then
-        if ply.glee_HeartAttackScore then
-            ply.glee_HeartAttackScore = nil
-
-        end
-        return
-
-    end
     local heartAttackScore = ply.glee_HeartAttackScore or 0
     local threshold = GAMEMODE:GetHeartAttackThreshold( ply )
 
@@ -529,7 +521,7 @@ hook.Add( "PlayerDeath", "glee_resetbeatstuff", function( ply )
     ply.BPMHistoric = nil
     ply:SetNWInt( "termHuntPlyBPM", restingBPMPermanent )
     ply.glee_HasHeartAttackWarned = nil
-    ply.glee_HeartAttackScore = 0
+    ply.glee_HeartAttackScore = nil
 
 end )
 
@@ -623,8 +615,11 @@ function GM:SpectateThing( ply, thing, msg )
 
     end
     ply:SetObserverMode( newMode )
-    ply:SetParent( thing ) -- fixes alot of flashing light visual bugs
-    ply:SetPos( thing:WorldSpaceCenter() )
+    if IsValid( thing ) then
+        ply:SetParent( thing ) -- fixes alot of flashing light visual bugs
+        ply:SetPos( thing:WorldSpaceCenter() )
+
+    end
     msg = msg or "glee_followedsomething"
     net.Start( msg )
     net.Send( ply )

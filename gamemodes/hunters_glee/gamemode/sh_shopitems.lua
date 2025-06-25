@@ -2710,7 +2710,7 @@ local function additionalHunter( purchaser )
         hunter.linkedPlayer = purchaser
 
         if purchaser:Health() <= 0 then
-            GAMEMODE:SpectateThing( ply, hunter )
+            GAMEMODE:SpectateThing( purchaser, hunter )
 
         end
 

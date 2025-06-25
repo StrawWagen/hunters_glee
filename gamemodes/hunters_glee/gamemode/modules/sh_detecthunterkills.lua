@@ -24,5 +24,4 @@ if SERVER then
         attacker:SetNW2Int( "glee_hunterkills", attackersKillCount )
 
     end )
-
 end

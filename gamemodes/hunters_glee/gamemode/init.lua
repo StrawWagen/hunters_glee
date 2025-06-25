@@ -242,6 +242,7 @@ function GM:Think()
 
             if cheats and not self.waitingOnNavoptimizerGen then
                 self:GenerateANavmeshPls()
+
             end
         elseif not dedi then
             huntersGlee_Announce( player.GetAll(), 1000, 1, "NO NAVMESH!\nInstall or generate yourself a navmesh!" )
@@ -771,12 +772,23 @@ function GM:GenerateANavmeshPls()
 
     -- when generation is done
     hook.Add( "navoptimizer_done_gencheapexpanded", "glee_detectrealnavgenfinish", function()
-        huntersGlee_Announce( player.GetAll(), 1001, 5, "Navmesh generation complete, optimizing..." )
+        huntersGlee_Announce( player.GetAll(), 1001, 5, "Navmesh generation complete! Removing any stray skybox areas... " )
+        timer.Simple( 1, function()
+            -- the skybox is NOT A PLAYABLE AREA!
+            RunConsoleCommand( "navmesh_delete_skyboxareas" )
+
+        end )
+        hook.Remove( "navoptimizer_done_gencheapexpanded", "glee_detectrealnavgenfinish" )
+
+    end )
+
+    hook.Add( "navoptimizer_done_removingskyboxareas", "glee_detectskyboxcleanupfinish", function()
+        huntersGlee_Announce( player.GetAll(), 1002, 5, "Skybox areas handled, now optimizing..." )
         timer.Simple( 1, function()
             RunConsoleCommand( "navmesh_globalmerge_auto" )
 
         end )
-        hook.Remove( "navoptimizer_done_gencheapexpanded", "glee_detectrealnavgenfinish" )
+        hook.Remove( "navoptimizer_done_removingskyboxareas", "glee_detectskyboxcleanupfinish" )
 
     end )
 

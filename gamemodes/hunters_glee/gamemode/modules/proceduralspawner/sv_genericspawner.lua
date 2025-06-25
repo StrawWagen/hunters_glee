@@ -95,7 +95,7 @@ local function addJob( curr )
     local genericJob = {}
     genericJob.jobsName = "auto_spawn.. " .. className
     genericJob.posFindingOrigin = livePly:GetPos()
-    genericJob.spawnRadius = curr.radius or 5000
+    genericJob.spawnRadius = curr.radius
     genericJob.onFailed = function() onJobBail( className ) end
 
     genericJob.originIsDefinitive = false
@@ -291,8 +291,8 @@ function GM:RandomlySpawnEnt( className, maxCount, chance, minAreaSize, radius, 
         className = className,
         chance = chance,
         maxCount = maxCount,
-        minAreaSize = minAreaSize,
-        radius = radius,
+        minAreaSize = minAreaSize or 25,
+        radius = radius or 5000,
         preSpawnedFunc = preSpawnedFunc,
         postSpawnedFunc = postSpawnedFunc,
 

@@ -15,7 +15,7 @@ local function DoFlashlight( state )
 
             local dir
             local start
-            if obsMode == OBS_MODE_IN_EYE then
+            if obsMode == OBS_MODE_IN_EYE and IsValid( obsTarg ) then
                 start = obsTarg.GetShootPos and obsTarg:GetShootPos() or obsTarg:WorldSpaceCenter()
                 dir = obsTarg:EyeAngles():Forward()
 
