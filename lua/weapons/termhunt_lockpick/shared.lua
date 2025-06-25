@@ -41,8 +41,7 @@ SWEP.Secondary.Ammo = ""
 
 local className = "termhunt_lockpick"
 if CLIENT then
-    language.Add( className, SWEP.PrintName )
-    killicon.Add( className, "vgui/hud/killicon/" .. className .. ".png", color_white )
+    terminator_Extras.glee_CL_SetupSwep( SWEP, className, "vgui/hud/killicon/" .. className .. ".png" )
 
 else
     resource.AddFile( "materials/vgui/hud/killicon/" .. className .. ".png" )

@@ -1,6 +1,6 @@
 if CLIENT then
     SWEP.DrawCrosshair   = false
-    SWEP.Slot      = 4
+    SWEP.Slot      = 2
     SWEP.ViewModelFlip        = false
     SWEP.ViewModelFOV        = 54
 
@@ -34,6 +34,7 @@ SWEP.Secondary.Automatic = false
 SWEP.Secondary.Ammo = "none"
 
 if CLIENT then
+    terminator_Extras.glee_CL_SetupSwep( SWEP, "termhunt_weapon_beartrap", "materials/vgui/hud/killicon/termhunt_bear_trap.png" )
     function SWEP:GetViewModelPosition( pos, ang )
         return pos + ang:Forward() * 5, ang
     end

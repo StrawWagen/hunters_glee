@@ -1,5 +1,5 @@
 SWEP.PrintName = "Reviver"
-SWEP.Author = "StrawWagen & the people who worked on the medkit"
+SWEP.Author = "StrawWagen & GMOD"
 SWEP.Purpose = "Resurrect the fallen"
 
 SWEP.Slot = 5
@@ -30,6 +30,20 @@ SWEP.ViewOffset = Vector( 0 )
 
 local HealSound = Sound( "items/medshot4.wav" )
 local DenySound = Sound( "items/medshotno1.wav" )
+
+if CLIENT then
+    terminator_Extras.glee_CL_SetupSwep( SWEP, "termhunt_reviver", "materials/vgui/hud/termhunt_reviver.png" )
+    function SWEP:HintPostStack()
+        local owner = self:GetOwner()
+        if not owner:GetNW2Bool( "gleereviver_resurrected", false ) then
+            return true, "Primary attack to resurrect a dead player!"
+        end
+    end
+
+else
+    resource.AddFile( "materials/entities/termhunt_reviver.png" )
+
+end
 
 function SWEP:Initialize()
 

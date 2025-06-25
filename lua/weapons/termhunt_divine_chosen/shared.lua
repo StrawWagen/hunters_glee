@@ -8,8 +8,8 @@ SWEP.PrintName      = "Divine Chosen"
 SWEP.DrawAmmo       = true
 SWEP.DrawCrosshair    = true
 
-SWEP.SlotPos          = 1
-SWEP.Slot             = 1
+SWEP.SlotPos          = 0
+SWEP.Slot             = 0
 
 SWEP.Spawnable        = true
 SWEP.AdminOnly       = true
@@ -32,15 +32,17 @@ SWEP.Secondary.Ammo        = "none"
 
 
 if CLIENT then
+    terminator_Extras.glee_CL_SetupSwep( SWEP, "termhunt_divine_chosen", "materials/vgui/hud/termhunt_divine_chosen.png" )
+
     function SWEP:HintPreStack()
         local owner = self:GetOwner()
 
         if not owner:GetNW2Bool( "divinechosen_singlestrike", false ) then return true, "PRIMARY ATTACK to summon a bolt of lightning." end
+        if not owner:GetNW2Bool( "divinechosen_jumpinmidair", false ) then return true, "JUMP IN MIDAIR to fly..." end
+        if not owner:IsOnGround() and not owner:GetNW2Bool( "divinechosen_dropinmidair", false ) then return true, "hold CROUCH IN MIDAIR to fall..." end
         if not owner:GetNW2Bool( "divinechosen_strikechained", false ) then return true, "HOLD DOWN PRIMARY ATTACK to create a chain of lightning." end
 
         if not owner:GetNW2Bool( "divinechosen_secondarystrike", false ) then return true, "RIGHT CLICK to charge a lightning strike of unrivaled power." end
-        if not owner:GetNW2Bool( "divinechosen_jumpinmidair", false ) then return true, "JUMP IN MIDAIR to fly..." end
-        if not owner:GetNW2Bool( "divinechosen_dropinmidair", false ) then return true, "hold CROUCH IN MIDAIR to fall..." end
 
     end
 else

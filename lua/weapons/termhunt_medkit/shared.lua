@@ -30,6 +30,7 @@ SWEP.HealAmount = 20 -- Maximum heal amount per use
 SWEP.MaxAmmo = math.huge -- Maxumum ammo
 
 if CLIENT then
+    terminator_Extras.glee_CL_SetupSwep( SWEP, "termhunt_medkit", "materials/vgui/hud/termhunt_medkit.png" )
     function SWEP:HintPostStack()
         local owner = self:GetOwner()
         if not owner:GetNW2Bool( "gleemedkit_healedself", false ) and owner:Health() < owner:GetMaxHealth() then return true, "Secondary attack to heal yourself!" end

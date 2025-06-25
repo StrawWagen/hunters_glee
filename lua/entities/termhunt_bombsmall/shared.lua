@@ -13,8 +13,7 @@ ENT.Model = "models/weapons/w_bugbait.mdl"
 
 local className = "termhunt_bombsmall"
 if CLIENT then
-    language.Add( className, ENT.PrintName )
-    killicon.Add( className, "vgui/hud/killicon/" .. className .. ".png", color_white )
+    terminator_Extras.glee_CL_SetupSent( ENT, className, "vgui/hud/killicon/" .. className .. ".png" )
 
 else
     resource.AddFile( "materials/vgui/hud/killicon/" .. className .. ".png" )

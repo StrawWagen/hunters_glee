@@ -10,21 +10,20 @@ SWEP.InventoryIcon      = "flaregun_hud"
 SWEP.HoldType           = "pistol"
 SWEP.Weight             = 3
 SWEP.Range              = 2000
-SWEP.Slot               = 1
+SWEP.Slot               = 2
 SWEP.SlotPos            = 3
 
 SWEP.AutoSwitchFrom     = true
 SWEP.DrawAmmo           = true
 SWEP.ViewModelFlip      = false
-SWEP.BounceWeaponIcon   = false
+SWEP.BounceWeaponIcon   = true
 
 SWEP.ViewModel          = "models/weapons/v_flaregun.mdl"
 SWEP.WorldModel         = "models/weapons/w_dkflaregun.mdl"
 
 local className = "termhunt_aeromatix_flare_gun"
 if CLIENT then
-    language.Add( className, SWEP.PrintName )
-    killicon.Add( className, "vgui/hud/killicon/" .. className .. ".png", color_white )
+    terminator_Extras.glee_CL_SetupSwep( SWEP, className, "materials/vgui/hud/killicon/" .. className .. ".png" )
     language.Add( "GLEE_FLAREGUN_PLAYER_ammo", "Flare" )
 
 else
@@ -152,11 +151,6 @@ end
 
 function SWEP:Initialize()
     self:SetHoldType( self.HoldType )
-    if CLIENT then
-        local oldpath = "vgui/hud/name"
-        local newpath = string.gsub( oldpath, "name", self.InventoryIcon )
-        self.WepSelectIcon = surface.GetTextureID( newpath )
-    end
 end
 
 function SWEP:OwnerChanged()

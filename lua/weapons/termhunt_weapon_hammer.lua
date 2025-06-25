@@ -59,8 +59,7 @@ SWEP.SecWallSound                 = ""                           -- Sound when w
 
 local className = "termhunt_weapon_hammer"
 if CLIENT then
-    language.Add( className, SWEP.PrintName )
-    killicon.Add( className, "vgui/hud/killicon/" .. className .. ".png", color_white )
+    terminator_Extras.glee_CL_SetupSwep( SWEP, className, "vgui/hud/killicon/" .. className .. ".png" )
 
     function SWEP:HintPostStack()
         local owner = self:GetOwner()
@@ -110,13 +109,6 @@ sound.Add( {
 
 local nailTooCloseDist = 3
 local nailFindDist = nailTooCloseDist * 5
-local yellow = Color( 255, 220, 0, a )
-
-function SWEP:DrawWeaponSelection( x, y, w, t, a )
-
-    draw.SimpleText( "C", "creditslogo", x + w / 2, y, yellow, TEXT_ALIGN_CENTER )
-
-end
 
 function SWEP:Initialize()
     self:SetHoldType( self.HoldType )

@@ -38,6 +38,14 @@ SWEP.Secondary.DefaultClip = -1
 SWEP.Secondary.Automatic = false
 SWEP.Secondary.Ammo = "none"
 
+if CLIENT then
+    terminator_Extras.glee_CL_SetupSwep( SWEP, "termhunt_radio", "materials/vgui/hud/termhunt_radio.png" )
+
+else
+    util.PrecacheSound( "ambient/levels/prison/radio_random11.wav" )
+    util.PrecacheSound( "ambient/levels/citadel/strange_talk11.wav" )
+
+end
 if SERVER then
     resource.AddFile( "materials/entities/termhunt_radio.png" )
 

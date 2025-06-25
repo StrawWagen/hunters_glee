@@ -16,6 +16,10 @@ local function ShutDownPanel( pnl )
 
 end
 
+-- make a panel thats super easy to close
+-- just click off it, or press use or menu key
+-- arg1, the panel to make easy to close
+-- arg2, optional function called right before the panel closes
 function terminator_Extras.easyClosePanel( pnl, callFirst )
     pnl.keyWasDown = {}
 
@@ -36,12 +40,16 @@ function terminator_Extras.easyClosePanel( pnl, callFirst )
     pnl.glee_easyCloseFirst = callFirst
 
     function pnl:Think()
+
+        -- catch people tabbing in
+        -- super annoying if you click on the window to tab back in, and the menu closes
         if not system.HasFocus() then
             justTabbedIn = true
             self:gleeOld_Think()
             return
 
         end
+
         -- bail if they open any menu, or press use
         if input_IsKeyDown( KEY_ESCAPE ) then ShutDownPanel( self ) return end
         if clientsUseKey then
@@ -96,4 +104,53 @@ function terminator_Extras.easyClosePanel( pnl, callFirst )
         self:gleeOld_Think()
 
     end
+end
+
+local function drawTexOverride( self, x, y, wide, tall, alpha )
+
+    -- Set us up the texture
+    surface.SetDrawColor( 255, 255, 255, alpha )
+    surface.SetMaterial( self.glee_WepSelectIcon )
+
+    -- Lets get a sin wave to make it bounce
+    local fsin = 0
+
+    if ( self.BounceWeaponIcon == true ) then
+        fsin = math.sin( CurTime() * 10 ) * 5
+    end
+
+    -- Borders
+    y = y + 10
+    x = x + 10
+    wide = wide - 20
+
+    -- Draw that mother
+    surface.DrawTexturedRect( x + fsin, y - fsin,  wide - fsin * 2 , ( wide / 2 ) + fsin )
+
+    -- Draw weapon info box
+    self:PrintWeaponInfo( x + wide + 20, y + tall * 0.95, alpha )
+
+end
+
+local white = Color( 255, 255, 255 )
+
+function terminator_Extras.glee_CL_SetupSwep( SWEP, class, texture )
+    language.Add( class, SWEP.PrintName )
+    killicon.Add( class, texture, white )
+
+    local mat = Material( texture, "alphatest" )
+    if not mat:IsError() then
+        SWEP.glee_WepSelectIcon = mat
+        SWEP.DrawWeaponSelection = drawTexOverride
+
+    else
+        ErrorNoHaltWithStack( "Error loading weapon icon texture for " .. class .. "\n" .. mat:GetName() .. "\n" .. texture )
+
+    end
+end
+
+function terminator_Extras.glee_CL_SetupSent( ENT, class, texture )
+    language.Add( class, ENT.PrintName )
+    killicon.Add( class, texture, white )
+
 end

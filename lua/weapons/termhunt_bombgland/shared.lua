@@ -2,7 +2,7 @@ SWEP.PrintName = "Bomb gland"
 SWEP.Author = "Straw W Wagen"
 SWEP.Purpose = "Drop bombs, Left click for small bomb, Reload for big bomb.\nDetonate oldest bomb with right click"
 
-SWEP.Slot = 1
+SWEP.Slot = 0
 SWEP.SlotPos = 2
 
 SWEP.Spawnable = true
@@ -31,9 +31,8 @@ SWEP.Secondary.Automatic   = false
 SWEP.Secondary.Ammo        = "none"
 
 if CLIENT then
-    language.Add( "termhunt_bombgland", SWEP.PrintName )
     -- use big bomb's kill icon
-    killicon.Add( "termhunt_bombgland", "vgui/hud/killicon/termhunt_bombbig.png", color_white )
+    terminator_Extras.glee_CL_SetupSwep( SWEP, "termhunt_bombgland", "materials/vgui/hud/killicon/termhunt_bombbig.png" )
     function SWEP:HintPostStack()
         local owner = self:GetOwner()
         local count = self:GetBombs()
@@ -45,6 +44,7 @@ if CLIENT then
         if not owner:GetNW2Bool( "bombgland_detonated", false ) and owner:GetNW2Bool( "bombgland_createdbomb", false ) then return true, "Secondary attack to explode your bombs!" end
 
     end
+
 else
     resource.AddFile( "materials/entities/termhunt_bombgland.png" )
 
@@ -64,7 +64,7 @@ function SWEP:Initialize()
     end
 end
 
-function SWEP:DrawWorldModel()                          end
+function SWEP:DrawWorldModel() end
 
 function SWEP:CustomAmmoDisplay()
 

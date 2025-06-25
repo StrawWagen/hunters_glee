@@ -20,7 +20,7 @@ SWEP.Instructions = [[
 Credit teapot 3504739480]]
 
 if CLIENT then
-    SWEP.WepSelectIcon = surface.GetTextureID( "vgui/entities/glee_weapon_crapvidcam" )
+    terminator_Extras.glee_CL_SetupSwep( SWEP, "weapon_glee_crapvidcam", "vgui/entities/glee_weapon_crapvidcam" )
 end
 
 SWEP.Author = "teapot"
