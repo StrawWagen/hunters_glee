@@ -65,14 +65,20 @@ local function asParsed( toParse, name, defaultsTbl )
     local finalMul = 1
     local default = defaultsTbl[name]
     if default then
-        if not toParse then -- soft default
+        if not toParse then
+            -- soft default
             toParse = default
 
         elseif isstring( toParse ) then
-            if toParse == "default" then -- explicit default
+            -- explicit default
+            if toParse == "default" then
                 toParse = default
 
-            elseif string.match( toParse, "^default%*[%d%.]+$" ) then -- dynamically mul the default!
+            -- dynamically mul the default!
+            -- eg default*1.5, default*0.25
+            -- much better than setting something independant from the default
+            -- because the defaults will change eventually....
+            elseif string.match( toParse, "^default%*[%d%.]+$" ) then
                 local multiplier = tonumber( string.match( toParse, "[%d%.]+$" ) )
                 if multiplier then
                     toParse = default
