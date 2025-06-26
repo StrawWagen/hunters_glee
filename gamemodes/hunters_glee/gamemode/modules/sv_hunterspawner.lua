@@ -62,18 +62,28 @@ local minRadius = 500 -- hardcoded num, if you spawn closer than this, it feels 
 local tooFarWhoCares = 5000^2 -- dont check visibility farther than this, leads to more spawns on big maps
 
 local function asParsed( toParse, name, defaultsTbl )
+    local finalMul = 1
     local default = defaultsTbl[name]
     if default then
-        if not toParse then -- fallback,
+        if not toParse then -- soft default
             toParse = default
 
-        elseif isstring( toParse ) and toParse == "default" then -- explicit default
-            toParse = default
+        elseif isstring( toParse ) then
+            if toParse == "default" then -- explicit default
+                toParse = default
 
+            elseif string.match( toParse, "^default%*[%d%.]+$" ) then -- dynamically mul the default!
+                local multiplier = tonumber( string.match( toParse, "[%d%.]+$" ) )
+                if multiplier then
+                    toParse = default
+                    finalMul = multiplier
+
+                end
+            end
         end
     end
 
-    if isnumber( toParse ) then return toParse end
+    if isnumber( toParse ) then return toParse * finalMul end
     if isfunction( toParse ) then return toParse end
 
     if isstring( default ) and isstring( toParse ) then
@@ -81,8 +91,8 @@ local function asParsed( toParse, name, defaultsTbl )
 
     end
 
-    if #toParse <= 1 and isnumber( toParse[1] ) then return toParse[1] end
-    if #toParse <= 2 and isnumber( toParse[1] ) and isnumber( toParse[2] ) then return math.Rand( toParse[1], toParse[2] ) end
+    if #toParse <= 1 and isnumber( toParse[1] ) then return toParse[1] * finalMul end
+    if #toParse <= 2 and isnumber( toParse[1] ) and isnumber( toParse[2] ) then return math.Rand( toParse[1], toParse[2] ) * finalMul end
 
 end
 
@@ -343,6 +353,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
         while budget > 0 do
             local addedOne
             local freebie
+            debugPrint( "picking with " .. budget .. " remaining" )
 
             for _, currSpawn in SortedPairsByMemberValue( spawns, "difficultyCost", true ) do -- go from most to least cost
                 if ( aliveCount + #pickedSpawns ) >= countWanted then break end
@@ -480,7 +491,7 @@ local staleRatioMinHp = 100 -- dont remove npcs below this hp too fast!
 
 local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they want, remove them and march the spawn distances smaller if they're being boring
     local maxHp = hunter:GetMaxHealth()
-    local noEnemyToRemove = maxHp * staleRatio
+    local noEnemyToRemove = maxHp * staleRatio -- enemies with more hp get more leeway
     local startingCount = math.random( -30, -15 )
     local krangled = true
 
