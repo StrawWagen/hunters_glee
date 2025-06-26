@@ -673,7 +673,7 @@ end
 
 local up20 = Vector( 0, 0, 20 )
 local up50 = Vector( 0, 0, 50 )
-local tries = 20
+local tries = 10
 
 -- spawn a hunter as far away as possible from every player by inching a distance check around
 -- made to be really random/overcomplicated so you never really know where they'll spawn from

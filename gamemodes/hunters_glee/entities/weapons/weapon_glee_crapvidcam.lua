@@ -257,6 +257,6 @@ end
 if not SERVER then return end
 
 hook.Add( "InitPostEntity", "CrapVidCam_glee", function()
-    GAMEMODE:RandomlySpawnEnt( "weapon_glee_crapvidcam", math.random( 1, 2 ), math.Rand( 0.1, 4.5 ), nil, math.random( 2000, 10000 ) )
+    GAMEMODE:RandomlySpawnEnt( "weapon_glee_crapvidcam", math.random( 1, 2 ), math.Rand( 15, 50 ), nil, math.random( 1000, 10000 ) )
 
 end )
