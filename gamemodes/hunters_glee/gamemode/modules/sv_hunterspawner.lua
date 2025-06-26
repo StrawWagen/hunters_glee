@@ -40,7 +40,7 @@ GAMEMODE.RegisteredSpawnSets = GAMEMODE.RegisteredSpawnSets or {}
 local minute = 60
 
 local setDefaults = {
-    difficultyPerMin = 100 / 10, -- 100% diff at 10 mins
+    difficultyPerMin = { 100 / 10, 150 / 10 }, -- 100-150% diff at 10 mins
     waveInterval = { minute, minute * 1.6 },
     diffBumpWhenWaveKilled = { 10, 20 },
     startingBudget = 20,

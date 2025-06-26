@@ -7,7 +7,7 @@ local set = {
     name = "hunters_glee_paparazzi", -- unique name
     prettyName = "Paparazzi's Glee",
     description = "Oh god, they're taking photos of us!",
-    difficultyPerMin = { 250 / 10, 500 / 10 }, -- difficulty per minute
+    difficultyPerMin = "default*3", -- difficulty per minute
     waveInterval = "default", -- time between spawn waves
     diffBumpWhenWaveKilled = { 15, 25 }, -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
     startingBudget = "default", -- so budget isnt 0
