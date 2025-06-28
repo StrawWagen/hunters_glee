@@ -87,7 +87,7 @@ hook.Add( "huntersglee_round_into_active", "glee_loadpersistientskulls", functio
     for i, skullTbl in pairs( GAMEMODE.persistientSkulls ) do
         local timerName = "glee_persistient_skullrespawn_" .. i
         timer.Create( timerName, 1, 0, function()
-            if terminator_Extras.posIsInterrupting( skullTbl.pos ) then return end -- wait!
+            if terminator_Extras.posIsInterruptingAlive( skullTbl.pos ) then return end -- wait!
 
             local skull = ents.Create( "termhunt_skull_pickup" )
             if not IsValid( skull ) then timer.Remove( timerName ) return end

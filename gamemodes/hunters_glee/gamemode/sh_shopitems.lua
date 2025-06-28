@@ -899,7 +899,7 @@ if CLIENT then
 
         local alpha = 230
 
-        if bit.band( util_PointContents( _LocalPlayer():GetShootPos() ), CONTENTS_WATER )  ~= 0 then
+        if bit.band( util_PointContents( _LocalPlayer():GetShootPos() ), CONTENTS_WATER ) ~= 0 then
             alpha = 255
 
         end

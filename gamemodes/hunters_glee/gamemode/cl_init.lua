@@ -316,6 +316,8 @@ local function beatThink( ply, cur )
 end
 
 
+local hour = 60 * 60
+
 local function paintRoundInfo( ply, cur )
     local typeVal = GetGlobalString( "GLEE_SpawnSetPrettyName", "Hunter's Glee" )
     local timeVal = GetGlobalInt( "TERMHUNTER_PLAYERTIMEVALUE", 0 )
@@ -333,7 +335,15 @@ local function paintRoundInfo( ply, cur )
         timeVal = 0
     end
 
-    local combinedString = infoVal .. string.ToMinutesSeconds( timeVal )
+    local combinedString = infoVal
+
+    if timeVal > hour then
+        local hours = math.floor( timeVal / hour )
+        combinedString = combinedString .. hours .. ":"
+
+    end
+
+    combinedString = combinedString .. string.ToMinutesSeconds( timeVal )
 
     if typeVal ~= "Hunter's Glee" then
         combinedString = typeVal .. " : " .. combinedString
@@ -345,6 +355,7 @@ local function paintRoundInfo( ply, cur )
         ply.infoColorOverride = Color( 255, 50, 50 )
         ply.resetColorTime = cur + 0.1
         ply:EmitSound( "buttons/lightswitch2.wav" )
+
     end
 
     if not GAMEMODE:CanShowDefaultHud() then return end
@@ -876,6 +887,10 @@ local function paintFinestPrey()
 
 end
 
+
+-- THE BIG ONE!
+-- Calls everything else above
+
 function HUDPaint()
     local ply = LocalPlayer()
     local cur = UnPredictedCurTime()
@@ -946,6 +961,7 @@ function HUDPaint()
 end
 hook.Add( "HUDPaint", "termhunt_playerdisplay", HUDPaint )
 
+
 local function ClThink()
     local ply = LocalPlayer()
     local cur = UnPredictedCurTime()
@@ -953,7 +969,7 @@ local function ClThink()
 
     if spectating then return end
 
-    -- sounds
+    -- heartbeat sounds!
     local didBeat, interval = beatThink( ply, cur )
     if didBeat then
         hook.Run( "glee_cl_heartbeat", ply, interval )
@@ -963,6 +979,7 @@ end
 
 hook.Add( "Think", "termhunt_clthink", ClThink )
 
+
 hook.Add( "PreDrawViewModel", "glee_dontdrawviewmodelsWHENDEAD", function( _vm, ply )
     if ply:Health() > 0 then return end -- they are alive
     if ( ply:GetObserverMode() == OBS_MODE_IN_EYE ) and IsValid( ply:GetObserverTarget() ) then return end -- spectating another player
@@ -970,6 +987,7 @@ hook.Add( "PreDrawViewModel", "glee_dontdrawviewmodelsWHENDEAD", function( _vm, 
     return true -- dont draw vm
 
 end )
+
 
 -- flash the window on round state change!
 -- only flash when round ends, and goes into active

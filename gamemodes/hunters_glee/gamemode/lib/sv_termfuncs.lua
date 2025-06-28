@@ -592,11 +592,12 @@ function GM:CountWinnablePlayers()
 end
 
 
-function GM:allPlayerShootPositions()
+function GM:allAlivePlayerShootPositions()
     local positions = {}
     for _, ply in ipairs( player.GetAll() ) do
         if ply:Health() <= 0 then continue end
         table.insert( positions, ply:GetShootPos() )
+
     end
     return positions
 
@@ -643,30 +644,30 @@ function GM:speakAsHuntersGlee( msg )
 
 end
 
-function GM:Bleed( player, extent )
-    local boneCount = math.Clamp( player:GetBoneCount(), 0, extent )
+function GM:Bleed( ply, extent )
+    local boneCount = math.Clamp( ply:GetBoneCount(), 0, extent )
     local operationCount = boneCount * 0.5
 
     for _ = 0, operationCount do
         local randBoneIndex = math.random( 1, boneCount )
-        local bonePos = player:GetBonePosition( randBoneIndex )
+        local bonePos = ply:GetBonePosition( randBoneIndex )
         if not bonePos then continue end
         local edata = EffectData()
 
         edata:SetOrigin( bonePos )
         edata:SetNormal( VectorRand() )
-        edata:SetEntity( player )
+        edata:SetEntity( ply )
         util.Effect( "BloodImpact", edata )
 
     end
 
 end
 
-function GM:PlaySoundOnEveryPlayer( path, pitch, vol )
+function GM:PlaySoundOnEveryPlayer( path, pitch, vol, dsp )
     for _, ply in player.Iterator() do
         local filterJustThem = RecipientFilter()
         filterJustThem:AddPlayer( ply )
-        ply:EmitSound( path, 75, pitch, vol, CHAN_STATIC, 0, 0, filterJustThem )
+        ply:EmitSound( path, 75, pitch, vol, CHAN_STATIC, 0, dsp, filterJustThem )
 
     end
 end

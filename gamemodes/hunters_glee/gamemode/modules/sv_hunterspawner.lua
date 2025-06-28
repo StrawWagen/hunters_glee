@@ -1,7 +1,9 @@
 
 local isnumber = isnumber
 local isstring = isstring
+local bit_band = bit.band
 local isfunction = isfunction
+local util_PointContents = util.PointContents
 local GAMEMODE = GAMEMODE or GM
 
 local function errorCatchingMitt( errMessage )
@@ -59,6 +61,7 @@ local spawnDefaults = {
 }
 
 local minRadius = 500 -- hardcoded num, if you spawn closer than this, it feels unfair
+local softMinRadius = 1000 -- slow down the marching if less than this dist
 local tooFarWhoCares = 5000^2 -- dont check visibility farther than this, leads to more spawns on big maps
 
 local function asParsed( toParse, name, defaultsTbl )
@@ -295,6 +298,8 @@ end
 
 resetWave()
 
+local nextHunterSpawn = 0
+
 hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", function( _, _, cur )
     if not GAMEMODE.HuntersGleeDoneTheGreedyPatch then return end
     if nextSpawnCheck > cur then return end
@@ -459,6 +464,9 @@ function GM:SpawnWaveSpawnIn()
         end
     end
 
+    local cur = CurTime()
+    if nextHunterSpawn > cur then return end
+
     if currSpawn.spawnType == "hunter" then
         local hunter = self:SpawnHunter( currSpawn.class, currSpawn )
         if IsValid( hunter ) then
@@ -472,6 +480,20 @@ function GM:SpawnWaveSpawnIn()
             hunter.glee_PrettyName = currSpawn.prettyName
             self.currentSpawning = nil -- spawn next one pls
             self.waveWasAlive = aliveHuntersCount()
+
+            -- ratelimit spawns
+            -- slower spawns if lagging
+            local lagFelt = physenv.GetLastSimulationTime() * 5000
+            lagFelt = math.max( lagFelt, 1 )
+            if lagFelt > 1 then
+                lagFelt = lagFelt^2
+                lagFelt = math.min( lagFelt, 10 )
+
+            else
+                lagFelt = math.Rand( 0, 0.5 )
+
+            end
+            nextHunterSpawn = cur + lagFelt
 
         else
             local _, spawnSet = self:GetSpawnSet()
@@ -511,7 +533,7 @@ local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they 
 
     if krangled then
         startingCount = startingCount * 2
-        noEnemyToRemove = math.max( noEnemyToRemove, staleRatioMinHp * staleRatio ) -- floor this
+        noEnemyToRemove = math.max( noEnemyToRemove, staleRatioMinHp * staleRatio ) -- floor this for weird enemies
 
     end
     local goodHunter = hunter.isTerminatorHunterBased and not hunter.IsFodder
@@ -536,11 +558,15 @@ local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they 
     local timerName = "glee_fodderhunter_removestale_" .. hunter:GetCreationID()
     timer.Create( timerName, math.Rand( 0.75, 1.25 ), 0, function()
         if not IsValid( hunter ) then timer.Remove( timerName ) return end
-        if hunter.glee_InterestingHunter then timer.Remove( timerName ) return end -- someone likes this guy
 
-        if not timerAdjusted and ( hunter.glee_FodderKills or 0 ) >= 1 then -- it killed a player, it's doing its job!
+        if not timerAdjusted and ( ( hunter.glee_FodderKills or 0 ) >= 1 or hunter.glee_InterestingHunter ) then -- it killed a player, it's doing its job!
             timerAdjusted = true
-            timer.Adjust( timerName, 4, 0 ) -- dont count this guy up fast at all
+            local newInterval = math.Rand( 1.75, 2.25 )
+            if not hunter.IsFodder then
+                newInterval = newInterval * 2 -- good hunter, give it more leeway
+
+            end
+            timer.Adjust( timerName, newInterval, 0 ) -- dont count this guy up fast at all
             hunter.glee_FodderNoEnemyCount = startingCount -- and reset the count
 
         end
@@ -559,14 +585,14 @@ local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they 
         local goodEnemy = IsValid( enemy ) and enemy.isTerminatorHunterChummy ~= hunter.isTerminatorHunterChummy
 
         if seesEnemy or goodEnemy then
-            hunter.glee_FodderNoEnemyCount = math.min( 0, oldCount + -1 ) -- good enemy, march count down
+            hunter.glee_FodderNoEnemyCount = math.min( 0, oldCount + -1 ) -- good enemy, snap count down and march it into the negatives
             return
 
         end
 
-        local removalTime = oldCount >= hunter.glee_FodderNoEnemyToRemove
+        local itsRemovalTime = oldCount >= hunter.glee_FodderNoEnemyToRemove
 
-        if removalTime then -- booring enem
+        if itsRemovalTime then -- booring enem
             local _, spawnSet = GAMEMODE:GetSpawnSet()
             if spawnSet then -- make the spawner spawn npcs closer if fodder hunters aren't finding enemies
                 local tooFarDist = spawnSet.dynamicTooFarDist
@@ -669,7 +695,12 @@ function GM:AdjustDynamicTooCloseCutoff( adjust, spawnSet )
         _, spawnSet = self:GetSpawnSet()
 
     end
-    local new = spawnSet.dynamicTooCloseDist + adjust
+    local old = spawnSet.dynamicTooCloseDist
+    local new = old + adjust
+    if new < old and new < softMinRadius then -- slow down when we're below the soft radius
+        new = old + ( adjust / 4 )
+
+    end
     local min = minRadius
     local max = spawnSet.maxSpawnDist
     spawnSet.dynamicTooCloseDist = math.Clamp( new, min, max )
@@ -681,7 +712,12 @@ function GM:AdjustDynamicTooFarCutoff( adjust, spawnSet )
         _, spawnSet = self:GetSpawnSet()
 
     end
-    local new = spawnSet.dynamicTooFarDist + adjust
+    local old = spawnSet.dynamicTooFarDist + adjust
+    local new = old + adjust
+    if new < old and new < softMinRadius then -- slow down when we're below the soft radius
+        new = old + ( adjust / 4 )
+
+    end
     local min = spawnSet.dynamicTooCloseDist + 1000
     local max = math.max( spawnSet.maxSpawnDist, spawnSet.dynamicTooCloseDist + 2000 )
     spawnSet.dynamicTooFarDist = math.Clamp( new, min, max )
@@ -691,6 +727,7 @@ end
 local up20 = Vector( 0, 0, 20 )
 local up50 = Vector( 0, 0, 50 )
 local tries = 10
+local shallowWaterOffset = Vector( 0, 0, 150 )
 
 -- spawn a hunter as far away as possible from every player by inching a distance check around
 -- made to be really random/overcomplicated so you never really know where they'll spawn from
@@ -707,7 +744,12 @@ function GM:getValidHunterPos()
     if fails > 150 and math.random( 0, 100 ) < 50 then -- too many fails? map is probably too big, just get areas near a player!
         local alivePlayer = self:anAlivePlayer()
         if IsValid( alivePlayer ) then
-            local maxs = Vector( dynamicTooCloseDist, dynamicTooCloseDist, dynamicTooCloseDist / 2 )
+            local height = dynamicTooCloseDist / 4
+            if fails > 250 then
+                height = dynamicTooCloseDist
+
+            end
+            local maxs = Vector( dynamicTooCloseDist, dynamicTooCloseDist, height )
             local pos = alivePlayer:GetPos()
             local pos1 = pos + maxs
             local pos2 = pos - maxs
@@ -720,7 +762,7 @@ function GM:getValidHunterPos()
 
     end
 
-    local playerShootPositions = self:allPlayerShootPositions()
+    local playerShootPositions = self:allAlivePlayerShootPositions()
 
     -- multiple attempts, will march distance down if we can't find a good option, marches up if there is a good spot
     -- makes it super random yet grounded
@@ -742,16 +784,28 @@ function GM:getValidHunterPos()
         spawnPos = spawnPos + up20
 
         if randomArea:IsUnderwater() then -- underwater spawning is lame
-            -- make it a bit closer
-            GAMEMODE:AdjustDynamicTooCloseCutoff( -150, spawnSet ) -- make it get closer
-            GAMEMODE:AdjustDynamicTooFarCutoff( -50, spawnSet ) -- closer here too
-            debugPrint( "underwater bite" )
             cost = cost + 0.1
+            local contentsAbove = util_PointContents( spawnPos + shallowWaterOffset )
+            local butItsShallow = bit_band( contentsAbove, CONTENTS_WATER ) == 0
+            if butItsShallow then -- but the water's so shallow....
+                GAMEMODE:AdjustDynamicTooCloseCutoff( -25, spawnSet )
+                GAMEMODE:AdjustDynamicTooFarCutoff( -10, spawnSet )
+                debugPrint( "shallow underwater bite" )
+
+            else
+                -- make it a bit closer
+                GAMEMODE:AdjustDynamicTooCloseCutoff( -75, spawnSet ) -- make it get closer
+                GAMEMODE:AdjustDynamicTooFarCutoff( -25, spawnSet ) -- closer here too
+                debugPrint( "underwater bite" )
+
+            end
             continue
 
         end
 
         local checkPos = spawnPos + up50
+        local nearestDist = math.huge
+        local nearestPlyPos
         local visibleToAPly
         local tooClose
         local tooFar
@@ -774,6 +828,12 @@ function GM:getValidHunterPos()
 
             end
 
+            if distSqr < nearestDist then
+                nearestDist = distSqr
+                nearestPlyPos = pos
+
+            end
+
             if distSqr < dynamicTooCloseDist^2 then -- dist check!
                 tooClose = true
                 break -- only break here so the justSpawnSomething doesnt spawn stuff next to people!!!!!
@@ -784,12 +844,19 @@ function GM:getValidHunterPos()
             end
         end
 
+        if not visibleToAPly and randomArea:IsPartiallyVisible( nearestPlyPos ) then -- double check, make sure the area is completely obscured
+            visibleToAPly = true
+
+        end
+
         cost = cost + 1
 
         local goodConventional = not visibleToAPly and not tooClose and not tooFar -- great spot to spawn!
         local justSpawnSomething = fails > 2000 and not tooClose -- fallback, map has no great spots to spawn
 
         if goodConventional or justSpawnSomething then
+            nearestDist = math.sqrt( nearestDist )
+
             GAMEMODE:AdjustDynamicTooCloseCutoff( 50, spawnSet ) -- make it get further
             GAMEMODE:AdjustDynamicTooFarCutoff( 100, spawnSet )
             debugPrint( "good spawn bump" )
@@ -804,7 +871,23 @@ function GM:getValidHunterPos()
 
             -- found a good spawn area, save it if we get stuck on the next spawn
             -- also leads to hordes spawning in one spot
-            spawnSet.lastGoodSpawnArea = randomArea
+            if math.random( 0, 100 ) <= 10 then -- chance to march goodspawnarea further away from nearest ply, so the spawns stack up less
+                local potentials = randomArea:GetAdjacentAreas()
+                table.Shuffle( potentials )
+                for _, adjArea in ipairs( potentials ) do
+                    if adjArea:GetSizeX() <= 25 or adjArea:GetSizeY() <= 25 then continue end -- too small
+                    local areaCenter = adjArea:GetCenter()
+                    if areaCenter:Distance( nearestPlyPos ) < nearestDist then continue end
+                    if adjArea:IsPartiallyVisible( nearestPlyPos ) then continue end -- dont regress
+                    spawnSet.lastGoodSpawnArea = adjArea
+                    break
+
+                end
+            end
+            if not IsValid( spawnSet.lastGoodSpawnArea ) then
+                spawnSet.lastGoodSpawnArea = randomArea
+
+            end
 
             return spawnPos, true
 
@@ -837,7 +920,7 @@ local function postSetSpawnset( new ) -- validate the spawnset cvar
         if GAMEMODE:IsValidSpawnSet( defaultSpawnSetName ) then
             RunConsoleCommand( "huntersglee_spawnset", defaultSpawnSetName )
             print( "Valid spawnsets are..." )
-            for _, set in ipairs( GAMEMODE:GetSpawnSets() ) do
+            for _, set in SortedPairsByMemberValue( GAMEMODE:GetSpawnSets(), "name" ) do
                 print( set.name )
 
             end
