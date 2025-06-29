@@ -127,19 +127,19 @@ local function DoorOnUsedInitial( _, thingUsingTheDoor, currentlyProcessingPlaye
         elseif IsValid( thingUsingTheDoor.huntersGleeHunterThatIsTargetingPly ) then
             -- give the player a bunch of score
             currentlyProcessingPlayer:GivePlayerScore( 250 )
-            msg = "A fleeing player has used one of your locked doors, you gain 250 score!"
+            msg = "A fleeing player used one of your locked doors, you gain 250 score!"
 
         else
             -- give the player some score
             currentlyProcessingPlayer:GivePlayerScore( 150 )
-            msg = "A player has used one of your locked doors, you gain 150 score!"
+            msg = "A player used one of your locked doors, you gain 150 score!"
 
         end
     -- check if the thing using the door is a nextbot
     elseif thingUsingTheDoor:IsNextBot() then
         -- give the player a bit less score
         currentlyProcessingPlayer:GivePlayerScore( 80 )
-        msg = GAMEMODE:GetNameOfBot( thingUsingTheDoor ) .. " has used one of your locked doors, you gain 80 score!"
+        msg = GAMEMODE:GetNameOfBot( thingUsingTheDoor ) .. " used one of your locked doors, you gain 80 score!"
 
     end
     huntersGlee_Announce( { currentlyProcessingPlayer }, 5, 6, msg )
