@@ -2288,6 +2288,7 @@ local function ar2Purchase( purchaser )
 
 end
 
+
 local function fragPurchase( purchaser )
     local frag = purchaser:GetWeapon( "weapon_frag" )
     if IsValid( frag ) then
@@ -2302,6 +2303,22 @@ local function fragPurchase( purchaser )
     loadoutConfirm( purchaser, 1 )
 
 end
+
+
+local function tauCannonPurchase( purchaser )
+    local tau = purchaser:GetWeapon( "termhunt_taucannon" )
+    if IsValid( tau ) then
+        purchaser:GiveAmmo( 100,   "Uranium 235",         false )
+
+    else
+        purchaser:Give( "termhunt_taucannon" )
+
+    end
+
+    loadoutConfirm( purchaser, 2 )
+
+end
+
 
 local function canPurchaseSuitBattery( purchaser )
     local new = purchaser:Armor() + 15
@@ -3192,8 +3209,25 @@ local defaultItems = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
         },
+        weight = 1,
         purchaseCheck = unUndeadCheck, lockpickCanPurchase,
         purchaseFunc = lockpickPurchase,
+    },
+    -- ka BOOOOOM
+    [ "taucannon" ] = {
+        name = "Tau Cannon",
+        desc = "High risk, High reward.\nDon't let it overcharge!",
+        cost = 0,
+        skullCost = 5,
+        cooldown = 0.5,
+        category = "Items",
+        purchaseTimes = {
+            GM.ROUND_INACTIVE,
+            GM.ROUND_ACTIVE,
+        },
+        weight = 1000,
+        purchaseCheck = unUndeadCheck,
+        purchaseFunc = tauCannonPurchase,
     },
     [ "slams" ] = {
         name = "Slams",
@@ -3207,6 +3241,7 @@ local defaultItems = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
         },
+        weight = 1,
         purchaseCheck = unUndeadCheck,
         purchaseFunc = slamsPurchase,
     },
@@ -3222,6 +3257,7 @@ local defaultItems = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
         },
+        weight = 1,
         purchaseCheck = unUndeadCheck,
         purchaseFunc = flaregunPurchase,
     },

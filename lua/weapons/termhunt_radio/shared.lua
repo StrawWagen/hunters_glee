@@ -12,6 +12,8 @@ SWEP.ViewModel = Model( "models/radio/c_radio.mdl" )
 SWEP.WorldModel = Model( "models/radio/w_radio.mdl" )
 SWEP.ViewModelFOV = 54
 SWEP.UseHands = true
+
+SWEP.HoldType = "slam"
 SWEP.Weight = 1
 
 local entMeta = FindMetaTable( "Entity" )
@@ -206,7 +208,7 @@ end
 
 -- when it goes from on the ground to on the player
 function SWEP:Equip()
-    self:SetHoldType( "slam" )
+    self:SetHoldType( self.HoldType )
     local owner = self:GetOwner()
 
     self.OldOwner = owner

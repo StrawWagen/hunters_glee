@@ -52,7 +52,7 @@ end
 
 function SWEP:Initialize()
     self:DrawShadow( false )
-    self:SetHoldType( "normal" )
+    self:SetHoldType( self.HoldType )
 
     if not SERVER then return end
     self.Bombs = 0
@@ -245,6 +245,7 @@ function SWEP:PrimaryAttack()
         self:PunchInvalid()
         return
     end
+
     self:PunchValid()
     self:SetBombs( math.Clamp( self:GetBombs() + -1, 0, math.huge ) )
     owner:EmitSound( "npc/barnacle/barnacle_crunch2.wav", 75, 100 )

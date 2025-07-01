@@ -15,6 +15,8 @@ SWEP.WorldModel = Model( "models/weapons/w_medkit.mdl" )
 SWEP.ViewModelFOV = 54
 SWEP.UseHands = true
 
+SWEP.HoldType = "slam"
+
 SWEP.Primary.ClipSize = math.huge
 SWEP.Primary.DefaultClip = 0
 SWEP.Primary.Automatic = false
@@ -62,9 +64,7 @@ local HealSound = Sound( "HealthKit.Touch" )
 local DenySound = Sound( "WallHealth.Deny" )
 
 function SWEP:Initialize()
-
-    self:SetHoldType( "slam" )
-
+    self:SetHoldType( self.HoldType )
     self:HealJuice( 200 )
 
 end

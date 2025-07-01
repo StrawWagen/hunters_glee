@@ -80,6 +80,7 @@ function ENT:Initialize()
             if self:GetIsTerminatorSkull() then
                 self:SetMaterial( "models/gibs/termskull" )
                 phys:SetMaterial( "metal" )
+                phys:SetBuoyancyRatio( 0 )
 
             else
                 phys:SetMaterial( "Watermelon" )

@@ -36,6 +36,7 @@ function ENT:rareCreationOptions()
         { class = "item_ammo_smg1_grenade", count = 3 },
         { class = "weapon_smg1" },
         { class = "item_ammo_ar2_altfire", count = 3 },
+        { class = "termhunt_skull_pickup" },
         { class = "weapon_ar2" },
         { class = "weapon_stunstick" },
         { class = "weapon_shotgun" },
@@ -46,6 +47,7 @@ function ENT:rareCreationOptions()
         { class = "termhunt_reviver" },
         { class = "termhunt_weapon_hammer" },
         { class = "termhunt_score_pickup", count = 6 },
+        { class = "termhunt_taucannon" }
     }
     return tbl
 

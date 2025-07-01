@@ -906,9 +906,9 @@ function termHuntOpenTheShop()
                     local sOrNoS = "s"
                     if skullCost <= 1 then
                         sOrNoS = ""
-                        self.costString = self.costString .. " Skull" .. sOrNoS .. "\n"
 
                     end
+                    self.costString = self.costString .. " Skull" .. sOrNoS .. "\n"
                 else
                     -- "decorative" cost that isn't applied when purchased
                     local decorativeCost = itemData.costDecorative

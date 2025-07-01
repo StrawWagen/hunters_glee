@@ -13,6 +13,8 @@ SWEP.WorldModel = Model( "models/weapons/w_medkit.mdl" )
 SWEP.ViewModelFOV = 54
 SWEP.UseHands = true
 
+SWEP.HoldType = "slam"
+
 SWEP.Primary.ClipSize = math.huge
 SWEP.Primary.DefaultClip = 1
 SWEP.Primary.Automatic = false
@@ -47,7 +49,7 @@ end
 
 function SWEP:Initialize()
 
-    self:SetHoldType( "slam" )
+    self:SetHoldType( self.HoldType )
 
     self:SetClip1( self.Primary.DefaultClip )
     self:UpdateColor()

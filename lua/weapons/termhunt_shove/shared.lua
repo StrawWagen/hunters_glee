@@ -94,11 +94,7 @@ function SWEP:ShoveSound( PitMod )
 end
 
 function SWEP:Initialize()
-    if self.SetHoldType then
-        self:SetHoldType( "normal" )
-    else
-        self:SetWeaponHoldType( "normal" )
-    end
+    self:SetHoldType( self.HoldType )
 
     self:DrawShadow( false )
 end

@@ -59,6 +59,7 @@ end
 
 function SWEP:Initialize()
     self.huntersglee_allowpickup = true
+    self:SetHoldType( self.HoldType )
 
 end
 

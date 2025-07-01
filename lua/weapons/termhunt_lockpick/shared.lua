@@ -22,6 +22,7 @@ SWEP.ViewModel = Model( "models/weapons/c_crowbar.mdl" )
 SWEP.WorldModel = Model( "models/weapons/w_crowbar.mdl" )
 
 SWEP.UseHands = true
+SWEP.HoldType = "normal"
 
 SWEP.Spawnable = true
 SWEP.AdminOnly = false
@@ -59,7 +60,7 @@ function SWEP:SetupDataTables()
 end
 
 function SWEP:Initialize()
-    self:SetHoldType( "normal" )
+    self:SetHoldType( self.HoldType )
 end
 
 function SWEP:PrimaryAttack()

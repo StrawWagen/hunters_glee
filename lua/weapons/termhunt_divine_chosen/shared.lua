@@ -85,11 +85,7 @@ end
 function SWEP:Initialize()
     self.oldClip = 0
     self.superStrikeCharge = 0
-    if self.SetHoldType then
-        self:SetHoldType( "normal" )
-    else
-        self:SetWeaponHoldType( "normal" )
-    end
+    self:SetHoldType( self.HoldType )
 
     self:DrawShadow( false )
 end

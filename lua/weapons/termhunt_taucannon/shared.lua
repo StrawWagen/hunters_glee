@@ -1,0 +1,449 @@
+
+-- CREDIT https://steamcommunity.com/sharedfiles/filedetails/?id=2885673816
+-- had to completely cleanup the code, what a mess
+
+SWEP.Base                		= "weapon_base"
+SWEP.Category            		= "Hunter's Glee"
+SWEP.Spawnable           		= true
+SWEP.AdminOnly 					= false
+SWEP.UseHands 					= true
+
+SWEP.ViewModel 					= "models/weapons/TauMmod/c_gauss.mdl"
+SWEP.WorldModel 				= "models/weapons/TauMmod/w_gauss.mdl"
+
+SWEP.Primary.Sound 				= "weapons/gauss/fire1.wav"
+SWEP.Primary.ClipSize    		= -1
+SWEP.Primary.DefaultClip 		= 100
+SWEP.Primary.Automatic   		= true
+SWEP.Primary.Ammo               = "Uranium 235"
+
+SWEP.Secondary.ClipSize  		= -1
+SWEP.Secondary.Delay            = 3
+SWEP.Secondary.DefaultClip 		= -1
+SWEP.Secondary.Automatic        = true
+SWEP.Secondary.Ammo             = ""
+
+
+SWEP.PrintName    	= "TAU CANNON"
+SWEP.Author       	= "Dnjido + StrawWagen"
+SWEP.Instructions 	= "Charge up for massive damage! But don't let it overcharge!"
+SWEP.ViewModelFOV 	= 58
+SWEP.Slot         	= 4
+
+SWEP.HoldType       = "ar2"
+
+
+SWEP.DrawCrosshair = true
+
+SWEP.Weight = 25
+
+SWEP.AutoSwitchTo = true
+SWEP.AutoSwitchFrom = false
+
+if CLIENT then
+    terminator_Extras.glee_CL_SetupSwep( SWEP, "termhunt_taucannon", "materials/entities/termhunt_taucannon.png" )
+
+end
+
+local max_Charge = 20
+local charge_SlowdownThresh = 10
+local gauss_Dmg = 75
+local gauss_Hull = Vector( 2, 2, 2 )
+
+function SWEP:CustomAmmoDisplay()
+    local table1 = {}
+    table1.Draw = true
+    table1.PrimaryClip = self:GetOwner():GetAmmoCount( self.Primary.Ammo )
+    table1.PrimaryAmmo = -1
+    table1.SecondaryAmmo = -1
+
+    return table1
+
+end
+
+function SWEP:Deploy()
+    self:EmitSound( "hunters_glee/weapons/gauss/gauss_deploy.wav" )
+
+end
+
+function SWEP:Holster()
+    self:KillSound()
+    return true
+
+end
+
+function SWEP:Initialize()
+    self.nextSprintTime = 0
+    self.chargeLevel = 0
+    self:SetHoldType( self.HoldType )
+
+end
+
+function SWEP:KillSound()
+    if self.chargeSound and self.chargeSound:IsPlaying() then
+        self.chargeSound:Stop()
+
+    end
+    if self.overchargeSound and self.overchargeSound:IsPlaying() then
+        self.overchargeSound:Stop()
+
+    end
+end
+
+function SWEP:DumpCharge()
+    local owner = self:GetOwner()
+    local chargeLevel = self.chargeLevel
+    if chargeLevel <= 0 then return end
+
+    self:KillSound()
+    local lvl = 75 + chargeLevel * 0.5
+
+    self:EmitSound( self.Primary.Sound, lvl, 100 + -chargeLevel )
+    self:SendWeaponAnim( ACT_VM_SECONDARYATTACK )
+
+    local bullet = {}
+
+    local needsSplode
+    if SERVER and chargeLevel >= charge_SlowdownThresh then
+        needsSplode = true
+
+    end
+
+    bullet.Callback = function( _attacker, trace, dmginfo )
+        if needsSplode then
+            isFirstBullet = nil
+            local attacker = IsValid( owner ) and owner or self
+            terminator_Extras.GleeFancySplode( trace.HitPos + trace.HitNormal * 5, 10 * chargeLevel, 8 * chargeLevel, attacker, self )
+
+        end
+
+        dmginfo:SetDamageType( bit.bor( DMG_AIRBOAT,DMG_BLAST ) )
+        if chargeLevel == max_Charge and trace.Entity:GetClass() ~= "prop_vehicle_apc" then
+            trace.Entity:SetHealth( 0 )
+
+        end
+        local effectdata = EffectData()
+        for _ = 0, max_Charge, chargeLevel * max_Charge do
+            effectdata:SetNormal( trace.HitNormal )
+            effectdata:SetOrigin( trace.HitPos )
+            util.Effect( "StunstickImpact", effectdata )
+        end
+    end
+
+    local validOwner = IsValid( owner )
+
+    local num = 1 + chargeLevel / 4
+    local dmg = gauss_Dmg * chargeLevel
+    local dir = validOwner and owner:GetAimVector() or self:GetForward()
+    local start = validOwner and owner:GetShootPos() or self:GetPos()
+
+    bullet.Num      = num
+    bullet.Dir      = dir
+    bullet.Src      = start
+    bullet.Force    = 500 + chargeLevel * 5
+    bullet.Spread   = 0 + chargeLevel * 0.1
+    bullet.HullSize = 1
+    bullet.Damage   = dmg
+    bullet.Tracer	= 1
+    bullet.TracerName = "HL1GaussBeam_GMOD"
+    bullet.Attacker = owner
+    bullet.HullSize = gauss_Hull
+    self:FireBullets( bullet )
+
+    if validOwner then
+        local forceDir = -dir
+        if owner:OnGround() then
+            if owner:Crouching() then
+                forceDir = forceDir + Vector( 0, 0, -1 )
+
+            else
+                forceDir = forceDir + Vector( 0, 0, 0.01 )
+
+            end
+            forceDir:Normalize()
+
+        end
+        local force = 250 + chargeLevel * 100
+        owner:SetVelocity( forceDir * force )
+
+        if GAMEMODE.GivePanic then
+            local panic = chargeLevel
+            if not owner:OnGround() then
+                panic = panic * 4
+
+            end
+            GAMEMODE:GivePanic( owner, panic )
+
+        end
+    else
+        self:GetPhysicsObject():ApplyForceCenter( -dir * chargeLevel * 1000 )
+
+    end
+
+    self.chargeLevel = 0
+
+end
+
+function SWEP:Think()
+    local owner = self:GetOwner()
+
+    if SERVER then
+        local vel = owner:GetVelocity():Length()
+        local crouchspeed = owner:GetWalkSpeed() * owner:GetCrouchedWalkSpeed()
+        local CHARGING = owner:KeyDown( IN_ATTACK2 )
+        if not owner:KeyDown( IN_ATTACK ) and not CHARGING then
+            local STARTING_SPRINTING = owner:KeyDown( IN_SPEED ) and vel >= crouchspeed and owner:OnGround() and CurTime() > self.nextSprintTime
+            if STARTING_SPRINTING then
+                self:SendWeaponAnim( ACT_VM_SPRINT_IDLE )
+                self.nextSprintTime = CurTime() + 1
+
+            end
+            local DONE_SPRINTING = owner:KeyReleased( IN_SPEED ) or ( owner:KeyDown( IN_SPEED ) and vel < crouchspeed ) or ( owner:KeyDown( IN_SPEED ) and not owner:OnGround() )
+            if DONE_SPRINTING then
+                self:SendWeaponAnim( ACT_VM_IDLE )
+
+            end
+        end
+
+        if owner:IsPlayer() and CHARGING then
+            local chargeLevel = self.chargeLevel
+            if not self.chargeSound then
+                self.chargeSound = CreateSound( self, "hunters_glee/weapons/gauss/chargeloop.wav" )
+
+            else
+                self.chargeSound:Play()
+                if chargeLevel < max_Charge then
+                    local pitch = 100 + 15 * chargeLevel
+                    if chargeLevel > charge_SlowdownThresh then
+                        local remainder = chargeLevel - charge_SlowdownThresh
+                        pitch = pitch + -30 * remainder
+
+                    end
+                    self.chargeSound:ChangePitch( pitch, 0 )
+
+                end
+            end
+            if not self.overchargeSound then
+                self.overchargeSound = CreateSound( self, "ambient/levels/labs/teleport_malfunctioning.wav" )
+
+            elseif chargeLevel > charge_SlowdownThresh then
+                self.overchargeSound:Play()
+                local pitch = 100 + 15 * ( chargeLevel - charge_SlowdownThresh )
+                local volume = 0.5 + ( chargeLevel - charge_SlowdownThresh ) * 0.05
+                self.overchargeSound:ChangePitch( pitch, 0 )
+                self.overchargeSound:ChangeVolume( volume, 0 )
+
+                local eyeTr = owner:GetEyeTrace()
+                local aimEnt = eyeTr.Entity
+                if IsValid( aimEnt ) and aimEnt.ReallyAnger then
+                    aimEnt:ReallyAnger( self.chargeLevel * 0.5 )
+
+                end
+                sound.EmitHint( SOUND_DANGER, eyeTr.HitPos, 50 + chargeLevel * 25, 1 )
+
+            end
+        end
+    end
+
+    if owner:IsPlayer() and owner:KeyReleased( IN_ATTACK2 ) and self.chargeLevel ~= 0 and IsFirstTimePredicted() then
+        self:DumpCharge()
+
+    end
+    if SERVER and self.chargeSound and self.chargeLevel == 0 then
+        self:KillSound()
+
+    end
+end
+
+function SWEP:Reload()
+    self:DefaultReload( ACT_VM_RELOAD )
+    local owner = self:GetOwner()
+    if owner:KeyPressed( IN_RELOAD ) then
+        self:SendWeaponAnim( ACT_VM_IDLE_DEPLOYED_1 )
+        timer.Create( "ts", 0.5, 1, function()
+            if not IsValid( self ) then return end
+            self:EmitSound( "hunters_glee/weapons/gauss/gauss_fidget.wav" )
+
+        end )
+    end
+end
+
+function SWEP:PrimaryAttack()
+    local owner = self:GetOwner()
+
+    self:SetNextPrimaryFire( CurTime() + 0.2 )
+    self:SetNextSecondaryFire( CurTime() + 1 )
+
+    if not owner:IsPlayer() or owner:GetAmmoCount( self.Primary.Ammo ) > 0 then
+
+        self:EmitSound( self.Primary.Sound )
+        self:SendWeaponAnim( ACT_VM_PRIMARYATTACK )
+        owner:SetAnimation( PLAYER_ATTACK1 )
+        if owner.RemoveAmmo then
+            owner:RemoveAmmo( 1, self.Primary.Ammo )
+
+        end
+
+        local bullet = {}
+
+        bullet.Callback = function( _, trace, dmginfo )
+            dmginfo:SetDamageType( bit.bor( DMG_AIRBOAT,DMG_BLAST ) )
+
+            if trace.Normal:Dot( trace.HitNormal ) < 0.5 then
+                timer.Simple( 0, function()
+                    local newOwner = self:GetOwner()
+                    if not IsValid( self ) or not IsValid( owner ) or newOwner ~= owner then return end
+                    local effectdata = EffectData()
+                    effectdata:SetNormal( trace.HitNormal )
+                    effectdata:SetOrigin( trace.HitPos )
+                    util.Effect( "StunstickImpact", effectdata )
+
+                    bullet = {}
+
+                    bullet.Callback = function( _, _, dmgInfo2 )
+                        dmgInfo2:SetDamageType( bit.bor( DMG_AIRBOAT,DMG_BLAST ) )
+
+                    end
+
+                    bullet.Num = 1
+                    bullet.Dir = owner:GetAimVector() -2 * ( owner:GetAimVector():Dot( trace.HitNormal ) ) * trace.HitNormal
+                    bullet.Src = trace.HitPos
+                    bullet.Force = 100
+                    bullet.Spread = 0
+                    bullet.HullSize = 1
+                    bullet.Damage = gauss_Dmg
+                    bullet.Tracer		= 0
+                    bullet.Attacker = owner
+                    bullet.HullSize = gauss_Hull
+                    self:FireBullets( bullet )
+
+                end )
+
+            else
+                local effectdata = EffectData()
+                effectdata:SetNormal( trace.HitNormal )
+                effectdata:SetOrigin( trace.HitPos )
+                util.Effect( "StunstickImpact", effectdata )
+
+            end
+        end
+
+        bullet.Num = 1
+        bullet.Dir = owner:GetAimVector()
+        bullet.Src = owner:GetShootPos()
+        bullet.Force = 100 + self.chargeLevel
+        bullet.Spread = 0
+        bullet.HullSize = 1
+        bullet.Damage = 20
+        bullet.Tracer		= 1
+        bullet.TracerName		= "HL1GaussBeam_GMOD"
+        bullet.Attacker = owner
+        self:FireBullets( bullet )
+
+    end
+end
+
+function SWEP:OnDrop()
+    if self.chargeLevel > 0 then
+        self:DumpCharge()
+
+    end
+    self:KillSound()
+    self.chargeLevel = 0
+
+end
+
+function SWEP:OwnerChanged()
+    self:KillSound()
+
+end
+
+function SWEP:OnRemove()
+    self:KillSound()
+
+end
+
+function SWEP:DoImpactEffect()
+    return true
+
+end
+
+function SWEP:FireAnimationEvent()
+    return true
+
+end
+
+function SWEP:Explode() -- YOU LET IT OVERCHARGE!
+    local owner = self:GetOwner()
+    if not IsValid( owner ) then return end
+
+    self:KillSound()
+    self:EmitSound( "ambient/levels/labs/electric_explosion3.wav", 90, 80, 1, CHAN_STATIC )
+    self:EmitSound( "ambient/levels/labs/electric_explosion4.wav", 90, 120, 1, CHAN_STATIC )
+    self:SendWeaponAnim( ACT_VM_SECONDARYATTACK )
+
+    local effectdata = EffectData()
+    effectdata:SetOrigin( owner:GetPos() )
+    effectdata:SetScale( 1 )
+    util.Effect( "Explosion", effectdata )
+
+    if not SERVER then return end
+
+    util.BlastDamage( self, owner, owner:WorldSpaceCenter(), 500, 1000 )
+
+    local dmginfo = DamageInfo()
+    dmginfo:SetDamage( 1000 )
+    dmginfo:SetAttacker( owner )
+    dmginfo:SetInflictor( self )
+    dmginfo:SetDamageType( bit.bor( DMG_BLAST,DMG_AIRBOAT ) )
+    owner:TakeDamageInfo( dmginfo )
+
+    if owner.DropWeaponKeepAmmo then
+        owner:DropWeaponKeepAmmo( self )
+
+    else
+        owner:DropWeapon( self )
+
+    end
+end
+
+function SWEP:SecondaryAttack()
+    local owner = self:GetOwner()
+    if owner.RemoveAmmo and self:Ammo1() ~= 0 then
+        local chargeLevel = self.chargeLevel
+        if chargeLevel < max_Charge then
+            chargeLevel = chargeLevel + 1
+            self.chargeLevel = chargeLevel
+            if owner.RemoveAmmo then
+                owner:RemoveAmmo( 1,self.Primary.Ammo )
+
+            end
+        else
+            self:DumpCharge()
+            self:Explode()
+
+        end
+        local add = 0.2
+        if chargeLevel > charge_SlowdownThresh then
+            local overThresh = ( chargeLevel - charge_SlowdownThresh )
+            if GAMEMODE.GivePanic then
+                GAMEMODE:GivePanic( owner, overThresh^1.5 )
+
+            end
+            add = add + overThresh * 0.1
+
+        end
+        self:SendWeaponAnim( ACT_VM_PULLBACK )
+        self:SetNextSecondaryFire( CurTime() + add )
+        self:SetNextPrimaryFire( CurTime() + add + 0.5 )
+        owner:ViewPunch( Angle( add / 4, math.Rand( -add, add ) * 3, math.Rand( -add, add ) * 25 ) )
+
+    end
+end
+
+if not SERVER then return end
+
+hook.Add( "InitPostEntity", "termhunt_taucannon_glee", function()
+    GAMEMODE:RandomlySpawnEnt( "termhunt_taucannon", 1, math.Rand( 0, 1 ), nil, math.random( 1000, 10000 ) )
+
+end )
