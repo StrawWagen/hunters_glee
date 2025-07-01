@@ -450,6 +450,7 @@ local REASON_INVALID = "That isn't a real thing for sale."
 local REASON_POOR = "You are too poor to afford this."
 local REASON_DEBT = "You can't buy this.\nYou're in Debt."
 local REASON_SKULLPOOR = "You need more skulls to buy this."
+local REASON_SKULLPOOR_1SKULL = "You need a skull to buy this."
 local REASON_SKULLDEBT = "You can't buy this, You're in Skull debt."
 
 -- shared!
@@ -549,8 +550,13 @@ function GM:canPurchase( ply, toPurchase )
         local skulls = ply:GetSkulls()
         local skullCostsTooMuch = skulls < skullCost and not canGoInDebt
         if skullCost >= 0 and skullCostsTooMuch and skullCost ~= 0 then
+            local difference = skullCost - skulls
+            if difference == 1 then
+                return nil, REASON_SKULLPOOR_1SKULL
+
+            end
             local cannotBuySkullsReason = REASON_SKULLPOOR
-            if score < 0 then
+            if skulls < 0 then
                 cannotBuySkullsReason = REASON_SKULLDEBT
 
             end

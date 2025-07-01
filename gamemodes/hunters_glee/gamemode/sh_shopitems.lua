@@ -2320,6 +2320,20 @@ local function tauCannonPurchase( purchaser )
 end
 
 
+local function canPurchaseCrapVidCam( purchaser )
+    if purchaser:HasWeapon( "weapon_glee_crapvidcam" ) then return false, "You already have a Crappy Video Camera." end
+    return true
+
+end
+
+local function crapVidCamPurchase( purchaser )
+    purchaser:Give( "weapon_glee_crapvidcam" )
+
+    loadoutConfirm( purchaser, 1 )
+
+end
+
+
 local function canPurchaseSuitBattery( purchaser )
     local new = purchaser:Armor() + 15
     if new > purchaser:GetMaxArmor() then return false, "Your battery is full." end
@@ -3228,6 +3242,22 @@ local defaultItems = {
         weight = 1000,
         purchaseCheck = unUndeadCheck,
         purchaseFunc = tauCannonPurchase,
+    },
+    -- funny cam
+    [ "crapvidcam" ] = {
+        name = "Crappy Video Camera",
+        desc = "Document the glee.",
+        cost = 0,
+        skullCost = 1,
+        cooldown = 0.5,
+        category = "Items",
+        purchaseTimes = {
+            GM.ROUND_INACTIVE,
+            GM.ROUND_ACTIVE,
+        },
+        weight = 900,
+        purchaseCheck = { unUndeadCheck, canPurchaseCrapVidCam },
+        purchaseFunc = crapVidCamPurchase,
     },
     [ "slams" ] = {
         name = "Slams",

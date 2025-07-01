@@ -61,6 +61,11 @@ function SWEP:CustomAmmoDisplay()
 
 end
 
+function SWEP:SetupDataTables()
+    self:NetworkVar( "Int", 0, "ChargeLevel" )
+
+end
+
 function SWEP:Deploy()
     self:EmitSound( "hunters_glee/weapons/gauss/gauss_deploy.wav" )
 
@@ -74,7 +79,7 @@ end
 
 function SWEP:Initialize()
     self.nextSprintTime = 0
-    self.chargeLevel = 0
+    self:SetChargeLevel( 0 )
     self:SetHoldType( self.HoldType )
 
 end
@@ -92,7 +97,7 @@ end
 
 function SWEP:DumpCharge()
     local owner = self:GetOwner()
-    local chargeLevel = self.chargeLevel
+    local chargeLevel = self:GetChargeLevel()
     if chargeLevel <= 0 then return end
 
     self:KillSound()
@@ -163,7 +168,15 @@ function SWEP:DumpCharge()
             forceDir:Normalize()
 
         end
-        local force = 250 + chargeLevel * 100
+
+        local force
+        if chargeLevel >= charge_SlowdownThresh then
+            force = 250 + chargeLevel * 100
+
+        else
+            force = chargeLevel * 100
+
+        end
         owner:SetVelocity( forceDir * force )
 
         if GAMEMODE.GivePanic then
@@ -180,76 +193,75 @@ function SWEP:DumpCharge()
 
     end
 
-    self.chargeLevel = 0
+    self:SetChargeLevel( 0 )
 
 end
 
 function SWEP:Think()
     local owner = self:GetOwner()
+    local chargeLevel = self:GetChargeLevel()
 
-    if SERVER then
-        local vel = owner:GetVelocity():Length()
-        local crouchspeed = owner:GetWalkSpeed() * owner:GetCrouchedWalkSpeed()
-        local CHARGING = owner:KeyDown( IN_ATTACK2 )
-        if not owner:KeyDown( IN_ATTACK ) and not CHARGING then
-            local STARTING_SPRINTING = owner:KeyDown( IN_SPEED ) and vel >= crouchspeed and owner:OnGround() and CurTime() > self.nextSprintTime
-            if STARTING_SPRINTING then
-                self:SendWeaponAnim( ACT_VM_SPRINT_IDLE )
-                self.nextSprintTime = CurTime() + 1
+    local vel = owner:GetVelocity():Length()
+    local crouchspeed = owner:GetWalkSpeed() * owner:GetCrouchedWalkSpeed()
+    local CHARGING = owner:KeyDown( IN_ATTACK2 )
+    if not owner:KeyDown( IN_ATTACK ) and not CHARGING then
+        local STARTING_SPRINTING = owner:KeyDown( IN_SPEED ) and vel >= crouchspeed and owner:OnGround() and CurTime() > self.nextSprintTime
+        if STARTING_SPRINTING then
+            self:SendWeaponAnim( ACT_VM_SPRINT_IDLE )
+            self.nextSprintTime = CurTime() + 1
 
-            end
-            local DONE_SPRINTING = owner:KeyReleased( IN_SPEED ) or ( owner:KeyDown( IN_SPEED ) and vel < crouchspeed ) or ( owner:KeyDown( IN_SPEED ) and not owner:OnGround() )
-            if DONE_SPRINTING then
-                self:SendWeaponAnim( ACT_VM_IDLE )
+        end
+        local DONE_SPRINTING = owner:KeyReleased( IN_SPEED ) or ( owner:KeyDown( IN_SPEED ) and vel < crouchspeed ) or ( owner:KeyDown( IN_SPEED ) and not owner:OnGround() )
+        if DONE_SPRINTING then
+            self:SendWeaponAnim( ACT_VM_IDLE )
+
+        end
+    end
+
+    if owner:IsPlayer() and CHARGING then
+        if not self.chargeSound then
+            self.chargeSound = CreateSound( self, "hunters_glee/weapons/gauss/chargeloop.wav" )
+
+        else
+            self.chargeSound:Play()
+            if chargeLevel < max_Charge then
+                local pitch = 100 + 15 * chargeLevel
+                if chargeLevel > charge_SlowdownThresh then
+                    local remainder = chargeLevel - charge_SlowdownThresh
+                    pitch = pitch + -30 * remainder
+
+                end
+                self.chargeSound:ChangePitch( pitch, 0 )
 
             end
         end
+        if not self.overchargeSound then
+            self.overchargeSound = CreateSound( self, "ambient/levels/labs/teleport_malfunctioning.wav" )
 
-        if owner:IsPlayer() and CHARGING then
-            local chargeLevel = self.chargeLevel
-            if not self.chargeSound then
-                self.chargeSound = CreateSound( self, "hunters_glee/weapons/gauss/chargeloop.wav" )
+        elseif chargeLevel > charge_SlowdownThresh then
+            self.overchargeSound:Play()
+            local pitch = 100 + 15 * ( chargeLevel - charge_SlowdownThresh )
+            local volume = 0.5 + ( chargeLevel - charge_SlowdownThresh ) * 0.05
+            self.overchargeSound:ChangePitch( pitch, 0 )
+            self.overchargeSound:ChangeVolume( volume, 0 )
 
-            else
-                self.chargeSound:Play()
-                if chargeLevel < max_Charge then
-                    local pitch = 100 + 15 * chargeLevel
-                    if chargeLevel > charge_SlowdownThresh then
-                        local remainder = chargeLevel - charge_SlowdownThresh
-                        pitch = pitch + -30 * remainder
-
-                    end
-                    self.chargeSound:ChangePitch( pitch, 0 )
-
-                end
-            end
-            if not self.overchargeSound then
-                self.overchargeSound = CreateSound( self, "ambient/levels/labs/teleport_malfunctioning.wav" )
-
-            elseif chargeLevel > charge_SlowdownThresh then
-                self.overchargeSound:Play()
-                local pitch = 100 + 15 * ( chargeLevel - charge_SlowdownThresh )
-                local volume = 0.5 + ( chargeLevel - charge_SlowdownThresh ) * 0.05
-                self.overchargeSound:ChangePitch( pitch, 0 )
-                self.overchargeSound:ChangeVolume( volume, 0 )
-
+            if SERVER then
                 local eyeTr = owner:GetEyeTrace()
+                sound.EmitHint( SOUND_DANGER, eyeTr.HitPos, 50 + chargeLevel * 25, 1 )
                 local aimEnt = eyeTr.Entity
                 if IsValid( aimEnt ) and aimEnt.ReallyAnger then
-                    aimEnt:ReallyAnger( self.chargeLevel * 0.5 )
+                    aimEnt:ReallyAnger( chargeLevel * 0.5 )
 
                 end
-                sound.EmitHint( SOUND_DANGER, eyeTr.HitPos, 50 + chargeLevel * 25, 1 )
-
             end
         end
     end
 
-    if owner:IsPlayer() and owner:KeyReleased( IN_ATTACK2 ) and self.chargeLevel ~= 0 and IsFirstTimePredicted() then
+    if owner:IsPlayer() and owner:KeyReleased( IN_ATTACK2 ) and chargeLevel ~= 0 and IsFirstTimePredicted() then
         self:DumpCharge()
 
     end
-    if SERVER and self.chargeSound and self.chargeLevel == 0 then
+    if SERVER and self.chargeSound and chargeLevel == 0 then
         self:KillSound()
 
     end
@@ -331,7 +343,7 @@ function SWEP:PrimaryAttack()
         bullet.Num = 1
         bullet.Dir = owner:GetAimVector()
         bullet.Src = owner:GetShootPos()
-        bullet.Force = 100 + self.chargeLevel
+        bullet.Force = 100 + self:GetChargeLevel()
         bullet.Spread = 0
         bullet.HullSize = 1
         bullet.Damage = 20
@@ -344,12 +356,12 @@ function SWEP:PrimaryAttack()
 end
 
 function SWEP:OnDrop()
-    if self.chargeLevel > 0 then
+    if self:GetChargeLevel() > 0 then
         self:DumpCharge()
 
     end
     self:KillSound()
-    self.chargeLevel = 0
+    self:SetChargeLevel( 0 )
 
 end
 
@@ -408,19 +420,24 @@ function SWEP:Explode() -- YOU LET IT OVERCHARGE!
 end
 
 function SWEP:SecondaryAttack()
+    if not IsFirstTimePredicted() then return end
     local owner = self:GetOwner()
     if owner.RemoveAmmo and self:Ammo1() ~= 0 then
-        local chargeLevel = self.chargeLevel
+        local chargeLevel = self:GetChargeLevel()
         if chargeLevel < max_Charge then
             chargeLevel = chargeLevel + 1
-            self.chargeLevel = chargeLevel
-            if owner.RemoveAmmo then
-                owner:RemoveAmmo( 1,self.Primary.Ammo )
+            self:SetChargeLevel( chargeLevel )
+            if SERVER and owner.RemoveAmmo then
+                owner:RemoveAmmo( 1, self.Primary.Ammo )
 
             end
         else
-            self:DumpCharge()
-            self:Explode()
+            if SERVER then
+                self:DumpCharge()
+                self:Explode()
+
+            end
+            return
 
         end
         local add = 0.2
@@ -433,11 +450,17 @@ function SWEP:SecondaryAttack()
             add = add + overThresh * 0.1
 
         end
-        self:SendWeaponAnim( ACT_VM_PULLBACK )
         self:SetNextSecondaryFire( CurTime() + add )
         self:SetNextPrimaryFire( CurTime() + add + 0.5 )
-        owner:ViewPunch( Angle( add / 4, math.Rand( -add, add ) * 3, math.Rand( -add, add ) * 25 ) )
+        if SERVER then
+            self:SendWeaponAnim( ACT_VM_PULLBACK )
+            local amp = chargeLevel
+            local fre = max_Charge - chargeLevel
+            local dur = add * 2
+            local rad = 100 + chargeLevel * 50
+            util.ScreenShake( owner:WorldSpaceCenter(), amp, fre, dur, rad, true )
 
+        end
     end
 end
 
