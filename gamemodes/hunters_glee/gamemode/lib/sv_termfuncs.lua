@@ -676,7 +676,7 @@ do
     local string = string
 
     function GM:GetNameOfBot( bot )
-        local name
+        local name = ""
         if bot.Nick and isfunction( bot.Nick ) then
             return bot:Nick()
 

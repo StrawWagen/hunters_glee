@@ -629,8 +629,11 @@ end
 function GM:StopSpectatingThing( ply )
     local target = ply:GetObserverTarget()
     ply:SetObserverMode( OBS_MODE_ROAMING )
-    if IsValid( target ) and target.GetShootPos then
+    if IsValid( ply:GetParent() ) then
         ply:SetParent( NULL )
+
+    end
+    if IsValid( target ) and target.GetShootPos then
         ply:SetPos( target:GetShootPos() )
 
     end

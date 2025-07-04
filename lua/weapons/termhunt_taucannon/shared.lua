@@ -1,4 +1,6 @@
 
+local GAMEMODE = GAMEMODE or GM
+
 -- CREDIT https://steamcommunity.com/sharedfiles/filedetails/?id=2885673816
 -- had to completely cleanup the code, what a mess
 
@@ -220,7 +222,14 @@ function SWEP:Think()
 
     if owner:IsPlayer() and CHARGING then
         if not self.chargeSound then
-            self.chargeSound = CreateSound( self, "hunters_glee/weapons/gauss/chargeloop.wav" )
+            local chargeSound = CreateSound( owner, "hunters_glee/weapons/gauss/chargeloop.wav" )
+            self.chargeSound = chargeSound
+            self:CallOnRemove( "gleetau_chargeSound", function()
+                if chargeSound and chargeSound:IsPlaying() then
+                    chargeSound:Stop()
+
+                end
+            end )
 
         else
             self.chargeSound:Play()
@@ -236,7 +245,14 @@ function SWEP:Think()
             end
         end
         if not self.overchargeSound then
-            self.overchargeSound = CreateSound( self, "ambient/levels/labs/teleport_malfunctioning.wav" )
+            local overchargeSound = CreateSound( owner, "ambient/levels/labs/teleport_malfunctioning.wav" )
+            self.overchargeSound = overchargeSound
+            self:CallOnRemove( "gleetau_overchargeSound", function()
+                if overchargeSound and overchargeSound:IsPlaying() then
+                    overchargeSound:Stop()
+
+                end
+            end )
 
         elseif chargeLevel > charge_SlowdownThresh then
             self.overchargeSound:Play()
@@ -465,8 +481,6 @@ function SWEP:SecondaryAttack()
 end
 
 if not SERVER then return end
+if not GAMEMODE.RandomlySpawnEnt then return end
 
-hook.Add( "InitPostEntity", "termhunt_taucannon_glee", function()
-    GAMEMODE:RandomlySpawnEnt( "termhunt_taucannon", 1, math.Rand( 0, 1 ), nil, math.random( 1000, 10000 ) )
-
-end )
+GAMEMODE:RandomlySpawnEnt( "termhunt_taucannon", 1, math.Rand( 0, 1 ), nil, math.random( 1000, 10000 ) )

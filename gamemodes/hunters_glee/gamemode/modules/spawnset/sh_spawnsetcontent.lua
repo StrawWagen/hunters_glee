@@ -22,6 +22,7 @@ if SERVER then
 
             end
         net.Send( plys )
+
     end
 
     hook.Add( "glee_post_set_spawnset", "glee_spawnset_content", function( _, spawnSet )
@@ -55,6 +56,46 @@ else
     local nextThink = 0
     local thinking
 
+    -- catch invalid Material() calls, store invalid materials, so we can rebuild them after the content is downloaded
+    terminator_Extras.glee_InvalidMats = {}
+    terminator_Extras.glee_OldMaterial = terminator_Extras.glee_OldMaterial or Material
+    local oldMaterial = terminator_Extras.glee_OldMaterial
+    function Material( name, params )
+        local mat = oldMaterial( name, params )
+        if mat:IsError() and not terminator_Extras.glee_InvalidMats[name] then
+            terminator_Extras.glee_InvalidMats[name] = { name = name, mat = mat, params = params }
+
+        end
+        return mat
+
+    end
+
+    local function fixBrokeMaterials( stuffMounted )
+        PrintTable( stuffMounted )
+        PrintTable( terminator_Extras.glee_InvalidMats )
+        local materialsMounted = {}
+        for _, name in ipairs( stuffMounted ) do
+            if string.StartsWith( name, "materials/" ) then
+                table.insert( materialsMounted, name )
+
+            end
+        end
+        for _, name in ipairs( materialsMounted ) do
+            local matData = terminator_Extras.glee_InvalidMats[name]
+            if not matData then
+                local altName = string.Replace( name, "materials/", "" )
+                matData = terminator_Extras.glee_InvalidMats[altName]
+                if not matData then
+                    continue
+
+                end
+            end
+            print( "GLEE: fixing material " .. name )
+            matData.mat:Recompute()
+
+        end
+    end
+
     local function tryDoingContent()
         if thinking then return end
         if nextThink > CurTime() then return end
@@ -67,18 +108,21 @@ else
 
         contentTried[currContent] = true
         thinking = true
-        nextThink = CurTime() + 1
+        nextThink = CurTime() + 0.1
 
         MsgN( "GLEE: mounting " .. currContent )
         steamworks.DownloadUGC( currContent, function( path )
             thinking = nil
-            nextThink = CurTime() + 1
+            nextThink = CurTime() + 0.1
 
             if not path then return end
-            local succeed = game.MountGMA( path )
+            local succeeded, stuffMounted = game.MountGMA( path )
 
-            if not succeed then return end
+            if not succeeded then return end
             MsgN( "GLEE: successfully mounted " .. currContent )
+
+            if not stuffMounted then return end
+            fixBrokeMaterials( stuffMounted )
 
         end )
     end
