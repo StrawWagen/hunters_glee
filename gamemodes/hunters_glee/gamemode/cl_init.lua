@@ -1034,9 +1034,15 @@ hook.Add( "CalcView", "glee_override_spectating_angles", function( ply, _, ang, 
 
     if mode == OBS_MODE_CHASE then
 
-        if not spectateTarget.GetShootPos then return end
+        local pivot
+        if spectateTarget.GetChasePos then
+            pivot = spectateTarget:GetChasePos()
 
-        local pivot = spectateTarget:GetShootPos()
+        else
+            pivot = spectateTarget:WorldSpaceCenter()
+
+        end
+
         local dir = -ang:Forward()
         local fallbackDrawPos = pivot + dir * 15
         local desiredDrawPos = pivot + dir * 100
@@ -1074,10 +1080,17 @@ hook.Add( "CalcView", "glee_override_spectating_angles", function( ply, _, ang, 
 
         local forward = termAng:Forward()
 
-        if not spectateTarget.GetShootPos then return end
+        local origin
+        if spectateTarget.GetShootPos then
+            origin = spectateTarget:GetShootPos()
+
+        else
+            origin = spectateTarget:WorldSpaceCenter()
+
+        end
 
         local view = {
-            origin = spectateTarget:GetShootPos() + forward * 15,
+            origin = origin + forward * 15,
             angles = termAng,
             fov = fov,
             znear = 8,

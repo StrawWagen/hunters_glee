@@ -51,6 +51,18 @@ if SERVER then
     end )
 
 else
+    local developer = GetConVar( "developer" )
+    local function isDeveloping()
+        return developer and developer:GetInt() > 0
+
+    end
+
+    local function devPrint( ... )
+        if not isDeveloping() then return end
+        print( ... )
+
+    end
+
     local contentTried = {}
     local contentTodo = {}
     local nextThink = 0
@@ -71,28 +83,64 @@ else
     end
 
     local function fixBrokeMaterials( stuffMounted )
-        PrintTable( stuffMounted )
-        PrintTable( terminator_Extras.glee_InvalidMats )
         local materialsMounted = {}
-        for _, name in ipairs( stuffMounted ) do
-            if string.StartsWith( name, "materials/" ) then
-                table.insert( materialsMounted, name )
+        for _, mountedName in ipairs( stuffMounted ) do
+            if string.StartsWith( mountedName, "materials/" ) then
+                table.insert( materialsMounted, mountedName )
 
             end
         end
-        for _, name in ipairs( materialsMounted ) do
-            local matData = terminator_Extras.glee_InvalidMats[name]
-            if not matData then
-                local altName = string.Replace( name, "materials/", "" )
-                matData = terminator_Extras.glee_InvalidMats[altName]
-                if not matData then
-                    continue
+
+        devPrint( "GLEE: trying to fix " .. #materialsMounted .. " materials" )
+
+        if isDeveloping() then
+            PrintTable( materialsMounted )
+            for invalidMatName, _ in pairs( terminator_Extras.glee_InvalidMats ) do
+                print( invalidMatName )
+
+            end
+        end
+
+        local fixed = {}
+        for _, mountedName in ipairs( materialsMounted ) do
+            for invalidMatName, matData in pairs( terminator_Extras.glee_InvalidMats ) do
+                if string.find( mountedName, invalidMatName ) then -- all the mounted stuff is gonna be like material.vmt, etc
+                    if fixed[invalidMatName] then continue end -- already fixed this one
+                    local mat = matData.mat
+
+                    local nameToTry = mountedName
+                    nameToTry = string.Replace( nameToTry, "materials/", "" )
+
+                    local wasProperMat = string.EndsWith( nameToTry, ".vmt" ) -- mat probably has custom params
+
+                    local tempMat = Material( nameToTry, matData.params )
+                    if tempMat:IsError() then
+                        devPrint( "GLEE: " .. nameToTry .. " FAILFIX 1" )
+                        continue
+
+                    end
+
+                    devPrint( "GLEE: fixing material " .. invalidMatName .. " with " .. nameToTry )
+                    mat:SetTexture( "$basetexture", tempMat:GetTexture( "$basetexture" ) ) -- we need to update the actual material!
+
+                    if wasProperMat then -- no way to set mat values generically? would operate over tempMat:GetKeyValues() if there was?
+                        mat:SetInt( "$alphatest", tempMat:GetInt( "$alphatest" ) or 0 )
+                        mat:SetInt( "$nocull", tempMat:GetInt( "$nocull" ) or 0 )
+                        mat:SetInt( "$ignorez", tempMat:GetInt( "$ignorez" ) or 0 )
+                        mat:SetInt( "$vertexcolor", tempMat:GetInt( "$vertexcolor" ) or 0 )
+                        mat:SetInt( "$vertexalpha", tempMat:GetInt( "$vertexalpha" ) or 0 )
+                        mat:SetInt( "$mips", tempMat:GetInt( "$mips" ) or 0 )
+                        mat:SetInt( "$noclamp", tempMat:GetInt( "$noclamp" ) or 0 )
+                        mat:SetInt( "$smooth", tempMat:GetInt( "$smooth" ) or 0 )
+
+                    end
+
+                    mat:Recompute()
+                    devPrint( "GLEE: " .. invalidMatName .. " fixed!" )
+                    fixed[invalidMatName] = true
 
                 end
             end
-            print( "GLEE: fixing material " .. name )
-            matData.mat:Recompute()
-
         end
     end
 
