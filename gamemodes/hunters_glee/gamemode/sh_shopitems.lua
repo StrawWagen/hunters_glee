@@ -1255,6 +1255,34 @@ local function bombGlandPurchase( purchaser )
 
 end
 
+local function marathonistPurchase(purchaser)
+    if not IsValid(purchaser) then return end
+    
+    if not purchaser.originalWalkSpeed then
+        purchaser.originalWalkSpeed = purchaser:GetWalkSpeed()
+        purchaser.originalRunSpeed = purchaser:GetRunSpeed()
+    end
+    
+    local speedMultiplier = 1.25
+    purchaser:SetWalkSpeed(purchaser.originalWalkSpeed * speedMultiplier)
+    purchaser:SetRunSpeed(purchaser.originalRunSpeed * speedMultiplier)
+    
+    purchaser.hasMarathonistPerk = true
+    
+    
+    local undoInnate = function(_)
+        if IsValid(purchaser) then
+            if purchaser.originalWalkSpeed then
+                purchaser:SetWalkSpeed(purchaser.originalWalkSpeed)
+                purchaser:SetRunSpeed(purchaser.originalRunSpeed)
+            end
+            purchaser.hasMarathonistPerk = false
+        end
+    end
+    
+    local timerName = "marathonist_" .. purchaser:GetClass() .. purchaser:EntIndex()
+    GAMEMODE:PutInnateInProperCleanup(timerName, undoInnate, purchaser)
+end
 
 local function susPurchase( purchaser )
 
@@ -3770,6 +3798,21 @@ local defaultItems = {
         weight = 85,
         purchaseCheck = { unUndeadCheck },
         purchaseFunc = bombGlandPurchase,
+    },
+    ["marathonist"] = {
+    name = "Marathonist",
+    desc = "Increases your movement speed significantly.\nMakes you feel lighter on your feet!",
+    cost = 200,
+    markup = 2,
+    cooldown = math.huge,
+    category = "Innate",
+    purchaseTimes = {
+        GM.ROUND_INACTIVE,
+        GM.ROUND_ACTIVE,
+    },
+    weight = 86,
+    purchaseCheck = { unUndeadCheck }, 
+    purchaseFunc = marathonistPurchase,
     },
     [ "ultralumen" ] = {
         name = "Ultra Lumen 3000.",
