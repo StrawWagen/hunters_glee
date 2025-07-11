@@ -228,7 +228,7 @@ function SWEP:BadHit( tr )
     if tr.HitPos:DistToSqr( owner:GetShootPos() ) < self.Primary.Distance^2 then
         local surfaceProperties = tr.SurfaceProps
         surfaceProperties = util.GetSurfaceData( surfaceProperties )
-        if tr.Entity and surfaceProperties.material == MAT_FLESH then
+        if tr.Entity and surfaceProperties and surfaceProperties.material == MAT_FLESH then
             tr.Entity:EmitSound( "Weapon_Crowbar.Melee_Hit", 75 )
             owner:EmitSound( "npc/zombie/claw_strike3.wav", 75, math.random( 120, 140 ), 1, CHAN_STATIC )
 
