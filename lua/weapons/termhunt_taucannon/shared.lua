@@ -319,6 +319,7 @@ function SWEP:PrimaryAttack()
 
             if trace.Normal:Dot( trace.HitNormal ) < 0.5 then
                 timer.Simple( 0, function()
+                    if not IsValid( self ) then return end
                     local newOwner = self:GetOwner()
                     if not IsValid( self ) or not IsValid( owner ) or newOwner ~= owner then return end
                     local effectdata = EffectData()

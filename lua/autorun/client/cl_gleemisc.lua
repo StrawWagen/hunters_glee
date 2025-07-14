@@ -106,6 +106,8 @@ function terminator_Extras.easyClosePanel( pnl, callFirst )
     end
 end
 
+
+-- override baseclass DrawWeaponSelection to accept actual materials instead of texids, so it can handle pngs with no bs
 local function drawTexOverride( self, x, y, wide, tall, alpha )
 
     -- Set us up the texture
@@ -134,6 +136,7 @@ end
 
 local white = Color( 255, 255, 255 )
 
+-- function that setups the weapon's PrintName translation, select icon. and killicon, all in one place
 function terminator_Extras.glee_CL_SetupSwep( SWEP, class, texture )
     language.Add( class, SWEP.PrintName )
     killicon.Add( class, texture, white )
