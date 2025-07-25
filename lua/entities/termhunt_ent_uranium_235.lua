@@ -1,8 +1,7 @@
 AddCSLuaFile()
 
-game.AddAmmoType( { name = "Uranium 235", dmgtype = DMG_AIRBOAT } )
 if CLIENT then
-    language.Add( "Uranium 235_ammo", "Uranium 235" )
+    language.Add( "Uranium_235_ammo", "Uranium 235" )
 
 end
 

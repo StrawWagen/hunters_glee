@@ -1,3 +1,5 @@
+terminator_Extras = terminator_Extras or {}
+
 util.doorIsUsable = function( door )
     local center = door:WorldSpaceCenter()
     local forward = door:GetForward()

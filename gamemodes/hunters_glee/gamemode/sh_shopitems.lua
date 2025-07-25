@@ -225,12 +225,7 @@ local function beartrapPurchase( purchaser )
 
     if hasWeap then
         -- give 6
-        weap:Charge()
-        weap:Charge()
-        weap:Charge()
-        weap:Charge()
-        weap:Charge()
-        weap:Charge()
+        purchaser:GiveAmmo( 6, "GLEE_BEARTRAP" )
 
         loadoutConfirm( purchaser, 1 )
 
@@ -243,11 +238,7 @@ local function beartrapPurchase( purchaser )
             -- where weap
             if not IsValid( weap ) then return end
             -- give 5
-            weap:Charge()
-            weap:Charge()
-            weap:Charge()
-            weap:Charge()
-            weap:Charge()
+            purchaser:GiveAmmo( 5, "GLEE_BEARTRAP" )
 
         end )
 
@@ -2384,7 +2375,7 @@ end
 local function nailerPurchase( purchaser )
     local nailer = purchaser:GetWeapon( "termhunt_weapon_hammer" )
     if IsValid( nailer ) then
-        nailer:Charge()
+        purchaser:GiveAmmo( 60, "GLEE_NAILS", true )
 
     else
         purchaser:Give( "termhunt_weapon_hammer" )

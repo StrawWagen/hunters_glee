@@ -12,7 +12,7 @@ local restingBPMPermanent = 60 -- needs to match clientside var too
 
 local distNeededToBeOnArea = 25^2
 local distWayTooFarOffNavmesh = 250^2
-local posCanSeeComplex = terminator_Extras.PosCanSeeComplex
+local posCanSeeComplex
 local defaultHeartAttackBpm = 290
 local bpmStartScreamingLikeCrazy = 225
 
@@ -234,6 +234,11 @@ function GM:calculateBPM( cur, players )
             local lowestZ = math.min( closestPos.z, plyPos.z )
             closestPos.z = highestZ
             plyPos.z = highestZ
+
+            if not posCanSeeComplex then
+                posCanSeeComplex = terminator_Extras.PosCanSeeComplex
+
+            end
 
             local plyCanSeeArea = posCanSeeComplex( plyPos, closestPos, ply, MASK_SOLID_BRUSHONLY )
 

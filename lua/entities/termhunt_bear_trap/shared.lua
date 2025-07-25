@@ -10,9 +10,6 @@ local className = "termhunt_bear_trap"
 if CLIENT then
     terminator_Extras.glee_CL_SetupSent( ENT, className, "vgui/hud/killicon/" .. className .. ".png" )
 
-else
-    resource.AddFile( "materials/vgui/hud/killicon/" .. className .. ".png" )
-
 end
 
 function ENT:Think()

@@ -19,33 +19,14 @@ SWEP.ViewModelFlip      = false
 SWEP.BounceWeaponIcon   = true
 
 SWEP.ViewModel          = "models/weapons/v_flaregun.mdl"
-SWEP.WorldModel         = "models/weapons/w_dkflaregun.mdl"
+SWEP.WorldModel         = "models/weapons/w_dkflaregun.mdl" -- https://steamcommunity.com/sharedfiles/filedetails/?id=1623971250
 
 local className = "termhunt_aeromatix_flare_gun"
 if CLIENT then
     terminator_Extras.glee_CL_SetupSwep( SWEP, className, "materials/vgui/hud/killicon/" .. className .. ".png" )
     language.Add( "GLEE_FLAREGUN_PLAYER_ammo", "Flare" )
 
-else
-    resource.AddFile( "materials/vgui/hud/killicon/" .. className .. ".png" )
-    resource.AddFile( "materials/models/weapons/dk_flaregun/gm.vmt" )
-    resource.AddFile( "materials/models/weapons/dk_flaregun/gm_n.vtf" )
-    resource.AddFile( "models/weapons/v_flaregun.mdl" )
-    resource.AddFile( "models/weapons/w_dkflaregun.mdl" ) -- https://steamcommunity.com/sharedfiles/filedetails/?id=1623971250
-
 end
-
-game.AddAmmoType( {
-    name = "GLEE_FLAREGUN_PLAYER", -- Note that whenever picked up, the localization string will be '#BULLET_PLAYER_556MM_ammo'
-    dmgtype = DMG_BURN,
-    tracer = TRACER_NONE,
-    plydmg = 0, -- This can either be a number or a ConVar name.
-    npcdmg = 0, -- Ditto.
-    force = 0,
-    maxcarry = 10, -- Ditto.
-    minsplash = 0,
-    maxsplash = 0
-} )
 
 SWEP.Primary.Sound = Sound( "weapons/flaregun/fire.wav" )
 SWEP.Primary.Ammo            = "GLEE_FLAREGUN_PLAYER"
@@ -186,13 +167,15 @@ local angOffset = Angle( 0, 180, -90 )
 
 function SWEP:DrawWorldModel()
     local owner = self:GetOwner()
-    if IsValid( owner ) then
+    if IsValid( owner ) and owner:GetActiveWeapon() == self then
         local attachId = owner:LookupAttachment( "anim_attachment_RH" )
         if attachId <= 0 then return end
         local attachTbl = owner:GetAttachment( attachId )
         local posOffsetW, angOffsetW = LocalToWorld( posOffset, angOffset, attachTbl.Pos, attachTbl.Ang )
         self:SetPos( posOffsetW )
         self:SetAngles( angOffsetW )
+
+        self:SetupBones()
 
     end
     self:DrawModel()

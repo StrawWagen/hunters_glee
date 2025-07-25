@@ -30,6 +30,8 @@ SWEP.Secondary.DefaultClip = -1
 SWEP.Secondary.Automatic   = false
 SWEP.Secondary.Ammo        = "none"
 
+-- https://freesound.org/people/nlux/sounds/620497/
+-- "sound/620497__nlux__choir-of-weeping-angels-loop.mp3"
 
 if CLIENT then
     terminator_Extras.glee_CL_SetupSwep( SWEP, "termhunt_divine_chosen", "materials/vgui/hud/termhunt_divine_chosen.png" )
@@ -45,10 +47,6 @@ if CLIENT then
         if not owner:GetNW2Bool( "divinechosen_secondarystrike", false ) then return true, "RIGHT CLICK to charge a lightning strike of unrivaled power." end
 
     end
-else
-    -- https://freesound.org/people/nlux/sounds/620497/
-    resource.AddFile( "sound/620497__nlux__choir-of-weeping-angels-loop.mp3" )
-
 end
 
 function SWEP:ShouldDrawViewModel() return false end

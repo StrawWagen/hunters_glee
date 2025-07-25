@@ -17,7 +17,7 @@ SWEP.Primary.Sound 				= "weapons/gauss/fire1.wav"
 SWEP.Primary.ClipSize    		= -1
 SWEP.Primary.DefaultClip 		= 100
 SWEP.Primary.Automatic   		= true
-SWEP.Primary.Ammo               = "Uranium 235"
+SWEP.Primary.Ammo               = "Uranium_235"
 
 SWEP.Secondary.ClipSize  		= -1
 SWEP.Secondary.Delay            = 3
@@ -45,23 +45,19 @@ SWEP.AutoSwitchFrom = false
 if CLIENT then
     terminator_Extras.glee_CL_SetupSwep( SWEP, "termhunt_taucannon", "materials/entities/termhunt_taucannon.png" )
 
+    function SWEP:CustomAmmoDisplay()
+        local ammo = self:GetOwner():GetAmmoCount( self:GetPrimaryAmmoType() )
+        return {
+            Draw = true,
+            PrimaryClip = ammo
+        }
+    end
 end
 
 local max_Charge = 20
 local charge_SlowdownThresh = 10
 local gauss_Dmg = 75
 local gauss_Hull = Vector( 2, 2, 2 )
-
-function SWEP:CustomAmmoDisplay()
-    local table1 = {}
-    table1.Draw = true
-    table1.PrimaryClip = self:GetOwner():GetAmmoCount( self.Primary.Ammo )
-    table1.PrimaryAmmo = -1
-    table1.SecondaryAmmo = -1
-
-    return table1
-
-end
 
 function SWEP:SetupDataTables()
     self:NetworkVar( "Int", 0, "ChargeLevel" )
@@ -139,10 +135,13 @@ function SWEP:DumpCharge()
 
     local validOwner = IsValid( owner )
 
+    local hullSizeMul = 1
+    hullSizeMul = hullSizeMul + chargeLevel / 2
+
     local num = 1 + chargeLevel / 4
     local dmg = gauss_Dmg * chargeLevel
     local dir = validOwner and owner:GetAimVector() or self:GetForward()
-    local start = validOwner and owner:GetShootPos() or self:GetPos()
+    local start = validOwner and owner:GetShootPos() or ( self:GetPos() + dir * 25 )
 
     bullet.Num      = num
     bullet.Dir      = dir
@@ -371,6 +370,26 @@ function SWEP:PrimaryAttack()
 
     end
 end
+
+-- always drop tau cannon and trigger DumpCharge on death
+hook.Add( "DoPlayerDeath", "glee_taucannon_drop", function( ply )
+    if ply.DropWeaponKeepAmmo then return end -- let glee weapon dropper do its thing
+
+    local weapon = ply:GetActiveWeapon()
+
+    if not IsValid( weapon ) or weapon:GetClass() ~= "termhunt_taucannon" then return end
+
+    if weapon:GetChargeLevel() <= 0 then return end
+
+    ply:DropWeapon( weapon )
+    timer.Simple( 30, function()
+        if not IsValid( weapon ) then return end
+        local newOwner = weapon:GetOwner()
+        if IsValid( newOwner ) then return end
+        SafeRemoveEntity( weapon )
+
+    end )
+end )
 
 function SWEP:OnDrop()
     if self:GetChargeLevel() > 0 then
