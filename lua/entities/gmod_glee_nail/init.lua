@@ -162,8 +162,6 @@ local function handleMaxDamageToBreak()
     end
     maxDamageToBreak = maxDamageToBreakCvar:GetInt()
 
-    print( maxDamageToBreak )
-
 end
 handleMaxDamageToBreak()
 cvars.AddChangeCallback( "huntersglee_nail_maxdamagetobreak", handleMaxDamageToBreak, "updatecvar" )
