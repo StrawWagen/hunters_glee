@@ -15,9 +15,6 @@ local className = "termhunt_flare"
 if CLIENT then
     terminator_Extras.glee_CL_SetupSent( ENT, className, "vgui/hud/killicon/" .. className .. ".png" )
 
-else
-    resource.AddFile( "materials/vgui/hud/killicon/" .. className .. ".png" )
-
 end
 
 local invis = Color( 255, 255, 255, 0 )

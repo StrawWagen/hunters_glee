@@ -232,7 +232,7 @@ end
 
 function SWEP:DrawWorldModel()
     local ply = self:GetOwner()
-    if not IsValid( ply ) then
+    if not IsValid( ply ) or ply:GetActiveWeapon() ~= self then
         self:DrawModel()
         return
 

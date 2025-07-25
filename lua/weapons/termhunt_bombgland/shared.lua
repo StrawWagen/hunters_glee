@@ -44,10 +44,6 @@ if CLIENT then
         if not owner:GetNW2Bool( "bombgland_detonated", false ) and owner:GetNW2Bool( "bombgland_createdbomb", false ) then return true, "Secondary attack to explode your bombs!" end
 
     end
-
-else
-    resource.AddFile( "materials/entities/termhunt_bombgland.png" )
-
 end
 
 function SWEP:Initialize()

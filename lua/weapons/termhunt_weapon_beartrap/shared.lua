@@ -23,10 +23,12 @@ SWEP.Spawnable        = true
 SWEP.AdminSpawnable    = false
 SWEP.Category = "Hunter's Glee"
 
-SWEP.Primary.ClipSize = 100
+SWEP.Primary.Automatic = true
+SWEP.Primary.Ammo = "GLEE_BEARTRAP"
+SWEP.Primary.ClipSize = -1
 SWEP.Primary.DefaultClip = 1
 SWEP.Primary.Automatic = false
-SWEP.Primary.Ammo = "none"
+SWEP.Primary.Distance = 150
 
 SWEP.Secondary.ClipSize = -1
 SWEP.Secondary.DefaultClip = -1
@@ -37,24 +39,19 @@ if CLIENT then
     terminator_Extras.glee_CL_SetupSwep( SWEP, "termhunt_weapon_beartrap", "materials/vgui/hud/killicon/termhunt_bear_trap.png" )
     function SWEP:GetViewModelPosition( pos, ang )
         return pos + ang:Forward() * 5, ang
+
     end
-end
 
-if SERVER then
-    resource.AddFile( "materials/VGUI/ttt/icon_beartrap.vmt" )
+    language.Add( "GLEE_BEARTRAP_ammo", "Beartrap" )
 
-    resource.AddFile( "materials/models/freeman/beartrap_diffuse.vtf" )
-    resource.AddFile( "materials/models/freeman/beartrap_specular.vtf" )
-    resource.AddFile( "materials/models/freeman/trap_dif.vmt" )
+    function SWEP:CustomAmmoDisplay()
+        local ammo = self:GetOwner():GetAmmoCount( self:GetPrimaryAmmoType() )
+        return {
+            Draw = true,
+            PrimaryClip = ammo
 
-    resource.AddFile( "sound/beartrap.wav" )
-
-    resource.AddFile( "models/stiffy360/beartrap.mdl" )
-
-    resource.AddFile( "models/stiffy360/c_beartrap.mdl" )
-
-    resource.AddFile( "materials/entities/termhunt_weapon_beartrap.png" )
-
+        }
+    end
 end
 
 function SWEP:Initialize()
@@ -69,24 +66,24 @@ function SWEP:Deploy()
 
 end
 
-function SWEP:Equip()
-    self:SetClip1( 0 )
-    self:Charge()
-
-end
-
 if SERVER then
     AddCSLuaFile()
 
 end
 
-SWEP.termPlace_PlacingRange = 150
+function SWEP:GetBeartrapCount() -- get the amount of beartraps we have left
+    local owner = self:GetOwner()
+    if not IsValid( owner ) then return 0 end
+    if SERVER and not owner:IsPlayer() then return 1 end
+    return owner:GetAmmoCount( self.Primary.Ammo )
+
+end
 
 function SWEP:ValidPlace()
     local owner = self:GetOwner()
     local traceStruct = {
         start = owner:GetShootPos(),
-        endpos = owner:GetShootPos() + owner:GetAimVector() * self.termPlace_PlacingRange,
+        endpos = owner:GetShootPos() + owner:GetAimVector() * self.Primary.Distance,
         filter = owner
     }
     local tr = util.TraceLine( traceStruct )
@@ -96,26 +93,9 @@ function SWEP:ValidPlace()
 
 end
 
-function SWEP:CustomAmmoDisplay()
-
-    self.AmmoDisplay = self.AmmoDisplay or {}
-    self.AmmoDisplay.Draw = true
-    self.AmmoDisplay.PrimaryClip = self:Clip1()
-
-    return self.AmmoDisplay
-
-end
-
-function SWEP:Charge()
-    self:SetClip1( self:Clip1() + 1 )
-
-end
-
 local gunCock = Sound( "items/ammo_pickup.wav" )
 
 function SWEP:EquipAmmo( newOwner )
-    local theirWeap = newOwner:GetWeapon( self:GetClass() )
-    theirWeap:SetClip1( theirWeap:Clip1() + 1 )
     newOwner:EmitSound( gunCock, 60, math.random( 90, 110 ) )
 
 end
@@ -133,12 +113,19 @@ function SWEP:DoGhost()
 
 end
 
+function SWEP:CanPrimaryAttack()
+    if self:GetNextPrimaryFire() > CurTime() then return false end
+
+    return true
+
+end
+
 function SWEP:Think()
-    if self:Clip1() <= 0 then return end
+    if self:GetBeartrapCount() <= 0 then return end
     if CLIENT then
         local owner = self:GetOwner()
         if owner ~= LocalPlayer() then return end
-        if self:Clip1() <= 0 then
+        if self:GetBeartrapCount() <= 0 then
             self:DeGhost()
             return
 
@@ -148,12 +135,18 @@ function SWEP:Think()
 
         else
             local canPlace, tr = self:ValidPlace()
+            if not canPlace or tr.HitPos:Distance( owner:GetShootPos() ) > self.Primary.Distance then
+                self:DeGhost()
+                return
+
+            end
             if not canPlace then return end
             local ang = tr.HitNormal:Angle()
             ang:RotateAroundAxis( ang:Right(), -90 )
 
             self.beartrapGhost:SetPos( tr.HitPos )
             self.beartrapGhost:SetAngles( ang )
+
         end
     elseif SERVER and self:GetOwner():KeyDown( IN_ATTACK ) then
         if not self:CanPrimaryAttack() then return end
@@ -186,9 +179,9 @@ end
 function SWEP:PrimaryAttack()
     local owner = self:GetOwner()
     if not owner:IsNextBot() then return end
+
     local canPlace, tr = self:ValidPlace()
     if not canPlace then return end
-    self:SetClip1( 1 )
     local placed = self:Place( tr )
     placed.usedByTerm = true
 
@@ -204,9 +197,9 @@ function SWEP:Place( tr )
 
     beartrap:EmitSound( "physics/metal/metal_solid_impact_hard5.wav", 65, 80 )
 
-    self:SetClip1( self:Clip1() + -1 )
+    owner:RemoveAmmo( 1, self.Primary.Ammo )
 
-    if self:Clip1() > 0 then return beartrap end
+    if self:GetBeartrapCount() > 0 then return beartrap end
 
     timer.Simple( 0.5, function()
         if not IsValid( self ) then return end
@@ -322,13 +315,14 @@ local angOffset = Angle( 0, -90, -90 )
 
 function SWEP:DrawWorldModel()
     local owner = self:GetOwner()
-    if IsValid( owner ) then
+    if IsValid( owner ) and owner:GetActiveWeapon() == self then
         local attachId = owner:LookupAttachment( "anim_attachment_RH" )
         if attachId <= 0 then return end
         local attachTbl = owner:GetAttachment( attachId )
         local posOffsetW, angOffsetW = LocalToWorld( posOffset, angOffset, attachTbl.Pos, attachTbl.Ang )
         self:SetPos( posOffsetW )
         self:SetAngles( angOffsetW )
+        self:SetupBones()
 
     else
         self:SetSequence( "ClosedIdle" )

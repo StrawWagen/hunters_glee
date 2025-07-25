@@ -1,7 +1,4 @@
 
-resource.AddFile( "materials/vgui/hud/losingcharge.png" )
-resource.AddFile( "materials/vgui/hud/nobattery.png" )
-
 util.AddNetworkString( "glee_batterychangedcharge" )
 
 local batteryChargesLocal = {}

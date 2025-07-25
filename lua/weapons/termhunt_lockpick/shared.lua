@@ -44,10 +44,6 @@ local className = "termhunt_lockpick"
 if CLIENT then
     terminator_Extras.glee_CL_SetupSwep( SWEP, className, "vgui/hud/killicon/" .. className .. ".png" )
 
-else
-    resource.AddFile( "materials/vgui/hud/killicon/" .. className .. ".png" )
-    resource.AddFile( "materials/entities/termhunt_lockpick.png" )
-
 end
 
 function SWEP:SetupDataTables()

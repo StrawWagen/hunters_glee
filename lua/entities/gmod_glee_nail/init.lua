@@ -28,13 +28,13 @@ function ENT:Attach( pos, ang, ent1, bone1, ent2, theConstraint )
     self.mainEnt = ent1
     self.secondEnt = ent2
 
-    local constraintsNails = theConstraint.huntersGlee_nails or {}
+    local constraintsNails = theConstraint.huntersGLEE_NAILS or {}
     table.insert( constraintsNails, self )
-    theConstraint.huntersGlee_nails = constraintsNails
+    theConstraint.huntersGLEE_NAILS = constraintsNails
 
     theConstraint:CallOnRemove( "constraint_removeallmynails", function()
-        if not theConstraint.huntersGlee_nails then return end
-        for _, currNail in ipairs( theConstraint.huntersGlee_nails ) do
+        if not theConstraint.huntersGLEE_NAILS then return end
+        for _, currNail in ipairs( theConstraint.huntersGLEE_NAILS ) do
             if IsValid( currNail ) then
                 self:Break()
             end
@@ -134,6 +134,39 @@ function ENT:Break()
 
 end
 
+local dmgAbsorb
+local dmgAbsorbDefault = 0.9
+local dmgAbsorbCvar = CreateConVar( "huntersglee_nail_damageabsorbratio", -1, { FCVAR_ARCHIVE, FCVAR_NOTIFY }, "How much damage should nails absorb? -1 for default, " .. tostring( dmgAbsorbDefault ), -1, 1 )
+local function handleDmgAbsorb()
+    if dmgAbsorbCvar:GetInt() < 0 then
+        dmgAbsorb = dmgAbsorbDefault
+
+        return
+
+    end
+    dmgAbsorb = dmgAbsorbCvar:GetFloat()
+
+end
+handleDmgAbsorb()
+cvars.AddChangeCallback( "huntersglee_nail_damageabsorbratio", handleDmgAbsorb, "updatecvar" )
+
+local maxDamageToBreak
+local maxDamageToBreakDefault = 190
+local maxDamageToBreakCvar = CreateConVar( "huntersglee_nail_maxdamagetobreak", -1, { FCVAR_ARCHIVE, FCVAR_NOTIFY }, "Damage events above this threshold will always break a nail. -1 for default," .. tostring( maxDamageToBreakDefault ), -1, 1000 )
+local function handleMaxDamageToBreak()
+    if maxDamageToBreakCvar:GetInt() < 0 then
+        maxDamageToBreak = maxDamageToBreakDefault
+
+        return
+
+    end
+    maxDamageToBreak = maxDamageToBreakCvar:GetInt()
+
+end
+handleMaxDamageToBreak()
+cvars.AddChangeCallback( "huntersglee_nail_maxdamagetobreak", handleMaxDamageToBreak, "updatecvar" )
+
+
 hook.Add( "EntityTakeDamage", "nail_break_when_nailed_damaged", function( target, dmg )
     if not target.huntersglee_breakablenails then return end
 
@@ -158,7 +191,7 @@ hook.Add( "EntityTakeDamage", "nail_break_when_nailed_damaged", function( target
     while damage > 0 and done < 1000 do
         done = done + 1
         -- nail's health, breaks if this roll is less than damage
-        local bite = math.random( 1, 190 )
+        local bite = math.random( 1, maxDamageToBreak )
         tempDamage = damage - bite
         if not target.huntersglee_breakablenails then
             break
@@ -168,7 +201,8 @@ hook.Add( "EntityTakeDamage", "nail_break_when_nailed_damaged", function( target
         if IsValid( randNail ) then
             if tempDamage > 0 then
                 randNail:Break()
-                dmg:ScaleDamage( 0.1 ) -- nails absorb damage!
+                local amountPropAbsorbs = 1 - dmgAbsorb
+                dmg:ScaleDamage( amountPropAbsorbs ) -- nails absorb damage!
                 damage = tempDamage
 
             else

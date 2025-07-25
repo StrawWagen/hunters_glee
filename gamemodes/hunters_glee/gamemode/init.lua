@@ -85,17 +85,6 @@ util.AddNetworkString( "glee_closetheshop" )
 util.AddNetworkString( "glee_roundstate" )
 util.AddNetworkString( "glee_sendtruesoullocations" )
 
-resource.AddFile( "materials/vgui/hud/glee_skullpickup.vmt" )
-resource.AddFile( "materials/vgui/hud/heartbeat.png" )
-resource.AddFile( "materials/vgui/hud/gleefulldata.png" )
-resource.AddFile( "materials/vgui/hud/gleenodata.png" )
-resource.AddFile( "materials/vgui/hud/deadshopicon.png" )
-
-resource.AddSingleFile( "sound/53937_meutecee_trumpethit07.wav" )
-resource.AddSingleFile( "sound/418788_name_heartbeat_single.wav" )
-resource.AddSingleFile( "sound/209578_zott820_cash-register-purchase.wav" )
-resource.AddSingleFile( "sound/482735__copyc4t__cartoon-long-throw.wav" )
-
 resource.AddWorkshop( "2848253104" ) -- gamemode
 resource.AddWorkshop( "2944078031" ) -- bot/model
 
@@ -215,7 +204,6 @@ function GM:Think()
     -- see player_termrunner
     -- see sv_zproceduralspawner
     -- see battery/sv_battery
-    -- see sv_darknessfear
     -- see sv_thirdpersonflashlight
     hook.Run( "glee_sv_validgmthink", players, currState, cur )
 

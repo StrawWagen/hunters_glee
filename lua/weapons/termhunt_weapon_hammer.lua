@@ -31,31 +31,40 @@ SWEP.Slot                 = 1                                   -- Decide which 
 ------------------------------\\ General Settings //------------------------------------------------------------|
 ----------------------------------------------------------------------------------------------------------------|
 SWEP.Primary.Automatic             = true                       -- Do We Have To Click Or Hold Down The Click
-SWEP.Primary.Ammo                 = "none"                      -- What Ammo Does This SWEP Use (If Melee Then Use None)   
-SWEP.Primary.Damage             = 0                             -- How Much Damage Does The SWEP Do                         
+SWEP.Primary.Ammo                 = "GLEE_NAILS"                      -- What Ammo Does This SWEP Use (If Melee Then Use None)   
+SWEP.Primary.Damage             = 30                             -- How Much Damage Does The SWEP Do                         
 SWEP.Primary.Spread                 = 0                         -- How Much Of A Spread Is There (Should Be Zero)
 SWEP.Primary.NumberofShots         = 0                          -- How Many Shots Come Out (should Be Zero)
 SWEP.Primary.Recoil             = 6                             -- How Much Jump After An Attack        
-SWEP.Primary.ClipSize           = math.huge                            -- Size Of The Clip
+SWEP.Primary.ClipSize           = -1                            -- Size Of The Clip
+SWEP.Primary.DefaultClip         = 30                           -- How Many Bullets Do You Start With
 SWEP.Primary.Delay                 = 0.8                        -- How longer Till Our Next Attack       
 SWEP.Primary.Force                 = 0                          -- The Amount Of Impact We Do To The World 
 SWEP.Primary.Distance             = 75                          -- How far can we reach?
 SWEP.SwingSound           = "weapons/iceaxe/iceaxe_swing1.wav"  -- Sound we make when we swing
 SWEP.NailedSound            = "hammer_hitnail"
 ----------------------------------------------------------------------------------------------------------------|
-SWEP.Secondary.Automatic         = false                         -- Do We Have To Click Or Hold Down The Click
-SWEP.Secondary.Ammo             = "none"                         -- What Ammo Does This SWEP Use (If Melee Then Use None)   
+SWEP.Secondary.Automatic         = true                         -- Do We Have To Click Or Hold Down The Click
+SWEP.Secondary.Ammo             = ""                         -- What Ammo Does This SWEP Use (If Melee Then Use None)   
 SWEP.Secondary.Damage             = 0                            -- How Much Damage Does The SWEP Do                         
 SWEP.Secondary.Spread             = 0                            -- How Much Of A Spread Is There (Should Be Zero)
 SWEP.Secondary.NumberofShots     = 0                             -- How Many Shots Come Out (should Be Zero)
 SWEP.Secondary.Recoil             = 6                            -- How Much Jump After An Attack        
 SWEP.Secondary.ClipSize            = 0                           -- Size Of The Clip
-SWEP.Secondary.Delay             = 1                             -- How longer Till Our Next Attack       
+SWEP.Secondary.Delay             = 0.8                             -- How longer Till Our Next Attack       
 SWEP.Secondary.Force             = 0                             -- The Amount Of Impact We Do To The World 
 SWEP.Secondary.Distance         = 75                             -- How far can we reach?
-SWEP.SecSwingSound                = ""                           -- Sound we make when we swing
-SWEP.SecWallSound                 = ""                           -- Sound when we hit something 
 ----------------------------------------------------------------------------------------------------------------|
+
+-- hit sounds are from barricade SWEP
+-- https://steamcommunity.com/sharedfiles/filedetails/?id=2953413221
+-- "sound/hammer/hit_nail01.wav"
+-- "sound/hammer/hit_nail02.wav"
+-- "sound/hammer/hit_nail03.wav"
+-- "sound/hammer/hit_nail04.wav"
+
+-- view model is also from barricade swep
+-- "models/weapons/c_barricadeswep.phy"
 
 local className = "termhunt_weapon_hammer"
 if CLIENT then
@@ -69,27 +78,16 @@ if CLIENT then
 
     end
 
-else
-    resource.AddFile( "materials/vgui/hud/killicon/" .. className .. ".png" )
+    language.Add( "GLEE_NAILS_ammo", "Nails" )
 
-    -- these hit sounds are from barricade SWEP
-    -- https://steamcommunity.com/sharedfiles/filedetails/?id=2953413221
-    resource.AddFile( "sound/hammer/hit_nail01.wav" )
-    resource.AddFile( "sound/hammer/hit_nail02.wav" )
-    resource.AddFile( "sound/hammer/hit_nail03.wav" )
-    resource.AddFile( "sound/hammer/hit_nail04.wav" )
+    function SWEP:CustomAmmoDisplay()
+        local ammo = self:GetOwner():GetAmmoCount( self:GetPrimaryAmmoType() )
+        return {
+            Draw = true,
+            PrimaryClip = ammo
 
-    resource.AddFile( "models/weapons/w_buzzhammer.mdl" )
-
-    -- view model is also from barricade swep
-    resource.AddFile( "models/weapons/c_barricadeswep.phy" )
-
-    resource.AddFile( "materials/models/weapons/cade_hammer.vmt" )
-    resource.AddFile( "materials/models/weapons/hammer.vmt" )
-    resource.AddFile( "materials/models/weapons/hammer2.vmt" )
-
-    resource.AddFile( "materials/entities/termhunt_weapon_hammer.png" )
-
+        }
+    end
 end
 
 sound.Add( {
@@ -113,31 +111,13 @@ local nailFindDist = nailTooCloseDist * 5
 function SWEP:Initialize()
     self:SetHoldType( self.HoldType )
     self:SetMaterial( "models/weapons/hammer.vmt" )
-    if SERVER then
-        self:SetClip1( 20 )
-    end
-end
-
-function SWEP:CustomAmmoDisplay()
-    self.AmmoDisplay = self.AmmoDisplay or {}
-    self.AmmoDisplay.Draw = true
-    self.AmmoDisplay.PrimaryClip = self:Clip1()
-
-    return self.AmmoDisplay
 
 end
 
-local gunCock = Sound( "items/ammo_pickup.wav" )
-
-function SWEP:EquipAmmo( newOwner )
-    local theirWeap = newOwner:GetWeapon( self:GetClass() )
-    theirWeap:Charge()
-    newOwner:EmitSound( gunCock, 60, math.random( 90, 110 ) )
-
-end
-
-function SWEP:Charge()
-    self:SetClip1( self:Clip1() + 20 )
+function SWEP:GetNailCount() -- get the amount of nails we have left
+    local owner = self:GetOwner()
+    if not IsValid( owner ) then return 0 end
+    return owner:GetAmmoCount( self.Primary.Ammo )
 
 end
 
@@ -147,7 +127,7 @@ SWEP.Offset = {
 }
 function SWEP:DrawWorldModel()
     local pl = self:GetOwner()
-    if IsValid( pl ) then
+    if IsValid( pl ) and pl:GetActiveWeapon() == self then
         local boneIndex = pl:LookupBone( "ValveBiped.Bip01_R_Hand" )
         if boneIndex then
             local pos, ang = pl:GetBonePosition( boneIndex )
@@ -157,6 +137,7 @@ function SWEP:DrawWorldModel()
             ang:RotateAroundAxis( ang:Forward(),  self.Offset.Ang.Forward )
             self:SetRenderOrigin( pos )
             self:SetRenderAngles( ang )
+            self:SetupBones()
             self:DrawModel()
         end
     else
@@ -171,7 +152,6 @@ function SWEP:OnRemove()
 end
 ----------------------------------------------------------------------------------------------------------------|
 function SWEP:Deploy()
-    --self:EmitSound("")
     self:SendWeaponAnim( ACT_VM_DRAW )
 end
 ----------------------------------------------------------------------------------------------------------------|
@@ -180,7 +160,6 @@ function SWEP:OnDrop()
 end
 ----------------------------------------------------------------------------------------------------------------|
 function SWEP:Holster()
-    --self:EmitSound("")
     return true
 end
 
@@ -222,7 +201,7 @@ function SWEP:BadHit( tr )
     bullet.Tracer = 0
     bullet.Force  = 10
     bullet.Distance = self.Primary.Distance
-    bullet.Damage = math.random( 25, 35 )
+    bullet.Damage = self.Primary.Damage + math.random( -5, 5 )
     owner:FireBullets( bullet )
 
     if tr.HitPos:DistToSqr( owner:GetShootPos() ) < self.Primary.Distance^2 then
@@ -290,7 +269,7 @@ function SWEP:CanNailPos( owner, trace, hitting )
     local whatWeHit = trace.Entity
 
     -- Bail if invalid
-    if whatWeHit:IsWorld() or self:Clip1() <= 0 or trace.HitPos:DistToSqr( owner:GetShootPos() ) > self.Primary.Distance^2 or not self:ValidEntityToNail( whatWeHit, trace.PhysicsBone ) then
+    if whatWeHit:IsWorld() or self:GetNailCount() <= 0 or trace.HitPos:DistToSqr( owner:GetShootPos() ) > self.Primary.Distance^2 or not self:ValidEntityToNail( whatWeHit, trace.PhysicsBone ) then
         if hitting and not IsValid( whatWeHit ) and not ( whatWeHit and whatWeHit:IsWorld() ) then
             self:Miss()
         elseif hitting then
@@ -315,7 +294,7 @@ function SWEP:CanNailPos( owner, trace, hitting )
 end
 
 
-function SWEP:Swing( owner, noNail )
+function SWEP:Swing( owner, noNail ) -- create nail or melee attack
     owner:LagCompensation( true )
 
     self:SetNextPrimaryFire( CurTime() + self.Primary.Delay / 2 ) -- always do half delay
@@ -388,9 +367,9 @@ function SWEP:Swing( owner, noNail )
     local constraint, nail = MakeNail( whatWeHit, secondHit, trace.PhysicsBone, trTwo.PhysicsBone, 50000, vOrigin, whatWeHit:WorldToLocalAngles( vDirection ) )
     if not constraint or not constraint:IsValid() then self:BadHit( trace ) owner:LagCompensation( false ) return end
 
-    self:SetClip1( math.Clamp( self:Clip1() + -1, 0, math.huge ) )
+    self:TakePrimaryAmmo( 1 )
 
-    if owner.AddCleanup then
+    if owner.AddCleanup then -- sandbox support
         undo.Create( "Nail" )
         undo.AddEntity( constraint )
         undo.AddEntity( nail )
@@ -413,9 +392,18 @@ function SWEP:PrimaryAttack( noNail )
 
 end
 
-function SWEP:SecondaryAttack()
+function SWEP:CanPrimaryAttack()
+    if self:GetNextPrimaryFire() > CurTime() then return false end
+
+    return true
+
+end
+
+function SWEP:SecondaryAttack() -- pull nails or melee attack
     if not self:CanPrimaryAttack() then return end
     if self:GetNextPrimaryFire() > CurTime() then return end
+
+    self:SetNextPrimaryFire( CurTime() + self.Primary.Delay / 2 ) -- always do half delay
 
     local owner = self:GetOwner()
 
@@ -440,6 +428,7 @@ function SWEP:SecondaryAttack()
     owner:LagCompensation( true )
     if SERVER then
         nearestNail:Break()
+        nearestNail:EmitSound( "physics/metal/metal_box_impact_hard" .. math.random( 1, 3 ) .. ".wav", 70, math.random( 90, 120 ) )
 
     end
 

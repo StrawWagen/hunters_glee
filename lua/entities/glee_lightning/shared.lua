@@ -12,13 +12,9 @@ ENT.Category = "Hunter's Glee"
 
 ENT.powa = 1
 
-if SERVER then
-    resource.AddFile( "sounds/hunters_glee/wizardry_thunderimpact.wav" ) -- FROM SHADOW MONEY WIZARD https://steamcommunity.com/sharedfiles/filedetails/?id=3046835259
-    resource.AddFile( "sounds/hunters_glee/wizardry_thunder.wav" ) -- DITTO!
-    resource.AddFile( "sounds/hunters_glee/397952_kinoton_thunder-clap-and-rumble-1.wav" )
-    resource.AddFile( "materials/vgui/hud/glee_lightning.vmt" )
-
-else
+    -- "sounds/hunters_glee/wizardry_thunderimpact.wav" FROM SHADOW MONEY WIZARD https://steamcommunity.com/sharedfiles/filedetails/?id=3046835259
+    -- "sounds/hunters_glee/wizardry_thunder.wav" -- DITTO!
+if CLIENT then
     terminator_Extras.glee_CL_SetupSent( ENT, "glee_lightning", "vgui/hud/glee_lightning" )
 
 end

@@ -20,12 +20,6 @@ function ENT:SetupDataTables()
     self:NetworkVar( "Bool", 0, "IsTerminatorSkull" )
 
 end
-if SERVER then
-    resource.AddFile( "materials/models/gibs/termskull.vmt" )
-    resource.AddFile( "sound/hunters_glee/bones/skullcrush.wav" )
-    resource.AddFile( "sound/hunters_glee/bones/break4.wav" )
-
-end
 util.PrecacheModel( "models/Gibs/HGIBS.mdl" )
 
 --sandbox support

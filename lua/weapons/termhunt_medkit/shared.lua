@@ -55,9 +55,6 @@ if CLIENT then
             end
         end
     end
-else
-    resource.AddFile( "materials/entities/termhunt_medkit.png" )
-
 end
 
 local HealSound = Sound( "HealthKit.Touch" )

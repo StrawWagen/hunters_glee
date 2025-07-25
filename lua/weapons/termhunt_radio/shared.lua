@@ -48,10 +48,6 @@ else
     util.PrecacheSound( "ambient/levels/citadel/strange_talk11.wav" )
 
 end
-if SERVER then
-    resource.AddFile( "materials/entities/termhunt_radio.png" )
-
-end
 
 function SWEP:Initialize()
     self:SetNWInt( "glee_radiochannel_index", 2 )
