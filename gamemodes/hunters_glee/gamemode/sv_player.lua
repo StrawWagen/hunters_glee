@@ -467,8 +467,14 @@ function GM:DoHeartAttackThink( ply )
 
         local damage = ( ply:GetMaxHealth() / 10 ) + ( heartAttackScore / threshold )
 
+        local takinDmg = ply
+        if ply:InVehicle() and IsValid( ply:GetVehicle() ) then
+            takinDmg = ply:GetVehicle()
+
+        end
+
         local world = game.GetWorld()
-        ply:TakeDamage( damage, world, world )
+        takinDmg:TakeDamage( damage, world, world )
         if math.random( 0, 100 ) < 50 then
             ply:SetNWInt( "termHuntPlyBPM", 0 )
 

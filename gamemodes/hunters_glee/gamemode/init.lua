@@ -204,7 +204,6 @@ function GM:Think()
     -- see player_termrunner
     -- see sv_zproceduralspawner
     -- see battery/sv_battery
-    -- see sv_darknessfear
     -- see sv_thirdpersonflashlight
     hook.Run( "glee_sv_validgmthink", players, currState, cur )
 
