@@ -448,6 +448,8 @@ function termHuntOpenTheShop()
 
         local shopCategoriesBlocked = {}
         local shopCategoryPanels = {}
+
+        if not GAMEMODE.shopCategories then error( "wtf? SHOP CATEGORIES DIDNT LOAD!" ) end -- reported errors
         local categories = table.Copy( GAMEMODE.shopCategories )
 
         -- the scrollable things that hold shop items and have names like innate and undead

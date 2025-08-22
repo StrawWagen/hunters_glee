@@ -134,6 +134,8 @@
 -- ttt button replacement
 -- barrels scoring confusing
 
+-- bhop perk?
+
 
 local thwaps = {
     Sound( "physics/body/body_medium_impact_hard3.wav" ),
@@ -1644,7 +1646,12 @@ end
 local function marcoPoloPurchase( purchaser )
     local timerName = "huntersglee_marcopolo" .. purchaser:GetCreationID()
 
-    purchaser:SetNWBool( "termHuntBlockScoring2", true )
+    local blockHookName = "huntersglee_marcopolo_block_" .. purchaser:GetCreationID()
+    hook.Add( "huntersglee_blockscoring", blockHookName, function( ply )
+        if not IsValid( ply ) then hook.Remove( "huntersglee_blockscoring", blockHookName ) return end
+        if ply == purchaser then return true end
+
+    end )
 
     local _, unexplored = GAMEMODE:GetAreaInOccupiedBigGroupOrRandomBigGroup()
     purchaser.marcoPoloExploredStatuses = {}
@@ -1738,11 +1745,11 @@ local function marcoPoloPurchase( purchaser )
     end )
 
     local undoInnate = function( _ )
-        purchaser:SetNWBool( "termHuntBlockScoring2", false )
         purchaser.marcoPoloExploredStatuses = nil
         purchaser.marcopolo_ToExploreCount = nil
         purchaser.marcopolo_ExploredCount = nil
         timer.Remove( timerName )
+        hook.Remove( "huntersglee_blockscoring", blockHookName )
 
     end
 
@@ -2299,7 +2306,7 @@ end
 local function tauCannonPurchase( purchaser )
     local tau = purchaser:GetWeapon( "termhunt_taucannon" )
     if IsValid( tau ) then
-        purchaser:GiveAmmo( 100,   "Uranium 235",         false )
+        purchaser:GiveAmmo( 100,   "Uranium_235",         false )
 
     else
         purchaser:Give( "termhunt_taucannon" )

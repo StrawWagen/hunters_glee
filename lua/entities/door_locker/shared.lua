@@ -88,6 +88,8 @@ function LockDoorAndRunAFunctionWhenTheDoorIsUsed( door, playerAttaching, functi
         if entity == door and door:GetSaveTable().m_bLocked then
             -- not necessary since doors now cant be locked twice, good to keep it tho
             for _, currentlyProcessingPlayer in ipairs( door.doorPlayers ) do
+                if not IsValid( currentlyProcessingPlayer ) then continue end
+
                 -- the door is locked, so run the function
                 functionToRun( door, thingUsingTheDoor, currentlyProcessingPlayer )
 

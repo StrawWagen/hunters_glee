@@ -342,9 +342,12 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
         countWanted = overrideCount
 
     else
+        local plyCount = player.GetCount()
+        local plyCountBoost = math.min( plyCount, 8 )
         countWanted = spawnSet.spawnCountPerDifficulty * difficulty
         countWanted = countWanted + spawnSet.startingSpawnCount
-        countWanted = math.min( countWanted, spawnSet.maxSpawnCount )
+        countWanted = math.max( countWanted, plyCountBoost ) -- full server? lots of bots at the start
+        countWanted = math.min( countWanted, spawnSet.maxSpawnCount ) -- but never above the maxSpawnCount
         countWanted = math.floor( countWanted )
 
     end

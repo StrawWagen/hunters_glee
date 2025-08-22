@@ -20,15 +20,24 @@ surface.CreateFont( "huntersglee_welcometext", fontData )
 
 local hasSeenMessage = CreateClientConVar( "cl_huntersglee_firsttimetutorial", 0, true, true, "Has the player seen the one-time tutorial series of messages?" )
 
-local stages = {
-    [ 1 ] = "Welcome.\nTo the hunt!",
-    [ 2 ] = "YOU ARE NOT ALONE.",
-    [ 3 ] = "Listen, see, flee...",
-    [ 4 ] = "Listen, to your heart.",
-    [ 5 ] = "See them, if they don't see you first.",
-    [ 6 ] = "Flee, but to where?",
-    [ 7 ] = "Just, above all else.",
-    [ 8 ] = "GIVE THEM GLEE!",
+local stagesSingleplayer = {
+    [1] = "Welcome.\nTo the hunt!",
+    [2] = "YOU ARE NOT ALONE.",
+    [3] = "Listen, see, flee...",
+    [4] = "Listen, to your heart.",
+    [5] = "See them, if they don't see you first.",
+    [6] = "Flee, but to where?",
+    [7] = "Just, above all else.",
+    [8] = "GIVE THEM GLEE!",
+}
+
+local stagesMultiplayer = { -- way less tense in multiplayer
+    [1] = "Welcome.\nTo the hunt!",
+    [2] = "You're here to survive.",
+    [3] = "You're here to... DIE?",
+    [4] = "Death will not be the end.",
+    [5] = "Until, then...",
+    [6] = "SURVIVE."
 }
 
 local function doMessageIfWeCan()
@@ -71,6 +80,15 @@ local function doMessageIfWeCan()
     button.nextPress = 0
     button.nextFlash = 0
 
+    local stages
+    if player.GetCount() >= 4 then
+        stages = stagesMultiplayer
+
+    else
+        stages = stagesSingleplayer
+
+    end
+
     local function nextStage()
         button.stage = button.stage + 1
         local fullMsg = stages[button.stage]
@@ -109,8 +127,8 @@ local function doMessageIfWeCan()
 
         local toShow = string.sub( fullMsg, 0, math.floor( button.charCount ) )
 
-        local rampUp = math.Clamp( button.charCount / 800, 0, 0.10 )
-        local added = 0.10 + rampUp
+        local rampUp = math.Clamp( button.charCount / 600, 0, 0.10 )
+        local added = 0.15 + rampUp
         button.charCount = button.charCount + added
 
         if button.charCount <= 1 then

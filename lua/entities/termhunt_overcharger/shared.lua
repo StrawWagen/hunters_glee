@@ -57,7 +57,7 @@ function ENT:CalculateCanPlace()
     if not IsValid( currTarg ) then return false, "You can't overcharge nothing." end
     if currTarg.terminator_OverCharged then return false, "It's already overcharged." end
     if not glee_CanOvercharge( currTarg ) then return false, "That's too weak to overcharge..." end
-    if GAMEMODE:isTemporaryTrueBool( "glee_playerplaced_termovercharger" ) then return false, "It's too soon for another terminator to be overcharged." end
+    if GAMEMODE:isTemporaryTrueBool( "glee_playerplaced_termovercharger" ) then return false, "It's too soon for another hunter to be overcharged." end
     if currTarg:IsSilentStepping() then return false, "There's Nothing there." end
     if not self:HasEnoughToPurchase() then return false, self:TooPoorString() end
     return true

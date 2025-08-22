@@ -1,5 +1,7 @@
 AddCSLuaFile()
 
+local entMeta = FindMetaTable( "Entity" )
+
 SWEP.Author         = "Straw W Wagen."
 SWEP.Contact        = ""
 SWEP.Purpose        = "Your powers as the holy chosen."
@@ -86,6 +88,15 @@ function SWEP:Initialize()
     self:SetHoldType( self.HoldType )
 
     self:DrawShadow( false )
+
+    hook.Add( "huntersglee_blockwinning", self, function( _, ply )
+        local owner = entMeta.GetOwner( self )
+        if not IsValid( owner ) then return end
+        if ply ~= owner then return end
+
+        return true
+
+    end )
 end
 
 function SWEP:Deploy()
@@ -205,7 +216,6 @@ function SWEP:Equip()
     end )
 
     owner:EmitSound( "music/hl2_song10.mp3", 75, math.random( 90, 110 ), 1, CHAN_STATIC )
-    owner.glee_isUndead = true
 
 end
 
@@ -213,8 +223,9 @@ function SWEP:ShutDown()
     if not IsValid( self ) then return end
 
     local owner = self:GetOwner()
+    local validOwner = IsValid( owner )
 
-    if self.ownersOriginalModel then
+    if validOwner and self.ownersOriginalModel then
         owner:SetModel( self.ownersOriginalModel )
 
     end
@@ -236,15 +247,13 @@ function SWEP:ShutDown()
 
     end
 
-    owner.glee_isUndead = nil
-
-    if self.modifiedMaxHp and owner and owner:GetMaxHealth() == self.maxHpModifedTo and owner:Health() > 0 then
+    if self.modifiedMaxHp and validOwner and owner:GetMaxHealth() == self.maxHpModifedTo and owner:Health() > 0 then
         owner:SetMaxHealth( 100 )
         owner:SetHealth( owner:GetMaxHealth() )
 
     end
 
-    if IsValid( owner ) then
+    if validOwner then
         owner:SetGravity( 1 )
 
     end

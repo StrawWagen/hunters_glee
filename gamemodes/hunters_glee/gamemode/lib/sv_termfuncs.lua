@@ -1,6 +1,7 @@
 local minusFiveHundred = Vector( 0,0,-500 )
 local minusOne = Vector( 0,0,-500 )
 local IsValid = IsValid
+local entMeta = FindMetaTable( "Entity" )
 
 function GM:getFloor( pos )
     local Dat = {
@@ -459,6 +460,17 @@ function GM:GetNearbyWalkableArea( playerReference, start, count )
 
 end
 
+function canWinTheRound( ply )
+    if entMeta.Health( ply ) <= 0 then return false end
+    if not ply.glee_FullLoaded then return false end
+    if hook.Run( "huntersglee_blockwinning", ply ) then return false end
+
+    return true
+
+end
+
+GM.canWinTheRound = canWinTheRound
+
 function GM:getRemaining( num, curtime )
     return math.abs( num - curtime )
 end
@@ -515,7 +527,7 @@ end
 function GM:returnWinnableInTable( stuff )
     local winnableStuff = {}
     for _, curr in pairs( stuff ) do
-        if curr:Health() > 0 and not curr.glee_isUndead then
+        if canWinTheRound( curr ) then
             table.insert( winnableStuff, curr )
 
         end
@@ -583,7 +595,7 @@ end
 function GM:CountWinnablePlayers()
     local aliveCount = 0
     for _, curr in pairs( player.GetAll() ) do
-        if curr:Health() > 0 and not curr.glee_isUndead and curr.glee_FullLoaded then
+        if canWinTheRound( curr ) then
             aliveCount = aliveCount + 1
 
         end

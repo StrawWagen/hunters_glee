@@ -2,9 +2,45 @@ local GAMEMODE = GAMEMODE or GM
 
 local asked = {}
 local spawned = {}
+local alreadyDone = {}
 local blockSpawning
 
 util.AddNetworkString( "glee_dothefirsttimemessage" )
+
+local function shelterPly( ply )
+    if ply:IsBot() then return end
+
+    local startingAng = ply:GetAngles()
+    startingAng.p = math.Round( startingAng.p, 0 )
+    startingAng.y = math.Round( startingAng.y, 0 )
+    startingAng.r = math.Round( startingAng.r, 0 )
+
+    local startPos = ply:GetPos()
+
+    ply:SetNoTarget( true )
+    ply:GodEnable()
+    local oldGroup = ply:GetCollisionGroup()
+    ply:SetCollisionGroup( COLLISION_GROUP_IN_VEHICLE )
+    ply:Fire( "alpha", 0 )
+
+    local timerName = "glee_tutorialshelter_" .. ply:GetCreationID()
+    timer.Create( timerName, 0.1, 0, function()
+        if not IsValid( ply ) then timer.Remove( timerName ) return end
+        local currAng = ply:GetAngles()
+        currAng.p = math.Round( currAng.p, 0 )
+        currAng.y = math.Round( currAng.y, 0 )
+        currAng.r = math.Round( currAng.r, 0 )
+
+        local currPos = ply:GetPos()
+        if currPos:Distance( startPos ) < 50 and currAng == startingAng then return end
+
+        ply:SetNoTarget( false )
+        ply:GodDisable()
+        ply:SetCollisionGroup( oldGroup )
+        ply:Fire( "alpha", 255 )
+
+    end )
+end
 
 local function needsToAsk( ply )
     --if not spawned[ply] then return end
@@ -22,19 +58,27 @@ function GAMEMODE:WaitingForAFirstTimePlayer( players )
 
     -- start spawning hunters if at least one person got through the tutorial
     if blockSpawning then
+        local sawTutorialCount = 0
+        local didntSeeTutorialCount = 0
         for _, ply in ipairs( players ) do
             local sawIt = ply:GetInfoNum( "cl_huntersglee_firsttimetutorial", 0 )
             if sawIt >= 1 and not ply:IsBot() then
-                blockSpawning = nil
-                break
+                sawTutorialCount = sawTutorialCount + 1
+
+            else
+                didntSeeTutorialCount = didntSeeTutorialCount + 1
 
             end
+        end
+        if sawTutorialCount >= didntSeeTutorialCount then -- ok, enough saw
+            blockSpawning = false
+
         end
         return blockSpawning
 
     end
 
-    -- if all players need the tutorial, block hunter spawning
+    -- if half of all players need the tutorial, block hunter spawning
     local needsToAskCount = 0
     local nonKnowers = {}
     for _, ply in ipairs( players ) do
@@ -46,7 +90,7 @@ function GAMEMODE:WaitingForAFirstTimePlayer( players )
         end
     end
 
-    if needsToAskCount >= #players then
+    if needsToAskCount >= #players / 2 then
         blockSpawning = true
 
     end
@@ -58,6 +102,11 @@ function GAMEMODE:WaitingForAFirstTimePlayer( players )
 
         end
         asked[ply] = true
+        if not alreadyDone[ply:SteamID()] then -- only give them god/notarg once per round
+            alreadyDone[ply:SteamID()] = true
+            shelterPly( ply )
+
+        end
         net.Start( "glee_dothefirsttimemessage" )
         net.Send( ply )
 

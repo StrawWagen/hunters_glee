@@ -74,6 +74,8 @@ else
     local oldMaterial = terminator_Extras.glee_OldMaterial
     function Material( name, params )
         local mat = oldMaterial( name, params )
+        if not mat then return mat end -- :(
+
         if mat:IsError() and not terminator_Extras.glee_InvalidMats[name] then
             terminator_Extras.glee_InvalidMats[name] = { name = name, mat = mat, params = params }
 

@@ -197,7 +197,10 @@ function SWEP:Place( tr )
 
     beartrap:EmitSound( "physics/metal/metal_solid_impact_hard5.wav", 65, 80 )
 
-    owner:RemoveAmmo( 1, self.Primary.Ammo )
+    if owner.RemoveAmmo then
+        owner:RemoveAmmo( 1, self.Primary.Ammo )
+
+    end
 
     if self:GetBeartrapCount() > 0 then return beartrap end
 

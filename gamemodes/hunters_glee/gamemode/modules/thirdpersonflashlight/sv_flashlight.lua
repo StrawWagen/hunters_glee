@@ -56,9 +56,11 @@ local function TPF_SetupProjectedTexture( ply )
 		local theFlashlightAngles = ply:EyeAngles()
 		if attachmentId then
 			local attachDat = ply:GetAttachment( attachmentId )
-			theFlashlightPos = attachDat.Pos
-			theFlashlightAngles = attachDat.Ang
+			if attachDat then
+				theFlashlightPos = attachDat.Pos
+				theFlashlightAngles = attachDat.Ang
 
+			end
 		end
 
 		theFlashlightPos = theFlashlightPos + theFlashlightAngles:Forward() * 15

@@ -68,16 +68,7 @@ function GM:calculateBPM( cur, players )
     for _, ply in ipairs( players ) do
         local plyHealth = ply:Health()
         if plyHealth <= 0 then
-            if istable( ply.BPMHistoric ) then
-                ply.BPMHistoric = nil
-
-            end
-            if ply.historicBPMDecrease then
-                ply.historicBPMDecrease = nil
-
-            end
             ply:SetNWInt( "termHuntPlyBPM", 0 )
-            ply:SetNWBool( "termHuntBlockScoring", false )
 
             return
 
@@ -299,7 +290,7 @@ function GM:calculateBPM( cur, players )
         idealBPM = math.Round( idealBPM )
 
         -- reward people who get high bpm with long-lasting bpm increase
-        local BPMHistoric = ply.BPMHistoric or { idealBPM }
+        local BPMHistoric = ply.glee_BPMHistoric or { idealBPM }
         table.insert( BPMHistoric, idealBPM )
         local historySize = 120
         if table.Count( BPMHistoric ) > historySize then
@@ -326,14 +317,14 @@ function GM:calculateBPM( cur, players )
         local BPM = additive / extent
         -- then bring it up to the activity spike
         BPM = math.Round( math.Clamp( BPM, activitySpikeBPM, math.huge ) )
-        ply.BPMHistoric = BPMHistoric
+        ply.glee_BPMHistoric = BPMHistoric
 
         -- when ply is off navmesh, slowly sap their life
         if doBpmDecrease and punishEscapingBool then
             local damaged
             local exceptionMovement = plysMoveType == MOVETYPE_NOCLIP or plyHealth <= 0 or ply:GetObserverMode() ~= OBS_MODE_NONE or ply:InVehicle()
             if not exceptionMovement and hasNavmesh then
-                local BPMDecrease = ply.historicBPMDecrease or 0
+                local BPMDecrease = ply.glee_historicBPMDecrease or 0
                 local added = 2
                 if onLadder then
                     added = 0.5
@@ -343,7 +334,7 @@ function GM:calculateBPM( cur, players )
                     self:GivePanic( ply, 25 )
 
                 end
-                ply.historicBPMDecrease = BPMDecrease + added
+                ply.glee_historicBPMDecrease = BPMDecrease + added
 
                 BPM = math.Clamp( BPM + -BPMDecrease, 0, math.huge )
                 BPM = math.Round( BPM )
@@ -373,13 +364,13 @@ function GM:calculateBPM( cur, players )
 
             end
         -- ramp down and then cleanup the decrease
-        elseif ply.historicBPMDecrease then
-            local BPMDecrease = ply.historicBPMDecrease
+        elseif ply.glee_historicBPMDecrease then
+            local BPMDecrease = ply.glee_historicBPMDecrease
             if BPMDecrease and BPMDecrease > 0 then
-                ply.historicBPMDecrease = ply.historicBPMDecrease + -1
+                ply.glee_historicBPMDecrease = ply.glee_historicBPMDecrease + -1
 
             elseif BPMDecrease and BPMDecrease <= 0 then
-                ply.historicBPMDecrease = nil
+                ply.glee_historicBPMDecrease = nil
 
             end
         end
@@ -395,23 +386,28 @@ function GM:calculateBPM( cur, players )
     end
 end
 
-function GM:manageServersideCountOfBeats() -- actual firing, beating of beats, do the calculations for "beats per minute", slowly and above
+-- do the heart beat timing, this follows the heavier calcs above
+-- clients also track their beat timing, so they can play the beat sound
+function GM:manageServersideCountOfBeats()
     local players = player.GetAll()
+    local cur = CurTime()
+    local canScore = GAMEMODE.canScore
+
     for _, ply in ipairs( players ) do
         local plysTbl = entMeta.GetTable( ply )
         -- scoring
         local BPM = entMeta.GetNWInt( ply, "termHuntPlyBPM" )
         -- block score, eg player is not on navmesh, or is on ladder
-        local blockingScore = entMeta.Health( ply ) <= 0 or entMeta.GetNWBool( ply, "termHuntBlockScoring" ) or entMeta.GetNWBool( ply, "termHuntBlockScoring2" ) -- wow 2 of them
+        local blockingScore = entMeta.Health( ply ) <= 0 or entMeta.GetNWBool( ply, "termHuntBlockScoring" ) or hook.Run( "huntersglee_blockscoring", ply, BPM )
         if BPM > 1 and not blockingScore then
 
             -- get when we should do the next beat, it's this way instead of a timer so that if bpm gets super fast super quick, the actual new time between beats is respected
             local beatTime = math.Clamp( 60 / BPM, 0, math.huge )
             local lastBeat = plysTbl.lastBeatTime or 0
-            local doServersideBeat = ( lastBeat + beatTime ) < CurTime()
+            local doServersideBeat = ( lastBeat + beatTime ) < cur
 
-            if doServersideBeat and GAMEMODE.canScore then
-                plysTbl.lastBeatTime = CurTime()
+            if doServersideBeat and canScore then
+                plysTbl.lastBeatTime = cur
                 local scoreGiven = 1
                 ply:GivePlayerScore( scoreGiven )
 
@@ -426,10 +422,10 @@ function GM:manageServersideCountOfBeats() -- actual firing, beating of beats, d
         if RealBPMClamped > 1 then
             local realBeatTime = math.Clamp( 60 / RealBPMClamped, 0, math.huge )
             local realLastBeat = plysTbl.lastRealBeatTime or 0
-            local doServersideRealBeat = ( realLastBeat + realBeatTime ) < CurTime()
+            local doServersideRealBeat = ( realLastBeat + realBeatTime ) < cur
 
             if doServersideRealBeat then
-                plysTbl.lastRealBeatTime = CurTime()
+                plysTbl.lastRealBeatTime = cur
                 local oldBeats = plysTbl.realHeartBeats or 0
                 plysTbl.realHeartBeats = oldBeats + 1
 
@@ -512,9 +508,10 @@ function GM:GetHeartAttackThreshold( ply )
 
 end
 
+-- HEART ATTACKS!
 hook.Add( "huntersglee_heartbeat_beat", "glee_heartattack_think", function( ply, BPM )
     local threshold = GAMEMODE:GetHeartAttackThreshold( ply )
-    if BPM > threshold then
+    if BPM > threshold then -- above thresh, add
         local added = math.abs( BPM - threshold )
         added = added / 4
         local oldScore = ply.glee_HeartAttackScore or 0
@@ -529,8 +526,11 @@ end )
 
 
 hook.Add( "PlayerDeath", "glee_resetbeatstuff", function( ply )
-    ply.BPMHistoric = nil
+    ply.glee_BPMHistoric = nil
+    ply.glee_historicBPMDecrease = nil
     ply:SetNWInt( "termHuntPlyBPM", restingBPMPermanent )
+    ply:SetNWBool( "termHuntBlockScoring", false )
+
     ply.glee_HasHeartAttackWarned = nil
     ply.glee_HeartAttackScore = nil
 
@@ -910,6 +910,7 @@ end
 
 GM.waitForSomeoneToLive = nil
 
+-- spectate what killed us
 hook.Add( "PlayerDeath", "glee_spectatedeadplayers", function( died, _, killer )
     if not IsValid( killer ) then return end
     if died == killer then return end
@@ -1074,12 +1075,12 @@ function GM:PlayerSpawn( pl, transiton )
 end
 
 -- dont spawn players in spots that people died.
-hook.Add( "PlayerDeath", "glee_dontspawnindeadspots", function( died, inflic, attacker )
+hook.Add( "PlayerDeath", "glee_dontspawnindeadspots", function( died, _, attacker )
     if died == attacker then return end
 
     local nearestNav = GAMEMODE:getNearestPosOnNav( died:GetPos(), 2000 )
 
-    if not nearestNav or not nearestNav.IsValid or not nearestNav:IsValid() then return end
+    if not IsValid( nearestNav ) then return end
     local id = nearestNav:GetID()
 
     occupiedSpawnAreas[id] = true
