@@ -46,7 +46,9 @@ if CLIENT then
     terminator_Extras.glee_CL_SetupSwep( SWEP, "termhunt_taucannon", "materials/entities/termhunt_taucannon.png" )
 
     function SWEP:CustomAmmoDisplay()
-        local ammo = self:GetOwner():GetAmmoCount( self:GetPrimaryAmmoType() )
+        local owner = self:GetOwner()
+        if not IsValid( owner ) then return end
+        local ammo = owner:GetAmmoCount( self:GetPrimaryAmmoType() )
         return {
             Draw = true,
             PrimaryClip = ammo

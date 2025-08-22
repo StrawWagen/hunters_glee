@@ -70,7 +70,7 @@ function GM:calculateBPM( cur, players )
         if plyHealth <= 0 then
             ply:SetNWInt( "termHuntPlyBPM", 0 )
 
-            return
+            continue
 
         end
 
@@ -145,7 +145,7 @@ function GM:calculateBPM( cur, players )
 
         local nextBPMCalc = ply.nextBPMCalc or 0
 
-        if nextBPMCalc > cur then return end
+        if nextBPMCalc > cur then continue end
 
         ply.nextBPMCalc = cur + math.random( 0.15, 0.25 )
 

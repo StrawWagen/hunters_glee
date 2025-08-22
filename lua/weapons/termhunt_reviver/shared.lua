@@ -100,6 +100,14 @@ function SWEP:PrimaryAttack()
     if self:Clip1() <= 0 then self:OnEmpty() return end
 
     if not self:GetOwner():IsPlayer() then return end
+
+    if ply:HasWeapon( "termhunt_divine_chosen" ) then
+        ply:ChatPrint( "Disgusting. Why would I help such a worthless being?" )
+        ply:DropWeapon( self )
+        return
+
+    end
+
     self:GetOwner():LagCompensation( true )
 
     local tr = util.TraceLine( {
@@ -124,10 +132,7 @@ function SWEP:PrimaryAttack()
         end
     end
 
-    if self:GetOwner():IsPlayer() then
-        self:GetOwner():LagCompensation( false )
-    end
-
+    self:GetOwner():LagCompensation( false )
 
     if IsValid( ent ) then
         self:StartResurrect( ent, resurrectPos )

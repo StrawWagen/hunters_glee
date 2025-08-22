@@ -45,7 +45,9 @@ if CLIENT then
     language.Add( "GLEE_BEARTRAP_ammo", "Beartrap" )
 
     function SWEP:CustomAmmoDisplay()
-        local ammo = self:GetOwner():GetAmmoCount( self:GetPrimaryAmmoType() )
+        local owner = self:GetOwner()
+        if not IsValid( owner ) then return end
+        local ammo = owner:GetAmmoCount( self:GetPrimaryAmmoType() )
         return {
             Draw = true,
             PrimaryClip = ammo
