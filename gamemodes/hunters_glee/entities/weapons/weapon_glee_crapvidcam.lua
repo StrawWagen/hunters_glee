@@ -235,11 +235,52 @@ function SWEP:DrawWorldModel()
     if not IsValid( ply ) or ply:GetActiveWeapon() ~= self then
         self:DrawModel()
         return
-
     end
-    local att = ply:GetAttachment(ply:LookupAttachment("anim_attachment_RH"))
-    local ang = att.Ang
-    self:SetPos(att.Pos + ang:Up() * 10 + ang:Right() + ang:Forward() * 2)
+
+    local pos, ang
+    local att = ply:GetAttachment( ply:LookupAttachment( "anim_attachment_RH" ) )
+    if att then
+        ang = att.Ang
+        pos = att.Pos + ang:Up() * 10 + ang:Right() + ang:Forward() * 2
+
+    else -- look out, ai slop below
+        -- bad pm, try using their right hand bone
+        local candidates = {
+            "ValveBiped.Bip01_R_Hand",
+            "ValveBiped.Bip01_R_Forearm",
+            "RightHand",
+            "r_hand",
+        }
+        for _, bname in ipairs( candidates ) do
+            local bone = ply:LookupBone( bname )
+            if bone then
+                local m = ply:GetBoneMatrix( bone )
+                if m then
+                    ang = m:GetAngles()
+                    pos = m:GetTranslation()
+                else
+                    local bp, ba = ply:GetBonePosition( bone )
+                    if bp and ba then
+                        ang = ba
+                        pos = bp
+                    end
+                end
+                if pos and ang then
+                    -- slight offset so it sits in the hand
+                    pos = pos + ang:Up() * 8 + ang:Right() * 2 + ang:Forward() * 2
+                    break
+                end
+            end
+        end
+
+        -- ultimate fallback
+        if not pos or not ang then
+            ang = ply:EyeAngles()
+            pos = ply:EyePos() + ang:Right() * 11 + ang:Forward() * 4
+        end
+    end
+
+    self:SetPos(pos)
     self:SetAngles(ang)
     self:SetupBones()
     self:DrawModel()
