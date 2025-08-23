@@ -99,21 +99,23 @@ function SWEP:PrimaryAttack()
 
     if self:Clip1() <= 0 then self:OnEmpty() return end
 
-    if not self:GetOwner():IsPlayer() then return end
+    local owner = self:GetOwner()
+    if not IsValid( owner ) then return end -- istg this will happen sometime
+    if not owner:IsPlayer() then return end
 
-    if ply:HasWeapon( "termhunt_divine_chosen" ) then
-        ply:ChatPrint( "Disgusting. Why would I help such a worthless being?" )
-        ply:DropWeapon( self )
+    if owner:HasWeapon( "termhunt_divine_chosen" ) then
+        owner:ChatPrint( "Disgusting. Why would I help such a worthless being?" )
+        owner:DropWeapon( self )
         return
 
     end
 
-    self:GetOwner():LagCompensation( true )
+    owner:LagCompensation( true )
 
     local tr = util.TraceLine( {
-        start = self:GetOwner():GetShootPos(),
-        endpos = self:GetOwner():GetShootPos() + self:GetOwner():GetAimVector() * 64,
-        filter = self:GetOwner()
+        start = owner:GetShootPos(),
+        endpos = owner:GetShootPos() + owner:GetAimVector() * 64,
+        filter = owner
     } )
 
     local ent = nil
@@ -132,7 +134,7 @@ function SWEP:PrimaryAttack()
         end
     end
 
-    self:GetOwner():LagCompensation( false )
+    owner:LagCompensation( false )
 
     if IsValid( ent ) then
         self:StartResurrect( ent, resurrectPos )
@@ -140,7 +142,7 @@ function SWEP:PrimaryAttack()
         self:SetNextPrimaryFire( CurTime() + 0.5 )
 
     else
-        self:GetOwner():EmitSound( DenySound, 75, 80 )
+        owner:EmitSound( DenySound, 75, 80 )
         self:SetNextPrimaryFire( CurTime() + 0.5 )
 
     end
