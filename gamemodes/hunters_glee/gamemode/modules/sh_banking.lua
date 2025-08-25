@@ -6,6 +6,7 @@ GM.bankInfoTable.accounts = GM.bankInfoTable.accounts or {}
 local bankFunctions = {}
 local GAMEMODE = GM
 
+-- % of player's bank account charged per period
 local glee_BankChargePerPeriod = CreateConVar( "huntersglee_bank_chargeperperiod", "-1", { FCVAR_ARCHIVE, FCVAR_REPLICATED }, "What percent of player's bank account is charged, per period. -1 is default, 10%", -1, 100 )
 local default_BankChargePerPeriod = 10
 function gleefunc_BankChargePerPeriod()
@@ -19,8 +20,9 @@ function gleefunc_BankChargePerPeriod()
     end
 end
 
+-- charge period
 local glee_BankChargePeriod = CreateConVar( "huntersglee_bank_chargeperiod", "-1", { FCVAR_ARCHIVE, FCVAR_REPLICATED }, "Period that the player's bank account is charged, in seconds. -1 for default, 86400, 1 day.", -1, 999999999999 )
-local default_BankChargePeriod = 172800
+local default_BankChargePeriod = 172800 -- 2 days
 function gleefunc_BankChargePeriod()
     local theVal = glee_BankChargePeriod:GetFloat()
     if theVal ~= -1 then
@@ -32,6 +34,7 @@ function gleefunc_BankChargePeriod()
     end
 end
 
+-- minimum funds, basically exists to clean up the file
 local glee_BankMinFunds = CreateConVar( "huntersglee_bank_minfunds", "-1", { FCVAR_ARCHIVE, FCVAR_REPLICATED }, "Minimum funds in a player's bank account, if an account ends up below this, it will be closed. -1 for default, 100", -1, 999999 )
 local default_BankMinFunds = 100
 function gleefunc_BankMinFunds()
@@ -190,6 +193,11 @@ if SERVER then
 
     hook.Add( "glee_roundstatechanged", "glee_validatebank_roundchangestates", bankFunctions.validateBank )
 
+    bankFunctions.updateOwnerName = function( account, ownerEnt )
+        local ownersName = ownerEnt:Nick()
+        account.ownersName = ownersName
+
+    end
 
     bankFunctions.setAccountsFunds = function( account, newFunds )
         if isCheats() then
@@ -236,6 +244,7 @@ if SERVER then
         local account = {}
         account.creationTime = os.time()
         account.lastCharge = account.creationTime
+        account.ownersName = ply:Nick()
         GAMEMODE.bankInfoTable.accounts[ply:SteamID()] = account
 
     end
@@ -244,6 +253,61 @@ if SERVER then
         GAMEMODE.bankInfoTable.accounts[steamID] = nil
 
     end
+
+    local nextSend = 0
+    -- send ALL the bank accounts to this player!
+    net.Receive( "glee_requestallbankaccounts", function( _, ply )
+        if nextSend > CurTime() then return end
+        nextSend = CurTime() + 1
+
+        local accounts = GAMEMODE.bankInfoTable.accounts
+
+        local count = table.Count( accounts )
+        net.Start( "glee_requestallbankaccounts" )
+        net.WriteUInt( count, 32 )
+        for ownersId, value in pairs( accounts ) do
+            net.WriteString( ownersId ) -- steamid
+            net.WriteString( value.ownersName or "Unknown" )
+            net.WriteUInt( value.funds or 0, 32 )
+
+        end
+        net.Send( ply )
+
+    end )
+end
+if CLIENT then
+    local nextAsk = 0
+    local currCallback
+    function GAMEMODE:RequestAllBankAccounts( callback )
+        if nextAsk > CurTime() then return false end
+        nextAsk = CurTime() + 1
+
+        net.Start( "glee_requestallbankaccounts" )
+        net.SendToServer()
+        currCallback = callback
+
+        return true
+
+    end
+    net.Receive( "glee_requestallbankaccounts", function()
+        if not currCallback then return end
+
+        local accounts = {}
+        local count = net.ReadUInt( 32 )
+        for _ = 1, count do
+            local steamID = net.ReadString()
+            local ownersName = net.ReadString()
+            local funds = net.ReadUInt( 32 )
+            accounts[steamID] = {
+                ownersName = ownersName,
+                funds = funds,
+
+            }
+        end
+        currCallback( accounts )
+        currCallback = nil
+
+    end )
 end
 
 bankFunctions.accountsFunds = function( account )
@@ -268,6 +332,8 @@ bankFunctions.checkBankAccount = function( ply )
         else
             has = true
             funds = bankFunctions.accountsFunds( account )
+            bankFunctions.updateOwnerName( account, ply )
+
         end
 
         ply:SetNW2Bool( "Glee_HasBankAccount", has )

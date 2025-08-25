@@ -202,6 +202,8 @@ end
 
 function SWEP:Think()
     local owner = self:GetOwner()
+    if not IsValid( owner ) then return end
+
     local chargeLevel = self:GetChargeLevel()
 
     local vel = owner:GetVelocity():Length()

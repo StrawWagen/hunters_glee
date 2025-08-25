@@ -29,6 +29,7 @@ function glee_Overcharge( target )
         if target:Health() <= 0 then timer.Remove( timerName ) return end
 
         if math.random( 0, 100 ) > 25 then return end
+        if target:IsSilentStepping() then return end
 
         target:EmitSound( "LoudSpark" )
         local hitTr = termHunt_ElectricalArcEffect( target, target:WorldSpaceCenter(), -vector_up, math.Rand( 0.5, 1 ), vector_up, 1000 )

@@ -1,6 +1,6 @@
 --announcer messages
 -- func that sends announcement string to tbl of players
--- so like check the pvs of divine conduit and give people a massive warning on their screen
+-- so like check the pvs of thunderous applause and give people a massive warning on their screen
 -- "weight" variable so grigori descending from the heavens will override a small "you got score"
 
 AddCSLuaFile()

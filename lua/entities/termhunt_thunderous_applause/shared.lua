@@ -4,9 +4,9 @@ ENT.Type = "anim"
 ENT.Base = "screamer_crate"
 
 ENT.Category    = "Other"
-ENT.PrintName   = "Divine Conduit"
+ENT.PrintName   = "Thunderous Applause"
 ENT.Author      = "StrawWagen"
-ENT.Purpose     = "Begins a divine conduit"
+ENT.Purpose     = "Applause of the highest order"
 ENT.Spawnable    = true
 ENT.AdminOnly    = game.IsDedicated()
 ENT.Category = "Hunter's Glee"
@@ -16,16 +16,16 @@ ENT.HullCheckSize = Vector( 20, 20, 10 )
 ENT.PosOffset = Vector( 0, 0, 10 )
 
 if SERVER then
-    util.AddNetworkString( "glee_nomoredivineconduit" )
+    util.AddNetworkString( "glee_nomorethunderousapplause" )
 
 end
 
 if CLIENT then
-    local nextNoMoreConduit = 0
+    local nextNoMoreApplause = 0
 
-    net.Receive( "glee_nomoredivineconduit", function()
-        if nextNoMoreConduit > CurTime() then return end
-        nextNoMoreConduit = CurTime() + 0.1
+    net.Receive( "glee_nomorethunderousapplause", function()
+        if nextNoMoreApplause > CurTime() then return end
+        nextNoMoreApplause = CurTime() + 0.1
 
         local toWipe = net.ReadEntity()
         if IsValid( toWipe ) then
@@ -164,7 +164,7 @@ function ENT:CalculateCanPlace()
     if IsHullTraceFull( checkPos, self.HullCheckSize, self ) then return false, self.noPurchaseReason_NoRoom end
     if getNearestNavFloor( checkPos ) == NULL then return false, self.noPurchaseReason_OffNavmesh end
     if not GAMEMODE:IsUnderSky( checkPos ) then return false, "Needs to be placed under the sky." end
-    if GAMEMODE:isTemporaryTrueBool( "termhunt_divine_conduit" ) then return false, "It's too soon for another conduit to form." end
+    if GAMEMODE:isTemporaryTrueBool( "termhunt_thunderous_applause" ) then return false, "Applause was just recently given. Wait until it's time again." end
     if not self:HasEnoughToPurchase() then return false, self:TooPoorString() end
     return true
 
@@ -203,7 +203,7 @@ function ENT:Place()
     end
 
     local divineIncrement = 0
-    local timerKey = "divineconduit_" .. self:GetCreationID()
+    local timerKey = "thunderousapplause_" .. self:GetCreationID()
     local strikeRad = self.radius
 
     local timerEnd = function()
@@ -246,7 +246,7 @@ function ENT:Place()
         end
     end
     huntersGlee_Announce( softwarnPlayers, 100, 15, "Something isn't right...\nYour hair is standing on end... " )
-    huntersGlee_Announce( hardwarnPlayers, 100, 15, "A Divine Conduit has been opened by " .. self.player:Nick() )
+    huntersGlee_Announce( hardwarnPlayers, 100, 15, self.player:Nick() .. " is.. Applauding! Thunderously!" )
 
     local max = 300
 
@@ -317,7 +317,7 @@ function ENT:Place()
 
     self.attackerInflictor = self.player
 
-    net.Start( "glee_nomoredivineconduit" )
+    net.Start( "glee_nomorethunderousapplause" )
         net.WriteEntity( self )
 
     net.Send( self.player )
@@ -327,12 +327,12 @@ function ENT:Place()
     self.player = nil
     self:SetOwner( NULL )
 
-    GAMEMODE:setTemporaryTrueBool( "termhunt_divine_conduit", interval )
+    GAMEMODE:setTemporaryTrueBool( "termhunt_thunderous_applause", interval )
 
 end
 
-hook.Add( "huntersglee_round_into_active", "divine_conduit_initialwait", function()
-    GAMEMODE:setTemporaryTrueBool( "termhunt_divine_conduit_initial", interval )
-    GAMEMODE:setTemporaryTrueBool( "termhunt_divine_conduit", interval )
+hook.Add( "huntersglee_round_into_active", "thunderous_applause_initialwait", function()
+    GAMEMODE:setTemporaryTrueBool( "termhunt_thunderous_applause_initial", interval )
+    GAMEMODE:setTemporaryTrueBool( "termhunt_thunderous_applause", interval )
 
 end )

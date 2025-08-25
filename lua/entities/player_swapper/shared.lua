@@ -218,10 +218,10 @@ function ENT:SwapPlayerAndTerminator( player, terminator )
     player:TeleportTo( terminatorPos )
 
     if terminator.SetPosNoTeleport then
-        local timerName = "glee_playerswapper_makesuretheygetthere_" .. tostring( terminator:GetCreationID() )
-        terminator:SetPosNoTeleport( playerPos )
+        terminator_Extras.TeleportTermTo( terminator, playerPos ) -- sets their pos correctly, AND kills their coroutine
 
         -- since bots are coroutined they could be in the middle of something that's gonna set them to an outdated pos, so we have to make sure they get there
+        local timerName = "glee_playerswapper_makesuretheygetthere_" .. tostring( terminator:GetCreationID() )
         local reps = 0
         timer.Create( timerName, 0, 40, function()
             if not IsValid( terminator ) then timer.Remove( timerName ) return end

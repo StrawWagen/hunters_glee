@@ -89,7 +89,10 @@ function SWEP:ValidPlace()
         filter = owner
     }
     local tr = util.TraceLine( traceStruct )
-    if not tr.Hit then return end
+    if not tr.Hit then return false, tr end
+
+    local hitEnt = tr.Entity
+    if IsValid( hitEnt ) and hitEnt:IsPlayer() then return false, tr end
 
     return true, tr
 

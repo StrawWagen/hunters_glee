@@ -34,12 +34,6 @@
 -- expect sweps to have a hint function - DONE
     -- pre / post hint stack funcs? - DONE
 -- give all glee sweps hints -- DONE
--- make conduit FUNNY! -- DONE
-    -- make it a PUNCHLINE
-    -- ( tighten it up )
-    -- turn zzarped plys into crispy skeletons -- done
-    -- overcharge terminator's speed? -- done
-    -- make them kill people, NOW! -- done
 
 -- chameleon gene makes you take 2x damage -done
 -- switch to generic procedural spawner -DONE
@@ -2550,15 +2544,15 @@ local function termOverchargerPurchase( purchaser, itemIdentifier )
 
 end
 
-local function conduitCanPurchase( _ )
-    if GAMEMODE:isTemporaryTrueBool( "termhunt_divine_conduit_initial" ) then return nil, "Not unlocked yet." end
-    if GAMEMODE:isTemporaryTrueBool( "termhunt_divine_conduit" ) then return nil, "It is too soon for another conduit to be opened." end
+local function applauseCanPurchase( _ )
+    if GAMEMODE:isTemporaryTrueBool( "termhunt_thunderous_applause_initial" ) then return nil, "It's too soon for the applause to begin." end
+    if GAMEMODE:isTemporaryTrueBool( "termhunt_thunderous_applause" ) then return nil, "Applause must be spaced out. Wait.." end
     return true, nil
 
 end
 
-local function conduitPurchase( purchaser, itemIdentifier )
-    setupPlacable( "termhunt_divine_conduit", purchaser, itemIdentifier )
+local function applausePurchase( purchaser, itemIdentifier )
+    setupPlacable( "termhunt_thunderous_applause", purchaser, itemIdentifier )
 
 end
 
@@ -4040,9 +4034,9 @@ local defaultItems = {
         purchaseFunc = blessingPurchase,
     },
     -- crazy purchase
-    [ "divineconduit" ] = {
-        name = "Divine Conduit",
-        desc = "Convey the will of the gods.\nUnlocks after 4 minutes, then a global 4 minute cooldown between uses.",
+    [ "thunderousapplause" ] = {
+        name = "Thunderous Applause",
+        desc = "Let the Living, hear your utmost gratitiude.\nUnlocks after 4 minutes, then a global 4 minute cooldown between uses.",
         costDecorative = "-600",
         cost = 0,
         markup = 1,
@@ -4052,8 +4046,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 20,
-        purchaseCheck = { undeadCheck, ghostCanPurchase, conduitCanPurchase },
-        purchaseFunc = conduitPurchase,
+        purchaseCheck = { undeadCheck, ghostCanPurchase, applauseCanPurchase },
+        purchaseFunc = applausePurchase,
     },
     -- explosive end to round
     [ "divinechosen" ] = {

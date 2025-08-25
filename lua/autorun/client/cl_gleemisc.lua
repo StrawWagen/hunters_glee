@@ -87,6 +87,7 @@ function terminator_Extras.easyClosePanel( pnl, callFirst )
         if not input_IsMouseDown( MOUSE_LEFT ) and not input_IsMouseDown( MOUSE_RIGHT ) then
             self:gleeOld_Think()
             justTabbedIn = nil
+            self.__startedClickingInside = nil
             return
 
         end
@@ -97,10 +98,15 @@ function terminator_Extras.easyClosePanel( pnl, callFirst )
         local myX, myY = self:GetPos()
         local myWidth, myHeight = self:GetSize()
         local mouseX, mouseY = input.GetCursorPos()
+        local startedClickingInside = self.__startedClickingInside
 
-        if mouseX < myX or mouseX > myX + myWidth then ShutDownPanel( self ) return end
-        if mouseY < myY or mouseY > myY + myHeight then ShutDownPanel( self ) return end
+        if not startedClickingInside then
+            if mouseX < myX or mouseX > myX + myWidth then ShutDownPanel( self ) return end
+            if mouseY < myY or mouseY > myY + myHeight then ShutDownPanel( self ) return end
 
+        end
+
+        self.__startedClickingInside = true
         self:gleeOld_Think()
 
     end
