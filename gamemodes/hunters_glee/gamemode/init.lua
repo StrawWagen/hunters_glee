@@ -2,8 +2,6 @@
 AddCSLuaFile( "shared.lua" )
 AddCSLuaFile( "cl_init.lua" )
 AddCSLuaFile( "modules/cl_souls.lua" )
-AddCSLuaFile( "modules/cl_banktop.lua" )
-AddCSLuaFile( "modules/cl_targetid.lua" )
 AddCSLuaFile( "modules/cl_tauntmenu.lua" )
 AddCSLuaFile( "modules/cl_scoreboard.lua" )
 AddCSLuaFile( "modules/cl_obfuscation.lua" )
@@ -15,6 +13,10 @@ AddCSLuaFile( "modules/bpm/cl_bpm.lua" )
 AddCSLuaFile( "modules/cl_spectateflashlight.lua" )
 AddCSLuaFile( "modules/thirdpersonflashlight/cl_flashlight.lua" )
 AddCSLuaFile( "modules/firsttimeplayers/cl_firsttimeplayers.lua" )
+
+AddCSLuaFile( "modules/contextmenu_widgets/cl_banktop.lua" )
+AddCSLuaFile( "modules/contextmenu_widgets/cl_tauntmenu.lua" )
+AddCSLuaFile( "modules/contextmenu_widgets/cl_settingsmenu.lua" )
 
 AddCSLuaFile( "cl_shopstandards.lua" )
 AddCSLuaFile( "cl_shoppinggui.lua" )
@@ -601,8 +603,13 @@ function GM:SetupTheLargestGroupsNStuff()
             while abs_Local( oldTime - SysTime() ) < maxTime and self.GreedyPatchCouroutine and coroutine_status( self.GreedyPatchCouroutine ) ~= "dead" do
                 patchResult, curError = coroutine_resume( self.GreedyPatchCouroutine, self )
 
-                if curError and curError ~= "done" then ErrorNoHaltWithStack( curError ) break end
+                if curError and curError ~= "done" then
+                    local stack = debug.traceback( self.GreedyPatchCouroutine )
+                    ErrorNoHalt( "GREEDY PATCH ERROR: " .. tostring( self ) .. "\n" .. curError .. "\n" .. stack .. "\n" )
+                    GAMEMODE:speakAsHuntersGlee( "!!!!!!!GREEDY PATCHER ERROR!!!!!!!! " .. curError )
+                    break
 
+                end
             end
         end
 

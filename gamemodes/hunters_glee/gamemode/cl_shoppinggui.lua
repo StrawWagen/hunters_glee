@@ -86,7 +86,7 @@ function termHuntOpenTheShop()
 
 
     local bigTextPadding = height / 180
-    local borderPadding = height / 40
+    local borderPadding = GAMEMODE.shopStandards.borderPadding * scale
 
     local whiteIdentifierLineWidth = height / GAMEMODE.shopStandards.whiteIdentifierLineWidthDiv -- the white bar
     local offsetNextToIdentifier = whiteIdentifierLineWidth * 4

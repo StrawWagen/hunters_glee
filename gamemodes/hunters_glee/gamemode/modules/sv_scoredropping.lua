@@ -32,7 +32,7 @@ end )
 local tooMuchScore = CreateConVar( "huntersglee_scoreleakquota", "2500", FCVAR_ARCHIVE, "If a player's score is above this, it will 'leak' on death" )
 
 hook.Add( "PlayerDeath", "glee_DropScoreWithTooMuch", function( victim, inflictor, attacker )
-    if victim == inflictor or victim == attacker then return end -- suicides handled above
+    if ( victim == inflictor and victim == attacker ) then return end -- suicides handled above
 
     if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
 

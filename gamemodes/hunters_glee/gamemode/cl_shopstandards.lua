@@ -190,5 +190,6 @@ GAMEMODE.shopStandards.notHoveredOverlay = Color( 0, 0, 0, 45 )
 GAMEMODE.shopStandards.pressedItemOverlay = Color( 255, 255, 255, 25 )
 GAMEMODE.shopStandards.markupTextColor = Color( 140, 140, 140, 255 )
 
+GAMEMODE.shopStandards.borderPadding = 27
 GAMEMODE.shopStandards.whiteIdentifierLineWidthDiv = 250
 GAMEMODE.shopStandards.shopCategoryHeight = 275

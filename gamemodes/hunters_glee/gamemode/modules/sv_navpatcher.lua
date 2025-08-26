@@ -130,13 +130,14 @@ function GAMEMODE:FindPotentialLinkagesBetweenNavAreaGroups( groups, groupCorner
         local tooFarAreas = {} -- only for this current group pair!
 
         for _, area1 in ipairs( group1 ) do
-            if not area1:IsValid() then continue end
             coroutine_yield()
+            if not IsValid( area1 ) then continue end
             local perfectConnectionCount = 0
 
             for _, area2 in ipairs( group2 ) do
-                if not area2:IsValid() then continue end
                 coroutine_yield()
+                if not IsValid( area1 ) then break end
+                if not IsValid( area2 ) then continue end
 
                 local area2sId = area2:GetID()
 

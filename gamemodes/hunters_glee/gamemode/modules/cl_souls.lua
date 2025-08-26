@@ -143,6 +143,8 @@ local function createSoul( ply )
     souls[ ply ] = soul
     ply.glee_soul = soul
 
+    soul.glee_IsSoulRagdoll = true
+
     soulSetup( soul )
     ply.glee_LastInsideEnt = nil
 

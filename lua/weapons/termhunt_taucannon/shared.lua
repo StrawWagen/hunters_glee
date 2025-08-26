@@ -214,10 +214,12 @@ function SWEP:Think()
         if STARTING_SPRINTING then
             self:SendWeaponAnim( ACT_VM_SPRINT_IDLE )
             self.nextSprintTime = CurTime() + 1
+            self.nextInspect = CurTime() + 1
 
         end
         local DONE_SPRINTING = owner:KeyReleased( IN_SPEED ) or ( owner:KeyDown( IN_SPEED ) and vel < crouchspeed ) or ( owner:KeyDown( IN_SPEED ) and not owner:OnGround() )
         if DONE_SPRINTING then
+            self.nextInspect = CurTime() + 0.25
             self:SendWeaponAnim( ACT_VM_IDLE )
 
         end
@@ -287,6 +289,11 @@ function SWEP:Think()
 end
 
 function SWEP:Reload()
+    local nextInspect = self.nextInspect or 0
+    if nextInspect > CurTime() then return end
+
+    self.nextInspect = CurTime() + 1
+
     self:DefaultReload( ACT_VM_RELOAD )
     local owner = self:GetOwner()
     if owner:KeyPressed( IN_RELOAD ) then
@@ -304,6 +311,7 @@ function SWEP:PrimaryAttack()
 
     self:SetNextPrimaryFire( CurTime() + 0.2 )
     self:SetNextSecondaryFire( CurTime() + 1 )
+    self.nextInspect = CurTime() + 1
 
     if not owner:IsPlayer() or owner:GetAmmoCount( self.Primary.Ammo ) > 0 then
 
@@ -461,6 +469,7 @@ end
 
 function SWEP:SecondaryAttack()
     if not IsFirstTimePredicted() then return end
+    self.nextInspect = CurTime() + 1
     local owner = self:GetOwner()
     if owner.RemoveAmmo and self:Ammo1() ~= 0 then
         local chargeLevel = self:GetChargeLevel()

@@ -21,6 +21,9 @@ end
 -- arg1, the panel to make easy to close
 -- arg2, optional function called right before the panel closes
 function terminator_Extras.easyClosePanel( pnl, callFirst )
+    if pnl.glee_EasyClosing then error( "easyClosePanel called twice on one panel!" ) return end
+    pnl.glee_EasyClosing = true
+
     pnl.keyWasDown = {}
 
     local clientsMenuKey = input.LookupBinding( "+menu" )

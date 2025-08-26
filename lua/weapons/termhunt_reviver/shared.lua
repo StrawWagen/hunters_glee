@@ -184,6 +184,8 @@ function SWEP:ResurrectPly( ply )
 
     self:TakePrimaryAmmo( 1 )
 
+    owner:SetNW2Bool( "gleereviver_resurrected", true )
+
     ply.unstuckOrigin = self.toResurrectPos
 
     timer.Simple( 0.1, function()

@@ -31,6 +31,6 @@ end
 
 terminator_Extras = terminator_Extras or {}
 
--- dead on match for
-terminator_Extras.defaultHudPaddingFromEdge = glee_sizeScaled( nil, 26 )
+-- USED FOR ADDING TO DEFAULT HUD, eg, beating heart element. NOT GUIS
+terminator_Extras.defaultHudPaddingFromEdge = glee_sizeScaled( nil, 26 ) -- how far to start the faded background
 terminator_Extras.defaultHudTextPaddingFromEdge = glee_sizeScaled( nil, 54 ) -- dead on match for the "health" text

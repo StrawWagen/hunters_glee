@@ -2284,11 +2284,11 @@ end
 local function fragPurchase( purchaser )
     local frag = purchaser:GetWeapon( "weapon_frag" )
     if IsValid( frag ) then
-        purchaser:GiveAmmo( 8,    "Grenade",         false )
+        purchaser:GiveAmmo( 10,    "Grenade",         false )
 
     else
-        purchaser:GiveAmmo( 7,    "Grenade",         false )
         purchaser:Give( "weapon_frag" )
+        purchaser:GiveAmmo( 9,    "Grenade",         false )
 
     end
 
@@ -2376,7 +2376,7 @@ end
 local function nailerPurchase( purchaser )
     local nailer = purchaser:GetWeapon( "termhunt_weapon_hammer" )
     if IsValid( nailer ) then
-        purchaser:GiveAmmo( 60, "GLEE_NAILS", true )
+        purchaser:GiveAmmo( nailer.Primary.DefaultClip * 2, "GLEE_NAILS", true )
 
     else
         purchaser:Give( "termhunt_weapon_hammer" )
@@ -3315,22 +3315,6 @@ local defaultItems = {
         purchaseCheck = unUndeadCheck,
         purchaseFunc = nailerPurchase,
     },
-    [ "frag" ] = {
-        name = "Grenades",
-        desc = "Grenade \nSimple explosives, useful for hordes!",
-        cost = 75,
-        markup = 2,
-        markupPerPurchase = 0.25,
-        cooldown = 0.5,
-        category = "Items",
-        purchaseTimes = {
-            GM.ROUND_INACTIVE,
-            GM.ROUND_ACTIVE,
-        },
-        weight = -90,
-        purchaseCheck = unUndeadCheck,
-        purchaseFunc = fragPurchase,
-    },
     -- terminator doesnt like taking damage from this, will save your ass
     [ "ar2" ] = {
         name = "Ar2",
@@ -3380,6 +3364,22 @@ local defaultItems = {
         weight = -140,
         purchaseCheck = unUndeadCheck,
         purchaseFunc = rpgPurchase,
+    },
+    [ "frag" ] = {
+        name = "10 Grenades",
+        desc = "10 Grenades.\nSimple explosives, useful for hordes!",
+        cost = 50,
+        markup = 1.5,
+        markupPerPurchase = 0.25,
+        cooldown = 0.5,
+        category = "Items",
+        purchaseTimes = {
+            GM.ROUND_INACTIVE,
+            GM.ROUND_ACTIVE,
+        },
+        weight = -90,
+        purchaseCheck = unUndeadCheck,
+        purchaseFunc = fragPurchase,
     },
     [ "gravitygun" ] = {
         name = "Gravity Gun",

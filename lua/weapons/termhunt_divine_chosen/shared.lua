@@ -701,9 +701,14 @@ function SWEP:DoEpicness( amount )
         local owner = self:GetOwner()
 
         if not IsValid( owner ) then return end
-        local filter = RecipientFilter()
-        filter:AddAllPlayers()
-        filter:RemovePlayer( owner )
+
+        filter = RecipientFilter()
+        for _, ply in player.Iterator() do
+            if ply:GetObserverTarget() == owner and ply:GetObserverMode() == OBS_MODE_IN_EYE then continue end
+            filter:AddPlayer( ply )
+
+        end
+        filter:RemovePlayers( toRemove )
 
         local scale = 0.1 + amount / 8
 

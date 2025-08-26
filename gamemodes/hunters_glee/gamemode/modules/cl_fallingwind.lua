@@ -220,7 +220,11 @@ hook.Add( "Think", "glee_Think_fallingwind", function()
 
     end
 
-    glee_FallingWind.Sound:ChangeVolume( glee_FallingWind.Volume:GetFloat() * math.Clamp( velocityProgress, 0, 1 ) )
+    local newVolume = glee_FallingWind.Volume:GetFloat() * math.Clamp( velocityProgress, 0, 1 )
+
+    if glee_FallingWind.Sound:GetVolume() == 0 and newVolume == 0 then return end
+
+    glee_FallingWind.Sound:ChangeVolume( newVolume )
     glee_FallingWind.Sound:ChangePitch( Lerp( velocityProgress, 40, 140 ) + math.sin( CurTime() ) * 10 )
 
 end )

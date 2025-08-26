@@ -2,9 +2,7 @@ include( "shared.lua" )
 include( "cl_shopstandards.lua" ) -- has to load almost first
 include( "cl_shoppinggui.lua" )
 include( "modules/cl_souls.lua" )
-include( "modules/cl_banktop.lua" )
 include( "modules/cl_targetid.lua" )
-include( "modules/cl_tauntmenu.lua" )
 include( "modules/cl_scoreboard.lua" )
 include( "modules/cl_obfuscation.lua" )
 include( "modules/cl_fallingwind.lua" )
@@ -15,8 +13,12 @@ include( "modules/signalstrength/cl_signalstrength.lua" )
 include( "modules/thirdpersonflashlight/cl_flashlight.lua" )
 include( "modules/firsttimeplayers/cl_firsttimeplayers.lua" )
 
-include( "modules/battery/cl_battery.lua" )
+include( "modules/contextmenu_widgets/cl_banktop.lua" )
+include( "modules/contextmenu_widgets/cl_tauntmenu.lua" )
+include( "modules/contextmenu_widgets/cl_settingsmenu.lua" )
+
 include( "modules/bpm/cl_bpm.lua" )
+include( "modules/battery/cl_battery.lua" )
 
 local entMeta = FindMetaTable( "Entity" )
 
@@ -26,7 +28,10 @@ local GAMEMODE = GM
 local killIconColor = Color( 255, 80, 0, 255 )
 killicon.Add( "glee_skullpickup", "vgui/hud/glee_skullpickup", killIconColor )
 
+local heartbeatVol = CreateClientConVar( "huntersglee_cl_heartbeat_volume", 1, true, false, "Heartbeat sound volume.", 0, 1 )
 local doHud = CreateClientConVar( "huntersglee_cl_showhud", 1, true, false, "Show the hud? Beats, score, round state...", 0, 1 )
+local baseDoHud = GetConVar( "cl_drawhud" )
+
 local paddingFromEdge = terminator_Extras.defaultHudTextPaddingFromEdge
 local scoreDisplayPadding = glee_sizeScaled( nil, 60 )
 local scoreMaxShakeSize = glee_sizeScaled( nil, 2 )
@@ -306,6 +311,9 @@ local function beatThink( ply, cur )
     local beatTime = math.Clamp( 60 / BPM, 0, 2 )
     local pitch = BPM
     local volume = ( BPM / 200 ) + -0.1
+    -- Apply user volume scaling (0..1)
+    local volScale = math.Clamp( heartbeatVol:GetFloat(), 0, 1 )
+    volume = math.Clamp( volume * volScale, 0, 1 )
     nextBeat = cur + beatTime
 
     if ply:Health() > 0 then
@@ -709,8 +717,10 @@ local function genericHints()
 
     end
 
+    local wepOwnedByMe = IsValid( wep ) and wep:GetOwner() == me
+
     local isWepHintPreStack, wepHintPreStack
-    if wep and wep.HintPreStack then
+    if wep and wep.HintPreStack and wepOwnedByMe then
         isWepHintPreStack, wepHintPreStack = wep:HintPreStack()
 
     end
@@ -796,7 +806,7 @@ local function genericHints()
         end
     end
     local isWepHintPostStack, wepHintPostStack
-    if wep and wep.HintPostStack then
+    if wep and wep.HintPostStack and wepOwnedByMe then
         isWepHintPostStack, wepHintPostStack = wep:HintPostStack()
 
     end
@@ -936,6 +946,7 @@ function HUDPaint()
 
         end
     else
+        if not baseDoHud:GetBool() then return end
         paintRoundInfo( ply, cur )
         paintMyTotalScore( ply, cur )
         paintMyTotalSkulls( ply, cur )
