@@ -2,7 +2,7 @@
 AddCSLuaFile( "shared.lua" )
 AddCSLuaFile( "cl_init.lua" )
 AddCSLuaFile( "modules/cl_souls.lua" )
-AddCSLuaFile( "modules/cl_tauntmenu.lua" )
+AddCSLuaFile( "modules/cl_targetid.lua" )
 AddCSLuaFile( "modules/cl_scoreboard.lua" )
 AddCSLuaFile( "modules/cl_obfuscation.lua" )
 AddCSLuaFile( "modules/cl_fallingwind.lua" )
