@@ -708,7 +708,6 @@ function SWEP:DoEpicness( amount )
             filter:AddPlayer( ply )
 
         end
-        filter:RemovePlayers( toRemove )
 
         local scale = 0.1 + amount / 8
 
