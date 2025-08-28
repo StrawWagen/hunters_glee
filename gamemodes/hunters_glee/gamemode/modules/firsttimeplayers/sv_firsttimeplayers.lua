@@ -50,6 +50,7 @@ local function shelterPly( ply )
         ply:SetCollisionGroup( oldGroup )
         ply:Fire( "alpha", 255 )
 
+        timer.Remove( timerName )
         gleetings( ply )
 
     end )
