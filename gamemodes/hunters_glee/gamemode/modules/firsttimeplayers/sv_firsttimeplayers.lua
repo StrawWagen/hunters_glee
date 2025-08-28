@@ -6,6 +6,17 @@ local alreadyDone = {}
 local blockSpawning
 
 util.AddNetworkString( "glee_dothefirsttimemessage" )
+util.AddNetworkString( "glee_askforgleetings" )
+
+local function gleetings( ply )
+    if not game.IsDedicated() then return end
+    local filterNotPly = RecipientFilter()
+    filterNotPly:AddAllPlayers()
+    filterNotPly:RemovePlayer( ply )
+    net.Start( "glee_askforgleetings" )
+        net.WriteEntity( ply )
+    net.Send( filterNotPly )
+end
 
 local function shelterPly( ply )
     if ply:IsBot() then return end
@@ -39,14 +50,33 @@ local function shelterPly( ply )
         ply:SetCollisionGroup( oldGroup )
         ply:Fire( "alpha", 255 )
 
+        gleetings( ply )
+
     end )
+end
+
+local function tutorialize( ply )
+    print( "GLEE: Tutorializing ", ply )
+    if ply:Glee_FlashlightIsOn() then
+        ply:Glee_Flashlight( false )
+
+    end
+    asked[ply] = true
+    if not alreadyDone[ply:SteamID()] then -- only give them god/notarg once per round
+        alreadyDone[ply:SteamID()] = true
+        shelterPly( ply )
+
+    end
+    net.Start( "glee_dothefirsttimemessage" )
+    net.Send( ply )
+
 end
 
 local function needsToAsk( ply )
     --if not spawned[ply] then return end
     if asked[ply] then return end
 
-    if ply:IsBot() then return true end
+    if ply:IsBot() then return end
 
     local sawIt = ply:GetInfoNum( "cl_huntersglee_firsttimetutorial", 0 )
     if sawIt == 0 then return true end
@@ -96,19 +126,7 @@ function GAMEMODE:WaitingForAFirstTimePlayer( players )
     end
 
     for _, ply in ipairs( nonKnowers ) do
-        print( "GLEE: Tutorializing ", ply )
-        if ply:Glee_FlashlightIsOn() then
-            ply:Glee_Flashlight( false )
-
-        end
-        asked[ply] = true
-        if not alreadyDone[ply:SteamID()] then -- only give them god/notarg once per round
-            alreadyDone[ply:SteamID()] = true
-            shelterPly( ply )
-
-        end
-        net.Start( "glee_dothefirsttimemessage" )
-        net.Send( ply )
+        tutorialize( ply )
 
     end
 end

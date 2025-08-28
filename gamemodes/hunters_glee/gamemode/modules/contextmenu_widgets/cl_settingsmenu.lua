@@ -64,6 +64,12 @@ local settingsCategories = {
                 prettyName = "Heartbeat volume",
                 desc = "Turn down the beat.",
             },
+            {
+                cvar = "huntersglee_cl_gleetingsask",
+                type = "check",
+                prettyName = "Gleetings message?",
+                desc = "Get a chat print when someone who's never played glee joins?",
+            },
         }
     },
     {

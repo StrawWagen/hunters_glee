@@ -139,7 +139,7 @@ function GM:getDebugShopItemStructureTable()
             name =              "Printed name that players see",
             desc =              "Description. Accepts a function or string.",
             cost =              "Cost, negative to give player score when purchasing, Accepts a function.",
-            can_goindebt =      "Optional. Can this item be bought when the player has no score? Can force players to buy innate debuffs, etc.",
+            canGoInDebt =      "Optional. Can this item be bought when the player has no score? Can force players to buy innate debuffs, etc.",
             fakeCost =          "Optional. Whether to skip applying the cost within the purchasing system. Good if you want a shop item to more dynamically apply costs, but still show a cost.",
             simpleCostDisplay = "Optional. Client. Skip the coloring + formatting of an item's cost in the shop.",
             markup =            "Optional. Price multipler to be applied when bought during the hunt, motivates people buy when the round's setting up.",
@@ -530,7 +530,7 @@ function GM:canPurchase( ply, toPurchase )
 
     local score = ply:GetScore()
     local cost = GAMEMODE:shopItemCost( toPurchase, ply )
-    local canGoInDebt = dat.can_goindebt
+    local canGoInDebt = dat.canGoInDebt
 
     -- account for negative cost
     local costsTooMuch = score < cost and not canGoInDebt

@@ -14,7 +14,8 @@ if SERVER then
                 if ply.glee_drowning then
                     if ply.glee_drowning < CurTime() then
                         local dmginfo = DamageInfo()
-                        ply.glee_drowning_damagecount = ply.glee_drowning_damagecount + 1
+                        local count = ply.glee_drowning_damagecount or 0
+                        ply.glee_drowning_damagecount = count + 1
                         local drownDamage = ( ply:GetMaxHealth() / 25 ) + ply.glee_drowning_damagecount * 2
                         dmginfo:SetDamage( drownDamage )
                         dmginfo:SetDamageType( DMG_DROWN )

@@ -58,6 +58,20 @@ function plyMeta:CacheNavArea()
     end
 end
 
+plyMeta.glee_OldDoAnimEvent = plyMeta.glee_OldDoAnimEvent or plyMeta.DoAnimationEvent
+
+function plyMeta:DoAnimationEvent( ... )
+    local blockFor = self.glee_BlockAnimEventsFor
+    if blockFor and blockFor > CurTime() then return end
+    if hook.Run( "glee_blockanimevent", self, ... ) == true then return end
+    plyMeta.glee_OldDoAnimEvent( self, ... )
+
+end
+
+function plyMeta:BlockAnimEventsFor( duration )
+    self.glee_BlockAnimEventsFor = CurTime() + duration
+
+end
 
 -- manage the BPM of ppl HERE
 
@@ -436,6 +450,17 @@ function GM:manageServersideCountOfBeats()
     end
 end
 
+function GM:EmulateHistoricHighBPM( ply )
+    if not IsValid( ply ) then return end
+    local target = bpmStartScreamingLikeCrazy
+    local historicBPM = {}
+    for _ = 1, 5 do
+        table.insert( historicBPM, target )
+
+    end
+    ply:SetNWInt( "termHuntPlyBPM", target )
+
+end
 
 -- used by hunts tally
 hook.Add( "huntersglee_givescore", "huntersglee_storealivescoring", function( scorer, addedscore )
@@ -448,6 +473,8 @@ hook.Add( "huntersglee_givescore", "huntersglee_storealivescoring", function( sc
     GAMEMODE.roundScore[ scorer:GetCreationID() ] = oldPlyScore + addedscore
 
 end )
+
+
 function GM:DoHeartAttackThink( ply )
     if not IsValid( ply ) then return end
     local nextThink = ply.glee_NextHeartAttackThink or 0
@@ -648,6 +675,9 @@ function GM:StopSpectatingThing( ply )
         ply:SetPos( target:GetShootPos() )
 
     end
+
+    local newAng = ply:GetAngles()
+    ply:SetAngles( Angle( newAng.p, newAng.y, 0 ) )
 
     net.Start( "glee_stoppedspectating" )
     net.Send( ply )
@@ -866,11 +896,6 @@ function GM:SpectateOverrides( ply, mode, deadPlayers )
 
     local isPlacing = IsValid( placing )
 
-    if GAMEMODE.canRespawn == true then
-        GAMEMODE:ensureNotSpectating( ply )
-        return
-
-    end
     if isPlacing and mode ~= OBS_MODE_ROAMING then -- stop following something, they're placing stuff!
         self:StopSpectatingThing( ply )
 
@@ -925,12 +950,12 @@ end )
 
 function GM:PlayerDeathThink( ply )
     local hasHp = ply:Health() > 0
-    if GAMEMODE.canRespawn == false and not hasHp then
+    if not GAMEMODE.canRespawn and not hasHp then
         if ply.termHuntTeam ~= GAMEMODE.TEAM_SPECTATE then
             GAMEMODE:spectatifyPlayer( ply )
 
         end
-    elseif GAMEMODE.canRespawn == true or ply.overrideSpawnAction or hasHp then
+    elseif GAMEMODE.canRespawn or ply.overrideSpawnAction or hasHp then
         local lastForced = ply.nextForcedRespawn or 0
 
         if lastForced < CurTime() then
@@ -1039,6 +1064,7 @@ function GM:PlayerSpawn( pl, transiton )
             if not IsValid( anotherAlivePlayer ) then return end
             local dirToMainPlayer = terminator_Extras.dirToPos( pl:GetShootPos(), anotherAlivePlayer:GetShootPos() )
             local ang = dirToMainPlayer:Angle()
+            ang.r = 0
             pl:SetEyeAngles( ang )
 
         end )
@@ -1207,32 +1233,5 @@ hook.Add( "PlayerDeath", "glee_storehomicides", function( died, _, attacker )
     homicidersCides[ died:SteamID() ] = true
 
     GAMEMODE.roundExtraData.homicides[ attackasId ] = homicidersCides
-
-end )
-
-
--- maps that spawn players high up....
-local hasGrace = {}
-hook.Add( "PlayerSpawn", "glee_firstfallgrace", function( ply )
-    hasGrace[ply] = true
-
-end )
-
-hook.Add( "OnPlayerHitGround", "glee_firstfallgrace", function( ply )
-    if not hasGrace[ply] then return end
-    timer.Simple( 0, function()
-        hasGrace[ply] = nil
-
-    end )
-end )
-
-hook.Add( "EntityTakeDamage", "glee_firstfallgrace", function( victim, dmg )
-    if not dmg:IsFallDamage() then return end
-    if not hasGrace[victim] then return end
-
-    local maxDamage = victim:Health() + -1
-    if dmg:GetDamage() < maxDamage then return end
-    dmg:SetDamage( maxDamage )
-    GAMEMODE:GivePanic( victim, maxDamage )
 
 end )

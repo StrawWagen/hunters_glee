@@ -2556,8 +2556,9 @@ local function applausePurchase( purchaser, itemIdentifier )
 
 end
 
+
 local function divineInterventionCost( purchaser )
-    local cost = 300
+    local cost = 400
     local chosenHasArrived = GetGlobalBool( "chosenhasarrived", false )
     if chosenHasArrived then
         local isChosen = purchaser:GetNW2Bool( "isdivinechosen", false )
@@ -2573,7 +2574,8 @@ local function divineInterventionCost( purchaser )
 
 end
 
-local minTimeBetweenResurrections = 30
+local minTimeBetweenResurrections = 20
+local dmgResistAfterRez = 8
 
 local function divineInterventionCooldown( purchaser )
     local isChosen = purchaser:GetNW2Bool( "isdivinechosen", false )
@@ -2586,7 +2588,8 @@ local function divineInterventionCooldown( purchaser )
     end
 end
 
-local function divineInterventionPos( purchaser )
+local function divineInterventionPos( purchaser, spawnUnsafe, radAdd )
+    radAdd = radAdd or 0
     local plys = GAMEMODE:returnWinnableInTable( player.GetAll() )
 
     if #plys <= 0 then
@@ -2599,16 +2602,19 @@ local function divineInterventionPos( purchaser )
     local chosenResurrectAnchor
     for _ = 1, #plys do
         chosenResurrectAnchor = table.remove( plys, math.random( 1, #plys ) )
-        -- dont spawn them next to someone who they killed or they will kill.
-        local isChosen = chosenResurrectAnchor:GetNW2Bool( "isdivinechosen", false ) == true
-        if isChosen or GAMEMODE:HasHomicided( purchaser, chosenResurrectAnchor ) or GAMEMODE:HasHomicided( chosenResurrectAnchor, purchaser ) then
-            continue
 
+        if not spawnUnsafe then
+            -- dont spawn them next to someone who they killed or they will kill.
+            local isChosen = chosenResurrectAnchor:GetNW2Bool( "isdivinechosen", false ) == true
+            if isChosen or GAMEMODE:HasHomicided( purchaser, chosenResurrectAnchor ) or GAMEMODE:HasHomicided( chosenResurrectAnchor, purchaser ) then
+                continue
+
+            end
         end
 
         for count = 1, 12 do
             -- search nearby chosen player in increasing radius
-            randomValidPos = GAMEMODE:GetNearbyWalkableArea( chosenResurrectAnchor, chosenResurrectAnchor:GetPos(), count )
+            randomValidPos = GAMEMODE:GetNearbyWalkableArea( chosenResurrectAnchor, chosenResurrectAnchor:GetPos(), count + radAdd )
 
             if randomValidPos then break end
 
@@ -2676,9 +2682,164 @@ local function divineIntervention( purchaser )
 
         termHunt_ElectricalArcEffect( purchaser, interventionPos, vector_up, 4 )
 
+        local stopTime = CurTime() + dmgResistAfterRez
+        local hookName = "glee_divineintervention_damage_" .. purchaser:GetCreationID()
+        hook.Add( "EntityTakeDamage", hookName, function( target, dmgInfo )
+            if target ~= purchaser then hook.Remove( hookName ) return end
+            if stopTime < CurTime() then hook.Remove( hookName ) return end
+
+            GAMEMODE:GivePanic( purchaser, dmgInfo:GetDamage() )
+            dmgInfo:ScaleDamage( 0.15 )
+
+        end )
+
+        local healTimerName = "glee_divineintervention_heal_" .. purchaser:GetCreationID()
+        local healAmount = 50
+        timer.Create( healTimerName, 1, 0, function()
+            if not IsValid( purchaser ) then timer.Remove( healTimerName ) return end
+            if purchaser:Health() <= 0 then timer.Remove( healTimerName ) return end
+            if healAmount <= 0 then timer.Remove( healTimerName ) return end
+
+            if math.random( 0, 100 ) > healAmount then return end
+
+            healAmount = healAmount * 0.75
+            local newHealth = math.min( purchaser:GetMaxHealth(), purchaser:Health() + healAmount )
+
+            purchaser:SetHealth( newHealth )
+
+        end )
     end )
 
     GAMEMODE:CloseShopOnPly( purchaser )
+
+end
+
+
+local function infernalInterventionCanPurchase()
+    local chosenHasArrived = GetGlobalBool( "chosenhasarrived", false )
+    if chosenHasArrived then
+        return false, "Something has weakened the infernal powers..."
+
+    end
+    return true, ""
+
+end
+
+local shriveledScale = Vector( 0.5, 0.5, 0.5 )
+local normalScale = Vector( 1, 1, 1 )
+
+if CLIENT then
+    hook.Add( "CreateClientsideRagdoll", "glee_ragdoll_scale", function( died, ragdoll )
+        if not IsValid( died ) then return end
+        if died:GetNW2Int( "glee_DevilDealDeathEnd", 0 ) < CurTime() then return end
+
+        local bc = ragdoll:GetBoneCount() or 0
+        for i = 0, bc - 1 do
+            ragdoll:ManipulateBoneScale( i, shriveledScale * math.Rand( 0.25, 2 ) )
+
+        end
+    end )
+end
+
+local function breakTheDeal( ply )
+    if not ply:GetNW2Bool( "glee_DidADealWithTheDevil", false ) then return end
+
+    ply:SetNW2Int( "glee_DevilDealDeathEnd", CurTime() + 2 )
+    timer.Simple( 0, function()
+        if not IsValid( ply ) then return end
+        ply:SetNW2Bool( "glee_DidADealWithTheDevil", false )
+
+        local bc = ply:GetBoneCount() or 0
+        for i = 0, bc - 1 do
+            ply:ManipulateBoneScale( i, normalScale )
+
+        end
+    end )
+end
+
+hook.Add( "PlayerDeath", "glee_reset_shrivel_on_death", function( victim )
+    if not victim:GetNW2Bool( "glee_DidADealWithTheDevil", false ) then return end
+    breakTheDeal( victim )
+
+end )
+
+local function infernalIntervention( purchaser )
+    if not SERVER then return end
+    if not purchaser.Resurrect then return end
+
+    timer.Simple( 1, function()
+        if not purchaser then return end
+        if purchaser:Health() > 0 then return end
+
+        -- intervention pos, but further from a player, and they can be unsafe.
+        local interventionPos = divineInterventionPos( purchaser, true, 10 )
+
+        purchaser:SetNW2Bool( "glee_DidADealWithTheDevil", true )
+
+        purchaser.unstuckOrigin = interventionPos
+        purchaser:Resurrect()
+
+        -- shrivel all bones
+        local bc = purchaser:GetBoneCount() or 0
+        for i = 0, bc - 1 do
+            purchaser:ManipulateBoneScale( i, shriveledScale * math.Rand( 0.5, 1.75 ) )
+
+        end
+
+        GAMEMODE:GivePanic( purchaser, 100 )
+
+        purchaser:SetHealth( 5 )
+        timer.Simple( 0, function() -- juggernaut, etc
+            if not IsValid( purchaser ) then return end
+            if not purchaser:Alive() then return end -- this would be unlucky!
+            purchaser:SetHealth( 5 )
+
+            GAMEMODE:GivePanic( purchaser, 50 )
+            GAMEMODE:EmulateHistoricHighBPM( purchaser )
+
+            purchaser:ConCommand( "act agree" ) -- why is it so hard to play anims on players, gmod :(
+
+            timer.Simple( 0, function()
+                if not IsValid( purchaser ) then return end
+                if not purchaser:Alive() then return end
+                purchaser:DoAnimationEvent( ACT_HL2MP_ZOMBIE_SLUMP_RISE )
+                purchaser:BlockAnimEventsFor( 3 )
+
+            end )
+        end )
+
+        local timerName = "glee_devilbleed_" .. purchaser:GetCreationID()
+        local strength = 100
+        timer.Create( timerName, 0.05, 200, function()
+            if not IsValid( purchaser ) then return end
+            if not purchaser:Alive() then return end
+
+            if math.random( 0, 100 ) > strength then return end
+            strength = strength * 0.9
+
+            GAMEMODE:Bleed( purchaser, strength )
+
+        end )
+
+        purchaser:EmitSound( "ambient/levels/labs/electric_explosion5.wav", 75, math.random( 70, 80 ) )
+        purchaser:EmitSound( "npc/antlion/digdown1.wav", 75, math.random( 150, 160 ) )
+
+        local goAwayTimer = "glee_divineintervention_goaway_" .. purchaser:GetCreationID()
+        timer.Create( goAwayTimer, 5, 0, function()
+            if not IsValid( purchaser ) then timer.Remove( goAwayTimer ) return end
+            if not purchaser:GetNW2Bool( "glee_DidADealWithTheDevil", false ) then timer.Remove( goAwayTimer ) return end
+
+            if purchaser:Health() <= 0 then timer.Remove( goAwayTimer ) return end
+            if purchaser:Health() < purchaser:GetMaxHealth() then return end
+
+            breakTheDeal( purchaser )
+            timer.Remove( goAwayTimer )
+
+        end )
+    end )
+
+    GAMEMODE:CloseShopOnPly( purchaser )
+    GAMEMODE:PutInnateInProperCleanup( nil, breakTheDeal, purchaser )
 
 end
 
@@ -3958,18 +4119,35 @@ local defaultItems = {
     -- lets dead people take the initiative
     [ "resurrection" ] = {
         name = "Divine Intervention",
-        desc = "Resurrect yourself.\nYou will revive next to another living player.\nEven if they're about to die...",
+        desc = "Resurrect yourself.\nYou will revive next to another living player and have " .. dmgResistAfterRez .. "s of damage resistance.",
         cost = divineInterventionCost,
         markup = 1,
-        markupPerPurchase = 0.5,
+        markupPerPurchase = 0.25,
         cooldown = divineInterventionCooldown,
         category = "Gifts",
         purchaseTimes = {
             GM.ROUND_ACTIVE,
         },
-        weight = -200,
+        weight = -201,
         purchaseCheck = { undeadCheck, divineInterventionDeathCooldown },
         purchaseFunc = divineIntervention,
+    },
+    -- for people who just want to BE ALIVE!
+    [ "resurrectioncrappy" ] = {
+        name = "Infernal Intervention",
+        desc = "Make a deal with the devil.\nYou will come back as a shriveled, weak, husk.",
+        cost = 75,
+        canGoInDebt = true,
+        markup = 1,
+        markupPerPurchase = 1,
+        cooldown = 10,
+        category = "Gifts",
+        purchaseTimes = {
+            GM.ROUND_ACTIVE,
+        },
+        weight = -200,
+        purchaseCheck = { undeadCheck, infernalInterventionCanPurchase },
+        purchaseFunc = infernalIntervention,
     },
     -- fun
     [ "termovercharger" ] = {

@@ -59,6 +59,8 @@ include( "modules/sv_mapvote.lua" )
 include( "modules/sv_skullmanager.lua" )
 include( "modules/sv_hunterspawner.lua" )
 include( "modules/sv_scoredropping.lua" )
+include( "modules/sv_rejoinpersist.lua" )
+include( "modules/sv_firstfallgrace.lua" )
 include( "modules/sv_seeding_rewarder.lua" )
 include( "modules/spawnset/sv_spawnsetvote.lua" )
 include( "modules/spawnset/sv_spawnsetsounds.lua" )
@@ -299,7 +301,7 @@ function GM:Think()
 
         end
     end
-    if currState == self.ROUND_LIMBO then --look at what happened during the round
+    if currState == self.ROUND_LIMBO then -- look at what happened during the round
         if self.limboEnd < cur then
             hook.Run( "huntersglee_round_leave_limbo" )
             self:beginSetup()
@@ -916,7 +918,7 @@ function GM:setupFinish()
         local var = GetConVar( "sv_cheats" )
         local time = self.roundStartAfterNavCheck
         if var:GetBool() == true then
-            time = time / 4
+            time = time / 8
 
         end
 

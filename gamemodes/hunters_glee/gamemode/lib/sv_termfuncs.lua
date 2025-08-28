@@ -657,22 +657,24 @@ function GM:speakAsHuntersGlee( msg )
 end
 
 function GM:Bleed( ply, extent )
-    local boneCount = math.Clamp( ply:GetBoneCount(), 0, extent )
-    local operationCount = boneCount * 0.5
+    local boneCount = ply:GetBoneCount()
+    local operationCount = math.min( extent, boneCount ) * 0.5
+
+    local clr = ply:GetBloodColor()
 
     for _ = 0, operationCount do
         local randBoneIndex = math.random( 1, boneCount )
         local bonePos = ply:GetBonePosition( randBoneIndex )
         if not bonePos then continue end
-        local edata = EffectData()
 
-        edata:SetOrigin( bonePos )
-        edata:SetNormal( VectorRand() )
-        edata:SetEntity( ply )
+        local edata = EffectData()
+            edata:SetOrigin( bonePos )
+            edata:SetColor( clr )
+            edata:SetNormal( VectorRand() )
+            edata:SetEntity( ply )
         util.Effect( "BloodImpact", edata )
 
     end
-
 end
 
 function GM:PlaySoundOnEveryPlayer( path, pitch, vol, dsp )
