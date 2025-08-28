@@ -2558,7 +2558,7 @@ end
 
 
 local function divineInterventionCost( purchaser )
-    local cost = 400
+    local cost = 350
     local chosenHasArrived = GetGlobalBool( "chosenhasarrived", false )
     if chosenHasArrived then
         local isChosen = purchaser:GetNW2Bool( "isdivinechosen", false )
@@ -2745,23 +2745,66 @@ local function breakTheDeal( ply )
     if not ply:GetNW2Bool( "glee_DidADealWithTheDevil", false ) then return end
 
     ply:SetNW2Int( "glee_DevilDealDeathEnd", CurTime() + 2 )
-    timer.Simple( 0, function()
-        if not IsValid( ply ) then return end
-        ply:SetNW2Bool( "glee_DidADealWithTheDevil", false )
+    ply:SetNW2Bool( "glee_DidADealWithTheDevil", false )
 
-        local bc = ply:GetBoneCount() or 0
-        for i = 0, bc - 1 do
-            ply:ManipulateBoneScale( i, normalScale )
+    ply:doSpeedModifier( "infernalintervention", nil )
 
-        end
-    end )
+    plysAng = ply:GetAngles()
+    ply:SetAngles( Angle( plysAng.p, plysAng.y, 0 ) ) -- RAAAGH ROLL
+
+    local bc = ply:GetBoneCount() or 0
+    for i = 0, bc - 1 do
+        ply:ManipulateBoneScale( i, normalScale )
+
+    end
 end
+
+local crumpleForce = Vector( 0, 0, -150000 )
+
+hook.Add( "glee_shover_shove", "glee_infernalinstantdeath", function( shoved )
+    if not shoved:GetNW2Bool( "glee_DidADealWithTheDevil", false ) then return end
+    if shoved:Health() >= 25 then return end -- they're not weak enough
+
+    local dmgInfo = DamageInfo()
+    dmgInfo:SetDamage( 5 )
+    dmgInfo:SetAttacker( game.GetWorld() )
+    dmgInfo:SetInflictor( game.GetWorld() )
+    if shoved:Health() <= 5 then
+        dmgInfo:SetDamageForce( crumpleForce )
+
+    end
+    shoved:TakeDamageInfo( dmgInfo ) -- kill with no blame
+
+end )
+
+hook.Add( "EntityTakeDamage", "glee_infernaldamageweakness", function( target, dmgInfo )
+    if not target:GetNW2Bool( "glee_DidADealWithTheDevil", false ) then return end
+
+    if dmgInfo:IsDamageType( DMG_BURN ) then
+        dmgInfo:ScaleDamage( 6 )
+
+    else
+        dmgInfo:ScaleDamage( 2 )
+
+    end
+end )
 
 hook.Add( "PlayerDeath", "glee_reset_shrivel_on_death", function( victim )
     if not victim:GetNW2Bool( "glee_DidADealWithTheDevil", false ) then return end
     breakTheDeal( victim )
 
 end )
+
+local function infernalInterventionDeathCooldown( purchaser )
+    local lastDeathTime = purchaser:GetNW2Int( "glee_divineintervetion_lastdietime", 0 )
+    local reviveTime = lastDeathTime + minTimeBetweenResurrections / 2
+    local timeTillRevive = math.abs( reviveTime - CurTime() )
+    timeTillRevive = math.Round( timeTillRevive, 1 )
+
+    if reviveTime > CurTime() then return false, "Death cooldown.\nPurchasable in " .. tostring( timeTillRevive ) .. " seconds." end
+    return true
+
+end
 
 local function infernalIntervention( purchaser )
     if not SERVER then return end
@@ -2786,6 +2829,8 @@ local function infernalIntervention( purchaser )
 
         end
 
+        purchaser:doSpeedModifier( "infernalintervention", -25 )
+
         GAMEMODE:GivePanic( purchaser, 100 )
 
         purchaser:SetHealth( 1 )
@@ -2797,13 +2842,13 @@ local function infernalIntervention( purchaser )
             GAMEMODE:GivePanic( purchaser, 50 )
             GAMEMODE:EmulateHistoricHighBPM( purchaser )
 
-            purchaser:ConCommand( "act agree" ) -- why is it so hard to play anims on players, gmod :(
+            purchaser:TauntDance( ACT_HL2MP_ZOMBIE_SLUMP_IDLE ) -- start with idle
 
-            timer.Simple( 0, function()
+            timer.Simple( 0.5, function() -- delay because of high ping players
                 if not IsValid( purchaser ) then return end
                 if not purchaser:Alive() then return end
-                purchaser:DoAnimationEvent( ACT_HL2MP_ZOMBIE_SLUMP_RISE )
-                purchaser:BlockAnimEventsFor( 3 )
+                purchaser:BlockAnimEventsFor( -1 ) -- reset TauntDance setting this
+                purchaser:TauntDance( ACT_HL2MP_ZOMBIE_SLUMP_RISE )
 
             end )
         end )
@@ -2834,6 +2879,8 @@ local function infernalIntervention( purchaser )
 
             breakTheDeal( purchaser )
             timer.Remove( goAwayTimer )
+
+            huntersGlee_Announce( { purchaser }, 20, 5, "Is the deal over?\nIt's like a weight has been lifted..." )
 
         end )
     end )
@@ -4140,13 +4187,13 @@ local defaultItems = {
         canGoInDebt = true,
         markup = 1,
         markupPerPurchase = 1,
-        cooldown = 20,
+        cooldown = 5,
         category = "Gifts",
         purchaseTimes = {
             GM.ROUND_ACTIVE,
         },
         weight = -200,
-        purchaseCheck = { undeadCheck, infernalInterventionCanPurchase },
+        purchaseCheck = { undeadCheck, infernalInterventionCanPurchase, infernalInterventionDeathCooldown },
         purchaseFunc = infernalIntervention,
     },
     -- fun

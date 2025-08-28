@@ -58,21 +58,6 @@ function plyMeta:CacheNavArea()
     end
 end
 
-plyMeta.glee_OldDoAnimEvent = plyMeta.glee_OldDoAnimEvent or plyMeta.DoAnimationEvent
-
-function plyMeta:DoAnimationEvent( ... )
-    local blockFor = self.glee_BlockAnimEventsFor
-    if blockFor and blockFor > CurTime() then return end
-    if hook.Run( "glee_blockanimevent", self, ... ) == true then return end
-    plyMeta.glee_OldDoAnimEvent( self, ... )
-
-end
-
-function plyMeta:BlockAnimEventsFor( duration )
-    self.glee_BlockAnimEventsFor = CurTime() + duration
-
-end
-
 -- manage the BPM of ppl HERE
 
 function GM:calculateBPM( cur, players )
