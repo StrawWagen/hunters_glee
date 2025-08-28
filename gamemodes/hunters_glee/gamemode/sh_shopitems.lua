@@ -2788,11 +2788,11 @@ local function infernalIntervention( purchaser )
 
         GAMEMODE:GivePanic( purchaser, 100 )
 
-        purchaser:SetHealth( 5 )
+        purchaser:SetHealth( 1 )
         timer.Simple( 0, function() -- juggernaut, etc
             if not IsValid( purchaser ) then return end
             if not purchaser:Alive() then return end -- this would be unlucky!
-            purchaser:SetHealth( 5 )
+            purchaser:SetHealth( 1 )
 
             GAMEMODE:GivePanic( purchaser, 50 )
             GAMEMODE:EmulateHistoricHighBPM( purchaser )
@@ -4140,7 +4140,7 @@ local defaultItems = {
         canGoInDebt = true,
         markup = 1,
         markupPerPurchase = 1,
-        cooldown = 10,
+        cooldown = 20,
         category = "Gifts",
         purchaseTimes = {
             GM.ROUND_ACTIVE,
