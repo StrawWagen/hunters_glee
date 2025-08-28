@@ -2766,7 +2766,7 @@ hook.Add( "glee_shover_shove", "glee_infernalinstantdeath", function( shoved )
     if shoved:Health() >= 25 then return end -- they're not weak enough
 
     local dmgInfo = DamageInfo()
-    dmgInfo:SetDamage( 5 )
+    dmgInfo:SetDamage( math.random( 1, 3 ) )
     dmgInfo:SetAttacker( game.GetWorld() )
     dmgInfo:SetInflictor( game.GetWorld() )
     if shoved:Health() <= 5 then
