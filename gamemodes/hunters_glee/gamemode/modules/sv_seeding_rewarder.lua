@@ -149,7 +149,7 @@ end )
 
 -- replace OnBecomeSeedPlayer and RewardSeedPly if you want to steal my code ( GIVE CREDIT! ) :)
 
-local maxReward = 600
+local maxReward = 1000
 local dropOffDivisor = 10
 GM.SEED_RewardedIds = GM.SEED_RewardedIds or {}
 GM.SEED_SeedPlysReward = GM.SEED_SeedPlysReward or {}
