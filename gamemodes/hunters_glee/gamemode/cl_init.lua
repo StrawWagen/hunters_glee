@@ -686,22 +686,26 @@ hook.Add( "glee_cl_confirmedpurchase", "storeIfPlayerBoughtUndeadItem", function
 end )
 
 net.Receive( "glee_followedsomething", function()
+    if not IsValid( LocalPlayer() ) then return end -- ???????
     LocalPlayer():EmitSound( "ui/buttonrollover.wav", 0, 120, 0.8 )
     LocalPlayer().glee_HasSpectatedSomeone = true
     RunConsoleCommand( "cl_huntersgleehint_hasspectatedsomeone", "1" )
 
 end )
 net.Receive( "glee_followednexthing", function()
+    if not IsValid( LocalPlayer() ) then return end
     LocalPlayer():EmitSound( "ui/buttonrollover.wav", 0, 200, 0.5 )
 
 end )
 net.Receive( "glee_switchedspectatemodes", function()
+    if not IsValid( LocalPlayer() ) then return end
     LocalPlayer():EmitSound( "ui/buttonrollover.wav", 0, 180, 0.5 )
     LocalPlayer().glee_HasSwitchedSpectateModes = true
     RunConsoleCommand( "cl_huntersgleehint_hasswitchedspectatemodes", "1" )
 
 end )
 net.Receive( "glee_stoppedspectating", function()
+    if not IsValid( LocalPlayer() ) then return end
     LocalPlayer():EmitSound( "ui/buttonrollover.wav", 0, 90, 0.8 )
     LocalPlayer().glee_HasStoppedSpectatingSomething = true
     RunConsoleCommand( "cl_huntersgleehint_hasstoppedspectating", "1" )

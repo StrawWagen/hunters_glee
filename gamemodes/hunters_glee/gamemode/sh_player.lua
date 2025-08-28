@@ -73,15 +73,20 @@ if SERVER then
         self:SetNWInt( "huntersglee_score", math.Round( score + add ) )
     end
 
-    function meta:GivePlayerSkulls( add )
-        if hook.Run( "huntersglee_giveskulls", self, add ) == false then return end
-        local skulls = self:GetSkulls()
-        self:SetNWInt( "huntersglee_skulls", math.Round( skulls + add ) )
+    function meta:SetScore( score )
+        if hook.Run( "huntersglee_setscore", self, score ) == false then return end
+        self:SetNWInt( "huntersglee_score", math.Round( score ) )
     end
 
     function meta:ResetScore()
         self:SetNWInt( "huntersglee_score", 0 )
 
+    end
+
+    function meta:GivePlayerSkulls( add )
+        if hook.Run( "huntersglee_giveskulls", self, add ) == false then return end
+        local skulls = self:GetSkulls()
+        self:SetNWInt( "huntersglee_skulls", math.Round( skulls + add ) )
     end
 
     function meta:ResetSkulls()
