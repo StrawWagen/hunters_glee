@@ -17,7 +17,7 @@ local zambieSpawnSet = {
     spawns = {
         {
             name = "combine_metropolice",
-            prettyName = "Metropolice",
+            prettyName = "A Metrocop",
             class = "terminator_nextbot_cmetro",
             spawnType = "hunter",
             difficultyCost = { 1 },
@@ -49,6 +49,7 @@ local zambieSpawnSet = {
             postSpawnedFuncs = nil,
         },
         {
+            hardRandomChance = { 25, 45 },
             name = "combine_shotgun_COMMON",
             prettyName = "A Combine Shotgunner",
             class = "terminator_nextbot_cshotgunsoldier",
