@@ -2291,6 +2291,7 @@ local function ar3Purchase( purchaser )
 end
 
 
+
 local function fragPurchase( purchaser )
     local frag = purchaser:GetWeapon( "weapon_frag" )
     if IsValid( frag ) then
@@ -3469,6 +3470,22 @@ local defaultItems = {
         purchaseCheck = { unUndeadCheck, canPurchaseCrapVidCam },
         purchaseFunc = crapVidCamPurchase,
     },
+    [ "ar3" ] = {
+        name = "Emplacement Gun",
+        desc = "It'll shred any medium/low health enemys, it's at its best when shooting at small & medium distances. It takes Ar2 ammunition, worthless on terminators.",
+        cost = 110,
+        markup = 2.5,
+        markupPerPurchase = 0.8,
+        cooldown = 0.5,
+        category = "Items",
+        purchaseTimes = {
+            GM.ROUND_INACTIVE,
+            GM.ROUND_ACTIVE,
+        },
+        weight = 800,
+        purchaseCheck = unUndeadCheck,
+        purchaseFunc = ar3Purchase,
+    },
     [ "slams" ] = {
         name = "Slams",
         desc = "Some slams, 17 to be exact.",
@@ -3549,22 +3566,6 @@ local defaultItems = {
         weight = -150,
         purchaseCheck = unUndeadCheck,
         purchaseFunc = ar2Purchase,
-    },
-    [ "ar3" ] = {
-        name = "Emplacement Gun",
-        desc = "It'll shred any medium/low health enemys, it's at its best when shooting at small & medium distances. It takes Ar2 ammunition, worthless on terminators.",
-        cost = 110,
-        markup = 2.5,
-        markupPerPurchase = 0.8,
-        cooldown = 0.5,
-        category = "Items",
-        purchaseTimes = {
-            GM.ROUND_INACTIVE,
-            GM.ROUND_ACTIVE,
-        },
-        weight = -140,
-        purchaseCheck = unUndeadCheck,
-        purchaseFunc = ar3Purchase,
     },
     -- lol you ran out of battery
     [ "armor" ] = {
