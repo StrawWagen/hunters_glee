@@ -138,15 +138,7 @@ local thwaps = {
 
 }
 
---local white = Color( 255,255,255 )
-
-local gunCock = Sound( "items/ammo_pickup.wav" )
-local function loadoutConfirm( ply, Count )
-    for _ = 0, Count do
-        ply:EmitSound( gunCock, 60, math.random( 90, 110 ) )
-
-    end
-end
+local shopHelpers = GM.shopHelpers
 
 local function playRandomSound( ent, sounds, level, pitch, channel )
     if not channel then
@@ -155,19 +147,6 @@ local function playRandomSound( ent, sounds, level, pitch, channel )
     local soundName = sounds[math.random( #sounds )]
 
     ent:EmitSound( soundName, level, pitch, 1, channel )
-
-end
-
-
-local function unUndeadCheck( purchaser )
-    if purchaser:Health() <= 0 then return false, "You must be alive to purchase this." end
-    return true, ""
-
-end
-
-local function undeadCheck( purchaser )
-    if purchaser:Health() > 0 then return false, "You must be dead to purchase this." end
-    return true, ""
 
 end
 
@@ -207,7 +186,7 @@ local function revivePurchase( purchaser )
     else
         weap = purchaser:Give( reviver, false )
         weap:AddResurrect()
-        loadoutConfirm( purchaser, 2 )
+        shopHelpers.loadoutConfirm( purchaser, 2 )
 
     end
 end
@@ -223,11 +202,11 @@ local function beartrapPurchase( purchaser )
         -- give 6
         purchaser:GiveAmmo( 6, "GLEE_BEARTRAP" )
 
-        loadoutConfirm( purchaser, 1 )
+        shopHelpers.loadoutConfirm( purchaser, 1 )
 
     else
         purchaser:Give( beartrap, false )
-        loadoutConfirm( purchaser, 1 )
+        shopHelpers.loadoutConfirm( purchaser, 1 )
         timer.Simple( 0.1, function()
             if not IsValid( purchaser ) then return end
             weap = purchaser:GetWeapon( beartrap )
@@ -253,7 +232,7 @@ local function medkitPurchase( purchaser )
 
     else
         purchaser:Give( medkit, false )
-        loadoutConfirm( purchaser, 1 )
+        shopHelpers.loadoutConfirm( purchaser, 1 )
 
     end
 end
@@ -2257,7 +2236,7 @@ end
 local function lockpickPurchase( purchaser )
     purchaser:Give( "termhunt_lockpick" )
 
-    loadoutConfirm( purchaser, 1 )
+    shopHelpers.loadoutConfirm( purchaser, 1 )
 
 end
 
@@ -2276,7 +2255,7 @@ local function ar2Purchase( purchaser )
 
     end
 
-    loadoutConfirm( purchaser, 1 )
+    shopHelpers.loadoutConfirm( purchaser, 1 )
 
 end
 
@@ -2292,7 +2271,7 @@ local function fragPurchase( purchaser )
 
     end
 
-    loadoutConfirm( purchaser, 1 )
+    shopHelpers.loadoutConfirm( purchaser, 1 )
 
 end
 
@@ -2307,7 +2286,7 @@ local function tauCannonPurchase( purchaser )
 
     end
 
-    loadoutConfirm( purchaser, 2 )
+    shopHelpers.loadoutConfirm( purchaser, 2 )
 
 end
 
@@ -2321,7 +2300,7 @@ end
 local function crapVidCamPurchase( purchaser )
     purchaser:Give( "weapon_glee_crapvidcam" )
 
-    loadoutConfirm( purchaser, 1 )
+    shopHelpers.loadoutConfirm( purchaser, 1 )
 
 end
 
@@ -2353,7 +2332,7 @@ local function rpgPurchase( purchaser )
 
     end
 
-    loadoutConfirm( purchaser, 1 )
+    shopHelpers.loadoutConfirm( purchaser, 1 )
 
 end
 
@@ -2368,7 +2347,7 @@ end
 local function gravityGunPurchase( purchaser )
     purchaser:Give( "weapon_physcannon" )
 
-    loadoutConfirm( purchaser, 1 )
+    shopHelpers.loadoutConfirm( purchaser, 1 )
 
 end
 
@@ -2382,7 +2361,7 @@ local function nailerPurchase( purchaser )
         purchaser:Give( "termhunt_weapon_hammer" )
 
     end
-    loadoutConfirm( purchaser, 1 )
+    shopHelpers.loadoutConfirm( purchaser, 1 )
 
 end
 
@@ -2411,7 +2390,7 @@ local function loadoutPurchase( purchaser )
         purchaser:GiveAmmo( amountOfAmmo, wepsAmmo, true )
 
     end
-    loadoutConfirm( purchaser, #loadoutLoadout )
+    shopHelpers.loadoutConfirm( purchaser, #loadoutLoadout )
 
 end
 
@@ -2421,7 +2400,7 @@ local function slamsPurchase( purchaser )
 
     purchaser:Give( "weapon_slam" )
 
-    loadoutConfirm( purchaser, 2 )
+    shopHelpers.loadoutConfirm( purchaser, 2 )
 
 end
 
@@ -2436,7 +2415,7 @@ local function flaregunPurchase( purchaser )
 
     end
 
-    loadoutConfirm( purchaser, 2 )
+    shopHelpers.loadoutConfirm( purchaser, 2 )
 
 end
 
@@ -3396,7 +3375,7 @@ local defaultItems = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
         },
-        purchaseFunc = function() end,
+        onPurchaseFunc = function() end,
         canShowInShop = isCheats,
     },
     [ "scoreundead" ] = {
@@ -3408,7 +3387,7 @@ local defaultItems = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
         },
-        purchaseFunc = function() end,
+        onPurchaseFunc = function() end,
         canShowInShop = isCheats,
     },
     -- lets people mess with locked rooms
@@ -3424,8 +3403,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 1,
-        purchaseCheck = unUndeadCheck, lockpickCanPurchase,
-        purchaseFunc = lockpickPurchase,
+        purchaseCheck = shopHelpers.aliveCheck, lockpickCanPurchase,
+        onPurchaseFunc = lockpickPurchase,
     },
     -- ka BOOOOOM
     [ "taucannon" ] = {
@@ -3440,8 +3419,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 1000,
-        purchaseCheck = unUndeadCheck,
-        purchaseFunc = tauCannonPurchase,
+        purchaseCheck = shopHelpers.aliveCheck,
+        onPurchaseFunc = tauCannonPurchase,
     },
     -- funny cam
     [ "crapvidcam" ] = {
@@ -3456,8 +3435,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 900,
-        purchaseCheck = { unUndeadCheck, canPurchaseCrapVidCam },
-        purchaseFunc = crapVidCamPurchase,
+        purchaseCheck = { shopHelpers.aliveCheck, canPurchaseCrapVidCam },
+        onPurchaseFunc = crapVidCamPurchase,
     },
     [ "slams" ] = {
         name = "Slams",
@@ -3472,8 +3451,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 1,
-        purchaseCheck = unUndeadCheck,
-        purchaseFunc = slamsPurchase,
+        purchaseCheck = shopHelpers.aliveCheck,
+        onPurchaseFunc = slamsPurchase,
     },
     [ "flaregun" ] = {
         name = "Flaregun",
@@ -3488,8 +3467,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 1,
-        purchaseCheck = unUndeadCheck,
-        purchaseFunc = flaregunPurchase,
+        purchaseCheck = shopHelpers.aliveCheck,
+        onPurchaseFunc = flaregunPurchase,
     },
     [ "guns" ] = {
         name = "Loadout",
@@ -3504,8 +3483,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = -95,
-        purchaseCheck = unUndeadCheck,
-        purchaseFunc = loadoutPurchase,
+        purchaseCheck = shopHelpers.aliveCheck,
+        onPurchaseFunc = loadoutPurchase,
     },
     [ "nailer" ] = {
         name = "Nailer",
@@ -3520,8 +3499,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = -90,
-        purchaseCheck = unUndeadCheck,
-        purchaseFunc = nailerPurchase,
+        purchaseCheck = shopHelpers.aliveCheck,
+        onPurchaseFunc = nailerPurchase,
     },
     -- terminator doesnt like taking damage from this, will save your ass
     [ "ar2" ] = {
@@ -3537,8 +3516,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = -150,
-        purchaseCheck = unUndeadCheck,
-        purchaseFunc = ar2Purchase,
+        purchaseCheck = shopHelpers.aliveCheck,
+        onPurchaseFunc = ar2Purchase,
     },
     -- lol you ran out of battery
     [ "armor" ] = {
@@ -3554,8 +3533,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = -150,
-        purchaseCheck = { unUndeadCheck, canPurchaseSuitBattery },
-        purchaseFunc = suitBatteryPurchase,
+        purchaseCheck = { shopHelpers.aliveCheck, canPurchaseSuitBattery },
+        onPurchaseFunc = suitBatteryPurchase,
     },
     [ "rpg" ] = {
         name = "RPG",
@@ -3570,8 +3549,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = -140,
-        purchaseCheck = unUndeadCheck,
-        purchaseFunc = rpgPurchase,
+        purchaseCheck = shopHelpers.aliveCheck,
+        onPurchaseFunc = rpgPurchase,
     },
     [ "frag" ] = {
         name = "10 Grenades",
@@ -3586,8 +3565,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = -90,
-        purchaseCheck = unUndeadCheck,
-        purchaseFunc = fragPurchase,
+        purchaseCheck = shopHelpers.aliveCheck,
+        onPurchaseFunc = fragPurchase,
     },
     [ "gravitygun" ] = {
         name = "Gravity Gun",
@@ -3601,8 +3580,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 1,
-        purchaseCheck = { unUndeadCheck, gravityGunCanPurchase },
-        purchaseFunc = gravityGunPurchase,
+        purchaseCheck = { shopHelpers.aliveCheck, gravityGunCanPurchase },
+        onPurchaseFunc = gravityGunPurchase,
     },
     -- keeps the rounds going
     [ "revivekit" ] = {
@@ -3617,8 +3596,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = -100,
-        purchaseCheck = unUndeadCheck,
-        purchaseFunc = revivePurchase,
+        purchaseCheck = shopHelpers.aliveCheck,
+        onPurchaseFunc = revivePurchase,
         canShowInShop = hasMultiplePeople,
     },
     -- heal jooce
@@ -3635,8 +3614,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = -100,
-        purchaseCheck = unUndeadCheck,
-        purchaseFunc = medkitPurchase,
+        purchaseCheck = shopHelpers.aliveCheck,
+        onPurchaseFunc = medkitPurchase,
     },
     -- funny bear trap
     [ "beartrap" ] = {
@@ -3652,8 +3631,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 0,
-        purchaseCheck = unUndeadCheck,
-        purchaseFunc = beartrapPurchase,
+        purchaseCheck = shopHelpers.aliveCheck,
+        onPurchaseFunc = beartrapPurchase,
     },
     -- this is to give the noobs in a lobby a huge score boost, also it's cool
     [ "witnessme" ] = {
@@ -3668,8 +3647,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = -100,
-        purchaseCheck = unUndeadCheck,
-        purchaseFunc = witnessPurchase,
+        purchaseCheck = shopHelpers.aliveCheck,
+        onPurchaseFunc = witnessPurchase,
         canShowInShop = multiplePeopleAndTerm,
     },
     [ "screamingbackpack" ] = {
@@ -3684,8 +3663,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = -90,
-        purchaseCheck = unUndeadCheck,
-        purchaseFunc = screamingBackpackPurchase,
+        purchaseCheck = shopHelpers.aliveCheck,
+        onPurchaseFunc = screamingBackpackPurchase,
         canShowInShop = terminatorInSpawnPool,
     },
     -- Risk vs reward.
@@ -3699,8 +3678,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = -90,
-        purchaseCheck = { unUndeadCheck, bloodDonorCanPurchase },
-        purchaseFunc = bloodDonorPurchase,
+        purchaseCheck = { shopHelpers.aliveCheck, bloodDonorCanPurchase },
+        onPurchaseFunc = bloodDonorPurchase,
     },
     -- flat DOWNGRADE
     [ "blindness" ] = {
@@ -3715,8 +3694,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = -90,
-        purchaseCheck = { unUndeadCheck },
-        purchaseFunc = blindnessPurchase,
+        purchaseCheck = { shopHelpers.aliveCheck },
+        onPurchaseFunc = blindnessPurchase,
     },
     -- flat downgrade
     [ "badknees" ] = {
@@ -3731,8 +3710,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = -90,
-        purchaseCheck = { unUndeadCheck },
-        purchaseFunc = badkneesPurchase,
+        purchaseCheck = { shopHelpers.aliveCheck },
+        onPurchaseFunc = badkneesPurchase,
     },
     -- hilarious downgrade
     [ "greasyhands" ] = {
@@ -3747,8 +3726,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = -80,
-        purchaseCheck = { unUndeadCheck },
-        purchaseFunc = greasyHandsPurchase,
+        purchaseCheck = { shopHelpers.aliveCheck },
+        onPurchaseFunc = greasyHandsPurchase,
     },
     [ "cholesterol" ] = {
         name = "37 Years of Cholesterol.",
@@ -3762,8 +3741,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = -80,
-        purchaseCheck = { unUndeadCheck },
-        purchaseFunc = cholesterolPurchase,
+        purchaseCheck = { shopHelpers.aliveCheck },
+        onPurchaseFunc = cholesterolPurchase,
     },
     [ "deafness" ] = {
         name = "Hard of Hearing.",
@@ -3777,8 +3756,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = -90,
-        purchaseCheck = { unUndeadCheck },
-        purchaseFunc = deafnessPurchase,
+        purchaseCheck = { shopHelpers.aliveCheck },
+        onPurchaseFunc = deafnessPurchase,
     },
     [ "sixthsense" ] = {
         name = "Sixth Sense.",
@@ -3792,8 +3771,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 80,
-        purchaseCheck = unUndeadCheck,
-        purchaseFunc = sixthSensePurchase,
+        purchaseCheck = shopHelpers.aliveCheck,
+        onPurchaseFunc = sixthSensePurchase,
     },
     -- reframe gaining score, because i thought it could be fun
     [ "marcopolo" ] = {
@@ -3806,8 +3785,8 @@ local defaultItems = {
             GM.ROUND_INACTIVE,
         },
         weight = 180,
-        purchaseCheck = unUndeadCheck,
-        purchaseFunc = marcoPoloPurchase,
+        purchaseCheck = shopHelpers.aliveCheck,
+        onPurchaseFunc = marcoPoloPurchase,
     },
     -- flat upgrade
     [ "juggernaut" ] = {
@@ -3822,8 +3801,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 120,
-        purchaseCheck = unUndeadCheck,
-        purchaseFunc = juggernautPurchase,
+        purchaseCheck = shopHelpers.aliveCheck,
+        onPurchaseFunc = juggernautPurchase,
     },
     --flat upgrade
     [ "froglegs" ] = {
@@ -3838,8 +3817,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 120,
-        purchaseCheck = unUndeadCheck,
-        purchaseFunc = frogLegsPurchase,
+        purchaseCheck = shopHelpers.aliveCheck,
+        onPurchaseFunc = frogLegsPurchase,
     },
     --[[--flat upgrade
     [ "mimicmadness" ] = {
@@ -3854,8 +3833,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 120,
-        purchaseCheck = unUndeadCheck,
-        purchaseFunc = mimicMadnessPurchase,
+        purchaseCheck = shopHelpers.aliveCheck,
+        onPurchaseFunc = mimicMadnessPurchase,
     },]]--
     --flat upgrade
     [ "temporaldiceroll" ] = {
@@ -3871,8 +3850,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 120,
-        purchaseCheck = unUndeadCheck,
-        purchaseFunc = temporalDiceRollPurchase,
+        purchaseCheck = shopHelpers.aliveCheck,
+        onPurchaseFunc = temporalDiceRollPurchase,
     },
     --flat upgrade
     [ "channel666" ] = {
@@ -3887,8 +3866,8 @@ local defaultItems = {
 
         },
         weight = 125,
-        purchaseCheck = { unUndeadCheck },
-        purchaseFunc = channel666Purchase,
+        purchaseCheck = { shopHelpers.aliveCheck },
+        onPurchaseFunc = channel666Purchase,
         canShowInShop = hasMultiplePeople,
     },
     -- Risk vs reward.
@@ -3904,8 +3883,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 85,
-        purchaseCheck = { unUndeadCheck, chameleonCanPurchase },
-        purchaseFunc = chameleonPurchase,
+        purchaseCheck = { shopHelpers.aliveCheck, chameleonCanPurchase },
+        onPurchaseFunc = chameleonPurchase,
     },
     -- signal boost
     [ "signalrelay" ] = {
@@ -3920,8 +3899,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 80,
-        purchaseCheck = { unUndeadCheck },
-        purchaseFunc = signalRelayPurchase,
+        purchaseCheck = { shopHelpers.aliveCheck },
+        onPurchaseFunc = signalRelayPurchase,
     },
     -- flat upgrade
     [ "coldblooded" ] = {
@@ -3936,8 +3915,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 80,
-        purchaseCheck = { unUndeadCheck },
-        purchaseFunc = coldbloodedPurchase,
+        purchaseCheck = { shopHelpers.aliveCheck },
+        onPurchaseFunc = coldbloodedPurchase,
     },
     -- flat upgrade
     [ "superiormetabolism" ] = {
@@ -3952,8 +3931,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 80,
-        purchaseCheck = { unUndeadCheck },
-        purchaseFunc = superiorMetabolismPurchase,
+        purchaseCheck = { shopHelpers.aliveCheck },
+        onPurchaseFunc = superiorMetabolismPurchase,
     },
     -- wacky ass shit
     [ "bombgland" ] = {
@@ -3968,8 +3947,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 85,
-        purchaseCheck = { unUndeadCheck },
-        purchaseFunc = bombGlandPurchase,
+        purchaseCheck = { shopHelpers.aliveCheck },
+        onPurchaseFunc = bombGlandPurchase,
     },
     [ "ultralumen" ] = {
         name = "Ultra Lumen 3000.",
@@ -3983,8 +3962,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 90,
-        purchaseCheck = { unUndeadCheck },
-        purchaseFunc = ultraLumenFlashlightPurchase,
+        purchaseCheck = { shopHelpers.aliveCheck },
+        onPurchaseFunc = ultraLumenFlashlightPurchase,
     },
     -- flat upgrade
     [ "susimpostor" ] = {
@@ -3999,8 +3978,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 90,
-        purchaseCheck = { unUndeadCheck },
-        purchaseFunc = susPurchase,
+        purchaseCheck = { shopHelpers.aliveCheck },
+        onPurchaseFunc = susPurchase,
     },
     -- sell out other players/your friends to become alive
     [ "screamcrate" ] = {
@@ -4014,8 +3993,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = -5,
-        purchaseCheck = { undeadCheck, ghostCanPurchase },
-        purchaseFunc = screamerPurchase,
+        purchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        onPurchaseFunc = screamerPurchase,
     },
     -- makes the map worth exploring
     [ "normcrate" ] = {
@@ -4029,8 +4008,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = -4,
-        purchaseCheck = { undeadCheck, ghostCanPurchase },
-        purchaseFunc = nonScreamerPurchase,
+        purchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        onPurchaseFunc = nonScreamerPurchase,
     },
     [ "weapcrate" ] = {
         name = "Crate of Weapons",
@@ -4043,8 +4022,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 1,
-        purchaseCheck = { undeadCheck, ghostCanPurchase },
-        purchaseFunc = weaponsCratePurchase,
+        purchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        onPurchaseFunc = weaponsCratePurchase,
     },
     [ "manhackcrate" ] = {
         name = "Crate with Manhacks",
@@ -4057,8 +4036,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 10,
-        purchaseCheck = { undeadCheck, ghostCanPurchase },
-        purchaseFunc = manhackCratePurchase,
+        purchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        onPurchaseFunc = manhackCratePurchase,
     },
     [ "undeadbeartrap" ] = {
         name = "Beartrap.",
@@ -4071,8 +4050,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 1,
-        purchaseCheck = { undeadCheck, ghostCanPurchase },
-        purchaseFunc = undeadBearTrapPurchase,
+        purchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        onPurchaseFunc = undeadBearTrapPurchase,
     },
     [ "barrels" ] = {
         name = "Barrels",
@@ -4085,8 +4064,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 1,
-        purchaseCheck = { undeadCheck, ghostCanPurchase },
-        purchaseFunc = barrelsPurchase,
+        purchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        onPurchaseFunc = barrelsPurchase,
     },
     -- punishes careless movement
     [ "barnacle" ] = {
@@ -4100,8 +4079,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 10,
-        purchaseCheck = { undeadCheck, ghostCanPurchase },
-        purchaseFunc = barnaclePurchase,
+        purchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        onPurchaseFunc = barnaclePurchase,
     },
     [ "doorlocker" ] = {
         name = "Door Locker",
@@ -4114,8 +4093,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 10,
-        purchaseCheck = { undeadCheck, ghostCanPurchase },
-        purchaseFunc = doorLockerPurchase,
+        purchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        onPurchaseFunc = doorLockerPurchase,
     },
     -- money but you're fucked if you revive
     [ "additionalterm" ] = {
@@ -4129,8 +4108,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = -100,
-        purchaseCheck = { undeadCheck, spawnAnotherHunterCheck },
-        purchaseFunc = additionalHunter,
+        purchaseCheck = { shopHelpers.undeadCheck, spawnAnotherHunterCheck },
+        onPurchaseFunc = additionalHunter,
         canShowInShop = spawnAnotherHunterCanShow,
     },
     [ "presser" ] = {
@@ -4144,8 +4123,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = -4,
-        purchaseCheck = { undeadCheck, ghostCanPurchase },
-        purchaseFunc = presserPurchase,
+        purchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        onPurchaseFunc = presserPurchase,
     },
     -- people who teamkill get funny consequence
     [ "homicidalglee" ] = {
@@ -4160,8 +4139,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 0,
-        purchaseCheck = { undeadCheck, ghostCanPurchase },
-        purchaseFunc = homicidalGleePurchase,
+        purchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        onPurchaseFunc = homicidalGleePurchase,
     },
     -- lets dead people take the initiative
     [ "resurrection" ] = {
@@ -4176,8 +4155,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = -201,
-        purchaseCheck = { undeadCheck, divineInterventionDeathCooldown },
-        purchaseFunc = divineIntervention,
+        purchaseCheck = { shopHelpers.undeadCheck, divineInterventionDeathCooldown },
+        onPurchaseFunc = divineIntervention,
     },
     -- for people who just want to BE ALIVE!
     [ "resurrectioncrappy" ] = {
@@ -4193,8 +4172,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = -200,
-        purchaseCheck = { undeadCheck, infernalInterventionCanPurchase, infernalInterventionDeathCooldown },
-        purchaseFunc = infernalIntervention,
+        purchaseCheck = { shopHelpers.undeadCheck, infernalInterventionCanPurchase, infernalInterventionDeathCooldown },
+        onPurchaseFunc = infernalIntervention,
     },
     -- fun
     [ "termovercharger" ] = {
@@ -4209,8 +4188,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 19,
-        purchaseCheck = { undeadCheck, ghostCanPurchase },
-        purchaseFunc = termOverchargerPurchase,
+        purchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        onPurchaseFunc = termOverchargerPurchase,
     },
     -- ultimate stalemate breaker
     [ "temporalinversion" ] = {
@@ -4225,8 +4204,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 20,
-        purchaseCheck = { undeadCheck, ghostCanPurchase, inversionCanPurchase },
-        purchaseFunc = plySwapperPurchase,
+        purchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase, inversionCanPurchase },
+        onPurchaseFunc = plySwapperPurchase,
     },
     [ "immortalizer" ] = {
         name = "Gift of Immortality",
@@ -4240,8 +4219,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 20,
-        purchaseCheck = { undeadCheck, ghostCanPurchase },
-        purchaseFunc = immortalizerPurchase,
+        purchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        onPurchaseFunc = immortalizerPurchase,
     },
     [ "blessing" ] = {
         name = "A Blessing",
@@ -4255,8 +4234,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 20,
-        purchaseCheck = { undeadCheck, ghostCanPurchase },
-        purchaseFunc = blessingPurchase,
+        purchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        onPurchaseFunc = blessingPurchase,
     },
     -- crazy purchase
     [ "thunderousapplause" ] = {
@@ -4271,8 +4250,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 20,
-        purchaseCheck = { undeadCheck, ghostCanPurchase, applauseCanPurchase },
-        purchaseFunc = applausePurchase,
+        purchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase, applauseCanPurchase },
+        onPurchaseFunc = applausePurchase,
     },
     -- explosive end to round
     [ "divinechosen" ] = {
@@ -4286,8 +4265,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 40,
-        purchaseCheck = { undeadCheck, divineChosenCanPurchase },
-        purchaseFunc = divineChosenPurchase,
+        purchaseCheck = { shopHelpers.undeadCheck, divineChosenCanPurchase },
+        onPurchaseFunc = divineChosenPurchase,
     },
     -- reason to rejoin
     [ "bankopenaccount" ] = {
@@ -4303,13 +4282,13 @@ local defaultItems = {
         },
         weight = 0,
         purchaseCheck = { canOpenAccount },
-        purchaseFunc = openAccountPurchase,
+        onPurchaseFunc = openAccountPurchase,
     },
     -- reason to rejoin
     [ "bankdeposit" ] = {
         name = "Deposit",
         desc = bankDepositDescription,
-        fakeCost = true, -- score removal is handled in purchasefunc
+        fakeCost = true, -- score removal is handled in onPurchaseFunc
         cost = bankDepositCost,
         cooldown = 0.5,
         category = "Bank",
@@ -4319,7 +4298,7 @@ local defaultItems = {
         },
         weight = 100,
         purchaseCheck = { hasBankAccount },
-        purchaseFunc = bankDepositPurchase,
+        onPurchaseFunc = bankDepositPurchase,
     },
     -- reason to rejoin
     [ "bankwithdraw" ] = {
@@ -4335,25 +4314,11 @@ local defaultItems = {
         },
         weight = 150,
         purchaseCheck = { hasBankAccount, bankCanWithdraw },
-        purchaseFunc = bankWithdrawPurchase,
+        onPurchaseFunc = bankWithdrawPurchase,
     },
 }
 
 function GM:SetupShopCatalouge()
-    local defaultCategories = { -- sorted by order
-        [ "Items" ] = { order = 1, canShowInShop = unUndeadCheck },
-        [ "Innate" ] = { order = 2, canShowInShop = unUndeadCheck },
-        [ "Sacrifices" ] = { order = 3, canShowInShop = undeadCheck },
-        [ "Gifts" ] = { order = 4, canShowInShop = undeadCheck },
-        [ "Bank" ] = { order = 5 },
-
-    }
-
-    for shopCategoryName, shopCategoryPriority in pairs( defaultCategories ) do
-        GAMEMODE:addShopCategory( shopCategoryName, shopCategoryPriority )
-
-    end
-
     for shopItemIdentifier, shopItemTbl in pairs( defaultItems ) do
         -- this is the correct way to add shop items!
         GAMEMODE:addShopItem( shopItemIdentifier, shopItemTbl )

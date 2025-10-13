@@ -9,6 +9,7 @@ include( "modules/cl_fallingwind.lua" )
 include( "modules/cl_killfeedoverride.lua" )
 include( "modules/cl_spectateflashlight.lua" )
 include( "modules/spawnset/cl_spawnsetvote.lua" )
+include( "modules/shopitems/cl_shopgobbler.lua" )
 include( "modules/signalstrength/cl_signalstrength.lua" )
 include( "modules/thirdpersonflashlight/cl_flashlight.lua" )
 include( "modules/firsttimeplayers/cl_firsttimeplayers.lua" )
@@ -22,7 +23,7 @@ include( "modules/battery/cl_battery.lua" )
 
 local entMeta = FindMetaTable( "Entity" )
 
-local GAMEMODE = GM
+local GAMEMODE = GAMEMODE or GM
 
 -- from https://github.com/Facepunch/garrysmod/blob/e189f14c088298ca800136fcfcfaf5d8535b6648/garrysmod/lua/includes/modules/killicon.lua#L202
 local killIconColor = Color( 255, 80, 0, 255 )
@@ -672,7 +673,7 @@ end )
 
 hook.Add( "glee_cl_confirmedpurchase", "storeIfPlayerBoughtUndeadItem", function( ply, id )
     local itemData = GAMEMODE:GetShopItemData( id )
-    if itemData.category ~= "Undead" then return end
+    if itemData.category ~= GAMEMODE.shopCategoryIds.GIFTS then return end
     if ply:Health() > 0 then return end
 
     ply.glee_DefinitelyBoughtAnUndeadItem = true

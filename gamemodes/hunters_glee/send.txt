@@ -37,15 +37,16 @@ gamemodes\hunters_glee\gamemode\modules\firsttimeplayers\cl_firsttimeplayers.lua
 
 gamemodes\hunters_glee\gamemode\modules\unsandboxing\sh_unsandboxing.lua
 
+gamemodes\hunters_glee\gamemode\modules\shopitems\cl_shopgobbler.lua
+gamemodes\hunters_glee\gamemode\modules\shopitems\sh_shopcategories.lua
+gamemodes\hunters_glee\gamemode\modules\shopitems\sh_shophelpers.lua
+
 gamemodes\hunters_glee\gamemode\modules\spawnset\cl_spawnsetvote.lua
 gamemodes\hunters_glee\gamemode\modules\spawnset\sh_spawnpoolutil.lua
 gamemodes\hunters_glee\gamemode\modules\spawnset\sh_spawnsetcontent.lua
 
-gamemode\hunters_glee\entities\weapons\weapon_glee_crapvidcam.lua
+gamemodes\hunters_glee\entities\weapons\weapon_glee_crapvidcam.lua
 
 lua\autorun\client\cl_shadowedtextfunc.lua
 lua\autorun\sh_generic_progress.lua
 lua\autorun\sh_glee_announcingText.lua
-
-materials/vgui/entities/glee_weapon_crapvidcam.vtf
-materials/vgui/entities/glee_weapon_crapvidcam.vmt

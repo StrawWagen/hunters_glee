@@ -449,12 +449,12 @@ function termHuntOpenTheShop()
         local shopCategoriesBlocked = {}
         local shopCategoryPanels = {}
 
-        if not GAMEMODE.shopCategories then error( "wtf? SHOP CATEGORIES DIDNT LOAD!" ) end -- reported errors
+        if not GAMEMODE.shopCategories then error( "wtf? SHOP CATEGORIES DIDNT LOAD!" ) end -- reported error...
         local categories = table.Copy( GAMEMODE.shopCategories )
 
         -- the scrollable things that hold shop items and have names like innate and undead
-        for category, stuff in SortedPairsByMemberValue( categories, "order", false ) do
-            if stuff.canShowInShop and not stuff.canShowInShop( ply ) then shopCategoriesBlocked[ category ] = true continue end
+        for category, catData in SortedPairsByMemberValue( categories, "order", false ) do
+            if catData.canShowInShop and not catData.canShowInShop( ply ) then shopCategoriesBlocked[ category ] = true continue end
 
             local horisScroller = vgui.Create( "DHorizontalScroller", ply.MAINSCROLLPANEL, shopCategoryName( category ) )
 
@@ -487,7 +487,7 @@ function termHuntOpenTheShop()
                 -- lil white line
                 draw_RoundedBox( 0, 0, self.betweenCategorySpacing, whiteIdentifierLineWidth, self.titleBarTall, whiteFaded )
                 -- name of category, eg "Innate"
-                draw.DrawText( category, "termhuntShopCategoryFont", self.TextX, self.TextY, white )
+                draw.DrawText( catData.name, "termhuntShopCategoryFont", self.TextX, self.TextY, white )
 
             end
 

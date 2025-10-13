@@ -33,6 +33,11 @@ AddCSLuaFile( "modules/sh_deathsounds.lua" )
 AddCSLuaFile( "modules/sh_danceslowdown.lua" )
 AddCSLuaFile( "modules/sh_playerdrowning.lua" )
 AddCSLuaFile( "modules/sh_detecthunterkills.lua" )
+
+AddCSLuaFile( "modules/shopitems/cl_shopgobbler.lua" )
+AddCSLuaFile( "modules/shopitems/sh_shophelpers.lua" )
+AddCSLuaFile( "modules/shopitems/sh_shopcategories.lua" )
+
 AddCSLuaFile( "modules/battery/sh_battery.lua" )
 AddCSLuaFile( "modules/spawnset/cl_spawnsetvote.lua" )
 AddCSLuaFile( "modules/spawnset/sh_spawnpoolutil.lua" )
@@ -42,11 +47,13 @@ AddCSLuaFile( "modules/signalstrength/cl_signalstrength.lua" )
 
 -- SV
 include( "lib/sv_termfuncs.lua" )
+
 include( "shared.lua" )
 include( "sv_player.lua" )
 include( "sv_playercommunication.lua" )
 
 include( "modules/sv_modelspeaking.lua" )
+include( "modules/sv_fullload.lua" )
 
 include( "modules/sv_unstucker.lua" )
 include( "modules/sv_wallkick.lua" )
@@ -124,8 +131,7 @@ local CurTime = CurTime
 -- also happens after hard map cleanup
 function GM:TermHuntSetup()
     self.waitingOnNavoptimizerGen       = nil
-    -- do greedy patch once per session
-    self.HuntersGleeDoneTheGreedyPatch  = self.HuntersGleeDoneTheGreedyPatch or nil
+    self.HuntersGleeDoneTheGreedyPatch  = self.HuntersGleeDoneTheGreedyPatch or nil -- do greedy patch once per session and play nice with autorefresh
     self.playerIsWaitingForPatch        = nil
     self.ValidNavarea                   = self.ValidNavarea or NULL
 

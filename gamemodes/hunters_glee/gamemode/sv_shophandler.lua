@@ -32,17 +32,17 @@ function GM:purchaseItem( ply, toPurchase )
         end
 
         local dat = self.shopItems[toPurchase]
-        local purchaseFunc = dat.purchaseFunc
-        if purchaseFunc then
-            if isfunction( purchaseFunc ) then
-                local noErrors, _ = xpcall( purchaseFunc, errorCatchingMitt, ply, toPurchase )
+        local onPurchaseFunc = dat.onPurchaseFunc
+        if onPurchaseFunc then
+            if isfunction( onPurchaseFunc ) then
+                local noErrors, _ = xpcall( onPurchaseFunc, errorCatchingMitt, ply, toPurchase )
                 if noErrors == false then
                     self:invalidateShopItem( toPurchase )
-                    print( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s purchaseFunc function errored!!!!!!!!!!!" )
+                    print( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s onPurchaseFunc function errored!!!!!!!!!!!" )
                     return
 
                 end
-            elseif purchaseFunc ~= true then
+            elseif onPurchaseFunc ~= true then
                 return
 
             end

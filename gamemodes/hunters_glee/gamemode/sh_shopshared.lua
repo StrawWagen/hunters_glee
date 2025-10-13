@@ -130,7 +130,7 @@ function GM:getDebugShopItemStructureTable()
             },
             weight = 0,
             purchaseCheck = unUndeadCheck,
-            purchaseFunc = slamsPurchase,
+            onPurchaseFunc = slamsPurchase,
         }
     }
     local theDescriptorTable = {
@@ -139,7 +139,7 @@ function GM:getDebugShopItemStructureTable()
             name =              "Printed name that players see",
             desc =              "Description. Accepts a function or string.",
             cost =              "Cost, negative to give player score when purchasing, Accepts a function.",
-            canGoInDebt =      "Optional. Can this item be bought when the player has no score? Can force players to buy innate debuffs, etc.",
+            canGoInDebt =       "Optional. Can this item be bought when the player has no score? Can force players to buy innate debuffs, etc.",
             fakeCost =          "Optional. Whether to skip applying the cost within the purchasing system. Good if you want a shop item to more dynamically apply costs, but still show a cost.",
             simpleCostDisplay = "Optional. Client. Skip the coloring + formatting of an item's cost in the shop.",
             markup =            "Optional. Price multipler to be applied when bought during the hunt, motivates people buy when the round's setting up.",
@@ -149,7 +149,7 @@ function GM:getDebugShopItemStructureTable()
             purchaseTimes =     "Item will only be purchasble in the round states specified by this table. Eg GAMEMODE.ROUND_ACTIVE ( hunting ).",
             weight =            "Optional. Where to order this relative to everything else in our category, accepts negative values.",
             purchaseCheck =     "Optional. Function or table of functions checked to see if this is purchasable, ran clientside on every item, every frame when shop is open. ran once serverside when purchased",
-            purchaseFunc =      "Server. What function to run when the item is bought.",
+            onPurchaseFunc =      "Server. What function to run when the item is bought.",
             canShowInShop =     "Optional. Can this be seen in the shop? also prevents purchases. Accepts a single function, or a table of functions."
         }
     }
@@ -171,7 +171,7 @@ function GM:addShopItem( shopItemIdentifier, shopItemData )
     if not shopItemData.cost then addShopFail( shopItemIdentifier, "invalid .cost" ) return end
     if not shopItemData.category then addShopFail( shopItemIdentifier, "invalid .category, create a new category first?" ) return end
     if not shopItemData.purchaseTimes or table.Count( shopItemData.purchaseTimes ) <= 0 then addShopFail( shopItemIdentifier, ".purchaseTimes are not specified" ) return end
-    if not shopItemData.purchaseFunc then addShopFail( shopItemIdentifier, "invalid .purchaseFunc" ) return end
+    if not shopItemData.onPurchaseFunc then addShopFail( shopItemIdentifier, "invalid .onPurchaseFunc" ) return end
 
     GAMEMODE.shopItems[shopItemIdentifier] = shopItemData
 
@@ -183,11 +183,6 @@ function GM:invalidateShopItem( identifier )
 
 
     end
-end
-
-function GM:addShopCategory( shopCategoryName, shopCategoryData )
-    GAMEMODE.shopCategories[shopCategoryName] = shopCategoryData
-
 end
 
 function GM:GetShopItemData( identifier )
