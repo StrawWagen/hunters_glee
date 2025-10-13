@@ -2280,6 +2280,16 @@ local function ar2Purchase( purchaser )
 
 end
 
+local function ar3Purchase( purchaser )
+    purchaser:GiveAmmo( 400,    "AR2",         true )
+
+
+    purchaser:Give( "termhunt_ar3" )
+
+    loadoutConfirm( purchaser, 2 )
+
+end
+
 
 local function fragPurchase( purchaser )
     local frag = purchaser:GetWeapon( "weapon_frag" )
@@ -3539,6 +3549,22 @@ local defaultItems = {
         weight = -150,
         purchaseCheck = unUndeadCheck,
         purchaseFunc = ar2Purchase,
+    },
+    [ "ar3" ] = {
+        name = "Emplacement Gun",
+        desc = "It'll shred any medium/low health enemys, it's at its best when shooting at small & medium distances. It takes Ar2 ammunition, worthless on terminators.",
+        cost = 110,
+        markup = 2.5,
+        markupPerPurchase = 0.8,
+        cooldown = 0.5,
+        category = "Items",
+        purchaseTimes = {
+            GM.ROUND_INACTIVE,
+            GM.ROUND_ACTIVE,
+        },
+        weight = -140,
+        purchaseCheck = unUndeadCheck,
+        purchaseFunc = ar3Purchase,
     },
     -- lol you ran out of battery
     [ "armor" ] = {
