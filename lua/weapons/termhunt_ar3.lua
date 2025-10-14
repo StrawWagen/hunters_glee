@@ -30,7 +30,7 @@ SWEP.UseHands = true
 SWEP.ShootSound = "Weapon_FuncTank.Single"
 SWEP.ConsecutiveShotsDecay = 1
 
-SWEP.HeatDecay = 0.005
+SWEP.HeatDecay = 0.004
 SWEP.HeatPerShot = 0.004
 SWEP.UnbearableHeat = 0.25
 
