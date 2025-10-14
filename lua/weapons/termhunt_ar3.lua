@@ -51,7 +51,7 @@ function SWEP:Deploy()
 
     local owner = self:GetOwner()
     if IsValid( owner ) and owner:IsPlayer() and owner.doSpeedClamp then
-        owner:doSpeedClamp( "glee_ar3_deployed", -50 ) -- apply speed debuff when equipped
+        owner:doSpeedClamp( "glee_ar3_deployed", -75 ) -- apply speed debuff when equipped
 
         local timerName = "glee_ar3_deploy_timer" .. self:GetCreationID()
 
@@ -129,9 +129,11 @@ function SWEP:Initialize()
             if overThresh > 0 then
                 if overThresh > 1 and math.Rand( 0, 1 ) < overThresh then
                     owner:Ignite( overThresh * 2 )
-                    GAMEMODE:GivePanic( owner, overThresh * 4 )
+                    if GAMEMODE.GivePanic then
+                        GAMEMODE:GivePanic( owner, overThresh * 4 )
 
-                else
+                    end
+                elseif GAMEMODE.GivePanic then
                     GAMEMODE:GivePanic( owner, overThresh * 2 )
 
                 end
