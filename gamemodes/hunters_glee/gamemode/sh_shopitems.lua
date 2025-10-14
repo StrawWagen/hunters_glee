@@ -2297,6 +2297,22 @@ local function fragPurchase( purchaser )
 end
 
 
+local function ar3Purchase( purchaser )
+    local ar3 = purchaser:GetWeapon( "termhunt_ar3" )
+    if IsValid( ar3 ) then
+        purchaser:GiveAmmo( 1000,    "AR2",         true )
+
+    else
+        purchaser:GiveAmmo( 500,    "AR2",         true )
+        purchaser:Give( "termhunt_ar3" )
+
+    end
+
+    loadoutConfirm( purchaser, 6 )
+
+end
+
+
 local function tauCannonPurchase( purchaser )
     local tau = purchaser:GetWeapon( "termhunt_taucannon" )
     if IsValid( tau ) then
@@ -3426,6 +3442,22 @@ local defaultItems = {
         weight = 1,
         purchaseCheck = unUndeadCheck, lockpickCanPurchase,
         purchaseFunc = lockpickPurchase,
+    },
+    -- awesome boomertaintaters gun
+    [ "ar3" ] = {
+        name = "Emplacement Gun",
+        desc = "Rapid fire, powerful, chews through flesh, but not metal...\nOverheats quickly...",
+        cost = 0,
+        skullCost = 5,
+        cooldown = 0.5,
+        category = "Items",
+        purchaseTimes = {
+            GM.ROUND_INACTIVE,
+            GM.ROUND_ACTIVE,
+        },
+        weight = 1100,
+        purchaseCheck = unUndeadCheck,
+        purchaseFunc = ar3Purchase,
     },
     -- ka BOOOOOM
     [ "taucannon" ] = {
