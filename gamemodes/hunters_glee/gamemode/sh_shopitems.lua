@@ -2280,17 +2280,6 @@ local function ar2Purchase( purchaser )
 
 end
 
-local function ar3Purchase( purchaser )
-    purchaser:GiveAmmo( 400,    "AR2",         true )
-
-
-    purchaser:Give( "termhunt_ar3" )
-
-    loadoutConfirm( purchaser, 2 )
-
-end
-
-
 
 local function fragPurchase( purchaser )
     local frag = purchaser:GetWeapon( "weapon_frag" )
@@ -2304,6 +2293,22 @@ local function fragPurchase( purchaser )
     end
 
     loadoutConfirm( purchaser, 1 )
+
+end
+
+
+local function ar3Purchase( purchaser )
+    local ar3 = purchaser:GetWeapon( "termhunt_ar3" )
+    if IsValid( ar3 ) then
+        purchaser:GiveAmmo( 1000,    "AR2",         true )
+
+    else
+        purchaser:GiveAmmo( 500,    "AR2",         true )
+        purchaser:Give( "termhunt_ar3" )
+
+    end
+
+    loadoutConfirm( purchaser, 6 )
 
 end
 
@@ -3438,6 +3443,22 @@ local defaultItems = {
         purchaseCheck = unUndeadCheck, lockpickCanPurchase,
         purchaseFunc = lockpickPurchase,
     },
+    -- awesome boomertaintaters gun
+    [ "ar3" ] = {
+        name = "Emplacement Gun",
+        desc = "Rapid fire, powerful, chews through flesh, but not metal...\nOverheats quickly...",
+        cost = 0,
+        skullCost = 5,
+        cooldown = 0.5,
+        category = "Items",
+        purchaseTimes = {
+            GM.ROUND_INACTIVE,
+            GM.ROUND_ACTIVE,
+        },
+        weight = 1100,
+        purchaseCheck = unUndeadCheck,
+        purchaseFunc = ar3Purchase,
+    },
     -- ka BOOOOOM
     [ "taucannon" ] = {
         name = "Tau Cannon",
@@ -3469,22 +3490,6 @@ local defaultItems = {
         weight = 900,
         purchaseCheck = { unUndeadCheck, canPurchaseCrapVidCam },
         purchaseFunc = crapVidCamPurchase,
-    },
-    [ "ar3" ] = {
-        name = "Emplacement Gun",
-        desc = "It'll shred any medium/low health enemys, it's at its best when shooting at small & medium distances. It takes Ar2 ammunition, worthless on terminators.",
-        cost = 110,
-        markup = 2.5,
-        markupPerPurchase = 0.8,
-        cooldown = 0.5,
-        category = "Items",
-        purchaseTimes = {
-            GM.ROUND_INACTIVE,
-            GM.ROUND_ACTIVE,
-        },
-        weight = 800,
-        purchaseCheck = unUndeadCheck,
-        purchaseFunc = ar3Purchase,
     },
     [ "slams" ] = {
         name = "Slams",
