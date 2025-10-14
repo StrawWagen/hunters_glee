@@ -39,7 +39,9 @@ gamemodes\hunters_glee\gamemode\modules\unsandboxing\sh_unsandboxing.lua
 
 gamemodes\hunters_glee\gamemode\modules\shopitems\cl_shopgobbler.lua
 gamemodes\hunters_glee\gamemode\modules\shopitems\sh_shopcategories.lua
+gamemodes\hunters_glee\gamemode\modules\shopitems\sh_shoptags.lua
 gamemodes\hunters_glee\gamemode\modules\shopitems\sh_shophelpers.lua
+gamemodes\hunters_glee\gamemode\modules\shopitems\sh_itemverification.lua
 
 gamemodes\hunters_glee\gamemode\modules\spawnset\cl_spawnsetvote.lua
 gamemodes\hunters_glee\gamemode\modules\spawnset\sh_spawnpoolutil.lua

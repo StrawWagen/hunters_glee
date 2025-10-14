@@ -46,13 +46,13 @@ function GM:ShopInitialThink()
         end
     end
     local count = 0
-    for _, shopItem in pairs( self.shopItems ) do
-        if self:SetupShopItem( shopItem ) then
+    for shopItemName, shopItem in pairs( self.shopItems ) do
+        if self:AddShopItem( shopItemName, shopItem ) then
             count = count + 1
 
         end
     end
-    print( "GLEE: Gobbled " .. count .. " shop items..." )
+    print( "GLEE: SV Gobbled " .. count .. " shop items..." )
 
     GAMEMODE:UpdateShopFor( player.GetAll() )
 

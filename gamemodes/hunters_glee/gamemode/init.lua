@@ -36,7 +36,9 @@ AddCSLuaFile( "modules/sh_detecthunterkills.lua" )
 
 AddCSLuaFile( "modules/shopitems/cl_shopgobbler.lua" )
 AddCSLuaFile( "modules/shopitems/sh_shophelpers.lua" )
+AddCSLuaFile( "modules/shopitems/sh_shoptags.lua" )
 AddCSLuaFile( "modules/shopitems/sh_shopcategories.lua" )
+AddCSLuaFile( "modules/shopitems/sh_itemverification.lua" )
 
 AddCSLuaFile( "modules/battery/sh_battery.lua" )
 AddCSLuaFile( "modules/spawnset/cl_spawnsetvote.lua" )

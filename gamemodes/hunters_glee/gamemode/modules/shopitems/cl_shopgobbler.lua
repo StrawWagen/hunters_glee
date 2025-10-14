@@ -16,6 +16,8 @@ net.Receive( "glee_gobbledirectories", function()
     local count = net.ReadUInt( 16 )
     GAMEMODE.validClientItemDirectories = GAMEMODE.validClientItemDirectories or {}
 
+    GAMEMODE.ItemGobbleCount = 0
+
     for _ = 1, count do
         local dir = net.ReadString()
         local ok = ProtectedCall( function( dirProtected ) include( "glee_shopitems/" .. dirProtected ) end, dir )
@@ -25,6 +27,9 @@ net.Receive( "glee_gobbledirectories", function()
 
         end
     end
+
+    print( "GLEE: CL Gobbled " .. GAMEMODE.ItemGobbleCount .. " shop items..." )
+
 end )
 
 function GM:GobbleShopItems( items )
@@ -34,8 +39,14 @@ function GM:GobbleShopItems( items )
             table.Merge( existingData, data )
 
         else
-            self.shopItems[ name ] = data
+            local wasGood, notGoodReason = self:AddShopItem( name, data )
+            if wasGood then
+                self.ItemGobbleCount = self.ItemGobbleCount + 1
 
+            elseif not wasGood then
+                ErrorNoHaltWithStack( "HUNTER'S GLEE: GAMEMODE:GobbleShopItems( items ) failed to add item " .. name .. " for reason... " .. tostring( notGoodReason ) )
+
+            end
         end
     end
 end

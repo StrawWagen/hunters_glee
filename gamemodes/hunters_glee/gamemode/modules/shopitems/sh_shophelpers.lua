@@ -16,17 +16,18 @@ function shopHelpers.undeadCheck( purchaser )
 end
 
 local gunCock = Sound( "items/ammo_pickup.wav" )
-function shopHelpers.loadoutConfirm( ply, Count )
-    for _ = 0, Count do
+function shopHelpers.loadoutConfirm( ply, count )
+    for _ = 0, count do
         ply:EmitSound( gunCock, 60, math.random( 90, 110 ) )
 
     end
 end
 
-function shopHelpers.purchaseWeapon( purchaser, wepClass, ammoData )
-    local ammoType = ammoData.ammoType
-    local purchaseClips = ammoData.purchaseClips
-    local resupplyClips = ammoData.resupplyClips
+function shopHelpers.purchaseWeapon( purchaser, data )
+    local wepClass = data.class
+    local ammoType = data.ammoType
+    local purchaseClips = data.purchaseClips
+    local resupplyClips = data.resupplyClips
 
     local weapon = purchaser:GetWeapon( wepClass )
 
@@ -49,6 +50,9 @@ function shopHelpers.purchaseWeapon( purchaser, wepClass, ammoData )
         end
     end
 
-    GAMEMODE.shopHelpers.loadoutConfirm( purchaser, 2 )
+    local confirmSoundWeight = data.confirmSoundWeight
+    if confirmSoundWeight then
+        GAMEMODE.shopHelpers.loadoutConfirm( purchaser, confirmSoundWeight )
 
+    end
 end

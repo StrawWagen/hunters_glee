@@ -35,7 +35,9 @@ include( "modules/unsandboxing/sh_unsandboxing.lua" )
 include( "sh_shopshared.lua" )
 include( "sh_shopitems.lua" )
 
+include( "modules/shopitems/sh_shoptags.lua" )
 include( "modules/shopitems/sh_shopcategories.lua" )
+include( "modules/shopitems/sh_itemverification.lua" )
 
 if SERVER then -- load order has to be right :(
     include( "modules/shopitems/sv_shopgobbler.lua" )

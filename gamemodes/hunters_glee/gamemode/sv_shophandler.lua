@@ -97,6 +97,9 @@ function GM:purchaseItem( ply, toPurchase )
             print( nameAndId .. " Bought: " .. dat.name  )
 
         end
+
+        hook.Run( "glee_PostShopItemPurchased", ply, toPurchase, dat )
+
     end )
 end
 
