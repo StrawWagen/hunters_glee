@@ -84,17 +84,6 @@ function SWEP:Initialize()
 
 end
 
-function SWEP:KillSound()
-    if self.chargeSound and self.chargeSound:IsPlaying() then
-        self.chargeSound:Stop()
-
-    end
-    if self.overchargeSound and self.overchargeSound:IsPlaying() then
-        self.overchargeSound:Stop()
-
-    end
-end
-
 function SWEP:DumpCharge()
     local owner = self:GetOwner()
     local chargeLevel = self:GetChargeLevel()
@@ -200,6 +189,17 @@ function SWEP:DumpCharge()
 
 end
 
+function SWEP:KillSound() -- you NEED to call this in all the places where it's called. DO NOT TRUST LOOPING SOUNDS!
+    if self.chargeSound and self.chargeSound:IsPlaying() then
+        self.chargeSound:Stop()
+
+    end
+    if self.overchargeSound and self.overchargeSound:IsPlaying() then
+        self.overchargeSound:Stop()
+
+    end
+end
+
 function SWEP:Think()
     local owner = self:GetOwner()
     if not IsValid( owner ) then return end
@@ -226,19 +226,22 @@ function SWEP:Think()
     end
 
     if owner:IsPlayer() and CHARGING then
-        if not self.chargeSound then
+        if not self.chargeSound then -- first think, create the sound
             local chargeSound = CreateSound( owner, "hunters_glee/weapons/gauss/chargeloop.wav" )
             self.chargeSound = chargeSound
-            self:CallOnRemove( "gleetau_chargeSound", function()
+            self:CallOnRemove( "gleetau_chargeSound", function() -- ALWAYS KILL THE SOUND WHEN GUN GOES AWAY
                 if chargeSound and chargeSound:IsPlaying() then
                     chargeSound:Stop()
 
                 end
             end )
 
-        else
-            self.chargeSound:Play()
-            if chargeLevel < max_Charge then
+        else -- ok next think, chargesound is created
+            if not self.chargeSound:IsPlaying() then -- otherwise stopsound would break the sound, small one tho since the sound is cleaned up when charging stops
+                self.chargeSound:Play()
+
+            end
+            if chargeLevel < max_Charge then -- and manage pitch
                 local pitch = 100 + 15 * chargeLevel
                 if chargeLevel > charge_SlowdownThresh then
                     local remainder = chargeLevel - charge_SlowdownThresh
@@ -249,24 +252,27 @@ function SWEP:Think()
 
             end
         end
-        if not self.overchargeSound then
+        if not self.overchargeSound then -- overcharging warning sound
             local overchargeSound = CreateSound( owner, "ambient/levels/labs/teleport_malfunctioning.wav" )
             self.overchargeSound = overchargeSound
-            self:CallOnRemove( "gleetau_overchargeSound", function()
+            self:CallOnRemove( "gleetau_overchargeSound", function() -- ALWAYS MAKE SURE LOOPING SOUNDS WILL BE KILLED
                 if overchargeSound and overchargeSound:IsPlaying() then
                     overchargeSound:Stop()
 
                 end
             end )
 
-        elseif chargeLevel > charge_SlowdownThresh then
-            self.overchargeSound:Play()
-            local pitch = 100 + 15 * ( chargeLevel - charge_SlowdownThresh )
-            local volume = 0.5 + ( chargeLevel - charge_SlowdownThresh ) * 0.05
+        elseif chargeLevel > charge_SlowdownThresh then -- decrease the pitch the more it overcharges
+            if not self.overchargeSound:IsPlaying() then -- stopsound WILL be called somehow
+                self.overchargeSound:Play()
+
+            end
+            local pitch = 100 + 15 * ( chargeLevel - charge_SlowdownThresh ) -- high pitch to low
+            local volume = 0.5 + ( chargeLevel - charge_SlowdownThresh ) * 0.05 -- low volume to high
             self.overchargeSound:ChangePitch( pitch, 0 )
             self.overchargeSound:ChangeVolume( volume, 0 )
 
-            if SERVER then
+            if SERVER then -- just makes bots react to scary weapon
                 local eyeTr = owner:GetEyeTrace()
                 sound.EmitHint( SOUND_DANGER, eyeTr.HitPos, 50 + chargeLevel * 25, 1 )
                 local aimEnt = eyeTr.Entity
@@ -277,13 +283,13 @@ function SWEP:Think()
             end
         end
     end
+    if SERVER and self.chargeSound and chargeLevel == 0 then
+        self:KillSound()
+
+    end
 
     if owner:IsPlayer() and owner:KeyReleased( IN_ATTACK2 ) and chargeLevel ~= 0 and IsFirstTimePredicted() then
         self:DumpCharge()
-
-    end
-    if SERVER and self.chargeSound and chargeLevel == 0 then
-        self:KillSound()
 
     end
 end
