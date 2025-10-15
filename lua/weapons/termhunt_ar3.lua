@@ -1,3 +1,6 @@
+-- viewmodel and worldmodel from THIS ADDON! https://steamcommunity.com/sharedfiles/filedetails/?id=3401113154
+-- give it some LOVE
+
 SWEP.PrintName = "Emplacement Gun"
 SWEP.Author = "Boomeritaintaters + gaming98"
 SWEP.Instructions = "I want revenge. I want them to know that death is coming - John Rambo"
@@ -28,7 +31,7 @@ SWEP.WorldModel = "models/weapons/tfa_mmod/w_ar3.mdl"
 SWEP.UseHands = true
 
 SWEP.ShootSound = "Weapon_FuncTank.Single"
-SWEP.ConsecutiveShotsDecay = 1
+SWEP.ConsecutiveShotsDecay = 2
 
 SWEP.HeatDecay = 0.004
 SWEP.HeatPerShot = 0.004
