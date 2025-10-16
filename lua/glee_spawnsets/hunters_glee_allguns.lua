@@ -7,7 +7,6 @@
 
 local function setWeaponOverride( hunter, wepClass )
     hunter.DefaultWeapon = wepClass
-    hunter.TERM_FISTS = wepClass
 
 end
 
@@ -128,3 +127,4 @@ local set = {
 
 -- put the spawnset IN the global table to be gobbled
 table.insert( GLEE_SPAWNSETS, set )
+
