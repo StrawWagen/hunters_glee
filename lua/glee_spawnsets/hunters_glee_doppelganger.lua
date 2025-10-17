@@ -1,7 +1,9 @@
+-- credit boometaters!
+
 local set = {
     name = "hunters_glee_doppelganger", -- unique name
-    prettyName = "Doppelgangers",
-    description = "It's... You?",
+    prettyName = "You!",
+    description = "Hey it's you, and you! And me? ...and you. and you. and oh god, oh god yOU? AND YOU? AND HIM, AND HER?",
     difficultyPerMin = "default", -- difficulty per minute
     waveInterval = "default", -- time between spawn waves
     diffBumpWhenWaveKilled = "default", -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
@@ -10,7 +12,7 @@ local set = {
     startingSpawnCount = 1,
     roundEndSound = "default",
     roundStartSound = "default",
-    chanceToBeVotable = 5,
+    chanceToBeVotable = 1,
     spawns = {
         {
             hardRandomChance = nil,
@@ -18,8 +20,6 @@ local set = {
             prettyName = "A Doppelganger",
             class = "terminator_nextbot_snail_disguised",
             spawnType = "hunter",
-            minCount = { 0 }, -- will ALWAYS maintain this count
-            maxCount = { 15 }, -- will never exceed this count, uses findbycount
             countClass = "terminator_nextbot_snail_disguised",
         },
     }
