@@ -2,6 +2,7 @@
 -- and credit to idksomething for the inspiration https://steamcommunity.com/id/blahaj1337/
 
 
+
 local function setWeaponOverride( hunter, wepClass )
     hunter.DefaultWeapon = wepClass
 
@@ -56,7 +57,7 @@ local set = {
             spawnType = "hunter",
             difficultyCost = 2,
             countClass = "terminator_nextbot_fakeply", -- class COUNTED, uses findbyclass
-            postSpawnedFuncs =  { givePistol },
+            preSpawnedFuncs =  { givePistol },
         },
         {
             hardRandomChance = nil,
@@ -66,7 +67,7 @@ local set = {
             spawnType = "hunter",
             difficultyCost = 4,
             countClass = "terminator_nextbot_fakeply", -- class COUNTED, uses findbyclass
-            postSpawnedFuncs =  { giveSMG },
+            preSpawnedFuncs =  { giveSMG },
         },
         {
             hardRandomChance = nil,
@@ -76,7 +77,7 @@ local set = {
             spawnType = "hunter",
             difficultyCost = 5.5,
             countClass = "terminator_nextbot_fakeply", -- class COUNTED, uses findbyclass
-            postSpawnedFuncs =  { give357 },
+            preSpawnedFuncs =  { give357 },
         },
         {
             hardRandomChance = nil,
@@ -86,7 +87,7 @@ local set = {
             spawnType = "hunter",
             difficultyCost = 6,
             countClass = "terminator_nextbot_fakeply", -- class COUNTED, uses findbyclass
-            postSpawnedFuncs =  { giveAR2 },
+            preSpawnedFuncs =  { giveAR2 },
         },
         {
             hardRandomChance = nil,
@@ -96,7 +97,7 @@ local set = {
             spawnType = "hunter",
             difficultyCost = 7.5,
             countClass = "terminator_nextbot_fakeply", -- class COUNTED, uses findbyclass
-            postSpawnedFuncs =  { giveXBOW },
+            preSpawnedFuncs =  { giveXBOW },
         },
         {
             hardRandomChance = nil,
@@ -106,7 +107,7 @@ local set = {
             spawnType = "hunter",
             difficultyCost = 10,
             countClass = "terminator_nextbot_fakeply", -- class COUNTED, uses findbyclass
-            postSpawnedFuncs =  { giveRPG },
+            preSpawnedFuncs =  { giveRPG },
         },
     }
 }
