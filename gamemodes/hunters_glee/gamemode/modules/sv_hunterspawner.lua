@@ -90,6 +90,10 @@ local function asParsed( toParse, name, defaultsTbl )
                 end
             end
         end
+
+    elseif not toParse then
+        return nil -- no default, and nothing to parse
+
     end
 
     if isnumber( toParse ) then return toParse * finalMul end
