@@ -11,7 +11,7 @@ function GM:getDebugShopItemStructureTable()
         [ "slams" ] = {
             name = "Slams",
             desc = "Some slams, 17 to be exact.",
-            cost = 80,
+            shCost = 80,
             markup = 2,
             cooldown = 1,
             tags = { "ITEMS", "Weapon" },
@@ -20,8 +20,8 @@ function GM:getDebugShopItemStructureTable()
                 GAMEMODE.ROUND_ACTIVE,
             },
             weight = 0,
-            purchaseCheck = unUndeadCheck,
-            onPurchaseFunc = slamsPurchase,
+            shPurchaseCheck = GAMEMODE.shopHelpers.aliveCheck,
+            svOnPurchaseFunc = slamsPurchase,
         }
     }
     local theDescriptorTable = {
@@ -29,7 +29,7 @@ function GM:getDebugShopItemStructureTable()
         [ "shopItemUniqueIdentifier" ] = {
             name =              "Printed name that players see",
             desc =              "Description. Accepts a function or string.",
-            cost =              "Cost, negative to give player score when purchasing, Accepts a function.",
+            shCost =              "Cost, negative to give player score when purchasing, Accepts a function.",
             canGoInDebt =       "Optional. Can this item be bought when the player has no score? Can force players to buy innate debuffs, etc.",
             fakeCost =          "Optional. Whether to skip applying the cost within the purchasing system. Good if you want a shop item to more dynamically apply costs, but still show a cost.",
             simpleCostDisplay = "Optional. Client. Skip the coloring + formatting of an item's cost in the shop.",
@@ -39,9 +39,9 @@ function GM:getDebugShopItemStructureTable()
             tags =              "Tags that define attributes of this item, categories included. Accepts an indexed table of strings, converted to a mask after adding.",
             purchaseTimes =     "Item will only be purchasble in the round states specified by this table. Eg GAMEMODE.ROUND_ACTIVE ( hunting ).",
             weight =            "Optional. Where to order this relative to everything else in our category, accepts negative values.",
-            purchaseCheck =     "Optional. Function or table of functions checked to see if this is purchasable, ran clientside on every item, every frame when shop is open. ran once serverside when purchased",
-            onPurchaseFunc =    "Server. What function to run when the item is bought.",
-            canShowInShop =     "Optional. Can this be seen in the shop? also prevents purchases. Accepts a single function, or a table of functions."
+            shPurchaseCheck =     "Optional. Function or table of functions checked to see if this is purchasable, ran clientside on every item, every frame when shop is open. ran once serverside when purchased",
+            svOnPurchaseFunc =    "Server. What function to run when the item is bought.",
+            shCanShowInShop =     "Optional. Can this be seen in the shop? also prevents purchases. Accepts a single function, or a table of functions."
         }
     }
     return theItemTable, theDescriptorTable
@@ -59,10 +59,11 @@ function GM:AddShopItem( shopItemIdentifier, shopItemData )
     if not istable( shopItemData ) then addShopFail( shopItemIdentifier, "data table is not a table" ) return end
     if not shopItemData.name then addShopFail( shopItemIdentifier, "invalid .name" ) return end
     if not shopItemData.desc then addShopFail( shopItemIdentifier, "invalid .desc ( description )" ) return end
-    if not shopItemData.cost then addShopFail( shopItemIdentifier, "invalid .cost" ) return end
+    if not shopItemData.shCost then addShopFail( shopItemIdentifier, "invalid .shCost" ) return end
     if not shopItemData.tags then addShopFail( shopItemIdentifier, "invalid .tags" ) return end
+    if shopItemData.category or shopItemData.categories then addShopFail( shopItemIdentifier, "do not set .category or .categories, categories are determined by .tags" ) return end
     if not shopItemData.purchaseTimes or table.Count( shopItemData.purchaseTimes ) <= 0 then addShopFail( shopItemIdentifier, ".purchaseTimes are not specified" ) return end
-    if not shopItemData.onPurchaseFunc then addShopFail( shopItemIdentifier, "invalid .onPurchaseFunc" ) return end
+    if not shopItemData.svOnPurchaseFunc then addShopFail( shopItemIdentifier, "invalid .svOnPurchaseFunc" ) return end
 
     GAMEMODE:ConvertItemTags( shopItemData )
     GAMEMODE:PutItemInProperCategories( shopItemData )
@@ -87,7 +88,7 @@ function GM:PutItemInProperCategories( shopItemData )
     local categories = GAMEMODE.shopCategories
     for tag, _ in pairs( shopItemData.tags ) do
         if categories[ tag ] then
-            print( "Putting " .. shopItemData.name .. " in category " .. tag )
+            --print( "Putting " .. shopItemData.name .. " in category " .. tag )
             shopItemData.categories = shopItemData.categories or {}
             shopItemData.categories[tag] = true
 
@@ -164,7 +165,7 @@ function GM:canPurchase( ply, toPurchase )
     if not wasValidCategory then return nil, lastNotPurchasableReason end
 
     -- do this first
-    local checkFunc = dat.purchaseCheck
+    local checkFunc = dat.shPurchaseCheck
     if isfunction( checkFunc ) then
         checkFunc = { checkFunc }
 
@@ -174,7 +175,7 @@ function GM:canPurchase( ply, toPurchase )
             local noErrors, returned, reason = xpcall( theCurrentCheckFunc, errorCatchingMitt, ply )
             if noErrors == false then
                 GAMEMODE:invalidateShopItem( toPurchase )
-                print( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s purchaseCheck function errored!!!!!!!!!!!" )
+                print( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s shPurchaseCheck function errored!!!!!!!!!!!" )
                 return nil, REASON_ERROR
 
             else

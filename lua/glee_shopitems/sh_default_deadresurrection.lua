@@ -2,7 +2,7 @@
 local shopHelpers = GAMEMODE.shopHelpers
 
 local function divineInterventionCost( purchaser )
-    local cost = 350
+    local shCost = 350
     local chosenHasArrived = GetGlobalBool( "chosenhasarrived", false )
     if chosenHasArrived then
         local isChosen = purchaser:GetNW2Bool( "isdivinechosen", false )
@@ -100,7 +100,7 @@ local function divineInterventionDeathCooldown( purchaser )
 
 end
 
-local function divineIntervention( purchaser )
+local function divineIntervention( shopItem, purchaser )
     if not SERVER then return end
     if not purchaser.Resurrect then return end
 
@@ -250,7 +250,7 @@ local function infernalInterventionDeathCooldown( purchaser )
 
 end
 
-local function infernalIntervention( purchaser )
+local function infernalIntervention( shopItem, purchaser )
     if not SERVER then return end
     if not purchaser.Resurrect then return end
 
@@ -338,7 +338,7 @@ local items = {
     [ "resurrection" ] = {
         name = "Divine Intervention",
         desc = "Resurrect yourself.\nYou will revive next to another living player and have " .. dmgResistAfterRez .. "s of damage resistance.",
-        cost = divineInterventionCost,
+        shCost = divineInterventionCost,
         markup = 1,
         markupPerPurchase = 0.25,
         cooldown = divineInterventionCooldown,
@@ -347,14 +347,14 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = -201,
-        purchaseCheck = { shopHelpers.undeadCheck, divineInterventionDeathCooldown },
-        onPurchaseFunc = divineIntervention,
+        shPurchaseCheck = { shopHelpers.undeadCheck, divineInterventionDeathCooldown },
+        svOnPurchaseFunc = divineIntervention,
     },
     -- for people who just want to BE ALIVE!
     [ "resurrectioncrappy" ] = {
         name = "Infernal Intervention",
         desc = "Make a deal with the devil.\nYou will come back as a shriveled, weak, husk.",
-        cost = 150,
+        shCost = 150,
         canGoInDebt = true,
         markup = 1,
         markupPerPurchase = 1,
@@ -364,8 +364,8 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = -200,
-        purchaseCheck = { shopHelpers.undeadCheck, infernalInterventionCanPurchase, infernalInterventionDeathCooldown },
-        onPurchaseFunc = infernalIntervention,
+        shPurchaseCheck = { shopHelpers.undeadCheck, infernalInterventionCanPurchase, infernalInterventionDeathCooldown },
+        svOnPurchaseFunc = infernalIntervention,
     },
 }
 

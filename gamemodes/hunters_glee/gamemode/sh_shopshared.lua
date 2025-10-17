@@ -213,7 +213,7 @@ function GM:shopItemCost( toPurchase, purchaser )
     if not toPurchase then return end
     local dat = GAMEMODE:GetShopItemData( toPurchase )
     if not dat then return 0 end
-    local costRaw = dat.cost
+    local costRaw = dat.shCost
     local cost = nil
 
     if isfunction( costRaw ) then

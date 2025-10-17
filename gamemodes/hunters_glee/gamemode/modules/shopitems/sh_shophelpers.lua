@@ -1,6 +1,6 @@
 local GM = GM or GAMEMODE
 
-local shopHelpers = {}
+local shopHelpers = GM.shopHelpers or {}
 GM.shopHelpers = shopHelpers
 
 function shopHelpers.aliveCheck( purchaser )
@@ -35,6 +35,8 @@ function shopHelpers.purchaseWeapon( purchaser, data )
         ammoType = ammoType or weapon:GetPrimaryAmmoType()
 
         local clipSize = weapon:GetMaxClip1()
+        if clipSize == -1 then clipSize = 1 end -- clipless weapons, eg slams, rpg
+
         local ammoToGive = clipSize * resupplyClips
         purchaser:GiveAmmo( ammoToGive, ammoType, true )
 
@@ -55,4 +57,10 @@ function shopHelpers.purchaseWeapon( purchaser, data )
         GAMEMODE.shopHelpers.loadoutConfirm( purchaser, confirmSoundWeight )
 
     end
+end
+
+local cheatsVar = GetConVar( "sv_cheats" )
+function shopHelpers.isCheats()
+    return cheatsVar:GetBool()
+
 end

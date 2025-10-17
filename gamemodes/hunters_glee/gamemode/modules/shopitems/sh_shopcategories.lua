@@ -7,22 +7,22 @@ function GM:SetupShopCategories()
         ITEMS = { -- weapons, guns
             name = "Items",
             order = 1,
-            canShowInShop = shopHelpers.aliveCheck
+            shCanShowInShop = shopHelpers.aliveCheck
         },
         INNATE = { -- passive, innate abilities
             name = "Innate",
             order = 2,
-            canShowInShop = shopHelpers.aliveCheck
+            shCanShowInShop = shopHelpers.aliveCheck
         },
         DEADSACRIFICES = { -- things you can place to earn money while dead
             name = "Sacrifices",
             order = 3,
-            canShowInShop = shopHelpers.undeadCheck
+            shCanShowInShop = shopHelpers.undeadCheck
         },
         DEADGIFTS = { -- things you can place to spend money, do stuff while dead
             name = "Gifts",
             order = 4,
-            canShowInShop = shopHelpers.undeadCheck
+            shCanShowInShop = shopHelpers.undeadCheck
         },
         BANK = { -- banking
             name = "Bank",
@@ -53,7 +53,7 @@ function GM:CategoryCanShow( identifier, purchaser )
     local catData = GAMEMODE:GetShopCategoryData( identifier )
     if not catData then return false end
 
-    local categoryCanShow = catData.canShowInShop
+    local categoryCanShow = catData.shCanShowInShop
     if isfunction( categoryCanShow ) then
         categoryCanShow = { categoryCanShow }
 
@@ -63,7 +63,7 @@ function GM:CategoryCanShow( identifier, purchaser )
             local noErrors, returned = xpcall( theCurrentShowFunc, errorCatchingMitt, purchaser )
             if noErrors == false then
                 GAMEMODE:invalidateShopItem( toPurchase )
-                print( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s canShowInShop function errored!!!!!!!!!!!" )
+                print( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s shCanShowInShop function errored!!!!!!!!!!!" )
                 return nil, REASON_ERROR
 
             else

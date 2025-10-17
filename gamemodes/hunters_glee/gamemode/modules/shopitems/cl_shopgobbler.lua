@@ -44,7 +44,7 @@ function GM:GobbleShopItems( items )
                 self.ItemGobbleCount = self.ItemGobbleCount + 1
 
             elseif not wasGood then
-                ErrorNoHaltWithStack( "HUNTER'S GLEE: GAMEMODE:GobbleShopItems( items ) failed to add item " .. name .. " for reason... " .. tostring( notGoodReason ) )
+                return
 
             end
         end

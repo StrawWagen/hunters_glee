@@ -454,7 +454,7 @@ function termHuntOpenTheShop()
 
         -- the scrollable things that hold shop items and have names like innate and undead
         for category, catData in SortedPairsByMemberValue( categories, "order", false ) do
-            if catData.canShowInShop and not catData.canShowInShop( ply ) then shopCategoriesBlocked[ category ] = true continue end
+            if catData.shCanShowInShop and not catData.shCanShowInShop( ply ) then shopCategoriesBlocked[ category ] = true continue end
 
             local horisScroller = vgui.Create( "DHorizontalScroller", ply.MAINSCROLLPANEL, shopCategoryName( category ) )
 
@@ -546,7 +546,7 @@ function termHuntOpenTheShop()
                 local myCategoryPanel = shopCategoryPanels[ category ]
                 if not myCategoryPanel then ErrorNoHaltWithStack( "tried to add item " .. identifier .. " to invalid category, " .. category ) continue end
 
-                if itemData.canShowInShop and not itemData.canShowInShop( ply ) then continue end
+                if itemData.shCanShowInShop and not itemData.shCanShowInShop( ply ) then continue end
 
                 local shopItem = vgui.Create( "DButton", myCategoryPanel, shopPanelName( identifier ) )
 

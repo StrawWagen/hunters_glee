@@ -32,20 +32,15 @@ function GM:purchaseItem( ply, toPurchase )
         end
 
         local dat = self.shopItems[toPurchase]
-        local onPurchaseFunc = dat.onPurchaseFunc
-        if onPurchaseFunc then
-            if isfunction( onPurchaseFunc ) then
-                local noErrors, _ = xpcall( onPurchaseFunc, errorCatchingMitt, ply, toPurchase )
-                if noErrors == false then
-                    self:invalidateShopItem( toPurchase )
-                    print( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s onPurchaseFunc function errored!!!!!!!!!!!" )
-                    return
+        local item = include( "sh_fauxitemclass.lua" )
 
-                end
-            elseif onPurchaseFunc ~= true then
-                return
+        local noErrors, _ = ProtectedCall( function( item2, dat2, ply2 )
+            item2:InternalSetup( dat2, ply2 )
+        end, errorCatchingMitt, item, dat, ply )
 
-            end
+        if not noErrors then
+            self:invalidateShopItem( toPurchase )
+
         end
 
         local theCooldown

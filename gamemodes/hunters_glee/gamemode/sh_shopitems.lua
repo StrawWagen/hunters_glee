@@ -2276,35 +2276,6 @@ local function fragPurchase( purchaser )
 end
 
 
-local function tauCannonPurchase( purchaser )
-    local tau = purchaser:GetWeapon( "termhunt_taucannon" )
-    if IsValid( tau ) then
-        purchaser:GiveAmmo( 100,   "Uranium_235",         false )
-
-    else
-        purchaser:Give( "termhunt_taucannon" )
-
-    end
-
-    shopHelpers.loadoutConfirm( purchaser, 2 )
-
-end
-
-
-local function canPurchaseCrapVidCam( purchaser )
-    if purchaser:HasWeapon( "weapon_glee_crapvidcam" ) then return false, "You already have a Crappy Video Camera." end
-    return true
-
-end
-
-local function crapVidCamPurchase( purchaser )
-    purchaser:Give( "weapon_glee_crapvidcam" )
-
-    shopHelpers.loadoutConfirm( purchaser, 1 )
-
-end
-
-
 local function canPurchaseSuitBattery( purchaser )
     local new = purchaser:Armor() + 15
     if new > purchaser:GetMaxArmor() then return false, "Your battery is full." end
@@ -2348,74 +2319,6 @@ local function gravityGunPurchase( purchaser )
     purchaser:Give( "weapon_physcannon" )
 
     shopHelpers.loadoutConfirm( purchaser, 1 )
-
-end
-
-
-local function nailerPurchase( purchaser )
-    local nailer = purchaser:GetWeapon( "termhunt_weapon_hammer" )
-    if IsValid( nailer ) then
-        purchaser:GiveAmmo( nailer.Primary.DefaultClip * 2, "GLEE_NAILS", true )
-
-    else
-        purchaser:Give( "termhunt_weapon_hammer" )
-
-    end
-    shopHelpers.loadoutConfirm( purchaser, 1 )
-
-end
-
-
-local loadoutLoadout = {
-    "weapon_pistol",
-    "weapon_shotgun",
-    "weapon_smg1",
-    "weapon_crossbow",
-    "weapon_357",
-
-}
-
-local function loadoutPurchase( purchaser )
-    for _, currWep in ipairs( loadoutLoadout ) do
-        local wep = purchaser:GetWeapon( currWep )
-        if not IsValid( wep ) then
-            wep = purchaser:Give( currWep )
-
-        end
-        if not IsValid( wep ) then continue end
-
-        local wepsAmmo = wep:GetPrimaryAmmoType()
-        local amountOfAmmo = wep:GetMaxClip1() or 1
-        amountOfAmmo = amountOfAmmo * 4
-        purchaser:GiveAmmo( amountOfAmmo, wepsAmmo, true )
-
-    end
-    shopHelpers.loadoutConfirm( purchaser, #loadoutLoadout )
-
-end
-
-
-local function slamsPurchase( purchaser )
-    purchaser:GiveAmmo( 14,    "slam",         true )
-
-    purchaser:Give( "weapon_slam" )
-
-    shopHelpers.loadoutConfirm( purchaser, 2 )
-
-end
-
-
-local function flaregunPurchase( purchaser )
-    if purchaser:HasWeapon( "termhunt_aeromatix_flare_gun" ) then
-        purchaser:GiveAmmo( 6,    "GLEE_FLAREGUN_PLAYER",         true )
-
-    else
-        purchaser:Give( "termhunt_aeromatix_flare_gun" )
-        purchaser:GiveAmmo( 2,    "GLEE_FLAREGUN_PLAYER",         true )
-
-    end
-
-    shopHelpers.loadoutConfirm( purchaser, 2 )
 
 end
 
@@ -3032,131 +2935,11 @@ GM.ROUND_LIMBO      = 3 -- just display winners
 --]]
 
 local defaultItems = {
-    [ "score" ] = {
-        name = "Score",
-        desc = "Free score, Cheat!",
-        cost = -1000,
-        category = "Innate",
-        purchaseTimes = {
-            GM.ROUND_INACTIVE,
-            GM.ROUND_ACTIVE,
-        },
-        onPurchaseFunc = function() end,
-        canShowInShop = isCheats,
-    },
-    [ "scoreundead" ] = {
-        name = "Score",
-        desc = "Free score, Cheat!",
-        cost = -1000,
-        category = "Gifts",
-        purchaseTimes = {
-            GM.ROUND_INACTIVE,
-            GM.ROUND_ACTIVE,
-        },
-        onPurchaseFunc = function() end,
-        canShowInShop = isCheats,
-    },
-    -- ka BOOOOOM
-    [ "taucannon" ] = {
-        name = "Tau Cannon",
-        desc = "High risk, High reward.\nDon't let it overcharge!",
-        cost = 0,
-        skullCost = 5,
-        cooldown = 0.5,
-        category = "Items",
-        purchaseTimes = {
-            GM.ROUND_INACTIVE,
-            GM.ROUND_ACTIVE,
-        },
-        weight = 1000,
-        purchaseCheck = shopHelpers.aliveCheck,
-        onPurchaseFunc = tauCannonPurchase,
-    },
-    -- funny cam
-    [ "crapvidcam" ] = {
-        name = "Crappy Video Camera",
-        desc = "Document the glee.",
-        cost = 0,
-        skullCost = 1,
-        cooldown = 0.5,
-        category = "Items",
-        purchaseTimes = {
-            GM.ROUND_INACTIVE,
-            GM.ROUND_ACTIVE,
-        },
-        weight = 900,
-        purchaseCheck = { shopHelpers.aliveCheck, canPurchaseCrapVidCam },
-        onPurchaseFunc = crapVidCamPurchase,
-    },
-    [ "slams" ] = {
-        name = "Slams",
-        desc = "Some slams, 17 to be exact.",
-        cost = 60,
-        markup = 2,
-        markupPerPurchase = 0.25,
-        cooldown = 0.5,
-        category = "Items",
-        purchaseTimes = {
-            GM.ROUND_INACTIVE,
-            GM.ROUND_ACTIVE,
-        },
-        weight = 1,
-        purchaseCheck = shopHelpers.aliveCheck,
-        onPurchaseFunc = slamsPurchase,
-    },
-    [ "flaregun" ] = {
-        name = "Flaregun",
-        desc = "Flaregun.\n+ 4 flares.",
-        cost = 45,
-        markup = 1.25,
-        markupPerPurchase = 0.15,
-        cooldown = 1,
-        category = "Items",
-        purchaseTimes = {
-            GM.ROUND_INACTIVE,
-            GM.ROUND_ACTIVE,
-        },
-        weight = 1,
-        purchaseCheck = shopHelpers.aliveCheck,
-        onPurchaseFunc = flaregunPurchase,
-    },
-    [ "guns" ] = {
-        name = "Loadout",
-        desc = "Normal guns.\n& Ammo!\nNot very useful against metal...",
-        cost = 45,
-        markup = 1.5,
-        markupPerPurchase = 0.25,
-        cooldown = 1,
-        category = "Items",
-        purchaseTimes = {
-            GM.ROUND_INACTIVE,
-            GM.ROUND_ACTIVE,
-        },
-        weight = -95,
-        purchaseCheck = shopHelpers.aliveCheck,
-        onPurchaseFunc = loadoutPurchase,
-    },
-    [ "nailer" ] = {
-        name = "Nailer",
-        desc = "Nail things together!\nNailing is rather loud.",
-        cost = 45,
-        markup = 3,
-        markupPerPurchase = 0.25,
-        cooldown = 0.5,
-        category = "Items",
-        purchaseTimes = {
-            GM.ROUND_INACTIVE,
-            GM.ROUND_ACTIVE,
-        },
-        weight = -90,
-        purchaseCheck = shopHelpers.aliveCheck,
-        onPurchaseFunc = nailerPurchase,
-    },
     -- terminator doesnt like taking damage from this, will save your ass
     [ "ar2" ] = {
         name = "Ar2",
         desc = "Ar2 + Balls.\nIt takes 2 AR2 balls to kill a terminator.",
-        cost = 75,
+        shCost = 75,
         markup = 2,
         markupPerPurchase = 0.4,
         cooldown = 0.5,
@@ -3166,14 +2949,14 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = -150,
-        purchaseCheck = shopHelpers.aliveCheck,
-        onPurchaseFunc = ar2Purchase,
+        shPurchaseCheck = shopHelpers.aliveCheck,
+        svOnPurchaseFunc = ar2Purchase,
     },
     -- lol you ran out of battery
     [ "armor" ] = {
         name = "Suit Battery",
         desc = "15 Suit Battery.",
-        cost = 15,
+        shCost = 15,
         markup = 6,
         markupPerPurchase = 0.5,
         cooldown = 0.5,
@@ -3183,13 +2966,13 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = -150,
-        purchaseCheck = { shopHelpers.aliveCheck, canPurchaseSuitBattery },
-        onPurchaseFunc = suitBatteryPurchase,
+        shPurchaseCheck = { shopHelpers.aliveCheck, canPurchaseSuitBattery },
+        svOnPurchaseFunc = suitBatteryPurchase,
     },
     [ "rpg" ] = {
         name = "RPG",
         desc = "RPG + Rockets.\nRocketing a hunter can save you in a pinch.",
-        cost = 60,
+        shCost = 60,
         markup = 1.5,
         markupPerPurchase = 0.15,
         cooldown = 0.5,
@@ -3199,13 +2982,13 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = -140,
-        purchaseCheck = shopHelpers.aliveCheck,
-        onPurchaseFunc = rpgPurchase,
+        shPurchaseCheck = shopHelpers.aliveCheck,
+        svOnPurchaseFunc = rpgPurchase,
     },
     [ "frag" ] = {
         name = "10 Grenades",
         desc = "10 Grenades.\nSimple explosives, useful for hordes!",
-        cost = 50,
+        shCost = 50,
         markup = 1.5,
         markupPerPurchase = 0.25,
         cooldown = 0.5,
@@ -3215,29 +2998,14 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = -90,
-        purchaseCheck = shopHelpers.aliveCheck,
-        onPurchaseFunc = fragPurchase,
-    },
-    [ "gravitygun" ] = {
-        name = "Gravity Gun",
-        desc = "Gravity Gun",
-        cost = 60,
-        markup = 2,
-        cooldown = 0.5,
-        category = "Items",
-        purchaseTimes = {
-            GM.ROUND_INACTIVE,
-            GM.ROUND_ACTIVE,
-        },
-        weight = 1,
-        purchaseCheck = { shopHelpers.aliveCheck, gravityGunCanPurchase },
-        onPurchaseFunc = gravityGunPurchase,
+        shPurchaseCheck = shopHelpers.aliveCheck,
+        svOnPurchaseFunc = fragPurchase,
     },
     -- keeps the rounds going
     [ "revivekit" ] = {
         name = "Revive Kit",
         desc = "Revives dead players.\nYou gain 300 score per resurrection.",
-        cost = 30,
+        shCost = 30,
         markup = 1.5,
         cooldown = 0.5,
         category = "Items",
@@ -3246,15 +3014,15 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = -100,
-        purchaseCheck = shopHelpers.aliveCheck,
-        onPurchaseFunc = revivePurchase,
-        canShowInShop = hasMultiplePeople,
+        shPurchaseCheck = shopHelpers.aliveCheck,
+        svOnPurchaseFunc = revivePurchase,
+        shCanShowInShop = hasMultiplePeople,
     },
     -- heal jooce
     [ "healthkit" ] = {
         name = "Medkit",
         desc = "Heals.\nYou gain score for healing players.\nHealing yourself is unweildy and slow.\nExcess health you find, will reload it.",
-        cost = 80,
+        shCost = 80,
         markup = 2,
         markupPerPurchase = 0.15,
         cooldown = 0.5,
@@ -3264,14 +3032,14 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = -100,
-        purchaseCheck = shopHelpers.aliveCheck,
-        onPurchaseFunc = medkitPurchase,
+        shPurchaseCheck = shopHelpers.aliveCheck,
+        svOnPurchaseFunc = medkitPurchase,
     },
     -- funny bear trap
     [ "beartrap" ] = {
         name = "Six Beartraps",
         desc = "Traps players, Terminators can easily overpower them.",
-        cost = 65,
+        shCost = 65,
         markup = 2,
         markupPerPurchase = 0.25,
         cooldown = 0.5,
@@ -3281,14 +3049,14 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 0,
-        purchaseCheck = shopHelpers.aliveCheck,
-        onPurchaseFunc = beartrapPurchase,
+        shPurchaseCheck = shopHelpers.aliveCheck,
+        svOnPurchaseFunc = beartrapPurchase,
     },
     -- this is to give the noobs in a lobby a huge score boost, also it's cool
     [ "witnessme" ] = {
         name = "Witness Me.",
         desc = "You die instantly to hunters if you have any witnesses.\nDead players can bear witness\nGain 250 score per witness.\nOnly happens once per round.",
-        cost = 30,
+        shCost = 30,
         markup = 2,
         cooldown = math.huge,
         category = "Innate",
@@ -3297,14 +3065,14 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = -100,
-        purchaseCheck = shopHelpers.aliveCheck,
-        onPurchaseFunc = witnessPurchase,
-        canShowInShop = multiplePeopleAndTerm,
+        shPurchaseCheck = shopHelpers.aliveCheck,
+        svOnPurchaseFunc = witnessPurchase,
+        shCanShowInShop = multiplePeopleAndTerm,
     },
     [ "screamingbackpack" ] = {
         name = "Beacon",
         desc = "A beacon.\nThe hunters will never lose you for long.",
-        cost = -120,
+        shCost = -120,
         markup = 0.25,
         cooldown = math.huge,
         category = "Innate",
@@ -3313,29 +3081,29 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = -90,
-        purchaseCheck = shopHelpers.aliveCheck,
-        onPurchaseFunc = screamingBackpackPurchase,
-        canShowInShop = terminatorInSpawnPool,
+        shPurchaseCheck = shopHelpers.aliveCheck,
+        svOnPurchaseFunc = screamingBackpackPurchase,
+        shCanShowInShop = terminatorInSpawnPool,
     },
     -- Risk vs reward.
     [ "blooddonor" ] = {
         name = "Donate Blood.",
         desc = "Donate blood for score.",
-        cost = bloodDonorCost,
+        shCost = bloodDonorCost,
         cooldown = math.huge,
         category = "Innate",
         purchaseTimes = {
             GM.ROUND_ACTIVE,
         },
         weight = -90,
-        purchaseCheck = { shopHelpers.aliveCheck, bloodDonorCanPurchase },
-        onPurchaseFunc = bloodDonorPurchase,
+        shPurchaseCheck = { shopHelpers.aliveCheck, bloodDonorCanPurchase },
+        svOnPurchaseFunc = bloodDonorPurchase,
     },
     -- flat DOWNGRADE
     [ "blindness" ] = {
         name = "Legally Blind.",
         desc = "Become unable to see more than a few feet ahead.",
-        cost = -240,
+        shCost = -240,
         markup = 0.2,
         cooldown = math.huge,
         category = "Innate",
@@ -3344,14 +3112,14 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = -90,
-        purchaseCheck = { shopHelpers.aliveCheck },
-        onPurchaseFunc = blindnessPurchase,
+        shPurchaseCheck = { shopHelpers.aliveCheck },
+        svOnPurchaseFunc = blindnessPurchase,
     },
     -- flat downgrade
     [ "badknees" ] = {
         name = "62 Year old Knees.",
         desc = "62 years of living a sedentary lifestyle.\nJumping hurts, and is relatively useless.\nFall damage is lethal.",
-        cost = -140,
+        shCost = -140,
         markup = 0.25,
         cooldown = math.huge,
         category = "Innate",
@@ -3360,14 +3128,14 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = -90,
-        purchaseCheck = { shopHelpers.aliveCheck },
-        onPurchaseFunc = badkneesPurchase,
+        shPurchaseCheck = { shopHelpers.aliveCheck },
+        svOnPurchaseFunc = badkneesPurchase,
     },
     -- hilarious downgrade
     [ "greasyhands" ] = {
         name = "Greasy Hands.",
         desc = "Eating greasy food all your life,\nyour hands... adapted to their new, circumstances...\nUnder stress, the grease flows like a faucet.",
-        cost = -160,
+        shCost = -160,
         markup = 0.25,
         cooldown = math.huge,
         category = "Innate",
@@ -3376,13 +3144,13 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = -80,
-        purchaseCheck = { shopHelpers.aliveCheck },
-        onPurchaseFunc = greasyHandsPurchase,
+        shPurchaseCheck = { shopHelpers.aliveCheck },
+        svOnPurchaseFunc = greasyHandsPurchase,
     },
     [ "cholesterol" ] = {
         name = "37 Years of Cholesterol.",
         desc = "Your body is weak, your heart, clogged...\nA lifetime of eating absolutely delicious food, has left you unprepared for The Hunt...\nYour heart beats much faster.\nBut you become succeptible to Heart Attacks.",
-        cost = -140,
+        shCost = -140,
         markup = 0.25,
         cooldown = math.huge,
         category = "Innate",
@@ -3391,13 +3159,13 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = -80,
-        purchaseCheck = { shopHelpers.aliveCheck },
-        onPurchaseFunc = cholesterolPurchase,
+        shPurchaseCheck = { shopHelpers.aliveCheck },
+        svOnPurchaseFunc = cholesterolPurchase,
     },
     [ "deafness" ] = {
         name = "Hard of Hearing.",
         desc = "You can barely hear a thing!",
-        cost = -75,
+        shCost = -75,
         markup = 0.25,
         cooldown = math.huge,
         category = "Innate",
@@ -3406,13 +3174,13 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = -90,
-        purchaseCheck = { shopHelpers.aliveCheck },
-        onPurchaseFunc = deafnessPurchase,
+        shPurchaseCheck = { shopHelpers.aliveCheck },
+        svOnPurchaseFunc = deafnessPurchase,
     },
     [ "sixthsense" ] = {
         name = "Sixth Sense.",
         desc = "You gain a sixth sense.\nYou innately know where things are.\nBut the sixth sense can be overwhelming.\nPanic will mount as the hunters close in.",
-        cost = 225,
+        shCost = 225,
         markup = 2,
         cooldown = math.huge,
         category = "Innate",
@@ -3421,28 +3189,28 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 80,
-        purchaseCheck = shopHelpers.aliveCheck,
-        onPurchaseFunc = sixthSensePurchase,
+        shPurchaseCheck = shopHelpers.aliveCheck,
+        svOnPurchaseFunc = sixthSensePurchase,
     },
     -- reframe gaining score, because i thought it could be fun
     [ "marcopolo" ] = {
         name = "Marco Polo",
         desc = "You gain score for exploring new parts of the map.\nBPM gives no score.\nGains per area explored start out trivial, but as you progress, the rewards become greater.",
-        cost = 25,
+        shCost = 25,
         cooldown = math.huge,
         category = "Innate",
         purchaseTimes = {
             GM.ROUND_INACTIVE,
         },
         weight = 180,
-        purchaseCheck = shopHelpers.aliveCheck,
-        onPurchaseFunc = marcoPoloPurchase,
+        shPurchaseCheck = shopHelpers.aliveCheck,
+        svOnPurchaseFunc = marcoPoloPurchase,
     },
     -- flat upgrade
     [ "juggernaut" ] = {
         name = "Juggernaut",
         desc = "Attain a new level of physique.\nYour footsteps are loud and bulky.\nYou cannot move quicker with Augmentations\nMax 500 health.",
-        cost = 350,
+        shCost = 350,
         markup = 2,
         cooldown = math.huge,
         category = "Innate",
@@ -3451,14 +3219,14 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 120,
-        purchaseCheck = shopHelpers.aliveCheck,
-        onPurchaseFunc = juggernautPurchase,
+        shPurchaseCheck = shopHelpers.aliveCheck,
+        svOnPurchaseFunc = juggernautPurchase,
     },
     --flat upgrade
     [ "froglegs" ] = {
         name = "Frog Legged Parkourist",
         desc = "Your legs become frog.\nThe gangly shape of your legs slows you down.\nYou are capable of frog kicking off walls.\nYour shove propels you further.\nYour superior frog geneology permits you to absorb greater falls.\nRibbit.",
-        cost = 350,
+        shCost = 350,
         markup = 2,
         cooldown = math.huge,
         category = "Innate",
@@ -3467,14 +3235,14 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 120,
-        purchaseCheck = shopHelpers.aliveCheck,
-        onPurchaseFunc = frogLegsPurchase,
+        shPurchaseCheck = shopHelpers.aliveCheck,
+        svOnPurchaseFunc = frogLegsPurchase,
     },
     --[[--flat upgrade
     [ "mimicmadness" ] = {
         name = "Prop Hunt",
         desc = "When crouched, you mimic the closest nearby prop.\nThe terminators are fooled from far away but the illusion breaks down since you don't have collisions.",
-        cost = 250,
+        shCost = 250,
         markup = 2,
         cooldown = math.huge,
         category = "Innate",
@@ -3483,14 +3251,14 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 120,
-        purchaseCheck = shopHelpers.aliveCheck,
-        onPurchaseFunc = mimicMadnessPurchase,
+        shPurchaseCheck = shopHelpers.aliveCheck,
+        svOnPurchaseFunc = mimicMadnessPurchase,
     },]]--
     --flat upgrade
     [ "temporaldiceroll" ] = {
         name = "Roll of the dice.",
         desc = "Roll the temporal dice.\n8 seconds after purchasing, you are teleported to a completely random part of the map",
-        cost = 75,
+        shCost = 75,
         markup = 1.5,
         markupPerPurchase = 1,
         cooldown = 90,
@@ -3500,14 +3268,14 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 120,
-        purchaseCheck = shopHelpers.aliveCheck,
-        onPurchaseFunc = temporalDiceRollPurchase,
+        shPurchaseCheck = shopHelpers.aliveCheck,
+        svOnPurchaseFunc = temporalDiceRollPurchase,
     },
     --flat upgrade
     [ "channel666" ] = {
         name = "Channel 666.",
         desc = "Your radio bridges life and death.\nYou can communicate with the dead, both ways.",
-        cost = 0,
+        shCost = 0,
         skullCost = 1,
         cooldown = math.huge,
         category = "Innate",
@@ -3516,15 +3284,15 @@ local defaultItems = {
 
         },
         weight = 125,
-        purchaseCheck = { shopHelpers.aliveCheck },
-        onPurchaseFunc = channel666Purchase,
-        canShowInShop = hasMultiplePeople,
+        shPurchaseCheck = { shopHelpers.aliveCheck },
+        svOnPurchaseFunc = channel666Purchase,
+        shCanShowInShop = hasMultiplePeople,
     },
     -- Risk vs reward.
     [ "invisserum" ] = {
         name = "Chameleon Gene",
         desc = "Become nearly invisible.\nYour chameleon skin can't take a beating, you take twice as much damage.\nYour weapons, and flashlight are still visible.",
-        cost = 350,
+        shCost = 350,
         markup = 2,
         cooldown = math.huge,
         category = "Innate",
@@ -3533,14 +3301,14 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 85,
-        purchaseCheck = { shopHelpers.aliveCheck, chameleonCanPurchase },
-        onPurchaseFunc = chameleonPurchase,
+        shPurchaseCheck = { shopHelpers.aliveCheck, chameleonCanPurchase },
+        svOnPurchaseFunc = chameleonPurchase,
     },
     -- signal boost
     [ "signalrelay" ] = {
         name = "Signal Relay.",
         desc = "Boosts your signal\nConsumes Suit Armor.",
-        cost = 50,
+        shCost = 50,
         markup = 2,
         cooldown = math.huge,
         category = "Innate",
@@ -3549,14 +3317,14 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 80,
-        purchaseCheck = { shopHelpers.aliveCheck },
-        onPurchaseFunc = signalRelayPurchase,
+        shPurchaseCheck = { shopHelpers.aliveCheck },
+        svOnPurchaseFunc = signalRelayPurchase,
     },
     -- flat upgrade
     [ "coldblooded" ] = {
         name = "Cold Blooded.",
         desc = "Your top speed is linked to your heartrate.",
-        cost = 150,
+        shCost = 150,
         markup = 2,
         cooldown = math.huge,
         category = "Innate",
@@ -3565,14 +3333,14 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 80,
-        purchaseCheck = { shopHelpers.aliveCheck },
-        onPurchaseFunc = coldbloodedPurchase,
+        shPurchaseCheck = { shopHelpers.aliveCheck },
+        svOnPurchaseFunc = coldbloodedPurchase,
     },
     -- flat upgrade
     [ "superiormetabolism" ] = {
         name = "Superior Metabolism.",
         desc = "You've always been different than those around you.\nWhat would hospitalize others for weeks, passed over you in days.\nYou regenerate health as your heart beats.",
-        cost = 200,
+        shCost = 200,
         markup = 2,
         cooldown = math.huge,
         category = "Innate",
@@ -3581,14 +3349,14 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 80,
-        purchaseCheck = { shopHelpers.aliveCheck },
-        onPurchaseFunc = superiorMetabolismPurchase,
+        shPurchaseCheck = { shopHelpers.aliveCheck },
+        svOnPurchaseFunc = superiorMetabolismPurchase,
     },
     -- wacky ass shit
     [ "bombgland" ] = {
         name = "Bomb Gland.",
         desc = "You accumulate bombs. Drop them with the bomb gland.\nLeft Click for small bombs, Reload for a big bomb.\nRight click to detonate oldest bomb.\nAfter you surpass 4 bombs, there's a chance that ANY damage will explode your undropped bombs.\nIf you die, all your bombs explode.",
-        cost = 50,
+        shCost = 50,
         markup = 2,
         cooldown = math.huge,
         category = "Innate",
@@ -3597,13 +3365,13 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 85,
-        purchaseCheck = { shopHelpers.aliveCheck },
-        onPurchaseFunc = bombGlandPurchase,
+        shPurchaseCheck = { shopHelpers.aliveCheck },
+        svOnPurchaseFunc = bombGlandPurchase,
     },
     [ "ultralumen" ] = {
         name = "Ultra Lumen 3000.",
         desc = "Scared of the dark?\nWhat if the dark feared YOU!\nThe Ultra Lumen 3000 is perfect for anyone that can't stand darkness, a fraction of the sun's power, in your hands!\nMay increase battery consumption.",
-        cost = 50,
+        shCost = 50,
         markup = 2,
         cooldown = math.huge,
         category = "Innate",
@@ -3612,14 +3380,14 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 90,
-        purchaseCheck = { shopHelpers.aliveCheck },
-        onPurchaseFunc = ultraLumenFlashlightPurchase,
+        shPurchaseCheck = { shopHelpers.aliveCheck },
+        svOnPurchaseFunc = ultraLumenFlashlightPurchase,
     },
     -- flat upgrade
     [ "susimpostor" ] = {
         name = "HVAC Specialist.",
         desc = "From a young age, vents have fascinated you.\nThe \"portals between rooms\", as you call them, have practically raised you.\nYou are scared of the normal world, crouching brings confort, and vents bring freedom from panic.\nYou move very fast while crouching. Even faster in vents.\nYou don't even notice the musty vent smell anymore.",
-        cost = 50,
+        shCost = 50,
         markup = 3,
         cooldown = math.huge,
         category = "Innate",
@@ -3628,14 +3396,14 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 90,
-        purchaseCheck = { shopHelpers.aliveCheck },
-        onPurchaseFunc = susPurchase,
+        shPurchaseCheck = { shopHelpers.aliveCheck },
+        svOnPurchaseFunc = susPurchase,
     },
     -- sell out other players/your friends to become alive
     [ "screamcrate" ] = {
         name = "Beaconed Supplies",
         desc = "Supplies with a beacon.\nBetray the others for score.\nCosts 75 to place.\nRefund upon first beacon transmit.",
-        cost = 0,
+        shCost = 0,
         markup = 1,
         cooldown = 60,
         category = "Sacrifices",
@@ -3643,14 +3411,14 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = -5,
-        purchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
-        onPurchaseFunc = screamerPurchase,
+        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        svOnPurchaseFunc = screamerPurchase,
     },
     -- makes the map worth exploring
     [ "normcrate" ] = {
         name = "Supplies",
         desc = "Supplies without a beacon.\nContains health, armour, rarely a weapon, special ammunition.\nPlace indoors, and far away from players and other supplies, for more score.",
-        cost = 0,
+        shCost = 0,
         markup = 1,
         cooldown = 10,
         category = "Sacrifices",
@@ -3658,13 +3426,13 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = -4,
-        purchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
-        onPurchaseFunc = nonScreamerPurchase,
+        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        svOnPurchaseFunc = nonScreamerPurchase,
     },
     [ "weapcrate" ] = {
         name = "Crate of Weapons",
         desc = "Supply crate with 5 weapons in it\nPlace indoors, and far away from players and other supplies, for more score.",
-        cost = 0,
+        shCost = 0,
         markup = 1,
         cooldown = 55,
         category = "Sacrifices",
@@ -3672,13 +3440,13 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 1,
-        purchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
-        onPurchaseFunc = weaponsCratePurchase,
+        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        svOnPurchaseFunc = weaponsCratePurchase,
     },
     [ "manhackcrate" ] = {
         name = "Crate with Manhacks",
         desc = "Supply crate with 5 manhacks in it.\nGives score when the manhacks damage stuff.",
-        cost = 0,
+        shCost = 0,
         markup = 1,
         cooldown = 80,
         category = "Sacrifices",
@@ -3686,13 +3454,13 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 10,
-        purchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
-        onPurchaseFunc = manhackCratePurchase,
+        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        svOnPurchaseFunc = manhackCratePurchase,
     },
     [ "undeadbeartrap" ] = {
         name = "Beartrap.",
         desc = "Beartrap.\nWhen a player, hunter, steps on it, you get a reward.\nCosts more to place it near the living, and intersecting objects.",
-        cost = 0,
+        shCost = 0,
         markup = 1,
         cooldown = 15,
         category = "Sacrifices",
@@ -3700,13 +3468,13 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 1,
-        purchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
-        onPurchaseFunc = undeadBearTrapPurchase,
+        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        svOnPurchaseFunc = undeadBearTrapPurchase,
     },
     [ "barrels" ] = {
         name = "Barrels",
         desc = "6 Barrels",
-        cost = 0,
+        shCost = 0,
         markup = 1,
         cooldown = 2,
         category = "Sacrifices",
@@ -3714,14 +3482,14 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 1,
-        purchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
-        onPurchaseFunc = barrelsPurchase,
+        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        svOnPurchaseFunc = barrelsPurchase,
     },
     -- punishes careless movement
     [ "barnacle" ] = {
         name = "Barnacle",
         desc = "Barnacle.\nYou gain 100 score the first time it grabs someone, and 45 score every further second it has someone grabbed.\nCosts more to place in groups, or place too close to players.",
-        cost = 5,
+        shCost = 5,
         markup = 1,
         cooldown = 0.5,
         category = "Sacrifices",
@@ -3729,13 +3497,13 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 10,
-        purchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
-        onPurchaseFunc = barnaclePurchase,
+        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        svOnPurchaseFunc = barnaclePurchase,
     },
     [ "doorlocker" ] = {
         name = "Door Locker",
         desc = "Locks doors, you gain score when something uses it.\n150 score, default.\n250 score if a player fleeing a hunter uses it.\nDon't use your own locked doors.",
-        cost = 5,
+        shCost = 5,
         markup = 1,
         cooldown = 0.5,
         category = "Sacrifices",
@@ -3743,14 +3511,14 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 10,
-        purchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
-        onPurchaseFunc = doorLockerPurchase,
+        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        svOnPurchaseFunc = doorLockerPurchase,
     },
     -- money but you're fucked if you revive
     [ "additionalterm" ] = {
         name = "Linked Hunter",
         desc = "Spawn another hunter.\nThey will take on your appearance.\nIf you personally kill it, you will gain 350 score.\nThe newcomer will never lose you, if you regain your life...",
-        cost = spawnAnotherHunterCost,
+        shCost = spawnAnotherHunterCost,
         markup = 1,
         cooldown = 90,
         category = "Sacrifices",
@@ -3758,14 +3526,14 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = -100,
-        purchaseCheck = { shopHelpers.undeadCheck, spawnAnotherHunterCheck },
-        onPurchaseFunc = additionalHunter,
-        canShowInShop = spawnAnotherHunterCanShow,
+        shPurchaseCheck = { shopHelpers.undeadCheck, spawnAnotherHunterCheck },
+        svOnPurchaseFunc = additionalHunter,
+        shCanShowInShop = spawnAnotherHunterCanShow,
     },
     [ "presser" ] = {
         name = "Presser",
         desc = "Press things on the map.\nThe more a thing is pressed, the higher it's cost climbs...",
-        cost = 0,
+        shCost = 0,
         markup = 1,
         cooldown = 5,
         category = "Gifts",
@@ -3773,15 +3541,15 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = -4,
-        purchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
-        onPurchaseFunc = presserPurchase,
+        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        svOnPurchaseFunc = presserPurchase,
     },
     -- people who teamkill get funny consequence
     [ "homicidalglee" ] = {
         name = "Homicidal Glee.",
         desc = "Bring a player's Homicidal Glee to the surface...\nCosts nothing to place, if the player killed you at least once before.\nCan only be placed every 15 seconds.",
         costDecorative = "0 / -200",
-        cost = 0,
+        shCost = 0,
         markup = 1,
         cooldown = 5,
         category = "Gifts",
@@ -3789,15 +3557,15 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 0,
-        purchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
-        onPurchaseFunc = homicidalGleePurchase,
+        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        svOnPurchaseFunc = homicidalGleePurchase,
     },
     -- fun
     [ "termovercharger" ] = {
         name = "Overcharger.",
         desc = "Overcharge a Hunter. Global 3 minute delay between Overcharges.",
         costDecorative = "-450",
-        cost = 0,
+        shCost = 0,
         markup = 1,
         cooldown = 5,
         category = "Gifts",
@@ -3805,15 +3573,15 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 19,
-        purchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
-        onPurchaseFunc = termOverchargerPurchase,
+        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        svOnPurchaseFunc = termOverchargerPurchase,
     },
     -- ultimate stalemate breaker
     [ "temporalinversion" ] = {
         name = "Temporal Inversion",
         desc = "Swaps a player out for their most remote enemy.\nUnlocks after 3 minutes, then a global 3 minute cooldown between uses.",
         costDecorative = "-400",
-        cost = 0,
+        shCost = 0,
         markup = 1,
         cooldown = 5,
         category = "Gifts",
@@ -3821,14 +3589,14 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 20,
-        purchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase, inversionCanPurchase },
-        onPurchaseFunc = plySwapperPurchase,
+        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase, inversionCanPurchase },
+        svOnPurchaseFunc = plySwapperPurchase,
     },
     [ "immortalizer" ] = {
         name = "Gift of Immortality",
         desc = "Gift 20 seconds, of true Immortality.\nCosts 200 to gift to hunters, 300 to gift to players.",
         costDecorative = "-200 / -300",
-        cost = 0,
+        shCost = 0,
         markup = 1,
         cooldown = 5,
         category = "Gifts",
@@ -3836,14 +3604,14 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 20,
-        purchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
-        onPurchaseFunc = immortalizerPurchase,
+        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        svOnPurchaseFunc = immortalizerPurchase,
     },
     [ "blessing" ] = {
         name = "A Blessing",
         desc = "2 minutes of health regeneration, and Calm.\nCosts 50 to gift to hunters, 100 to gift to players.",
         costDecorative = "-50 / -100",
-        cost = 0,
+        shCost = 0,
         markup = 1,
         cooldown = 5,
         category = "Gifts",
@@ -3851,15 +3619,15 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 20,
-        purchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
-        onPurchaseFunc = blessingPurchase,
+        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        svOnPurchaseFunc = blessingPurchase,
     },
     -- crazy purchase
     [ "thunderousapplause" ] = {
         name = "Thunderous Applause",
         desc = "Let the Living, hear your utmost gratitiude.\nUnlocks after 4 minutes, then a global 4 minute cooldown between uses.",
         costDecorative = "-600",
-        cost = 0,
+        shCost = 0,
         markup = 1,
         cooldown = 0,
         category = "Gifts",
@@ -3867,14 +3635,14 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 20,
-        purchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase, applauseCanPurchase },
-        onPurchaseFunc = applausePurchase,
+        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase, applauseCanPurchase },
+        svOnPurchaseFunc = applausePurchase,
     },
     -- explosive end to round
     [ "divinechosen" ] = {
         name = "grigori",
         desc = "The ultimate sacrifice.\nThe gods gift you a fraction of their power, to end the hunt.\nRequires \"Patience\" to run dry.",
-        cost = 2000,
+        shCost = 2000,
         markup = 1,
         cooldown = math.huge,
         category = "Gifts",
@@ -3882,15 +3650,15 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 40,
-        purchaseCheck = { shopHelpers.undeadCheck, divineChosenCanPurchase },
-        onPurchaseFunc = divineChosenPurchase,
+        shPurchaseCheck = { shopHelpers.undeadCheck, divineChosenCanPurchase },
+        svOnPurchaseFunc = divineChosenPurchase,
     },
     -- reason to rejoin
     [ "bankopenaccount" ] = {
         name = "Bank Account",
         desc = "Open a bank account.",
         simpleCostDisplay = true,
-        cost = openAccountCost,
+        shCost = openAccountCost,
         cooldown = 0,
         category = "Bank",
         purchaseTimes = {
@@ -3898,15 +3666,15 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 0,
-        purchaseCheck = { canOpenAccount },
-        onPurchaseFunc = openAccountPurchase,
+        shPurchaseCheck = { canOpenAccount },
+        svOnPurchaseFunc = openAccountPurchase,
     },
     -- reason to rejoin
     [ "bankdeposit" ] = {
         name = "Deposit",
         desc = bankDepositDescription,
-        fakeCost = true, -- score removal is handled in onPurchaseFunc
-        cost = bankDepositCost,
+        fakeCost = true, -- score removal is handled in svOnPurchaseFunc
+        shCost = bankDepositCost,
         cooldown = 0.5,
         category = "Bank",
         purchaseTimes = {
@@ -3914,15 +3682,15 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 100,
-        purchaseCheck = { hasBankAccount },
-        onPurchaseFunc = bankDepositPurchase,
+        shPurchaseCheck = { hasBankAccount },
+        svOnPurchaseFunc = bankDepositPurchase,
     },
     -- reason to rejoin
     [ "bankwithdraw" ] = {
         name = "Withdraw",
         desc = "Withdraw 100 score from your account.",
         fakeCost = true,
-        cost = -100,
+        shCost = -100,
         cooldown = 0.5,
         category = "Bank",
         purchaseTimes = {
@@ -3930,8 +3698,8 @@ local defaultItems = {
             GM.ROUND_ACTIVE,
         },
         weight = 150,
-        purchaseCheck = { hasBankAccount, bankCanWithdraw },
-        onPurchaseFunc = bankWithdrawPurchase,
+        shPurchaseCheck = { hasBankAccount, bankCanWithdraw },
+        svOnPurchaseFunc = bankWithdrawPurchase,
     },
 }
 
