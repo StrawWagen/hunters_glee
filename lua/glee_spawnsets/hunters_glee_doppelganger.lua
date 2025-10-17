@@ -20,6 +20,7 @@ local set = {
             prettyName = "A Doppelganger",
             class = "terminator_nextbot_snail_disguised",
             spawnType = "hunter",
+            difficultyCost = 10,
             countClass = "terminator_nextbot_snail_disguised",
         },
     }

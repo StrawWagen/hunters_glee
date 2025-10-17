@@ -34,7 +34,7 @@ end
 
 
 local set = {
-    name = "hunters_glee_allguns", -- unique name
+    name = "hunters_glee_paparazzi_allgun", -- unique name
     prettyName = "Paparazzi Population... Boom?",
     description = "Paparazzi, with guns? this is some kind of purge, a gleeful purge? a gleeurge???", -- secret for those who check
     difficultyPerMin = "default*1.5", -- difficulty per minute
