@@ -55,7 +55,7 @@ local set = {
             prettyName = "A Paparazzi With A Pistol",
             class = "terminator_nextbot_fakeply", -- class spawned
             spawnType = "hunter",
-            difficultyCost = 2,
+            difficultyCost = 1.5, -- reduced from 2 to make more common
             countClass = "terminator_nextbot_fakeply", -- class COUNTED, uses findbyclass
             preSpawnedFuncs =  { givePistol },
         },
@@ -65,7 +65,7 @@ local set = {
             prettyName = "A Paparazzi With A Smg",
             class = "terminator_nextbot_fakeply", -- class spawned
             spawnType = "hunter",
-            difficultyCost = 4,
+            difficultyCost = 3, -- reduced from 4 to make more common
             countClass = "terminator_nextbot_fakeply", -- class COUNTED, uses findbyclass
             preSpawnedFuncs =  { giveSMG },
         },
@@ -85,27 +85,27 @@ local set = {
             prettyName = "A Paparazzi With A Ar2",
             class = "terminator_nextbot_fakeply", -- class spawned
             spawnType = "hunter",
-            difficultyCost = 6,
+            difficultyCost = 4.5, -- reduced from 6 to make more common
             countClass = "terminator_nextbot_fakeply", -- class COUNTED, uses findbyclass
             preSpawnedFuncs =  { giveAR2 },
         },
         {
-            hardRandomChance = nil,
+            hardRandomChance = 0.35, -- 35% chance to spawn when budget allows
             name = "paparazzi_xbow", -- unique name
             prettyName = "A Paparazzi With A Crossbow",
             class = "terminator_nextbot_fakeply", -- class spawned
             spawnType = "hunter",
-            difficultyCost = 7.5,
+            difficultyCost = 12, -- increased to spawn later
             countClass = "terminator_nextbot_fakeply", -- class COUNTED, uses findbyclass
             preSpawnedFuncs =  { giveXBOW },
         },
         {
-            hardRandomChance = nil,
+            hardRandomChance = 0.15, -- only 15% chance to spawn when budget allows
             name = "paparazzi_rpg", -- unique name
             prettyName = "A Paparazzi With A RPG",
             class = "terminator_nextbot_fakeply", -- class spawned
             spawnType = "hunter",
-            difficultyCost = 10,
+            difficultyCost = 20, -- doubled from 10 to spawn much later
             countClass = "terminator_nextbot_fakeply", -- class COUNTED, uses findbyclass
             preSpawnedFuncs =  { giveRPG },
         },
@@ -114,4 +114,3 @@ local set = {
 
 -- put the spawnset IN the global table to be gobbled
 table.insert( GLEE_SPAWNSETS, set )
-
