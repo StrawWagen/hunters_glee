@@ -1403,7 +1403,7 @@ local function juggernautPurchase( purchaser )
     local applyNaut = function()
         local currentHealthRatio = purchaser:Health() / purchaser:GetMaxHealth()
 
-        local newMaxHealth = 500
+        local newMaxHealth = ( purchaser.Glee_BaseHealth or 100 ) * 5 -- 500 by default
         local newHealth = newMaxHealth * currentHealthRatio
 
         purchaser:SetMaxHealth( newMaxHealth )
@@ -2271,7 +2271,52 @@ local function fragPurchase( purchaser )
 
     end
 
-    shopHelpers.loadoutConfirm( purchaser, 1 )
+    loadoutConfirm( purchaser, 1 )
+
+end
+
+
+local function ar3Purchase( purchaser )
+    local ar3 = purchaser:GetWeapon( "termhunt_ar3" )
+    if IsValid( ar3 ) then
+        purchaser:GiveAmmo( 1000,    "AR2",         true )
+
+    else
+        purchaser:GiveAmmo( 500,    "AR2",         true )
+        purchaser:Give( "termhunt_ar3" )
+
+    end
+
+    loadoutConfirm( purchaser, 6 )
+
+end
+
+
+local function tauCannonPurchase( purchaser )
+    local tau = purchaser:GetWeapon( "termhunt_taucannon" )
+    if IsValid( tau ) then
+        purchaser:GiveAmmo( 100,   "Uranium_235",         false )
+
+    else
+        purchaser:Give( "termhunt_taucannon" )
+
+    end
+
+    loadoutConfirm( purchaser, 2 )
+
+end
+
+
+local function canPurchaseCrapVidCam( purchaser )
+    if purchaser:HasWeapon( "weapon_glee_crapvidcam" ) then return false, "You already have a Crappy Video Camera." end
+    return true
+
+end
+
+local function crapVidCamPurchase( purchaser )
+    purchaser:Give( "weapon_glee_crapvidcam" )
+
+    loadoutConfirm( purchaser, 1 )
 
 end
 

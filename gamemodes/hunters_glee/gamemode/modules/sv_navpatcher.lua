@@ -242,6 +242,7 @@ function GAMEMODE:FindPotentialLinkagesBetweenNavAreaGroups( groups, groupCorner
             local fauxGroup2 = {}
             for _, found in ipairs( foundInTheBox ) do
                 coroutine_yield()
+                if not IsValid( found ) then continue end
                 if not group1Ids[ found:GetID() ] then
                     table.insert( fauxGroup2, found )
 

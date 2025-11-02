@@ -668,7 +668,7 @@ function GM:StopSpectatingThing( ply )
     net.Send( ply )
 
     local oldAng = ply:GetAngles()
-    timer.Simple( 0.0, function()
+    timer.Simple( 0, function()
         if not IsValid( ply ) then return end
         ply:SetAngles( Angle( oldAng.p, oldAng.y, 0 ) )
     end )
