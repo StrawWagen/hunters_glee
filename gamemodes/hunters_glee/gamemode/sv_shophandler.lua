@@ -32,20 +32,15 @@ function GM:purchaseItem( ply, toPurchase )
         end
 
         local dat = self.shopItems[toPurchase]
-        local purchaseFunc = dat.purchaseFunc
-        if purchaseFunc then
-            if isfunction( purchaseFunc ) then
-                local noErrors, _ = xpcall( purchaseFunc, errorCatchingMitt, ply, toPurchase )
-                if noErrors == false then
-                    self:invalidateShopItem( toPurchase )
-                    print( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s purchaseFunc function errored!!!!!!!!!!!" )
-                    return
+        local item = include( "sh_fauxitemclass.lua" )
 
-                end
-            elseif purchaseFunc ~= true then
-                return
+        local noErrors, _ = ProtectedCall( function( item2, dat2, ply2 )
+            item2:InternalSetup( dat2, ply2 )
+        end, errorCatchingMitt, item, dat, ply )
 
-            end
+        if not noErrors then
+            self:invalidateShopItem( toPurchase )
+
         end
 
         local theCooldown
@@ -97,6 +92,9 @@ function GM:purchaseItem( ply, toPurchase )
             print( nameAndId .. " Bought: " .. dat.name  )
 
         end
+
+        hook.Run( "glee_PostShopItemPurchased", ply, toPurchase, dat )
+
     end )
 end
 

@@ -90,6 +90,7 @@ local function asParsed( toParse, name, defaultsTbl )
                 end
             end
         end
+
     elseif not toParse then
         return nil -- no default, and nothing to parse
 
@@ -970,9 +971,9 @@ function GM:SpawnSetInitialThink()
         end
     end
     print( "GLEE: Gobbled " .. count .. " spawnsets..." )
-    GLEE_SPAWNSETS = {}
+    GLEE_SPAWNSETS = nil
 
-    GAMEMODE.GobbledSpawnsets = true
+    self.GobbledSpawnsets = true
     hook.Run( "glee_post_spawnsetgobble" )
 
     local spawnSetPicked = spawnSetVar:GetString()

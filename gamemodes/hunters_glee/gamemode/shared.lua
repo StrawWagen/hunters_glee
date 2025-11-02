@@ -18,8 +18,6 @@ GM.Website = "N/A"
 include( "player_class/player_termrunner.lua" )
 
 include( "sh_player.lua" )
-include( "sh_shopshared.lua" )
-include( "sh_shopitems.lua" )
 
 include( "modules/sh_panic.lua" )
 include( "modules/sh_banking.lua" )
@@ -29,10 +27,22 @@ include( "modules/sh_danceslowdown.lua" )
 include( "modules/sh_playerdrowning.lua" )
 include( "modules/battery/sh_battery.lua" )
 include( "modules/sh_detecthunterkills.lua" )
+include( "modules/shopitems/sh_shophelpers.lua" )
 include( "modules/spawnset/sh_spawnpoolutil.lua" )
 include( "modules/spawnset/sh_spawnsetcontent.lua" )
 include( "modules/unsandboxing/sh_unsandboxing.lua" )
 
+include( "sh_shopshared.lua" )
+include( "sh_shopitems.lua" )
+
+include( "modules/shopitems/sh_shoptags.lua" )
+include( "modules/shopitems/sh_shopcategories.lua" )
+include( "modules/shopitems/sh_itemverification.lua" )
+
+if SERVER then -- load order has to be right :(
+    include( "modules/shopitems/sv_shopgobbler.lua" )
+
+end
 
 function GM:GetHuntersClass()
     return "terminator_nextbot_snail"
@@ -42,7 +52,7 @@ end
 function GM:SharedSetup()
     GAMEMODE:ResetShopItemCooldowns()
     GAMEMODE:SetupShop()
-    GAMEMODE:SetupShopCatalouge()
+    GAMEMODE:ShopInitialThink()
 
 end
 
@@ -110,7 +120,6 @@ function GM:PostCleanupMap()
 end
 
 function GM:InitPostEntity()
-
     GAMEMODE:SharedSetup()
 
 end
