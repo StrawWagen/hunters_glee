@@ -1424,7 +1424,7 @@ local function juggernautPurchase( purchaser )
     local applyNaut = function()
         local currentHealthRatio = purchaser:Health() / purchaser:GetMaxHealth()
 
-        local newMaxHealth = 500
+        local newMaxHealth = ( purchaser.Glee_BaseHealth or 100 ) * 5 -- 500 by default
         local newHealth = newMaxHealth * currentHealthRatio
 
         purchaser:SetMaxHealth( newMaxHealth )
