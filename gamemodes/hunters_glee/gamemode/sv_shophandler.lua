@@ -21,8 +21,9 @@ function GM:purchaseItem( ply, toPurchase )
     local delay = 100 - ply:GetSignalStrength()
     delay = delay / 200
 
-    timer.Simple( delay, function()
+    timer.Simple( delay, function() -- delay purchase since people could get around the shop loading with the console command
         if not IsValid( ply ) then return end
+
         --print( ply, toPurchase )
         local purchasable, notPurchasableReason = self:canPurchase( ply, toPurchase )
         if not purchasable then
@@ -32,11 +33,10 @@ function GM:purchaseItem( ply, toPurchase )
         end
 
         local dat = self.shopItems[toPurchase]
-        local item = include( "sh_fauxitemclass.lua" )
 
-        local noErrors, _ = ProtectedCall( function( item2, dat2, ply2 )
-            item2:InternalSetup( dat2, ply2 )
-        end, errorCatchingMitt, item, dat, ply )
+        local noErrors, _ = ProtectedCall( function( dat2, ply2 )
+            dat2.svOnPurchaseFunc( ply2 )
+        end, dat, ply )
 
         if not noErrors then
             self:invalidateShopItem( toPurchase )
@@ -86,8 +86,7 @@ function GM:purchaseItem( ply, toPurchase )
         end
         ply:SetNW2Int( name, oldCount + 1 )
 
-        if game.IsDedicated() then
-            -- 'log' shop item purchases 
+        if game.IsDedicated() then -- 'log' shop item purchases 
             local nameAndId = ply:GetName() .. "[" .. ply:SteamID() .. "]"
             print( nameAndId .. " Bought: " .. dat.name  )
 

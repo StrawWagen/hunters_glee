@@ -50,6 +50,10 @@ function shopHelpers.purchaseWeapon( purchaser, data )
             purchaser:GiveAmmo( ammoToGive, ammoType, true )
 
         end
+        if IsValid( weapon ) then
+            purchaser:SelectWeapon( weapon )
+
+        end
     end
 
     local confirmSoundWeight = data.confirmSoundWeight

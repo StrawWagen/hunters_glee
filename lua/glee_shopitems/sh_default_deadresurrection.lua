@@ -2,7 +2,7 @@
 local shopHelpers = GAMEMODE.shopHelpers
 
 local function divineInterventionCost( purchaser )
-    local shCost = 350
+    local cost = 350
     local chosenHasArrived = GetGlobalBool( "chosenhasarrived", false )
     if chosenHasArrived then
         local isChosen = purchaser:GetNW2Bool( "isdivinechosen", false )
@@ -100,7 +100,7 @@ local function divineInterventionDeathCooldown( purchaser )
 
 end
 
-local function divineIntervention( shopItem, purchaser )
+local function divineIntervention( purchaser )
     if not SERVER then return end
     if not purchaser.Resurrect then return end
 
@@ -207,7 +207,6 @@ local crumpleForce = Vector( 0, 0, -150000 )
 
 hook.Add( "glee_shover_shove", "glee_infernalinstantdeath", function( shoved )
     if not shoved:GetNW2Bool( "glee_DidADealWithTheDevil", false ) then return end
-    if shoved:Health() >= 25 then return end -- they're not weak enough
 
     local dmgInfo = DamageInfo()
     dmgInfo:SetDamage( math.random( 1, 3 ) )
@@ -250,7 +249,7 @@ local function infernalInterventionDeathCooldown( purchaser )
 
 end
 
-local function infernalIntervention( shopItem, purchaser )
+local function infernalIntervention( purchaser )
     if not SERVER then return end
     if not purchaser.Resurrect then return end
 

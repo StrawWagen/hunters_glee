@@ -751,12 +751,12 @@ function GM:getValidHunterPos()
     if fails > 15 and math.random( 0, 100 ) < 50 then -- too many fails? map is probably too big, just get areas near a player!
         local alivePlayer = self:anAlivePlayer()
         if IsValid( alivePlayer ) then
-            local height = dynamicTooCloseDist / 4
+            local height = dynamicTooFarDist / 4
             if fails > 250 then
-                height = dynamicTooCloseDist
+                height = dynamicTooFarDist
 
             end
-            local maxs = Vector( dynamicTooCloseDist, dynamicTooCloseDist, height )
+            local maxs = Vector( dynamicTooFarDist, dynamicTooFarDist, height )
             local pos = alivePlayer:GetPos()
             local pos1 = pos + maxs
             local pos2 = pos - maxs
@@ -859,7 +859,7 @@ function GM:getValidHunterPos()
         cost = cost + 1
 
         local goodConventional = not visibleToAPly and not tooClose and not tooFar -- great spot to spawn!
-        local justSpawnSomething = fails > 2000 and not tooClose -- fallback, map has no great spots to spawn
+        local justSpawnSomething = fails > 200 and not tooClose -- fallback, map has no great spots to spawn
 
         if goodConventional or justSpawnSomething then
             nearestDist = math.sqrt( nearestDist )

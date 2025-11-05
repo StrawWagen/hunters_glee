@@ -2307,20 +2307,6 @@ local function tauCannonPurchase( purchaser )
 end
 
 
-local function canPurchaseCrapVidCam( purchaser )
-    if purchaser:HasWeapon( "weapon_glee_crapvidcam" ) then return false, "You already have a Crappy Video Camera." end
-    return true
-
-end
-
-local function crapVidCamPurchase( purchaser )
-    purchaser:Give( "weapon_glee_crapvidcam" )
-
-    loadoutConfirm( purchaser, 1 )
-
-end
-
-
 local function canPurchaseSuitBattery( purchaser )
     local new = purchaser:Armor() + 15
     if new > purchaser:GetMaxArmor() then return false, "Your battery is full." end
@@ -2347,21 +2333,6 @@ local function rpgPurchase( purchaser )
         purchaser:Give( "weapon_rpg" )
 
     end
-
-    shopHelpers.loadoutConfirm( purchaser, 1 )
-
-end
-
-
-local function gravityGunCanPurchase( purchaser )
-    local gravgun = purchaser:GetWeapon( "weapon_physcannon" )
-    if IsValid( gravgun ) then return false, "You aready have a Gravity Gun!" end
-    return true
-
-end
-
-local function gravityGunPurchase( purchaser )
-    purchaser:Give( "weapon_physcannon" )
 
     shopHelpers.loadoutConfirm( purchaser, 1 )
 

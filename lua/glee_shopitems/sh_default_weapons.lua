@@ -25,7 +25,7 @@ local items = {
         },
         weight = -95,
         shPurchaseCheck = shopHelpers.aliveCheck,
-        svOnPurchaseFunc = function( _shopItem, purchaser )
+        svOnPurchaseFunc = function( purchaser )
             for _, currWep in ipairs( loadoutLoadout ) do
                 shopHelpers.purchaseWeapon( purchaser, {
                     class = currWep,
@@ -52,9 +52,9 @@ local items = {
         },
         weight = -90,
         shPurchaseCheck = shopHelpers.aliveCheck,
-        svOnPurchaseFunc = function( _shopItem, purchaser )
+        svOnPurchaseFunc = function( purchaser )
             shopHelpers.purchaseWeapon( purchaser, {
-                class = "termhunt_nailer",
+                class = "termhunt_weapon_hammer",
                 confirmSoundWeight = 2,
                 ammoType = "GLEE_NAILS",
                 purchaseClips = 0,
@@ -81,7 +81,7 @@ local items = {
             return true
 
         end },
-        svOnPurchaseFunc = function( _shopItem, purchaser )
+        svOnPurchaseFunc = function( purchaser )
             shopHelpers.purchaseWeapon( purchaser, {
                 class = "weapon_physcannon",
                 confirmSoundWeight = 2,
@@ -104,7 +104,7 @@ local items = {
         },
         weight = 1,
         shPurchaseCheck = shopHelpers.aliveCheck,
-        svOnPurchaseFunc = function( _shopItem, purchaser )
+        svOnPurchaseFunc = function( purchaser )
             shopHelpers.purchaseWeapon( purchaser, {
                 class = "termhunt_aeromatix_flare_gun",
                 confirmSoundWeight = 2,
@@ -129,7 +129,7 @@ local items = {
         },
         weight = 1,
         shPurchaseCheck = { shopHelpers.aliveCheck, lockpickCanPurchase },
-        svOnPurchaseFunc = function( _shopItem, purchaser )
+        svOnPurchaseFunc = function( purchaser )
             shopHelpers.purchaseWeapon( purchaser, {
                 class = "termhunt_lockpick",
                 confirmSoundWeight = 2,
@@ -151,7 +151,7 @@ local items = {
         },
         weight = 1,
         shPurchaseCheck = shopHelpers.aliveCheck,
-        svOnPurchaseFunc = function( _shopItem, purchaser )
+        svOnPurchaseFunc = function( purchaser )
             shopHelpers.purchaseWeapon( purchaser, {
                 class = "weapon_slam",
                 confirmSoundWeight = 3,
@@ -182,7 +182,7 @@ local items = {
 
             end
         },
-        svOnPurchaseFunc = function( _shopItem, purchaser )
+        svOnPurchaseFunc = function( purchaser )
             shopHelpers.purchaseWeapon( purchaser, {
                 class = "weapon_glee_crapvidcam",
                 confirmSoundWeight = 1,
@@ -204,7 +204,7 @@ local items = {
         },
         weight = 1000,
         shPurchaseCheck = shopHelpers.aliveCheck,
-        svOnPurchaseFunc = function( _shopItem, purchaser )
+        svOnPurchaseFunc = function( purchaser )
             shopHelpers.purchaseWeapon( purchaser, {
                 class = "termhunt_taucannon",
                 confirmSoundWeight = 2,
