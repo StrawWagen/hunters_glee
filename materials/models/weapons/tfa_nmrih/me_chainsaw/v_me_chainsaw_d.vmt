@@ -1,0 +1,25 @@
+VertexLitGeneric
+{
+$halflambert "1"
+
+$phong "1"
+$phongtint "[.12 .15 .1]"
+$phongboost "5"
+$phongexponent "20"
+$phongfresnelranges "[1 10 8]"
+
+$envmap "env_cubemap"
+$envmaptint "[.12 .15 .1]"
+$normalmapalphaenvmapmask "1"
+
+$rimlight "1"
+$rimlightexponent "2"
+$rimlightboost ".2"
+
+$basetexture "models\weapons\tfa_nmrih\me_chainsaw\v_me_chainsaw_d"
+$bumpmap "models\weapons\tfa_nmrih\me_chainsaw\v_me_chainsaw_n"
+$envmapmask "v_me_chainsaw_n"
+
+$surfaceprop "metal"
+	"keywords" "chainsaw"
+}

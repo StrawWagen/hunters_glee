@@ -1,0 +1,9 @@
+"VertexLitGeneric"
+{
+	"$baseTexture" "models\weapons\tfa_nmrih\me_chainsaw\v_me_chainsaw_chain_d"
+	
+	"$alphatest" "1"
+
+	"$surfaceprop" "metal"
+	"keywords" "chainsaw"
+}
