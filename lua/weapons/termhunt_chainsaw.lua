@@ -1,4 +1,4 @@
--- model is from this https://steamcommunity.com/sharedfiles/filedetails/?id=2841514992&searchtext=no+more+room+in+helli melle pack 
+-- model is from this https://steamcommunity.com/sharedfiles/filedetails/?id=2841514992&searchtext=no+more+room+in+helli melee pack 
 -- GIVE THEM LOVE AND AWARD THEM YAYAYAYAYA 
 -- billions must award YLW
 
@@ -27,18 +27,54 @@ SWEP.Secondary.DefaultClip = -1
 SWEP.Secondary.Automatic = false
 SWEP.Secondary.Ammo = "none"
 
+function SWEP:SetupDataTables()
+    self:NetworkVar( "Bool", "IsRevvedUp" )
+    self:NetworkVar( "Bool", "IsTurningOn" )
+    self:NetworkVar( "Bool", "IsTurningOff" )
+    self:NetworkVar( "Bool", "IsAttacking" )
+end
+
 function SWEP:Initialize()
+    self:SetIsRevvedUp( false )
+    self:SetIsTurningOn( false )
+    self:SetIsTurningOff( false )
+    self:SetIsAttacking( false )
     self:SetHoldType( self.HoldType )
-    self.IsRevvedUp = false
-    self.IsTurningOn = false
-    self.IsTurningOff = false
-    self.IsAttacking = false
+end
+
+function SWEP:StopLoopSounds()
+    self:StopSound( "chainsaw/chainsaw_idleloop.wav" )
+    self:StopSound( "chainsaw/chainsaw_sawloop.wav" )
+end
+
+function SWEP:PlayIdleLoop()
+    if not self:GetIsRevvedUp() then return end
+    self:StopLoopSounds()
+    self:EmitSound( "chainsaw/chainsaw_idleloop.wav" )
+end
+
+function SWEP:PlayRevvedSound()
+    self:StopLoopSounds()
+    self:EmitSound( "chainsaw/chainsaw_sawloop.wav" )
+end
+
+function SWEP:PlayTurningOnSound()
+    self:EmitSound( "chainsaw/chainsaw_failedstart.wav" )
+end
+
+function SWEP:PlayTurningOnSound2()
+    self:EmitSound( "chainsaw/chainsaw_successstart.wav" )
+end
+
+function SWEP:PlayTurningOffSound()
+    self:EmitSound( "chainsaw/chainsaw_turnoff.wav" )
 end
 
 function SWEP:Reload()
-    if self.IsTurningOn or self.IsTurningOff then return end
+    if not IsFirstTimePredicted() then return end
+    if self:GetIsTurningOn() or self:GetIsTurningOff() then return end
 
-    if self.IsRevvedUp then
+    if self:GetIsRevvedUp() then
         self:TurnOff()
     else
         self:TurnOn()
@@ -46,57 +82,55 @@ function SWEP:Reload()
 end
 
 function SWEP:TurnOn()
-    self.IsTurningOn = true
+    if not SERVER then return end
+    if self:GetIsTurningOn() or self:GetIsRevvedUp() then return end
 
+    self:SetIsTurningOn( true )
     local vm = self:GetOwner():GetViewModel()
     vm:SendViewModelMatchingSequence( vm:LookupSequence( "TurnOn" ) )
 
     timer.Simple( 0.7, function()
-        if not IsValid( self ) then return end
-        self:EmitSound( "chainsaw/chainsaw_failedstart.wav" )
+        if not IsValid( self ) or not self:GetIsTurningOn() then return end
+        self:PlayTurningOnSound()
     end )
-
 
     timer.Simple( 1.5, function()
-        if not IsValid( self ) then return end
-        self:EmitSound( "chainsaw/chainsaw_successstart.wav" )
+        if not IsValid( self ) or not self:GetIsTurningOn() then return end
+        self:PlayTurningOnSound2()
     end )
 
-
     timer.Simple( 2.8, function()
-        if not IsValid( self ) then return end
-
-        self:StopSound( "chainsaw/chainsaw_sawloop.wav" )
-        self:StopSound( "chainsaw/chainsaw_idleloop.wav" )
-        self:EmitSound( "chainsaw/chainsaw_idleloop.wav" )
-        self.IsRevvedUp = true
-        self.IsTurningOn = false
+        if not IsValid( self ) or not self:GetIsTurningOn() then return end
+        self:SetIsRevvedUp( true )
+        self:SetIsTurningOn( false )
+        self:PlayIdleLoop()
 
         local vm2 = self:GetOwner():GetViewModel()
-        vm2:SendViewModelMatchingSequence( vm2:LookupSequence( "IdleOn" ) )
-
+        if IsValid( vm2 ) then
+            vm2:SendViewModelMatchingSequence( vm2:LookupSequence( "IdleOn" ) )
+        end
     end )
 
     self:SetNextPrimaryFire( CurTime() + 0.6 )
 end
 
 function SWEP:TurnOff()
-    self.IsTurningOff = true
-    self.IsAttacking = false
+    if not SERVER then return end
+    if self:GetIsTurningOff() then return end
+
+    self:SetIsTurningOff( true )
+    self:SetIsAttacking( false )
 
     local vm = self:GetOwner():GetViewModel()
     vm:SendViewModelMatchingSequence( vm:LookupSequence( "TurnOff" ) )
 
-    self:EmitSound( "chainsaw/chainsaw_turnoff.wav" )
-
-    self:StopSound( "chainsaw/chainsaw_idleloop.wav" )
-    self:StopSound( "chainsaw/chainsaw_sawloop.wav" )
+    self:StopLoopSounds()
+    self:PlayTurningOffSound()
 
     timer.Simple( 1.0, function()
         if not IsValid( self ) then return end
-
-        self.IsRevvedUp = false
-        self.IsTurningOff = false
+        self:SetIsRevvedUp( false )
+        self:SetIsTurningOff( false )
     end )
 
     self:SetNextPrimaryFire( CurTime() + 1.0 )
@@ -104,48 +138,49 @@ end
 
 function SWEP:PrimaryAttack()
     if not IsFirstTimePredicted() then return end
-    if self.IsTurningOn or self.IsTurningOff then return end
+    if self:GetIsTurningOn() or self:GetIsTurningOff() then return end
 
-    if not self.IsRevvedUp then
+    if not self:GetIsRevvedUp() then
         self:TurnOn()
         return
     end
 
+    if not SERVER then return end
+
     local vm = self:GetOwner():GetViewModel()
     vm:SendViewModelMatchingSequence( vm:LookupSequence( "Attack_On" ) )
 
-    if not self.IsAttacking then
-        self:StopSound( "chainsaw/chainsaw_idleloop.wav" )
-        self:StopSound( "chainsaw/chainsaw_sawloop.wav" )
-        self:EmitSound( "chainsaw/chainsaw_sawloop.wav" )
-        self.IsAttacking = true
-
+    if not self:GetIsAttacking() then
+        self:PlayRevvedSound()
+        self:SetIsAttacking( true )
         vm:SendViewModelMatchingSequence( 11 )
     end
 
     self:DealDamage()
-
     self:SetNextPrimaryFire( CurTime() + 0.2 )
-
     self:GetOwner():SetAnimation( PLAYER_ATTACK1 )
 end
 
 function SWEP:Think()
-    local shutDownAttacking = self.IsAttacking and self.IsRevvedUp and not self:GetOwner():KeyDown( IN_ATTACK )
-    if shutDownAttacking then
-        self.IsAttacking = false
-        self:StopSound( "chainsaw/chainsaw_sawloop.wav" )
-        self:StopSound( "chainsaw/chainsaw_idleloop.wav" )
-        self:EmitSound( "chainsaw/chainsaw_idleloop.wav" )
+    if not SERVER then return end
+    local owner = self:GetOwner()
+    if not IsValid( owner ) then return end
 
-        local vm = self:GetOwner():GetViewModel()
-        vm:SendViewModelMatchingSequence( vm:LookupSequence( "IdleOn" ) )
+    local stopAttacking = self:GetIsAttacking() and self:GetIsRevvedUp() and not owner:KeyDown( IN_ATTACK )
+    if stopAttacking then
+        self:SetIsAttacking( false )
+        self:PlayIdleLoop()
+
+        local vm = owner:GetViewModel()
+        if IsValid( vm ) then
+            vm:SendViewModelMatchingSequence( vm:LookupSequence( "IdleOn" ) )
+        end
     end
 
-    local doIdleAnim = self.IsRevvedUp and not self.IsAttacking and not self.IsTurningOn and not self.IsTurningOff
-    if doIdleAnim then
-        local vm = self:GetOwner():GetViewModel()
-        if vm:GetSequence() != vm:LookupSequence( "IdleOn" ) then
+    local shouldIdle = self:GetIsRevvedUp() and not self:GetIsAttacking() and not self:GetIsTurningOn() and not self:GetIsTurningOff()
+    if shouldIdle then
+        local vm = owner:GetViewModel()
+        if IsValid( vm ) and vm:GetSequence() != vm:LookupSequence( "IdleOn" ) then
             vm:SendViewModelMatchingSequence( vm:LookupSequence( "IdleOn" ) )
         end
     end
@@ -178,7 +213,6 @@ function SWEP:DealDamage()
         owner:FireBullets( bullet )
 
         if IsValid( ent ) and ( ent:IsPlayer() or ent:IsNPC() or ent:IsNextBot() ) then
-
             sound.Play( "physics/body/body_medium_break"..math.random( 2, 4 )..".wav", tr.HitPos, 75, math.random( 100, 155 ), 1 )
             sound.Play( "npc/antlion_guard/antlion_guard_shellcrack"..math.random( 1, 2 )..".wav", tr.HitPos, 75, math.random( 100, 155 ), 1 )
             sound.Play( "ambient/machines/slicer"..math.random( 1, 4 )..".wav", tr.HitPos, 75, math.random( 100, 155 ), 1 )
@@ -193,19 +227,14 @@ function SWEP:DealDamage()
     end
 end
 
-
 function SWEP:Holster()
-    if self.IsRevvedUp then
+    if self:GetIsRevvedUp() then
         self:TurnOff()
     end
-
-    self:StopSound( "chainsaw/chainsaw_idleloop.wav" )
-    self:StopSound( "chainsaw/chainsaw_sawloop.wav" )
-
+    self:StopLoopSounds()
     return true
 end
 
 function SWEP:OnRemove()
-    self:StopSound( "chainsaw/chainsaw_idleloop.wav" )
-    self:StopSound( "chainsaw/chainsaw_sawloop.wav" )
+    self:StopLoopSounds()
 end
