@@ -2,10 +2,6 @@
 -- GIVE THEM LOVE AND AWARD THEM YAYAYAYAYA 
 -- billions must award YLW
 
-
-
-
-
 SWEP.Base = "weapon_base"
 SWEP.Category = "Hunter's Glee"
 SWEP.Spawnable = true
@@ -33,7 +29,7 @@ SWEP.Secondary.Ammo = "none"
 
 function SWEP:Initialize()
     self:SetHoldType( self.HoldType )
-    self.IsReadyToAttack = false
+    self.IsRevvedUp = false
     self.IsTurningOn = false
     self.IsTurningOff = false
     self.IsAttacking = false
@@ -42,7 +38,7 @@ end
 function SWEP:Reload()
     if self.IsTurningOn or self.IsTurningOff then return end
 
-    if self.IsReadyToAttack then
+    if self.IsRevvedUp then
         self:TurnOff()
     else
         self:TurnOn()
@@ -73,11 +69,12 @@ function SWEP:TurnOn()
         self:StopSound( "chainsaw/chainsaw_sawloop.wav" )
         self:StopSound( "chainsaw/chainsaw_idleloop.wav" )
         self:EmitSound( "chainsaw/chainsaw_idleloop.wav" )
-        self.IsReadyToAttack = true
+        self.IsRevvedUp = true
         self.IsTurningOn = false
-        
-        local vm = self:GetOwner():GetViewModel()
-        vm:SendViewModelMatchingSequence( vm:LookupSequence( "IdleOn" ) )
+
+        local vm2 = self:GetOwner():GetViewModel()
+        vm2:SendViewModelMatchingSequence( vm2:LookupSequence( "IdleOn" ) )
+
     end )
 
     self:SetNextPrimaryFire( CurTime() + 0.6 )
@@ -98,7 +95,7 @@ function SWEP:TurnOff()
     timer.Simple( 1.0, function()
         if not IsValid( self ) then return end
 
-        self.IsReadyToAttack = false
+        self.IsRevvedUp = false
         self.IsTurningOff = false
     end )
 
@@ -106,9 +103,10 @@ function SWEP:TurnOff()
 end
 
 function SWEP:PrimaryAttack()
+    if not IsFirstTimePredicted() then return end
     if self.IsTurningOn or self.IsTurningOff then return end
 
-    if not self.IsReadyToAttack then
+    if not self.IsRevvedUp then
         self:TurnOn()
         return
     end
@@ -122,18 +120,19 @@ function SWEP:PrimaryAttack()
         self:EmitSound( "chainsaw/chainsaw_sawloop.wav" )
         self.IsAttacking = true
 
-        vm:SendViewModelMatchingSequence( 11 ) 
+        vm:SendViewModelMatchingSequence( 11 )
     end
 
     self:DealDamage()
 
     self:SetNextPrimaryFire( CurTime() + 0.2 )
 
-	self:GetOwner():SetAnimation( PLAYER_ATTACK1 )
+    self:GetOwner():SetAnimation( PLAYER_ATTACK1 )
 end
 
 function SWEP:Think()
-    if self.IsReadyToAttack and not self:GetOwner():KeyDown( IN_ATTACK ) and self.IsAttacking then
+    local shutDownAttacking = self.IsAttacking and self.IsRevvedUp and not self:GetOwner():KeyDown( IN_ATTACK )
+    if shutDownAttacking then
         self.IsAttacking = false
         self:StopSound( "chainsaw/chainsaw_sawloop.wav" )
         self:StopSound( "chainsaw/chainsaw_idleloop.wav" )
@@ -142,8 +141,9 @@ function SWEP:Think()
         local vm = self:GetOwner():GetViewModel()
         vm:SendViewModelMatchingSequence( vm:LookupSequence( "IdleOn" ) )
     end
-    
-    if self.IsReadyToAttack and not self.IsAttacking and not self.IsTurningOn and not self.IsTurningOff then
+
+    local doIdleAnim = self.IsRevvedUp and not self.IsAttacking and not self.IsTurningOn and not self.IsTurningOff
+    if doIdleAnim then
         local vm = self:GetOwner():GetViewModel()
         if vm:GetSequence() != vm:LookupSequence( "IdleOn" ) then
             vm:SendViewModelMatchingSequence( vm:LookupSequence( "IdleOn" ) )
@@ -164,25 +164,25 @@ function SWEP:DealDamage()
     if tr.Hit and tr.HitPos:Distance( owner:GetShootPos() ) <= 90 then
         local ent = tr.Entity
 
-            local bullet = {
-                Num = 1,
-                Src = owner:GetShootPos(),
-                Dir = owner:GetAimVector(),
-                Spread = Vector( 0, 0, 0 ),
-                Tracer = 0,
-                Force = 3,
-                Damage = math.random( 26, 62 ),
-                Distance = 90
-            }
+        local bullet = {
+            Num = 1,
+            Src = owner:GetShootPos(),
+            Dir = owner:GetAimVector(),
+            Spread = Vector( 0, 0, 0 ),
+            Tracer = 0,
+            Force = 3,
+            Damage = math.random( 26, 62 ),
+            Distance = 90
+        }
 
-            owner:FireBullets( bullet )
+        owner:FireBullets( bullet )
 
-            if IsValid( ent ) and ( ent:IsPlayer() or ent:IsNPC() or ent:IsNextBot() ) then
+        if IsValid( ent ) and ( ent:IsPlayer() or ent:IsNPC() or ent:IsNextBot() ) then
 
             sound.Play( "physics/body/body_medium_break"..math.random( 2, 4 )..".wav", tr.HitPos, 75, math.random( 100, 155 ), 1 )
             sound.Play( "npc/antlion_guard/antlion_guard_shellcrack"..math.random( 1, 2 )..".wav", tr.HitPos, 75, math.random( 100, 155 ), 1 )
             sound.Play( "ambient/machines/slicer"..math.random( 1, 4 )..".wav", tr.HitPos, 75, math.random( 100, 155 ), 1 )
-            
+
             local ed = EffectData()
             ed:SetOrigin( tr.HitPos )
             ed:SetNormal( tr.HitNormal )
@@ -195,7 +195,7 @@ end
 
 
 function SWEP:Holster()
-    if self.IsReadyToAttack then
+    if self.IsRevvedUp then
         self:TurnOff()
     end
 
