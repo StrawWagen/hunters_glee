@@ -649,6 +649,16 @@ function GM:SpectateThing( ply, thing, msg )
 
 end
 
+function GM:FixAnglesOf( ply )
+    timer.Simple( 0, function()
+        if not IsValid( ply ) then return end
+        local angles = ply:EyeAngles()
+        angles.r = 0
+        ply:SetEyeAngles( angles )
+
+    end )
+end
+
 function GM:StopSpectatingThing( ply )
     local target = ply:GetObserverTarget()
     ply:SetObserverMode( OBS_MODE_ROAMING )
@@ -661,17 +671,10 @@ function GM:StopSpectatingThing( ply )
 
     end
 
-    local newAng = ply:GetAngles()
-    ply:SetAngles( Angle( newAng.p, newAng.y, 0 ) )
-
     net.Start( "glee_stoppedspectating" )
     net.Send( ply )
 
-    local oldAng = ply:GetAngles()
-    timer.Simple( 0, function()
-        if not IsValid( ply ) then return end
-        ply:SetAngles( Angle( oldAng.p, oldAng.y, 0 ) )
-    end )
+    self:FixAnglesOf( ply )
 end
 
 local nextSpectateIdleCheck = {}

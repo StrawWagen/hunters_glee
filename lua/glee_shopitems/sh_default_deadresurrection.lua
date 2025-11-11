@@ -147,7 +147,7 @@ local function divineIntervention( purchaser )
             if math.random( 0, 100 ) > healAmount then return end
 
             healAmount = healAmount * 0.75
-            local newHealth = math.min( purchaser:GetMaxHealth(), purchaser:Health() + healAmount )
+            local newHealth = math.min( purchaser:Health() + healAmount, purchaser:GetMaxHealth() )
 
             purchaser:SetHealth( newHealth )
 

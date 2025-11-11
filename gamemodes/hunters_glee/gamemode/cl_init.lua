@@ -1065,11 +1065,22 @@ hook.Add( "CalcView", "glee_override_spectating_angles", function( ply, _, ang, 
         local dir = -ang:Forward()
         local fallbackDrawPos = pivot + dir * 15
         local desiredDrawPos = pivot + dir * 100
+        local filter = { spectateTarget }
+        if spectateTarget.InVehicle and spectateTarget:InVehicle() then
+            local vehicle = spectateTarget:GetVehicle()
+            filter[#filter + 1] = vehicle
+            if IsValid( vehicle:GetParent() ) then
+                filter[#filter + 1] = vehicle:GetParent()
+
+            end
+        end
+
+        ang.r = 0 -- no roll please
 
         local checkTr = {
             start = fallbackDrawPos,
             endpos = desiredDrawPos,
-            filter = spectateTarget
+            filter = filter
 
         }
 
@@ -1085,39 +1096,53 @@ hook.Add( "CalcView", "glee_override_spectating_angles", function( ply, _, ang, 
         return view
     end
 
-    if not isTerm then return end
-
     if mode == OBS_MODE_IN_EYE then
-        local termAng
-        if spectateTarget.GetEyeAngles then
-            termAng = spectateTarget:GetEyeAngles()
+        if spectateTarget.InVehicle and spectateTarget:InVehicle() then
+            local vehicle = spectateTarget:GetVehicle()
+            local eyeAng = spectateTarget:EyeAngles()
+            eyeAng = vehicle:WorldToLocalAngles( eyeAng )
+            local view = {
+                origin = spectateTarget:GetShootPos(),
+                angles = eyeAng,
+                fov = fov,
+                znear = 8,
+                drawviewer = false
 
-        else
-            termAng = spectateTarget:GetAngles()
+            }
+            return view
+
+        elseif isTerm then
+            local termAng
+            if spectateTarget.GetEyeAngles then
+                termAng = spectateTarget:GetEyeAngles()
+
+            else
+                termAng = spectateTarget:GetAngles()
+
+            end
+
+            local forward = termAng:Forward()
+
+            local origin
+            if spectateTarget.GetShootPos then
+                origin = spectateTarget:GetShootPos()
+
+            else
+                origin = spectateTarget:WorldSpaceCenter()
+
+            end
+
+            local view = {
+                origin = origin + forward * 15,
+                angles = termAng,
+                fov = fov,
+                znear = 8,
+                drawviewer = false
+
+            }
+            return view
 
         end
-
-        local forward = termAng:Forward()
-
-        local origin
-        if spectateTarget.GetShootPos then
-            origin = spectateTarget:GetShootPos()
-
-        else
-            origin = spectateTarget:WorldSpaceCenter()
-
-        end
-
-        local view = {
-            origin = origin + forward * 15,
-            angles = termAng,
-            fov = fov,
-            znear = 8,
-            drawviewer = false
-
-        }
-        return view
-
     end
 end )
 
