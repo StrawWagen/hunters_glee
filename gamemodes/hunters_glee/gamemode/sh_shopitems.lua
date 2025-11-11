@@ -2310,7 +2310,7 @@ local function ar3Purchase( purchaser )
 
     loadoutConfirm( purchaser, 6 )
 
-
+end
     
     
 local function chainsawPurchase( purchaser )
