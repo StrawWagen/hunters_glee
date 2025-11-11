@@ -51,13 +51,13 @@ function SWEP:TurnOn()
     local vm = self:GetOwner():GetViewModel()
     vm:SendViewModelMatchingSequence( vm:LookupSequence( "TurnOn" ) )
 
-        timer.Simple( 0.7, function()
+    timer.Simple( 0.7, function()
         if not IsValid( self ) then return end
         self:EmitSound( "chainsaw/chainsaw_failedstart.wav" )
     end )
 
 
-        timer.Simple( 1.5, function()
+    timer.Simple( 1.5, function()
         if not IsValid( self ) then return end
         self:EmitSound( "chainsaw/chainsaw_successstart.wav" )
     end )
