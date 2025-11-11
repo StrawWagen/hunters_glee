@@ -30,7 +30,7 @@ SWEP.WorldModel = "models/weapons/tfa_mmod/w_ar3.mdl"
 
 SWEP.UseHands = true
 
-SWEP.ShootSound = "Weapon_FuncTank.Single"
+SWEP.ShootSound = ( "weapons/ar3/ar3_fire" .. math.random(1,3) .. ".wav" )
 SWEP.ConsecutiveShotsDecay = 2
 
 SWEP.HeatDecay = 0.004
@@ -167,6 +167,7 @@ function SWEP:InspectAnim()
 
     self:SendWeaponAnim( ACT_VM_FIDGET )
 
+    self:EmitSound( "ar3/ar3_fidget.wav" )
 end
 
 function SWEP:Reload()
@@ -189,7 +190,7 @@ function SWEP:Reload()
     timer.Create( timerName, 1.3, 1, function()
         if not IsValid( self ) then return end
 
-        self:EmitSound( "weapons/shotgun/shotgun_cock.wav" )
+        self:EmitSound( "ar3/ar3_pump.wav" )
 
         local ammo = math.min( self.Primary.ClipSize - self:Clip1(), self:GetOwner():GetAmmoCount( self.Primary.Ammo ) )
         self:SetClip1( self:Clip1() + ammo )
