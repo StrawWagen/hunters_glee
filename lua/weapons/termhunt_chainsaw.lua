@@ -22,7 +22,7 @@ SWEP.HoldType = "physgun"
 SWEP.ViewModelFlip = true
 
 SWEP.Primary.Automatic = true
-SWEP.Primary.Ammo = "gasoline"
+SWEP.Primary.Ammo = "none"
 SWEP.Primary.ClipSize = -1
 SWEP.Primary.DefaultClip = -1
 
@@ -184,3 +184,4 @@ function SWEP:OnRemove()
     self:StopSound( "Weapon_Chainsaw.IdleLoop" )
     self:StopSound( "Weapon_Chainsaw.SawLoop" )
 end
+
