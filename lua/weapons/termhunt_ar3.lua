@@ -30,7 +30,7 @@ SWEP.WorldModel = "models/weapons/tfa_mmod/w_ar3.mdl"
 
 SWEP.UseHands = true
 
-SWEP.ShootSound = ( "weapons/ar3/ar3_fire" .. math.random(1,3) .. ".wav" )
+SWEP.ShootSound = ( "ar3/ar3_fire" .. math.random(1,3) .. ".wav" )
 SWEP.ConsecutiveShotsDecay = 2
 
 SWEP.HeatDecay = 0.004
