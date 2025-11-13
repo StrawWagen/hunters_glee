@@ -2310,6 +2310,15 @@ local function ar3Purchase( purchaser )
 
     loadoutConfirm( purchaser, 6 )
 
+
+end
+    
+
+local function chainsawPurchase( purchaser )
+    purchaser:Give( "termhunt_chainsaw" )
+
+    loadoutConfirm( purchaser, 1 )
+
 end
 
 
@@ -3455,7 +3464,7 @@ local defaultItems = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
         },
-        weight = 1100,
+        weight = 1200,
         purchaseCheck = unUndeadCheck,
         purchaseFunc = ar3Purchase,
     },
@@ -3471,9 +3480,24 @@ local defaultItems = {
             GM.ROUND_INACTIVE,
             GM.ROUND_ACTIVE,
         },
-        weight = 1000,
+        weight = 1100,
         purchaseCheck = unUndeadCheck,
         purchaseFunc = tauCannonPurchase,
+    },
+    [ "chainsaw" ] = {
+        name = "Chainsaw",
+        desc = "A roaring beast of blood and metal, nothing survives the bite of its spinning teeth... \nMetal’s the only thing that bites back...",
+        cost = 0,
+        skullCost = 3,
+        cooldown = 0.5,
+        category = "Items",
+        purchaseTimes = {
+            GM.ROUND_INACTIVE,
+            GM.ROUND_ACTIVE,
+        },
+        weight = 1000,
+        purchaseCheck = unUndeadCheck,
+        purchaseFunc = chainsawPurchase,
     },
     -- funny cam
     [ "crapvidcam" ] = {
