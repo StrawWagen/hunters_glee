@@ -2,13 +2,20 @@ AddCSLuaFile()
 
 local entMeta = FindMetaTable( "Entity" )
 
-SWEP.Author         = "Straw W Wagen."
-SWEP.Contact        = ""
-SWEP.Purpose        = "Your powers as the holy chosen."
-SWEP.Instructions   = "Hold down and then release, Left, or Right click."
-SWEP.PrintName      = "Divine Chosen"
-SWEP.DrawAmmo       = true
-SWEP.DrawCrosshair    = true
+SWEP.Author = "Straw W Wagen."
+SWEP.Contact = ""
+SWEP.Purpose = "Your powers as the holy chosen."
+SWEP.Instructions = [[
+Hold primary to create a chain of lightning.
+
+Hold secondary to create a concentrated burst of lightning.
+
+Jump midair to use holy force to give yourself a push.
+
+Crouch midair to use holy force to descend.]]
+SWEP.PrintName = "Divine Chosen"
+SWEP.DrawAmmo = true
+SWEP.DrawCrosshair = true
 
 SWEP.SlotPos          = 0
 SWEP.Slot             = 0
@@ -752,7 +759,7 @@ function SWEP:EpicnessThink()
     if inHighIntensity < CurTime() and epic >= 100 then
         if epic >= 225 then
             -- once we do this line, activate a period of faster regen, and ranting
-            huntersGlee_Announce( { self:GetOwner() }, 500, 8, "SHOW THEM." )
+            huntersGlee_Announce( { self:GetOwner() }, 500, 8, "SHOW THEM" )
             local result = table.Random( superHighIntensity )
             theSound = result[1]
             self.nextEpicLine = CurTime() + result[2]
