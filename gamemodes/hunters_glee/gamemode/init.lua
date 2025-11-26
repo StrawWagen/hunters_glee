@@ -41,6 +41,9 @@ AddCSLuaFile( "modules/shopitems/sh_shoptags.lua" )
 AddCSLuaFile( "modules/shopitems/sh_shopcategories.lua" )
 AddCSLuaFile( "modules/shopitems/sh_itemverification.lua" )
 
+AddCSLuaFile( "modules/statuseffects/cl_statuseffects.lua" )
+AddCSLuaFile( "modules/statuseffects/sh_statuseffectbase.lua" )
+
 AddCSLuaFile( "modules/battery/sh_battery.lua" )
 AddCSLuaFile( "modules/spawnset/cl_spawnsetvote.lua" )
 AddCSLuaFile( "modules/spawnset/sh_spawnpoolutil.lua" )
@@ -75,6 +78,7 @@ include( "modules/sv_firstfallgrace.lua" )
 include( "modules/sv_seeding_rewarder.lua" )
 include( "modules/spawnset/sv_spawnsetvote.lua" )
 include( "modules/spawnset/sv_spawnsetsounds.lua" )
+include( "modules/statuseffects/sv_statuseffects.lua" )
 include( "modules/firsttimeplayers/sv_firsttimeplayers.lua" )
 
 include( "modules/battery/sv_battery.lua" )

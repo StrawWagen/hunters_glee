@@ -39,6 +39,8 @@ include( "modules/shopitems/sh_shoptags.lua" )
 include( "modules/shopitems/sh_shopcategories.lua" )
 include( "modules/shopitems/sh_itemverification.lua" )
 
+-- does not include sh_statuseffectbase, that one is used to return a status effect table
+
 if SERVER then -- load order has to be right :(
     include( "modules/shopitems/sv_shopgobbler.lua" )
 
@@ -104,7 +106,7 @@ function GM:PostCleanupMap()
         GAMEMODE:removePorters()
         GAMEMODE:removeBlockers()
 
-        GAMEMODE:CleanupTimers()
+        hook.Run( "glee_PostCleanupMap" )
 
         if GAMEMODE.blockCleanupSetup then return end
 

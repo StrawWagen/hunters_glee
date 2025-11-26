@@ -68,3 +68,20 @@ function shopHelpers.isCheats()
     return cheatsVar:GetBool()
 
 end
+
+shopHelpers.thwaps = {
+    Sound( "physics/body/body_medium_impact_hard3.wav" ),
+    Sound( "physics/body/body_medium_impact_hard2.wav" ),
+    Sound( "physics/body/body_medium_break2.wav" ),
+
+}
+
+function shopHelpers.playRandomSound( ent, sounds, level, pitch, channel )
+    if not channel then
+        channel = CHAN_STATIC
+    end
+    local soundName = sounds[math.random( #sounds )]
+
+    ent:EmitSound( soundName, level, pitch, 1, channel )
+
+end

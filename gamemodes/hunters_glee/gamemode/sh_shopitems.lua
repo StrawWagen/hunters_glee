@@ -130,25 +130,7 @@
 
 -- bhop perk?
 
-
-local thwaps = {
-    Sound( "physics/body/body_medium_impact_hard3.wav" ),
-    Sound( "physics/body/body_medium_impact_hard2.wav" ),
-    Sound( "physics/body/body_medium_break2.wav" ),
-
-}
-
 local shopHelpers = GM.shopHelpers
-
-local function playRandomSound( ent, sounds, level, pitch, channel )
-    if not channel then
-        channel = CHAN_STATIC
-    end
-    local soundName = sounds[math.random( #sounds )]
-
-    ent:EmitSound( soundName, level, pitch, 1, channel )
-
-end
 
 local sv_cheats = GetConVar( "sv_cheats" )
 
@@ -171,24 +153,6 @@ end
 local function multiplePeopleAndTerm()
     return hasMultiplePeople() and terminatorInSpawnPool()
 
-end
-
-local reviver = "termhunt_reviver"
-
-local function revivePurchase( purchaser )
-    local weap = purchaser:GetWeapon( reviver )
-    local hasWeap = IsValid( weap )
-
-    if hasWeap then
-        weap:AddResurrect()
-        weap:AddResurrect()
-
-    else
-        weap = purchaser:Give( reviver, false )
-        weap:AddResurrect()
-        shopHelpers.loadoutConfirm( purchaser, 2 )
-
-    end
 end
 
 
@@ -233,45 +197,6 @@ local function medkitPurchase( purchaser )
     else
         purchaser:Give( medkit, false )
         shopHelpers.loadoutConfirm( purchaser, 1 )
-
-    end
-end
-
-
-local function bloodDonorCanPurchase( purchaser )
-    if purchaser:Health() <= 1 then return false, "You don't have any blood to donate!" end
-    return true, ""
-
-end
-
-local function bloodDonorCalc( purchaser )
-    local beginningHealth = purchaser:Health()
-    local remainingHealth = beginningHealth - 100
-    remainingHealth = math.Clamp( remainingHealth, 1, math.huge )
-
-    local scoreGiven = math.abs( beginningHealth - remainingHealth ) * 1.15
-    scoreGiven = math.ceil( scoreGiven )
-
-    return scoreGiven, remainingHealth
-
-end
-
-local function bloodDonorCost( purchaser )
-    return -bloodDonorCalc( purchaser )
-
-end
-
-local function bloodDonorPurchase( purchaser )
-    local scoreGiven, remainingHealth = bloodDonorCalc( purchaser )
-
-    GAMEMODE:Bleed( purchaser, scoreGiven )
-
-    purchaser:GivePlayerScore( scoreGiven )
-
-    purchaser:SetHealth( remainingHealth )
-
-    for _ = 0, 2 do
-        playRandomSound( purchaser, thwaps, 75, math.random( 100, 120 ) )
 
     end
 end
@@ -952,93 +877,6 @@ local function blindnessPurchase( purchaser )
 
 end
 
-local function deafnessPurchase( purchaser )
-    purchaser.glee_IsDeaf = true
-
-    local timerName = "huntersglee_DeafnessInnateTimer_" .. purchaser:GetClass() .. purchaser:EntIndex()
-
-    local function giveDeaf()
-        purchaser:SetDSP( 31 )
-
-    end
-    local function unDeafInternal()
-        purchaser:SetDSP( 1 )
-
-    end
-    local function unDeaf()
-        unDeafInternal()
-        purchaser.glee_IsDeaf = false
-
-    end
-
-    timer.Create( timerName, 1, 0, function()
-        if IsValid( purchaser ) then
-            if not purchaser.glee_IsDeaf then timer.Remove( timerName ) return end
-            if purchaser:Health() <= 0 then unDeafInternal() return end
-            giveDeaf()
-
-        else
-            timer.Remove( timerName )
-
-        end
-    end )
-
-    giveDeaf()
-
-    local undoInnate = function( _ )
-        unDeaf()
-
-    end
-
-    GAMEMODE:PutInnateInProperCleanup( timerName, undoInnate, purchaser )
-
-end
-
-
-local function superiorMetabolismPurchase( purchaser )
-    purchaser.oldRegenerationScore = purchaser.realHeartBeats
-
-    local timerName = "supMetabolismTimer_" .. purchaser:GetClass() .. purchaser:EntIndex()
-
-    local doSuperiorMetabolismThink = function()
-        local currBeats = purchaser.realHeartBeats
-        local oldBeats = purchaser.oldRegenerationScore
-
-        if currBeats ~= oldBeats then
-            purchaser.oldRegenerationScore = purchaser.realHeartBeats
-            if currBeats <= oldBeats then return end -- wtf?
-
-            local amount = 1
-
-            local newHealth = math.Clamp( purchaser:Health() + amount, 0, purchaser:GetMaxHealth() )
-            purchaser:SetHealth( newHealth )
-
-        end
-    end
-
-    -- Set the timer to repeat the sound
-    timer.Create( timerName, 0.05, 0, function()
-        if IsValid( purchaser ) then
-            if purchaser:Health() <= 0 then return end
-            doSuperiorMetabolismThink()
-
-        else
-            -- If the entity is no longer valid, stop the timer
-            timer.Remove( timerName )
-
-        end
-    end )
-
-    local undoInnate = function( _ )
-        timer.Remove( timerName )
-        purchaser.oldRegenerationScore = nil
-
-    end
-
-    GAMEMODE:PutInnateInProperCleanup( timerName, undoInnate, purchaser )
-
-end
-
 
 local function cholesterolPurchase( purchaser )
     local hookName1 = "glee_cholesterol_higherresting_" .. purchaser:GetCreationID()
@@ -1289,44 +1127,6 @@ local function susPurchase( purchaser )
         purchaser.oldSusSpeedMul = nil
         respawner:SetWalkSpeed( respawner.defaultWalkSpeed )
         respawner:SetCrouchedWalkSpeed( respawner.defaultCrouchSpeedMul )
-        timer.Remove( timerName )
-
-    end
-
-    GAMEMODE:PutInnateInProperCleanup( timerName, undoInnate, purchaser )
-
-end
-
-
-local speedBoostBeginsAt = 95
-local bpmToSpeedScale = 4
-
-local function coldbloodedPurchase( purchaser )
-    local timerName = "ColdBloodedTimer_" .. purchaser:GetClass() .. purchaser:GetCreationID()
-
-    purchaser.doSpeedMod = function()
-        local BPM = purchaser:GetNWInt( "termHuntPlyBPM" ) or 60
-        local usefulBPM = BPM - speedBoostBeginsAt
-        usefulBPM = usefulBPM * bpmToSpeedScale
-
-        purchaser:doSpeedModifier( "coldblooded", usefulBPM )
-
-    end
-
-    timer.Create( timerName, 0.1, 0, function()
-        if IsValid( purchaser ) then
-            if purchaser:Health() <= 0 then return end
-            purchaser.doSpeedMod()
-
-        else
-            -- If the entity is no longer valid, stop the timer
-            timer.Remove( timerName )
-
-        end
-    end )
-
-    local undoInnate = function( respawner )
-        respawner:doSpeedModifier( "coldblooded", nil )
         timer.Remove( timerName )
 
     end
@@ -3017,23 +2817,6 @@ local defaultItems = {
         shPurchaseCheck = shopHelpers.aliveCheck,
         svOnPurchaseFunc = fragPurchase,
     },
-    -- keeps the rounds going
-    [ "revivekit" ] = {
-        name = "Revive Kit",
-        desc = "Revives dead players.\nYou gain 300 score per resurrection.",
-        shCost = 30,
-        markup = 1.5,
-        cooldown = 0.5,
-        category = "Items",
-        purchaseTimes = {
-            GM.ROUND_INACTIVE,
-            GM.ROUND_ACTIVE,
-        },
-        weight = -100,
-        shPurchaseCheck = shopHelpers.aliveCheck,
-        svOnPurchaseFunc = revivePurchase,
-        shCanShowInShop = hasMultiplePeople,
-    },
     -- heal jooce
     [ "healthkit" ] = {
         name = "Medkit",
@@ -3101,20 +2884,6 @@ local defaultItems = {
         svOnPurchaseFunc = screamingBackpackPurchase,
         shCanShowInShop = terminatorInSpawnPool,
     },
-    -- Risk vs reward.
-    [ "blooddonor" ] = {
-        name = "Donate Blood.",
-        desc = "Donate blood for score.",
-        shCost = bloodDonorCost,
-        cooldown = math.huge,
-        category = "Innate",
-        purchaseTimes = {
-            GM.ROUND_ACTIVE,
-        },
-        weight = -90,
-        shPurchaseCheck = { shopHelpers.aliveCheck, bloodDonorCanPurchase },
-        svOnPurchaseFunc = bloodDonorPurchase,
-    },
     -- flat DOWNGRADE
     [ "blindness" ] = {
         name = "Legally Blind.",
@@ -3177,21 +2946,6 @@ local defaultItems = {
         weight = -80,
         shPurchaseCheck = { shopHelpers.aliveCheck },
         svOnPurchaseFunc = cholesterolPurchase,
-    },
-    [ "deafness" ] = {
-        name = "Hard of Hearing.",
-        desc = "You can barely hear a thing!",
-        shCost = -75,
-        markup = 0.25,
-        cooldown = math.huge,
-        category = "Innate",
-        purchaseTimes = {
-            GM.ROUND_INACTIVE,
-            GM.ROUND_ACTIVE,
-        },
-        weight = -90,
-        shPurchaseCheck = { shopHelpers.aliveCheck },
-        svOnPurchaseFunc = deafnessPurchase,
     },
     [ "sixthsense" ] = {
         name = "Sixth Sense.",
@@ -3335,22 +3089,6 @@ local defaultItems = {
         weight = 80,
         shPurchaseCheck = { shopHelpers.aliveCheck },
         svOnPurchaseFunc = signalRelayPurchase,
-    },
-    -- flat upgrade
-    [ "coldblooded" ] = {
-        name = "Cold Blooded.",
-        desc = "Your top speed is linked to your heartrate.",
-        shCost = 150,
-        markup = 2,
-        cooldown = math.huge,
-        category = "Innate",
-        purchaseTimes = {
-            GM.ROUND_INACTIVE,
-            GM.ROUND_ACTIVE,
-        },
-        weight = 80,
-        shPurchaseCheck = { shopHelpers.aliveCheck },
-        svOnPurchaseFunc = coldbloodedPurchase,
     },
     -- flat upgrade
     [ "superiormetabolism" ] = {
