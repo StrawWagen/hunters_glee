@@ -8,11 +8,11 @@ SWEP.Purpose = "Your powers as the holy chosen."
 SWEP.Instructions = [[
 Hold primary to create a chain of lightning.
 
-Hold secondary to create a concentrated burst of lightning.
+Hold secondary to charge a powerful single strike.
 
-Jump midair to use holy force to give yourself a push.
+Jump in the air, to rise...
 
-Crouch midair to use holy force to descend.]]
+Crouch midair, to descend...]]
 SWEP.PrintName = "Divine Chosen"
 SWEP.DrawAmmo = true
 SWEP.DrawCrosshair = true

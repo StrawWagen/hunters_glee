@@ -4,7 +4,7 @@
 SWEP.PrintName = "Emplacement Gun"
 SWEP.Author = "Boomeritaintaters + gaming98"
 SWEP.Instructions = [[
-Primary to fire. The longer you fire, the faster it becomes. Just don't let it overheat!
+The longer you shoot, the faster the bullets fly. Just don't let it overheat!
 
 “I want revenge. I want them to know that death is coming. And there's nothing they can do to stop it.”
  - John Rambo]]
