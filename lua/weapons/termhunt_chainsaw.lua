@@ -28,10 +28,10 @@ SWEP.Secondary.Automatic = false
 SWEP.Secondary.Ammo = "none"
 
 function SWEP:SetupDataTables()
-    self:NetworkVar( "Bool", 0, "IsRevvedUp" )
-    self:NetworkVar( "Bool", 1, "IsTurningOn" )
-    self:NetworkVar( "Bool", 2, "IsTurningOff" )
-    self:NetworkVar( "Bool", 3, "IsAttacking" )
+    self:NetworkVar( "Bool", "IsRevvedUp" )
+    self:NetworkVar( "Bool", "IsTurningOn" )
+    self:NetworkVar( "Bool", "IsTurningOff" )
+    self:NetworkVar( "Bool", "IsAttacking" )
 end
 
 function SWEP:Initialize()
@@ -295,3 +295,4 @@ end
 function SWEP:OnRemove()
     self:KillSound()
 end
+
