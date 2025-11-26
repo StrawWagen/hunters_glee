@@ -3,7 +3,11 @@
 
 SWEP.PrintName = "Emplacement Gun"
 SWEP.Author = "Boomeritaintaters + gaming98"
-SWEP.Instructions = "I want revenge. I want them to know that death is coming - John Rambo"
+SWEP.Instructions = [[
+The longer you shoot, the faster the bullets fly. Just don't let it overheat!
+
+“I want revenge. I want them to know that death is coming. And there's nothing they can do to stop it.”
+ - John Rambo]]
 SWEP.Category = "Hunter's Glee"
 
 SWEP.Spawnable = true
@@ -283,4 +287,5 @@ function SWEP:DrawWorldModel()
     stopHeatDrawing( self, self )
 
 end
+
 
