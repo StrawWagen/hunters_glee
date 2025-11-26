@@ -46,7 +46,7 @@ function SWEP:SetupDataTables()
 end
 
 function SWEP:Deploy()
-    self:EmitSound( "weapons/ar3/ar3_deploy.wav" )
+    self:EmitSound( "ar3/ar3_deploy.wav" )
     self.deploying = true
     self.deployTime = CurTime() + 1
 
@@ -283,3 +283,4 @@ function SWEP:DrawWorldModel()
     stopHeatDrawing( self, self )
 
 end
+
