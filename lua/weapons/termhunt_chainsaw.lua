@@ -22,6 +22,11 @@ SWEP.Primary.Ammo = "none"
 SWEP.Primary.ClipSize = -1
 SWEP.Primary.DefaultClip = -1
 
+SWEP.Secondary.ClipSize = -1
+SWEP.Secondary.DefaultClip = -1
+SWEP.Secondary.Automatic = false
+SWEP.Secondary.Ammo = "none"
+
 function SWEP:SetupDataTables()
     self:NetworkVar( "Bool", "IsRevvedUp" )
     self:NetworkVar( "Bool", "IsTurningOn" )
@@ -294,4 +299,3 @@ end
 function SWEP:OnRemove()
     self:KillSound()
 end
-
