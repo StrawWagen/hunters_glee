@@ -30,7 +30,7 @@ SWEP.WorldModel = "models/weapons/tfa_mmod/w_ar3.mdl"
 
 SWEP.UseHands = true
 
-SWEP.ShootSound = ( "ar3/ar3_fire" .. math.random(1,3) .. ".wav" )
+SWEP.ShootSound = "Weapon_FuncTank.Single"
 SWEP.ConsecutiveShotsDecay = 2
 
 SWEP.HeatDecay = 0.004
@@ -89,7 +89,7 @@ function SWEP:PrimaryAttack()
 
     self:SetNextPrimaryFire( CurTime() + add )
     self:ShootBullet( math.random( 15, 25 ), 1, 0.03 )
-    self:EmitSound( self.ShootSound )
+    self:EmitSound( "ar3/ar3_fire" .. math.random(1,3) .. ".wav" )
     self:TakePrimaryAmmo( 1 )
 
     if not SERVER then return end
