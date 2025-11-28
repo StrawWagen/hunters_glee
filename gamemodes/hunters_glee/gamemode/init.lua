@@ -76,7 +76,7 @@ include( "modules/proceduralspawner/sv_genericspawner.lua" )
 include( "modules/proceduralspawner/sv_cratespawner.lua" )
 include( "modules/proceduralspawner/sv_beartrapspawner.lua" )
 include( "modules/proceduralspawner/sv_jeepspawner.lua" )
-include( "modules/proceduralspawner/sv_raresgenericspawns.lua" )
+include( "modules/proceduralspawner/sv_raregenericspawns.lua" )
 
 include( "modules/weapondropper/sv_weapondropper.lua" )
 include( "modules/signalstrength/sv_signalstrength.lua" )
