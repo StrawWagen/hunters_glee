@@ -25,6 +25,7 @@ end
 
 hook.Add( "glee_connectedgroups_end", "glee_spawnajeepifwewant", function()
     if not jeepVar:GetBool() then return end
+    if hook.Run( "glee_blockjeepspawning" ) then return end
     if GAMEMODE.navmeshUnderSkySurfaceArea < jeepSurfaceArea then return end
 
     local jeepsOnThisMap = GAMEMODE.navmeshUnderSkySurfaceArea / jeepSurfaceArea
