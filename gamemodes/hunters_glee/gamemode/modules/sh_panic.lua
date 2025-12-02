@@ -241,7 +241,7 @@ elseif SERVER then
             end
 
             if panicSpeedPenaltyMul then
-                ply:doSpeedModifier( "panic", -panic * panicSpeedPenaltyMul )
+                ply:DoSpeedModifier( "panic", -panic * panicSpeedPenaltyMul )
 
             end
 

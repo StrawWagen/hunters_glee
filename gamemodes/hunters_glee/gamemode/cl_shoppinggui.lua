@@ -855,12 +855,15 @@ function termHuntOpenTheShop()
                     local shopItemNameHPadded = shopItemNameH * 1.2
                     self.shopItemNameHPadded = shopItemNameHPadded
 
+                    local _, shopMarkupH = surface.GetTextSize( self.markupString )
+                    local shopMarkupHPadded = shopMarkupH * 1.2
+
                     --item name
                     draw.DrawText( self.itemData.name, "termhuntShopItemFont", offsetNextToIdentifier, offsetNextToIdentifier, white, TEXT_ALIGN_LEFT )
                     --item cost
                     draw.DrawText( self.costString, "termhuntShopItemFont", offsetNextToIdentifier, shopItemNameHPadded + offsetNextToIdentifier, self.costColor, TEXT_ALIGN_LEFT )
                     -- current markup being applied
-                    draw.DrawText( self.markupString, "termhuntShopItemFont", offsetNextToIdentifier, shopItemNameHPadded + shopItemNameHPadded + offsetNextToIdentifier, markupTextColor, TEXT_ALIGN_LEFT )
+                    draw.DrawText( self.markupString, "termhuntShopItemFont", offsetNextToIdentifier, shopItemNameHPadded + shopMarkupHPadded + offsetNextToIdentifier, markupTextColor, TEXT_ALIGN_LEFT )
 
                     self.myOverlayColor = nil
 

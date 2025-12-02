@@ -53,14 +53,14 @@ function SWEP:Deploy()
     if CLIENT then return end
 
     local owner = self:GetOwner()
-    if IsValid( owner ) and owner:IsPlayer() and owner.doSpeedClamp then
-        owner:doSpeedClamp( "glee_ar3_deployed", -75 ) -- apply speed debuff when equipped
+    if IsValid( owner ) and owner:IsPlayer() and owner.DoSpeedClamp then
+        owner:DoSpeedClamp( "glee_ar3_deployed", -75 ) -- apply speed debuff when equipped
 
         local timerName = "glee_ar3_deploy_timer" .. self:GetCreationID()
 
         local function stopDebuff()
             timer.Remove( timerName )
-            owner:doSpeedClamp( "glee_ar3_deployed", nil )
+            owner:DoSpeedClamp( "glee_ar3_deployed", nil )
 
         end
         timer.Create( timerName, 0.45, 0, function() -- cleanup debuff when no longer active weapon

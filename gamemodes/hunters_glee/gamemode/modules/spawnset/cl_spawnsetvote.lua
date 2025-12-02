@@ -26,6 +26,7 @@ net.Receive( "glee_begin_spawnsetvote", function()
 
 end )
 
+-- hotkey voters
 local voters = {
     "slot1",
     "slot2",
@@ -39,11 +40,15 @@ local voters = {
 }
 
 function spawnSetVote:CreateVotePanel()
-
+    -- hold to vote bind
     local holdToVote = "+showscores"
+
+    -- plays clacky sounds when you hover buttons
     local pressableThink = GAMEMODE.shopStandards.pressableThink
+    -- all done sound!
     local voteDoneSound = "buttons/lever4.wav"
 
+    -- colors
     local cantAffordOverlay =   GAMEMODE.shopStandards.cantAffordOverlay
     local notHoveredOverlay =   GAMEMODE.shopStandards.notHoveredOverlay
     local pressedItemOverlay =  GAMEMODE.shopStandards.pressedItemOverlay
@@ -144,6 +149,7 @@ function spawnSetVote:CreateVotePanel()
     end
 
 
+    -- tell people what this is
     local infoLabel = vgui.Create( "DLabel", voteHolder, "glee_voteinfo_label" )
 
     infoLabel:SetSize( 10 * scale, 0 ) -- scaling these just in case
@@ -159,6 +165,7 @@ function spawnSetVote:CreateVotePanel()
     infoLabel:SetText( "Vote to change up the hunt..." )
 
 
+    -- countdown
     local countdownLabel = vgui.Create( "DLabel", voteHolder, "glee_voteinfo_countdown" )
 
     countdownLabel:SetSize( 10 * scale, 0 )
@@ -181,6 +188,7 @@ function spawnSetVote:CreateVotePanel()
 
         countdownLabel:SetText( untilDone )
 
+        -- flash red and play sound when vote's about to end
         if untilDone <= 5 and untilDoneRaw % 1 < 0.1 then
             countdownLabel:SetTextColor( GAMEMODE.shopStandards.red )
             if not self.countdownClick then
@@ -199,8 +207,9 @@ function spawnSetVote:CreateVotePanel()
     end
 
 
+    -- all the options!
     for ind, data in ipairs( options ) do
-        if ind >= 9 then return end
+        if ind > 9 then return end -- keyboards only have so many number keys
 
         local currButton = vgui.Create( "DButton", voteHolder, data.name )
         currButton.name = data.name
@@ -279,6 +288,7 @@ function spawnSetVote:CreateVotePanel()
         end
     end
 
+    -- make sure people know how to vote!
     local hintYapper = vgui.Create( "DLabel", voteHolder, "glee_voteinfo_hintyapper" )
 
     hintYapper:SetSize( 10, 0 )
@@ -293,6 +303,7 @@ function spawnSetVote:CreateVotePanel()
     hintYapper:SetContentAlignment( 7 )
     hintYapper:SetWrap( true )
     hintYapper:SetText( "" )
+    hintYapper:SetTextInset( whiteIdentifierLineWidth, 0 )
 
     local oldHintThink = hintYapper.Think
     function hintYapper:Think()
@@ -303,8 +314,8 @@ function spawnSetVote:CreateVotePanel()
         end
 
         local hint = ""
-        local hintStart = "Open chat"
-        local hintEnd = " to vote."
+        local hintStart = "(Open chat"
+        local hintEnd = " to vote.)"
         local valid, phrase = GAMEMODE:TranslatedBind( holdToVote )
         if hasAllTheVoteKeys and valid then -- some doofus is gonna have this unbound
             hint = hintStart .. " or press a number while holding " .. string.upper( phrase ) .. " " .. hintEnd
@@ -317,6 +328,14 @@ function spawnSetVote:CreateVotePanel()
         self:SetText( hint )
 
         oldHintThink( hintYapper )
+
+    end
+
+    function hintYapper:Paint( w, h )
+
+        if self:GetText() == "" then return end
+
+        draw_RoundedBox( 0, 0, 0, w, h, GAMEMODE.shopStandards.backgroundColor )
 
     end
 end

@@ -103,8 +103,10 @@ local healAmountAfterRez = 50
 local dmgResistAfterRez = 8
 
 if SERVER then
-    GAMEMODE:RegisterStatusEffect( "divineintervention_blessing", -- 
+    GAMEMODE:RegisterStatusEffect( "divineintervention_blessing", -- healing and damage resist after rez
         function( self, owner ) -- setup func
+            self.removeOnDeath = true -- magic variable, sets the effect to be removed on death
+
             local stopTime = CurTime() + dmgResistAfterRez
 
             self:Hook( "EntityTakeDamage", function( target, dmgInfo )
@@ -128,11 +130,7 @@ if SERVER then
                 owner:SetHealth( newHealth )
 
             end )
-        end,
-        function() end, -- teardown func, :Hooks are automatically removed, dont bother
-        {
-            removeOnDeath = true,
-        }
+        end
     )
 end
 
@@ -175,64 +173,9 @@ local function divineIntervention( purchaser )
 end
 
 
-local function infernalInterventionCanPurchase()
-    local chosenHasArrived = GetGlobalBool( "chosenhasarrived", false )
-    if chosenHasArrived then
-        return false, "Something has weakened the infernal powers..."
-
-    end
-    return true, ""
-
-end
-
 local shriveledScale = Vector( 0.5, 0.5, 0.5 )
 local normalScale = Vector( 1, 1, 1 )
-
-if CLIENT then
-    -- crunch their clientside ragdolls
-    hook.Add( "CreateClientsideRagdoll", "glee_ragdoll_scale", function( died, ragdoll )
-        if not IsValid( died ) then return end
-        if not died:IsPlayer() then return end
-        if not died:HasStatusEffect( "infernalintervention_rawendofthedeal" ) then return end
-
-        local bc = ragdoll:GetBoneCount() or 0
-        for i = 0, bc - 1 do
-            ragdoll:ManipulateBoneScale( i, shriveledScale * math.Rand( 0.25, 2 ) )
-
-        end
-    end )
-end
-
 local crumpleForce = Vector( 0, 0, -150000 )
-
-hook.Add( "glee_shover_shove", "glee_infernalinstantdeath", function( shoved ) -- shove infernal intervention players to kill them with no blame
-    if not target:IsPlayer() then return end
-    if not shoved:HasStatusEffect( "infernalintervention_rawendofthedeal" ) then return end
-
-    local dmgInfo = DamageInfo()
-    dmgInfo:SetDamage( math.random( 1, 3 ) )
-    dmgInfo:SetAttacker( game.GetWorld() )
-    dmgInfo:SetInflictor( game.GetWorld() )
-    if shoved:Health() <= 5 then
-        dmgInfo:SetDamageForce( crumpleForce )
-
-    end
-    shoved:TakeDamageInfo( dmgInfo ) -- kill with no blame
-
-end )
-
-hook.Add( "EntityTakeDamage", "glee_infernaldamageweakness", function( target, dmgInfo ) -- weak!
-    if not target:IsPlayer() then return end
-    if not target:HasStatusEffect( "infernalintervention_rawendofthedeal" ) then return end
-
-    if dmgInfo:IsDamageType( DMG_BURN ) then
-        dmgInfo:ScaleDamage( 6 )
-
-    else
-        dmgInfo:ScaleDamage( 2 )
-
-    end
-end )
 
 local function infernalInterventionDeathCooldown( purchaser )
     local lastDeathTime = purchaser:GetNW2Int( "glee_divineintervetion_lastdietime", 0 )
@@ -245,66 +188,118 @@ local function infernalInterventionDeathCooldown( purchaser )
 
 end
 
-hook.Add( "PlayerSpawn", "glee_infernalintervention_apply", function( ply )
-    if not ply:HasStatusEffect( "infernalintervention_rawendofthedeal" ) then return end
+if CLIENT then
+    GAMEMODE:RegisterStatusEffect( "infernalintervention_rawendofthedeal",
+        function( self, owner ) -- setup func
+            -- crunch their clientside ragdolls
+            self:HookOnce( "CreateClientsideRagdoll", function( died, ragdoll )
+                if not IsValid( died ) then return end
+                if not died:IsPlayer() then return end
+                if not died:HasStatusEffect( "infernalintervention_rawendofthedeal" ) then return end
 
-    -- shrivel all bones
-    local bc = ply:GetBoneCount() or 0
-    for i = 0, bc - 1 do
-        ply:ManipulateBoneScale( i, shriveledScale * math.Rand( 0.5, 1.75 ) )
+                local bc = ragdoll:GetBoneCount() or 0
+                for i = 0, bc - 1 do
+                    ragdoll:ManipulateBoneScale( i, shriveledScale * math.Rand( 0.25, 2 ) )
 
-    end
-
-    -- apply speed mod
-    ply:doSpeedModifier( "infernalintervention", -25 )
-
-    -- wake up screaming with terror!
-    GAMEMODE:GivePanic( ply, 100 )
-
-    -- spawn in with 1 health
-    ply:SetHealth( 1 )
-
-    -- fix health just in case
-    timer.Simple( 0, function() -- juggernaut, etc
-        if not IsValid( ply ) then return end
-        if not ply:Alive() then return end -- this would be unlucky!
-        ply:SetHealth( 1 )
-
-        GAMEMODE:GivePanic( ply, 50 )
-        GAMEMODE:EmulateHistoricHighBPM( ply ) -- spawn with a pounding heart
-
-        ply:TauntDance( ACT_HL2MP_ZOMBIE_SLUMP_IDLE ) -- zombie rising anim
-
-        timer.Simple( 0.5, function() -- delay because of high ping players
-            if not IsValid( ply ) then return end
-            if not ply:Alive() then return end
-            ply:BlockAnimEventsFor( -1 ) -- reset TauntDance cooldown, animate NOW!
-            ply:TauntDance( ACT_HL2MP_ZOMBIE_SLUMP_RISE )
-
-        end )
-    end )
-
-    -- bleeding effect on spawn, just visual
-    local timerName = "glee_devilbleed_" .. ply:GetCreationID()
-    local strength = 100
-    timer.Create( timerName, 0.05, 200, function()
-        if not IsValid( ply ) then return end
-        if not ply:Alive() then return end
-        if math.random( 0, 100 ) > strength then return end
-        strength = strength * 0.9
-
-        GAMEMODE:Bleed( ply, strength )
-    end )
-
-    -- spawning sounds
-    ply:EmitSound( "ambient/levels/labs/electric_explosion5.wav", 75, math.random( 70, 80 ) )
-    ply:EmitSound( "npc/antlion/digdown1.wav", 75, math.random( 150, 160 ) )
-
-end )
+                end
+            end )
+        end
+    )
+end
 
 if SERVER then
     GAMEMODE:RegisterStatusEffect( "infernalintervention_rawendofthedeal",
         function( self, owner ) -- setup func
+            -- shove infernal intervention players to kill them with no blame
+            self:HookOnce( "glee_shover_shove", function( shoved )
+                if not shoved:IsPlayer() then return end
+                if not shoved:HasStatusEffect( "infernalintervention_rawendofthedeal" ) then return end
+
+                local dmgInfo = DamageInfo()
+                dmgInfo:SetDamage( math.random( 1, 3 ) )
+                dmgInfo:SetAttacker( game.GetWorld() )
+                dmgInfo:SetInflictor( game.GetWorld() )
+                if shoved:Health() <= 5 then
+                    dmgInfo:SetDamageForce( crumpleForce )
+
+                end
+                shoved:TakeDamageInfo( dmgInfo )
+
+            end )
+
+            -- damage weakness
+            self:HookOnce( "EntityTakeDamage", function( target, dmgInfo )
+                if not target:IsPlayer() then return end
+                if not target:HasStatusEffect( "infernalintervention_rawendofthedeal" ) then return end
+
+                if dmgInfo:IsDamageType( DMG_BURN ) then -- OH GOD IT BURNS
+                    dmgInfo:ScaleDamage( 6 )
+
+                else
+                    dmgInfo:ScaleDamage( 2 )
+
+                end
+            end )
+
+            -- apply effects on spawn
+            self:HookOnce( "PlayerSpawn", function( ply )
+                if not ply:HasStatusEffect( "infernalintervention_rawendofthedeal" ) then return end
+
+                -- shrivel all bones
+                local bc = ply:GetBoneCount() or 0
+                for i = 0, bc - 1 do
+                    ply:ManipulateBoneScale( i, shriveledScale * math.Rand( 0.5, 1.75 ) )
+
+                end
+
+                -- apply speed mod
+                ply:DoSpeedModifier( "infernalintervention", -25 )
+
+                -- wake up screaming with terror!
+                GAMEMODE:GivePanic( ply, 100 )
+
+                -- spawn in with 1 health
+                ply:SetHealth( 1 )
+
+                -- fix health just in case
+                timer.Simple( 0, function() -- juggernaut, etc
+                    if not IsValid( ply ) then return end
+                    if not ply:Alive() then return end -- this would be unlucky!
+                    ply:SetHealth( 1 )
+
+                    GAMEMODE:GivePanic( ply, 50 )
+                    GAMEMODE:EmulateHistoricHighBPM( ply ) -- spawn with a pounding heart
+
+                    ply:TauntDance( ACT_HL2MP_ZOMBIE_SLUMP_IDLE ) -- zombie rising anim
+
+                    timer.Simple( 0.5, function() -- delay because of high ping players
+                        if not IsValid( ply ) then return end
+                        if not ply:Alive() then return end
+                        ply:BlockAnimEventsFor( -1 ) -- reset TauntDance cooldown, animate NOW!
+                        ply:TauntDance( ACT_HL2MP_ZOMBIE_SLUMP_RISE )
+
+                    end )
+                end )
+
+                -- bleeding effect on spawn, just visual
+                local timerName = "glee_devilbleed_" .. ply:GetCreationID()
+                local strength = 100
+                timer.Create( timerName, 0.05, 200, function()
+                    if not IsValid( ply ) then return end
+                    if not ply:Alive() then return end
+                    if math.random( 0, 100 ) > strength then return end
+                    strength = strength * 0.9
+
+                    GAMEMODE:Bleed( ply, strength )
+                end )
+
+                -- spawning sounds
+                ply:EmitSound( "ambient/levels/labs/electric_explosion5.wav", 75, math.random( 70, 80 ) )
+                ply:EmitSound( "npc/antlion/digdown1.wav", 75, math.random( 150, 160 ) )
+
+            end )
+
+            -- check if player reaches full health to end the deal
             self:Timer( "check_full_health", 1, 0, function()
                 if owner:Health() <= 0 then return end
                 if owner:Health() < owner:GetMaxHealth() then return end
@@ -312,11 +307,12 @@ if SERVER then
                 owner:RemoveStatusEffect( "infernalintervention_rawendofthedeal" )
 
                 huntersGlee_Announce( { owner }, 20, 5, "Is the deal over?\nIt's like a weight has been lifted..." )
+
             end )
         end,
         function( _self, owner ) -- teardown func
-            owner:doSpeedModifier( "infernalintervention", nil )
-            GAMEMODE:FixAnglesOf( owner )
+            owner:DoSpeedModifier( "infernalintervention", nil )
+            GAMEMODE:FixAnglesOf( owner ) -- the TauntDance may leave them tilted, wait until teardown to fix lol
 
             local bc = owner:GetBoneCount() or 0
             for i = 0, bc - 1 do
@@ -380,7 +376,7 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = -200,
-        shPurchaseCheck = { shopHelpers.undeadCheck, infernalInterventionCanPurchase, infernalInterventionDeathCooldown },
+        shPurchaseCheck = { shopHelpers.undeadCheck, infernalInterventionDeathCooldown },
         svOnPurchaseFunc = infernalIntervention,
     },
     -- soft reason to get around the map, go places people have died 
@@ -412,7 +408,7 @@ local items = {
 
             end
         end,
-        shCanShowInShop = hasMultiplePeople,
+        shCanShowInShop = shopHelpers.hasMultiplePeople,
     },
 }
 

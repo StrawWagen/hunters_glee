@@ -146,7 +146,7 @@ local REASON_SKULLDEBT = "You can't buy this, You're in Skull debt."
 function GM:canPurchase( ply, toPurchase )
     if not toPurchase or toPurchase == "" then return end
     local dat = GAMEMODE:GetShopItemData( toPurchase )
-    if not dat then GAMEMODE:invalidateShopItem( _, toPurchase ) return false, REASON_INVALID end
+    if not dat then return false, REASON_INVALID end
 
     local wasValidCategory = false
     local lastNotPurchasableReason = REASON_INVALIDCATEGORY

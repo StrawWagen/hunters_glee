@@ -28,8 +28,16 @@ function GM:purchaseItem( ply, toPurchase )
         local purchasable, notPurchasableReason = self:canPurchase( ply, toPurchase )
         if not purchasable then
             if not notPurchasableReason then return end
-            ply:PrintMessage( HUD_PRINTTALK, notPurchasableReason )
+            if ply:IsBot() then
+                print( notPurchasableReason ) -- we need to know WHY!!!
+
+            else
+                ply:PrintMessage( HUD_PRINTTALK, notPurchasableReason )
+
+            end
+            hook.Run( "glee_CouldntPurchase", ply, toPurchase, notPurchasableReason )
             return
+
         end
 
         local dat = self.shopItems[toPurchase]
@@ -115,6 +123,16 @@ concommand.Add( "termhunt_purchase", function( ply, _, args, _ )
     GAMEMODE:purchaseItem( ply, args[1] )
 
 end )
+
+concommand.Add( "termhunt_bots_purchase", function( ply, _, args, _ )
+    if not ply:IsAdmin() then return end
+    local bots = player.GetBots()
+    if #bots <= 0 then return end
+    for _, bot in ipairs( bots ) do
+        GAMEMODE:purchaseItem( bot, args[1] )
+
+    end
+end, nil, "Makes all bots attempt to purchase the specified shop item." )
 
 hook.Add( "PlayerSpawn", "glee_closeshopwhenspawning", function( spawned )
     net.Start( "glee_closetheshop" )

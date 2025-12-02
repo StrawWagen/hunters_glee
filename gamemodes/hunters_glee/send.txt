@@ -18,6 +18,7 @@ gamemodes\hunters_glee\gamemode\sh_player.lua
 gamemodes\hunters_glee\gamemode\modules\sh_panic.lua
 gamemodes\hunters_glee\gamemode\modules\sh_banking.lua
 gamemodes\hunters_glee\gamemode\modules\sh_tempbools.lua
+gamemodes\hunters_glee\gamemode\modules\sh_slowmopitch.lua
 gamemodes\hunters_glee\gamemode\modules\sh_playerdrowning.lua
 gamemodes\hunters_glee\gamemode\modules\sh_danceslowdown.lua
 gamemodes\hunters_glee\gamemode\modules\sh_detecthunterkills.lua

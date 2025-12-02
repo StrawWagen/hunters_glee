@@ -25,40 +25,65 @@ end
 
 function shopHelpers.purchaseWeapon( purchaser, data )
     local wepClass = data.class
-    local ammoType = data.ammoType
-    local purchaseClips = data.purchaseClips
-    local resupplyClips = data.resupplyClips
-
     local weapon = purchaser:GetWeapon( wepClass )
+    local alreadyHasWeapon = IsValid( weapon )
 
-    if resupplyClips and IsValid( weapon ) then
-        ammoType = ammoType or weapon:GetPrimaryAmmoType()
-
-        local clipSize = weapon:GetMaxClip1()
-        if clipSize == -1 then clipSize = 1 end -- clipless weapons, eg slams, rpg
-
-        local ammoToGive = clipSize * resupplyClips
-        purchaser:GiveAmmo( ammoToGive, ammoType, true )
-
-    else
+    if not alreadyHasWeapon then
         weapon = purchaser:Give( wepClass )
-        if purchaseClips and IsValid( weapon ) then
-            ammoType = ammoType or weapon:GetPrimaryAmmoType()
 
-            local clipSize = weapon:GetMaxClip1()
-            local ammoToGive = clipSize * purchaseClips
-            purchaser:GiveAmmo( ammoToGive, ammoType, true )
-
-        end
         if IsValid( weapon ) then
             purchaser:SelectWeapon( weapon )
 
         end
     end
 
-    local confirmSoundWeight = data.confirmSoundWeight
-    if confirmSoundWeight then
-        GAMEMODE.shopHelpers.loadoutConfirm( purchaser, confirmSoundWeight )
+    if not IsValid( weapon ) then return end
+
+    -- primary ammo
+    local primaryAmmoType = data.ammoType or weapon:GetPrimaryAmmoType()
+    local primaryClips = alreadyHasWeapon and data.resupplyClips or data.purchaseClips
+
+    if primaryClips then
+        local clipSize = weapon:GetMaxClip1()
+        if clipSize == -1 then
+            local hasDefaultClip = weapon.Primary and weapon.Primary.DefaultClip 
+            if hasDefaultClip then
+                clipSize = weapon.Primary.DefaultClip
+
+            else
+                clipSize = 1
+
+            end
+        end
+
+        purchaser:GiveAmmo( clipSize * primaryClips, primaryAmmoType, true )
+
+    end
+
+    -- secondary ammo
+    local secondaryAmmoType = data.secondaryAmmoType or weapon:GetSecondaryAmmoType()
+    local secondaryClips = alreadyHasWeapon and data.resupplySecondaryClips or data.purchaseSecondaryClips
+
+    if secondaryClips and secondaryAmmoType and secondaryAmmoType ~= -1 then
+        local clipSize = weapon:GetMaxClip2()
+        if clipSize == -1 then
+            local hasDefaultClip = weapon.Secondary and weapon.Secondary.DefaultClip
+            if hasDefaultClip then
+                clipSize = weapon.Secondary.DefaultClip
+
+            else
+                clipSize = 1
+
+            end
+        end
+
+        purchaser:GiveAmmo( clipSize * secondaryClips, secondaryAmmoType, true )
+
+    end
+
+    -- confirmation sound
+    if data.confirmSoundWeight then
+        shopHelpers.loadoutConfirm( purchaser, data.confirmSoundWeight )
 
     end
 end
@@ -83,5 +108,21 @@ function shopHelpers.playRandomSound( ent, sounds, level, pitch, channel )
     local soundName = sounds[math.random( #sounds )]
 
     ent:EmitSound( soundName, level, pitch, 1, channel )
+
+end
+
+function shopHelpers.hasMultiplePeople() -- some items require multiple players, hide them so we dont confuse new plys
+    if #player.GetAll() <= 1 then return end
+    return true
+
+end
+
+function shopHelpers.terminatorInSpawnPool()
+    return GAMEMODE:PartialClassIsInSpawnPool( "terminator_nextbot" )
+
+end
+
+function shopHelpers.multiplePeopleAndTerm()
+    return shopHelpers.hasMultiplePeople() and shopHelpers.terminatorInSpawnPool()
 
 end

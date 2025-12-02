@@ -1,4 +1,6 @@
 
+util.AddNetworkString( "glee_statuseffects_syncrequest" )
+
 local plyMeta = FindMetaTable( "Player" )
 local GM = GAMEMODE or GM
 local nw2NamePrefix = "glee_hasstatuseffect_"
@@ -48,8 +50,6 @@ function plyMeta:GiveStatusEffect( name )
     self:SetNW2Bool( nw2Name, true )
 
 end
-
-include( "sh_statuseffectbase.lua" )
 
 function plyMeta:RemoveStatusEffect( name )
     local plysEffects = self.glee_StatusEffects
