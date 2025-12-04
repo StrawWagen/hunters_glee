@@ -28,9 +28,11 @@ function statusEffect:GetOwner()
 end
 
 
-function statusEffect:SetRemoveOnDeath( shouldRemove )
-    self._removeOnDeath = shouldRemove
+if SERVER then
+    function statusEffect:SetRemoveOnDeath( shouldRemove )
+        self._removeOnDeath = shouldRemove
 
+    end
 end
 
 
