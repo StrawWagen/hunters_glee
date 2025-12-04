@@ -775,7 +775,7 @@ if SERVER then
 
     GAMEMODE:RegisterStatusEffect( "temporal_dice_roll",
         function( self, owner ) -- setup func
-            self.removeOnDeath = true
+            self:SetRemoveOnDeath( true )
             self.countdown = 8
 
             owner:EmitSound( "ambient/levels/labs/teleport_mechanism_windup5.wav", 85, 110, 0.4, CHAN_STATIC )

@@ -28,6 +28,12 @@ function statusEffect:GetOwner()
 end
 
 
+function statusEffect:SetRemoveOnDeath( shouldRemove )
+    self._removeOnDeath = shouldRemove
+
+end
+
+
 function statusEffect:SetSetupFunc( func )
     self._setup = func
 

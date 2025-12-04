@@ -102,7 +102,7 @@ hook.Add( "PlayerDeath", "glee_statuseffects_doremoveondeath", function( ply )
     if not plysEffects then return end
 
     for name, effect in pairs( plysEffects ) do
-        if effect.removeOnDeath then
+        if effect._removeOnDeath then
             ply:RemoveStatusEffect( name )
 
         end

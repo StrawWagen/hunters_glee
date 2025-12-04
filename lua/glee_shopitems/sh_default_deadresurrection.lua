@@ -63,7 +63,7 @@ local dmgResistAfterRez = 8
 if SERVER then
     GAMEMODE:RegisterStatusEffect( "divineintervention_blessing", -- healing and damage resist after rez
         function( self, owner ) -- setup func
-            self.removeOnDeath = true -- magic variable, sets the effect to be removed on death
+            self:SetRemoveOnDeath( true ) -- its not a persistent effect, remove it on death
 
             local stopTime = CurTime() + dmgResistAfterRez
 
