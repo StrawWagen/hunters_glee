@@ -675,7 +675,7 @@ end )
 
 hook.Add( "glee_cl_confirmedpurchase", "storeIfPlayerBoughtUndeadItem", function( ply, id )
     local itemData = GAMEMODE:GetShopItemData( id )
-    if itemData.tags["DeadGift"] ~= true then return end
+    if itemData.tags["DEADGIFTS"] ~= true then return end
     if ply:Health() > 0 then return end
 
     ply.glee_DefinitelyBoughtAnUndeadItem = true
