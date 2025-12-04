@@ -24,7 +24,6 @@ AddCSLuaFile( "cl_shoppinggui.lua" )
 
 AddCSLuaFile( "sh_player.lua" )
 AddCSLuaFile( "sh_shopshared.lua" )
-AddCSLuaFile( "sh_shopitems.lua" )
 
 -- SHARED INCLUDES
 AddCSLuaFile( "modules/sh_panic.lua" )
