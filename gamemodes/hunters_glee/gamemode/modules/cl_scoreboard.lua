@@ -30,22 +30,26 @@ local PLAYER_LINE = {
         self.Avatar:SetSize( 32, 32 )
         self.Avatar:SetMouseInputEnabled( false )
 
-        self.Name = self:Add( "DLabel" )
+        self.Name = self:Add( "DButton" )
         self.Name:Dock( FILL )
         self.Name:SetFont( "ScoreboardDefault" )
         self.Name:SetTextColor( Color( 93, 93, 93 ) )
         self.Name:DockMargin( 8, 0, 0, 0 )
-
-        -- Invisible button overlay for spectating player
-        self.SpectateButton = self.Name:Add( "DButton" )
-        self.SpectateButton:Dock( FILL )
-        self.SpectateButton:SetText( "" )
-        self.SpectateButton.Paint = function() end -- Make it invisible
-        self.SpectateButton.DoClick = function()
-            if IsValid( self.Player ) then
-                RunConsoleCommand( "glee_spectate_player", self.Player:SteamID() )
+        self.Name:SetContentAlignment( 4 ) -- Left align text
+        self.Name.Paint = function( s, w, h )
+            -- Draw just the text, no background
+            local txt = s:GetText()
+            if txt and txt ~= "" then
+                draw.SimpleText( txt, s:GetFont(), 0, h / 2, s:GetTextColor(), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
             end
         end
+        self.Name.DoClick = function()
+            if IsValid( self.Player ) then
+                RunConsoleCommand( "glee_spectate_player", self.Player:UserID() )
+            end
+        end
+        self.Name:SetTooltip( "Click to spectate this player." )
+        self.Name:SetTooltipDelay( 0 )
 
         self.Mute = self:Add( "DImageButton" )
         self.Mute:SetSize( 32, 32 )
@@ -256,6 +260,13 @@ local SCORE_BOARD = {
 }
 
 SCORE_BOARD = vgui.RegisterTable( SCORE_BOARD, "EditablePanel" )
+
+-- auto re fresh
+if IsValid( g_Scoreboard ) then
+    g_Scoreboard:Remove()
+    g_Scoreboard = nil
+
+end
 
 --[[---------------------------------------------------------
     Name: gamemode:ScoreboardShow( )
