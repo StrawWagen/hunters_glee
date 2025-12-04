@@ -371,6 +371,12 @@ local function divineChosenCanPurchase( purchaser )
         if GAMEMODE.roundExtraData.divineChosenSpent[ purchaser:GetCreationID() ] == true then return nil, "You had your chance." end
 
     end
+
+    if purchaser:HasStatusEffect( "divine_chosen" ) then
+        return nil, "You are already divine."
+
+    end
+
     return true, nil
 
 end

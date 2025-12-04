@@ -3,7 +3,11 @@
 
 SWEP.PrintName = "Emplacement Gun"
 SWEP.Author = "Boomeritaintaters + gaming98"
-SWEP.Instructions = "I want revenge. I want them to know that death is coming - John Rambo"
+SWEP.Instructions = [[
+The longer you shoot, the faster the bullets fly. Just don't let it overheat!
+
+“I want revenge. I want them to know that death is coming. And there's nothing they can do to stop it.”
+ - John Rambo]]
 SWEP.Category = "Hunter's Glee"
 
 SWEP.Spawnable = true
@@ -30,7 +34,6 @@ SWEP.WorldModel = "models/weapons/tfa_mmod/w_ar3.mdl"
 
 SWEP.UseHands = true
 
-SWEP.ShootSound = "Weapon_FuncTank.Single"
 SWEP.ConsecutiveShotsDecay = 2
 
 SWEP.HeatDecay = 0.004
@@ -46,21 +49,21 @@ function SWEP:SetupDataTables()
 end
 
 function SWEP:Deploy()
-    self:EmitSound( "weapons/ar3/ar3_deploy.wav" )
+    self:EmitSound( "hunters_glee/ar3/ar3_deploy.wav" )
     self.deploying = true
     self.deployTime = CurTime() + 1
 
     if CLIENT then return end
 
     local owner = self:GetOwner()
-    if IsValid( owner ) and owner:IsPlayer() and owner.DoSpeedClamp then
-        owner:DoSpeedClamp( "glee_ar3_deployed", -75 ) -- apply speed debuff when equipped
+    if IsValid( owner ) and owner:IsPlayer() and owner.doSpeedClamp then
+        owner:doSpeedClamp( "glee_ar3_deployed", -75 ) -- apply speed debuff when equipped
 
         local timerName = "glee_ar3_deploy_timer" .. self:GetCreationID()
 
         local function stopDebuff()
             timer.Remove( timerName )
-            owner:DoSpeedClamp( "glee_ar3_deployed", nil )
+            owner:doSpeedClamp( "glee_ar3_deployed", nil )
 
         end
         timer.Create( timerName, 0.45, 0, function() -- cleanup debuff when no longer active weapon
@@ -89,7 +92,7 @@ function SWEP:PrimaryAttack()
 
     self:SetNextPrimaryFire( CurTime() + add )
     self:ShootBullet( math.random( 15, 25 ), 1, 0.03 )
-    self:EmitSound( self.ShootSound )
+    self:EmitSound( "hunters_glee/ar3/ar3_fire" .. math.random(1,3) .. ".wav" )
     self:TakePrimaryAmmo( 1 )
 
     if not SERVER then return end
@@ -167,6 +170,8 @@ function SWEP:InspectAnim()
 
     self:SendWeaponAnim( ACT_VM_FIDGET )
 
+    self:EmitSound( "hunters_glee/ar3/ar3_fidget.wav" )
+
 end
 
 function SWEP:Reload()
@@ -189,7 +194,7 @@ function SWEP:Reload()
     timer.Create( timerName, 1.3, 1, function()
         if not IsValid( self ) then return end
 
-        self:EmitSound( "weapons/shotgun/shotgun_cock.wav" )
+        self:EmitSound( "hunters_glee/ar3/ar3_pump.wav" )
 
         local ammo = math.min( self.Primary.ClipSize - self:Clip1(), self:GetOwner():GetAmmoCount( self.Primary.Ammo ) )
         self:SetClip1( self:Clip1() + ammo )
@@ -282,3 +287,4 @@ function SWEP:DrawWorldModel()
     stopHeatDrawing( self, self )
 
 end
+

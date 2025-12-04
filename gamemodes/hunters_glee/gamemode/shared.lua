@@ -34,7 +34,6 @@ include( "modules/spawnset/sh_spawnsetcontent.lua" )
 include( "modules/unsandboxing/sh_unsandboxing.lua" )
 
 include( "sh_shopshared.lua" )
-include( "sh_shopitems.lua" )
 
 include( "modules/shopitems/sh_shoptags.lua" )
 include( "modules/shopitems/sh_shopcategories.lua" )

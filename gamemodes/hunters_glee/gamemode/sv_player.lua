@@ -346,9 +346,17 @@ function GM:calculateBPM( cur, players )
                     local divisor = 100
                     if BPMDecrease > restingBPMPermanent * 4 then
                         divisor = 10
+
                     elseif BPMDecrease > restingBPMPermanent * 3 then
                         divisor = 50
+
                     end
+
+                    if ply.glee_Blessed then -- more decrease if blessed is fighting it
+                        divisor = divisor / 2
+
+                    end
+
                     local damage = math.ceil( ply:GetMaxHealth() / divisor )
                     ply:TakeDamage( damage, game.GetWorld(), game.GetWorld() )
                     huntersGlee_Announce( { ply }, 100, 2.5, "Something is off.\nIt feels like you're somewhere wrong..." )
@@ -675,6 +683,7 @@ function GM:StopSpectatingThing( ply )
     net.Send( ply )
 
     self:FixAnglesOf( ply )
+
 end
 
 local nextSpectateIdleCheck = {}

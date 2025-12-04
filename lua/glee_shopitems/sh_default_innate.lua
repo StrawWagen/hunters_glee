@@ -1189,8 +1189,10 @@ if CLIENT then
                     local classOfSensed = sensed:GetClass()
                     local suspicious = string.find( classOfSensed, "disguised" )
 
+                    local isPly = sensed:IsPlayer()
+
                     --gregori
-                    if sensed:HasStatusEffect( "divine_chosen" ) then
+                    if isPly and sensed:HasStatusEffect( "divine_chosen" ) then
                         if sensed:Health() <= 0 then continue end
                         sixthSenseColor = sixthSenseHunter
                         spriteSize = 200
@@ -1228,7 +1230,7 @@ if CLIENT then
                         end
 
                     -- player, always a player, never a sus player!
-                    elseif sensed:IsPlayer() or suspicious then
+                    elseif isPly or suspicious then
                         if sensed:Health() <= 0 then continue end
                         sixthSenseColor = sixthSensePlayer
                         spriteSize = 100

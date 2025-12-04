@@ -1,4 +1,3 @@
-include( "sh_shopitems.lua" )
 
 if SERVER then
     include( "sv_shophandler.lua" )

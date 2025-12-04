@@ -380,7 +380,7 @@ local items = {
             } )
         end,
     },
-    -- john rambo ahh
+    -- awesome boomertaintaters gun
     [ "ar3" ] = {
         name = "Emplacement Gun",
         desc = "Rapid fire, powerful, chews through flesh, but not metal...\nOverheats quickly...",
