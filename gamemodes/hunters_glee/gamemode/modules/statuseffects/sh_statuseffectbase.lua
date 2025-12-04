@@ -89,16 +89,16 @@ function statusEffect:Hook( hookName, func )
         error( "GLEE: statusEffect:Hook doesn't need a hook name!" )
 
     end
-    local hookIdentifier = "glee_statuseffect_" .. self:GetPrintName() .. "_" .. hookName
+    local fullHookIdentifier = "glee_statuseffect_" .. self:GetPrintName() .. "_" .. hookName
     table.insert( self._teardownTasks, function()
-        hook.Remove( hookName, hookIdentifier )
+        hook.Remove( hookName, fullHookIdentifier )
 
     end )
 
-    table.insert( self._setupTasks, function()
-        hook.Add( hookName, hookIdentifier, func )
+    hook.Add( hookName, fullHookIdentifier, func )
 
-    end )
+    return fullHookIdentifier
+
 end
 
 --[[---------------------------------------------------------
@@ -121,22 +121,22 @@ function statusEffect:HookOnce( hookName, func )
 
     local activeEffectsCount = GAMEMODE.activeEffectsCount
     local myName = self:GetPrintName()
-    activeEffectsCount[ myName ] = activeEffectsCount[ myName ] or 0
 
-    if activeEffectsCount[ myName ] >= 1 then return end -- already hooked
+    local fullHookIdentifier = "glee_statuseffect_" .. myName .. "_" .. hookName
 
-    local hookIdentifier = "glee_statuseffect_" .. myName .. "_" .. hookName
+    activeEffectsCount[ fullHookIdentifier ] = activeEffectsCount[ fullHookIdentifier ] or 0
+    if activeEffectsCount[ fullHookIdentifier ] >= 1 then return end -- already hooked
     table.insert( self._teardownTasks, function()
-        activeEffectsCount[ myName ] = activeEffectsCount[ myName ] - 1
-        hook.Remove( hookName, hookIdentifier )
+        activeEffectsCount[ fullHookIdentifier ] = activeEffectsCount[ fullHookIdentifier ] - 1
+        hook.Remove( hookName, fullHookIdentifier )
 
     end )
 
-    table.insert( self._setupTasks, function()
-        activeEffectsCount[ myName ] = activeEffectsCount[ myName ] + 1
-        hook.Add( hookName, hookIdentifier, func )
+    activeEffectsCount[ fullHookIdentifier ] = activeEffectsCount[ fullHookIdentifier ] + 1
+    hook.Add( hookName, fullHookIdentifier, func )
 
-    end )
+    return fullHookIdentifier
+
 end
 
 --[[---------------------------------------------------------
@@ -156,10 +156,10 @@ function statusEffect:Timer( timerName, delay, reps, func )
 
     end )
 
-    table.insert( self._setupTasks, function()
-        timer.Create( fullTimerName, delay, reps, func )
+    timer.Create( fullTimerName, delay, reps, func )
 
-    end )
+    return fullTimerName
+
 end
 
 return statusEffect

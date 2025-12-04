@@ -250,13 +250,13 @@ function spawnSetVote:CreateVotePanel()
 
         end
 
-        currButton.OnMousePressed = function( self, keyCode )
+        function currButton:OnMousePressed( keyCode )
             if keyCode ~= MOUSE_LEFT then return end
             self.pressed = true
 
         end
 
-        currButton.OnMouseReleased = function( self, keyCode )
+        function currButton:OnMouseReleased( keyCode )
             if keyCode ~= MOUSE_LEFT then return end
             self.pressed = nil
 
@@ -318,7 +318,7 @@ function spawnSetVote:CreateVotePanel()
         local hintEnd = " to vote.)"
         local valid, phrase = GAMEMODE:TranslatedBind( holdToVote )
         if hasAllTheVoteKeys and valid then -- some doofus is gonna have this unbound
-            hint = hintStart .. " or press a number while holding " .. string.upper( phrase ) .. " " .. hintEnd
+            hint = hintStart .. " or press a number while holding " .. string.upper( phrase ) .. hintEnd
 
         else
             hint = hintStart .. hintEnd

@@ -1,7 +1,3 @@
-local function errorCatchingMitt( errMessage )
-    ErrorNoHaltWithStack( errMessage )
-
-end
 
 function GM:sendPurchaseConfirm( ply, cost, toPurchase )
     net.Start( "glee_confirmpurchase" )
@@ -43,7 +39,7 @@ function GM:purchaseItem( ply, toPurchase )
         local dat = self.shopItems[toPurchase]
 
         local noErrors, _ = ProtectedCall( function( dat2, ply2 )
-            dat2.svOnPurchaseFunc( ply2 )
+            dat2.svOnPurchaseFunc( ply2, toPurchase )
         end, dat, ply )
 
         if not noErrors then
@@ -87,12 +83,12 @@ function GM:purchaseItem( ply, toPurchase )
         local name = "huntersglee_purchasecount_" .. toPurchase
         -- use nw2 because this will never be set when player is not valid clientside
         local oldCount = ply:GetNW2Int( name, 0 )
-        if oldCount == 0 then
-            -- clean this up when round restarts
-            self:RunFunctionOnProperCleanup( function() ply:SetNW2Int( name, 0 ) end, ply )
+        local newCount = oldCount + 1
 
-        end
-        ply:SetNW2Int( name, oldCount + 1 )
+        ply:SetNW2Int( name, newCount )
+
+        ply.glee_ShopItemPurchaseCounts = ply.glee_ShopItemPurchaseCounts or {}
+        ply.glee_ShopItemPurchaseCounts[name] = newCount
 
         if game.IsDedicated() then -- 'log' shop item purchases 
             local nameAndId = ply:GetName() .. "[" .. ply:SteamID() .. "]"
@@ -104,6 +100,18 @@ function GM:purchaseItem( ply, toPurchase )
 
     end )
 end
+
+hook.Add( "huntersglee_player_reset", "glee_shophandler_resetpurchasecounts", function( ply )
+    local counts = ply.glee_ShopItemPurchaseCounts
+    if not counts then return end
+
+    for name, _count in pairs( counts ) do
+        ply:SetNW2Int( name, 0 )
+
+    end
+    counts = {}
+
+end )
 
 function GM:RefundShopItemCooldown( ply, toPurchase )
     GAMEMODE:noShopCooldown( ply, toPurchase )

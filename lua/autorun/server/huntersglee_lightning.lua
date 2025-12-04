@@ -201,16 +201,30 @@ function termHunt_PowafulLightning( inflic, attacker, strikingPos, powa )
 
         local dmgType = DMG_SHOCK
         local damageScale = 1
+
+        -- DIRECT HIT!
         if powa > 4 and strikingPos:DistToSqr( thing:GetPos() ) < 100^2 then
             dmgType = bit.bor( DMG_DISSOLVE, DMG_SHOCK )
             damageScale = 10
 
+        elseif not terminator_Extras.PosCanSee( strikingPos, thing:WorldSpaceCenter() ) then
+            damageScale = 0.25
+
         end
 
-        if not dir then return end
+        local damageAmount = powa * damageScale * 100 ^ 1.1
+
+        if damageAmount < 1 then continue end
+
+        thing:SetNW2Bool( "glee_recentlyStruckByLightning", true )
+        timer.Simple( 0.1, function()
+            if not IsValid( thing ) then return end
+            thing:SetNW2Bool( "glee_recentlyStruckByLightning", false )
+
+        end )
 
         local damage = DamageInfo()
-        damage:SetDamage( powa * damageScale * 100 ^ 1.1 )
+        damage:SetDamage( damageAmount )
         damage:SetDamagePosition( strikingPos )
         damage:SetAttacker( attacker )
         damage:SetInflictor( inflic )

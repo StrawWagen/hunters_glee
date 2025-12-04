@@ -41,8 +41,6 @@ if SERVER then
 
     GAMEMODE:RegisterStatusEffect( "deafness",
         function( self, owner ) -- setup func
-            owner.glee_IsDeaf = true
-
             function self:GiveDeaf()
                 local effectOwner = self:GetOwner()
                 effectOwner:SetDSP( 31 )
@@ -60,9 +58,8 @@ if SERVER then
 
             end )
         end,
-        function( self, owner ) -- teardown func
+        function( self, _ ) -- teardown func
             self:UnDeafInternal()
-            owner.glee_IsDeaf = false
 
         end
     )
@@ -284,10 +281,10 @@ if SERVER then
 
             self.additionalHooksName = "glee_witnesseddeathconfirm_" .. owner:SteamID()
 
-            owner.AttackConfirmed = function( owner, attacker ) -- this is called inside term shooting_handler task
+            owner.AttackConfirmed = function( enemy, attacker ) -- this is called inside term shooting_handler task
                 if not attacker or not owner then return end
                 if GAMEMODE.roundExtraData.witnessed == true then return end
-                if attacker:GetEnemy() ~= owner then return end
+                if enemy ~= owner then return end
                 if not terminator_Extras.PosCanSee( attacker:GetShootPos(), owner:GetShootPos(), MASK_SOLID_BRUSHONLY ) then return end
 
                 local witnessing = {}
@@ -341,28 +338,6 @@ if SERVER then
                 -- ONE witness per round
                 GAMEMODE.roundExtraData.witnessed = true
 
-                -- can't be an effect:Hook, that one is only added on effect setup, and we're well past that now
-                -- scale all damage from the attacker, let them destroy anything in the way
-                hook.Add( "EntityTakeDamage", self.additionalHooksName, function( target, dmgInfo )
-                    local attackerEnt = dmgInfo:GetAttacker()
-                    if not IsValid( attackerEnt ) then return end
-                    if attackerEnt ~= attacker then return end
-
-                    dmgInfo:ScaleDamage( 1000 )
-                    local dmgForce = dmgInfo:GetDamageForce() or terminator_Extras.dirToPos( attackerEnt:GetShootPos(), target:GetShootPos() )
-                    dmgForce = dmgForce * 500
-                    dmgInfo:SetDamageForce( dmgForce )
-
-                end )
-
-                -- we leave a big gap between bot primary attacking, and forcing the player to die
-                -- hopefully this means the bot kills them with their weapon, not the ensured death
-                hook.Add( "PlayerDeath", self.additionalHooksName, function( died )
-                    if died ~= owner then return end
-                    self:PowerfulDeath( attacker )
-
-                end )
-
                 -- ookay effects time
 
                 util.ScreenShake( owner:GetPos(), 0.5, 20, 3, 5000, true )
@@ -371,7 +346,7 @@ if SERVER then
                 -- slow down time! 
                 game.SetTimeScale( 0.2 )
 
-                -- even weak bots get to throw strong crobars for this
+                -- even weak bots get to throw strong crowbars for this
                 attacker.gleeWitness_OldThrowingForceMul = attacker.ThrowingForceMul
                 attacker.ThrowingForceMul = ( attacker.ThrowingForceMul or 1000 ) * 1000
 
@@ -400,7 +375,36 @@ if SERVER then
 
                     end
 
+                    local startingPos = owner:GetPos()
+
+                    self.moveStopTimerName = self:Timer( "stopOwnersMovement", 0.01, 0, function() -- make sure owner stays still during all this
+                        if owner:Health() <= 0 then timer.Remove( self.moveStopTimerName ) return end
+                        owner:SetPos( startingPos )
+
+                    end )
+
                     owner:EmitSound( "weapons/fx/nearmiss/bulletltor07.wav", 150, 80, 0.3 )
+
+                end )
+
+                -- buff all damage done by attacker during this time
+                self.takeDamageHookName = self:Hook( "EntityTakeDamage", function( target, dmgInfo )
+                    local attackerEnt = dmgInfo:GetAttacker()
+                    if not IsValid( attackerEnt ) then return end
+                    if attackerEnt ~= attacker then return end
+
+                    dmgInfo:ScaleDamage( 1000 )
+                    local dmgForce = dmgInfo:GetDamageForce() or terminator_Extras.dirToPos( attackerEnt:GetShootPos(), target:GetShootPos() )
+                    dmgForce = dmgForce * 500
+                    dmgInfo:SetDamageForce( dmgForce )
+
+                end )
+
+                -- we leave a big gap between bot primary attacking, and forcing the player to die
+                -- hopefully this means the bot kills them with their weapon, not the ensured death
+                self.playerDeathHookName = self:Hook( "PlayerDeath", function( died )
+                    if died ~= owner then return end
+                    self:PowerfulDeath( attacker )
 
                 end )
 
@@ -408,7 +412,7 @@ if SERVER then
 
                 -- ENSURE DEATH
                 -- really funny how this makes bots with cameras instakill people
-                timer.Simple( 2, function()
+                timer.Simple( 1.25, function()
                     if not IsValid( owner ) then return end
                     if owner:Health() <= 0 then return end -- they already died!
                     self:PowerfulDeath( attacker )
@@ -423,8 +427,8 @@ if SERVER then
                         attacker.gleeWitness_OldThrowingForceMul = nil
 
                     end
-                    hook.Remove( "EntityTakeDamage", self.additionalHooksName )
-                    hook.Remove( "PlayerDeath", self.additionalHooksName )
+                    hook.Remove( "EntityTakeDamage", self.takeDamageHookName )
+                    hook.Remove( "PlayerDeath", self.playerDeathHookName )
                     game.SetTimeScale( 1 )
 
                 end )
@@ -455,7 +459,6 @@ if SERVER then
 
     GAMEMODE:RegisterStatusEffect( "juggernaut",
         function( self, owner ) -- setup func
-
             function self:ApplyJuggernaut()
                 local currentHealthRatio = owner:Health() / owner:GetMaxHealth()
 
@@ -512,7 +515,6 @@ if SERVER then
         end,
         function( _, owner ) -- teardown func
             owner:DoSpeedClamp( "juggernautclamp", nil )
-            owner.isJuggernaut = nil
 
         end
     )
@@ -548,16 +550,357 @@ if SERVER then
 
                 dmg:ScaleDamage( 2 )
                 target:EmitSound( "Cardboard.Break" )
-                if target.glee_chameleonHint then return end
-                target.glee_chameleonHint = true
+                if self.glee_chameleonHint then return end
+                self.glee_chameleonHint = true
 
                 huntersGlee_Announce( { target }, 15, 4, "Ouch! Chameleon skin is weak!" )
 
             end )
         end,
-        function( self, owner ) -- teardown func
-            owner.glee_chameleonHint = nil
+        function( self, _ ) -- teardown func
             self:UnChameleonize()
+
+        end
+    )
+
+    GAMEMODE:RegisterStatusEffect( "marco_polo",
+        function( self, owner ) -- setup func
+            -- block default BPM scoring for this player
+            self:Hook( "huntersglee_blockscoring", function( ply )
+                if ply == owner then return true end
+
+            end )
+
+            -- build the exploration map from the big nav group
+            local _, unexplored = GAMEMODE:GetAreaInOccupiedBigGroupOrRandomBigGroup()
+            self.exploredStatuses = {}
+            for _, area in ipairs( unexplored ) do
+                if not area:IsUnderwater() then
+                    self.exploredStatuses[ area:GetID() ] = false
+
+                end
+            end
+            self.reservedReward = 0 -- carryover reward for small bits
+            self.toExploreCount = table.Count( self.exploredStatuses ) -- how many areas to explore total
+            self.exploredCount = 0 -- how many areas we've explored so far
+
+            self:Timer( "exploreCheck", 0.5, 0, function()
+                if owner:Health() <= 0 then return end
+                if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
+
+                local areasWeTraversed = navmesh.Find( owner:GetPos(), 950, 100, 50 )
+                local reward = self.reservedReward
+
+                for _, potentiallyTraversed in ipairs( areasWeTraversed ) do
+                    local areaId = potentiallyTraversed:GetID()
+                    if self.exploredStatuses[ areaId ] == true then continue end
+
+                    self.exploredStatuses[ areaId ] = true
+                    self.exploredCount = self.exploredCount + 1
+                    local ratioWeAt = self.exploredCount / self.toExploreCount
+
+                    local areaReward = 0
+
+                    if ratioWeAt > 1 then -- outside the big group ( this will happen )
+                        areaReward = 1
+
+                    elseif ratioWeAt > 0.9 then
+                        areaReward = 10
+
+                    elseif ratioWeAt > 0.8 then
+                        areaReward = 3
+
+                    elseif ratioWeAt > 0.5 then
+                        areaReward = 1.5
+
+                    elseif ratioWeAt > 0.25 then
+                        areaReward = 0.18
+
+                    elseif ratioWeAt > 0.1 then
+                        areaReward = 0.1
+
+                    else
+                        areaReward = 0.02
+
+                    end
+
+                    reward = reward + areaReward
+
+                    if reward > 0 then -- communicate the exploration visually
+                        local recipFilter = RecipientFilter()
+                        recipFilter:AddPlayer( owner )
+
+                        local beam = EffectData()
+                        beam:SetStart( potentiallyTraversed:GetCenter() )
+                        beam:SetOrigin( owner:GetShootPos() + -vector_up * 35 )
+                        beam:SetScale( 0.1 + ( areaReward / 2 ) )
+                        beam:SetMagnitude( 0.3 + ratioWeAt / 2 )
+                        util.Effect( "eff_marcopolo_communicate", beam, nil, recipFilter )
+
+                    end
+                end
+
+                if reward >= 1 then
+                    owner:GivePlayerScore( reward )
+                    self.reservedReward = 0
+
+                else -- cant give less than 1 score!
+                    self.reservedReward = reward
+
+                end
+            end )
+        end
+    )
+
+    local frogLegsJumpSounds = {
+        "npc/barnacle/barnacle_tongue_pull1.wav",
+        "npc/barnacle/barnacle_tongue_pull2.wav",
+        "npc/barnacle/barnacle_tongue_pull3.wav",
+    }
+
+    GAMEMODE:RegisterStatusEffect( "frog_legs",
+        function( self, owner ) -- setup func
+            owner.canWallkick = true
+            owner.parkourForce = 1.25
+
+            function self:ApplyFrogLegs()
+                owner:DoSpeedModifier( "froglegs", -100 )
+
+            end
+
+            self:ApplyFrogLegs()
+
+            self:Hook( "PlayerSpawn", function( spawned )
+                if spawned ~= owner then return end
+
+                timer.Simple( 0.1, function()
+                    if not IsValid( owner ) then return end
+
+                    self:ApplyFrogLegs()
+
+                end )
+            end )
+
+            self:Hook( "GetFallDamage", function( ply, speed )
+                if ply ~= owner then return end
+
+                local dmg = speed / 60
+                dmg = dmg + -15
+                if dmg < 0 then
+                    ply:EmitSound( "npc/barnacle/barnacle_bark1.wav", 78, math.random( 70, 90 ) + -dmg * 2, 0.3 )
+                    return 0
+
+                end
+
+                dmg = dmg * 2 -- if we get past the check, punish player
+
+                return dmg
+
+            end )
+
+            self:Hook( "KeyPress", function( ply, key )
+                if ply ~= owner then return end
+
+                if key == IN_DUCK and ply:OnGround() and not self.primedJump then
+                    self.primedJump = true
+                    ply:EmitSound( "weapons/bugbait/bugbait_squeeze3.wav", 78, math.random( 110, 120 ), 0.6, CHAN_STATIC )
+
+                end
+
+                if key ~= IN_JUMP then return end
+                if not ply:OnGround() then return end
+                if ply:WaterLevel() >= 3 then return end
+
+                timer.Simple( 0, function()
+                    if not IsValid( ply ) then return end
+
+                    local pitchOff = 0
+                    local scalar = 150
+                    if ply:Crouching() then
+                        if self.primedJump then
+                            self.primedJump = nil
+                            scalar = 350
+                            pitchOff = -20
+
+                        else
+                            scalar = 75
+
+                        end
+                    end
+
+                    local dir = ply:GetVelocity():GetNormalized()
+                    dir.z = math.Clamp( dir.z, -0.15, 0.15 )
+                    dir:Normalize()
+                    local vel = dir * scalar
+                    ply:SetVelocity( vel )
+
+                    local theSound = frogLegsJumpSounds[ math.random( 1, #frogLegsJumpSounds ) ]
+                    ply:EmitSound( theSound, 78, math.random( 180, 200 ) + pitchOff, 1, CHAN_STATIC )
+
+                end )
+            end )
+        end,
+        function( _, owner ) -- teardown func
+            owner:DoSpeedModifier( "froglegs", nil )
+            owner.canWallkick = nil
+            owner.parkourForce = nil
+
+        end
+    )
+
+    GAMEMODE:RegisterStatusEffect( "signal_relay",
+        function( self, owner ) -- setup func
+            self:Hook( "glee_signalstrength_used", function( ply )
+                if ply ~= owner then return end
+                if owner:Health() <= 0 then return end
+
+                if owner:Armor() <= 0 then
+                    ply:BatteryNag( 1.25 )
+                    return
+                end
+
+                ply:GivePlayerBatteryCharge( -0.25 )
+
+            end )
+
+            self:Hook( "glee_signalstrength_update", function( ply, strength, static )
+                if ply ~= owner then return end
+                if owner:Armor() <= 0 then return end
+
+                return strength + math.random( 35, 45 ), math.Clamp( static, 0, 5 )
+
+            end )
+        end
+    )
+
+    GAMEMODE:RegisterStatusEffect( "temporal_dice_roll",
+        function( self, owner ) -- setup func
+            self.removeOnDeath = true
+            self.countdown = 8
+
+            owner:EmitSound( "ambient/levels/labs/teleport_mechanism_windup5.wav", 85, 110, 0.4, CHAN_STATIC )
+
+            self:Timer( "rollCountdown", 1, 0, function() -- reps based off self.countdown
+                self.countdown = self.countdown - 1
+
+                if self.countdown <= 0 then -- do the teleport
+                    local beamStart = owner:WorldSpaceCenter()
+
+                    local randomNavArea = GAMEMODE:GetAreaInOccupiedBigGroupOrRandomBigGroup( true )
+                    local randomPos = randomNavArea:GetCenter()
+
+                    owner:TeleportTo( randomPos )
+
+                    owner:EmitSound( "ambient/levels/labs/electric_explosion3.wav", 85, 40, 0.4, CHAN_STATIC )
+                    owner:EmitSound( "ambient/levels/labs/electric_explosion5.wav", 85, 100, 1, CHAN_STATIC )
+                    owner:EmitSound( "physics/concrete/concrete_impact_hard3.wav", 85, 100, 1, CHAN_STATIC )
+
+                    local beamEnd = owner:WorldSpaceCenter()
+
+                    util.ScreenShake( randomPos, 10, 20, 4, 1000, true )
+
+                    local beam = EffectData()
+                    beam:SetStart( beamStart )
+                    beam:SetOrigin( beamEnd )
+                    beam:SetScale( 1.5 )
+                    util.Effect( "eff_huntersglee_dicebeam", beam, true )
+
+                    owner:RemoveStatusEffect( "temporal_dice_roll" )
+
+                else -- countdown tick
+                    GAMEMODE:GivePanic( owner, 15 )
+                    local pitch = 80 + ( 8 - self.countdown ) * 5
+                    owner:EmitSound( "Chain.ImpactHard", 75, pitch )
+                    huntersGlee_Announce( { owner }, 10, 2, "Rolling in... " .. self.countdown )
+
+                end
+            end )
+        end
+    )
+
+    GAMEMODE:RegisterStatusEffect( "channel_666" ) -- the radio swep just checks if ply has this status effect
+
+    GAMEMODE:RegisterStatusEffect( "bomb_gland",
+        function( self, owner ) -- setup func
+            self:Timer( "keepBombGland", 0.1, 0, function()
+                if owner:Health() <= 0 then return end
+
+                local gland = owner:GetWeapon( "termhunt_bombgland" )
+                if not IsValid( gland ) then
+                    owner:Give( "termhunt_bombgland" )
+                    owner:SelectWeapon( "termhunt_bombgland" )
+
+                end
+            end )
+        end
+    )
+
+    GAMEMODE:RegisterStatusEffect( "ultra_lumen",
+        function( self, owner ) -- setup func
+            owner:Glee_Flashlight( false ) -- flashlight properties are getting updated, turn it off so ply can see new properties
+
+            self:Hook( "glee_flashlight_poweruse", function( ply, use )
+                if ply ~= owner then return end
+                return use * 1.5
+
+            end )
+
+            self:Hook( "glee_flashlightstats", function( ply, alpha, farz, fov )
+                if ply ~= owner then return end
+                if alpha ~= 255 then return end
+
+                farz = farz * 3
+                fov = 120
+
+                return farz, fov
+
+            end )
+        end
+    )
+
+    GAMEMODE:RegisterStatusEffect( "vent_crawler", -- very sus
+        function( self, owner ) -- setup func
+            self.defaultWalkSpeed = owner:GetWalkSpeed()
+            self.defaultCrouchSpeedMul = owner:GetCrouchedWalkSpeed()
+
+            self:Timer( "ventCheck", 0.2, 0, function()
+                if owner:Health() <= 0 then return end
+
+                local myCenter = owner:WorldSpaceCenter()
+
+                local traceData = {
+                    start = myCenter,
+                    endpos = owner:GetPos() + Vector( 0, 0, -25 ),
+                    mask = MASK_SOLID_BRUSHONLY,
+
+                }
+
+                local trace = util.TraceLine( traceData )
+
+                local inVent = trace.MatType == MAT_VENT or string.find( trace.HitTexture, "vent" )
+
+                local newCrouchMul = 1
+                local newWalkMul = 1
+
+                if inVent then
+                    GAMEMODE:GivePanic( owner, -10 )
+                    newWalkMul = 1.5
+
+                end
+
+                if self.oldCrouchMul ~= newCrouchMul or self.oldWalkMul ~= newWalkMul then
+                    self.oldCrouchMul = newCrouchMul
+                    self.oldWalkMul = newWalkMul
+                    owner:SetCrouchedWalkSpeed( newCrouchMul )
+                    owner:SetWalkSpeed( self.defaultWalkSpeed * newWalkMul )
+
+                end
+            end )
+        end,
+        function( self, owner ) -- teardown func
+            owner:SetWalkSpeed( self.defaultWalkSpeed )
+            owner:SetCrouchedWalkSpeed( self.defaultCrouchSpeedMul )
+
         end
     )
 end
@@ -742,7 +1085,6 @@ if CLIENT then
 
             self:Hook( "HUDPaint", function()
                 if owner:Health() <= 0 then return end
-                if not owner:GetNWBool( "huntersglee_hassixthsense", false ) then return end
 
                 local curTime = CurTime()
 
@@ -848,7 +1190,7 @@ if CLIENT then
                     local suspicious = string.find( classOfSensed, "disguised" )
 
                     --gregori
-                    if sensed:GetNW2Bool( "isdivinechosen", nil ) then
+                    if sensed:HasStatusEffect( "divine_chosen" ) then
                         if sensed:Health() <= 0 then continue end
                         sixthSenseColor = sixthSenseHunter
                         spriteSize = 200
@@ -929,20 +1271,16 @@ end
 if SERVER then
     GAMEMODE:RegisterStatusEffect( "sixth_sense",
         function( self, owner ) -- setup func
-            owner:SetNWBool( "huntersglee_hassixthsense", true )
-            owner.glee_hasSixthSense = true
-
             self:Hook( "terminator_spotenemy", function( term, spotted ) -- play arresting sound when an enemy spots us
                 if spotted ~= owner then return end
-                if not owner.glee_hasSixthSense then return end
 
-                local nextSound = owner.glee_nextSixthSenseSpottedSound or 0
+                local nextSound = self.glee_nextSixthSenseSpottedSound or 0
                 if nextSound > CurTime() then return end
 
                 local scaryness = GAMEMODE:GetBotScaryness( owner, term )
                 if scaryness < 0.7 then return end -- not scary, zzzzzzzzz
 
-                owner.glee_nextSixthSenseSpottedSound = CurTime() + 30
+                self.glee_nextSixthSenseSpottedSound = CurTime() + 30
 
                 local distance = owner:GetPos():Distance( term:GetPos() )
 
@@ -961,14 +1299,12 @@ if SERVER then
 
             self:Hook( "terminator_enemythink", function( term, theThingWhoIsEnemy ) -- give panic when an enemy has its eyes on us
                 if theThingWhoIsEnemy ~= owner then return end
-                if not owner.glee_hasSixthSense then return end
 
-                local nextSixthSenseTrackingPanic = owner.glee_nextSixthSenseTrackingPanic or 0
+                local nextSixthSenseTrackingPanic = self.glee_nextSixthSenseTrackingPanic or 0
                 if nextSixthSenseTrackingPanic > CurTime() then return end
 
                 -- dont do like a billion of these events
-                owner.glee_nextSixthSenseTrackingPanic = CurTime() + 1
-
+                self.glee_nextSixthSenseTrackingPanic = CurTime() + 1
                 local distance = term:GetPos():Distance( owner:GetPos() )
                 local scaryness = GAMEMODE:GetBotScaryness( owner, term )
 
@@ -988,13 +1324,6 @@ if SERVER then
 
                 end
             end )
-        end,
-        function( _, owner ) -- teardown func
-            owner:SetNWBool( "huntersglee_hassixthsense", false )
-            owner.glee_hasSixthSense = nil
-            owner.glee_nextSixthSenseSpottedSound = nil
-            owner.glee_nextSixthSenseTrackingPanic = nil
-
         end
     )
 end
@@ -1273,6 +1602,151 @@ local items = {
         shPurchaseCheck = shopHelpers.aliveCheck,
         svOnPurchaseFunc = function( ply )
             ply:GiveStatusEffect( "chameleon" )
+
+        end,
+    },
+    -- reframe gaining score, because i thought it could be fun
+    [ "marcopolo" ] = {
+        name = "Marco Polo",
+        desc = "You gain score for exploring new parts of the map.\nBPM gives no score.\nGains per area explored start out trivial, but as you progress, the rewards become greater.",
+        shCost = 25,
+        cooldown = math.huge,
+        tags = { "INNATE" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_INACTIVE,
+        },
+        weight = 180,
+        shPurchaseCheck = shopHelpers.aliveCheck,
+        svOnPurchaseFunc = function( ply )
+            ply:GiveStatusEffect( "marco_polo" )
+
+        end,
+    },
+    -- flat upgrade
+    [ "froglegs" ] = {
+        name = "Frog Legged Parkourist",
+        desc = "Your legs become frog.\nThe gangly shape of your legs slows you down.\nYou are capable of frog kicking off walls.\nYour shove propels you further.\nYour superior frog geneology permits you to absorb greater falls.\nRibbit.",
+        shCost = 350,
+        markup = 2,
+        cooldown = math.huge,
+        tags = { "INNATE" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_INACTIVE,
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = 120,
+        shPurchaseCheck = shopHelpers.aliveCheck,
+        svOnPurchaseFunc = function( ply )
+            ply:GiveStatusEffect( "frog_legs" )
+
+        end,
+    },
+    [ "signalrelay" ] = {
+        name = "Signal Relay.",
+        desc = "Boosts your signal.\nInstant shop loading, anywhere.\nConsumes Suit Armor.",
+        shCost = 50,
+        markup = 2,
+        cooldown = math.huge,
+        tags = { "INNATE" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_INACTIVE,
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = 80,
+        shPurchaseCheck = shopHelpers.aliveCheck,
+        svOnPurchaseFunc = function( ply )
+            ply:GiveStatusEffect( "signal_relay" )
+
+        end,
+    },
+    [ "temporaldiceroll" ] = {
+        name = "Roll of the dice.",
+        desc = "Roll the temporal dice.\n8 seconds after purchasing, you are teleported to a completely random part of the map.",
+        shCost = 75,
+        markup = 1.5,
+        markupPerPurchase = 1,
+        cooldown = 90,
+        tags = { "INNATE" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_INACTIVE,
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = 120,
+        shPurchaseCheck = shopHelpers.aliveCheck,
+        svOnPurchaseFunc = function( ply )
+            ply:GiveStatusEffect( "temporal_dice_roll" )
+
+        end,
+    },
+    [ "channel666" ] = {
+        name = "Channel 666.",
+        desc = "Your radio bridges life and death.\nYou can communicate with the dead, both ways.",
+        shCost = 0,
+        skullCost = 1,
+        cooldown = math.huge,
+        tags = { "INNATE" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = 125,
+        shPurchaseCheck = shopHelpers.aliveCheck,
+        svOnPurchaseFunc = function( ply )
+            ply:GiveStatusEffect( "channel_666" )
+
+        end,
+        shCanShowInShop = shopHelpers.hasMultiplePeople,
+    },
+    [ "bombgland" ] = {
+        name = "Bomb Gland.",
+        desc = "You accumulate bombs. Drop them with the bomb gland.\nLeft Click for small bombs, Reload for a big bomb.\nRight click to detonate oldest bomb.\nAfter you surpass 4 bombs, there's a chance that ANY damage will explode your undropped bombs.\nIf you die, all your bombs explode.",
+        shCost = 50,
+        markup = 2,
+        cooldown = math.huge,
+        tags = { "INNATE" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_INACTIVE,
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = 85,
+        shPurchaseCheck = shopHelpers.aliveCheck,
+        svOnPurchaseFunc = function( ply )
+            ply:GiveStatusEffect( "bomb_gland" )
+
+        end,
+    },
+    [ "ultralumen" ] = {
+        name = "Ultra Lumen 3000.",
+        desc = "Scared of the dark?\nWhat if the dark feared YOU!\nThe Ultra Lumen 3000 is perfect for anyone that can't stand darkness, a fraction of the sun's power, in your hands!\nMay increase battery consumption.",
+        shCost = 50,
+        markup = 2,
+        cooldown = math.huge,
+        tags = { "INNATE" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_INACTIVE,
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = 90,
+        shPurchaseCheck = shopHelpers.aliveCheck,
+        svOnPurchaseFunc = function( ply )
+            ply:GiveStatusEffect( "ultra_lumen" )
+
+        end,
+    },
+    [ "susimpostor" ] = {
+        name = "HVAC Specialist.",
+        desc = "From a young age, vents have fascinated you.\nThe \"portals between rooms\", as you call them, have practically raised you.\nYou are scared of the normal world, crouching brings confort, and vents bring freedom from panic.\nYou move very fast while crouching. Even faster in vents.\nYou don't even notice the musty vent smell anymore.",
+        shCost = 50,
+        markup = 3,
+        cooldown = math.huge,
+        tags = { "INNATE" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_INACTIVE,
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = 90,
+        shPurchaseCheck = shopHelpers.aliveCheck,
+        svOnPurchaseFunc = function( ply )
+            ply:GiveStatusEffect( "vent_crawler" )
 
         end,
     },

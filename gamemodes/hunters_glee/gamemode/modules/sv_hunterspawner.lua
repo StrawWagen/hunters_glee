@@ -748,12 +748,16 @@ function GM:getValidHunterPos()
     if not self.biggestNavmeshGroups then return nil, nil end
 
     local areas
-    if fails > 15 and math.random( 0, 100 ) < 50 then -- too many fails? map is probably too big, just get areas near a player!
+    if fails == 15 or ( fails > 15 and math.random( 0, 100 ) < 50 ) then -- too many fails? map is probably too big, just get areas near a player!
+        if fails == 15 then
+            debugPrint( "FINDING IN BOX" )
+
+        end
         local alivePlayer = self:anAlivePlayer()
         if IsValid( alivePlayer ) then
-            local height = dynamicTooFarDist / 4
+            local height = dynamicTooFarDist / 8
             if fails > 250 then
-                height = dynamicTooFarDist
+                height = dynamicTooFarDist / 4
 
             end
             local maxs = Vector( dynamicTooFarDist, dynamicTooFarDist, height )

@@ -74,6 +74,9 @@ function plyMeta:CanDropWeaponKeepAmmo( wep )
     if not IsValid( wep ) then return end
     if wep.ShouldDropOnDie and wep:ShouldDropOnDie() == false then return end
 
+    local holdType = wep:GetHoldType()
+    if holdType == "normal" then return false end
+
     return true
 
 end

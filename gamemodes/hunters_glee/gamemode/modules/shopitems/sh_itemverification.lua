@@ -41,7 +41,7 @@ function GM:getDebugShopItemStructureTable()
             weight =            "Optional. Where to order this relative to everything else in our category, accepts negative values.",
             shPurchaseCheck =     "Optional. Function or table of functions checked to see if this is purchasable, ran clientside on every item, every frame when shop is open. ran once serverside when purchased",
             svOnPurchaseFunc =    "Server. What function to run when the item is bought.",
-            shCanShowInShop =     "Optional. Can this be seen in the shop? also prevents purchases. Accepts a single function, or a table of functions."
+            shCanShowInShop =     "Optional. Can this be seen in the shop? also prevents purchases. Accepts a single function.",
         }
     }
     return theItemTable, theDescriptorTable
@@ -64,9 +64,12 @@ function GM:AddShopItem( shopItemIdentifier, shopItemData )
     if shopItemData.category or shopItemData.categories then addShopFail( shopItemIdentifier, "do not set .category or .categories, categories are determined by .tags" ) return end
     if not shopItemData.purchaseTimes or table.Count( shopItemData.purchaseTimes ) <= 0 then addShopFail( shopItemIdentifier, ".purchaseTimes are not specified" ) return end
     if not shopItemData.svOnPurchaseFunc then addShopFail( shopItemIdentifier, "invalid .svOnPurchaseFunc" ) return end
+    if shopItemData.shCanShowInShop and not isfunction( shopItemData.shCanShowInShop ) then addShopFail( shopItemIdentifier, "invalid .shCanShowInShop" ) return end
 
     GAMEMODE:ConvertItemTags( shopItemData )
-    GAMEMODE:PutItemInProperCategories( shopItemData )
+
+    local foundAHome = GAMEMODE:PutItemInProperCategories( shopItemData )
+    if not foundAHome then addShopFail( shopItemIdentifier, "wasnt put in a category!!, check sh_shopcategories.lua for full category list" ) return end
 
     GAMEMODE.shopItems[shopItemIdentifier] = shopItemData
 
@@ -74,7 +77,7 @@ function GM:AddShopItem( shopItemIdentifier, shopItemData )
 
 end
 
-function GM:ConvertItemTags( shopItemData )
+function GM:ConvertItemTags( shopItemData ) -- convert indexed table to mask
     if not istable( shopItemData.tags ) then return end
     local newTags = {}
     for _, tag in ipairs( shopItemData.tags ) do
@@ -84,16 +87,20 @@ function GM:ConvertItemTags( shopItemData )
     shopItemData.tags = newTags
 end
 
-function GM:PutItemInProperCategories( shopItemData )
+function GM:PutItemInProperCategories( shopItemData ) -- put item in categories based on tags
+    local foundAHome
     local categories = GAMEMODE.shopCategories
     for tag, _ in pairs( shopItemData.tags ) do
         if categories[ tag ] then
             --print( "Putting " .. shopItemData.name .. " in category " .. tag )
             shopItemData.categories = shopItemData.categories or {}
             shopItemData.categories[tag] = true
+            foundAHome = true
 
         end
     end
+    return foundAHome
+
 end
 
 function GM:invalidateShopItem( identifier )

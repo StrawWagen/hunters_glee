@@ -53,6 +53,7 @@ function ENT:Initialize()
     if SERVER then
         self.nextAmbientSkullSound = CurTime() + 5
         self.nextFreezingThink = CurTime() + 5
+        self.crushImmunityTime = CurTime() + math.Rand( 1, 4 )
         self.DoNotDuplicate = true
         self.nextPickup = 0
         self.nextCrushRoll = 0
@@ -213,6 +214,8 @@ function ENT:Touch( touched )
     end
 
     if self:GetIsTerminatorSkull() then return end
+    if self.crushImmunityTime > CurTime() then return end
+
     -- just like in tha movie goyss!!!!
     if touched.isTerminatorHunterChummy and touched.ReallyHeavy and touched:GetPos():DistToSqr( self:WorldSpaceCenter() ) < closeEnoughToStepOn then
         if self.nextCrushRoll > CurTime() then return end
@@ -301,6 +304,8 @@ function ENT:OnTakeDamage( dmg )
         self:TakePhysicsDamage( dmg )
         if self:GetIsTerminatorSkull() then return end
         if dmg:GetDamage() < 75 then return end
+
+        if self.crushImmunityTime > CurTime() then return end
         self:Crumble()
 
     end

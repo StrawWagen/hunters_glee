@@ -22,6 +22,14 @@ function plyMeta:HasStatusEffect( name )
 
 end
 
+function plyMeta:GetStatusEffect( name )
+    local plysEffects = self.glee_StatusEffects
+    if not plysEffects then return nil end
+
+    return plysEffects[name]
+
+end
+
 function plyMeta:GiveStatusEffect( name )
     local registeredEffect = GAMEMODE.RegisteredStatusEffects and GAMEMODE.RegisteredStatusEffects[name] or nil
     if not registeredEffect then ErrorNoHaltWithStack( "GLEE: Tried to give player invalid status effect; " .. name ) return end

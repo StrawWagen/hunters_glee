@@ -19,6 +19,14 @@ function plyMeta:HasStatusEffect( name )
 
 end
 
+function plyMeta:GetStatusEffect( name )
+    local plysEffects = self.glee_StatusEffects
+    if not plysEffects then return nil end
+
+    return plysEffects[name]
+
+end
+
 function plyMeta:StatusEffectApplyCL( name ) -- no way to give status effects on client, GIVE THEM ON SERVER!
     local registeredEffect = GAMEMODE.RegisteredStatusEffects and GAMEMODE.RegisteredStatusEffects[name] or nil
     if not registeredEffect then return end -- this effect only has server logic!

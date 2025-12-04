@@ -1053,10 +1053,9 @@ hook.Add( "CalcView", "glee_override_spectating_angles", function( ply, _, ang, 
     local mode = ply:GetObserverMode()
 
     if mode == OBS_MODE_CHASE and IsValid( spectateTarget ) then
-
         local pivot
-        if spectateTarget.GetChasePos then
-            pivot = spectateTarget:GetChasePos()
+        if spectateTarget.GetShootPos then
+            pivot = spectateTarget:GetShootPos()
 
         else
             pivot = spectateTarget:WorldSpaceCenter()

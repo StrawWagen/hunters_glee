@@ -46,7 +46,7 @@ function shopHelpers.purchaseWeapon( purchaser, data )
     if primaryClips then
         local clipSize = weapon:GetMaxClip1()
         if clipSize == -1 then
-            local hasDefaultClip = weapon.Primary and weapon.Primary.DefaultClip 
+            local hasDefaultClip = weapon.Primary and weapon.Primary.DefaultClip
             if hasDefaultClip then
                 clipSize = weapon.Primary.DefaultClip
 

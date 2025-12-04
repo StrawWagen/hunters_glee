@@ -186,7 +186,7 @@ end
 
 function GM:purchaseCount( purchaser, toPurchase )
     local name = "huntersglee_purchasecount_" .. toPurchase
-    -- use nw2bool because this will never be set when player is not valid.. right?
+    -- use nw2int because this will never be set when player is not valid.. right?
     return purchaser:GetNW2Int( name, 0 )
 
 end
