@@ -347,6 +347,7 @@ function GM:calculateBPM( cur, players )
                     if BPMDecrease > restingBPMPermanent * 4 then
                         divisor = 10
 
+
                     elseif BPMDecrease > restingBPMPermanent * 3 then
                         divisor = 50
 
@@ -355,7 +356,14 @@ function GM:calculateBPM( cur, players )
                     if ply.glee_Blessed then -- more decrease if blessed is fighting it
                         divisor = divisor / 2
 
+
                     end
+
+                    if ply.glee_Blessed then -- more decrease if blessed is fighting it
+                        divisor = divisor / 2
+
+                    end
+
 
                     local damage = math.ceil( ply:GetMaxHealth() / divisor )
                     ply:TakeDamage( damage, game.GetWorld(), game.GetWorld() )
