@@ -449,12 +449,12 @@ function termHuntOpenTheShop()
         local shopCategoriesBlocked = {}
         local shopCategoryPanels = {}
 
-        if not GAMEMODE.shopCategories then error( "wtf? SHOP CATEGORIES DIDNT LOAD!" ) end -- reported errors
+        if not GAMEMODE.shopCategories then error( "wtf? SHOP CATEGORIES DIDNT LOAD!" ) end -- reported error...
         local categories = table.Copy( GAMEMODE.shopCategories )
 
         -- the scrollable things that hold shop items and have names like innate and undead
-        for category, stuff in SortedPairsByMemberValue( categories, "order", false ) do
-            if stuff.canShowInShop and not stuff.canShowInShop( ply ) then shopCategoriesBlocked[ category ] = true continue end
+        for category, catData in SortedPairsByMemberValue( categories, "order", false ) do
+            if catData.shCanShowInShop and not catData.shCanShowInShop( ply ) then shopCategoriesBlocked[ category ] = true continue end
 
             local horisScroller = vgui.Create( "DHorizontalScroller", ply.MAINSCROLLPANEL, shopCategoryName( category ) )
 
@@ -487,7 +487,7 @@ function termHuntOpenTheShop()
                 -- lil white line
                 draw_RoundedBox( 0, 0, self.betweenCategorySpacing, whiteIdentifierLineWidth, self.titleBarTall, whiteFaded )
                 -- name of category, eg "Innate"
-                draw.DrawText( category, "termhuntShopCategoryFont", self.TextX, self.TextY, white )
+                draw.DrawText( catData.name, "termhuntShopCategoryFont", self.TextX, self.TextY, white )
 
             end
 
@@ -539,455 +539,460 @@ function termHuntOpenTheShop()
 
         -- shop items
         for identifier, itemData in SortedPairsByMemberValue( GAMEMODE.shopItems, "weight", false ) do
-            local myCategory = itemData.category
-            if shopCategoriesBlocked[ myCategory ] then continue end
+            local myCategories = itemData.categories
+            for category, _ in pairs( myCategories ) do
+                if shopCategoriesBlocked[ category ] then continue end
 
-            local myCategoryPanel = shopCategoryPanels[ myCategory ]
-            if not myCategoryPanel then ErrorNoHaltWithStack( "tried to add item " .. identifier .. " to invalid category, " .. myCategory ) continue end
+                local myCategoryPanel = shopCategoryPanels[ category ]
+                if not myCategoryPanel then ErrorNoHaltWithStack( "tried to add item " .. identifier .. " to invalid category, " .. category ) continue end
 
-            if itemData.canShowInShop and not itemData.canShowInShop( ply ) then continue end
+                if itemData.shCanShowInShop and not itemData.shCanShowInShop( ply ) then continue end
 
-            local shopItem = vgui.Create( "DButton", myCategoryPanel, shopPanelName( identifier ) )
+                local shopItem = vgui.Create( "DButton", myCategoryPanel, shopPanelName( identifier ) )
 
-            myCategoryPanel:AddPanel( shopItem )
+                myCategoryPanel:AddPanel( shopItem )
 
-            shopItem.itemData = itemData
-            shopItem.itemIdentifier = identifier
+                shopItem.itemData = itemData
+                shopItem.itemIdentifier = identifier
 
-            shopItem:SetSize( myCategoryPanel.shopItemWidth, myCategoryPanel.shopItemHeight )
-            shopItem:SetText( "" )
+                shopItem:SetSize( myCategoryPanel.shopItemWidth, myCategoryPanel.shopItemHeight )
+                shopItem:SetText( "" )
 
-            shopItem.costString = ""
-            shopItem.costColor = white
-            shopItem.markupString = ""
+                shopItem.costString = ""
+                shopItem.costColor = white
+                shopItem.markupString = ""
 
-            shopItem.IsHoveredCooler = function( self )
-                local tooltipHovered = nil
-                if self.coolTooltip and self.coolTooltip.fakeButton then
-                    tooltipHovered = self.coolTooltip.fakeButton:IsHovered()
+                shopItem.IsHoveredCooler = function( self )
+                    local tooltipHovered = nil
+                    if self.coolTooltip and self.coolTooltip.fakeButton then
+                        tooltipHovered = self.coolTooltip.fakeButton:IsHovered()
+
+                    end
+                    return self:IsHovered() or tooltipHovered
 
                 end
-                return self:IsHovered() or tooltipHovered
 
-            end
+                shopItem.Think = function( self )
+                    local hovering = isHovered( self )
+                    if not hovering then hovering = false end
 
-            shopItem.Think = function( self )
-                local hovering = isHovered( self )
-                if not hovering then hovering = false end
+                    pressableThink( self, hovering )
+                    if hovering ~= self.hovered then
+                        if not self.hoveredScoreDisplay and hovering then
+                            shopFrame.scoreToAddFrame = self
 
-                pressableThink( self, hovering )
-                if hovering ~= self.hovered then
-                    if not self.hoveredScoreDisplay and hovering then
-                        shopFrame.scoreToAddFrame = self
+                        elseif self.hoveredScoreDisplay and shopFrame.scoreToAddFrame == self then
+                            shopFrame.scoreToAddFrame = nil
 
-                    elseif self.hoveredScoreDisplay and shopFrame.scoreToAddFrame == self then
-                        shopFrame.scoreToAddFrame = nil
+                        end
+
+                        self.hoveredScoreDisplay = hovering
+                        self.hovered = hovering
+                    end
+
+                    if self.purchased then
+                        -- other half of the purchasing sounds are handled in sh_shopshared
+                        ply:EmitSound( switchSound, 60, 50, 0.24 )
+                        self.purchased = nil
+
+                    elseif self.triedToPurchase then
+                        if IsValid( shopItem.coolTooltip ) then
+                            local oldTime = shopItem.coolTooltip.noPurchaseShakeTime or 0
+                            shopItem.coolTooltip.noPurchaseShakeTime = math.max( CurTime() + 0.5, oldTime + 0.1 )
+
+                        end
+                        self.triedToPurchase = nil
+
+                    end
+                    self.notDoneSetup = nil
+
+                end
+
+                -- tooltips!
+                shopItem.OnBeginHovering = function()
+                    -- this is spaghetti
+                    local coolTooltip = vgui.Create( "DSizeToContents", ply.MAINSCROLLPANEL, shopPanelName( identifier ) .. "_cooltooltip" )
+                    -- hide the jank setup bugs!
+                    coolTooltip.isSetupTime = CurTime() + 0.1
+
+                    shopItem.coolTooltip = coolTooltip
+                    myCategoryPanel.coolTooltip = coolTooltip
+
+                    local _, categorysY = myCategoryPanel:GetPos()
+
+                    local itemsX, itemsY = shopItem:GetPos()
+                    local tooltipsY = itemsY + categorysY
+                    local tooltipsX = itemsX + -myCategoryPanel.OffsetX
+                    coolTooltip.xPos, coolTooltip.yPos = tooltipsX, tooltipsY
+                    -- pos under the text, not under the item
+                    local yPosUnder = tooltipsY + shopItem.shopItemNameHPadded * 3.5
+
+                    coolTooltip:SetSize( myCategoryPanel.shopItemWidth, myCategoryPanel.shopItemHeight )
+                    -- up up and away!
+                    coolTooltip:SetPos( tooltipsX, -tooltipsY + -myCategoryPanel.shopItemHeight )
+
+                    coolTooltip.Paint = function ( self )
+                        if not self.hasSetup then return end
+                        draw_RoundedBox( 0, 0, 0, self:GetWide(), self:GetTall(), shopItemColor )
+                        draw_RoundedBox( 0, 0, 0, whiteIdentifierLineWidth, self:GetTall(), whiteFaded )
 
                     end
 
-                    self.hoveredScoreDisplay = hovering
-                    self.hovered = hovering
-                end
+                    coolTooltip.Think = function ( self )
 
-                if self.purchased then
-                    -- other half of the purchasing sounds are handled in sh_shopshared
-                    ply:EmitSound( switchSound, 60, 50, 0.24 )
-                    self.purchased = nil
+                        -- this is kind of bad
+                        if coolTooltip.descLabel and coolTooltip.markupLabel and coolTooltip.noBuyLabel and IsValid( coolTooltip.descLabel ) and IsValid( coolTooltip.markupLabel ) and IsValid( coolTooltip.noBuyLabel ) and not coolTooltip.gettingRemoved then
+                            local description = shopItem.coolTooltipDescription
+                            local descLabel = coolTooltip.descLabel
 
-                elseif self.triedToPurchase then
-                    if IsValid( shopItem.coolTooltip ) then
-                        local oldTime = shopItem.coolTooltip.noPurchaseShakeTime or 0
-                        shopItem.coolTooltip.noPurchaseShakeTime = math.max( CurTime() + 0.5, oldTime + 0.1 )
+                            -- item desc
+                            descLabel:SetTextInset( offsetNextToIdentifier, offsetNextToIdentifier )
+                            descLabel:SetFont( "termhuntShopItemSmallerFont" )
+                            descLabel:SetText( description )
+                            descLabel:SetContentAlignment( 7 )
+                            descLabel:SetWrap( true )
+                            descLabel:SizeToContentsY()
+                            local descSizeX, descSizeY = descLabel:GetSize()
+
+                            -- info on markups
+                            local markupInfo = shopItem.coolTooltipMarkup
+                            local markupLabel = coolTooltip.markupLabel
+
+                            if markupInfo ~= "" then
+                                markupLabel:SetTextInset( offsetNextToIdentifier, 0 )
+                                markupLabel:SetFont( "termhuntShopItemSmallerFont" )
+                                markupLabel:SetText( markupInfo )
+                                markupLabel:SetContentAlignment( 7 )
+                                markupLabel:SetWrap( true )
+                                markupLabel:SizeToContentsY()
+
+                            else
+                                markupLabel:SetText( "" )
+                                markupLabel:SetSize( myCategoryPanel.shopItemWidth, 0 )
+
+                            end
+                            local markupSizeX, markupSizeY = markupLabel:GetSize()
+
+                            -- why you cant buy this
+                            local noPurchase = shopItem.coolTooltipNoPurchase
+                            local noBuyLabel = coolTooltip.noBuyLabel
+
+                            if noPurchase ~= "" then
+                                noBuyLabel:SetTextInset( offsetNextToIdentifier, 0 )
+                                noBuyLabel:SetFont( "termhuntShopItemSmallerFont" )
+                                noBuyLabel:SetText( noPurchase )
+                                noBuyLabel:SetContentAlignment( 7 )
+                                noBuyLabel:SetWrap( true )
+                                noBuyLabel:SizeToContentsY()
+
+                            else
+                                noBuyLabel:SetText( "" )
+                                noBuyLabel:SetSize( myCategoryPanel.shopItemWidth, 0 )
+
+                            end
+                            local noBSizeX, noBSizeY = noBuyLabel:GetSize()
+
+                            -- put them together with padding around the text
+                            descLabel:SetSize( descSizeX + -offsetNextToIdentifier, descSizeY )
+                            markupLabel:SetSize( markupSizeX + -offsetNextToIdentifier, markupSizeY )
+                            noBuyLabel:SetSize( noBSizeX + -offsetNextToIdentifier, noBSizeY + offsetNextToIdentifier )
+                            coolTooltip.fakeButton:SetSize( descSizeX + markupSizeX + noBSizeX, descSizeY + markupSizeY + noBSizeY + offsetNextToIdentifier )
+
+                            if coolTooltip.hasSetup then
+                                descLabel:SetTextColor( whiteFaded )
+                                noBuyLabel:SetTextColor( whiteFaded )
+                                markupLabel:SetTextColor( whiteFaded )
+
+                            end
+                        end
+
+                        local _, scaledSizeY = self:GetSize()
+                        if scaledSizeY ~= 0 then
+                            local bottomOfTip = yPosUnder + scaledSizeY + height / 5
+                            if bottomOfTip > height then
+                                yPosAbove = tooltipsY + -scaledSizeY
+                                self:SetPos( tooltipsX, yPosAbove )
+                                self.fakeButton:SetPos( tooltipsX, yPosAbove )
+                            else
+                                self:SetPos( tooltipsX, yPosUnder )
+                                self.fakeButton:SetPos( tooltipsX, yPosAbove )
+                            end
+                        end
+
+                        if coolTooltip.noBuyLabel:IsValid() then
+                            local shakeTime = self.noPurchaseShakeTime or 0
+                            local noPurchaseShake = 0
+                            if shakeTime > CurTime() then
+                                local absed = math.abs( self.noPurchaseShakeTime - CurTime() )
+                                noPurchaseShake = math.Rand( -absed, absed ) * 8
+                            end
+
+                            local noBuyLabel = coolTooltip.noBuyLabel
+                            noBuyLabel:DockMargin( 0, noPurchaseShake, 0, noPurchaseShake )
+                            noBuyLabel:Dock( TOP )
+
+                        end
+
+                        if self.isSetupTime > CurTime() then return end
+                        self.hasSetup = true
 
                     end
-                    self.triedToPurchase = nil
+
+
+                    local tooltipTopButton = vgui.Create( "DButton", coolTooltip, shopPanelName( identifier ) .. "_cooltooltip_topbutton" )
+
+                    coolTooltip.fakeButton = tooltipTopButton
+                    tooltipTopButton:SetText( "" )
+                    tooltipTopButton:Dock( TOP )
+
+                    tooltipTopButton.Paint = function( _ )
+                    end
+
+                    tooltipTopButton.OnMousePressed = function( _, keyCode )
+                        shopItem:OnMousePressed( keyCode )
+
+                    end
+
+                    tooltipTopButton.OnMouseReleased = function( _, keyCode )
+                        shopItem:OnMouseReleased( keyCode )
+
+                    end
+
+                    tooltipTopButton.OnMouseWheeled = function( _, delta )
+                        myCategoryPanel:OnMouseWheeled( delta )
+                        return true
+
+                    end
+
+                    tooltipTopButton.CoolerScroll = function( _, delta, stepScale )
+                        myCategoryPanel:CoolerScroll( delta, stepScale )
+
+                    end
+
+                    tooltipTopButton.PaintOver = function( self )
+                        if not coolTooltip.hasSetup then return end
+                        if shopItem.myOverlayColor then
+                            draw_RoundedBox( 0, 0, 0, self:GetWide(), self:GetTall(), shopItem.myOverlayColor )
+
+                        end
+                    end
+
+
+                    local descLabel = vgui.Create( "DLabel", tooltipTopButton, shopPanelName( identifier ) .. "_cooltooltip_label" )
+
+                    descLabel:SetTextColor( invisibleColor )
+
+                    coolTooltip.descLabel = descLabel
+
+                    descLabel:SetSize( myCategoryPanel.shopItemWidth )
+                    descLabel:Dock( TOP )
+
+
+                    local markupLabel = vgui.Create( "DLabel", tooltipTopButton, shopPanelName( identifier ) .. "_cooltooltip_label" )
+
+                    markupLabel:SetTextColor( invisibleColor )
+
+                    coolTooltip.markupLabel = markupLabel
+
+                    markupLabel:SetSize( myCategoryPanel.shopItemWidth )
+                    markupLabel:Dock( TOP )
+
+
+                    local noBuyLabel = vgui.Create( "DLabel", tooltipTopButton, shopPanelName( identifier ) .. "_cooltooltip_label" )
+
+                    noBuyLabel:SetTextColor( invisibleColor )
+
+                    coolTooltip.noBuyLabel = noBuyLabel
+
+                    noBuyLabel:SetSize( myCategoryPanel.shopItemWidth )
+                    noBuyLabel:Dock( TOP )
 
                 end
-                self.notDoneSetup = nil
 
-            end
+                shopItem.RemoveCoolTooltip = function()
+                    local tooltip = shopItem.coolTooltip
+                    if not tooltip then return end
+                    if tooltip.descLabel then
+                        tooltip.descLabel:Remove()
 
-            -- tooltips!
-            shopItem.OnBeginHovering = function()
-                -- this is spaghetti
-                local coolTooltip = vgui.Create( "DSizeToContents", ply.MAINSCROLLPANEL, shopPanelName( identifier ) .. "_cooltooltip" )
-                -- hide the jank setup bugs!
-                coolTooltip.isSetupTime = CurTime() + 0.1
+                    end
+                    if tooltip.markupLabel then
+                        tooltip.markupLabel:Remove()
 
-                shopItem.coolTooltip = coolTooltip
-                myCategoryPanel.coolTooltip = coolTooltip
+                    end
+                    if tooltip.noBuyLabel then
+                        tooltip.noBuyLabel:Remove()
 
-                local _, categorysY = myCategoryPanel:GetPos()
+                    end
+                    -- let the text remove so it NEVER flashes
+                    timer.Simple( 0, function()
+                        if not IsValid( tooltip ) then return end
+                        if tooltip.fakeButton then
+                            tooltip.fakeButton:Remove()
 
-                local itemsX, itemsY = shopItem:GetPos()
-                local tooltipsY = itemsY + categorysY
-                local tooltipsX = itemsX + -myCategoryPanel.OffsetX
-                coolTooltip.xPos, coolTooltip.yPos = tooltipsX, tooltipsY
-                -- pos under the text, not under the item
-                local yPosUnder = tooltipsY + shopItem.shopItemNameHPadded * 3.5
+                        end
+                        tooltip:Remove()
 
-                coolTooltip:SetSize( myCategoryPanel.shopItemWidth, myCategoryPanel.shopItemHeight )
-                -- up up and away!
-                coolTooltip:SetPos( tooltipsX, -tooltipsY + -myCategoryPanel.shopItemHeight )
+                    end )
+                end
 
-                coolTooltip.Paint = function ( self )
-                    if not self.hasSetup then return end
-                    draw_RoundedBox( 0, 0, 0, self:GetWide(), self:GetTall(), shopItemColor )
+                -- tooltips end
+                -- paint the shop item!
+                shopItem.Paint = function( self )
+
+                    local hovered = self:IsHoveredCooler()
+
+                    if hovered then
+                        draw_RoundedBox( 0, 0, 0, self:GetWide(), self:GetTall(), shopItemColor )
+
+                    end
+
                     draw_RoundedBox( 0, 0, 0, whiteIdentifierLineWidth, self:GetTall(), whiteFaded )
 
-                end
+                    surface.SetFont( "termhuntShopItemFont" )
+                    local _, shopItemNameH = surface.GetTextSize( self.itemData.name )
 
-                coolTooltip.Think = function ( self )
+                    local shopItemNameHPadded = shopItemNameH * 1.2
+                    self.shopItemNameHPadded = shopItemNameHPadded
 
-                    -- this is kind of bad
-                    if coolTooltip.descLabel and coolTooltip.markupLabel and coolTooltip.noBuyLabel and IsValid( coolTooltip.descLabel ) and IsValid( coolTooltip.markupLabel ) and IsValid( coolTooltip.noBuyLabel ) and not coolTooltip.gettingRemoved then
-                        local description = shopItem.coolTooltipDescription
-                        local descLabel = coolTooltip.descLabel
+                    local _, shopMarkupH = surface.GetTextSize( self.markupString )
+                    local shopMarkupHPadded = shopMarkupH * 1.2
 
-                        -- item desc
-                        descLabel:SetTextInset( offsetNextToIdentifier, offsetNextToIdentifier )
-                        descLabel:SetFont( "termhuntShopItemSmallerFont" )
-                        descLabel:SetText( description )
-                        descLabel:SetContentAlignment( 7 )
-                        descLabel:SetWrap( true )
-                        descLabel:SizeToContentsY()
-                        local descSizeX, descSizeY = descLabel:GetSize()
+                    --item name
+                    draw.DrawText( self.itemData.name, "termhuntShopItemFont", offsetNextToIdentifier, offsetNextToIdentifier, white, TEXT_ALIGN_LEFT )
+                    --item cost
+                    draw.DrawText( self.costString, "termhuntShopItemFont", offsetNextToIdentifier, shopItemNameHPadded + offsetNextToIdentifier, self.costColor, TEXT_ALIGN_LEFT )
+                    -- current markup being applied
+                    draw.DrawText( self.markupString, "termhuntShopItemFont", offsetNextToIdentifier, shopItemNameHPadded + shopMarkupHPadded + offsetNextToIdentifier, markupTextColor, TEXT_ALIGN_LEFT )
 
-                        -- info on markups
-                        local markupInfo = shopItem.coolTooltipMarkup
-                        local markupLabel = coolTooltip.markupLabel
+                    self.myOverlayColor = nil
 
-                        if markupInfo ~= "" then
-                            markupLabel:SetTextInset( offsetNextToIdentifier, 0 )
-                            markupLabel:SetFont( "termhuntShopItemSmallerFont" )
-                            markupLabel:SetText( markupInfo )
-                            markupLabel:SetContentAlignment( 7 )
-                            markupLabel:SetWrap( true )
-                            markupLabel:SizeToContentsY()
+                    if not self.purchasable then
+                        self.myOverlayColor = cantAffordOverlay
+                        draw_RoundedBox( 0, 0, 0, self:GetWide(), self:GetTall(), self.myOverlayColor )
 
-                        else
-                            markupLabel:SetText( "" )
-                            markupLabel:SetSize( myCategoryPanel.shopItemWidth, 0 )
+                    elseif not hovered then
+                        self.pressed = nil
+                        self.myOverlayColor = notHoveredOverlay
+                        draw_RoundedBox( 0, 0, 0, self:GetWide(), self:GetTall(), self.myOverlayColor )
+
+                    elseif self.pressed then
+                        self.myOverlayColor = pressedItemOverlay
+                        draw_RoundedBox( 0, 0, 0, self:GetWide(), self:GetTall(), self.myOverlayColor )
+
+                    end
+
+                    local score = ply:GetScore()
+
+                    local nextBigCaching = self.nextBigCaching or 0
+                    if nextBigCaching > CurTime() and score == self.oldScore then return end
+
+                    local identifierPaint = self.itemIdentifier
+                    -- check after all the potentially custom functions had a chance to run  
+                    if GAMEMODE.invalidShopItems[ identifierPaint ] then self:Remove() return end
+
+                    self.purchasable, self.notPurchasableReason = GAMEMODE:canPurchase( ply, identifierPaint )
+                    self.nextBigCaching = CurTime() + 0.1
+                    self.oldScore = score
+
+                    -- add newline before no buy reason
+                    local noPurchaseReason = ""
+                    if self.notPurchasableReason and self.notPurchasableReason ~= "" then
+                        noPurchaseReason = "\n" .. self.notPurchasableReason
+
+                    end
+
+                    local cost = GAMEMODE:shopItemCost( identifierPaint, ply )
+                    local skullCost = GAMEMODE:shopItemSkullCost( identifierPaint, ply )
+                    self.costString = ""
+                    self.costColor = white
+
+                    if skullCost and skullCost >= 0 then
+                        self.costString, self.costColor = GAMEMODE:translatedShopItemCost( ply, skullCost, "skull", identifierPaint )
+                        local sOrNoS = "s"
+                        if skullCost <= 1 then
+                            sOrNoS = ""
 
                         end
-                        local markupSizeX, markupSizeY = markupLabel:GetSize()
+                        self.costString = self.costString .. " Skull" .. sOrNoS .. "\n"
+                    else
+                        -- "decorative" cost that isn't applied when purchased
+                        local decorativeCost = itemData.costDecorative
+                        if decorativeCost then
+                            self.costString = itemData.costDecorative
 
-                        -- why you cant buy this
-                        local noPurchase = shopItem.coolTooltipNoPurchase
-                        local noBuyLabel = coolTooltip.noBuyLabel
-
-                        if noPurchase ~= "" then
-                            noBuyLabel:SetTextInset( offsetNextToIdentifier, 0 )
-                            noBuyLabel:SetFont( "termhuntShopItemSmallerFont" )
-                            noBuyLabel:SetText( noPurchase )
-                            noBuyLabel:SetContentAlignment( 7 )
-                            noBuyLabel:SetWrap( true )
-                            noBuyLabel:SizeToContentsY()
+                        elseif itemData.simpleCostDisplay then
+                            self.costString = tostring( cost )
 
                         else
-                            noBuyLabel:SetText( "" )
-                            noBuyLabel:SetSize( myCategoryPanel.shopItemWidth, 0 )
-
-                        end
-                        local noBSizeX, noBSizeY = noBuyLabel:GetSize()
-
-                        -- put them together with padding around the text
-                        descLabel:SetSize( descSizeX + -offsetNextToIdentifier, descSizeY )
-                        markupLabel:SetSize( markupSizeX + -offsetNextToIdentifier, markupSizeY )
-                        noBuyLabel:SetSize( noBSizeX + -offsetNextToIdentifier, noBSizeY + offsetNextToIdentifier )
-                        coolTooltip.fakeButton:SetSize( descSizeX + markupSizeX + noBSizeX, descSizeY + markupSizeY + noBSizeY + offsetNextToIdentifier )
-
-                        if coolTooltip.hasSetup then
-                            descLabel:SetTextColor( whiteFaded )
-                            noBuyLabel:SetTextColor( whiteFaded )
-                            markupLabel:SetTextColor( whiteFaded )
+                            self.costString, self.costColor = GAMEMODE:translatedShopItemCost( ply, cost, "score", identifierPaint )
 
                         end
                     end
 
-                    local _, scaledSizeY = self:GetSize()
-                    if scaledSizeY ~= 0 then
-                        local bottomOfTip = yPosUnder + scaledSizeY + height / 5
-                        if bottomOfTip > height then
-                            yPosAbove = tooltipsY + -scaledSizeY
-                            self:SetPos( tooltipsX, yPosAbove )
-                            self.fakeButton:SetPos( tooltipsX, yPosAbove )
+                    -- markups applied
+                    self.markupString = ""
+                    local currentMarkup = GAMEMODE:shopMarkup( ply, identifierPaint )
+                    if currentMarkup ~= 1 then
+                        self.markupString = "( " .. tostring( currentMarkup ) .. "x markup )"
+                    end
+
+                    -- handle tooltips
+                    local description = ""
+                    local descriptionReturned = GAMEMODE:translateShopItemDescription( ply, identifierPaint, self.itemData.desc )
+                    if descriptionReturned and descriptionReturned ~= "" then
+                        description = descriptionReturned
+
+                    end
+
+                    local additionalMarkupStr = ""
+                    local localizedMarkupPer = self.itemData.markupPerPurchase
+                    if localizedMarkupPer and isnumber( localizedMarkupPer ) then
+                        local boughtCount = GAMEMODE:purchaseCount( ply, identifierPaint )
+                        if boughtCount == 0 then
+                            additionalMarkupStr = "\nCost is marked up +" .. localizedMarkupPer .. "x per purchase."
                         else
-                            self:SetPos( tooltipsX, yPosUnder )
-                            self.fakeButton:SetPos( tooltipsX, yPosAbove )
+                            additionalMarkupStr = "\nBought " .. boughtCount .. ". Additional markup is +" .. localizedMarkupPer * boughtCount .. "x"
                         end
                     end
 
-                    if coolTooltip.noBuyLabel:IsValid() then
-                        local shakeTime = self.noPurchaseShakeTime or 0
-                        local noPurchaseShake = 0
-                        if shakeTime > CurTime() then
-                            local absed = math.abs( self.noPurchaseShakeTime - CurTime() )
-                            noPurchaseShake = math.Rand( -absed, absed ) * 8
-                        end
+                    self.coolTooltipDescription = description
+                    self.coolTooltipMarkup = additionalMarkupStr
+                    self.coolTooltipNoPurchase = noPurchaseReason
 
-                        local noBuyLabel = coolTooltip.noBuyLabel
-                        noBuyLabel:DockMargin( 0, noPurchaseShake, 0, noPurchaseShake )
-                        noBuyLabel:Dock( TOP )
+                end
+
+                -- buy the item!
+                shopItem.OnMousePressed = function( self, keyCode )
+                    if keyCode ~= MOUSE_LEFT then return end
+                    self.pressed = true
+
+                end
+
+                shopItem.OnMouseReleased = function( self, keyCode )
+                    if keyCode ~= MOUSE_LEFT then return end
+                    self.pressed = nil
+                    if self.purchasable then -- purchasability is also checked on server! no cheesing!
+                        RunConsoleCommand( "cl_termhunt_purchase", self.itemIdentifier )
+                        self.purchased = true
+
+                    else
+                        self.triedToPurchase = true
 
                     end
-
-                    if self.isSetupTime > CurTime() then return end
-                    self.hasSetup = true
-
                 end
 
-
-                local tooltipTopButton = vgui.Create( "DButton", coolTooltip, shopPanelName( identifier ) .. "_cooltooltip_topbutton" )
-
-                coolTooltip.fakeButton = tooltipTopButton
-                tooltipTopButton:SetText( "" )
-                tooltipTopButton:Dock( TOP )
-
-                tooltipTopButton.Paint = function( _ )
-                end
-
-                tooltipTopButton.OnMousePressed = function( _, keyCode )
-                    shopItem:OnMousePressed( keyCode )
-
-                end
-
-                tooltipTopButton.OnMouseReleased = function( _, keyCode )
-                    shopItem:OnMouseReleased( keyCode )
-
-                end
-
-                tooltipTopButton.OnMouseWheeled = function( _, delta )
-                    myCategoryPanel:OnMouseWheeled( delta )
-                    return true
-
-                end
-
-                tooltipTopButton.CoolerScroll = function( _, delta, stepScale )
+                shopItem.CoolerScroll = function( _, delta, stepScale )
                     myCategoryPanel:CoolerScroll( delta, stepScale )
 
                 end
 
-                tooltipTopButton.PaintOver = function( self )
-                    if not coolTooltip.hasSetup then return end
-                    if shopItem.myOverlayColor then
-                        draw_RoundedBox( 0, 0, 0, self:GetWide(), self:GetTall(), shopItem.myOverlayColor )
+                shopItem:DockMargin( 0, myCategoryPanel.topMargin, 0, 0 )
+                shopItem:Dock( LEFT )
 
-                    end
-                end
-
-
-                local descLabel = vgui.Create( "DLabel", tooltipTopButton, shopPanelName( identifier ) .. "_cooltooltip_label" )
-
-                descLabel:SetTextColor( invisibleColor )
-
-                coolTooltip.descLabel = descLabel
-
-                descLabel:SetSize( myCategoryPanel.shopItemWidth )
-                descLabel:Dock( TOP )
-
-
-                local markupLabel = vgui.Create( "DLabel", tooltipTopButton, shopPanelName( identifier ) .. "_cooltooltip_label" )
-
-                markupLabel:SetTextColor( invisibleColor )
-
-                coolTooltip.markupLabel = markupLabel
-
-                markupLabel:SetSize( myCategoryPanel.shopItemWidth )
-                markupLabel:Dock( TOP )
-
-
-                local noBuyLabel = vgui.Create( "DLabel", tooltipTopButton, shopPanelName( identifier ) .. "_cooltooltip_label" )
-
-                noBuyLabel:SetTextColor( invisibleColor )
-
-                coolTooltip.noBuyLabel = noBuyLabel
-
-                noBuyLabel:SetSize( myCategoryPanel.shopItemWidth )
-                noBuyLabel:Dock( TOP )
+                --print( "put " .. identifier .. " into " .. tostring( myCategoryPanel ) )
 
             end
-
-            shopItem.RemoveCoolTooltip = function()
-                local tooltip = shopItem.coolTooltip
-                if not tooltip then return end
-                if tooltip.descLabel then
-                    tooltip.descLabel:Remove()
-
-                end
-                if tooltip.markupLabel then
-                    tooltip.markupLabel:Remove()
-
-                end
-                if tooltip.noBuyLabel then
-                    tooltip.noBuyLabel:Remove()
-
-                end
-                -- let the text remove so it NEVER flashes
-                timer.Simple( 0, function()
-                    if not IsValid( tooltip ) then return end
-                    if tooltip.fakeButton then
-                        tooltip.fakeButton:Remove()
-
-                    end
-                    tooltip:Remove()
-
-                end )
-            end
-
-            -- tooltips end
-            -- paint the shop item!
-            shopItem.Paint = function( self )
-
-                local hovered = self:IsHoveredCooler()
-
-                if hovered then
-                    draw_RoundedBox( 0, 0, 0, self:GetWide(), self:GetTall(), shopItemColor )
-
-                end
-
-                draw_RoundedBox( 0, 0, 0, whiteIdentifierLineWidth, self:GetTall(), whiteFaded )
-
-                surface.SetFont( "termhuntShopItemFont" )
-                local _, shopItemNameH = surface.GetTextSize( self.itemData.name )
-
-                local shopItemNameHPadded = shopItemNameH * 1.2
-                self.shopItemNameHPadded = shopItemNameHPadded
-
-                --item name
-                draw.DrawText( self.itemData.name, "termhuntShopItemFont", offsetNextToIdentifier, offsetNextToIdentifier, white, TEXT_ALIGN_LEFT )
-                --item cost
-                draw.DrawText( self.costString, "termhuntShopItemFont", offsetNextToIdentifier, shopItemNameHPadded + offsetNextToIdentifier, self.costColor, TEXT_ALIGN_LEFT )
-                -- current markup being applied
-                draw.DrawText( self.markupString, "termhuntShopItemFont", offsetNextToIdentifier, shopItemNameHPadded + shopItemNameHPadded + offsetNextToIdentifier, markupTextColor, TEXT_ALIGN_LEFT )
-
-                self.myOverlayColor = nil
-
-                if not self.purchasable then
-                    self.myOverlayColor = cantAffordOverlay
-                    draw_RoundedBox( 0, 0, 0, self:GetWide(), self:GetTall(), self.myOverlayColor )
-
-                elseif not hovered then
-                    self.pressed = nil
-                    self.myOverlayColor = notHoveredOverlay
-                    draw_RoundedBox( 0, 0, 0, self:GetWide(), self:GetTall(), self.myOverlayColor )
-
-                elseif self.pressed then
-                    self.myOverlayColor = pressedItemOverlay
-                    draw_RoundedBox( 0, 0, 0, self:GetWide(), self:GetTall(), self.myOverlayColor )
-
-                end
-
-                local score = ply:GetScore()
-
-                local nextBigCaching = self.nextBigCaching or 0
-                if nextBigCaching > CurTime() and score == self.oldScore then return end
-
-                local identifierPaint = self.itemIdentifier
-                -- check after all the potentially custom functions had a chance to run  
-                if GAMEMODE.invalidShopItems[ identifierPaint ] then self:Remove() return end
-
-                self.purchasable, self.notPurchasableReason = GAMEMODE:canPurchase( ply, identifierPaint )
-                self.nextBigCaching = CurTime() + 0.1
-                self.oldScore = score
-
-                -- add newline before no buy reason
-                local noPurchaseReason = ""
-                if self.notPurchasableReason and self.notPurchasableReason ~= "" then
-                    noPurchaseReason = "\n" .. self.notPurchasableReason
-
-                end
-
-                local cost = GAMEMODE:shopItemCost( identifierPaint, ply )
-                local skullCost = GAMEMODE:shopItemSkullCost( identifierPaint, ply )
-                self.costString = ""
-                self.costColor = white
-
-                if skullCost and skullCost >= 0 then
-                    self.costString, self.costColor = GAMEMODE:translatedShopItemCost( ply, skullCost, "skull", identifierPaint )
-                    local sOrNoS = "s"
-                    if skullCost <= 1 then
-                        sOrNoS = ""
-
-                    end
-                    self.costString = self.costString .. " Skull" .. sOrNoS .. "\n"
-                else
-                    -- "decorative" cost that isn't applied when purchased
-                    local decorativeCost = itemData.costDecorative
-                    if decorativeCost then
-                        self.costString = itemData.costDecorative
-
-                    elseif itemData.simpleCostDisplay then
-                        self.costString = tostring( cost )
-
-                    else
-                        self.costString, self.costColor = GAMEMODE:translatedShopItemCost( ply, cost, "score", identifierPaint )
-
-                    end
-                end
-
-                -- markups applied
-                self.markupString = ""
-                local currentMarkup = GAMEMODE:shopMarkup( ply, identifierPaint )
-                if currentMarkup ~= 1 then
-                    self.markupString = "( " .. tostring( currentMarkup ) .. "x markup )"
-                end
-
-                -- handle tooltips
-                local description = ""
-                local descriptionReturned = GAMEMODE:translateShopItemDescription( ply, identifierPaint, self.itemData.desc )
-                if descriptionReturned and descriptionReturned ~= "" then
-                    description = descriptionReturned
-
-                end
-
-                local additionalMarkupStr = ""
-                local localizedMarkupPer = self.itemData.markupPerPurchase
-                if localizedMarkupPer and isnumber( localizedMarkupPer ) then
-                    local boughtCount = GAMEMODE:purchaseCount( ply, identifierPaint )
-                    if boughtCount == 0 then
-                        additionalMarkupStr = "\nCost is marked up +" .. localizedMarkupPer .. "x per purchase."
-                    else
-                        additionalMarkupStr = "\nBought " .. boughtCount .. ". Additional markup is +" .. localizedMarkupPer * boughtCount .. "x"
-                    end
-                end
-
-                self.coolTooltipDescription = description
-                self.coolTooltipMarkup = additionalMarkupStr
-                self.coolTooltipNoPurchase = noPurchaseReason
-
-            end
-
-            -- buy the item!
-            shopItem.OnMousePressed = function( self, keyCode )
-                if keyCode ~= MOUSE_LEFT then return end
-                self.pressed = true
-
-            end
-
-            shopItem.OnMouseReleased = function( self, keyCode )
-                if keyCode ~= MOUSE_LEFT then return end
-                self.pressed = nil
-                if self.purchasable then -- purchasability is also checked on server! no cheesing!
-                    RunConsoleCommand( "cl_termhunt_purchase", self.itemIdentifier )
-                    self.purchased = true
-
-                else
-                    self.triedToPurchase = true
-
-                end
-            end
-
-            shopItem.CoolerScroll = function( _, delta, stepScale )
-                myCategoryPanel:CoolerScroll( delta, stepScale )
-
-            end
-
-            shopItem:DockMargin( 0, myCategoryPanel.topMargin, 0, 0 )
-            shopItem:Dock( LEFT )
-
-            --print( "put " .. identifier .. " into " .. tostring( myCategoryPanel ) )
-
         end
     end
 

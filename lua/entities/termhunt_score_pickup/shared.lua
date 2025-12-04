@@ -127,6 +127,7 @@ function ENT:Think()
 
     else
         self:DoClicking()
+
         -- slowly lose score
         if self.nextScoreDecay > CurTime() then return end
         if self.nextAllowedMerge > CurTime() then return end
@@ -219,6 +220,7 @@ end
 
 function ENT:DoScore( reciever )
     if not reciever:IsPlayer() then return end
+    if self.gaveScore then return end
 
     self:PloopSound()
 
@@ -235,6 +237,7 @@ function ENT:DoScore( reciever )
 
     if not reciever.GivePlayerScore then SafeRemoveEntity( self ) return end
 
+    self.gaveScore = true
     reciever:GivePlayerScore( self:GetScore() )
 
     SafeRemoveEntity( self )

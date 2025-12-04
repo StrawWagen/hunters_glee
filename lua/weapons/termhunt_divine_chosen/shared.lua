@@ -255,7 +255,7 @@ function SWEP:ShutDown()
     end
 
     if self.modifiedMaxHp and validOwner and owner:GetMaxHealth() == self.maxHpModifedTo and owner:Health() > 0 then
-        owner:SetMaxHealth( 100 )
+        owner:SetMaxHealth( owner.Glee_BaseHealth or 100 )
         owner:SetHealth( owner:GetMaxHealth() )
 
     end

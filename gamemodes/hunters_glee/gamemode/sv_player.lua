@@ -347,6 +347,7 @@ function GM:calculateBPM( cur, players )
                     if BPMDecrease > restingBPMPermanent * 4 then
                         divisor = 10
 
+
                     elseif BPMDecrease > restingBPMPermanent * 3 then
                         divisor = 50
 
@@ -355,7 +356,14 @@ function GM:calculateBPM( cur, players )
                     if ply.glee_Blessed then -- more decrease if blessed is fighting it
                         divisor = divisor / 2
 
+
                     end
+
+                    if ply.glee_Blessed then -- more decrease if blessed is fighting it
+                        divisor = divisor / 2
+
+                    end
+
 
                     local damage = math.ceil( ply:GetMaxHealth() / divisor )
                     ply:TakeDamage( damage, game.GetWorld(), game.GetWorld() )
@@ -657,6 +665,51 @@ function GM:SpectateThing( ply, thing, msg )
 
 end
 
+-- spectate player by steamid
+concommand.Add( "glee_spectate_player", function( ply, cmd, args )
+    if not IsValid( ply ) then return end
+    if ply.termHuntTeam ~= GAMEMODE.TEAM_SPECTATE then return end
+    if not args[1] then return end
+
+    local ID = args[1]
+    local targetPly = nil
+    if string.StartsWith( ID, "STEAM_" ) then
+        -- steamid
+        for _, checkPly in ipairs( player.GetAll() ) do
+            if checkPly:SteamID() == ID then
+                targetPly = checkPly
+                break
+
+            end
+        end
+    else-- userid
+        local userIDNum = tonumber( ID )
+        if not userIDNum then return end
+        for _, checkPly in ipairs( player.GetAll() ) do
+            if checkPly:UserID() == userIDNum then
+                targetPly = checkPly
+                break
+
+            end
+        end
+    end
+
+    if not IsValid( targetPly ) then return end
+    if targetPly:Health() <= 0 then return end
+    GAMEMODE:SpectateThing( ply, targetPly )
+
+end )
+
+function GM:FixAnglesOf( ply )
+    timer.Simple( 0, function()
+        if not IsValid( ply ) then return end
+        local angles = ply:EyeAngles()
+        angles.r = 0
+        ply:SetEyeAngles( angles )
+
+    end )
+end
+
 function GM:StopSpectatingThing( ply )
     local target = ply:GetObserverTarget()
     ply:SetObserverMode( OBS_MODE_ROAMING )
@@ -669,17 +722,11 @@ function GM:StopSpectatingThing( ply )
 
     end
 
-    local newAng = ply:GetAngles()
-    ply:SetAngles( Angle( newAng.p, newAng.y, 0 ) )
-
     net.Start( "glee_stoppedspectating" )
     net.Send( ply )
 
-    local oldAng = ply:GetAngles()
-    timer.Simple( 0, function()
-        if not IsValid( ply ) then return end
-        ply:SetAngles( Angle( oldAng.p, oldAng.y, 0 ) )
-    end )
+    self:FixAnglesOf( ply )
+
 end
 
 local nextSpectateIdleCheck = {}

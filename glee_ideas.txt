@@ -1,0 +1,128 @@
+-- officially announce modding support
+-- change workshop icon
+-- add gifs to workshop page
+
+-- glee exists to entertain the CEOS
+-- CEOS are stupid and crony
+-- some CEOS ( goals ) work on small navmeshes
+-- when round starts players can pick which ceo they like
+-- all ceos work on big navmeshes
+-- each ceo has a stupid and FUNNY! quota that players have to do to win
+-- eg, olive branch, one person has to pay 10k to win
+-- CEOS IS A GIMMICK, NOT GONNA DO IT!!
+
+-- placables need to use run on key -- done
+-- boot player from shop when they buy a placable -- done
+-- door locker is fucked -- done
+-- make beacon supplies simpler -- done
+-- wasd kicks out of spectate -- done
+-- standardize +- placable hud stuff -done
+-- flares are SUPER LAGGYYYYY -- done
+-- fix the broken dice -- DONE!
+-- dead people can hear alive global? -- done
+-- barrels sweet spot? -- done
+
+-- DO THESE!
+
+-- ignore locked doors have been proven as unpathable -done
+    -- build ignored list, whenever we bash a door, clear the list -DONE
+-- fix bot jumping when bashing doors - DONE
+-- polish bot handling wierd jumps - DONE
+-- make bot avoid where it was damaged - DONME 
+-- expect sweps to have a hint function - DONE
+    -- pre / post hint stack funcs? - DONE
+-- give all glee sweps hints -- DONE
+
+-- chameleon gene makes you take 2x damage -done
+-- switch to generic procedural spawner -DONE
+-- replace killfeed -no
+
+-- SIMPLIFY RADIO!!! --DONE!
+-- make tab menu opaque when alive --DONE!
+-- same with kill feed -DONE
+
+-- true goal
+    -- skulls spawn when people die -- DONE
+    -- skulls persist thru rounds -- DONE
+    -- terminators drop metal skulls ( when not dissolved! ), worth 2x skulls -- DONE
+    -- if map has skulls in it, use those first -- DONE
+    -- plys drop 10% of their skulls when they die as finest prey -- DONE!
+
+    -- highlight player with most skulls -- done
+    -- add sounds for finest prey stealing! -- DONE!
+    -- use score as tiebreaker in finest prey -- DONE
+    -- make skull hints not stupid -- DONE!
+    -- above undone
+
+-- charge system
+    -- use suit energy as battery -DONE
+    -- makes damage even scarier
+    -- spawn with 60 suit energy -DONE
+    -- remove flashlight, binoculars items -DONE
+    -- make them always work when you have suit energy instead -- DONE
+    -- radio uses suit battery -- DONE
+
+-- fov decrease with panic! -DONE! -- undone
+-- make radio only transmit when held in hand -NO!
+
+-- make nailer bit stronger -done
+
+-- make alive players not be able to see text chats from the dead --done
+
+-- revenge/friendly items
+-- curse, "Homicidal Glee" -DONE
+    -- undead player buys, can only place on people who killed them, makes them dance -DONE
+
+-- overcharge terminator undead item? -- DONE
+-- bear trap PASS -- DONE!!!
+
+-- spawn waves
+    -- only spawn terminators when all die or after x minutes --done
+    -- linked hunter random spawn --done!
+-- dont respawn next to people you have homicided -- DONE!
+-- does bot over-predict when people juke it towards it --no, done
+
+-- pull nails rclick? --NO
+
+-- do intro if 1 player online and its their first time --DONE!
+-- check brutalist kfc doors -- DONE
+
+-- only withdraw/deposit when round is starting / player is dead --done
+-- make all undead evil items cost 2x --doneish
+
+-- check lag compensation on all npcs -- done
+-- do the los check for bot unstucker --done
+
+-- overcharged bots throw with sonic boom --done
+-- bot avoid damaging ents idea, needs path building pass. -- done
+-- bot placing of slams + beartrap --done
+
+-- Replace stupid temp bools with ints, polish conduit/inversion cooldowns
+-- fix stupid visual immortalizer bug -- done?
+
+-- blessing -- done
+    -- crappier version of immortality
+    -- but it lasts like minutes
+-- fix balls infinite money --DONE
+-- give notifs when people break your crates/barrels? --no
+-- PULL ALL SPECTATORS TO GRIGORI -- done
+
+-- effigy
+-- pushes dead people away, makes them look away
+-- steals their money when they get close, or aim near it
+-- make homicidal glee cost more
+
+-- loan
+
+-- server-based leaderboard
+-- quickest to 10 skulls
+-- most skulls
+-- flat, most hunter kills
+-- most skulls, additive ( all players skulls in one session, added up )
+
+-- radio draw channel instead of ammo
+
+-- ghostly wind undead item
+-- barrels scoring confusing
+
+-- bhop perk?

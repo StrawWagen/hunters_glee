@@ -90,6 +90,7 @@ local function asParsed( toParse, name, defaultsTbl )
                 end
             end
         end
+
     elseif not toParse then
         return nil -- no default, and nothing to parse
 
@@ -747,12 +748,16 @@ function GM:getValidHunterPos()
     if not self.biggestNavmeshGroups then return nil, nil end
 
     local areas
-    if fails > 15 and math.random( 0, 100 ) < 50 then -- too many fails? map is probably too big, just get areas near a player!
+    if fails == 15 or ( fails > 15 and math.random( 0, 100 ) < 50 ) then -- too many fails? map is probably too big, just get areas near a player!
+        if fails == 15 then
+            debugPrint( "FINDING IN BOX" )
+
+        end
         local alivePlayer = self:anAlivePlayer()
         if IsValid( alivePlayer ) then
-            local height = dynamicTooFarDist / 4
+            local height = dynamicTooFarDist / 8
             if fails > 250 then
-                height = dynamicTooFarDist
+                height = dynamicTooFarDist / 4
 
             end
             local maxs = Vector( dynamicTooFarDist, dynamicTooFarDist, height )
@@ -858,7 +863,7 @@ function GM:getValidHunterPos()
         cost = cost + 1
 
         local goodConventional = not visibleToAPly and not tooClose and not tooFar -- great spot to spawn!
-        local justSpawnSomething = fails > 2000 and not tooClose -- fallback, map has no great spots to spawn
+        local justSpawnSomething = fails > 200 and not tooClose -- fallback, map has no great spots to spawn
 
         if goodConventional or justSpawnSomething then
             nearestDist = math.sqrt( nearestDist )
@@ -970,9 +975,9 @@ function GM:SpawnSetInitialThink()
         end
     end
     print( "GLEE: Gobbled " .. count .. " spawnsets..." )
-    GLEE_SPAWNSETS = {}
+    GLEE_SPAWNSETS = nil
 
-    GAMEMODE.GobbledSpawnsets = true
+    self.GobbledSpawnsets = true
     hook.Run( "glee_post_spawnsetgobble" )
 
     local spawnSetPicked = spawnSetVar:GetString()
