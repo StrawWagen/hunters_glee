@@ -31,9 +31,20 @@ AddCSLuaFile( "modules/sh_panic.lua" )
 AddCSLuaFile( "modules/sh_banking.lua" )
 AddCSLuaFile( "modules/sh_tempbools.lua" )
 AddCSLuaFile( "modules/sh_deathsounds.lua" )
+AddCSLuaFile( "modules/sh_slowmopitch.lua" )
 AddCSLuaFile( "modules/sh_danceslowdown.lua" )
 AddCSLuaFile( "modules/sh_playerdrowning.lua" )
 AddCSLuaFile( "modules/sh_detecthunterkills.lua" )
+
+AddCSLuaFile( "modules/shopitems/cl_shopgobbler.lua" )
+AddCSLuaFile( "modules/shopitems/sh_shophelpers.lua" )
+AddCSLuaFile( "modules/shopitems/sh_shoptags.lua" )
+AddCSLuaFile( "modules/shopitems/sh_shopcategories.lua" )
+AddCSLuaFile( "modules/shopitems/sh_itemverification.lua" )
+
+AddCSLuaFile( "modules/statuseffects/cl_statuseffects.lua" )
+AddCSLuaFile( "modules/statuseffects/sh_statuseffectbase.lua" )
+
 AddCSLuaFile( "modules/battery/sh_battery.lua" )
 AddCSLuaFile( "modules/spawnset/cl_spawnsetvote.lua" )
 AddCSLuaFile( "modules/spawnset/sh_spawnpoolutil.lua" )
@@ -43,11 +54,13 @@ AddCSLuaFile( "modules/signalstrength/cl_signalstrength.lua" )
 
 -- SV
 include( "lib/sv_termfuncs.lua" )
+
 include( "shared.lua" )
 include( "sv_player.lua" )
 include( "sv_playercommunication.lua" )
 
 include( "modules/sv_modelspeaking.lua" )
+include( "modules/sv_fullload.lua" )
 
 include( "modules/sv_unstucker.lua" )
 include( "modules/sv_wallkick.lua" )
@@ -66,6 +79,7 @@ include( "modules/sv_firstfallgrace.lua" )
 include( "modules/sv_seeding_rewarder.lua" )
 include( "modules/spawnset/sv_spawnsetvote.lua" )
 include( "modules/spawnset/sv_spawnsetsounds.lua" )
+include( "modules/statuseffects/sv_statuseffects.lua" )
 include( "modules/firsttimeplayers/sv_firsttimeplayers.lua" )
 
 include( "modules/battery/sv_battery.lua" )
@@ -81,7 +95,6 @@ include( "modules/proceduralspawner/sv_raregenericspawns.lua" )
 include( "modules/weapondropper/sv_weapondropper.lua" )
 include( "modules/signalstrength/sv_signalstrength.lua" )
 
-util.AddNetworkString( "glee_witnesseddeathconfirm" )
 util.AddNetworkString( "glee_resetplayershopcooldowns" )
 util.AddNetworkString( "glee_sendshopcooldowntoplayer" )
 util.AddNetworkString( "glee_invalidateshopcooldown" )
@@ -127,8 +140,7 @@ local CurTime = CurTime
 -- also happens after hard map cleanup
 function GM:TermHuntSetup()
     self.waitingOnNavoptimizerGen       = nil
-    -- do greedy patch once per session
-    self.HuntersGleeDoneTheGreedyPatch  = self.HuntersGleeDoneTheGreedyPatch or nil
+    self.HuntersGleeDoneTheGreedyPatch  = self.HuntersGleeDoneTheGreedyPatch or nil -- do greedy patch once per session and play nice with autorefresh
     self.playerIsWaitingForPatch        = nil
     self.ValidNavarea                   = self.ValidNavarea or NULL
 

@@ -18,6 +18,7 @@ gamemodes\hunters_glee\gamemode\sh_player.lua
 gamemodes\hunters_glee\gamemode\modules\sh_panic.lua
 gamemodes\hunters_glee\gamemode\modules\sh_banking.lua
 gamemodes\hunters_glee\gamemode\modules\sh_tempbools.lua
+gamemodes\hunters_glee\gamemode\modules\sh_slowmopitch.lua
 gamemodes\hunters_glee\gamemode\modules\sh_playerdrowning.lua
 gamemodes\hunters_glee\gamemode\modules\sh_danceslowdown.lua
 gamemodes\hunters_glee\gamemode\modules\sh_detecthunterkills.lua
@@ -37,6 +38,15 @@ gamemodes\hunters_glee\gamemode\modules\thirdpersonflashlight\cl_flashlight.lua
 gamemodes\hunters_glee\gamemode\modules\firsttimeplayers\cl_firsttimeplayers.lua
 
 gamemodes\hunters_glee\gamemode\modules\unsandboxing\sh_unsandboxing.lua
+
+gamemodes\hunters_glee\gamemode\modules\shopitems\cl_shopgobbler.lua
+gamemodes\hunters_glee\gamemode\modules\shopitems\sh_shopcategories.lua
+gamemodes\hunters_glee\gamemode\modules\shopitems\sh_shoptags.lua
+gamemodes\hunters_glee\gamemode\modules\shopitems\sh_shophelpers.lua
+gamemodes\hunters_glee\gamemode\modules\shopitems\sh_itemverification.lua
+
+gamemodes\hunters_glee\gamemode\modules\statuseffects\cl_statuseffects.lua
+gamemodes\hunters_glee\gamemode\modules\statuseffects\sh_statuseffectbase.lua
 
 gamemodes\hunters_glee\gamemode\modules\spawnset\cl_spawnsetvote.lua
 gamemodes\hunters_glee\gamemode\modules\spawnset\sh_spawnpoolutil.lua

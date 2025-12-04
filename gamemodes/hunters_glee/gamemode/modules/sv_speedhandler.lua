@@ -1,14 +1,14 @@
 
 local plyMeta = FindMetaTable( "Player" )
 
---[[--------------
-    ply:doSpeedModifier
+--[[---------------------------------------------------------
+    ply:DoSpeedModifier
     Adds or removes a speed modifier for the player.
     @param speedKey: A unique key for the speed modifier.
     @param speedModifier: The speed modifier to apply. If nil, the modifier is removed.
     @return: None
---]]--------------
-function plyMeta:doSpeedModifier( speedKey, speedModifier )
+--]]---------------------------------------------------------
+function plyMeta:DoSpeedModifier( speedKey, speedModifier )
     self.glee_speedmodifiers = self.glee_speedmodifiers or {}
 
     if speedModifier then
@@ -19,18 +19,18 @@ function plyMeta:doSpeedModifier( speedKey, speedModifier )
 
     end
 
-    self:refeshPlayerSpeed( self )
+    self:RefeshPlayerSpeed( self )
 
 end
 
---[[--------------
-    ply:doSpeedClamp
+--[[---------------------------------------------------------
+    ply:DoSpeedClamp
     Adds or removes a speed clamp for the player.
     @param speedKey: A unique key for the speed clamp.
     @param speedClamp: The speed clamp to apply. If nil, the clamp is removed.
     @return: None
---]]--------------
-function plyMeta:doSpeedClamp( speedKey, speedClamp )
+--]]---------------------------------------------------------
+function plyMeta:DoSpeedClamp( speedKey, speedClamp )
     self.glee_maxspeedmodifiers = self.glee_maxspeedmodifiers or {}
 
     if speedClamp then
@@ -41,17 +41,17 @@ function plyMeta:doSpeedClamp( speedKey, speedClamp )
 
     end
 
-    self:refeshPlayerSpeed( self )
+    self:RefeshPlayerSpeed( self )
 
 end
 
---[[--------------
-    ply:refeshPlayerSpeed
+--[[---------------------------------------------------------
+    ply:RefeshPlayerSpeed
     Refreshes the player's speed based on current modifiers and clamps.
     @return: None
---]]--------------
+--]]---------------------------------------------------------
 
-function plyMeta:refeshPlayerSpeed()
+function plyMeta:RefeshPlayerSpeed()
     self.glee_speedmodifiers = self.glee_speedmodifiers or {}
     self.glee_maxspeedmodifiers = self.glee_maxspeedmodifiers or {}
     self.glee_defaultspeed = self.glee_defaultspeed or self:GetRunSpeed() -- sets the default here!

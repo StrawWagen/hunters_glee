@@ -87,7 +87,7 @@ function SWEP:ChannelSwitch( add )
 
     add = add or 1
 
-    local can666 = owner:GetNWBool( "glee_cantalk_tothedead", false )
+    local can666 = owner:HasStatusEffect( "channel_666" )
     local currChannel = self:GetChannelIndex()
     local newChannel = currChannel + add
 
@@ -221,7 +221,7 @@ function SWEP:Equip()
     local preferredChannel = owner.huntersglee_preferredradiochannel
     if preferredChannel then
         -- had 666, but not anymore!
-        if preferredChannel == undeadChannel and not owner:GetNWBool( "glee_cantalk_tothedead", false ) then
+        if preferredChannel == undeadChannel and not owner:HasStatusEffect( "channel_666" ) then
             self:SetNWInt( "glee_radiochannel_index", 2 )
             owner.huntersglee_preferredradiochannel = 2
 

@@ -133,7 +133,7 @@ function ENT:Place()
 
     end )
 
-    self.player.glee_nextHomicidalGleePlace = CurTime() + 15
+    self.player.glee_nextHomicidalGleePlace = CurTime() + 30
 
     local plysToAlert = {}
     for _, thing in ipairs( ents.FindInPVS( dancer:GetShootPos() ) ) do

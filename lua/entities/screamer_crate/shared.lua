@@ -24,7 +24,7 @@ local beaconVecOffset = Vector( 6.94, -8.67, 25.83 )
 local beaconAngOffset = Angle( 0, -90, 0 )
 
 local beepInterval = 20
-local beepsPerCrate = 20
+local beepsPerCrate = 10
 
 ENT.placedItems = 0
 

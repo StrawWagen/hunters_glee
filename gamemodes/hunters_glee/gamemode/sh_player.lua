@@ -62,7 +62,7 @@ function meta:GetSkulls()
 end
 
 function meta:SeesDeadPeople()
-    return self:Health() <= 0 or self:GetNWInt( "glee_radiochannel", 0 ) == 666 or self:GetNW2Bool( "isdivinechosen", false )
+    return self:Health() <= 0 or self:GetNWInt( "glee_radiochannel", 0 ) == 666 or self:HasStatusEffect( "divine_chosen" )
 
 end
 

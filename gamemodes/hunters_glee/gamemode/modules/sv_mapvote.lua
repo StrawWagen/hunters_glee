@@ -29,6 +29,8 @@ local function startTheMapVoteTimer()
 
             if not MapVote.state then return end
             if MapVote.state.isInProgress then return end
+
+            GAMEMODE:speakAsHuntersGlee( "Starting forced mapvote..." )
             MapVote.Start()
 
             mapVoteIncrement = 0

@@ -36,6 +36,17 @@ local PLAYER_LINE = {
         self.Name:SetTextColor( Color( 93, 93, 93 ) )
         self.Name:DockMargin( 8, 0, 0, 0 )
 
+        -- Invisible button overlay for spectating player
+        self.SpectateButton = self.Name:Add( "DButton" )
+        self.SpectateButton:Dock( FILL )
+        self.SpectateButton:SetText( "" )
+        self.SpectateButton.Paint = function() end -- Make it invisible
+        self.SpectateButton.DoClick = function()
+            if IsValid( self.Player ) then
+                RunConsoleCommand( "glee_spectate_player", self.Player:SteamID() )
+            end
+        end
+
         self.Mute = self:Add( "DImageButton" )
         self.Mute:SetSize( 32, 32 )
         self.Mute:Dock( RIGHT )

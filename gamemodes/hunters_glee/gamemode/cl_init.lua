@@ -10,6 +10,8 @@ include( "modules/cl_fallingwind.lua" )
 include( "modules/cl_killfeedoverride.lua" )
 include( "modules/cl_spectateflashlight.lua" )
 include( "modules/spawnset/cl_spawnsetvote.lua" )
+include( "modules/shopitems/cl_shopgobbler.lua" )
+include( "modules/statuseffects/cl_statuseffects.lua" )
 include( "modules/signalstrength/cl_signalstrength.lua" )
 include( "modules/thirdpersonflashlight/cl_flashlight.lua" )
 include( "modules/firsttimeplayers/cl_firsttimeplayers.lua" )
@@ -23,7 +25,7 @@ include( "modules/battery/cl_battery.lua" )
 
 local entMeta = FindMetaTable( "Entity" )
 
-local GAMEMODE = GM
+local GAMEMODE = GAMEMODE or GM
 
 -- from https://github.com/Facepunch/garrysmod/blob/e189f14c088298ca800136fcfcfaf5d8535b6648/garrysmod/lua/includes/modules/killicon.lua#L202
 local killIconColor = Color( 255, 80, 0, 255 )
@@ -673,7 +675,7 @@ end )
 
 hook.Add( "glee_cl_confirmedpurchase", "storeIfPlayerBoughtUndeadItem", function( ply, id )
     local itemData = GAMEMODE:GetShopItemData( id )
-    if itemData.category ~= "Undead" then return end
+    if itemData.tags["DeadGift"] ~= true then return end
     if ply:Health() > 0 then return end
 
     ply.glee_DefinitelyBoughtAnUndeadItem = true
@@ -1051,10 +1053,9 @@ hook.Add( "CalcView", "glee_override_spectating_angles", function( ply, _, ang, 
     local mode = ply:GetObserverMode()
 
     if mode == OBS_MODE_CHASE and IsValid( spectateTarget ) then
-
         local pivot
-        if spectateTarget.GetChasePos then
-            pivot = spectateTarget:GetChasePos()
+        if spectateTarget.GetShootPos then
+            pivot = spectateTarget:GetShootPos()
 
         else
             pivot = spectateTarget:WorldSpaceCenter()
@@ -1064,11 +1065,22 @@ hook.Add( "CalcView", "glee_override_spectating_angles", function( ply, _, ang, 
         local dir = -ang:Forward()
         local fallbackDrawPos = pivot + dir * 15
         local desiredDrawPos = pivot + dir * 100
+        local filter = { spectateTarget }
+        if spectateTarget.InVehicle and spectateTarget:InVehicle() then
+            local vehicle = spectateTarget:GetVehicle()
+            filter[#filter + 1] = vehicle
+            if IsValid( vehicle:GetParent() ) then
+                filter[#filter + 1] = vehicle:GetParent()
+
+            end
+        end
+
+        ang.r = 0 -- no roll please
 
         local checkTr = {
             start = fallbackDrawPos,
             endpos = desiredDrawPos,
-            filter = spectateTarget
+            filter = filter
 
         }
 
@@ -1084,39 +1096,53 @@ hook.Add( "CalcView", "glee_override_spectating_angles", function( ply, _, ang, 
         return view
     end
 
-    if not isTerm then return end
-
     if mode == OBS_MODE_IN_EYE then
-        local termAng
-        if spectateTarget.GetEyeAngles then
-            termAng = spectateTarget:GetEyeAngles()
+        if spectateTarget.InVehicle and spectateTarget:InVehicle() then
+            local vehicle = spectateTarget:GetVehicle()
+            local eyeAng = spectateTarget:EyeAngles()
+            eyeAng = vehicle:WorldToLocalAngles( eyeAng )
+            local view = {
+                origin = spectateTarget:GetShootPos(),
+                angles = eyeAng,
+                fov = fov,
+                znear = 8,
+                drawviewer = false
 
-        else
-            termAng = spectateTarget:GetAngles()
+            }
+            return view
+
+        elseif isTerm then
+            local termAng
+            if spectateTarget.GetEyeAngles then
+                termAng = spectateTarget:GetEyeAngles()
+
+            else
+                termAng = spectateTarget:GetAngles()
+
+            end
+
+            local forward = termAng:Forward()
+
+            local origin
+            if spectateTarget.GetShootPos then
+                origin = spectateTarget:GetShootPos()
+
+            else
+                origin = spectateTarget:WorldSpaceCenter()
+
+            end
+
+            local view = {
+                origin = origin + forward * 15,
+                angles = termAng,
+                fov = fov,
+                znear = 8,
+                drawviewer = false
+
+            }
+            return view
 
         end
-
-        local forward = termAng:Forward()
-
-        local origin
-        if spectateTarget.GetShootPos then
-            origin = spectateTarget:GetShootPos()
-
-        else
-            origin = spectateTarget:WorldSpaceCenter()
-
-        end
-
-        local view = {
-            origin = origin + forward * 15,
-            angles = termAng,
-            fov = fov,
-            znear = 8,
-            drawviewer = false
-
-        }
-        return view
-
     end
 end )
 
