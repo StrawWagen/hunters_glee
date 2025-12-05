@@ -42,6 +42,11 @@ SWEP.UnbearableHeat = 0.25
 
 SWEP.LastAttack = 0
 
+if CLIENT then
+    terminator_Extras.glee_CL_SetupSwep( SWEP, "termhunt_ar3", "materials/vgui/hud/killicon/termhunt_ar3.png" )
+
+end
+
 function SWEP:SetupDataTables()
     self:NetworkVar( "Int", "ConsecutiveShots" )
     self:NetworkVar( "Float", "Heat" )
