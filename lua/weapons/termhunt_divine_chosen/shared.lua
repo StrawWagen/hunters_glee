@@ -711,6 +711,7 @@ function SWEP:DoEpicness( amount )
 
         filter = RecipientFilter()
         for _, ply in player.Iterator() do
+            if ply == owner then continue end
             if ply:GetObserverTarget() == owner and ply:GetObserverMode() == OBS_MODE_IN_EYE then continue end
             filter:AddPlayer( ply )
 
