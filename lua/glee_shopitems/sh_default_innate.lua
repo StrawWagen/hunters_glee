@@ -238,7 +238,7 @@ if SERVER then
 
     GAMEMODE:RegisterStatusEffect( "witness_me",
         function( self, owner ) -- setup func
-            function self:PowerfulDeath( attacker ) -- amped up death with lots of extra effects
+            function self:PowerfulDeath( attacker, witnessing ) -- amped up death with lots of extra effects
                 if not IsValid( owner ) then return end
                 if not IsValid( attacker ) then return end
 
@@ -277,6 +277,12 @@ if SERVER then
                     IgnoreEntity = attacker,
 
                 } )
+
+                for _, witness in ipairs( witnessing ) do
+                    if not IsValid( witness ) then continue end
+                    GAMEMODE:EmulateHistoricHighBPM( witness ) -- everyone witnessing gets a pounding heart
+
+                end
             end
 
             self.additionalHooksName = "glee_witnesseddeathconfirm_" .. owner:SteamID()
@@ -404,7 +410,7 @@ if SERVER then
                 -- hopefully this means the bot kills them with their weapon, not the ensured death
                 self.playerDeathHookName = self:Hook( "PlayerDeath", function( died )
                     if died ~= owner then return end
-                    self:PowerfulDeath( attacker )
+                    self:PowerfulDeath( attacker, witnessing )
 
                 end )
 
@@ -415,7 +421,7 @@ if SERVER then
                 timer.Simple( 1.25, function()
                     if not IsValid( owner ) then return end
                     if owner:Health() <= 0 then return end -- they already died!
-                    self:PowerfulDeath( attacker )
+                    self:PowerfulDeath( attacker, witnessing )
 
                 end )
 

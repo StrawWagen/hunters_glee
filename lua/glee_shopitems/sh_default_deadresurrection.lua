@@ -217,13 +217,13 @@ if SERVER then
                     GAMEMODE:GivePanic( ply, 50 )
                     GAMEMODE:EmulateHistoricHighBPM( ply ) -- spawn with a pounding heart
 
-                    ply:TauntDance( ACT_HL2MP_ZOMBIE_SLUMP_IDLE ) -- zombie rising anim
+                    ply:TauntDance( ACT_HL2MP_ZOMBIE_SLUMP_IDLE ) -- start lying down
 
                     timer.Simple( 0.5, function() -- delay because of high ping players
                         if not IsValid( ply ) then return end
                         if not ply:Alive() then return end
                         ply:BlockAnimEventsFor( -1 ) -- reset TauntDance cooldown, animate NOW!
-                        ply:TauntDance( ACT_HL2MP_ZOMBIE_SLUMP_RISE )
+                        ply:TauntDance( ACT_HL2MP_ZOMBIE_SLUMP_RISE ) -- RISE!
 
                     end )
                 end )
