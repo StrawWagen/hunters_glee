@@ -8,86 +8,9 @@ hook.Add( "Think", "glee_cachedoproxchat", function()
 
 end )
 
---[[
-local shouldChatCache = {}
-local needsRebuild = {}
 
-function GM:EarlyVoiceCache( ply )
-    needsRebuild[ ply ] = true
+local GM = GM or GAMEMODE
 
-end
-
-local function vcCache( listener, talker, canHear, doProx )
-    local listenersCache = shouldChatCache[listener] or {}
-    currCache = listenersCache[talker] or {}
-
-    currCache[1] = canHear
-    currCache[2] = doProx
-
-    listenersCache[talker] = currCache
-    shouldChatCache[listener] = listenersCache
-
-
-    local canOrCannot = " CANNOT BE HEARD BY "
-    if canHear == true then
-        canOrCannot = " CAN BE HEARD BY "
-    end
-
-    print( talker, canOrCannot, listener )
-
-end
-
-local function getCache( listener, talker )
-    local listenersCache = shouldChatCache[listener]
-    if not listenersCache then
-        buildVCCache( listener, talker )
-        listenersCache = shouldChatCache[listener]
-
-    end
-    local theCurrCache = listenersCache[talker]
-    -- invalid or a rebuild was requested
-    if not theCurrCache or needsRebuild[listener] == true or needsRebuild[talker] == true then
-        buildVCCache( listener, talker )
-        theCurrCache = shouldChatCache[listener][talker]
-
-    end
-    return theCurrCache
-
-end
-
-local timerName = "glee_managevoicechat"
-
-local function restartVcTimer()
-    timer.Create( timerName, 0.5, 0, function()
-        local allPlayers = player.GetAll()
-        for _, listener in ipairs( allPlayers ) do
-            for _, talker in ipairs( allPlayers ) do
-                buildVCCache( listener, talker )
-
-            end
-        end
-    end )
-end
-restartVcTimer()
-
---timer erred and needs restarting!
-hook.Add( "huntersglee_round_into_active", "glee_restartvctimer", function()
-    if timer.Exists( timerName ) then return end
-    restartVcTimer()
-
-end )
-
-hook.Add( "PlayerDeath", "glee_RebuildVoiceChat", function( dead )
-    GAMEMODE:EarlyVoiceCache( dead )
-
-end )
-
-hook.Add( "PlayerSpawn", "glee_RebuildVoiceChat", function( whoSpawned )
-    GAMEMODE:EarlyVoiceCache( whoSpawned )
-
-end )
-
---]]
 
 local entMeta = FindMetaTable( "Entity" )
 local ent_Health = entMeta.Health
@@ -146,24 +69,18 @@ local function listenerCanHear( listener, talker )
 end
 
 
-hook.Add( "PlayerCanHearPlayersVoice", "glee_voicechat_system", function( listener, talker )
+function GM:PlayerCanHearPlayersVoice( listener, talker )
     local canHear, proxy = listenerCanHear( listener, talker )
-
-    --local canOrCannot = " DOESNT HEAR "
-    --if canHear == true then
-    --    canOrCannot = " HEARS "
-    --end
-    --print( listener, canOrCannot, talker, proxy )
-
     return canHear, proxy
 
-end )
+end
 
 
 -- text chat is always global
-hook.Add( "PlayerCanSeePlayersChat", "glee_chatblock", function( _, _, listener, talker )
+function GM:PlayerCanSeePlayersChat( _text, _teamOnly, listener, talker )
     if not IsValid( talker ) or not IsValid( listener ) then return end
     if not doProxChatCached then
+        --print( listener, talker, "1", true )
         return true
 
     end
@@ -175,23 +92,30 @@ hook.Add( "PlayerCanSeePlayersChat", "glee_chatblock", function( _, _, listener,
 
     local listenerIsSpectator = listenersHealth <= 0
 
-    -- dead people conditional message seeing
+    -- only other dead people, and channel 666'ers can see dead player's messages
     if talkerIsSpectator then
         local listenersChannel = listener:GetGleeRadioChannel()
         local talkersChannel = talker:GetGleeRadioChannel()
         if listenerIsSpectator then
+            --print( listener, talker, "2", true )
             return true
 
         elseif listenersChannel == talkersChannel then
+            --print( listener, talker, "3", true )
             return true
 
         else
+            --print( listener, talker, "4", false )
             return false
 
         end
     -- everyone can see messages from alive people
     elseif talkerIsPlaying then
+        --print( listener, talker, "5", true )
         return true
 
     end
-end )
+
+    --print( listener, talker, "6", false )
+
+end

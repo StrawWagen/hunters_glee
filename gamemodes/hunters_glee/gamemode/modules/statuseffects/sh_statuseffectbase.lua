@@ -97,7 +97,7 @@ function statusEffect:Hook( hookName, func )
         error( "GLEE: statusEffect:Hook doesn't need a hook name!" )
 
     end
-    local fullHookIdentifier = "glee_statuseffect_" .. self:GetPrintName() .. "_" .. hookName .. "_" .. self:GetOwner():GetCreationID()
+    local fullHookIdentifier = "glee_statuseffect_" .. self:GetPrintName() .. "_" .. hookName .. "_" .. tostring( self )
     table.insert( self._teardownTasks, function()
         hook.Remove( hookName, fullHookIdentifier )
 
@@ -157,7 +157,7 @@ end
     @return: None
 --]]---------------------------------------------------------
 function statusEffect:Timer( timerName, delay, reps, func )
-    local fullTimerName = "glee_statuseffect_" .. self:GetPrintName() .. "_" .. timerName .. "_" .. self:GetOwner():GetCreationID()
+    local fullTimerName = "glee_statuseffect_" .. self:GetPrintName() .. "_" .. timerName .. "_" .. tostring( self )
 
     table.insert( self._teardownTasks, function()
         timer.Remove( fullTimerName )
