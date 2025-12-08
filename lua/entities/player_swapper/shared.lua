@@ -306,7 +306,7 @@ function ENT:UpdateGivenScore()
 
 end
 
-local interval = 180
+local interval = 120
 
 function ENT:Place()
     local plyToSwap = self:GetCurrTarget()

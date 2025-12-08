@@ -233,7 +233,7 @@ if SERVER then
                 local strength = 100
                 timer.Create( timerName, 0.05, 200, function()
                     if not IsValid( ply ) then return end
-                    if not ply:Alive() then return end
+                    if not ply:Alive() then timer.Remove( timerName ) return end
                     if math.random( 0, 100 ) > strength then return end
                     strength = strength * 0.9
 
@@ -248,8 +248,8 @@ if SERVER then
 
             -- check if player reaches full health to end the deal
             self:Timer( "check_full_health", 1, 0, function()
-                if owner:Health() <= 0 then return end
-                if owner:Health() < owner:GetMaxHealth() then return end
+                if not owner:Alive() then return end
+                if owner:Health() < owner:GetMaxHealth() + -1 then return end
 
                 owner:RemoveStatusEffect( "infernalintervention_rawendofthedeal" )
 

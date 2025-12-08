@@ -455,7 +455,7 @@ function GM:EmulateHistoricHighBPM( ply )
     if not IsValid( ply ) then return end
     local target = bpmStartScreamingLikeCrazy
     local historicBPM = {}
-    for _ = 1, 5 do
+    for _ = 1, 8 do
         table.insert( historicBPM, target )
 
     end
@@ -1182,25 +1182,43 @@ end )
 hook.Add( "PlayerCanPickupWeapon", "noDoublePickup", function( ply, weapon )
     local class = weapon:GetClass()
     if goodPickupClasses[class] then return true end
-    if weapon.huntersglee_allowpickup then return true end
-    if ply:HasWeapon( class ) then
-        local bypassPickupBlock = weapon.glee_bypassPickupBlock or 0
-        local usedTheWeapon = bypassPickupBlock > CurTime()
+    if weapon.glee_allowPickup then return true end
+    local alreadyHas = ply:HasWeapon( class )
+    if not alreadyHas then return end
+    local bypassPickupBlock = weapon.glee_bypassPickupBlock or 0
+    local usedTheWeapon = bypassPickupBlock > CurTime()
 
-        local theWeapTheyHave = ply:GetWeapon( class )
-        local theWeapsAmmo = theWeapTheyHave:GetPrimaryAmmoType()
-        -- no ammo!?!?!
-        if theWeapsAmmo == -1 or not theWeapsAmmo then return false end
-        local ammoCount = ply:GetAmmoCount( theWeapsAmmo )
+    local theWeapTheyHave = ply:GetWeapon( class )
+    local theWeapsAmmo = theWeapTheyHave:GetPrimaryAmmoType()
+    -- no ammo!?!?!
+    if theWeapsAmmo == -1 or not theWeapsAmmo then return false end
+    local ammoCount = ply:GetAmmoCount( theWeapsAmmo )
 
-        if ammoCount == 0 or usedTheWeapon then
-            return true
+    if ammoCount == 0 or usedTheWeapon then
+        return -- allow pickup
 
-        else
-            return false
-
-        end
     end
+    return false
+
+end )
+
+hook.Add( "PlayerCanPickupWeapon", "noPainfulPickup", function( _ply, weapon )
+    if not weapon:IsOnFire() then return end
+
+    local bypassPickupBlock = weapon.glee_bypassPickupBlock or 0
+    local usedTheWeapon = bypassPickupBlock > CurTime()
+    if usedTheWeapon then return end
+
+    return false
+
+end )
+
+hook.Add( "WeaponEquip", "glee_fixignitedweapons", function( wep, ply )
+    if not wep:IsOnFire() then return end
+    wep:Extinguish()
+    ply:Ignite( math.Rand( 3, 6 ), 0 )
+    GAMEMODE:GivePanic( 5 )
+
 end )
 
 hook.Add( "EntityTakeDamage", "huntersglee_makepvpreallybad", function( dmgTarg, dmg )

@@ -1,10 +1,5 @@
 -- kill sandbox stuff
 
-function GM:CanProperty()
-    return false
-
-end
-
 hook.Add( "PlayerNoClip", "glee_blocknoclip", function( _, wantsToEnter )
     if wantsToEnter then
         return false
@@ -26,6 +21,11 @@ local function canSpawnMenu( ply )
     if not IsValid( ply ) then return false end
     if not ply:IsAdmin() then return false end
     return true
+
+end
+
+function GM:CanProperty( ply, _property, _ent )
+    return canSpawnMenu( ply )
 
 end
 
@@ -114,7 +114,6 @@ else
     -- stop player was killed by x console messages
     local string_find = string.find
     local old_MsgAll = MsgAll
-
     function MsgAll( ... )
         for _, arg in ipairs( { ... } ) do
             if string_find( arg, "suicide" ) or string_find( arg, "killed" ) then

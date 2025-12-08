@@ -290,7 +290,7 @@ local items = {
     },
     [ "temporalinversion" ] = {
         name = "Temporal Inversion",
-        desc = "Swaps a player out for their most remote enemy.\nUnlocks after 3 minutes, then a global 3 minute cooldown between uses.",
+        desc = "Swaps a player out for their most remote enemy.\nUnlocks after 2 minutes, then a global 2 minute cooldown between uses.",
         costDecorative = "-400",
         shCost = 0,
         markup = 1,

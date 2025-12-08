@@ -270,5 +270,4 @@ function termHunt_PowafulLightning( inflic, attacker, strikingPos, powa )
         inflic.glee_inflictingLightning = nil
 
     end )
-
 end

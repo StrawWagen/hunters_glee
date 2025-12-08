@@ -13,6 +13,13 @@ local slowEnoughToFreeze = 20^2
 -- likely will majorly decrease lag on big glee sessions
 -- call terminator_Extras.SmartSleepEntity( ent, checkinterval ) to add ent to system
 
+local noNavTextures = {
+    ["tools/toolsnodraw"] = true,
+    ["halflife/black"] = true,
+    ["tools/toolsblack"] = true,
+
+}
+
 local function handleSleep( ent, curTime ) -- think func
     if not IsValid( ent ) then return end
     if not ent.glee_issmartsleeping then return end
@@ -34,10 +41,26 @@ local function handleSleep( ent, curTime ) -- think func
 
     local obj = ent:GetPhysicsObject()
     if IsValid( obj ) and obj:IsMotionEnabled() then
-        obj:EnableMotion( false )
-        --debugoverlay.Cross( ent:GetPos(), 10, 5, color_white, true )
-        ent.glee_nextsmartsleepcheck = curTime + ent.glee_smartsleepinterval * 2
+        local tr = terminator_Extras.getFloorTr( ent:GetPos() )
+        local needsRemove
+        if tr.HitSky then -- fell into the void!
+            needsRemove = true
 
+        -- if it landed on one of these, and there's no navarea nearby, remove it
+        elseif tr.HitWorld and noNavTextures[ tr.HitTexture ] and not IsValid( navmesh.GetNavArea( ent:GetPos() ) ) then
+            needsRemove = true
+
+        end
+        if needsRemove then
+            SafeRemoveEntity( ent )
+            --debugoverlay.Cross( ent:GetPos(), 20, 5, Color( 255, 0, 0 ), true )
+
+        else
+            obj:EnableMotion( false )
+            ent.glee_nextsmartsleepcheck = curTime + ent.glee_smartsleepinterval * 2
+            --debugoverlay.Cross( ent:GetPos(), 10, 5, color_white, true )
+
+        end
     else
         ent.glee_nextsmartsleepcheck = curTime + ent.glee_smartsleepinterval * 2
 
@@ -214,6 +237,7 @@ end
 hook.Add( "InitPostEntity", "glee_setupsmartsleeping", function()
     if gmod.GetGamemode().ISHUNTERSGLEE then
         setupOnCreateHook()
+
     end
 end )
 
@@ -222,4 +246,5 @@ local theGamemode = gmod.GetGamemode()
 -- autorefresh
 if theGamemode and theGamemode.ISHUNTERSGLEE then
     setupOnCreateHook()
+
 end

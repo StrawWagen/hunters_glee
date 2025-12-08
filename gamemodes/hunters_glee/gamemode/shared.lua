@@ -103,7 +103,7 @@ function GM:PostCleanupMap()
     GAMEMODE:SharedSetup()
 
     if SERVER then
-        GAMEMODE:removePorters()
+        --GAMEMODE:removePorters()
         GAMEMODE:removeBlockers()
 
         hook.Run( "glee_PostCleanupMap" )

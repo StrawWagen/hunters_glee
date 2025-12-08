@@ -293,6 +293,10 @@ elseif SERVER then
             panic = math.Clamp( panic, 45, 100 )
 
         end
+        if victim:IsOnFire() and damage:IsDamageType( DMG_BURN ) then
+            panic = panic * 2
+
+        end
         GAMEMODE:GivePanic( victim, panic )
 
     end )

@@ -57,7 +57,7 @@ if CLIENT then
 end
 
 function SWEP:Initialize()
-    self.huntersglee_allowpickup = true
+    self.glee_allowPickup = true
     self:SetHoldType( self.HoldType )
 
 end

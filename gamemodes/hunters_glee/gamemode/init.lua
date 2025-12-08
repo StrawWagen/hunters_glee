@@ -635,7 +635,7 @@ function GM:SetupTheLargestGroupsNStuff()
         self.navmeshGroups = self:GetConnectedNavAreaGroups( navmesh.GetAllNavAreas() )
         self.biggestNavmeshGroups = self:FilterNavareaGroupsForGreaterThanPercent( self.navmeshGroups, self.biggestGroupsRatio )
 
-        self:removePorters() -- remove teleporters that cross navmesh groups, or lead to non-navmeshed spots
+        --self:removePorters() -- remove teleporters that cross navmesh groups, or lead to non-navmeshed spots
 
         -- fix maps with separate spawn rooms w/ teleporters
         self:TeleportRoomCheck()
