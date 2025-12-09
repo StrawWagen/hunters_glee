@@ -28,6 +28,7 @@ SWEP.DrawAmmo             = true                                -- Does the ammo
 SWEP.Weight             = 10                                    -- Chose the weight of the Swep.
 SWEP.SlotPos             = 2                                    -- Decide which slot you want your swep do be in.
 SWEP.Slot                 = 1                                   -- Decide which slot you want your swep do be in.
+SWEP.IsMelee              = true                                -- so term bots can know this is melee easily
 ------------------------------\\ General Settings //------------------------------------------------------------|
 ----------------------------------------------------------------------------------------------------------------|
 SWEP.Primary.Automatic             = true                       -- Do We Have To Click Or Hold Down The Click
