@@ -581,10 +581,10 @@ if SERVER then
             local _, unexplored = GAMEMODE:GetAreaInOccupiedBigGroupOrRandomBigGroup()
             self.exploredStatuses = {}
             for _, area in ipairs( unexplored ) do
-                if not area:IsUnderwater() then
-                    self.exploredStatuses[ area:GetID() ] = false
+                if not IsValid( area ) then continue end
+                if not area:IsUnderwater() then continue end
+                self.exploredStatuses[ area:GetID() ] = false
 
-                end
             end
             self.reservedReward = 0 -- carryover reward for small bits
             self.toExploreCount = table.Count( self.exploredStatuses ) -- how many areas to explore total
