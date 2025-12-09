@@ -95,7 +95,6 @@ function ENT:Touch( toucher )
     if not IsValid( toucher ) then return end
     if not toucher:IsSolid() then return end
     if self:IsReadyToSpring() then
-
         local toucherInt = toucher
 
         local attacker = self:GetCreator()
@@ -109,11 +108,16 @@ function ENT:Touch( toucher )
         local timerObliterate = function()
             timer.Remove( timerName )
             if not IsValid( toucherInt ) then return end
+            self.bearTrapping = nil
             toucherInt.bearTrapped = nil
 
         end
 
+        local trappableToucher
+
         if toucherInt:IsPlayer() then
+            trappableToucher = true
+
             self:Hurt( toucherInt, attacker )
             self:Snap( toucherInt )
 
@@ -122,8 +126,6 @@ function ENT:Touch( toucher )
             end
 
             if self:GetPhysicsObject():IsMotionEnabled() then return end
-
-            toucherInt.bearTrapped = true
 
             timer.Create( timerName, 8, 0, function()
                 if not IsValid( toucherInt ) then timerObliterate() return end
@@ -139,6 +141,7 @@ function ENT:Touch( toucher )
 
             local hookObliterate = function()
                 hook.Remove( "SetupMove", hookName )
+                self.bearTrapping = nil
                 toucherInt.bearTrapped = nil
 
             end
@@ -165,6 +168,8 @@ function ENT:Touch( toucher )
                 end
             end )
         elseif toucherInt.isTerminatorHunterBased then
+            trappableToucher = true
+
             local dmg = DamageInfo()
             dmg:SetAttacker( attacker )
             dmg:SetInflictor( self )
@@ -217,6 +222,12 @@ function ENT:Touch( toucher )
             toucherInt:TakeDamageInfo( dmg )
 
         end
+
+        if trappableToucher then
+            self.bearTrapping = toucherInt
+            toucherInt.bearTrapped = true
+
+        end
     end
 end
 
@@ -263,11 +274,17 @@ end
 function ENT:OnTakeDamage( dmg )
     self.dmg = self.dmg + dmg:GetDamage()
     if self.dmg < 45 then return end
+
     if self:IsReadyToSpring() then
+        self.dmg = 0
         self:Snap()
 
     elseif self.dmg > 120 and dmg:IsDamageType( DMG_CLUB ) then
         self:EmitSound( "doors/vent_open1.wav", 90, 110, 1, CHAN_STATIC )
+        self:PickUp()
+
+    elseif not IsValid( self.bearTrapping ) and self.dmg > math.random( 45, 80 ) then
+        self:EmitSound( "physics/metal/metal_box_strain2.wav", 90, 110, 1, CHAN_STATIC )
         self:PickUp()
 
     end

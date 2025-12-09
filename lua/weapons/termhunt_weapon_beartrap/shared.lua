@@ -207,20 +207,26 @@ function SWEP:Place( tr )
 
     end
 
-    if self:GetBeartrapCount() > 0 then return beartrap end
+    if owner:IsPlayer() then
+        if self:GetBeartrapCount() > 0 then return beartrap end
 
-    timer.Simple( 0.5, function()
-        if not IsValid( self ) then return end
-        if not IsValid( self:GetOwner() ) then return end
-        --- AAAAAHH
-        if not self:GetOwner().SwitchToDefaultWeapon then return end
-        self:GetOwner():SwitchToDefaultWeapon()
-        if not self:GetOwner().StripWeapon then return end
-        self:GetOwner():StripWeapon( self:GetClass() )
+        timer.Simple( 0.5, function()
+            if not IsValid( self ) then return end
+            if not IsValid( self:GetOwner() ) then return end
+            --- AAAAAHH
+            if not self:GetOwner().SwitchToDefaultWeapon then return end
+            self:GetOwner():SwitchToDefaultWeapon()
+            if not self:GetOwner().StripWeapon then return end
+            self:GetOwner():StripWeapon( self:GetClass() )
 
-    end )
-    return beartrap
+        end )
+        return beartrap
 
+    else
+        SafeRemoveEntity( self )
+        return beartrap
+
+    end
 end
 
 function SWEP:SecondaryAttack()
