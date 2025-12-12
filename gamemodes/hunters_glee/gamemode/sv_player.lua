@@ -1272,9 +1272,9 @@ function GM:HasSlighted( slighter, slighted )
     -- breaks on bots!
     -- all bots have same steamid!
     local slightersSlights = allSlighted[ slighter:SteamID() ]
-    if not slightersSlights then return false end
+    if not slightersSlights then return 0 end
     local amount = slightersSlights[ slighted:SteamID() ]
-    if not amount then return false end
+    if not amount then return 0 end
 
     return amount
 
