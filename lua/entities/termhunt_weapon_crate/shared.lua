@@ -80,8 +80,8 @@ function ENT:UpdateGivenScore()
     scoreGiven = scoreGiven / maxScoreDist
     scoreGiven = ( scoreGiven * 15 )
 
-    local nookingComp = terminator_Extras.GetNookScore( myPos, 1200 ) + -2
-    nookingComp = math.Clamp( nookingComp * 20, 0, 60 )
+    local nookingComp = terminator_Extras.GetNookScore( myPos, 1200 ) + -3
+    nookingComp = math.Clamp( nookingComp * 45, 0, 100 )
 
     scoreGiven = scoreGiven + nookingComp
 

@@ -1267,14 +1267,30 @@ hook.Add( "glee_sv_validgmthink", "glee_cachenavareas", function( players )
     end
 end )
 
-function GM:HasHomicided( homicider, homicided )
-    local allHomicides = GAMEMODE.roundExtraData.homicides or {}
+function GM:HasSlighted( slighter, slighted )
+    local allSlighted = GAMEMODE.roundExtraData.hasSlighted or {}
     -- breaks on bots!
     -- all bots have same steamid!
-    local homicidersCides = allHomicides[ homicider:SteamID() ]
-    if not homicidersCides then return false end
-    if homicidersCides[ homicided:SteamID() ] then return true end
-    return false
+    local slightersSlights = allSlighted[ slighter:SteamID() ]
+    if not slightersSlights then return false end
+    local amount = slightersSlights[ slighted:SteamID() ]
+    if not amount then return false end
+
+    return amount
+
+end
+
+function GM:AddSlight( slighter, slighted, amount )
+    local slighterId = slighter:SteamID()
+
+    if not GAMEMODE.roundExtraData.hasSlighted then GAMEMODE.roundExtraData.hasSlighted = {} end
+
+    local allSlighted = GAMEMODE.roundExtraData.hasSlighted
+    local slightersSlights = allSlighted[ slighterId ] or {}
+    local oldAmount = slightersSlights[ slighted:SteamID() ] or 0
+
+    slightersSlights[ slighted:SteamID() ] = oldAmount + amount
+    GAMEMODE.roundExtraData.hasSlighted[ slighterId ] = slightersSlights
 
 end
 
@@ -1282,14 +1298,6 @@ hook.Add( "PlayerDeath", "glee_storehomicides", function( died, _, attacker )
     if not IsValid( attacker ) then return end
     if attacker == died then return end
     if not attacker:IsPlayer() then return end
-    local attackasId = attacker:SteamID()
-
-    if not GAMEMODE.roundExtraData.homicides then GAMEMODE.roundExtraData.homicides = {} end
-
-    local allHomicides = GAMEMODE.roundExtraData.homicides
-    local homicidersCides = allHomicides[ attackasId ] or {}
-    homicidersCides[ died:SteamID() ] = true
-
-    GAMEMODE.roundExtraData.homicides[ attackasId ] = homicidersCides
+    GAMEMODE:AddSlight( attacker, died, 100 )
 
 end )

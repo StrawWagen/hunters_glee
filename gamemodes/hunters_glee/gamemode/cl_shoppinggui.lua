@@ -193,7 +193,7 @@ function termHuntOpenTheShop()
         -- mess up the lerp a bit
         local nextLoad = shopFrame.nextLoad or 0
         local loadRate = shopFrame.loadRate or 0
-        local oldLoadPercent = shopFrame.oldLoadPercent
+        local oldLoadPercent = shopFrame.oldLoadPercent or 0
 
         local subtProductAbsed = math.abs( CurTime() - nextLoad ) / loadRate^1.05
         local lerpedPercent = Lerp( 1 - subtProductAbsed, oldLoadPercent, percent )
@@ -203,7 +203,7 @@ function termHuntOpenTheShop()
 
         local drawExclamationMark
 
-        if lastStrength <= 25 and ( CurTime() % 1 ) < 0.5 then
+        if lastStrength <= 25 and ( CurTime() % 1 ) < 0.5 then -- low signal!
             drawExclamationMark = true
 
         end
@@ -297,6 +297,7 @@ function termHuntOpenTheShop()
     end
 
     shopFrame.loadPercent = 0
+    shopFrame.oldLoadPercent = 0
     shopFrame.startedLoading = CurTime()
 
     function shopFrame:Think()

@@ -26,6 +26,9 @@ local beaconAngOffset = Angle( 0, -90, 0 )
 local beepInterval = 20
 local beepsPerCrate = 10
 
+local deposit = -100
+local placingCost = math.abs( deposit )
+
 ENT.placedItems = 0
 
 sound.Add( {
@@ -88,8 +91,6 @@ end
 
 ENT.HullCheckSize = Vector( 20, 20, 10 )
 ENT.PosOffset = Vector( 0, 0, 10 )
-local deposit = -75
-local placingCost = math.abs( deposit )
 
 if CLIENT then
     -- score gained on place
@@ -516,7 +517,7 @@ end )
 
 
 local MEMORY_BREAKABLE = 4
-local startGivingScoreDist = 3000
+local startGivingScoreDist = 3500
 local startGivingScoreDistSqr = startGivingScoreDist^2
 
 function ENT:UpdateGivenScore()
@@ -540,7 +541,7 @@ function ENT:UpdateGivenScore()
     scoreGiven = scoreGiven * 40 -- bring this back up to the score we want
 
     if smallestDistLinear < 1700 then
-        scoreGiven = scoreGiven * 2.5 -- leap to way higher scores
+        scoreGiven = scoreGiven * 3.5 -- leap to way higher scores
     end
 
     scoreGiven = scoreGiven + -5

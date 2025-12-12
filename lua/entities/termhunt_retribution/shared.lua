@@ -77,7 +77,7 @@ if not SERVER then return end
 function ENT:UpdateGivenScore()
     local currTarget = self:GetCurrTarget()
     if not IsValid( currTarget ) then return end
-    if GAMEMODE.HasHomicided and GAMEMODE:HasHomicided( currTarget, self.player ) then self:SetGivenScore( 0 ) return end
+    if GAMEMODE.HasSlighted and GAMEMODE:HasSlighted( currTarget, self.player ) >= 100 then self:SetGivenScore( 0 ) return end
 
     self:SetGivenScore( -200 )
 
@@ -153,7 +153,7 @@ function ENT:Place()
 
     local reason = ""
     local reasonGlobal = ""
-    if GAMEMODE:HasHomicided( dancer, self.player ) then
+    if GAMEMODE:HasSlighted( dancer, self.player ) >= 100 then
         reason = "You can't help but dance as the HOMICIDAL GLEE\nof killing " .. self.player:Nick() .. "\nflashes through your mind..."
         reasonGlobal = dancer:Nick() .. " is overcome by their Homicidal Glee."
 

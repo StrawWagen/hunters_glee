@@ -192,6 +192,10 @@ function SWEP:PrimaryAttack( firstMul )
 
                 self:SetNextPrimaryFire( CurTime() + 0.8 )
 
+                if Hit:IsPlayerHolding() then
+                    Hit:ForcePlayerDrop()
+
+                end
             end
             owner:ViewPunch( Angle( -15, 0, 0 ) * firstMul )
             self:ShoveAnim()

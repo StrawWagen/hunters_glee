@@ -518,12 +518,13 @@ hook.Add( "PostCleanupMap", "glee_resethunterspawnerstats", function()
 
 end )
 
--- how many times the hunter's max health it needs to be without an enemy before it gets removed
+-- how many seconds of the hunter's max health it needs to be without an enemy before it gets removed
 -- 0.5 ratio means, 100 hp hunter needs to be without an enemy for 50 seconds before it gets removed
 local staleRatio = 0.5
 
-local staleRatioMinHp = 100 -- dont remove npcs below this hp too fast! 
+local krangledStaleRatioMin = 100 -- dont remove krangled npcs below this hp too fast! 
 
+-- make the spawner spawn npcs closer if bots aren't finding enemies
 local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they want, remove them and march the spawn distances smaller if they're being boring
     local maxHp = hunter:GetMaxHealth()
     local noEnemyToRemove = maxHp * staleRatio -- enemies with more hp get more leeway
@@ -540,7 +541,7 @@ local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they 
 
     if krangled then
         startingCount = startingCount * 2
-        noEnemyToRemove = math.max( noEnemyToRemove, staleRatioMinHp * staleRatio ) -- floor this for weird enemies
+        noEnemyToRemove = math.max( noEnemyToRemove, krangledStaleRatioMin * staleRatio ) -- floor this for weird enemies
 
     end
     local goodHunter = hunter.isTerminatorHunterBased and not hunter.IsFodder
@@ -549,21 +550,22 @@ local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they 
 
     end
 
-    hunter.glee_FodderNoEnemyCount = startingCount
-    hunter.glee_FodderNoEnemyToRemove = noEnemyToRemove
+    hunter.glee_StaleNoEnemyCount = startingCount
+    hunter.glee_NoEnemyToRemove = noEnemyToRemove
 
     hook.Add( "glee_hunter_nearbyaply", hunter, function( me, nearestHunter ) -- so they dont delete when they're nearby a ply, eg, they bought chameleon 
         if me ~= nearestHunter then return end
-        local new = nearestHunter.glee_FodderNoEnemyCount + -1
+        local new = nearestHunter.glee_StaleNoEnemyCount + -1
         new = math.Clamp( new, 0, math.huge )
 
-        nearestHunter.glee_FodderNoEnemyCount = new
+        nearestHunter.glee_StaleNoEnemyCount = new
 
     end )
 
     local timerAdjusted
     local timerName = "glee_fodderhunter_removestale_" .. hunter:GetCreationID()
     timer.Create( timerName, math.Rand( 0.75, 1.25 ), 0, function()
+        if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
         if not IsValid( hunter ) then timer.Remove( timerName ) return end
 
         if not timerAdjusted and ( ( hunter.glee_FodderKills or 0 ) >= 1 or hunter.glee_InterestingHunter ) then -- it killed a player, it's doing its job!
@@ -574,7 +576,7 @@ local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they 
 
             end
             timer.Adjust( timerName, newInterval, 0 ) -- dont count this guy up fast at all
-            hunter.glee_FodderNoEnemyCount = startingCount -- and reset the count
+            hunter.glee_StaleNoEnemyCount = startingCount -- and reset the count
 
         end
 
@@ -586,45 +588,46 @@ local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they 
             enemy = hunter:GetTarget()
 
         end
-        local oldCount = hunter.glee_FodderNoEnemyCount
+        local oldCount = hunter.glee_StaleNoEnemyCount
 
         local seesEnemy = ( hunter.glee_SeeEnemy or 0 ) > CurTime()
         local goodEnemy = IsValid( enemy ) and enemy.isTerminatorHunterChummy ~= hunter.isTerminatorHunterChummy
 
         if seesEnemy or goodEnemy then
-            hunter.glee_FodderNoEnemyCount = math.min( 0, oldCount + -1 ) -- good enemy, snap count down and march it into the negatives
+            hunter.glee_StaleNoEnemyCount = math.min( 0, oldCount + -1 ) -- good enemy, snap count down and march it into the negatives
             return
 
         end
 
-        local itsRemovalTime = oldCount >= hunter.glee_FodderNoEnemyToRemove
+        local itsRemovalTime = oldCount >= hunter.glee_NoEnemyToRemove
 
         if itsRemovalTime then -- booring enem
             local _, spawnSet = GAMEMODE:GetSpawnSet()
-            if spawnSet then -- make the spawner spawn npcs closer if fodder hunters aren't finding enemies
+            if spawnSet then -- so boring, lets get ready to remove this bot, and maybe forgive them if we're wrong
                 local tooFarDist = spawnSet.dynamicTooFarDist
-                local bite = -hunter.glee_FodderNoEnemyToRemove
+                local noEnemyToRemoveI = hunter.glee_NoEnemyToRemove
+                local spawnDistBite = noEnemyToRemoveI * 3
 
                 debugPrint( "stale" )
 
                 local _, nearestDistSqr = GAMEMODE:nearestAlivePlayer( hunter:GetPos() )
                 local nearestDist = math.sqrt( nearestDistSqr )
                 if nearestDist > tooFarDist * 5 then -- way too far
-                    bite = bite * 6
+                    spawnDistBite = noEnemyToRemoveI * 8
                     debugPrint( "way too far" )
 
                 elseif nearestDist > tooFarDist * 2.5 then -- too far
-                    bite = bite * 3
+                    spawnDistBite = noEnemyToRemoveI * 6
                     debugPrint( "too far" )
 
                 end
-                GAMEMODE:AdjustDynamicTooCloseCutoff( bite, spawnSet )
-                GAMEMODE:AdjustDynamicTooFarCutoff( bite * 1.5, spawnSet )
+                GAMEMODE:AdjustDynamicTooCloseCutoff( spawnDistBite, spawnSet )
+                GAMEMODE:AdjustDynamicTooFarCutoff( spawnDistBite * 1.5, spawnSet )
 
-                if nearestDist < tooFarDist * 0.75 and not hunter.glee_FodderWasNearPlayerAtLeast then -- bot is close, give it a second chance, but still bite the cutoffs above
+                if nearestDist < tooFarDist * 0.5 and not hunter.glee_FodderWasNearPlayerAtLeast then -- bot is close, give it a second chance, but still bite the cutoffs above
                     debugPrint( "FORGIVE STALE", hunter )
                     hunter.glee_FodderWasNearPlayerAtLeast = true
-                    hunter.glee_FodderNoEnemyToRemove = hunter.glee_FodderNoEnemyToRemove * 2 -- still remove eventually
+                    hunter.glee_NoEnemyToRemove = hunter.glee_NoEnemyToRemove * 2 -- still remove eventually
                     return
 
                 end
@@ -635,22 +638,23 @@ local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they 
 
         end
 
-        hunter.glee_FodderNoEnemyCount = oldCount + 1 -- boring
+        hunter.glee_StaleNoEnemyCount = oldCount + 1 -- boring
 
     end )
 end
 
+-- track kills from hunters, so we can not despawn ones getting the job done.
 hook.Add( "PlayerDeath", "glee_fodderenemy_catchkrangled", function( _, inflic, attacker )
     local oldCount
     local killer
 
     if IsValid( inflic ) then
-        oldCount = inflic.glee_FodderNoEnemyCount
+        oldCount = inflic.glee_StaleNoEnemyCount
         killer = inflic
 
     end
     if not oldCount and IsValid( attacker ) then
-        oldCount = attacker.glee_FodderNoEnemyCount
+        oldCount = attacker.glee_StaleNoEnemyCount
         killer = attacker
 
     end
@@ -658,9 +662,10 @@ hook.Add( "PlayerDeath", "glee_fodderenemy_catchkrangled", function( _, inflic, 
     if not oldCount then return end
 
     killer.glee_FodderKills = ( killer.glee_FodderKills or 0 ) + 1
-    killer.glee_FodderNoEnemyCount = math.min( -30, oldCount + -30 )
+    killer.glee_StaleNoEnemyCount = math.min( -30, oldCount + -30 )
 
 end )
+
 
 function GM:SpawnHunter( class, currSpawn )
     local spawnPos, valid = self:getValidHunterPos()
@@ -765,7 +770,12 @@ function GM:getValidHunterPos()
             local pos1 = pos + maxs
             local pos2 = pos - maxs
             areas = navmesh.FindInBox( pos1, pos2 )
+            if #areas > 5000 then
+                local bite = -( #areas / 100 )
+                GAMEMODE:AdjustDynamicTooCloseCutoff( bite, spawnSet ) -- prob laggy, shrink it!
+                GAMEMODE:AdjustDynamicTooFarCutoff( bite * 0.75, spawnSet )
 
+            end
         end
     end
     if not areas or #areas <= 0 then

@@ -175,21 +175,22 @@ function ENT:GetFurthestTerminator()
     local wasOneWithGoodHealth
 
     for _, thing in ipairs( ents.GetAll() ) do
-        if thing.TerminatorNextBot then
-            local distance = thing:GetPos():DistToSqr( myPos )
-            local hasGoodHealth = thing:GetMaxHealth() >= terminator_Extras.healthDefault
+        if not thing.TerminatorNextBot then continue end
+        if thing:Health() <= 0 then continue end -- dead but still valid!
 
-            local better = distance > furthestDistance
-            if wasOneWithGoodHealth and not hasGoodHealth then -- invert STRONG enemies PLS
-                better = false
+        local distance = thing:GetPos():DistToSqr( myPos )
+        local hasGoodHealth = thing:GetMaxHealth() >= terminator_Extras.healthDefault
 
-            end
-            if better then
-                furthestTerminator = thing
-                furthestDistance = distance
-                wasOneWithGoodHealth = hasGoodHealth
+        local better = distance > furthestDistance
+        if wasOneWithGoodHealth and not hasGoodHealth then -- invert STRONG enemies PLS
+            better = false
 
-            end
+        end
+        if better then
+            furthestTerminator = thing
+            furthestDistance = distance
+            wasOneWithGoodHealth = hasGoodHealth
+
         end
     end
 

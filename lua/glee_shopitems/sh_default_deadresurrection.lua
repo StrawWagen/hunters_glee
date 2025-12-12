@@ -20,8 +20,8 @@ local function divineInterventionPos( purchaser, spawnUnsafe, radAdd )
 
         if not spawnUnsafe then
             -- dont spawn them next to someone who they killed or they will kill.
-            local isChosen = chosenResurrectAnchor:HasStatusEffect( "divine_chosen" )
-            if isChosen or GAMEMODE:HasHomicided( purchaser, chosenResurrectAnchor ) or GAMEMODE:HasHomicided( chosenResurrectAnchor, purchaser ) then
+            local isChosen = chosenResurrectAnchor:HasStatusEffect( "divine_chosen" ) 
+            if isChosen or GAMEMODE:HasSlighted( purchaser, chosenResurrectAnchor ) >= 50 or GAMEMODE:HasSlighted( chosenResurrectAnchor, purchaser ) >= 50 then
                 continue
 
             end
@@ -550,6 +550,8 @@ if SERVER then
 
                         GAMEMODE.roundExtraData.divineChosenSpent[ potentialChosen:GetCreationID() ] = true
                         potentialChosen:RemoveStatusEffect( "divine_chosen" )
+
+                        huntersGlee_Announce( player.GetAll(), 500, 15, string.upper( potentialChosen:Nick() ) .. " has FAILED their divine task..." )
 
                         timer.Simple( 0.1, function()
                             if not IsValid( potentialChosen ) then return end

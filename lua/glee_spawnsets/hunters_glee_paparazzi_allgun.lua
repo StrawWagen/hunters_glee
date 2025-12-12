@@ -52,62 +52,62 @@ local set = {
         {
             hardRandomChance = nil,
             name = "paparazzi_pistol", -- unique name
-            prettyName = "A Paparazzi With A Pistol",
+            prettyName = "A Pistoling Paparazzi",
             class = "terminator_nextbot_fakeply", -- class spawned
             spawnType = "hunter",
-            difficultyCost = 1.5, -- reduced from 2 to make more common
+            difficultyCost = { 1, 3 }, -- reduced from 2 to make more common
             countClass = "terminator_nextbot_fakeply", -- class COUNTED, uses findbyclass
             preSpawnedFuncs =  { givePistol },
         },
         {
             hardRandomChance = nil,
             name = "paparazzi_smg", -- unique name
-            prettyName = "A Paparazzi With A Smg",
+            prettyName = "A Submachinegunning Paparazzi",
             class = "terminator_nextbot_fakeply", -- class spawned
             spawnType = "hunter",
-            difficultyCost = 3, -- reduced from 4 to make more common
+            difficultyCost = { 2, 4 },
             countClass = "terminator_nextbot_fakeply", -- class COUNTED, uses findbyclass
             preSpawnedFuncs =  { giveSMG },
         },
         {
             hardRandomChance = nil,
-            name = "paparazzi_357", -- unique name
-            prettyName = "A Paparazzi With A Revolver",
-            class = "terminator_nextbot_fakeply", -- class spawned
-            spawnType = "hunter",
-            difficultyCost = 5.5,
-            countClass = "terminator_nextbot_fakeply", -- class COUNTED, uses findbyclass
-            preSpawnedFuncs =  { give357 },
-        },
-        {
-            hardRandomChance = nil,
             name = "paparazzi_ar2", -- unique name
-            prettyName = "A Paparazzi With A Ar2",
+            prettyName = "An Ar2'ing Paparazzi",
             class = "terminator_nextbot_fakeply", -- class spawned
             spawnType = "hunter",
-            difficultyCost = 4.5, -- reduced from 6 to make more common
+            difficultyCost = { 4, 10 },
             countClass = "terminator_nextbot_fakeply", -- class COUNTED, uses findbyclass
             preSpawnedFuncs =  { giveAR2 },
         },
         {
-            hardRandomChance = 0.35, -- 35% chance to spawn when budget allows
-            name = "paparazzi_xbow", -- unique name
-            prettyName = "A Paparazzi With A Crossbow",
+            hardRandomChance = nil,
+            name = "paparazzi_357", -- unique name
+            prettyName = "A Revolver-Wielding Paparazzi",
             class = "terminator_nextbot_fakeply", -- class spawned
             spawnType = "hunter",
-            difficultyCost = 12, -- increased to spawn later
+            difficultyCost = { 6, 12 },
             countClass = "terminator_nextbot_fakeply", -- class COUNTED, uses findbyclass
-            preSpawnedFuncs =  { giveXBOW },
+            preSpawnedFuncs =  { give357 },
         },
         {
             hardRandomChance = 0.15, -- only 15% chance to spawn when budget allows
             name = "paparazzi_rpg", -- unique name
-            prettyName = "A Paparazzi With A RPG",
+            prettyName = "A Rocket Propelled Paparazzi",
             class = "terminator_nextbot_fakeply", -- class spawned
             spawnType = "hunter",
-            difficultyCost = 20, -- doubled from 10 to spawn much later
+            difficultyCost = { 25, 75 }, -- doubled from 10 to spawn much later
             countClass = "terminator_nextbot_fakeply", -- class COUNTED, uses findbyclass
             preSpawnedFuncs =  { giveRPG },
+        },
+        {
+            hardRandomChance = 0.35, -- 35% chance to spawn when budget allows
+            name = "paparazzi_xbow", -- unique name
+            prettyName = "A Bolti'n Paparazzi",
+            class = "terminator_nextbot_fakeply", -- class spawned
+            spawnType = "hunter",
+            difficultyCost = { 50, 150 },
+            countClass = "terminator_nextbot_fakeply", -- class COUNTED, uses findbyclass
+            preSpawnedFuncs =  { giveXBOW },
         },
     }
 }

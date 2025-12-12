@@ -79,9 +79,9 @@ function ENT:UpdateGivenScore()
 
     local scoreGiven = math.Clamp( distToClosestPlyLinear, 0, maxScoreDist )
     scoreGiven = scoreGiven / maxScoreDist
-    scoreGiven = ( scoreGiven * 5 )
+    scoreGiven = ( scoreGiven * 9 )
 
-    scoreGiven = scoreGiven + ( terminator_Extras.GetNookScore( myPos ) - 1.5 ) * 7
+    scoreGiven = scoreGiven + ( terminator_Extras.GetNookScore( myPos ) - 2 ) * 9
 
     scoreGiven = scoreGiven + -punishmentGiven
     scoreGiven = math.Clamp( scoreGiven, -math.huge, 30 )

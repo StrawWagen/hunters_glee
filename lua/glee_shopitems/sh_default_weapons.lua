@@ -256,7 +256,7 @@ local items = {
     },
     [ "flaregun" ] = {
         name = "Flaregun",
-        desc = "Flaregun.\n+ 4 flares.",
+        desc = "Flaregun.\n+ 6 flares.",
         shCost = 45,
         markup = 1.25,
         markupPerPurchase = 0.15,
@@ -274,8 +274,8 @@ local items = {
                 class = "termhunt_aeromatix_flare_gun",
                 confirmSoundWeight = 2,
                 ammoType = "GLEE_FLAREGUN_PLAYER",
-                purchaseClips = 0,
-                resupplyClips = 4,
+                purchaseClips = 2,
+                resupplyClips = 6,
 
             } )
         end,

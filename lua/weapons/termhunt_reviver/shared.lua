@@ -200,7 +200,7 @@ function SWEP:ResurrectPly( ply )
     if owner.GivePlayerScore then
         local reward = 300
         -- dont give as much score if owner killed who they reviving
-        if GAMEMODE:HasHomicided( owner, ply ) then
+        if GAMEMODE:HasSlighted( owner, ply ) >= 50 then
             reward = 150
             if not owner.glee_HomicideReviveHint then
                 owner.glee_HomicideReviveHint = true
