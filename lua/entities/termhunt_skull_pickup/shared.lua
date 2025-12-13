@@ -169,7 +169,7 @@ function ENT:DoScore( reciever )
                 huntersGlee_Announce( { reciever }, 10, 10, "You found a metal skull.\nMust have been quite a fight to bring one of those down..." )
 
             else
-                huntersGlee_Announce( { reciever }, 10, 10, "It's skull...\nSolid metal." )
+                huntersGlee_Announce( { reciever }, 10, 10, "Its skull...\nSolid metal." )
 
             end
         end
@@ -191,7 +191,7 @@ function ENT:DoScore( reciever )
             GAMEMODE:GivePanic( purchaser, 60 )
 
         else
-            huntersGlee_Announce( { reciever }, 10, 10, "That's it's skull..." )
+            huntersGlee_Announce( { reciever }, 10, 10, "That's its skull..." )
             GAMEMODE:GivePanic( purchaser, 50 )
 
         end
