@@ -212,6 +212,7 @@ end
 
 function SWEP:ShootBullet( damage, numBullets, aimcone )
     local ply = self:GetOwner()
+    if not IsValid( ply ) then return end
 
     local bullet = {}
     bullet.Num = numBullets

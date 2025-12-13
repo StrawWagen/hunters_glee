@@ -350,7 +350,7 @@ if SERVER then
                 owner:EmitSound( "ambient/machines/thumper_hit.wav", 150, 40, 0.5 )
 
                 -- slow down time! 
-                game.SetTimeScale( 0.2 )
+                game.SetTimeScale( 0.1 )
 
                 -- even weak bots get to throw strong crowbars for this
                 attacker.gleeWitness_OldThrowingForceMul = attacker.ThrowingForceMul
@@ -390,6 +390,11 @@ if SERVER then
                     end )
 
                     owner:EmitSound( "weapons/fx/nearmiss/bulletltor07.wav", 150, 80, 0.3 )
+
+                end )
+
+                timer.Simple( 0.5, function()
+                    game.SetTimeScale( 0.3 )
 
                 end )
 
