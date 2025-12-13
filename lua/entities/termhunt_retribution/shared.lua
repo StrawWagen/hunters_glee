@@ -64,6 +64,7 @@ end
 function ENT:CalculateCanPlace()
     local currTarget = self:GetCurrTarget()
     if not IsValid( currTarget ) then return false, "You have to find a vessel for Homicidal Glee." end
+    if currTarget:HasStatusEffect( "divine_chosen" ) then return false, "They're already as gleefully homicidal as one can be..." end
     if self:GetDanceSeq() < 0 then return false, "They're too boring to dance." end -- lol if this happens
     if currTarget:IsPlayingTaunt2() then return false, "They're already dancing!" end
     if self.player.glee_nextHomicidalGleePlace and self.player.glee_nextHomicidalGleePlace > CurTime() then return false, "Wait. It's too soon for you to surface one's Homicidal Glee." end
