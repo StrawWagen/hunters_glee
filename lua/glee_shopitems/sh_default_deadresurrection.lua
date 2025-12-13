@@ -20,7 +20,7 @@ local function divineInterventionPos( purchaser, spawnUnsafe, radAdd )
 
         if not spawnUnsafe then
             -- dont spawn them next to someone who they killed or they will kill.
-            local isChosen = chosenResurrectAnchor:HasStatusEffect( "divine_chosen" ) 
+            local isChosen = chosenResurrectAnchor:HasStatusEffect( "divine_chosen" )
             if isChosen or GAMEMODE:HasSlighted( purchaser, chosenResurrectAnchor ) >= 50 or GAMEMODE:HasSlighted( chosenResurrectAnchor, purchaser ) >= 50 then
                 continue
 

@@ -200,7 +200,14 @@ function SWEP:ResurrectPly( ply )
     if owner.GivePlayerScore then
         local reward = 300
         -- dont give as much score if owner killed who they reviving
-        if GAMEMODE:HasSlighted( owner, ply ) >= 50 then
+        if ply:HasStatusEffect( "infernalintervention_rawendofthedeal" ) then
+            reward = 150
+            if not owner.glee_InfernalReviveHint then
+                owner.glee_InfernalReviveHint = true
+                huntersGlee_Announce( { owner }, 5, 6, "Half score, since they side with the infernal powers..." )
+
+            end
+        elseif GAMEMODE:HasSlighted( owner, ply ) >= 50 then
             reward = 150
             if not owner.glee_HomicideReviveHint then
                 owner.glee_HomicideReviveHint = true
