@@ -32,14 +32,15 @@ function GM:GetBotScaryness( ply, bot ) -- AAH
     end
 
     local velLeng = bot:GetVelocity():Length()
-    local scaryNum = bot:GetMaxHealth() + ( velLeng / 2 ) -- fast things are scary!
+    local hp = math.max( bot:Health(), bot:GetMaxHealth() ) -- some npcs have health set but not maxhealth set...
+    local scaryNum = hp + ( velLeng / 2 ) -- fast things are scary!
 
     local scaryness = scaryNum / healthDefault
 
     if scaryness > 1.25 then -- let scaryness go crazy but not too crazy
-        scaryness = scaryness - 1
+        scaryness = scaryness - 1.25
         scaryness = scaryness / 6
-        scaryness = scaryness + 1
+        scaryness = scaryness + 1.25
 
     end
 

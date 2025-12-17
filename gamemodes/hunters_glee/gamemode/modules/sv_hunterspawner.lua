@@ -50,6 +50,7 @@ local setDefaults = {
     startingSpawnCount = { 1.8, 2 },
     maxSpawnCount = 10,
     maxSpawnDist = { 4500, 6500 },
+    minSpawnDist = 500, -- if you spawn closer than this, it feels unfair
     roundEndSound = "53937_meutecee_trumpethit07.wav",
     roundStartSound = "", -- no sound for glee
     genericSpawnerRate = 1,
@@ -60,8 +61,12 @@ local spawnDefaults = {
     maxCount = -1, -- respects maxSpawnCount tho
 }
 
-local minRadius = 500 -- hardcoded num, if you spawn closer than this, it feels unfair
-local softMinRadius = 1000 -- slow down the marching if less than this dist
+local spawnIgnored = { -- these don't exist to be parsed
+    preSpawnedFunc = true,
+    postSpawnedFunc = true,
+}
+
+local hardMinSpawnDist = 500 -- absolute minimum spawn distance
 local tooFarWhoCares = 5000^2 -- dont check visibility farther than this, leads to more spawns on big maps
 
 local function asParsed( toParse, name, defaultsTbl )
@@ -192,12 +197,12 @@ function GM:ParsedSpawnSet( asRegistered )
     local spawnSet = table.Copy( asRegistered )
 
     local setParsed = {}
-    for name, _ in pairs( spawnSet ) do
+    for name, _ in pairs( spawnSet ) do -- parse all existing spawnset variables
         parse( spawnSet, name, setDefaults, spawnSet )
         setParsed[name] = true
 
     end
-    for name, _ in pairs( setDefaults ) do -- get the nil defaults
+    for name, _ in pairs( setDefaults ) do -- setup the nil defaults that weren't set
         if setParsed[name] then continue end
         parse( spawnSet, name, setDefaults, spawnSet )
 
@@ -205,13 +210,14 @@ function GM:ParsedSpawnSet( asRegistered )
 
     for _, currSpawn in ipairs( spawnSet.spawns ) do
         local spawnParsed = {}
-        for name, _ in pairs( currSpawn ) do
+        for name, _ in pairs( currSpawn ) do -- parse all existing spawnset variables
             parse( currSpawn, name, spawnDefaults, spawnSet )
             spawnParsed[name] = true
 
         end
         for name, _ in pairs( spawnDefaults ) do -- get the nil defaults
             if spawnParsed[name] then continue end
+            if spawnIgnored[name] then continue end
             parse( currSpawn, name, spawnDefaults, spawnSet )
 
         end
@@ -219,6 +225,7 @@ function GM:ParsedSpawnSet( asRegistered )
 
     spawnSet.dynamicTooCloseDist = spawnSet.maxSpawnDist * 0.5
     spawnSet.dynamicTooFarDist = spawnSet.maxSpawnDist
+    spawnSet.softMinRadius = spawnSet.minSpawnDist + 500
 
     return spawnSet
 
@@ -709,12 +716,26 @@ function GM:AdjustDynamicTooCloseCutoff( adjust, spawnSet )
     end
     local old = spawnSet.dynamicTooCloseDist
     local new = old + adjust
-    if new < old and new < softMinRadius then -- slow down when we're below the soft radius
+    if new < old and new < spawnSet.softMinRadius then -- slow down when we're below the soft radius
         new = old + ( adjust / 4 )
 
     end
-    local min = minRadius
+
+    local min
     local max = spawnSet.maxSpawnDist
+
+    local minSpawnDist = spawnSet.minSpawnDist
+    if minSpawnDist <= hardMinSpawnDist then -- this will work fine on tiny maps
+        min = minSpawnDist
+
+    else -- wont work fine, just slow it down once when below minSpawnDist, otherwise bots wont spawn on tiny maps
+        if new < old and new < minSpawnDist then
+            new = old + ( adjust / 25 )
+
+        end
+        min = hardMinSpawnDist -- maps below this size are not supported
+    end
+
     spawnSet.dynamicTooCloseDist = math.Clamp( new, min, max )
 
 end
@@ -726,7 +747,7 @@ function GM:AdjustDynamicTooFarCutoff( adjust, spawnSet )
     end
     local old = spawnSet.dynamicTooFarDist + adjust
     local new = old + adjust
-    if new < old and new < softMinRadius then -- slow down when we're below the soft radius
+    if new < old and new < spawnSet.softMinRadius then -- slow down when we're below the soft radius
         new = old + ( adjust / 4 )
 
     end
