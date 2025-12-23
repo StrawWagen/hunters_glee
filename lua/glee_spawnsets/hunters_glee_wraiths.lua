@@ -1,5 +1,5 @@
 
-local  terminatorSpawnSet = {
+local terminatorSpawnSet = {
     name = "hunters_glee_wraiths", -- unique name
     prettyName = "Terminator Wraiths",
     description = "Tons of cloaking terminators, are you up for a real challenge?",

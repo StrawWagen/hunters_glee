@@ -85,6 +85,8 @@ function ENT:Place()
 
     end
 
+    targ.CoroutineThresh = math.max( terminator_Extras.baseCoroutineThresh * 2, targ.CoroutineThresh ) -- this guy gets to be really smart!
+
     GAMEMODE:setTemporaryTrueBool( "glee_playerplaced_termovercharger", 180 )
 
     huntersGlee_Announce( player.GetAll(), 80, 8, self.player:Nick() .. " has overcharged " .. GAMEMODE:GetNameOfBot( targ ) ..  "..." )
@@ -96,6 +98,8 @@ function ENT:Place()
         GAMEMODE:sendPurchaseConfirm( self.player, score )
 
     end
+
+    GAMEMODE:AddMischievousness( self.player, 5, "overcharged a hunter" )
 
     self:TellPlyToClearHighlighter()
 

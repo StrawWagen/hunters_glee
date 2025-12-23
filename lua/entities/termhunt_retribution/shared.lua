@@ -15,6 +15,11 @@ ENT.Model = "models/Items/item_item_crate.mdl"
 ENT.HullCheckSize = Vector( 20, 20, 10 )
 ENT.PosOffset = Vector( 0, 0, 10 )
 
+local function getDanceSeq( targ )
+    return targ:SelectWeightedSequence( ACT_GMOD_TAUNT_DANCE )
+
+end
+
 if CLIENT then
     function ENT:DoHudStuff()
         if not IsValid( self:GetCurrTarget() ) then return end
@@ -22,8 +27,10 @@ if CLIENT then
         local screenMiddleH = ScrH() / 2
         local scoreGained = math.Round( self:GetGivenScore() )
         local scoreString = "They've killed you before.\nTheir Homicidal Glee costs nothing to surface!"
-        if scoreGained < 0 then
+        if scoreGained < -75 then
             scoreString = "Cost: " .. tostring( scoreGained )
+        elseif scoreGained < 0 then
+            scoreString = "They've... Wronged you before.\nTheir Homicidal glee Costs... " .. tostring( scoreGained ) .. " To surface."
 
         end
 
@@ -31,12 +38,6 @@ if CLIENT then
         surface.drawShadowedTextBetter( scoreString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
 
     end
-end
-
-function ENT:GetDanceSeq( targ )
-    targ = targ or self:GetCurrTarget()
-    return targ:SelectWeightedSequence( ACT_GMOD_TAUNT_DANCE )
-
 end
 
 function ENT:GetNearestTarget()
@@ -65,7 +66,7 @@ function ENT:CalculateCanPlace()
     local currTarget = self:GetCurrTarget()
     if not IsValid( currTarget ) then return false, "You have to find a vessel for Homicidal Glee." end
     if currTarget:HasStatusEffect( "divine_chosen" ) then return false, "They're already as gleefully homicidal as one can be..." end
-    if self:GetDanceSeq() < 0 then return false, "They're too boring to dance." end -- lol if this happens
+    if getDanceSeq( currTarget ) < 0 then return false, "They're too boring to dance." end -- lol if this happens
     if currTarget:IsPlayingTaunt2() then return false, "They're already dancing!" end
     if self.player.glee_nextHomicidalGleePlace and self.player.glee_nextHomicidalGleePlace > CurTime() then return false, "Wait. It's too soon for you to surface one's Homicidal Glee." end
     if not self:HasEnoughToPurchase() then return false, self:TooPoorString() end
@@ -75,12 +76,24 @@ end
 
 if not SERVER then return end
 
+local baseCost = 200
+
 function ENT:UpdateGivenScore()
     local currTarget = self:GetCurrTarget()
     if not IsValid( currTarget ) then return end
-    if GAMEMODE.HasSlighted and GAMEMODE:HasSlighted( currTarget, self.player ) >= 100 then self:SetGivenScore( 0 ) return end
 
-    self:SetGivenScore( -200 )
+    local slightSize = 0
+    if GAMEMODE.HasSlighted then
+        slightSize = GAMEMODE:HasSlighted( currTarget, self.player )
+
+    end
+
+    local reduction = slightSize * 2
+    reduction = math.Clamp( reduction, -baseCost, baseCost )
+
+    local cost = -baseCost + reduction
+
+    self:SetGivenScore( cost )
 
 end
 
@@ -101,11 +114,33 @@ local cheers = {
 }
 
 function ENT:Place()
-    local dancer = self:GetCurrTarget()
 
+    GAMEMODE:SurfaceHomicidalGlee( self:GetCurrTarget(), self.player )
+
+    local score = self:GetGivenScore()
+
+    if self.player.GivePlayerScore and score then
+        self.player:GivePlayerScore( score )
+        GAMEMODE:sendPurchaseConfirm( self.player, score )
+
+    end
+
+    self.player.glee_nextHomicidalGleePlace = CurTime() + 15
+
+end
+
+hook.Add( "glee_slightsizeoverride", "noguilt_forkilling_dancers", function( died )
+    if not died:IsPlayingTaunt2() then return end
+    if not died.glee_evilHomicidalGlee then return end
+
+    return 25, "killed them while they were guiltily dancing"
+
+end )
+
+function GAMEMODE:SurfaceHomicidalGlee( dancer, surfacer )
     if not IsValid( dancer ) then return end
 
-    local danceSeq = self:GetDanceSeq()
+    local danceSeq = getDanceSeq( dancer )
     if danceSeq < 0 then return end
 
     if dancer:InVehicle() then
@@ -113,7 +148,7 @@ function ENT:Place()
 
     end
 
-    if not dancer:TauntDance() then return end
+    if not dancer:TauntDance() then return end -- starts the taunt
 
     dancer:EmitSound( happyLines[math.random( 1, #happyLines )], 75, math.random( 95, 105 ) )
     timer.Simple( 1, function()
@@ -125,16 +160,28 @@ function ENT:Place()
 
     timer.Create( timerName, 3, 0, function()
         -- rage quit!
-        if not IsValid( dancer ) then timer.Remove( timerName ) return end
+        if not IsValid( dancer ) then
+            timer.Remove( timerName )
+            return
+
+        end
         -- F
-        if dancer:Health() < 0 then timer.Remove( timerName ) return end
-        if not dancer:IsPlayingTaunt2() then timer.Remove( timerName ) return end
+        if dancer:Health() < 0 then
+            timer.Remove( timerName )
+            dancer.glee_evilHomicidalGlee = nil
+            return
+
+        end
+        if not dancer:IsPlayingTaunt2() then
+            dancer.glee_evilHomicidalGlee = nil
+            timer.Remove( timerName )
+            return
+
+        end
 
         dancer:EmitSound( cheers[math.random( 1, #cheers )], 75, math.random( 95, 105 ) )
 
     end )
-
-    self.player.glee_nextHomicidalGleePlace = CurTime() + 30
 
     local plysToAlert = {}
     for _, thing in ipairs( ents.FindInPVS( dancer:GetShootPos() ) ) do
@@ -144,23 +191,39 @@ function ENT:Place()
         end
     end
 
-    local score = self:GetGivenScore()
-
-    if self.player.GivePlayerScore and score then
-        self.player:GivePlayerScore( score )
-        GAMEMODE:sendPurchaseConfirm( self.player, score )
+    local validSurfacer = IsValid( surfacer )
+    local oldSlight = 0
+    if validSurfacer then
+        GAMEMODE:HasSlighted( dancer, surfacer )
 
     end
 
     local reason = ""
     local reasonGlobal = ""
-    if GAMEMODE:HasSlighted( dancer, self.player ) >= 100 then
-        reason = "You can't help but dance as the HOMICIDAL GLEE\nof killing " .. self.player:Nick() .. "\nflashes through your mind..."
-        reasonGlobal = dancer:Nick() .. " is overcome by their Homicidal Glee."
+    if validSurfacer then
+        if oldSlight >= 75 then
+            reason = "You can't help but dance as the GUILTY HOMICIDAL GLEE\nof killing " .. surfacer:Nick() .. "\nflashes through your mind..."
+            reasonGlobal = dancer:Nick() .. " is overcome by their Guilty Homicidal Glee."
+            dancer.glee_evilHomicidalGlee = true
+
+        else
+            reason = "You can't help but dance as " .. surfacer:Nick() .. "\nbrings your HOMICIDAL GLEE to the surface..."
+            reasonGlobal = dancer:Nick() .. " is overcome with Homicidal Glee."
+            dancer.glee_evilHomicidalGlee = false
+
+        end
+
+        if GAMEMODE:IsInnocent( dancer ) then
+            GAMEMODE:AddSlight( surfacer, dancer, 15, "forced to dance" )
+
+        end
+
+        GAMEMODE:AddSlight( dancer, surfacer, -25, "used homicidal glee, decay" ) -- slowly remove slight
 
     else
-        reason = "You can't help but dance as " .. self.player:Nick() .. "\nbrings your HOMICIDAL GLEE to the surface..."
-        reasonGlobal = dancer:Nick() .. " is overcome with Homicidal Glee."
+        reason = "Killing all those innocent people has left you boiling with GUILTY HOMICIDAL GLEE...\nYou can't help but let it out!"
+        reasonGlobal = dancer:Nick() .. "'s Guilty Homicidal Glee boils to the surface..."
+        dancer.glee_evilHomicidalGlee = true
 
     end
 

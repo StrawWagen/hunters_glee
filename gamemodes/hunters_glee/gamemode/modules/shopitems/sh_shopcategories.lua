@@ -62,8 +62,7 @@ function GM:CategoryCanShow( identifier, purchaser )
         for _, theCurrentShowFunc in ipairs( categoryCanShow ) do
             local noErrors, returned = xpcall( theCurrentShowFunc, errorCatchingMitt, purchaser )
             if noErrors == false then
-                GAMEMODE:invalidateShopItem( toPurchase )
-                print( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s shCanShowInShop function errored!!!!!!!!!!!" )
+                print( "GLEE: !!!!!!!!!! " .. catData.name .. "'s shCanShowInShop function errored!!!!!!!!!!!" )
                 return nil, REASON_ERROR
 
             else

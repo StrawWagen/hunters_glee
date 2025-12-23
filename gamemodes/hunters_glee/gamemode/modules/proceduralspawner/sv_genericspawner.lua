@@ -205,7 +205,7 @@ local enabled = {}
 
 hook.Add( "glee_sv_validgmthink_active", "glee_spawner_managegenericspawns", function()
     if nextCheck > CurTime() then return end
-    nextCheck = CurTime() + GAMEMODE:GenSpawnAdjusted( 5 )
+    nextCheck = CurTime() + GAMEMODE:ScaledGenericSpawnerRate( 5 )
 
     -- validate the spawned tables
     for className, entsSpawned in ipairs( created ) do

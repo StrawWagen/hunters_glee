@@ -7,7 +7,15 @@ local function giveSlam( _spawnset, npc )
         if not IsValid( npc ) then timer.Remove( timerName ) return end
         local primaryWeapon = npc:GetActiveWeapon()
 
-        if IsValid( primaryWeapon ) and primaryWeapon:GetClass() == "weapon_slam" then return end
+        if IsValid( primaryWeapon ) then
+            if primaryWeapon:GetClass() == "weapon_slam" then
+                return
+
+            else
+                primaryWeapon.terminatorCrappyWeapon = true -- dont use this again
+
+            end
+        end
         local bar = npc:Give( "weapon_slam" )
         bar.terminator_IgnoreWeaponUtility = true
 

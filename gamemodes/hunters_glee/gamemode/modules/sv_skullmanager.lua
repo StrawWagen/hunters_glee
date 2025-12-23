@@ -155,7 +155,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_addskulljobs", function()
     if nextSkullSpawnCheck > CurTime() then return end
 
     local skulls = ents.FindByClass( "termhunt_skull_pickup" )
-    if #skulls >= mapSkullCount then nextSkullSpawnCheck = CurTime() + GAMEMODE:GenSpawnAdjusted( 15 ) return end
+    if #skulls >= mapSkullCount then nextSkullSpawnCheck = CurTime() + GAMEMODE:ScaledGenericSpawnerRate( 15 ) return end
 
     local skullJob = {}
     skullJob.jobsName = "skull"
@@ -244,7 +244,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_addskulljobs", function()
     --print( "ADDED" )
     --PrintTable( skullJob )
 
-    nextSkullSpawnCheck = CurTime() + GAMEMODE:GenSpawnAdjusted( 20 )
+    nextSkullSpawnCheck = CurTime() + GAMEMODE:ScaledGenericSpawnerRate( 20 )
 
     if mapSkullCount <= 4 and navmesh.GetNavAreaCount() > 4000 then
         mapSkullCount = 8

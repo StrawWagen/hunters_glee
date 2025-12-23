@@ -239,6 +239,7 @@ end
 
 local myMaxVolume = 0.05
 
+-- follow our owner's pos/ang with some jitter based on their voice volume
 local function followPly( soul, ply, data )
     local pos = data and data.pos or ply:GetPos()
     local ang = data and data.ang or ply:GetAngles()
@@ -324,6 +325,7 @@ local function soulThink( ply )
                         local dir = data.ang:Forward()
                         pos = pos + -dir * 50
                         updateDisplayPos( ply, pos )
+                        debugoverlay.Cross( pos, 10, 0.1, Color( 255, 0, 0 ), true )
 
                     else
                         updateDisplayPos( ply, data.targ:WorldSpaceCenter() )

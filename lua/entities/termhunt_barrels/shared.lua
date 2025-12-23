@@ -192,6 +192,8 @@ function ENT:Place()
 
     end
 
+    GAMEMODE:AddMischievousness( self.player, 1, "placed a barrel" )
+
     self.placeCount = self.placeCount + -1
 
     if self.placeCount > 0 then

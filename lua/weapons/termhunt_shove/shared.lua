@@ -170,7 +170,6 @@ function SWEP:PrimaryAttack( firstMul )
     local Force = AimVector
 
     if IsValid( Hit ) then
-        hook.Run( "glee_shover_shove", Hit )
         local Phys = Hit:GetPhysicsObject()
         if Phys and IsValid( Phys ) then
             Force.z = math.Clamp( Force.z, 0.5, 1 )
@@ -182,6 +181,7 @@ function SWEP:PrimaryAttack( firstMul )
                 end
                 owner:SetVelocity( owner:GetVelocity() + -( Force * 0.25 ) * firstMul )
                 self:SetNextPrimaryFire( CurTime() + 1 )
+                Hit.glee_lastShover = owner
 
             else
                 local PlyForce = -Force * 125
@@ -204,6 +204,8 @@ function SWEP:PrimaryAttack( firstMul )
             NoHit = true
 
         end
+        hook.Run( "glee_shover_shove", Hit )
+
     elseif Hit:IsWorld() and not Trace.HitSky and owner:GetEyeTrace().HitWorld then -- check eyetrace too, make sure we dont do the 5 sec cooldown when they just barely missed an entity
         self:SetNextPrimaryFire( CurTime() + 2.2 )
         local mul = -150
@@ -239,3 +241,25 @@ function SWEP:OnDrop()
         self:Remove()
     end
 end
+
+hook.Add( "OnPlayerHitGround", "glee_shover_resetfalldamageblame", function( ply )
+    timer.Simple( 0, function()
+        if not IsValid( ply ) then return end
+        ply.glee_lastShover = nil
+
+    end )
+end )
+
+
+hook.Add( "EntityTakeDamage", "glee_shover_blamefalldamage", function( target, dmg )
+    local shover = target.glee_lastShover
+    if not IsValid( shover ) then return end
+    if not dmg:IsFallDamage() then return end
+
+    dmg:SetAttacker( shover )
+    local shoveSwep = shover:GetWeapon( "termhunt_shove" )
+    if IsValid( shoveSwep ) then
+        dmg:SetInflictor( shoveSwep )
+
+    end
+end )

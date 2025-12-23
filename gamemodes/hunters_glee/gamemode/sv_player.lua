@@ -950,13 +950,20 @@ function GM:SpectateOverrides( ply, mode, deadPlayers )
     end
 
     local pos = ply:GetPos()
+    local ang = ply:GetAimVector():Angle()
+
+    local observing = ply:GetObserverTarget()
+    if IsValid( observing ) then
+        ang = observing:LocalToWorldAngles( ang )
+
+    end
 
     net.Start( "glee_sendtruesoullocations", true )
         net.WriteEntity( ply )
         net.WriteVector( pos )
-        net.WriteAngle( ply:EyeAngles() )
+        net.WriteAngle( ang )
         net.WriteInt( mode, 6 )
-        net.WriteEntity( ply:GetObserverTarget() )
+        net.WriteEntity( observing )
     net.Send( deadPlayers )
 
 end
@@ -1222,6 +1229,8 @@ hook.Add( "WeaponEquip", "glee_fixignitedweapons", function( wep, ply )
 end )
 
 hook.Add( "EntityTakeDamage", "huntersglee_makepvpreallybad", function( dmgTarg, dmg )
+    if dmg:IsFallDamage() then return end -- shoving doesnt get scaled
+
     local attacker = dmg:GetAttacker()
     local inflictor = dmg:GetInflictor()
     local areBothPlayers = dmgTarg:IsPlayer() and attacker:IsPlayer()
@@ -1265,39 +1274,4 @@ hook.Add( "glee_sv_validgmthink", "glee_cachenavareas", function( players )
 
         end
     end
-end )
-
-function GM:HasSlighted( slighter, slighted )
-    local allSlighted = GAMEMODE.roundExtraData.hasSlighted or {}
-    -- breaks on bots!
-    -- all bots have same steamid!
-    local slightersSlights = allSlighted[ slighter:SteamID() ]
-    if not slightersSlights then return 0 end
-    local amount = slightersSlights[ slighted:SteamID() ]
-    if not amount then return 0 end
-
-    return amount
-
-end
-
-function GM:AddSlight( slighter, slighted, amount )
-    local slighterId = slighter:SteamID()
-
-    if not GAMEMODE.roundExtraData.hasSlighted then GAMEMODE.roundExtraData.hasSlighted = {} end
-
-    local allSlighted = GAMEMODE.roundExtraData.hasSlighted
-    local slightersSlights = allSlighted[ slighterId ] or {}
-    local oldAmount = slightersSlights[ slighted:SteamID() ] or 0
-
-    slightersSlights[ slighted:SteamID() ] = oldAmount + amount
-    GAMEMODE.roundExtraData.hasSlighted[ slighterId ] = slightersSlights
-
-end
-
-hook.Add( "PlayerDeath", "glee_storehomicides", function( died, _, attacker )
-    if not IsValid( attacker ) then return end
-    if attacker == died then return end
-    if not attacker:IsPlayer() then return end
-    GAMEMODE:AddSlight( attacker, died, 100 )
-
 end )

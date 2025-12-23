@@ -97,18 +97,21 @@ function ENT:UpdateGivenScore()
 end
 
 function ENT:Place()
-    local betrayalScore = self:GetGivenScore()
     local beartrap = GAMEMODE:SpawnABearTrap( self:GetPos() )
 
     beartrap:SetCreator( owner )
     beartrap.undeadbeartrap_placer = self.player
     beartrap:EmitSound( "items/ammocrate_open.wav", 75, 100 )
 
+    local betrayalScore = self:GetGivenScore()
+
     if self.player and self.player.GivePlayerScore and betrayalScore then
         self.player:GivePlayerScore( betrayalScore )
         GAMEMODE:sendPurchaseConfirm( self.player, betrayalScore )
 
     end
+
+    GAMEMODE:AddMischievousness( self.player, 2, "placed a beartrap while dead" )
 
     SafeRemoveEntity( self )
 

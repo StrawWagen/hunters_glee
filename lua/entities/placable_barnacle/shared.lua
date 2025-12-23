@@ -260,6 +260,8 @@ function ENT:Place()
 
     end
 
+    GAMEMODE:AddMischievousness( self.player, 1, "placed a barnacle" )
+
     SafeRemoveEntity( self )
 
 end

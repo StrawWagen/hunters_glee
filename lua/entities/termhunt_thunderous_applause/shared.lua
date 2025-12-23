@@ -194,14 +194,6 @@ function ENT:Place()
     local underSky, strikePos = GAMEMODE:IsUnderSky( self:GetPos() )
     if not underSky then return end
 
-    local betrayalScore = self:GetGivenScore()
-
-    if self.player.GivePlayerScore and betrayalScore then
-        self.player:GivePlayerScore( betrayalScore )
-        GAMEMODE:sendPurchaseConfirm( self.player, betrayalScore )
-
-    end
-
     local divineIncrement = 0
     local timerKey = "thunderousapplause_" .. self:GetCreationID()
     local strikeRad = self.radius
@@ -314,6 +306,16 @@ function ENT:Place()
 
         end
     end )
+
+    local betrayalScore = self:GetGivenScore()
+
+    if self.player.GivePlayerScore and betrayalScore then
+        self.player:GivePlayerScore( betrayalScore )
+        GAMEMODE:sendPurchaseConfirm( self.player, betrayalScore )
+
+    end
+
+    GAMEMODE:AddMischievousness( self.player, 10, "applauded thunderously" )
 
     self.attackerInflictor = self.player
 

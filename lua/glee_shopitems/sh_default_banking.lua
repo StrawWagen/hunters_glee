@@ -58,7 +58,7 @@ local items = {
             local descTbl = {
                 "Deposit score for another time.\n",
                 "The bank has a 10% procesing fee when depositing.\n",
-                "Idle fees of \"" .. periodCharge .. "\"% of your entire balance, ",
+                "Idle FEES! of \"" .. periodCharge .. "\"% of your entire balance, ",
                 "will apply every \"" .. chargePeriodDays .. "\" real-time " .. days,
 
             }

@@ -28,12 +28,12 @@ function meta:GetSignalStrength( area )
     local staticFinal = 0
     if not GAMEMODE.highestAreaZ then -- edge case
         signalFinal = 45
-        staticFinal = ( area:GetID() % 30 ) + 20
+        staticFinal = ( area:GetID() % 30 ) + 30
 
     elseif not GAMEMODE.isSkyOnMap then -- no sky anywhere, more score higher up
         local distToHighest = GAMEMODE.highestAreaZ - pos.z
-        signalFinal =  25 - ( distToHighest / 1000 )
-        staticFinal = ( area:GetID() % 30 ) + 20
+        signalFinal = 50 - ( distToHighest / 400 )
+        staticFinal = ( area:GetID() % 30 ) + 30
 
     elseif not GAMEMODE.areasUnderSky[ area ] then -- not under sky, check neighbors
         local neighborCount = 0

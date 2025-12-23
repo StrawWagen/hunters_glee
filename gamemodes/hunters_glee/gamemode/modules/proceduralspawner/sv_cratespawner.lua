@@ -43,7 +43,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_addcratejobs", function()
     end
 
     crates = ents.FindByClass( "item_item_crate" )
-    if #crates > 30 then nextCrateSpawn = CurTime() + GAMEMODE:GenSpawnAdjusted( 10 ) return end
+    if #crates > 30 then nextCrateSpawn = CurTime() + GAMEMODE:ScaledGenericSpawnerRate( 10 ) return end
 
     local alivePlayer = GAMEMODE:anAlivePlayer()
     if not IsValid( alivePlayer ) then return end
@@ -180,7 +180,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_addcratejobs", function()
     --print( "ADDED" )
     --PrintTable( crateJob )
 
-    nextCrateSpawn = CurTime() + GAMEMODE:GenSpawnAdjusted( time )
+    nextCrateSpawn = CurTime() + GAMEMODE:ScaledGenericSpawnerRate( time )
 
 end )
 

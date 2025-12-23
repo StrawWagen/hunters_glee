@@ -154,6 +154,8 @@ function ENT:Place()
     LockDoorAndRunAFunctionWhenTheDoorIsUsed( door, self.player, DoorOnUsedInitial )
     door:EmitSound( "doors/door_locked2.wav", 80 )
 
+    GAMEMODE:AddMischievousness( self.player, 1, "locked a door" )
+
     self:TellPlyToClearHighlighter()
 
     SafeRemoveEntity( self )

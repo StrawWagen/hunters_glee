@@ -652,6 +652,8 @@ function ENT:Place()
         end
     end
 
+    GAMEMODE:AddMischievousness( self.player, 0.5, "placed beaconed supplies" )
+
     SafeRemoveEntity( self )
 
 end

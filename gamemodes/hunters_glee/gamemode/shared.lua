@@ -58,24 +58,6 @@ function GM:SharedSetup()
 
 end
 
-function GM:PutInnateInProperCleanup( timerName, additionalFunc, funcTarget )
-    GAMEMODE.TimersToCleanup = GAMEMODE.TimersToCleanup or {}
-
-    local tbl = { name = timerName, func = additionalFunc, targ = funcTarget }
-
-    table.insert( GAMEMODE.TimersToCleanup, tbl )
-
-end
-
-function GM:RunFunctionOnProperCleanup( theFunc, funcTarget )
-    GAMEMODE.TimersToCleanup = GAMEMODE.TimersToCleanup or {}
-
-    local tbl = { func = theFunc, targ = funcTarget }
-
-    table.insert( GAMEMODE.TimersToCleanup, tbl )
-
-end
-
 local function catch( err )
     print( "FUNCTION ERRORED WHEN CLEANUPTIMERS RAN!" )
     ErrorNoHaltWithStack( err )

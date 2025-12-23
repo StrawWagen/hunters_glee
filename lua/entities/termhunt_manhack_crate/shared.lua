@@ -170,6 +170,9 @@ function ENT:Place()
         GAMEMODE:sendPurchaseConfirm( self.player, betrayalScore )
 
     end
+
+    GAMEMODE:AddMischievousness( self.player, 3, "placed a manhacked supplies" )
+
     SafeRemoveEntity( self )
 
 end

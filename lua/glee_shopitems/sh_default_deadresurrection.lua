@@ -287,9 +287,6 @@ local function infernalIntervention( purchaser )
         purchaser:Resurrect()
 
     end )
-
-    GAMEMODE:PutInnateInProperCleanup( nil, breakTheDeal, purchaser )
-
 end
 
 

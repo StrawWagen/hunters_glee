@@ -136,6 +136,8 @@ local function checkFlashlightBrightness( ply )
         end
         ply:SetFlashlightBrightness( noBatteryBright + math.random( -15, 10 ) )
         timer.Simple( math.Rand( 0.05, 0.25 ), function()
+            if not IsValid( ply ) then return end
+            if ply:GetBatteryCharge() > 0 then return end
             ply:SetFlashlightBrightness( noBatteryBright + math.random( -2, 2 ) )
 
         end )

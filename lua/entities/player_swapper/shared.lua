@@ -395,6 +395,8 @@ function ENT:Place()
 
     end
 
+    GAMEMODE:AddMischievousness( self.player, 5, "temporally inverted someone" )
+
     self:TellPlyToClearHighlighter()
 
     self.player.placableTargeted = nil
