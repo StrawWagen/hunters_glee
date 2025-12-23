@@ -455,7 +455,7 @@ function termHuntOpenTheShop()
 
         -- the scrollable things that hold shop items and have names like innate and undead
         for category, catData in SortedPairsByMemberValue( categories, "order", false ) do
-            if catData.shCanShowInShop and not catData.shCanShowInShop( ply ) then shopCategoriesBlocked[ category ] = true continue end
+            if not GAMEMODE:CategoryCanShow( category, ply ) then shopCategoriesBlocked[ category ] = true continue end
 
             local horisScroller = vgui.Create( "DHorizontalScroller", ply.MAINSCROLLPANEL, shopCategoryName( category ) )
 
