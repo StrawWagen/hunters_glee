@@ -6,7 +6,7 @@ It's you (and your friends?) versus a variety of relentless enemies. Get close t
 
 But here's the twist: **the fun really begins when you die**. As a ghost, you unlock a whole new shop selection. Lock doors, place traps for your friends, or build a tempting supply room rigged with explosive barrels!
 
-> 🎮 [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=2848253104) · 📋 [Issue Tracker](https://strawwagen1.atlassian.net/jira/software/projects/GLEE/boards/1)
+> 🎮 [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=2848253104)
 
 ---
 
