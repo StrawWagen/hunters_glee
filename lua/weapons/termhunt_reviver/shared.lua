@@ -232,6 +232,9 @@ function SWEP:ResurrectPly( ply )
         reward = math.Clamp( reward + -rewardBite, 0, 300 )
         owner:GivePlayerScore( reward )
 
+        -- this forgiveness cant be too high, because we dont know HOW the player died
+        GAMEMODE:AddMischievousness( owner, -1, "revived a player" )
+
         ply.glee_resurrectDecreasingScore = math.max( CurTime() + 60, ply.glee_resurrectDecreasingScore + 60 )
 
     end
