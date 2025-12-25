@@ -193,7 +193,7 @@ hook.Add( "PlayerDeath", "glee_storeslights", function( died, _, attacker )
 
     -- let them build up, do multiple dances in a row if they kill like 10 people in 1 second
     local timerName = "glee_autohomicidalglee_waiter" .. attacker:GetCreationID() .. currentEvilnessToSurface
-    timer.Create( timerName, math.Rand( 5, 10 ), 0, function()
+    timer.Create( timerName, math.Rand( 2, 6 ), 0, function()
         if not IsValid( attacker ) then timer.Remove( timerName ) return end
         if attacker:Health() <= 0 then timer.Remove( timerName ) return end
 
