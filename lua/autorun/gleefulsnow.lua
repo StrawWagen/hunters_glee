@@ -4,10 +4,10 @@ if SERVER then return end
 
 if engine.ActiveGamemode() != "hunters_glee" then return end
 
-local snowEnabled = CreateClientConVar("snowflakes_enabled", "1", true, false)
-local emitter = ParticleEmitter(Vector(), false)
-
+local snowEnabled = CreateClientConVar( "snowflakes_enabled", "1", true, false )
+local emitter = ParticleEmitter( Vector(), false )
 local spawned = false
+
 local windSounds = {
     "ambient/wind/wind_gust_10.wav",
     "ambient/wind/smallgust2.wav",
