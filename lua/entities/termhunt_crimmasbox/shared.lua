@@ -2,37 +2,29 @@ AddCSLuaFile()
 
 ENT.Type = "anim"
 ENT.Base = "base_gmodentity"
-ENT.PrintName = "Box"
+ENT.PrintName = "Giftbox"
 ENT.Category = "Hunter's Glee"
 ENT.Author = "Boomertaters"
 ENT.Spawnable = true
 ENT.AdminOnly = false
 
-local models = {
-    "models/props_junk/cardboard_box001a.mdl",
-    "models/props_junk/cardboard_box001b.mdl",
-    "models/props_junk/cardboard_box002a.mdl",
-    "models/props_junk/cardboard_box002b.mdl",
-    "models/props_junk/cardboard_box003a.mdl",
-    "models/props_junk/cardboard_box003b.mdl"
-}
-
 
 function ENT:Initialize()
     if CLIENT then return end
 
-    self:SetModel( table.Random( models ) )
+    self:SetModel( "models/cstrike/models/models_kit/xmas/giftbox_mini_quad.mdl" )
+    self:SetSkin( math.random( 0, 3 ) )
     self:PhysicsInit( SOLID_VPHYSICS )
     self:SetMoveType( MOVETYPE_VPHYSICS )
     self:SetSolid( SOLID_VPHYSICS )
     self:SetUseType( CONTINUOUS_USE )
-    self:PrecacheGibs()
 
     local phys = self:GetPhysicsObject()
     if IsValid( phys ) then
         phys:Wake()
     end
 end
+
 
 function ENT:Use( user )
     if CLIENT then return end
@@ -84,7 +76,6 @@ function ENT:OpenBox()
         end
     end
 
-    self:GibBreakServer( Vector( 0, 0, 1000 ) )
     self:Remove()
 end
 

@@ -2,7 +2,7 @@ AddCSLuaFile()
 
 ENT.Type = "anim"
 ENT.Base = "base_gmodentity"
-ENT.PrintName = "Tree"
+ENT.PrintName = "Christmas Tree"
 ENT.Category = "Hunter's Glee"
 ENT.Author = "Boomertaters"
 ENT.Spawnable = true
@@ -12,7 +12,7 @@ ENT.AdminOnly = false
 function ENT:Initialize()
     if CLIENT then return end
 
-    self:SetModel( "models/models_kit/xmas/xmastree.mdl" )
+    self:SetModel( "models/cstrike/models/models_kit/xmas/xmastree_mini.mdl" )
     self:PhysicsInit( SOLID_VPHYSICS )
     self:SetMoveType( MOVETYPE_NONE )
     self:SetSolid( SOLID_VPHYSICS )
@@ -38,6 +38,8 @@ function ENT:SpawnBoxes()
 
         local box = ents.Create( "termhunt_crimmasbox" )
         if not IsValid( box ) then continue end
+
+        self:DeleteOnRemove( box )
 
         box:SetPos( self:GetPos() + offset )
         box:SetAngles( Angle( 0, math.random( 360 ), 0 ) )
