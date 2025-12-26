@@ -88,11 +88,23 @@ function ENT:OpenBox()
         end
     end
 
-    self:Remove()
+    SafeRemoveEntity( self )
+
+    if not IsValid( self.ribbon ) then return end -- might happen
+    SafeRemoveEntity( self.ribbon )
+
 end
 
 
 local GAMEMODE = GAMEMODE or GM
 if not GAMEMODE.RandomlySpawnEnt then return end
 
-GAMEMODE:RandomlySpawnEnt( "termhunt_crimmasbox", math.huge, 30, 115 )
+local spawnCount = math.random( 5, 30 )
+
+-- only enabled in x % of rounds
+local enabledChance = 30
+
+-- won't spawn in areas thinner/smaller than this
+local minAreaSize = 50
+
+GAMEMODE:RandomlySpawnEnt( "termhunt_crimmasbox", spawnCount, enabledChance, minAreaSize )

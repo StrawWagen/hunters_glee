@@ -12,7 +12,7 @@ ENT.AdminOnly = false
 function ENT:Initialize()
     if CLIENT then return end
 
-    self:SetModel( "models/models_kit/xmas/xmastree_mini.mdl" )
+    self:SetModel( "models/cstrike/models/models_kit/xmas/xmastree_mini.mdl" )
     self:PhysicsInit( SOLID_VPHYSICS )
     self:SetMoveType( MOVETYPE_NONE )
     self:SetSolid( SOLID_VPHYSICS )
@@ -54,4 +54,12 @@ end
 local GAMEMODE = GAMEMODE or GM
 if not GAMEMODE.RandomlySpawnEnt then return end
 
-GAMEMODE:RandomlySpawnEnt( "termhunt_crimmastree", math.huge, 45, 85 )
+local spawnCount = math.random( 5, 30 )
+
+-- only enabled in x % of rounds
+local enabledChance = 85
+
+-- won't spawn in areas thinner/smaller than this
+local minAreaSize = 250
+
+GAMEMODE:RandomlySpawnEnt( "termhunt_crimmastree", spawnCount, enabledChance, minAreaSize )
