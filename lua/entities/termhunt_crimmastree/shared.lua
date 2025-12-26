@@ -12,7 +12,7 @@ ENT.AdminOnly = false
 function ENT:Initialize()
     if CLIENT then return end
 
-    self:SetModel( "models/cstrike/models/models_kit/xmas/xmastree_mini.mdl" )
+    self:SetModel( "models/models_kit/xmas/xmastree_mini.mdl" )
     self:PhysicsInit( SOLID_VPHYSICS )
     self:SetMoveType( MOVETYPE_NONE )
     self:SetSolid( SOLID_VPHYSICS )
@@ -39,8 +39,6 @@ function ENT:SpawnBoxes()
         local box = ents.Create( "termhunt_crimmasbox" )
         if not IsValid( box ) then continue end
 
-        self:DeleteOnRemove( box )
-
         box:SetPos( self:GetPos() + offset )
         box:SetAngles( Angle( 0, math.random( 360 ), 0 ) )
         box:Spawn()
@@ -56,4 +54,4 @@ end
 local GAMEMODE = GAMEMODE or GM
 if not GAMEMODE.RandomlySpawnEnt then return end
 
-GAMEMODE:RandomlySpawnEnt( "termhunt_crimmastree", math.huge, 20, 165 )
+GAMEMODE:RandomlySpawnEnt( "termhunt_crimmastree", math.huge, 45, 85 )
