@@ -319,11 +319,11 @@ local enabledChance = 10
 -- won't spawn in areas thinner/smaller than this
 local minAreaSize = 25 
 
--- optional
+-- optional, radius from players to spawn within
 local radius = 5000 -- defaults to 5000 when nil
 
 -- optional
--- called on ent BEFORE it's spawned, also blocks this spawn from trying to find a "SpawnFunction" on the sent table
+-- called on ent BEFORE it's spawned, also blocks this spawn from trying to find a "SpawnFunction" on the sent's ENT table
 local function preSpawnedFunc( spawned )
     print( "you will soon be unable to escape the", spawned )
 

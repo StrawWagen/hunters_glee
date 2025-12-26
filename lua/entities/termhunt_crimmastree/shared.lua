@@ -39,8 +39,6 @@ function ENT:SpawnBoxes()
         local box = ents.Create( "termhunt_crimmasbox" )
         if not IsValid( box ) then continue end
 
-        self:DeleteOnRemove( box )
-
         box:SetPos( self:GetPos() + offset )
         box:SetAngles( Angle( 0, math.random( 360 ), 0 ) )
         box:Spawn()
@@ -56,4 +54,12 @@ end
 local GAMEMODE = GAMEMODE or GM
 if not GAMEMODE.RandomlySpawnEnt then return end
 
-GAMEMODE:RandomlySpawnEnt( "termhunt_crimmastree", math.huge, 20, 165 )
+local spawnCount = math.random( 5, 30 )
+
+-- only enabled in x % of rounds
+local enabledChance = 85
+
+-- won't spawn in areas thinner/smaller than this
+local minAreaSize = 250
+
+GAMEMODE:RandomlySpawnEnt( "termhunt_crimmastree", spawnCount, enabledChance, minAreaSize )
