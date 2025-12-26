@@ -13,7 +13,7 @@ function ENT:Initialize()
     if CLIENT then return end
 
     self:SetModel( "models/cstrike/models/models_kit/xmas/giftbox_mini_quad.mdl" )
-    self:SetSkin( math.random( 0, 3 ) )
+    self:SetSkin( math.random( 0, 4 ) )
     self:PhysicsInit( SOLID_VPHYSICS )
     self:SetMoveType( MOVETYPE_VPHYSICS )
     self:SetSolid( SOLID_VPHYSICS )
@@ -23,6 +23,15 @@ function ENT:Initialize()
     if IsValid( phys ) then
         phys:Wake()
     end
+
+    local ribbon = ents.Create( "prop_dynamic" )
+    ribbon:SetModel( "models/cstrike/models/models_kit/xmas/giftbox_mini_ribbon_curly.mdl" )
+    ribbon:SetSkin( math.random( 0, 4 ) )
+    ribbon:SetParent( self )
+    ribbon:AddEffects( EF_BONEMERGE )
+    ribbon:Spawn()
+
+    self.ribbon = ribbon
 end
 
 
@@ -47,7 +56,7 @@ end
 function ENT:HandleShake()
     if timer.Exists( "termhunt_box_shake_" .. self:EntIndex() ) then return end
 
-    self:EmitSound( "physics/cardboard/cardboard_box_impact_soft" .. math.random( 1, 3 ) .. ".wav", 65, math.random( 95, 105 ) )
+    self:EmitSound( "physics/cardboard/cardboard_box_impact_soft" .. math.random( 1, 3 ) .. ".wav", math.random( 95, 105 ) )
 
     local phys = self:GetPhysicsObject()
     if IsValid( phys ) then
@@ -61,7 +70,10 @@ end
 
 function ENT:OpenBox()
     generic_KillProgressBar( nil, "termhunt_giftbox_open" )
-    self:EmitSound( "items/ammocrate_open.wav", 155 )
+
+    local effect = EffectData()
+    effect:SetOrigin( self:GetPos() )
+    util.Effect( "glee_sparkles", effect )
 
     for i = 1, math.random( 3, 8 ) do
         local supply = ents.Create( "dynamic_box_resupply_fake" )
@@ -83,4 +95,4 @@ end
 local GAMEMODE = GAMEMODE or GM
 if not GAMEMODE.RandomlySpawnEnt then return end
 
-GAMEMODE:RandomlySpawnEnt( "termhunt_crimmasbox", math.huge, 45, 40 )
+GAMEMODE:RandomlySpawnEnt( "termhunt_crimmasbox", math.huge, 30, 115 )
