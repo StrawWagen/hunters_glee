@@ -93,14 +93,14 @@ elseif SERVER then
                     ply.screamMaxPanicFleeSounds = nil
 
                 end
-                ply.screamMaxPanicFleeSounds = ply.screamMaxPanicFleeSounds or table.Copy( self:GetCorrectSoundsForModel( ply, "panicReleaseScreamsChased" ) )
+                ply.screamMaxPanicFleeSounds = ply.screamMaxPanicFleeSounds or self:GetCorrectShuffledSoundsForModel( ply, "panicReleaseScreamsChased" )
 
                 -- play these otherwise
                 if ply.screamMaxPanicSounds and #ply.screamMaxPanicSounds < 1 then
                     ply.screamMaxPanicSounds = nil
 
                 end
-                ply.screamMaxPanicSounds = ply.screamMaxPanicSounds or table.Copy( self:GetCorrectSoundsForModel( ply, "panicReleaseScreams" ) )
+                ply.screamMaxPanicSounds = ply.screamMaxPanicSounds or self:GetCorrectSoundsForModel( ply, "panicReleaseScreams" )
 
                 local screamSound
                 local validScreamSounds = ply.screamMaxPanicSounds and #ply.screamMaxPanicSounds >= 1
@@ -174,7 +174,7 @@ elseif SERVER then
 
                 end
 
-                ply.screamPanicSounds = ply.screamPanicSounds or table.Copy( self:GetCorrectSoundsForModel( ply, "panicBuildingScreams" ) )
+                ply.screamPanicSounds = ply.screamPanicSounds or self:GetCorrectSoundsForModel( ply, "panicBuildingScreams" )
                 local validScreamPanicSounds = ply.screamPanicSounds and #ply.screamPanicSounds >= 1
                 if validScreamPanicSounds then
                     local screamSound = table.remove( ply.screamPanicSounds, math.random( 1, #ply.screamPanicSounds ) )

@@ -187,9 +187,9 @@ function GM:GetConnectedNavAreaGroups( navAreas )
 
     end )
 
-    hook.Run( "glee_connectedgroups_end", navAreas )
+    hook.Run( "glee_connectedgroups_end", groups )
 
-    return groups, groupCorners
+    return groups, groupCorners, navAreas
 
 end
 

@@ -633,13 +633,17 @@ function GM:SetupTheLargestGroupsNStuff()
         -- if patch result does not equal nil, then wait
         if ( self.GreedyPatchCouroutine and patchResult ~= nil ) then return end
 
-        self.navmeshGroups = self:GetConnectedNavAreaGroups( navmesh.GetAllNavAreas() )
+        local _, navAreas
+
+        self.navmeshGroups, _, navAreas = self:GetConnectedNavAreaGroups( navmesh.GetAllNavAreas() )
         self.biggestNavmeshGroups = self:FilterNavareaGroupsForGreaterThanPercent( self.navmeshGroups, self.biggestGroupsRatio )
 
         --self:removePorters() -- remove teleporters that cross navmesh groups, or lead to non-navmeshed spots
 
         -- fix maps with separate spawn rooms w/ teleporters
         self:TeleportRoomCheck()
+
+        hook.Run( "glee_navpatcher_finish", navAreas )
 
         hook.Remove( "Think", "glee_DoGreedyPatchThinkHook" )
 

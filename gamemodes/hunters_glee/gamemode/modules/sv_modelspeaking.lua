@@ -121,9 +121,18 @@ function GM:GetCorrectSoundsForModel( ply, category )
     local categories = allSounds[finalModelPartStr]
     local sounds = categories[category]
     if not sounds then
-        return theGenericSounds
+        return table.Copy( theGenericSounds )
 
     end
+    return table.Copy( sounds )
+
+end
+
+function GM:GetCorrectShuffledSoundsForModel( ply, category )
+    local sounds = self:GetCorrectSoundsForModel( ply, category )
+    if not sounds then return end
+
+    table.Shuffle( sounds )
     return sounds
 
 end
@@ -203,17 +212,46 @@ local generic = {
     panicBuildingScreams = {
         "vo/npc/male01/help01.wav",
         "vo/npc/male01/pain01.wav",
+        "vo/npc/male01/gordead_ans19.wav",
         "vo/npc/male01/pain04.wav",
+        "vo/episode_1/npc/male01/cit_pain02.wav",
+        "vo/npc/male01/gordead_ans05.wav",
+        "vo/npc/male01/ow01.wav",
         "vo/npc/male01/pain08.wav",
+        "vo/episode_1/npc/male01/cit_pain03.wav",
         "vo/npc/male01/pain09.wav",
+        "vo/npc/male01/gordead_ans04.wav",
+        "vo/episode_1/npc/male01/cit_shock01.wav",
+        "vo/episode_1/npc/male01/cit_shock02.wav",
+        "vo/episode_1/npc/male01/cit_shock07.wav",
+        "vo/episode_1/npc/male01/cit_shock11.wav",
         "vo/npc/male01/startle01.wav",
         "vo/npc/male01/startle02.wav",
+        "vo/episode_1/npc/male01/cit_shock10.wav",
+        "vo/episode_1/npc/male01/cit_alert_rollers04.wav",
+        "vo/episode_1/npc/male01/cit_alert_antlions06.wav",
+        "vo/coast/bugbait/sandy_help.wav",
+        "vo/streetwar/sniper/male01/c17_09_help01.wav",
+        "vo/streetwar/sniper/male01/c17_09_help02.wav",
 
     },
     panicReleaseScreams = {
         "vo/npc/male01/pain07.wav",
+        "vo/episode_1/npc/male01/cit_pain07.wav",
+        "vo/episode_1/npc/female01/cit_pain08.wav",
+        "vo/episode_1/npc/male01/cit_shock04.wav",
+        "vo/episode_1/npc/male01/cit_buddykilled03.wav",
+        "vo/episode_1/npc/male01/cit_buddykilled04.wav",
         "vo/npc/male01/no01.wav",
         "vo/npc/male01/no02.wav",
+        "vo/outland_02/griggs_fightlion_01.wav",
+        "vo/outland_12/reb1_sawmillexplo05.wav",
+        "vo/streetwar/sniper/male01/c17_09_help01.wav",
+        "vo/streetwar/sniper/male01/c17_09_help02.wav",
+        "vo/episode_1/npc/male01/cit_evac_casualty08.wav",
+        "vo/episode_1/npc/male01/cit_evac_casualty11.wav",
+        "vo/coast/odessa/male01/nlo_cubdeath02.wav",
+        "vo/coast/odessa/male01/nlo_cubdeath01.wav",
 
     },
     panicReleaseScreamsChased = {
@@ -221,6 +259,15 @@ local generic = {
         "vo/npc/male01/runforyourlife01.wav",
         "vo/npc/male01/runforyourlife02.wav",
         "vo/npc/male01/runforyourlife03.wav",
+        "vo/npc/male01/gethellout.wav",
+        "vo/episode_1/npc/male01/cit_runforit.wav",
+        "vo/canals/male01/stn6_incoming.wav",
+        "vo/episode_1/npc/male01/cit_alert_gunship02.wav",
+        "vo/episode_1/npc/male01/cit_evac_casualty08.wav",
+        "vo/outland_12/reb1_lastwave09.wav",
+        "vo/episode_1/npc/male01/cit_evac_casualty11.wav",
+        "vo/outland_02/griggs_fightlion_01.wav",
+        "vo/outland_12/reb1_sawmillexplo05.wav",
 
     }
 }
@@ -352,7 +399,7 @@ local barney = {
 }
 GM:AddModelSounds( "barney", barney )
 
-local citizen = {
+local citizen = { -- death sounds are the only citizen-specific ones
     death = {
         "vo/npc/male01/pain07.wav",
         "vo/npc/male01/pain08.wav",
