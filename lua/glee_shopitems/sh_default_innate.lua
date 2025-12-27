@@ -76,10 +76,16 @@ if SERVER then
         function( self, owner ) -- setup func
             -- save the old jump power so we can restore it later
             self.originalJumpPower = owner:GetJumpPower()
-            owner:SetJumpPower( self.originalJumpPower * 0.70 )
+            self:Hook( "PlayerSpawn", function( spawned )
+                if spawned ~= owner then return end
+                spawned:SetJumpPower( self.originalJumpPower * 0.7 )
 
-            self:Hook( "GetFallDamage", function( ply, speed ) -- crazy high fall damage
-                if ply ~= owner then return end
+            end )
+
+            owner:SetJumpPower( self.originalJumpPower * 0.7 )
+
+            self:HookOnce( "GetFallDamage", function( ply, speed ) -- crazy high fall damage
+                if not ply:HasStatusEffect( "bad_knees" ) then return end
 
                 for count = 1, 4 do
                     local soundP = awfulKneeSounds[ math.random( 1, #awfulKneeSounds ) ]
@@ -91,8 +97,8 @@ if SERVER then
 
             end )
 
-            self:Hook( "KeyPress", function( ply, key ) -- funny sounds and pain on jump
-                if ply ~= owner then return end
+            self:HookOnce( "KeyPress", function( ply, key ) -- funny sounds and pain on jump
+                if not ply:HasStatusEffect( "bad_knees" ) then return end
                 if key ~= IN_JUMP then return end
 
                 if not ply:OnGround() then return end
