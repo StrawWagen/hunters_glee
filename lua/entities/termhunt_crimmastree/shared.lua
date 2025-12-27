@@ -54,7 +54,7 @@ end
 local GAMEMODE = GAMEMODE or GM
 if not GAMEMODE.RandomlySpawnEnt then return end
 
-local spawnCount = math.random( 5, 30 )
+local spawnCount = math.random( 0, 5 )
 
 -- only enabled in x % of rounds
 local enabledChance = 85

@@ -83,6 +83,18 @@ elseif SERVER then
             local panicSoundPitch = nil
             local panicSoundHitch = nil
 
+            local currModel = ply:GetModel() -- simplest, most reliable way i can think to do this
+            if ply.panicLastModel ~= currModel then
+                if ply.panicLastModel then
+                    ply.screamMaxPanicFleeSounds = nil
+                    ply.screamMaxPanicSounds = nil
+                    ply.screamPanicSounds = nil
+
+                end
+                ply.panicLastModel = currModel
+
+            end
+
             if panic >= maxPanic then -- scream loud, resets panic
                 local hookResult = hook.Run( "huntersglee_blockpanicreset", ply, panic )
                 local canResetPanic = not underwater and hookResult ~= true
@@ -93,14 +105,22 @@ elseif SERVER then
                     ply.screamMaxPanicFleeSounds = nil
 
                 end
-                ply.screamMaxPanicFleeSounds = ply.screamMaxPanicFleeSounds or self:GetCorrectShuffledSoundsForModel( ply, "panicReleaseScreamsChased" )
+                if not ply.screamMaxPanicFleeSounds then
+                    ply.screamMaxPanicFleeSounds = self:GetCorrectShuffledSoundsForModel( ply, "panicReleaseScreamsChased" )
+                    ply.screamMaxPanicFleeSounds = self:GenderizeSounds( ply, ply.screamMaxPanicFleeSounds )
+
+                end
 
                 -- play these otherwise
                 if ply.screamMaxPanicSounds and #ply.screamMaxPanicSounds < 1 then
                     ply.screamMaxPanicSounds = nil
 
                 end
-                ply.screamMaxPanicSounds = ply.screamMaxPanicSounds or self:GetCorrectSoundsForModel( ply, "panicReleaseScreams" )
+                if not ply.screamMaxPanicSounds then
+                    ply.screamMaxPanicSounds = self:GetCorrectSoundsForModel( ply, "panicReleaseScreams" )
+                    ply.screamMaxPanicSounds = self:GenderizeSounds( ply, ply.screamMaxPanicSounds )
+
+                end
 
                 local screamSound
                 local validScreamSounds = ply.screamMaxPanicSounds and #ply.screamMaxPanicSounds >= 1
@@ -151,7 +171,7 @@ elseif SERVER then
 
                     if canResetPanic then -- reset panic with a scream
                         panic = 50
-                        ply:EmitSound( self:GenderizeSound( ply, screamSound ), 130, math.Rand( 99, 106 ), 1, CHAN_VOICE )
+                        ply:EmitSound( screamSound, 130, math.Rand( 99, 106 ), 1, CHAN_VOICE )
 
                     else -- let panic get overflown, we just take little bites
                         panic = panic + -25
@@ -174,12 +194,16 @@ elseif SERVER then
 
                 end
 
-                ply.screamPanicSounds = ply.screamPanicSounds or self:GetCorrectSoundsForModel( ply, "panicBuildingScreams" )
+                if not ply.screamPanicSounds then
+                    ply.screamPanicSounds = self:GetCorrectSoundsForModel( ply, "panicReleaseScreams" )
+                    ply.screamPanicSounds = self:GenderizeSounds( ply, ply.screamPanicSounds )
+
+                end
                 local validScreamPanicSounds = ply.screamPanicSounds and #ply.screamPanicSounds >= 1
                 if validScreamPanicSounds then
                     local screamSound = table.remove( ply.screamPanicSounds, math.random( 1, #ply.screamPanicSounds ) )
                     if screamSound and not underwater then
-                        ply:EmitSound( self:GenderizeSound( ply, screamSound ), 88, 100, 1, CHAN_VOICE )
+                        ply:EmitSound( screamSound, 88, 100, 1, CHAN_VOICE )
 
                     end
                     ply:ViewPunch( AngleRand() * 0.05 )
@@ -272,6 +296,7 @@ elseif SERVER then
     hook.Add( "huntersglee_round_into_active", "huntersglee_startpanicthinking", function()
         if not timer.Exists( panicTimer ) then
             GAMEMODE:DoPanicThinkTimer( panicTimer )
+
         end
     end )
 
@@ -331,5 +356,6 @@ elseif SERVER then
 
     hook.Add( "PlayerSpawn", "glee_panic_resetsounds", function( ply )
         resetPanicSounds( ply )
+
     end )
 end

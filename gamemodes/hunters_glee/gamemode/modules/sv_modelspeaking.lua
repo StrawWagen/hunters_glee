@@ -144,15 +144,35 @@ local hardcodedFemale = {
 }
 
 function GM:GenderizeSound( ply, snd )
-    if not string_find( snd, "male" ) then return snd end
+    if not string_find( snd, "male" ) then return snd, false end
 
     local plyModel = GetModel( ply )
     if hardcodedFemale[ plyModel ] or string_find( string_lower( plyModel ), "fem" ) then
-        return string_replace( snd, "male", "female" )
+        return string_replace( snd, "male", "female" ), true
 
     end
-    return snd
+    return snd, true
 
+end
+
+function GM:GenderizeSounds( ply, sounds )
+    local wasOneGenderized = false
+    local genderedSounds = {}
+    for _, snd in ipairs( sounds ) do
+        local newSound, valid = self:GenderizeSound( ply, snd )
+
+        if not valid then continue end
+        wasOneGenderized = true
+        table.insert( genderedSounds, newSound )
+
+    end
+    if wasOneGenderized then
+        return genderedSounds
+
+    else
+        return sounds
+
+    end
 end
 
 function GM:GetRandModelLine( ply, category )
@@ -237,17 +257,15 @@ local generic = {
     },
     panicReleaseScreams = {
         "vo/npc/male01/pain07.wav",
-        "vo/episode_1/npc/male01/cit_pain07.wav",
-        "vo/episode_1/npc/female01/cit_pain08.wav",
-        "vo/episode_1/npc/male01/cit_shock04.wav",
-        "vo/episode_1/npc/male01/cit_buddykilled03.wav",
-        "vo/episode_1/npc/male01/cit_buddykilled04.wav",
         "vo/npc/male01/no01.wav",
         "vo/npc/male01/no02.wav",
-        "vo/outland_02/griggs_fightlion_01.wav",
-        "vo/outland_12/reb1_sawmillexplo05.wav",
+        "vo/episode_1/npc/male01/cit_pain07.wav",
+        "vo/episode_1/npc/male01/cit_pain08.wav",
+        "vo/episode_1/npc/male01/cit_shock04.wav",
+        "vo/episode_1/npc/male01/cit_shock10.wav",
+        "vo/episode_1/npc/male01/cit_buddykilled03.wav",
+        "vo/episode_1/npc/male01/cit_buddykilled04.wav",
         "vo/streetwar/sniper/male01/c17_09_help01.wav",
-        "vo/streetwar/sniper/male01/c17_09_help02.wav",
         "vo/episode_1/npc/male01/cit_evac_casualty08.wav",
         "vo/episode_1/npc/male01/cit_evac_casualty11.wav",
         "vo/coast/odessa/male01/nlo_cubdeath02.wav",
@@ -268,6 +286,7 @@ local generic = {
         "vo/episode_1/npc/male01/cit_evac_casualty11.wav",
         "vo/outland_02/griggs_fightlion_01.wav",
         "vo/outland_12/reb1_sawmillexplo05.wav",
+        "vo/streetwar/sniper/male01/c17_09_help02.wav",
 
     }
 }

@@ -325,7 +325,6 @@ local function soulThink( ply )
                         local dir = data.ang:Forward()
                         pos = pos + -dir * 50
                         updateDisplayPos( ply, pos )
-                        debugoverlay.Cross( pos, 10, 0.1, Color( 255, 0, 0 ), true )
 
                     else
                         updateDisplayPos( ply, data.targ:WorldSpaceCenter() )
