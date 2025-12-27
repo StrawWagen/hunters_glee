@@ -240,6 +240,11 @@ function ENT:UpdateExplainability()
         self.plysThatKnowOurOrigin = plysThatKnowOurOrigin
 
     end
+    if self.killersCreationID then
+        self.plysThatKnowOurOrigin = self.plysThatKnowOurOrigin or {}
+        self.plysThatKnowOurOrigin[self.killersCreationID] = true
+
+    end
 end
 
 function ENT:Crumble()

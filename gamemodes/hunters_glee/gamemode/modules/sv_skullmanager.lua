@@ -28,7 +28,7 @@ function GM:SpawnASkull( pos, ang, termSkull, parent )
 
 end
 
-local function spawnTermSkull( died, _, _ )
+local function spawnTermSkull( died, dmg, _ )
     if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
 
     local maxHealth = died:GetMaxHealth()
@@ -44,12 +44,16 @@ local function spawnTermSkull( died, _, _ )
     -- makes "erm something must have died here" hints better
     newSkull.fromSomethingWitnessable = true
     newSkull.nextPickup = CurTime() + 1
+    local attackersCreationID = dmg:GetAttacker():GetCreationID()
+    newSkull.killersCreationID = attackersCreationID
 
 end
 
 hook.Add( "OnTerminatorKilledRagdoll", "glee_dropterminatorskulls", spawnTermSkull )
 
 hook.Add( "OnTerminatorKilledDissolve", "glee_dropterminatorskulls", spawnTermSkull )
+
+hook.Add( "OnTerminatorKilledScripted", "glee_dropterminatorskulls", spawnTermSkull )
 
 hook.Add( "PlayerDeath", "glee_dropplayerskulls", function( died, _, attacker )
     if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
