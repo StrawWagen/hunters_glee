@@ -295,7 +295,7 @@ function GM:Think()
             end
         else
             if self.isBadSingleplayer then
-                huntersGlee_Announce( players, 1000, 1, "This gamemode is at it's best when started with at least 2 player slots.\nThat doesn't mean you need 2 people!\nJust click the green \"Single Player\" and choose another option!" )
+                huntersGlee_Announce( players, 1000, 1, "This gamemode is at its best when started with at least 2 player slots.\nThat doesn't mean you need 2 people!\nJust click the green \"Single Player\" and choose another option!" )
 
             end
             self.blockPvp   = true
