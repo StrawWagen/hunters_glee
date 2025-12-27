@@ -89,6 +89,7 @@ elseif SERVER then
                     ply.screamMaxPanicFleeSounds = nil
                     ply.screamMaxPanicSounds = nil
                     ply.screamPanicSounds = nil
+                    ply.panicIsFemale = self:IsModelFemale( ply )
 
                 end
                 ply.panicLastModel = currModel
@@ -214,9 +215,11 @@ elseif SERVER then
 
             end
 
+            local baseSoundPitch = ply.panicIsFemale and 110 or 100
+
             if panic >= 25 and increasing then -- breathing sound
                 doPanicSound = true
-                panicSoundPitch = 90 + ( panic * 0.4 )
+                panicSoundPitch = ( baseSoundPitch - 10 ) + ( panic * 0.4 )
                 ply:ViewPunch( AngleRand() * 0.005 )
 
                 panicSpeedPenaltyMul = 0.45
@@ -224,7 +227,7 @@ elseif SERVER then
             elseif panic >= 25 and not increasing then -- trigger the hitch/lower pitch breathing sound
                 doPanicSound = true
                 panicSoundHitch = true -- hitch when going from increasing to not increasing
-                panicSoundPitch = 80
+                panicSoundPitch = baseSoundPitch - 20
 
                 panicSpeedPenaltyMul = 0.25
 

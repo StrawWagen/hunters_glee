@@ -143,6 +143,16 @@ local hardcodedFemale = {
 
 }
 
+function GM:IsModelFemale( ply )
+    local plyModel = GetModel( ply )
+    if hardcodedFemale[ plyModel ] or string_find( string_lower( plyModel ), "fem" ) then
+        return true
+
+    end
+    return false
+
+end
+
 function GM:GenderizeSound( ply, snd )
     if not string_find( snd, "male" ) then return snd, false end
 
