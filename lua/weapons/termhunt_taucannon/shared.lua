@@ -275,6 +275,10 @@ function SWEP:Think()
             if SERVER then -- just makes bots react to scary weapon
                 local eyeTr = owner:GetEyeTrace()
                 sound.EmitHint( SOUND_DANGER, eyeTr.HitPos, 50 + chargeLevel * 25, 1 )
+                if GAMEMODE.PanicSource then
+                    GAMEMODE:PanicSource( eyeTr.HitPos, 15, 200 )
+
+                end
                 local aimEnt = eyeTr.Entity
                 if IsValid( aimEnt ) and aimEnt.ReallyAnger then
                     aimEnt:ReallyAnger( chargeLevel * 0.5 )

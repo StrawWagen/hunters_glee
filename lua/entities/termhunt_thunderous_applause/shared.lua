@@ -151,6 +151,7 @@ local function SparkEffect( SparkPos )
     Sparks:SetScale( 1 )
     Sparks:SetRadius( 6 )
     util.Effect( "Sparks", Sparks )
+
 end
 
 function ENT:UpdateGivenScore()
@@ -187,7 +188,7 @@ end
 local flatten = Vector( 1,1,0 )
 local tinyUpOffset = Vector( 0,0,20 )
 local interval = 60 * 4
-local tallOblong = Vector( 1, 1, 1.75 )
+local tallOblong = Vector( 1, 1, 4 )
 
 function ENT:Place()
 
@@ -258,6 +259,10 @@ function ENT:Place()
 
                 if not GAMEMODE:IsUnderSky( sparkPos ) then continue end
 
+                if GAMEMODE.PanicSource then
+                    GAMEMODE:PanicSource( sparkPos, 100, 200 )
+ 
+                end
                 SparkEffect( sparkPos )
                 sound.Play( "LoudSpark", sparkPos )
                 sound.EmitHint( SOUND_DANGER, sparkPos, 500, 6, self:GetOwner() )

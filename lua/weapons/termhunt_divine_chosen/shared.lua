@@ -405,6 +405,10 @@ function SWEP:Think()
             self:SetClip1( self:Clip1() + -3 )
             self.oldPrimaryHit = hit
             SparkEffect( hit )
+            if GAMEMODE.PanicSource then
+                GAMEMODE:PanicSource( hit, 100, 200 )
+
+            end
             table.insert( self.primaryHits, hit )
             sound.EmitHint( SOUND_DANGER, hit, 400, 2, owner )
 
@@ -477,8 +481,12 @@ function SWEP:Think()
             self.nextSuperStrikeWarn = CurTime() + offset
             local eyeHitPos = owner:GetEyeTrace().HitPos
             for _ = 1, math.ceil( self.superStrikeCharge / 50 ) do
-                SparkEffect( eyeHitPos + VectorRand() * self.superStrikeCharge )
+                local sparkPos = eyeHitPos + VectorRand() * self.superStrikeCharge
+                SparkEffect( sparkPos )
+                if GAMEMODE.PanicSource then
+                    GAMEMODE:PanicSource( sparkPos, 25, 200 )
 
+                end
             end
             sound.EmitHint( SOUND_DANGER, eyeHitPos, self.superStrikeCharge * 20, 6, owner )
 

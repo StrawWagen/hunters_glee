@@ -4,6 +4,8 @@ terminator_Extras = terminator_Extras or {}
 local input_IsKeyDown = input.IsKeyDown
 local input_IsMouseDown = input.IsMouseDown
 
+list.Set( "ContentCategoryIcons", "Hunter's Glee", "icon24/glee_icon24.png" )
+
 local justTabbedIn = false
 
 local function ShutDownPanel( pnl )

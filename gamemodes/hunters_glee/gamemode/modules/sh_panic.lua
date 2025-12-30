@@ -54,6 +54,27 @@ elseif SERVER then
 
     end
 
+    -- create a panic source
+    -- radius is how far it affects
+    -- strength is how much panic it gives when below 25% of radius, ramps down beyond that
+    function GM:PanicSource( pos, strength, radius )
+        local nearby = ents.FindInSphere( pos, radius )
+        local maxPanicGrace = radius * 0.25
+        local radiusFinal = radius - maxPanicGrace
+        for _, ent in ipairs( nearby ) do
+            if not ent:IsPlayer() then continue end
+            local dist = ent:WorldSpaceCenter():Distance( pos )
+            local distNormalized = dist / radiusFinal
+            local distInverted = math.Clamp( 1.25 - distNormalized, 0, 1 )
+
+            local panicAmount = strength * distInverted
+            if panicAmount < 1 then continue end
+
+            self:GivePanic( ent, panicAmount )
+
+        end
+    end
+
     local fleeDist = 1500
     local maxPanic = 115
 

@@ -204,7 +204,10 @@ hook.Add( "EntityTakeDamage", "nail_break_when_nailed_damaged", function( target
                 local amountPropAbsorbs = 1 - dmgAbsorb
                 dmg:ScaleDamage( amountPropAbsorbs ) -- nails absorb damage!
                 damage = tempDamage
+                if GAMEMODE.PanicSource then
+                    GAMEMODE:PanicSource( randNail:GetPos(), 10, 100 ) -- its scary to be next to breaking nails!
 
+                end
             else
                 randNail:Strain()
                 dmg:ScaleDamage( 0 )

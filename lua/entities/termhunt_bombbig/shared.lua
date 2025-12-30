@@ -78,6 +78,10 @@ function ENT:OnTakeDamage( dmg )
         self:EmitSound( "physics/flesh/flesh_squishy_impact_hard4.wav", 80, pit + 20 )
 
         sound.EmitHint( SOUND_DANGER, self:GetPos(), 800, 4, self )
+        if GAMEMODE.PanicSource then
+            GAMEMODE:PanicSource( self:GetPos(), 50, 200 )
+
+        end
 
         local obj = self:GetPhysicsObject()
         obj:ApplyForceCenter( VectorRand() * obj:GetMass() * 200 )
