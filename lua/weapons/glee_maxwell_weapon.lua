@@ -303,9 +303,6 @@ if CLIENT then
 				vm.BonePositionBreaker = nil
 				timer.Remove( timerName )
 
-			elseif ourOwner == originalOwner and breaker ~= self then -- someone else broke them
-				timer.Remove( timerName )
-
 			end
 		end )
 	end

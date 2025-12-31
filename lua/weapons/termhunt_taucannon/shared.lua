@@ -194,10 +194,12 @@ function SWEP:KillSound() -- you NEED to call this in all the places where it's 
         self.chargeSound:Stop()
 
     end
+    self.chargeSound = nil
     if self.overchargeSound and self.overchargeSound:IsPlaying() then
         self.overchargeSound:Stop()
 
     end
+    self.overchargeSound = nil
 end
 
 function SWEP:Think()
