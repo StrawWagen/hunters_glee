@@ -5,10 +5,15 @@ else
 	SWEP.Slot = 2
 	SWEP.SlotPos = 7
 	SWEP.DrawCrosshair = false
-	SWEP.BounceWeaponIcon = false
+	SWEP.BounceWeaponIcon = true
 end
 
 -- CREDIT https://steamcommunity.com/sharedfiles/filedetails/?id=2878054450 by bean
+
+if CLIENT then
+	terminator_Extras.glee_CL_SetupSwep( SWEP, "glee_maxwell_weapon", "materials/vgui/hud/killicon/glee_maxwell_weapon.png" )
+
+end
 
 SWEP.Purpose = "I still have nightmares about that cat..."
 SWEP.Instructions = "What cat?"
