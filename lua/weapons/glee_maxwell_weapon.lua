@@ -546,7 +546,7 @@ if CLIENT then
 		if not tab then return end
 
 		-- Create the clientside models here because Garry says we can't do it in the render hook
-		for _, v in pairs( tab ) do
+		for i, v in pairs( tab ) do
 			local isValidModel = v.type == "Model" and v.model and v.model ~= ""
 				and ( not IsValid( v.modelEnt ) or v.createdModel ~= v.model )
 				and string.find( v.model, ".mdl" ) and file.Exists( v.model, "GAME" )
@@ -559,6 +559,21 @@ if CLIENT then
 					v.modelEnt:SetParent( self )
 					v.modelEnt:SetNoDraw( true )
 					v.createdModel = v.model
+
+					local timerName = "cleanup_memleak_" .. v.model .. "_" .. self:GetCreationID() .. "_" .. i
+					timer.Create( timerName, 10, 0, function()
+						if not IsValid( v.modelEnt ) then
+							timer.Remove( timerName )
+							return
+
+						end
+
+						if not IsValid( self ) then
+							SafeRemoveEntity( v.modelEnt )
+							timer.Remove( timerName )
+
+						end
+					end )
 				else
 					v.modelEnt = nil
 

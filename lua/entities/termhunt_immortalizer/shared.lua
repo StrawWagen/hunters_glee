@@ -144,6 +144,7 @@ function ENT:Place()
         end
 
         local damageDealt = damage:GetDamage()
+        damageDealt = math.Clamp( damageDealt, 0, 5000 ) -- sanity clamp, eg supercop
 
         local path = "physics/metal/metal_barrel_impact_hard" .. math.random( 5, 7 ) .. ".wav"
         local pit = 120 + ( -damageDealt / 10 )
