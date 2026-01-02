@@ -146,6 +146,9 @@ hook.Add( "PlayerDeath", "glee_storeslights", function( died, _, attacker )
     if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
     if not attacker:IsPlayer() then return end
 
+    -- the chosen doesn't get guilt
+    if attacker:HasStatusEffect( "divine_chosen" ) then return end
+
     if not IsValid( attacker ) then return end
     if attacker == died then return end
 

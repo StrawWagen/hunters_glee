@@ -560,6 +560,8 @@ if CLIENT then
 					v.modelEnt:SetNoDraw( true )
 					v.createdModel = v.model
 
+					-- mem leak ""fix""
+					-- trash implementation, i wish ent:DeleteOnRemove() was shared
 					local timerName = "cleanup_memleak_" .. v.model .. "_" .. self:GetCreationID() .. "_" .. i
 					timer.Create( timerName, 10, 0, function()
 						if not IsValid( v.modelEnt ) then
