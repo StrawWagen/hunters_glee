@@ -745,6 +745,11 @@ if SERVER then
                         end
                     end
 
+                    if ply:IsPlayingTaunt2() then
+                        scalar = scalar * 0.25
+
+                    end
+
                     local dir = ply:GetVelocity():GetNormalized()
                     dir.z = math.Clamp( dir.z, -0.15, 0.15 )
                     dir:Normalize()
