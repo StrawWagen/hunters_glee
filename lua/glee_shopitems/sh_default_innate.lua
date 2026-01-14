@@ -23,7 +23,6 @@ if SERVER then
         end
     )
 
-
     GAMEMODE:RegisterStatusEffect( "superior_metabolism",
         function( self, owner ) -- setup func
             self:Hook( "huntersglee_heartbeat_beat", function( ply ) -- heal a bit on each heartbeat
@@ -666,6 +665,45 @@ if SERVER then
 
                 end
             end )
+        end
+    )
+
+    GAMEMODE:RegisterStatusEffect( "mecha_legs",
+        function( self, owner ) -- setup func
+            self:Timer( "manage_mechalegs", 0.1, 0, function()
+                local armor = owner:Armor()
+                local maxArmor = owner:GetMaxArmor()
+                local armorRatio = armor / maxArmor
+
+                local speedMod = armorRatio * 345
+
+                owner:DoSpeedModifier( "mechalegs", speedMod )
+
+                if armor > 0 then
+                    owner:GivePlayerBatteryCharge( -0.1 )
+                end
+            end )
+    
+       -- copied from the juggernaut innate (lasy!!!)
+            self:Hook( "PlayerFootstep", function( ply, _, foot ) -- clomp clomp
+                if ply ~= owner then return end
+
+                local stepNum = math.random( 1, 7 )
+                local stepSnd = "mechalegs/mechalegs_0" .. stepNum .. ".wav"
+
+                local velLeng = ply:GetVelocity():Length()
+
+                util.ScreenShake( ply:GetPos(), velLeng / 125, 20, 0.4, velLeng * 1.2 )
+
+                local pitch = 50 + ( velLeng / 40 )
+                local volume = 0.3 + ( velLeng / 500 )
+                ply:EmitSound( stepSnd, 85, pitch, volume, CHAN_AUTO )
+
+                return true
+            end )
+        end,
+        function( _, owner ) -- teardown func
+            owner:DoSpeedModifier( "mechalegs", nil )
         end
     )
 
@@ -1554,6 +1592,7 @@ local items = {
 
         end,
     },
+    
     -- flat upgrade
     [ "superiormetabolism" ] = {
         name = "Superior Metabolism.",
@@ -1643,6 +1682,24 @@ local items = {
         shPurchaseCheck = shopHelpers.aliveCheck,
         svOnPurchaseFunc = function( ply )
             ply:GiveStatusEffect( "marco_polo" )
+
+        end,
+    },
+    [ "mechalegs" ] = {
+        name = "Mecha Legs",
+        desc = "Your speed scales with suit armor.\nFull armor, full speed.\nNo armor, no speed.",
+        shCost = 200,
+        markup = 2,
+        cooldown = math.huge,
+        tags = { "INNATE" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_INACTIVE,
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = 190,
+        shPurchaseCheck = { shopHelpers.aliveCheck },
+        svOnPurchaseFunc = function( ply )
+            ply:GiveStatusEffect( "mecha_legs" )
 
         end,
     },
