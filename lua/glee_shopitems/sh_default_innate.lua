@@ -695,7 +695,7 @@ if SERVER then
 
                 util.ScreenShake( ply:GetPos(), velLeng / 125, 20, 0.4, velLeng * 1.2 )
 
-                local pitch = 50 + ( velLeng / 40 )
+                local pitch = 70 + ( velLeng / 20 )
                 local volume = 0.3 + ( velLeng / 500 )
                 ply:EmitSound( stepSnd, 85, pitch, volume, CHAN_AUTO )
 
