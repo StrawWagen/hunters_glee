@@ -479,7 +479,16 @@ if SERVER then
                 local maxArmor = owner:GetMaxArmor()
                 local armorRatio = armor / maxArmor
 
-                local speedMod = ( armorRatio * 345 ) + -100
+                local noArmorDecrease = -100
+                local addedByArmor = armorRatio * 345
+                local speedMod = addedByArmor
+
+                -- apply the decrease only if the player runs out of armor
+                -- its better to have big dramatic changes from mechanics like this imo
+                if armor <= 0 then
+                    speedMod = noArmorDecrease 
+
+                end
 
                 owner:DoSpeedModifier( "mechalegs", speedMod )
 
