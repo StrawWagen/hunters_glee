@@ -654,6 +654,9 @@ function GM:SpectateThing( ply, thing, msg )
 
     end
     ply:SetObserverMode( newMode )
+
+    ply:SetNotSolid( true ) -- players can somehow end up solid
+
     if IsValid( thing ) then
         ply:SetParent( thing ) -- fixes alot of flashing light visual bugs
         ply:SetPos( thing:WorldSpaceCenter() )

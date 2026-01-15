@@ -60,10 +60,10 @@ function ENT:BarrelRandomize()
     self:SetAngles( ang )
 
     timer.Simple( 0, function()
+        if not IsValid( self ) then return end
         self:SkinRandomize()
 
     end )
-
 end
 
 if not SERVER then return end
