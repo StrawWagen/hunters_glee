@@ -102,7 +102,7 @@ local set = {
             preSpawnedFuncs =  { give357 },
         },
         {
-            hardRandomChance = 0.15,
+            hardRandomChance = { 10, 20 },
             name = "paparazzi_flaregun", -- unique name
             prettyName = "A Flare-Flinging Paparazzi",
             class = "terminator_nextbot_fakeply", -- class spawned
@@ -112,7 +112,7 @@ local set = {
             preSpawnedFuncs =  { giveFlareGun },
         },
         {
-            hardRandomChance = 0.15,
+            hardRandomChance = { 0, 20 },
             name = "paparazzi_xbow", -- unique name
             prettyName = "A Bolti'n Paparazzi",
             class = "terminator_nextbot_fakeply", -- class spawned
@@ -122,7 +122,7 @@ local set = {
             preSpawnedFuncs =  { giveXBOW },
         },
         {
-            hardRandomChance = 0.75,
+            hardRandomChance = { 5, 75 },
             name = "paparazzi_rpg", -- unique name
             prettyName = "A Rocket Propelled Paparazzi",
             class = "terminator_nextbot_fakeply", -- class spawned
@@ -132,7 +132,7 @@ local set = {
             preSpawnedFuncs =  { giveRPG },
         },
         {
-            hardRandomChance = 0.15,
+            hardRandomChance = { 5, 20 },
             name = "paparazzi_ar3", -- unique name
             prettyName = "An AR3-Annihilating Paparazzi",
             class = "terminator_nextbot_fakeply", -- class spawned
@@ -142,7 +142,7 @@ local set = {
             preSpawnedFuncs =  { giveAR3 },
         },
         {
-            hardRandomChance = 0.05,
+            hardRandomChance = { 5, 20 },
             name = "paparazzi_taucannon", -- unique name
             prettyName = "A Tau-Blasting Paparazzi",
             class = "terminator_nextbot_fakeply", -- class spawned
