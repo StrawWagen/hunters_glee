@@ -134,6 +134,7 @@ function spawnSetVote:OnVoteEnd()
     end
 
     print( "GLEE: Mode vote is over, winner is, " .. spawnSetVote.winner )
+    GAMEMODE:speakAsHuntersGlee( "Mode vote over! Winner is " .. GAMEMODE:GetPrettyNameOfSpawnSet( spawnSetVote.winner ) )
 
     if GAMEMODE:RoundState() == GAMEMODE.ROUND_ACTIVE and GAMEMODE:getRemaining( GAMEMODE.termHunt_roundBegunTime, CurTime() ) > 60 then -- if round has properly started
         huntersGlee_Announce( player.GetAll(), 1001, 10, "Mode will be changed to " .. GAMEMODE:GetPrettyNameOfSpawnSet( spawnSetVote.winner ) .. "\n on round end." )
