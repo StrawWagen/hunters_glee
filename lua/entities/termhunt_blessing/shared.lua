@@ -169,9 +169,6 @@ function ENT:Place()
 
     self.player.ghostEnt = nil
 
-    self.player = nil
-    self:SetOwner( NULL )
-
     if target:IsPlayer() then
         GAMEMODE:AddMischievousness( self.player, -5, "blessed a player, reduction" )
 
@@ -179,6 +176,9 @@ function ENT:Place()
         GAMEMODE:AddMischievousness( self.player, 1, "blessed a hunter..." )
 
     end
+
+    self.player = nil
+    self:SetOwner( NULL )
 
     SafeRemoveEntity( self )
 
