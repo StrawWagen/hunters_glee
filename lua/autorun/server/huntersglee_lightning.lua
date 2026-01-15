@@ -10,36 +10,13 @@ sound.Add( {
 } )
 
 function glee_CanOvercharge( target )
-    if target.DoMetallicDamage then return true end
-    if target:GetMaxHealth() < terminator_Extras.healthDefault * 0.5 then return false end
-    return true
+    return target:CanOvercharge()
 
 end
 
 function glee_Overcharge( target )
     target:Overcharge()
-    target:ReallyAnger( 120 )
 
-    target:EmitSound( "ambient/levels/labs/electric_explosion1.wav", 100, 80 )
-
-    local timerName = "terminator_overchargedpower_" .. target:GetCreationID()
-
-    timer.Create( timerName, 0.1, 0, function()
-        if not IsValid( target ) then timer.Remove( timerName ) return end
-        if target:Health() <= 0 then timer.Remove( timerName ) return end
-
-        if math.random( 0, 100 ) > 25 then return end
-        if target:IsSilentStepping() then return end
-
-        target:EmitSound( "LoudSpark" )
-        local hitTr = termHunt_ElectricalArcEffect( target, target:WorldSpaceCenter(), -vector_up, math.Rand( 0.5, 1 ), vector_up, 1000 )
-
-        local zzarpedEnt = hitTr.Entity
-
-        if not IsValid( zzarpedEnt ) then return end
-        zzarpedEnt:Fire( "IgniteLifetime", 5 )
-
-    end )
 end
 
 hook.Add( "EntityTakeDamage", "glee_interceptlightningdamage", function( target, dmgInfo ) 
