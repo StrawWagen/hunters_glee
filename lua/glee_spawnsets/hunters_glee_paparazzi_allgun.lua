@@ -32,6 +32,18 @@ local function giveXBOW( _, hunter )
     setWeaponOverride( hunter, "weapon_crossbow" )
 end
 
+local function giveFlareGun( _, hunter )
+    setWeaponOverride( hunter, "termhunt_aeromatix_flare_gun" )
+end
+
+local function giveAR3( _, hunter )
+    setWeaponOverride( hunter, "termhunt_ar3" )
+end
+
+local function giveTauCannon( _, hunter )
+    setWeaponOverride( hunter, "termhunt_taucannon" )
+end
+
 
 local set = {
     name = "hunters_glee_paparazzi_allgun", -- unique name
@@ -72,10 +84,10 @@ local set = {
         {
             hardRandomChance = nil,
             name = "paparazzi_ar2", -- unique name
-            prettyName = "An Ar2'ing Paparazzi",
+            prettyName = "A Pulse Riflin' Paparazzi",
             class = "terminator_nextbot_fakeply", -- class spawned
             spawnType = "hunter",
-            difficultyCost = { 4, 10 },
+            difficultyCost = { 6, 12 },
             countClass = "terminator_nextbot_fakeply", -- class COUNTED, uses findbyclass
             preSpawnedFuncs =  { giveAR2 },
         },
@@ -90,7 +102,27 @@ local set = {
             preSpawnedFuncs =  { give357 },
         },
         {
-            hardRandomChance = 0.15, -- only 15% chance to spawn when budget allows
+            hardRandomChance = 0.15,
+            name = "paparazzi_flaregun", -- unique name
+            prettyName = "A Flare-Flinging Paparazzi",
+            class = "terminator_nextbot_fakeply", -- class spawned
+            spawnType = "hunter",
+            difficultyCost = { 8, 16 },
+            countClass = "terminator_nextbot_fakeply", -- class COUNTED, uses findbyclass
+            preSpawnedFuncs =  { giveFlareGun },
+        },
+        {
+            hardRandomChance = 0.15,
+            name = "paparazzi_xbow", -- unique name
+            prettyName = "A Bolti'n Paparazzi",
+            class = "terminator_nextbot_fakeply", -- class spawned
+            spawnType = "hunter",
+            difficultyCost = { 50, 150 },
+            countClass = "terminator_nextbot_fakeply", -- class COUNTED, uses findbyclass
+            preSpawnedFuncs =  { giveXBOW },
+        },
+        {
+            hardRandomChance = 0.75,
             name = "paparazzi_rpg", -- unique name
             prettyName = "A Rocket Propelled Paparazzi",
             class = "terminator_nextbot_fakeply", -- class spawned
@@ -100,14 +132,24 @@ local set = {
             preSpawnedFuncs =  { giveRPG },
         },
         {
-            hardRandomChance = 0.35, -- 35% chance to spawn when budget allows
-            name = "paparazzi_xbow", -- unique name
-            prettyName = "A Bolti'n Paparazzi",
+            hardRandomChance = 0.15,
+            name = "paparazzi_ar3", -- unique name
+            prettyName = "An AR3-Annihilating Paparazzi",
             class = "terminator_nextbot_fakeply", -- class spawned
             spawnType = "hunter",
             difficultyCost = { 50, 150 },
             countClass = "terminator_nextbot_fakeply", -- class COUNTED, uses findbyclass
-            preSpawnedFuncs =  { giveXBOW },
+            preSpawnedFuncs =  { giveAR3 },
+        },
+        {
+            hardRandomChance = 0.05,
+            name = "paparazzi_taucannon", -- unique name
+            prettyName = "A Tau-Blasting Paparazzi",
+            class = "terminator_nextbot_fakeply", -- class spawned
+            spawnType = "hunter",
+            difficultyCost = { 100, 200 },
+            countClass = "terminator_nextbot_fakeply", -- class COUNTED, uses findbyclass
+            preSpawnedFuncs =  { giveTauCannon },
         },
     }
 }
