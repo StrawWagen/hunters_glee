@@ -485,29 +485,32 @@ if SERVER then
 
                 if armor > 0 then
                     owner:GivePlayerBatteryCharge( -0.044 )
+
                 end
             end )
 
             -- copied from juggernaut innate (lazy!!!)
-            self:Hook( "PlayerFootstep", function( ply, _, foot ) -- clomp clomp
+            self:Hook( "PlayerFootstep", function( ply, _pos, _foot ) -- clomp clomp
                 if ply ~= owner then return end
 
                 local stepNum = math.random( 1, 7 )
-                local stepSnd = "mechalegs/mechalegs_0" .. stepNum .. ".wav"
+                local stepSnd = "hunters_glee/mechalegs/mechalegs_0" .. stepNum .. ".wav"
 
                 local velLeng = ply:GetVelocity():Length()
 
                 util.ScreenShake( ply:GetPos(), velLeng / 125, 20, 0.4, velLeng * 1.2 )
 
                 local pitch = 70 + ( velLeng / 20 )
-                local volume = 0.3 + ( velLeng / 500 )
-                ply:EmitSound( stepSnd, 85, pitch, volume, CHAN_AUTO )
+                local volume = 0.2 + ( velLeng / 500 )
+                ply:EmitSound( stepSnd, 80, pitch, volume, CHAN_AUTO )
 
                 return true
+
             end )
         end,
         function( _, owner ) -- teardown func
             owner:DoSpeedModifier( "mechalegs", nil )
+
         end
     )
 
