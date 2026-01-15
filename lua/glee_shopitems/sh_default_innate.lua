@@ -1634,7 +1634,7 @@ local items = {
     },
     [ "mechalegs" ] = {
         name = "Mecha Legs",
-        desc = "Mechanical leg augmentations.\nSpeed scales with suit battery.\nConstantly drains power.\nNo battery makes you slower than normal.",
+        desc = "Mechanical leg augmentations.\nPowers your motion with Suit Battery.\nThey're basically dead weight when you run out of power.",
         shCost = 200,
         markup = 2,
         cooldown = math.huge,
