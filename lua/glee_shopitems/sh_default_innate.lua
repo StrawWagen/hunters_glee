@@ -23,7 +23,6 @@ if SERVER then
         end
     )
 
-
     GAMEMODE:RegisterStatusEffect( "superior_metabolism",
         function( self, owner ) -- setup func
             self:Hook( "huntersglee_heartbeat_beat", function( ply ) -- heal a bit on each heartbeat
@@ -473,6 +472,69 @@ if SERVER then
         end
     )
 
+    GAMEMODE:RegisterStatusEffect( "mecha_legs",
+        function( self, owner ) -- setup func
+            self.originalJumpPower = owner:GetJumpPower()
+
+            self:Timer( "manage_mechalegs", 0.1, 0, function()
+                local armor = owner:Armor()
+
+                local noArmorDecrease = -100
+                local addedByArmor = armor * 3.45
+                local speedMod = addedByArmor
+
+                -- apply the decrease only if the player runs out of armor
+                -- it's better to have big dramatic changes from mechanics like this imo
+                if armor <= 0 then
+                    speedMod = noArmorDecrease
+                end
+
+                owner:DoSpeedModifier( "mechalegs", speedMod )
+
+                local jumpPower = self.originalJumpPower
+                if armor > 0 then
+                    jumpPower = self.originalJumpPower * 1.3
+                else
+                    jumpPower = self.originalJumpPower * 0.7
+                end
+
+                owner:SetJumpPower( jumpPower )
+
+                if armor > 0 and owner:OnGround() then
+                    local velLeng = owner:GetVelocity():Length()
+                    local drain = ( velLeng / 10000 ) * 0.5
+                    owner:GivePlayerBatteryCharge( -drain )
+                end
+            end )
+
+            self:Hook( "PlayerSpawn", function( spawned )
+                if spawned ~= owner then return end
+                spawned:SetJumpPower( self.originalJumpPower * 1.3 )
+            end )
+
+            -- copied from juggernaut innate (lazy!!!)
+            self:Hook( "PlayerFootstep", function( ply, _pos, _foot ) -- clomp clomp
+                if ply ~= owner then return end
+
+                local stepNum = math.random( 1, 7 )
+                local stepSnd = "hunters_glee/mechalegs/mechalegs_0" .. stepNum .. ".wav"
+
+                local velLeng = ply:GetVelocity():Length()
+
+                util.ScreenShake( ply:GetPos(), velLeng / 125, 20, 0.4, velLeng * 1.2 )
+
+                local pitch = 70 + ( velLeng / 20 )
+                local volume = 0.2 + ( velLeng / 500 )
+                ply:EmitSound( stepSnd, 80, pitch, volume, CHAN_AUTO )
+
+                return true
+            end )
+        end,
+        function( self, owner ) -- teardown func
+            owner:DoSpeedModifier( "mechalegs", nil )
+            owner:SetJumpPower( self.originalJumpPower )
+        end
+    )
 
     GAMEMODE:RegisterStatusEffect( "juggernaut",
         function( self, owner ) -- setup func
@@ -1554,6 +1616,7 @@ local items = {
 
         end,
     },
+    
     -- flat upgrade
     [ "superiormetabolism" ] = {
         name = "Superior Metabolism.",
@@ -1588,6 +1651,24 @@ local items = {
         shPurchaseCheck = shopHelpers.aliveCheck,
         svOnPurchaseFunc = function( ply )
             ply:GiveStatusEffect( "sixth_sense" )
+
+        end,
+    },
+    [ "mechalegs" ] = {
+        name = "Mecha Legs",
+        desc = "Mechanical leg augmentations.\nPowers your motion with Suit Battery.\nThey're basically dead weight when you run out of power.",
+        shCost = 200,
+        markup = 2,
+        cooldown = math.huge,
+        tags = { "INNATE" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_INACTIVE,
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = 120,
+        shPurchaseCheck = { shopHelpers.aliveCheck },
+        svOnPurchaseFunc = function( ply )
+            ply:GiveStatusEffect( "mecha_legs" )
 
         end,
     },
