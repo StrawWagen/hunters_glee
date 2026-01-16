@@ -474,28 +474,42 @@ if SERVER then
 
     GAMEMODE:RegisterStatusEffect( "mecha_legs",
         function( self, owner ) -- setup func
+            self.originalJumpPower = owner:GetJumpPower()
+
             self:Timer( "manage_mechalegs", 0.1, 0, function()
                 local armor = owner:Armor()
-                local maxArmor = owner:GetMaxArmor()
-                local armorRatio = armor / maxArmor
 
                 local noArmorDecrease = -100
-                local addedByArmor = armorRatio * 345
+                local addedByArmor = armor * 3.45
                 local speedMod = addedByArmor
 
                 -- apply the decrease only if the player runs out of armor
-                -- its better to have big dramatic changes from mechanics like this imo
+                -- it's better to have big dramatic changes from mechanics like this imo
                 if armor <= 0 then
-                    speedMod = noArmorDecrease 
-
+                    speedMod = noArmorDecrease
                 end
 
                 owner:DoSpeedModifier( "mechalegs", speedMod )
 
+                local jumpPower = self.originalJumpPower
                 if armor > 0 then
-                    owner:GivePlayerBatteryCharge( -0.044 )
-
+                    jumpPower = self.originalJumpPower * 1.3
+                else
+                    jumpPower = self.originalJumpPower * 0.7
                 end
+
+                owner:SetJumpPower( jumpPower )
+
+                if armor > 0 and owner:OnGround() then
+                    local velLeng = owner:GetVelocity():Length()
+                    local drain = ( velLeng / 10000 ) * 0.5
+                    owner:GivePlayerBatteryCharge( -drain )
+                end
+            end )
+
+            self:Hook( "PlayerSpawn", function( spawned )
+                if spawned ~= owner then return end
+                spawned:SetJumpPower( self.originalJumpPower * 1.3 )
             end )
 
             -- copied from juggernaut innate (lazy!!!)
@@ -514,12 +528,11 @@ if SERVER then
                 ply:EmitSound( stepSnd, 80, pitch, volume, CHAN_AUTO )
 
                 return true
-
             end )
         end,
-        function( _, owner ) -- teardown func
+        function( self, owner ) -- teardown func
             owner:DoSpeedModifier( "mechalegs", nil )
-
+            owner:SetJumpPower( self.originalJumpPower )
         end
     )
 
