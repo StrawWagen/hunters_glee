@@ -655,7 +655,7 @@ function GM:SpectateThing( ply, thing, msg )
     end
     ply:SetObserverMode( newMode )
 
-    ply:SetNotSolid( true ) -- players can somehow end up solid
+    ply:SetNotSolid( true ) -- players can somehow end up solid while spectating
 
     if IsValid( thing ) then
         ply:SetParent( thing ) -- fixes alot of flashing light visual bugs
