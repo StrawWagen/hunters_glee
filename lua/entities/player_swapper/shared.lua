@@ -175,14 +175,14 @@ function ENT:GetFurthestTerminator()
     local wasOneWithGoodHealth
 
     for _, thing in ipairs( ents.GetAll() ) do
-        if not thing.TerminatorNextBot then continue end
+        if not ( thing.TerminatorNextBot or thing.glee_IsAHunter ) then continue end
         if thing:Health() <= 0 then continue end -- dead but still valid!
 
         local distance = thing:GetPos():DistToSqr( myPos )
         local hasGoodHealth = thing:GetMaxHealth() >= terminator_Extras.healthDefault
 
         local better = distance > furthestDistance
-        if wasOneWithGoodHealth and not hasGoodHealth then -- invert STRONG enemies PLS
+        if wasOneWithGoodHealth and not hasGoodHealth then -- temporally invert STRONG enemies PLS
             better = false
 
         end

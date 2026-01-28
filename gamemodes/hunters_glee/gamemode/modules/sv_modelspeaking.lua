@@ -153,7 +153,7 @@ function GM:IsModelFemale( ply )
 
 end
 
-function GM:GenderizeSound( ply, snd )
+function GM:GenderizeSound( ply, snd ) -- genderize
     if not string_find( snd, "male" ) then return snd, false end
 
     local plyModel = GetModel( ply )
@@ -479,14 +479,19 @@ local alyx = {
     panicBuildingScreams = {
         "vo/novaprospekt/al_horrible01.wav",
         "vo/novaprospekt/al_gasp01.wav",
+        "vo/outland_07/barn/al_barn_agh02.wav",
         "vo/npc/alyx/gasp03.wav",
+        "vo/outland_10/olde-inne/al_ambush_heyow01.wav",
         "vo/npc/alyx/gasp02.wav",
+        "vo/outland_11/dogfight/al_str_ohnodog.wav",
         "vo/eli_lab/al_dogairlock01.wav",
 
     },
     panicReleaseScreams = {
+        "vo/outland_07/barn/al_barn_aghno.wav",
         "vo/novaprospekt/al_ohmygod.wav",
         "vo/npc/alyx/hurt05.wav",
+        "vo/streetwar/alyx_gate/al_ahno.wav",
         "vo/npc/alyx/uggh02.wav",
         "vo/npc/alyx/ohno_startle01.wav",
         "vo/npc/alyx/ohno_startle03.wav",
@@ -498,6 +503,8 @@ local alyx = {
         "vo/npc/alyx/watchout01.wav",
         "vo/npc/alyx/watchout02.wav",
         "vo/eli_lab/al_getitopen01.wav",
+        "vo/outland_11/dogfight/al_str_omg.wav",
+        "vo/outland_10/olde-inne/al_ambush_weresurrounded.wav",
 
     }
 }
@@ -532,22 +539,39 @@ local breen = {
 GM:AddModelSounds( "breen", breen )
 
 local eli = {
+    onRoundStart = {
+        "vo/outland_11a/silo/eli_silo_happeningagain01.wav",
+        "vo/outland_11a/silo/eli_silo_happeningagain02.wav",
+        "vo/outland_11a/silo/eli_silo_happeningagain03.wav",
+
+    },
     death = {
         "vo/citadel/eli_alyx01.wav",
         "vo/citadel/eli_alyxsweetheart.wav",
+        "vo/outland_01/intro/eli_transmit_goodgod.wav",
+        "vo/outland_11a/silo/eli_silo_talk15.wav",
 
     },
     panicBuildingScreams = {
+        "vo/outland_11a/silo/eli_silo_fineinaminute01.wav",
         "vo/citadel/eli_goodgod.wav",
         "vo/eli_lab/eli_safety.wav",
+        "vo/outland_11a/silo/eli_silo_fineinaminute05.wav",
+        "vo/episode_1/intro/eli_what01.wav",
+        "vo/outland_11a/silo/eli_silo_fineinaminute03.wav",
 
     },
     panicReleaseScreams = {
         "vo/citadel/eli_notobreen.wav",
+        "vo/outland_12a/launch/eli_launch_bigpain01.wav",
+        "vo/outland_12a/launch/eli_launch_bigpain04.wav",
 
     },
     panicReleaseScreamsChased = {
+        "vo/outland_11a/silo/eli_silo_ohbrother.wav",
         "vo/k_lab/eli_seeforyourself.wav",
+        "vo/outland_12a/launch/eli_launch_closeeyes.wav",
+        "vo/outland_11a/silo/eli_silo_useit02.wav",
         "vo/k_lab/eli_behindyou.wav",
         "vo/novaprospekt/eli_nevermindme01.wav",
 
@@ -556,6 +580,12 @@ local eli = {
 GM:AddModelSounds( "/eli", eli )
 
 local gman = {
+    onRoundStart = {
+        "vo/gman_misc/gman_riseshine.wav",
+        "vo/citadel/gman_exit02.wav",
+        "vo/outland_02/junction/gman_mono34.wav",
+
+    },
     death = {
         "vo/citadel/gman_exit10.wav",
 
@@ -578,6 +608,13 @@ local gman = {
 GM:AddModelSounds( "gman", gman )
 
 local grigori = {
+    onRoundStart = {
+        "vo/ravenholm/aimforhead.wav",
+        "vo/ravenholm/bucket_guardwell.wav",
+        "vo/ravenholm/bucket_patience.wav",
+        "vo/ravenholm/grave_stayclose.wav",
+
+    },
     death = {
         "vo/ravenholm/monk_helpme01.wav",
         "vo/ravenholm/monk_helpme04.wav",

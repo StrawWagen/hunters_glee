@@ -16,7 +16,6 @@ local function postSpawnedOvercharge( spawnDat, spawned )
         end
     end
 
-    print( overchargedChance )
     if math.Rand( 0, 100 ) > overchargedChance then return end
     glee_Overcharge( spawned )
 

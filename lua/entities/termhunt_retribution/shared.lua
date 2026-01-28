@@ -76,7 +76,7 @@ end
 
 if not SERVER then return end
 
-local baseCost = 200
+local baseCost = 400
 
 function ENT:UpdateGivenScore()
     local currTarget = self:GetCurrTarget()
@@ -88,10 +88,12 @@ function ENT:UpdateGivenScore()
 
     end
 
-    local reduction = slightSize * 2
-    reduction = math.Clamp( reduction, -baseCost, baseCost )
+    -- eventually make this free
+    local slightRefund = slightSize * ( baseCost / 100 )
+    slightRefund = math.Clamp( slightRefund, -baseCost * 1.5, baseCost )
 
-    local cost = -baseCost + reduction
+    -- final cost
+    local cost = -baseCost + slightRefund
 
     self:SetGivenScore( cost )
 

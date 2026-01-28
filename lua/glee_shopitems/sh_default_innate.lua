@@ -246,7 +246,10 @@ if SERVER then
         function( self, owner ) -- setup func
             function self:PowerfulDeath( attacker, witnessing ) -- amped up death with lots of extra effects
                 if not IsValid( owner ) then return end
-                if not IsValid( attacker ) then return end
+                if not IsValid( attacker ) then -- always. die.
+                    attacker = game.GetWorld()
+
+                end
 
                 GAMEMODE:Bleed( owner, math.huge )
 
@@ -262,7 +265,13 @@ if SERVER then
                     local damage = DamageInfo()
                     damage:SetDamage( 5000000 )
                     damage:SetDamagePosition( owner:WorldSpaceCenter() )
-                    damage:SetDamageForce( terminator_Extras.dirToPos( attacker:GetShootPos(), owner:GetShootPos() ) * 200000000 )
+                    if IsValid( attacker ) then
+                        damage:SetDamageForce( terminator_Extras.dirToPos( attacker:GetShootPos(), owner:GetShootPos() ) * 200000000 )
+
+                    else
+                        damage:SetDamageForce( -vector_up * 200000000 )
+
+                    end
                     damage:SetAttacker( attacker )
                     damage:SetInflictor( attacker )
                     damage:SetDamageType( DMG_CLUB )
@@ -300,12 +309,14 @@ if SERVER then
                 if not terminator_Extras.PosCanSee( attacker:GetShootPos(), owner:GetShootPos(), MASK_SOLID_BRUSHONLY ) then return end
 
                 local witnessing = {}
+                local witnessingMask = {}
 
                 local purchaseShootPos = owner:GetShootPos()
                 for _, ply in ipairs( player.GetAll() ) do
                     if ply == owner then continue end
                     if not terminator_Extras.PosCanSee( purchaseShootPos, ply:GetShootPos(), MASK_SOLID_BRUSHONLY ) then continue end
                     table.insert( witnessing, ply )
+                    witnessingMask[ply] = true
 
                 end
 
@@ -323,6 +334,25 @@ if SERVER then
                 end
 
                 huntersGlee_Announce( witnessing, 20, 10, "YOU WITNESS " .. string.upper( owner:Nick() ) )
+
+                local notWitnessing = {}
+                for _, ply in ipairs( player.GetAll() ) do
+                    if witnessingMask[ply] then continue end
+                    if ply == owner then continue end
+                    table.insert( notWitnessing, ply )
+
+                end
+
+                -- let everyone else know that this 'lag' is intentional
+                if #notWitnessing > 0 then
+                    local blab = " SOUL WITNESSES THE GRIM FATE OF "
+                    if witnessingCount > 1 then
+                        blab = " SOULS BARE WITNESS TO THE GRIM FATE OF "
+
+                    end
+                    huntersGlee_Announce( notWitnessing, 20, 5, witnessingCount .. blab .. string.upper( owner:Nick() ) )
+
+                end
 
                 -- s OR not s
                 local SorNotS = ""
@@ -363,7 +393,7 @@ if SERVER then
                 attacker.ThrowingForceMul = ( attacker.ThrowingForceMul or 1000 ) * 1000
 
                 -- ATTACK!!!!!
-                timer.Simple( 0.4, function()
+                timer.Simple( 0.3, function()
                     if not IsValid( attacker ) then return end
                     if not IsValid( owner ) then return end
 
@@ -399,8 +429,8 @@ if SERVER then
 
                 end )
 
-                timer.Simple( 0.5, function()
-                    game.SetTimeScale( 0.3 )
+                timer.Simple( 0.35, function()
+                    game.SetTimeScale( 0.4 )
 
                 end )
 

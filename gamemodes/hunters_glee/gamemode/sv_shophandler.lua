@@ -113,6 +113,7 @@ hook.Add( "huntersglee_player_reset", "glee_shophandler_resetpurchasecounts", fu
 
 end )
 
+
 function GM:RefundShopItemCooldown( ply, toPurchase )
     GAMEMODE:noShopCooldown( ply, toPurchase )
     net.Start( "glee_invalidateshopcooldown" )
@@ -121,11 +122,6 @@ function GM:RefundShopItemCooldown( ply, toPurchase )
 
 end
 
-function GM:CloseShopOnPly( ply )
-    net.Start( "glee_closetheshop" )
-    net.Send( ply )
-
-end
 
 concommand.Add( "termhunt_purchase", function( ply, _, args, _ )
     GAMEMODE:purchaseItem( ply, args[1] )
@@ -142,12 +138,19 @@ concommand.Add( "termhunt_bots_purchase", function( ply, _, args, _ )
     end
 end, nil, "Makes all bots attempt to purchase the specified shop item." )
 
+
+function GM:CloseShopOnPly( ply )
+    net.Start( "glee_closetheshop" )
+    net.Send( ply )
+
+end
+
+-- time for new shop categories, close shop because it's not setup to refresh categories
 hook.Add( "PlayerSpawn", "glee_closeshopwhenspawning", function( spawned )
     net.Start( "glee_closetheshop" )
     net.Send( spawned )
 
 end )
-
 hook.Add( "PlayerDeath", "glee_closeshopwhendead", function( died )
     net.Start( "glee_closetheshop" )
     net.Send( died )

@@ -188,7 +188,10 @@ hook.Add( "PlayerDeath", "glee_storeslights", function( died, _, attacker )
 
     GAMEMODE.roundExtraData.nextHomicidalGleeSurfaces[ attacker:SteamID() ] = currentEvilnessToSurface + autoHomicidalEvilnessIncrements + extraAfterFirstSurface
 
+    GAMEMODE:GivePanic( attacker, attackersEvilness )
+
     if not attacker.glee_autoHomicidalGleeHint then
+        GAMEMODE:GivePanic( attacker, attackersEvilness * 2 )
         attacker.glee_autoHomicidalGleeHint = true
         huntersGlee_Announce( { attacker }, 10, 6, "So much death!\nIt's making you feel... Homicidally Gleeful...?" )
 
@@ -211,5 +214,10 @@ end )
 hook.Add( "glee_shover_shove", "glee_shover_slights", function( shoved )
     if not shoved:IsPlayer() then return end
     GAMEMODE:AddSlight( shoved.glee_lastShover, shoved, 0.5, "shoved them" )
+
+end )
+
+hook.Add( "huntersglee_player_reset", "glee_reset_autohomicidalgleehint", function( ply )
+    ply.glee_autoHomicidalGleeHint = nil
 
 end )

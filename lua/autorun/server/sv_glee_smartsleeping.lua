@@ -93,6 +93,34 @@ hook.Add( "Think", "glee_dynamicfreezing_think", function() -- calls the thinker
 
 end )
 
+local nextBreak = 0
+
+hook.Add( "Think", "glee_dynamicfreezing_laggingthink", function() -- deal damage to random sleepers if the server is lagging
+    local curTime = CurTime()
+    if nextBreak > curTime then return end
+    nextBreak = curTime + 1
+
+    local lagScale = physenv.GetLastSimulationTime() * 1000
+
+    local lagging = lagScale > 100
+    if not lagging then return end
+
+    local randomFrozenEnt = toFreeze[ math.random( 1, #toFreeze ) ]
+    if not IsValid( randomFrozenEnt ) then return end
+
+    damaged.glee_smartsleepingdontwake = true
+
+    local dmg = DamageInfo()
+    dmg:SetAttacker( game.GetWorld() )
+    dmg:SetInflictor( game.GetWorld() )
+    dmg:SetDamage( lagScale * 2 )
+    dmg:SetDamageType( DMG_CRUSH )
+    randomFrozenEnt:TakeDamageInfo( dmg )
+
+    damaged.glee_smartsleepingdontwake = nil
+
+end )
+
 terminator_Extras.SmartSleepEntity = function( ent, interval )
     interval = interval or 10
     table.insert( toFreeze, ent )
@@ -143,6 +171,7 @@ local name = "glee_sleeper_blastdamageratelimit"
 -- dont unchain entire stacks of stuff, do it slowly!
 hook.Add( "EntityTakeDamage", "glee_unchainsleepers", function( damaged, info )
     if not damaged.glee_issmartsleeping then return end
+    if damaged.glee_smartsleepingdontwake then return end
     if info:GetDamage() <= 1 then return end
     damagedCount = damagedCount + 1
     if damagedCount >= maxDamaged then

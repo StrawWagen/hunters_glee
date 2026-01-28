@@ -52,9 +52,33 @@ function GAMEMODE:DoGreedyPatch()
 
     GAMEMODE:speakAsHuntersGlee( "Made " .. breakablePatches .. " New navareas in breakable windows/brushes." )
 
-    local navmeshGroups, groupCorners = GAMEMODE:GetConnectedNavAreaGroups( navmesh.GetAllNavAreas() )
+    local navmeshGroups, groupCorners, navAreas = GAMEMODE:GetConnectedNavAreaGroups( navmesh.GetAllNavAreas() )
 
     GAMEMODE:speakAsHuntersGlee( "Understanding navmesh..." )
+
+    hook.Run( "glee_navmesh_beginvisiting" )
+
+    for i, area in ipairs( navAreas ) do
+        if i % 100 == 0 then
+            coroutine_yield()
+
+        end
+        -- cool hook that visits every navarea once per session!!!
+        hook.Run( "glee_navmesh_visit", area )
+
+    end
+    for i, area in ipairs( navAreas ) do
+        if i % 100 == 0 then
+            coroutine_yield()
+
+        end
+        hook.Run( "glee_navmesh_postvisit", area )
+
+    end
+
+    hook.Run( "glee_navmesh_finishvisiting" )
+
+    GAMEMODE:speakAsHuntersGlee( "Finding spots to patch..." )
 
     local potentialLinkages = GAMEMODE:FindPotentialLinkagesBetweenNavAreaGroups( navmeshGroups, groupCorners, nil )
 
@@ -708,41 +732,3 @@ function GAMEMODE:seeIfBreakableAndGetNormal( breakable )
 
     end
 end
-
--- sky data, used by signal strength
-
-GAMEMODE.isSkyOnMap = GAMEMODE.isSkyOnMap or nil
-GAMEMODE.highestZ = GAMEMODE.highestZ or nil
-GAMEMODE.areasUnderSky = GAMEMODE.areasUnderSky or nil
-
-local function reset()
-    GAMEMODE.isSkyOnMap = false
-    GAMEMODE.areasUnderSky = {}
-    GAMEMODE.highestZ = -math.huge
-
-end
-
-hook.Add( "glee_connectedgroups_begin", "glee_resetskydata", reset )
-
-local centerOffset = Vector( 0, 0, 25 )
-
-hook.Add( "glee_connectedgroups_visit", "glee_precacheskydata", function( area )
-    local underSky, hitPos = GAMEMODE:IsUnderSky( area:GetCenter() + centerOffset )
-    if underSky then
-        GAMEMODE.isSkyOnMap = true
-        GAMEMODE.areasUnderSky[ area ] = true
-
-    end
-    local currZ = hitPos.z
-    if currZ > GAMEMODE.highestZ then
-        GAMEMODE.highestZ = currZ
-
-    end
-end )
-
-hook.Add( "terminator_areapatcher_doneapatch", "glee_invalidate_greedypatch", function( _areasMade, areaCount )
-    if areaCount >= 1 then
-        GAMEMODE.HuntersGleeNeedsRepatching = true
-
-    end
-end ) 

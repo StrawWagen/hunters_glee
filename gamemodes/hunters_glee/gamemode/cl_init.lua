@@ -739,6 +739,7 @@ local function genericHints()
     local dead = me:Health() <= 0
 
     if inBetween then
+        -- hey you should open the shop!!!!
         if not me.openedHuntersGleeShop and me:GetScore() >= 50 then
             local clientsMenuKey = input.LookupBinding( "+menu" )
             if not clientsMenuKey then me.openedHuntersGleeShop = true return end
@@ -752,6 +753,7 @@ local function genericHints()
             return true, "You have score to spend, things to buy!\nPress \" " .. string.upper( phrase ) .. " \" to open the shop."
 
         end
+    -- hey you should mess with the alive people and revive yourself!!!
     elseif dead then
         local myScore = me:GetScore()
 
@@ -798,6 +800,7 @@ local function genericHints()
 
         end
 
+        -- dont spam flicker the flashlight hint
         if not me.glee_HasDoneSpectateFlashlight and render.GetLightColor( me:GetPos() ):LengthSqr() < 0.005 then
             me.flashlightAdditive = ( me.flashlightAdditive or 0 ) + 1
 
@@ -823,6 +826,7 @@ local function genericHints()
     end
 end
 
+-- click, click, click, read this text!
 local openTheDamnShopSound = Sound( "buttons/lightswitch2.wav" )
 local openTheDamnShopState = nil
 
@@ -847,6 +851,8 @@ local function paintTheDamnHint( _, theHint, cur )
     surface.drawShadowedTextBetter( theHint, "termhuntShopHintFont", textColor, paddingFromEdge, paddingFromEdge + hintPadding, false )
 
 end
+
+-- painting round end stuff
 
 local totalScoreNameOffset = glee_sizeScaled( nil, -90 )
 local totalScoreOffset = glee_sizeScaled( nil, -40 )
@@ -979,9 +985,10 @@ function HUDPaint()
     ply.displayedWinners = displayWinners
 
 end
-hook.Add( "HUDPaint", "termhunt_playerdisplay", HUDPaint )
+hook.Add( "HUDPaint", "termhunt_guicaller", HUDPaint )
 
 
+-- manage heartbeat sounds
 local function ClThink()
     local ply = LocalPlayer()
     local cur = UnPredictedCurTime()
@@ -989,17 +996,16 @@ local function ClThink()
 
     if spectating then return end
 
-    -- heartbeat sounds!
     local didBeat, interval = beatThink( ply, cur )
     if didBeat then
         hook.Run( "glee_cl_heartbeat", ply, interval )
 
     end
 end
-
 hook.Add( "Think", "termhunt_clthink", ClThink )
 
 
+-- weird bug where vms show up sometimes i think
 hook.Add( "PreDrawViewModel", "glee_dontdrawviewmodelsWHENDEAD", function( _vm, ply )
     if ply:Health() > 0 then return end -- they are alive
     if ( ply:GetObserverMode() == OBS_MODE_IN_EYE ) and IsValid( ply:GetObserverTarget() ) then return end -- spectating another player
@@ -1009,8 +1015,8 @@ hook.Add( "PreDrawViewModel", "glee_dontdrawviewmodelsWHENDEAD", function( _vm, 
 end )
 
 
--- flash the window on round state change!
--- only flash when round ends, and goes into active
+-- flash the gmod window!
+-- only flash when round ends, and when it goes into active
 local oldState = nil
 local toFlash = {
     [GAMEMODE.ROUND_ACTIVE]     = true,
@@ -1094,6 +1100,7 @@ hook.Add( "CalcView", "glee_override_spectating_angles", function( ply, _, ang, 
 
         }
         return view
+
     end
 
     if mode == OBS_MODE_IN_EYE then

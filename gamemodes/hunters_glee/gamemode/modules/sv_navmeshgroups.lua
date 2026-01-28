@@ -108,8 +108,6 @@ function GM:GetConnectedNavAreaGroups( navAreas )
 
     -- iterate over each navarea in the array
     for _, navArea in ipairs( navAreas ) do
-        hook.Run( "glee_connectedgroups_visit", navArea )
-
         -- check if the navarea has been visited
         if not visited[navArea] then
             -- the navarea has not been visited, so create a new group for it
@@ -475,54 +473,3 @@ function GM:TeleportRoomCheck()
 
     end
 end
-
-
-local function areasSurfaceArea( area )
-    return area:GetSizeX() * area:GetSizeY()
-
-end
-
--- navmesh understanding stuff
-local function reset()
-    GAMEMODE.isSkyOnMap = false
-    GAMEMODE.areasUnderSky = {}
-    GAMEMODE.highestZ = -math.huge
-    GAMEMODE.highestAreaZ = -math.huge
-    GAMEMODE.navmeshTotalSurfaceArea = 0
-    GAMEMODE.navmeshUnderSkySurfaceArea = 0
-
-end
-hook.Add( "InitPostEntity", "glee_baseline_navdata", reset )
-
-hook.Add( "glee_connectedgroups_begin", "glee_reset_navdata", reset )
-
-local centerOffset = Vector( 0, 0, 25 )
-
-hook.Add( "glee_connectedgroups_visit", "glee_precache_skydata", function( area )
-    local areasCenter = area:GetCenter()
-    local underSky, hitPos = GAMEMODE:IsUnderSky( areasCenter + centerOffset )
-    if underSky then
-        GAMEMODE.isSkyOnMap = true
-        GAMEMODE.areasUnderSky[ area ] = true
-        GAMEMODE.navmeshUnderSkySurfaceArea = GAMEMODE.navmeshUnderSkySurfaceArea + areasSurfaceArea( area )
-
-    end
-
-    local currHitZ = hitPos.z
-    if currHitZ > GAMEMODE.highestZ then
-        GAMEMODE.highestZ = currHitZ
-
-    end
-
-    local currAreaZ = areasCenter.z
-    if currAreaZ > GAMEMODE.highestAreaZ then
-        GAMEMODE.highestAreaZ = currAreaZ
-
-    end
-end )
-
-hook.Add( "glee_connectedgroups_visit", "glee_precache_navsurfacearea", function( area )
-    local areasSurface = areasSurfaceArea( area )
-    GAMEMODE.navmeshTotalSurfaceArea = GAMEMODE.navmeshTotalSurfaceArea + areasSurface
-
-end )

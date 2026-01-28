@@ -767,6 +767,7 @@ function GM:SpawnHunter( class, currSpawn )
     hunter:Spawn()
     table.insert( self.glee_Hunters, hunter )
     hunter:SetNW2Bool( "glee_IsHunter", true )
+    hunter.glee_IsAHunter = true
     hunter.glee_SpawnArea = spawnArea -- so we can prefer to spawn enemies from this area, if this bot ends up killing someone!
     hunter.glee_SpawnsetThatMadeMe = self.CurrSpawnSetName
 

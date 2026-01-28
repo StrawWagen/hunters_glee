@@ -255,6 +255,8 @@ function SWEP:OnRemove()
 end
 
 
+-- placing while dead begin
+
 local vec_up = Vector( 0, 0, 1 )
 SWEP.termPlace_MaxAreaSize = 100
 

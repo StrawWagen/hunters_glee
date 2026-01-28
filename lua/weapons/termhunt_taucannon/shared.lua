@@ -54,6 +54,13 @@ if CLIENT then
             PrimaryClip = ammo
         }
     end
+    function SWEP:HintPostStack()
+        local owner = self:GetOwner()
+
+        if not owner:GetNW2Bool( "glee_taucannon_primaryfired", false ) then return true, "PRIMARY ATTACK to... attack..." end
+        if not owner:GetNW2Bool( "glee_taucannon_secondaryfired", false ) then return true, "Hold SECONDARY ATTACK to charge the tau cannon.\nDon't let it overcharge!" end
+
+    end
 end
 
 local max_Charge = 20
@@ -89,6 +96,11 @@ function SWEP:DumpCharge()
     local chargeLevel = self:GetChargeLevel()
     if chargeLevel <= 0 then return end
 
+    if SERVER then
+        owner:SetNW2Bool( "glee_taucannon_secondaryfired", true )
+
+    end
+
     self:KillSound()
     local lvl = 75 + chargeLevel * 0.5
 
@@ -121,6 +133,7 @@ function SWEP:DumpCharge()
             effectdata:SetNormal( trace.HitNormal )
             effectdata:SetOrigin( trace.HitPos )
             util.Effect( "StunstickImpact", effectdata )
+
         end
     end
 
@@ -332,6 +345,11 @@ function SWEP:PrimaryAttack()
         owner:SetAnimation( PLAYER_ATTACK1 )
         if owner.RemoveAmmo then
             owner:RemoveAmmo( 1, self.Primary.Ammo )
+
+        end
+
+        if SERVER then
+            owner:SetNW2Bool( "glee_taucannon_primaryfired", true )
 
         end
 
