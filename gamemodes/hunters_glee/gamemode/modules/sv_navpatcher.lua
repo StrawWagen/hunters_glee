@@ -63,6 +63,7 @@ function GAMEMODE:DoGreedyPatch()
             coroutine_yield()
 
         end
+        if not IsValid( area ) then continue end
         -- cool hook that visits every navarea once per session!!!
         hook.Run( "glee_navmesh_visit", area )
 
@@ -72,6 +73,7 @@ function GAMEMODE:DoGreedyPatch()
             coroutine_yield()
 
         end
+        if not IsValid( area ) then continue end
         hook.Run( "glee_navmesh_postvisit", area )
 
     end
