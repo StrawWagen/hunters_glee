@@ -502,7 +502,6 @@ if SERVER then
 
             -- patience system - global timer, but we track if we created it
             GAMEMODE.roundExtraData.divinePatienceEnds = GAMEMODE.roundExtraData.divinePatienceEnds or ( CurTime() + 90 )
-            GAMEMODE.roundExtraData.divinePatienceHasExtended = GAMEMODE.roundExtraData.divinePatienceHasExtended or {}
 
             -- increase patience on player deaths (global hook, only create once)
             if not GAMEMODE.roundExtraData.createdThePatienceIncreaseHook then
@@ -512,18 +511,16 @@ if SERVER then
                     if victim:HasStatusEffect( "divine_chosen" ) then return end
                     if isStillGoing() == false then
                         hook.Remove( "PlayerDeath", "hunterslgee_increasedivinepatience" )
-                        return
+
+                    else
+                        if not GAMEMODE.roundExtraData.divinePatienceEnds then
+                            hook.Remove( "PlayerDeath", "hunterslgee_increasedivinepatience" )
+                            return
+
+                        end
+                        GAMEMODE.roundExtraData.divinePatienceEnds = math.max( CurTime() + 90, GAMEMODE.roundExtraData.divinePatienceEnds + 40 )
 
                     end
-                    if not GAMEMODE.roundExtraData.divinePatienceEnds then
-                        hook.Remove( "PlayerDeath", "hunterslgee_increasedivinepatience" )
-                        return
-
-                    end
-                    if GAMEMODE.roundExtraData.divinePatienceHasExtended[ victim ] then return end
-                    GAMEMODE.roundExtraData.divinePatienceEnds = math.max( CurTime() + 90, GAMEMODE.roundExtraData.divinePatienceEnds + 40 )
-                    GAMEMODE.roundExtraData.divinePatienceHasExtended[ victim ] = true
-
                 end )
             end
 
