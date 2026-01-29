@@ -262,11 +262,11 @@ if SERVER then
 
 	end
 
-	hook.Add( "InitPostEntity", "CrapVidCam_glee", function()
+	hook.Add( "InitPostEntity", "maxwell_glee", function()
 		if not GAMEMODE.IsReallyHuntersGlee then return end
 
-		-- keep 5 sent_balls spawned in the map
-		local spawnCount = 5
+		-- keep 5 X spawned in the map
+		local spawnCount = math.random( 1, 5 )
 
 		-- only enabled in x % of rounds
 		local enabledChance = math.Rand( 1, 15 )
