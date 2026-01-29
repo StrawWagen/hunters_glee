@@ -1,6 +1,8 @@
 
 local meta = FindMetaTable( "Player" )
 
+-- func that teleports ply to new pos, updating unstuck origin and handling unstuck process
+
 function meta:TeleportTo( pos )
     self.unstuckOrigin = pos
     if self:InVehicle() then
@@ -37,6 +39,7 @@ function meta:IsStuckBasic()
     local move = self:GetMoveType()
     if move == MOVETYPE_NOCLIP then return end
     if move == MOVETYPE_LADDER then return end
+    if move == MOVETYPE_OBSERVER then return end
 
     return true
 
