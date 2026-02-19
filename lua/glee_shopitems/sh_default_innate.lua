@@ -97,8 +97,8 @@ if SERVER then
             end )
 
             self:HookOnce( "KeyPress", function( ply, key ) -- funny sounds and pain on jump
-                if not ply:HasStatusEffect( "bad_knees" ) then return end
                 if key ~= IN_JUMP then return end
+                if not ply:HasStatusEffect( "bad_knees" ) then return end
 
                 if not ply:OnGround() then return end
                 if ply:WaterLevel() >= 3 then return end
@@ -493,14 +493,18 @@ if SERVER then
 
                 if armor > 0 and owner:OnGround() then
                     local velLeng = owner:GetVelocity():Length()
+                    if velLeng <= 25 then return end
+
                     local drain = ( velLeng / 10000 ) * 0.5
                     owner:GivePlayerBatteryCharge( -drain )
+
                 end
             end )
 
-            self:Hook( "KeyPress", function( ply, key )
-                if ply ~= owner then return end
+            self:HookOnce( "KeyPress", function( ply, key )
                 if key ~= IN_JUMP then return end
+                if not ply:HasStatusEffect( "mecha_legs" ) then return end
+
                 if not ply:OnGround() then return end
                 if ply:WaterLevel() >= 3 then return end
 
@@ -509,18 +513,24 @@ if SERVER then
                     local armor = ply:Armor()
                     local jumpBoost
                     if armor > 0 then
+                        ply:GivePlayerBatteryCharge( -0.25 )
                         jumpBoost = self.originalJumpPower * 0.3
                     else
                         jumpBoost = self.originalJumpPower * -0.3
                     end
+                    -- Applies velocity, thanks plymeta
                     ply:SetVelocity( Vector( 0, 0, jumpBoost ) )
+
+                    local pitch = math.random( 70, 80 ) + ( jumpBoost * 0.25 )
+
+                    ply:EmitSound( "npc/dog/dog_servo3.wav", 78, pitch, 0.6, CHAN_STATIC )
 
                 end )
             end )
 
             -- copied from juggernaut innate (lazy!!!)
-            self:Hook( "PlayerFootstep", function( ply, _pos, _foot ) -- clomp clomp
-                if ply ~= owner then return end
+            self:HookOnce( "PlayerFootstep", function( ply, _pos, _foot ) -- clomp clomp
+                if not ply:HasStatusEffect( "mecha_legs" ) then return end
 
                 local stepNum = math.random( 1, 7 )
                 local stepSnd = "hunters_glee/mechalegs/mechalegs_0" .. stepNum .. ".wav"
@@ -530,15 +540,22 @@ if SERVER then
                 util.ScreenShake( ply:GetPos(), velLeng / 125, 20, 0.4, velLeng * 1.2 )
 
                 local pitch = 70 + ( velLeng / 20 )
-                local volume = 0.2 + ( velLeng / 500 )
+                local volume = 0.2 + ( velLeng / 1500 )
+                local armor = ply:Armor()
+                if armor <= 0 then
+                    pitch = pitch - 30
+                    volume = volume - 0.1
+
+                end
                 ply:EmitSound( stepSnd, 80, pitch, volume, CHAN_AUTO )
 
                 return true
+
             end )
         end,
         function( self, owner ) -- teardown func
             owner:DoSpeedModifier( "mechalegs", nil )
-            
+
         end
     )
 
@@ -571,8 +588,8 @@ if SERVER then
                 end )
             end )
 
-            self:Hook( "PlayerFootstep", function( ply, _, foot ) -- clomp clomp
-                if ply ~= owner then return end
+            self:HookOnce( "PlayerFootstep", function( ply, _, foot ) -- clomp clomp
+                if not ply:HasStatusEffect( "juggernaut" ) then return end
 
                 local target = 0
                 if foot == 0 then
@@ -783,8 +800,8 @@ if SERVER then
 
             end )
 
-            self:Hook( "KeyPress", function( ply, key )
-                if ply ~= owner then return end
+            self:HookOnce( "KeyPress", function( ply, key )
+                if not ply:HasStatusEffect( "frog_legs" ) then return end
 
                 if key == IN_DUCK and ply:OnGround() and not self.primedJump then
                     self.primedJump = true
@@ -822,6 +839,7 @@ if SERVER then
                     dir.z = math.Clamp( dir.z, -0.15, 0.15 )
                     dir:Normalize()
                     local vel = dir * scalar
+                    -- Applies velocity, thanks plymeta
                     ply:SetVelocity( vel )
 
                     local theSound = frogLegsJumpSounds[ math.random( 1, #frogLegsJumpSounds ) ]
@@ -1662,8 +1680,8 @@ local items = {
     },
     [ "mechalegs" ] = {
         name = "Mecha Legs",
-        desc = "Mechanical leg augmentations.\nPowers your motion with Suit Battery.\nThey're basically dead weight when you run out of power.",
-        shCost = 200,
+        desc = "Mechanical leg augmentations.\nSpeed at the cost of Suit Battery.\nDead weight when you run out of power.",
+        shCost = 125,
         markup = 2,
         cooldown = math.huge,
         tags = { "INNATE" },
@@ -1702,7 +1720,7 @@ local items = {
         name = "Chameleon Gene",
         desc = "Become nearly invisible.\nYour chameleon skin can't take a beating, you take twice as much damage.\nYour weapons, and flashlight are still visible.",
         shCost = 350,
-        markup = 2,
+        markup = 1.5,
         cooldown = math.huge,
         tags = { "INNATE" },
         purchaseTimes = {
