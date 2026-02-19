@@ -36,6 +36,8 @@ function ENT:StartTouch( ent )
 	if not IsValid( ent ) then return end
 	if not ent:IsPlayer() then return end
 
+	if ent:HasWeapon( "glee_maxwell_weapon" ) then return end
+
 	local wep = ent:Give( "glee_maxwell_weapon" )
 	ent:SelectWeapon( "glee_maxwell_weapon" )
 	undo.ReplaceEntity( wep, self )

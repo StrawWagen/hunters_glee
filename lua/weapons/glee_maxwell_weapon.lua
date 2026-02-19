@@ -266,10 +266,14 @@ if SERVER then
 		if not GAMEMODE.IsReallyHuntersGlee then return end
 
 		-- keep 5 X spawned in the map
-		local spawnCount = math.random( 1, 5 )
+		local spawnCount = math.random( 1, 2 )
+		if math.random( 0, 100 ) < 5 then
+			spawnCount = math.random( 3, 6 )
 
-		-- only enabled in x % of rounds
-		local enabledChance = math.Rand( 1, 15 )
+		end
+
+		-- only enabled in x % of sessions
+		local enabledChance = math.Rand( 1, 10 )
 
 		-- won't spawn in areas thinner/smaller than this
 		local minAreaSize = 25
