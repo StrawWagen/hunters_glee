@@ -491,15 +491,6 @@ if SERVER then
 
                 owner:DoSpeedModifier( "mechalegs", speedMod )
 
-                local jumpPower = self.originalJumpPower
-                if armor > 0 then
-                    jumpPower = self.originalJumpPower * 1.3
-                else
-                    jumpPower = self.originalJumpPower * 0.7
-                end
-
-                owner:SetJumpPower( jumpPower )
-
                 if armor > 0 and owner:OnGround() then
                     local velLeng = owner:GetVelocity():Length()
                     local drain = ( velLeng / 10000 ) * 0.5
@@ -507,9 +498,24 @@ if SERVER then
                 end
             end )
 
-            self:Hook( "PlayerSpawn", function( spawned )
-                if spawned ~= owner then return end
-                spawned:SetJumpPower( self.originalJumpPower * 1.3 )
+            self:Hook( "KeyPress", function( ply, key )
+                if ply ~= owner then return end
+                if key ~= IN_JUMP then return end
+                if not ply:OnGround() then return end
+                if ply:WaterLevel() >= 3 then return end
+
+                timer.Simple( 0, function()
+                    if not IsValid( ply ) then return end
+                    local armor = ply:Armor()
+                    local jumpBoost
+                    if armor > 0 then
+                        jumpBoost = self.originalJumpPower * 0.3
+                    else
+                        jumpBoost = self.originalJumpPower * -0.3
+                    end
+                    ply:SetVelocity( Vector( 0, 0, jumpBoost ) )
+
+                end )
             end )
 
             -- copied from juggernaut innate (lazy!!!)
@@ -532,7 +538,7 @@ if SERVER then
         end,
         function( self, owner ) -- teardown func
             owner:DoSpeedModifier( "mechalegs", nil )
-            owner:SetJumpPower( self.originalJumpPower )
+            
         end
     )
 
