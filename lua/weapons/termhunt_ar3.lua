@@ -198,6 +198,7 @@ function SWEP:Reload()
 
     timer.Create( timerName, 1.3, 1, function()
         if not IsValid( self ) then return end
+        if not IsValid( self:GetOwner() ) then return end
 
         self:EmitSound( "hunters_glee/ar3/ar3_pump.wav" )
 
