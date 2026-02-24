@@ -21,7 +21,7 @@ local function startTheMapVoteTimer()
 
             doingMapVote = true
 
-            GAMEMODE:speakAsHuntersGlee( "A forced mapvote has been queued..." )
+            GAMEMODE:SpeakAsHuntersGlee( "A forced mapvote has been queued..." )
 
         else
             -- wait until round and podium is over
@@ -30,7 +30,7 @@ local function startTheMapVoteTimer()
             if not MapVote.state then return end
             if MapVote.state.isInProgress then return end
 
-            GAMEMODE:speakAsHuntersGlee( "Starting forced mapvote..." )
+            GAMEMODE:SpeakAsHuntersGlee( "Starting forced mapvote..." )
             MapVote.Start()
 
             mapVoteIncrement = 0

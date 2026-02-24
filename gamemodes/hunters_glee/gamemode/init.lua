@@ -601,7 +601,7 @@ function GM:SetupTheLargestGroupsNStuff()
         if not self.HuntersGleeDoneTheGreedyPatch and not game.SinglePlayer() then
 
             if not self.GreedyPatchCouroutine then
-                self:speakAsHuntersGlee( "Beginning greedy navpatcher process..." )
+                self:SpeakAsHuntersGlee( "Beginning greedy navpatcher process..." )
 
             end
 
@@ -624,7 +624,7 @@ function GM:SetupTheLargestGroupsNStuff()
                 if curError and curError ~= "done" then
                     local stack = debug.traceback( self.GreedyPatchCouroutine )
                     ErrorNoHalt( "GREEDY PATCH ERROR: " .. tostring( self ) .. "\n" .. curError .. "\n" .. stack .. "\n" )
-                    GAMEMODE:speakAsHuntersGlee( "!!!!!!!GREEDY PATCHER ERROR!!!!!!!! " .. curError )
+                    GAMEMODE:SpeakAsHuntersGlee( "!!!!!!!GREEDY PATCHER ERROR!!!!!!!! " .. curError )
                     break
 
                 end

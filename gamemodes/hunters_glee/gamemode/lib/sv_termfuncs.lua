@@ -651,7 +651,7 @@ function GM:anyAreCloserThan( positions, checkPosition, closerThanDistance, zTol
     end
 end
 
-function GM:speakAsHuntersGlee( msg )
+function GM:SpeakAsHuntersGlee( msg )
     PrintMessage( HUD_PRINTTALK, "HUNTER'S GLEE: " .. msg )
 
 end

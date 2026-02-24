@@ -20,7 +20,7 @@ function GAMEMODE:DoGreedyPatch()
         end
     end
 
-    GAMEMODE:speakAsHuntersGlee( "Made " .. doorPatches .. " New navareas under doors." )
+    GAMEMODE:SpeakAsHuntersGlee( "Made " .. doorPatches .. " New navareas under doors." )
 
     --glasss
     local glasss = ents.FindByClass( "func_breakable_surf" )
@@ -50,11 +50,11 @@ function GAMEMODE:DoGreedyPatch()
         end
     end
 
-    GAMEMODE:speakAsHuntersGlee( "Made " .. breakablePatches .. " New navareas in breakable windows/brushes." )
+    GAMEMODE:SpeakAsHuntersGlee( "Made " .. breakablePatches .. " New navareas in breakable windows/brushes." )
 
     local navmeshGroups, groupCorners, navAreas = GAMEMODE:GetConnectedNavAreaGroups( navmesh.GetAllNavAreas() )
 
-    GAMEMODE:speakAsHuntersGlee( "Understanding navmesh..." )
+    GAMEMODE:SpeakAsHuntersGlee( "Understanding navmesh..." )
 
     hook.Run( "glee_navmesh_beginvisiting" )
 
@@ -80,15 +80,15 @@ function GAMEMODE:DoGreedyPatch()
 
     hook.Run( "glee_navmesh_finishvisiting" )
 
-    GAMEMODE:speakAsHuntersGlee( "Finding spots to patch..." )
+    GAMEMODE:SpeakAsHuntersGlee( "Finding spots to patch..." )
 
     local potentialLinkages = GAMEMODE:FindPotentialLinkagesBetweenNavAreaGroups( navmeshGroups, groupCorners, nil )
 
-    GAMEMODE:speakAsHuntersGlee( "Patching..." )
+    GAMEMODE:SpeakAsHuntersGlee( "Patching..." )
 
     GAMEMODE:TakePotentialLinkagesAndLinkTheValidOnes( potentialLinkages )
 
-    GAMEMODE:speakAsHuntersGlee( "Greedy navpatcher is... DONE!" )
+    GAMEMODE:SpeakAsHuntersGlee( "Greedy navpatcher is... DONE!" )
 
     GAMEMODE.HuntersGleeDoneTheGreedyPatch = navmesh.GetNavAreaCount()
 
@@ -245,7 +245,7 @@ function GAMEMODE:FindPotentialLinkagesBetweenNavAreaGroups( groups, groupCorner
         local group1Size = #group1
         if nextStillGoingHint < CurTime() then
             nextStillGoingHint = CurTime() + stillGoingInterval
-            GAMEMODE:speakAsHuntersGlee( "Understanding navarea group #" .. group1Id .. " of " .. #groups .. "..." )
+            GAMEMODE:SpeakAsHuntersGlee( "Understanding navarea group #" .. group1Id .. " of " .. #groups .. "..." )
 
         end
         -- small group! just check proximity, dont waste time checking every pair
@@ -408,7 +408,7 @@ function GAMEMODE:TakePotentialLinkagesAndLinkTheValidOnes( groupLinkages )
         end
     end
 
-    GAMEMODE:speakAsHuntersGlee( "Success! Made " .. linkedCount .. " New links between orphan areas" )
+    GAMEMODE:SpeakAsHuntersGlee( "Success! Made " .. linkedCount .. " New links between orphan areas" )
 
 end
 
