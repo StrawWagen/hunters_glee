@@ -4,8 +4,13 @@ local GM = GAMEMODE or GM
 
 function GM:ShopInitialThink()
     self:SetupShopCategories()
-    self.shopItems = self.shopItems or {}
-    self.validClientItemDirectories = self.validClientItemDirectories or {}
+
+    self.invalidShopItems = {}
+    self.shopItems = {}
+    self.validClientItemDirectories = {}
+
+    net.Start( "glee_pleasepleasegivemeshopdata" )
+    net.SendToServer()
 
 end
 

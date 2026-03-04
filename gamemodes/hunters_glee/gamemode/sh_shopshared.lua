@@ -105,13 +105,6 @@ end
 
 -- all below is shared
 
-function GM:SetupShop()
-    GAMEMODE.shopItems = {}
-    GAMEMODE.shopCategories = {}
-    GAMEMODE.invalidShopItems = {}
-
-end
-
 function GM:GetShopItemData( identifier )
     local dat = GAMEMODE.shopItems[ identifier ]
     if not istable( dat ) then return end

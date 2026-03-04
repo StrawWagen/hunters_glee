@@ -11,6 +11,9 @@ local validPrefixes = {
 function GM:ShopInitialThink()
     self:SetupShopCategories()
 
+    self.GobbledShopItems = nil
+
+    self.invalidShopItems = {}
     self.shopItems = {}
     self.validServerItemDirectories = {}
     self.validClientItemDirectories = {}
@@ -54,12 +57,29 @@ function GM:ShopInitialThink()
     end
     print( "GLEE: SV Gobbled " .. count .. " shop items..." )
 
-    GAMEMODE:UpdateShopFor( player.GetAll() )
-
     self.GobbledShopItems = true
     hook.Run( "glee_post_shopitemgobble" )
 
 end
+
+
+util.AddNetworkString( "glee_pleasepleasegivemeshopdata" )
+net.Receive( "glee_pleasepleasegivemeshopdata", function( len, ply )
+    local nextRequest = ply.glee_NextShopDataRequest or 0
+    if CurTime() < nextRequest then return end
+    ply.glee_NextShopDataRequest = CurTime() + 0.1
+
+    local requestTimerName = "glee_pleasepleasegivemeshopdata_timer_" .. ply:GetCreationID()
+    timer.Create( requestTimerName, 0.1, 1, function()
+        if not IsValid( ply ) then timer.Remove( requestTimerName ) return end
+        if not GAMEMODE.GobbledShopItems then return end -- wait....
+
+        GAMEMODE:UpdateShopFor( ply )
+        timer.Remove( requestTimerName )
+
+    end )
+end )
+
 
 util.AddNetworkString( "glee_gobbledirectories" )
 

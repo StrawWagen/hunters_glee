@@ -48,7 +48,6 @@ end
 
 function GM:SharedSetup()
     GAMEMODE:ResetShopItemCooldowns()
-    GAMEMODE:SetupShop()
     GAMEMODE:ShopInitialThink()
 
 end
