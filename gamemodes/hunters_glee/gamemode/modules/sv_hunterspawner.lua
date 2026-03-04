@@ -1019,7 +1019,7 @@ function GM:getValidHunterPos()
             end
         end
 
-        if not visibleToAPly and currentArea:IsVisible( nearestPlyPos ) then -- double check, make sure the area is completely obscured
+        if not visibleToAPly and nearestPlyPos and currentArea:IsVisible( nearestPlyPos ) then -- double check, make sure the area is completely obscured
             visibleToAPly = true
 
         end
