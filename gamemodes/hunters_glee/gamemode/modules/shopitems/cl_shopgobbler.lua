@@ -4,14 +4,17 @@ local GM = GAMEMODE or GM
 
 function GM:ShopInitialThink()
     self:SetupShopCategories()
-    self.shopItems = {}
-    self.validClientItemDirectories = {}
+    self.shopItems = self.shopItems or {}
+    self.validClientItemDirectories = self.validClientItemDirectories or {}
 
 end
 
 net.Receive( "glee_gobbledirectories", function()
     if nextRecieve > CurTime() then return end
     nextRecieve = CurTime() + 0.1
+
+    GAMEMODE.shopItems = {}
+    GAMEMODE.validClientItemDirectories = {}
 
     local count = net.ReadUInt( 16 )
     GAMEMODE.validClientItemDirectories = GAMEMODE.validClientItemDirectories or {}

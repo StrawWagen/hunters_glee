@@ -46,38 +46,11 @@ if SERVER then -- load order has to be right :(
 
 end
 
-function GM:GetHuntersClass()
-    return "terminator_nextbot_snail"
-
-end
-
 function GM:SharedSetup()
     GAMEMODE:ResetShopItemCooldowns()
     GAMEMODE:SetupShop()
     GAMEMODE:ShopInitialThink()
 
-end
-
-local function catch( err )
-    print( "FUNCTION ERRORED WHEN CLEANUPTIMERS RAN!" )
-    ErrorNoHaltWithStack( err )
-
-end
-
-function GM:CleanupTimers()
-    GAMEMODE.TimersToCleanup = GAMEMODE.TimersToCleanup or {}
-    for _, tbl in ipairs( GAMEMODE.TimersToCleanup ) do
-        if tbl.name then
-            timer.Stop( tbl.name )
-
-        end
-
-        local func = tbl.func
-        if func and IsValid( tbl.targ ) then
-            xpcall( func, catch, tbl.targ )
-        end
-    end
-    GAMEMODE.TimersToCleanup = nil
 end
 
 function GM:PostCleanupMap()
