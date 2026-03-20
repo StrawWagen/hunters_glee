@@ -1232,7 +1232,7 @@ hook.Add( "WeaponEquip", "glee_fixignitedweapons", function( wep, ply )
 end )
 
 hook.Add( "EntityTakeDamage", "huntersglee_makepvpreallybad", function( dmgTarg, dmg )
-    if dmg:IsFallDamage() then return end -- shoving doesnt get scaled
+    if dmg:IsFallDamage() then return end -- shoving and goomba doesnt get scaled
 
     local attacker = dmg:GetAttacker()
     local inflictor = dmg:GetInflictor()
@@ -1242,7 +1242,7 @@ hook.Add( "EntityTakeDamage", "huntersglee_makepvpreallybad", function( dmgTarg,
         dmg:ScaleDamage( 0 )
 
     elseif areBothPlayers and not selfDamage and not dmg:IsExplosionDamage() then --lol explode
-        if dmg:IsDamageType( DMG_DISSOLVE ) and inflictor and inflictor:GetClass() == "prop_combine_ball" then
+        if dmg:IsDamageType( DMG_DISSOLVE ) and inflictor and inflictor:GetClass() == "prop_combine_ball" then -- special cball case
             local nextpermittedballdamage = dmgTarg.huntersglee_nextpermittedballdamage or 0
             if nextpermittedballdamage > CurTime() then
                 dmg:ScaleDamage( 0 )

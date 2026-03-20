@@ -68,7 +68,6 @@ include( "modules/sv_navmeshgroups.lua" )
 include( "modules/sv_navpatcher.lua" )
 include( "modules/sv_navmeshcategorizer.lua" )
 include( "modules/sv_doorbash.lua" )
-include( "modules/sv_goomba.lua" )
 include( "modules/sv_mapvote.lua" )
 include( "modules/sv_guilt.lua" )
 include( "modules/sv_modelscale.lua" )
@@ -81,6 +80,7 @@ include( "modules/sv_seeding_rewarder.lua" )
 include( "modules/spawnset/sv_spawnsetvote.lua" )
 include( "modules/spawnset/sv_spawnsetsounds.lua" )
 include( "modules/statuseffects/sv_statuseffects.lua" )
+include( "modules/sv_falldamage_andgoomba.lua" )
 include( "modules/firsttimeplayers/sv_firsttimeplayers.lua" )
 
 include( "modules/battery/sv_battery.lua" )
@@ -961,7 +961,6 @@ function GM:setupFinish()
 end
 
 function GM:concmdSetup()
-    RunConsoleCommand( "mp_falldamage", "1" )
     RunConsoleCommand( "ai_disabled", "0" )
     RunConsoleCommand( "ai_ignoreplayers", "0" )
 

@@ -83,7 +83,7 @@ if SERVER then
 
             owner:SetJumpPower( self.originalJumpPower * 0.7 )
 
-            self:HookOnce( "GetFallDamage", function( ply, speed ) -- crazy high fall damage
+            self:HookOnce( "glee_getfalldamage", function( ply, speed ) -- crazy high fall damage
                 if not ply:HasStatusEffect( "bad_knees" ) then return end
 
                 for count = 1, 4 do
@@ -813,7 +813,7 @@ if SERVER then
                 end )
             end )
 
-            self:Hook( "GetFallDamage", function( ply, speed )
+            self:Hook( "glee_getfalldamage", function( ply, speed )
                 if ply ~= owner then return end
 
                 local dmg = speed / 60
