@@ -93,10 +93,13 @@ end
 
 function SWEP:DumpCharge()
     local owner = self:GetOwner()
+
     local chargeLevel = self:GetChargeLevel()
     if chargeLevel <= 0 then return end
 
-    if SERVER then
+    local validOwner = IsValid( owner )
+
+    if SERVER and validOwner then
         owner:SetNW2Bool( "glee_taucannon_secondaryfired", true )
 
     end
@@ -137,8 +140,6 @@ function SWEP:DumpCharge()
         end
     end
 
-    local validOwner = IsValid( owner )
-
     local hullSizeMul = 1
     hullSizeMul = hullSizeMul + chargeLevel / 2
 
@@ -151,7 +152,7 @@ function SWEP:DumpCharge()
     bullet.Dir      = dir
     bullet.Src      = start
     bullet.Force    = 500 + chargeLevel * 5
-    bullet.Spread   = 0 + chargeLevel * 0.1
+    bullet.Spread   = Vector( 0, 0, 0 )
     bullet.HullSize = 1
     bullet.Damage   = dmg
     bullet.Tracer	= 1
@@ -379,7 +380,7 @@ function SWEP:PrimaryAttack()
                     bullet.Dir = owner:GetAimVector() -2 * ( owner:GetAimVector():Dot( trace.HitNormal ) ) * trace.HitNormal
                     bullet.Src = trace.HitPos
                     bullet.Force = 100
-                    bullet.Spread = 0
+                    bullet.Spread = Vector( 0.01, 0.01, 0 )
                     bullet.HullSize = 1
                     bullet.Damage = gauss_Dmg
                     bullet.Tracer		= 0
@@ -402,7 +403,7 @@ function SWEP:PrimaryAttack()
         bullet.Dir = owner:GetAimVector()
         bullet.Src = owner:GetShootPos()
         bullet.Force = 100 + self:GetChargeLevel()
-        bullet.Spread = 0
+        bullet.Spread = Vector( 0, 0, 0 )
         bullet.HullSize = 1
         bullet.Damage = 20
         bullet.Tracer		= 1

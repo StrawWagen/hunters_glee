@@ -20,6 +20,9 @@ local entMeta = FindMetaTable( "Entity" )
 
 local plyMeta = FindMetaTable( "Player" )
 
+
+-- navarea caching, we get player's navmeshes alot, so it's worth it to cache
+
 function plyMeta:GetNavAreaData()
     if not IsValid( self.glee_CachedNavArea ) then
         self:CacheNavArea()
@@ -45,7 +48,7 @@ function plyMeta:CacheNavArea()
 
         local oldArea = self.glee_CachedOldNavArea
         if oldArea and oldArea ~= area then
-            hook.Run( "glee_ply_changednavareas", self, oldArea, newArea )
+            hook.Run( "glee_ply_changednavareas", self, oldArea, area )
             self.glee_CachedOldNavArea = area
 
         elseif not oldArea then
@@ -57,6 +60,16 @@ function plyMeta:CacheNavArea()
 
     end
 end
+
+hook.Add( "glee_sv_validgmthink", "glee_cachenavareas", function( players )
+    for _, ply in ipairs( players ) do
+        if ply:Health() > 0 then
+            ply:CacheNavArea()
+
+        end
+    end
+end )
+
 
 -- manage the BPM of ppl HERE
 
@@ -470,11 +483,13 @@ hook.Add( "huntersglee_givescore", "huntersglee_storealivescoring", function( sc
     if addedscore < 1 then return end
     if GAMEMODE:RoundState() ~= 1 then return end
 
-    local oldPlyScore = GAMEMODE.roundScore[ scorer:GetCreationID() ] or 0
-    GAMEMODE.roundScore[ scorer:GetCreationID() ] = oldPlyScore + addedscore
+    local oldPlyScore = GAMEMODE.roundScore[scorer:GetCreationID()] or 0
+    GAMEMODE.roundScore[scorer:GetCreationID()] = oldPlyScore + addedscore
 
 end )
 
+
+-- heart attack thinker!
 
 function GM:DoHeartAttackThink( ply )
     if not IsValid( ply ) then return end
@@ -536,7 +551,6 @@ function GM:GetHeartAttackThreshold( ply )
 
 end
 
--- HEART ATTACKS!
 hook.Add( "huntersglee_heartbeat_beat", "glee_heartattack_think", function( ply, BPM )
     local threshold = GAMEMODE:GetHeartAttackThreshold( ply )
     if BPM > threshold then -- above thresh, add
@@ -582,8 +596,9 @@ hook.Add( "huntersglee_player_into_active", "glee_yaponroundstart", function( pl
 end )
 
 
-GM.TEAM_PLAYING = 1
-GM.TEAM_SPECTATE = 2
+GM.TEAM_PLAYING = 1 -- alive
+GM.TEAM_SPECTATE = 2 -- spectating, as a ghost
+GM.TEAM_WON = 3 -- spectating, but you can't respawn, get cooler items in the shop and bot controlling
 
 function GM:spectatifyPlayer( ply )
     ply:SetNWBool( "termhunt_spectating", true )
@@ -604,22 +619,7 @@ function GM:unspectatifyPlayer( ply )
 
     ply:SetNWBool( "termhunt_spectating", false )
     ply:UnSpectate()
-    ply.overrideSpawnAction = true
-
-end
-
-function GM:ensureNotSpectating( ply ) -- this is kinda redundant
-    if ply.termHuntTeam ~= GAMEMODE.TEAM_SPECTATE then return end
-
-    ply.spectateDoFreecam = nil
-    ply.spectateDoFreecamForced = nil
-    ply.termHuntTeam = GAMEMODE.TEAM_PLAYING
-
-    ply:SetNWBool( "termhunt_spectating", false )
-    ply:UnSpectate()
-
-    if ply:Health() <= 0 then return end
-    ply:KillSilent()
+    ply.glee_needsRespawning = true
 
 end
 
@@ -977,13 +977,11 @@ function GM:managePlayerSpectating()
         local newMode = ply:GetObserverMode()
         if ply.termHuntTeam == GAMEMODE.TEAM_SPECTATE then
             GAMEMODE:SpectateOverrides( ply, newMode, deadPlayers )
-        elseif newMode > 0 and not ply.gleeIsMimic then -- ply is spectating but their team doesnt match!
-            GAMEMODE:ensureNotSpectating( ply )
+        elseif newMode > 0 then -- ply is spectating but their team doesnt match!
+            GAMEMODE:unspectatifyPlayer( ply )
         end
     end
 end
-
-GM.waitForSomeoneToLive = nil
 
 -- spectate what killed us
 hook.Add( "PlayerDeath", "glee_spectatedeadplayers", function( died, _, killer )
@@ -993,8 +991,15 @@ hook.Add( "PlayerDeath", "glee_spectatedeadplayers", function( died, _, killer )
 
 end )
 
+
+-- respawning players when 
+--    canRespawn is true
+--    or they've been forced out of spectate
+
+GM.waitForSomeoneToLive = nil
+
 hook.Add( "PlayerDeath", "glee_default_waittospawn", function( ply )
-    ply.nextForcedRespawn = CurTime() + 0.25
+    ply.glee_nextForcedRespawn = CurTime() + 0.25
 
 end )
 
@@ -1005,8 +1010,8 @@ function GM:PlayerDeathThink( ply )
             GAMEMODE:spectatifyPlayer( ply )
 
         end
-    elseif GAMEMODE.canRespawn or ply.overrideSpawnAction or hasHp then
-        local lastForced = ply.nextForcedRespawn or 0
+    elseif GAMEMODE.canRespawn or ply.glee_needsRespawning or hasHp then
+        local lastForced = ply.glee_nextForcedRespawn or 0
 
         if lastForced < CurTime() then
             local plys = player.GetAll()
@@ -1020,16 +1025,17 @@ function GM:PlayerDeathThink( ply )
                         GAMEMODE.waitForSomeoneToLive = nil
                     end )
                     ply:Spawn()
-                    ply.overrideSpawnAction = nil
+                    ply.glee_needsRespawning = nil
 
                     for _, currPly in ipairs( plys ) do
-                        currPly.nextForcedRespawn = CurTime() + math.Rand( 0.5, 1 )
+                        currPly.glee_nextForcedRespawn = CurTime() + math.Rand( 0.5, 1 )
 
                     end
                 else return end
+            -- respawn players normally
             else
                 ply:Spawn()
-                ply.overrideSpawnAction = nil
+                ply.glee_needsRespawning = nil
                 GAMEMODE.waitForSomeoneToLive = nil
 
             end
@@ -1038,7 +1044,9 @@ function GM:PlayerDeathThink( ply )
 end
 
 
-local spaceCheckUpOffset = Vector( 0,0,64 )
+-- massive custom spawning logic
+
+local spaceCheckUpOffset = Vector( 0, 0, 64 )
 local spaceCheckHull = Vector( 17, 17, 2 )
 local occupiedSpawnAreas = {}
 
@@ -1053,8 +1061,8 @@ function GM:PlayerSpawn( pl, transiton )
     local newPos = nil
     local center, area = nil, nil
 
-    if pl.unstuckOrigin then
-        newPos = pl.unstuckOrigin
+    if pl.glee_unstuckOrigin then
+        newPos = pl.glee_unstuckOrigin
 
     elseif IsValid( anotherAlivePlayer ) and not hook.Run( "huntersglee_blockspawn_nearplayers", pl, anotherAlivePlayer ) and GAMEMODE.hasNavmesh then
         for count = 1, 12 do
@@ -1064,8 +1072,8 @@ function GM:PlayerSpawn( pl, transiton )
             center, area = GAMEMODE:GetNearbyWalkableArea( anotherAlivePlayer, start, count )
 
             if center then
+                center = center + Vector( 0, 0, 10 )
 
-                center = center + Vector( 0,0,10 )
                 local tDat = {}
                 tDat.start = center
                 tDat.endpos = center + spaceCheckUpOffset
@@ -1087,7 +1095,7 @@ function GM:PlayerSpawn( pl, transiton )
         -- if we aren't the first person spawning, then always spawn us in occupied groups
         if IsValid( anotherAlivePlayer ) then
             local randomUsedArea = GAMEMODE:GetAreaInOccupiedBigGroupOrRandomBigGroup()
-            if randomUsedArea and randomUsedArea.IsValid and randomUsedArea:IsValid() then
+            if IsValid( randomUsedArea ) then
                 newPos = randomUsedArea:GetCenter()
 
             -- fallback
@@ -1108,7 +1116,7 @@ function GM:PlayerSpawn( pl, transiton )
             pl:TeleportTo( offsettedNewPos )
 
         end )
-        -- look at other ply so its easy to find eachother
+        -- look at our anchor ply so its easy to find eachother
         timer.Simple( engine.TickInterval() * 2, function()
             if not IsValid( pl ) then return end
             if not IsValid( anotherAlivePlayer ) then return end
@@ -1264,16 +1272,6 @@ hook.Add( "EntityTakeDamage", "huntersglee_makepvpreallybad", function( dmgTarg,
             end
         else
             dmg:ScaleDamage( 0.5 )
-
-        end
-    end
-end )
-
-
-hook.Add( "glee_sv_validgmthink", "glee_cachenavareas", function( players )
-    for _, ply in ipairs( players ) do
-        if ply:Health() > 0 then
-            ply:CacheNavArea()
 
         end
     end

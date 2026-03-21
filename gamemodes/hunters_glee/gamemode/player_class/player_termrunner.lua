@@ -37,8 +37,8 @@ function PLAYER:SetupPlayerFuncsCheck()
 
     end
 
-    realPlayer.Resurrect = function()
-        if not realPlayer.unstuckOrigin then return end
+    realPlayer.Resurrect = function( _self, resurrectPos )
+        realPlayer.glee_unstuckOrigin = resurrectPos
 
         hook.Run( "termhunt_plyresurrected", realPlayer )
 

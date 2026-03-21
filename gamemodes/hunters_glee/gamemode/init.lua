@@ -902,7 +902,7 @@ function GM:beginSetup()
         ply.shopItemCooldowns = {} -- reset wep cooldowns
         ply.isTerminatorHunterKiller = nil -- dont have this persist thru rounds
         ply:ResetSkulls()
-        self:ensureNotSpectating( ply )
+        self:unspectatifyPlayer( ply )
         hook.Run( "huntersglee_player_reset", ply )
 
     end

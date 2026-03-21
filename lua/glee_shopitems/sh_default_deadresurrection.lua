@@ -118,8 +118,7 @@ local function divineIntervention( purchaser )
 
         end
 
-        purchaser.unstuckOrigin = interventionPos
-        purchaser:Resurrect()
+        purchaser:Resurrect( interventionPos )
 
         termHunt_ElectricalArcEffect( purchaser, interventionPos, vector_up, 4 )
 
@@ -283,8 +282,7 @@ local function infernalIntervention( purchaser )
         -- intervention pos, but further from a player, and they can be unsafe.
         local interventionPos = divineInterventionPos( purchaser, true, 10 )
 
-        purchaser.unstuckOrigin = interventionPos
-        purchaser:Resurrect()
+        purchaser:Resurrect( interventionPos )
 
     end )
 end
@@ -564,9 +562,8 @@ if SERVER then
             self.resurrect = function()
                 local area = GAMEMODE:GetAreaInOccupiedBigGroupOrRandomBigGroup()
                 local randAreasCenter = area:GetCenter()
-                owner.unstuckOrigin = randAreasCenter
 
-                owner:Resurrect()
+                owner:Resurrect( randAreasCenter )
 
                 self.respawnCount = ( self.respawnCount or 0 ) + 1
                 owner:SetNW2Int( "glee_divineintervention_respawncount", self.respawnCount )

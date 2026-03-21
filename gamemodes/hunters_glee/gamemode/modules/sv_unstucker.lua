@@ -4,7 +4,7 @@ local meta = FindMetaTable( "Player" )
 -- func that teleports ply to new pos, updating unstuck origin and handling unstuck process
 
 function meta:TeleportTo( pos )
-    self.unstuckOrigin = pos
+    self.glee_unstuckOrigin = pos
     if self:InVehicle() then
         self:ExitVehicle()
 
@@ -17,7 +17,7 @@ function meta:TeleportTo( pos )
         if self:GetPos():DistToSqr( pos ) < 750^2 then return end
 
         -- didnt teleport ply... try AGAIN!
-        self.unstuckOrigin = pos
+        self.glee_unstuckOrigin = pos
         self:SetPos( pos )
         self:unstuckFullHandle()
 
@@ -25,7 +25,7 @@ function meta:TeleportTo( pos )
 end
 
 function meta:BeginUnstuck()
-    self.unstuckOrigin = nil
+    self.glee_unstuckOrigin = nil
     self:unstuckFullHandle()
 
 end
@@ -53,7 +53,7 @@ function meta:unstuckFullHandle()
         self.glee_Unstucking = true
         local shouldBeValid
 
-        local origin = self.unstuckOrigin or self:GetPos()
+        local origin = self.glee_unstuckOrigin or self:GetPos()
         local result = self:checkIfPlyIsStuckAndHandle( origin )
 
         -- they are stuck
@@ -65,8 +65,8 @@ function meta:unstuckFullHandle()
 
         -- not stuck anymore!!! break the recursion!
         elseif result == false then
-            if self.unstuckOrigin ~= nil then
-                self.unstuckOrigin = nil
+            if self.glee_unstuckOrigin ~= nil then
+                self.glee_unstuckOrigin = nil
 
             end
             self.glee_Unstucking = nil

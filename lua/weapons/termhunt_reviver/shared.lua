@@ -186,8 +186,6 @@ function SWEP:ResurrectPly( ply )
 
     owner:SetNW2Bool( "gleereviver_resurrected", true )
 
-    ply.unstuckOrigin = self.toResurrectPos
-
     timer.Simple( 0.1, function()
         if not IsValid( ply ) then return end
         local filterAllPlayers = RecipientFilter()
@@ -239,7 +237,7 @@ function SWEP:ResurrectPly( ply )
 
     end
 
-    ply:Resurrect()
+    ply:Resurrect( self.toResurrectPos )
     return true
 
 end
@@ -282,6 +280,7 @@ function SWEP:Think()
                 generic_KillProgressBar( owner, "glee_resurrector" )
                 self:ResurrectPly( ent )
                 done = true
+
             end
         end
         if done == true then
