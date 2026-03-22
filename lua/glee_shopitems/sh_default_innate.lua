@@ -928,6 +928,7 @@ if SERVER then
                     local randomPos = randomNavArea:GetCenter()
 
                     owner:TeleportTo( randomPos )
+                    owner:SetVelocity( Vector( 0, 0, 0 ) )
 
                     owner:EmitSound( "ambient/levels/labs/electric_explosion3.wav", 85, 40, 0.4, CHAN_STATIC )
                     owner:EmitSound( "ambient/levels/labs/electric_explosion5.wav", 85, 100, 1, CHAN_STATIC )
@@ -1083,7 +1084,7 @@ if CLIENT then
                 end
 
                 surface_SetDrawColor( 0, 0, 0, alpha )
-                surface_DrawRect( -ScrW() * 0.5, -ScrH() * 0.5, ScrW(), ScrH() )
+                surface_DrawRect( -ScrW(), -ScrH(), ScrW() * 2, ScrH() * 2 )
 
             end )
 

@@ -596,9 +596,16 @@ hook.Add( "huntersglee_player_into_active", "glee_yaponroundstart", function( pl
 end )
 
 
+function GM:PlyCanRespawn( ply )
+    if ply.termHuntTeam == GAMEMODE.TEAM_ESCAPED then return false end
+    return true
+
+end
+
+
 GM.TEAM_PLAYING = 1 -- alive
 GM.TEAM_SPECTATE = 2 -- spectating, as a ghost
-GM.TEAM_WON = 3 -- spectating, but you can't respawn, get cooler items in the shop and bot controlling
+GM.TEAM_ESCAPED = 3 -- spectating, but you can't respawn, get cooler items in the shop and free bot controlling
 
 function GM:spectatifyPlayer( ply )
     ply:SetNWBool( "termhunt_spectating", true )
@@ -610,14 +617,25 @@ function GM:spectatifyPlayer( ply )
 
 end
 
+function GM:escapifyPlayer( ply )
+    ply:SetNWBool( "termhunt_escaped", true )
+    ply:Spectate( OBS_MODE_DEATHCAM )
+
+    ply.spectateDoFreecam = CurTime() + 8
+    ply.spectateDoFreecamForced = CurTime() + 2
+    ply.termHuntTeam = GAMEMODE.TEAM_ESCAPED
+
+end
+
 function GM:unspectatifyPlayer( ply )
-    if ply.termHuntTeam ~= GAMEMODE.TEAM_SPECTATE then return end
+    if ply.termHuntTeam == GAMEMODE.TEAM_PLAYING then return end
 
     ply.spectateDoFreecam = nil
     ply.spectateDoFreecamForced = nil
     ply.termHuntTeam = GAMEMODE.TEAM_PLAYING
 
     ply:SetNWBool( "termhunt_spectating", false )
+    ply:SetNWBool( "termhunt_escaped", false )
     ply:UnSpectate()
     ply.glee_needsRespawning = true
 
@@ -671,7 +689,7 @@ end
 -- spectate player by steamid
 concommand.Add( "glee_spectate_player", function( ply, cmd, args )
     if not IsValid( ply ) then return end
-    if ply.termHuntTeam ~= GAMEMODE.TEAM_SPECTATE then return end
+    if ply.termHuntTeam == GAMEMODE.TEAM_PLAYING then return end
     if not args[1] then return end
 
     local ID = args[1]
@@ -716,6 +734,11 @@ end
 function GM:StopSpectatingThing( ply )
     local target = ply:GetObserverTarget()
     ply:SetObserverMode( OBS_MODE_ROAMING )
+
+    if ply:IsDrivingEntity() then -- controlling a bot
+        drive.PlayerStopDriving( ply )
+
+    end
     if IsValid( ply:GetParent() ) then
         ply:SetParent( NULL )
 
@@ -725,12 +748,23 @@ function GM:StopSpectatingThing( ply )
 
     end
 
+    ply:SetNotSolid( true )
+
     net.Start( "glee_stoppedspectating" )
     net.Send( ply )
 
     self:FixAnglesOf( ply )
 
 end
+
+hook.Add( "StartEntityDriving", "glee_unparentbeforedriving", function( ent, ply )
+    if ply.termHuntTeam == GAMEMODE.TEAM_PLAYING then return end
+    if not IsValid( ply:GetParent() ) then return end
+    ply:SetParent( NULL )
+    ply:SetObserverMode( OBS_MODE_ROAMING )
+    ply:SetNotSolid( true )
+
+end )
 
 local nextSpectateIdleCheck = {}
 
@@ -747,8 +781,7 @@ local nextSpectateIdleCheck = {}
             -- switch between OBS_MODE_CHASE and OBS_MODE_IN_EYE
 
 local function DoKeyPressSpectateSwitch( ply, keyPressed )
-    if not SERVER then return end
-    if ply.termHuntTeam ~= GAMEMODE.TEAM_SPECTATE then return end
+    if ply.termHuntTeam == GAMEMODE.TEAM_PLAYING then return end
     local mode = ply:GetObserverMode()
 
     local followingThing = mode == OBS_MODE_CHASE or mode == OBS_MODE_IN_EYE
@@ -760,6 +793,12 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
     local actionTime = ply.glee_ghostEntActionTime or 0
     local wasGhostEnting = actionTime + 0.25 > CurTime()
     if IsValid( placing ) or wasGhostEnting then return end
+
+    local driving = ply:GetDrivingEntity()
+    if IsValid( driving ) then
+        return
+
+    end
 
     local spectated = nil
     local currentlySpectating = ply:GetObserverTarget()
@@ -1144,7 +1183,7 @@ function GM:PlayerSpawn( pl, transiton )
     player_manager.RunClass( pl, "Spawn" )
 
     -- If we are in transition, do not touch player's weapons
-    if ( !transiton ) then
+    if not transiton then
         -- Call item loadout function
         hook.Call( "PlayerLoadout", GAMEMODE, pl )
     end

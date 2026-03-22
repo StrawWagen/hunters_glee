@@ -1058,6 +1058,11 @@ hook.Add( "CalcView", "glee_override_spectating_angles", function( ply, _, ang, 
     local isTerm, spectateTarget = IsSpectatingTerminator()
     local mode = ply:GetObserverMode()
 
+    if ply:IsDrivingEntity() then -- yield to driving system
+        return
+
+    end
+
     if mode == OBS_MODE_CHASE and IsValid( spectateTarget ) then
         local pivot
         if spectateTarget.GetShootPos then

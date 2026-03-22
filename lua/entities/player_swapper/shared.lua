@@ -217,6 +217,7 @@ function ENT:SwapPlayerAndTerminator( player, terminator )
     util.Effect( "eff_huntersglee_dicebeam", beam, true )
 
     player:TeleportTo( terminatorPos )
+    player:SetVelocity( terminator:GetVelocity() )
 
     if terminator.SetPosNoTeleport then
         terminator_Extras.TeleportTermTo( terminator, playerPos ) -- sets their pos correctly, AND kills their coroutine
