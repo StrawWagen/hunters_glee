@@ -36,6 +36,15 @@ function ENT:SpawnFunction( ply, tr )
 end
 
 if SERVER and terminator_Extras then
+
+    local function angerEverything()
+        for _, ent in ents.Iterator() do
+            if not ent.ReallyAnger then continue end
+            ent:ReallyAnger( 120 )
+
+        end
+    end
+
     local zHeightToStartCalling = 500
 
     local heli_SpeedLimit = 4000
@@ -81,12 +90,8 @@ if SERVER and terminator_Extras then
 
         self.calledForHeli = true
 
-        for _, ent in ents.Iterator() do
-            if ent.ReallyAnger then
-                ent:ReallyAnger( 120 )
+        angerEverything()
 
-            end
-        end
     end
 
     local function makeHeliFriendlyWith( heli, thing )
@@ -103,7 +108,7 @@ if SERVER and terminator_Extras then
         local heliDir = heliVel:GetNormalized()
         local curSpeed = heliVel:Length()
 
-        if curSpeed <= 10 then
+        if curSpeed <= 150 then
             heliDir = heli:GetForward()
 
         end
@@ -112,7 +117,7 @@ if SERVER and terminator_Extras then
 
         local blockedTrData = {
             start = helisPos,
-            endpos = helisPos + heliDir * curSpeed * 1.25,
+            endpos = helisPos + heliDir * curSpeed * 1.5,
             mask = MASK_SOLID,
             mins = Vector( callingHeliMins, callingHeliMins, callingHeliMins / 4 ),
             maxs = Vector( callingHeliMaxs, callingHeliMaxs, callingHeliMaxs / 4 ),
@@ -182,6 +187,7 @@ if SERVER and terminator_Extras then
         heli.rescueHeliArrivedFromPos = spawnPos
         heli.originalRescuePos = targetPos
         heli.currentHeliGoal = "rescue"
+        heli.nextAngerEverything = CurTime() + 10
 
         heli.glee_PrettyName = "Rescue Heli"
 
@@ -272,6 +278,14 @@ if SERVER and terminator_Extras then
         end
     end
 
+    local function heliManageAngering( self )
+        if CurTime() < self.nextAngerEverything then return end
+        self.nextAngerEverything = CurTime() + 10
+
+        angerEverything()
+
+    end
+
     local vecUp400 = Vector( 0, 0, 400 )
     local vecUp200 = Vector( 0, 0, 200 )
 
@@ -352,6 +366,10 @@ if SERVER and terminator_Extras then
                     idealMovePos = self.originalRescuePos
 
                 end
+
+            elseif IsValid( currentRescueTarget ) and currentRescueTarget:GetNWEntity( "glee_RappelSourceEnt", NULL ) == self then
+                self.currentHeliTask = "rescue_waitForRescueTargetToRappel"
+                idealMovePos = myPos
 
             -- approach rescue target!
             elseif IsValid( currentRescueTarget ) then
@@ -452,6 +470,7 @@ if SERVER and terminator_Extras then
 
         heliManageMusic( self )
         heliManageRope( self )
+        heliManageAngering( self )
 
         -- ideal movepos!
         -- cast rays in front of us, tighter if we're fast
@@ -508,6 +527,8 @@ if SERVER and terminator_Extras then
                 results[penalty * 1.15] = lastBest
 
             end
+            local oneWasClear
+
             for i = 1, count do
                 local currDist = distance
                 if i > 2 then
@@ -534,6 +555,7 @@ if SERVER and terminator_Extras then
                 local traceResult = util.TraceHull( traceDataMove )
 
                 if traceResult.StartSolid then continue end
+                oneWasClear = true
 
                 local penalty = getPenaltyForPos( traceResult.HitPos, traceResult )
 
@@ -545,8 +567,12 @@ if SERVER and terminator_Extras then
 
             local bestPos = nil
 
-            if table.Count( results ) <= 0 then
-                ErrorNoHaltWithStack("STUCK!!!")
+            if not oneWasClear and self:VisibleVec( idealMovePos ) and distToIdeal < 500 then
+                bestPos = idealMovePos
+                self.heli_lastBestPos = nil
+                self.heli_lastBestPosPenalty = nil
+
+            elseif not oneWasClear then
                 for _ = 1, 10 do
                     local offfsettedPos = myPos + VectorRand() * 500
                     if not util.IsInWorld( offfsettedPos ) then continue end
@@ -569,6 +595,7 @@ if SERVER and terminator_Extras then
 
                 self.heli_lastBestPos = bestPos
                 self.heli_lastBestPosPenalty = smallestPenalty
+
             end
 
             SafeRemoveEntityDelayed( self.ourPathTrack, 0.1 )
