@@ -1,7 +1,9 @@
 
+local falldamageDivisor = 15 -- how much damage per speed falling
+
 -- fall on breakable stuff to reduce fall damage!
 function GM:GetFallDamage( faller, speed )
-    local damage = speed / 8 -- apparently this ensures parity with mp_falldamage 1
+    local damage = speed / falldamageDivisor
 
     local fallersHealth = faller:Health()
     local maxDamage = fallersHealth * 4 -- they only have this much "mass" to deal damage with
