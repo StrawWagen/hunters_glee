@@ -5,6 +5,8 @@ local ownSoulNearFade = CreateClientConVar( "huntersglee_cl_ownsoul_nearfade", 0
 
 local LocalPlayer = LocalPlayer
 local IsValid = IsValid
+local bit = bit
+local util = util
 
 local upToDateData = {}
 local souls = {}
@@ -126,7 +128,7 @@ local function soulSetup( soul )
 end
 
 local function createSoul( ply )
-    if IsValid( ply.glee_soul ) then
+    if IsValid( ply.glee_soul ) then -- fallback, shouldnt happen
         SafeRemoveEntity( ply.glee_soul )
         ply.glee_soul = nil
 
@@ -137,10 +139,11 @@ local function createSoul( ply )
 
     ply:CallOnRemove( "glee_deletesoul", function( ent )
         stopShowing( ent.glee_soul )
+
     end )
 
     soul:SetOwner( ply )
-    souls[ ply ] = soul
+    souls[ply] = soul
     ply.glee_soul = soul
 
     soul.glee_IsSoulRagdoll = true
@@ -154,6 +157,9 @@ local function createSoul( ply )
         soul:SetBodygroup( bGroup["id"], ply:GetBodygroup( bGroup["id"] ) )
 
     end
+
+    soul:SetSkin( ply:GetSkin() )
+
     function soul.GetPlayerColor( self )
         local owner = self:GetOwner()
         if not IsValid( owner ) then return vec_zero end

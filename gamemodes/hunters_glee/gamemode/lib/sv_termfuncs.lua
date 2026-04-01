@@ -380,25 +380,25 @@ function GM:getFurthestConnectedNav( start, dist, ignoreBlocker )
 
 end
 
-local vec40Z = Vector( 0,0,40 )
+local vec40Z = Vector( 0, 0, 40 )
 
-function GM:GetNearbyWalkableArea( playerReference, start, count )
+function GM:GetNearbyWalkableArea( playerReference, start, count, occupiedSpawnAreas )
     local spawnTraceOffset = vec40Z
     local res = GAMEMODE:getNearestPosOnNav( start, 20000 )
     local startArea = res.area
 
-    if not ( startArea and startArea.IsValid and startArea:IsValid() ) then return end
+    if not IsValid( startArea ) then return end
     local canBeUnderwater = startArea:IsUnderwater()
-    local occupiedSpawnAreas = occupiedSpawnAreas or {}
 
     local scoreData = {}
     scoreData.startPos = res.pos
     scoreData.allowUnderwater = startArea:IsUnderwater()
     scoreData.traceOffset = spawnTraceOffset
+    scoreData.occupiedSpawnAreas = occupiedSpawnAreas or {}
 
     local scoreFunction = function( scoreData, area1, area2 )
 
-        if occupiedSpawnAreas[area2:GetID()] then return 0 end
+        if scoreData.occupiedSpawnAreas[area2:GetID()] then return 0 end
         if area2:IsUnderwater() and not canBeUnderwater then return 0 end
 
         local area2Center = area2:GetCenter()
@@ -406,6 +406,7 @@ function GM:GetNearbyWalkableArea( playerReference, start, count )
         local score = distanceTravelled * math.Rand( 0.5, 1.5 )
         local traceOffset = scoreData.traceOffset
 
+        -- pass thru these crappy areas but only if they're the last choice
         if area2:IsUnderwater() and not scoreData.allowUnderwater then
             score = 1
         end

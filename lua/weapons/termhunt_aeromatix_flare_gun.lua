@@ -5,7 +5,6 @@ SWEP.Author             = "AeroMatix" -- + edited by straw w wagen
 SWEP.Spawnable          = true
 SWEP.PrintName          = "Flare Gun"
 SWEP.Category           = "Hunter's Glee"
-SWEP.InventoryIcon      = "flaregun_hud"
 
 SWEP.HoldType           = "pistol"
 SWEP.Weight             = 3

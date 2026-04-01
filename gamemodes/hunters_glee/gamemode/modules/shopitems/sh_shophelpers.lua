@@ -3,14 +3,26 @@ local GM = GM or GAMEMODE
 local shopHelpers = GM.shopHelpers or {}
 GM.shopHelpers = shopHelpers
 
+-- alive! in the hunt
 function shopHelpers.aliveCheck( purchaser )
     if purchaser:Health() <= 0 then return false, "You must be alive to purchase this." end
     return true, ""
 
 end
 
+-- dead! keep it interesting for the alive people!
 function shopHelpers.undeadCheck( purchaser )
     if purchaser:Health() > 0 then return false, "You must be dead to purchase this." end
+    return true, ""
+
+end
+
+-- escaped! just spectating, can't respawn, but can control bots!
+function shopHelpers.escapedCheck( purchaser )
+    if purchaser:GetNWInt( "glee_spectateteam", GAMEMODE.TEAM_PLAYING ) ~= GAMEMODE.TEAM_ESCAPED then
+        return false, "You must escape, to purchase this."
+
+    end
     return true, ""
 
 end

@@ -205,7 +205,7 @@ local enabled = {}
 
 hook.Add( "glee_sv_validgmthink_active", "glee_spawner_managegenericspawns", function()
     if nextCheck > CurTime() then return end
-    nextCheck = CurTime() + GAMEMODE:ScaledGenericSpawnerRate( 5 )
+    nextCheck = CurTime() + GAMEMODE:ScaledGenericSpawnerRate( 5 ) -- check this every 5 seconds, slower/faster if the spawnset desires
 
     -- validate the spawned tables
     for className, entsSpawned in ipairs( created ) do
@@ -249,46 +249,118 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawner_managegenericspawns", fun
     end
 end )
 
-
-hook.Add( "huntersglee_round_into_limbo", "glee_resetgenericspawnchances", function()
+local function cleanup()
     enabled = nil
     enabled = {}
     created = nil
     created = {}
     currentlySpawning = nil
     currentlySpawning = {}
+
+    for className, data in pairs( GAMEMODE.genericSpawnTables ) do
+        if data.expireOnRoundEnd then
+            GAMEMODE.genericSpawnTables[className] = nil
+
+        end
+    end
+end
+
+
+hook.Add( "huntersglee_round_into_limbo", "glee_resetgenericspawnchances", function()
+    cleanup()
 
 end )
 
 hook.Add( "PreCleanupMap", "glee_resetgenericspawnchances", function()
-    enabled = nil
-    enabled = {}
-    created = nil
-    created = {}
-    currentlySpawning = nil
-    currentlySpawning = {}
+    cleanup()
 
 end )
 
+function GM:IsGenericSpawning( className )
+    local spawnTables = GAMEMODE.genericSpawnTables
+    if not spawnTables then return false end
 
+    return spawnTables[className] ~= nil
+
+end
 
 
 -- THE GENERIC SPAWNER IN QUESTION
 
 -- call this func once and the gamemode will maintain X count of ents on the map
 -- just run the function with a class, and itll spawn it somewhere big enough for minAreaSize
--- chance is per round chance for it to start being respawned
--- if you want to do something cooler, see the beartrap, crate, skull spawner for functioning examples
+-- chance is per round chance for it to start being spawned
+-- if you want to do something cooler with custom spawnpos weights, see the beartrap, crate, skull spawner for functioning examples
 
-function GM:RandomlySpawnEnt( className, maxCount, chance, minAreaSize, radius, preSpawnedFunc, postSpawnedFunc )
+-- eg.... 
+-- you would put this at the very end of your shiny 'lua/entities/sent_ball.lua'
+--[[
+
+-- only enable if gamemode is GLEE
+local GAMEMODE = GAMEMODE or GM
+if not GAMEMODE.RandomlySpawnEntTbl then return end
+
+GAMEMODE:RandomlySpawnEntTbl( "sent_ball", {
+
+    -- keep 5 sent_balls spawned in the map
+    maxCount = 5,
+
+    -- only enabled in x % of rounds
+    chance = 10,
+
+    -- won't spawn in areas thinner/smaller than this
+    minAreaSize = 25,
+
+    -- optional, radius from players to spawn within
+    -- radius = 5000, -- defaults to 5000
+
+    -- optional
+    -- called on ent BEFORE it's spawned, also blocks this spawn from trying to find a "SpawnFunction" on the sent's ENT table
+    -- preSpawnedFunc = function( spawned )
+    --     print( "you will soon be unable to escape the", spawned )
+    -- end,
+
+    -- optional
+    -- called on ent after it's spawned
+    -- postSpawnedFunc = function( spawned )
+    --     print( "you cannot escape the", spawned )
+    -- end,
+
+    -- optional
+    -- if true, spawner will delete itself on round end 
+    -- expireOnRoundEnd = true,
+
+} )
+
+--]]
+
+-- USE THIS ONE
+function GM:RandomlySpawnEntTbl( className, data )
     local spawnTables = GAMEMODE.genericSpawnTables
     if not spawnTables then
         spawnTables = {}
         GAMEMODE.genericSpawnTables = spawnTables
 
     end
-    local curr = {
-        className = className,
+
+    if not className then error( "RandomlySpawnEntTbl: missing className" ) end
+    if data.className then error( "RandomlySpawnEntTbl: .className should not be in .data" ) end
+    if not data.chance then error( "RandomlySpawnEntTbl: missing chance for " .. className ) end
+    if not data.maxCount then error( "RandomlySpawnEntTbl: missing maxCount for " .. className ) end
+
+    data.className = className
+    data.minAreaSize = data.minAreaSize or 25
+    data.radius = data.radius or 5000
+
+    spawnTables[className] = data
+
+end
+-- USE THE ABOVE ONE!
+
+
+-- dont use this its here for backwards compat
+function GM:RandomlySpawnEnt( className, maxCount, chance, minAreaSize, radius, preSpawnedFunc, postSpawnedFunc )
+    local data = {
         chance = chance,
         maxCount = maxCount,
         minAreaSize = minAreaSize or 25,
@@ -297,45 +369,7 @@ function GM:RandomlySpawnEnt( className, maxCount, chance, minAreaSize, radius, 
         postSpawnedFunc = postSpawnedFunc,
 
     }
-    spawnTables[className] = curr
+
+    GAMEMODE:RandomlySpawnEntTbl( className, data )
 
 end
-
--- eg.... 
--- you would put this at the very end of your shiny 'lua/entities/sent_ball.lua'
---[[
-
--- only enable if gamemode is GLEE
-local GAMEMODE = GAMEMODE or GM
-if not GAMEMODE.RandomlySpawnEnt then return end
-
-
--- keep 5 sent_balls spawned in the map
-local spawnCount = 5
-
--- only enabled in x % of rounds
-local enabledChance = 10
-
--- won't spawn in areas thinner/smaller than this
-local minAreaSize = 25 
-
--- optional, radius from players to spawn within
-local radius = 5000 -- defaults to 5000 when nil
-
--- optional
--- called on ent BEFORE it's spawned, also blocks this spawn from trying to find a "SpawnFunction" on the sent's ENT table
-local function preSpawnedFunc( spawned )
-    print( "you will soon be unable to escape the", spawned )
-
-end
-
--- optional
--- called on ent after it's spawned
-local function postSpawnedFunc( spawned )
-    print( "you cannot escape the", spawned )
-
-end
-
-GAMEMODE:RandomlySpawnEnt( "sent_ball", spawnCount, enabledChance, minAreaSize, radius, preSpawnedFunc, postSpawnedFunc )
-
---]]

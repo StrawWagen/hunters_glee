@@ -580,7 +580,7 @@ end )
 
 
 hook.Add( "huntersglee_player_into_active", "glee_yaponroundstart", function( ply )
-    if math.random( 0, 100 ) > 100 then return end -- 25% chance to play a line
+    if math.random( 0, 100 ) > 25 then return end -- 25% chance to play a line
     if player.GetCount() < 5 then return end -- only when it's PACKED!
     if GAMEMODE:GetPanic( ply ) > 25 then return end
 
@@ -590,6 +590,7 @@ hook.Add( "huntersglee_player_into_active", "glee_yaponroundstart", function( pl
     timer.Simple( math.Rand( 5, 15 ), function()
         if not IsValid( ply ) then return end
         if ply:Health() <= 0 then return end
+        if ply:IsSpeaking() then return end -- they're already saying something in vc!
         ply:EmitSound( line, 75, math.random( 99, 101 ), 1, CHAN_AUTO )
 
     end )
@@ -602,14 +603,21 @@ function GM:PlyCanRespawn( ply )
 
 end
 
-
+-- these are defined in shared
+--[[
 GM.TEAM_PLAYING = 1 -- alive
 GM.TEAM_SPECTATE = 2 -- spectating, as a ghost
 GM.TEAM_ESCAPED = 3 -- spectating, but you can't respawn, get cooler items in the shop and free bot controlling
+--]]
 
 function GM:spectatifyPlayer( ply )
-    ply:SetNWBool( "termhunt_spectating", true )
-    ply:Spectate( OBS_MODE_DEATHCAM )
+    --ErrorNoHaltWithStack("A")
+    if ply:Alive() then
+        ply:KillSilent()
+
+    end
+    ply:SetNWInt( "glee_spectateteam", GAMEMODE.TEAM_SPECTATE )
+    ply:Spectate( OBS_MODE_ROAMING )
 
     ply.spectateDoFreecam = CurTime() + 8
     ply.spectateDoFreecamForced = CurTime() + 2
@@ -618,24 +626,31 @@ function GM:spectatifyPlayer( ply )
 end
 
 function GM:escapifyPlayer( ply )
-    ply:SetNWBool( "termhunt_escaped", true )
-    ply:Spectate( OBS_MODE_DEATHCAM )
+    --ErrorNoHaltWithStack("B")
+    if ply:Alive() then
+        ply:KillSilent()
+
+    end
+    ply:SetNWInt( "glee_spectateteam", GAMEMODE.TEAM_ESCAPED )
+    ply:Spectate( OBS_MODE_ROAMING )
 
     ply.spectateDoFreecam = CurTime() + 8
     ply.spectateDoFreecamForced = CurTime() + 2
     ply.termHuntTeam = GAMEMODE.TEAM_ESCAPED
 
+    hook.Run( "glee_ply_escaped", ply )
+
 end
 
 function GM:unspectatifyPlayer( ply )
+    --ErrorNoHaltWithStack("C")
     if ply.termHuntTeam == GAMEMODE.TEAM_PLAYING then return end
 
     ply.spectateDoFreecam = nil
     ply.spectateDoFreecamForced = nil
     ply.termHuntTeam = GAMEMODE.TEAM_PLAYING
 
-    ply:SetNWBool( "termhunt_spectating", false )
-    ply:SetNWBool( "termhunt_escaped", false )
+    ply:SetNWInt( "glee_spectateteam", GAMEMODE.TEAM_PLAYING )
     ply:UnSpectate()
     ply.glee_needsRespawning = true
 
@@ -768,20 +783,9 @@ end )
 
 local nextSpectateIdleCheck = {}
 
--- if placing
-    -- if following player, unfollow
-    -- do nothing otherwise
-
--- elseif its been >0.5s since we were last placing ( stops peoples camera snapping to players right after they place stuff and havent let go of key )
-    -- if left click
-        --if not following ply, then follow nearest alive player
-        --if following player, follow next alive player
-    -- if right click
-        -- if following ply
-            -- switch between OBS_MODE_CHASE and OBS_MODE_IN_EYE
-
 local function DoKeyPressSpectateSwitch( ply, keyPressed )
     if ply.termHuntTeam == GAMEMODE.TEAM_PLAYING then return end
+
     local mode = ply:GetObserverMode()
 
     local followingThing = mode == OBS_MODE_CHASE or mode == OBS_MODE_IN_EYE
@@ -789,20 +793,23 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
 
     nextSpectateIdleCheck[ply] = CurTime() + 0.1
 
+    -- dont snap to spec targs when placing
     local placing = ply.ghostEnt
+    if IsValid( placing ) then return end
+
+    -- wait a second after placing, before snapping to spec targs
     local actionTime = ply.glee_ghostEntActionTime or 0
     local wasGhostEnting = actionTime + 0.25 > CurTime()
-    if IsValid( placing ) or wasGhostEnting then return end
+    if wasGhostEnting then return end
 
+    -- if driving a bot, don't snap
     local driving = ply:GetDrivingEntity()
-    if IsValid( driving ) then
-        return
-
-    end
+    if IsValid( driving ) then return end
 
     local spectated = nil
     local currentlySpectating = ply:GetObserverTarget()
 
+    -- orbiting our body
     if deathCamming then
         if isMovementKey( keyPressed ) and ply.spectateDoFreecamForced < CurTime() then
             shutDownDeathCam( ply )
@@ -822,6 +829,7 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
             GAMEMODE:StopSpectatingThing( ply )
 
         end
+    -- start spectating! or switch to the next spectate target!
     elseif keyPressed == IN_ATTACK or keyPressed == IN_ATTACK2 then
         local direction
         if keyPressed == IN_ATTACK then
@@ -843,7 +851,7 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
             end
         end
 
-        -- go to next player
+        -- go to next player/bot
         if followingThing then
             local toSpectateCheck = table.Copy( stuffToSpectate )
             if direction == -1 then
@@ -903,11 +911,13 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
 
             end
         end
+    -- stop following thing, go to freecam
     elseif isMovementKey( keyPressed ) then
         if followingThing then
             GAMEMODE:StopSpectatingThing( ply )
 
         end
+    -- switch between chase and in eye
     elseif keyPressed == IN_JUMP then
         if followingThing then
             net.Start( "glee_switchedspectatemodes" )
@@ -920,16 +930,31 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
 
             end
         end
+    elseif keyPressed == IN_ZOOM and followingThing and currentlySpectating.isTerminatorHunterBased then
+        if ply:GetNWInt( "glee_spectateteam", GAMEMODE.TEAM_PLAYING ) == GAMEMODE.TEAM_ESCAPED then
+            local drivemode = "drive_sandbox"
+
+            if currentlySpectating.GetEntityDriveMode then
+                drivemode = currentlySpectating:GetEntityDriveMode( ply )
+
+            end
+
+            drive.PlayerStartDriving( ply, currentlySpectating, drivemode )
+
+        end
+    -- the thing we were spectating just died!
     elseif followingThing and currentlySpectating.Health and currentlySpectating:Health() <= 0 then
         GAMEMODE:StopSpectatingThing( ply )
 
         local toWatch
         local time
 
+        -- it has a real killer, spectate that!
         if currentlySpectating.glee_KillerToSpectate then
             toWatch = currentlySpectating.glee_KillerToSpectate
             time = 2
 
+        -- otherwise, spectate someone else alive
         else
             time = math.random( 10, 15 )
 
@@ -937,6 +962,7 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
 
         local afkCheckPos = ply:GetPos()
 
+        -- only auto-spectate killer, or random ply, if we're laid back, the kind of player to just watch without flying around 
         timer.Simple( time, function()
             if not IsValid( ply ) then return end -- lol ragequit
             if ply:Health() > 0 then return end
@@ -1014,10 +1040,12 @@ function GM:managePlayerSpectating()
     local deadPlayers = self:getDeadListeners()
     for _, ply in player.Iterator() do
         local newMode = ply:GetObserverMode()
-        if ply.termHuntTeam == GAMEMODE.TEAM_SPECTATE then
+        if ply.termHuntTeam == GAMEMODE.TEAM_SPECTATE or ply.termHuntTeam == GAMEMODE.TEAM_ESCAPED then
             GAMEMODE:SpectateOverrides( ply, newMode, deadPlayers )
+
         elseif newMode > 0 then -- ply is spectating but their team doesnt match!
             GAMEMODE:unspectatifyPlayer( ply )
+
         end
     end
 end
@@ -1045,8 +1073,9 @@ end )
 function GM:PlayerDeathThink( ply )
     local hasHp = ply:Health() > 0
     if not GAMEMODE.canRespawn and not hasHp then
-        if ply.termHuntTeam ~= GAMEMODE.TEAM_SPECTATE then
+        if ply.termHuntTeam == GAMEMODE.TEAM_PLAYING then
             GAMEMODE:spectatifyPlayer( ply )
+            ply:SetObserverMode( OBS_MODE_DEATHCAM )
 
         end
     elseif GAMEMODE.canRespawn or ply.glee_needsRespawning or hasHp then
@@ -1070,7 +1099,10 @@ function GM:PlayerDeathThink( ply )
                         currPly.glee_nextForcedRespawn = CurTime() + math.Rand( 0.5, 1 )
 
                     end
-                else return end
+                else -- wait for someone to live, dont respawn yet
+                    return
+
+                end
             -- respawn players normally
             else
                 ply:Spawn()
@@ -1083,7 +1115,7 @@ function GM:PlayerDeathThink( ply )
 end
 
 
--- massive custom spawning logic
+-- massive custom player respawn location logic
 
 local spaceCheckUpOffset = Vector( 0, 0, 64 )
 local spaceCheckHull = Vector( 17, 17, 2 )
@@ -1100,15 +1132,19 @@ function GM:PlayerSpawn( pl, transiton )
     local newPos = nil
     local center, area = nil, nil
 
+    -- something's telling us to respawn here!
     if pl.glee_unstuckOrigin then
         newPos = pl.glee_unstuckOrigin
 
+    -- no special spot to respawn, we'll respawn somewhere near another player, if possible
     elseif IsValid( anotherAlivePlayer ) and not hook.Run( "huntersglee_blockspawn_nearplayers", pl, anotherAlivePlayer ) and GAMEMODE.hasNavmesh then
         for count = 1, 12 do
 
             local start = anotherAlivePlayer:GetPos()
 
-            center, area = GAMEMODE:GetNearbyWalkableArea( anotherAlivePlayer, start, count )
+            -- traces a path along the navmesh away from anotherAlivePlayer
+            -- won't go through playerclips 
+            center, area = GAMEMODE:GetNearbyWalkableArea( anotherAlivePlayer, start, count, occupiedSpawnAreas )
 
             if center then
                 center = center + Vector( 0, 0, 10 )
@@ -1224,6 +1260,9 @@ function GM:PlayerInitialSpawn( ply )
 
 end
 
+-- block pickup of already owned weapons
+-- except some special cases
+-- bypass by pressing USE on weapons
 local goodPickupClasses = {
     ["weapon_frag"] = true,
     ["weapon_slam"] = true,
@@ -1240,8 +1279,10 @@ hook.Add( "PlayerCanPickupWeapon", "noDoublePickup", function( ply, weapon )
     local class = weapon:GetClass()
     if goodPickupClasses[class] then return true end
     if weapon.glee_allowPickup then return true end
+
     local alreadyHas = ply:HasWeapon( class )
     if not alreadyHas then return end
+
     local bypassPickupBlock = weapon.glee_bypassPickupBlock or 0
     local usedTheWeapon = bypassPickupBlock > CurTime()
 
@@ -1275,6 +1316,18 @@ hook.Add( "WeaponEquip", "glee_fixignitedweapons", function( wep, ply )
     wep:Extinguish()
     ply:Ignite( math.Rand( 3, 6 ), 0 )
     GAMEMODE:GivePanic( 5 )
+
+end )
+
+hook.Add( "Term_OnStartedDriving", "glee_startdrivingsounds", function( driver, driven )
+    net.Start( "glee_starteddriving" )
+    net.Send( driver )
+
+end )
+
+hook.Add( "Term_OnStoppedDriving", "glee_stopdrivingsounds", function( driver, driven )
+    net.Start( "glee_stoppeddriving" )
+    net.Send( driver )
 
 end )
 

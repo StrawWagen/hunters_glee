@@ -11,6 +11,7 @@ AddCSLuaFile( "modules/cl_killfeedoverride.lua" )
 
 AddCSLuaFile( "modules/battery/cl_battery.lua" )
 AddCSLuaFile( "modules/bpm/cl_bpm.lua" )
+AddCSLuaFile( "modules/escaping/cl_escaping.lua" )
 AddCSLuaFile( "modules/cl_spectateflashlight.lua" )
 AddCSLuaFile( "modules/thirdpersonflashlight/cl_flashlight.lua" )
 AddCSLuaFile( "modules/firsttimeplayers/cl_firsttimeplayers.lua" )
@@ -83,6 +84,8 @@ include( "modules/statuseffects/sv_statuseffects.lua" )
 include( "modules/sv_falldamage_andgoomba.lua" )
 include( "modules/firsttimeplayers/sv_firsttimeplayers.lua" )
 
+include( "modules/escaping/sv_escaping.lua" )
+
 include( "modules/battery/sv_battery.lua" )
 include( "modules/thirdpersonflashlight/sv_flashlight.lua" )
 
@@ -92,6 +95,7 @@ include( "modules/proceduralspawner/sv_cratespawner.lua" )
 include( "modules/proceduralspawner/sv_beartrapspawner.lua" )
 include( "modules/proceduralspawner/sv_jeepspawner.lua" )
 include( "modules/proceduralspawner/sv_raregenericspawns.lua" )
+include( "modules/proceduralspawner/sv_rescueflarespawner.lua" )
 
 include( "modules/weapondropper/sv_weapondropper.lua" )
 include( "modules/signalstrength/sv_signalstrength.lua" )
@@ -104,6 +108,8 @@ util.AddNetworkString( "glee_followedsomething" )
 util.AddNetworkString( "glee_followednexthing" )
 util.AddNetworkString( "glee_switchedspectatemodes" )
 util.AddNetworkString( "glee_stoppedspectating" )
+util.AddNetworkString( "glee_starteddriving" )
+util.AddNetworkString( "glee_stoppeddriving" )
 util.AddNetworkString( "glee_dropcurrentweapon" )
 util.AddNetworkString( "glee_closetheshop" )
 util.AddNetworkString( "glee_roundstate" )
@@ -342,7 +348,7 @@ function GM:Think()
         if nobodyAlive then
             self:roundEnd()
 
-        elseif not waitingForAFirstTimePlayer then
+        elseif not waitingForAFirstTimePlayer then -- dont spawn hunters if someones still in the tutorial!
             self.blockPvp   = false
             self.doProxChat = true
             self.canRespawn = false
@@ -366,12 +372,12 @@ function GM:Think()
     self:RoundStateRepeat()
 
     if displayTime then
-        SetGlobalInt( "TERMHUNTER_PLAYERTIMEVALUE", displayTime )
+        SetGlobalInt( "TERMHUNT_PLAYERTIMEVALUE", displayTime )
 
     end
     -- this often desyncs, not really a big problem tho
     if displayName then
-        SetGlobalString( "TERMHUNTER_PLAYERVALUENAME", displayName )
+        SetGlobalString( "TERMHUNT_PLAYERVALUENAME", displayName )
 
     end
 end
@@ -849,6 +855,8 @@ function GM:roundStart()
     SetGlobalEntity( "termHuntWinner", NULL )
     SetGlobalInt( "termHuntWinnerSkulls", 0 )
 
+    SetGlobalInt( "termhuntEscapedCount", 0 )
+
     for _, ply in ipairs( player.GetAll() ) do
         ply:SetDeaths( 0 )
         hook.Run( "huntersglee_player_into_active", ply )
@@ -869,7 +877,7 @@ function GM:roundEnd()
 
     self.deadPlayers = {}
     self:SetRoundState( self.ROUND_LIMBO )
-    timer.Simple( engine.TickInterval(), function()
+    timer.Simple( 0, function()
         if plyCount <= 0 then return end
 
         local winner = self:calculateWinner()
@@ -877,6 +885,14 @@ function GM:roundEnd()
 
         SetGlobalBool( "termHuntDisplayWinners", true )
         SetGlobalInt( "termHuntTotalScore", math.Round( totalScore ) )
+
+        local escapedCount = 0
+        for _, ply in player.Iterator() do
+            if ply.termHuntTeam ~= GAMEMODE.TEAM_ESCAPED then continue end
+            escapedCount = escapedCount + 1
+
+        end
+        SetGlobalInt( "termhuntEscapedCount", escapedCount )
 
         if winner:GetSkulls() <= 0 then
             SetGlobalEntity( "termHuntWinner", NULL )

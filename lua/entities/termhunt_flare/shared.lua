@@ -159,6 +159,11 @@ function ENT:OnRemove()
     end
 end
 
+function ENT:AdditionalThink()
+    -- stub
+
+end
+
 function ENT:Think()
     local myPos = self:GetPos()
     local contents = util.PointContents( myPos )
@@ -168,6 +173,8 @@ function ENT:Think()
         SafeRemoveEntity( self )
 
     end
+    self:AdditionalThink()
+
 end
 
 if not CLIENT then return end
@@ -180,7 +187,7 @@ local slowSpeed = 10^2
 
 hook.Add( "RenderScreenspaceEffects", "glee_predraw_fogpiercing_flares", function()
 
-    if #flaresThatPierceFog <= 0 then return end
+    if not next( flaresThatPierceFog ) then return end
 
     local me = LocalPlayer()
     local myShootPos = me:GetShootPos()
