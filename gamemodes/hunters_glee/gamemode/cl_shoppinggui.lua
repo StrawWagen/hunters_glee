@@ -38,6 +38,7 @@ local MAINSCROLLNAME = "main_scroll_window"
 local noDataMateiral = Material( "vgui/hud/gleenodata.png", "noclamp" )
 local dataMaterial = Material( "vgui/hud/gleefulldata.png", "noclamp smooth" )
 local deadDataMaterial = Material( "vgui/hud/deadshopicon.png", "noclamp smooth" )
+local gradientMaterial = Material( "gui/gradient" )
 
 LocalPlayer().MAINSSHOPPANEL = LocalPlayer().MAINSSHOPPANEL or nil
 LocalPlayer().MAINSCROLLPANEL = LocalPlayer().MAINSCROLLPANEL or nil
@@ -64,6 +65,7 @@ function termHuntOpenTheShop()
     local backgroundColor =     GAMEMODE.shopStandards.backgroundColor
     local invisibleColor =      GAMEMODE.shopStandards.invisibleColor
     local shopItemColor =       GAMEMODE.shopStandards.shopItemColor
+    local shopScrollGradient =  GAMEMODE.shopStandards.shopScrollGradient
     local cantAffordOverlay =   GAMEMODE.shopStandards.cantAffordOverlay
     local scrollEndsOverlay =   GAMEMODE.shopStandards.scrollEndsOverlay
     local notHoveredOverlay =   GAMEMODE.shopStandards.notHoveredOverlay
@@ -93,6 +95,7 @@ function termHuntOpenTheShop()
 
     local scrollWidth = height / 15
     local shopCategoryWidth, shopCategoryHeight = glee_sizeScaled( 1920 * scale, GAMEMODE.shopStandards.shopCategoryHeight * scale )
+    local shopScrollGradientWidth = glee_sizeScaled( GAMEMODE.shopStandards.shopScrollGradientWidth * scale )
 
 
     shopFrame.titleBarSize = scrollWidth
@@ -482,6 +485,21 @@ function termHuntOpenTheShop()
             horisScroller.TextX = offsetNextToIdentifier
             horisScroller.TextY = bigTextPadding + horisScroller.betweenCategorySpacing
 
+            horisScroller.DrawScrollGradient = function( self, isLeftSide )
+                surface.SetMaterial( gradientMaterial )
+                surface.SetDrawColor( shopScrollGradient )
+
+                local h = math.Round( self.shopItemHeight )
+                local y = math.Round( self:GetTall() - h )
+
+                if isLeftSide then
+                    surface.DrawTexturedRectUV( 0, y, shopScrollGradientWidth, h, 0, 0, 1, 1 )
+                else
+                    local x = self:GetWide() - shopScrollGradientWidth
+                    surface.DrawTexturedRectUV( x, y, shopScrollGradientWidth, h, 1, 0, 0, 1 )
+                end
+            end
+
             horisScroller.Paint = function( self )
                 -- the little shading under the category label
                 draw_RoundedBox( 0, 0, self.betweenCategorySpacing, self.titleBarWide, self.titleBarTall, shopItemColor )
@@ -489,7 +507,16 @@ function termHuntOpenTheShop()
                 draw_RoundedBox( 0, 0, self.betweenCategorySpacing, whiteIdentifierLineWidth, self.titleBarTall, whiteFaded )
                 -- name of category, eg "Innate"
                 draw.DrawText( catData.name, "termhuntShopCategoryFont", self.TextX, self.TextY, white )
+            end
 
+            horisScroller.PaintOver = function( self )
+                if self.canScrollLeft then
+                    self:DrawScrollGradient( true )
+                end
+
+                if self.canScrollRight then
+                    self:DrawScrollGradient( false )
+                end
             end
 
             horisScroller.CoolerScroll = function( self, delta, stepScale )
@@ -531,6 +558,26 @@ function termHuntOpenTheShop()
                     self.coolTooltip:Remove()
 
                 end
+            end
+
+            -- Because Garry didn't provide it himself...
+            horisScroller.GetScrollMax = function( self )
+                local viewWidth = self:GetWide()
+                local fullWidth = self.pnlCanvas:GetWide()
+                if viewWidth >= fullWidth then return 0 end -- Not enough items to scroll
+
+                return fullWidth - viewWidth
+            end
+
+            local _PerformLayout = horisScroller.PerformLayout
+            horisScroller.PerformLayout = function( self )
+                _PerformLayout( self )
+
+                local scroll = self.OffsetX
+                local scrollMax = self:GetScrollMax()
+
+                self.canScrollLeft = scroll > 0
+                self.canScrollRight = scroll < scrollMax
             end
 
             horisScroller:Dock( TOP )
