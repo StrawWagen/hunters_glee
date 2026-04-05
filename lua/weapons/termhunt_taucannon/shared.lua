@@ -76,6 +76,8 @@ end
 function SWEP:Deploy()
     self:EmitSound( "hunters_glee/weapons/gauss/gauss_deploy.wav" )
 
+    return true
+
 end
 
 function SWEP:Holster()

@@ -149,7 +149,7 @@ function SWEP:Equip()
 
     end )
 
-    hook.Add( "EntityTakeDamage", self.hookId, function( target,dmg )
+    hook.Add( "EntityTakeDamage", self.hookId, function( target, dmg )
         if not IsValid( self ) then hook.Remove( "EntityTakeDamage", hookId ) return end
         local owner = self:GetOwner()
         if not IsValid( owner ) then hook.Remove( "EntityTakeDamage", hookId ) return end
@@ -414,7 +414,7 @@ function SWEP:Think()
 
             owner:SetNW2Bool( "divinechosen_singlestrike", true )
 
-            owner:ViewPunch( Angle( 0.1,0,math.random( -1, 1 ) ) )
+            owner:ViewPunch( Angle( 0.1, 0, math.random( -1, 1 ) ) )
 
             self:DoEpicness( 1 )
 
@@ -471,7 +471,7 @@ function SWEP:Think()
 
             self:SetClip1( self:Clip1() + -2 )
             local punch = self.superStrikeCharge / 400 * math.random( -5, 5 )
-            owner:ViewPunch( Angle( 0,-punch,punch ) )
+            owner:ViewPunch( Angle( 0, -punch, punch ) )
 
             self:DoEpicness( 1 )
 
@@ -497,7 +497,7 @@ function SWEP:Think()
 
         local eyeTrace = owner:GetEyeTrace()
         local powa = self.superStrikeCharge / 8
-        owner:ViewPunch( Angle( -powa * 2,powa * math.Rand( -1, 1 ),0 ) )
+        owner:ViewPunch( Angle( -powa * 2, powa * math.Rand( -1, 1 ), 0 ) )
 
         if powa > 8 then
             owner:SetNW2Bool( "divinechosen_secondarystrike", true )
@@ -568,14 +568,15 @@ function SWEP:DrawHUD()
 end
 
 local spriteOffsets = {
-    Vector( 0,4,0 ),
-    Vector( 0,-4,0 ),
+    Vector( 0, 4, 0 ),
+    Vector( 0, -4, 0 ),
 
 }
 
 local white = Color( 255, 255, 255 )
 local mat
 
+-- draw lights on owner's eyes
 function SWEP:DrawWorldModel()
 
     local owner = self:GetOwner()
@@ -768,12 +769,13 @@ function SWEP:EpicnessThink()
     if inHighIntensity < CurTime() and epic >= 100 then
         if epic >= 225 then
             -- once we do this line, activate a period of faster regen, and ranting
-            huntersGlee_Announce( { self:GetOwner() }, 500, 8, "SHOW THEM" )
+            huntersGlee_AnnounceDramatic( { self:GetOwner() }, 1001, 8, "SHOW THEM" )
             local result = table.Random( superHighIntensity )
             theSound = result[1]
             self.nextEpicLine = CurTime() + result[2]
             self.inHighIntensity = CurTime() + epic / 8
             targetEpicness = 0
+
         -- not high enough, just rant
         elseif epic >= 100 then
             local result = table.Random( highIntensity )
@@ -864,6 +866,8 @@ hook.Add( "PlayerDeath", "glee_chosendeathsound", function( ply )
 
     if theWep.epicness < 50 then return end
 
+    -- play death line
+    -- spawn these placeholder ents to play it from
     local placeholder = ents.Create( "prop_physics" )
     placeholder:SetPos( ply:GetPos() )
     placeholder:SetModel( "models/Gibs/HGIBS.mdl" )

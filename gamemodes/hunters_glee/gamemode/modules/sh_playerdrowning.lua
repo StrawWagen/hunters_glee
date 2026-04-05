@@ -116,7 +116,7 @@ hook.Add( "SetupMove", "glee_unabletoswim", function( ply, mvd )
                 vel.z = newZ
                 mvd:SetVelocity( vel )
 
-                if not ply:GetNWBool( "glee_IsRapelling", nil ) and mvd:KeyDown( IN_JUMP ) then
+                if not ply:GetNWBool( "glee_IsRappelling", nil ) and mvd:KeyDown( IN_JUMP ) then
                     RemoveKeys( mvd, IN_JUMP )
 
                 end

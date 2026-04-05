@@ -481,7 +481,7 @@ hook.Add( "huntersglee_givescore", "huntersglee_storealivescoring", function( sc
     if not IsValid( scorer ) then return end
     if scorer:Health() <= 0 then return end
     if addedscore < 1 then return end
-    if GAMEMODE:RoundState() ~= 1 then return end
+    if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
 
     local oldPlyScore = GAMEMODE.roundScore[scorer:GetCreationID()] or 0
     GAMEMODE.roundScore[scorer:GetCreationID()] = oldPlyScore + addedscore
@@ -611,7 +611,7 @@ GM.TEAM_ESCAPED = 3 -- spectating, but you can't respawn, get cooler items in th
 --]]
 
 function GM:spectatifyPlayer( ply )
-    --ErrorNoHaltWithStack("A")
+    --ErrorNoHaltWithStack( "A ", ply )
     if ply:Alive() then
         ply:KillSilent()
 
@@ -626,7 +626,7 @@ function GM:spectatifyPlayer( ply )
 end
 
 function GM:escapifyPlayer( ply )
-    --ErrorNoHaltWithStack("B")
+    --ErrorNoHaltWithStack( "B ", ply )
     if ply:Alive() then
         ply:KillSilent()
 
@@ -643,7 +643,7 @@ function GM:escapifyPlayer( ply )
 end
 
 function GM:unspectatifyPlayer( ply )
-    --ErrorNoHaltWithStack("C")
+    --ErrorNoHaltWithStack( "C ", ply )
     if ply.termHuntTeam == GAMEMODE.TEAM_PLAYING then return end
 
     ply.spectateDoFreecam = nil
@@ -651,7 +651,7 @@ function GM:unspectatifyPlayer( ply )
     ply.termHuntTeam = GAMEMODE.TEAM_PLAYING
 
     ply:SetNWInt( "glee_spectateteam", GAMEMODE.TEAM_PLAYING )
-    ply:UnSpectate()
+    ply:UnSpectate() -- also sets observer mode to none
     ply.glee_needsRespawning = true
 
 end
@@ -701,8 +701,8 @@ function GM:SpectateThing( ply, thing, msg )
 
 end
 
--- spectate player by steamid
-concommand.Add( "glee_spectate_player", function( ply, cmd, args )
+-- spectate player by steamid ( left click on players names in tab menu )
+concommand.Add( "glee_spectate_player", function( ply, _cmd, args )
     if not IsValid( ply ) then return end
     if ply.termHuntTeam == GAMEMODE.TEAM_PLAYING then return end
     if not args[1] then return end
@@ -781,8 +781,7 @@ hook.Add( "StartEntityDriving", "glee_unparentbeforedriving", function( ent, ply
 
 end )
 
-local nextSpectateIdleCheck = {}
-
+-- fun spectating with juice
 local function DoKeyPressSpectateSwitch( ply, keyPressed )
     if ply.termHuntTeam == GAMEMODE.TEAM_PLAYING then return end
 
@@ -790,8 +789,6 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
 
     local followingThing = mode == OBS_MODE_CHASE or mode == OBS_MODE_IN_EYE
     local deathCamming = mode == OBS_MODE_DEATHCAM
-
-    nextSpectateIdleCheck[ply] = CurTime() + 0.1
 
     -- dont snap to spec targs when placing
     local placing = ply.ghostEnt
@@ -930,7 +927,8 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
 
             end
         end
-    elseif keyPressed == IN_ZOOM and followingThing and currentlySpectating.isTerminatorHunterBased then
+    -- take control!
+    elseif keyPressed == IN_ZOOM and followingThing and currentlySpectating.isTerminatorHunterBased and GAMEMODE:RoundState() == GAMEMODE.ROUND_ACTIVE then
         if ply:GetNWInt( "glee_spectateteam", GAMEMODE.TEAM_PLAYING ) == GAMEMODE.TEAM_ESCAPED then
             local drivemode = "drive_sandbox"
 
@@ -989,17 +987,23 @@ end
 
 hook.Add( "KeyPress", "glee_SwitchSpectateModes", DoKeyPressSpectateSwitch )
 
-hook.Add( "glee_sv_validgmthink", "glee_SwitchSpectateModes", function( players )
-    for _, ply in ipairs( players ) do
-        local nextIdle = nextSpectateIdleCheck[ply] or 0
-        if nextIdle < CurTime() then
-            DoKeyPressSpectateSwitch( ply, 0 )
+do
+    local nextSpectateKeyPressThink = {}
 
+    hook.Add( "glee_sv_validgmthink", "glee_SwitchSpectateModes", function( players )
+        for _, ply in ipairs( players ) do
+            local nextIdle = nextSpectateKeyPressThink[ply] or 0
+            if nextIdle < CurTime() then
+                nextSpectateKeyPressThink[ply] = CurTime() + 0.1
+                DoKeyPressSpectateSwitch( ply, 0 )
+
+            end
         end
-    end
-end )
+    end )
+end
 
-function GM:SpectateOverrides( ply, mode, deadPlayers )
+
+function GM:SpectateThink( ply, mode, deadPlayers )
     local placing = ply.ghostEnt
 
     local isPlacing = IsValid( placing )
@@ -1037,11 +1041,13 @@ function GM:SpectateOverrides( ply, mode, deadPlayers )
 end
 
 function GM:managePlayerSpectating()
-    local deadPlayers = self:getDeadListeners()
+    -- just for who we're gonna send soul info to
+    local soulListners = self:getDeadListeners()
+
     for _, ply in player.Iterator() do
         local newMode = ply:GetObserverMode()
         if ply.termHuntTeam == GAMEMODE.TEAM_SPECTATE or ply.termHuntTeam == GAMEMODE.TEAM_ESCAPED then
-            GAMEMODE:SpectateOverrides( ply, newMode, deadPlayers )
+            GAMEMODE:SpectateThink( ply, newMode, soulListners )
 
         elseif newMode > 0 then -- ply is spectating but their team doesnt match!
             GAMEMODE:unspectatifyPlayer( ply )
@@ -1256,7 +1262,7 @@ end
 
 function GM:PlayerInitialSpawn( ply )
     player_manager.SetPlayerClass( ply, "player_termrunner" )
-    ply.termHuntTeam = GAMEMODE.TEAM_PLAYING
+    self:unspectatifyPlayer( ply )
 
 end
 

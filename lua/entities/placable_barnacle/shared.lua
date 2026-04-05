@@ -149,9 +149,9 @@ end
 if not SERVER then return end
 
 
-local tooCloseToPlayer = 350
-local sortaCloseToPlayers = 1000
-local barnaclePunishmentDist = 750
+local tooCloseToPlayer = 250
+local sortaCloseToPlayers = 750
+local barnaclePunishmentDist = 400
 
 function ENT:UpdateGivenScore()
     local plys = player.GetAll()

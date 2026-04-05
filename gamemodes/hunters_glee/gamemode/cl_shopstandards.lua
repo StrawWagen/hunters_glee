@@ -83,7 +83,7 @@ GAMEMODE.shopStandards.pressableThink = pressableThink
 local function setupShopFonts()
     -- YOUR CURRENT SCORE
     local fontData = {
-        font = "Arial",
+        font = GAMEMODE.GLEE_FONT,
         extended = false,
         size = glee_sizeScaled( nil, 50 * GAMEMODE.shopStandards.shpScale ),
         weight = 500,
@@ -106,7 +106,7 @@ local function setupShopFonts()
 
     -- CATEGORY
     fontData = {
-        font = "Arial",
+        font = GAMEMODE.GLEE_FONT,
         extended = false,
         size = glee_sizeScaled( nil, 50 * GAMEMODE.shopStandards.shpScale ),
         weight = 500,
@@ -126,7 +126,7 @@ local function setupShopFonts()
 
     -- ITEMS
     fontData = {
-        font = "Arial",
+        font = GAMEMODE.GLEE_FONT,
         extended = false,
         size = glee_sizeScaled( nil, 28 * GAMEMODE.shopStandards.shpScale ),
         weight = 500,
@@ -149,7 +149,7 @@ local function setupShopFonts()
 
     -- ITEMS
     fontData = {
-        font = "Arial",
+        font = GAMEMODE.GLEE_FONT,
         extended = false,
         size = glee_sizeScaled( nil, 24 * GAMEMODE.shopStandards.shpScale ),
         weight = 500,

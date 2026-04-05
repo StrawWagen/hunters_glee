@@ -11,8 +11,15 @@ function shopHelpers.aliveCheck( purchaser )
 end
 
 -- dead! keep it interesting for the alive people!
-function shopHelpers.undeadCheck( purchaser )
+function shopHelpers.deadCheck( purchaser )
     if purchaser:Health() > 0 then return false, "You must be dead to purchase this." end
+    return true, ""
+
+end
+
+-- dead! keep it interesting for the alive people!
+function shopHelpers.deadNotEscapedCheck( purchaser )
+    if purchaser:Health() > 0 then return false, "Only souls still present may purchase this." end
     return true, ""
 
 end

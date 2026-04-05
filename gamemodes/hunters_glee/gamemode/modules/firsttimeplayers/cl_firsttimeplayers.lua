@@ -1,6 +1,6 @@
 
 local fontData = {
-    font = "Arial",
+    font = GAMEMODE.GLEE_FONT,
     extended = false,
     size = glee_sizeScaled( nil, 60 ),
     weight = 500,

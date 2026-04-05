@@ -46,15 +46,40 @@ local function allRidersOf( vehicle )
             end
         end
     end
+    local rappellers = vehicle.glee_stuffRappellingOffMe
+    if rappellers then
+        for rappeler, _ in pairs( rappellers ) do
+            if not IsValid( rappeler ) then continue end
+            if not rappeler:Alive() then continue end
+            if not rappeler:IsPlayer() then continue end
+            if explored[rappeller] then continue end
+            explored[rappeller] = true
+
+            table.insert( riders, rappeler )
+
+        end
+    end
     return riders
 
 end
 
+local textDisplayDuration = 4
+
 function GM:escapifyVehicle( vehicle )
-    local driver = vehicle:GetDriver()
+    local driver
+    if vehicle.GetDriver then
+        driver = vehicle:GetDriver()
+
+    end
     local riders = allRidersOf( vehicle )
     local actualRidersNoDriver = {}
     local riderCount = 0
+
+    if #riders <= 0 then return end
+
+    local delayUntil = CurTime() + textDisplayDuration + 0.15
+    GAMEMODE:DelayRoundEndingUntil( delayUntil )
+
     for _, rider in ipairs( riders ) do
         GAMEMODE:escapifyPlayer( rider )
         if rider ~= driver then
@@ -65,25 +90,37 @@ function GM:escapifyVehicle( vehicle )
     end
 
     if riderCount > 0 then
-        local scorePerRider = scorePerRiderCvar:GetInt()
-        if scorePerRider < 0 then
-            scorePerRider = defaultScorePerEscapedRider
+        if IsValid( driver ) then
+            huntersGlee_AnnounceDramatic( actualRidersNoDriver, 1000, textDisplayDuration, "You've escaped!\nYou can finally leave this all behind, thanks to...\n" .. driver:Nick() )
 
+            local scorePerRider = scorePerRiderCvar:GetInt()
+            if scorePerRider < 0 then
+                scorePerRider = defaultScorePerEscapedRider
+
+            end
+            local increase = riderCount * scorePerRider
+            driver:GivePlayerScore( increase )
+
+            local sOrNoS = riderCount == 1 and "" or "s"
+            huntersGlee_AnnounceDramatic( { driver }, 1000, textDisplayDuration, "You helped " .. riderCount .. " soul" .. sOrNoS .. " escape...\n+" .. increase .. " Score." )
+
+        else
+            local escapablePlyCount = potentialEscapersCount()
+            if escapablePlyCount > 1 then
+                huntersGlee_AnnounceDramatic( riders, 1000, textDisplayDuration, "You've escaped!\nBut who did you leave behind?" )
+
+            else
+                huntersGlee_AnnounceDramatic( riders, 1000, textDisplayDuration, "You've escaped!\nYou can finally leave this all behind..." )
+
+            end
         end
-        local increase = riderCount * scorePerRider
-        driver:GivePlayerScore( increase )
-
-        huntersGlee_Announce( actualRidersNoDriver, 1000, 8, "You've escaped!\nYou can finally leave this all behind, thanks to...\n" .. driver:Nick() )
-        local sOrNoS = riderCount == 1 and "" or "s"
-        huntersGlee_Announce( { driver }, 1000, 8, "You helped " .. riderCount .. " soul" .. sOrNoS .. " escape...\n+" .. increase .. " Score." )
-
     else
         local escapablePlyCount = potentialEscapersCount()
         if escapablePlyCount > 1 then
-            huntersGlee_Announce( { driver }, 1000, 8, "You've escaped!\nBut who did you leave behind?" )
+            huntersGlee_AnnounceDramatic( { driver }, 1000, textDisplayDuration, "You've escaped!\nBut who did you leave behind?" )
 
         else
-            huntersGlee_Announce( { driver }, 1000, 8, "You've escaped!\nYou can finally leave this all behind..." )
+            huntersGlee_AnnounceDramatic( { driver }, 1000, textDisplayDuration, "You've escaped!\nYou can finally leave this all behind..." )
 
         end
     end
@@ -122,4 +159,10 @@ hook.Add( "PlayerEnteredVehicle", "glee_findescapablevehicles", function( _drive
         GAMEMODE.glee_EscapableVehicles[trueVehicle] = nil
 
     end )
+end )
+
+hook.Add( "glee_rescueheliescape", "glee_escapeviarescueheli", function( heli )
+    if not IsValid( heli ) then return end
+    GAMEMODE:escapifyVehicle( heli )
+
 end )

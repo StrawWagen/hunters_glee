@@ -95,7 +95,7 @@ function SWEP:ShootFlare()
     local flare = ents.Create( "termhunt_flare" )
     if not IsValid( flare ) then return end
 
-    owner:ViewPunch( Angle( -10,0,0 ) )
+    owner:ViewPunch( Angle( -10, 0, 0 ) )
 
     local offsettedPos, dirToShoot = self:GetProjectileOffset()
 
@@ -148,11 +148,11 @@ function SWEP:GetNPCBulletSpread( _ )
 end
 
 function SWEP:GetNPCBurstSettings()
-    return 1,1,0.001
+    return 1, 1, 0.001
 end
 
 function SWEP:GetNPCRestTimes()
-    return 2,4
+    return 2, 4
 end
 
 function SWEP:GetCapabilities()

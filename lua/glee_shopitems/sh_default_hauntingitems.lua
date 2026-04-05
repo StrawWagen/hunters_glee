@@ -77,7 +77,7 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = -5,
-        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
             setupPlacable( "screamer_crate", purchaser, itemIdentifier )
 
@@ -94,7 +94,7 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = -4,
-        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
             setupPlacable( "termhunt_normal_crate", purchaser, itemIdentifier )
 
@@ -111,7 +111,7 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = 1,
-        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
             setupPlacable( "termhunt_weapon_crate", purchaser, itemIdentifier )
 
@@ -128,7 +128,7 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = 10,
-        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
             setupPlacable( "termhunt_manhack_crate", purchaser, itemIdentifier )
 
@@ -145,7 +145,7 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = 1,
-        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
             setupPlacable( "termhunt_undead_beartrap", purchaser, itemIdentifier )
 
@@ -162,7 +162,7 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = 1,
-        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
             setupPlacable( "termhunt_barrels", purchaser, itemIdentifier )
 
@@ -179,7 +179,7 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = 10,
-        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
             setupPlacable( "placable_barnacle", purchaser, itemIdentifier )
 
@@ -196,7 +196,7 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = 10,
-        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
             setupPlacable( "door_locker", purchaser, itemIdentifier )
 
@@ -221,7 +221,7 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = -100,
-        shPurchaseCheck = { shopHelpers.undeadCheck, function()
+        shPurchaseCheck = { shopHelpers.deadCheck, function()
             local extraData = GAMEMODE.roundExtraData or {}
             local extraHunter = GetGlobal2Entity( "glee_linkedhunter" )
             local validCsideHunter = IsValid( extraHunter ) and extraHunter:Health() > 0
@@ -246,7 +246,7 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = -4,
-        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
             setupPlacable( "termhunt_presser", purchaser, itemIdentifier )
 
@@ -264,7 +264,7 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = 0,
-        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
             setupPlacable( "termhunt_retribution", purchaser, itemIdentifier )
 
@@ -282,7 +282,7 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = 19,
-        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
             setupPlacable( "termhunt_overcharger", purchaser, itemIdentifier )
 
@@ -300,7 +300,7 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = 20,
-        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase, function()
+        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase, function()
             if GAMEMODE:isTemporaryTrueBool( "termhunt_player_swapper_initial" ) then return nil, "Not unlocked yet." end
             if GAMEMODE:isTemporaryTrueBool( "termhunt_player_swapper" ) then return nil, "It is too soon for another inversion to begin." end
             return true, nil
@@ -323,7 +323,7 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = 20,
-        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
             setupPlacable( "termhunt_immortalizer", purchaser, itemIdentifier )
 
@@ -341,7 +341,7 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = 20,
-        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
             setupPlacable( "termhunt_blessing", purchaser, itemIdentifier )
 
@@ -359,7 +359,7 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = 20,
-        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase, function()
+        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase, function()
             if GAMEMODE:isTemporaryTrueBool( "termhunt_thunderous_applause_initial" ) then return nil, "It's too soon for the applause to begin." end
             if GAMEMODE:isTemporaryTrueBool( "termhunt_thunderous_applause" ) then return nil, "Applause must be spaced out. Wait.." end
             return true, nil

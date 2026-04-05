@@ -82,7 +82,7 @@ if CLIENT then
     include( "autorun/client/cl_gleescalingfunc.lua" )
 
     local fontData = {
-        font = "Arial",
+        font = GAMEMODE.GLEE_FONT or "Arial",
         extended = false,
         size = glee_sizeScaled( nil, 30 ),
         weight = 500,

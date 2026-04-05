@@ -3,6 +3,7 @@ AddCSLuaFile( "shared.lua" )
 AddCSLuaFile( "cl_init.lua" )
 AddCSLuaFile( "modules/cl_souls.lua" )
 AddCSLuaFile( "modules/cl_targetid.lua" )
+AddCSLuaFile( "modules/cl_winscreen.lua" )
 AddCSLuaFile( "modules/cl_modelscale.lua" )
 AddCSLuaFile( "modules/cl_scoreboard.lua" )
 AddCSLuaFile( "modules/cl_obfuscation.lua" )
@@ -167,6 +168,7 @@ function GM:TermHuntSetup()
     self.roundScore                     = {}
     self.roundExtraData                 = {} -- helper tbl that is reset on round end
 
+    self.roundEarliestEnd               = 0
     self.nextStateTransmit              = 0
 
     -- just in case!
@@ -339,13 +341,16 @@ function GM:Think()
         displayTime = 0
 
     end
-    if currState == self.ROUND_ACTIVE then -- THE HUNT BEGINS
+    if currState == self.ROUND_ACTIVE then -- THE HUNT
         local aliveCount = self:CountWinnablePlayers()
         local waitingForAFirstTimePlayer = self:WaitingForAFirstTimePlayer( players )
+        local specificallyWaiting = ( self.roundEarliestEnd or 0 ) > cur
 
         nobodyAlive = aliveCount == 0
 
-        if nobodyAlive then
+        local win = nobodyAlive and not specificallyWaiting
+
+        if win then
             self:roundEnd()
 
         elseif not waitingForAFirstTimePlayer then -- dont spawn hunters if someones still in the tutorial!
@@ -840,6 +845,11 @@ function GM:RemoveHunters()
     end
 end
 
+function GM:DelayRoundEndingUntil( time )
+    self.roundEarliestEnd = math.max( self.roundEarliestEnd, time )
+
+end
+
 -- from where people can buy stuff with discounts, to the hunt
 function GM:roundStart()
     hook.Run( "huntersglee_round_pre_into_active" )
@@ -918,7 +928,7 @@ function GM:beginSetup()
         ply.shopItemCooldowns = {} -- reset wep cooldowns
         ply.isTerminatorHunterKiller = nil -- dont have this persist thru rounds
         ply:ResetSkulls()
-        self:unspectatifyPlayer( ply )
+        -- self:unspectatifyPlayer( ply ) -- don't unspectatify here, GAMEMODE.canRespawn handles it
         hook.Run( "huntersglee_player_reset", ply )
 
     end
@@ -928,10 +938,17 @@ function GM:beginSetup()
     self.blockCleanupSetup = nil
 
     SetGlobalBool( "termHuntDisplayWinners", false )
-    self.termHunt_roundStartTime = CurTime() + self.roundStartNormal
+    local var = GetConVar( "sv_cheats" )
+    local time = self.roundStartNormal
+    if var:GetBool() == true then
+        time = time / 8
+
+    end
+    self.termHunt_roundStartTime = CurTime() + time
     self:SetRoundState( self.ROUND_INACTIVE )
     timer.Simple( 2, function()
         self:TeleportRoomCheck()
+
     end )
 
     hook.Run( "huntersglee_round_into_inactive" )
@@ -954,7 +971,7 @@ function GM:setupFinish()
         local var = GetConVar( "sv_cheats" )
         local time = self.roundStartAfterNavCheck
         if var:GetBool() == true then
-            time = time / 8
+            time = time / 10
 
         end
 
@@ -976,6 +993,7 @@ function GM:setupFinish()
     end
 end
 
+-- in case people left these on accidentally
 function GM:concmdSetup()
     RunConsoleCommand( "ai_disabled", "0" )
     RunConsoleCommand( "ai_ignoreplayers", "0" )

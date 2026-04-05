@@ -13,7 +13,10 @@ SWEP.Range              = 2000
 SWEP.Slot               = 2
 SWEP.SlotPos            = 3
 
-SWEP.AutoSwitchFrom     = true
+SWEP.Purpose = "Shoot into the sky to call for... help?"
+
+SWEP.AutoSwitchFrom     = false
+SWEP.AutoSwitchTo       = true
 SWEP.DrawAmmo           = true
 SWEP.ViewModelFlip      = false
 SWEP.BounceWeaponIcon   = true
@@ -87,6 +90,12 @@ function SWEP:ShootFlare()
     end )
 
     hook.Run( "glee_signalflare_shoot", owner, self, flare )
+
+end
+
+function SWEP:CanBePickedUpByNPCs()
+    return true
+
 end
 
 if not CLIENT then return end

@@ -385,7 +385,10 @@ function SWEP:Deploy()
         GAMEMODE:SendDeadPlayersToClients()
 
     end
+    return true
+
 end
+
 if CLIENT then
     function SWEP:DrawHUD()
         local doingReviving = self:GetNWBool( "RevivingPly", false )

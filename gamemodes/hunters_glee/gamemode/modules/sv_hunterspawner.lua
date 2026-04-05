@@ -1065,7 +1065,7 @@ function GM:getValidHunterPos()
                 table.Shuffle( potentials )
                 for _, adjArea in ipairs( potentials ) do
                     if adjArea:GetSizeX() <= 25 or adjArea:GetSizeY() <= 25 then continue end -- too small
-                    if adjArea:IsVisible( nearestPlyPos ) then continue end -- dont regress
+                    if nearestPlyPos and adjArea:IsVisible( nearestPlyPos ) then continue end -- dont regress
                     spawnSet.lastGoodSpawnArea = adjArea
                     spawnSet.lastGoodSpawnAreaWeight = math.random( 5, 15 )
                     break

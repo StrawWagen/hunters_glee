@@ -48,10 +48,10 @@ function ENT:UpdateGivenScore()
 
     local smallestDistLinear = math.sqrt( smallestDist )
 
-    if smallestDistLinear < 500 then
+    if smallestDistLinear < 400 then
         scoreGiven = -100
 
-    elseif smallestDistLinear < 1500 then
+    elseif smallestDistLinear < 1000 then
         scoreGiven = -50
 
     else

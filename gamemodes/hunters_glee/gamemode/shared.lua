@@ -1,6 +1,8 @@
 
 DeriveGamemode( "sandbox" )
 
+GM.GLEE_FONT = "Arial"
+
 -- GLOBALS!
 GM.ROUND_INVALID          = -1 -- tell people to install a navmesh
 GM.ROUND_SETUP      = 0 -- wait until the navmesh has definitely spawned
@@ -20,7 +22,6 @@ GM.Email = "N/A"
 GM.Website = "N/A"
 
 include( "player_class/player_termrunner.lua" )
-
 include( "sh_player.lua" )
 
 include( "modules/sh_panic.lua" )

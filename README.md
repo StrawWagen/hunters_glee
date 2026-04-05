@@ -108,7 +108,7 @@ Additional descriptive tags (e.g., `"Weapon"`, `"Utility"`) don't affect categor
 
 ```lua
 shopHelpers.aliveCheck( purchaser )      -- Returns true if alive
-shopHelpers.undeadCheck( purchaser )     -- Returns true if dead
+shopHelpers.deadCheck( purchaser )     -- Returns true if dead
 shopHelpers.isCheats()                 -- Returns true if sv_cheats is on
 shopHelpers.purchaseWeapon( purchaser, {
     class = "weapon_smg1",

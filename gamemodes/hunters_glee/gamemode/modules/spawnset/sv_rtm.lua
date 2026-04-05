@@ -170,7 +170,7 @@ hook.Add( "PlayerSay", "RTM Chat Commands", function( ply, text )
     if f then
         f( ply )
     end
-end )
+end, HOOK_MONITOR_HIGH ) -- if ulib, run first
 
 function RTM.HandleRTMCommand( ply )
     RTM.StarTMote( ply )

@@ -95,7 +95,7 @@ ENT.PosOffset = Vector( 0, 0, 10 )
 if CLIENT then
     -- score gained on place
     local fontData = {
-        font = "Arial",
+        font = GAMEMODE.GLEE_FONT or "Arial",
         extended = false,
         size = glee_sizeScaled( nil, 40 ),
         weight = 500,
