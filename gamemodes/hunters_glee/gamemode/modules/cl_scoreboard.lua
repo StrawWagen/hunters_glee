@@ -614,8 +614,9 @@ local SCORE_BOARD = {
         end
 
         local plyCount = player.GetCount()
-        if panelCreated or plyCount ~= self._plyCount then
-            self._plyCount = plyCount
+
+        if self._updatePlyCount then
+            self._updatePlyCount = nil
             self.PlyCountLabel:SetText( "Players: " .. plyCount .. "/" .. game.MaxPlayers() )
 
             -- Manaually calculate content height of the player list because vgui is trash
@@ -627,10 +628,17 @@ local SCORE_BOARD = {
             local height = baseHeight + heightPerPly * plyCount
 
             self.Scores:SetHeight( math.Clamp( height, baseHeight, baseHeight + heightPerPly * 14.25 ) )
+            self.Scores:PerformLayout() -- Update VBar
 
             -- Calculate info nudge, since the scrollbar pushes things over a little
             local scrollBar = self.Scores:GetVBar()
-            plyInfoNudge = scrollBar:IsVisible() and scrollBar:GetWide() or 0
+            plyInfoNudge = scrollBar.Enabled and scrollBar:GetWide() or 0
+        end
+
+        -- Wait until the next frame to update, so Scores and its children can perform their layout.
+        if panelCreated or plyCount ~= self._plyCount then
+            self._updatePlyCount = true
+            self._plyCount = plyCount
         end
 
         self.DiscordButton:SetVisible( discordConvar:GetString() ~= "" )
