@@ -227,7 +227,7 @@ local PLAYER_ACTION_MENU = {
             end
         )
 
-        if not GAMEMODE:IsObscured() then
+        if not LocalPlayer():Alive() then
             addOption( "Spectate", function()
                 RunConsoleCommand( "glee_spectate_player", ply:UserID() )
             end )
