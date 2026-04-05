@@ -620,7 +620,7 @@ local SCORE_BOARD = {
 
             -- Resize Scores to fit its contents, to a limit.
             self.Scores:GetCanvas():InvalidateLayout( true ) -- Resize to fit contents
-            self.Scores:SetHeight( math.min( self.Scores:GetCanvas():GetTall(), 580 ) )
+            self.Scores:SetHeight( math.min( self.Scores:GetCanvas():GetTall(), 590 ) )
             self.Scores:PerformLayout() -- Update VBar
 
             -- Calculate info nudge, since the scrollbar pushes things over a little.
