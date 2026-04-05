@@ -398,7 +398,7 @@ local PLAYER_LINE = {
 
         local status = PLY_STATUS_ALIVE
 
-        if ply:HasStatusEffect( "divine_chosen" ) then
+        if ply:Alive() and ply:HasStatusEffect( "divine_chosen" ) then
             status = PLY_STATUS_GRIGORI
         end
 
