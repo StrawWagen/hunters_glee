@@ -623,7 +623,7 @@ local SCORE_BOARD = {
             local plyPanel = player.GetByID( 1 ).ScoreEntry
             local _, plyMarginTop, _, plyMarginBottom = plyPanel:GetDockMargin()
             local heightPerPly = plyPanel:GetTall() + plyMarginTop + plyMarginBottom
-            local baseHeight = self.PlyCountLabel:GetTall() + padding
+            local baseHeight = padding
             local height = baseHeight + heightPerPly * plyCount
 
             self.Scores:SetHeight( math.Clamp( height, baseHeight, baseHeight + heightPerPly * 14.25 ) )
