@@ -619,18 +619,11 @@ local SCORE_BOARD = {
             self._updatePlyCount = nil
             self.PlyCountLabel:SetText( "Players: " .. plyCount .. "/" .. game.MaxPlayers() )
 
-            -- Manaually calculate content height of the player list because vgui is trash
-            local padding = self.Scores:GetCanvas():GetDockPadding()
-            local plyPanel = player.GetByID( 1 ).ScoreEntry
-            local _, plyMarginTop, _, plyMarginBottom = plyPanel:GetDockMargin()
-            local heightPerPly = plyPanel:GetTall() + plyMarginTop + plyMarginBottom
-            local baseHeight = padding
-            local height = baseHeight + heightPerPly * plyCount
-
-            self.Scores:SetHeight( math.Clamp( height, baseHeight, baseHeight + heightPerPly * 14.25 ) )
+            -- Resize Scores to fit its contents, to a limit.
+            self.Scores:SetHeight( math.min( self.Scores:GetCanvas():GetTall(), 580 ) )
             self.Scores:PerformLayout() -- Update VBar
 
-            -- Calculate info nudge, since the scrollbar pushes things over a little
+            -- Calculate info nudge, since the scrollbar pushes things over a little.
             local scrollBar = self.Scores:GetVBar()
             plyInfoNudge = scrollBar.Enabled and scrollBar:GetWide() or 0
         end
