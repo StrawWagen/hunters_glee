@@ -1,6 +1,7 @@
 
 local PLY_STATUS_ALIVE = 1
 local PLY_STATUS_DEAD = 2
+local PLY_STATUS_GRIGORI = 3
 
 local COLOR_BORDER = Color( 0, 0, 0 )
 local COLOR_BACKGROUND = Color( 31, 36, 65 )
@@ -36,6 +37,11 @@ local PLY_COLORS = {
         BG_UNHOVERED = Color( 57, 30, 63 ),
         BG_HOVERED = Color( 47, 21, 53 ),
         NAME = Color( 255, 200, 200 ),
+    },
+    [PLY_STATUS_GRIGORI] = {
+        BG_UNHOVERED = Color( 61, 61, 29 ),
+        BG_HOVERED = Color( 51, 51, 20 ),
+        NAME = Color( 255, 255, 200 ),
     },
 }
 
@@ -391,6 +397,11 @@ local PLAYER_LINE = {
         if not IsValid( ply ) then return end
 
         local status = PLY_STATUS_ALIVE
+
+        if ply:HasStatusEffect( "divine_chosen" ) then
+            status = PLY_STATUS_GRIGORI
+        end
+
         if not GAMEMODE:IsObscured() and not ply:Alive() then
             status = PLY_STATUS_DEAD
         end
