@@ -45,7 +45,7 @@ local PLY_COLORS = {
     },
 }
 
-local PLY_INFO_SPACING = 120
+local PLY_INFO_SPACING = 100
 local PLY_INFOS = { -- From right to left on the scoreboard.
     {
         NAME = "Ping",
