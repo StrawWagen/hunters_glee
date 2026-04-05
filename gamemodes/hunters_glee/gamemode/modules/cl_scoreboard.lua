@@ -4,6 +4,7 @@ local PLY_STATUS_DEAD = 2
 local PLY_STATUS_GRIGORI = 3
 
 local COLOR_BORDER = Color( 0, 0, 40, 150 )
+local COLOR_HEADER = Color( 37, 37, 37, 220 )
 local COLOR_BACKGROUND = Color( 37, 37, 37, 240 )
 local COLOR_BACKGROUND_DARK = Color( 0, 0, 0, 50 )
 local COLOR_ACTION_MENU_BACKGROUND = Color( 37, 37, 37, 240 )
@@ -11,7 +12,7 @@ local COLOR_BUTTON = Color( 0, 0, 0, 120 )
 local COLOR_BUTTON_HOVERED = Color( 73, 73, 73, 255 )
 local COLOR_SCROLL_BACKGROUND = Color( 0, 0, 0, 0 )
 local COLOR_SCROLL_BAR = Color( 60, 60, 60, 150 )
-local COLOR_DIVIDER = Color( 200, 200, 200, 50 )
+local COLOR_DIVIDER = Color( 80, 80, 80, 240 )
 local COLOR_LOCALPLAYER_NAME = Color( 43, 136, 28 )
 local COLOR_SELECTION_ARROW = Color( 80, 80, 100 )
 
@@ -585,15 +586,19 @@ local SCORE_BOARD = {
 
     Paint = function( self, w, h )
         local borderRadius = 0
+        local headerHeight = self.Header:GetTall()
 
         surface.SetDrawColor( COLOR_BORDER )
         surface.DrawOutlinedRect( 0, 0, w, h, borderRadius )
 
+        surface.SetDrawColor( COLOR_HEADER )
+        surface.DrawRect( borderRadius, borderRadius, w - borderRadius * 2, headerHeight - borderRadius )
+
         surface.SetDrawColor( COLOR_BACKGROUND )
-        surface.DrawRect( borderRadius, borderRadius, w - borderRadius * 2, h - borderRadius * 2 )
+        surface.DrawRect( borderRadius, headerHeight + 1, w - borderRadius * 2, h - borderRadius - headerHeight - 1 )
 
         surface.SetDrawColor( COLOR_DIVIDER )
-        surface.DrawRect( borderRadius, self.Header:GetTall(), w - borderRadius * 2, 1 )
+        surface.DrawRect( borderRadius, headerHeight, w - borderRadius * 2, 1 )
     end,
 
     Think = function( self )
