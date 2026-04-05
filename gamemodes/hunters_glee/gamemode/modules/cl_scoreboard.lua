@@ -29,6 +29,9 @@ local COLOR_PING_BAD = Color( 150, 50, 0 )
 local HOVER_SLIDE_AMOUNT = 30
 local HOVER_SLIDE_DURATION = 0.2
 
+local BORDER_RADIUS_MAIN = 0 -- 4
+local BORDER_RADIUS_ACTION_MENU = 0 -- 2
+
 local PLY_COLORS = {
     [PLY_STATUS_ALIVE] = {
         BG_UNHOVERED = Color( 0, 0, 0, 150 ),
@@ -256,7 +259,7 @@ local PLAYER_ACTION_MENU = {
     end,
 
     Paint = function( _, w, h )
-        local borderRadius = 0
+        local borderRadius = BORDER_RADIUS_ACTION_MENU
 
         surface.SetDrawColor( COLOR_BORDER )
         surface.DrawOutlinedRect( 0, 0, w, h, borderRadius )
@@ -585,7 +588,7 @@ local SCORE_BOARD = {
     end,
 
     Paint = function( self, w, h )
-        local borderRadius = 0
+        local borderRadius = BORDER_RADIUS_MAIN
         local headerHeight = self.Header:GetTall()
 
         surface.SetDrawColor( COLOR_BORDER )
