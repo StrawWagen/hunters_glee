@@ -46,6 +46,7 @@ local PLY_COLORS = {
     },
 }
 
+local PLY_LINE_SPACING = 4
 local PLY_INFO_SPACING = 100
 local PLY_INFOS = { -- From right to left on the scoreboard.
     {
@@ -276,7 +277,7 @@ local PLAYER_LINE = {
 
         self:Dock( TOP )
         self:DockPadding( 3, 0, 0, 0 )
-        self:DockMargin( 0, 4, 0, 0 )
+        self:DockMargin( 0, PLY_LINE_SPACING, 0, 0 )
         self:SetHeight( 32 + 4 )
         self:SetMouseInputEnabled( true )
         self:SetText( "" )
@@ -456,7 +457,7 @@ PLAYER_LINE = vgui.RegisterTable( PLAYER_LINE, "DButton" )
 local SCORE_BOARD = {
     Init = function( self )
         local mainPadding = 16 -- left/right padding applied to outermost elements.
-        local plyListPadding = 8 -- left/right/bottom padding applied to the scrollable player list.
+        local plyListPadding = 8 -- padding applied to the scrollable player list.
 
         self:SetSize( 1100, 720 )
         self:SetPos( ScrW() / 2 - self:GetWide() / 2, ScrH() / 2 - self:GetTall() / 2 )
@@ -521,11 +522,11 @@ local SCORE_BOARD = {
             label:DockMargin( 0, 0, 0, 0 )
         end
 
-        local plyLabel = self.CategoryLabelHolder:Add( "DLabel" )
-        applyPlyInfoProperties( plyLabel )
-        plyLabel:SetContentAlignment( 1 )
-        plyLabel:SetText( "Player" )
-        plyLabel:Dock( LEFT )
+        self.PlyCountLabel = self.CategoryLabelHolder:Add( "DLabel" )
+        applyPlyInfoProperties( self.PlyCountLabel )
+        self.PlyCountLabel:SetContentAlignment( 1 )
+        self.PlyCountLabel:SetText( "Players" )
+        self.PlyCountLabel:Dock( LEFT )
 
         for _, info in ipairs( PLY_INFOS ) do
             local label = self.CategoryLabelHolder:Add( "DLabel" )
@@ -543,29 +544,14 @@ local SCORE_BOARD = {
 
         -- Player list
         local scoreCornerRadius = 4
-        local plyCountContainer = self:Add( "DPanel" )
-        plyCountContainer:SetHeight( 22 )
-        plyCountContainer:Dock( TOP )
-        plyCountContainer:DockPadding( plyListPadding, 0, 0, 0 )
-
-        -- Have to put this in a panel above Scores to ensure sorting doesn't put players above PlyCountLabel.
-        plyCountContainer.Paint = function( _, w, h )
-            draw.RoundedBoxEx( scoreCornerRadius, 0, 0, w, h, COLOR_BACKGROUND_DARK, true, true, false, false )
-        end
-
-        self.PlyCountLabel = plyCountContainer:Add( "DLabel" )
-        self.PlyCountLabel:Dock( FILL )
-        self.PlyCountLabel:SetContentAlignment( 4 )
-        self.PlyCountLabel:SetFont( "ScoreboardPlayerCount" )
-        self.PlyCountLabel:SetTextColor( COLOR_TEXT )
 
         self.Scores = self:Add( "DScrollPanel" )
         self.Scores:DockPadding( 0, 0, 0, 0 )
-        self.Scores:GetCanvas():DockPadding( plyListPadding, 0, plyListPadding, plyListPadding )
+        self.Scores:GetCanvas():DockPadding( plyListPadding, plyListPadding - PLY_LINE_SPACING, plyListPadding, plyListPadding )
         self.Scores:Dock( TOP )
 
         self.Scores.Paint = function( _, w, h )
-            draw.RoundedBoxEx( scoreCornerRadius, 0, 0, w, h, COLOR_BACKGROUND_DARK, false, false, true, true )
+            draw.RoundedBox( scoreCornerRadius, 0, 0, w, h, COLOR_BACKGROUND_DARK )
         end
 
         -- Don't scroll when mouse-wheeling a mute button, since it has special behavior.
