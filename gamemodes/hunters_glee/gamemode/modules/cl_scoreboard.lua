@@ -579,6 +579,7 @@ local SCORE_BOARD = {
 
         local scrollBar = self.Scores:GetVBar()
         scrollBar:SetHideButtons( true )
+        scrollBar:SetWidth( 10 )
 
         scrollBar.Paint = function( _, w, h )
             surface.SetDrawColor( COLOR_SCROLL_BACKGROUND )
