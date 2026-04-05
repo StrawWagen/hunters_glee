@@ -227,7 +227,7 @@ local PLAYER_ACTION_MENU = {
             end
         )
 
-        if not LocalPlayer():Alive() then
+        if ply:Alive() and not LocalPlayer():Alive() then
             addOption( "Spectate", function()
                 RunConsoleCommand( "glee_spectate_player", ply:UserID() )
             end )
