@@ -3,18 +3,19 @@ local PLY_STATUS_ALIVE = 1
 local PLY_STATUS_DEAD = 2
 local PLY_STATUS_GRIGORI = 3
 
-local COLOR_BORDER = Color( 0, 0, 0 )
-local COLOR_BACKGROUND = Color( 31, 36, 65 )
-local COLOR_BACKGROUND_DARK = Color( 17, 21, 41 )
-local COLOR_BUTTON = Color( 31, 36, 65 )
-local COLOR_BUTTON_HOVERED = Color( 23, 27, 56 )
-local COLOR_SCROLL_BACKGROUND = Color( 14, 18, 38 )
-local COLOR_SCROLL_BAR = Color( 37, 42, 71 )
-local COLOR_DIVIDER = Color( 60, 69, 86 )
+local COLOR_BORDER = Color( 0, 0, 40, 150 )
+local COLOR_BACKGROUND = Color( 37, 37, 37, 240 )
+local COLOR_BACKGROUND_DARK = Color( 0, 0, 0, 50 )
+local COLOR_ACTION_MENU_BACKGROUND = Color( 37, 37, 37, 240 )
+local COLOR_BUTTON = Color( 0, 0, 0, 120 )
+local COLOR_BUTTON_HOVERED = Color( 73, 73, 73, 255 )
+local COLOR_SCROLL_BACKGROUND = Color( 0, 0, 0, 0 )
+local COLOR_SCROLL_BAR = Color( 60, 60, 60, 150 )
+local COLOR_DIVIDER = Color( 200, 200, 200, 50 )
 local COLOR_LOCALPLAYER_NAME = Color( 43, 136, 28 )
-local COLOR_SELECTION_ARROW = Color( 91, 100, 153 )
+local COLOR_SELECTION_ARROW = Color( 80, 80, 100 )
 
-local COLOR_TEXT = Color( 180, 180, 180 )
+local COLOR_TEXT = Color( 200, 200, 200 )
 local COLOR_SERVER = Color( 255, 255, 255 )
 local COLOR_TEXT_SCORE = Color( 255, 255, 255 )
 local COLOR_TEXT_SKULLS = Color( 255, 255, 255 )
@@ -29,18 +30,18 @@ local HOVER_SLIDE_DURATION = 0.2
 
 local PLY_COLORS = {
     [PLY_STATUS_ALIVE] = {
-        BG_UNHOVERED = Color( 31, 36, 65 ),
-        BG_HOVERED = Color( 23, 27, 56 ),
+        BG_UNHOVERED = Color( 0, 0, 0, 150 ),
+        BG_HOVERED = Color( 60, 60, 60, 255 ),
         NAME = Color( 255, 255, 255 ),
     },
     [PLY_STATUS_DEAD] = {
-        BG_UNHOVERED = Color( 57, 30, 63 ),
-        BG_HOVERED = Color( 47, 21, 53 ),
+        BG_UNHOVERED = Color( 60, 0, 0, 150 ),
+        BG_HOVERED = Color( 90, 45, 45 ),
         NAME = Color( 255, 200, 200 ),
     },
     [PLY_STATUS_GRIGORI] = {
-        BG_UNHOVERED = Color( 61, 61, 29 ),
-        BG_HOVERED = Color( 51, 51, 20 ),
+        BG_UNHOVERED = Color( 60, 60, 0, 150 ),
+        BG_HOVERED = Color( 90, 90, 45 ),
         NAME = Color( 255, 255, 200 ),
     },
 }
@@ -95,7 +96,7 @@ surface.CreateFont( "ScoreboardMapName", {
 } )
 
 surface.CreateFont( "ScoreboardGamemodeTitle", {
-    font    = "Helvetica",
+    font    = "Tahoma",
     size    = 32,
     weight    = 600
 } )
@@ -256,9 +257,9 @@ local PLAYER_ACTION_MENU = {
         local borderRadius = 2
 
         surface.SetDrawColor( COLOR_BORDER )
-        surface.DrawRect( 0, 0, w, h )
+        surface.DrawOutlinedRect( 0, 0, w, h, borderRadius )
 
-        surface.SetDrawColor( COLOR_BACKGROUND_DARK )
+        surface.SetDrawColor( COLOR_ACTION_MENU_BACKGROUND )
         surface.DrawRect( borderRadius, borderRadius, w - borderRadius * 2, h - borderRadius * 2 )
     end
 }
@@ -598,10 +599,12 @@ local SCORE_BOARD = {
 
     Paint = function( self, w, h )
         local borderRadius = 4
-        local cornerSize = 8
 
-        draw.RoundedBox( cornerSize, 0, 0, w, h, COLOR_BORDER )
-        draw.RoundedBox( cornerSize, borderRadius, borderRadius, w - borderRadius * 2, h - borderRadius * 2, COLOR_BACKGROUND )
+        surface.SetDrawColor( COLOR_BORDER )
+        surface.DrawOutlinedRect( 0, 0, w, h, borderRadius )
+
+        surface.SetDrawColor( COLOR_BACKGROUND )
+        surface.DrawRect( borderRadius, borderRadius, w - borderRadius * 2, h - borderRadius * 2 )
 
         surface.SetDrawColor( COLOR_DIVIDER )
         surface.DrawRect( borderRadius, self.Header:GetTall(), w - borderRadius * 2, 1 )
