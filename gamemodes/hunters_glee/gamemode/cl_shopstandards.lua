@@ -167,6 +167,8 @@ local function setupShopFonts()
     }
     surface.CreateFont( "termhuntShopItemSmallerFont", fontData )
 
+    hook.Run( "glee_rebuildfonts" )
+
 end
 
 setupShopFonts()
@@ -192,4 +194,6 @@ GAMEMODE.shopStandards.markupTextColor = Color( 140, 140, 140, 255 )
 
 GAMEMODE.shopStandards.borderPadding = 27
 GAMEMODE.shopStandards.whiteIdentifierLineWidthDiv = 250
+
 GAMEMODE.shopStandards.shopCategoryHeight = 275
+GAMEMODE.shopStandards.shopScrollGradientWidth = 130
