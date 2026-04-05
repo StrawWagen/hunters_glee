@@ -378,7 +378,7 @@ local PLAYER_LINE = {
         -- Hover slide.
         local hoverProgress = self._hoverProgress or 0
         local slideOut = self:IsHovered() or isViewingActionsForPly( ply )
-        local hoverDelta = ( slideOut and 1 or -1 ) * FrameTime() / HOVER_SLIDE_DURATION
+        local hoverDelta = ( slideOut and 1 or -0.5 ) * FrameTime() / HOVER_SLIDE_DURATION
 
         hoverProgress = math.Clamp( hoverProgress + hoverDelta, 0, 1 )
 
