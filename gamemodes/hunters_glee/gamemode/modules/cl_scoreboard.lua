@@ -383,7 +383,7 @@ local PLAYER_LINE = {
         end
 
         -- Set order based on skulls, then points.
-        self:SetZPos( -1000000 * ply:GetSkulls() - ply:GetScore() )
+        self:SetZPos( -1000 * ply:GetSkulls() - ply:GetScore() / 100 )
 
         -- Hover slide.
         local hoverProgress = self._hoverProgress or 0
