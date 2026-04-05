@@ -141,7 +141,7 @@ end
 local PLAYER_ACTION_MENU = {
     Init = function( self )
         self:DockPadding( 0, 0, 0, 0 )
-        self:SetSize( 300, 1000 )
+        self:SetSize( 300, 1000 ) -- Large temporary height, gets auto-adjusted in Setup.
 
         self.HoverSlide = self:Add( "DPanel" )
         self.HoverSlide:SetWidth( 0 )
