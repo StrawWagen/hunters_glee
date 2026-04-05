@@ -254,7 +254,7 @@ local PLAYER_ACTION_MENU = {
     end,
 
     Paint = function( _, w, h )
-        local borderRadius = 2
+        local borderRadius = 0
 
         surface.SetDrawColor( COLOR_BORDER )
         surface.DrawOutlinedRect( 0, 0, w, h, borderRadius )
@@ -598,7 +598,7 @@ local SCORE_BOARD = {
     end,
 
     Paint = function( self, w, h )
-        local borderRadius = 4
+        local borderRadius = 0
 
         surface.SetDrawColor( COLOR_BORDER )
         surface.DrawOutlinedRect( 0, 0, w, h, borderRadius )
