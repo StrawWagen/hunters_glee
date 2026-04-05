@@ -570,14 +570,79 @@ local SCORE_BOARD = {
             draw.RoundedBox( scoreCornerRadius, 0, 0, w, h, COLOR_BACKGROUND_DARK )
         end
 
+
+        -- Scroll secret stuff
+        local scrollSecretReq = 50
+        local scrollSecretDecay = 5
+
+        local scrollSecretTime = CurTime()
+        local scrollSecretVal = 0
+
+        local function scrollSecretClear()
+            scrollSecretVal = 0
+            scrollSecretTime = CurTime()
+
+            if IsValid( self.Scores.ScrollSecret ) then
+                self.Scores.ScrollSecret:Remove()
+                self.Scores.ScrollSecret = nil
+            end
+        end
+
+        local function scrollSecretDone()
+            if IsValid( self.Scores.ScrollSecret ) then return end
+
+            local plyPanel = self.Scores:GetCanvas():GetChildren()[1]
+            local height = plyPanel:GetTall()
+            local leftPadding = plyPanel:GetDockPadding()
+
+            local panel = self.Scores:Add( "DPanel" )
+            self.Scores.ScrollSecret = panel
+            panel:Dock( TOP )
+            panel:SetHeight( height )
+            panel:SetZPos( -1000000 )
+            panel.Paint = function() end
+
+            local btn = panel:Add( "DImageButton" )
+            btn:SetImage( "icon32/glee_two_lemons_32.png" )
+            btn:SetPos( leftPadding, height / 2 - 32 / 2 )
+            btn:SizeToContents()
+            btn:SetTooltip( "Scoreboard made by Two Lemons" )
+            btn:SetTooltipDelay( 1 )
+            btn.DoClick = function() gui.OpenURL( "https://github.com/legokidlogan" ) end
+        end
+
+        local function scrollSecretDelta( delta )
+            if delta <= 0 then
+                scrollSecretClear()
+                return
+            end
+
+            local now = CurTime()
+            local timeSince = now - scrollSecretTime
+
+            if timeSince >= 1 then
+                scrollSecretClear()
+                return
+            end
+
+            scrollSecretVal = math.max( 0, scrollSecretVal + delta - timeSince * scrollSecretDecay )
+            scrollSecretTime = now
+
+            if scrollSecretVal >= scrollSecretReq then
+                scrollSecretDone()
+            end
+        end
+
+
         -- Don't scroll when mouse-wheeling a mute button, since it has special behavior.
         local _OnMouseWheeled = self.Scores.OnMouseWheeled
-        self.Scores.OnMouseWheeled = function( ... )
+        self.Scores.OnMouseWheeled = function( s, delta )
             local hov = vgui.GetHoveredPanel()
             if not hov then return end
             if hov.isScoreboardMuteButton then return end
 
-            _OnMouseWheeled( ... )
+            scrollSecretDelta( delta )
+            _OnMouseWheeled( s, delta )
         end
 
         local scrollBar = self.Scores:GetVBar()
