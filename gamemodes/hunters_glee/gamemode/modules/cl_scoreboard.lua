@@ -140,80 +140,12 @@ end
 --
 local PLAYER_ACTION_MENU = {
     Init = function( self )
-        local selfObj = self
-
-        local padding = 4
-        local labelHeight = 24
-
         self:DockPadding( 0, 0, 0, 0 )
         self:SetSize( 300, 1000 )
 
         self.HoverSlide = self:Add( "DPanel" )
         self.HoverSlide:SetWidth( 0 )
         self.HoverSlide:Dock( LEFT )
-
-        local function addOption( text, callback )
-            local label = self:Add( "DLabel" )
-            label:SetFont( "ScoreboardPlayerAction" )
-            label:SetTextColor( COLOR_TEXT )
-            label:SetHeight( labelHeight )
-            label:SetMouseInputEnabled( true )
-            label:DockMargin( padding, padding, padding, 0 )
-            label:Dock( TOP )
-
-            -- Static vs dynamic text
-            if type( text ) == "string" then
-                label:SetText( " " .. text )
-            else
-                local _Think = label.Think
-                label.Think = function()
-                    if not IsValid( selfObj.Player ) then return end
-
-                    label:SetText( " " .. text( selfObj.Player ) )
-                    _Think( label )
-                end
-            end
-
-            label.DoClick = function()
-                if not IsValid( selfObj.Player ) then return end
-                callback( selfObj.Player )
-            end
-
-            label.Paint = function( _, w, h )
-                surface.SetDrawColor( label:IsHovered() and COLOR_BUTTON_HOVERED or COLOR_BUTTON )
-                surface.DrawRect( 0, 0, w, h )
-            end
-        end
-
-        addOption( "Open Steam Profile", function( ply )
-            ply:ShowProfile()
-        end )
-
-        addOption( "Copy Name", function( ply )
-            SetClipboardText( ply:Nick() )
-        end )
-
-        addOption( "Copy SteamID", function( ply )
-            SetClipboardText( ply:SteamID() )
-        end )
-
-        addOption(
-            function( ply )
-                return ply:IsMuted() and "Unmute" or "Mute"
-            end,
-            function( ply )
-                ply:SetMuted( not ply:IsMuted() )
-            end
-        )
-
-        if not GAMEMODE:IsObscured() then
-            addOption( "Spectate", function( ply )
-                RunConsoleCommand( "glee_spectate_player", ply:UserID() )
-            end )
-        end
-
-        -- vgui child count is weird. Also :SizeToChildren() is broken, yippee!
-        self:SetHeight( ( #self:GetChildren() - 1 ) * ( padding + labelHeight ) + padding )
 
         -- Remove if the player clicks anywhere else. (HasFocus is broken, have to do it manually)
         hook.Add( "PlayerButtonDown", "glee_scoreboard_pam_autoclose", function( ply, btn )
@@ -236,7 +168,73 @@ local PLAYER_ACTION_MENU = {
 
     Setup = function( self, ply )
         self.Player = ply
-        self:Think( self )
+        if self:Think( self ) == false then return end
+
+        local padding = 4
+        local labelHeight = 24
+
+        local function addOption( text, callback )
+            local label = self:Add( "DLabel" )
+            label:SetFont( "ScoreboardPlayerAction" )
+            label:SetTextColor( COLOR_TEXT )
+            label:SetHeight( labelHeight )
+            label:SetMouseInputEnabled( true )
+            label:DockMargin( padding, padding, padding, 0 )
+            label:Dock( TOP )
+
+            -- Static vs dynamic text
+            if type( text ) == "string" then
+                label:SetText( " " .. text )
+            else
+                local _Think = label.Think
+                label.Think = function()
+                    if not IsValid( ply ) then return end
+
+                    label:SetText( " " .. text() )
+                    _Think( label )
+                end
+            end
+
+            label.DoClick = function()
+                if not IsValid( ply ) then return end
+                callback()
+            end
+
+            label.Paint = function( _, w, h )
+                surface.SetDrawColor( label:IsHovered() and COLOR_BUTTON_HOVERED or COLOR_BUTTON )
+                surface.DrawRect( 0, 0, w, h )
+            end
+        end
+
+        addOption( "Open Steam Profile", function()
+            ply:ShowProfile()
+        end )
+
+        addOption( "Copy Name", function()
+            SetClipboardText( ply:Nick() )
+        end )
+
+        addOption( "Copy SteamID", function()
+            SetClipboardText( ply:SteamID() )
+        end )
+
+        addOption(
+            function()
+                return ply:IsMuted() and "Unmute" or "Mute"
+            end,
+            function()
+                ply:SetMuted( not ply:IsMuted() )
+            end
+        )
+
+        if not GAMEMODE:IsObscured() then
+            addOption( "Spectate", function()
+                RunConsoleCommand( "glee_spectate_player", ply:UserID() )
+            end )
+        end
+
+        -- vgui child count is weird. Also :SizeToChildren() is broken, yippee!
+        self:SetHeight( ( #self:GetChildren() - 1 ) * ( padding + labelHeight ) + padding )
     end,
 
     Think = function( self )
@@ -244,7 +242,7 @@ local PLAYER_ACTION_MENU = {
 
         if not IsValid( ply ) or g_ScoreboardPlyActionMenu ~= self then
             self:Remove()
-            return
+            return false
         end
     end,
 
