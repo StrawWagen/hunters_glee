@@ -76,6 +76,8 @@ end
 function SWEP:Deploy()
     self:EmitSound( "hunters_glee/weapons/gauss/gauss_deploy.wav" )
 
+    return true
+
 end
 
 function SWEP:Holster()
@@ -545,6 +547,10 @@ function SWEP:SecondaryAttack()
 end
 
 if not SERVER then return end
-if not GAMEMODE.RandomlySpawnEnt then return end
+if not GAMEMODE.RandomlySpawnEntTbl then return end
 
-GAMEMODE:RandomlySpawnEnt( "termhunt_taucannon", 1, math.Rand( 0, 1 ), nil, math.random( 1000, 10000 ) )
+GAMEMODE:RandomlySpawnEntTbl( "termhunt_taucannon", {
+    maxCount = 1,
+    chance = math.Rand( 0, 1 ),
+    radius = math.random( 1000, 10000 ),
+} )

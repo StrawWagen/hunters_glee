@@ -29,6 +29,18 @@ game.AddAmmoType( {
 } )
 
 game.AddAmmoType( {
+    name = "GLEE_SIGNALFLAREGUN_PLAYER",
+    dmgtype = DMG_BURN,
+    tracer = TRACER_NONE,
+    plydmg = 45, -- This can either be a number or a ConVar name.
+    npcdmg = 45, -- Ditto.
+    force = 0,
+    maxcarry = 9999, -- Ditto.
+    minsplash = 0,
+    maxsplash = 0
+} )
+
+game.AddAmmoType( {
     name = "Uranium_235",
     dmgtype = DMG_AIRBOAT
 

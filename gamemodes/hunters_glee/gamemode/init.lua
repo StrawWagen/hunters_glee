@@ -3,6 +3,7 @@ AddCSLuaFile( "shared.lua" )
 AddCSLuaFile( "cl_init.lua" )
 AddCSLuaFile( "modules/cl_souls.lua" )
 AddCSLuaFile( "modules/cl_targetid.lua" )
+AddCSLuaFile( "modules/cl_winscreen.lua" )
 AddCSLuaFile( "modules/cl_modelscale.lua" )
 AddCSLuaFile( "modules/cl_scoreboard.lua" )
 AddCSLuaFile( "modules/cl_obfuscation.lua" )
@@ -11,6 +12,7 @@ AddCSLuaFile( "modules/cl_killfeedoverride.lua" )
 
 AddCSLuaFile( "modules/battery/cl_battery.lua" )
 AddCSLuaFile( "modules/bpm/cl_bpm.lua" )
+AddCSLuaFile( "modules/escaping/cl_escaping.lua" )
 AddCSLuaFile( "modules/cl_spectateflashlight.lua" )
 AddCSLuaFile( "modules/thirdpersonflashlight/cl_flashlight.lua" )
 AddCSLuaFile( "modules/firsttimeplayers/cl_firsttimeplayers.lua" )
@@ -83,6 +85,8 @@ include( "modules/statuseffects/sv_statuseffects.lua" )
 include( "modules/sv_falldamage_andgoomba.lua" )
 include( "modules/firsttimeplayers/sv_firsttimeplayers.lua" )
 
+include( "modules/escaping/sv_escaping.lua" )
+
 include( "modules/battery/sv_battery.lua" )
 include( "modules/thirdpersonflashlight/sv_flashlight.lua" )
 
@@ -92,6 +96,7 @@ include( "modules/proceduralspawner/sv_cratespawner.lua" )
 include( "modules/proceduralspawner/sv_beartrapspawner.lua" )
 include( "modules/proceduralspawner/sv_jeepspawner.lua" )
 include( "modules/proceduralspawner/sv_raregenericspawns.lua" )
+include( "modules/proceduralspawner/sv_rescueflarespawner.lua" )
 
 include( "modules/weapondropper/sv_weapondropper.lua" )
 include( "modules/signalstrength/sv_signalstrength.lua" )
@@ -104,6 +109,8 @@ util.AddNetworkString( "glee_followedsomething" )
 util.AddNetworkString( "glee_followednexthing" )
 util.AddNetworkString( "glee_switchedspectatemodes" )
 util.AddNetworkString( "glee_stoppedspectating" )
+util.AddNetworkString( "glee_starteddriving" )
+util.AddNetworkString( "glee_stoppeddriving" )
 util.AddNetworkString( "glee_dropcurrentweapon" )
 util.AddNetworkString( "glee_closetheshop" )
 util.AddNetworkString( "glee_roundstate" )
@@ -161,6 +168,7 @@ function GM:TermHuntSetup()
     self.roundScore                     = {}
     self.roundExtraData                 = {} -- helper tbl that is reset on round end
 
+    self.roundEarliestEnd               = 0
     self.nextStateTransmit              = 0
 
     -- just in case!
@@ -333,16 +341,19 @@ function GM:Think()
         displayTime = 0
 
     end
-    if currState == self.ROUND_ACTIVE then -- THE HUNT BEGINS
+    if currState == self.ROUND_ACTIVE then -- THE HUNT
         local aliveCount = self:CountWinnablePlayers()
         local waitingForAFirstTimePlayer = self:WaitingForAFirstTimePlayer( players )
+        local specificallyWaiting = ( self.roundEarliestEnd or 0 ) > cur
 
         nobodyAlive = aliveCount == 0
 
-        if nobodyAlive then
+        local win = nobodyAlive and not specificallyWaiting
+
+        if win then
             self:roundEnd()
 
-        elseif not waitingForAFirstTimePlayer then
+        elseif not waitingForAFirstTimePlayer then -- dont spawn hunters if someones still in the tutorial!
             self.blockPvp   = false
             self.doProxChat = true
             self.canRespawn = false
@@ -366,12 +377,12 @@ function GM:Think()
     self:RoundStateRepeat()
 
     if displayTime then
-        SetGlobalInt( "TERMHUNTER_PLAYERTIMEVALUE", displayTime )
+        SetGlobalInt( "TERMHUNT_PLAYERTIMEVALUE", displayTime )
 
     end
     -- this often desyncs, not really a big problem tho
     if displayName then
-        SetGlobalString( "TERMHUNTER_PLAYERVALUENAME", displayName )
+        SetGlobalString( "TERMHUNT_PLAYERVALUENAME", displayName )
 
     end
 end
@@ -834,6 +845,11 @@ function GM:RemoveHunters()
     end
 end
 
+function GM:DelayRoundEndingUntil( time )
+    self.roundEarliestEnd = math.max( self.roundEarliestEnd, time )
+
+end
+
 -- from where people can buy stuff with discounts, to the hunt
 function GM:roundStart()
     hook.Run( "huntersglee_round_pre_into_active" )
@@ -848,6 +864,8 @@ function GM:roundStart()
 
     SetGlobalEntity( "termHuntWinner", NULL )
     SetGlobalInt( "termHuntWinnerSkulls", 0 )
+
+    SetGlobalInt( "termhuntEscapedCount", 0 )
 
     for _, ply in ipairs( player.GetAll() ) do
         ply:SetDeaths( 0 )
@@ -869,7 +887,7 @@ function GM:roundEnd()
 
     self.deadPlayers = {}
     self:SetRoundState( self.ROUND_LIMBO )
-    timer.Simple( engine.TickInterval(), function()
+    timer.Simple( 0, function()
         if plyCount <= 0 then return end
 
         local winner = self:calculateWinner()
@@ -877,6 +895,14 @@ function GM:roundEnd()
 
         SetGlobalBool( "termHuntDisplayWinners", true )
         SetGlobalInt( "termHuntTotalScore", math.Round( totalScore ) )
+
+        local escapedCount = 0
+        for _, ply in player.Iterator() do
+            if ply.termHuntTeam ~= GAMEMODE.TEAM_ESCAPED then continue end
+            escapedCount = escapedCount + 1
+
+        end
+        SetGlobalInt( "termhuntEscapedCount", escapedCount )
 
         if winner:GetSkulls() <= 0 then
             SetGlobalEntity( "termHuntWinner", NULL )
@@ -902,7 +928,7 @@ function GM:beginSetup()
         ply.shopItemCooldowns = {} -- reset wep cooldowns
         ply.isTerminatorHunterKiller = nil -- dont have this persist thru rounds
         ply:ResetSkulls()
-        self:unspectatifyPlayer( ply )
+        -- self:unspectatifyPlayer( ply ) -- don't unspectatify here, GAMEMODE.canRespawn handles it
         hook.Run( "huntersglee_player_reset", ply )
 
     end
@@ -912,10 +938,17 @@ function GM:beginSetup()
     self.blockCleanupSetup = nil
 
     SetGlobalBool( "termHuntDisplayWinners", false )
-    self.termHunt_roundStartTime = CurTime() + self.roundStartNormal
+    local var = GetConVar( "sv_cheats" )
+    local time = self.roundStartNormal
+    if var:GetBool() == true then
+        time = time / 8
+
+    end
+    self.termHunt_roundStartTime = CurTime() + time
     self:SetRoundState( self.ROUND_INACTIVE )
     timer.Simple( 2, function()
         self:TeleportRoomCheck()
+
     end )
 
     hook.Run( "huntersglee_round_into_inactive" )
@@ -938,7 +971,7 @@ function GM:setupFinish()
         local var = GetConVar( "sv_cheats" )
         local time = self.roundStartAfterNavCheck
         if var:GetBool() == true then
-            time = time / 8
+            time = time / 10
 
         end
 
@@ -960,6 +993,7 @@ function GM:setupFinish()
     end
 end
 
+-- in case people left these on accidentally
 function GM:concmdSetup()
     RunConsoleCommand( "ai_disabled", "0" )
     RunConsoleCommand( "ai_ignoreplayers", "0" )

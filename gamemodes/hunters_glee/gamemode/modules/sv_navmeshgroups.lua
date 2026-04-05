@@ -327,6 +327,11 @@ local function areaThatIsntUnderwater( areas )
 
 end
 
+function GM:GetRandomGroup( groups )
+    return groups[math.random( 1, #groups )]
+
+end
+
 -- get navarea to teleport to that isnt boring
 function GM:GetAreaInOccupiedBigGroupOrRandomBigGroup( noUnderWater )
 
@@ -398,7 +403,7 @@ function GM:GetNavmeshGroupsWithPlayers( yieldable )
     local bigGroups = GAMEMODE.biggestNavmeshGroups
     local alivePlayers = GAMEMODE:getAlivePlayers()
 
-    if #alivePlayers <= 0 then return end
+    if #alivePlayers <= 0 then return { GAMEMODE:GetRandomGroup( bigGroups ) } end
 
     local groupsWithPlayers = {}
     local doneGroups = {}

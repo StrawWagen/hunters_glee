@@ -166,6 +166,10 @@ function ENT:PhysicsSimulate( _, _ )
 end
 
 local GAMEMODE = GAMEMODE or GM
-if not GAMEMODE.RandomlySpawnEnt then return end
+if not GAMEMODE.RandomlySpawnEntTbl then return end
 
-GAMEMODE:RandomlySpawnEnt( className, 1, 2.5, 25 )
+GAMEMODE:RandomlySpawnEntTbl( className, {
+    maxCount = 1,
+    chance = 2.5,
+    minAreaSize = 25,
+} )

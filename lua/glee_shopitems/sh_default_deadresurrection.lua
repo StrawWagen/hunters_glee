@@ -290,7 +290,7 @@ end
 
 -- grigori stuff
 local defaultDivisor = 10
-local minGrigoriMinutes = 5
+local minGrigoriMinutes = 0 -- 5
 
 -- overcomplicated way to make grigori happen later if rounds are 'interesting' ( people earning lots of score )
 local glee_scoretochosentimeoffset_divisor = CreateConVar(
@@ -379,7 +379,7 @@ end
 if CLIENT then
     -- triumphant font
     local fontData = {
-        font = "Arial",
+        font = GAMEMODE.GLEE_FONT or "Arial",
         extended = false,
         size = glee_sizeScaled( nil, 40 ),
         weight = 500,
@@ -405,14 +405,22 @@ if CLIENT then
         function( self, owner ) -- setup func
             if LocalPlayer() ~= owner then return end
 
+            self:Hook( "glee_blockGenericAnnouncements", function()
+                return true
+
+            end )
+            self:Hook( "glee_blockDramaticAnnouncements", function( _, priority )
+                if priority >= 1000 then return end
+                return true
+
+            end )
+
             self:Hook( "HUDPaint", function()
                 local chosenWeap = owner:GetWeapon( "termhunt_divine_chosen" )
                 if not ( IsValid( chosenWeap ) or owner:Health() <= 0 ) then return end
 
                 local noPatienceTime = GetGlobal2Int( "divineChosenPatienceEnds", 0 )
                 if noPatienceTime == 0 or noPatienceTime == -2147483648 then return end
-
-                huntersGlee_BlockAnnouncements( owner, 5 )
 
                 local timeTillNoPatience = noPatienceTime - CurTime()
                 if timeTillNoPatience > 0 then
@@ -662,7 +670,7 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = -201,
-        shPurchaseCheck = { shopHelpers.undeadCheck, function( purchaser )
+        shPurchaseCheck = { shopHelpers.deadCheck, function( purchaser )
             local isChosen = purchaser:HasStatusEffect( "divine_chosen" )
             if isChosen then return true end
 
@@ -676,6 +684,7 @@ local items = {
 
         end, },
         svOnPurchaseFunc = divineIntervention,
+        shCanShowInShop = shopHelpers.deadNotEscapedCheck,
     },
     -- for people who just want to BE ALIVE!
     [ "resurrectioncrappy" ] = {
@@ -691,7 +700,7 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = -200,
-        shPurchaseCheck = { shopHelpers.undeadCheck, function( purchaser )
+        shPurchaseCheck = { shopHelpers.deadCheck, function( purchaser )
             local lastDeathTime = purchaser:GetNW2Int( "glee_divineintervetion_lastdietime", 0 )
             local reviveTime = lastDeathTime + minTimeBetweenResurrections / 2
             local timeTillRevive = math.abs( reviveTime - CurTime() )
@@ -702,6 +711,7 @@ local items = {
 
         end, },
         svOnPurchaseFunc = infernalIntervention,
+        shCanShowInShop = shopHelpers.deadNotEscapedCheck,
     },
     -- soft reason to get around the map, go places people have died 
     [ "revivekit" ] = {
@@ -747,11 +757,12 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = 30,
-        shPurchaseCheck = { shopHelpers.undeadCheck, divineChosenCanPurchase },
+        shPurchaseCheck = { shopHelpers.deadCheck, divineChosenCanPurchase },
         svOnPurchaseFunc = function( purchaser )
             purchaser:GiveStatusEffect( "divine_chosen" )
 
         end,
+        shCanShowInShop = shopHelpers.deadNotEscapedCheck,
     },
 }
 
