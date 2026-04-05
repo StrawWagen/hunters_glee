@@ -15,6 +15,8 @@ GM.Author = "StrawWagen"
 GM.Email = "N/A"
 GM.Website = "N/A"
 
+CreateConVar( "glee_discord_url", "", FCVAR_ARCHIVE + FCVAR_REPLICATED, "Adds a discord join link for your server in the glee scoreboard." )
+
 include( "player_class/player_termrunner.lua" )
 
 include( "sh_player.lua" )
