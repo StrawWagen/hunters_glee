@@ -462,6 +462,7 @@ local SCORE_BOARD = {
     Init = function( self )
         local mainPadding = 16 -- left/right padding applied to outermost elements.
         local plyListPadding = 8 -- padding applied to the scrollable player list.
+        local headerPadding = 8 -- top/bottom padding for header text
 
         self:SetSize( 1100, 720 )
         self:SetPos( ScrW() / 2 - self:GetWide() / 2, ScrH() / 2 - self:GetTall() / 2 )
@@ -472,11 +473,8 @@ local SCORE_BOARD = {
         self.Header:Dock( TOP )
         self.Header:SetHeight( 60 )
 
-        self.Header.Paint = function( _, w, h )
-            local padding = 8
-
-            draw.SimpleText( GetHostName(), "ScoreboardServerName", w / 2, padding, COLOR_SERVER, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
-            draw.SimpleText( game.GetMap(), "ScoreboardMapName", w / 2, h - padding, COLOR_TEXT, TEXT_ALIGN_CENTER, TEXT_ALIGN_BOTTOM )
+        self.Header.Paint = function( _, w, _h )
+            draw.SimpleText( GetHostName(), "ScoreboardServerName", w / 2, headerPadding, COLOR_SERVER, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
         end
 
         -- TODO: Replace with a custom image for extra fancy gamemode title?
@@ -496,6 +494,20 @@ local SCORE_BOARD = {
         self.HeaderRight = self.Header:Add( "DPanel" )
         self.HeaderRight:Dock( RIGHT )
         self.HeaderRight:SetPaintBackground( false )
+
+        self:InvalidateLayout( true ) -- Update header width from docking
+
+        self.MapLabel = self.Header:Add( "DLabel" )
+        self.MapLabel:SetSize( 200, 20 ) -- v Manual dock since auto would get misaligned by the sizes of left/right headers
+        self.MapLabel:SetPos( self.Header:GetWide() / 2 - self.MapLabel:GetWide() / 2, self.Header:GetTall() - self.MapLabel:GetTall() - headerPadding )
+        self.MapLabel:SetPaintBackground( false )
+        self.MapLabel:SetContentAlignment( 2 )
+        self.MapLabel:SetFont( "ScoreboardMapName" )
+        self.MapLabel:SetTextColor( COLOR_TEXT )
+        self.MapLabel:SetText( game.GetMap() )
+        self.MapLabel:SetMouseInputEnabled( true )
+        self.MapLabel:SetTooltip( "" )
+        self.MapLabel:SetTooltipDelay( 0 )
 
         self.DiscordButton = self.HeaderRight:Add( "DImageButton" )
         self.DiscordButton:SetPos( self.HeaderRight:GetWide() / 2, self.HeaderRight:GetTall() / 2 )
@@ -636,6 +648,7 @@ local SCORE_BOARD = {
             plyInfoNudge = scrollBar.Enabled and scrollBar:GetWide() or 0
         end
 
+        self.MapLabel:SetTooltip( os.date( "!Map uptime: %H:%M:%S", CurTime() ) )
         self.DiscordButton:SetVisible( discordConvar:GetString() ~= "" )
     end
 }
