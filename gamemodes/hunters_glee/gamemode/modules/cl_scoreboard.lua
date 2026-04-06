@@ -50,18 +50,18 @@ local PLY_COLORS = {
         NAME = Color( 255, 255, 255 ),
     },
     [PLY_STATUS_DEAD] = {
-        BG_UNHOVERED = Color( 60, 0, 0, 150 ),
-        BG_HOVERED = Color( 90, 45, 45 ),
+        BG_UNHOVERED = Color( 75, 0, 0, 150 ),
+        BG_HOVERED = Color( 100, 50, 50 ),
         NAME = Color( 255, 200, 200 ),
     },
     [PLY_STATUS_GRIGORI] = {
-        BG_UNHOVERED = Color( 60, 60, 0, 150 ),
-        BG_HOVERED = Color( 90, 90, 45 ),
+        BG_UNHOVERED = Color( 75, 75, 0, 150 ),
+        BG_HOVERED = Color( 100, 100, 50 ),
         NAME = Color( 255, 255, 200 ),
     },
     [PLY_STATUS_ESCAPED] = {
-        BG_UNHOVERED = Color( 0, 45, 60, 150 ),
-        BG_HOVERED = Color( 45, 75, 90 ),
+        BG_UNHOVERED = Color( 0, 55, 75, 150 ),
+        BG_HOVERED = Color( 50, 87, 100 ),
         NAME = Color( 200, 255, 255 ),
     },
 }
