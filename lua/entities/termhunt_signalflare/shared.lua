@@ -421,6 +421,8 @@ if SERVER and terminator_Extras then
 
         end
 
+        heli:Fire( "EnableDeadlyShooting", 1, 0.1 )
+
         track:SetPos( targetPos )
 
         heli.ourPathTrack = track
