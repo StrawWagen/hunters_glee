@@ -508,7 +508,7 @@ local SCORE_BOARD = {
         self.Header:SetHeight( glee_sizeScaled( nil, HEADER_HEIGHT ) )
 
         self.Header.Paint = function( _, w, _h )
-            draw.SimpleText( GetHostName(), "ScoreboardServerName", w / 2, headerPadding, COLOR_SERVER, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
+            surface.drawShadowedTextBetter( GetHostName(), "ScoreboardServerName", COLOR_SERVER, w / 2, headerPadding, true )
         end
 
         -- TODO: Replace with a custom image for extra fancy gamemode title?
@@ -519,11 +519,15 @@ local SCORE_BOARD = {
         self.HeaderLeft:SetContentAlignment( 4 )
         self.HeaderLeft:SetFont( "ScoreboardGamemodeTitle" )
         self.HeaderLeft:SetTextColor( COLOR_TEXT_GAMEMODE )
-        self.HeaderLeft:SetText( "Hunter's Glee" )
+        self.HeaderLeft:SetText( "" )
         self.HeaderLeft:SetMouseInputEnabled( true )
         self.HeaderLeft:SetTooltip( "Get some glee" )
         self.HeaderLeft:SetTooltipDelay( 0 )
         self.HeaderLeft.DoClick = function() gui.OpenURL( GAMEMODE_URL ) end
+        self.HeaderLeft.Paint = function( s )
+            local fontHeight = draw.GetFontHeight( s:GetFont() )
+            surface.drawShadowedTextBetter( "Hunter's Glee", s:GetFont(), s:GetTextColor(), 0, s:GetTall() / 2 - fontHeight / 2, false )
+        end
 
         self.HeaderRight = self.Header:Add( "DPanel" )
         self.HeaderRight:Dock( RIGHT )
