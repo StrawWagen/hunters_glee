@@ -39,6 +39,9 @@ local BORDER_RADIUS_MAIN = glee_sizeScaled( nil, 0 ) -- 4
 local BORDER_RADIUS_ACTION_MENU = glee_sizeScaled( nil, 0 ) -- 2
 
 local PADDING_OUTER = glee_sizeScaled( 16 ) -- left/right/bottom padding applied to outermost elements.
+local BOARD_WIDTH = 1100
+local BOARD_HEIGHT = 720 -- True height gets limited by header + padding + list height. Be sure to adjust LIST_MAX_HEIGHT if this gets changed.
+local LIST_MAX_HEIGHT = glee_sizeScaled( nil, 590 )
 
 local PLY_COLORS = {
     [PLY_STATUS_ALIVE] = {
@@ -486,7 +489,7 @@ local SCORE_BOARD = {
         local plyListPadding = glee_sizeScaled( nil, 8 ) -- padding applied to the scrollable player list.
         local headerPadding = glee_sizeScaled( nil, 8 ) -- top/bottom padding for header text
 
-        self:SetSize( glee_sizeScaled( 1100, 720 ) )
+        self:SetSize( glee_sizeScaled( BOARD_WIDTH, BOARD_HEIGHT ) )
         self:SetPos( ScrW() / 2 - self:GetWide() / 2, ScrH() / 2 - self:GetTall() / 2 )
         self:DockPadding( PADDING_OUTER, 0, PADDING_OUTER, 0 )
 
@@ -738,7 +741,7 @@ local SCORE_BOARD = {
 
             -- Resize Scores to fit its contents, to a limit.
             self.Scores:GetCanvas():InvalidateLayout( true ) -- Resize to fit contents
-            self.Scores:SetHeight( math.min( self.Scores:GetCanvas():GetTall(), glee_sizeScaled( nil, 590 ) ) )
+            self.Scores:SetHeight( math.min( self.Scores:GetCanvas():GetTall(), LIST_MAX_HEIGHT ) )
             self.Scores:PerformLayout() -- Update VBar
 
             -- Calculate info nudge, since the scrollbar pushes things over a little.
