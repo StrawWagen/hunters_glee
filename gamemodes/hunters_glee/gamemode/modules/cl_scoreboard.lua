@@ -38,6 +38,8 @@ local HOVER_SLIDE_DURATION = 0.1
 local BORDER_RADIUS_MAIN = glee_sizeScaled( nil, 0 ) -- 4
 local BORDER_RADIUS_ACTION_MENU = glee_sizeScaled( nil, 0 ) -- 2
 
+local PADDING_OUTER = glee_sizeScaled( 16 ) -- left/right/bottom padding applied to outermost elements.
+
 local PLY_COLORS = {
     [PLY_STATUS_ALIVE] = {
         BG_UNHOVERED = Color( 0, 0, 0, 150 ),
@@ -481,13 +483,12 @@ PLAYER_LINE = vgui.RegisterTable( PLAYER_LINE, "DButton" )
 --
 local SCORE_BOARD = {
     Init = function( self )
-        local mainPadding = glee_sizeScaled( 16 ) -- left/right padding applied to outermost elements.
         local plyListPadding = glee_sizeScaled( nil, 8 ) -- padding applied to the scrollable player list.
         local headerPadding = glee_sizeScaled( nil, 8 ) -- top/bottom padding for header text
 
         self:SetSize( glee_sizeScaled( 1100, 720 ) )
         self:SetPos( ScrW() / 2 - self:GetWide() / 2, ScrH() / 2 - self:GetTall() / 2 )
-        self:DockPadding( mainPadding, 0, mainPadding, 0 )
+        self:DockPadding( PADDING_OUTER, 0, PADDING_OUTER, 0 )
 
         -- Header
         self.Header = self:Add( "Panel" )
@@ -701,8 +702,13 @@ local SCORE_BOARD = {
         surface.SetDrawColor( COLOR_HEADER )
         surface.DrawRect( borderRadius, borderRadius, w - borderRadius * 2, headerHeight - borderRadius )
 
+        local boardBackTopY = headerHeight + 1
+        local _, boardBackTopYGlobal = self:LocalToScreen( 0, boardBackTopY )
+        local _, scoresBottomYGlobal = self.Scores:LocalToScreen( 0, self.Scores:GetTall() )
+        local bgHeight = scoresBottomYGlobal - boardBackTopYGlobal + 1 + PADDING_OUTER
+
         surface.SetDrawColor( COLOR_BACKGROUND )
-        surface.DrawRect( borderRadius, headerHeight + 1, w - borderRadius * 2, h - borderRadius - headerHeight - 1 )
+        surface.DrawRect( borderRadius, boardBackTopY, w - borderRadius * 2, bgHeight - borderRadius )
 
         surface.SetDrawColor( COLOR_DIVIDER )
         surface.DrawRect( borderRadius, headerHeight, w - borderRadius * 2, 1 )
