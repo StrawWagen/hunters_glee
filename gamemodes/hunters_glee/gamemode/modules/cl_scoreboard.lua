@@ -508,7 +508,7 @@ local SCORE_BOARD = {
         self.Header:SetHeight( glee_sizeScaled( nil, HEADER_HEIGHT ) )
 
         self.Header.Paint = function( _, w, _h )
-            surface.drawShadowedTextBetter( GetHostName(), "ScoreboardServerName", COLOR_SERVER, w / 2, headerPadding, true )
+            draw.SimpleText( GetHostName(), "ScoreboardServerName", w / 2, headerPadding, COLOR_SERVER, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
         end
 
         -- TODO: Replace with a custom image for extra fancy gamemode title?
