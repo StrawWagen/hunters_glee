@@ -1,13 +1,7 @@
 
 local glee_sizeScaled = glee_sizeScaled
-local function rescale( x, y )
-    x, y = glee_sizeScaled( x, y )
-    if x then x = math.Round( x ) end
-    if not y then return x end -- Avoid returning ( x, nil ) so functions like math.max don't freak out
 
-    return x, math.Round( y )
-end
-
+local GAMEMODE_URL = "https://steamcommunity.com/sharedfiles/filedetails/?id=2848253104"
 
 local PLY_STATUS_ALIVE = 1
 local PLY_STATUS_DEAD = 2
@@ -27,21 +21,22 @@ local COLOR_DIVIDER = Color( 80, 80, 80, 240 )
 local COLOR_LOCALPLAYER_NAME = Color( 43, 136, 28 )
 local COLOR_SELECTION_ARROW = Color( 80, 80, 100 )
 
-local COLOR_TEXT = Color( 200, 200, 200 )
-local COLOR_SERVER = Color( 255, 255, 255 )
-local COLOR_TEXT_SCORE = Color( 255, 255, 255 )
-local COLOR_TEXT_SKULLS = Color( 255, 255, 255 )
-local COLOR_TEXT_GAMEMODE = Color( 255, 190, 190 )
+local white = Color( 255, 255, 255 )
+local COLOR_TEXT = white
+local COLOR_SERVER = white
+local COLOR_TEXT_SCORE = white
+local COLOR_TEXT_SKULLS = white
+local COLOR_TEXT_GAMEMODE = white
 
 local COLOR_PING_GOOD = Color( 50, 150, 0 )
 local COLOR_PING_OKAY = Color( 150, 150, 0 )
 local COLOR_PING_BAD = Color( 150, 50, 0 )
 
-local HOVER_SLIDE_AMOUNT = rescale( 30 )
-local HOVER_SLIDE_DURATION = 0.2
+local HOVER_SLIDE_AMOUNT = glee_sizeScaled( 30 )
+local HOVER_SLIDE_DURATION = 0.1
 
-local BORDER_RADIUS_MAIN = rescale( nil, 0 ) -- 4
-local BORDER_RADIUS_ACTION_MENU = rescale( nil, 0 ) -- 2
+local BORDER_RADIUS_MAIN = glee_sizeScaled( nil, 0 ) -- 4
+local BORDER_RADIUS_ACTION_MENU = glee_sizeScaled( nil, 0 ) -- 2
 
 local PLY_COLORS = {
     [PLY_STATUS_ALIVE] = {
@@ -66,8 +61,8 @@ local PLY_COLORS = {
     },
 }
 
-local PLY_LINE_SPACING = rescale( nil, 4 )
-local PLY_INFO_SPACING = rescale( 100 )
+local PLY_LINE_SPACING = glee_sizeScaled( nil, 4 )
+local PLY_INFO_SPACING = glee_sizeScaled( 100 )
 local PLY_INFOS = { -- From right to left on the scoreboard.
     {
         NAME = "Ping",
@@ -89,7 +84,7 @@ local PLY_INFOS = { -- From right to left on the scoreboard.
     },
     {
         NAME = "Skulls",
-        TOOLTIP = "Skulls.\nVery valuable.",
+        TOOLTIP = "Skulls.\nEach one is something dead.",
         GETTER = function( ply )
             return tostring( ply:GetSkulls() ), COLOR_TEXT_SKULLS
         end,
@@ -103,54 +98,58 @@ local PLY_INFOS = { -- From right to left on the scoreboard.
     },
 }
 
+local function setupFonts()
+    local theFont = GAMEMODE and GAMEMODE.GLEE_FONT or "Arial"
+    surface.CreateFont( "ScoreboardServerName", {
+        font    = theFont,
+        size    = glee_sizeScaled( nil, 24 ),
+        weight    = 500
+    } )
 
-surface.CreateFont( "ScoreboardServerName", {
-    font    = "Roboto",
-    size    = rescale( nil, 24 ),
-    weight    = 600
-} )
+    surface.CreateFont( "ScoreboardMapName", {
+        font    = theFont,
+        size    = glee_sizeScaled( nil, 16 ),
+        weight    = 500
+    } )
 
-surface.CreateFont( "ScoreboardMapName", {
-    font    = "Helvetica",
-    size    = rescale( nil, 16 ),
-    weight    = 400
-} )
+    surface.CreateFont( "ScoreboardGamemodeTitle", {
+        font    = theFont,
+        size    = glee_sizeScaled( nil, 32 ),
+        weight    = 1000
+    } )
 
-surface.CreateFont( "ScoreboardGamemodeTitle", {
-    font    = "Tahoma",
-    size    = rescale( nil, 32 ),
-    weight    = 600
-} )
+    surface.CreateFont( "ScoreboardInfoCategory", {
+        font    = theFont,
+        size    = glee_sizeScaled( nil, 18 ),
+        weight    = 500
+    } )
 
-surface.CreateFont( "ScoreboardInfoCategory", {
-    font    = "Roboto",
-    size    = rescale( nil, 18 ),
-    weight    = 500
-} )
+    surface.CreateFont( "ScoreboardPlayerCount", {
+        font    = theFont,
+        size    = glee_sizeScaled( nil, 16 ),
+        weight    = 500
+    } )
 
-surface.CreateFont( "ScoreboardPlayerCount", {
-    font    = "Roboto",
-    size    = rescale( nil, 16 ),
-    weight    = 400
-} )
+    surface.CreateFont( "ScoreboardPlayerName", {
+        font    = theFont,
+        size    = glee_sizeScaled( nil, 22 ),
+        weight    = 500
+    } )
 
-surface.CreateFont( "ScoreboardPlayerName", {
-    font    = "Roboto",
-    size    = rescale( nil, 22 ),
-    weight    = 400
-} )
+    surface.CreateFont( "ScoreboardPlayerInfo", {
+        font    = theFont,
+        size    = glee_sizeScaled( nil, 17 ),
+        weight    = 500
+    } )
 
-surface.CreateFont( "ScoreboardPlayerInfo", {
-    font    = "Roboto",
-    size    = rescale( nil, 17 ),
-    weight    = 400
-} )
-
-surface.CreateFont( "ScoreboardPlayerAction", {
-    font    = "Roboto",
-    size    = rescale( nil, 18 ),
-    weight    = 400
-} )
+    surface.CreateFont( "ScoreboardPlayerAction", {
+        font    = theFont,
+        size    = glee_sizeScaled( nil, 18 ),
+        weight    = 500
+    } )
+end
+setupFonts()
+hook.Add( "glee_rebuildfonts", "glee_scoreboard_setup_fonts", setupFonts )
 
 
 local plyInfoNudge = 0 -- Additional x offset that needs to be added to ply info in PLAYER_LINE for alignment.
@@ -169,7 +168,7 @@ end
 local PLAYER_ACTION_MENU = {
     Init = function( self )
         self:DockPadding( 0, 0, 0, 0 )
-        self:SetSize( rescale( 300, 1000 ) ) -- Large temporary height, gets auto-adjusted in Setup.
+        self:SetSize( glee_sizeScaled( 300, 1000 ) ) -- Large temporary height, gets auto-adjusted in Setup.
 
         self.HoverSlide = self:Add( "DPanel" )
         self.HoverSlide:SetWidth( 0 )
@@ -198,8 +197,8 @@ local PLAYER_ACTION_MENU = {
         self.Player = ply
         if self:Think( self ) == false then return end
 
-        local padding = rescale( nil, 4 )
-        local labelHeight = rescale( nil, 24 )
+        local padding = glee_sizeScaled( nil, 4 )
+        local labelHeight = glee_sizeScaled( nil, 24 )
 
         local function addOption( text, callback )
             local label = self:Add( "DLabel" )
@@ -296,9 +295,9 @@ local PLAYER_LINE = {
         local selfObj = self
 
         self:Dock( TOP )
-        self:DockPadding( rescale( 3 ), 0, 0, 0 )
+        self:DockPadding( glee_sizeScaled( 3 ), 0, 0, 0 )
         self:DockMargin( 0, PLY_LINE_SPACING, 0, 0 )
-        self:SetHeight( rescale( nil, 32 + 4 ) )
+        self:SetHeight( glee_sizeScaled( nil, 32 + 4 ) )
         self:SetMouseInputEnabled( true )
         self:SetText( "" )
 
@@ -309,9 +308,9 @@ local PLAYER_LINE = {
         self.HoverSlide.Paint = function( _, w, h )
             if not isViewingActionsForPly( selfObj.Player ) then return end
 
-            local tipRadius = rescale( nil, 10 )
-            local padding = rescale( 3 )
-            local lineThickness = rescale( nil, 6 )
+            local tipRadius = glee_sizeScaled( nil, 10 )
+            local padding = glee_sizeScaled( 3 )
+            local lineThickness = glee_sizeScaled( nil, 6 )
             local lineLength = w - padding * 2 - tipRadius
 
             draw.NoTexture()
@@ -324,9 +323,9 @@ local PLAYER_LINE = {
             } )
         end
 
-        local avatarSize = rescale( nil, 32 )
-        local muteSize = rescale( nil, 32 )
-        local namePadding = rescale( 8 )
+        local avatarSize = glee_sizeScaled( nil, 32 )
+        local muteSize = glee_sizeScaled( nil, 32 )
+        local namePadding = glee_sizeScaled( 8 )
 
         self.AvatarButton = self:Add( "DPanel" )
         self.AvatarButton:Dock( LEFT )
@@ -352,7 +351,7 @@ local PLAYER_LINE = {
         self.Mute:SetSize( muteSize, muteSize )
         self.Mute:Dock( RIGHT )
         self.Mute:DockMargin( 0, 0, PLY_INFO_SPACING * #PLY_INFOS + muteSize + namePadding, 0 )
-        self.Mute:SetTooltip( "Mute/Unmute this player's voicechat" )
+        self.Mute:SetTooltip( "Mute/Unmute this player's voicechat\nScroll to adjust volume" )
         self.Mute:SetTooltipDelay( 0 )
     end,
 
@@ -397,7 +396,7 @@ local PLAYER_LINE = {
                 local a = 255 - math.Clamp( CurTime() - ( s.LastTick or 0 ), 0, 3 ) * 255
                 if a <= 0 then return end
 
-                draw.RoundedBox( rescale( nil, 4 ), 0, 0, w, h, Color( 0, 0, 0, a * 0.75 ) )
+                draw.RoundedBox( glee_sizeScaled( nil, 4 ), 0, 0, w, h, Color( 0, 0, 0, a * 0.75 ) )
                 draw.SimpleText( math.ceil( ply:GetVoiceVolumeScale() * 100 ) .. "%", "DermaDefaultBold", w / 2, h / 2, Color( 255, 255, 255, a ), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
             end
         end
@@ -482,18 +481,18 @@ PLAYER_LINE = vgui.RegisterTable( PLAYER_LINE, "DButton" )
 --
 local SCORE_BOARD = {
     Init = function( self )
-        local mainPadding = rescale( 16 ) -- left/right padding applied to outermost elements.
-        local plyListPadding = rescale( nil, 8 ) -- padding applied to the scrollable player list.
-        local headerPadding = rescale( nil, 8 ) -- top/bottom padding for header text
+        local mainPadding = glee_sizeScaled( 16 ) -- left/right padding applied to outermost elements.
+        local plyListPadding = glee_sizeScaled( nil, 8 ) -- padding applied to the scrollable player list.
+        local headerPadding = glee_sizeScaled( nil, 8 ) -- top/bottom padding for header text
 
-        self:SetSize( rescale( 1100, 720 ) )
+        self:SetSize( glee_sizeScaled( 1100, 720 ) )
         self:SetPos( ScrW() / 2 - self:GetWide() / 2, ScrH() / 2 - self:GetTall() / 2 )
         self:DockPadding( mainPadding, 0, mainPadding, 0 )
 
         -- Header
         self.Header = self:Add( "Panel" )
         self.Header:Dock( TOP )
-        self.Header:SetHeight( rescale( nil, 60 ) )
+        self.Header:SetHeight( glee_sizeScaled( nil, 60 ) )
 
         self.Header.Paint = function( _, w, _h )
             draw.SimpleText( GetHostName(), "ScoreboardServerName", w / 2, headerPadding, COLOR_SERVER, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
@@ -502,7 +501,7 @@ local SCORE_BOARD = {
         -- TODO: Replace with a custom image for extra fancy gamemode title?
         self.HeaderLeft = self.Header:Add( "DLabel" )
         self.HeaderLeft:Dock( LEFT )
-        self.HeaderLeft:SetWidth( rescale( 200 ) )
+        self.HeaderLeft:SetWidth( glee_sizeScaled( 200 ) )
         self.HeaderLeft:SetPaintBackground( false )
         self.HeaderLeft:SetContentAlignment( 4 )
         self.HeaderLeft:SetFont( "ScoreboardGamemodeTitle" )
@@ -511,17 +510,17 @@ local SCORE_BOARD = {
         self.HeaderLeft:SetMouseInputEnabled( true )
         self.HeaderLeft:SetTooltip( "Get some glee" )
         self.HeaderLeft:SetTooltipDelay( 0 )
-        self.HeaderLeft.DoClick = function() gui.OpenURL( "https://steamcommunity.com/sharedfiles/filedetails/?id=2848253104" ) end
+        self.HeaderLeft.DoClick = function() gui.OpenURL( GAMEMODE_URL ) end
 
         self.HeaderRight = self.Header:Add( "DPanel" )
         self.HeaderRight:Dock( RIGHT )
-        self.HeaderRight:SetWidth( rescale( 200 ) )
+        self.HeaderRight:SetWidth( glee_sizeScaled( 200 ) )
         self.HeaderRight:SetPaintBackground( false )
 
         self:InvalidateLayout( true ) -- Update header width from docking
 
         self.MapLabel = self.Header:Add( "DLabel" )
-        self.MapLabel:SetSize( rescale( 200, 20 ) ) -- v Manual dock since auto would get misaligned by the sizes of left/right headers
+        self.MapLabel:SetSize( glee_sizeScaled( 200, 20 ) ) -- v Manual dock since auto would get misaligned by the sizes of left/right headers
         self.MapLabel:SetPos( self.Header:GetWide() / 2 - self.MapLabel:GetWide() / 2, self.Header:GetTall() - self.MapLabel:GetTall() - headerPadding )
         self.MapLabel:SetPaintBackground( false )
         self.MapLabel:SetContentAlignment( 2 )
@@ -532,7 +531,7 @@ local SCORE_BOARD = {
         self.MapLabel:SetTooltip( "" )
         self.MapLabel:SetTooltipDelay( 0 )
 
-        local discordSize = rescale( nil, 32 )
+        local discordSize = glee_sizeScaled( nil, 32 )
         self.DiscordButton = self.HeaderRight:Add( "DImageButton" )
         self.DiscordButton:SetPos( self.HeaderRight:GetWide() - discordSize, discordSize / 2 )
         self.DiscordButton:SetImage( "icon32/glee_discord_32.png" )
@@ -553,7 +552,7 @@ local SCORE_BOARD = {
         end
 
         self.CategoryLabelHolder = self:Add( "Panel" )
-        self.CategoryLabelHolder:SetHeight( rescale( nil, 40 ) )
+        self.CategoryLabelHolder:SetHeight( glee_sizeScaled( nil, 40 ) )
         self.CategoryLabelHolder:DockPadding( plyListPadding, 0, plyListPadding, plyListPadding )
         self.CategoryLabelHolder:Dock( TOP )
 
@@ -587,7 +586,7 @@ local SCORE_BOARD = {
 
 
         -- Player list
-        local scoreCornerRadius = rescale( nil, 4 )
+        local scoreCornerRadius = glee_sizeScaled( nil, 4 )
 
         self.Scores = self:Add( "DScrollPanel" )
         self.Scores:DockPadding( 0, 0, 0, 0 )
@@ -675,7 +674,7 @@ local SCORE_BOARD = {
 
         local scrollBar = self.Scores:GetVBar()
         scrollBar:SetHideButtons( true )
-        scrollBar:SetWidth( rescale( 10 ) )
+        scrollBar:SetWidth( glee_sizeScaled( 10 ) )
 
         scrollBar.Paint = function( _, w, h )
             surface.SetDrawColor( COLOR_SCROLL_BACKGROUND )
@@ -685,7 +684,7 @@ local SCORE_BOARD = {
         local scrollBarGrip = scrollBar.btnGrip
 
         scrollBarGrip.Paint = function( _, w, h )
-            draw.RoundedBox( rescale( 6 ), 0, 0, rescale( w - 2 ), h, COLOR_SCROLL_BAR )
+            draw.RoundedBox( glee_sizeScaled( 6 ), 0, 0, glee_sizeScaled( w - 2 ), h, COLOR_SCROLL_BAR )
         end
     end,
 
@@ -733,7 +732,7 @@ local SCORE_BOARD = {
 
             -- Resize Scores to fit its contents, to a limit.
             self.Scores:GetCanvas():InvalidateLayout( true ) -- Resize to fit contents
-            self.Scores:SetHeight( math.min( self.Scores:GetCanvas():GetTall(), rescale( nil, 590 ) ) )
+            self.Scores:SetHeight( math.min( self.Scores:GetCanvas():GetTall(), glee_sizeScaled( nil, 590 ) ) )
             self.Scores:PerformLayout() -- Update VBar
 
             -- Calculate info nudge, since the scrollbar pushes things over a little.
