@@ -108,54 +108,54 @@ local PLY_INFOS = { -- From right to left on the scoreboard.
 local function setupFonts()
     local theFont = GAMEMODE and GAMEMODE.GLEE_FONT or "Arial"
     surface.CreateFont( "ScoreboardServerName", {
-        font    = theFont,
-        size    = glee_sizeScaled( nil, 30 ),
+        font      = theFont,
+        size      = glee_sizeScaled( nil, 30 ),
         weight    = 500,
-        shadow  = true,
+        shadow    = true,
     } )
 
     surface.CreateFont( "ScoreboardMapName", {
-        font    = theFont,
-        size    = math.max( glee_sizeScaled( nil, 17 ), 17 ),
+        font      = theFont,
+        size      = math.max( glee_sizeScaled( nil, 17 ), 17 ),
         weight    = 400,
         antialias = false,
     } )
 
     surface.CreateFont( "ScoreboardGamemodeTitle", {
-        font    = theFont,
-        size    = glee_sizeScaled( nil, 44 ),
+        font      = theFont,
+        size      = glee_sizeScaled( nil, 44 ),
         weight    = 1000,
-        shadow  = true,
+        shadow    = true,
     } )
 
     surface.CreateFont( "ScoreboardInfoCategory", {
-        font    = theFont,
-        size    = glee_sizeScaled( nil, 18 ),
-        weight    = 500
+        font      = theFont,
+        size      = glee_sizeScaled( nil, 18 ),
+        weight    = 500,
     } )
 
     surface.CreateFont( "ScoreboardPlayerCount", {
-        font    = theFont,
-        size    = glee_sizeScaled( nil, 16 ),
-        weight    = 500
+        font      = theFont,
+        size      = glee_sizeScaled( nil, 16 ),
+        weight    = 500,
     } )
 
     surface.CreateFont( "ScoreboardPlayerName", {
-        font    = theFont,
-        size    = glee_sizeScaled( nil, 22 ),
-        weight    = 500
+        font      = theFont,
+        size      = glee_sizeScaled( nil, 22 ),
+        weight    = 500,
     } )
 
     surface.CreateFont( "ScoreboardPlayerInfo", {
-        font    = theFont,
-        size    = glee_sizeScaled( nil, 17 ),
-        weight    = 500
+        font      = theFont,
+        size      = glee_sizeScaled( nil, 17 ),
+        weight    = 500,
     } )
 
     surface.CreateFont( "ScoreboardPlayerAction", {
-        font    = theFont,
-        size    = glee_sizeScaled( nil, 18 ),
-        weight    = 500
+        font      = theFont,
+        size      = glee_sizeScaled( nil, 18 ),
+        weight    = 500,
     } )
 end
 setupFonts()
