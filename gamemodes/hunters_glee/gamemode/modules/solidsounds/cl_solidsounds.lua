@@ -197,3 +197,9 @@ net.Receive( "glee_sendsolidsound", function()
     beginFade( path, pitch, vol, fadeOutLength, fadeInLength )
 
 end )
+
+net.Receive( "glee_stopsolidsounds", function()
+    stopAndClear()
+    fadeActive   = false
+    fadeInActive = false
+end )

@@ -121,7 +121,16 @@ if SERVER and terminator_Extras then
     local slowMovingHeliMaxs = 175
     local slowMovingHeliMins = -slowMovingHeliMaxs
 
-    local invisMat = Color( 255, 255, 255, 255 )
+    local invisCol = Color( 255, 255, 255, 1 )
+
+    local heli_seatPositions = {
+        { pos = Vector( -51.1, 1.1, -19.8 ), ang = Angle( 0, -90, -15 ) },
+        { pos = Vector( -51.1, 28.9, -19.8 ), ang = Angle( 0, -90, -15 ) },
+        { pos = Vector( -51.1, -26.8, -19.8 ), ang = Angle( 0, -90, -15 ) },
+        { pos = Vector( 59.6, -0.4, -48 ), ang = Angle( 0, 90, 15 ) },
+        { pos = Vector( 61, 26, -47.4 ), ang = Angle( 15, -0.3, 0 ) },
+        { pos = Vector( 61.5, -26.9, -47.6 ), ang = Angle( -15, -179.7, 0 ) },
+    }
 
     local rescueTimerName = "glee_rescueheli_countdown"
 
@@ -326,7 +335,7 @@ if SERVER and terminator_Extras then
         seat:SetParent( heli )
         seat:DrawShadow( false )
         seat:PhysicsDestroy()
-        seat:SetColor( invisMat )
+        seat:SetColor( invisCol )
 
         seat.PhysgunDisabled = true
         seat.DoNotDuplicate = true
@@ -462,10 +471,8 @@ if SERVER and terminator_Extras then
 
         heli.glee_PrettyName = "The Rescue Heli"
 
-        local seatPos = Vector( 0, 0, 0 )
-
-        for _ = 1, 4 do
-            heliSpawnSeat( heli, seatPos, Angle( 0, 270, 10 ) )
+        for _, data in ipairs( heli_seatPositions ) do
+            heliSpawnSeat( heli, data.pos, data.ang )
 
         end
 

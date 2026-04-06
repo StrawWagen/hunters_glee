@@ -69,7 +69,9 @@ function GM:PostCleanupMap()
 
         if GAMEMODE.blockCleanupSetup then return end
 
-        hook.Run( "glee_PostRealCleanupMap")
+        hook.Run( "glee_PostRealCleanupMap" )
+
+        GAMEMODE:StopAllSolidSounds()
 
         for _, ply in ipairs( player.GetAll() ) do
             ply.isSetup = nil
