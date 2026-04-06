@@ -39,7 +39,7 @@ local BORDER_RADIUS_MAIN = glee_sizeScaled( nil, 0 ) -- 4
 local BORDER_RADIUS_ACTION_MENU = glee_sizeScaled( nil, 0 ) -- 2
 
 local PADDING_OUTER = glee_sizeScaled( 16 ) -- left/right/bottom padding applied to outermost elements.
-local BOARD_WIDTH = 1100
+local BOARD_WIDTH = 1200
 local BOARD_HEIGHT = 720 -- True height gets limited by header + padding + list height. Be sure to adjust LIST_MAX_HEIGHT if this gets changed.
 local LIST_MAX_HEIGHT = glee_sizeScaled( nil, 590 )
 
