@@ -12,6 +12,7 @@ end
 local PLY_STATUS_ALIVE = 1
 local PLY_STATUS_DEAD = 2
 local PLY_STATUS_GRIGORI = 3
+local PLY_STATUS_ESCAPED = 4
 
 local COLOR_BORDER = Color( 0, 0, 40, 150 )
 local COLOR_HEADER = Color( 37, 37, 37, 220 )
@@ -57,6 +58,11 @@ local PLY_COLORS = {
         BG_UNHOVERED = Color( 60, 60, 0, 150 ),
         BG_HOVERED = Color( 90, 90, 45 ),
         NAME = Color( 255, 255, 200 ),
+    },
+    [PLY_STATUS_ESCAPED] = {
+        BG_UNHOVERED = Color( 0, 45, 60, 150 ),
+        BG_HOVERED = Color( 45, 75, 90 ),
+        NAME = Color( 200, 255, 255 ),
     },
 }
 
@@ -422,7 +428,9 @@ local PLAYER_LINE = {
             status = PLY_STATUS_GRIGORI
         end
 
-        if not GAMEMODE:IsObscured() and not ply:Alive() then
+        if not ply:Alive() and ply:GetNWInt( "glee_spectateteam" ) == GAMEMODE.TEAM_ESCAPED then
+            status = PLY_STATUS_ESCAPED
+        elseif not GAMEMODE:IsObscured() and not ply:Alive() then
             status = PLY_STATUS_DEAD
         end
 
