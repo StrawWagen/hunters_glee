@@ -107,6 +107,7 @@ if SERVER and terminator_Extras then
     local heli_TooFarFromGround = 1250
     local heli_TooCloseToGround = 300
     local heli_ExitPos = Vector( 0, 0, -100 )
+    local heli_RopeOriginOffset = Vector( -7.1, 50.8, -40.5 )
 
     -- hullsize for finding a corridor from flare to sky 
     local callingHeliMaxs = 450
@@ -176,6 +177,10 @@ if SERVER and terminator_Extras then
         self.calledForHeli = true
 
         local heliSpawnDelay = 70
+        if not GAMEMODE.IsReallyHuntersGlee then
+            heliSpawnDelay = 30
+
+        end
         local diffBump
 
         local spawnPos = callTraceResult.HitPos
@@ -400,6 +405,7 @@ if SERVER and terminator_Extras then
         if not IsValid( track ) then
             SafeRemoveEntity( heli )
             return
+
         end
 
         heli:SetPos( spawnPos )
@@ -435,9 +441,10 @@ if SERVER and terminator_Extras then
         heli:SetNWBool( "isGleeRescueHeli", true )
 
         heli:Spawn()
+
+        heli:SetModel( "models/glee/combine_helicopter_glee.mdl" )
         heli:Activate()
 
-        heli:SetSubMaterial( 0, "models/glee/rebelheli/combine_helicopter01" )
         for _, ply in player.Iterator() do
             makeHeliFriendlyWith( heli, ply )
 
@@ -496,6 +503,7 @@ if SERVER and terminator_Extras then
             timer.Simple( 0, function()
                 if not IsValid( ply ) then return end
                 if not IsValid( vehicle ) then return end
+                if not ply.TeleportTo then return end
                 local exitPos = vehicle:LocalToWorld( heli_ExitPos )
                 ply:TeleportTo( exitPos )
 
@@ -566,7 +574,7 @@ if SERVER and terminator_Extras then
                 local distToRescue = self:GetPos():Distance( self.currentRescueTarget:GetPos() )
                 if distToRescue < glee_RappelSettings.ropeDropFromVehicleLength then
                     self.glee_NextRappelRope = CurTime() + 5
-                    DropRappelRopeFromVehicle( self )
+                    DropRappelRopeFromVehicle( self, heli_RopeOriginOffset )
 
                 end
             end

@@ -43,7 +43,6 @@ function playerMeta:RappelTo( ent, hitPos )
     end
 
     local localOffset = ent:WorldToLocal( hitPos )
-    rappelRope:SetParent( ent, 0 )
     self:SetNWEntity( "glee_RappelSourceEnt", ent )
     self:SetNWVector( "glee_RappelSourceOffset", localOffset )
 
@@ -121,9 +120,11 @@ function playerMeta:StopRapelling()
 
 end
 
-function playerMeta:RappelToVehicle( vehicle )
+function playerMeta:RappelToVehicle( vehicle, anchorPos )
     vehicle.glee_IsTechincallyAVehicle = true
-    self:RappelTo( vehicle, vehicle:GetPos() )
+    anchorPos = anchorPos or vehicle:GetPos()
+    self:RappelTo( vehicle, anchorPos )
+
 end
 
 local startDownOffset = 25
@@ -131,11 +132,12 @@ local startDownOffset = 25
 -- Drops a rope from a vehicle that players can +USE to start ascending.
 -- Spawns three props: an anchor following the vehicle, a dangling physics
 -- weight connected by a rope constraint, and an invisible hitbox for +USE.
-function DropRappelRopeFromVehicle( vehicle )
+function DropRappelRopeFromVehicle( vehicle, posOffset )
     if not IsValid( vehicle ) then return end
 
     local ropeLength = glee_RappelSettings.ropeDropFromVehicleLength
-    local anchorPos = vehicle:GetPos() - vehicle:GetUp() * startDownOffset
+    posOffset = posOffset or vehicle:GetUp() * startDownOffset
+    local anchorPos = vehicle:LocalToWorld( posOffset )
 
     -- Start prop: invisible anchor that follows the vehicle
     local startProp = ents.Create( "prop_physics" )
@@ -172,6 +174,7 @@ function DropRappelRopeFromVehicle( vehicle )
     -- USE hitbox, this is what detects people using the rope
     local hitboxProp = ents.Create( "base_anim" )
     hitboxProp:SetPos( anchorPos )
+    hitboxProp:SetParent( vehicle, 0 )
     hitboxProp:Spawn()
 
     local ropeUseHitboxWidth = glee_RappelSettings.ropeUseHitboxWidth
@@ -232,7 +235,7 @@ function DropRappelRopeFromVehicle( vehicle )
         end
 
         -- Keep start prop anchored to vehicle
-        local newAnchorPos = vehicle:GetPos() - vehicle:GetUp() * startDownOffset
+        local newAnchorPos = vehicle:LocalToWorld( posOffset )
         startProp:SetPos( newAnchorPos )
 
         local phys = startProp:GetPhysicsObject()
@@ -285,7 +288,7 @@ hook.Add( "PlayerUse", "glee_Rappel_DetectRappelUse", function( user, ent )
     local dist = util.DistanceToLine( startProp:GetPos(), endProp:GetPos(), user:GetShootPos() )
     if dist > glee_RappelSettings.ropeUseAimTolerance then return false end
 
-    user:RappelToVehicle( vehicle )
+    user:RappelToVehicle( vehicle, startProp:GetPos() )
 
     if ent.RopeCleanup then ent.RopeCleanup() end
 
