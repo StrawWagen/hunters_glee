@@ -1,4 +1,14 @@
 
+local glee_sizeScaled = glee_sizeScaled
+local function rescale( x, y )
+    x, y = glee_sizeScaled( x, y )
+    if x then x = math.Round( x ) end
+    if not y then return x end -- Avoid returning ( x, nil ) so functions like math.max don't freak out
+
+    return x, math.Round( y )
+end
+
+
 local PLY_STATUS_ALIVE = 1
 local PLY_STATUS_DEAD = 2
 local PLY_STATUS_GRIGORI = 3
@@ -26,11 +36,11 @@ local COLOR_PING_GOOD = Color( 50, 150, 0 )
 local COLOR_PING_OKAY = Color( 150, 150, 0 )
 local COLOR_PING_BAD = Color( 150, 50, 0 )
 
-local HOVER_SLIDE_AMOUNT = 30
+local HOVER_SLIDE_AMOUNT = rescale( 30 )
 local HOVER_SLIDE_DURATION = 0.2
 
-local BORDER_RADIUS_MAIN = 0 -- 4
-local BORDER_RADIUS_ACTION_MENU = 0 -- 2
+local BORDER_RADIUS_MAIN = rescale( nil, 0 ) -- 4
+local BORDER_RADIUS_ACTION_MENU = rescale( nil, 0 ) -- 2
 
 local PLY_COLORS = {
     [PLY_STATUS_ALIVE] = {
@@ -50,8 +60,8 @@ local PLY_COLORS = {
     },
 }
 
-local PLY_LINE_SPACING = 4
-local PLY_INFO_SPACING = 100
+local PLY_LINE_SPACING = rescale( nil, 4 )
+local PLY_INFO_SPACING = rescale( 100 )
 local PLY_INFOS = { -- From right to left on the scoreboard.
     {
         NAME = "Ping",
@@ -90,49 +100,49 @@ local PLY_INFOS = { -- From right to left on the scoreboard.
 
 surface.CreateFont( "ScoreboardServerName", {
     font    = "Roboto",
-    size    = 24,
+    size    = rescale( nil, 24 ),
     weight    = 600
 } )
 
 surface.CreateFont( "ScoreboardMapName", {
     font    = "Helvetica",
-    size    = 16,
+    size    = rescale( nil, 16 ),
     weight    = 400
 } )
 
 surface.CreateFont( "ScoreboardGamemodeTitle", {
     font    = "Tahoma",
-    size    = 32,
+    size    = rescale( nil, 32 ),
     weight    = 600
 } )
 
 surface.CreateFont( "ScoreboardInfoCategory", {
     font    = "Roboto",
-    size    = 18,
+    size    = rescale( nil, 18 ),
     weight    = 500
 } )
 
 surface.CreateFont( "ScoreboardPlayerCount", {
     font    = "Roboto",
-    size    = 16,
+    size    = rescale( nil, 16 ),
     weight    = 400
 } )
 
 surface.CreateFont( "ScoreboardPlayerName", {
     font    = "Roboto",
-    size    = 22,
+    size    = rescale( nil, 22 ),
     weight    = 400
 } )
 
 surface.CreateFont( "ScoreboardPlayerInfo", {
     font    = "Roboto",
-    size    = 17,
+    size    = rescale( nil, 17 ),
     weight    = 400
 } )
 
 surface.CreateFont( "ScoreboardPlayerAction", {
     font    = "Roboto",
-    size    = 18,
+    size    = rescale( nil, 18 ),
     weight    = 400
 } )
 
@@ -153,7 +163,7 @@ end
 local PLAYER_ACTION_MENU = {
     Init = function( self )
         self:DockPadding( 0, 0, 0, 0 )
-        self:SetSize( 300, 1000 ) -- Large temporary height, gets auto-adjusted in Setup.
+        self:SetSize( rescale( 300, 1000 ) ) -- Large temporary height, gets auto-adjusted in Setup.
 
         self.HoverSlide = self:Add( "DPanel" )
         self.HoverSlide:SetWidth( 0 )
@@ -182,8 +192,8 @@ local PLAYER_ACTION_MENU = {
         self.Player = ply
         if self:Think( self ) == false then return end
 
-        local padding = 4
-        local labelHeight = 24
+        local padding = rescale( nil, 4 )
+        local labelHeight = rescale( nil, 24 )
 
         local function addOption( text, callback )
             local label = self:Add( "DLabel" )
@@ -280,9 +290,9 @@ local PLAYER_LINE = {
         local selfObj = self
 
         self:Dock( TOP )
-        self:DockPadding( 3, 0, 0, 0 )
+        self:DockPadding( rescale( 3 ), 0, 0, 0 )
         self:DockMargin( 0, PLY_LINE_SPACING, 0, 0 )
-        self:SetHeight( 32 + 4 )
+        self:SetHeight( rescale( nil, 32 + 4 ) )
         self:SetMouseInputEnabled( true )
         self:SetText( "" )
 
@@ -293,14 +303,14 @@ local PLAYER_LINE = {
         self.HoverSlide.Paint = function( _, w, h )
             if not isViewingActionsForPly( selfObj.Player ) then return end
 
-            local tipRadius = 10
-            local padding = 3
-            local lineThickness = 6
+            local tipRadius = rescale( nil, 10 )
+            local padding = rescale( 3 )
+            local lineThickness = rescale( nil, 6 )
             local lineLength = w - padding * 2 - tipRadius
 
             draw.NoTexture()
             surface.SetDrawColor( COLOR_SELECTION_ARROW )
-            surface.DrawRect( padding, h / 2 - lineThickness / 2, lineLength, 6 )
+            surface.DrawRect( padding, h / 2 - lineThickness / 2, lineLength, lineThickness )
             surface.DrawPoly( {
                 { x = padding + lineLength, y = h / 2 - tipRadius },
                 { x = padding + lineLength + tipRadius, y = h / 2 },
@@ -308,30 +318,34 @@ local PLAYER_LINE = {
             } )
         end
 
+        local avatarSize = rescale( nil, 32 )
+        local muteSize = rescale( nil, 32 )
+        local namePadding = rescale( 8 )
+
         self.AvatarButton = self:Add( "DPanel" )
         self.AvatarButton:Dock( LEFT )
-        self.AvatarButton:SetWidth( 32 )
+        self.AvatarButton:SetWidth( avatarSize )
         self.AvatarButton:SetMouseInputEnabled( false )
         self.AvatarButton.Paint = function() end
 
         self.Avatar = vgui.Create( "AvatarImage", self.AvatarButton )
-        self.Avatar:SetSize( 32, 32 )
-        self.Avatar:SetPos( 0, self:GetTall() / 2 - 32 / 2 )
+        self.Avatar:SetSize( avatarSize, avatarSize )
+        self.Avatar:SetPos( 0, self:GetTall() / 2 - avatarSize / 2 )
         self.Avatar:SetMouseInputEnabled( false )
 
         self.Name = self:Add( "DLabel" )
         self.Name:Dock( FILL )
         self.Name:SetPaintBackground( false )
         self.Name:SetFont( "ScoreboardPlayerName" )
-        self.Name:DockMargin( 8, 0, 0, 0 )
+        self.Name:DockMargin( namePadding, 0, 0, 0 )
         self.Name:SetContentAlignment( 4 )
         self.Name:SetMouseInputEnabled( false )
 
         self.Mute = self:Add( "DImageButton" )
         self.Mute.isScoreboardMuteButton = true
-        self.Mute:SetSize( 32, 32 )
+        self.Mute:SetSize( muteSize, muteSize )
         self.Mute:Dock( RIGHT )
-        self.Mute:DockMargin( 0, 0, PLY_INFO_SPACING * #PLY_INFOS + 32 + 8, 0 )
+        self.Mute:DockMargin( 0, 0, PLY_INFO_SPACING * #PLY_INFOS + muteSize + namePadding, 0 )
         self.Mute:SetTooltip( "Mute/Unmute this player's voicechat" )
         self.Mute:SetTooltipDelay( 0 )
     end,
@@ -377,7 +391,7 @@ local PLAYER_LINE = {
                 local a = 255 - math.Clamp( CurTime() - ( s.LastTick or 0 ), 0, 3 ) * 255
                 if a <= 0 then return end
 
-                draw.RoundedBox( 4, 0, 0, w, h, Color( 0, 0, 0, a * 0.75 ) )
+                draw.RoundedBox( rescale( nil, 4 ), 0, 0, w, h, Color( 0, 0, 0, a * 0.75 ) )
                 draw.SimpleText( math.ceil( ply:GetVoiceVolumeScale() * 100 ) .. "%", "DermaDefaultBold", w / 2, h / 2, Color( 255, 255, 255, a ), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
             end
         end
@@ -460,18 +474,18 @@ PLAYER_LINE = vgui.RegisterTable( PLAYER_LINE, "DButton" )
 --
 local SCORE_BOARD = {
     Init = function( self )
-        local mainPadding = 16 -- left/right padding applied to outermost elements.
-        local plyListPadding = 8 -- padding applied to the scrollable player list.
-        local headerPadding = 8 -- top/bottom padding for header text
+        local mainPadding = rescale( 16 ) -- left/right padding applied to outermost elements.
+        local plyListPadding = rescale( nil, 8 ) -- padding applied to the scrollable player list.
+        local headerPadding = rescale( nil, 8 ) -- top/bottom padding for header text
 
-        self:SetSize( 1100, 720 )
+        self:SetSize( rescale( 1100, 720 ) )
         self:SetPos( ScrW() / 2 - self:GetWide() / 2, ScrH() / 2 - self:GetTall() / 2 )
         self:DockPadding( mainPadding, 0, mainPadding, 0 )
 
         -- Header
         self.Header = self:Add( "Panel" )
         self.Header:Dock( TOP )
-        self.Header:SetHeight( 60 )
+        self.Header:SetHeight( rescale( nil, 60 ) )
 
         self.Header.Paint = function( _, w, _h )
             draw.SimpleText( GetHostName(), "ScoreboardServerName", w / 2, headerPadding, COLOR_SERVER, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
@@ -480,7 +494,7 @@ local SCORE_BOARD = {
         -- TODO: Replace with a custom image for extra fancy gamemode title?
         self.HeaderLeft = self.Header:Add( "DLabel" )
         self.HeaderLeft:Dock( LEFT )
-        self.HeaderLeft:SetWidth( 200 )
+        self.HeaderLeft:SetWidth( rescale( 200 ) )
         self.HeaderLeft:SetPaintBackground( false )
         self.HeaderLeft:SetContentAlignment( 4 )
         self.HeaderLeft:SetFont( "ScoreboardGamemodeTitle" )
@@ -493,12 +507,13 @@ local SCORE_BOARD = {
 
         self.HeaderRight = self.Header:Add( "DPanel" )
         self.HeaderRight:Dock( RIGHT )
+        self.HeaderRight:SetWidth( rescale( 200 ) )
         self.HeaderRight:SetPaintBackground( false )
 
         self:InvalidateLayout( true ) -- Update header width from docking
 
         self.MapLabel = self.Header:Add( "DLabel" )
-        self.MapLabel:SetSize( 200, 20 ) -- v Manual dock since auto would get misaligned by the sizes of left/right headers
+        self.MapLabel:SetSize( rescale( 200, 20 ) ) -- v Manual dock since auto would get misaligned by the sizes of left/right headers
         self.MapLabel:SetPos( self.Header:GetWide() / 2 - self.MapLabel:GetWide() / 2, self.Header:GetTall() - self.MapLabel:GetTall() - headerPadding )
         self.MapLabel:SetPaintBackground( false )
         self.MapLabel:SetContentAlignment( 2 )
@@ -509,13 +524,18 @@ local SCORE_BOARD = {
         self.MapLabel:SetTooltip( "" )
         self.MapLabel:SetTooltipDelay( 0 )
 
+        local discordSize = rescale( nil, 32 )
         self.DiscordButton = self.HeaderRight:Add( "DImageButton" )
-        self.DiscordButton:SetPos( self.HeaderRight:GetWide() / 2, self.HeaderRight:GetTall() / 2 )
+        self.DiscordButton:SetPos( self.HeaderRight:GetWide() - discordSize, discordSize / 2 )
         self.DiscordButton:SetImage( "icon32/glee_discord_32.png" )
-        self.DiscordButton:SizeToContents()
+        self.DiscordButton:SetSize( discordSize, discordSize )
         self.DiscordButton:SetVisible( false )
         self.DiscordButton:SetTooltip( "Join the server's Discord" )
         self.DiscordButton:SetTooltipDelay( 0 )
+
+        if discordSize ~= 32 then
+            self.DiscordButton:SetStretchToFit( true )
+        end
 
         self.DiscordButton.DoClick = function()
             local url = discordConvar:GetString()
@@ -525,7 +545,7 @@ local SCORE_BOARD = {
         end
 
         self.CategoryLabelHolder = self:Add( "Panel" )
-        self.CategoryLabelHolder:SetHeight( 40 )
+        self.CategoryLabelHolder:SetHeight( rescale( nil, 40 ) )
         self.CategoryLabelHolder:DockPadding( plyListPadding, 0, plyListPadding, plyListPadding )
         self.CategoryLabelHolder:Dock( TOP )
 
@@ -559,7 +579,7 @@ local SCORE_BOARD = {
 
 
         -- Player list
-        local scoreCornerRadius = 4
+        local scoreCornerRadius = rescale( nil, 4 )
 
         self.Scores = self:Add( "DScrollPanel" )
         self.Scores:DockPadding( 0, 0, 0, 0 )
@@ -647,7 +667,7 @@ local SCORE_BOARD = {
 
         local scrollBar = self.Scores:GetVBar()
         scrollBar:SetHideButtons( true )
-        scrollBar:SetWidth( 10 )
+        scrollBar:SetWidth( rescale( 10 ) )
 
         scrollBar.Paint = function( _, w, h )
             surface.SetDrawColor( COLOR_SCROLL_BACKGROUND )
@@ -657,7 +677,7 @@ local SCORE_BOARD = {
         local scrollBarGrip = scrollBar.btnGrip
 
         scrollBarGrip.Paint = function( _, w, h )
-            draw.RoundedBox( 6, 0, 0, w - 2, h, COLOR_SCROLL_BAR )
+            draw.RoundedBox( rescale( 6 ), 0, 0, rescale( w - 2 ), h, COLOR_SCROLL_BAR )
         end
     end,
 
@@ -705,7 +725,7 @@ local SCORE_BOARD = {
 
             -- Resize Scores to fit its contents, to a limit.
             self.Scores:GetCanvas():InvalidateLayout( true ) -- Resize to fit contents
-            self.Scores:SetHeight( math.min( self.Scores:GetCanvas():GetTall(), 590 ) )
+            self.Scores:SetHeight( math.min( self.Scores:GetCanvas():GetTall(), rescale( nil, 590 ) ) )
             self.Scores:PerformLayout() -- Update VBar
 
             -- Calculate info nudge, since the scrollbar pushes things over a little.
