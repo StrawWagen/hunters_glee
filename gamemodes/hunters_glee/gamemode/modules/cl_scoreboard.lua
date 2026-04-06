@@ -41,6 +41,7 @@ local BORDER_RADIUS_ACTION_MENU = glee_sizeScaled( nil, 0 ) -- 2
 local PADDING_OUTER = glee_sizeScaled( 16 ) -- left/right/bottom padding applied to outermost elements.
 local BOARD_WIDTH = 1200
 local BOARD_HEIGHT = 720 -- True height gets limited by header + padding + list height. Be sure to adjust LIST_MAX_HEIGHT if this gets changed.
+local HEADER_HEIGHT = 80
 local LIST_MAX_HEIGHT = glee_sizeScaled( nil, 590 )
 
 local PLY_COLORS = {
@@ -108,20 +109,23 @@ local function setupFonts()
     local theFont = GAMEMODE and GAMEMODE.GLEE_FONT or "Arial"
     surface.CreateFont( "ScoreboardServerName", {
         font    = theFont,
-        size    = glee_sizeScaled( nil, 24 ),
-        weight    = 500
+        size    = glee_sizeScaled( nil, 30 ),
+        weight    = 500,
+        shadow  = true,
     } )
 
     surface.CreateFont( "ScoreboardMapName", {
         font    = theFont,
-        size    = glee_sizeScaled( nil, 16 ),
-        weight    = 500
+        size    = math.max( glee_sizeScaled( nil, 17 ), 17 ),
+        weight    = 400,
+        antialias = false,
     } )
 
     surface.CreateFont( "ScoreboardGamemodeTitle", {
         font    = theFont,
-        size    = glee_sizeScaled( nil, 32 ),
-        weight    = 1000
+        size    = glee_sizeScaled( nil, 44 ),
+        weight    = 1000,
+        shadow  = true,
     } )
 
     surface.CreateFont( "ScoreboardInfoCategory", {
@@ -492,7 +496,7 @@ PLAYER_LINE = vgui.RegisterTable( PLAYER_LINE, "DButton" )
 local SCORE_BOARD = {
     Init = function( self )
         local plyListPadding = glee_sizeScaled( nil, 8 ) -- padding applied to the scrollable player list.
-        local headerPadding = glee_sizeScaled( nil, 8 ) -- top/bottom padding for header text
+        local headerPadding = glee_sizeScaled( nil, 10 ) -- top/bottom padding for header text
 
         self:SetSize( glee_sizeScaled( BOARD_WIDTH, BOARD_HEIGHT ) )
         self:SetPos( ScrW() / 2 - self:GetWide() / 2, ScrH() / 2 - self:GetTall() / 2 )
@@ -501,7 +505,7 @@ local SCORE_BOARD = {
         -- Header
         self.Header = self:Add( "Panel" )
         self.Header:Dock( TOP )
-        self.Header:SetHeight( glee_sizeScaled( nil, 60 ) )
+        self.Header:SetHeight( glee_sizeScaled( nil, HEADER_HEIGHT ) )
 
         self.Header.Paint = function( _, w, _h )
             draw.SimpleText( GetHostName(), "ScoreboardServerName", w / 2, headerPadding, COLOR_SERVER, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
@@ -510,7 +514,7 @@ local SCORE_BOARD = {
         -- TODO: Replace with a custom image for extra fancy gamemode title?
         self.HeaderLeft = self.Header:Add( "DLabel" )
         self.HeaderLeft:Dock( LEFT )
-        self.HeaderLeft:SetWidth( glee_sizeScaled( 200 ) )
+        self.HeaderLeft:SetWidth( glee_sizeScaled( 300 ) )
         self.HeaderLeft:SetPaintBackground( false )
         self.HeaderLeft:SetContentAlignment( 4 )
         self.HeaderLeft:SetFont( "ScoreboardGamemodeTitle" )
@@ -541,8 +545,9 @@ local SCORE_BOARD = {
         self.MapLabel:SetTooltipDelay( 0 )
 
         local discordSize = glee_sizeScaled( nil, 32 )
+        self.Header:InvalidateLayout( true )
         self.DiscordButton = self.HeaderRight:Add( "DImageButton" )
-        self.DiscordButton:SetPos( self.HeaderRight:GetWide() - discordSize, discordSize / 2 )
+        self.DiscordButton:SetPos( self.HeaderRight:GetWide() - discordSize, self.HeaderRight:GetTall() / 2 - discordSize / 2 )
         self.DiscordButton:SetImage( "icon32/glee_discord_32.png" )
         self.DiscordButton:SetSize( discordSize, discordSize )
         self.DiscordButton:SetVisible( false )
