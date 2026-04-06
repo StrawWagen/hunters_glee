@@ -167,6 +167,8 @@ local function setupShopFonts()
     }
     surface.CreateFont( "termhuntShopItemSmallerFont", fontData )
 
+    hook.Run( "glee_rebuildfonts" )
+
 end
 
 setupShopFonts()

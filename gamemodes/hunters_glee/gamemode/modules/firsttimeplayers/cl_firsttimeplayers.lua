@@ -1,22 +1,28 @@
 
-local fontData = {
-    font = GAMEMODE.GLEE_FONT,
-    extended = false,
-    size = glee_sizeScaled( nil, 60 ),
-    weight = 500,
-    blursize = 0,
-    scanlines = 0,
-    antialias = true,
-    underline = false,
-    italic = false,
-    strikeout = false,
-    symbol = false,
-    rotary = false,
-    shadow = true,
-    additive = false,
-    outline = false,
-}
-surface.CreateFont( "huntersglee_welcometext", fontData )
+local function defineFont()
+    surface.CreateFont( "huntersglee_welcometext", {
+        font = GAMEMODE and GAMEMODE.GLEE_FONT or "Arial",
+        extended = false,
+        size = glee_sizeScaled( nil, 60 ),
+        weight = 500,
+        blursize = 0,
+        scanlines = 0,
+        antialias = true,
+        underline = false,
+        italic = false,
+        strikeout = false,
+        symbol = false,
+        rotary = false,
+        shadow = true,
+        additive = false,
+        outline = false,
+    } )
+end
+defineFont()
+hook.Add( "glee_rebuildfonts", "glee_rebuild_welcometext_font", function()
+    defineFont()
+
+end )
 
 local imNewMyself = nil
 local hasSeenMessage = CreateClientConVar( "cl_huntersglee_firsttimetutorial", 0, true, true, "Has the player seen the one-time tutorial series of messages?" )

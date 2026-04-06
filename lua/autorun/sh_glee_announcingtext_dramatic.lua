@@ -81,42 +81,49 @@ local TEXT_COLOR_G      = 255
 local TEXT_COLOR_B      = 255
 
 
-surface.CreateFont( "huntersglee_dramatic_announcingtext", {
-    font = GAMEMODE.GLEE_FONT or "Arial",
-    extended = false,
-    size = glee_sizeScaled( nil, FONT_SIZE ),
-    weight = FONT_WEIGHT,
-    blursize = 0,
-    scanlines = 0,
-    antialias = true,
-    underline = false,
-    italic = false,
-    strikeout = false,
-    symbol = false,
-    rotary = false,
-    shadow = true,
-    additive = false,
-    outline = false,
-} )
+local function defineFont()
+    surface.CreateFont( "huntersglee_dramatic_announcingtext", {
+        font = GAMEMODE and GAMEMODE.GLEE_FONT or "Arial",
+        extended = false,
+        size = glee_sizeScaled( nil, FONT_SIZE ),
+        weight = FONT_WEIGHT,
+        blursize = 0,
+        scanlines = 0,
+        antialias = true,
+        underline = false,
+        italic = false,
+        strikeout = false,
+        symbol = false,
+        rotary = false,
+        shadow = true,
+        additive = false,
+        outline = false,
+    } )
 
--- glow layer font for the bloom effect behind the text
-surface.CreateFont( "huntersglee_dramatic_announcingtext_glow", {
-    font = GAMEMODE.GLEE_FONT or "Arial",
-    extended = false,
-    size = glee_sizeScaled( nil, FONT_SIZE ),
-    weight = FONT_WEIGHT,
-    blursize = glee_sizeScaled( nil, 8 ),
-    scanlines = 0,
-    antialias = true,
-    underline = false,
-    italic = false,
-    strikeout = false,
-    symbol = false,
-    rotary = false,
-    shadow = false,
-    additive = true,
-    outline = false,
-} )
+    -- glow layer font for the bloom effect behind the text
+    surface.CreateFont( "huntersglee_dramatic_announcingtext_glow", {
+        font = GAMEMODE and GAMEMODE.GLEE_FONT or "Arial",
+        extended = false,
+        size = glee_sizeScaled( nil, FONT_SIZE ),
+        weight = FONT_WEIGHT,
+        blursize = glee_sizeScaled( nil, 8 ),
+        scanlines = 0,
+        antialias = true,
+        underline = false,
+        italic = false,
+        strikeout = false,
+        symbol = false,
+        rotary = false,
+        shadow = false,
+        additive = true,
+        outline = false,
+    } )
+end
+defineFont()
+hook.Add( "glee_rebuildfonts", "glee_rebuild_dramatic_announcement_font", function()
+    defineFont()
+
+end )
 
 local currAnnouncement = nil
 local currPriority = 0

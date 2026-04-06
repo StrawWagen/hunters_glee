@@ -19,7 +19,7 @@ if SERVER then
 
             ply.glee_Announcement_Priority = priority
 
-            if ply:IsBot() then -- for easier debugging
+            if ply:IsBot() then -- for easier debuggxing
                 print( "GLEEBOTANNOUNCE ", ply, announcement )
 
             else
@@ -51,25 +51,31 @@ if not CLIENT then return end
 
 include( "autorun/client/cl_gleescalingfunc.lua" )
 
+local function defineFont()
+    surface.CreateFont( "huntersglee_announcingtext", {
+        font = GAMEMODE and GAMEMODE.GLEE_FONT or "Arial",
+        extended = false,
+        size = glee_sizeScaled( nil, 40 ),
+        weight = 500,
+        blursize = 0,
+        scanlines = 0,
+        antialias = true,
+        underline = false,
+        italic = false,
+        strikeout = false,
+        symbol = false,
+        rotary = false,
+        shadow = true,
+        additive = false,
+        outline = false,
+    } )
 
-local fontData = {
-    font = GAMEMODE.GLEE_FONT or "Arial",
-    extended = false,
-    size = glee_sizeScaled( nil, 40 ),
-    weight = 500,
-    blursize = 0,
-    scanlines = 0,
-    antialias = true,
-    underline = false,
-    italic = false,
-    strikeout = false,
-    symbol = false,
-    rotary = false,
-    shadow = true,
-    additive = false,
-    outline = false,
-}
-surface.CreateFont( "huntersglee_announcingtext", fontData )
+end
+defineFont()
+hook.Add( "glee_rebuildfonts", "glee_rebuild_announcingtext_font", function()
+    defineFont()
+
+end )
 
 local currAnnouncement = nil
 local currPriority = 0
