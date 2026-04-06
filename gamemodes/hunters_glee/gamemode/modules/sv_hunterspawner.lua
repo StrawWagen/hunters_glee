@@ -44,7 +44,7 @@ local setDefaults = {
     maxSpawnCount = 10,
     maxSpawnDist = { 4500, 6500 },
     minSpawnDist = 500, -- if you spawn closer than this, it feels unfair
-    roundEndSound = "53937_meutecee_trumpethit07.wav",
+    roundEndSound = "hunters_glee/music/8.22.GleeExp.ogg",
     roundStartSound = "", -- no sound for glee
     genericSpawnerRate = 1,
 }
@@ -309,8 +309,6 @@ end
 
 local nextSpawnCheck = 0
 
-GAMEMODE.deadWaveDiffBump = 0 -- dont reset this, so cheesable maps get harder and harder 
-
 local function resetWave()
     GAMEMODE.nextSpawnWave = 0
     GAMEMODE.waveWasAlive = nil
@@ -345,6 +343,15 @@ local function aliveHuntersCount()
 end
 
 
+function GM:BumpSessionDifficulty( amount )
+    self.sessionDiffBump = self.sessionDiffBump + amount
+
+end
+function GM:BumpRoundDifficulty( amount )
+    self.roundDiffBump = self.roundDiffBump + amount
+
+end
+
 local nextHunterSpawn = 0
 
 -- the picker
@@ -370,8 +377,8 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
     if aliveCount <= 1 and GAMEMODE.waveWasAlive and aliveCount < GAMEMODE.waveWasAlive then
         GAMEMODE.waveWasAlive = nil
         GAMEMODE.nextSpawnWave = 0
-        debugPrint( "bump", GAMEMODE.deadWaveDiffBump, spawnSet.diffBumpWhenWaveKilled )
-        GAMEMODE.deadWaveDiffBump = GAMEMODE.deadWaveDiffBump + spawnSet.diffBumpWhenWaveKilled
+        debugPrint( "bump", GAMEMODE.sessionDiffBump, spawnSet.diffBumpWhenWaveKilled )
+        GAMEMODE:BumpSessionDifficulty( spawnSet.diffBumpWhenWaveKilled )
 
     end
 
@@ -388,7 +395,8 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
 
     local diffPerMin = spawnSet.difficultyPerMin
     local difficulty = diffPerMin * minutes
-    difficulty = difficulty + GAMEMODE.deadWaveDiffBump
+    difficulty = difficulty + GAMEMODE.sessionDiffBump
+    difficulty = difficulty + GAMEMODE.roundDiffBump
 
     local countWanted
     local overrideCount = overrideCountVar:GetInt()
@@ -1040,7 +1048,7 @@ function GM:getValidHunterPos()
             fails = 0
             spawnSet.dynamicTooCloseFailCounts = -2
             if justSpawnSomething then
-                GAMEMODE.deadWaveDiffBump = GAMEMODE.deadWaveDiffBump + spawnSet.diffBumpWhenWaveKilled / 4 -- blast difficulty up
+                GAMEMODE:BumpSessionDifficulty( spawnSet.diffBumpWhenWaveKilled / 4 ) -- blast difficulty up
 
             end
 

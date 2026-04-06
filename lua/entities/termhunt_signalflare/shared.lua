@@ -108,17 +108,27 @@ if SERVER and terminator_Extras then
     local heli_TooCloseToGround = 300
     local heli_ExitPos = Vector( 0, 0, -100 )
 
-    local callingHeliMaxs = 350
+    -- hullsize for finding a corridor from flare to sky 
+    local callingHeliMaxs = 450
     local callingHeliMins = -callingHeliMaxs
 
-    local tightHeliMaxs = 225
-    local tightHeliMins = -tightHeliMaxs
+    -- hullsize for nav traces
+    local wayfindingHeliMaxs = 325
+    local wayfindingHeliMins = -wayfindingHeliMaxs
+
+    -- when flying less than heli_CloseToObstacleSpeedLimit, do smaller nav traces
+    local slowMovingHeliMaxs = 175
+    local slowMovingHeliMins = -slowMovingHeliMaxs
 
     local invisMat = Color( 255, 255, 255, 255 )
+
+    local rescueTimerName = "glee_rescueheli_countdown"
 
     function ENT:AdditionalThink()
         if self.calledForHeli then return end
         if IsValid( terminator_Extras.glee_CurrentRescueHeli ) then return end
+        if timer.Exists( rescueTimerName ) then return end -- already called, just waiting
+
         local myPos = self:GetPos()
 
         if not self.HitSkyboxAtLeastOnce then
@@ -133,6 +143,7 @@ if SERVER and terminator_Extras then
 
         local randDir = VectorRand()
         randDir.z = math.Rand( -0.05, 0.25 ) -- dont call heli upwards
+        randDir:Normalize()
 
         local offset = randDir * 20000
 
@@ -161,12 +172,77 @@ if SERVER and terminator_Extras then
 
         end
 
-        local dirToMyPos = terminator_Extras.dirToPos( callTraceResult.HitPos, myPos )
-        local heli = terminator_Extras.glee_SpawnTheRescueHeli( callTraceResult.HitPos, dirToMyPos, myPos )
-        if not IsValid( heli ) then return end
-
-        self.calledForHeli = true
         angerEverything()
+        self.calledForHeli = true
+
+        local heliSpawnDelay = 70
+        local diffBump
+
+        local spawnPos = callTraceResult.HitPos
+        local goalPos = myPos
+
+        local firstWait = 3
+        local secondWait = 10
+
+        timer.Create( rescueTimerName, 1, heliSpawnDelay, function()
+            local repsLeft = timer.RepsLeft( rescueTimerName )
+
+            if repsLeft == heliSpawnDelay - firstWait then
+                huntersGlee_AnnounceDramatic( player.GetAll(), 500, secondWait - firstWait, "Rescue has been called..." )
+                if GAMEMODE.IsReallyHuntersGlee then
+                    GAMEMODE:SendSolidSound( "hunters_glee/music/8.23.GleeExp2.ogg" )
+                    local _, spawnSet = GAMEMODE:GetSpawnSet()
+                    diffBump = spawnSet.diffBumpWhenWaveKilled
+                    GAMEMODE:BumpRoundDifficulty( diffBump ) -- send the spawner into overdrive
+                    angerEverything()
+
+                end
+            end
+
+            if repsLeft == heliSpawnDelay - secondWait then
+                huntersGlee_AnnounceDramatic( player.GetAll(), 501, 10, "Entering the map in T-" .. heliSpawnDelay - secondWait .. " seconds..." )
+
+                if not diffBump then return end
+                GAMEMODE:BumpRoundDifficulty( diffBump ) -- send the spawner into overdrive
+                angerEverything()
+
+            end
+            if repsLeft == 10 then
+                huntersGlee_Announce( player.GetAll(), 100, 5, "T-10 seconds till map entry..." )
+
+                if not diffBump then return end
+                GAMEMODE:BumpRoundDifficulty( diffBump )
+                angerEverything()
+
+            end
+            if repsLeft == 0 then
+                huntersGlee_AnnounceDramatic( player.GetAll(), 100, 10, "Rescue has entered the map..." )
+                terminator_Extras.glee_SpawnTheRescueHeli( spawnPos, -randDir, goalPos )
+
+                if not diffBump then return end
+                GAMEMODE:BumpRoundDifficulty( diffBump )
+                angerEverything()
+
+            end
+        end )
+
+        hook.Add( "huntersglee_round_into_active", "glee_cancelrescuehelitimer_newround", function()
+            if not timer.Exists( rescueTimerName ) then return end
+            timer.Remove( rescueTimerName )
+
+        end )
+
+        hook.Add( "huntersglee_round_leave_limbo", "glee_cancelrescuehelitimer_limboend", function()
+            if not timer.Exists( rescueTimerName ) then return end
+            timer.Remove( rescueTimerName )
+
+        end )
+
+        hook.Add( "glee_PostRealCleanupMap", "glee_cancelrescuehelitimer_cleanup", function()
+            if not timer.Exists( rescueTimerName ) then return end
+            timer.Remove( rescueTimerName )
+
+        end )
 
     end
 
@@ -477,46 +553,6 @@ if SERVER and terminator_Extras then
 
     end
 
-    local playMusicDistance = 3500^2
-
-    local function heliManageMusic( self )
-        local currGoal = self.currentHeliGoal
-        local playMusic
-        if currGoal == "rescue" and IsValid( self.currentRescueTarget ) and self:GetPos():DistToSqr( self.currentRescueTarget:GetPos() ) < playMusicDistance then
-            playMusic = true
-
-        elseif currGoal == "escape" and #heliGetRiders( self ) > 0 then
-            playMusic = true
-
-        else
-            playMusic = false
-
-        end
-        if playMusic then
-            if not self.heliMusic then
-                local allPlayersFilter = RecipientFilter()
-                allPlayersFilter:AddAllPlayers()
-
-                local music = CreateSound( self, "hunters_glee/richard_wagner_ride_of_the_valkyries_short.mp3", allPlayersFilter )
-                self.heliMusic = music
-                music:SetSoundLevel( 98 )
-                music:PlayEx( 1, 100 )
-                self:CallOnRemove( "stopHeliMusicOnRemove", function()
-                    if not self.heliMusic then return end
-                    self.heliMusic:Stop()
-                    self.heliMusic = nil
-
-                end )
-            end
-        else
-            if self.heliMusic then
-                self.heliMusic:Stop()
-                self.heliMusic = nil
-
-            end
-        end
-    end
-
     local function heliManageRope( self )
         local currGoal = self.currentHeliGoal
         local rapelling = IsValid( self.glee_RappelRopeStartProp )
@@ -756,7 +792,6 @@ if SERVER and terminator_Extras then
             end
         end
 
-        heliManageMusic( self )
         heliManageRope( self )
         heliManageAngering( self )
 
@@ -772,12 +807,20 @@ if SERVER and terminator_Extras then
             local dirToIdeal = ( idealMovePos - myPos ):GetNormalized()
             local trCheckDir = ( moveDir * 0.5 ) + ( dirToIdeal * 0.5 )
 
+            local mins = wayfindingHeliMins
+            local maxs = wayfindingHeliMaxs
+            if curSpeed <= heli_CloseToObstacleSpeedLimit then
+                mins = slowMovingHeliMins
+                maxs = slowMovingHeliMaxs
+
+            end
+
             local traceDataMove = {
                 start = myPos,
                 endpos = nil,
                 mask = MASK_SOLID_BRUSHONLY,
-                mins = Vector( tightHeliMins, tightHeliMins, tightHeliMins ),
-                maxs = Vector( tightHeliMaxs, tightHeliMaxs, tightHeliMaxs ),
+                mins = Vector( mins, mins, mins ),
+                maxs = Vector( maxs, maxs, maxs ),
 
             }
             local function getPenaltyForPos( pos, traceResult, rayCheck )

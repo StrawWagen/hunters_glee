@@ -14,6 +14,7 @@ AddCSLuaFile( "modules/battery/cl_battery.lua" )
 AddCSLuaFile( "modules/bpm/cl_bpm.lua" )
 AddCSLuaFile( "modules/escaping/cl_escaping.lua" )
 AddCSLuaFile( "modules/cl_spectateflashlight.lua" )
+AddCSLuaFile( "modules/solidsounds/cl_solidsounds.lua" )
 AddCSLuaFile( "modules/thirdpersonflashlight/cl_flashlight.lua" )
 AddCSLuaFile( "modules/firsttimeplayers/cl_firsttimeplayers.lua" )
 
@@ -79,6 +80,7 @@ include( "modules/sv_scoredropping.lua" )
 include( "modules/sv_rejoinpersist.lua" )
 include( "modules/sv_firstfallgrace.lua" )
 include( "modules/sv_seeding_rewarder.lua" )
+include( "modules/solidsounds/sv_solidsounds.lua" )
 include( "modules/spawnset/sv_spawnsetvote.lua" )
 include( "modules/spawnset/sv_spawnsetsounds.lua" )
 include( "modules/statuseffects/sv_statuseffects.lua" )
@@ -142,6 +144,10 @@ GM.roundStartAfterNavCheck      = 75
 GM.roundStartNormal             = 30
 GM.IsReallyHuntersGlee          = true
 
+-- this is increased when all hunters are killed, or are being forced to spawn in front of players
+-- basically it makes the spawner get more aggressive the longer you stay on cheesable maps
+GM.sessionDiffBump = 0
+
 local CurTime = CurTime
 
 -- gamemode starts up, starts 5 second countdown to navmesh check.
@@ -168,6 +174,7 @@ function GM:TermHuntSetup()
     self.roundScore                     = {}
     self.roundExtraData                 = {} -- helper tbl that is reset on round end
 
+    self.roundDiffBump                  = 0
     self.roundEarliestEnd               = 0
     self.nextStateTransmit              = 0
 
@@ -861,6 +868,7 @@ function GM:roundStart()
     self.roundScore = {}
     self.roundExtraData = nil
     self.roundExtraData = {}
+    self.roundDiffBump = 0
 
     SetGlobalEntity( "termHuntWinner", NULL )
     SetGlobalInt( "termHuntWinnerSkulls", 0 )

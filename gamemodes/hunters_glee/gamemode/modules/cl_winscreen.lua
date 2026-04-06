@@ -98,11 +98,11 @@ local function buildSections( startTime )
     }
 
     if escapedCount <= 0 then
-        escapedEntries[#escapedEntries + 1] = { text = "None, Nobody escaped", font = "termhuntTriumphantFont", color = color_red }
+        escapedEntries[#escapedEntries + 1] = { text = "None, Nobody Escaped", font = "termhuntTriumphantFont", color = color_red }
 
     else
         local sIfMultiple = escapedCount == 1 and "" or "s"
-        escapedEntries[#escapedEntries + 1] = { text = escapedCount .. " Soul" .. sIfMultiple .. " escaped", font = "termhuntTriumphantFont", color = color_red }
+        escapedEntries[#escapedEntries + 1] = { text = escapedCount .. " Soul" .. sIfMultiple .. " Escaped", font = "termhuntTriumphantFont", color = color_red }
 
     end
 

@@ -34,6 +34,8 @@ gamemodes\hunters_glee\gamemode\modules\battery\sh_battery.lua
 
 gamemodes\hunters_glee\gamemode\modules\escaping\cl_escaping.lua
 
+gamemodes\hunters_glee\gamemode\modules\solidsounds\cl_solidsounds.lua
+
 gamemodes\hunters_glee\gamemode\modules\bpm\cl_bpm.lua
 
 gamemodes\hunters_glee\gamemode\modules\thirdpersonflashlight\cl_flashlight.lua

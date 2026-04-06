@@ -7,7 +7,7 @@ local function playStartSound()
 
     local dsp = spawnSet.roundStartSoundDSP
 
-    GAMEMODE:PlaySoundOnEveryPlayer( startSound, nil, nil, dsp )
+    GAMEMODE:SendSolidSound( startSound, { dsp = dsp } )
 
 end
 
@@ -19,7 +19,7 @@ local function playEndSound()
 
     local dsp = spawnSet.roundEndSoundDSP
 
-    GAMEMODE:PlaySoundOnEveryPlayer( endSound, nil, nil, dsp )
+    GAMEMODE:SendSolidSound( endSound, { dsp = dsp } )
 
 end
 

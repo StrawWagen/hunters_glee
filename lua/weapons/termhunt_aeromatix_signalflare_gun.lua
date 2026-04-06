@@ -29,6 +29,12 @@ if CLIENT then
     terminator_Extras.glee_CL_SetupSwep( SWEP, className, "materials/vgui/hud/killicon/" .. className .. ".png" )
     language.Add( "GLEE_SIGNALFLAREGUN_PLAYER_ammo", "Escape Signal Flare" )
 
+    function SWEP:HintPreStack()
+        if self:Clip1() <= 0 then return end
+
+        return true, "SHOOT into the open,\nto call for RESCUE..."
+
+    end
 end
 
 SWEP.Primary.Sound = Sound( "weapons/flaregun/fire.wav" )
