@@ -66,6 +66,7 @@ local PLY_COLORS = {
     },
 }
 
+local PLY_LINE_HEIGHT = glee_sizeScaled( nil, 32 ) -- Adjust the height of player rows and avatars.
 local PLY_LINE_SPACING = glee_sizeScaled( nil, 4 )
 local PLY_INFO_SPACING = glee_sizeScaled( 100 )
 local PLY_INFOS = { -- From right to left on the scoreboard.
@@ -302,7 +303,7 @@ local PLAYER_LINE = {
         self:Dock( TOP )
         self:DockPadding( glee_sizeScaled( 3 ), 0, 0, 0 )
         self:DockMargin( 0, PLY_LINE_SPACING, 0, 0 )
-        self:SetHeight( glee_sizeScaled( nil, 32 + 4 ) )
+        self:SetHeight( PLY_LINE_HEIGHT + glee_sizeScaled( nil, 4 ) ) -- top/bottom padding
         self:SetMouseInputEnabled( true )
         self:SetText( "" )
 
@@ -328,7 +329,7 @@ local PLAYER_LINE = {
             } )
         end
 
-        local avatarSize = glee_sizeScaled( nil, 32 )
+        local avatarSize = PLY_LINE_HEIGHT
         local muteSize = glee_sizeScaled( nil, 32 )
         local namePadding = glee_sizeScaled( 8 )
 
@@ -351,18 +352,22 @@ local PLAYER_LINE = {
         self.Name:SetContentAlignment( 4 )
         self.Name:SetMouseInputEnabled( false )
 
-        self.Mute = self:Add( "DImageButton" )
+        self.MuteHolder = self:Add( "Panel" )
+        self.MuteHolder:SetWidth( muteSize )
+        self.MuteHolder:Dock( RIGHT )
+        self.MuteHolder:DockMargin( 0, 0, PLY_INFO_SPACING * #PLY_INFOS + muteSize + namePadding, 0 )
+
+        self.Mute = self.MuteHolder:Add( "DImageButton" )
         self.Mute.isScoreboardMuteButton = true
         self.Mute:SetSize( muteSize, muteSize )
-        self.Mute:Dock( RIGHT )
-        self.Mute:DockMargin( 0, 0, PLY_INFO_SPACING * #PLY_INFOS + muteSize + namePadding, 0 )
+        self.Mute:SetPos( 0, self:GetTall() / 2 - muteSize / 2 )
         self.Mute:SetTooltip( "Mute/Unmute this player's voicechat\nScroll to adjust volume" )
         self.Mute:SetTooltipDelay( 0 )
     end,
 
     Setup = function( self, ply )
         self.Player = ply
-        self.Avatar:SetPlayer( ply )
+        self.Avatar:SetPlayer( ply, PLY_LINE_HEIGHT )
         self:Think( self )
     end,
 
