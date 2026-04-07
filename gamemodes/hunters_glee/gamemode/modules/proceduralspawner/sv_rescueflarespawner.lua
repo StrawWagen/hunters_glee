@@ -17,6 +17,6 @@ hook.Add( "glee_sv_validgmthink_active", "glee_rescueflarespawning", function()
         maxCount = 1,
         minAreaSize = 50,
         expireOnRoundEnd = true,
-    } )
 
+    } )
 end )

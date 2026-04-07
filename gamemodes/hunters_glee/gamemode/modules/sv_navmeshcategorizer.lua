@@ -67,8 +67,7 @@ end
 local ceilingLowThreshold  = 120
 local ceilingHighThreshold = 300
 
-local runwayLength = 4000
-
+local runwayLength = 5000
 
 local flags = {}
 GM.NavEFlags = flags -- Nav Extra Flags
@@ -179,7 +178,7 @@ hook.Add( "glee_navmesh_visit", "glee_precache_extraflags", function( area )
     local adjacents = area:GetAdjacentAreas()
 
     if #adjacents <= 0 then return end
-    if area:IsUnderwater() then
+    if underSky and area:IsUnderwater() then
         for _, neighbor in ipairs( adjacents ) do
             if neighbor:IsUnderwater() then continue end
             if area:ComputeAdjacentConnectionHeightChange( neighbor ) > 36 then continue end
@@ -189,7 +188,7 @@ hook.Add( "glee_navmesh_visit", "glee_precache_extraflags", function( area )
     end
 
     local areaSmallestAxis = math.min( area:GetSizeX(), area:GetSizeY() )
-    if areaSmallestAxis >= 350 and flat then
+    if underSky and areaSmallestAxis >= 350 and flat then
         local isAReallyLongDirection
         -- seed start angle from area ID so results are stable across sessions
         local startAngle = math.rad( area:GetID() )
