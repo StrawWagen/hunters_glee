@@ -736,6 +736,13 @@ concommand.Add( "glee_spectate_player", function( ply, _cmd, args )
 
 end )
 
+concommand.Add( "glee_test_escape", function( ply )
+    if not IsValid( ply ) then return end
+    if not ply:IsAdmin() then return end
+    GAMEMODE:escapifyPlayer( ply )
+
+end, nil, "Test the escape state", FCVAR_CHEAT )
+
 function GM:FixAnglesOf( ply )
     timer.Simple( 0, function()
         if not IsValid( ply ) then return end
