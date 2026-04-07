@@ -35,7 +35,9 @@ end
 local GAMEMODE = GAMEMODE or GM
 
 function GAMEMODE:HasExtraFlag( area, flag )
-    return bit.band( area:GetExtraData(), flag ) ~= 0
+    local flags = self.areaExtraFlags[area]
+    if not flags then return false end
+    return bit.band( flags, flag ) ~= 0
 
 end
 
@@ -140,38 +142,15 @@ hook.Add( "glee_navmesh_visit", "glee_precache_extraflags", function( area )
 
     end
 
-    -- locale checks rely on world-space traces; nav areas can have out-of-bounds centers
-    -- from bad nav data, firing traces from there produces garbage results
     if not util.IsInWorld( areasCenter ) then return end
 
     local adjacents = area:GetAdjacentAreas()
 
     if #adjacents <= 0 then return end
-    if area:IsUnderwater() then return end
-
-    -- LOCALE_BEACH: must be on a displacement or sandy surface, and sit at the waterline
-    -- meaning it has at least one underwater neighbor and at least one dry neighbor.
-    -- Purely underwater or purely dry areas don't count.
-    local onDisplacement, floorTr = GAMEMODE:IsOverDisplacement( areasCenter )
-    local onSand = onDisplacement or floorTr.MatType == MAT_SAND
-    if onSand then
-        local hasWet = false
-        local hasDry = false
-
+    if area:IsUnderwater() then
         for _, neighbor in ipairs( adjacents ) do
-            if neighbor:IsUnderwater() then
-                hasWet = true
-
-            else
-                hasDry = true
-
-            end
-            if hasWet and hasDry then break end
-
-        end
-
-        if hasWet and hasDry then
-            GAMEMODE:AddExtraFlag( area, GAMEMODE.NavEFlags.LOCALE_BEACH )
+            if neighbor:IsUnderwater() then continue end
+            GAMEMODE:AddExtraFlag( neighbor, GAMEMODE.NavEFlags.LOCALE_BEACH )
 
         end
     end

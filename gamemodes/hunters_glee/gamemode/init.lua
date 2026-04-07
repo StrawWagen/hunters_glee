@@ -601,6 +601,8 @@ hook.Add( "glee_sv_validgmthink_active", "glee_checkhunters_areinvalidgroups", f
     end
 end )
 
+GM.HuntersGleeNeedsRepatching = true
+
 -- do the navmesh patching
 -- involves adding areas under doors, windows, and then finding sections of navmesh that are separate from the biggest section, then linking them back up to it.
 function GM:SetupTheLargestGroupsNStuff()
