@@ -186,6 +186,7 @@ GAMEMODE.shopStandards.whiteFaded = Color( 255, 255, 255, 230 )
 GAMEMODE.shopStandards.backgroundColor = Color( 37, 37, 37, 240 )
 GAMEMODE.shopStandards.invisibleColor = Color( 0, 0, 0, 0 )
 GAMEMODE.shopStandards.shopItemColor = Color( 73, 73, 73, 255 )
+GAMEMODE.shopStandards.shopScrollGradient = Color( 60, 60, 60, 200 )
 GAMEMODE.shopStandards.cantAffordOverlay = Color( 0, 0, 0, 200 )
 GAMEMODE.shopStandards.scrollEndsOverlay = Color( 0, 0, 0, 100 )
 GAMEMODE.shopStandards.notHoveredOverlay = Color( 0, 0, 0, 45 )
@@ -194,6 +195,5 @@ GAMEMODE.shopStandards.markupTextColor = Color( 140, 140, 140, 255 )
 
 GAMEMODE.shopStandards.borderPadding = 27
 GAMEMODE.shopStandards.whiteIdentifierLineWidthDiv = 250
-
 GAMEMODE.shopStandards.shopCategoryHeight = 275
 GAMEMODE.shopStandards.shopScrollGradientWidth = 130

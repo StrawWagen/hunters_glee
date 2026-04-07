@@ -1,6 +1,5 @@
 
 local falldamageDivisor = 15 -- how much damage per speed falling
--- tweak this on flatgrass pls
 
 -- fall on breakable stuff to reduce fall damage!
 function GM:GetFallDamage( faller, speed )

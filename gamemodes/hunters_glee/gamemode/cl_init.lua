@@ -219,7 +219,7 @@ function GAMEMODE:TranslatedBind( bind )
 end
 
 local deadPlyColor = Color( 87, 117, 117 )
-local escapedPlyColor = Color( 255, 255, 255 )
+local escapedPlyColor = Color( 0, 190, 255 )
 
 local function playerSpectateColor( ply, visible )
     local teamColor = GAMEMODE:GetTeamColor( ply )
