@@ -1,7 +1,6 @@
 local GAMEMODE = GAMEMODE or GM
 GAMEMODE.isSkyOnMap = GAMEMODE.isSkyOnMap or nil
 GAMEMODE.highestZ = GAMEMODE.highestZ or nil
-GAMEMODE.areasUnderSky = GAMEMODE.areasUnderSky or nil
 
 local coroutine_running = coroutine.running
 local coroutine_yield = coroutine.yield

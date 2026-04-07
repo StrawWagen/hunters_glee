@@ -252,8 +252,10 @@ function GM:findValidNavResult( data, start, radius, scoreFunc, noMoreOptionsMin
     end
 end
 
+GM.IsUnderSky_Distance = 12000
+
 local fiftyPowerOfTwo = 50^2
-local vec12kZ = Vector( 0, 0, 12000 )
+local vec12kZ = Vector( 0, 0, GM.IsUnderSky_Distance )
 local vecNeg1K = Vector( 0, 0, -1000 )
 
 function GM:IsUnderSky( pos )
@@ -266,19 +268,25 @@ function GM:IsUnderSky( pos )
     local skyTraceResult = util.TraceLine( skyTraceDat )
 
     if skyTraceResult.HitSky then
-        return true, skyTraceResult.HitPos
+        return true, skyTraceResult.HitPos, skyTraceResult
 
     elseif not skyTraceResult.Hit then
-        return true, skyTraceResult.HitPos
+        return true, skyTraceResult.HitPos, skyTraceResult
 
     else
-        return nil, skyTraceResult.HitPos
+        return nil, skyTraceResult.HitPos, skyTraceResult
 
     end
 end
 
-function GM:IsUnderDisplacement( pos )
+function GM:IsOverDisplacement( pos )
+    local tr = terminator_Extras.getFloorTr( pos )
+    if tr.HitTexture ~= "**displacement**" then return nil, tr end
+    return true, tr
 
+end
+
+function GM:IsUnderDisplacement( pos )
     -- get the sky
     local firstTraceDat = {
         start = pos,

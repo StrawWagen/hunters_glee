@@ -38,10 +38,10 @@ local soundTracks = {
 }
 
 function GM:GetASoundTrack( name )
-    local roundsTracks = GAMEMODE.roundExtraData.soundtracks
+    local roundsTracks = GAMEMODE.soundtracksSequential
     if not roundsTracks then
-        GAMEMODE.roundExtraData.soundtracks = {}
-        roundsTracks = GAMEMODE.roundExtraData.soundtracks
+        GAMEMODE.soundtracksSequential = {}
+        roundsTracks = GAMEMODE.soundtracksSequential
 
     end
 

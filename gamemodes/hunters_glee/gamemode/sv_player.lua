@@ -1366,7 +1366,7 @@ hook.Add( "EntityTakeDamage", "huntersglee_makepvpreallybad", function( dmgTarg,
     end
 end )
 
-net.Receive( "glee_fakeinzoom", function( ply )
+net.Receive( "glee_fakeinzoom", function( _, ply )
     GAMEMODE:TakeOverControl( ply, ply:GetObserverTarget() )
 
 end )
