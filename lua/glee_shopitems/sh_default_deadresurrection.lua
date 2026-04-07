@@ -290,7 +290,7 @@ end
 
 -- grigori stuff
 local defaultDivisor = 10
-local minGrigoriMinutes = 0 -- 5
+local minGrigoriMinutes = 5 -- 5
 
 -- overcomplicated way to make grigori happen later if rounds are 'interesting' ( people earning lots of score )
 local glee_scoretochosentimeoffset_divisor = CreateConVar(

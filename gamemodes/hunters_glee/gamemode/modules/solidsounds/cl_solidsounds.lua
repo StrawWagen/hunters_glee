@@ -1,5 +1,6 @@
 
-local volumeVar = CreateClientConVar( "glee_music_volume", "1", true, false, "Glee music volume" )
+local defaultMusicVolume = 0.75
+local volumeVar = CreateClientConVar( "huntersglee_musicvolume", "-1", true, false, "Glee music volume, -1 for default, " .. defaultMusicVolume, -1, 1 )
 
 local currentChannel  = nil
 local currentPath     = nil
@@ -25,6 +26,20 @@ local fadeInDuration  = 0
 local fadeInTargetVol = 0
 
 local loadGeneration  = 0  -- incremented on every new load request; callbacks compare against it to avoid applying stale results
+
+cvars.AddChangeCallback( "huntersglee_musicvolume", function( _, _, newVal )
+    local volume = tonumber( newVal ) or defaultMusicVolume
+    if volume < 0 then volume = defaultMusicVolume end
+
+    if fadeInActive then
+        fadeInTargetVol = currentVol * volume
+
+    elseif IsValid( currentChannel ) and not fadeActive then
+        currentChannel:SetVolume( currentVol * volume )
+
+    end
+
+end, "huntersglee_musicvolume_update" )
 
 local function startSound( path, pitch, vol, offset, fadeInLength )
     if IsValid( currentChannel ) then
@@ -58,15 +73,22 @@ local function startSound( path, pitch, vol, offset, fadeInLength )
         local playbackRate = pitch / 100
         channel:SetPlaybackRate( playbackRate )
 
-        local targetVol = vol * volumeVar:GetFloat()
+        local volume = volumeVar:GetFloat()
+        if volume < 0 then
+            volume = defaultMusicVolume
+
+        end
+        local targetVol = vol * volume
         if fadeInLength > 0 then
             channel:SetVolume( 0 )
             fadeInActive    = true
             fadeInStartTime = CurTime()
             fadeInDuration  = fadeInLength
             fadeInTargetVol = targetVol
+
         else
             channel:SetVolume( targetVol )
+
         end
 
         channel:Play()

@@ -1102,6 +1102,7 @@ local FKeyBinds = {
     ["noclip"] = "DropCurrentWeapon",
     ["invnext"] = "HandleZoomOut",
     ["invprev"] = "HandleZoomIn",
+    ["toggle_zoom"] = "SendFakeInZoom",
 
 }
 
@@ -1154,5 +1155,15 @@ function GM:HandleZoomOut()
 
     end
     ply.glee_SpectateOrbitDistance = math.Clamp( oldDist + rate, closestSpectateDistance, maxSpectateZoomOut )
+
+end
+
+function GM:SendFakeInZoom()
+    local ply = LocalPlayer()
+    local following = ply:GetObserverTarget()
+    if not IsValid( following ) then return end
+
+    net.Start( "glee_fakeinzoom" )
+    net.SendToServer()
 
 end

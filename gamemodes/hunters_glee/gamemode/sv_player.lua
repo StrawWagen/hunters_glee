@@ -928,18 +928,9 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
             end
         end
     -- take control!
-    elseif keyPressed == IN_ZOOM and followingThing and currentlySpectating.isTerminatorHunterBased and GAMEMODE:RoundState() == GAMEMODE.ROUND_ACTIVE then
-        if ply:GetNWInt( "glee_spectateteam", GAMEMODE.TEAM_PLAYING ) == GAMEMODE.TEAM_ESCAPED then
-            local drivemode = "drive_sandbox"
+    elseif keyPressed == IN_ZOOM and followingThing then
+        GAMEMODE:TakeOverControl( ply, currentlySpectating )
 
-            if currentlySpectating.GetEntityDriveMode then
-                drivemode = currentlySpectating:GetEntityDriveMode( ply )
-
-            end
-
-            drive.PlayerStartDriving( ply, currentlySpectating, drivemode )
-
-        end
     -- the thing we were spectating just died!
     elseif followingThing and currentlySpectating.Health and currentlySpectating:Health() <= 0 then
         GAMEMODE:StopSpectatingThing( ply )
@@ -1374,3 +1365,23 @@ hook.Add( "EntityTakeDamage", "huntersglee_makepvpreallybad", function( dmgTarg,
         end
     end
 end )
+
+net.Receive( "glee_fakeinzoom", function( ply )
+    GAMEMODE:TakeOverControl( ply, ply:GetObserverTarget() )
+
+end )
+
+function GM:TakeOverControl( ply, target )
+    if not target.isTerminatorHunterBased then return end
+    if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
+    if ply:GetNWInt( "glee_spectateteam", GAMEMODE.TEAM_PLAYING ) ~= GAMEMODE.TEAM_ESCAPED then return end
+    local drivemode = "drive_sandbox"
+
+    if target.GetEntityDriveMode then
+        drivemode = target:GetEntityDriveMode( ply )
+
+    end
+
+    drive.PlayerStartDriving( ply, target, drivemode )
+
+end

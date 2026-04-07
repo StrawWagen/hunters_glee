@@ -19,7 +19,11 @@ end
 
 -- dead! keep it interesting for the alive people!
 function shopHelpers.deadNotEscapedCheck( purchaser )
-    if purchaser:Health() > 0 then return false, "Only souls still present may purchase this." end
+    if purchaser:Health() > 0 then return false, "You must be dead to purchase this." end
+    if purchaser:GetNWInt( "glee_spectateteam", GAMEMODE.TEAM_PLAYING ) == GAMEMODE.TEAM_ESCAPED then
+        return false, "This is only for present souls to purchase."
+
+    end
     return true, ""
 
 end

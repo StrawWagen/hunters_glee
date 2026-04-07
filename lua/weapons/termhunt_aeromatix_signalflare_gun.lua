@@ -24,6 +24,8 @@ SWEP.BounceWeaponIcon   = true
 SWEP.ViewModel          = "models/weapons/v_flaregun.mdl"
 SWEP.WorldModel         = "models/weapons/w_dkflaregun.mdl" -- https://steamcommunity.com/sharedfiles/filedetails/?id=1623971250
 
+SWEP.AdminOnly = true
+
 local className = "termhunt_aeromatix_signalflare_gun"
 if CLIENT then
     terminator_Extras.glee_CL_SetupSwep( SWEP, className, "materials/vgui/hud/killicon/" .. className .. ".png" )
@@ -72,7 +74,7 @@ function SWEP:ShootFlare()
     flare:SetPos( offsettedPos )
     local obj = flare:GetPhysicsObject()
     if IsValid( obj ) then
-        obj:SetVelocity( dirToShoot * 48000 )
+        obj:SetVelocity( dirToShoot * 96000 )
 
     end
 

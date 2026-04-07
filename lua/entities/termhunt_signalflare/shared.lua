@@ -64,8 +64,10 @@ end
 
 if SERVER and terminator_Extras then
 
-    ENT.SteppedTooCloseDist = 2000
-    ENT.MinTooCloseDist = 400
+    ENT.SteppedTooCloseDist = 2000 -- start at 2k dist
+    ENT.MinTooCloseDist = 400 -- step down to 400 if we dont find any good corridors to spawn heli at
+    ENT.SteppedDirMaxZ = 0.25 -- start at 0.25z
+    ENT.MaxDirMaxZ = 0.75
 
     local function angerEverything()
         for _, ent in ents.Iterator() do
@@ -100,7 +102,7 @@ if SERVER and terminator_Extras then
         end
     end
 
-    local zHeightToStartCalling = 500
+    local zHeightToStartCalling = 350
 
     local heli_SpeedLimit = 4000
     local heli_CloseToObstacleSpeedLimit = 250
@@ -152,7 +154,7 @@ if SERVER and terminator_Extras then
         end
 
         local randDir = VectorRand()
-        randDir.z = math.Rand( -0.05, 0.25 ) -- dont call heli upwards
+        randDir.z = math.Rand( -0.05, self.SteppedDirMaxZ ) -- dont call heli upwards
         randDir:Normalize()
 
         local offset = randDir * 20000
@@ -165,22 +167,45 @@ if SERVER and terminator_Extras then
 
         end
 
+        local currMins = math.random( wayfindingHeliMins, callingHeliMins )
+        local currMaxs = math.random( wayfindingHeliMaxs, callingHeliMaxs )
+
+        local myPosOffsetted = myPos + randDir * math.random( 25, callingHeliMaxs )
+
         local traceData = {
-            start = myPos,
+            start = myPosOffsetted,
             endpos = myPos + offset,
             mask = MASK_NPCSOLID_BRUSHONLY,
-            mins = Vector( callingHeliMins, callingHeliMins, callingHeliMins / 4 ),
-            maxs = Vector( callingHeliMaxs, callingHeliMaxs, callingHeliMaxs / 4 ),
+            mins = Vector( currMins, currMins, currMins / 4 ),
+            maxs = Vector( currMaxs, currMaxs, currMaxs / 4 ),
 
         }
         local callTraceResult = util.TraceHull( traceData )
-        if not callTraceResult.HitSky then return end
+
+        local boxColor = Color( 0, 255, 0, 100 )
+        if callTraceResult.HitSky then
+            boxColor = Color( 0, 255, 0, 255 )
+
+        end
+
+        debugoverlay.SweptBox(
+            traceData.start,
+            callTraceResult.HitPos,
+            traceData.mins,
+            traceData.maxs,
+            Angle( 0, 0, 0 ),
+            5,
+            boxColor
+        )
 
         if callTraceResult.HitPos:Distance( myPos ) < self.SteppedTooCloseDist then -- too close!
             self.SteppedTooCloseDist = math.max( self.SteppedTooCloseDist - 250, self.MinTooCloseDist )
+            self.SteppedDirMaxZ = math.Clamp( self.SteppedDirMaxZ + 0.05, 0, self.MaxDirMaxZ )
             return
 
         end
+
+        if not callTraceResult.HitSky then return end
 
         angerEverything()
         self.calledForHeli = true
@@ -204,9 +229,9 @@ if SERVER and terminator_Extras then
             if repsLeft == heliSpawnDelay - firstWait then
                 huntersGlee_AnnounceDramatic( player.GetAll(), 500, secondWait - firstWait, "Rescue has been called..." )
                 if GAMEMODE.IsReallyHuntersGlee then
-                    GAMEMODE:SendSolidSound( "hunters_glee/music/8.23.GleeExp2.ogg" )
+                    GAMEMODE:SendSolidSound( GAMEMODE:GetASoundTrack( "heliEvac" ) )
                     local _, spawnSet = GAMEMODE:GetSpawnSet()
-                    diffBump = spawnSet.diffBumpWhenWaveKilled
+                    diffBump = spawnSet.diffBumpWhenWaveKilled / 2
                     GAMEMODE:BumpRoundDifficulty( diffBump ) -- send the spawner into overdrive
                     angerEverything()
 
@@ -238,12 +263,6 @@ if SERVER and terminator_Extras then
                 angerEverything()
 
             end
-        end )
-
-        hook.Add( "huntersglee_round_into_active", "glee_cancelrescuehelitimer_newround", function()
-            if not timer.Exists( rescueTimerName ) then return end
-            timer.Remove( rescueTimerName )
-
         end )
 
         hook.Add( "huntersglee_round_leave_limbo", "glee_cancelrescuehelitimer_limboend", function()
@@ -451,7 +470,10 @@ if SERVER and terminator_Extras then
 
         heli:Spawn()
 
+        local mins, maxs = heli:GetCollisionBounds()
+
         heli:SetModel( "models/glee/combine_helicopter_glee.mdl" )
+        heli:SetCollisionBounds( mins, maxs )
         heli:Activate()
 
         for _, ply in player.Iterator() do
@@ -1018,8 +1040,10 @@ local lifetime = 20
 
 local signalFlaresThatPierceFog = {}
 
-local flareMatId = surface.GetTextureID( "effects/strider_bulge_dudv_dx60" )
-local flareColor = Color( 255, 255, 255, 50 )
+local bigFlareMatId = surface.GetTextureID( "effects/strider_bulge_dudv_dx60" )
+local flareColorBig = Color( 255, 255, 255, 255 )
+local smallFlareMatId = surface.GetTextureID( "effects/huntermuzzle" )
+local flareColorSmall = Color( 150, 150, 255, 255 )
 
 hook.Add( "RenderScreenspaceEffects", "glee_predraw_fogpiercing_signalflares", function()
 
@@ -1029,7 +1053,7 @@ hook.Add( "RenderScreenspaceEffects", "glee_predraw_fogpiercing_signalflares", f
     local eyePos = EyePos()
 
     for _, flare in pairs( signalFlaresThatPierceFog ) do
-        local sizeMul = 100
+        local sizeMul = 400
 
         local flaresRealPos = flare:WorldSpaceCenter()
         local pos2d = flaresRealPos:ToScreen()
@@ -1045,32 +1069,51 @@ hook.Add( "RenderScreenspaceEffects", "glee_predraw_fogpiercing_signalflares", f
         local canSee = terminator_Extras.PosCanSeeComplex( eyePos, flaresRealPos, me )
         if not canSee then continue end
 
-        local distScalar = math.log( distanceToIt, 4 ) * 5
+        -- magic num
+        local distBite = math.log( distanceToIt, 4 ) * 5
+
         local timeToDeath = math.abs( flare:GetDeathTime() - CurTime() )
-        local size = math.Clamp( ( timeToDeath / lifetime ) + 1, 0, 1 )
+        local size = math.Clamp( timeToDeath / lifetime, 0, 1 )
         size = size * sizeMul
 
-        local width = size + -distScalar
-        local height = size + -distScalar
+        local width = size + -distBite
+        local height = size + -distBite
 
-        local jitter = width * 0.05
-
-        local jitterx = math.Rand( -jitter, jitter )
-        local jittery = math.Rand( -jitter, jitter )
-
+        local bigJitter = width * 0.05
+        local bigJitterx = math.Rand( -bigJitter, bigJitter )
+        local bigJittery = math.Rand( -bigJitter, bigJitter )
         local halfWidth = width / 2
-        local halfHeight = height / 2
 
-        local texturedQuadStructure = {
-            texture = flareMatId,
-            color   = flareColor,
-            x 	= pos2d.x + -halfWidth + jitterx,
-            y 	= pos2d.y + -halfHeight + jittery,
+        -- draw big dim one
+        local bigStruc = {
+            texture = bigFlareMatId,
+            color   = flareColorBig,
+            x 	= pos2d.x + -halfWidth + bigJitterx,
+            y 	= pos2d.y + -halfWidth + bigJittery,
             w 	= width,
             h 	= height
         }
 
-        draw.TexturedQuad( texturedQuadStructure )
+        draw.TexturedQuad( bigStruc )
+
+        -- draw small bright one
+
+        local smallWidth = width / 6
+        local smallJitter = smallWidth * 0.05
+        local smallJitterx = math.Rand( -smallJitter, smallJitter )
+        local smallJittery = math.Rand( -smallJitter, smallJitter )
+        local smallWidthHalf = smallWidth / 2
+
+        local smallStruc = {
+            texture = smallFlareMatId,
+            color = flareColorSmall,
+            x = pos2d.x + -smallWidthHalf + smallJitterx / 2,
+            y = pos2d.y + -smallWidthHalf + smallJittery / 2,
+            w = smallWidth,
+            h = smallWidth
+        }
+
+        draw.TexturedQuad( smallStruc )
 
     end
 end )
@@ -1091,7 +1134,8 @@ end
 
 -- rescue heli spotlight
 -- from Dynamic Combine Flashlights by Zelektra
-local nextBlinkTime = 0
+-- been optimized to hell and back
+local nextBlinkToggle = 0
 local blinkInterval = 0.5
 local flashlightSprite = Material( "engine/lightsprite" )
 local warningLightSprite = Material( "effects/blueflare1" )
@@ -1145,49 +1189,51 @@ local function DrawHelicopterBeams( npc, bDepth, bSkybox )
     if bSkybox then return end
     if bDepth then return end
 
-    if npc.spotlightOn == false then return end
+    local spotlightOn = npc.spotlightOn
+    if spotlightOn then
 
-    -- Get the muzzle attachment
-    local attachmentIndex = npc:LookupAttachment( "Spotlight" )
-    if attachmentIndex == 0 then return end
+        -- Get the muzzle attachment
+        local attachmentIndex = npc:LookupAttachment( "Spotlight" )
+        if attachmentIndex == 0 then return end
 
-    local attachment = npc:GetAttachment( attachmentIndex )
-    if not attachment then return end
+        local attachment = npc:GetAttachment( attachmentIndex )
+        if not attachment then return end
 
-    local attachmentsForward = attachment.Ang:Forward()
-    local startPos = attachment.Pos + ( attachmentsForward * 5 ) - ( attachment.Ang:Up() * 4 )
-    local endPos = startPos + attachmentsForward * 2000
+        local attachmentsForward = attachment.Ang:Forward()
+        local startPos = attachment.Pos + ( attachmentsForward * 5 ) - ( attachment.Ang:Up() * 4 )
+        local endPos = startPos + attachmentsForward * 2000
 
-    -- Calculate dot product for scaling and visibility
-    local dir = attachment.Ang:Forward() * -1
-    local viewDir = ( startPos - EyePos() ):GetNormalized()
-    local dotProduct = dir:Dot( viewDir )
-    dotProduct = math.Clamp( dotProduct, 0, 1 ) -- Clamp to avoid very small or very large sizes
+        -- Calculate dot product for scaling and visibility
+        local dir = attachment.Ang:Forward() * -1
+        local viewDir = ( startPos - EyePos() ):GetNormalized()
+        local dotProduct = dir:Dot( viewDir )
+        dotProduct = math.Clamp( dotProduct, 0, 1 ) -- Clamp to avoid very small or very large sizes
 
-    local flaslightSpriteCheckResult = util.TraceLine( {
-        start = EyePos(),
-        endpos = startPos,
-        filter = { npc, LocalPlayer() }
-    } )
+        local flaslightSpriteCheckResult = util.TraceLine( {
+            start = EyePos(),
+            endpos = startPos,
+            filter = { npc, LocalPlayer() }
+        } )
 
-    if dotProduct > 0 and not flaslightSpriteCheckResult.Hit then -- Only draw for visible sprites
-        local size = dotProduct * 400 -- Adjust base size multiplier as needed
+        if dotProduct > 0 and not flaslightSpriteCheckResult.Hit then -- Only draw for visible sprites
+            local size = dotProduct * 400 -- Adjust base size multiplier as needed
 
-        render.SetMaterial( flashlightSprite )
-        render.DrawSprite( startPos, size, size, Color( 255, 255, 255, 255 * dotProduct ) )
+            render.SetMaterial( flashlightSprite )
+            render.DrawSprite( startPos, size, size, Color( 255, 255, 255, 255 * dotProduct ) )
+
+        end
+
+        local spotlightCheck = util.TraceLine( {
+            start = startPos,
+            endpos = endPos,
+            filter = { npc },
+            mask = MASK_OPAQUE
+        } )
+
+        render.SetMaterial( flashlightMaterial )
+        render.DrawBeam( startPos, spotlightCheck.HitPos, 1000, 0, spotlightCheck.Fraction, Color( 255, 255, 255, ( 255 * 5 ) * ( 1 - dotProduct ) ) )
 
     end
-
-    local spotlightCheck = util.TraceLine( {
-        start = startPos,
-        endpos = endPos,
-        filter = { npc },
-        mask = MASK_OPAQUE
-    } )
-
-    render.SetMaterial( flashlightMaterial )
-    render.DrawBeam( startPos, spotlightCheck.HitPos, 1000, 0, spotlightCheck.Fraction, Color( 255, 255, 255, ( 255 * 5 ) * ( 1 - dotProduct ) ) )
-
     if blinkState == true then
         local attachmentIndexWarn1 = npc:LookupAttachment( "Light_Red0" )
         if attachmentIndexWarn1 == 0 then return end
@@ -1222,10 +1268,15 @@ local function DrawHelicopterBeams( npc, bDepth, bSkybox )
 
     end
 
-    if CurTime() > nextBlinkTime then
-        nextBlinkTime = CurTime() + blinkInterval
-        if blinkState == false then blinkState = true else blinkState = false end
+    if CurTime() > nextBlinkToggle then
+        nextBlinkToggle = CurTime() + blinkInterval
+        if blinkState == false then
+            blinkState = true
 
+        else
+            blinkState = false
+
+        end
     end
 end
 

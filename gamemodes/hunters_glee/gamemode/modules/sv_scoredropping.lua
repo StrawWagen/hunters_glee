@@ -48,11 +48,13 @@ hook.Add( "PlayerDeath", "glee_DropScoreWithTooMuch", function( victim, inflicto
     victim:GivePlayerScore( -scoreToDrop )
     huntersGlee_Announce( { victim }, 1, 5, "You've died with too much score.\n" .. scoreToDrop .. " score is left behind." )
 
+    local amount = math.random( 90, 110 )
+
     while scoreToDrop > 0 do
         local droppedBall = ents.Create( "termhunt_score_pickup" )
         droppedBall:SetPos( victim:GetPos() + vector_up * 25 )
 
-        local theBallsScore = math.Clamp( scoreToDrop, 0, math.random( 90, 110 ) )
+        local theBallsScore = math.Clamp( scoreToDrop, 0, amount )
         scoreToDrop = scoreToDrop + -theBallsScore
         droppedBall:SetScore( theBallsScore )
         droppedBall:Spawn()
@@ -61,5 +63,7 @@ hook.Add( "PlayerDeath", "glee_DropScoreWithTooMuch", function( victim, inflicto
             droppedBall:GetPhysicsObject():SetVelocity( VectorRand() * math.random( 10, 30 ) )
 
         end
+
+        amount = amount * 1.25
     end
 end )

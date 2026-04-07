@@ -26,4 +26,37 @@ end
 function GM:StopAllSolidSounds()
     net.Start( "glee_stopsolidsounds" )
     net.Broadcast()
+
+end
+
+local soundTracks = {
+    heliEvac = {
+        "hunters_glee/music/8.23.GleeExp2.ogg",
+        "hunters_glee/music/8.24.to_noone.ogg",
+
+    }
+}
+
+function GM:GetASoundTrack( name )
+    local roundsTracks = GAMEMODE.roundExtraData.soundtracks
+    if not roundsTracks then
+        GAMEMODE.roundExtraData.soundtracks = {}
+        roundsTracks = GAMEMODE.roundExtraData.soundtracks
+
+    end
+
+    local tracksToPlay = roundsTracks[name]
+    if not tracksToPlay or #tracksToPlay == 0 then
+        local allTracks = soundTracks[name]
+        if not allTracks then return end
+
+        tracksToPlay = table.Copy( allTracks )
+        roundsTracks[name] = tracksToPlay
+
+    end
+
+    local track = table.remove( tracksToPlay, 1 )
+
+    return track
+
 end

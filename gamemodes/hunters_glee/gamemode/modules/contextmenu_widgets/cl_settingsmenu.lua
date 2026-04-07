@@ -39,6 +39,15 @@ local settingsCategories = {
         name = "GLEE",
         items = {
             {
+                cvar = "huntersglee_musicvolume",
+                type = "slider",
+                min = 0,
+                max = 1,
+                decimals = 1,
+                prettyName = "Music volume",
+                desc = "Adjust the volume of the music.",
+            },
+            {
                 cvar = "huntersglee_cl_showhud",
                 type = "check",
                 prettyName = "Show top left info",
