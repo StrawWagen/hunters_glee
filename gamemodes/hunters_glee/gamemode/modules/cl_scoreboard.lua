@@ -8,6 +8,8 @@ local PLY_STATUS_DEAD = 2
 local PLY_STATUS_GRIGORI = 3
 local PLY_STATUS_ESCAPED = 4
 
+local white = Color( 255, 255, 255 )
+
 local COLOR_BORDER = Color( 0, 0, 40, 150 )
 local COLOR_HEADER = Color( 37, 37, 37, 220 )
 local COLOR_BACKGROUND = Color( 37, 37, 37, 240 )
@@ -17,11 +19,10 @@ local COLOR_BUTTON = Color( 0, 0, 0, 120 )
 local COLOR_BUTTON_HOVERED = Color( 73, 73, 73, 255 )
 local COLOR_SCROLL_BACKGROUND = Color( 0, 0, 0, 0 )
 local COLOR_SCROLL_BAR = Color( 60, 60, 60, 150 )
-local COLOR_DIVIDER = Color( 80, 80, 80, 240 )
+local COLOR_DIVIDER = white
 local COLOR_LOCALPLAYER_NAME = Color( 43, 136, 28 )
 local COLOR_SELECTION_ARROW = Color( 80, 80, 100 )
 
-local white = Color( 255, 255, 255 )
 local COLOR_TEXT = white
 local COLOR_SERVER = white
 local COLOR_TEXT_SCORE = white
@@ -35,13 +36,11 @@ local COLOR_PING_BAD = Color( 150, 50, 0 )
 local HOVER_SLIDE_AMOUNT = glee_sizeScaled( 30 )
 local HOVER_SLIDE_DURATION = 0.1
 
-local BORDER_RADIUS_MAIN = glee_sizeScaled( nil, 0 ) -- 4
 local BORDER_RADIUS_ACTION_MENU = glee_sizeScaled( nil, 0 ) -- 2
 
-local PADDING_OUTER = glee_sizeScaled( 16 ) -- left/right/bottom padding applied to outermost elements.
+local HEADER_HEIGHT = 100
 local BOARD_WIDTH = 1200
 local BOARD_HEIGHT = 720 -- True height gets limited by header + padding + list height. Be sure to adjust LIST_MAX_HEIGHT if this gets changed.
-local HEADER_HEIGHT = 80
 local LIST_MAX_HEIGHT = glee_sizeScaled( nil, 590 )
 
 local PLY_COLORS = {
@@ -51,8 +50,8 @@ local PLY_COLORS = {
         NAME = Color( 255, 255, 255 ),
     },
     [PLY_STATUS_DEAD] = {
-        BG_UNHOVERED = Color( 75, 0, 0, 150 ),
-        BG_HOVERED = Color( 100, 50, 50 ),
+        BG_UNHOVERED = Color( 85, 0, 0, 150 ),
+        BG_HOVERED = Color( 125, 50, 50 ),
         NAME = Color( 255, 200, 200 ),
     },
     [PLY_STATUS_GRIGORI] = {
@@ -80,6 +79,7 @@ local PLY_INFOS = { -- From right to left on the scoreboard.
             if ping >= 150 then color = COLOR_PING_BAD end
 
             return tostring( ping ), color
+
         end,
     },
     {
@@ -87,6 +87,7 @@ local PLY_INFOS = { -- From right to left on the scoreboard.
         TOOLTIP = "Score.\nEither get close to hunters, or game the Shop.",
         GETTER = function( ply )
             return tostring( ply:GetScore() ), COLOR_TEXT_SCORE
+
         end,
     },
     {
@@ -94,6 +95,7 @@ local PLY_INFOS = { -- From right to left on the scoreboard.
         TOOLTIP = "Skulls.\nEach one is something dead.",
         GETTER = function( ply )
             return tostring( ply:GetSkulls() ), COLOR_TEXT_SKULLS
+
         end,
     },
     {
@@ -101,9 +103,12 @@ local PLY_INFOS = { -- From right to left on the scoreboard.
         GETTER = function( ply )
             local teamID = ply:Team()
             return team.GetName( teamID ), team.GetColor( teamID )
+
         end,
     },
 }
+
+local GAMEMODE_TITLE_HEIGHT = HEADER_HEIGHT * 0.55
 
 local function setupFonts()
     local theFont = GAMEMODE and GAMEMODE.GLEE_FONT or "Arial"
@@ -116,14 +121,14 @@ local function setupFonts()
 
     surface.CreateFont( "ScoreboardMapName", {
         font      = theFont,
-        size      = math.max( glee_sizeScaled( nil, 17 ), 17 ),
+        size      = glee_sizeScaled( nil, 17 ),
         weight    = 400,
         antialias = false,
     } )
 
     surface.CreateFont( "ScoreboardGamemodeTitle", {
         font      = theFont,
-        size      = glee_sizeScaled( nil, 44 ),
+        size      = glee_sizeScaled( nil, GAMEMODE_TITLE_HEIGHT ),
         weight    = 1000,
         shadow    = true,
     } )
@@ -158,7 +163,9 @@ local function setupFonts()
         weight    = 500,
     } )
 end
+
 setupFonts()
+
 hook.Add( "glee_rebuildfonts", "glee_scoreboard_setup_fonts", setupFonts )
 
 
@@ -169,6 +176,13 @@ local discordConvar = GetConVar( "glee_discord_url" )
 local function isViewingActionsForPly( ply )
     if not IsValid( g_ScoreboardPlyActionMenu ) then return false end
     return g_ScoreboardPlyActionMenu.Player == ply
+
+end
+
+local function copyTextAndNotify( text )
+    SetClipboardText( text )
+    print( "Copied; " .. text )
+
 end
 
 
@@ -184,15 +198,16 @@ local PLAYER_ACTION_MENU = {
         self.HoverSlide:SetWidth( 0 )
         self.HoverSlide:Dock( LEFT )
 
-        -- Remove if the player clicks anywhere else. (HasFocus is broken, have to do it manually)
+        -- Remove if the player clicks anywhere else. ( HasFocus is broken, have to do it manually )
         hook.Add( "PlayerButtonDown", "glee_scoreboard_pam_autoclose", function( ply, btn )
-            if ply ~= LocalPlayer() then return end -- Shouldn't ever happen, but just in case...
+            if ply ~= LocalPlayer() then return end -- could potentially happen with weird addons
             if btn < MOUSE_FIRST or btn > MOUSE_LAST then return end
             if not IsValid( g_ScoreboardPlyActionMenu ) then return end
             if g_ScoreboardPlyActionMenu:IsHovered() then return end
             if g_ScoreboardPlyActionMenu:IsChildHovered( false ) then return end
 
             g_ScoreboardPlyActionMenu:Remove()
+
         end )
 
         -- Remove listener on panel remove
@@ -200,6 +215,7 @@ local PLAYER_ACTION_MENU = {
         self.Remove = function( s )
             hook.Remove( "PlayerButtonDown", "glee_scoreboard_pam_autoclose" )
             _Remove( s )
+
         end
     end,
 
@@ -222,6 +238,7 @@ local PLAYER_ACTION_MENU = {
             -- Static vs dynamic text
             if type( text ) == "string" then
                 label:SetText( " " .. text )
+
             else
                 local _Think = label.Think
                 label.Think = function()
@@ -229,49 +246,59 @@ local PLAYER_ACTION_MENU = {
 
                     label:SetText( " " .. text() )
                     _Think( label )
+
                 end
             end
 
             label.DoClick = function()
                 if not IsValid( ply ) then return end
                 callback()
+
             end
 
             label.Paint = function( _, w, h )
                 surface.SetDrawColor( label:IsHovered() and COLOR_BUTTON_HOVERED or COLOR_BUTTON )
                 surface.DrawRect( 0, 0, w, h )
+
             end
         end
 
         addOption( "Open Steam Profile", function()
             ply:ShowProfile()
+
         end )
 
         addOption( "Copy Name", function()
-            SetClipboardText( ply:Nick() )
+            copyTextAndNotify( ply:Nick() )
+
         end )
 
         addOption( "Copy SteamID", function()
-            SetClipboardText( ply:SteamID() )
+            copyTextAndNotify( ply:SteamID() )
+
         end )
 
         addOption(
             function()
                 return ply:IsMuted() and "Unmute" or "Mute"
+
             end,
             function()
                 ply:SetMuted( not ply:IsMuted() )
+
             end
         )
 
         if ply:Alive() and not LocalPlayer():Alive() then
             addOption( "Spectate", function()
                 RunConsoleCommand( "glee_spectate_player", ply:UserID() )
+
             end )
         end
 
         -- vgui child count is weird. Also :SizeToChildren() is broken, yippee!
         self:SetHeight( ( #self:GetChildren() - 1 ) * ( padding + labelHeight ) + padding )
+
     end,
 
     Think = function( self )
@@ -280,6 +307,7 @@ local PLAYER_ACTION_MENU = {
         if not IsValid( ply ) or g_ScoreboardPlyActionMenu ~= self then
             self:Remove()
             return false
+
         end
     end,
 
@@ -291,6 +319,7 @@ local PLAYER_ACTION_MENU = {
 
         surface.SetDrawColor( COLOR_ACTION_MENU_BACKGROUND )
         surface.DrawRect( borderRadius, borderRadius, w - borderRadius * 2, h - borderRadius * 2 )
+
     end
 }
 
@@ -315,6 +344,7 @@ local PLAYER_LINE = {
         self.HoverSlide:SetWidth( 0 )
         self.HoverSlide:Dock( LEFT )
         self.HoverSlide:SetMouseInputEnabled( false )
+
         self.HoverSlide.Paint = function( _, w, h )
             if not isViewingActionsForPly( selfObj.Player ) then return end
 
@@ -331,6 +361,7 @@ local PLAYER_LINE = {
                 { x = padding + lineLength + tipRadius, y = h / 2 },
                 { x = padding + lineLength, y = h / 2 + tipRadius },
             } )
+
         end
 
         local avatarSize = PLY_LINE_HEIGHT
@@ -495,12 +526,14 @@ PLAYER_LINE = vgui.RegisterTable( PLAYER_LINE, "DButton" )
 --
 local SCORE_BOARD = {
     Init = function( self )
+        self.paddingOuter = glee_sizeScaled( nil, GAMEMODE.shopStandards.borderPadding )
+
         local plyListPadding = glee_sizeScaled( nil, 8 ) -- padding applied to the scrollable player list.
-        local headerPadding = glee_sizeScaled( nil, 10 ) -- top/bottom padding for header text
+        local headerPadding = glee_sizeScaled( nil, HEADER_HEIGHT * 0.25 ) -- top/bottom padding for header text
 
         self:SetSize( glee_sizeScaled( BOARD_WIDTH, BOARD_HEIGHT ) )
         self:SetPos( ScrW() / 2 - self:GetWide() / 2, ScrH() / 2 - self:GetTall() / 2 )
-        self:DockPadding( PADDING_OUTER, 0, PADDING_OUTER, 0 )
+        self:DockPadding( self.paddingOuter, 0, self.paddingOuter, 0 )
 
         -- Header
         self.Header = self:Add( "Panel" )
@@ -509,6 +542,7 @@ local SCORE_BOARD = {
 
         self.Header.Paint = function( _, w, _h )
             draw.SimpleText( GetHostName(), "ScoreboardServerName", w / 2, headerPadding, COLOR_SERVER, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
+
         end
 
         -- TODO: Replace with a custom image for extra fancy gamemode title?
@@ -521,14 +555,17 @@ local SCORE_BOARD = {
         self.HeaderLeft:SetTextColor( COLOR_TEXT_GAMEMODE )
         self.HeaderLeft:SetText( "" )
         self.HeaderLeft:SetMouseInputEnabled( true )
-        self.HeaderLeft:SetTooltip( "Get some glee" )
+        self.HeaderLeft:SetTooltip( "Gamemode's Workshop" )
         self.HeaderLeft:SetTooltipDelay( 0 )
         self.HeaderLeft.DoClick = function() gui.OpenURL( GAMEMODE_URL ) end
         self.HeaderLeft.Paint = function( s )
             local fontHeight = draw.GetFontHeight( s:GetFont() )
-            surface.drawShadowedTextBetter( "Hunter's Glee", s:GetFont(), s:GetTextColor(), 0, s:GetTall() / 2 - fontHeight / 2, false )
+            local gamemodeTextY = s:GetTall() / 2 - fontHeight / 2
+            surface.drawShadowedTextBetter( "Hunter's Glee", s:GetFont(), s:GetTextColor(), 0, gamemodeTextY, false )
+
         end
 
+        -- holder for discord button
         self.HeaderRight = self.Header:Add( "DPanel" )
         self.HeaderRight:Dock( RIGHT )
         self.HeaderRight:SetWidth( glee_sizeScaled( 200 ) )
@@ -547,6 +584,10 @@ local SCORE_BOARD = {
         self.MapLabel:SetMouseInputEnabled( true )
         self.MapLabel:SetTooltip( "" )
         self.MapLabel:SetTooltipDelay( 0 )
+        self.MapLabel.DoClick = function()
+            copyTextAndNotify( game.GetMap() )
+
+        end
 
         local discordSize = glee_sizeScaled( nil, 32 )
         self.Header:InvalidateLayout( true )
@@ -560,6 +601,7 @@ local SCORE_BOARD = {
 
         if discordSize ~= 32 then
             self.DiscordButton:SetStretchToFit( true )
+
         end
 
         self.DiscordButton.DoClick = function()
@@ -567,11 +609,12 @@ local SCORE_BOARD = {
             if url == "" then return end
 
             gui.OpenURL( url )
+
         end
 
         self.CategoryLabelHolder = self:Add( "Panel" )
         self.CategoryLabelHolder:SetHeight( glee_sizeScaled( nil, 40 ) )
-        self.CategoryLabelHolder:DockPadding( plyListPadding, 0, plyListPadding, plyListPadding )
+        self.CategoryLabelHolder:DockPadding( plyListPadding, plyListPadding * 2, plyListPadding, plyListPadding )
         self.CategoryLabelHolder:Dock( TOP )
 
         local function applyPlyInfoProperties( label )
@@ -581,17 +624,19 @@ local SCORE_BOARD = {
             label:SetTextColor( COLOR_TEXT )
             label:SetWidth( PLY_INFO_SPACING )
             label:DockMargin( 0, 0, 0, 0 )
+
         end
 
         self.PlyCountLabel = self.CategoryLabelHolder:Add( "DLabel" )
         applyPlyInfoProperties( self.PlyCountLabel )
-        self.PlyCountLabel:SetContentAlignment( 1 )
+        self.PlyCountLabel:SetContentAlignment( 5 )
         self.PlyCountLabel:SetText( "Players" )
         self.PlyCountLabel:Dock( LEFT )
 
         for _, info in ipairs( PLY_INFOS ) do
             local label = self.CategoryLabelHolder:Add( "DLabel" )
             applyPlyInfoProperties( label )
+            label:SetContentAlignment( 5 )
             label:SetText( info.NAME )
             label:Dock( RIGHT )
 
@@ -599,6 +644,7 @@ local SCORE_BOARD = {
                 label:SetTooltip( info.TOOLTIP )
                 label:SetTooltipDelay( 0 )
                 label:SetMouseInputEnabled( true )
+
             end
         end
 
@@ -613,6 +659,7 @@ local SCORE_BOARD = {
 
         self.Scores.Paint = function( _, w, h )
             draw.RoundedBox( scoreCornerRadius, 0, 0, w, h, COLOR_BACKGROUND_DARK )
+
         end
 
 
@@ -630,6 +677,7 @@ local SCORE_BOARD = {
             if IsValid( self.Scores.ScrollSecret ) then
                 self.Scores.ScrollSecret:Remove()
                 self.Scores.ScrollSecret = nil
+
             end
         end
 
@@ -654,12 +702,14 @@ local SCORE_BOARD = {
             btn:SetTooltip( "Scoreboard made by Two Lemons" )
             btn:SetTooltipDelay( 1 )
             btn.DoClick = function() gui.OpenURL( "https://github.com/legokidlogan" ) end
+
         end
 
         local function scrollSecretDelta( delta )
             if delta <= 0 then
                 scrollSecretClear()
                 return
+
             end
 
             local now = CurTime()
@@ -668,6 +718,7 @@ local SCORE_BOARD = {
             if timeSince >= 1 then
                 scrollSecretClear()
                 return
+
             end
 
             scrollSecretVal = math.max( 0, scrollSecretVal + delta - timeSince * scrollSecretDecay )
@@ -675,6 +726,7 @@ local SCORE_BOARD = {
 
             if scrollSecretVal >= scrollSecretReq then
                 scrollSecretDone()
+
             end
         end
 
@@ -688,6 +740,7 @@ local SCORE_BOARD = {
 
             scrollSecretDelta( delta )
             _OnMouseWheeled( s, delta )
+
         end
 
         local scrollBar = self.Scores:GetVBar()
@@ -697,12 +750,14 @@ local SCORE_BOARD = {
         scrollBar.Paint = function( _, w, h )
             surface.SetDrawColor( COLOR_SCROLL_BACKGROUND )
             surface.DrawRect( 0, 0, w, h )
+
         end
 
         local scrollBarGrip = scrollBar.btnGrip
 
         scrollBarGrip.Paint = function( _, w, h )
             draw.RoundedBox( glee_sizeScaled( 6 ), 0, 0, glee_sizeScaled( w - 2 ), h, COLOR_SCROLL_BAR )
+
         end
     end,
 
@@ -710,25 +765,28 @@ local SCORE_BOARD = {
     end,
 
     Paint = function( self, w, h )
-        local borderRadius = BORDER_RADIUS_MAIN
         local headerHeight = self.Header:GetTall()
 
         surface.SetDrawColor( COLOR_BORDER )
-        surface.DrawOutlinedRect( 0, 0, w, h, borderRadius )
+        surface.DrawOutlinedRect( 0, 0, w, h, 0 )
 
         surface.SetDrawColor( COLOR_HEADER )
-        surface.DrawRect( borderRadius, borderRadius, w - borderRadius * 2, headerHeight - borderRadius )
+        surface.DrawRect( 0, 0, w, headerHeight )
 
-        local boardBackTopY = headerHeight + 1
+        local dividerWidth = glee_sizeScaled( nil, 1080 )
+        dividerWidth = dividerWidth / GAMEMODE.shopStandards.whiteIdentifierLineWidthDiv
+
+        local boardBackTopY = headerHeight + dividerWidth
         local _, boardBackTopYGlobal = self:LocalToScreen( 0, boardBackTopY )
         local _, scoresBottomYGlobal = self.Scores:LocalToScreen( 0, self.Scores:GetTall() )
-        local bgHeight = scoresBottomYGlobal - boardBackTopYGlobal + 1 + PADDING_OUTER
+        local bgHeight = scoresBottomYGlobal - boardBackTopYGlobal + self.paddingOuter
 
         surface.SetDrawColor( COLOR_BACKGROUND )
-        surface.DrawRect( borderRadius, boardBackTopY, w - borderRadius * 2, bgHeight - borderRadius )
+        surface.DrawRect( 0, boardBackTopY, w, bgHeight )
 
         surface.SetDrawColor( COLOR_DIVIDER )
-        surface.DrawRect( borderRadius, headerHeight, w - borderRadius * 2, 1 )
+        surface.DrawRect( 0, headerHeight, w, dividerWidth )
+
     end,
 
     Think = function( self )
@@ -745,6 +803,7 @@ local SCORE_BOARD = {
             entry:Dock( TOP )
 
             panelCreated = true
+
         end
 
         local plyCount = player.GetCount()
@@ -761,10 +820,13 @@ local SCORE_BOARD = {
             -- Calculate info nudge, since the scrollbar pushes things over a little.
             local scrollBar = self.Scores:GetVBar()
             plyInfoNudge = scrollBar.Enabled and scrollBar:GetWide() or 0
+
         end
 
-        self.MapLabel:SetTooltip( os.date( "!Map uptime: %H:%M:%S", CurTime() ) )
+        local tooltip = os.date( "!Map uptime: %H:%M:%S", CurTime() ) .. "\nLeft click to copy map"
+        self.MapLabel:SetTooltip( tooltip )
         self.DiscordButton:SetVisible( discordConvar:GetString() ~= "" )
+
     end
 }
 
@@ -780,6 +842,7 @@ if IsValid( g_Scoreboard ) then
         if IsValid( ply.ScoreEntry ) then
             ply.ScoreEntry:Remove()
             ply.ScoreEntry = nil
+
         end
     end
 end
@@ -787,6 +850,7 @@ end
 if IsValid( g_ScoreboardPlyActionMenu ) then
     g_ScoreboardPlyActionMenu:Remove()
     g_ScoreboardPlyActionMenu = nil
+
 end
 
 
@@ -797,12 +861,14 @@ end
 function GM:ScoreboardShow()
     if not IsValid( g_Scoreboard ) then
         g_Scoreboard = vgui.CreateFromTable( SCORE_BOARD )
+
     end
 
     if IsValid( g_Scoreboard ) then
         g_Scoreboard:Show()
         g_Scoreboard:MakePopup()
         g_Scoreboard:SetKeyboardInputEnabled( false )
+
     end
 end
 
@@ -813,10 +879,12 @@ end
 function GM:ScoreboardHide()
     if IsValid( g_Scoreboard ) then
         g_Scoreboard:Hide()
+
     end
 
     if IsValid( g_ScoreboardPlyActionMenu ) then
         g_ScoreboardPlyActionMenu:Remove()
+
     end
 end
 
