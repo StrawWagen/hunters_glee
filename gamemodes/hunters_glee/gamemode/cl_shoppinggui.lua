@@ -450,14 +450,35 @@ function termHuntOpenTheShop()
 
         -- make the scrollbar match the style!
         function scrollBar:Paint( w, h )
-            draw_RoundedBox( 0, 0, 0, w, h, shopItemColor )
-            draw_RoundedBox( 0, 0, 0, w, h, cantAffordOverlay )
+            local btnHeight = scrollBar.btnUp:GetTall()
+
+            draw_RoundedBox( 0, 0, btnHeight, w, h - btnHeight * 2, shopItemColor )
+            draw_RoundedBox( 0, 0, btnHeight, w, h - btnHeight * 2, cantAffordOverlay )
         end
 
         function scrollBar.btnUp:Paint( w, h )
-            draw_RoundedBox( 0, 0, 0, w, h, shopItemColor )
+            surface.SetDrawColor( shopItemColor )
+            draw.NoTexture()
+
+            local slide = h * 0.5
+
+            local function shape()
+                surface.DrawPoly( {
+                    { x = w / 2, y = 0, },
+                    { x = w, y = h - slide, },
+                    { x = w, y = h, },
+                    { x = 0, y = h, },
+                    { x = 0, y = h - slide, },
+                } )
+
+            end
+
+            shape()
+
             if not self:IsHovered() then
-                draw_RoundedBox( 0, 0, 0, w, h, notHoveredOverlay )
+                surface.SetDrawColor( notHoveredOverlay )
+                shape()
+
             end
         end
 
@@ -466,9 +487,28 @@ function termHuntOpenTheShop()
         end
 
         function scrollBar.btnDown:Paint( w, h )
-            draw_RoundedBox( 0, 0, 0, w, h, shopItemColor )
+            surface.SetDrawColor( shopItemColor )
+            draw.NoTexture()
+
+            local slide = h * 0.5
+
+            local function shape()
+                surface.DrawPoly( {
+                    { x = w, y = 0, },
+                    { x = w, y = h - slide, },
+                    { x = w / 2, y = h, },
+                    { x = 0, y = h - slide, },
+                    { x = 0, y = 0, },
+                } )
+
+            end
+
+            shape()
+
             if not self:IsHovered() then
-                draw_RoundedBox( 0, 0, 0, w, h, notHoveredOverlay )
+                surface.SetDrawColor( notHoveredOverlay )
+                shape()
+
             end
         end
 
