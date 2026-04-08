@@ -34,6 +34,7 @@ local draw_RoundedBox = draw.RoundedBox
 
 local lastScroll = 0
 local MAINSCROLLNAME = "main_scroll_window"
+local scrollHintsAcknowledged = {}
 
 local noDataMateiral = Material( "vgui/hud/gleenodata.png", "noclamp" )
 local dataMaterial = Material( "vgui/hud/gleefulldata.png", "noclamp smooth" )
@@ -59,20 +60,28 @@ function termHuntOpenTheShop()
     local pressableThink = GAMEMODE.shopStandards.pressableThink
     local isHovered = GAMEMODE.shopStandards.isHovered
 
-    local white =               GAMEMODE.shopStandards.white
-    local whiteFaded =          GAMEMODE.shopStandards.whiteFaded
+    local white =                 GAMEMODE.shopStandards.white
+    local whiteFaded =            GAMEMODE.shopStandards.whiteFaded
 
-    local backgroundColor =     GAMEMODE.shopStandards.backgroundColor
-    local invisibleColor =      GAMEMODE.shopStandards.invisibleColor
-    local shopItemColor =       GAMEMODE.shopStandards.shopItemColor
-    local shopScrollGradient =  GAMEMODE.shopStandards.shopScrollGradient
-    local cantAffordOverlay =   GAMEMODE.shopStandards.cantAffordOverlay
-    local scrollEndsOverlay =   GAMEMODE.shopStandards.scrollEndsOverlay
-    local notHoveredOverlay =   GAMEMODE.shopStandards.notHoveredOverlay
-    local pressedItemOverlay =  GAMEMODE.shopStandards.pressedItemOverlay
-    local markupTextColor =     GAMEMODE.shopStandards.markupTextColor
+    local backgroundColor =       GAMEMODE.shopStandards.backgroundColor
+    local invisibleColor =        GAMEMODE.shopStandards.invisibleColor
+    local shopItemColor =         GAMEMODE.shopStandards.shopItemColor
+    local shopScrollGradient =    GAMEMODE.shopStandards.shopScrollGradient
+    local cantAffordOverlay =     GAMEMODE.shopStandards.cantAffordOverlay
+    local scrollEndsOverlay =     GAMEMODE.shopStandards.scrollEndsOverlay
+    local notHoveredOverlay =     GAMEMODE.shopStandards.notHoveredOverlay
+    local pressedItemOverlay =    GAMEMODE.shopStandards.pressedItemOverlay
+    local markupTextColor =       GAMEMODE.shopStandards.markupTextColor
 
-    local switchSound =         GAMEMODE.shopStandards.switchSound
+    local scrollHintColorDark =   GAMEMODE.shopStandards.scrollHintColorDark
+    local scrollHintColorBright = GAMEMODE.shopStandards.scrollHintColorBright
+    local scrollHintPullbackDur = GAMEMODE.shopStandards.scrollHintPullbackDur
+    local scrollHintBounceDur =   GAMEMODE.shopStandards.scrollHintBounceDur
+    local scrollHintLingerDur =   GAMEMODE.shopStandards.scrollHintLingerDur
+    local scrollHintSizeMult =    GAMEMODE.shopStandards.scrollHintSizeMult
+    local scrollHintMoveMult =    GAMEMODE.shopStandards.scrollHintMoveMult
+
+    local switchSound =           GAMEMODE.shopStandards.switchSound
 
     local ply = LocalPlayer()
     ply.oldScrollPositions = ply.oldScrollPositions or {}
@@ -135,6 +144,77 @@ function termHuntOpenTheShop()
         clientsRightKey = input.GetKeyCode( clientsRightKey )
 
     end
+
+    local scrollHintPulling = true
+    local scrollHintLingering = false
+    local scrollHintTime = nil -- Time of start of current pull/bounce phase
+
+    local function drawScrollHint( x, y, containerHeight )
+        local now = RealTime()
+
+        if not scrollHintTime then
+            scrollHintTime = now
+        end
+
+        local elapsed = now - scrollHintTime
+        local frac = 0
+
+        if scrollHintLingering then
+            if elapsed >= scrollHintLingerDur then
+                scrollHintLingering = false
+                scrollHintTime = now
+            end
+        else
+            local phaseDur = scrollHintPulling and scrollHintPullbackDur or scrollHintBounceDur
+
+            if elapsed >= phaseDur then
+                elapsed = 0
+                scrollHintPulling = not scrollHintPulling
+                scrollHintTime = now
+
+                if scrollHintPulling then
+                    scrollHintLingering = true
+                end
+            end
+
+            local easeFunc = scrollHintPulling and math.ease.InOutExpo or math.ease.OutBounce
+            frac = easeFunc( elapsed / phaseDur )
+
+            if not scrollHintPulling then
+                frac = 1 - frac
+            end
+        end
+
+        local radius = containerHeight * scrollHintSizeMult / 2
+        local slide = radius * 1.5
+        local tighten = slide * 0.5
+        x = x - frac * radius * scrollHintMoveMult
+
+        draw.NoTexture()
+
+        if scrollHintLingering then
+            surface.SetDrawColor( scrollHintColorDark )
+        else
+            surface.SetDrawColor( scrollHintColorBright )
+        end
+
+        -- Bottom poly
+        surface.DrawPoly( {
+            { x = x, y = y, },
+            { x = x - slide + tighten, y = y + radius, },
+            { x = x - slide, y = y + radius, },
+            { x = x - slide + tighten, y = y, },
+        } )
+
+        -- Top poly
+        surface.DrawPoly( {
+            { x = x - slide + tighten, y = y - radius, },
+            { x = x, y = y, },
+            { x = x - slide + tighten, y = y, },
+            { x = x - slide, y = y - radius, },
+        } )
+    end
+
 
     -- if pressed button that opened shop, close the shop
     function shopFrame:OnKeyCodePressed( pressed )
@@ -537,6 +617,8 @@ function termHuntOpenTheShop()
 
                 end
 
+                scrollHintsAcknowledged[ category ] = true
+
                 return true
 
             end
@@ -928,6 +1010,16 @@ function termHuntOpenTheShop()
                         self.myOverlayColor = pressedItemOverlay
                         draw_RoundedBox( 0, 0, 0, self:GetWide(), self:GetTall(), self.myOverlayColor )
 
+                    end
+
+                    if myCategoryPanel.canScrollRight and not scrollHintsAcknowledged[ category ] then
+                        local w = self:GetWide()
+                        local endX = self:LocalToScreen( w )
+                        local endXView = myCategoryPanel:LocalToScreen( myCategoryPanel:GetWide() )
+
+                        if endX >= endXView then
+                            drawScrollHint( w * 0.45, self:GetTall() * 0.7, self:GetTall() )
+                        end
                     end
 
                     local score = ply:GetScore()

@@ -197,3 +197,11 @@ GAMEMODE.shopStandards.borderPadding = 27
 GAMEMODE.shopStandards.whiteIdentifierLineWidthDiv = 250
 GAMEMODE.shopStandards.shopCategoryHeight = 275
 GAMEMODE.shopStandards.shopScrollGradientWidth = 130
+
+GAMEMODE.shopStandards.scrollHintColorDark = Color( 230, 230, 230, 230 )
+GAMEMODE.shopStandards.scrollHintColorBright = Color( 255, 255, 255, 230 )
+GAMEMODE.shopStandards.scrollHintPullbackDur = 2
+GAMEMODE.shopStandards.scrollHintBounceDur = 0.5
+GAMEMODE.shopStandards.scrollHintLingerDur = 1
+GAMEMODE.shopStandards.scrollHintSizeMult = 0.4
+GAMEMODE.shopStandards.scrollHintMoveMult = 1
