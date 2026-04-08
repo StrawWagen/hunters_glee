@@ -154,6 +154,7 @@ function termHuntOpenTheShop()
 
         if not scrollHintTime then
             scrollHintTime = now
+
         end
 
         local elapsed = now - scrollHintTime
@@ -163,7 +164,9 @@ function termHuntOpenTheShop()
             if elapsed >= scrollHintLingerDur then
                 scrollHintLingering = false
                 scrollHintTime = now
+
             end
+
         else
             local phaseDur = scrollHintPulling and scrollHintPullbackDur or scrollHintBounceDur
 
@@ -174,7 +177,9 @@ function termHuntOpenTheShop()
 
                 if scrollHintPulling then
                     scrollHintLingering = true
+
                 end
+
             end
 
             local easeFunc = scrollHintPulling and math.ease.InOutExpo or math.ease.OutBounce
@@ -182,7 +187,9 @@ function termHuntOpenTheShop()
 
             if not scrollHintPulling then
                 frac = 1 - frac
+
             end
+
         end
 
         local radius = containerHeight * scrollHintSizeMult / 2
@@ -194,8 +201,10 @@ function termHuntOpenTheShop()
 
         if scrollHintLingering then
             surface.SetDrawColor( scrollHintColorDark )
+
         else
             surface.SetDrawColor( scrollHintColorBright )
+
         end
 
         -- Bottom poly
@@ -213,6 +222,7 @@ function termHuntOpenTheShop()
             { x = x - slide + tighten, y = y, },
             { x = x - slide, y = y - radius, },
         } )
+
     end
 
 
