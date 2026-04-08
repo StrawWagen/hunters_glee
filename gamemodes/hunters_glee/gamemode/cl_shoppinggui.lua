@@ -466,6 +466,11 @@ function termHuntOpenTheShop()
             draw_RoundedBox( 0, 0, btnHeight, w, h - btnHeight * 2, cantAffordOverlay )
         end
 
+        if clientsForwardKey then
+            scrollBar.btnUp:SetTooltip( "Scroll Up (" .. input.GetKeyName( clientsForwardKey ) .. ")" )
+
+        end
+
         function scrollBar.btnUp:Paint( w, h )
             surface.SetDrawColor( shopItemColor )
             draw.NoTexture()
@@ -494,6 +499,11 @@ function termHuntOpenTheShop()
 
         function scrollBar.btnUp:Think()
             pressableThink( self )
+        end
+
+        if clientsBackKey then
+            scrollBar.btnDown:SetTooltip( "Scroll Down (" .. input.GetKeyName( clientsBackKey ) .. ")" )
+
         end
 
         function scrollBar.btnDown:Paint( w, h )
@@ -1062,6 +1072,7 @@ function termHuntOpenTheShop()
 
                     end
 
+                    -- draw the scroll hint!
                     if myCategoryPanel.canScrollRight and not scrollHintsAcknowledged[ category ] then
                         local w = self:GetWide()
                         local endX = self:LocalToScreen( w )
@@ -1069,6 +1080,7 @@ function termHuntOpenTheShop()
 
                         if endX >= endXView then
                             drawScrollHint( w * 0.45, self:GetTall() * 0.7, self:GetTall() )
+
                         end
                     end
 
