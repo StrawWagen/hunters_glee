@@ -467,7 +467,9 @@ function termHuntOpenTheShop()
         end
 
         if clientsForwardKey then
-            scrollBar.btnUp:SetTooltip( "Scroll Up (" .. input.GetKeyName( clientsForwardKey ) .. ")" )
+            local name = input.GetKeyName( clientsForwardKey )
+            name = string.upper( name )
+            scrollBar.btnUp:SetTooltip( "Scroll Up (" .. name .. ")" )
 
         end
 
@@ -502,7 +504,9 @@ function termHuntOpenTheShop()
         end
 
         if clientsBackKey then
-            scrollBar.btnDown:SetTooltip( "Scroll Down (" .. input.GetKeyName( clientsBackKey ) .. ")" )
+            local name = input.GetKeyName( clientsBackKey )
+            name = string.upper( name )
+            scrollBar.btnDown:SetTooltip( "Scroll Down (" .. name .. ")" )
 
         end
 
