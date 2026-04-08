@@ -279,14 +279,14 @@ hook.Add( "PlayerUse", "glee_Rappel_DetectRappelUse", function( user, ent )
     local startProp = ent.RopeStartProp
     local endProp = ent.RopeEndProp
 
-    if not IsValid( vehicle ) or not IsValid( startProp ) or not IsValid( endProp ) then return false end
-    if user:GetNWBool( "glee_IsRappelling", false ) then return false end
+    if not IsValid( vehicle ) or not IsValid( startProp ) or not IsValid( endProp ) then return end
+    if user:GetNWBool( "glee_IsRappelling", false ) then return end
 
     if hook.Run( "PlayerBlockRappel", user, ent ) then return end
 
     -- only if they're aiming roughly at the rope
     local dist = util.DistanceToLine( startProp:GetPos(), endProp:GetPos(), user:GetShootPos() )
-    if dist > glee_RappelSettings.ropeUseAimTolerance then return false end
+    if dist > glee_RappelSettings.ropeUseAimTolerance then return end
 
     user:RappelToVehicle( vehicle, startProp:GetPos() )
 

@@ -44,8 +44,9 @@ local setDefaults = {
     maxSpawnCount = 10,
     maxSpawnDist = { 4500, 6500 },
     minSpawnDist = 500, -- if you spawn closer than this, it feels unfair
-    roundEndSound = "hunters_glee/53937_meutecee_trumpethit07.wav",
+    roundEndSound = "hunters_glee/music/not_53937_meutecee_trumpethit07.wav",
     roundStartSound = "", -- no sound for glee
+    roundWinSound = "",
     genericSpawnerRate = 1,
 }
 

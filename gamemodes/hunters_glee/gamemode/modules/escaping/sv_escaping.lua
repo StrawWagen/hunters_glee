@@ -26,39 +26,44 @@ end
 
 local function allRidersOf( vehicle )
     local riders = {}
-    local unexplored = { vehicle }
+    local riderLookup = {}
     local explored = {}
-    -- recursively find all riders
-    while #unexplored > 0 do
-        local current = table.remove( unexplored, 1 )
-        for _, child in ipairs( current:GetChildren() ) do
-            if explored[child] then continue end
-            explored[child] = true
 
-            if not IsValid( child ) then continue end
-            if child:IsPlayer() and child:Alive() then
-                table.insert( riders, child )
-                table.insert( unexplored, child )
+    local function recurse( ent )
+        if explored[ent] or not IsValid( ent ) then return end
 
-            else
-                table.insert( unexplored, child )
+        if ent.GetDriver then
+            local rider = ent:GetDriver()
+
+            if not riderLookup[rider] and IsValid( rider ) and rider:IsPlayer() and rider:Alive() then
+                riderLookup[rider] = true
+                table.insert( riders, rider )
 
             end
         end
+
+        for _, child in pairs( ent:GetChildren() ) do
+            recurse( child )
+
+        end
     end
+
+    recurse( vehicle )
+
     local rappellers = vehicle.glee_stuffRappellingOffMe
     if rappellers then
         for rappeler, _ in pairs( rappellers ) do
             if not IsValid( rappeler ) then continue end
             if not rappeler:Alive() then continue end
             if not rappeler:IsPlayer() then continue end
-            if explored[rappeller] then continue end
-            explored[rappeller] = true
+            if riderLookup[rappeller] then continue end
 
+            riderLookup[rappeller] = true
             table.insert( riders, rappeler )
 
         end
     end
+
     return riders
 
 end
