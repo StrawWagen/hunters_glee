@@ -127,6 +127,8 @@ if SERVER then
 
         -- Gather available items
         local items = shopHelpers.getItemsInCategory( "BARGAINS" )
+        shopHelpers.filterByTag( items, "unpurchaseable", false ) -- Remove unpurchaseable from offer pool
+
         local offersLeft = math.min( math.random( offerMin, offerMax ), #items )
         offerTbl.__count = offersLeft -- Store for faster access. Technically means we can't allow an item id of "__count", but that's not happening!
 
@@ -200,7 +202,8 @@ end
 
 -- Only allow bargains that are on offer and in stock.
 hook.Add( "glee_shop_canshow", "glee_shopitems_bargainoffers", function( ply, itemData )
-    if not itemData.tags.BARGAINS then return end
+    if not itemData.tags.BARGAINS then return end -- Not a bargain, don't care.
+    if itemData.tags.unpurchaseable then return end -- Allow unpurcaseable to be seen always. They don't need offers and can't be bought.
     if GAMEMODE:GetBargainPurchasesLeft( ply ) <= 0 then return false, "All bargains are out of stock!" end
     if not GAMEMODE:IsBargainOffered( itemData.identifier, ply ) then return false, "This bargain is not on offer." end
 
@@ -578,6 +581,27 @@ end
 
 
 local items = {
+    -- Special unpurchaseable item, shows remaining bargain purchases.
+    [ "bargain_stock_display" ] = {
+        name = "Bargain Stock.",
+        desc = "You can only buy this many more bargains this round.",
+        shCost = 0,
+        costDecorative = function( ply )
+            local remaining = GAMEMODE:GetBargainPurchasesLeft( ply )
+
+            return tostring( remaining ), remaining >= 1 and GAMEMODE.shopStandards.shopCostCanBuy or GAMEMODE.shopStandards.shopCostTooPoor
+        end,
+        cooldown = math.huge,
+        tags = { "BARGAINS", "unpurchaseable" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = -9999,
+        shPurchaseCheck = function() return false, "" end,
+        svOnPurchaseFunc = function() end,
+        unpurchaseableReason = "",
+    },
+
     -- Risk vs reward.
     [ "blooddonor" ] = {
         name = "Donate Blood.",
