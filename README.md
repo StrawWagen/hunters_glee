@@ -99,6 +99,7 @@ Items appear in categories based on their first matching tag:
 |-----|----------|------------|
 | `ITEMS` | Items | Alive players |
 | `INNATE` | Innate | Alive players |
+| `BARGAINS` | Bargains | Alive players |
 | `DEADSACRIFICES` | Sacrifices | Dead players |
 | `DEADGIFTS` | Gifts | Dead players |
 | `BANK` | Bank | All players |
