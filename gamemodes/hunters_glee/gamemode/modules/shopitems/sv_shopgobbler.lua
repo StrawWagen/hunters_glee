@@ -103,7 +103,20 @@ function GM:GobbleShopItems( items )
     for name, data in pairs( items ) do
         self.shopItems[ name ] = data
 
+        -- Process the item if called after setup (for dev testing)
+        if self.GobbledShopItems then
+            self:AddShopItem( name, data )
+
+        end
+
     end
+
+    -- Ditto
+    if self.GobbledShopItems then
+        hook.Run( "glee_post_shopitemgobble" )
+
+    end
+
 end
 
 function GM:SetupShopItem() -- todo, finish
