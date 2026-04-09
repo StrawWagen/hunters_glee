@@ -112,11 +112,6 @@ function GM:GetShopItemData( identifier )
 
 end
 
-local white = Vector( 255,255,255 )
-local red = Color( 220,0,0 )
-local yellow = Color( 255,255,0 )
-local sadGreen = Color( 106,190,9 )
-
 -- take cost number
 -- return string that accurately describes what its gonna do
 -- also return color
@@ -124,10 +119,11 @@ local sadGreen = Color( 106,190,9 )
 -- cost 50 would be '-50' and depending on whether player can afford, green or red.
 -- it reverses the number i know, it's stupid
 function GM:translatedShopItemCost( purchaser, cost, compareType, identifier )
+    local standards = GAMEMODE.shopStandards
 
-    if not cost then return "", white end
+    if not cost then return "", standards.shopCostNormal end
 
-    local color = white
+    local color = standards.shopCostNormal
     local preTextSymbol = ""
     local theCost = ""
     local compareVal
@@ -141,7 +137,7 @@ function GM:translatedShopItemCost( purchaser, cost, compareType, identifier )
 
     -- add difference between "not enough money" and "you bought this already"
     if identifier and purchaser and purchaser.shopItemCooldowns[ identifier ] == math.huge then
-        return "---", white
+        return "---", standards.shopCostNormal
 
     end
 
@@ -152,21 +148,21 @@ function GM:translatedShopItemCost( purchaser, cost, compareType, identifier )
         canAfford = ( compareVal + -cost ) >= 0
 
         if not canAfford then
-            color = red
+            color = standards.shopCostTooPoor
 
         else
-            color = sadGreen
+            color = standards.shopCostCanBuy
 
         end
 
     elseif cost < 0 then
         preTextSymbol = "+"
         theCost = tostring( math.abs( cost ) )
-        color = yellow
+        color = standards.shopCostGivesMoney
 
     elseif cost == 0 then
         theCost = "N/A"
-        color = white
+        color = standards.shopCostNormal
 
     end
 
