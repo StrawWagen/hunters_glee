@@ -114,6 +114,9 @@ function termHuntOpenTheShop()
     shopFrame:DockPadding( 0, shopFrame.titleBarSize, 0, 0 ) -- the little lighter bar at the top
     shopFrame:ShowCloseButton( false )
 
+    net.Start( "glee_loadingtheshop" )
+    net.SendToServer()
+
 
     local clientsMenuKey = input.LookupBinding( "+menu" )
     if clientsMenuKey then
