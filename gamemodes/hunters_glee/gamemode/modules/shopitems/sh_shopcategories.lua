@@ -17,7 +17,11 @@ function GM:SetupShopCategories()
         BARGAINS = { -- passive, innate downgrades that give money
             name = "Bargains",
             order = 3,
-            shCanShowInShop = shopHelpers.aliveCheck
+            shCanShowInShop = function( purchaser )
+                if not shopHelpers.aliveCheck( purchaser ) then return false end
+
+                return GM:GetOfferedBargainCount( purchaser ) > 0
+            end,
         },
         HORRORS = { -- things that escaped players can buy, the strongest items in the game
             name = "Horrors",

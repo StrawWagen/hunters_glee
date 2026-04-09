@@ -1,5 +1,217 @@
 
 local shopHelpers = GAMEMODE.shopHelpers
+local cvarBase = "huntersglee_bargain_"
+local cvarFlags = FCVAR_ARCHIVE + FCVAR_REPLICATED
+
+local cvarOfferMin = CreateConVar( cvarBase .. "offer_min", -1, cvarFlags, "The minimum amount of bargains to offer to each player per round. -1 to always give max amount.", -1, 256 )
+local cvarOfferMax = CreateConVar( cvarBase .. "offer_max", 5, cvarFlags, "The maximum amount of bargains to offer to each player per round.", 0, 256 )
+local cvarPurchaseMax = CreateConVar( cvarBase .. "purchase_max", 3, cvarFlags, "The maximum number of bargains each player can purchase per round.", 0, 256 )
+local cvarSameForEveryone = CreateConVar( cvarBase .. "same_for_everyone", 0, cvarFlags, "Should everyone be given the same bargain offers per round?", 0, 1 )
+
+
+glee_BargainOffers = glee_BargainOffers or {} -- { [shopItemName] = true, __count = count, }
+glee_BargainOffersPerPly = glee_BargainOffersPerPly or {} -- [ply] = { [shopItemName] = true, __count = count, }
+glee_BargainPurchaseCounts = glee_BargainPurchaseCounts or {} -- [ply] = bargainPurchaseCountThisRound
+
+
+-- returns offerTbl, calledReset
+local function getOfferTbl( ply )
+    if not ply then return glee_BargainOffers end
+
+    local offerTbl = glee_BargainOffersPerPly[ ply ]
+    if not offerTbl then
+        offerTbl = { __count = 0, }
+        glee_BargainOffersPerPly[ ply ] = offerTbl
+
+        -- If ply needed a new table, then generate it now.
+        if SERVER then
+            GAMEMODE:ResetBargainOffers( ply )
+            return offerTbl, true
+
+        end
+
+    end
+
+    return offerTbl
+
+end
+
+-- Accounts for cvarSameForEveryone
+local function getEffectiveOfferTbl( ply )
+    return getOfferTbl( ( not cvarSameForEveryone:GetBool() ) and ply ) -- one-line so luajit runs faster
+
+end
+
+
+function GAMEMODE:GetOfferedBargainCount( ply )
+    return getEffectiveOfferTbl( ply ).__count
+
+end
+
+function GAMEMODE:IsBargainOffered( itemID, ply )
+    return getEffectiveOfferTbl( ply )[ itemID ] or false
+
+end
+
+function GAMEMODE:GetBargainPurchaseCount( ply )
+    return glee_BargainPurchaseCounts[ ply ] or 0
+
+end
+
+function GAMEMODE:GetBargainPurchasesLeft( ply )
+    return cvarPurchaseMax:GetInt() - self:GetBargainPurchaseCount( ply )
+
+end
+
+
+-- Bargain offer reset
+if SERVER then
+    util.AddNetworkString( "glee_bargainoffers" )
+
+    local function netWriteOfferTbl( tbl )
+        local count = tbl and tbl.__count or 0
+
+        net.WriteUInt( count, 8 )
+        if count == 0 then return end
+
+        for identifier in pairs( tbl ) do
+            if identifier ~= "__count" then
+                net.WriteString( identifier )
+
+            end
+
+        end
+
+    end
+
+    local function networkOffers( ply )
+        net.Start( "glee_bargainoffers" )
+        netWriteOfferTbl( glee_BargainOffers ) -- Write global offerings
+        netWriteOfferTbl( glee_BargainOffersPerPly[ ply or false ] ) -- Write the player's offerings, or tell them to wipe it if global
+
+        if ply then
+            net.Send( ply )
+
+        else
+            net.Broadcast()
+
+        end
+
+    end
+
+
+    function GAMEMODE:ResetBargainOffers( ply )
+        if ply and ( not IsValid( ply ) or not ply:IsPlayer() ) then return end
+
+        local offerTbl, calledReset = getOfferTbl( ply )
+        if calledReset then return end -- Don't double-reset on players.
+
+        if not ply then
+            -- If resetting globally, wipe per-ply table so they can auto-generate later.
+            table.Empty( glee_BargainOffersPerPly )
+
+        end
+
+        table.Empty( offerTbl ) -- Wipe old offerings
+        offerTbl.__count = 0 -- Default
+
+        local offerMax = cvarOfferMax:GetInt()
+        if offerMax <= 0 then -- No offerings allowed!
+            networkOffers( ply )
+            return
+
+        end
+
+        local offerMin = cvarOfferMin:GetInt()
+        if offerMin <= -1 then offerMin = offerMax end
+
+        -- Gather available items
+        local items = shopHelpers.getItemsInCategory( "BARGAINS" )
+        local offersLeft = math.min( math.random( offerMin, offerMax ), #items )
+        offerTbl.__count = offersLeft -- Store for faster access. Technically means we can't allow an item id of "__count", but that's not happening!
+
+        -- Select randomly
+        while offersLeft > 0 do
+            local item = table.remove( items, math.random( 1, #items ) )
+            offerTbl[ item.identifier ] = true
+            offersLeft = offersLeft - 1
+        end
+
+        networkOffers( ply )
+
+    end
+
+
+    -- Network to late joins. Should be pointless when players have different offers, but what if ply's offers generate before ply loads in?
+    hook.Add( "glee_full_load", "glee_shopitems_bargainoffers", networkOffers )
+
+    hook.Add( "huntersglee_round_into_inactive", "glee_shopitems_bargainoffers", function()
+        -- Don't need to manually reset on all players here since the per-ply table gets wiped, and will generate as players open the shop.
+        GAMEMODE:ResetBargainOffers()
+
+    end )
+
+    hook.Add( "glee_loadingtheshop", "glee_shopitems_bargainoffers", function( ply )
+        getOfferTbl( ply ) -- Access offers, to force them to generate if they haven't yet.
+
+    end )
+
+    hook.Add( "glee_PostShopItemPurchased", "glee_shopitems_bargainoffers", function( ply, _itemID, itemData )
+        if not itemData.tags.BARGAINS then return end
+
+        glee_BargainPurchaseCounts[ ply ] = ( glee_BargainPurchaseCounts[ ply ] or 0 ) + 1
+
+    end )
+
+else -- CLIENT
+
+
+    local function netReadOfferTbl( tbl )
+        local count = net.ReadUInt( 8 )
+        table.Empty( tbl )
+        tbl.__count = count
+
+        for _ = 1, count do
+            tbl[ net.ReadString() ] = true
+
+        end
+
+    end
+
+
+    hook.Add( "glee_cl_confirmedpurchase", "glee_shopitems_bargainoffers", function( ply, itemID )
+        local itemData = GAMEMODE:GetShopItemData( itemID )
+        if not itemData then return end
+        if not itemData.tags.BARGAINS then return end
+
+        glee_BargainPurchaseCounts[ ply ] = ( glee_BargainPurchaseCounts[ ply ] or 0 ) + 1
+
+    end )
+
+
+    net.Receive( "glee_bargainoffers", function()
+        netReadOfferTbl( glee_BargainOffers )
+        netReadOfferTbl( getOfferTbl( LocalPlayer() ) )
+
+    end )
+
+end
+
+
+-- Only allow bargains that are on offer and in stock.
+hook.Add( "glee_shop_canshow", "glee_shopitems_bargainoffers", function( ply, itemData )
+    if not itemData.tags.BARGAINS then return end
+    if GAMEMODE:GetBargainPurchasesLeft( ply ) <= 0 then return false, "All bargains are out of stock!" end
+    if not GAMEMODE:IsBargainOffered( itemData.identifier, ply ) then return false, "This bargain is not on offer." end
+
+end )
+
+-- Reset purchase counts during round setup.
+hook.Add( "glee_roundstatechanged", "glee_shopitems_bargainoffers", function( _, newState )
+    if newState ~= GAMEMODE.ROUND_INACTIVE then return end
+    table.Empty( glee_BargainPurchaseCounts )
+
+end )
 
 
 if SERVER then
@@ -405,7 +617,7 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = -90,
-        shPurchaseCheck = { shopHelpers.aliveCheck },
+        shPurchaseCheck = { shopHelpers.aliveCheck, },
         svOnPurchaseFunc = function( ply )
             ply:GiveStatusEffect( "deafness" )
 
@@ -424,7 +636,7 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = -90,
-        shPurchaseCheck = { shopHelpers.aliveCheck },
+        shPurchaseCheck = { shopHelpers.aliveCheck, },
         svOnPurchaseFunc = function( ply )
             ply:GiveStatusEffect( "blindness" )
 
@@ -443,7 +655,7 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = -80,
-        shPurchaseCheck = { shopHelpers.aliveCheck },
+        shPurchaseCheck = { shopHelpers.aliveCheck, },
         svOnPurchaseFunc = function( ply )
             ply:GiveStatusEffect( "high_cholesterol" )
 
@@ -462,7 +674,7 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = -80,
-        shPurchaseCheck = { shopHelpers.aliveCheck },
+        shPurchaseCheck = { shopHelpers.aliveCheck, },
         svOnPurchaseFunc = function( ply )
             ply:GiveStatusEffect( "greasy_hands" )
 
@@ -481,7 +693,7 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = -90,
-        shPurchaseCheck = { shopHelpers.aliveCheck },
+        shPurchaseCheck = { shopHelpers.aliveCheck, },
         svOnPurchaseFunc = function( ply )
             ply:GiveStatusEffect( "bad_knees" )
 
@@ -499,12 +711,12 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = -90,
-        shPurchaseCheck = { shopHelpers.aliveCheck },
+        shPurchaseCheck = { shopHelpers.aliveCheck, },
+        shCanShowInShop = shopHelpers.terminatorInSpawnPool,
         svOnPurchaseFunc = function( ply )
             ply:GiveStatusEffect( "beacon" )
 
         end,
-        shCanShowInShop = shopHelpers.terminatorInSpawnPool,
     },
 }
 
