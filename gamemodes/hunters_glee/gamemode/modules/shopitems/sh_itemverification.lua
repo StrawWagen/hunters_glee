@@ -42,7 +42,8 @@ function GM:getDebugShopItemStructureTable()
             shPurchaseCheck =     "Optional. Function or table of functions checked to see if this is purchasable, ran clientside on every item, every frame when shop is open. ran once serverside when purchased",
             svOnPurchaseFunc =    "Server. What function to run when the item is bought.",
             shCanShowInShop =     "Optional. Function or table of functions checked to decide if this can be seen in the shop. Also prevents purchases.",
-            costDecorative =    "Optional. Fake cost string to display in the shop, or a function which returns a string and color."
+            costDecorative =    "Optional. Fake cost string to display in the shop, or a function which returns a string and color.",
+            unpurchaseableReason = "Optional. Custom denial string to use if the item has the 'unpurchaseable' tag.",
 
             --[[ Auto-generated fields: (for internal use/reference)
             categories = "Auto-generated. A lookup table of this ite'ms tags that match shop categories."

@@ -88,6 +88,7 @@ GAMEMODE:GobbleShopItems( items )
 | `weight` | ❌ | Sort order within category (lower = higher) |
 | `shCanShowInShop` | ❌ | Visibility function: `function(purchaser) -> bool` |
 | `costDecorative` | ❌ | Fake, decorative cost. string or function: `function(purchaser, itemID) -> string, color` |
+| `unpurchaseableReason` | ❌ | If the item has the `"unpurchaseable"` tag, this string can replace the default purchase failure reason. |
 | `identifier` | ❌ | Auto-generated. Same as the item ID used when defining the item |
 
 #### Category Tags
@@ -103,6 +104,13 @@ Items appear in categories based on their first matching tag:
 | `BANK` | Bank | All players |
 
 Additional descriptive tags (e.g., `"Weapon"`, `"Utility"`) don't affect categorization.
+
+Some other tags automatically apply special properties to items:
+
+- `unpurchaseable`
+    - Causes the item to be completely unpurchaseable, but doesn't hide it from the shop.
+    - Good for using a shop slot to display information rather than provide an item.
+    - Adding the `unpurchaseableReason` field to the item will let you override the fail reason string.
 
 #### Shopping Helper Functions
 
