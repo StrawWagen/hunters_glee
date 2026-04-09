@@ -200,12 +200,18 @@ else -- CLIENT
 end
 
 
--- Only allow bargains that are on offer and in stock.
+-- Only show bargains that are on offer.
 hook.Add( "glee_shop_canshow", "glee_shopitems_bargainoffers", function( ply, itemData )
     if not itemData.tags.BARGAINS then return end -- Not a bargain, don't care.
     if itemData.tags.unpurchaseable then return end -- Allow unpurcaseable to be seen always. They don't need offers and can't be bought.
-    if GAMEMODE:GetBargainPurchasesLeft( ply ) <= 0 then return false, "All bargains are out of stock!" end
     if not GAMEMODE:IsBargainOffered( itemData.identifier, ply ) then return false, "This bargain is not on offer." end
+
+end )
+
+-- Only buy bargains while they are in stock.
+hook.Add( "glee_shop_canpurchase", "glee_shopitems_bargainoffers", function( ply, itemData )
+    if not itemData.tags.BARGAINS then return end -- Not a bargain, don't care.
+    if GAMEMODE:GetBargainPurchasesLeft( ply ) <= 0 then return false, "All bargains are out of stock!" end
 
 end )
 
