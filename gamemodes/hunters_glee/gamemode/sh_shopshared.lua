@@ -101,7 +101,69 @@ elseif CLIENT then
     end, autoComplete, "purchase an item" )
     -- ew ew
 
+
+    -- take cost number
+    -- return string that accurately describes what its gonna do
+    -- also return color
+    -- so cost -50 would be '+50' and yellow because it would give players 50 score for buying
+    -- cost 50 would be '-50' and depending on whether player can afford, green or red.
+    -- it reverses the number i know, it's stupid
+    function GM:translatedShopItemCost( purchaser, cost, compareType, identifier )
+        local standards = GAMEMODE.shopStandards
+
+        if not cost then return "", standards.shopCostNormal end
+
+        local color = standards.shopCostNormal
+        local preTextSymbol = ""
+        local theCost = ""
+        local compareVal
+        if compareType == "score" then
+            compareVal = purchaser:GetScore()
+
+        elseif compareType == "skull" then
+            compareVal = purchaser:GetSkulls()
+
+        end
+
+        -- add difference between "not enough money" and "you bought this already"
+        if identifier and purchaser and purchaser.shopItemCooldowns[ identifier ] == math.huge then
+            return "---", standards.shopCostNormal
+
+        end
+
+        if cost > 0 then
+            preTextSymbol = "-"
+            theCost = tostring( math.abs( cost ) )
+
+            canAfford = ( compareVal + -cost ) >= 0
+
+            if not canAfford then
+                color = standards.shopCostTooPoor
+
+            else
+                color = standards.shopCostCanBuy
+
+            end
+
+        elseif cost < 0 then
+            preTextSymbol = "+"
+            theCost = tostring( math.abs( cost ) )
+            color = standards.shopCostGivesMoney
+
+        elseif cost == 0 then
+            theCost = "N/A"
+            color = standards.shopCostNormal
+
+        end
+
+        local outString = preTextSymbol .. theCost
+
+        return outString, color
+
+    end
+
 end
+
 
 -- all below is shared
 
@@ -109,66 +171,6 @@ function GM:GetShopItemData( identifier )
     local dat = GAMEMODE.shopItems[ identifier ]
     if not istable( dat ) then return end
     return dat
-
-end
-
--- take cost number
--- return string that accurately describes what its gonna do
--- also return color
--- so cost -50 would be '+50' and yellow because it would give players 50 score for buying
--- cost 50 would be '-50' and depending on whether player can afford, green or red.
--- it reverses the number i know, it's stupid
-function GM:translatedShopItemCost( purchaser, cost, compareType, identifier )
-    local standards = GAMEMODE.shopStandards
-
-    if not cost then return "", standards.shopCostNormal end
-
-    local color = standards.shopCostNormal
-    local preTextSymbol = ""
-    local theCost = ""
-    local compareVal
-    if compareType == "score" then
-        compareVal = purchaser:GetScore()
-
-    elseif compareType == "skull" then
-        compareVal = purchaser:GetSkulls()
-
-    end
-
-    -- add difference between "not enough money" and "you bought this already"
-    if identifier and purchaser and purchaser.shopItemCooldowns[ identifier ] == math.huge then
-        return "---", standards.shopCostNormal
-
-    end
-
-    if cost > 0 then
-        preTextSymbol = "-"
-        theCost = tostring( math.abs( cost ) )
-
-        canAfford = ( compareVal + -cost ) >= 0
-
-        if not canAfford then
-            color = standards.shopCostTooPoor
-
-        else
-            color = standards.shopCostCanBuy
-
-        end
-
-    elseif cost < 0 then
-        preTextSymbol = "+"
-        theCost = tostring( math.abs( cost ) )
-        color = standards.shopCostGivesMoney
-
-    elseif cost == 0 then
-        theCost = "N/A"
-        color = standards.shopCostNormal
-
-    end
-
-    local outString = preTextSymbol .. theCost
-
-    return outString, color
 
 end
 
