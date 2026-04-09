@@ -1128,7 +1128,15 @@ function termHuntOpenTheShop()
                         -- "decorative" cost that isn't applied when purchased
                         local decorativeCost = itemData.costDecorative
                         if decorativeCost then
-                            self.costString = itemData.costDecorative
+                            if isfunction( decorativeCost ) then
+                                local str, color = decorativeCost( ply, identifierPaint )
+                                self.costString = str or self.costString
+                                self.costColor = color or self.costColor
+
+                            else
+                                self.costString = decorativeCost
+
+                            end
 
                         elseif itemData.simpleCostDisplay then
                             self.costString = tostring( cost )

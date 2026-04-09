@@ -87,6 +87,7 @@ GAMEMODE:GobbleShopItems( items )
 | `cooldown` | ❌ | Seconds between purchases (`math.huge` = once per round) |
 | `weight` | ❌ | Sort order within category (lower = higher) |
 | `shCanShowInShop` | ❌ | Visibility function: `function(purchaser) -> bool` |
+| `costDecorative` | ❌ | Fake, decorative cost. string or function: `function(purchaser, itemID) -> string, color` |
 | `identifier` | ❌ | Auto-generated. Same as the item ID used when defining the item |
 
 #### Category Tags
