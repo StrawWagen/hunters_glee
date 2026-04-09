@@ -743,7 +743,7 @@ function termHuntOpenTheShop()
                 local myCategoryPanel = shopCategoryPanels[ category ]
                 if not myCategoryPanel then ErrorNoHaltWithStack( "tried to add item " .. identifier .. " to invalid category, " .. category ) continue end
 
-                if itemData.shCanShowInShop and not itemData.shCanShowInShop( ply ) then continue end
+                if not GAMEMODE:canShowInShop( ply, identifier ) then continue end
 
                 local shopItem = vgui.Create( "DButton", myCategoryPanel, shopPanelName( identifier ) )
 

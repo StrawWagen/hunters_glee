@@ -87,6 +87,7 @@ GAMEMODE:GobbleShopItems( items )
 | `cooldown` | ❌ | Seconds between purchases (`math.huge` = once per round) |
 | `weight` | ❌ | Sort order within category (lower = higher) |
 | `shCanShowInShop` | ❌ | Visibility function: `function(purchaser) -> bool` |
+| `identifier` | ❌ | Auto-generated. Same as the item ID used when defining the item |
 
 #### Category Tags
 
@@ -118,6 +119,28 @@ shopHelpers.purchaseWeapon( purchaser, {
     confirmSoundWeight = 1, -- Gun cock sound intensity
 } )
 ```
+
+### Shopping Hooks
+
+Additional ways to control access to shop items.
+
+- `allow`, `failReason` = `glee_shop_canshow`( `ply`, `itemData` )
+  - Return `false`, `failReason` to block the item from showing.
+  - Behaves similarly to `shCanShowInShop`, but called on a global scale and with reference to the item.
+- `allow`, `failReason` = `glee_shop_canpurchase`( `ply`, `itemData` )
+  - Return `false`, `failReason` to block the item from being purchased.
+  - Behaves similarly to `shPurchaseCheck`, but called on a global scale and with reference to the item.
+
+Example:
+
+```lua
+hook.Add( "glee_shop_canshow", "i_really_hate_debuffs", function( ply, itemData )
+    if itemData.tags.Debuff then return false, "Debuffs are LAME" end
+
+end )
+
+```
+
 
 ---
 
