@@ -149,3 +149,18 @@ function shopHelpers.multiplePeopleAndTerm()
     return shopHelpers.hasMultiplePeople() and shopHelpers.terminatorInSpawnPool()
 
 end
+
+-- Does NOT sort by weight.
+function shopHelpers.getItemsInCategory( category )
+    local items = {}
+
+    for _, itemData in pairs( GAMEMODE.shopItems ) do
+        if itemData.categories and itemData.categories[category] then
+            table.insert( items, itemData )
+
+        end
+
+    end
+
+    return items
+end
