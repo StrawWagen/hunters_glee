@@ -41,7 +41,14 @@ function GM:getDebugShopItemStructureTable()
             weight =            "Optional. Where to order this relative to everything else in our category, accepts negative values.",
             shPurchaseCheck =     "Optional. Function or table of functions checked to see if this is purchasable, ran clientside on every item, every frame when shop is open. ran once serverside when purchased",
             svOnPurchaseFunc =    "Server. What function to run when the item is bought.",
-            shCanShowInShop =     "Optional. Can this be seen in the shop? also prevents purchases. Accepts a single function.",
+            shCanShowInShop =     "Optional. Function or table of functions checked to decide if this can be seen in the shop. Also prevents purchases.",
+            costDecorative =    "Optional. Fake cost string to display in the shop, or a function which returns a string and color.",
+            unpurchaseableReason = "Optional. Custom denial string to use if the item has the 'unpurchaseable' tag.",
+
+            --[[ Auto-generated fields: (for internal use/reference)
+            categories = "Auto-generated. A lookup table of this ite'ms tags that match shop categories."
+            identifier = "Auto-generated. The item's unique identifier.",
+            --]]
         }
     }
     return theItemTable, theDescriptorTable
@@ -64,7 +71,7 @@ function GM:AddShopItem( shopItemIdentifier, shopItemData )
     if shopItemData.category or shopItemData.categories then addShopFail( shopItemIdentifier, "do not set .category or .categories, categories are determined by .tags" ) return end
     if not shopItemData.purchaseTimes or table.Count( shopItemData.purchaseTimes ) <= 0 then addShopFail( shopItemIdentifier, ".purchaseTimes are not specified" ) return end
     if not shopItemData.svOnPurchaseFunc then addShopFail( shopItemIdentifier, "invalid .svOnPurchaseFunc" ) return end
-    if shopItemData.shCanShowInShop and not isfunction( shopItemData.shCanShowInShop ) then addShopFail( shopItemIdentifier, "invalid .shCanShowInShop" ) return end
+    if shopItemData.shCanShowInShop and not isfunction( shopItemData.shCanShowInShop ) and not istable( shopItemData.shCanShowInShop ) then addShopFail( shopItemIdentifier, "invalid .shCanShowInShop" ) return end
 
     GAMEMODE:ConvertItemTags( shopItemData )
 
@@ -72,6 +79,7 @@ function GM:AddShopItem( shopItemIdentifier, shopItemData )
     if not foundAHome then addShopFail( shopItemIdentifier, "wasnt put in a category!!, check sh_shopcategories.lua for full category list" ) return end
 
     GAMEMODE.shopItems[shopItemIdentifier] = shopItemData
+    shopItemData.identifier = shopItemIdentifier -- Replicate identifier for easier access
 
     hook.Run( "glee_shopitemadded", shopItemIdentifier, shopItemData )
 
@@ -150,17 +158,59 @@ local REASON_SKULLPOOR = "You need more skulls to buy this."
 local REASON_SKULLPOOR_1SKULL = "You need a skull to buy this."
 local REASON_SKULLDEBT = "You can't buy this, You're in Skull debt."
 
+local function runChecks( ply, itemData, hookName, checkFuncs, funcName )
+    local itemID = itemData.identifier
+
+    -- Run hook
+    local success, returned, reason = xpcall( hook.Run, errorCatchingMitt, hookName, ply, itemData )
+    if not success then
+        GAMEMODE:invalidateShopItem( itemID )
+        print( "GLEE: !!!!!!!!!! " .. hookName .. " errored for " .. itemID .. "!!!!!!!!!!!" )
+        return false, REASON_ERROR
+
+    end
+    if returned == false then return false, reason end -- Blocked
+
+    -- Run checker funcs
+    if isfunction( checkFuncs ) then
+        checkFuncs = { checkFuncs }
+
+    end
+    if istable( checkFuncs ) then
+        for _, checkFunc in ipairs( checkFuncs ) do
+            success, returned, reason = xpcall( checkFunc, errorCatchingMitt, ply )
+            if not success then
+                GAMEMODE:invalidateShopItem( itemID )
+                print( "GLEE: !!!!!!!!!! " .. itemID .. "'s " .. funcName .. " function errored!!!!!!!!!!!" )
+                return false, REASON_ERROR
+
+            else
+                if returned == true then continue end
+                return false, reason
+
+            end
+
+        end
+
+    end
+
+    return true
+
+end
+
+
 -- shared!
 
-function GM:canPurchase( ply, toPurchase )
-    if not toPurchase or toPurchase == "" then return end
-    local dat = GAMEMODE:GetShopItemData( toPurchase )
-    if not dat then return false, REASON_INVALID end
+function GM:canShowInShop( ply, itemID )
+    if not itemID or itemID == "" then return false, REASON_INVALID end
+    local itemData = GAMEMODE:GetShopItemData( itemID )
+    if not itemData then return false, REASON_INVALID end
 
+    -- Check categories first
     local wasValidCategory = false
     local lastNotPurchasableReason = REASON_INVALIDCATEGORY
 
-    for categoryIdentifier, _ in pairs( dat.categories ) do
+    for categoryIdentifier, _ in pairs( itemData.categories ) do
         local purchasableCategory, reason = self:CategoryCanShow( categoryIdentifier, ply )
         if purchasableCategory then
             wasValidCategory = true
@@ -171,36 +221,28 @@ function GM:canPurchase( ply, toPurchase )
         end
     end
 
-    if not wasValidCategory then return nil, lastNotPurchasableReason end
+    if not wasValidCategory then return false, lastNotPurchasableReason end
 
-    -- do this first
-    local checkFunc = dat.shPurchaseCheck
-    if isfunction( checkFunc ) then
-        checkFunc = { checkFunc }
+    return runChecks( ply, itemData, "glee_shop_canshow", itemData.shCanShowInShop, "shCanShowInShop" )
+end
 
-    end
-    if istable( checkFunc ) then
-        for _, theCurrentCheckFunc in ipairs( checkFunc ) do
-            local noErrors, returned, reason = xpcall( theCurrentCheckFunc, errorCatchingMitt, ply )
-            if noErrors == false then
-                GAMEMODE:invalidateShopItem( toPurchase )
-                print( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s shPurchaseCheck function errored!!!!!!!!!!!" )
-                return nil, REASON_ERROR
+function GM:canPurchase( ply, itemID )
+    if not itemID or itemID == "" then return end
+    local itemData = GAMEMODE:GetShopItemData( itemID )
+    if not itemData then return false, REASON_INVALID end
 
-            else
-                if returned == true then continue end
-                return nil, reason
+    local nextPurchase = ply.shopItemCooldowns[ itemID ] or -20000
+    if nextPurchase == math.huge then return false, "You've already bought this." end
 
-            end
-        end
-    end
+    local allowed, failReason = self:canShowInShop( ply, itemID )
+    if not allowed then return false, failReason end
 
-    local nextPurchase = ply.shopItemCooldowns[toPurchase] or -20000
-    if nextPurchase == math.huge then return nil, "You've already bought this." end
+    allowed, failReason = runChecks( ply, itemData, "glee_shop_canpurchase", itemData.shPurchaseCheck, "shPurchaseCheck" )
+    if not allowed then return false, failReason end
 
     local score = ply:GetScore()
-    local cost = GAMEMODE:shopItemCost( toPurchase, ply )
-    local canGoInDebt = dat.canGoInDebt
+    local cost = GAMEMODE:shopItemCost( itemID, ply )
+    local canGoInDebt = itemData.canGoInDebt
 
     -- account for negative cost
     local costsTooMuch = score < cost and not canGoInDebt
@@ -211,18 +253,18 @@ function GM:canPurchase( ply, toPurchase )
             cannotBuyReason = REASON_DEBT
 
         end
-        return nil, cannotBuyReason
+        return false, cannotBuyReason
 
     end
 
-    local skullCost = GAMEMODE:shopItemSkullCost( toPurchase, ply )
+    local skullCost = GAMEMODE:shopItemSkullCost( itemID, ply )
     if skullCost then
         local skulls = ply:GetSkulls()
         local skullCostsTooMuch = skulls < skullCost and not canGoInDebt
         if skullCost >= 0 and skullCostsTooMuch and skullCost ~= 0 then
             local difference = skullCost - skulls
             if difference == 1 then
-                return nil, REASON_SKULLPOOR_1SKULL
+                return false, REASON_SKULLPOOR_1SKULL
 
             end
             local cannotBuySkullsReason = REASON_SKULLPOOR
@@ -230,7 +272,7 @@ function GM:canPurchase( ply, toPurchase )
                 cannotBuySkullsReason = REASON_SKULLDEBT
 
             end
-            return nil, cannotBuySkullsReason
+            return false, cannotBuySkullsReason
 
         end
     end
@@ -238,18 +280,18 @@ function GM:canPurchase( ply, toPurchase )
     if nextPurchase > CurTime() then
         local nextPurchasePresentable = math.Round( math.abs( nextPurchase - CurTime() ), 1 )
         local cooldownReason = "Cooldown, Purchasable in " .. tostring( nextPurchasePresentable )
-        return nil, cooldownReason
+        return false, cooldownReason
 
     end
 
     local hookResult, notPurchasableReason = hook.Run( "glee_blockpurchaseitem", ply, self.itemIdentifier )
 
-    if hookResult then return nil, notPurchasableReason end
+    if hookResult then return false, notPurchasableReason end
 
     local currState = GAMEMODE:RoundState()
-    local times = dat.purchaseTimes
+    local times = itemData.purchaseTimes
     local goodTime = table.HasValue( times, currState )
-    if not goodTime then return nil, badTimeReasonTranslation( currState, times ) end
+    if not goodTime then return false, badTimeReasonTranslation( currState, times ) end
 
     return true, ""
 

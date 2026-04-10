@@ -199,7 +199,10 @@ function GAMEMODE:RoundState()
 end
 
 net.Receive( "glee_roundstate", function()
-    GAMEMODE.currRoundState = net.ReadInt( 8 )
+    local currState = GAMEMODE.currRoundState
+    local newState = net.ReadInt( 8 )
+    GAMEMODE.currRoundState = newState
+    hook.Run( "glee_roundstatechanged", currState, newState )
 
 end )
 

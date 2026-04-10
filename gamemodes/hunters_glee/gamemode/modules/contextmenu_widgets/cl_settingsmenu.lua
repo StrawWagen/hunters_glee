@@ -79,6 +79,12 @@ local settingsCategories = {
                 prettyName = "Gleetings message?",
                 desc = "Get a chat print when someone who's never played glee joins?",
             },
+            {
+                cvar = "huntersglee_cl_bargains_category",
+                type = "check",
+                prettyName = "Separate shop category for bargains",
+                desc = "Show bargain items in their own category?",
+            },
         }
     },
     {

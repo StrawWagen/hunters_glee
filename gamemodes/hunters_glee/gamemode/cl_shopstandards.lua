@@ -183,6 +183,11 @@ GAMEMODE.shopStandards.white = Color( 255, 255, 255 )
 GAMEMODE.shopStandards.red = Color( 255, 0, 0 )
 GAMEMODE.shopStandards.whiteFaded = Color( 255, 255, 255, 230 )
 
+GAMEMODE.shopStandards.shopCostNormal = Vector( 255, 255, 255 )
+GAMEMODE.shopStandards.shopCostTooPoor = Color( 220, 0, 0 )
+GAMEMODE.shopStandards.shopCostGivesMoney = Color( 255, 255, 0 )
+GAMEMODE.shopStandards.shopCostCanBuy = Color( 106, 190, 9 )
+
 GAMEMODE.shopStandards.backgroundColor = Color( 37, 37, 37, 240 )
 GAMEMODE.shopStandards.invisibleColor = Color( 0, 0, 0, 0 )
 GAMEMODE.shopStandards.shopItemColor = Color( 73, 73, 73, 255 )

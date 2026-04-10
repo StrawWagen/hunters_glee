@@ -112,7 +112,14 @@ end )
 -- ran inside each shopitem folder
 function GM:GobbleShopItems( items )
     for name, data in pairs( items ) do
-        self.shopItems[name] = data
+        self.shopItems[ name ] = data
+    end
+
+    -- Alert, should only happen if something misuses the shop gobbler or if files are being re-run for dev testing.
+    if self.GobbledShopItems then
+        print( "GLEE: !!!!!!!!!! Gobbled shop items late, you must run gmod_admin_cleanup to apply the changes !!!!!!!!!!!" )
+        -- Calling GM:ShopInitialThink() in luapad also works!
 
     end
+
 end

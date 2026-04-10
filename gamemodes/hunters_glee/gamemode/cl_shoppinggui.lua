@@ -117,6 +117,9 @@ function termHuntOpenTheShop()
     shopFrame:DockPadding( 0, shopFrame.titleBarSize, 0, 0 ) -- the little lighter bar at the top
     shopFrame:ShowCloseButton( false )
 
+    net.Start( "glee_loadingtheshop" )
+    net.SendToServer()
+
 
     local clientsMenuKey = input.LookupBinding( "+menu" )
     if clientsMenuKey then
@@ -749,7 +752,7 @@ function termHuntOpenTheShop()
                 local myCategoryPanel = shopCategoryPanels[ category ]
                 if not myCategoryPanel then ErrorNoHaltWithStack( "tried to add item " .. identifier .. " to invalid category, " .. category ) continue end
 
-                if itemData.shCanShowInShop and not itemData.shCanShowInShop( ply ) then continue end
+                if not GAMEMODE:canShowInShop( ply, identifier ) then continue end
 
                 local shopItem = vgui.Create( "DButton", myCategoryPanel, shopPanelName( identifier ) )
 
@@ -1134,7 +1137,15 @@ function termHuntOpenTheShop()
                         -- "decorative" cost that isn't applied when purchased
                         local decorativeCost = itemData.costDecorative
                         if decorativeCost then
-                            self.costString = itemData.costDecorative
+                            if isfunction( decorativeCost ) then
+                                local str, color = decorativeCost( ply, identifierPaint )
+                                self.costString = str or self.costString
+                                self.costColor = color or self.costColor
+
+                            else
+                                self.costString = decorativeCost
+
+                            end
 
                         elseif itemData.simpleCostDisplay then
                             self.costString = tostring( cost )

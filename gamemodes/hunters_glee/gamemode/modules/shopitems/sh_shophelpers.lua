@@ -149,3 +149,190 @@ function shopHelpers.multiplePeopleAndTerm()
     return shopHelpers.hasMultiplePeople() and shopHelpers.terminatorInSpawnPool()
 
 end
+
+-- Does NOT sort by weight.
+function shopHelpers.getItemsInCategory( category )
+    local items = {}
+
+    for _, itemData in pairs( GAMEMODE.shopItems ) do
+        if itemData.categories and itemData.categories[category] then
+            table.insert( items, itemData )
+
+        end
+
+    end
+
+    return items
+end
+
+--[[
+    - Self-modifies and returns a list of items after filtering by tags.
+
+    items: table
+        - A sequential list of either item ID strings, or item datas.
+    tags: string or table
+        - The tag(s) to use as a filter.
+        - If a table, can either be sequential or a lookup of string to bool.
+            - A sequential list is preferable.
+            - If a whitelist, items will be allowed if they have ANY of the tags.
+                - If requireAll is true, items instead will need ALL of the tags.
+            - If a blacklist, items will be allowed if they have NONE of the tags.
+    isWhitelist: (optional) bool
+        - If true, will treat tags as a whitelist.
+        - If false, will treat tags as a balcklist.
+        - Defaults to true.
+    requireAll: (optional) bool
+        - If in whitelist mode, this requires items to have ALL the tags to be allowed.
+        - Defaults to false.
+--]]
+function shopHelpers.filterByTag( items, tags, isWhitelist, requireAll )
+    if isstring( tags ) then
+        tags = { tags }
+
+    elseif istable( tags ) and tags[1] == nil then
+        -- Convert lookup into sequential.
+        local oldTags = tags
+        tags = {}
+
+        for tag in pairs( oldTags ) do
+            table.insert( tags, tag )
+
+        end
+
+    end
+
+    if isWhitelist == nil then isWhitelist = true end
+
+    for i = #items, 1, -1 do
+        local item = items[i]
+
+        if isstring( item ) then
+            item = GAMEMODE:GetShopItemData( item )
+            if not item then
+                table.remove( items, i )
+                continue
+
+            end
+
+        end
+
+        local remove = false
+        local hasATag = false
+        local itemTagLookup = item.tags
+
+        for _, tag in ipairs( tags ) do
+            if isWhitelist == not itemTagLookup[ tag ] then -- Whitelist + not found, or blacklist + found
+                if requireAll or not isWhitelist then
+                    remove = true
+                    break
+
+                end
+
+            else
+                hasATag = true
+                if isWhitelist and not requireAll then break end
+
+            end
+
+        end
+
+        if remove or ( isWhitelist and not hasATag ) then
+            table.remove( items, i )
+
+        end
+
+    end
+
+    return items
+
+end
+
+--[[
+    - Adds tags to items, and auto-adjusts their categories if applicable.
+    - Does NOT get replicated to the other realm.
+    - Returns true on success, false if called before the shop catalog has been loaded.
+
+    items: table or string
+        - A single item data, item ID, or a sequential list of item datas or item IDs.
+    tags: table or string
+        - The tag to add, or a sequential list of tags.
+--]]
+function shopHelpers.addTags( items, tags )
+    if not GM.GobbledShopItems then return false end
+
+    if isstring( items ) or items.desc then
+        items = { items }
+
+    end
+
+    if isstring( tags ) then
+        tags = { tags }
+
+    end
+
+    for _, item in ipairs( items ) do
+        if isstring( item ) then
+            item = GAMEMODE:GetShopItemData( item )
+            if not item then continue end
+
+        end
+
+        local itemTags = item.tags
+
+        for _, tag in ipairs( tags ) do
+            itemTags[ tag ] = true
+
+        end
+
+        GM:PutItemInProperCategories( item )
+
+    end
+
+    return true
+
+end
+
+--[[
+    - Removes tags from items, and auto-adjusts their categories if applicable.
+    - Does NOT get replicated to the other realm.
+    - Returns true on success, false if called before the shop catalog has been loaded.
+
+    items: table or string
+        - A single item data, item ID, or a sequential list of item datas or item IDs.
+    tags: table or string
+        - The tag to remove, or a sequential list of tags.
+--]]
+function shopHelpers.removeTags( items, tags )
+    if not GM.GobbledShopItems then return false end
+
+    if isstring( items ) or items.desc then
+        items = { items }
+
+    end
+
+    if isstring( tags ) then
+        tags = { tags }
+
+    end
+
+    for _, item in ipairs( items ) do
+        if isstring( item ) then
+            item = GAMEMODE:GetShopItemData( item )
+            if not item then continue end
+
+        end
+
+        local itemTags = item.tags
+        local itemCategories = item.categories
+
+        for _, tag in ipairs( tags ) do
+            itemTags[ tag ] = nil
+            itemCategories[ tag ] = nil
+
+        end
+
+    end
+
+    return true
+
+end

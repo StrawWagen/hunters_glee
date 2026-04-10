@@ -3,6 +3,8 @@ local nextRecieve = 0
 local GM = GAMEMODE or GM
 
 function GM:ShopInitialThink()
+    self.GobbledShopItems = false
+
     self:SetupShopCategories()
 
     self.invalidShopItems = {}
@@ -36,7 +38,10 @@ net.Receive( "glee_gobbledirectories", function()
         end
     end
 
+    GAMEMODE.GobbledShopItems = true
+
     print( "GLEE: CL Gobbled " .. GAMEMODE.ItemGobbleCount .. " shop items..." )
+    hook.Run( "glee_post_shopitemgobble" )
 
 end )
 
@@ -57,4 +62,12 @@ function GM:GobbleShopItems( items )
             end
         end
     end
+
+    -- Alert, should only happen if something misuses the shop gobbler or if files are being re-run for dev testing.
+    if self.GobbledShopItems then
+        print( "GLEE: !!!!!!!!!! Gobbled shop items late, you must run gmod_admin_cleanup to apply the changes !!!!!!!!!!!" )
+        -- Calling GM:ShopInitialThink() in luapad also works!
+
+    end
+
 end
