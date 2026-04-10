@@ -660,6 +660,7 @@ function GM:anyAreCloserThan( positions, checkPosition, closerThanDistance, zTol
     end
 end
 
+-- speak in player's chat
 function GM:SpeakAsHuntersGlee( msg )
     PrintMessage( HUD_PRINTTALK, "HUNTER'S GLEE: " .. msg )
 

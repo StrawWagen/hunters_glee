@@ -303,7 +303,19 @@ if SERVER then
 
             owner.AttackConfirmed = function( enemy, attacker ) -- this is called inside term shooting_handler task
                 if not attacker or not owner then return end
-                if GAMEMODE.roundExtraData.witnessed == true then return end
+                local firstWitnessing
+                local lastWitnessing
+                local witnessable
+                if not GAMEMODE.roundExtraData.firstWitnessed then
+                    witnessable = true -- first death is witnessable
+                    firstWitnessing = true
+                    
+                elseif not GAMEMODE.roundExtraData.lastWitnessed and #GAMEMODE:getAlivePlayers() <= 1 then
+                    witnessable = true -- last death witnessable
+                    lastWitnessing = true
+
+                end
+                if not witnessable then return end
                 if enemy ~= owner then return end
                 if not terminator_Extras.PosCanSee( attacker:GetShootPos(), owner:GetShootPos(), MASK_SOLID_BRUSHONLY ) then return end
 
@@ -376,8 +388,16 @@ if SERVER then
                 -- dont fire early!
                 attacker:BlockWeaponFiringUntil( CurTime() + 0.39 )
 
-                -- ONE witness per round
-                GAMEMODE.roundExtraData.witnessed = true
+                -- two witnesses per round, one with first player to be attacked
+                -- one with last player to be attacked
+                if firstWitnessing then
+                    GAMEMODE.roundExtraData.firstWitnessed = true
+
+                end
+                if lastWitnessing then
+                    GAMEMODE.roundExtraData.lastWitnessed = true
+
+                end
 
                 -- ookay effects time
 
@@ -1636,7 +1656,7 @@ local items = {
     -- this is to give the noobs in a lobby a huge score boost, also it's cool
     [ "witnessme" ] = {
         name = "Witness Me.",
-        desc = "You die instantly to hunters if you have any witnesses.\nDead players can bear witness\nGain 250 score per witness.\nOnly happens once per round.",
+        desc = "You die instantly to hunters if you have any witnesses.\nDead players can bear witness\nGain 250 score per witness.\nOnly happens twice per round.",
         shCost = 30,
         markup = 2,
         cooldown = math.huge,
