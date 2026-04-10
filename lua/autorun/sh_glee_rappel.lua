@@ -23,7 +23,7 @@ glee_RappelSettings = {
     shouldSnap = true,
     heliOffsets = {},
     boardDistance = 45,
-    ropeDropFromVehicleLength = 600,
+    ropeDropFromVehicleLength = 700,
     ropeUseHitboxWidth = 128,
     ropeUseAimTolerance = 100,
 }

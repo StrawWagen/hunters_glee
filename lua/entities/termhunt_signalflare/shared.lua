@@ -223,11 +223,20 @@ if SERVER and terminator_Extras then
         local firstWait = 3
         local secondWait = 10
 
+        local shooter = self.MyOwner
+
         timer.Create( rescueTimerName, 1, heliSpawnDelay, function()
             local repsLeft = timer.RepsLeft( rescueTimerName )
-
             if repsLeft == heliSpawnDelay - firstWait then
-                huntersGlee_AnnounceDramatic( player.GetAll(), 500, secondWait - firstWait, "Rescue has been called..." )
+                local name
+                if shooter.Nick and isstring( shooter:Nick() ) then
+                    name = shooter:Nick()
+
+                else
+                    name = GAMEMODE:GetNameOfBot( shooter )
+
+                end
+                huntersGlee_AnnounceDramatic( player.GetAll(), 500, secondWait - firstWait, name .. "\nHAS CALLED FOR RESCUE!" )
                 if GAMEMODE.IsReallyHuntersGlee then
                     GAMEMODE:SendSolidSound( GAMEMODE:GetASoundTrack( "heliEvac" ) )
                     local _, spawnSet = GAMEMODE:GetSpawnSet()
@@ -239,7 +248,7 @@ if SERVER and terminator_Extras then
             end
 
             if repsLeft == heliSpawnDelay - secondWait then
-                huntersGlee_AnnounceDramatic( player.GetAll(), 501, 10, "Entering the map in T-" .. heliSpawnDelay - secondWait .. " seconds..." )
+                huntersGlee_AnnounceDramatic( player.GetAll(), 501, 10, "Rescue, entering the map in T-" .. heliSpawnDelay - secondWait .. " seconds..." )
 
                 if not diffBump then return end
                 GAMEMODE:BumpRoundDifficulty( diffBump ) -- send the spawner into overdrive
@@ -266,6 +275,12 @@ if SERVER and terminator_Extras then
         end )
 
         hook.Add( "huntersglee_round_leave_limbo", "glee_cancelrescuehelitimer_limboend", function()
+            if not timer.Exists( rescueTimerName ) then return end
+            timer.Remove( rescueTimerName )
+
+        end )
+
+        hook.Add( "huntersglee_round_into_limbo", "glee_cancelrescuehelitimer_limboend", function()
             if not timer.Exists( rescueTimerName ) then return end
             timer.Remove( rescueTimerName )
 
@@ -355,6 +370,7 @@ if SERVER and terminator_Extras then
         seat:DrawShadow( false )
         seat:PhysicsDestroy()
         seat:SetColor( invisCol )
+        seat:SetRenderMode( RENDERMODE_TRANSALPHA )
 
         seat.PhysgunDisabled = true
         seat.DoNotDuplicate = true

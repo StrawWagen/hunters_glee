@@ -998,9 +998,11 @@ hook.Add( "CalcView", "glee_override_spectating_angles", function( ply, _, ang, 
         }
 
         local spectateTr = util.TraceLine( checkTr )
+        -- just use the endpos if something fucked is going on ( evac heli )
+        local cameraOrigin = ( spectateTr.Entity == spectateTarget ) and desiredDrawPos or spectateTr.HitPos
 
         local view = {
-            origin = spectateTr.HitPos,
+            origin = cameraOrigin,
             angles = ang,
             fov = fov,
             drawviewer = false,
