@@ -2,7 +2,7 @@ local GAMEMODE = GAMEMODE or GM
 
 local scrollHintExpired = CreateClientConVar( "cl_huntersgleehint_hasscrolledcategories", 0, true, false )
 local scrolledCount = 0
-local scrollCountToStopPermanently = 100
+local scrollCountToStopPermanently = 5
 
 local glee_sizeScaled = glee_sizeScaled
 
