@@ -246,3 +246,93 @@ function shopHelpers.filterByTag( items, tags, isWhitelist, requireAll )
     return items
 
 end
+
+--[[
+    - Adds tags to items, and auto-adjusts their categories if applicable.
+    - Does NOT get replicated to the other realm.
+    - Returns true on success, false if called before the shop catalog has been loaded.
+
+    items: table or string
+        - A single item data, item ID, or a sequential list of item datas or item IDs.
+    tags: table or string
+        - The tag to add, or a sequential list of tags.
+--]]
+function shopHelpers.addTags( items, tags )
+    if not GM.GobbledShopItems then return false end
+
+    if isstring( items ) or items.desc then
+        items = { items }
+
+    end
+
+    if isstring( tags ) then
+        tags = { tags }
+
+    end
+
+    for _, item in ipairs( items ) do
+        if isstring( item ) then
+            item = GAMEMODE:GetShopItemData( item )
+            if not item then continue end
+
+        end
+
+        local itemTags = item.tags
+
+        for _, tag in ipairs( tags ) do
+            itemTags[ tag ] = true
+
+        end
+
+        GM:PutItemInProperCategories( item )
+
+    end
+
+    return true
+
+end
+
+--[[
+    - Removes tags from items, and auto-adjusts their categories if applicable.
+    - Does NOT get replicated to the other realm.
+    - Returns true on success, false if called before the shop catalog has been loaded.
+
+    items: table or string
+        - A single item data, item ID, or a sequential list of item datas or item IDs.
+    tags: table or string
+        - The tag to remove, or a sequential list of tags.
+--]]
+function shopHelpers.removeTags( items, tags )
+    if not GM.GobbledShopItems then return false end
+
+    if isstring( items ) or items.desc then
+        items = { items }
+
+    end
+
+    if isstring( tags ) then
+        tags = { tags }
+
+    end
+
+    for _, item in ipairs( items ) do
+        if isstring( item ) then
+            item = GAMEMODE:GetShopItemData( item )
+            if not item then continue end
+
+        end
+
+        local itemTags = item.tags
+        local itemCategories = item.categories
+
+        for _, tag in ipairs( tags ) do
+            itemTags[ tag ] = nil
+            itemCategories[ tag ] = nil
+
+        end
+
+    end
+
+    return true
+
+end
