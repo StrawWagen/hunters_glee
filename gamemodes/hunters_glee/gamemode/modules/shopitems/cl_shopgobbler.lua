@@ -3,6 +3,8 @@ local nextRecieve = 0
 local GM = GAMEMODE or GM
 
 function GM:ShopInitialThink()
+    self.GobbledShopItems = false
+
     self:SetupShopCategories()
 
     self.invalidShopItems = {}
@@ -36,7 +38,10 @@ net.Receive( "glee_gobbledirectories", function()
         end
     end
 
+    GAMEMODE.GobbledShopItems = true
+
     print( "GLEE: CL Gobbled " .. GAMEMODE.ItemGobbleCount .. " shop items..." )
+    hook.Run( "glee_post_shopitemgobble" )
 
 end )
 
