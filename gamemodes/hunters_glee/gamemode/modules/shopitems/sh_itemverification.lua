@@ -107,7 +107,6 @@ end
 
 function GM:invalidateShopItem( identifier )
     GAMEMODE.invalidShopItems[identifier] = true
-    if SERVER then --????
     if SERVER then --TODO; handle this case
 
 
