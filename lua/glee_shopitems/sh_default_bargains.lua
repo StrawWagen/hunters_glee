@@ -8,6 +8,8 @@ local cvarOfferMax = CreateConVar( cvarBase .. "offer_max", 5, cvarFlags, "The m
 local cvarPurchaseMax = CreateConVar( cvarBase .. "purchase_max", 3, cvarFlags, "The maximum number of bargains each player can purchase per round.", 0, 256 )
 local cvarSameForEveryone = CreateConVar( cvarBase .. "same_for_everyone", 0, cvarFlags, "Should everyone be given the same bargain offers per round?", 0, 1 )
 
+local cvarSeparateCategory = CLIENT and CreateClientConVar( "huntersglee_cl_bargains_category", 0, true, false, "Show bargain items in their own category?", 0, 1 )
+
 
 glee_BargainOffers = glee_BargainOffers or {} -- { [shopItemName] = true, __count = count, }
 glee_BargainOffersPerPly = glee_BargainOffersPerPly or {} -- [ply] = { [shopItemName] = true, __count = count, }
@@ -180,6 +182,19 @@ else -- CLIENT
 
     end
 
+    local function handleCategoryChange( useOwnCategory )
+        local items = shopHelpers.getItemsInCategory( "BARGAINS" )
+        shopHelpers.filterByTag( items, "bargain_only", false )
+
+        if useOwnCategory then -- Use Bargains category, so remove from Innate.
+            shopHelpers.removeTags( items, "INNATE" )
+
+        else -- Bargains category is getting hidden, so add to Innate.
+            shopHelpers.addTags( items, "INNATE" )
+
+        end
+    end
+
 
     hook.Add( "glee_cl_confirmedpurchase", "glee_shopitems_bargainoffers", function( ply, itemID )
         local itemData = GAMEMODE:GetShopItemData( itemID )
@@ -189,6 +204,17 @@ else -- CLIENT
         glee_BargainPurchaseCounts[ ply ] = ( glee_BargainPurchaseCounts[ ply ] or 0 ) + 1
 
     end )
+
+    hook.Add( "glee_post_shopitemgobble", "glee_shopitems_bargainoffers", function()
+        handleCategoryChange( cvarSeparateCategory:GetBool() )
+
+    end )
+
+
+    cvars.AddChangeCallback( "huntersglee_cl_bargains_category", function( _, _, new )
+        handleCategoryChange( tobool( new ) )
+
+    end, "glee_shopitems_bargainoffers" )
 
 
     net.Receive( "glee_bargainoffers", function()
@@ -598,7 +624,7 @@ local items = {
             return tostring( remaining ), remaining >= 1 and GAMEMODE.shopStandards.shopCostCanBuy or GAMEMODE.shopStandards.shopCostTooPoor
         end,
         cooldown = math.huge,
-        tags = { "BARGAINS", "unpurchaseable" },
+        tags = { "BARGAINS", "unpurchaseable", "bargain_only" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },

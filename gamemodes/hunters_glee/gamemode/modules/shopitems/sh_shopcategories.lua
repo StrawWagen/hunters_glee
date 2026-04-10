@@ -19,6 +19,7 @@ function GM:SetupShopCategories()
             order = 3,
             shCanShowInShop = function( purchaser )
                 if not shopHelpers.aliveCheck( purchaser ) then return false end
+                if CLIENT and not GetConVar( "huntersglee_cl_bargains_category" ):GetBool() then return false end
 
                 return GM:GetOfferedBargainCount( purchaser ) > 0
             end,
