@@ -1656,7 +1656,7 @@ local items = {
     -- this is to give the noobs in a lobby a huge score boost, also it's cool
     [ "witnessme" ] = {
         name = "Witness Me.",
-        desc = "You die instantly to hunters if you have any witnesses.\nDead players can bear witness\nGain 250 score per witness.\nOnly happens twice per round.",
+        desc = "You die instantly to hunters if you have any witnesses.\nDead players can bear witness\nGain 250 score per witness.\nOnly the first, and last death of a round are witnessable...",
         shCost = 30,
         markup = 2,
         cooldown = math.huge,
