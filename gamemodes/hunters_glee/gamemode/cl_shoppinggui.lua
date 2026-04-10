@@ -684,7 +684,7 @@ function termHuntOpenTheShop()
 
                 end
 
-                if not scrollHintExpired:GetBool() then
+                if not scrollHintExpired:GetBool() and delta < 0 then
                     scrolledCount = scrolledCount + 1
                     if scrolledCount >= scrollCountToStopPermanently then
                         RunConsoleCommand( "cl_huntersgleehint_hasscrolledcategories", "1" )
