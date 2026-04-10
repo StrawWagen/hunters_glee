@@ -73,6 +73,8 @@ function GM:AddShopItem( shopItemIdentifier, shopItemData )
 
     GAMEMODE.shopItems[shopItemIdentifier] = shopItemData
 
+    hook.Run( "glee_shopitemadded", shopItemIdentifier, shopItemData )
+
     return true
 
 end
@@ -81,7 +83,7 @@ function GM:ConvertItemTags( shopItemData ) -- convert indexed table to mask
     if not istable( shopItemData.tags ) then return end
     local newTags = {}
     for _, tag in ipairs( shopItemData.tags ) do
-        newTags[ tag ] = true
+        newTags[tag] = true
 
     end
     shopItemData.tags = newTags
@@ -91,7 +93,7 @@ function GM:PutItemInProperCategories( shopItemData ) -- put item in categories 
     local foundAHome
     local categories = GAMEMODE.shopCategories
     for tag, _ in pairs( shopItemData.tags ) do
-        if categories[ tag ] then
+        if categories[tag] then
             --print( "Putting " .. shopItemData.name .. " in category " .. tag )
             shopItemData.categories = shopItemData.categories or {}
             shopItemData.categories[tag] = true
@@ -106,6 +108,7 @@ end
 function GM:invalidateShopItem( identifier )
     GAMEMODE.invalidShopItems[identifier] = true
     if SERVER then --????
+    if SERVER then --TODO; handle this case
 
 
     end

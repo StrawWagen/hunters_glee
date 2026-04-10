@@ -1,7 +1,5 @@
 local GM = GM or GAMEMODE
 
-local shopHelpers = GM.shopHelpers
-
 local validPrefixes = {
     ["sh_"] = true,
     ["sv_"] = true,
@@ -21,12 +19,14 @@ function GM:ShopInitialThink()
     local shopFiles = file.Find( "glee_shopitems/*.lua", "LUA" )
     for _, name in ipairs( shopFiles ) do
         local prefix = string.sub( name, 1, 3 )
-        if not validPrefixes[ prefix ] then
+        if not validPrefixes[prefix] then
             ErrorNoHaltWithStack( "GLEE: Invalid shop item prefix " .. prefix .. " in file " .. name .. "\nNeeds to be sh_, sv_, or cl_" )
             continue
 
         end
 
+        -- all items need to be defined on server & client
+        -- this is literally just here for if you want to have private server logic, no other reason
         local shared = prefix == "sh_"
         local server = prefix == "sv_"
         local client = prefix == "cl_"
@@ -38,16 +38,18 @@ function GM:ShopInitialThink()
             local ok = ProtectedCall( function( nameProtected ) include( "glee_shopitems/" .. nameProtected ) end, name )
 
             if ok then
-                self.validServerItemDirectories[ name ] = true
+                self.validServerItemDirectories[name] = true
 
             end
         end
         if gobbleCl then
             AddCSLuaFile( "glee_shopitems/" .. name )
-            self.validClientItemDirectories[ name ] = true
+            self.validClientItemDirectories[name] = true
 
         end
     end
+
+    -- actually add the items
     local count = 0
     for shopItemName, shopItem in pairs( self.shopItems ) do
         if self:AddShopItem( shopItemName, shopItem ) then
@@ -55,6 +57,7 @@ function GM:ShopInitialThink()
 
         end
     end
+
     print( "GLEE: SV Gobbled " .. count .. " shop items..." )
 
     self.GobbledShopItems = true
@@ -63,6 +66,24 @@ function GM:ShopInitialThink()
 end
 
 
+-- send directories to clients
+-- we never send items to clients
+-- just tell them what to include()
+util.AddNetworkString( "glee_gobbledirectories" )
+
+function GM:UpdateShopFor( plyOrPlys )
+    net.Start( "glee_gobbledirectories" )
+        net.WriteUInt( table.Count( GAMEMODE.validClientItemDirectories ), 16 ) -- max 65,535 directories lol
+        for dir, _ in pairs( GAMEMODE.validClientItemDirectories ) do
+            net.WriteString( dir )
+
+        end
+    net.Send( plyOrPlys )
+
+end
+
+
+-- client wants shopitem data! we'll wait and send it after GM.GobbledShopItems is true
 util.AddNetworkString( "glee_pleasepleasegivemeshopdata" )
 net.Receive( "glee_pleasepleasegivemeshopdata", function( len, ply )
     local nextRequest = ply.glee_NextShopDataRequest or 0
@@ -81,32 +102,17 @@ net.Receive( "glee_pleasepleasegivemeshopdata", function( len, ply )
 end )
 
 
-util.AddNetworkString( "glee_gobbledirectories" )
-
-function GM:UpdateShopFor( plyOrPlys )
-    net.Start( "glee_gobbledirectories" )
-        net.WriteUInt( table.Count( GAMEMODE.validClientItemDirectories ), 16 )
-        for dir, _ in pairs( GAMEMODE.validClientItemDirectories ) do
-            net.WriteString( dir )
-
-        end
-    net.Send( plyOrPlys )
-
-end
-
+-- update on fullload
 hook.Add( "glee_full_load", "glee_shopgobbler_requestgobble", function( ply )
     GAMEMODE:UpdateShopFor( ply )
 
 end )
 
+
+-- ran inside each shopitem folder
 function GM:GobbleShopItems( items )
     for name, data in pairs( items ) do
-        self.shopItems[ name ] = data
+        self.shopItems[name] = data
 
     end
-end
-
-function GM:SetupShopItem() -- todo, finish
-    return true
-
 end

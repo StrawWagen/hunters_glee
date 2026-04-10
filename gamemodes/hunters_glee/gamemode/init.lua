@@ -152,7 +152,8 @@ GM.sessionDiffBump = 0
 local CurTime = CurTime
 
 -- gamemode starts up, starts 5 second countdown to navmesh check.
--- also happens after hard map cleanup
+-- runs in Initialize,
+-- also ran after hard map cleanup, ( gmod_admin_cleanup ) for debugging
 function GM:TermHuntSetup()
     self.waitingOnNavoptimizerGen       = nil
     self.HuntersGleeDoneTheGreedyPatch  = self.HuntersGleeDoneTheGreedyPatch or nil -- do greedy patch once per session and play nice with autorefresh
@@ -178,6 +179,7 @@ function GM:TermHuntSetup()
     self.roundDiffBump                  = 0
     self.roundEarliestEnd               = 0
     self.nextStateTransmit              = 0
+    self.finishedRoundCount             = 0
 
     -- just in case!
     hook.Remove( "Think", "glee_DoGreedyPatchThinkHook" )
@@ -895,6 +897,7 @@ function GM:roundEnd()
     local plyCount = #player.GetAll()
     local timeAdd = math.Clamp( plyCount * 0.7, 1, 15 ) -- give time for discussion
     self.limboEnd = CurTime() + 18 + timeAdd
+    self.finishedRoundCount = self.finishedRoundCount + 1
 
     self.deadPlayers = {}
     self:SetRoundState( self.ROUND_LIMBO )

@@ -1,5 +1,9 @@
 local GAMEMODE = GAMEMODE or GM
 
+local scrollHintExpired = CreateClientConVar( "cl_huntersgleehint_hasscrolledcategories", 0, true, false )
+local scrolledCount = 0
+local scrollCountToStopPermanently = 100
+
 local glee_sizeScaled = glee_sizeScaled
 
 local function shopPanelName( identifier )
@@ -34,7 +38,6 @@ local draw_RoundedBox = draw.RoundedBox
 
 local lastScroll = 0
 local MAINSCROLLNAME = "main_scroll_window"
-local scrollHintsAcknowledged = {}
 
 local noDataMateiral = Material( "vgui/hud/gleenodata.png", "noclamp" )
 local dataMaterial = Material( "vgui/hud/gleefulldata.png", "noclamp smooth" )
@@ -607,7 +610,7 @@ function termHuntOpenTheShop()
             local horisScroller = vgui.Create( "DHorizontalScroller", ply.MAINSCROLLPANEL, shopCategoryName( category ) )
 
             --print( "createdcat " .. category .. " " .. tostring( horisScroller ) )
-            shopCategoryPanels[ category ] = horisScroller
+            shopCategoryPanels[category] = horisScroller
 
             ply.MAINSCROLLPANEL:AddItem( horisScroller )
 
@@ -681,7 +684,13 @@ function termHuntOpenTheShop()
 
                 end
 
-                scrollHintsAcknowledged[ category ] = true
+                if not scrollHintExpired:GetBool() then
+                    scrolledCount = scrolledCount + 1
+                    if scrolledCount >= scrollCountToStopPermanently then
+                        RunConsoleCommand( "cl_huntersgleehint_hasscrolledcategories", "1" )
+
+                    end
+                end
 
                 return true
 
@@ -1076,8 +1085,8 @@ function termHuntOpenTheShop()
 
                     end
 
-                    -- draw the scroll hint!
-                    if myCategoryPanel.canScrollRight and not scrollHintsAcknowledged[ category ] then
+                    -- draw category scroll hint if we're split by the edge of the shop
+                    if myCategoryPanel.canScrollRight and not scrollHintExpired:GetBool() then
                         local w = self:GetWide()
                         local endX = self:LocalToScreen( w )
                         local endXView = myCategoryPanel:LocalToScreen( myCategoryPanel:GetWide() )
