@@ -312,6 +312,20 @@ function GM:translateShopItemDescription( ply, toPurchase, descriptionRaw )
 
         end
     end
+
+    local itemData = GAMEMODE:GetShopItemData( toPurchase )
+    if not itemData then return description end -- No item???
+
+    local noErrors, returned = xpcall( hook.Run, errorCatchingMitt, "glee_shop_itemdescription", ply, itemData, description )
+    if noErrors == false then
+        -- Non-halting error
+        print( "GLEE: !!!!!!!!!! glee_shop_itemdescription hook errored for " .. toPurchase .. "!!!!!!!!!!!" )
+
+    elseif isstring( returned ) then
+        description = returned
+
+    end
+
     return description
 
 end

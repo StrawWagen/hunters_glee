@@ -140,6 +140,9 @@ Additional ways to control access to shop items.
 - `allow`, `failReason` = `glee_shop_canpurchase`( `ply`, `itemData` )
   - Return `false`, `failReason` to block the item from being purchased.
   - Behaves similarly to `shPurchaseCheck`, but called on a global scale and with reference to the item.
+- `newDescription` = `glee_shop_itemdescription`( `ply`, `itemData`, `description` )
+  - Return `newDescription`, to override the item description.
+  - Remember, only one hook listener can return non-nil at a time!
 
 Example:
 
