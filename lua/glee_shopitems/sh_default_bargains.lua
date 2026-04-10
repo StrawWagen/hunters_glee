@@ -248,6 +248,14 @@ hook.Add( "glee_roundstatechanged", "glee_shopitems_bargainoffers", function( _,
 
 end )
 
+-- Append blurb to description for silliness and to make bargains more identifiable when categories are merged.
+hook.Add( "glee_shop_itemdescription", "glee_shopitems_bargainoffers", function( _, itemData, description )
+    if not itemData.tags.BARGAINS then return end -- Not a bargain, don't care.
+    if itemData.tags.unpurchaseable then return end -- Unpurchaseables are purely informational, don't mess with what they have to say.
+
+    return description .. "\n\nWhat a bargain!"
+end )
+
 
 if SERVER then
 
