@@ -8,7 +8,7 @@ SWEP.PrintName          = "Escape Signal Flare"
 SWEP.Category           = "Hunter's Glee"
 
 SWEP.HoldType           = "pistol"
-SWEP.Weight             = 6
+SWEP.Weight             = 1 -- less weight, pls dont steal this npcs!!
 SWEP.Range              = 2000
 SWEP.Slot               = 2
 SWEP.SlotPos            = 3
@@ -99,6 +99,26 @@ function SWEP:ShootFlare()
 
     hook.Run( "glee_signalflare_shoot", owner, self, flare )
 
+    if not owner:IsPlayer() then
+        SafeRemoveEntityDelayed( self, 2 )
+        return
+
+    end
+
+    timer.Simple( 0, function()
+        if not IsValid( self ) then return end
+        if self:Clip1() > 0 then return end
+        if owner:GetAmmoCount( self.Primary.Ammo ) > 0 then return end
+
+        timer.Simple( 1, function()
+            if not IsValid( self ) then return end
+            if not IsValid( owner ) then return end
+            owner:SelectWeapon( "termhunt_shove" )
+
+        end )
+        SafeRemoveEntityDelayed( self, 2 )
+
+    end )
 end
 
 function SWEP:CanBePickedUpByNPCs()

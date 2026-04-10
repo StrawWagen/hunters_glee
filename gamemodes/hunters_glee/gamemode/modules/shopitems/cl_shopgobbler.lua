@@ -33,7 +33,7 @@ net.Receive( "glee_gobbledirectories", function()
         local ok = ProtectedCall( function( dirProtected ) include( "glee_shopitems/" .. dirProtected ) end, dir )
 
         if ok then
-            GAMEMODE.validClientItemDirectories[ dir ] = true
+            GAMEMODE.validClientItemDirectories[dir] = true
 
         end
     end
@@ -47,7 +47,7 @@ end )
 
 function GM:GobbleShopItems( items )
     for name, data in pairs( items ) do
-        local existingData = self.shopItems[ name ]
+        local existingData = self.shopItems[name]
         if existingData then
             table.Merge( existingData, data )
 

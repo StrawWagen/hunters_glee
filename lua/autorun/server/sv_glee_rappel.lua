@@ -3,6 +3,9 @@ local GAMEMODE = GAMEMODE or GM
 
 local playerMeta = FindMetaTable( "Player" )
 
+local glee_ActiveRappelRopes = {}
+local glee_ActiveRappelRopeCount = 0
+
 function playerMeta:RappelTo( ent, hitPos )
     if not IsValid( self ) then return end
     if not self:Alive() then return end
@@ -130,8 +133,8 @@ end
 local startDownOffset = 25
 
 -- Drops a rope from a vehicle that players can +USE to start ascending.
--- Spawns three props: an anchor following the vehicle, a dangling physics
--- weight connected by a rope constraint, and an invisible hitbox for +USE.
+-- Spawns two props: an anchor following the vehicle and a dangling physics
+-- weight connected by a rope constraint.
 function DropRappelRopeFromVehicle( vehicle, posOffset )
     if not IsValid( vehicle ) then return end
 
@@ -171,27 +174,17 @@ function DropRappelRopeFromVehicle( vehicle, posOffset )
         "cable/cable", false
     )
 
-    -- USE hitbox, this is what detects people using the rope
-    local hitboxProp = ents.Create( "base_anim" )
-    hitboxProp:SetPos( anchorPos )
-    hitboxProp:SetParent( vehicle, 0 )
-    hitboxProp:Spawn()
+    -- Mark dangling end prop with rappel data for FindUseEntity detection
+    endProp.IsRappelDanglingProp = true
+    endProp.RappelVehicle = vehicle
+    endProp.RopeStartProp = startProp
+    glee_ActiveRappelRopes[endProp] = true
+    glee_ActiveRappelRopeCount = glee_ActiveRappelRopeCount + 1
+    endProp:CallOnRemove( "glee_Rappel_DecrementRopeCount", function()
+        glee_ActiveRappelRopeCount = glee_ActiveRappelRopeCount - 1
+        glee_ActiveRappelRopes[endProp] = nil
 
-    local ropeUseHitboxWidth = glee_RappelSettings.ropeUseHitboxWidth
-    hitboxProp:PhysicsInitBox(
-        Vector( -ropeUseHitboxWidth, -ropeUseHitboxWidth, -ropeLength / 2 ),
-        Vector( ropeUseHitboxWidth, ropeUseHitboxWidth, ropeLength / 2 )
-    )
-    hitboxProp:SetMoveType( MOVETYPE_NONE )
-    hitboxProp:SetUseType( SIMPLE_USE )
-    hitboxProp:SetNoDraw( true )
-    hitboxProp:SetNotSolid( false )
-    hitboxProp:SetCollisionGroup( COLLISION_GROUP_WORLD )
-
-    hitboxProp.RappelVehicle = vehicle
-    hitboxProp.IsRappelUseHitbox = true
-    hitboxProp.RopeStartProp = startProp
-    hitboxProp.RopeEndProp = endProp
+    end )
 
     vehicle.glee_RappelDropSound = CreateSound( vehicle, glee_RappelSettings.ropeDropSound )
     vehicle.glee_RappelDropSound:PlayEx( 1, math.random( 90, 110 ) )
@@ -207,7 +200,6 @@ function DropRappelRopeFromVehicle( vehicle, posOffset )
     local function cleanup()
         if IsValid( startProp ) then startProp:Remove() end
         if IsValid( endProp ) then endProp:Remove() end
-        if IsValid( hitboxProp ) then hitboxProp:Remove() end
         if IsValid( vehicle ) then
             if vehicle.glee_RappelDropSound then
                 vehicle.glee_RappelDropSound:Stop()
@@ -221,7 +213,7 @@ function DropRappelRopeFromVehicle( vehicle, posOffset )
 
     end
 
-    hitboxProp.RopeCleanup = cleanup
+    endProp.RopeCleanup = cleanup
     vehicle.glee_RappelRopeCleanup = cleanup
 
     vehicle.glee_RappelRopeStartProp = startProp
@@ -245,12 +237,6 @@ function DropRappelRopeFromVehicle( vehicle, posOffset )
 
         end
 
-        -- Position hitbox centered between the two rope endpoints
-        if IsValid( endProp ) and IsValid( hitboxProp ) then
-            hitboxProp:SetPos( ( startProp:GetPos() + endProp:GetPos() ) / 2 )
-
-        end
-
         if IsValid( endPropsObj ) then -- dampen swinging
             local oldVel = endPropsObj:GetVelocity()
             local dampenedVel = oldVel * 0.98
@@ -264,31 +250,52 @@ function DropRappelRopeFromVehicle( vehicle, posOffset )
 
     end )
 
-    hook.Run( "OnVehicleDroppedRope", vehicle, hitboxProp )
+    hook.Run( "OnVehicleDroppedRope", vehicle, startProp )
 
-    return hitboxProp, startProp, endProp
+    return startProp, endProp
 
 end
 
--- detect players +USEing the rope hitbox
+-- find rappel rope when player tries to use something nearby
+hook.Add( "FindUseEntity", "glee_Rappel_FindRappelRope", function( ply, _defaultEnt )
+    if glee_ActiveRappelRopeCount == 0 then return end
+    if ply:GetNWBool( "glee_IsRappelling", false ) then return end
+
+    local plysShoot = ply:GetShootPos()
+
+    for danglingProp in pairs( glee_ActiveRappelRopes ) do
+        if not IsValid( danglingProp ) then
+            glee_ActiveRappelRopes[danglingProp] = nil
+            continue
+
+        end
+
+        local anchorProp = danglingProp.RopeStartProp
+        if not IsValid( anchorProp ) then continue end
+
+        local dist = util.DistanceToLine( anchorProp:GetPos(), danglingProp:GetPos(), plysShoot )
+        if dist <= glee_RappelSettings.ropeUseAimTolerance then
+            return danglingProp
+
+        end
+    end
+end )
+
+-- handle players +USEing the rappel rope
 hook.Add( "PlayerUse", "glee_Rappel_DetectRappelUse", function( user, ent )
-    if not ent.IsRappelUseHitbox then return end
+    if glee_ActiveRappelRopeCount == 0 then return end
+    if not ent.IsRappelDanglingProp then return end
     if not user:IsPlayer() then return end
 
     local vehicle = ent.RappelVehicle
-    local startProp = ent.RopeStartProp
-    local endProp = ent.RopeEndProp
+    local anchorProp = ent.RopeStartProp
 
-    if not IsValid( vehicle ) or not IsValid( startProp ) or not IsValid( endProp ) then return end
+    if not IsValid( vehicle ) or not IsValid( anchorProp ) then return end
     if user:GetNWBool( "glee_IsRappelling", false ) then return end
 
     if hook.Run( "PlayerBlockRappel", user, ent ) then return end
 
-    -- only if they're aiming roughly at the rope
-    local dist = util.DistanceToLine( startProp:GetPos(), endProp:GetPos(), user:GetShootPos() )
-    if dist > glee_RappelSettings.ropeUseAimTolerance then return end
-
-    user:RappelToVehicle( vehicle, startProp:GetPos() )
+    user:RappelToVehicle( vehicle, anchorProp:GetPos() )
 
     if ent.RopeCleanup then ent.RopeCleanup() end
 

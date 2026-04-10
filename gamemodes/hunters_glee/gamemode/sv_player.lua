@@ -694,6 +694,13 @@ function GM:SpectateThing( ply, thing, msg )
         ply:SetParent( thing ) -- fixes alot of flashing light visual bugs
         ply:SetPos( thing:WorldSpaceCenter() )
 
+        local callName = "glee_unfollow_" .. ply:GetCreationID()
+        thing:CallOnRemove( callName, function()
+            if not IsValid( ply ) then return end
+            if ply:GetObserverTarget() ~= thing then return end
+            GAMEMODE:StopSpectatingThing( ply )
+
+        end )
     end
     msg = msg or "glee_followedsomething"
     net.Start( msg )
