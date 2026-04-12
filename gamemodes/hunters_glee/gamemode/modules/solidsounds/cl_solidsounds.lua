@@ -2,226 +2,191 @@
 local defaultMusicVolume = 0.75
 local volumeVar = CreateClientConVar( "huntersglee_musicvolume", "-1", true, false, "Glee music volume, -1 for default, " .. defaultMusicVolume, -1, 1 )
 
-local currentChannel  = nil
-local currentPath     = nil
-local currentPitch    = 100
-local currentVol      = 1
-local soundStartTime  = 0   -- CurTime() minus seek offset, so ( CurTime() - soundStartTime ) = expected playback position
+-- All active-sound state lives here; nil means nothing is playing.
+local state           = nil
+local currentPriority = 0
+local loadGen         = 0  -- incremented on every load; callbacks compare to reject stale results
 
-local lastThinkTime   = 0
-local THINK_INTERVAL  = 1 -- slow thinks, actually manages the songs
-
-local fadeDuration    = 0.5  -- set per-fade from server; default matches DEFAULT_FADE_OUT
-local fadeActive      = false
-local fadeStartTime   = 0
-local fadeStartVol    = 0
-local pendingPath     = nil
-local pendingPitch    = nil
-local pendingVol      = nil
-local pendingFadeIn   = 0
-
-local fadeInActive    = false
-local fadeInStartTime = 0
-local fadeInDuration  = 0
-local fadeInTargetVol = 0
-
-local loadGeneration  = 0  -- incremented on every new load request; callbacks compare against it to avoid applying stale results
+local lastThinkTime  = 0
+local THINK_INTERVAL = 1  -- recovery check rate-limit; 1 second of lost audio is acceptable
 
 cvars.AddChangeCallback( "huntersglee_musicvolume", function( _, _, newVal )
+    if not state then return end
+
     local volume = tonumber( newVal ) or defaultMusicVolume
     if volume < 0 then volume = defaultMusicVolume end
 
-    if fadeInActive then
-        fadeInTargetVol = currentVol * volume
+    if state.fadeIn.active then
+        state.fadeIn.targetVol = state.vol * volume
 
-    elseif IsValid( currentChannel ) and not fadeActive then
-        currentChannel:SetVolume( currentVol * volume )
+    elseif IsValid( state.channel ) and not state.fade.active then
+        state.channel:SetVolume( state.vol * volume )
 
     end
 
 end, "huntersglee_musicvolume_update" )
 
 local function startSound( path, pitch, vol, offset, fadeInLength )
-    if IsValid( currentChannel ) then
-        currentChannel:Stop()
-        currentChannel = nil
-
+    if state and IsValid( state.channel ) then
+        state.channel:Stop()
     end
 
-    loadGeneration = loadGeneration + 1
-    local myGen    = loadGeneration
+    loadGen = loadGen + 1
+    local myGen = loadGen
 
-    soundStartTime = CurTime() - offset
-    currentPath    = path
-    currentPitch   = pitch
-    currentVol     = vol
+    state = {
+        channel   = nil,
+        path      = path,
+        pitch     = pitch,
+        vol       = vol,
+        startTime = CurTime() - offset,
+        fade      = { active = false, startTime = 0, startVol = 0, duration = 0 },
+        fadeIn    = { active = false, startTime = 0, duration  = 0, targetVol = 0 },
+        pending   = nil,
+    }
 
-    sound.PlayFile( currentPath, "noblock", function( channel, errNum, _errStr )
-        local errored = ( errNum and errNum ~= 0 )
-        if errored then return end
-
-        if not IsValid( channel ) then return end
-
-        if loadGeneration ~= myGen then
+    -- sound.PlayFile paths are relative to garrysmod/, but tracks are stored relative to garrysmod/sound/
+    sound.PlayFile( "sound/" .. path, "noblock", function( channel, errNum, _errStr )
+        if errNum and errNum ~= 0 then return end
+        if not IsValid( channel )  then return end
+        if loadGen ~= myGen then
             channel:Stop()
             return
-
         end
 
-        currentChannel = channel
+        state.channel = channel
         if offset > 0 then channel:SetTime( offset ) end
-        local playbackRate = pitch / 100
-        channel:SetPlaybackRate( playbackRate )
+        channel:SetPlaybackRate( pitch / 100 )
 
         local volume = volumeVar:GetFloat()
-        if volume < 0 then
-            volume = defaultMusicVolume
-
-        end
+        if volume < 0 then volume = defaultMusicVolume end
         local targetVol = vol * volume
+
         if fadeInLength > 0 then
             channel:SetVolume( 0 )
-            fadeInActive    = true
-            fadeInStartTime = CurTime()
-            fadeInDuration  = fadeInLength
-            fadeInTargetVol = targetVol
-
+            state.fadeIn = {
+                active    = true,
+                startTime = CurTime(),
+                duration  = fadeInLength,
+                targetVol = targetVol,
+            }
         else
             channel:SetVolume( targetVol )
-
         end
 
         channel:Play()
-
     end )
 end
 
 local function stopAndClear()
-    if IsValid( currentChannel ) then currentChannel:Stop() end
-    currentChannel = nil
-    currentPath    = nil
-    loadGeneration = loadGeneration + 1  -- invalidate any in-flight load
-
+    if state and IsValid( state.channel ) then state.channel:Stop() end
+    state           = nil
+    currentPriority = 0
+    loadGen         = loadGen + 1  -- invalidate any in-flight load
 end
 
 local function beginFade( path, pitch, vol, fadeOutLength, fadeInLength )
-    if not IsValid( currentChannel ) then
+    if not state or not IsValid( state.channel ) then
         startSound( path, pitch, vol, 0, fadeInLength )
         return
-
     end
 
-    -- If a fade is already running, just redirect its target
-    pendingFadeIn = fadeInLength
-    fadeStartVol  = currentChannel:GetVolume()
-    fadeStartTime = CurTime()
-    fadeDuration  = fadeOutLength
-    fadeActive    = true
-    pendingPath   = path
-    pendingPitch  = pitch
-    pendingVol    = vol
-
+    -- Reset fade timer from current volume; if a fade is already running this restarts the countdown
+    state.fade = {
+        active    = true,
+        startTime = CurTime(),
+        startVol  = state.channel:GetVolume(),
+        duration  = fadeOutLength,
+    }
+    state.pending = {
+        path   = path,
+        pitch  = pitch,
+        vol    = vol,
+        fadeIn = fadeInLength,
+    }
 end
 
 hook.Add( "Think", "glee_solidsound_think", function()
+    if not state then return end
     local now = CurTime()
 
-    -- Fade-in runs every frame (volume ramp up after a new sound starts)
-    if fadeInActive then
-        local progress = math.Clamp( ( now - fadeInStartTime ) / fadeInDuration, 0, 1 )
+    -- Fade-in: ramps volume up after a new sound begins (runs every frame)
+    if state.fadeIn.active then
+        local progress = math.Clamp( ( now - state.fadeIn.startTime ) / state.fadeIn.duration, 0, 1 )
 
-        if IsValid( currentChannel ) then
-            currentChannel:SetVolume( fadeInTargetVol * progress )
+        if IsValid( state.channel ) then
+            state.channel:SetVolume( state.fadeIn.targetVol * progress )
         end
 
         if progress >= 1 then
-            fadeInActive = false
+            state.fadeIn.active = false
         end
-
     end
 
-    -- Fade-out runs every frame
-    if fadeActive then
-        local progress = math.Clamp( ( now - fadeStartTime ) / fadeDuration, 0, 1 )
+    -- Fade-out: ramps volume down, then starts pending sound (runs every frame)
+    if state.fade.active then
+        local progress = math.Clamp( ( now - state.fade.startTime ) / state.fade.duration, 0, 1 )
 
-        if IsValid( currentChannel ) then
-            currentChannel:SetVolume( fadeStartVol * ( 1 - progress ) )
-
+        if IsValid( state.channel ) then
+            state.channel:SetVolume( state.fade.startVol * ( 1 - progress ) )
         end
 
-        -- fade is done, kill the sound
         if progress >= 1 then
+            local pending = state.pending
             stopAndClear()
-            fadeActive = false
-            if pendingPath then
-                startSound( pendingPath, pendingPitch, pendingVol, 0, pendingFadeIn )
-                pendingPath  = nil
-                pendingPitch = nil
-                pendingVol   = nil
-
+            if pending then
+                startSound( pending.path, pending.pitch, pending.vol, 0, pending.fadeIn )
             end
         end
 
         return  -- skip recovery check while fading
-
     end
 
-    -- Recovery check is rate-limited; 1 second of lost audio is acceptable
+    -- Recovery check (rate-limited)
     if now - lastThinkTime < THINK_INTERVAL then return end
     lastThinkTime = now
 
-    if not currentPath then return end
-
-    if not IsValid( currentChannel ) then
+    if not IsValid( state.channel ) then
         -- Channel was externally invalidated (e.g. stopsound) while we still expect music
-        local offset = now - soundStartTime
-        startSound( currentPath, currentPitch, currentVol, offset, 0 )
+        local offset = now - state.startTime
+        startSound( state.path, state.pitch, state.vol, offset, 0 )
         return
-
     end
 
-    local state = currentChannel:GetState()
+    local chanState = state.channel:GetState()
 
-    if state == GMOD_CHANNEL_STOPPED then
+    if chanState == GMOD_CHANNEL_STOPPED then
         -- Distinguish natural end from unexpected stop
-        local expectedPos = now - soundStartTime
-        local len         = currentChannel:GetLength()
+        local expectedPos = now - state.startTime
+        local len         = state.channel:GetLength()
 
-        local stoppedPrematurely = len > 0 and expectedPos < len - 1
-        if stoppedPrematurely then
+        if len > 0 and expectedPos < len - 1 then
             -- Stopped before the track ended; restart from estimated position
-            startSound( currentPath, currentPitch, currentVol, expectedPos, 0 )
-
+            startSound( state.path, state.pitch, state.vol, expectedPos, 0 )
         else
             -- Natural end (or indeterminate length); clear state
             stopAndClear()
-
         end
-    elseif state == GMOD_CHANNEL_STALLED then
-        currentChannel:Play()
 
+    elseif chanState == GMOD_CHANNEL_STALLED then
+        state.channel:Play()
     end
 end )
 
 net.Receive( "glee_sendsolidsound", function()
-    local path  = net.ReadString()
-    if not string.StartsWith( path, "sound/" ) then
-        -- "Unlike other sound functions and structures, the path is relative to garrysmod/ instead of garrysmod/sound/"
-        path = "sound/" .. path
-
-    end
+    local path          = net.ReadString()
     local pitch         = net.ReadFloat()
     local vol           = net.ReadFloat()
-    local _dsp          = net.ReadFloat()  -- no DSP equivalent in PlayFile; read to keep buffer aligned
     local fadeInLength  = net.ReadFloat()
     local fadeOutLength = net.ReadFloat()
+    local priority      = net.ReadInt( 16 )
+
+    if priority < currentPriority then return end
+    currentPriority = priority
 
     beginFade( path, pitch, vol, fadeOutLength, fadeInLength )
-
 end )
 
 net.Receive( "glee_stopsolidsounds", function()
     stopAndClear()
-    fadeActive   = false
-    fadeInActive = false
 end )

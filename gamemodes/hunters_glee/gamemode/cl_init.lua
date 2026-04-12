@@ -226,7 +226,7 @@ local function playerSpectateColor( ply, visible )
     local color = nil
     local a = nil
     if ply:Health() <= 0 then
-        if ply:GetNWInt( "glee_spectateteam" ) == GAMEMODE.TEAM_ESCAPED then
+        if ply:HasEscaped() then
             color = escapedPlyColor
             a = 255
         elseif visible then
@@ -699,7 +699,7 @@ local function genericHints()
 
         local result, hooksHint = hook.Run( "huntersglee_cl_displayhint_predeadhints", me )
 
-        local hasEscaped = me:GetNWInt( "glee_spectateteam" ) == GAMEMODE.TEAM_ESCAPED
+        local hasEscaped = me:HasEscaped()
 
         if result then
             return result, hooksHint

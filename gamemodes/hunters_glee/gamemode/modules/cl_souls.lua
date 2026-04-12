@@ -181,6 +181,9 @@ local function createSoul( ply )
         render.SetBlend( 1 )
 
     end
+
+    return soul
+
 end
 
 local tooFarWake = 35^2
@@ -312,14 +315,18 @@ local function soulThink( ply )
             local spectatingSmth = IsValid( data.targ )
             if data.mode == OBS_MODE_ROAMING then
                 if not IsValid( soul ) or ( soul:GetModel() ~= ply:GetModel() ) then
-                    createSoul( ply )
+                    soul = createSoul( ply )
+                    if IsValid( soul ) and ply.gleeSouls_ReadyToPlaySound then
+                        ply.gleeSouls_ReadyToPlaySound = false
+                        sound.Play( "hunters_glee/music/released_souls_(not_trumpet).wav", soul:GetPos(), 80, math.random( 75, 85 ) )
 
+                    end
                 else
                     followPly( soul, ply, data )
 
                 end
             elseif spectatingSmth then
-                targetParent = data.targ
+                targetParent = data.targx
                 if soul then
                     soulGoInto( soul, data.targ )
                     targetParent = soul
@@ -352,6 +359,9 @@ local function soulThink( ply )
     elseif IsValid( soul ) then -- they alive now, their soul has a place
         soulGoInto( soul, ply )
 
+    else
+        ply.gleeSouls_ReadyToPlaySound = true
+
     end
 end
 
@@ -376,6 +386,7 @@ hook.Add( "Tick", "glee_souls", function()
             local soul = ply.glee_soul
             if soul then
                 stopShowing( soul )
+                ply.gleeSouls_ReadyToPlaySound = true
 
             end
         end

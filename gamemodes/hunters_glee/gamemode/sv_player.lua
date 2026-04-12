@@ -598,7 +598,7 @@ end )
 
 
 function GM:PlyCanRespawn( ply )
-    if ply.termHuntTeam == GAMEMODE.TEAM_ESCAPED then return false end
+    if ply:HasEscaped() then return false end
     return true
 
 end
@@ -1388,7 +1388,7 @@ end )
 function GM:TakeOverControl( ply, target )
     if not target.isTerminatorHunterBased then return end
     if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
-    if ply:GetNWInt( "glee_spectateteam", GAMEMODE.TEAM_PLAYING ) ~= GAMEMODE.TEAM_ESCAPED then return end
+    if not ply:HasEscaped() then return end
     local drivemode = "drive_sandbox"
 
     if target.GetEntityDriveMode then

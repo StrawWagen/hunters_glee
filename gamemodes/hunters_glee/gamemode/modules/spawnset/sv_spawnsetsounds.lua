@@ -23,9 +23,34 @@ local function playEndSound()
 
 end
 
+local function playWinSound()
+    local _, spawnSet = GAMEMODE:GetSpawnSet()
+
+    local winSound = spawnSet.roundWinSound
+    if winSound == "" then return end
+
+    local dsp = spawnSet.roundWinSoundDSP
+
+    GAMEMODE:SendSolidSound( winSound, { dsp = dsp } )
+
+end
+
+local function playPerfectWinSound()
+    local _, spawnSet = GAMEMODE:GetSpawnSet()
+
+    local perfectWinSound = spawnSet.roundPerfectWinSound
+    if perfectWinSound == "" then return end
+
+    local dsp = spawnSet.roundPerfectWinSoundDSP
+
+    GAMEMODE:SendSolidSound( perfectWinSound, { dsp = dsp } )
+
+end
+
 
 hook.Add( "huntersglee_round_into_active", "glee_spawnset_startsound", function()
     playStartSound()
+
 
 end )
 
@@ -36,6 +61,27 @@ hook.Add( "glee_post_set_spawnset", "glee_spawnset_startsound", function() -- wh
 end )
 
 hook.Add( "huntersglee_round_into_limbo", "glee_spawnset_endsound", function()
-    playEndSound()
+    local everyoneEscaped = true
+    local someoneEscaped = false
+    for _, ply in player.Iterator() do
+        local hasEscaped = ply:HasEscaped()
+        if hasEscaped then
+            someoneEscaped = true
 
+        else
+            everyoneEscaped = false
+
+        end
+
+    end
+    if everyoneEscaped then
+        playPerfectWinSound()
+
+    elseif someoneEscaped then
+        playWinSound()
+
+    else
+        playEndSound()
+
+    end
 end )

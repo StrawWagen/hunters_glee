@@ -6,19 +6,30 @@ local DEFAULT_FADE_IN  = 0
 local DEFAULT_FADE_OUT = 0.5
 
 function GM:SendSolidSound( path, data )
+
+    local initialPath = path
+
+    if string.StartsWith( path, "tracks/" ) then
+        local trackData
+        path, trackData = GAMEMODE:GetASoundTrack( string.sub( path, 8 ) )
+        data = data or trackData
+    end
+
+    if not path then error( "invalid track: " .. initialPath ) end
+
     data = data or {}
     data.pitch         = data.pitch or 100
     data.vol           = data.vol or 1
-    data.dsp           = data.dsp or 0
     data.fadeInLength  = data.fadeInLength or DEFAULT_FADE_IN
     data.fadeOutLength = data.fadeOutLength or DEFAULT_FADE_OUT
+    data.priority      = data.priority or 0
     net.Start( "glee_sendsolidsound" )
         net.WriteString( path )
         net.WriteFloat( data.pitch )
         net.WriteFloat( data.vol )
-        net.WriteFloat( data.dsp )
         net.WriteFloat( data.fadeInLength )
         net.WriteFloat( data.fadeOutLength )
+        net.WriteInt( data.priority, 16 )
     net.Broadcast()
 
 end
@@ -31,32 +42,33 @@ end
 
 local soundTracks = {
     heliEvac = {
-        "hunters_glee/music/8.23.GleeExp2.ogg",
-        "hunters_glee/music/8.24.to_noone.ogg",
-
+        sounds = {
+            "hunters_glee/music/8.23.GleeExp2.ogg",
+            "hunters_glee/music/8.24.to_noone.ogg",
+        },
+        priority = 0,
+    },
+    roundWin = {
+        sounds   = { "hunters_glee/music/qutedeath.mp3" },
+        priority = 0,
+    },
+    roundPerfectWin = {
+        sounds   = { "hunters_glee/music/8.25.ToWishToGlee.ogg" },
+        priority = 0,
     }
 }
 
 function GM:GetASoundTrack( name )
-    local roundsTracks = GAMEMODE.soundtracksSequential
-    if not roundsTracks then
-        GAMEMODE.soundtracksSequential = {}
-        roundsTracks = GAMEMODE.soundtracksSequential
+    local trackDef = soundTracks[name]
+    if not trackDef then return end
 
-    end
+    GAMEMODE.soundtrackIndices = GAMEMODE.soundtrackIndices or {}
 
-    local tracksToPlay = roundsTracks[name]
-    if not tracksToPlay or #tracksToPlay == 0 then
-        local allTracks = soundTracks[name]
-        if not allTracks then return end
+    local index = GAMEMODE.soundtrackIndices[name] or 1
+    local path  = trackDef.sounds[index]
 
-        tracksToPlay = table.Copy( allTracks )
-        roundsTracks[name] = tracksToPlay
+    GAMEMODE.soundtrackIndices[name] = ( index % #trackDef.sounds ) + 1
 
-    end
-
-    local track = table.remove( tracksToPlay, 1 )
-
-    return track
+    return path, { priority = trackDef.priority or 0 }
 
 end

@@ -912,7 +912,7 @@ function GM:roundEnd()
 
         local escapedCount = 0
         for _, ply in player.Iterator() do
-            if ply.termHuntTeam ~= GAMEMODE.TEAM_ESCAPED then continue end
+            if not ply:HasEscaped() then continue end
             escapedCount = escapedCount + 1
 
         end

@@ -472,7 +472,7 @@ local PLAYER_LINE = {
             status = PLY_STATUS_GRIGORI
         end
 
-        if not ply:Alive() and ply:GetNWInt( "glee_spectateteam" ) == GAMEMODE.TEAM_ESCAPED then
+        if not ply:Alive() and ply:HasEscaped() then
             status = PLY_STATUS_ESCAPED
         elseif not GAMEMODE:IsObscured() and not ply:Alive() then
             status = PLY_STATUS_DEAD

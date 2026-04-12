@@ -1851,7 +1851,7 @@ local items = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
         },
-        weight = 120,
+        weight = 130,
         shPurchaseCheck = shopHelpers.aliveCheck,
         svOnPurchaseFunc = function( ply )
             ply:GiveStatusEffect( "temporal_dice_roll" )
