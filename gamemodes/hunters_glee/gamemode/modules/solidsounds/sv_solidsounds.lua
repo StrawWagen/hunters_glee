@@ -48,6 +48,10 @@ local soundTracks = {
         },
         priority = 0,
     },
+    roundEnd = {
+        sounds   = { "hunters_glee/music/gleeroundendhoot6simple.ogg" },
+        priority = 0,
+    },
     roundWin = {
         sounds   = { "hunters_glee/music/qutedeath.mp3" },
         priority = 0,
