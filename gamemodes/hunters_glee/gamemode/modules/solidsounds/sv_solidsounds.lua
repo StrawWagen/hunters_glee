@@ -2,7 +2,7 @@
 util.AddNetworkString( "glee_sendsolidsound" )
 util.AddNetworkString( "glee_stopsolidsounds" )
 
-local DEFAULT_FADE_IN  = 0
+local DEFAULT_FADE_IN  = 0.25
 local DEFAULT_FADE_OUT = 0.5
 
 function GM:SendSolidSound( path, data )
