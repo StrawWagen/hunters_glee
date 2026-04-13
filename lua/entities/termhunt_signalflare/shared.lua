@@ -66,6 +66,8 @@ end
 
 if SERVER and terminator_Extras then
 
+    util.PrecacheModel( heliModel )
+
     ENT.SteppedTooCloseDist = 2000 -- start at 2k dist
     ENT.MinTooCloseDist = 400 -- step down to 400 if we dont find any good corridors to spawn heli at
     ENT.SteppedDirMaxZ = 0.25 -- start at 0.25z
@@ -211,8 +213,6 @@ if SERVER and terminator_Extras then
 
         angerEverything()
         self.calledForHeli = true
-
-        util.PrecacheModel( heliModel )
 
         local heliSpawnDelay = 70
         if not GAMEMODE.IsReallyHuntersGlee then
