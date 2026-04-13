@@ -17,9 +17,7 @@ local function playEndSound()
     local endSound = spawnSet.roundEndSound
     if endSound == "" then return end
 
-    local dsp = spawnSet.roundEndSoundDSP
-
-    GAMEMODE:SendSolidSound( endSound, { dsp = dsp } )
+    GAMEMODE:SendSolidSound( endSound )
 
 end
 
@@ -29,9 +27,7 @@ local function playWinSound()
     local winSound = spawnSet.roundWinSound
     if winSound == "" then return end
 
-    local dsp = spawnSet.roundWinSoundDSP
-
-    GAMEMODE:SendSolidSound( winSound, { dsp = dsp } )
+    GAMEMODE:SendSolidSound( winSound )
 
 end
 
@@ -41,9 +37,7 @@ local function playPerfectWinSound()
     local perfectWinSound = spawnSet.roundPerfectWinSound
     if perfectWinSound == "" then return end
 
-    local dsp = spawnSet.roundPerfectWinSoundDSP
-
-    GAMEMODE:SendSolidSound( perfectWinSound, { dsp = dsp } )
+    GAMEMODE:SendSolidSound( perfectWinSound )
 
 end
 
