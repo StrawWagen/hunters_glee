@@ -19,6 +19,8 @@ if CLIENT then
 
 end
 
+local heliModel = "models/glee/combine_helicopter_glee.mdl"
+
 local EntityPairs
 
 do
@@ -209,6 +211,8 @@ if SERVER and terminator_Extras then
 
         angerEverything()
         self.calledForHeli = true
+
+        util.PrecacheModel( heliModel )
 
         local heliSpawnDelay = 70
         if not GAMEMODE.IsReallyHuntersGlee then
@@ -488,7 +492,7 @@ if SERVER and terminator_Extras then
 
         local mins, maxs = heli:GetCollisionBounds()
 
-        heli:SetModel( "models/glee/combine_helicopter_glee.mdl" )
+        heli:SetModel( heliModel )
         heli:SetCollisionBounds( mins, maxs )
         heli:Activate()
 
