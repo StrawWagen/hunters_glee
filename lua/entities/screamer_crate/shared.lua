@@ -569,28 +569,7 @@ function GM:ScreamingCrate( pos )
     PlayRepeatingSound( crate, "horrific_crate_scream" )
     crate:EmitSound( "npc/turret_floor/deploy.wav", 90, 120 )
 
-    local beaconOnCrate = ents.Create( "prop_physics" )
-    if IsValid( beaconOnCrate ) then
-        beaconOnCrate:SetModel( "models/props_lab/reciever01b.mdl" )
-        local beaconsPos = crate:LocalToWorld( beaconVecOffset )
-        local beaconsAng = crate:LocalToWorldAngles( beaconAngOffset )
-        beaconOnCrate:SetPos( beaconsPos )
-        beaconOnCrate:SetAngles( beaconsAng )
-        beaconOnCrate:SetCollisionGroup( COLLISION_GROUP_WEAPON )
-        beaconOnCrate:Spawn()
-        beaconOnCrate:SetParent( crate )
-
-        crate:CallOnRemove( "beaconedSuppliesBeaconFallOff", function( _, beacon )
-            local thePos = beacon:GetPos()
-            beacon:SetParent()
-            beacon:SetPos( thePos )
-            SafeRemoveEntityDelayed( beacon, 35 )
-            terminator_Extras.SmartSleepEntity( beacon, 3 )
-
-
-        end, beaconOnCrate )
-
-    end
+    terminator_Extras.AttachParentedDetail( crate, "models/props_lab/reciever01b.mdl", beaconVecOffset, beaconAngOffset, COLLISION_GROUP_WEAPON )
 
     crate.terminatorHunterInnateReaction = function()
         return MEMORY_BREAKABLE

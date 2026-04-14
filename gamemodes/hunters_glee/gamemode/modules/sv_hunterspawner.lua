@@ -34,29 +34,15 @@ GAMEMODE.RegisteredSpawnSets = GAMEMODE.RegisteredSpawnSets or {}
 
 local minute = 60
 
-local setDefaults = {
-    difficultyPerMin = { 100 / 10, 150 / 10 }, -- 100-150% diff at 10 mins
-    waveInterval = { minute, minute * 1.6 },
-    diffBumpWhenWaveKilled = { 10, 20 },
-    startingBudget = 20,
-    spawnCountPerDifficulty = { 0.08, 0.1 },
-    startingSpawnCount = { 1.8, 2 },
-    maxSpawnCount = 10,
-    maxSpawnDist = { 4500, 6500 },
-    minSpawnDist = 500, -- if you spawn closer than this, it feels unfair
-    roundEndSound = "tracks/roundEnd", -- parsed by sv_solidsounds.lua
-    roundWinSound = "tracks/roundWin",
-    roundPerfectWinSound = "tracks/roundPerfectWin",
-    roundStartSound = "", -- no sound for glee
-    genericSpawnerRate = 1,
-}
+-- so the default-defining folder is easier to find
+local setDefaults = include( "spawnset/sv_spawnsetdefaults.lua" )
 
 local spawnDefaults = {
-    minCount = -1, -- makes it ignore these
-    maxCount = -1, -- respects maxSpawnCount tho
+    minCount = -1, -- if these aren't defined, sets to -1 which makes them ignored
+    maxCount = -1, -- just this is ignored, it still respects maxSpawnCount tho
 }
 
-local spawnIgnored = { -- these don't exist to be parsed
+local spawnIgnored = { -- dont parse these, they run on the ents during spawning
     preSpawnedFunc = true,
     postSpawnedFunc = true,
 }
@@ -535,7 +521,20 @@ function GM:SpawnWaveSpawnIn()
     if nextHunterSpawn > cur then return end
 
     if currSpawn.spawnType == "hunter" then
+
+        local idealTickrate = 1 / FrameTime()
+        local currTickrate = 1 / engine.AbsoluteFrameTime()
+        local threshold = math.max( 2.5, idealTickrate * 0.5 )
+        local lagging = currTickrate <= threshold
+        if lagging then
+            debugPrint( "not spawning hunter, laggy, tickrate is " .. currTickrate .. " threshold is " .. threshold )
+            nextHunterSpawn = cur + 1
+            return
+
+        end
+
         local hunter = self:SpawnHunter( currSpawn.class, currSpawn )
+
         if IsValid( hunter ) then
             debugPrint( "spawned", hunter, currSpawn.name, currSpawn.prettyName )
             if currSpawn.postSpawnedFuncs then
@@ -784,8 +783,10 @@ function GM:SpawnHunter( class, currSpawn )
     print( hunter ) -- i like this print, you cannot make me remove it
     if debuggingVar:GetBool() then
         local nearestPly = self:nearestAlivePlayer( spawnPos )
-        debugoverlay.Line( spawnPos, nearestPly:GetShootPos() + nearestPly:GetAimVector() * 50, 10, color_white, true )
+        if IsValid( nearestPly ) then
+            debugoverlay.Line( spawnPos, nearestPly:GetShootPos() + nearestPly:GetAimVector() * 50, 10, color_white, true )
 
+        end
     end
 
     manageIfStale( hunter )

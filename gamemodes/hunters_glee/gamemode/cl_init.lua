@@ -1,7 +1,6 @@
 include( "shared.lua" )
 include( "cl_shopstandards.lua" ) -- has to load almost first
 include( "cl_shoppinggui.lua" )
-include( "modules/cl_souls.lua" )
 include( "modules/cl_targetid.lua" )
 include( "modules/cl_winscreen.lua" )
 include( "modules/cl_scoreboard.lua" )
@@ -11,6 +10,7 @@ include( "modules/cl_fallingwind.lua" )
 include( "modules/cl_killfeedoverride.lua" )
 include( "modules/escaping/cl_escaping.lua" )
 include( "modules/cl_spectateflashlight.lua" )
+include( "modules/deadplayerfx/cl_souls.lua" )
 include( "modules/spawnset/cl_spawnsetvote.lua" )
 include( "modules/shopitems/cl_shopgobbler.lua" )
 include( "modules/solidsounds/cl_solidsounds.lua" )
@@ -835,7 +835,7 @@ local lastDisplayWinners = false
 function HUDPaint()
     local ply = LocalPlayer()
     local cur = UnPredictedCurTime()
-    local displayWinners = GetGlobalBool( "termHuntDisplayWinners", false )
+    local displayWinners = GetGlobalBool( "glee_DisplayWinners", false )
 
     if displayWinners then
         paintOtherPlayers( ply )

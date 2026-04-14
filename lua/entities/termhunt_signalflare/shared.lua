@@ -21,33 +21,6 @@ end
 
 local heliModel = "models/glee/combine_helicopter_glee.mdl"
 
-local EntityPairs
-
-do
-    local e
-
-    -- Custom iterator, similar to ipairs, but made to iterate
-    -- over a table of entities, while skipping invalid entities.
-    -- CREDIT GLIDE, STYLED
-    local function EntIterator( array, i )
-        i = i + 1
-        e = array[i]
-
-        while e and not ( e.IsValid and e:IsValid() ) do
-            i = i + 1
-            e = array[i]
-        end
-
-        if e then
-            return i, e
-        end
-    end
-
-    function EntityPairs( array )
-        return EntIterator, array, 0
-    end
-end
-
 --sandbox support
 function ENT:SpawnFunction( ply, tr )
 
@@ -66,12 +39,41 @@ end
 
 if SERVER and terminator_Extras then
 
+    local EntityPairs
+
+    do
+        local e
+
+        -- Custom iterator, similar to ipairs, but made to iterate
+        -- over a table of entities, while skipping invalid entities.
+        -- CREDIT GLIDE, STYLED
+        local function EntIterator( array, i )
+            i = i + 1
+            e = array[i]
+
+            while e and not ( e.IsValid and e:IsValid() ) do
+                i = i + 1
+                e = array[i]
+            end
+
+            if e then
+                return i, e
+            end
+        end
+
+        function EntityPairs( array )
+            return EntIterator, array, 0
+        end
+    end
+
+    local debugging = CreateConVar( "huntersglee_debug_escapeheli", "0", { FCVAR_NONE }, "Enable debug info for the escape heli?" )
+
     util.PrecacheModel( heliModel )
 
     ENT.SteppedTooCloseDist = 2000 -- start at 2k dist
     ENT.MinTooCloseDist = 400 -- step down to 400 if we dont find any good corridors to spawn heli at
-    ENT.SteppedDirMaxZ = 0.25 -- start at 0.25z
-    ENT.MaxDirMaxZ = 0.75
+    ENT.SteppedDirMaxZ = 0.15 -- start at 0.15
+    ENT.MaxDirMaxZ = 0.75 -- stepped up every failure until it reaches this
 
     local function angerEverything()
         for _, ent in ents.Iterator() do
@@ -192,15 +194,18 @@ if SERVER and terminator_Extras then
 
         end
 
-        debugoverlay.SweptBox(
-            traceData.start,
-            callTraceResult.HitPos,
-            traceData.mins,
-            traceData.maxs,
-            Angle( 0, 0, 0 ),
-            5,
-            boxColor
-        )
+        if debugging:GetBool() then
+            debugoverlay.SweptBox(
+                traceData.start,
+                callTraceResult.HitPos,
+                traceData.mins,
+                traceData.maxs,
+                Angle( 0, 0, 0 ),
+                5,
+                boxColor
+            )
+
+        end
 
         if callTraceResult.HitPos:Distance( myPos ) < self.SteppedTooCloseDist then -- too close!
             self.SteppedTooCloseDist = math.max( self.SteppedTooCloseDist - 250, self.MinTooCloseDist )
@@ -302,6 +307,15 @@ if SERVER and terminator_Extras then
         if not IsValid( heli ) then return end
         if not IsValid( thing ) then return end
         heli:AddEntityRelationship( thing, D_LI, 99 )
+
+    end
+
+    local function makeFeudWith( heli, thing )
+        if not IsValid( heli ) then return end
+        if not IsValid( thing ) then return end
+        heli:AddEntityRelationship( thing, D_HT, 99 )
+        if not thing.AddEntityRelationship then return end
+        thing:AddEntityRelationship( heli, D_HT, 999 )
 
     end
 
@@ -424,17 +438,18 @@ if SERVER and terminator_Extras then
 
         end
 
-        --[[
-        debugoverlay.SweptBox(
-            blockedTrData.start,
-            blockedTrResult.HitPos,
-            blockedTrData.mins,
-            blockedTrData.maxs,
-            Angle( 0, 0, 0 ),
-            0.5,
-            Color( 255, 0, 0 )
-        )
-        --]]
+        if debugging:GetBool() then
+            debugoverlay.SweptBox(
+                blockedTrData.start,
+                blockedTrResult.HitPos,
+                blockedTrData.mins,
+                blockedTrData.maxs,
+                Angle( 0, 0, 0 ),
+                1,
+                Color( 255, 0, 0 )
+            )
+
+        end
 
         heli:SetSaveValue( "m_flPathMaxSpeed", newSpeed )
         return newSpeed
@@ -495,6 +510,37 @@ if SERVER and terminator_Extras then
         heli:SetModel( heliModel )
         heli:SetCollisionBounds( mins, maxs )
         heli:Activate()
+
+        heli.heli_Missiles = {}
+
+        -- missile hardpoint support
+        local mountingRight = terminator_Extras.AttachParentedDetail( heli, "models/props_trainstation/mount_connection001a.mdl", Vector( 44.5, -83.2, -17.8 ), Angle( 0, -89.9, 164 ) )
+        if IsValid( mountingRight ) then
+            local missileRight = ents.Create( "glee_helimissile" )
+            missileRight:SetStartsInactive( true )
+            missileRight:SetAttacker( heli )
+            missileRight:SetInflictor( missileRight )
+            missileRight:SetOwner( heli )
+            terminator_Extras.AttachParentedDetail( heli, missileRight, Vector( 40.6, -106.3, -31.5 ), Angle( 16, 0, 90 ) )
+
+            table.insert( heli.heli_Missiles, missileRight )
+
+        end
+
+        local mountingLeft = terminator_Extras.AttachParentedDetail( heli, "models/props_trainstation/mount_connection001a.mdl", Vector( 45, 83.2, -17.9 ), Angle( 0, 89.9, -164 ) )
+        if IsValid( mountingLeft ) then
+            local missileLeft = ents.Create( "glee_helimissile" )
+            missileLeft:SetStartsInactive( true )
+            missileLeft:SetAttacker( heli )
+            missileLeft:SetInflictor( missileLeft )
+            missileLeft:SetOwner( heli )
+            terminator_Extras.AttachParentedDetail( heli, missileLeft, Vector( 40.7, 106.3, -31.4 ), Angle( 16, 0, -90 ) )
+
+            table.insert( heli.heli_Missiles, missileLeft )
+
+        end
+
+        heli.nextMissileFire = 0
 
         for _, ply in player.Iterator() do
             makeHeliFriendlyWith( heli, ply )
@@ -612,6 +658,16 @@ if SERVER and terminator_Extras then
 
     end
 
+    concommand.Add( "huntersglee_debug_spawnrescueheli", function( ply, cmd, args )
+        if not ply:IsAdmin() then return end
+        local spawnPos = ply:GetPos() + Vector( 0, 0, 50 )
+        local faceDir = -ply:GetForward()
+        local targetPos = spawnPos + faceDir * 500
+
+        terminator_Extras.glee_SpawnTheRescueHeli( spawnPos, faceDir, targetPos )
+
+    end )
+
     local function heliManageRope( self )
         local currGoal = self.currentHeliGoal
         local rapelling = IsValid( self.glee_RappelRopeStartProp )
@@ -640,6 +696,53 @@ if SERVER and terminator_Extras then
 
         angerEverything()
 
+    end
+
+    local function heliManageMissileAttacking( self, enemy )
+        local nextFire = self.nextMissileFire
+        if CurTime() < nextFire then return end
+
+        if enemy:Health() <= 0 then return end
+
+        local hostilesAroundEnemy = 0
+        local friendliesAroundEnemy = 0
+        for _, thing in ipairs( ents.FindInSphere( enemy:GetPos(), 1250 ) ) do
+            if not ( thing:IsPlayer() or thing:IsNPC() or thing:IsNextBot() ) then continue end
+            local dispToThing = self:Disposition( thing )
+            if dispToThing == D_HT then
+                hostilesAroundEnemy = hostilesAroundEnemy + 1
+
+            elseif dispToThing == D_LI then
+                friendliesAroundEnemy = friendliesAroundEnemy + 1
+
+            end
+        end
+
+        if friendliesAroundEnemy > 1 then return end
+        -- shoot if lots of enemies, or enemy is tanky
+        local stronk = enemy:Health() > 1500 or enemy.ReallyHeavy
+        if not stronk and hostilesAroundEnemy < 2 then return end
+
+        local missiles = self.heli_Missiles
+        if not missiles or #missiles == 0 then return end
+        for _, missile in ipairs( missiles ) do
+            if not IsValid( missile ) then continue end
+            if not IsValid( missile:GetParent() ) then continue end
+            if not terminator_Extras.PosCanSeeComplex( missile:GetPos(), enemy:GetPos(), { self, missile } ) then continue end
+
+            local missilesPreUnparentedPos = missile:GetPos()
+            missile:SetParent( NULL )
+            missile:SetPos( missilesPreUnparentedPos )
+            missile:SetCollisionGroup( COLLISION_GROUP_PROJECTILE )
+
+            local dirToEnemy = terminator_Extras.dirToPos( missilesPreUnparentedPos, enemy:GetPos() )
+            missile:SetAngles( dirToEnemy:Angle() )
+
+            missile:MissileActivate()
+            self.nextMissileFire = CurTime() + 15
+            break
+
+        end
     end
 
     local vecUp400 = Vector( 0, 0, 400 )
@@ -695,8 +798,19 @@ if SERVER and terminator_Extras then
                 currEnemy:ReallyAnger( 30 )
 
             end
-            if not self:Visible( currEnemy ) then
+
+            makeFeudWith( self, currEnemy )
+
+            local enemysPos = currEnemy:GetPos()
+
+            local visibleEnem = self:Visible( currEnemy )
+            local facingEnemy = self:GetForward():Dot( ( enemysPos - myPos ):GetNormalized() ) > 0.97
+
+            if not visibleEnem then
                 self:SetEnemy( NULL )
+
+            elseif facingEnemy then
+                heliManageMissileAttacking( self, currEnemy )
 
             end
         end
@@ -787,6 +901,9 @@ if SERVER and terminator_Extras then
             else
                 self.currentHeliTask = "rescue_wanderForward"
                 local curMoveDir = ourVel:GetNormalized()
+                curMoveDir.z = math.Clamp( curMoveDir.z, -0.5, 0.5 ) -- dont go upwards too much when wandering
+                curMoveDir.z = curMoveDir.z * 0.5
+                curMoveDir:Normalize()
                 local forOffset = curMoveDir * 2000
                 local randOffset = VectorRand() * 150
                 idealMovePos = myPos + forOffset + randOffset
@@ -796,11 +913,7 @@ if SERVER and terminator_Extras then
         -- if no skybox surfaces, fly towards where we spawned
         elseif currGoal == "escape" then
             local nearestSkyboxPos = self.nearestSkyboxPos
-            local attempts = 5
-            if not nearestSkyboxPos or not self:VisibleVec( nearestSkyboxPos ) then
-                attempts = 10
-
-            end
+            local attempts = 10
             local trStruc = {
                 start = myPos,
                 endpos = nil,
@@ -825,6 +938,10 @@ if SERVER and terminator_Extras then
                 end
 
                 if not nearestSkyboxPos or myDistToNew < myPos:Distance( nearestSkyboxPos ) then
+                    if debugging:GetBool() then
+                        debugoverlay.Line( myPos, trResult.HitPos, 1, Color( 255, 255, 0 ), true )
+
+                    end
                     nearestSkyboxPos = trResult.HitPos
                     self.nearestSkyboxPos = nearestSkyboxPos
 
@@ -857,7 +974,11 @@ if SERVER and terminator_Extras then
         -- ideal movepos!
         -- we now find somewhere that will get us closer to the ideal movepos
         if idealMovePos then
-            --debugoverlay.Line( myPos, idealMovePos, 1, Color( 0, 255, 255 ), true )
+            if debugging:GetBool() then
+                debugoverlay.Sphere( idealMovePos, 25, 1, Color( 0, 255, 255 ), true )
+                debugoverlay.Line( myPos, idealMovePos, 1, Color( 0, 255, 255 ), true )
+
+            end
 
             local curSpeed = ourVel:Length()
             local distToIdeal = myPos:Distance( idealMovePos )
@@ -936,6 +1057,8 @@ if SERVER and terminator_Extras then
 
                 -- bigger angle checks the further into the loop we are
                 local integral = i / count
+
+                -- if we're going slow, way less velocity bias
                 if i > 2 and curSpeed < 500 then
                     integral = 2
 
@@ -955,7 +1078,10 @@ if SERVER and terminator_Extras then
 
                 local penalty = getPenaltyForPos( traceResult.HitPos, traceResult, offsetedDir * currDist )
 
-                --debugoverlay.Line( myPos, traceResult.HitPos, 1, Color( 255, 0, 0 ), true )
+                if debugging:GetBool() then
+                    debugoverlay.Line( myPos, traceResult.HitPos, 0.5, Color( 255, 0, 0 ), true )
+
+                end
 
                 results[penalty] = traceResult.HitPos
 
@@ -1044,6 +1170,10 @@ if SERVER and terminator_Extras then
                 self.ourPathTrack = newTrack
                 self:Fire( "SetTrack", self.glee_HeliTrack_TargetName )
 
+                if debugging:GetBool() then
+                    debugoverlay.Line( myPos, bestPos, 1, Color( 0, 255, 0 ), true )
+
+                end
             end
 
             manageHeliSpeedLimit( self, idealMovePos, skysTheLimit )

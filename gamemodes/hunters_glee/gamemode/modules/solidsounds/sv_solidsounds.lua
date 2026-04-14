@@ -2,7 +2,7 @@
 util.AddNetworkString( "glee_sendsolidsound" )
 util.AddNetworkString( "glee_stopsolidsounds" )
 
-local DEFAULT_FADE_IN  = 0.25
+local DEFAULT_FADE_IN  = 0
 local DEFAULT_FADE_OUT = 0.5
 
 function GM:SendSolidSound( path, data )
@@ -12,8 +12,6 @@ function GM:SendSolidSound( path, data )
     if string.StartsWith( path, "tracks/" ) then
         local trackData
         path, trackData = GAMEMODE:GetASoundTrack( string.sub( path, 8 ) )
-        print( path, trackData )
-        PrintTable( trackData )
         data = table.Copy( trackData )  -- avoid mutating trackData
 
     end
@@ -50,7 +48,7 @@ local soundTracks = {
             "hunters_glee/music/8.24.to_noone.ogg",
         },
         priority = 50,
-        fadeInLength = 4,
+        fadeInLength = 1,
     },
     roundEnd = {
         sounds   = { "hunters_glee/music/gleeroundendhoot6simple.ogg" },

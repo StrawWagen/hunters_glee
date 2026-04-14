@@ -284,8 +284,8 @@ local function checkSkulls()
     -- wait until the skull has finished setting up
     timer.Simple( 0, function()
         local winner, tieBroken = GAMEMODE:calculateWinner()
-        SetGlobalEntity( "termHuntWinner", winner )
-        SetGlobalBool( "termHuntWinnerTied", tieBroken )
+        SetGlobalEntity( "glee_Winner", winner )
+        SetGlobalBool( "glee_WinnerTied", tieBroken )
 
     end )
 end
@@ -296,7 +296,7 @@ hook.Add( "huntersglee_round_into_active", "glee_broadcastnewfinestprey", checkS
 
 
 hook.Add( "PlayerDeath", "glee_winnerdropsskulls", function( victim )
-    local winner = GetGlobalEntity( "termHuntWinner" )
+    local winner = GetGlobalEntity( "glee_Winner" )
 
     if not IsValid( winner ) then return end
     if winner ~= victim then return end

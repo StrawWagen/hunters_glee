@@ -72,7 +72,18 @@ function LockDoorAndRunAFunctionWhenTheDoorIsUsed( door, playerAttaching, functi
     door:EmitSound( "doors/door_locked2.wav", 80 )
 
     door.doorPlayers = door.doorPlayers or {}
-    table.insert( door.doorPlayers, playerAttaching )
+    local alreadyInTable = false
+    for _, ply in ipairs( door.doorPlayers ) do
+        if ply == playerAttaching then
+            alreadyInTable = true
+            break
+
+        end
+    end
+    if not alreadyInTable then
+        table.insert( door.doorPlayers, playerAttaching )
+
+    end
 
     local hookName = "CheckUsedEntity_DoorLocker_" .. door:GetCreationID()
 

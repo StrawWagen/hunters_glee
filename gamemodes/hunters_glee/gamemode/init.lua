@@ -1,7 +1,6 @@
 -- ADDCS
 AddCSLuaFile( "shared.lua" )
 AddCSLuaFile( "cl_init.lua" )
-AddCSLuaFile( "modules/cl_souls.lua" )
 AddCSLuaFile( "modules/cl_targetid.lua" )
 AddCSLuaFile( "modules/cl_winscreen.lua" )
 AddCSLuaFile( "modules/cl_modelscale.lua" )
@@ -13,6 +12,7 @@ AddCSLuaFile( "modules/cl_killfeedoverride.lua" )
 AddCSLuaFile( "modules/battery/cl_battery.lua" )
 AddCSLuaFile( "modules/bpm/cl_bpm.lua" )
 AddCSLuaFile( "modules/escaping/cl_escaping.lua" )
+AddCSLuaFile( "modules/deadplayerfx/cl_souls.lua" )
 AddCSLuaFile( "modules/cl_spectateflashlight.lua" )
 AddCSLuaFile( "modules/solidsounds/cl_solidsounds.lua" )
 AddCSLuaFile( "modules/thirdpersonflashlight/cl_flashlight.lua" )
@@ -143,6 +143,7 @@ GM.SpawnTypes = {
 
 GM.roundStartAfterNavCheck      = 75
 GM.roundStartNormal             = 30
+GM.roundStartNormalAllEscaped   = 60
 GM.IsReallyHuntersGlee          = true
 
 -- this is increased when all hunters are killed, or are being forced to spawn in front of players
@@ -183,7 +184,7 @@ function GM:TermHuntSetup()
 
     -- just in case!
     hook.Remove( "Think", "glee_DoGreedyPatchThinkHook" )
-    SetGlobalBool( "termHuntDisplayWinners", false )
+    SetGlobalBool( "glee_DisplayWinners", false )
     game.SetTimeScale( 1 )
 
     for _, ply in ipairs( player.GetAll() ) do
@@ -506,7 +507,7 @@ end
 function GM:initDependenciesCheck()
     self.ValidNavarea = self:navmeshCheck()
 
-    SetGlobalBool( "termHuntDisplayWinners", false )
+    SetGlobalBool( "glee_DisplayWinners", false )
     self.hasNavmesh = self.ValidNavarea:IsValid() and navmesh.IsLoaded()
     return self.hasNavmesh
 
@@ -862,6 +863,12 @@ function GM:DelayRoundEndingUntil( time )
 
 end
 
+function GM:ResetExtraData()
+    self.roundExtraData = nil
+    self.roundExtraData = {}
+
+end
+
 -- from where people can buy stuff with discounts, to the hunt
 function GM:roundStart()
     hook.Run( "huntersglee_round_pre_into_active" )
@@ -871,14 +878,12 @@ function GM:roundStart()
     self:SetRoundState( self.ROUND_ACTIVE )
     self.roundScore = nil
     self.roundScore = {}
-    self.roundExtraData = nil
-    self.roundExtraData = {}
     self.roundDiffBump = 0
 
-    SetGlobalEntity( "termHuntWinner", NULL )
-    SetGlobalInt( "termHuntWinnerSkulls", 0 )
+    SetGlobalEntity( "glee_Winner", NULL )
+    SetGlobalInt( "glee_WinnerSkulls", 0 )
 
-    SetGlobalInt( "termhuntEscapedCount", 0 )
+    SetGlobalInt( "glee_EscapedCount", 0 )
 
     for _, ply in ipairs( player.GetAll() ) do
         ply:SetDeaths( 0 )
@@ -899,6 +904,21 @@ function GM:roundEnd()
     self.limboEnd = CurTime() + 18 + timeAdd
     self.finishedRoundCount = self.finishedRoundCount + 1
 
+    GAMEMODE.roundExtraData.everyoneEscaped = true
+    GAMEMODE.roundExtraData.someoneEscaped = false
+    for _, ply in player.Iterator() do
+        local hasEscaped = ply:HasEscaped()
+        if hasEscaped then
+            GAMEMODE.roundExtraData.someoneEscaped = true
+
+        else
+            GAMEMODE.roundExtraData.everyoneEscaped = false
+
+        end
+    end
+
+    SetGlobalBool( "glee_EveryoneEscapedLastRound", GAMEMODE.roundExtraData.everyoneEscaped )
+
     self.deadPlayers = {}
     self:SetRoundState( self.ROUND_LIMBO )
     timer.Simple( 0, function()
@@ -907,8 +927,8 @@ function GM:roundEnd()
         local winner = self:calculateWinner()
         local totalScore = self:calculateTotalScore()
 
-        SetGlobalBool( "termHuntDisplayWinners", true )
-        SetGlobalInt( "termHuntTotalScore", math.Round( totalScore ) )
+        SetGlobalBool( "glee_DisplayWinners", true )
+        SetGlobalInt( "glee_TotalScore", math.Round( totalScore ) )
 
         local escapedCount = 0
         for _, ply in player.Iterator() do
@@ -916,17 +936,17 @@ function GM:roundEnd()
             escapedCount = escapedCount + 1
 
         end
-        SetGlobalInt( "termhuntEscapedCount", escapedCount )
+        SetGlobalInt( "glee_EscapedCount", escapedCount )
 
         if winner:GetSkulls() <= 0 then
-            SetGlobalEntity( "termHuntWinner", NULL )
-            SetGlobalInt( "termHuntWinnerSkulls", 0 )
+            SetGlobalEntity( "glee_Winner", NULL )
+            SetGlobalInt( "glee_WinnerSkulls", 0 )
             return
 
         end
 
-        SetGlobalEntity( "termHuntWinner", winner )
-        SetGlobalInt( "termHuntWinnerSkulls", winner:GetSkulls() )
+        SetGlobalEntity( "glee_Winner", winner )
+        SetGlobalInt( "glee_WinnerSkulls", winner:GetSkulls() )
 
     end )
 
@@ -937,6 +957,7 @@ end
 -- from the part where finest prey & total score is displayed, into setup where people can buy stuff with discounts
 function GM:beginSetup()
     self:RemoveHunters()
+
     for _, ply in player.Iterator() do
         ply.realRespawn = true -- wipe all shop attributes
         ply.shopItemCooldowns = {} -- reset wep cooldowns
@@ -951,9 +972,18 @@ function GM:beginSetup()
     game.CleanUpMap( false, { "env_fire", "entityflame", "_firesmoke" } )
     self.blockCleanupSetup = nil
 
-    SetGlobalBool( "termHuntDisplayWinners", false )
+    SetGlobalBool( "glee_DisplayWinners", false )
+    SetGlobalBool( "glee_EveryoneEscapedLastRound", false )
+
+    local time
+    if self.roundExtraData.everyoneEscaped then
+        time = self.roundStartNormalAllEscaped
+
+    else
+        time = self.roundStartNormal
+
+    end
     local var = GetConVar( "sv_cheats" )
-    local time = self.roundStartNormal
     if var:GetBool() == true then
         time = time / 8
 
@@ -965,6 +995,8 @@ function GM:beginSetup()
 
     end )
 
+    self:ResetExtraData()
+
     hook.Run( "huntersglee_round_into_inactive" )
 
 end
@@ -972,6 +1004,8 @@ end
 -- navmesh is not loaded at initialize so we wait
 -- from the 5 second countdown to the first buying period
 function GM:setupFinish()
+    self:ResetExtraData()
+
     self.termHunt_navmeshCheckTime = math.huge
     local HasNav = self:initDependenciesCheck()
     if HasNav ~= true then

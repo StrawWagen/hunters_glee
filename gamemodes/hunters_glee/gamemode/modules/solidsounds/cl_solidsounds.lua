@@ -60,7 +60,7 @@ local function startSound( path, pitch, vol, offset, fadeInLength, fadeOutLength
     -- channel won't be invalid for a couple frames as the sound loads
     nextThink = CurTime() + THINK_INTERVAL
 
-    sound.PlayFile( realPath, "noblock", function( channel, errNum, _errStr )
+    sound.PlayFile( realPath, "noblock noplay", function( channel, errNum, _errStr )
         if errNum and errNum ~= 0 then return end
         if not IsValid( channel )  then return end
         if loadGen ~= myGen then
@@ -142,7 +142,8 @@ hook.Add( "Think", "glee_solidsound_think", function()
         local progress = math.Clamp( ( now - currentSound.fadeIn.startTime ) / currentSound.fadeIn.duration, 0, 1 )
 
         if IsValid( currentSound.channel ) then
-            currentSound.channel:SetVolume( currentSound.fadeIn.targetVol * progress )
+            local vol = currentSound.fadeIn.targetVol * progress
+            currentSound.channel:SetVolume( vol )
 
         end
 
@@ -157,7 +158,8 @@ hook.Add( "Think", "glee_solidsound_think", function()
         local progress = math.Clamp( ( now - currentSound.fade.startTime ) / currentSound.fade.duration, 0, 1 )
 
         if IsValid( currentSound.channel ) then
-            currentSound.channel:SetVolume( currentSound.fade.startVol * ( 1 - progress ) )
+            local vol = currentSound.fade.startVol * ( 1 - progress )
+            currentSound.channel:SetVolume( vol )
 
         end
 

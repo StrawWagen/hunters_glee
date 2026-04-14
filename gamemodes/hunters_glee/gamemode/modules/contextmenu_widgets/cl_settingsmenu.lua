@@ -45,7 +45,7 @@ local settingsCategories = {
                 max = 1,
                 decimals = 1,
                 prettyName = "Music volume",
-                desc = "Change the music's volume.",
+                desc = "Change the music's volume. Default is -1 which translates to 0.75",
             },
             {
                 cvar = "huntersglee_cl_showhud",

@@ -51,7 +51,7 @@ local function buildSections( startTime )
     sections = {}
 
     -- SECTION 1: Hunt's Tally
-    local totalScore = GetGlobalInt( "termHuntTotalScore", 0 )
+    local totalScore = GetGlobalInt( "glee_TotalScore", 0 )
     totalScore = math.Round( totalScore )
 
     sections[1] = {
@@ -65,8 +65,8 @@ local function buildSections( startTime )
 
 
     -- SECTION 2: Finest Prey
-    local winner = GetGlobalEntity( "termHuntWinner", NULL )
-    local winnerSkulls = GetGlobalInt( "termHuntWinnerSkulls", 0 )
+    local winner = GetGlobalEntity( "glee_Winner", NULL )
+    local winnerSkulls = GetGlobalInt( "glee_WinnerSkulls", 0 )
 
     local preyEntries = {
         { text = "Finest Prey", font = "termhuntTriumphantFont", color = color_white },
@@ -91,7 +91,7 @@ local function buildSections( startTime )
 
 
     -- SECTION 3: Souls Escaped
-    local escapedCount = GetGlobalInt( "termhuntEscapedCount", 0 )
+    local escapedCount = GetGlobalInt( "glee_EscapedCount", 0 )
 
     local escapedEntries = {
         { text = "Souls Escaped", font = "termhuntTriumphantFont", color = color_white },

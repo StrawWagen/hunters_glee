@@ -55,27 +55,16 @@ hook.Add( "glee_post_set_spawnset", "glee_spawnset_startsound", function() -- wh
 end )
 
 hook.Add( "huntersglee_round_into_limbo", "glee_spawnset_endsound", function()
-    local everyoneEscaped = true
-    local someoneEscaped = false
-    for _, ply in player.Iterator() do
-        local hasEscaped = ply:HasEscaped()
-        if hasEscaped then
-            someoneEscaped = true
-
-        else
-            everyoneEscaped = false
-
-        end
-
-    end
-    if everyoneEscaped then
+    if GAMEMODE.roundExtraData.everyoneEscaped then
         playPerfectWinSound()
 
-    elseif someoneEscaped then
+    elseif GAMEMODE.roundExtraData.someoneEscaped then
         playWinSound()
 
     else
-        playEndSound()
+        timer.Simple( 1, function()
+            playEndSound()
 
+        end )
     end
 end )
