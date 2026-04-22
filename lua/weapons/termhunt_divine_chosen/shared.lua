@@ -149,6 +149,7 @@ function SWEP:Equip()
 
     end )
 
+    -- self-lightning rocket jumps you
     hook.Add( "EntityTakeDamage", self.hookId, function( target, dmg )
         if not IsValid( self ) then hook.Remove( "EntityTakeDamage", hookId ) return end
         local owner = self:GetOwner()

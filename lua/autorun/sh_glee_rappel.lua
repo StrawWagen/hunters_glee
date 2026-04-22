@@ -26,6 +26,7 @@ glee_RappelSettings = {
     ropeDropFromVehicleLength = 700,
     ropeUseHitboxWidth = 128,
     ropeUseAimTolerance = 100,
+    rappelingFriction = 0.5,
 }
 
 local function getRappelAnchorPos( rappeller )
@@ -109,6 +110,13 @@ local function moveHook( ply, moveData )
             end )
         end
     end
+
+    -- Horizontal friction: bleed off XY velocity while on the rope
+    local frictVel = moveData:GetVelocity()
+    local frictionMul = 1 - glee_RappelSettings.rappelingFriction * engine.TickInterval()
+    frictVel.x = frictVel.x * frictionMul
+    frictVel.y = frictVel.y * frictionMul
+    moveData:SetVelocity( frictVel )
 
     if not glee_RappelSettings.shouldSnap then return end
 

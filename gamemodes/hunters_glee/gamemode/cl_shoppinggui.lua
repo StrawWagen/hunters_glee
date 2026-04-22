@@ -1150,6 +1150,7 @@ function termHuntOpenTheShop()
                     local currentMarkup = GAMEMODE:shopMarkup( ply, identifierPaint )
                     if currentMarkup ~= 1 then
                         self.markupString = "( " .. tostring( currentMarkup ) .. "x markup )"
+
                     end
 
                     -- handle tooltips

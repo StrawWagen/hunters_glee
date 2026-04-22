@@ -1,6 +1,43 @@
 
 local bit = bit
 
+
+local GAMEMODE = GAMEMODE or GM
+
+local ceilingLowThreshold  = 120
+local ceilingHighThreshold = 300
+
+local runwayLength = 5000
+
+local flags = {}
+GM.NavEFlags = flags -- Nav Extra Flags
+
+flags.FLAT = 1 -- flat ground
+flags.UNDER_SKY = 2 -- area is under sky
+flags.LOW_CEILING = 4 -- area has low ceiling
+flags.HIGH_CEILING = 8 -- area has high ceiling
+flags.LOCALE_BEACH = 16 -- right next to water
+flags.LOCALE_RUNWAY = 32 -- big areas with long sightlines in at least one direction, something can take off if spawned
+flags.LOCALE_PEAK = 64 -- in highest 10% of the map, and higher center than all neighbors
+flags.LOCALE_DREG = 128 -- lowest 10% of the map, can be underwater
+
+concommand.Add( "huntersglee_debug_highlightallareaswithflag", function( ply, cmd, args )
+    if not ply:IsAdmin() then return end
+
+    local flag = tonumber( args[1] )
+    if not flag then return end
+
+    local areas = GAMEMODE:GetAreasWithFlag( flag )
+    print( "Highlighting " .. #areas .. " areas with flag " .. flag )
+
+    for _, area in ipairs( areas ) do
+        local center = area:GetCenter()
+        debugoverlay.Cross( center, 10, 5, Color( 255, 0, 0 ), true )
+
+    end
+end )
+
+
 local function areasSurfaceArea( area )
     return area:GetSizeX() * area:GetSizeY()
 
@@ -32,26 +69,24 @@ local function areaIsFlat( area )
 
 end
 
-local GAMEMODE = GAMEMODE or GM
-
-function GAMEMODE:HasExtraFlag( area, flag )
-    local flags = self.areaExtraFlags[area]
-    if not flags then return false end
-    return bit.band( flags, flag ) ~= 0
+function GAMEMODE:HasExtraFlags( area, flag )
+    local areasFlags = self.areaExtraFlags[area]
+    if not areasFlags then return false end
+    return bit.band( areasFlags, flag ) ~= 0
 
 end
 
 function GAMEMODE:GetAreasWithFlag( flag )
-    return self.areasByExtraFlags[flag]
+    return self.areasByExtraFlags[flag] or {}
 
 end
 
 function GAMEMODE:RegisterFlagStatus( area, flag )
-    local flags = self.areaExtraFlags[area] or 0
+    local areasFlags = self.areaExtraFlags[area] or 0
 
-    if bit.band( flags, flag ) ~= 0 then return end -- already has flag
+    if bit.band( areasFlags, flag ) ~= 0 then return end -- already has flag
 
-    self.areaExtraFlags[area] = bit.bor( flags, flag )
+    self.areaExtraFlags[area] = bit.bor( areasFlags, flag )
 
     local allAreasWithFlag = self.areasByExtraFlags[flag]
     if not allAreasWithFlag then -- first one!
@@ -64,24 +99,6 @@ function GAMEMODE:RegisterFlagStatus( area, flag )
 end
 
 
-local ceilingLowThreshold  = 120
-local ceilingHighThreshold = 300
-
-local runwayLength = 5000
-
-local flags = {}
-GM.NavEFlags = flags -- Nav Extra Flags
-
-flags.FLAT = 1 -- flat ground
-flags.UNDER_SKY = 2 -- area is under sky
-flags.LOW_CEILING = 4 -- area has low ceiling
-flags.HIGH_CEILING = 8 -- area has high ceiling
-flags.LOCALE_BEACH = 16 -- right next to water
-flags.LOCALE_RUNWAY = 32 -- long flat open area, like an airstrip, only consider if area is perfectly flat and large
-flags.LOCALE_PEAK = 64 -- in highest 10% of the map, and higher center than all neighbors
-flags.LOCALE_DREG = 128 -- lowest 500u of the map
-
-
 -- navmesh understanding stuff
 local function reset()
     GAMEMODE.isSkyOnMap = false
@@ -90,6 +107,8 @@ local function reset()
     GAMEMODE.highestSkyZ = -math.huge -- highest z on map, probably skybox height
     GAMEMODE.highestAreaZ = -math.huge -- highest navarea center's z
     GAMEMODE.lowestAreaZ = math.huge -- lowest navarea center's z
+    GAMEMODE.dregCutoff = math.huge -- lowestAreaZ + 10% of Z range
+    GAMEMODE.PeakCutoff = -math.huge -- highestAreaZ - 10% of Z range
     GAMEMODE.navmeshTotalSurfaceArea = 0
     GAMEMODE.navmeshUnderSkySurfaceArea = 0
 
@@ -233,25 +252,34 @@ hook.Add( "glee_navmesh_visit", "glee_precache_extraflags", function( area )
     end
 end )
 
+hook.Add( "glee_navmesh_postvisit_start", "glee_set_dreg_cutoff", function()
+    local zRange = GAMEMODE.highestAreaZ - GAMEMODE.lowestAreaZ
+    local tenPercentOfHeight = zRange * 0.1
+
+    -- dreg cutoff for LOCALE_DREG
+    GAMEMODE.dregCutoff = GAMEMODE.lowestAreaZ + tenPercentOfHeight
+
+    -- peak cutoff for LOCALE_PEAK
+    GAMEMODE.PeakCutoff = GAMEMODE.highestAreaZ - tenPercentOfHeight
+
+end )
+
 hook.Add( "glee_navmesh_postvisit", "glee_precache_extraflags", function( area )
     local areasCenter = area:GetCenter()
     local currAreaZ = areasCenter.z
 
-    -- LOCALE_DREG: lowest 500u of the map
-    if currAreaZ <= GAMEMODE.lowestAreaZ + 500 then
+    -- LOCALE_DREG: deepest parts of the map
+    if currAreaZ <= GAMEMODE.dregCutoff then
         GAMEMODE:RegisterFlagStatus( area, flags.LOCALE_DREG )
 
     end
 
-    -- LOCALE_PEAK: in highest 10% of the map's Z range, and higher center than all neighbors
-    local zRange = GAMEMODE.highestAreaZ - GAMEMODE.lowestAreaZ
-    local peakThreshold = GAMEMODE.highestAreaZ - zRange * 0.1
-
-    if currAreaZ >= peakThreshold then
+    -- LOCALE_PEAK: highest parts of the map that are also higher than all their neighbors
+    if currAreaZ >= GAMEMODE.PeakCutoff then
         local isHigherThanAllNeighbors = true
 
         for _, neighbor in ipairs( area:GetAdjacentAreas() ) do
-            if neighbor:GetCenter().z >= currAreaZ then
+            if neighbor:GetCenter().z > currAreaZ then
                 isHigherThanAllNeighbors = false
                 break
 

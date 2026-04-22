@@ -15,7 +15,7 @@ SWEP.Instructions = "Primary Fire: Attach/Cut Rope"
 SWEP.Spawnable = true
 SWEP.AdminOnly = false
 
-SWEP.IsEonRappel = true
+SWEP.IsGleeRappel = true
 
 SWEP.ViewModelFOV = 45
 SWEP.ViewModelFlip = false
@@ -49,25 +49,26 @@ end
 function SWEP:PrimaryAttack()
     if not SERVER then return end
 
-    local ply = self:GetOwner()
-    if not IsValid( ply ) then return end
-    if not ply:IsPlayer() then return end
-    if ply:GetMoveType() == MOVETYPE_NOCLIP then return end
+    local owner = self:GetOwner()
+    if not IsValid( owner ) then return end
+    if not owner:IsPlayer() then return end
 
-    if ply:GetNWBool( "glee_IsRappelling", false ) then
-        ply:StopRapelling()
+    if owner:GetNWBool( "glee_IsRappelling", false ) then
+        owner:StopRapelling()
         return
 
     end
 
-    local eyeTrace = ply:GetEyeTrace()
+    local eyeTrace = owner:GetEyeTrace()
 
-    if hook.Run( "PlayerBlockRappel", ply, eyeTrace ) then return end
-    if eyeTrace.HitPos:Distance( ply:GetPos() ) >= self.MaxDistance then return end
+    if hook.Run( "PlayerBlockRappel", owner, eyeTrace ) then return end
+
+    print("hi")
+    if eyeTrace.HitPos:Distance( owner:GetPos() ) >= self.MaxDistance then return end
 
     local traceEnt = eyeTrace.Entity
     local hitPos = eyeTrace.HitPos
-    ply:RappelTo( traceEnt, hitPos )
+    owner:RappelTo( traceEnt, hitPos )
 
 end
 

@@ -68,6 +68,9 @@ function GAMEMODE:DoGreedyPatch()
         hook.Run( "glee_navmesh_visit", area )
 
     end
+
+    hook.Run( "glee_navmesh_postvisit_start" )
+
     for i, area in ipairs( navAreas ) do
         if i % 100 == 0 then
             coroutine_yield()

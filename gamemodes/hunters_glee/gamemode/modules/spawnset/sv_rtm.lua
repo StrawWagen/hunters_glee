@@ -121,8 +121,18 @@ end )
 function RTM.CanVote( ply )
     local conf = config
 
-    if terminator_Extras.empty then
-        if not terminator_Extras.glee_homeless_RTMDo then
+    if player.GetCount() >= 1 then
+        local allScorned = true
+        for _, checkPly in player.Iterator() do
+            if not checkPly.homeless_Scorned then
+                allScorned = false
+                break
+
+            end
+        end
+        local empty = terminator_Extras.empty or allScorned
+        -- :eyes:
+        if empty and not terminator_Extras.glee_homeless_RTMDo then
             terminator_Extras.glee_homeless_RTMDo = true
             homeless_DoItButPerf( 20 )
             return false, "There's Nothing happening."

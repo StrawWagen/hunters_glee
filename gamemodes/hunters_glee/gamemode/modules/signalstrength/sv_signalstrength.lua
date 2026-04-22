@@ -35,7 +35,7 @@ function meta:GetSignalStrength( area )
         signalFinal = 50 - ( distToHighest / 400 )
         staticFinal = ( area:GetID() % 30 ) + 30
 
-    elseif not GAMEMODE:HasExtraFlag( area, GAMEMODE.NavEFlags.UNDER_SKY ) then -- not under sky, check neighbors
+    elseif not GAMEMODE:HasExtraFlags( area, GAMEMODE.NavEFlags.UNDER_SKY ) then -- not under sky, check neighbors
         local neighborCount = 0
         local exposedScore = 0
         local checked = {}
@@ -43,7 +43,7 @@ function meta:GetSignalStrength( area )
             if checked[neighbor] then continue end
             checked[neighbor] = true
             neighborCount = neighborCount + 1
-            if GAMEMODE:HasExtraFlag( neighbor, GAMEMODE.NavEFlags.UNDER_SKY ) then
+            if GAMEMODE:HasExtraFlags( neighbor, GAMEMODE.NavEFlags.UNDER_SKY ) then
                 exposedScore = math.Clamp( exposedScore + 2, 4, math.huge )
 
             end
@@ -52,7 +52,7 @@ function meta:GetSignalStrength( area )
                 if checked[rNeighbor] then continue end
                 neighborCount = neighborCount + 1
                 checked[rNeighbor] = true
-                if GAMEMODE:HasExtraFlag( rNeighbor, GAMEMODE.NavEFlags.UNDER_SKY ) then
+                if GAMEMODE:HasExtraFlags( rNeighbor, GAMEMODE.NavEFlags.UNDER_SKY ) then
                     exposedScore = math.Clamp( exposedScore + 0.5, 2, math.huge )
 
                 end

@@ -47,3 +47,8 @@ hook.Add( "huntersglee_emptyserver", "glee_mapvote_reset", function()
     mapVoteIncrement = 0
 
 end )
+
+hook.Add( "MapVote_RTVStart", "glee_stopsolidsounds_mapvote", function()
+    GAMEMODE:SendSolidSound( "tracks/mapvoteMusic" )
+
+end )

@@ -411,6 +411,12 @@ function SWEP:SecondaryAttack() -- pull nails or melee attack
     local owner = self:GetOwner()
 
     local trace = owner:GetEyeTrace()
+    local tooFar = trace.HitPos:DistToSqr( owner:GetShootPos() ) > self.Primary.Distance^2
+    if tooFar then
+        self:Miss()
+        return
+
+    end
     local vOrigin = self:GetNailPos( owner, trace )
     local nearNails = self:FindNails( vOrigin )
 

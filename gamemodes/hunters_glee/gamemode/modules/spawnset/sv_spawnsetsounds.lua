@@ -62,7 +62,7 @@ hook.Add( "huntersglee_round_into_limbo", "glee_spawnset_endsound", function()
         playWinSound()
 
     else
-        timer.Simple( 1, function()
+        timer.Simple( 0.5, function()
             playEndSound()
 
         end )

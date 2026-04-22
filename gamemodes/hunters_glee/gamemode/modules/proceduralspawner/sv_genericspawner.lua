@@ -97,6 +97,10 @@ local function addJob( curr )
     genericJob.posFindingOrigin = livePly:GetPos()
     genericJob.spawnRadius = curr.radius
     genericJob.onFailed = function() onJobBail( className ) end
+    genericJob.extraFlagsWhitelist = curr.extraFlagsWhitelist
+    genericJob.extraFlagsBlacklist = curr.extraFlagsBlacklist
+    genericJob.attributeWhitelist = curr.attributeWhitelist
+    genericJob.attributeBlacklist = curr.attributeBlacklist
 
     genericJob.originIsDefinitive = false
     genericJob.sortForNearest = false
@@ -330,6 +334,14 @@ GAMEMODE:RandomlySpawnEntTbl( "sent_ball", {
     -- if true, spawner will delete itself on round end 
     -- expireOnRoundEnd = true,
 
+    -- optional
+    -- only spawn in navareas with these custom flags, full list in sv_navmeshcategorizer.lua
+    -- extraFlagsWhitelist/extraFlagsBlacklist
+
+    -- optional
+    -- NAV_MESH attribute filtering, for all the default attributes like NAV_MESH_AVOID
+    -- attributeWhitelist/attributeBlacklist
+
 } )
 
 --]]
@@ -349,6 +361,7 @@ function GM:RandomlySpawnEntTbl( className, data )
     if not data.maxCount then error( "RandomlySpawnEntTbl: missing maxCount for " .. className ) end
 
     data.className = className
+    -- default these ones
     data.minAreaSize = data.minAreaSize or 25
     data.radius = data.radius or 5000
 

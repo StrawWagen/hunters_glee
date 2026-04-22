@@ -185,6 +185,7 @@ end
 
 function GM:shopMarkup( purchaser, toPurchase )
     local dat = GAMEMODE:GetShopItemData( toPurchase )
+    if not dat then return 1 end
     if not dat.markup then return 1 end
     if GAMEMODE:RoundState() == GAMEMODE.ROUND_ACTIVE then
         if dat.markupPerPurchase then

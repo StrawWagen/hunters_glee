@@ -33,6 +33,7 @@ gamemodes\hunters_glee\gamemode\modules\battery\cl_battery.lua
 gamemodes\hunters_glee\gamemode\modules\battery\sh_battery.lua
 
 gamemodes\hunters_glee\gamemode\modules\deadplayerfx\cl_souls.lua
+gamemodes\hunters_glee\gamemode\modules\deadplayerfx\cl_deaddesaturation.lua
 
 gamemodes\hunters_glee\gamemode\modules\escaping\cl_escaping.lua
 

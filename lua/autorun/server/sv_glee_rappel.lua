@@ -349,8 +349,8 @@ end )
 
 
 hook.Add( "PlayerBlockRappel", "glee_Rappel_Ratelimit", function( ply, rappelUseEnt )
-    if not IsValid( ply ) then return true end
-    if not IsValid( rappelUseEnt ) then return true end
+    if not IsValid( ply ) then return end
+    if not IsValid( rappelUseEnt ) then return end
 
     local last = ply.glee_LastStopRappeling or 0
     if last + 1 > CurTime() then

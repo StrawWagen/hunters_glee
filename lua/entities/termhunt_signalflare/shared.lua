@@ -108,6 +108,25 @@ if SERVER and terminator_Extras then
         end
     end
 
+    function ENT:AdditionalInitialize()
+        local brightness = 5
+        -- bright blue light
+        local dlight = ents.Create( "light_dynamic" )
+        dlight:SetKeyValue( "_light", "255 255 255 200" )
+        dlight:SetKeyValue( "distance", "450" )
+        dlight:SetKeyValue( "brightness", tostring( brightness ) )
+        dlight:SetPos( self:GetPos() )
+        dlight:SetParent( self )
+        dlight:Spawn()
+
+        dlight:Fire( "brightness", brightness * 0.75, 3 )
+        dlight:Fire( "brightness", brightness * 0.5, 5 )
+        dlight:Fire( "brightness", brightness * 0.25, 10 )
+
+        self.signalflare_dLight = dlight
+
+    end
+
     local zHeightToStartCalling = 350
 
     local heli_SpeedLimit = 4000
@@ -143,7 +162,22 @@ if SERVER and terminator_Extras then
     local rescueTimerName = "glee_rescueheli_countdown"
 
     function ENT:AdditionalThink()
+        if self.wastedFlare then return end
         if self.calledForHeli then return end
+
+        local myPhysObj = self:GetPhysicsObject()
+        if IsValid( myPhysObj ) then
+            local velLengSqr = myPhysObj:GetVelocity():LengthSqr()
+            if velLengSqr < 10^2 then
+                self.wastedFlare = true
+                if IsValid( self.MyOwner ) and self.MyOwner:IsPlayer() and not self.MyOwner.glee_SignalFlareHint then
+                    self.MyOwner.glee_SignalFlareHint = true
+                    huntersGlee_Announce( { self.MyOwner }, 500, 5, "God, that's bright\nI bet you could see it from miles away..." )
+
+                end
+            end
+        end
+
         if IsValid( terminator_Extras.glee_CurrentRescueHeli ) then return end
         if timer.Exists( rescueTimerName ) then return end -- already called, just waiting
 
@@ -838,21 +872,6 @@ if SERVER and terminator_Extras then
                 self.currentHeliTask = "rescue_switchToEscape"
                 self.currentHeliGoal = "escape"
 
-            elseif self.originalRescuePos then
-                self.currentHeliTask = "rescue_flyToFlare"
-
-                local distToOriginalRescuePos = myPos:Distance( self.originalRescuePos )
-                if self:VisibleVec( self.originalRescuePos ) and distToOriginalRescuePos < 3000 then
-                    self.originalRescuePos = nil
-
-                elseif distToOriginalRescuePos < 1500 then
-                    self.originalRescuePos = nil
-
-                else
-                    idealMovePos = self.originalRescuePos
-
-                end
-
             elseif IsValid( rescueTarget ) and rescueTarget:GetNWEntity( "glee_RappelSourceEnt", NULL ) == self then
                 self.currentHeliTask = "rescue_waitForRescueTargetToRappel"
                 idealMovePos = myPos
@@ -867,6 +886,21 @@ if SERVER and terminator_Extras then
 
                 -- go way above them if they're on the ground, just a bit above if they're high up
                 idealMovePos.z = math.max( idealMovePos.z, rescueTargetsPos.z + 200 )
+
+            elseif self.originalRescuePos then
+                self.currentHeliTask = "rescue_flyToFlare"
+
+                local distToOriginalRescuePos = myPos:Distance( self.originalRescuePos )
+                if self:VisibleVec( self.originalRescuePos ) and distToOriginalRescuePos < 3000 then
+                    self.originalRescuePos = nil
+
+                elseif distToOriginalRescuePos < 1500 then
+                    self.originalRescuePos = nil
+
+                else
+                    idealMovePos = self.originalRescuePos
+
+                end
 
             -- fly towards last place we saw a rescue target
             elseif self.lastSawARescueTargetPos then
@@ -913,7 +947,7 @@ if SERVER and terminator_Extras then
         -- if no skybox surfaces, fly towards where we spawned
         elseif currGoal == "escape" then
             local nearestSkyboxPos = self.nearestSkyboxPos
-            local attempts = 10
+            local attempts = 5
             local trStruc = {
                 start = myPos,
                 endpos = nil,
@@ -922,13 +956,22 @@ if SERVER and terminator_Extras then
                 maxs = Vector( callingHeliMaxs, callingHeliMaxs, callingHeliMaxs / 4 ),
 
             }
+
+            -- first dir is towards where we're going
+            local dir = ourVel:GetNormalized()
+            local offset
+
             for _ = 1, attempts do
-                local offset = VectorRand()
-                offset.z = math.Rand( -0.25, 0.25 ) -- dont look upwards
-                offset = offset * 40000
+                offset = dir * 40000
                 trStruc.endpos = myPos + offset
 
                 local trResult = util.TraceHull( trStruc )
+
+                -- followup ones are random directions
+                dir = VectorRand()
+                dir.z = math.Rand( -0.25, 0.25 ) -- dont look upwards
+                dir:Normalize()
+
                 if not trResult.HitSky then continue end
 
                 local myDistToNew = myPos:Distance( trResult.HitPos )

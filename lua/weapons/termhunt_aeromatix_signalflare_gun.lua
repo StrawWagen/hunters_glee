@@ -13,7 +13,7 @@ SWEP.Range              = 2000
 SWEP.Slot               = 2
 SWEP.SlotPos            = 3
 
-SWEP.Purpose = "Shoot into the sky to call for... help?"
+SWEP.Purpose            = "Extremely bright, could probably be seen from miles away."
 
 SWEP.AutoSwitchFrom     = false
 SWEP.AutoSwitchTo       = true
@@ -31,12 +31,6 @@ if CLIENT then
     terminator_Extras.glee_CL_SetupSwep( SWEP, className, "materials/vgui/hud/killicon/" .. className .. ".png" )
     language.Add( "GLEE_SIGNALFLAREGUN_PLAYER_ammo", "Escape Signal Flare" )
 
-    function SWEP:HintPreStack()
-        if self:Clip1() <= 0 then return end
-
-        return true, "SHOOT into the open,\nto call for RESCUE..."
-
-    end
 end
 
 SWEP.Primary.Sound = Sound( "weapons/flaregun/fire.wav" )
@@ -118,6 +112,23 @@ function SWEP:ShootFlare()
         end )
         SafeRemoveEntityDelayed( self, 2 )
 
+    end )
+end
+
+function SWEP:Equip()
+    timer.Simple( 0, function()
+        if not IsValid( self ) then return end
+        local owner = self:GetOwner()
+
+        if not owner:IsPlayer() then return end
+        if not IsValid( owner ) then return end
+        owner:SelectWeapon( self )
+
+        if not owner.glee_SignalFlarePickedUpHint then
+            owner.glee_SignalFlarePickedUpHint = true
+            huntersGlee_Announce( { owner }, 500, 5, "A flaregun?\nThis, this looks... bright?" )
+
+        end
     end )
 end
 

@@ -42,6 +42,11 @@ function ENT:SpawnFunction( ply, tr )
 
 end
 
+function ENT:AdditionalInitialize()
+    -- stub
+
+end
+
 function ENT:Initialize()
     self:SetModel( self.Model )
 
@@ -107,6 +112,8 @@ function ENT:Initialize()
         self.BurnSound:ChangePitch( 80, lifetime )
 
     end )
+
+    self:AdditionalInitialize()
 
 end
 

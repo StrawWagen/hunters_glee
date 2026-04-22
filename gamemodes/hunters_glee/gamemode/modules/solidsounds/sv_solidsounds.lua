@@ -41,12 +41,19 @@ function GM:StopAllSolidSounds()
 
 end
 
+function GM:StopSolidSoundsFor( ply )
+    net.Start( "glee_stopsolidsounds" )
+    net.Send( ply )
+
+end
+
 local soundTracks = {
     heliEvac = {
         sounds = {
             "hunters_glee/music/8.23.GleeExp2.ogg",
             "hunters_glee/music/8.24.to_noone.ogg",
         },
+        randomOrder = true,
         priority = 50,
         fadeInLength = 1,
     },
@@ -61,8 +68,21 @@ local soundTracks = {
     roundPerfectWin = {
         sounds   = { "hunters_glee/music/8.25.ToWishToGlee.ogg" },
         priority = 1000,
+    },
+    mapvoteMusic = {
+        sounds   = { "hunters_glee/music/SEWERSiN.mp3" },
+        priority = 50,
     }
 }
+
+-- shuffle ones with .randomOrder
+hook.Add( "huntersglee_round_into_active", "glee_randomizesoundtracks", function()
+    for _, trackData in ipairs( soundTracks ) do
+        if not trackData.randomOrder then continue end
+        table.Shuffle( trackData.sounds )
+
+    end
+end )
 
 function GM:GetASoundTrack( name )
     local trackData = soundTracks[name]

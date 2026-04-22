@@ -349,13 +349,24 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
     if nextSpawnCheck > cur then return end
     nextSpawnCheck = cur + 0.2
 
-    -- :eyes:
-    if terminator_Extras.empty then -- homeless
-        if GAMEMODE:GetSpawnSet() == "explorers_glee" then return end
+    if player.GetCount() >= 1 then
+        local allScorned = true
+        for _, ply in player.Iterator() do
+            if not ply.homeless_Scorned then
+                allScorned = false
+                break
 
-        GAMEMODE:SetSpawnSet( "explorers_glee" )
-        return
+            end
+        end
+        local empty = terminator_Extras.empty or allScorned
+        -- :eyes:
+        if empty then -- homeless
+            if GAMEMODE:GetSpawnSet() == "explorers_glee" then return end
 
+            GAMEMODE:SetSpawnSet( "explorers_glee" )
+            return
+
+        end
     end
 
     local _, spawnSet = GAMEMODE:GetSpawnSet()
