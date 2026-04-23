@@ -288,13 +288,15 @@ local function infernalIntervention( purchaser )
 end
 
 
--- grigori stuff
+-- grigori stuff 
 local defaultDivisor = 10
 local minGrigoriMinutes = 5 -- 5
 
 -- overcomplicated way to make grigori happen later if rounds are 'interesting' ( people earning lots of score )
+-- basically, grigori cannot happen sooner than the default "patience" minGrigoriMinutes
+-- and every score earned / divisor, adds to "patience" 
 local glee_scoretochosentimeoffset_divisor = CreateConVar(
-    "huntersglee_scoretochosentimeoffset_divisor1",
+    "huntersglee_scoretochosentime_offsetdivisor",
     "-1",
     bit.bor( FCVAR_REPLICATED, FCVAR_ARCHIVE ),
     "-1 = default, if set bigger, grigori can happen sooner, if smaller, happens later",
@@ -325,6 +327,7 @@ if SERVER then
             divisor = defaultDivisor
 
         end
+
         local moreTime = scoreGiven / divisor
         moreTime = moreTime / #player.GetAll() -- don't make this blow up on full servers!
 
@@ -343,6 +346,7 @@ end
 local function divineChosenCanPurchase( purchaser )
     local addedBySpending = GetGlobal2Int( "glee_chosen_timeoffset", 0 ) / 60
     local minutes = minGrigoriMinutes + addedBySpending
+    -- always purchasable after 20 minutes
     minutes = math.Clamp( minutes, minGrigoriMinutes, 20 )
 
     local offset = 60 * minutes
@@ -358,6 +362,7 @@ local function divineChosenCanPurchase( purchaser )
 
     end
 
+    -- sv_cheats allows buying NOW!
     if block then return isCheats(), pt1 end
 
     if SERVER then

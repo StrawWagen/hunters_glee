@@ -166,8 +166,39 @@ hook.Add( "PlayerEnteredVehicle", "glee_findescapablevehicles", function( _drive
     end )
 end )
 
+-- rescue heli npc
 hook.Add( "glee_rescueheliescape", "glee_escapeviarescueheli", function( heli )
     if not IsValid( heli ) then return end
     GAMEMODE:escapifyVehicle( heli )
+
+end )
+
+
+-- begin escaping rewards
+
+-- flat 50% discount on all shop items if EVERYONE escaped
+-- hook.Add( "huntersglee_round_pre_into_inactive", )
+
+-- reward for escaping
+local flatEscapingReward = 500
+local rewardPerSkull = 150
+
+hook.Add( "huntersglee_player_pre_reset", "glee_escaping_rewards", function( ply )
+    if not ply:HasEscaped() then return end
+
+    local msg = "+" .. flatEscapingReward .. " Score..."
+    ply:GivePlayerScore( flatEscapingReward )
+
+    local skulls = ply:GetSkulls()
+    if skulls > 0 then
+        local skullBonus = skulls * rewardPerSkull
+        msg = msg .. "\n+" .. skullBonus .. " Skull Bonus..."
+        ply:GivePlayerScore( skullBonus )
+
+    else
+        msg = msg .. "\nNo skulls collected..."
+
+    end
+    huntersGlee_AnnounceDramatic( { ply }, 1000, 4, "You escaped!\n" .. msg )
 
 end )

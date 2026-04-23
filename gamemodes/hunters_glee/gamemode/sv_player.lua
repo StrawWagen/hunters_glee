@@ -1349,10 +1349,18 @@ hook.Add( "EntityTakeDamage", "huntersglee_makepvpreallybad", function( dmgTarg,
     local inflictor = dmg:GetInflictor()
     local areBothPlayers = dmgTarg:IsPlayer() and attacker:IsPlayer()
     local selfDamage = dmgTarg == attacker
-    if areBothPlayers and GAMEMODE.blockPvp == true then
+
+    if not areBothPlayers then return end
+
+    local attackerIsHorriblyEvil = GAMEMODE:IsHorriblyEvil( attacker )
+    local targIsHorriblyEvil = GAMEMODE:IsHorriblyEvil( dmgTarg )
+
+    if attackerIsHorriblyEvil and targIsHorriblyEvil then return end -- if both are evil, they can fight eachother fine
+
+    if GAMEMODE.blockPvp == true then
         dmg:ScaleDamage( 0 )
 
-    elseif areBothPlayers and not selfDamage and not dmg:IsExplosionDamage() then --lol explode
+    elseif not selfDamage then
         if dmg:IsDamageType( DMG_DISSOLVE ) and inflictor and inflictor:GetClass() == "prop_combine_ball" then -- special cball case
             local nextpermittedballdamage = dmgTarg.huntersglee_nextpermittedballdamage or 0
             if nextpermittedballdamage > CurTime() then
@@ -1373,6 +1381,9 @@ hook.Add( "EntityTakeDamage", "huntersglee_makepvpreallybad", function( dmgTarg,
                 inflictor:Fire( "Explode" )
 
             end
+        elseif dmg:IsExplosionDamage() then
+            dmg:ScaleDamage( 0.75 )
+
         else
             dmg:ScaleDamage( 0.5 )
 

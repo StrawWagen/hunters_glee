@@ -866,6 +866,8 @@ function GM:DelayRoundEndingUntil( time )
 
 end
 
+-- reset on initial setup, after we wait for navmesh to load
+-- and is the final thing to go when the gamemode stops displaying winners
 function GM:ResetExtraData()
     self.roundExtraData = nil
     self.roundExtraData = {}
@@ -959,9 +961,13 @@ end
 
 -- from the part where finest prey & total score is displayed, into setup where people can buy stuff with discounts
 function GM:beginSetup()
+    hook.Run( "huntersglee_round_pre_into_inactive" )
+
     self:RemoveHunters()
 
     for _, ply in player.Iterator() do
+        hook.Run( "huntersglee_player_pre_reset", ply )
+
         ply.realRespawn = true -- wipe all shop attributes
         ply.shopItemCooldowns = {} -- reset wep cooldowns
         ply.isTerminatorHunterKiller = nil -- dont have this persist thru rounds

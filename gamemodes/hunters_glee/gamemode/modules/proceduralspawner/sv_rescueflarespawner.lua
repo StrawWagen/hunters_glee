@@ -69,6 +69,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_rescueflarespawning", function()
         for _, ragdoll in ipairs( ragdolls ) do
             if ragdoll.glee_skulldecapitated then continue end
             if ragdoll.glee_createdARescueFlareGun then continue end
+            if ragdoll.glee_wasCheckedForARescueFlareGun and ragdoll.glee_wasCheckedForARescueFlareGun > cur then continue end
 
             local ragsId = ragdoll:MapCreationID()
             local fastestFoundAt = GAMEMODE.FastestFoundAt[ragsId]
@@ -79,7 +80,11 @@ hook.Add( "glee_sv_validgmthink_active", "glee_rescueflarespawning", function()
             if not IsValid( area ) then continue end
 
             local interrupting = terminator_Extras.posIsInterruptingAlive( pos )
-            if interrupting then continue end
+            if interrupting then
+                ragdoll.glee_wasCheckedForARescueFlareGun = cur + 45
+                continue
+
+            end
 
             local flareGun = spawnFlareGunInHand( ragdoll, area )
             if not IsValid( flareGun ) then continue end

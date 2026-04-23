@@ -137,6 +137,31 @@ function SWEP:CanBePickedUpByNPCs()
 
 end
 
+-- make da flare gun FLOAT
+local function applyBuoyancy( swep )
+    local phys = swep:GetPhysicsObject()
+    if not IsValid( phys ) then return end
+    phys:SetBuoyancyRatio( 2 )
+
+end
+
+function SWEP:Initialize()
+    self:SetHoldType( self.HoldType )
+    if SERVER then
+        timer.Simple( 0, function()
+            if not IsValid( self ) then return end
+            applyBuoyancy( self )
+
+        end )
+    end
+end
+
+function SWEP:OnDrop()
+    if not SERVER then return end
+    applyBuoyancy( self )
+
+end
+
 if not CLIENT then return end
 
 local blueFlaregunWMat = Material( "models/weapons/dk_flaregun/signal_gm.vmt" )

@@ -165,23 +165,26 @@ if SERVER and terminator_Extras then
         if self.wastedFlare then return end
         if self.calledForHeli then return end
 
+        local myPos = self:GetPos()
+
         local myPhysObj = self:GetPhysicsObject()
         if IsValid( myPhysObj ) then
             local velLengSqr = myPhysObj:GetVelocity():LengthSqr()
             if velLengSqr < 10^2 then
-                self.wastedFlare = true
-                if IsValid( self.MyOwner ) and self.MyOwner:IsPlayer() and not self.MyOwner.glee_SignalFlareHint then
-                    self.MyOwner.glee_SignalFlareHint = true
-                    huntersGlee_Announce( { self.MyOwner }, 500, 5, "God, that's bright\nI bet you could see it from miles away..." )
+                local floorCheck = terminator_Extras.getFloorTr( myPos ).HitPos
+                if floorCheck:Distance( myPos ) < 50 then
+                    self.wastedFlare = true
+                    if IsValid( self.MyOwner ) and self.MyOwner:IsPlayer() and not self.MyOwner.glee_SignalFlareHint then
+                        self.MyOwner.glee_SignalFlareHint = true
+                        huntersGlee_Announce( { self.MyOwner }, 500, 5, "God, that's bright\nI bet you could see it from miles away..." )
 
+                    end
                 end
             end
         end
 
         if IsValid( terminator_Extras.glee_CurrentRescueHeli ) then return end
         if timer.Exists( rescueTimerName ) then return end -- already called, just waiting
-
-        local myPos = self:GetPos()
 
         if not self.HitSkyboxAtLeastOnce then
             local startPos = self.StartingPos
@@ -216,8 +219,8 @@ if SERVER and terminator_Extras then
             start = myPosOffsetted,
             endpos = myPos + offset,
             mask = MASK_NPCSOLID_BRUSHONLY,
-            mins = Vector( currMins, currMins, currMins / 4 ),
-            maxs = Vector( currMaxs, currMaxs, currMaxs / 4 ),
+            mins = Vector( currMins, currMins, wayfindingHeliMins / 2 ),
+            maxs = Vector( currMaxs, currMaxs, wayfindingHeliMaxs / 2 ),
 
         }
         local callTraceResult = util.TraceHull( traceData )

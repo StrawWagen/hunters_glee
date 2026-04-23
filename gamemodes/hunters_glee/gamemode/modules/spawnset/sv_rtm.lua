@@ -127,7 +127,6 @@ function RTM.CanVote( ply )
             if not checkPly.homeless_Scorned then
                 allScorned = false
                 break
-
             end
         end
         local empty = terminator_Extras.empty or allScorned
@@ -137,7 +136,6 @@ function RTM.CanVote( ply )
             homeless_DoItButPerf( 20 )
             return false, "There's Nothing happening."
         end
-        return false, ""
     end
 
     if ply.RTMVotedTime and ply.RTMVotedTime + conf.PlyRTMCooldownSeconds >= CurTime() then
