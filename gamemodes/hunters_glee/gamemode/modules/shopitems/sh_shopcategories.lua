@@ -16,22 +16,22 @@ function GM:SetupShopCategories()
         },
         HORRORS = { -- things that escaped players can buy, the strongest items in the game
             name = "Horrors",
-            order = 3,
+            order = 4,
             shCanShowInShop = shopHelpers.escapedCheck
         },
         DEADSACRIFICES = { -- things you can place to earn money while dead
             name = "Sacrifices",
-            order = 4,
+            order = 5,
             shCanShowInShop = shopHelpers.deadCheck
         },
         DEADGIFTS = { -- things you can place to spend money, do stuff while dead
             name = "Gifts",
-            order = 5,
+            order = 6,
             shCanShowInShop = shopHelpers.deadCheck
         },
         BANK = { -- banking
             name = "Bank",
-            order = 6,
+            order = 7,
         }
     }
 

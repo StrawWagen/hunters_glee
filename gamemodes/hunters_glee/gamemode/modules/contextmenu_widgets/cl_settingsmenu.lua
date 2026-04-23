@@ -1,6 +1,6 @@
--- AI SLOP FILE
--- Minimalist, table-driven settings menu. Clientside only.
--- Architecture mirrors cl_tauntmenu/cl_banktop: command-owned window, single-instance holder, DesktopWindows just triggers the command.
+
+-- settings for CLIENT options
+-- not for cvars that affect serverside behavior
 
 local GAMEMODE = GAMEMODE or GM
 
