@@ -14,16 +14,6 @@ function GM:SetupShopCategories()
             order = 2,
             shCanShowInShop = shopHelpers.aliveCheck
         },
-        BARGAINS = { -- passive, innate downgrades that give money
-            name = "Bargains",
-            order = 3,
-            shCanShowInShop = function( purchaser )
-                if not shopHelpers.aliveCheck( purchaser ) then return false end
-                if CLIENT and not GetConVar( "huntersglee_cl_bargains_category" ):GetBool() then return false end
-
-                return GM:GetOfferedBargainCount( purchaser ) > 0
-            end,
-        },
         HORRORS = { -- things that escaped players can buy, the strongest items in the game
             name = "Horrors",
             order = 4,

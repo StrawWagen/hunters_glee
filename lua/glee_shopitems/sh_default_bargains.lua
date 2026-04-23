@@ -3,29 +3,34 @@ local shopHelpers = GAMEMODE.shopHelpers
 local cvarBase = "huntersglee_bargain_"
 local cvarFlags = FCVAR_ARCHIVE + FCVAR_REPLICATED
 
-local cvarOfferMin = CreateConVar( cvarBase .. "offer_min", -1, cvarFlags, "The minimum amount of bargains to offer to each player per round. -1 to always give max amount.", -1, 256 )
-local cvarOfferMax = CreateConVar( cvarBase .. "offer_max", 5, cvarFlags, "The maximum amount of bargains to offer to each player per round.", 0, 256 )
-local cvarPurchaseMax = CreateConVar( cvarBase .. "purchase_max", 3, cvarFlags, "The maximum number of bargains each player can purchase per round.", 0, 256 )
-local cvarSameForEveryone = CreateConVar( cvarBase .. "same_for_everyone", 0, cvarFlags, "Should everyone be given the same bargain offers per round?", 0, 1 )
+local defaultOfferCount = 3
+local cvarOfferCount = CreateConVar( cvarBase .. "huntersglee_bargainoffercount", -1, cvarFlags, "The number of bargains to offer to each player per round. -1 for default, " .. defaultOfferCount, 0, 256 )
 
-local cvarSeparateCategory = CLIENT and CreateClientConVar( "huntersglee_cl_bargains_category", 0, true, false, "Show bargain items in their own category?", 0, 1 )
+local function getOfferCount()
+    local offerCount = cvarOfferCount:GetInt()
+    if offerCount == -1 then
+        offerCount = defaultOfferCount
 
+    end
 
-glee_BargainOffers = glee_BargainOffers or {} -- { [shopItemName] = true, __count = count, }
-glee_BargainOffersPerPly = glee_BargainOffersPerPly or {} -- [ply] = { [shopItemName] = true, __count = count, }
-glee_BargainPurchaseCounts = glee_BargainPurchaseCounts or {} -- [ply] = bargainPurchaseCountThisRound
+    return offerCount
+
+end
+
+GAMEMODE.glee_BargainOffersPerPly = GAMEMODE.glee_BargainOffersPerPly or {} -- [ply] = { [shopItemName] = true, __count = count, }
+
+-- appended on the end of all bargain items' descriptions
+local bargainDescrip = "\n\nThis is a bargain. You might not see it again..."
 
 
 -- returns offerTbl, calledReset
+-- sets up and networks the bargain table to players when they request it
 local function getOfferTbl( ply )
-    if not ply then return glee_BargainOffers end
-
-    local offerTbl = glee_BargainOffersPerPly[ ply ]
+    local offerTbl = GAMEMODE.glee_BargainOffersPerPly[ ply ]
     if not offerTbl then
         offerTbl = { __count = 0, }
-        glee_BargainOffersPerPly[ ply ] = offerTbl
+        GAMEMODE.glee_BargainOffersPerPly[ ply ] = offerTbl
 
-        -- If ply needed a new table, then generate it now.
         if SERVER then
             GAMEMODE:ResetBargainOffers( ply )
             return offerTbl, true
@@ -38,30 +43,13 @@ local function getOfferTbl( ply )
 
 end
 
--- Accounts for cvarSameForEveryone
-local function getEffectiveOfferTbl( ply )
-    return getOfferTbl( ( not cvarSameForEveryone:GetBool() ) and ply ) -- one-line so luajit runs faster
-
-end
-
-
 function GAMEMODE:GetOfferedBargainCount( ply )
-    return getEffectiveOfferTbl( ply ).__count
+    return getOfferTbl( ply ).__count
 
 end
 
 function GAMEMODE:IsBargainOffered( itemID, ply )
-    return getEffectiveOfferTbl( ply )[ itemID ] or false
-
-end
-
-function GAMEMODE:GetBargainPurchaseCount( ply )
-    return glee_BargainPurchaseCounts[ ply ] or 0
-
-end
-
-function GAMEMODE:GetBargainPurchasesLeft( ply )
-    return cvarPurchaseMax:GetInt() - self:GetBargainPurchaseCount( ply )
+    return getOfferTbl( ply )[ itemID ] or false
 
 end
 
@@ -70,75 +58,56 @@ end
 if SERVER then
     util.AddNetworkString( "glee_bargainoffers" )
 
-    local function netWriteOfferTbl( tbl )
+    local function networkOffers( ply )
+        local tbl = GAMEMODE.glee_BargainOffersPerPly[ ply ]
         local count = tbl and tbl.__count or 0
 
+        net.Start( "glee_bargainoffers" )
         net.WriteUInt( count, 8 )
-        if count == 0 then return end
-
-        for identifier in pairs( tbl ) do
+        for identifier in pairs( tbl or {} ) do
             if identifier ~= "__count" then
                 net.WriteString( identifier )
 
             end
 
         end
-
-    end
-
-    local function networkOffers( ply )
-        net.Start( "glee_bargainoffers" )
-        netWriteOfferTbl( glee_BargainOffers ) -- Write global offerings
-        netWriteOfferTbl( glee_BargainOffersPerPly[ ply or false ] ) -- Write the player's offerings, or tell them to wipe it if global
-
-        if ply then
-            net.Send( ply )
-
-        else
-            net.Broadcast()
-
-        end
+        net.Send( ply )
 
     end
 
 
     function GAMEMODE:ResetBargainOffers( ply )
-        if ply and ( not IsValid( ply ) or not ply:IsPlayer() ) then return end
-
-        local offerTbl, calledReset = getOfferTbl( ply )
-        if calledReset then return end -- Don't double-reset on players.
-
         if not ply then
-            -- If resetting globally, wipe per-ply table so they can auto-generate later.
-            table.Empty( glee_BargainOffersPerPly )
+            table.Empty( GAMEMODE.glee_BargainOffersPerPly )
+            return
 
         end
 
-        table.Empty( offerTbl ) -- Wipe old offerings
-        offerTbl.__count = 0 -- Default
+        if not IsValid( ply ) or not ply:IsPlayer() then return end
 
-        local offerMax = cvarOfferMax:GetInt()
-        if offerMax <= 0 then -- No offerings allowed!
+        local offerTbl, calledReset = getOfferTbl( ply )
+        if calledReset then return end
+
+        table.Empty( offerTbl )
+        offerTbl.__count = 0
+
+        local offerCount = getOfferCount()
+        if offerCount <= 0 then
             networkOffers( ply )
             return
 
         end
 
-        local offerMin = cvarOfferMin:GetInt()
-        if offerMin <= -1 then offerMin = offerMax end
+        local items = shopHelpers.getItemsByTag( "Bargain" )
 
-        -- Gather available items
-        local items = shopHelpers.getItemsInCategory( "BARGAINS" )
-        shopHelpers.filterByTag( items, "unpurchaseable", false ) -- Remove unpurchaseable from offer pool
+        local offersLeft = math.min( offerCount, #items )
+        offerTbl.__count = offersLeft
 
-        local offersLeft = math.min( math.random( offerMin, offerMax ), #items )
-        offerTbl.__count = offersLeft -- Store for faster access. Technically means we can't allow an item id of "__count", but that's not happening!
-
-        -- Select randomly
         while offersLeft > 0 do
             local item = table.remove( items, math.random( 1, #items ) )
             offerTbl[ item.identifier ] = true
             offersLeft = offersLeft - 1
+            PrintTable( item )
         end
 
         networkOffers( ply )
@@ -156,70 +125,22 @@ if SERVER then
     end )
 
     hook.Add( "glee_loadingtheshop", "glee_shopitems_bargainoffers", function( ply )
-        getOfferTbl( ply ) -- Access offers, to force them to generate if they haven't yet.
-
-    end )
-
-    hook.Add( "glee_PostShopItemPurchased", "glee_shopitems_bargainoffers", function( ply, _itemID, itemData )
-        if not itemData.tags.BARGAINS then return end
-
-        glee_BargainPurchaseCounts[ ply ] = ( glee_BargainPurchaseCounts[ ply ] or 0 ) + 1
+        getOfferTbl( ply )
 
     end )
 
 else -- CLIENT
 
-
-    local function netReadOfferTbl( tbl )
+    net.Receive( "glee_bargainoffers", function()
+        local offerTbl = getOfferTbl( LocalPlayer() )
         local count = net.ReadUInt( 8 )
-        table.Empty( tbl )
-        tbl.__count = count
+        table.Empty( offerTbl )
+        offerTbl.__count = count
 
         for _ = 1, count do
-            tbl[ net.ReadString() ] = true
+            offerTbl[ net.ReadString() ] = true
 
         end
-
-    end
-
-    local function handleCategoryChange( useOwnCategory )
-        local items = shopHelpers.getItemsInCategory( "BARGAINS" )
-        shopHelpers.filterByTag( items, "bargain_only", false )
-
-        if useOwnCategory then -- Use Bargains category, so remove from Innate.
-            shopHelpers.removeTags( items, "INNATE" )
-
-        else -- Bargains category is getting hidden, so add to Innate.
-            shopHelpers.addTags( items, "INNATE" )
-
-        end
-    end
-
-
-    hook.Add( "glee_cl_confirmedpurchase", "glee_shopitems_bargainoffers", function( ply, itemID )
-        local itemData = GAMEMODE:GetShopItemData( itemID )
-        if not itemData then return end
-        if not itemData.tags.BARGAINS then return end
-
-        glee_BargainPurchaseCounts[ ply ] = ( glee_BargainPurchaseCounts[ ply ] or 0 ) + 1
-
-    end )
-
-    hook.Add( "glee_post_shopitemgobble", "glee_shopitems_bargainoffers", function()
-        handleCategoryChange( cvarSeparateCategory:GetBool() )
-
-    end )
-
-
-    cvars.AddChangeCallback( "huntersglee_cl_bargains_category", function( _, _, new )
-        handleCategoryChange( tobool( new ) )
-
-    end, "glee_shopitems_bargainoffers" )
-
-
-    net.Receive( "glee_bargainoffers", function()
-        netReadOfferTbl( glee_BargainOffers )
-        netReadOfferTbl( getOfferTbl( LocalPlayer() ) )
 
     end )
 
@@ -228,23 +149,8 @@ end
 
 -- Only show bargains that are on offer.
 hook.Add( "glee_shop_canshow", "glee_shopitems_bargainoffers", function( ply, itemData )
-    if not itemData.tags.BARGAINS then return end -- Not a bargain, don't care.
-    if itemData.tags.unpurchaseable then return end -- Allow unpurcaseable to be seen always. They don't need offers and can't be bought.
+    if not itemData.tags.Bargain then return end -- Not a bargain, don't care.
     if not GAMEMODE:IsBargainOffered( itemData.identifier, ply ) then return false, "This bargain is not on offer." end
-
-end )
-
--- Only buy bargains while they are in stock.
-hook.Add( "glee_shop_canpurchase", "glee_shopitems_bargainoffers", function( ply, itemData )
-    if not itemData.tags.BARGAINS then return end -- Not a bargain, don't care.
-    if GAMEMODE:GetBargainPurchasesLeft( ply ) <= 0 then return false, "All bargains are out of stock!" end
-
-end )
-
--- Reset purchase counts during round setup.
-hook.Add( "glee_roundstatechanged", "glee_shopitems_bargainoffers", function( _, newState )
-    if newState ~= GAMEMODE.ROUND_INACTIVE then return end
-    table.Empty( glee_BargainPurchaseCounts )
 
 end )
 
@@ -613,34 +519,13 @@ end
 
 
 local items = {
-    -- Special unpurchaseable item, shows remaining bargain purchases.
-    [ "bargain_stock_display" ] = {
-        name = "Bargain Stock.",
-        desc = "You can only buy this many more bargains this round.",
-        shCost = 0,
-        costDecorative = function( ply )
-            local remaining = GAMEMODE:GetBargainPurchasesLeft( ply )
-
-            return tostring( remaining ), remaining >= 1 and GAMEMODE.shopStandards.shopCostCanBuy or GAMEMODE.shopStandards.shopCostTooPoor
-        end,
-        cooldown = math.huge,
-        tags = { "BARGAINS", "unpurchaseable", "bargain_only" },
-        purchaseTimes = {
-            GAMEMODE.ROUND_ACTIVE,
-        },
-        weight = -9999,
-        shPurchaseCheck = function() return false, "" end,
-        svOnPurchaseFunc = function() end,
-        unpurchaseableReason = "",
-    },
-
     -- Risk vs reward.
     [ "blooddonor" ] = {
         name = "Donate Blood.",
-        desc = "Donate blood for score.",
+        desc = "Donate blood for score." .. bargainDescrip,
         shCost = bloodDonorCost,
         cooldown = math.huge,
-        tags = { "BARGAINS", "Debuff" },
+        tags = { "INNATE", "Debuff", "Bargain" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE, -- only purchasble when actively hunting, otherwise people would heal with cheap preround healthkits
         },
@@ -663,11 +548,11 @@ local items = {
     },
     [ "deafness" ] = {
         name = "Hard of Hearing.",
-        desc = "You can barely hear a thing!",
+        desc = "You can barely hear a thing!" .. bargainDescrip,
         shCost = -75,
         markup = 0.25,
         cooldown = math.huge,
-        tags = { "BARGAINS", "Debuff" },
+        tags = { "INNATE", "Debuff", "Bargain" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -682,11 +567,11 @@ local items = {
     -- flat DOWNGRADE
     [ "blindness" ] = {
         name = "Legally Blind.",
-        desc = "Become unable to see more than a few feet ahead.",
+        desc = "Become unable to see more than a few feet ahead." .. bargainDescrip,
         shCost = -240,
         markup = 0.2,
         cooldown = math.huge,
-        tags = { "BARGAINS", "Debuff" },
+        tags = { "INNATE", "Debuff", "Bargain" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -701,11 +586,11 @@ local items = {
     -- increased bpm but you get heart attacks easier
     [ "highcholesterol" ] = {
         name = "37 Years of\nCholesterol",
-        desc = "Your body is weak, your heart, clogged...\nA lifetime of eating absolutely delicious food, has left you unprepared for The Hunt...\nYour heart beats much faster.\nBut you become succeptible to Heart Attacks.",
+        desc = "Your body is weak, your heart, clogged...\nA lifetime of eating absolutely delicious food, has left you unprepared for The Hunt...\nYour heart beats much faster.\nBut you become succeptible to Heart Attacks." .. bargainDescrip,
         shCost = -140,
         markup = 0.25,
         cooldown = math.huge,
-        tags = { "BARGAINS", "Debuff" },
+        tags = { "INNATE", "Debuff", "Bargain" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -720,11 +605,11 @@ local items = {
     -- hilarious downgrade
     [ "greasyhands" ] = {
         name = "Greasy Hands.",
-        desc = "Eating greasy food all your life,\nyour hands... adapted to their new, circumstances...\nUnder stress, the grease flows like a faucet.",
+        desc = "Eating greasy food all your life,\nyour hands... adapted to their new, circumstances...\nUnder stress, the grease flows like a faucet." .. bargainDescrip,
         shCost = -160,
         markup = 0.25,
         cooldown = math.huge,
-        tags = { "BARGAINS", "Debuff" },
+        tags = { "INNATE", "Debuff", "Bargain" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -739,11 +624,11 @@ local items = {
     -- flat downgrade
     [ "badknees" ] = {
         name = "62 Year old Knees.",
-        desc = "62 years of living a sedentary lifestyle.\nJumping hurts, and is relatively useless.\nFall damage is lethal.",
+        desc = "62 years of living a sedentary lifestyle.\nJumping hurts, and is relatively useless.\nFall damage is lethal." .. bargainDescrip,
         shCost = -140,
         markup = 0.25,
         cooldown = math.huge,
-        tags = { "BARGAINS", "Debuff" },
+        tags = { "INNATE", "Debuff", "Bargain" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -757,11 +642,11 @@ local items = {
     },
     [ "beacon" ] = {
         name = "Beacon",
-        desc = "A beacon.\nThe hunters will never lose you for long.",
+        desc = "A beacon.\nThe hunters will never lose you for long." .. bargainDescrip,
         shCost = -120,
         markup = 0.25,
         cooldown = math.huge,
-        tags = { "BARGAINS", "Debuff" },
+        tags = { "INNATE", "Debuff", "Bargain" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
