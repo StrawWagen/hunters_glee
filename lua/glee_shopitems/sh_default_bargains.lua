@@ -107,7 +107,7 @@ if SERVER then
             local item = table.remove( items, math.random( 1, #items ) )
             offerTbl[ item.identifier ] = true
             offersLeft = offersLeft - 1
-            PrintTable( item )
+
         end
 
         networkOffers( ply )
