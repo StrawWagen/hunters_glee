@@ -13,6 +13,6 @@
 	"$phongfresnelranges" "[0.0 0.5 1.0]"
 
 	 $AmbientOcclusion "1"
-	 $reflectivity "[ 1  1  1]"
+	 $reflectivity "[1  1  1]"
 	 $parallaxmapscale "0.05"
 }

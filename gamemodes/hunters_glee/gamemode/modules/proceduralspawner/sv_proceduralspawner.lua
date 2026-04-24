@@ -97,7 +97,7 @@ hook.Add( "glee_sv_validgmthink", "glee_proceduralspawner", function( _, currSta
 
         end
     end
-    ]]--
+   ]]--
 
     -- tackle current job
     if currJobCoroutine then
@@ -292,13 +292,13 @@ hook.Add( "glee_sv_validgmthink", "glee_proceduralspawner", function( _, currSta
             coroutine.yield()
             local score = scoringFunc( currJob, toCheckPos, budget )
             if score then
-                scoredPositions[ math.Round( score, 2 ) ] = toCheckPos
+                scoredPositions[math.Round( score, 2 )] = toCheckPos
 
             end
         end
 
         local bestPositionKey = table.maxn( scoredPositions )
-        local bestPosition = scoredPositions[ bestPositionKey ]
+        local bestPosition = scoredPositions[bestPositionKey]
 
         if not bestPosition then failRoutine() spawnJobInfo( jobsName, "Spawn job bailed, found no best position." ) return end
 

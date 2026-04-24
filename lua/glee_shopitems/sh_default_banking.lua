@@ -7,7 +7,7 @@ local function hasBankAccount( purchaser )
 end
 
 local items = {
-    [ "bankopenaccount" ] = {
+    ["bankopenaccount"] = {
         name = "Bank Account",
         desc = "Open a bank account.",
         simpleCostDisplay = true,
@@ -40,7 +40,7 @@ local items = {
             end )
         end,
     },
-    [ "bankdeposit" ] = {
+    ["bankdeposit"] = {
         name = "Deposit",
         desc = function()
             local chargePeriod = gleefunc_BankChargePeriod()
@@ -88,7 +88,7 @@ local items = {
 
         end,
     },
-    [ "bankwithdraw" ] = {
+    ["bankwithdraw"] = {
         name = "Withdraw",
         desc = "Withdraw 100 score from your account.",
         fakeCost = true,

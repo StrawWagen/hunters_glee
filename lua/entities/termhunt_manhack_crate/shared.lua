@@ -130,10 +130,10 @@ hook.Add( "EntityTakeDamage", "glee_rewarding_manhacks_reward", function ( targe
     if not canDamageTbl then return end
 
     -- already spent!
-    if not canDamageTbl[ attacker.glee_ManhackCrateDamagingId ] then return end
+    if not canDamageTbl[attacker.glee_ManhackCrateDamagingId] then return end
     if not owner.GivePlayerScore then return end
 
-    owner.glee_ManhacksThatCanDamage[ attacker.glee_ManhackCrateDamagingId ] = nil
+    owner.glee_ManhacksThatCanDamage[attacker.glee_ManhackCrateDamagingId] = nil
     if target:IsPlayer() then
         if target == owner then
             huntersGlee_Announce( { owner }, 5, 8, "You've been damaged by your own manhacks..." )
@@ -165,7 +165,7 @@ function ENT:Place()
     if self.player and self.player.GivePlayerScore and betrayalScore then
         crate.glee_manhackcrate_player = self.player
         self.player.glee_ManhacksThatCanDamage = self.player.glee_ManhacksThatCanDamage or {}
-        self.player.glee_ManhacksThatCanDamage[ crate:GetCreationID() ] = true
+        self.player.glee_ManhacksThatCanDamage[crate:GetCreationID()] = true
         self.player:GivePlayerScore( betrayalScore )
         GAMEMODE:sendPurchaseConfirm( self.player, betrayalScore )
 

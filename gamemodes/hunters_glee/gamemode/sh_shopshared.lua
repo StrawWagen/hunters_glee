@@ -126,7 +126,7 @@ elseif CLIENT then
         end
 
         -- add difference between "not enough money" and "you bought this already"
-        if identifier and purchaser and purchaser.shopItemCooldowns[ identifier ] == math.huge then
+        if identifier and purchaser and purchaser.shopItemCooldowns[identifier] == math.huge then
             return "---", standards.shopCostNormal
 
         end
@@ -168,7 +168,7 @@ end
 -- all below is shared
 
 function GM:GetShopItemData( identifier )
-    local dat = GAMEMODE.shopItems[ identifier ]
+    local dat = GAMEMODE.shopItems[identifier]
     if not istable( dat ) then return end
     return dat
 

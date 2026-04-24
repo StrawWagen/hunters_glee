@@ -241,19 +241,19 @@ function GM:FindValidNavAreaCenter( navAreaGroups )
     local randomSpawn
     local randomSpawnInd = math.random( 1, #spawns )
     for _ = 1, 10 do
-        randomSpawn = spawns[ randomSpawnInd ]
+        randomSpawn = spawns[randomSpawnInd]
         if IsValid( randomSpawn ) then break end
 
     end
 
     -- choose a random navarea group
-    local group = navAreaGroups[ math.random( #navAreaGroups ) ]
+    local group = navAreaGroups[math.random( #navAreaGroups )]
 
     -- add a random sample of 30 navarea centers to the array
     for _ = 1, 150 do
         if #navAreaCenters > 30 then break end
         -- choose a random navarea from the group
-        local navArea = group[ math.random( #group ) ]
+        local navArea = group[math.random( #group )]
         if not IsValid( navArea ) then continue end
 
         if navArea:IsUnderwater() then continue end
@@ -386,8 +386,8 @@ function GM:GetAreaInOccupiedBigGroupOrRandomBigGroup( noUnderWater )
     -- nope, hunters aren't in big groups either, just a random area in a random big group
     ::getareainbigoroccupiedFail::
 
-    local randBigGroup = bigGroups[ math.random( 1, #bigGroups ) ]
-    local randAreaInRandGroup = randBigGroup[ math.random( 1, #randBigGroup ) ]
+    local randBigGroup = bigGroups[math.random( 1, #bigGroups )]
+    local randAreaInRandGroup = randBigGroup[math.random( 1, #randBigGroup )]
 
     if noUnderWater and randAreaInRandGroup:IsUnderwater() then
         randAreaInRandGroup = areaThatIsntUnderwater( randBigGroup )
@@ -418,10 +418,10 @@ function GM:GetNavmeshGroupsWithPlayers( yieldable )
         local bigGroupThatSomeoneIsIn = GAMEMODE:GetGroupThatNavareaExistsIn( alivePlysNav, bigGroups )
 
         if not bigGroupThatSomeoneIsIn then continue end
-        if doneGroups[ #bigGroupThatSomeoneIsIn ] then continue end
+        if doneGroups[#bigGroupThatSomeoneIsIn] then continue end
 
         -- this can theoretically break, but i know it's very, very unlikely
-        doneGroups[ #bigGroupThatSomeoneIsIn ] = true
+        doneGroups[#bigGroupThatSomeoneIsIn] = true
         table.insert( groupsWithPlayers, bigGroupThatSomeoneIsIn )
 
     end

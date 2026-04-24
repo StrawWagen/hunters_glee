@@ -152,7 +152,7 @@ local function parse( tbl, name, defaultsTbl, spawnSet )
 
     if isfunction( parsed ) then
         -- it accepts functions!!!!!!
-        --[[ eg,
+        --[[eg,
             .maxCount = function( spawnSet )
                 return spawnset.maxSpawnCount
             end,

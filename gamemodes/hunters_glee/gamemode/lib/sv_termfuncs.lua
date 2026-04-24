@@ -201,7 +201,7 @@ function GM:findValidNavResult( data, start, radius, scoreFunc, noMoreOptionsMin
             for _, currClosedId in ipairs( closedSequential ) do
                 local currClosedScore = scores[currClosedId]
 
-                if isnumber( currClosedScore ) and currClosedScore > bestClosedScore and isLadder[ currClosedId ] ~= true then
+                if isnumber( currClosedScore ) and currClosedScore > bestClosedScore and isLadder[currClosedId] ~= true then
                     bestClosedScore = currClosedScore
                     bestClosedAreaId = currClosedId
 

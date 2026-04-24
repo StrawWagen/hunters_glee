@@ -455,8 +455,8 @@ local function nailUnregister( nail, ent )
 
     -- idk how this is gonna end up with a nil value but whatever
     local nails = ent.huntersglee_breakablenails or {}
-    if nails[ creationId ] then
-        nails[ creationId ] = nil
+    if nails[creationId] then
+        nails[creationId] = nil
 
     end
 
@@ -481,7 +481,7 @@ local function registerNail( nail, ent )
 
     local nails = ent.huntersglee_breakablenails or {}
     local creationId = nail:GetCreationID()
-    nails[ creationId ] = nail
+    nails[creationId] = nail
 
     ent.huntersglee_breakablenails = nails
 

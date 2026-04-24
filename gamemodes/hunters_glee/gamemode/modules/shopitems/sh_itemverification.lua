@@ -8,7 +8,7 @@ end
 function GM:getDebugShopItemStructureTable()
     -- example item
     local theItemTable = {
-        [ "slams" ] = {
+        ["slams"] = {
             name = "Slams",
             desc = "Some slams, 17 to be exact.",
             shCost = 80,
@@ -26,7 +26,7 @@ function GM:getDebugShopItemStructureTable()
     }
     local theDescriptorTable = {
         -- all fields should be identical on server/client
-        [ "shopItemUniqueIdentifier" ] = {
+        ["shopItemUniqueIdentifier"] = {
             name =              "Printed name that players see",
             desc =              "Description. Accepts a function or string.",
             shCost =              "Cost, negative to give player score when purchasing, Accepts a function.",
@@ -45,7 +45,7 @@ function GM:getDebugShopItemStructureTable()
             costDecorative =    "Optional. Fake cost string to display in the shop, or a function which returns a string and color.",
             unpurchaseableReason = "Optional. Custom denial string to use if the item has the 'unpurchaseable' tag.",
 
-            --[[ Auto-generated fields: (for internal use/reference)
+            --[[Auto-generated fields: (for internal use/reference)
             categories = "Auto-generated. A lookup table of this ite'ms tags that match shop categories."
             identifier = "Auto-generated. The item's unique identifier.",
             --]]
@@ -133,11 +133,11 @@ local timeTranslations = { -- translations for just the time reasons below
 }
 
 local function badTimeReasonTranslation( currentTime, validStages )
-    local currentTimeTranslation = timeTranslations[ currentTime ]
+    local currentTimeTranslation = timeTranslations[currentTime]
 
     validTranslations = {}
     for _, validStage in pairs( validStages ) do
-        table.insert( validTranslations, timeTranslations[ validStage ] )
+        table.insert( validTranslations, timeTranslations[validStage] )
 
     end
 
@@ -231,7 +231,7 @@ function GM:canPurchase( ply, itemID )
     local itemData = GAMEMODE:GetShopItemData( itemID )
     if not itemData then return false, REASON_INVALID end
 
-    local nextPurchase = ply.shopItemCooldowns[ itemID ] or -20000
+    local nextPurchase = ply.shopItemCooldowns[itemID] or -20000
     if nextPurchase == math.huge then return false, "You've already bought this." end
 
     local allowed, failReason = self:canShowInShop( ply, itemID )

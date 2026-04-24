@@ -12,7 +12,7 @@
 	"$phongfresnelranges"	"[.1 .6 1.0]"
 	
 	"$envmap" "env_cubemap"
-	"$envmaptint" "[ .05 .05 .05 ]"
+	"$envmaptint" "[.05 .05 .05]"
 	"$envmapfresnel" "1"
 
 }

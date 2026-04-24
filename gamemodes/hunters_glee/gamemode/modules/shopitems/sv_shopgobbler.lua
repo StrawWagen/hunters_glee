@@ -112,7 +112,7 @@ end )
 -- ran inside each shopitem folder
 function GM:GobbleShopItems( items )
     for name, data in pairs( items ) do
-        self.shopItems[ name ] = data
+        self.shopItems[name] = data
     end
 
     -- Alert, should only happen if something misuses the shop gobbler or if files are being re-run for dev testing.

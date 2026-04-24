@@ -368,7 +368,7 @@ local function divineChosenCanPurchase( purchaser )
     if SERVER then
         -- ONLY ONE CHANCE PER ROUND!
         GAMEMODE.roundExtraData.divineChosenSpent = GAMEMODE.roundExtraData.divineChosenSpent or {}
-        if GAMEMODE.roundExtraData.divineChosenSpent[ purchaser:GetCreationID() ] == true then return nil, "You had your chance." end
+        if GAMEMODE.roundExtraData.divineChosenSpent[purchaser:GetCreationID()] == true then return nil, "You had your chance." end
 
     end
 
@@ -556,7 +556,7 @@ if SERVER then
                     for _, potentialChosen in ipairs( player.GetAll() ) do
                         if not potentialChosen:HasStatusEffect( "divine_chosen" ) then continue end
 
-                        GAMEMODE.roundExtraData.divineChosenSpent[ potentialChosen:GetCreationID() ] = true
+                        GAMEMODE.roundExtraData.divineChosenSpent[potentialChosen:GetCreationID()] = true
                         potentialChosen:RemoveStatusEffect( "divine_chosen" )
 
                         huntersGlee_Announce( player.GetAll(), 500, 15, string.upper( potentialChosen:Nick() ) .. " has FAILED their divine task..." )
@@ -639,7 +639,7 @@ end
 
 local items = {
     -- lets dead people take the initiative
-    [ "resurrection" ] = {
+    ["resurrection"] = {
         name = "Divine Intervention",
         desc = "Resurrect yourself.\nYou will revive next to another living player and have " .. dmgResistAfterRez .. "s of damage resistance.",
         shCost = function( purchaser )
@@ -692,7 +692,7 @@ local items = {
         shCanShowInShop = shopHelpers.deadNotEscapedCheck,
     },
     -- for people who just want to BE ALIVE!
-    [ "resurrectioncrappy" ] = {
+    ["resurrectioncrappy"] = {
         name = "Infernal Intervention",
         desc = "Make a deal with the devil.\nYou will come back as a shriveled, weak, husk.",
         shCost = 150,
@@ -719,7 +719,7 @@ local items = {
         shCanShowInShop = shopHelpers.deadNotEscapedCheck,
     },
     -- soft reason to get around the map, go places people have died 
-    [ "revivekit" ] = {
+    ["revivekit"] = {
         name = "Revive Kit",
         desc = "Revives dead players.\nYou gain 300 score per resurrection.",
         shCost = 30,
@@ -750,7 +750,7 @@ local items = {
         shCanShowInShop = shopHelpers.hasMultiplePeople,
     },
     -- END THE ROUND!!!
-    [ "divinechosen" ] = {
+    ["divinechosen"] = {
         name = "grigori",
         desc = "grigori.",
         shCost = 2000,

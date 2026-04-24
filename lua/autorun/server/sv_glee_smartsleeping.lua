@@ -47,7 +47,7 @@ local function handleSleep( ent, curTime ) -- think func
             needsRemove = true
 
         -- if it landed on one of these, and there's no navarea nearby, remove it
-        elseif tr.HitWorld and noNavTextures[ tr.HitTexture ] and not IsValid( navmesh.GetNavArea( ent:GetPos() ) ) then
+        elseif tr.HitWorld and noNavTextures[tr.HitTexture] and not IsValid( navmesh.GetNavArea( ent:GetPos() ) ) then
             needsRemove = true
 
         end
@@ -219,7 +219,7 @@ local function setupOnCreateHook()
         if not IsValid( ent ) then return end
         if ent.glee_issmartsleeping then return end
         local class = ent:GetClass()
-        if ent:IsWeapon() or fastSleepClasses[ class ] then
+        if ent:IsWeapon() or fastSleepClasses[class] then
             wepGibCount = wepGibCount + 1
             local sleepTime = 30
             -- map with npcs dropping weapons?

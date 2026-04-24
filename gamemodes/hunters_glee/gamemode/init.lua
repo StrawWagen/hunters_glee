@@ -452,7 +452,7 @@ function GM:calculateWinner()
     end
 
     local biggestCount = table.maxn( playersWithSkullCounts )
-    local bestPlayers = playersWithSkullCounts[ biggestCount ]
+    local bestPlayers = playersWithSkullCounts[biggestCount]
     local bestPlayer
     local tieBroken = false
     -- break ties with score count
@@ -697,7 +697,7 @@ function GM:removePorters() -- it was either do this, or make the terminator use
         if not portersGroup then SafeRemoveEntity( porter ) continue end
 
         local portersVals = porter:GetKeyValues()
-        local targetsName = portersVals[ "target" ]
+        local targetsName = portersVals["target"]
         local destTbl = ents.FindByName( targetsName )
 
         for _, dest in ipairs( destTbl ) do

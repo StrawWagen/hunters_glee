@@ -2,7 +2,7 @@
 local shopHelpers = GAMEMODE.shopHelpers
 
 local items = {
-    [ "score" ] = {
+    ["score"] = {
         name = "Score",
         desc = "Free score, Cheat!",
         shCost = -1000,

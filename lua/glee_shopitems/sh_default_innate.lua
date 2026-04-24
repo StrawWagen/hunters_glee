@@ -526,7 +526,7 @@ if SERVER then
             for _, area in ipairs( unexplored ) do
                 if not IsValid( area ) then continue end
                 if not area:IsUnderwater() then continue end
-                self.exploredStatuses[ area:GetID() ] = false
+                self.exploredStatuses[area:GetID()] = false
 
             end
             self.reservedReward = 0 -- carryover reward for small bits
@@ -542,9 +542,9 @@ if SERVER then
 
                 for _, potentiallyTraversed in ipairs( areasWeTraversed ) do
                     local areaId = potentiallyTraversed:GetID()
-                    if self.exploredStatuses[ areaId ] == true then continue end
+                    if self.exploredStatuses[areaId] == true then continue end
 
-                    self.exploredStatuses[ areaId ] = true
+                    self.exploredStatuses[areaId] = true
                     self.exploredCount = self.exploredCount + 1
                     local ratioWeAt = self.exploredCount / self.toExploreCount
 
@@ -689,7 +689,7 @@ if SERVER then
                     -- Applies velocity, thanks plymeta
                     ply:SetVelocity( vel )
 
-                    local theSound = frogLegsJumpSounds[ math.random( 1, #frogLegsJumpSounds ) ]
+                    local theSound = frogLegsJumpSounds[math.random( 1, #frogLegsJumpSounds )]
                     ply:EmitSound( theSound, 78, math.random( 180, 200 ) + pitchOff, 1, CHAN_STATIC )
 
                 end )
@@ -1156,7 +1156,7 @@ end
 
 local items = {
     -- this is to give the noobs in a lobby a huge score boost, also it's cool
-    [ "witnessme" ] = {
+    ["witnessme"] = {
         name = "Witness Me.",
         desc = "You die instantly to hunters if you have any witnesses.\nDead players can bear witness\nGain 250 score per witness.\nOnly the first, and last death of a round are witnessable...",
         shCost = 30,
@@ -1175,7 +1175,7 @@ local items = {
         end,
         shCanShowInShop = shopHelpers.multiplePeopleAndTerm,
     },
-    [ "coldblooded" ] = {
+    ["coldblooded"] = {
         name = "Cold Blooded.",
         desc = "Your top speed is linked to your heartrate.",
         shCost = 150,
@@ -1194,7 +1194,7 @@ local items = {
         end,
     },
     -- flat upgrade
-    [ "superiormetabolism" ] = {
+    ["superiormetabolism"] = {
         name = "Superior Metabolism.",
         desc = "You've always been different than those around you.\nWhat would hospitalize others for weeks, passed over you in days.\nYou regenerate health as your heart beats.",
         shCost = 200,
@@ -1212,7 +1212,7 @@ local items = {
 
         end,
     },
-    [ "sixthsense" ] = {
+    ["sixthsense"] = {
         name = "Sixth Sense.",
         desc = "You gain a sixth sense.\nYou innately know where things are.\nBut the sixth sense can be overwhelming.\nPanic will mount as the hunters close in.",
         shCost = 225,
@@ -1230,7 +1230,7 @@ local items = {
 
         end,
     },
-    [ "mechalegs" ] = {
+    ["mechalegs"] = {
         name = "Mecha Legs",
         desc = "Mechanical leg augmentations.\nSpeed at the cost of Suit Battery.\nDead weight when you run out of power.",
         shCost = 125,
@@ -1249,7 +1249,7 @@ local items = {
         end,
     },
     -- flat upgrade
-    [ "juggernaut" ] = {
+    ["juggernaut"] = {
         name = "Juggernaut",
         desc = "Attain a new level of physique.\nYour footsteps are loud and bulky.\nYou cannot move quicker with Augmentations\nMax 500 health.",
         shCost = 350,
@@ -1268,7 +1268,7 @@ local items = {
         end,
     },
     -- Risk vs reward.
-    [ "chameleon" ] = {
+    ["chameleon"] = {
         name = "Chameleon Gene",
         desc = "Become nearly invisible.\nYour chameleon skin can't take a beating, you take twice as much damage.\nYour weapons, and flashlight are still visible.",
         shCost = 350,
@@ -1287,7 +1287,7 @@ local items = {
         end,
     },
     -- reframe gaining score, because i thought it could be fun
-    [ "marcopolo" ] = {
+    ["marcopolo"] = {
         name = "Marco Polo",
         desc = "You gain score for exploring new parts of the map.\nBPM gives no score.\nGains per area explored start out trivial, but as you progress, the rewards become greater.",
         shCost = 25,
@@ -1304,7 +1304,7 @@ local items = {
         end,
     },
     -- flat upgrade
-    [ "froglegs" ] = {
+    ["froglegs"] = {
         name = "Frog Legged Parkourist",
         desc = "Your legs become frog.\nThe gangly shape of your legs slows you down.\nYou are capable of frog kicking off walls.\nYour shove propels you further.\nYour superior frog geneology permits you to absorb greater falls.\nRibbit.",
         shCost = 350,
@@ -1322,7 +1322,7 @@ local items = {
 
         end,
     },
-    [ "signalrelay" ] = {
+    ["signalrelay"] = {
         name = "Signal Relay.",
         desc = "Boosts your signal.\nInstant shop loading, anywhere.\nConsumes Suit Armor.",
         shCost = 50,
@@ -1340,7 +1340,7 @@ local items = {
 
         end,
     },
-    [ "temporaldiceroll" ] = {
+    ["temporaldiceroll"] = {
         name = "Roll of the dice.",
         desc = "Roll the temporal dice.\n8 seconds after purchasing, you are teleported to a completely random part of the map.",
         shCost = 75,
@@ -1359,7 +1359,7 @@ local items = {
 
         end,
     },
-    [ "channel666" ] = {
+    ["channel666"] = {
         name = "Channel 666.",
         desc = "Your radio bridges life and death.\nYou can communicate with the dead, both ways.",
         shCost = 0,
@@ -1377,7 +1377,7 @@ local items = {
         end,
         shCanShowInShop = shopHelpers.hasMultiplePeople,
     },
-    [ "bombgland" ] = {
+    ["bombgland"] = {
         name = "Bomb Gland.",
         desc = "You accumulate bombs. Drop them with the bomb gland.\nLeft Click for small bombs, Reload for a big bomb.\nRight click to detonate oldest bomb.\nAfter you surpass 4 bombs, there's a chance that ANY damage will explode your undropped bombs.\nIf you die, all your bombs explode.",
         shCost = 50,
@@ -1395,7 +1395,7 @@ local items = {
 
         end,
     },
-    [ "ultralumen" ] = {
+    ["ultralumen"] = {
         name = "Ultra Lumen 3000.",
         desc = "Scared of the dark?\nWhat if the dark feared YOU!\nThe Ultra Lumen 3000 is perfect for anyone that can't stand darkness, a fraction of the sun's power, in your hands!\nMay increase battery consumption.",
         shCost = 50,
@@ -1413,7 +1413,7 @@ local items = {
 
         end,
     },
-    [ "susimpostor" ] = {
+    ["susimpostor"] = {
         name = "HVAC Specialist.",
         desc = "From a young age, vents have fascinated you.\nThe \"portals between rooms\", as you call them, have practically raised you.\nYou are scared of the normal world, crouching brings comfort, and vents bring freedom from panic.\nYou move very fast while crouching. Even faster in vents.\nYou don't even notice the musty vent smell anymore.",
         shCost = 50,

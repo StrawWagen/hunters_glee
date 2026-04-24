@@ -322,7 +322,7 @@ end
 
 bankFunctions.checkBankAccount = function( ply )
     if SERVER then
-        local account = GAMEMODE.bankInfoTable.accounts[ ply:SteamID() ]
+        local account = GAMEMODE.bankInfoTable.accounts[ply:SteamID()]
         local has
         local funds
         if not account then

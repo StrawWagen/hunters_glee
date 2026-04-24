@@ -26,10 +26,10 @@ local bargainDescrip = "\n\nThis is a bargain. You might not see it again..."
 -- returns offerTbl, calledReset
 -- sets up and networks the bargain table to players when they request it
 local function getOfferTbl( ply )
-    local offerTbl = GAMEMODE.glee_BargainOffersPerPly[ ply ]
+    local offerTbl = GAMEMODE.glee_BargainOffersPerPly[ply]
     if not offerTbl then
         offerTbl = { __count = 0, }
-        GAMEMODE.glee_BargainOffersPerPly[ ply ] = offerTbl
+        GAMEMODE.glee_BargainOffersPerPly[ply] = offerTbl
 
         if SERVER then
             GAMEMODE:ResetBargainOffers( ply )
@@ -49,7 +49,7 @@ function GAMEMODE:GetOfferedBargainCount( ply )
 end
 
 function GAMEMODE:IsBargainOffered( itemID, ply )
-    return getOfferTbl( ply )[ itemID ] or false
+    return getOfferTbl( ply )[itemID] or false
 
 end
 
@@ -59,7 +59,7 @@ if SERVER then
     util.AddNetworkString( "glee_bargainoffers" )
 
     local function networkOffers( ply )
-        local tbl = GAMEMODE.glee_BargainOffersPerPly[ ply ]
+        local tbl = GAMEMODE.glee_BargainOffersPerPly[ply]
         local count = tbl and tbl.__count or 0
 
         net.Start( "glee_bargainoffers" )
@@ -105,7 +105,7 @@ if SERVER then
 
         while offersLeft > 0 do
             local item = table.remove( items, math.random( 1, #items ) )
-            offerTbl[ item.identifier ] = true
+            offerTbl[item.identifier] = true
             offersLeft = offersLeft - 1
 
         end
@@ -138,7 +138,7 @@ else -- CLIENT
         offerTbl.__count = count
 
         for _ = 1, count do
-            offerTbl[ net.ReadString() ] = true
+            offerTbl[net.ReadString()] = true
 
         end
 
@@ -206,7 +206,7 @@ if SERVER then
                 if not ply:HasStatusEffect( "bad_knees" ) then return end
 
                 for count = 1, 4 do
-                    local soundP = awfulKneeSounds[ math.random( 1, #awfulKneeSounds ) ]
+                    local soundP = awfulKneeSounds[math.random( 1, #awfulKneeSounds )]
                     ply:EmitSound( soundP, 70, math.random( 70, 80 + count * 4 ), 1, CHAN_STATIC )
 
                 end
@@ -226,7 +226,7 @@ if SERVER then
                 ply:TakeDamage( 3, game.GetWorld(), game.GetWorld() )
 
                 for count = 1, math.random( 1, 3 ) do
-                    local soundP = awfulKneeSounds[ math.random( 1, #awfulKneeSounds ) ]
+                    local soundP = awfulKneeSounds[math.random( 1, #awfulKneeSounds )]
                     ply:EmitSound( soundP, 70, math.random( 110, 120 + count * 4 ), 1, CHAN_STATIC )
 
                 end
@@ -520,7 +520,7 @@ end
 
 local items = {
     -- Risk vs reward.
-    [ "blooddonor" ] = {
+    ["blooddonor"] = {
         name = "Donate Blood.",
         desc = "Donate blood for score." .. bargainDescrip,
         shCost = bloodDonorCost,
@@ -546,7 +546,7 @@ local items = {
             end
         end,
     },
-    [ "deafness" ] = {
+    ["deafness"] = {
         name = "Hard of Hearing.",
         desc = "You can barely hear a thing!" .. bargainDescrip,
         shCost = -100,
@@ -565,7 +565,7 @@ local items = {
         end,
     },
     -- flat DOWNGRADE
-    [ "blindness" ] = {
+    ["blindness"] = {
         name = "Legally Blind.",
         desc = "Become unable to see more than a few feet ahead." .. bargainDescrip,
         shCost = -300,
@@ -584,7 +584,7 @@ local items = {
         end,
     },
     -- increased bpm but you get heart attacks easier
-    [ "highcholesterol" ] = {
+    ["highcholesterol"] = {
         name = "37 Years of\nCholesterol",
         desc = "Your body is weak, your heart, clogged...\nA lifetime of eating absolutely delicious food, has left you unprepared for The Hunt...\nYour heart beats much faster.\nBut you become succeptible to Heart Attacks." .. bargainDescrip,
         shCost = -175,
@@ -603,7 +603,7 @@ local items = {
         end,
     },
     -- hilarious downgrade
-    [ "greasyhands" ] = {
+    ["greasyhands"] = {
         name = "Greasy Hands.",
         desc = "Eating greasy food all your life,\nyour hands... adapted to their new, circumstances...\nUnder stress, the grease flows like a faucet." .. bargainDescrip,
         shCost = -200,
@@ -622,7 +622,7 @@ local items = {
         end,
     },
     -- flat downgrade
-    [ "badknees" ] = {
+    ["badknees"] = {
         name = "62 Year old Knees.",
         desc = "62 years of living a sedentary lifestyle.\nJumping hurts, and is relatively useless.\nFall damage is lethal." .. bargainDescrip,
         shCost = -162,
@@ -640,7 +640,7 @@ local items = {
 
         end,
     },
-    [ "beacon" ] = {
+    ["beacon"] = {
         name = "Beacon",
         desc = "A beacon.\nThe hunters will never lose you for long." .. bargainDescrip,
         shCost = -140,

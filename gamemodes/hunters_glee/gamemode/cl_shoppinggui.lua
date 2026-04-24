@@ -608,7 +608,7 @@ function termHuntOpenTheShop()
 
         -- the scrollable things that hold shop items and have names like innate and undead
         for category, catData in SortedPairsByMemberValue( categories, "order", false ) do
-            if not GAMEMODE:CategoryCanShow( category, ply ) then shopCategoriesBlocked[ category ] = true continue end
+            if not GAMEMODE:CategoryCanShow( category, ply ) then shopCategoriesBlocked[category] = true continue end
 
             local horisScroller = vgui.Create( "DHorizontalScroller", ply.MAINSCROLLPANEL, shopCategoryName( category ) )
 
@@ -679,7 +679,7 @@ function termHuntOpenTheShop()
 
                 local newOffset = self.OffsetX or 0
                 if newOffset ~= oldOffset then -- dont do anything if we reach the end of the scroller
-                    ply.oldScrollPositions[ category ] = newOffset
+                    ply.oldScrollPositions[category] = newOffset
                     self:RemoveCoolTooltip()
                     local pitchOffset = ( oldOffset - newOffset ) * 0.1
                     pitchOffset = pitchOffset / stepScale
@@ -702,7 +702,7 @@ function termHuntOpenTheShop()
             horisScroller.Think = function( self )
                 if self.fixedScroll then return end
                 self.fixedScroll = nil
-                self:SetScroll( ply.oldScrollPositions[ category ] or 0 )
+                self:SetScroll( ply.oldScrollPositions[category] or 0 )
 
             end
 
@@ -747,9 +747,9 @@ function termHuntOpenTheShop()
         for identifier, itemData in SortedPairsByMemberValue( GAMEMODE.shopItems, "weight", false ) do
             local myCategories = itemData.categories
             for category, _ in pairs( myCategories ) do
-                if shopCategoriesBlocked[ category ] then continue end
+                if shopCategoriesBlocked[category] then continue end
 
-                local myCategoryPanel = shopCategoryPanels[ category ]
+                local myCategoryPanel = shopCategoryPanels[category]
                 if not myCategoryPanel then ErrorNoHaltWithStack( "tried to add item " .. identifier .. " to invalid category, " .. category ) continue end
 
                 if not GAMEMODE:canShowInShop( ply, identifier ) then continue end
@@ -1107,7 +1107,7 @@ function termHuntOpenTheShop()
 
                     local identifierPaint = self.itemIdentifier
                     -- check after all the potentially custom functions had a chance to run  
-                    if GAMEMODE.invalidShopItems[ identifierPaint ] then self:Remove() return end
+                    if GAMEMODE.invalidShopItems[identifierPaint] then self:Remove() return end
 
                     self.purchasable, self.notPurchasableReason = GAMEMODE:canPurchase( ply, identifierPaint )
                     self.nextBigCaching = CurTime() + 0.1
