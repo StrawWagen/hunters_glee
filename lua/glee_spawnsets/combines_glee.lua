@@ -82,6 +82,18 @@ local zambieSpawnSet = {
             maxCount = { 4 },
             postSpawnedFuncs = nil,
         },
+        {
+            hardRandomChance = { 0, 5 },
+            name = "combine_rocketeer",
+            prettyName = "A Combine Rocketeer",
+            class = "terminator_nextbot_crocketeer",
+            spawnType = "hunter",
+            difficultyCost = { 10, 20 },
+            difficultyNeeded = { 150, 300 },
+            countClass = "terminator_nextbot_crocketeer",
+            maxCount = { 4 },
+            postSpawnedFuncs = nil,
+        },
     }
 }
 
