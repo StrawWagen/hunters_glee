@@ -3,7 +3,7 @@ local shopHelpers = GAMEMODE.shopHelpers
 local cvarBase = "huntersglee_bargain_"
 local cvarFlags = FCVAR_ARCHIVE + FCVAR_REPLICATED
 
-local defaultOfferCount = 3
+local defaultOfferCount = 4
 local cvarOfferCount = CreateConVar( cvarBase .. "huntersglee_bargainoffercount", -1, cvarFlags, "The number of bargains to offer to each player per round. -1 for default, " .. defaultOfferCount, 0, 256 )
 
 local function getOfferCount()
