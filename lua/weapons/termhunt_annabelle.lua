@@ -67,7 +67,6 @@ end
 
 function SWEP:Deploy()
     self:SendWeaponAnim( ACT_VM_DRAW )
-    self:EmitSound( "hunters_glee/annabelle/deploy.wav", 75, 100 )
 
     if SERVER then
         self:ResetStats()
@@ -210,3 +209,4 @@ function SWEP:FinishReload()
         self:SendWeaponAnim( ACT_VM_IDLE )
     end )
 end
+
