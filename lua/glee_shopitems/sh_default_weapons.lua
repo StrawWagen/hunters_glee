@@ -405,6 +405,30 @@ local items = {
             } )
         end,
     },
+    [ "grigorigun" ] = {
+        name = "Annabelle",
+        desc = "Rewards precision.\nHits boost damage and speed. Miss, it loses its spark until you find your rhythm again.",
+        shCost = 0,
+        skullCost = 5,
+        cooldown = 0.5,
+        tags = { "ITEMS", "Weapon", "SkullCost" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_INACTIVE,
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = 1000,
+        shPurchaseCheck = shopHelpers.aliveCheck,
+        svOnPurchaseFunc = function( purchaser )
+            shopHelpers.purchaseWeapon( purchaser, {
+                class = "termhunt_annabelle",
+                confirmSoundWeight = 5,
+                ammoType = nil, -- auto
+                purchaseClips = 0,
+                resupplyClips = 6,
+
+            } )
+        end,
+    },
 }
 
 GAMEMODE:GobbleShopItems( items )
