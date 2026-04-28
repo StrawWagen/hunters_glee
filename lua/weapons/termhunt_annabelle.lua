@@ -4,13 +4,13 @@
 SWEP.PrintName    = "Annabelle"
 SWEP.Author       = "Boomertaters"
 SWEP.Category     = "Hunter's Glee"
-SWEP.Instructions = "Hitting targets increases damage and fire rate. Missing decreases them."
+SWEP.Instructions = "DO. NOT. MISS."
 
 SWEP.Spawnable    = true
 SWEP.AdminOnly    = false
 SWEP.UseHands     = true
 
-SWEP.Primary.Damage         = 90
+SWEP.Primary.Damage         = 100
 SWEP.Primary.ClipSize       = 6
 SWEP.Primary.DefaultClip    = 72
 SWEP.Primary.NumShots       = 1
@@ -23,7 +23,7 @@ SWEP.Secondary.DefaultClip  = -1
 SWEP.Secondary.Automatic    = false
 SWEP.Secondary.Ammo         = "none"
 
-SWEP.Weight         = 5
+SWEP.Weight         = 12
 SWEP.AutoSwitchTo   = false
 SWEP.AutoSwitchFrom = false
 SWEP.Slot           = 2
@@ -33,6 +33,8 @@ SWEP.DrawCrosshair  = true
 
 SWEP.ViewModel = "models/weapons/annabelle/v_win92.mdl"
 SWEP.WorldModel = "models/weapons/annabelle/w_win92.mdl"
+
+SWEP.Range = 10000 -- for term ai
 
 if CLIENT then
     language.Add( "GLEE_ANNABELLE_SLUGS_ammo", "Slugs" )
@@ -51,7 +53,7 @@ function SWEP:ResetStats()
 end
 
 SWEP.MaxDamageMult = 4
-SWEP.MaxSpeedMult = 1.8
+SWEP.MaxSpeedMult = 2
 SWEP.MinDamageMult = 0.9
 SWEP.MinSpeedMult = 0.9
 
@@ -152,15 +154,16 @@ function SWEP:ShootBullet( owner )
     local hitLiving
 
     owner:FireBullets( {
-        Num      = self.Primary.NumShots,
-        Src      = owner:GetShootPos(),
-        Dir      = owner:GetAimVector(),
-        Spread   = Vector( self.Primary.Spread, self.Primary.Spread, 0 ),
-        Tracer   = 1,
-        Force    = 30,
-        Damage   = self.Primary.Damage * self:GetDamageMult(),
-        AmmoType = "357",
-        Callback = function( _, trace, _ )
+        Num         = self.Primary.NumShots,
+        Src         = owner:GetShootPos(),
+        Dir         = owner:GetAimVector(),
+        Spread      = Vector( self.Primary.Spread, self.Primary.Spread, 0 ),
+        TracerName  = "AirboatGunTracer",
+        Tracer      = 1,
+        Force       = 30,
+        Damage      = self.Primary.Damage * self:GetDamageMult(),
+        AmmoType    = "357",
+        Callback    = function( _, trace, _ )
             if not SERVER then return end
 
             local ent = trace.Entity
@@ -185,15 +188,18 @@ function SWEP:Reload()
 
     if owner:GetAmmoCount( self.Primary.Ammo ) <= 0 then return end
 
+    local speedMult = self:GetSpeedMult()
+
     self:SendWeaponAnim( ACT_SHOTGUN_RELOAD_START )
     owner:SetAnimation( PLAYER_RELOAD )
 
     if SERVER then
+        self.ReloadSpeedMult = speedMult
         self:SetReloading( true )
         self:ResetStats()
-        self:SetNextPrimaryFire( CurTime() + 2 )
+        self:SetNextPrimaryFire( CurTime() + 2 / speedMult )
 
-        timer.Simple( 0.45, function()
+        timer.Simple( 0.45 / speedMult, function()
             if not IsValid( self ) then return end
             self:ReloadLoop()
         end )
@@ -212,13 +218,15 @@ function SWEP:ReloadLoop()
         return
     end
 
+    local speedMult = self.ReloadSpeedMult or 1
+
     self:EmitSound( "hunters_glee/annabelle/insert.wav", 75, 100 )
     self:SendWeaponAnim( ACT_VM_RELOAD )
-    self:SetNextPrimaryFire( CurTime() + 2 )
+    self:SetNextPrimaryFire( CurTime() + 2 / speedMult )
     owner:RemoveAmmo( 1, self.Primary.Ammo )
     self:SetClip1( self:Clip1() + 1 )
 
-    timer.Create( "glee_annabelle_reloadloop" .. self:GetCreationID(), 0.60, 1, function()
+    timer.Create( "glee_annabelle_reloadloop" .. self:GetCreationID(), 0.60 / speedMult, 1, function()
         if not IsValid( self ) then return end
         self:ReloadLoop()
     end )
@@ -227,11 +235,16 @@ end
 function SWEP:FinishReload()
     if not self:GetReloading() then return end
 
+    local speedMult = self.ReloadSpeedMult or 1
+
     self:SetReloading( false )
-    self:SetNextPrimaryFire( CurTime() + 0.5 )
+
+    self:EmitSound( "weapons/shotgun/shotgun_cock.wav", 80, 100 * speedMult )
+
+    self:SetNextPrimaryFire( CurTime() + 0.5 / speedMult )
     self:SendWeaponAnim( ACT_SHOTGUN_RELOAD_FINISH )
 
-    timer.Create( "glee_annabelle_finishanim" .. self:GetCreationID(), 0.5, 1, function()
+    timer.Create( "glee_annabelle_finishanim" .. self:GetCreationID(), 0.5 / speedMult, 1, function()
         if not IsValid( self ) then return end
         if self:GetReloading() then return end
 

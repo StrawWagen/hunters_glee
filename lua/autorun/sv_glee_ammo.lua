@@ -43,11 +43,9 @@ game.AddAmmoType( {
 game.AddAmmoType( {
     name = "Uranium_235",
     dmgtype = DMG_AIRBOAT
-
 } )
 
 game.AddAmmoType( {
-    name = "GLEE_ANNABELLE_SHELLS",
+    name = "GLEE_ANNABELLE_SLUGS",
     dmgtype = DMG_BUCKSHOT,
-
 } )
