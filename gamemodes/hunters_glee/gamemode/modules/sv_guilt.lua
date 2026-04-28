@@ -12,6 +12,7 @@ end )
 
 local autoHomicidalEvilnessIncrements = 200
 local extraAfterFirstSurface = 100
+local evilnessPerPersistGuilt = 5
 
 
 --[[---------------------------------------------------------
@@ -88,6 +89,9 @@ function GM:IsInnocent( ply )
     -- have they been placing lots of beartraps?
     local totalEvilness = self.roundExtraData.generalMischievousness[plysId] or 0
 
+    local persistientEvilness = self:GetPersistientGuilt( ply ) * evilnessPerPersistGuilt
+    totalEvilness = totalEvilness + persistientEvilness
+
     -- have they been killing people? damaging people?
     local slightersSlights = self.roundExtraData.hasSlighted[plysId]
     if not slightersSlights then return totalEvilness < innocentTolerance, totalEvilness end
@@ -155,6 +159,14 @@ function GM:GetMischievousness( ply )
 
 end
 
+--[[---------------------------------------------------------
+    GM:OnKilledTrulyInnocentSoul
+    @desc Reacts to a player killing a truly, INNOCENT soul.
+        adds a massive downside to killing people for no reason
+    @param attacker: The player who did the killing.
+    @param died: The player who died.
+    @return: None
+--]]---------------------------------------------------------
 function GM:OnKilledTrulyInnocentSoul( attacker, died )
     -- every 2 innocent player kills, it surfaces
     local currentEvilnessToSurface = GAMEMODE.roundExtraData.nextHomicidalGleeSurfaces[attacker:SteamID()] or autoHomicidalEvilnessIncrements
@@ -237,5 +249,32 @@ end )
 
 hook.Add( "huntersglee_player_reset", "glee_reset_autohomicidalgleehint", function( ply )
     ply.glee_autoHomicidalGleeHint = nil
+
+end )
+
+
+local dayInSeconds = 60 * 60 * 24
+
+function GM:GetPersistientGuilt( ply )
+    local currentTime = os.time()
+    local oldPersistientGuilt = ply:GetPData( "huntersglee_persistientguilt", currentTime )
+    local guiltInDays = math.Round( ( currentTime - oldPersistientGuilt ) / dayInSeconds, 1 )
+    return guiltInDays
+
+end
+
+function GM:IncrementPersistientGuilt( ply, add )
+    local daysToAdd = dayInSeconds * ( add or 1 )
+    local currentTime = os.time()
+    local oldPersistientGuilt = ply:GetPData( "huntersglee_persistientguilt", currentTime )
+    local newPersistientGuilt = oldPersistientGuilt + daysToAdd
+    ply:SetPData( "huntersglee_persistientguilt", newPersistientGuilt )
+
+end
+
+hook.Add( "OnKilledTrulyInnocentSoul", "glee_incrementpersistientguilt", function( attacker, died )
+    if not game.IsDedicated() then return end -- local multi? who cares!
+
+    GAMEMODE:IncrementPersistientGuilt( attacker )
 
 end )
