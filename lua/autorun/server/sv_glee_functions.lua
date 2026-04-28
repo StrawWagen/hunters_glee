@@ -51,3 +51,41 @@ function terminator_Extras.GleeFancySplode( pos, damage, radius, attacker, infli
     util.Decal( "FadingScorch", pos + up, pos + down * radius / 4, ent )
 
 end
+
+-- Creates a prop_physics parented to `parent`, positioned/angled via local-space offsets.
+-- On parent removal the detail unparents, falls to the world, then is cleaned up.
+function terminator_Extras.AttachParentedDetail( parent, toSpawn, localPos, localAng )
+    local detail
+    if isstring( toSpawn ) then
+        detail = ents.Create( "prop_physics" )
+        if not IsValid( detail ) then return end
+
+        detail:SetModel( toSpawn )
+
+    elseif IsValid( toSpawn ) then
+        detail = toSpawn
+
+    else
+        return
+
+    end
+
+    detail:SetPos( parent:LocalToWorld( localPos ) )
+    detail:SetAngles( parent:LocalToWorldAngles( localAng ) )
+    detail:SetCollisionGroup( COLLISION_GROUP_WEAPON )
+    detail:Spawn()
+    detail:SetParent( parent )
+
+    parent:CallOnRemove( "glee_detailFallOff_" .. detail:GetCreationID(), function( _, det )
+        if not IsValid( det ) then return end
+        if parent:Health() > 0 then SafeRemoveEntity( det ) return end  -- if parent is removed while still alive, delete it
+        local thePos = det:GetPos()
+        det:SetParent()
+        det:SetPos( thePos )
+        SafeRemoveEntityDelayed( det, 35 )
+        terminator_Extras.SmartSleepEntity( det, 3 )
+    end, detail )
+
+    return detail
+
+end

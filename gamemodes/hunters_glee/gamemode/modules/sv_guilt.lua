@@ -10,6 +10,10 @@ hook.Add( "huntersglee_round_into_active", "glee_slighting_initialize", function
 
 end )
 
+local autoHomicidalEvilnessIncrements = 200
+local extraAfterFirstSurface = 100
+local evilnessPerPersistGuilt = 5
+
 
 --[[---------------------------------------------------------
     GM:AddSlight
@@ -27,21 +31,21 @@ function GM:AddSlight( slighter, slighted, amount, reason )
     local allSlighted = self.roundExtraData.hasSlighted
     local allSlightReasons = self.roundExtraData.slightReasons
 
-    local slightersSlights = allSlighted[ slighterId ] or {}
+    local slightersSlights = allSlighted[slighterId] or {}
 
-    local slightersReasons = allSlightReasons[ slighterId ] or {}
-    local slightersReasonsForTarget = slightersReasons[ slightedId ] or {}
+    local slightersReasons = allSlightReasons[slighterId] or {}
+    local slightersReasonsForTarget = slightersReasons[slightedId] or {}
 
-    local oldAmount = slightersSlights[ slightedId ] or 0
-    slightersSlights[ slightedId ] = oldAmount + amount
-    self.roundExtraData.hasSlighted[ slighterId ] = slightersSlights
+    local oldAmount = slightersSlights[slightedId] or 0
+    slightersSlights[slightedId] = oldAmount + amount
+    self.roundExtraData.hasSlighted[slighterId] = slightersSlights
 
     hook.Run( "huntersglee_player_slighted", slighter, slighted, amount, reason )
 
     if not reason then ErrorNoHaltWithStack( "AAAH NO AddSlight REASON" ) end
     table.insert( slightersReasonsForTarget, reason ) -- for debugging
-    slightersReasons[ slightedId ] = slightersReasonsForTarget
-    self.roundExtraData.slightReasons[ slighterId ] = slightersReasons
+    slightersReasons[slightedId] = slightersReasonsForTarget
+    self.roundExtraData.slightReasons[slighterId] = slightersReasons
 
 end
 
@@ -58,9 +62,9 @@ function GM:HasSlighted( slighter, slighted )
     local allSlighted = self.roundExtraData.hasSlighted
     -- breaks on bots!
     -- all bots have same steamid!
-    local slightersSlights = allSlighted[ slighter:SteamID() ]
+    local slightersSlights = allSlighted[slighter:SteamID()]
     if not slightersSlights then return 0 end
-    local amount = slightersSlights[ slighted:SteamID() ]
+    local amount = slightersSlights[slighted:SteamID()]
     if not amount then return 0 end
 
     return amount
@@ -83,10 +87,13 @@ function GM:IsInnocent( ply )
     local plysId = ply:SteamID()
 
     -- have they been placing lots of beartraps?
-    local totalEvilness = self.roundExtraData.generalMischievousness[ plysId ] or 0
+    local totalEvilness = self.roundExtraData.generalMischievousness[plysId] or 0
+
+    local persistientEvilness = self:GetPersistientGuilt( ply ) * evilnessPerPersistGuilt
+    totalEvilness = totalEvilness + persistientEvilness
 
     -- have they been killing people? damaging people?
-    local slightersSlights = self.roundExtraData.hasSlighted[ plysId ]
+    local slightersSlights = self.roundExtraData.hasSlighted[plysId]
     if not slightersSlights then return totalEvilness < innocentTolerance, totalEvilness end
 
     for _, amount in pairs( slightersSlights ) do
@@ -97,6 +104,19 @@ function GM:IsInnocent( ply )
 
 end
 
+--[[---------------------------------------------------------
+    GM:IsHorriblyEvil
+    @desc Is this player's total evilness above autoHomicidalEvilnessIncrements, x2?
+    @param ply: The player to check.
+    @return: Boolean
+--]]---------------------------------------------------------
+function GM:IsHorriblyEvil( ply )
+    local innocent, evilness = self:IsInnocent( ply )
+    if innocent then return false, evilness end
+
+    return evilness >= autoHomicidalEvilnessIncrements * 2, evilness
+
+end
 
 --[[---------------------------------------------------------
     GM:AddMischievousness
@@ -109,16 +129,16 @@ function GM:AddMischievousness( ply, amount, reason )
     if self:RoundState() ~= self.ROUND_ACTIVE then return end
 
     local plysId = ply:SteamID()
-    local oldAmount = self.roundExtraData.generalMischievousness[ plysId ] or 0
-    local oldReasons = self.roundExtraData.mischievousnessReasons[ plysId ] or {}
+    local oldAmount = self.roundExtraData.generalMischievousness[plysId] or 0
+    local oldReasons = self.roundExtraData.mischievousnessReasons[plysId] or {}
 
-    self.roundExtraData.generalMischievousness[ plysId ] = oldAmount + amount
+    self.roundExtraData.generalMischievousness[plysId] = oldAmount + amount
 
     hook.Run( "huntersglee_player_beingmischievous", ply, amount )
 
     if not reason then ErrorNoHaltWithStack( "AAAH NO AddMischievousness REASON" ) end
     table.insert( oldReasons, reason ) -- for debugging
-    self.roundExtraData.mischievousnessReasons[ plysId ] = oldReasons
+    self.roundExtraData.mischievousnessReasons[plysId] = oldReasons
 
 end
 
@@ -133,14 +153,51 @@ function GM:GetMischievousness( ply )
     if self:RoundState() ~= self.ROUND_ACTIVE then return 0 end
 
     local plysId = ply:SteamID()
-    local mischievousness = self.roundExtraData.generalMischievousness[ plysId ] or 0
+    local mischievousness = self.roundExtraData.generalMischievousness[plysId] or 0
 
     return mischievousness
 
 end
 
-local autoHomicidalEvilnessIncrements = 200
-local extraAfterFirstSurface = 100
+--[[---------------------------------------------------------
+    GM:OnKilledTrulyInnocentSoul
+    @desc Reacts to a player killing a truly, INNOCENT soul.
+        adds a massive downside to killing people for no reason
+    @param attacker: The player who did the killing.
+    @param died: The player who died.
+    @return: None
+--]]---------------------------------------------------------
+function GM:OnKilledTrulyInnocentSoul( attacker, died )
+    -- every 2 innocent player kills, it surfaces
+    local currentEvilnessToSurface = GAMEMODE.roundExtraData.nextHomicidalGleeSurfaces[attacker:SteamID()] or autoHomicidalEvilnessIncrements
+
+    local _, attackersEvilness = GAMEMODE:IsInnocent( attacker )
+    if attackersEvilness < currentEvilnessToSurface then return end
+
+    GAMEMODE.roundExtraData.nextHomicidalGleeSurfaces[attacker:SteamID()] = currentEvilnessToSurface + autoHomicidalEvilnessIncrements + extraAfterFirstSurface
+
+    GAMEMODE:GivePanic( attacker, attackersEvilness )
+
+    if not attacker.glee_autoHomicidalGleeHint then
+        GAMEMODE:GivePanic( attacker, attackersEvilness * 2 )
+        attacker.glee_autoHomicidalGleeHint = true
+        huntersGlee_Announce( { attacker }, 10, 6, "So much death!\nIt's making you feel... Homicidally Gleeful...?" )
+
+    end
+
+    -- let them build up, do multiple dances in a row if they kill like 10 people in 1 second
+    local timerName = "glee_autohomicidalglee_waiter" .. attacker:GetCreationID() .. currentEvilnessToSurface
+    timer.Create( timerName, math.Rand( 2, 6 ), 0, function()
+        if not IsValid( attacker ) then timer.Remove( timerName ) return end
+        if attacker:Health() <= 0 then timer.Remove( timerName ) return end
+
+        if attacker:IsPlayingTaunt2() then return end -- wait....
+
+        GAMEMODE:SurfaceHomicidalGlee( attacker )
+        timer.Remove( timerName )
+
+    end )
+end
 
 hook.Add( "PlayerDeath", "glee_storeslights", function( died, _, attacker )
     if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
@@ -180,35 +237,8 @@ hook.Add( "PlayerDeath", "glee_storeslights", function( died, _, attacker )
     -- only for killing innocent people
     if not GAMEMODE:IsInnocent( died ) then return end
 
-    -- every 2 innocent player kills, it surfaces
-    local currentEvilnessToSurface = GAMEMODE.roundExtraData.nextHomicidalGleeSurfaces[ attacker:SteamID() ] or autoHomicidalEvilnessIncrements
+    GAMEMODE:OnKilledTrulyInnocentSoul( attacker, died )
 
-    local _, attackersEvilness = GAMEMODE:IsInnocent( attacker )
-    if attackersEvilness < currentEvilnessToSurface then return end
-
-    GAMEMODE.roundExtraData.nextHomicidalGleeSurfaces[ attacker:SteamID() ] = currentEvilnessToSurface + autoHomicidalEvilnessIncrements + extraAfterFirstSurface
-
-    GAMEMODE:GivePanic( attacker, attackersEvilness )
-
-    if not attacker.glee_autoHomicidalGleeHint then
-        GAMEMODE:GivePanic( attacker, attackersEvilness * 2 )
-        attacker.glee_autoHomicidalGleeHint = true
-        huntersGlee_Announce( { attacker }, 10, 6, "So much death!\nIt's making you feel... Homicidally Gleeful...?" )
-
-    end
-
-    -- let them build up, do multiple dances in a row if they kill like 10 people in 1 second
-    local timerName = "glee_autohomicidalglee_waiter" .. attacker:GetCreationID() .. currentEvilnessToSurface
-    timer.Create( timerName, math.Rand( 2, 6 ), 0, function()
-        if not IsValid( attacker ) then timer.Remove( timerName ) return end
-        if attacker:Health() <= 0 then timer.Remove( timerName ) return end
-
-        if attacker:IsPlayingTaunt2() then return end -- wait....
-
-        GAMEMODE:SurfaceHomicidalGlee( attacker )
-        timer.Remove( timerName )
-
-    end )
 end )
 
 hook.Add( "glee_shover_shove", "glee_shover_slights", function( shoved )
@@ -219,5 +249,32 @@ end )
 
 hook.Add( "huntersglee_player_reset", "glee_reset_autohomicidalgleehint", function( ply )
     ply.glee_autoHomicidalGleeHint = nil
+
+end )
+
+
+local dayInSeconds = 60 * 60 * 24
+
+function GM:GetPersistientGuilt( ply )
+    local currentTime = os.time()
+    local oldPersistientGuilt = ply:GetPData( "huntersglee_persistientguilt", currentTime )
+    local guiltInDays = math.Round( ( currentTime - oldPersistientGuilt ) / dayInSeconds, 1 )
+    return guiltInDays
+
+end
+
+function GM:IncrementPersistientGuilt( ply, add )
+    local daysToAdd = dayInSeconds * ( add or 1 )
+    local currentTime = os.time()
+    local oldPersistientGuilt = ply:GetPData( "huntersglee_persistientguilt", currentTime )
+    local newPersistientGuilt = oldPersistientGuilt + daysToAdd
+    ply:SetPData( "huntersglee_persistientguilt", newPersistientGuilt )
+
+end
+
+hook.Add( "OnKilledTrulyInnocentSoul", "glee_incrementpersistientguilt", function( attacker, died )
+    if not game.IsDedicated() then return end -- local multi? who cares!
+
+    GAMEMODE:IncrementPersistientGuilt( attacker )
 
 end )

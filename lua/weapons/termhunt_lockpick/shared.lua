@@ -178,7 +178,7 @@ function SWEP:Think()
         if class == "prop_door_rotating" or class == "item_item_crate" then
             self:SetNextSoundTime( CurTime() + 1 )
             local snd = { 1,3,4 }
-            local soundNum = tostring( snd[math.Round( util.SharedRandom( "DarkRP_LockpickSnd" .. CurTime(), 1, #snd ) ) ] )
+            local soundNum = tostring( snd[math.Round( util.SharedRandom( "DarkRP_LockpickSnd" .. CurTime(), 1, #snd ) )] )
             self:EmitSound( "weapons/357/357_reload" .. soundNum .. ".wav", 50, 100 )
         end
     end

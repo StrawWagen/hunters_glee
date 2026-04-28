@@ -42,6 +42,11 @@ function ENT:SpawnFunction( ply, tr )
 
 end
 
+function ENT:AdditionalInitialize()
+    -- stub
+
+end
+
 function ENT:Initialize()
     self:SetModel( self.Model )
 
@@ -59,12 +64,10 @@ function ENT:Initialize()
     if IsValid( phys ) then
         phys:Wake()
         timer.Simple( 1, function()
-            if not phys or not phys:IsValid() then return end
-            phys:EnableDrag( true )
-            phys:SetDragCoefficient( 48 )
+            if not IsValid( self ) then return end
+            self:StartFlyingSlow()
 
         end )
-
     end
 
     -- the one that gives the big sprite
@@ -101,12 +104,16 @@ function ENT:Initialize()
 
     timer.Simple( 0, function()
         if not IsValid( self ) then return end
+
+        self.StartingPos = self:GetPos()
+
         self.BurnSound = CreateSound( self, "weapons/flaregun/burn.wav" )
         self.BurnSound:Play()
         self.BurnSound:ChangePitch( 80, lifetime )
 
-
     end )
+
+    self:AdditionalInitialize()
 
 end
 
@@ -115,7 +122,35 @@ function ENT:UpdateTransmitState()
 
 end
 
+function ENT:StartFlyingSlow()
+    if self.FlyingSlow then return end
+    self.FlyingSlow = true
+
+    local phys = self:GetPhysicsObject()
+    if not phys or not phys:IsValid() then return end
+    phys:EnableDrag( true )
+    phys:SetDragCoefficient( 100 )
+
+end
+
 function ENT:PhysicsCollide( colData, _ )
+
+    if colData.TheirSurfaceProps == 76 then -- don't bounce off skybox ( default_silent )
+        self.HitSkyboxAtLeastOnce = true
+
+        timer.Simple( 0, function()
+            if not IsValid( self ) then return end
+            local myPhysObj = self:GetPhysicsObject()
+            if not IsValid( myPhysObj ) then return end
+
+            myPhysObj:SetVelocity( Vector( 0, 0, 0 ) )
+
+            self:StartFlyingSlow()
+
+        end )
+        return
+
+    end
 
     local hitEnt = colData.HitEntity
     if not IsValid( hitEnt ) then return end
@@ -131,7 +166,7 @@ function ENT:PhysicsCollide( colData, _ )
         local dmgInfo = DamageInfo()
         dmgInfo:SetDamage( impactDamage )
         dmgInfo:SetDamageType( DMG_BURN )
-        dmgInfo:SetAttacker( self.MyOwner or self )
+        dmgInfo:SetAttacker( IsValid( self.MyOwner ) and self.MyOwner or self )
         dmgInfo:SetInflictor( self )
         hitEnt:TakeDamageInfo( dmgInfo )
 
@@ -159,6 +194,11 @@ function ENT:OnRemove()
     end
 end
 
+function ENT:AdditionalThink()
+    -- stub
+
+end
+
 function ENT:Think()
     local myPos = self:GetPos()
     local contents = util.PointContents( myPos )
@@ -168,6 +208,8 @@ function ENT:Think()
         SafeRemoveEntity( self )
 
     end
+    self:AdditionalThink()
+
 end
 
 if not CLIENT then return end
@@ -180,10 +222,10 @@ local slowSpeed = 10^2
 
 hook.Add( "RenderScreenspaceEffects", "glee_predraw_fogpiercing_flares", function()
 
-    if #flaresThatPierceFog <= 0 then return end
+    if not next( flaresThatPierceFog ) then return end
 
     local me = LocalPlayer()
-    local myShootPos = me:GetShootPos()
+    local eyePos = EyePos()
 
     for _, flare in pairs( flaresThatPierceFog ) do
 
@@ -193,10 +235,10 @@ hook.Add( "RenderScreenspaceEffects", "glee_predraw_fogpiercing_flares", functio
         if not pos2d.visible then continue end
         if flare:GetVelocity():LengthSqr() < slowSpeed then continue end
 
-        local distanceToIt = myShootPos:Distance( flaresRealPos )
+        local distanceToIt = eyePos:Distance( flaresRealPos )
         if distanceToIt < 1000 then continue end
 
-        local canSee = terminator_Extras.PosCanSeeComplex( myShootPos, flaresRealPos, me )
+        local canSee = terminator_Extras.PosCanSeeComplex( eyePos, flaresRealPos, me )
         if not canSee then continue end
 
         local distScalar = math.log( distanceToIt, 4 ) * 5

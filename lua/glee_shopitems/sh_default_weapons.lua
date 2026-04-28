@@ -19,7 +19,7 @@ end
 
 local items = {
     -- lol you ran out of battery
-    [ "armor" ] = {
+    ["armor"] = {
         name = "Suit Battery",
         desc = "15 Suit Battery.",
         shCost = 15,
@@ -41,7 +41,7 @@ local items = {
 
         end,
     },
-    [ "rpg" ] = {
+    ["rpg"] = {
         name = "RPG",
         desc = "RPG + Rockets.\nRocketing a hunter can save you in a pinch.",
         shCost = 60,
@@ -66,7 +66,7 @@ local items = {
             } )
         end,
     },
-    [ "frag" ] = {
+    ["frag"] = {
         name = "10 Grenades",
         desc = "10 Grenades.\nSimple explosives, useful for hordes!",
         shCost = 50,
@@ -92,7 +92,7 @@ local items = {
         end,
     },
     -- heal jooce
-    [ "healthkit" ] = {
+    ["healthkit"] = {
         name = "Medkit",
         desc = "Heals.\nYou gain score for healing players.\nHealing yourself is unweildy and slow.\nExcess health you find, will reload it.",
         shCost = 80,
@@ -122,7 +122,7 @@ local items = {
         end,
     },
     -- funny bear trap
-    [ "beartrap" ] = {
+    ["beartrap"] = {
         name = "Six Beartraps",
         desc = "Traps players, Terminators can easily overpower them.",
         shCost = 65,
@@ -148,7 +148,7 @@ local items = {
         end,
     },
     -- terminator doesnt like taking damage from this, will save your ass
-    [ "ar2" ] = {
+    ["ar2"] = {
         name = "Ar2",
         desc = "Ar2 + Balls.\nIt takes 2 AR2 balls to kill a terminator.",
         shCost = 75,
@@ -176,7 +176,7 @@ local items = {
             } )
         end,
     },
-    [ "guns" ] = {
+    ["guns"] = {
         name = "Loadout",
         desc = "Normal guns.\n& Ammo!\nNot very useful against metal...",
         shCost = 45,
@@ -203,7 +203,7 @@ local items = {
             end
         end,
     },
-    [ "nailer" ] = {
+    ["nailer"] = {
         name = "Nailer",
         desc = "Nail things together!\nNailing is rather loud.",
         shCost = 45,
@@ -228,7 +228,7 @@ local items = {
             } )
         end,
     },
-    [ "gravitygun" ] = {
+    ["gravitygun"] = {
         name = "Gravity Gun",
         desc = "Gravity Gun",
         shCost = 60,
@@ -254,7 +254,7 @@ local items = {
             } )
         end,
     },
-    [ "flaregun" ] = {
+    ["flaregun"] = {
         name = "Flaregun",
         desc = "Flaregun.\n+ 6 flares.",
         shCost = 45,
@@ -281,7 +281,7 @@ local items = {
         end,
     },
     -- lets people mess with locked rooms
-    [ "lockpick" ] = {
+    ["lockpick"] = {
         name = "Lockpick",
         desc = "Lockpick, for doors.\nCan also open things like crates,\n( relatively ) quietly.",
         shCost = 20,
@@ -302,7 +302,7 @@ local items = {
             } )
         end,
     },
-    [ "slams" ] = {
+    ["slams"] = {
         name = "Slams",
         desc = "Some slams, 17 to be exact.",
         shCost = 60,
@@ -328,7 +328,7 @@ local items = {
         end,
     },
     -- funny cam
-    [ "crapvidcam" ] = {
+    ["crapvidcam"] = {
         name = "Crappy Video Camera",
         desc = "Document the glee.",
         shCost = 0,
@@ -356,7 +356,7 @@ local items = {
         end,
     },
     -- ka BOOOOOM
-    [ "taucannon" ] = {
+    ["taucannon"] = {
         name = "Tau Cannon",
         desc = "High risk, High reward.\nDon't let it overcharge!",
         shCost = 0,
@@ -381,7 +381,7 @@ local items = {
         end,
     },
     -- awesome boomertaintaters gun
-    [ "ar3" ] = {
+    ["ar3"] = {
         name = "Emplacement Gun",
         desc = "Rapid fire, powerful, chews through flesh, but not metal...\nOverheats quickly...",
         shCost = 0,

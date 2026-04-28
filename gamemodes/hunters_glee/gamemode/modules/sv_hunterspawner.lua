@@ -34,27 +34,15 @@ GAMEMODE.RegisteredSpawnSets = GAMEMODE.RegisteredSpawnSets or {}
 
 local minute = 60
 
-local setDefaults = {
-    difficultyPerMin = { 100 / 10, 150 / 10 }, -- 100-150% diff at 10 mins
-    waveInterval = { minute, minute * 1.6 },
-    diffBumpWhenWaveKilled = { 10, 20 },
-    startingBudget = 20,
-    spawnCountPerDifficulty = { 0.08, 0.1 },
-    startingSpawnCount = { 1.8, 2 },
-    maxSpawnCount = 10,
-    maxSpawnDist = { 4500, 6500 },
-    minSpawnDist = 500, -- if you spawn closer than this, it feels unfair
-    roundEndSound = "53937_meutecee_trumpethit07.wav",
-    roundStartSound = "", -- no sound for glee
-    genericSpawnerRate = 1,
-}
+-- so the default-defining folder is easier to find
+local setDefaults = include( "spawnset/sv_spawnsetdefaults.lua" )
 
 local spawnDefaults = {
-    minCount = -1, -- makes it ignore these
-    maxCount = -1, -- respects maxSpawnCount tho
+    minCount = -1, -- if these aren't defined, sets to -1 which makes them ignored
+    maxCount = -1, -- just this is ignored, it still respects maxSpawnCount tho
 }
 
-local spawnIgnored = { -- these don't exist to be parsed
+local spawnIgnored = { -- dont parse these, they run on the ents during spawning
     preSpawnedFunc = true,
     postSpawnedFunc = true,
 }
@@ -164,7 +152,7 @@ local function parse( tbl, name, defaultsTbl, spawnSet )
 
     if isfunction( parsed ) then
         -- it accepts functions!!!!!!
-        --[[ eg,
+        --[[eg,
             .maxCount = function( spawnSet )
                 return spawnset.maxSpawnCount
             end,
@@ -309,8 +297,6 @@ end
 
 local nextSpawnCheck = 0
 
-GAMEMODE.deadWaveDiffBump = 0 -- dont reset this, so cheesable maps get harder and harder 
-
 local function resetWave()
     GAMEMODE.nextSpawnWave = 0
     GAMEMODE.waveWasAlive = nil
@@ -345,6 +331,15 @@ local function aliveHuntersCount()
 end
 
 
+function GM:BumpSessionDifficulty( amount )
+    self.sessionDiffBump = self.sessionDiffBump + amount
+
+end
+function GM:BumpRoundDifficulty( amount )
+    self.roundDiffBump = self.roundDiffBump + amount
+
+end
+
 local nextHunterSpawn = 0
 
 -- the picker
@@ -354,13 +349,24 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
     if nextSpawnCheck > cur then return end
     nextSpawnCheck = cur + 0.2
 
-    -- :eyes:
-    if terminator_Extras.empty then -- homeless
-        if GAMEMODE:GetSpawnSet() == "explorers_glee" then return end
+    if player.GetCount() >= 1 then
+        local allScorned = true
+        for _, ply in player.Iterator() do
+            if not ply.homeless_Scorned then
+                allScorned = false
+                break
 
-        GAMEMODE:SetSpawnSet( "explorers_glee" )
-        return
+            end
+        end
+        local empty = terminator_Extras.empty or allScorned
+        -- :eyes:
+        if empty then -- homeless
+            if GAMEMODE:GetSpawnSet() == "explorers_glee" then return end
 
+            GAMEMODE:SetSpawnSet( "explorers_glee" )
+            return
+
+        end
     end
 
     local _, spawnSet = GAMEMODE:GetSpawnSet()
@@ -370,8 +376,8 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
     if aliveCount <= 1 and GAMEMODE.waveWasAlive and aliveCount < GAMEMODE.waveWasAlive then
         GAMEMODE.waveWasAlive = nil
         GAMEMODE.nextSpawnWave = 0
-        debugPrint( "bump", GAMEMODE.deadWaveDiffBump, spawnSet.diffBumpWhenWaveKilled )
-        GAMEMODE.deadWaveDiffBump = GAMEMODE.deadWaveDiffBump + spawnSet.diffBumpWhenWaveKilled
+        debugPrint( "bump", GAMEMODE.sessionDiffBump, spawnSet.diffBumpWhenWaveKilled )
+        GAMEMODE:BumpSessionDifficulty( spawnSet.diffBumpWhenWaveKilled )
 
     end
 
@@ -388,7 +394,8 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
 
     local diffPerMin = spawnSet.difficultyPerMin
     local difficulty = diffPerMin * minutes
-    difficulty = difficulty + GAMEMODE.deadWaveDiffBump
+    difficulty = difficulty + GAMEMODE.sessionDiffBump
+    difficulty = difficulty + GAMEMODE.roundDiffBump
 
     local countWanted
     local overrideCount = overrideCountVar:GetInt()
@@ -525,7 +532,20 @@ function GM:SpawnWaveSpawnIn()
     if nextHunterSpawn > cur then return end
 
     if currSpawn.spawnType == "hunter" then
+
+        local idealTickrate = 1 / FrameTime()
+        local currTickrate = 1 / engine.AbsoluteFrameTime()
+        local threshold = math.max( 2.5, idealTickrate * 0.5 )
+        local lagging = currTickrate <= threshold
+        if lagging then
+            debugPrint( "not spawning hunter, laggy, tickrate is " .. currTickrate .. " threshold is " .. threshold )
+            nextHunterSpawn = cur + 1
+            return
+
+        end
+
         local hunter = self:SpawnHunter( currSpawn.class, currSpawn )
+
         if IsValid( hunter ) then
             debugPrint( "spawned", hunter, currSpawn.name, currSpawn.prettyName )
             if currSpawn.postSpawnedFuncs then
@@ -774,8 +794,10 @@ function GM:SpawnHunter( class, currSpawn )
     print( hunter ) -- i like this print, you cannot make me remove it
     if debuggingVar:GetBool() then
         local nearestPly = self:nearestAlivePlayer( spawnPos )
-        debugoverlay.Line( spawnPos, nearestPly:GetShootPos() + nearestPly:GetAimVector() * 50, 10, color_white, true )
+        if IsValid( nearestPly ) then
+            debugoverlay.Line( spawnPos, nearestPly:GetShootPos() + nearestPly:GetAimVector() * 50, 10, color_white, true )
 
+        end
     end
 
     manageIfStale( hunter )
@@ -1040,7 +1062,7 @@ function GM:getValidHunterPos()
             fails = 0
             spawnSet.dynamicTooCloseFailCounts = -2
             if justSpawnSomething then
-                GAMEMODE.deadWaveDiffBump = GAMEMODE.deadWaveDiffBump + spawnSet.diffBumpWhenWaveKilled / 4 -- blast difficulty up
+                GAMEMODE:BumpSessionDifficulty( spawnSet.diffBumpWhenWaveKilled / 4 ) -- blast difficulty up
 
             end
 
@@ -1065,7 +1087,7 @@ function GM:getValidHunterPos()
                 table.Shuffle( potentials )
                 for _, adjArea in ipairs( potentials ) do
                     if adjArea:GetSizeX() <= 25 or adjArea:GetSizeY() <= 25 then continue end -- too small
-                    if adjArea:IsVisible( nearestPlyPos ) then continue end -- dont regress
+                    if nearestPlyPos and adjArea:IsVisible( nearestPlyPos ) then continue end -- dont regress
                     spawnSet.lastGoodSpawnArea = adjArea
                     spawnSet.lastGoodSpawnAreaWeight = math.random( 5, 15 )
                     break

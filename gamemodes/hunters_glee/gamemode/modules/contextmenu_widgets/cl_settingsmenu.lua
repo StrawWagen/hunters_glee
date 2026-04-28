@@ -1,6 +1,6 @@
--- AI SLOP FILE
--- Minimalist, table-driven settings menu. Clientside only.
--- Architecture mirrors cl_tauntmenu/cl_banktop: command-owned window, single-instance holder, DesktopWindows just triggers the command.
+
+-- settings for CLIENT options
+-- not for cvars that affect serverside behavior
 
 local GAMEMODE = GAMEMODE or GM
 
@@ -38,6 +38,15 @@ local settingsCategories = {
     {
         name = "GLEE",
         items = {
+            {
+                cvar = "huntersglee_musicvolume",
+                type = "slider",
+                min = 0,
+                max = 1,
+                decimals = 1,
+                prettyName = "Music volume",
+                desc = "Change the music's volume. Default is -1 which translates to 0.75",
+            },
             {
                 cvar = "huntersglee_cl_showhud",
                 type = "check",
@@ -209,6 +218,17 @@ function settingsMenu:Create( container )
             slider:SetMax( max )
             slider:SetDecimals( decimals )
             slider:SetValue( cvarRef and cvarRef:GetFloat() or min )
+            function slider:PaintOver()
+                if not ( cvarRef and cvarRef:GetFloat() == -1 ) then return end
+                if math.abs( self:GetValue() - min ) > 0.0001 then return end
+                -- only cover the track portion (Slider child), not the TextArea
+                local sld = self.Slider
+                if not IsValid( sld ) then return end
+                local sx, sy = sld:GetPos()
+                local sw, sh = sld:GetSize()
+                draw.SimpleText( "DEFAULT", "termhuntShopItemFont", sx + sw * 0.5, sy + sh * 0.5,
+                    GAMEMODE.shopStandards.white or color_white, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
+            end
             function slider:OnValueChanged( val )
                 if def.changeWhenDone then
                     self._pendingVal = val

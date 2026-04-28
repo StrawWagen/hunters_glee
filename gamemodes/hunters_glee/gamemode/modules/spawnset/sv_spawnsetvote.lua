@@ -114,7 +114,7 @@ function spawnSetVote:OnVoteEnd()
     spawnSetVote.winner = spawnSetVote:GetWinningKey( voteCounts )
 
     if spawnSetVote.winner == GAMEMODE:GetSpawnSet() then
-        huntersGlee_Announce( player.GetAll(), 1001, 5, "Mode will remain " .. GAMEMODE:GetPrettyNameOfSpawnSet( spawnSetVote.winner ) .. "..." )
+        huntersGlee_AnnounceDramatic( player.GetAll(), 1001, 5, "Mode will remain " .. GAMEMODE:GetPrettyNameOfSpawnSet( spawnSetVote.winner ) .. "..." )
         spawnSetVote.currVote = nil
 
         return
@@ -128,16 +128,18 @@ function spawnSetVote:OnVoteEnd()
         game.ConsoleCommand( "huntersglee_spawnset " .. set .. "\n" )
         huntersGlee_Announce( player.GetAll(), 150, 3, "Setting mode..." )
         timer.Simple( 2, function()
-            huntersGlee_Announce( player.GetAll(), 1001, 5, "Mode changed to " .. GAMEMODE:GetPrettyNameOfSpawnSet( set ) )
+            huntersGlee_AnnounceDramatic( player.GetAll(), 1001, 5, "Mode changed to " .. GAMEMODE:GetPrettyNameOfSpawnSet( set ) )
 
         end )
     end
 
+    -- print in console!
     print( "GLEE: Mode vote is over, winner is, " .. spawnSetVote.winner )
+    -- and in people's chat!
     GAMEMODE:SpeakAsHuntersGlee( "Mode vote over! Winner is " .. GAMEMODE:GetPrettyNameOfSpawnSet( spawnSetVote.winner ) )
 
     if GAMEMODE:RoundState() == GAMEMODE.ROUND_ACTIVE and GAMEMODE:getRemaining( GAMEMODE.termHunt_roundBegunTime, CurTime() ) > 60 then -- if round has properly started
-        huntersGlee_Announce( player.GetAll(), 1001, 10, "Mode will be changed to " .. GAMEMODE:GetPrettyNameOfSpawnSet( spawnSetVote.winner ) .. "\n on round end." )
+        huntersGlee_AnnounceDramatic( player.GetAll(), 1001, 10, "Mode will be changed to " .. GAMEMODE:GetPrettyNameOfSpawnSet( spawnSetVote.winner ) .. "\n on round end." )
         hook.Add( "huntersglee_round_into_inactive", "glee_setvotedspawnset", function()
             setSpawnSet( spawnSetVote.winner )
 
@@ -160,6 +162,7 @@ function spawnSetVote:OnVoteEnd()
 end
 
 -- from cfc mapvote cause the code's clean and it handles every case
+-- GIVE LOVE TO HMM
 function spawnSetVote:GetWinningKey( tab )
     local highest = -math.huge
     local count = 0

@@ -385,7 +385,10 @@ function SWEP:Deploy()
         GAMEMODE:SendDeadPlayersToClients()
 
     end
+    return true
+
 end
+
 if CLIENT then
     function SWEP:DrawHUD()
         local doingReviving = self:GetNWBool( "RevivingPly", false )
@@ -401,6 +404,7 @@ if CLIENT then
             local dist1 = ownerPos:DistToSqr( a.pos )
             local dist2 = ownerPos:DistToSqr( b.pos )
             return dist1 < dist2
+
         end )
         for _, data in ipairs( deads ) do
             if not IsValid( data.ply ) then continue end

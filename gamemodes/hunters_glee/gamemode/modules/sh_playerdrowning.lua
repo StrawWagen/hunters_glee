@@ -1,6 +1,6 @@
 
-CreateConVar( "huntersglee_players_cannot_swim", 1, bit.bor( FCVAR_NOTIFY, FCVAR_ARCHIVE, FCVAR_REPLICATED ), "Block players from swimming?.", 0, 1 )
-CreateConVar( "huntersglee_cannotswim_graceperiod", 4.5, bit.bor( FCVAR_NOTIFY, FCVAR_ARCHIVE, FCVAR_REPLICATED ), "How long to let players swim for?.", 0, 64 )
+local cvBlockPlySwimming = CreateConVar( "huntersglee_players_cannot_swim", 1, bit.bor( FCVAR_NOTIFY, FCVAR_ARCHIVE, FCVAR_REPLICATED ), "Block players from swimming?.", 0, 1 )
+local cvDrowningGracePeriod = CreateConVar( "huntersglee_cannotswim_graceperiod", 4.5, bit.bor( FCVAR_NOTIFY, FCVAR_ARCHIVE, FCVAR_REPLICATED ), "How long to let players swim for?.", 0, 64 )
 
 if SERVER then
     hook.Add( "glee_sv_validgmthink", "glee_playerdrowning", function( players )
@@ -10,7 +10,9 @@ if SERVER then
             if wata >= 2 and ply:IsOnFire() then
                 ply:Extinguish()
             end
+            -- head submerged
             if wata >= 3 then
+                -- manage
                 if ply.glee_drowning then
                     if ply.glee_drowning < CurTime() then
                         local dmginfo = DamageInfo()
@@ -27,6 +29,7 @@ if SERVER then
                         ply.glee_drowning = CurTime() + 1.25
                         GAMEMODE:GivePanic( ply, 25 )
                     end
+                -- setup
                 else
                     -- will start drowning soon
                     ply.glee_drowning = CurTime() + 8
@@ -48,28 +51,6 @@ hook.Add( "PlayerDeath", "glee_resetdrowning", function( ply )
 
 end )
 
-local blockPlySwimmingCached
-
-local function blockPlySwimming() -- TODO; JUST GET THE RETURN OF CREATECONVAR WTF IS THIS OLD CODE
-    if not blockPlySwimmingCached then
-        blockPlySwimmingCached = GetConVar( "huntersglee_players_cannot_swim" )
-
-    end
-    return blockPlySwimmingCached
-
-end
-
-local gracePeriodLengthCached
-
-local function getDrowningGracePeriod()
-    if not gracePeriodLengthCached then
-        gracePeriodLengthCached = GetConVar( "huntersglee_cannotswim_graceperiod" )
-
-    end
-    return gracePeriodLengthCached
-
-end
-
 local function RemoveKeys( data, keys )
     -- Using bitwise operations to clear the key bits.
     local newbuttons = bit.band( data:GetButtons(), bit.bnot( keys ) )
@@ -78,7 +59,7 @@ local function RemoveKeys( data, keys )
 end
 
 hook.Add( "SetupMove", "glee_unabletoswim", function( ply, mvd )
-    if blockPlySwimming():GetBool() ~= true then return end
+    if cvBlockPlySwimming:GetBool() ~= true then return end
     local waterLvl = ply:WaterLevel()
     local cur = CurTime()
     if waterLvl >= 2 and ply:Health() > 0 and ply:GetMoveType() ~= MOVETYPE_NOCLIP then
@@ -117,8 +98,8 @@ hook.Add( "SetupMove", "glee_unabletoswim", function( ply, mvd )
                 ply.glee_drowning = ply.glee_drowning + -0.003
 
             end
-            if noswimming_briefrespite < cur then -- give them a couple seconds of swimming
-                local timeItTakesToLoseSwim = getDrowningGracePeriod():GetFloat()
+            if noswimming_briefrespite < cur then -- respite is over
+                local timeItTakesToLoseSwim = cvDrowningGracePeriod:GetFloat()
                 local swimmingStrengthNormalized = timeSinceFreeFromWater / timeItTakesToLoseSwim
                 local maxTheyCanGoUp = -swimmingStrengthNormalized * 400
 
@@ -135,14 +116,14 @@ hook.Add( "SetupMove", "glee_unabletoswim", function( ply, mvd )
                 vel.z = newZ
                 mvd:SetVelocity( vel )
 
-                if mvd:KeyDown( IN_JUMP ) then
+                if not ply:GetNWBool( "glee_IsRappelling", nil ) and mvd:KeyDown( IN_JUMP ) then
                     RemoveKeys( mvd, IN_JUMP )
 
                 end
             end
         else
             ply.glee_noswimming_briefrespite = cur + 0.8
-            ply.glee_noswimming_lastlandlubbering = cur + -( getDrowningGracePeriod():GetFloat() / 2 )
+            ply.glee_noswimming_lastlandlubbering = cur + -( cvDrowningGracePeriod:GetFloat() / 2 )
             ply.glee_nextWaterSound = cur + 0.8
             ply.glee_DoSufferingSplash = true
 

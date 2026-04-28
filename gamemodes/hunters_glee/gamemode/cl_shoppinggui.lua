@@ -1,5 +1,9 @@
 local GAMEMODE = GAMEMODE or GM
 
+local scrollHintExpired = CreateClientConVar( "cl_huntersgleehint_hasscrolledcategories", 0, true, false )
+local scrolledCount = 0
+local scrollCountToStopPermanently = 5
+
 local glee_sizeScaled = glee_sizeScaled
 
 local function shopPanelName( identifier )
@@ -59,20 +63,28 @@ function termHuntOpenTheShop()
     local pressableThink = GAMEMODE.shopStandards.pressableThink
     local isHovered = GAMEMODE.shopStandards.isHovered
 
-    local white =               GAMEMODE.shopStandards.white
-    local whiteFaded =          GAMEMODE.shopStandards.whiteFaded
+    local white =                 GAMEMODE.shopStandards.white
+    local whiteFaded =            GAMEMODE.shopStandards.whiteFaded
 
-    local backgroundColor =     GAMEMODE.shopStandards.backgroundColor
-    local invisibleColor =      GAMEMODE.shopStandards.invisibleColor
-    local shopItemColor =       GAMEMODE.shopStandards.shopItemColor
-    local shopScrollGradient =  GAMEMODE.shopStandards.shopScrollGradient
-    local cantAffordOverlay =   GAMEMODE.shopStandards.cantAffordOverlay
-    local scrollEndsOverlay =   GAMEMODE.shopStandards.scrollEndsOverlay
-    local notHoveredOverlay =   GAMEMODE.shopStandards.notHoveredOverlay
-    local pressedItemOverlay =  GAMEMODE.shopStandards.pressedItemOverlay
-    local markupTextColor =     GAMEMODE.shopStandards.markupTextColor
+    local backgroundColor =       GAMEMODE.shopStandards.backgroundColor
+    local invisibleColor =        GAMEMODE.shopStandards.invisibleColor
+    local shopItemColor =         GAMEMODE.shopStandards.shopItemColor
+    local shopScrollGradient =    GAMEMODE.shopStandards.shopScrollGradient
+    local cantAffordOverlay =     GAMEMODE.shopStandards.cantAffordOverlay
+    local scrollEndsOverlay =     GAMEMODE.shopStandards.scrollEndsOverlay
+    local notHoveredOverlay =     GAMEMODE.shopStandards.notHoveredOverlay
+    local pressedItemOverlay =    GAMEMODE.shopStandards.pressedItemOverlay
+    local markupTextColor =       GAMEMODE.shopStandards.markupTextColor
 
-    local switchSound =         GAMEMODE.shopStandards.switchSound
+    local scrollHintColorDark =   GAMEMODE.shopStandards.scrollHintColorDark
+    local scrollHintColorBright = GAMEMODE.shopStandards.scrollHintColorBright
+    local scrollHintPullbackDur = GAMEMODE.shopStandards.scrollHintPullbackDur
+    local scrollHintBounceDur =   GAMEMODE.shopStandards.scrollHintBounceDur
+    local scrollHintLingerDur =   GAMEMODE.shopStandards.scrollHintLingerDur
+    local scrollHintSizeMult =    GAMEMODE.shopStandards.scrollHintSizeMult
+    local scrollHintMoveMult =    GAMEMODE.shopStandards.scrollHintMoveMult
+
+    local switchSound =           GAMEMODE.shopStandards.switchSound
 
     local ply = LocalPlayer()
     ply.oldScrollPositions = ply.oldScrollPositions or {}
@@ -105,6 +117,9 @@ function termHuntOpenTheShop()
     shopFrame:DockPadding( 0, shopFrame.titleBarSize, 0, 0 ) -- the little lighter bar at the top
     shopFrame:ShowCloseButton( false )
 
+    net.Start( "glee_loadingtheshop" )
+    net.SendToServer()
+
 
     local clientsMenuKey = input.LookupBinding( "+menu" )
     if clientsMenuKey then
@@ -135,6 +150,87 @@ function termHuntOpenTheShop()
         clientsRightKey = input.GetKeyCode( clientsRightKey )
 
     end
+
+    local scrollHintPulling = true
+    local scrollHintLingering = false
+    local scrollHintTime = nil -- Time of start of current pull/bounce phase
+
+    local function drawScrollHint( x, y, containerHeight )
+        local now = RealTime()
+
+        if not scrollHintTime then
+            scrollHintTime = now
+
+        end
+
+        local elapsed = now - scrollHintTime
+        local frac = 0
+
+        if scrollHintLingering then
+            if elapsed >= scrollHintLingerDur then
+                scrollHintLingering = false
+                scrollHintTime = now
+
+            end
+
+        else
+            local phaseDur = scrollHintPulling and scrollHintPullbackDur or scrollHintBounceDur
+
+            if elapsed >= phaseDur then
+                elapsed = 0
+                scrollHintPulling = not scrollHintPulling
+                scrollHintTime = now
+
+                if scrollHintPulling then
+                    scrollHintLingering = true
+
+                end
+
+            end
+
+            local easeFunc = scrollHintPulling and math.ease.InOutExpo or math.ease.OutBounce
+            frac = easeFunc( elapsed / phaseDur )
+
+            if not scrollHintPulling then
+                frac = 1 - frac
+
+            end
+
+        end
+
+        local radius = containerHeight * scrollHintSizeMult / 2
+        local slide = radius * 1.5
+        local tighten = slide * 0.5
+        x = x - frac * radius * scrollHintMoveMult
+
+        draw.NoTexture()
+
+        if scrollHintLingering then
+            surface.SetDrawColor( scrollHintColorDark )
+
+        else
+            surface.SetDrawColor( scrollHintColorBright )
+
+        end
+
+        -- Bottom poly
+        surface.DrawPoly( {
+            { x = x, y = y, },
+            { x = x - slide + tighten, y = y + radius, },
+            { x = x - slide, y = y + radius, },
+            { x = x - slide + tighten, y = y, },
+        } )
+
+        -- Top poly
+        surface.DrawPoly( {
+            { x = x - slide + tighten, y = y - radius, },
+            { x = x, y = y, },
+            { x = x - slide + tighten, y = y, },
+            { x = x - slide, y = y - radius, },
+        } )
+
+    end
+
 
     -- if pressed button that opened shop, close the shop
     function shopFrame:OnKeyCodePressed( pressed )
@@ -370,14 +466,42 @@ function termHuntOpenTheShop()
 
         -- make the scrollbar match the style!
         function scrollBar:Paint( w, h )
-            draw_RoundedBox( 0, 0, 0, w, h, shopItemColor )
-            draw_RoundedBox( 0, 0, 0, w, h, cantAffordOverlay )
+            local btnHeight = scrollBar.btnUp:GetTall()
+
+            draw_RoundedBox( 0, 0, btnHeight, w, h - btnHeight * 2, shopItemColor )
+            draw_RoundedBox( 0, 0, btnHeight, w, h - btnHeight * 2, cantAffordOverlay )
+        end
+
+        if clientsForwardKey then
+            local name = input.GetKeyName( clientsForwardKey )
+            name = string.upper( name )
+            scrollBar.btnUp:SetTooltip( "Scroll Up (" .. name .. ")" )
+
         end
 
         function scrollBar.btnUp:Paint( w, h )
-            draw_RoundedBox( 0, 0, 0, w, h, shopItemColor )
+            surface.SetDrawColor( shopItemColor )
+            draw.NoTexture()
+
+            local slide = h * 0.5
+
+            local function shape()
+                surface.DrawPoly( {
+                    { x = w / 2, y = 0, },
+                    { x = w, y = h - slide, },
+                    { x = w, y = h, },
+                    { x = 0, y = h, },
+                    { x = 0, y = h - slide, },
+                } )
+
+            end
+
+            shape()
+
             if not self:IsHovered() then
-                draw_RoundedBox( 0, 0, 0, w, h, notHoveredOverlay )
+                surface.SetDrawColor( notHoveredOverlay )
+                shape()
+
             end
         end
 
@@ -385,10 +509,36 @@ function termHuntOpenTheShop()
             pressableThink( self )
         end
 
+        if clientsBackKey then
+            local name = input.GetKeyName( clientsBackKey )
+            name = string.upper( name )
+            scrollBar.btnDown:SetTooltip( "Scroll Down (" .. name .. ")" )
+
+        end
+
         function scrollBar.btnDown:Paint( w, h )
-            draw_RoundedBox( 0, 0, 0, w, h, shopItemColor )
+            surface.SetDrawColor( shopItemColor )
+            draw.NoTexture()
+
+            local slide = h * 0.5
+
+            local function shape()
+                surface.DrawPoly( {
+                    { x = w, y = 0, },
+                    { x = w, y = h - slide, },
+                    { x = w / 2, y = h, },
+                    { x = 0, y = h - slide, },
+                    { x = 0, y = 0, },
+                } )
+
+            end
+
+            shape()
+
             if not self:IsHovered() then
-                draw_RoundedBox( 0, 0, 0, w, h, notHoveredOverlay )
+                surface.SetDrawColor( notHoveredOverlay )
+                shape()
+
             end
         end
 
@@ -458,12 +608,12 @@ function termHuntOpenTheShop()
 
         -- the scrollable things that hold shop items and have names like innate and undead
         for category, catData in SortedPairsByMemberValue( categories, "order", false ) do
-            if not GAMEMODE:CategoryCanShow( category, ply ) then shopCategoriesBlocked[ category ] = true continue end
+            if not GAMEMODE:CategoryCanShow( category, ply ) then shopCategoriesBlocked[category] = true continue end
 
             local horisScroller = vgui.Create( "DHorizontalScroller", ply.MAINSCROLLPANEL, shopCategoryName( category ) )
 
             --print( "createdcat " .. category .. " " .. tostring( horisScroller ) )
-            shopCategoryPanels[ category ] = horisScroller
+            shopCategoryPanels[category] = horisScroller
 
             ply.MAINSCROLLPANEL:AddItem( horisScroller )
 
@@ -529,12 +679,20 @@ function termHuntOpenTheShop()
 
                 local newOffset = self.OffsetX or 0
                 if newOffset ~= oldOffset then -- dont do anything if we reach the end of the scroller
-                    ply.oldScrollPositions[ category ] = newOffset
+                    ply.oldScrollPositions[category] = newOffset
                     self:RemoveCoolTooltip()
                     local pitchOffset = ( oldOffset - newOffset ) * 0.1
                     pitchOffset = pitchOffset / stepScale
                     ply:EmitSound( "physics/plastic/plastic_barrel_impact_soft2.wav", 60, 100 + pitchOffset, 0.2 * stepScale )
 
+                end
+
+                if not scrollHintExpired:GetBool() and delta < 0 then
+                    scrolledCount = scrolledCount + 1
+                    if scrolledCount >= scrollCountToStopPermanently then
+                        RunConsoleCommand( "cl_huntersgleehint_hasscrolledcategories", "1" )
+
+                    end
                 end
 
                 return true
@@ -544,7 +702,7 @@ function termHuntOpenTheShop()
             horisScroller.Think = function( self )
                 if self.fixedScroll then return end
                 self.fixedScroll = nil
-                self:SetScroll( ply.oldScrollPositions[ category ] or 0 )
+                self:SetScroll( ply.oldScrollPositions[category] or 0 )
 
             end
 
@@ -589,12 +747,12 @@ function termHuntOpenTheShop()
         for identifier, itemData in SortedPairsByMemberValue( GAMEMODE.shopItems, "weight", false ) do
             local myCategories = itemData.categories
             for category, _ in pairs( myCategories ) do
-                if shopCategoriesBlocked[ category ] then continue end
+                if shopCategoriesBlocked[category] then continue end
 
-                local myCategoryPanel = shopCategoryPanels[ category ]
+                local myCategoryPanel = shopCategoryPanels[category]
                 if not myCategoryPanel then ErrorNoHaltWithStack( "tried to add item " .. identifier .. " to invalid category, " .. category ) continue end
 
-                if itemData.shCanShowInShop and not itemData.shCanShowInShop( ply ) then continue end
+                if not GAMEMODE:canShowInShop( ply, identifier ) then continue end
 
                 local shopItem = vgui.Create( "DButton", myCategoryPanel, shopPanelName( identifier ) )
 
@@ -930,6 +1088,18 @@ function termHuntOpenTheShop()
 
                     end
 
+                    -- draw category scroll hint if we're split by the edge of the shop
+                    if myCategoryPanel.canScrollRight and not scrollHintExpired:GetBool() then
+                        local w = self:GetWide()
+                        local endX = self:LocalToScreen( w )
+                        local endXView = myCategoryPanel:LocalToScreen( myCategoryPanel:GetWide() )
+
+                        if endX >= endXView then
+                            drawScrollHint( w * 0.45, self:GetTall() * 0.7, self:GetTall() )
+
+                        end
+                    end
+
                     local score = ply:GetScore()
 
                     local nextBigCaching = self.nextBigCaching or 0
@@ -937,7 +1107,7 @@ function termHuntOpenTheShop()
 
                     local identifierPaint = self.itemIdentifier
                     -- check after all the potentially custom functions had a chance to run  
-                    if GAMEMODE.invalidShopItems[ identifierPaint ] then self:Remove() return end
+                    if GAMEMODE.invalidShopItems[identifierPaint] then self:Remove() return end
 
                     self.purchasable, self.notPurchasableReason = GAMEMODE:canPurchase( ply, identifierPaint )
                     self.nextBigCaching = CurTime() + 0.1
@@ -967,7 +1137,15 @@ function termHuntOpenTheShop()
                         -- "decorative" cost that isn't applied when purchased
                         local decorativeCost = itemData.costDecorative
                         if decorativeCost then
-                            self.costString = itemData.costDecorative
+                            if isfunction( decorativeCost ) then
+                                local str, color = decorativeCost( ply, identifierPaint )
+                                self.costString = str or self.costString
+                                self.costColor = color or self.costColor
+
+                            else
+                                self.costString = decorativeCost
+
+                            end
 
                         elseif itemData.simpleCostDisplay then
                             self.costString = tostring( cost )
@@ -983,6 +1161,7 @@ function termHuntOpenTheShop()
                     local currentMarkup = GAMEMODE:shopMarkup( ply, identifierPaint )
                     if currentMarkup ~= 1 then
                         self.markupString = "( " .. tostring( currentMarkup ) .. "x markup )"
+
                     end
 
                     -- handle tooltips

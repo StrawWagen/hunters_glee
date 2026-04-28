@@ -60,7 +60,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_addcratejobs", function()
         if area:IsBlocked() then return end
         if area:IsUnderwater() then return end
         -- dont place anchor boxes in spots already taken!
-        if not currJob.sortForNearest and currJob.placedAlready[ area:GetID() ] then return end
+        if not currJob.sortForNearest and currJob.placedAlready[area:GetID()] then return end
         if nearbyGreaterThanCount( area:GetCenter(), 400, crates, 4 ) then return end
         return true
 
@@ -100,7 +100,6 @@ hook.Add( "glee_sv_validgmthink_active", "glee_addcratejobs", function()
 
     end
 
-    GAMEMODE.roundExtraData = GAMEMODE.roundExtraData or {}
     proceduralCratePlaces = GAMEMODE.roundExtraData.proceduralCratePlaces or 0
     GAMEMODE.roundExtraData.proceduralCratePlaces = proceduralCratePlaces + 1
 
@@ -188,9 +187,9 @@ end )
 local function postPlaced( bestPosition )
     local placedArea = GAMEMODE:getNearestNav( bestPosition, 500 )
     if placedArea and placedArea.IsValid and placedArea:IsValid() then
-        placedAlready[ placedArea:GetID() ] = true
+        placedAlready[placedArea:GetID()] = true
         for _, area in ipairs( placedArea:GetAdjacentAreas() ) do
-            placedAlready[ area:GetID() ] = true
+            placedAlready[area:GetID()] = true
 
         end
     end

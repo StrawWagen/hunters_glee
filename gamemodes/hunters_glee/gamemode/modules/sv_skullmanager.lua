@@ -186,7 +186,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_addskulljobs", function()
         if area:IsBlocked() then return end
         if area:IsUnderwater() then return end
         -- dont place skulls in spots twice per session!
-        if currJob.placedAlready[ area:GetID() ] then return end
+        if currJob.placedAlready[area:GetID()] then return end
         return true
 
     end
@@ -259,9 +259,9 @@ end )
 local function postPlaced( bestPosition )
     local placedArea = GAMEMODE:getNearestNav( bestPosition, 500 )
     if placedArea and placedArea.IsValid and placedArea:IsValid() then
-        placedAlready[ placedArea:GetID() ] = true
+        placedAlready[placedArea:GetID()] = true
         for _, area in ipairs( placedArea:GetAdjacentAreas() ) do
-            placedAlready[ area:GetID() ] = true
+            placedAlready[area:GetID()] = true
 
         end
     end
@@ -284,8 +284,8 @@ local function checkSkulls()
     -- wait until the skull has finished setting up
     timer.Simple( 0, function()
         local winner, tieBroken = GAMEMODE:calculateWinner()
-        SetGlobalEntity( "termHuntWinner", winner )
-        SetGlobalBool( "termHuntWinnerTied", tieBroken )
+        SetGlobalEntity( "glee_Winner", winner )
+        SetGlobalBool( "glee_WinnerTied", tieBroken )
 
     end )
 end
@@ -296,7 +296,7 @@ hook.Add( "huntersglee_round_into_active", "glee_broadcastnewfinestprey", checkS
 
 
 hook.Add( "PlayerDeath", "glee_winnerdropsskulls", function( victim )
-    local winner = GetGlobalEntity( "termHuntWinner" )
+    local winner = GetGlobalEntity( "glee_Winner" )
 
     if not IsValid( winner ) then return end
     if winner ~= victim then return end

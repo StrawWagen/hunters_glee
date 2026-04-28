@@ -87,6 +87,9 @@ GAMEMODE:GobbleShopItems( items )
 | `cooldown` | ❌ | Seconds between purchases (`math.huge` = once per round) |
 | `weight` | ❌ | Sort order within category (lower = higher) |
 | `shCanShowInShop` | ❌ | Visibility function: `function(purchaser) -> bool` |
+| `costDecorative` | ❌ | Fake, decorative cost. string or function: `function(purchaser, itemID) -> string, color` |
+| `unpurchaseableReason` | ❌ | If the item has the `"unpurchaseable"` tag, this string can replace the default purchase failure reason. |
+| `identifier` | ❌ | Auto-generated. Same as the item ID used when defining the item |
 
 #### Category Tags
 
@@ -96,11 +99,19 @@ Items appear in categories based on their first matching tag:
 |-----|----------|------------|
 | `ITEMS` | Items | Alive players |
 | `INNATE` | Innate | Alive players |
+| `BARGAINS` | Bargains | Alive players |
 | `DEADSACRIFICES` | Sacrifices | Dead players |
 | `DEADGIFTS` | Gifts | Dead players |
 | `BANK` | Bank | All players |
 
 Additional descriptive tags (e.g., `"Weapon"`, `"Utility"`) don't affect categorization.
+
+Some other tags automatically apply special properties to items:
+
+- `unpurchaseable`
+    - Causes the item to be completely unpurchaseable, but doesn't hide it from the shop.
+    - Good for using a shop slot to display information rather than provide an item.
+    - Adding the `unpurchaseableReason` field to the item will let you override the fail reason string.
 
 #### Shopping Helper Functions
 
@@ -108,7 +119,7 @@ Additional descriptive tags (e.g., `"Weapon"`, `"Utility"`) don't affect categor
 
 ```lua
 shopHelpers.aliveCheck( purchaser )      -- Returns true if alive
-shopHelpers.undeadCheck( purchaser )     -- Returns true if dead
+shopHelpers.deadCheck( purchaser )     -- Returns true if dead
 shopHelpers.isCheats()                 -- Returns true if sv_cheats is on
 shopHelpers.purchaseWeapon( purchaser, {
     class = "weapon_smg1",
@@ -118,6 +129,31 @@ shopHelpers.purchaseWeapon( purchaser, {
     confirmSoundWeight = 1, -- Gun cock sound intensity
 } )
 ```
+
+### Shopping Hooks
+
+Additional ways to control access to shop items.
+
+- `allow`, `failReason` = `glee_shop_canshow`( `ply`, `itemData` )
+  - Return `false`, `failReason` to block the item from showing.
+  - Behaves similarly to `shCanShowInShop`, but called on a global scale and with reference to the item.
+- `allow`, `failReason` = `glee_shop_canpurchase`( `ply`, `itemData` )
+  - Return `false`, `failReason` to block the item from being purchased.
+  - Behaves similarly to `shPurchaseCheck`, but called on a global scale and with reference to the item.
+- `newDescription` = `glee_shop_itemdescription`( `ply`, `itemData`, `description` )
+  - Return `newDescription`, to override the item description.
+  - Remember, only one hook listener can return non-nil at a time!
+
+Example:
+
+```lua
+hook.Add( "glee_shop_canshow", "i_really_hate_debuffs", function( ply, itemData )
+    if itemData.tags.Debuff then return false, "Debuffs are LAME" end
+
+end )
+
+```
+
 
 ---
 

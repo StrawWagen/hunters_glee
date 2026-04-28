@@ -7,7 +7,7 @@ local function playStartSound()
 
     local dsp = spawnSet.roundStartSoundDSP
 
-    GAMEMODE:PlaySoundOnEveryPlayer( startSound, nil, nil, dsp )
+    GAMEMODE:SendSolidSound( startSound, { dsp = dsp } )
 
 end
 
@@ -17,15 +17,34 @@ local function playEndSound()
     local endSound = spawnSet.roundEndSound
     if endSound == "" then return end
 
-    local dsp = spawnSet.roundEndSoundDSP
+    GAMEMODE:SendSolidSound( endSound )
 
-    GAMEMODE:PlaySoundOnEveryPlayer( endSound, nil, nil, dsp )
+end
+
+local function playWinSound()
+    local _, spawnSet = GAMEMODE:GetSpawnSet()
+
+    local winSound = spawnSet.roundWinSound
+    if winSound == "" then return end
+
+    GAMEMODE:SendSolidSound( winSound )
+
+end
+
+local function playPerfectWinSound()
+    local _, spawnSet = GAMEMODE:GetSpawnSet()
+
+    local perfectWinSound = spawnSet.roundPerfectWinSound
+    if perfectWinSound == "" then return end
+
+    GAMEMODE:SendSolidSound( perfectWinSound )
 
 end
 
 
 hook.Add( "huntersglee_round_into_active", "glee_spawnset_startsound", function()
     playStartSound()
+
 
 end )
 
@@ -36,6 +55,16 @@ hook.Add( "glee_post_set_spawnset", "glee_spawnset_startsound", function() -- wh
 end )
 
 hook.Add( "huntersglee_round_into_limbo", "glee_spawnset_endsound", function()
-    playEndSound()
+    if GAMEMODE.roundExtraData.everyoneEscaped then
+        playPerfectWinSound()
 
+    elseif GAMEMODE.roundExtraData.someoneEscaped then
+        playWinSound()
+
+    else
+        timer.Simple( 0.5, function()
+            playEndSound()
+
+        end )
+    end
 end )

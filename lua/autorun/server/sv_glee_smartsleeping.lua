@@ -47,7 +47,7 @@ local function handleSleep( ent, curTime ) -- think func
             needsRemove = true
 
         -- if it landed on one of these, and there's no navarea nearby, remove it
-        elseif tr.HitWorld and noNavTextures[ tr.HitTexture ] and not IsValid( navmesh.GetNavArea( ent:GetPos() ) ) then
+        elseif tr.HitWorld and noNavTextures[tr.HitTexture] and not IsValid( navmesh.GetNavArea( ent:GetPos() ) ) then
             needsRemove = true
 
         end
@@ -98,17 +98,17 @@ local nextBreak = 0
 hook.Add( "Think", "glee_dynamicfreezing_laggingthink", function() -- deal damage to random sleepers if the server is lagging
     local curTime = CurTime()
     if nextBreak > curTime then return end
-    nextBreak = curTime + 1
+    nextBreak = curTime + 0.1
 
     local lagScale = physenv.GetLastSimulationTime() * 1000
 
-    local lagging = lagScale > 100
+    local lagging = lagScale > math.random( 50, 100 )
     if not lagging then return end
 
-    local randomFrozenEnt = toFreeze[ math.random( 1, #toFreeze ) ]
+    local randomFrozenEnt = toFreeze[math.random( 1, #toFreeze )]
     if not IsValid( randomFrozenEnt ) then return end
 
-    damaged.glee_smartsleepingdontwake = true
+    randomFrozenEnt.glee_smartsleepingdontwake = true
 
     local dmg = DamageInfo()
     dmg:SetAttacker( game.GetWorld() )
@@ -117,7 +117,7 @@ hook.Add( "Think", "glee_dynamicfreezing_laggingthink", function() -- deal damag
     dmg:SetDamageType( DMG_CRUSH )
     randomFrozenEnt:TakeDamageInfo( dmg )
 
-    damaged.glee_smartsleepingdontwake = nil
+    randomFrozenEnt.glee_smartsleepingdontwake = nil
 
 end )
 
@@ -161,6 +161,11 @@ end )
 
 hook.Add( "PlayerUse", "glee_unchainsleepers", function( _, used )
     unchainSleeper( used )
+
+end )
+
+hook.Add( "RappelDrag", "glee_unchainsleepers", function( dragged )
+    unchainSleeper( dragged )
 
 end )
 
@@ -214,7 +219,7 @@ local function setupOnCreateHook()
         if not IsValid( ent ) then return end
         if ent.glee_issmartsleeping then return end
         local class = ent:GetClass()
-        if ent:IsWeapon() or fastSleepClasses[ class ] then
+        if ent:IsWeapon() or fastSleepClasses[class] then
             wepGibCount = wepGibCount + 1
             local sleepTime = 30
             -- map with npcs dropping weapons?

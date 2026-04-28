@@ -201,7 +201,7 @@ function GM:findValidNavResult( data, start, radius, scoreFunc, noMoreOptionsMin
             for _, currClosedId in ipairs( closedSequential ) do
                 local currClosedScore = scores[currClosedId]
 
-                if isnumber( currClosedScore ) and currClosedScore > bestClosedScore and isLadder[ currClosedId ] ~= true then
+                if isnumber( currClosedScore ) and currClosedScore > bestClosedScore and isLadder[currClosedId] ~= true then
                     bestClosedScore = currClosedScore
                     bestClosedAreaId = currClosedId
 
@@ -252,8 +252,10 @@ function GM:findValidNavResult( data, start, radius, scoreFunc, noMoreOptionsMin
     end
 end
 
+GM.IsUnderSky_Distance = 12000
+
 local fiftyPowerOfTwo = 50^2
-local vec12kZ = Vector( 0, 0, 12000 )
+local vec12kZ = Vector( 0, 0, GM.IsUnderSky_Distance )
 local vecNeg1K = Vector( 0, 0, -1000 )
 
 function GM:IsUnderSky( pos )
@@ -266,19 +268,25 @@ function GM:IsUnderSky( pos )
     local skyTraceResult = util.TraceLine( skyTraceDat )
 
     if skyTraceResult.HitSky then
-        return true, skyTraceResult.HitPos
+        return true, skyTraceResult.HitPos, skyTraceResult
 
     elseif not skyTraceResult.Hit then
-        return true, skyTraceResult.HitPos
+        return true, skyTraceResult.HitPos, skyTraceResult
 
     else
-        return nil, skyTraceResult.HitPos
+        return nil, skyTraceResult.HitPos, skyTraceResult
 
     end
 end
 
-function GM:IsUnderDisplacement( pos )
+function GM:IsOverDisplacement( pos )
+    local tr = terminator_Extras.getFloorTr( pos )
+    if tr.HitTexture ~= "**displacement**" then return nil, tr end
+    return true, tr
 
+end
+
+function GM:IsUnderDisplacement( pos )
     -- get the sky
     local firstTraceDat = {
         start = pos,
@@ -380,25 +388,25 @@ function GM:getFurthestConnectedNav( start, dist, ignoreBlocker )
 
 end
 
-local vec40Z = Vector( 0,0,40 )
+local vec40Z = Vector( 0, 0, 40 )
 
-function GM:GetNearbyWalkableArea( playerReference, start, count )
+function GM:GetNearbyWalkableArea( playerReference, start, count, occupiedSpawnAreas )
     local spawnTraceOffset = vec40Z
     local res = GAMEMODE:getNearestPosOnNav( start, 20000 )
     local startArea = res.area
 
-    if not ( startArea and startArea.IsValid and startArea:IsValid() ) then return end
+    if not IsValid( startArea ) then return end
     local canBeUnderwater = startArea:IsUnderwater()
-    local occupiedSpawnAreas = occupiedSpawnAreas or {}
 
     local scoreData = {}
     scoreData.startPos = res.pos
     scoreData.allowUnderwater = startArea:IsUnderwater()
     scoreData.traceOffset = spawnTraceOffset
+    scoreData.occupiedSpawnAreas = occupiedSpawnAreas or {}
 
     local scoreFunction = function( scoreData, area1, area2 )
 
-        if occupiedSpawnAreas[area2:GetID()] then return 0 end
+        if scoreData.occupiedSpawnAreas[area2:GetID()] then return 0 end
         if area2:IsUnderwater() and not canBeUnderwater then return 0 end
 
         local area2Center = area2:GetCenter()
@@ -406,6 +414,7 @@ function GM:GetNearbyWalkableArea( playerReference, start, count )
         local score = distanceTravelled * math.Rand( 0.5, 1.5 )
         local traceOffset = scoreData.traceOffset
 
+        -- pass thru these crappy areas but only if they're the last choice
         if area2:IsUnderwater() and not scoreData.allowUnderwater then
             score = 1
         end
@@ -651,6 +660,7 @@ function GM:anyAreCloserThan( positions, checkPosition, closerThanDistance, zTol
     end
 end
 
+-- speak in player's chat
 function GM:SpeakAsHuntersGlee( msg )
     PrintMessage( HUD_PRINTTALK, "HUNTER'S GLEE: " .. msg )
 
@@ -673,15 +683,6 @@ function GM:Bleed( ply, extent )
             edata:SetNormal( VectorRand() )
             edata:SetEntity( ply )
         util.Effect( "BloodImpact", edata )
-
-    end
-end
-
-function GM:PlaySoundOnEveryPlayer( path, pitch, vol, dsp )
-    for _, ply in player.Iterator() do
-        local filterJustThem = RecipientFilter()
-        filterJustThem:AddPlayer( ply )
-        ply:EmitSound( path, 75, pitch, vol, CHAN_STATIC, 0, dsp, filterJustThem )
 
     end
 end

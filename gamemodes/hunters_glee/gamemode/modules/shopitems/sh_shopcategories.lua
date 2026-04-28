@@ -14,31 +14,36 @@ function GM:SetupShopCategories()
             order = 2,
             shCanShowInShop = shopHelpers.aliveCheck
         },
+        HORRORS = { -- things that escaped players can buy, the strongest items in the game
+            name = "Horrors",
+            order = 4,
+            shCanShowInShop = shopHelpers.escapedCheck
+        },
         DEADSACRIFICES = { -- things you can place to earn money while dead
             name = "Sacrifices",
-            order = 3,
-            shCanShowInShop = shopHelpers.undeadCheck
+            order = 5,
+            shCanShowInShop = shopHelpers.deadCheck
         },
         DEADGIFTS = { -- things you can place to spend money, do stuff while dead
             name = "Gifts",
-            order = 4,
-            shCanShowInShop = shopHelpers.undeadCheck
+            order = 6,
+            shCanShowInShop = shopHelpers.deadCheck
         },
         BANK = { -- banking
             name = "Bank",
-            order = 5,
+            order = 7,
         }
     }
 
     self.shopCategoryIds = {}
     for category, _ in pairs( self.shopCategories ) do -- kinda dumb
-        self.shopCategoryIds[ category ] = category
+        self.shopCategoryIds[category] = category
 
     end
 end
 
 function GM:GetShopCategoryData( categoryIdentifier )
-    local dat = GAMEMODE.shopCategories[ categoryIdentifier ]
+    local dat = GAMEMODE.shopCategories[categoryIdentifier]
     if not istable( dat ) then return end
     return dat
 

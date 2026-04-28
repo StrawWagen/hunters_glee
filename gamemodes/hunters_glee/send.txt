@@ -2,6 +2,7 @@ gamemodes\hunters_glee\gamemode\cl_shopstandards.lua
 gamemodes\hunters_glee\gamemode\cl_shoppinggui.lua
 
 gamemodes\hunters_glee\gamemode\modules\cl_targetid.lua
+gamemodes\hunters_glee\gamemode\modules\cl_winscreen.lua
 gamemodes\hunters_glee\gamemode\modules\cl_scoreboard.lua
 gamemodes\hunters_glee\gamemode\modules\cl_modelscale.lua
 gamemodes\hunters_glee\gamemode\modules\cl_obfuscation.lua
@@ -30,6 +31,13 @@ gamemodes\hunters_glee\gamemode\player_class\player_termrunnertaunt.lua
 
 gamemodes\hunters_glee\gamemode\modules\battery\cl_battery.lua
 gamemodes\hunters_glee\gamemode\modules\battery\sh_battery.lua
+
+gamemodes\hunters_glee\gamemode\modules\deadplayerfx\cl_souls.lua
+gamemodes\hunters_glee\gamemode\modules\deadplayerfx\cl_deaddesaturation.lua
+
+gamemodes\hunters_glee\gamemode\modules\escaping\cl_escaping.lua
+
+gamemodes\hunters_glee\gamemode\modules\solidsounds\cl_solidsounds.lua
 
 gamemodes\hunters_glee\gamemode\modules\bpm\cl_bpm.lua
 

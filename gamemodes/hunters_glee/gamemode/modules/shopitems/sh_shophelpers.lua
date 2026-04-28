@@ -3,14 +3,37 @@ local GM = GM or GAMEMODE
 local shopHelpers = GM.shopHelpers or {}
 GM.shopHelpers = shopHelpers
 
+-- alive! in the hunt
 function shopHelpers.aliveCheck( purchaser )
     if purchaser:Health() <= 0 then return false, "You must be alive to purchase this." end
     return true, ""
 
 end
 
-function shopHelpers.undeadCheck( purchaser )
+-- dead! keep it interesting for the alive people!
+function shopHelpers.deadCheck( purchaser )
     if purchaser:Health() > 0 then return false, "You must be dead to purchase this." end
+    return true, ""
+
+end
+
+-- dead! but not for the escaped people.
+function shopHelpers.deadNotEscapedCheck( purchaser )
+    if purchaser:Health() > 0 then return false, "You must be dead to purchase this." end
+    if purchaser:HasEscaped() then
+        return false, "This is only for present souls to purchase."
+
+    end
+    return true, ""
+
+end
+
+-- escaped! just spectating, can't respawn, but can control bots!
+function shopHelpers.escapedCheck( purchaser )
+    if not purchaser:HasEscaped() then
+        return false, "You must escape, to purchase this."
+
+    end
     return true, ""
 
 end
@@ -125,4 +148,33 @@ end
 function shopHelpers.multiplePeopleAndTerm()
     return shopHelpers.hasMultiplePeople() and shopHelpers.terminatorInSpawnPool()
 
+end
+
+-- Does NOT sort by weight.
+function shopHelpers.getItemsInCategory( category )
+    local items = {}
+
+    for _, itemData in pairs( GAMEMODE.shopItems ) do
+        if itemData.categories and itemData.categories[category] then
+            table.insert( items, itemData )
+
+        end
+
+    end
+
+    return items
+end
+
+function shopHelpers.getItemsByTag( tag )
+    local items = {}
+
+    for _, itemData in pairs( GAMEMODE.shopItems ) do
+        if itemData.tags and itemData.tags[tag] then
+            table.insert( items, itemData )
+
+        end
+
+    end
+
+    return items
 end

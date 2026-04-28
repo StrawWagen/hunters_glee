@@ -156,3 +156,7 @@ hook.Add( "PlayerDeath", "glee_closeshopwhendead", function( died )
     net.Send( died )
 
 end )
+
+net.Receive( "glee_loadingtheshop", function( _, ply )
+    hook.Run( "glee_loadingtheshop", ply ) -- Starting to open the shop. For living players, it'll be a few seconds longer until it fully opens.
+end )

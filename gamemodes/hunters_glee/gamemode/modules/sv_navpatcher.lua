@@ -68,6 +68,9 @@ function GAMEMODE:DoGreedyPatch()
         hook.Run( "glee_navmesh_visit", area )
 
     end
+
+    hook.Run( "glee_navmesh_postvisit_start" )
+
     for i, area in ipairs( navAreas ) do
         if i % 100 == 0 then
             coroutine_yield()
@@ -126,7 +129,7 @@ function GAMEMODE:FindPotentialLinkagesBetweenNavAreaGroups( groups, groupCorner
 
     local groupCenters = {}
     local function groupsCenter( groupsId, group )
-        local groupsAveragePos = groupCenters[ groupsId ]
+        local groupsAveragePos = groupCenters[groupsId]
         if groupsAveragePos then return groupsAveragePos end
 
         for _, area in ipairs( group ) do
@@ -142,7 +145,7 @@ function GAMEMODE:FindPotentialLinkagesBetweenNavAreaGroups( groups, groupCorner
         if not groupsAveragePos then return vec_zero end
         groupsAveragePos = groupsAveragePos / #group
 
-        groupCenters[ groupsId ] = groupsAveragePos
+        groupCenters[groupsId] = groupsAveragePos
         return groupsAveragePos
 
     end
@@ -168,17 +171,17 @@ function GAMEMODE:FindPotentialLinkagesBetweenNavAreaGroups( groups, groupCorner
                 local area2sId = area2:GetID()
 
                 -- was cached as too far
-                if tooFarAreas[ area2sId ] then continue end
+                if tooFarAreas[area2sId] then continue end
                 if not AreasHaveAnyOverlap( area1, area2 ) then continue end
 
                 local distBetweenSqr = areasCenter( area1 ):DistToSqr( areasCenter( area2 ) )
 
                 -- dont even bother, too far
                 if distBetweenSqr > distanceToJustIgnoreSqr then
-                    tooFarAreas[ area2sId ] = true
+                    tooFarAreas[area2sId] = true
                     local adjAreas = area2:GetAdjacentAreas()
                     for _, adjArea in ipairs( adjAreas ) do
-                        tooFarAreas[ adjArea:GetID() ] = true
+                        tooFarAreas[adjArea:GetID()] = true
 
                     end
                     continue
@@ -254,7 +257,7 @@ function GAMEMODE:FindPotentialLinkagesBetweenNavAreaGroups( groups, groupCorner
             local group1Ids = {}
             for _, area in ipairs( group1 ) do
                 if not IsValid( area ) then continue end
-                group1Ids[ area:GetID() ] = true
+                group1Ids[area:GetID()] = true
 
             end
 
@@ -269,7 +272,7 @@ function GAMEMODE:FindPotentialLinkagesBetweenNavAreaGroups( groups, groupCorner
             for _, found in ipairs( foundInTheBox ) do
                 coroutine_yield()
                 if not IsValid( found ) then continue end
-                if not group1Ids[ found:GetID() ] then
+                if not group1Ids[found:GetID()] then
                     table.insert( fauxGroup2, found )
 
                 end

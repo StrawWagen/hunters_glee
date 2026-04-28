@@ -83,7 +83,7 @@ GAMEMODE.shopStandards.pressableThink = pressableThink
 local function setupShopFonts()
     -- YOUR CURRENT SCORE
     local fontData = {
-        font = "Arial",
+        font = GAMEMODE.GLEE_FONT,
         extended = false,
         size = glee_sizeScaled( nil, 50 * GAMEMODE.shopStandards.shpScale ),
         weight = 500,
@@ -106,7 +106,7 @@ local function setupShopFonts()
 
     -- CATEGORY
     fontData = {
-        font = "Arial",
+        font = GAMEMODE.GLEE_FONT,
         extended = false,
         size = glee_sizeScaled( nil, 50 * GAMEMODE.shopStandards.shpScale ),
         weight = 500,
@@ -126,7 +126,7 @@ local function setupShopFonts()
 
     -- ITEMS
     fontData = {
-        font = "Arial",
+        font = GAMEMODE.GLEE_FONT,
         extended = false,
         size = glee_sizeScaled( nil, 28 * GAMEMODE.shopStandards.shpScale ),
         weight = 500,
@@ -149,7 +149,7 @@ local function setupShopFonts()
 
     -- ITEMS
     fontData = {
-        font = "Arial",
+        font = GAMEMODE.GLEE_FONT,
         extended = false,
         size = glee_sizeScaled( nil, 24 * GAMEMODE.shopStandards.shpScale ),
         weight = 500,
@@ -167,6 +167,8 @@ local function setupShopFonts()
     }
     surface.CreateFont( "termhuntShopItemSmallerFont", fontData )
 
+    hook.Run( "glee_rebuildfonts" )
+
 end
 
 setupShopFonts()
@@ -180,6 +182,11 @@ end, "glee_shoprescale" )
 GAMEMODE.shopStandards.white = Color( 255, 255, 255 )
 GAMEMODE.shopStandards.red = Color( 255, 0, 0 )
 GAMEMODE.shopStandards.whiteFaded = Color( 255, 255, 255, 230 )
+
+GAMEMODE.shopStandards.shopCostNormal = Vector( 255, 255, 255 )
+GAMEMODE.shopStandards.shopCostTooPoor = Color( 220, 0, 0 )
+GAMEMODE.shopStandards.shopCostGivesMoney = Color( 255, 255, 0 )
+GAMEMODE.shopStandards.shopCostCanBuy = Color( 106, 190, 9 )
 
 GAMEMODE.shopStandards.backgroundColor = Color( 37, 37, 37, 240 )
 GAMEMODE.shopStandards.invisibleColor = Color( 0, 0, 0, 0 )
@@ -195,3 +202,11 @@ GAMEMODE.shopStandards.borderPadding = 27
 GAMEMODE.shopStandards.whiteIdentifierLineWidthDiv = 250
 GAMEMODE.shopStandards.shopCategoryHeight = 275
 GAMEMODE.shopStandards.shopScrollGradientWidth = 130
+
+GAMEMODE.shopStandards.scrollHintColorDark = Color( 230, 230, 230, 230 )
+GAMEMODE.shopStandards.scrollHintColorBright = Color( 255, 255, 255, 230 )
+GAMEMODE.shopStandards.scrollHintPullbackDur = 2
+GAMEMODE.shopStandards.scrollHintBounceDur = 0.5
+GAMEMODE.shopStandards.scrollHintLingerDur = 1
+GAMEMODE.shopStandards.scrollHintSizeMult = 0.4
+GAMEMODE.shopStandards.scrollHintMoveMult = 1

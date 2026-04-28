@@ -193,7 +193,7 @@ local juiceToGive = {
 
 hook.Add( "PlayerCanPickupItem", "glee_medkit_absorbsitems", function( ply, item )
     local itemsClass = item:GetClass()
-    local toGive = juiceToGive[ itemsClass ]
+    local toGive = juiceToGive[itemsClass]
     if not toGive then return end
 
     local plysWep = ply:GetWeapon( "termhunt_medkit" )

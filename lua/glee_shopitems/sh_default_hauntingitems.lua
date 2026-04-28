@@ -66,7 +66,7 @@ if SERVER then
 end
 
 local items = {
-    [ "screamcrate" ] = {
+    ["screamcrate"] = {
         name = "Beaconed Supplies",
         desc = "Supplies with a beacon.\nBetray the others for score.\nCosts 75 to place.\nRefund upon first beacon transmit.",
         shCost = 0,
@@ -77,13 +77,13 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = -5,
-        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
             setupPlacable( "screamer_crate", purchaser, itemIdentifier )
 
         end,
     },
-    [ "normcrate" ] = {
+    ["normcrate"] = {
         name = "Supplies",
         desc = "Supplies without a beacon.\nContains health, armour, rarely a weapon, special ammunition.\nPlace indoors, and far away from players and other supplies, for more score.",
         shCost = 0,
@@ -94,13 +94,13 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = -4,
-        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
             setupPlacable( "termhunt_normal_crate", purchaser, itemIdentifier )
 
         end,
     },
-    [ "weapcrate" ] = {
+    ["weapcrate"] = {
         name = "Crate of Weapons",
         desc = "Supply crate with 5 weapons in it\nPlace indoors, and far away from players and other supplies, for more score.",
         shCost = 0,
@@ -111,13 +111,13 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = 1,
-        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
             setupPlacable( "termhunt_weapon_crate", purchaser, itemIdentifier )
 
         end,
     },
-    [ "manhackcrate" ] = {
+    ["manhackcrate"] = {
         name = "Crate with Manhacks",
         desc = "Supply crate with 5 manhacks in it.\nGives score when the manhacks damage stuff.",
         shCost = 0,
@@ -128,13 +128,13 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = 10,
-        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
             setupPlacable( "termhunt_manhack_crate", purchaser, itemIdentifier )
 
         end,
     },
-    [ "undeadbeartrap" ] = {
+    ["undeadbeartrap"] = {
         name = "Beartrap.",
         desc = "Beartrap.\nWhen a player, hunter, steps on it, you get a reward.\nCosts more to place it near the living, and intersecting objects.",
         shCost = 0,
@@ -145,13 +145,13 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = 1,
-        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
             setupPlacable( "termhunt_undead_beartrap", purchaser, itemIdentifier )
 
         end,
     },
-    [ "barrels" ] = {
+    ["barrels"] = {
         name = "Barrels",
         desc = "6 Barrels",
         shCost = 0,
@@ -162,13 +162,13 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = 1,
-        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
             setupPlacable( "termhunt_barrels", purchaser, itemIdentifier )
 
         end,
     },
-    [ "barnacle" ] = {
+    ["barnacle"] = {
         name = "Barnacle",
         desc = "Barnacle.\nYou gain 100 score the first time it grabs someone, and 45 score every further second it has someone grabbed.\nCosts more to place in groups, or place too close to players.",
         shCost = 5,
@@ -179,13 +179,13 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = 10,
-        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
             setupPlacable( "placable_barnacle", purchaser, itemIdentifier )
 
         end,
     },
-    [ "doorlocker" ] = {
+    ["doorlocker"] = {
         name = "Door Locker",
         desc = "Locks doors, you gain score when something uses it.\n150 score, default.\n250 score if a player fleeing a hunter uses it.\nDon't use your own locked doors.",
         shCost = 5,
@@ -196,13 +196,13 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = 10,
-        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
             setupPlacable( "door_locker", purchaser, itemIdentifier )
 
         end,
     },
-    [ "additionalterm" ] = {
+    ["additionalterm"] = {
         name = "Linked Hunter",
         desc = "Spawn another hunter.\nThey will take on your appearance.\nIf you personally kill it, you will gain 350 score.\nThe newcomer will never lose you, if you regain your life...",
         shCost = function()
@@ -221,7 +221,7 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = -100,
-        shPurchaseCheck = { shopHelpers.undeadCheck, function()
+        shPurchaseCheck = { shopHelpers.deadCheck, function()
             local extraData = GAMEMODE.roundExtraData or {}
             local extraHunter = GetGlobal2Entity( "glee_linkedhunter" )
             local validCsideHunter = IsValid( extraHunter ) and extraHunter:Health() > 0
@@ -235,7 +235,7 @@ local items = {
 
         end,
     },
-    [ "presser" ] = {
+    ["presser"] = {
         name = "Presser",
         desc = "Press things on the map.\nThe more a thing is pressed, the higher it's cost climbs...",
         shCost = 0,
@@ -246,13 +246,13 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = -4,
-        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
             setupPlacable( "termhunt_presser", purchaser, itemIdentifier )
 
         end,
     },
-    [ "homicidalglee" ] = {
+    ["homicidalglee"] = {
         name = "Homicidal Glee.",
         desc = "Bring a player's Homicidal Glee to the surface...\nCosts nothing to place, if the player killed you at least once before.\nCan only be placed every 15 seconds.",
         costDecorative = "0 / -400",
@@ -264,13 +264,13 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = 0,
-        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
             setupPlacable( "termhunt_retribution", purchaser, itemIdentifier )
 
         end,
     },
-    [ "termovercharger" ] = {
+    ["termovercharger"] = {
         name = "Overcharger.",
         desc = "Overcharge a Hunter. Global 3 minute delay between Overcharges.",
         costDecorative = "-450",
@@ -282,13 +282,13 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = 19,
-        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
             setupPlacable( "termhunt_overcharger", purchaser, itemIdentifier )
 
         end,
     },
-    [ "temporalinversion" ] = {
+    ["temporalinversion"] = {
         name = "Temporal Inversion",
         desc = "Swaps a player out for their most remote enemy.\nUnlocks after 2 minutes, then a global 2 minute cooldown between uses.",
         costDecorative = "-400",
@@ -300,7 +300,7 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = 20,
-        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase, function()
+        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase, function()
             if GAMEMODE:isTemporaryTrueBool( "termhunt_player_swapper_initial" ) then return nil, "Not unlocked yet." end
             if GAMEMODE:isTemporaryTrueBool( "termhunt_player_swapper" ) then return nil, "It is too soon for another inversion to begin." end
             return true, nil
@@ -311,7 +311,7 @@ local items = {
 
         end,
     },
-    [ "immortalizer" ] = {
+    ["immortalizer"] = {
         name = "Gift of Immortality",
         desc = "Gift 20 seconds, of true Immortality.\nCosts 200 to gift to hunters, 300 to gift to players.",
         costDecorative = "-200 / -300",
@@ -323,13 +323,13 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = 20,
-        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
             setupPlacable( "termhunt_immortalizer", purchaser, itemIdentifier )
 
         end,
     },
-    [ "blessing" ] = {
+    ["blessing"] = {
         name = "A Blessing",
         desc = "2 minutes of health regeneration, and Calm.\nCosts 50 to gift to hunters, 100 to gift to players.",
         costDecorative = "-50 / -100",
@@ -341,13 +341,13 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = 20,
-        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase },
+        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
             setupPlacable( "termhunt_blessing", purchaser, itemIdentifier )
 
         end,
     },
-    [ "thunderousapplause" ] = {
+    ["thunderousapplause"] = {
         name = "Thunderous Applause",
         desc = "Let the Living, hear your utmost gratitiude.\nUnlocks after 4 minutes, then a global 4 minute cooldown between uses.",
         costDecorative = "-600",
@@ -359,7 +359,7 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = 20,
-        shPurchaseCheck = { shopHelpers.undeadCheck, ghostCanPurchase, function()
+        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase, function()
             if GAMEMODE:isTemporaryTrueBool( "termhunt_thunderous_applause_initial" ) then return nil, "It's too soon for the applause to begin." end
             if GAMEMODE:isTemporaryTrueBool( "termhunt_thunderous_applause" ) then return nil, "Applause must be spaced out. Wait.." end
             return true, nil

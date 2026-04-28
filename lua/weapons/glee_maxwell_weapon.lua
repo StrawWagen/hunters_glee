@@ -265,23 +265,17 @@ if SERVER then
 	hook.Add( "InitPostEntity", "maxwell_glee", function()
 		if not GAMEMODE.IsReallyHuntersGlee then return end
 
-		-- keep 5 X spawned in the map
-		local spawnCount = math.random( 1, 2 )
+		local maxCount = math.random( 1, 2 )
 		if math.random( 0, 100 ) < 5 then
-			spawnCount = math.random( 3, 6 )
-
+			maxCount = math.random( 3, 6 )
 		end
 
-		-- only enabled in x % of sessions
-		local enabledChance = math.Rand( 1, 10 )
-
-		-- won't spawn in areas thinner/smaller than this
-		local minAreaSize = 25
-
-		-- optional, radius from players to spawn within
-		local radius = math.random( 1000, 10000 ) -- defaults to 5000 when nil
-
-		GAMEMODE:RandomlySpawnEnt( "glee_maxwell_weapon", spawnCount, enabledChance, minAreaSize, radius )
+		GAMEMODE:RandomlySpawnEntTbl( "glee_maxwell_weapon", {
+			maxCount = maxCount,
+			chance = math.Rand( 1, 10 ),
+			minAreaSize = 25,
+			radius = math.random( 1000, 10000 ),
+		} )
 
 	end )
 end
