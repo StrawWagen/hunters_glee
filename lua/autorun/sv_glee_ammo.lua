@@ -45,3 +45,9 @@ game.AddAmmoType( {
     dmgtype = DMG_AIRBOAT
 
 } )
+
+game.AddAmmoType( {
+    name = "GLEE_ANNABELLE_SHELLS",
+    dmgtype = DMG_BUCKSHOT,
+
+} )

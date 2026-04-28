@@ -13,10 +13,10 @@ SWEP.UseHands     = true
 SWEP.Primary.Damage         = 90
 SWEP.Primary.ClipSize       = 6
 SWEP.Primary.DefaultClip    = 72
-SWEP.Primary.NumShots       = 4
-SWEP.Primary.Spread         = 0.001
+SWEP.Primary.NumShots       = 1
+SWEP.Primary.Spread         = 0
 SWEP.Primary.Automatic      = false
-SWEP.Primary.Ammo           = "Buckshot"
+SWEP.Primary.Ammo           = "GLEE_ANNABELLE_SLUGS"
 
 SWEP.Secondary.ClipSize     = -1
 SWEP.Secondary.DefaultClip  = -1
@@ -34,6 +34,9 @@ SWEP.DrawCrosshair  = true
 SWEP.ViewModel = "models/weapons/annabelle/v_win92.mdl"
 SWEP.WorldModel = "models/weapons/annabelle/w_win92.mdl"
 
+if CLIENT then
+    language.Add( "GLEE_ANNABELLE_SLUGS_ammo", "Slugs" )
+end
 
 function SWEP:SetupDataTables()
     self:NetworkVar( "Bool",  0, "Reloading" )
