@@ -12,7 +12,7 @@ SWEP.UseHands     = true
 
 SWEP.Primary.Damage         = 90
 SWEP.Primary.ClipSize       = 6
-SWEP.Primary.DefaultClip    = 36
+SWEP.Primary.DefaultClip    = 72
 SWEP.Primary.NumShots       = 4
 SWEP.Primary.Spread         = 0.001
 SWEP.Primary.Automatic      = false

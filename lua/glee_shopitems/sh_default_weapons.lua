@@ -424,7 +424,7 @@ local items = {
                 confirmSoundWeight = 5,
                 ammoType = nil, -- auto
                 purchaseClips = 0,
-                resupplyClips = 6,
+                resupplyClips = 12,
 
             } )
         end,
