@@ -59,7 +59,7 @@ end
 local campersDelightSpawnSet = {
     name = "hunters_glee_campers",
     prettyName = "Camper's Delight",
-    description = "more campers than a tf2 trade lobby? impossible!",
+    description = "More campers than a tf2 trade lobby? impossible!",
     difficultyPerMin = "default",
     waveInterval = "default",
     diffBumpWhenWaveKilled = "default",
