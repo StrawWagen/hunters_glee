@@ -405,7 +405,7 @@ local items = {
             } )
         end,
     },
-    [ "grigorigun" ] = {
+    ["grigorigun"] = {
         name = "Annabelle",
         desc = "Rewards precision.\nHits boost damage and speed. Miss, it loses its spark until you find your rhythm again.",
         shCost = 0,
