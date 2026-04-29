@@ -182,7 +182,7 @@ function SWEP:ShootBullet( owner )
         Spread      = Vector( self.Primary.Spread, self.Primary.Spread, 0 ),
         TracerName  = "AirboatGunTracer",
         Tracer      = 1,
-        Force       = 15 * self:GetDamageMult(),
+        Force       = 5 * self:GetDamageMult(),
         Damage      = self.Primary.Damage * self:GetDamageMult(),
         AmmoType    = "357",
         Callback    = function( _, trace, _ )
