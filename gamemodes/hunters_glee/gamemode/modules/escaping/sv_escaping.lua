@@ -189,16 +189,21 @@ hook.Add( "huntersglee_player_pre_reset", "glee_escaping_rewards", function( ply
     local msg = "+" .. flatEscapingReward .. " Score..."
     ply:GivePlayerScore( flatEscapingReward )
 
-    local skulls = ply:GetSkulls()
-    if skulls > 0 then
-        local skullBonus = skulls * rewardPerSkull
-        msg = msg .. "\n+" .. skullBonus .. " Skull Bonus..."
-        ply:GivePlayerScore( skullBonus )
-
-    else
-        msg = msg .. "\nNo skulls collected..."
-
-    end
     huntersGlee_AnnounceDramatic( { ply }, 1000, 4, "You escaped!\n" .. msg )
+    timer.Simple( 4, function()
+        if not IsValid( ply ) then return end
+        local skulls = ply:GetSkulls()
+        local skullMsg
+        if skulls > 0 then
+            local skullBonus = skulls * rewardPerSkull
+            skullMsg = skullMsg .. "\n+" .. skullBonus .. " Skull Bonus..."
+            ply:GivePlayerScore( skullBonus )
 
+        else
+            skullMsg = skullMsg .. "\nNo skulls were collected..."
+
+        end
+        huntersGlee_AnnounceDramatic( { ply }, 1000, 4, skullMsg )
+
+    end )
 end )

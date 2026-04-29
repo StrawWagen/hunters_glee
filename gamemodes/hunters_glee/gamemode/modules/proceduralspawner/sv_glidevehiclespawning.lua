@@ -5,6 +5,8 @@ if not Glide then return end
 
 local vec_down = Vector( 0, 0, -1 )
 
+local GAMEMODE = GAMEMODE or GM
+
 terminator_Extras.collected = false
 local glideClasses = {}
 local glideVehicleTypes = {}

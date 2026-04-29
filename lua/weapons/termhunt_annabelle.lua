@@ -1,8 +1,13 @@
 -- Thank you to the developers of https://steamcommunity.com/sharedfiles/filedetails/?id=1682679491 for the annabelle weapon model and sounds!!
+--[[
+    Model and textures: fozieus
+    Sounds: Valve, Buu342
+    Animations: Buu342
+--]]
 -- Give 'em awards and follows!
 
 SWEP.PrintName    = "Annabelle"
-SWEP.Author       = "Boomertaters + Straw W Wagen"
+SWEP.Author       = "fozieus, Buu342, Boomertaters + Straw W Wagen"
 SWEP.Category     = "Hunter's Glee"
 SWEP.Instructions = "DO. NOT. MISS."
 
@@ -12,7 +17,7 @@ SWEP.UseHands     = true
 
 SWEP.Primary.Damage         = 150
 SWEP.Primary.ClipSize       = 6
-SWEP.Primary.DefaultClip    = 72
+SWEP.Primary.DefaultClip    = 36
 SWEP.Primary.NumShots       = 1
 SWEP.Primary.Spread         = 0
 SWEP.Primary.Automatic      = false
@@ -246,7 +251,7 @@ function SWEP:ReloadLoop()
 
     local speedMult = self.ReloadSpeedMult or 1
 
-    self:EmitSound( "hunters_glee/annabelle/insert.wav", 75, 100 )
+    self:EmitSound( "hunters_glee/annabelle/insert.wav", 75, 100 * speedMult, 1, CHAN_ITEM )
     self:SendWeaponAnim( ACT_VM_RELOAD )
     self:SetNextPrimaryFire( CurTime() + 2 / speedMult )
     owner:RemoveAmmo( 1, self.Primary.Ammo )
@@ -273,8 +278,9 @@ function SWEP:FinishReload()
     timer.Create( "glee_annabelle_finishanim" .. self:GetCreationID(), untilFireAdd, 1, function()
         if not IsValid( self ) then return end
         if self:GetReloading() then return end
+        if self:GetFiring() then return end
 
-        self:EmitSound( "weapons/smg1/switch_single.wav", 80, 100 * speedMult )
+        self:EmitSound( "weapons/smg1/switch_single.wav", 80, 100 * speedMult, 1, CHAN_ITEM )
 
         self:SendWeaponAnim( ACT_VM_IDLE )
     end )
