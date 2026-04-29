@@ -2,7 +2,7 @@
 -- Give 'em awards and follows!
 
 SWEP.PrintName    = "Annabelle"
-SWEP.Author       = "Boomertaters"
+SWEP.Author       = "Boomertaters + Straw W Wagen"
 SWEP.Category     = "Hunter's Glee"
 SWEP.Instructions = "DO. NOT. MISS."
 
@@ -37,6 +37,8 @@ SWEP.WorldModel = "models/glee/weapons/annabelle/w_glee_annabelle.mdl"
 SWEP.Range = 10000 -- for term ai
 
 if CLIENT then
+    terminator_Extras.glee_CL_SetupSwep( SWEP, "termhunt_annabelle", "materials/vgui/hud/killicon/termhunt_annabelle.png" )
+
     language.Add( "GLEE_ANNABELLE_SLUGS_ammo", "Slugs" )
 end
 
