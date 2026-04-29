@@ -1,5 +1,4 @@
 -- all credit goes to the garrys gift people! https://steamcommunity.com/sharedfiles/filedetails/?id=3627597099&searchtext=garrys+gift
--- idk who made the code but i'm assuming its StrawWagen! https://steamcommunity.com/id/StrawWagen/
 
 local colors = {
     Color(6,255,193),
