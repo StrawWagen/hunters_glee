@@ -1,4 +1,4 @@
--- Thank you to the developers of https://steamcommunity.com/sharedfiles/filedetails/?id=1682679491&searchtext=li%27l+annabelle for the annabelle weapon model and sounds!!
+-- Thank you to the developers of https://steamcommunity.com/sharedfiles/filedetails/?id=1682679491 for the annabelle weapon model and sounds!!
 -- Give 'em awards and follows!
 
 SWEP.PrintName    = "Annabelle"
@@ -10,7 +10,7 @@ SWEP.Spawnable    = true
 SWEP.AdminOnly    = false
 SWEP.UseHands     = true
 
-SWEP.Primary.Damage         = 100
+SWEP.Primary.Damage         = 150
 SWEP.Primary.ClipSize       = 6
 SWEP.Primary.DefaultClip    = 72
 SWEP.Primary.NumShots       = 1
@@ -31,8 +31,8 @@ SWEP.SlotPos        = 1
 SWEP.DrawAmmo       = true
 SWEP.DrawCrosshair  = true
 
-SWEP.ViewModel = "models/weapons/annabelle/v_win92.mdl"
-SWEP.WorldModel = "models/weapons/annabelle/w_win92.mdl"
+SWEP.ViewModel = "models/glee/weapons/annabelle/v_glee_annabelle.mdl"
+SWEP.WorldModel = "models/glee/weapons/annabelle/w_glee_annabelle.mdl"
 
 SWEP.Range = 10000 -- for term ai
 
@@ -43,6 +43,7 @@ end
 function SWEP:SetupDataTables()
     self:NetworkVar( "Bool",  0, "Reloading" )
     self:NetworkVar( "Bool",  1, "Firing" )
+    self:NetworkVar( "Bool",  2, "CancellingReload" )
     self:NetworkVar( "Float", 0, "DamageMult" )
     self:NetworkVar( "Float", 1, "SpeedMult" )
 end
@@ -75,6 +76,7 @@ function SWEP:Initialize()
         self:ResetStats()
         self:SetReloading( false )
         self:SetFiring( false )
+        self:SetCancellingReload( false )
     end
 end
 
@@ -85,6 +87,7 @@ function SWEP:Deploy()
         self:ResetStats()
         self:SetReloading( false )
         self:SetFiring( false )
+        self:SetCancellingReload( false )
     end
 
     return true
@@ -94,6 +97,7 @@ function SWEP:Holster()
     if SERVER then
         self:SetReloading( false )
         self:SetFiring( false )
+        self:SetCancellingReload( false )
     end
 
     return true
@@ -105,7 +109,7 @@ function SWEP:PrimaryAttack()
     if self:GetFiring() then return end
     if not self:CanPrimaryAttack() then return end
 
-    local owner     = self:GetOwner()
+    local owner = self:GetOwner()
     owner:LagCompensation( true )
 
     local speedMult = self:GetSpeedMult()
@@ -113,6 +117,9 @@ function SWEP:PrimaryAttack()
     self:SetNextPrimaryFire( CurTime() + 0.85 / speedMult )
     self:TakePrimaryAmmo( 1 )
     self:ShootBullet( owner )
+
+    local punchAng = Angle( -2 * speedMult, math.Rand( -0.3, 0.3 ) * speedMult, 0 )
+    owner:ViewPunch( punchAng )
 
     if SERVER then
         self:SetFiring( true )
@@ -132,10 +139,25 @@ end
 function SWEP:SecondaryAttack()
 end
 
+function SWEP:Think()
+    if not SERVER then return end
+    if not self:GetReloading() then return end
+    if self:GetCancellingReload() then return end
+
+    local owner = self:GetOwner()
+    if not IsValid( owner ) then return end
+
+    if owner:KeyDown( IN_ATTACK ) and self:Clip1() > 0 then
+        self:SetCancellingReload( true )
+    end
+end
+
 function SWEP:ShootBullet( owner )
 
     self:SendWeaponAnim( ACT_VM_PRIMARYATTACK )
-    owner:MuzzleFlash()
+    if IsFirstTimePredicted() then
+        owner:MuzzleFlash()
+    end
     owner:SetAnimation( PLAYER_ATTACK1 )
 
     local vm = owner:GetViewModel()
@@ -160,7 +182,7 @@ function SWEP:ShootBullet( owner )
         Spread      = Vector( self.Primary.Spread, self.Primary.Spread, 0 ),
         TracerName  = "AirboatGunTracer",
         Tracer      = 1,
-        Force       = 30,
+        Force       = 15 * self:GetDamageMult(),
         Damage      = self.Primary.Damage * self:GetDamageMult(),
         AmmoType    = "357",
         Callback    = function( _, trace, _ )
@@ -196,6 +218,7 @@ function SWEP:Reload()
     if SERVER then
         self.ReloadSpeedMult = speedMult
         self:SetReloading( true )
+        self:SetCancellingReload( false )
         self:ResetStats()
         self:SetNextPrimaryFire( CurTime() + 2 / speedMult )
 
@@ -212,7 +235,8 @@ function SWEP:ReloadLoop()
     local owner = self:GetOwner()
     if not IsValid( owner ) then return end -- was dropped!
 
-    if self:Clip1() >= 6 or owner:GetAmmoCount( self.Primary.Ammo ) <= 0 then
+    if self:GetCancellingReload() or self:Clip1() >= 6 or owner:GetAmmoCount( self.Primary.Ammo ) <= 0 then
+        self:SetCancellingReload( false )
         self:FinishReload()
 
         return
@@ -239,14 +263,16 @@ function SWEP:FinishReload()
 
     self:SetReloading( false )
 
-    self:EmitSound( "weapons/shotgun/shotgun_cock.wav", 80, 100 * speedMult )
+    local untilFireAdd = 0.5 / speedMult
 
-    self:SetNextPrimaryFire( CurTime() + 0.5 / speedMult )
+    self:SetNextPrimaryFire( CurTime() + untilFireAdd )
     self:SendWeaponAnim( ACT_SHOTGUN_RELOAD_FINISH )
 
-    timer.Create( "glee_annabelle_finishanim" .. self:GetCreationID(), 0.5 / speedMult, 1, function()
+    timer.Create( "glee_annabelle_finishanim" .. self:GetCreationID(), untilFireAdd, 1, function()
         if not IsValid( self ) then return end
         if self:GetReloading() then return end
+
+        self:EmitSound( "weapons/smg1/switch_single.wav", 80, 100 * speedMult )
 
         self:SendWeaponAnim( ACT_VM_IDLE )
     end )

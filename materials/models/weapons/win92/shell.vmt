@@ -1,6 +1,0 @@
-"VertexLitGeneric"
-{
-	"$baseTexture" "models/weapons/win92/shell"
-	"$envmapmask" "models/weapons/win92/shell_ref"
-	"$envmap" "env_cubemap"
-}
