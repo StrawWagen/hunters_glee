@@ -1,59 +1,15 @@
-local function giveRPG( _spawnset, npc )
-    npc.DefaultWeapon = "weapon_rpg"
-    npc.DefaultSidearms = { "weapon_rpg" }
-
-    local timerName = "glee_term_rpg_give_" .. npc:GetCreationID()
-    timer.Create( timerName, 1, 0, function()
-        if not IsValid( npc ) then timer.Remove( timerName ) return end
-        local primaryWeapon = npc:GetActiveWeapon()
-
-        if IsValid( primaryWeapon ) then
-            if primaryWeapon:GetClass() == "weapon_rpg" then
-                return
-
-            else
-                primaryWeapon.terminatorCrappyWeapon = true
-
-            end
-        end
-        local bar = npc:Give( "weapon_rpg" )
-        bar.terminator_IgnoreWeaponUtility = true
-
-    end )
-end
-
-local function setFistsAsRPG( _spawnset, npc )
-    npc.TERM_FISTS = "weapon_rpg"
+local function setWeaponOverride( hunter, wepClass )
+    hunter.DefaultWeapon = wepClass
+    hunter.TERM_FISTS = wepClass
 
 end
 
-local function giveTau( _spawnset, npc )
-    npc.DefaultWeapon = "termhunt_taucannon"
-    npc.DefaultSidearms = { "termhunt_taucannon" }
-
-    local timerName = "glee_term_tau_give_" .. npc:GetCreationID()
-    timer.Create( timerName, 1, 0, function()
-        if not IsValid( npc ) then timer.Remove( timerName ) return end
-        local primaryWeapon = npc:GetActiveWeapon()
-
-        if IsValid( primaryWeapon ) then
-            if primaryWeapon:GetClass() == "termhunt_taucannon" then
-                return
-
-            else
-                primaryWeapon.terminatorCrappyWeapon = true
-
-            end
-        end
-        local bar = npc:Give( "termhunt_taucannon" )
-        bar.terminator_IgnoreWeaponUtility = true
-
-    end )
+local function giveRPG( _, hunter )
+    setWeaponOverride( hunter, "weapon_rpg" )
 end
 
-local function setFistsAsTau( _spawnset, npc )
-    npc.TERM_FISTS = "termhunt_taucannon"
-
+local function giveTauCannon( _, hunter )
+    setWeaponOverride( hunter, "termhunt_taucannon" )
 end
 
 local campersDelightSpawnSet = {
@@ -73,29 +29,24 @@ local campersDelightSpawnSet = {
     genericSpawnerRate = "default",
     chanceToBeVotable = 1,
     spawns = {
-        {
             hardRandomChance = nil,
-            name = "tau_terminator",
+            name = "tau_terminator", -- unique name
             prettyName = "A Tau Campin' Terminator",
-            class = "terminator_nextbot_snail",
+            class = "terminator_nextbot_snail", -- class spawned
             spawnType = "hunter",
             difficultyCost = { 10 },
-            countClass = "terminator_nextbot_snail*",
-            minCount = { 1 },
-            preSpawnedFuncs = { giveTau },
-            postSpawnedFuncs = { setFistsAsTau },
+            countClass = "terminator_nextbot_snail", -- class COUNTED, uses findbyclass
+            preSpawnedFuncs =  { giveTauCannon },
         },
         {
             hardRandomChance = nil,
-            name = "rpg_terminator",
+            name = "rpg_terminator", -- unique name
             prettyName = "A RPG Campin' Terminator",
-            class = "terminator_nextbot_snail",
+            class = "terminator_nextbot_snail", -- class spawned
             spawnType = "hunter",
             difficultyCost = { 10 },
-            countClass = "terminator_nextbot_snail*",
-            minCount = { 1 },
-            preSpawnedFuncs = { giveRPG },
-            postSpawnedFuncs = { setFistsAsRPG },
+            countClass = "terminator_nextbot_snail", -- class COUNTED, uses findbyclass
+            preSpawnedFuncs =  { giveRPG },
         },
     }
 }
