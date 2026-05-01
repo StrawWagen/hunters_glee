@@ -307,9 +307,10 @@ function GM:GetGroupThatNavareaExistsIn( navArea, navAreaGroups, yieldable )
 
     if navAreaGroups == GAMEMODE.biggestNavmeshGroups and GAMEMODE.biggestNavmeshGroupsByArea then
         return GAMEMODE.biggestNavmeshGroupsByArea[navArea]
+
     end
 
-    -- fallback linear search (used for small ad-hoc group tables without a prebuilt map)
+    -- fallback
     for _, group in ipairs( navAreaGroups ) do
         if yieldable then
             coroutine_yield()
