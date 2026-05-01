@@ -33,7 +33,7 @@ function ENT:Initialize()
         if not IsValid( self ) then return end
         termHunt_PowafulLightning( self, self:GetOwner(), self:GetPos() + ( vector_up * 10 ), self.powa )
 
-        SafeRemoveEntityDelayed( self, 0.1 )
+        SafeRemoveEntityDelayed( self, 15 )
 
     end )
 end
