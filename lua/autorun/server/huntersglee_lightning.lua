@@ -133,7 +133,7 @@ local function dirToPos( startPos, endPos )
 end
 
 
-local vecNeg5Hundred = Vector( 0,0,-500 )
+local vecNeg5Hundred = Vector( 0, 0, -500 )
 local vectorUp25 = Vector( 0, 0, 25 )
 
 function termHunt_PowafulLightning( inflic, attacker, strikingPos, powa )
