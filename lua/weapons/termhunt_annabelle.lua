@@ -15,7 +15,7 @@ SWEP.Spawnable    = true
 SWEP.AdminOnly    = false
 SWEP.UseHands     = true
 
-SWEP.Primary.Damage         = 150
+SWEP.Primary.Damage         = 90
 SWEP.Primary.ClipSize       = 6
 SWEP.Primary.DefaultClip    = 36
 SWEP.Primary.NumShots       = 1
@@ -191,7 +191,7 @@ function SWEP:ShootBullet( owner )
         Tracer      = 1,
         Force       = 5 * self:GetDamageMult(),
         Damage      = self.Primary.Damage * self:GetDamageMult(),
-        AmmoType    = "357",
+        AmmoType    = "GLEE_ANNABELLE_SLUGS",
         Callback    = function( _, trace, _ )
             if not SERVER then return end
 

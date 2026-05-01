@@ -47,5 +47,5 @@ game.AddAmmoType( {
 
 game.AddAmmoType( {
     name = "GLEE_ANNABELLE_SLUGS",
-    dmgtype = DMG_BUCKSHOT,
+    dmgtype = bit.bor( DMG_BULLET, DMG_SNIPER ), -- DMG_SNIPER penetrates .DoMetallicDamage npc dmg resist
 } )

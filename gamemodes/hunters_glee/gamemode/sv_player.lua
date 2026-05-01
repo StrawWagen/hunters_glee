@@ -612,6 +612,10 @@ GM.TEAM_ESCAPED = 3 -- spectating, but you can't respawn, get cooler items in th
 
 function GM:spectatifyPlayer( ply )
     --ErrorNoHaltWithStack( "A ", ply )
+    if ply:IsOnFire() then
+        ply:Extinguish()
+
+    end
     if ply:Alive() then
         ply:KillSilent()
 
@@ -627,6 +631,10 @@ end
 
 function GM:escapifyPlayer( ply )
     --ErrorNoHaltWithStack( "B ", ply )
+    if ply:IsOnFire() then
+        ply:Extinguish()
+
+    end
     if ply:Alive() then
         ply:KillSilent()
 

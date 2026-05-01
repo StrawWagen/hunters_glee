@@ -41,11 +41,6 @@ if SERVER then
             end )
         end
     end
-
-    timer.Simple( 1, function()
-        huntersGlee_AnnounceDramatic( player.GetAll(), 100, 2, "TEST" )
-
-    end )
 end
 
 if not CLIENT then return end
