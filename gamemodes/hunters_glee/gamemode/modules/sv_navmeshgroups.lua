@@ -220,8 +220,20 @@ function GM:FilterNavareaGroupsForGreaterThanPercent( groups, targetPercent )
     end
 
     return finalGroups
+
 end
 
+function GM:BuildNavAreaReverseMap( groups )
+    local map = {}
+    for _, group in ipairs( groups ) do
+        for _, navAreaInGroup in ipairs( group ) do
+            map[navAreaInGroup] = group
+
+        end
+    end
+    GAMEMODE.biggestNavmeshGroupsByArea = map
+
+end
 
 -- find a navarea center that is on biggest navmesh groups, and is close ish to a spawnpoint.
 
@@ -291,21 +303,23 @@ end
 
 -- used for finding out WHICH group player is in
 function GM:GetGroupThatNavareaExistsIn( navArea, navAreaGroups, yieldable )
-    -- iterate over each navarea group
-    if istable( navAreaGroups ) then
-        for _, group in ipairs( navAreaGroups ) do
-            if yieldable then
-                coroutine_yield()
+    if not istable( navAreaGroups ) then return end
 
-            end
-            if istable( group ) then
-                -- check if the navarea is in the group
-                for _, navAreaInGroup in ipairs( group ) do
-                    if navAreaInGroup == navArea then
-                        -- the navarea is in the group, so return true
-                        return group
+    if navAreaGroups == GAMEMODE.biggestNavmeshGroups and GAMEMODE.biggestNavmeshGroupsByArea then
+        return GAMEMODE.biggestNavmeshGroupsByArea[navArea]
+    end
 
-                    end
+    -- fallback linear search (used for small ad-hoc group tables without a prebuilt map)
+    for _, group in ipairs( navAreaGroups ) do
+        if yieldable then
+            coroutine_yield()
+
+        end
+        if istable( group ) then
+            for _, navAreaInGroup in ipairs( group ) do
+                if navAreaInGroup == navArea then
+                    return group
+
                 end
             end
         end
@@ -435,6 +449,7 @@ function GM:TeleportRoomCheck()
     if not GAMEMODE.biggestNavmeshGroups or not GAMEMODE.navmeshGroups then
         GAMEMODE.navmeshGroups = GAMEMODE:GetConnectedNavAreaGroups( navmesh.GetAllNavAreas() )
         GAMEMODE.biggestNavmeshGroups = GAMEMODE:FilterNavareaGroupsForGreaterThanPercent( GAMEMODE.navmeshGroups, GAMEMODE.biggestGroupsRatio or 0.4 )
+        GAMEMODE:BuildNavAreaReverseMap( GAMEMODE.biggestNavmeshGroups )
 
     end
 
