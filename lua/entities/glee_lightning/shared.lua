@@ -27,7 +27,6 @@ end
 function ENT:Initialize()
     if not SERVER then return end
     self:SetNotSolid( true )
-    self:SetNoDraw( true )
 
     timer.Simple( 0, function()
         if not IsValid( self ) then return end
@@ -36,4 +35,7 @@ function ENT:Initialize()
         SafeRemoveEntityDelayed( self, 15 )
 
     end )
+end
+
+function ENT:Draw() -- invis
 end
