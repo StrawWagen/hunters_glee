@@ -82,15 +82,21 @@ local function asParsed( toParse, name, defaultsTbl )
 
     end
 
+    -- number or parsed default
     if isnumber( toParse ) then return toParse * finalMul end
+
+    -- accepts functions
     if isfunction( toParse ) then return toParse end
 
+    -- allow strings if we expect them
     if isstring( default ) and isstring( toParse ) then
         return toParse
 
     end
 
+    -- 1 member table
     if #toParse <= 1 and isnumber( toParse[1] ) then return toParse[1] * finalMul end
+    -- 2 member tables, picked num will be between them, different each round
     if #toParse <= 2 and isnumber( toParse[1] ) and isnumber( toParse[2] ) then return math.Rand( toParse[1], toParse[2] ) * finalMul end
 
 end
@@ -134,11 +140,27 @@ function GM:IsValidSpawnSet( spawnSet )
         end
         if not isstring( spawn.prettyName ) then yapErr( spawnSet, ".spawns " .. name .. " invalid .prettyname" ) return end
         if not isstring( spawn.class ) then yapErr( spawnSet, ".spawns " .. name .. " invalid .class" ) return end
-        if not isstring( spawn.countClass ) then yapErr( spawnSet, ".spawns " .. name .. " invalid .countClass" ) return end
+
+        local minCount = asParsed( spawn.minCount, "minCount", spawnDefaults )
+        if not minCount then yapErr( spawnSet, ".spawns " .. name .. " invalid .minCount" ) return end
+        local maxCount = asParsed( spawn.maxCount, "maxCount", spawnDefaults )
+        if not maxCount then yapErr( spawnSet, ".spawns " .. name .. " invalid .maxCount" ) return end
+
+        local thisEntryHasMinMax = maxCount > -1 or minCount > -1
+        local countClass = spawn.countClass
+        -- if min or max count, .countClass needs to be a string
+        if thisEntryHasMinMax and not isstring( countClass ) then
+            yapErr( spawnSet, ".spawns " .. name .. " invalid .countClass" )
+            return
+
+        -- else, .countClass needs to be a string or nil
+        elseif not isstring( countClass ) and countClass ~= nil then
+            yapErr( spawnSet, ".spawns " .. name .. " invalid .countClass" )
+            return
+
+        end
 
         if not asParsed( spawn.difficultyCost, "difficultyCost", spawnDefaults ) then yapErr( spawnSet, ".spawns " .. name .. " invalid .difficultyCost" ) return end
-        if not asParsed( spawn.minCount, "minCount", spawnDefaults ) then yapErr( spawnSet, ".spawns " .. name .. " invalid .minCount" ) return end
-        if not asParsed( spawn.maxCount, "maxCount", spawnDefaults ) then yapErr( spawnSet, ".spawns " .. name .. " invalid .maxCount" ) return end
 
     end
 
@@ -462,12 +484,16 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
 
                 end
 
+                -- is this within the budget?
                 local good = currSpawn.difficultyCost <= budget
+
+                -- does it have a minCount we should respect?
                 if currSpawn.minCount > -1 and not good then -- minCount bypasses budget
                     good = count < currSpawn.minCount
                     freebie = true
 
                 end
+                -- does it have a personal maxCount?
                 if currSpawn.maxCount > -1 then
                     good = good and count < currSpawn.maxCount
 
