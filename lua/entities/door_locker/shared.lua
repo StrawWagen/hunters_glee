@@ -23,15 +23,20 @@ if not SERVER then return end
 ENT.HullCheckSize = Vector( 20, 20, 10 )
 ENT.PosOffset = Vector( 0, 0, 10 )
 
+local doorClasses = {
+    ["prop_door_rotating"] = true,
+    ["func_door"] = true,
+}
+
 function ENT:GetNearestTarget()
     local nearestDoor = nil
     local nearestDistance = math.huge
     local myPos = self:GetPos()
 
-    -- Find all prop_door_rotating entities within a radius of 2048 units
+    -- Find all applicable door entities within a radius of 2048 units
     local doors = ents.FindInSphere( myPos, 2048 )
     for _, door in ipairs( doors ) do
-        if door:GetClass() == "prop_door_rotating" then
+        if doorClasses[ door:GetClass() ] then
             if not util.doorIsUsable( door ) then continue end
             if not door:IsSolid() then continue end
             -- Calculate the distance between the door and the entity
@@ -56,8 +61,15 @@ end
 function ENT:CalculateCanPlace()
     local door = self:GetCurrTarget()
     if not IsValid( door ) then return false, "You need to aim at a door." end
-    if door:GetInternalVariable( "m_eDoorState" ) == 2 then return false, "That door is open." end
     if door:GetInternalVariable( "m_bLocked" ) == true then return false, "That door is already locked." end
+
+    if door:GetClass() == "prop_door_rotating" then
+        if door:GetInternalVariable( "m_eDoorState" ) == 2 then return false, "That door is open." end
+
+    else -- func_door
+        if door:GetInternalVariable( "m_toggle_state" ) == 0 then return false, "That door is open." end
+
+    end
 
     return true
 
