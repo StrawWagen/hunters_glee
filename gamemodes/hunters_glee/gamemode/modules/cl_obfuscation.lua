@@ -3,7 +3,7 @@ local LocalPlayer = LocalPlayer
 local CurTime = CurTime
 
 function GM:IsObscured()
-    return LocalPlayer():Health() > 0
+    return LocalPlayer():Health() > 0 and not LocalPlayer():HasStatusEffect( "sixth_sense" )
 
 end
 
