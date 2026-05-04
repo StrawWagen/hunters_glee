@@ -190,20 +190,38 @@ hook.Add( "huntersglee_player_pre_reset", "glee_escaping_rewards", function( ply
     ply:GivePlayerScore( flatEscapingReward )
 
     huntersGlee_AnnounceDramatic( { ply }, 1000, 4, "You escaped!\n" .. msg )
-    timer.Simple( 4, function()
-        if not IsValid( ply ) then return end
-        local skulls = ply:GetSkulls()
-        local skullMsg
-        if skulls > 0 then
-            local skullBonus = skulls * rewardPerSkull
-            skullMsg = skullMsg .. "\n+" .. skullBonus .. " Skull Bonus..."
-            ply:GivePlayerScore( skullBonus )
-
-        else
-            skullMsg = skullMsg .. "\nNo skulls were collected..."
+    local timerName = "glee_escaping_skullrewardgobbler_" .. ply:EntIndex()
+    local totalSkulls = ply:GetSkulls()
+    local skullReward = totalSkulls
+    local ranCount = 0
+    local rewardHinted
+    timer.Create( timerName, 4, 0, function()
+        if not IsValid( ply ) then
+            timer.Remove( timerName )
+            return
 
         end
-        huntersGlee_AnnounceDramatic( { ply }, 1000, 4, skullMsg )
+        if skullReward <= 0 then
+            timer.Remove( timerName )
+            return
+
+        end
+        if not rewardHinted then
+            rewardHinted = true
+            local skullMsg = "Cashing out your " .. totalSkulls .. " skulls..."
+            huntersGlee_AnnounceDramatic( { ply }, 1001, 4, skullMsg )
+
+        end
+        
+        -- TODO: play sounds when this happens
+
+        ranCount = ranCount + 1
+        local newDelay = 1 / ranCount
+        timer.Adjust( timerName, newDelay, 0, nil )
+
+        local reward = rewardPerSkull
+        ply:GivePlayerScore( reward )
+        skullReward = skullReward - 1
 
     end )
 end )

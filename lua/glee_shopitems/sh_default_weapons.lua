@@ -17,6 +17,11 @@ local function canPurchaseSuitBattery( purchaser )
 
 end
 
+hook.Add( "glee_PostRealCleanupMap", "glee_shophandler_resetsignalflarepurchasecount", function()
+    SetGlobalInt( "glee_SignalFlarePurchaseCount", 0 )
+
+end )
+
 local items = {
     -- lol you ran out of battery
     ["armor"] = {
@@ -332,7 +337,7 @@ local items = {
         name = "Crappy Video Camera",
         desc = "Document the glee.",
         shCost = 0,
-        skullCost = 1,
+        shSkullCost = 1,
         cooldown = 0.5,
         tags = { "ITEMS", "Utility", "Fun", "SkullCost" },
         purchaseTimes = {
@@ -360,7 +365,7 @@ local items = {
         name = "Tau Cannon",
         desc = "High risk, High reward.\nDon't let it overcharge!",
         shCost = 0,
-        skullCost = 5,
+        shSkullCost = 5,
         cooldown = 0.5,
         tags = { "ITEMS", "Weapon", "SkullCost" },
         purchaseTimes = {
@@ -385,7 +390,7 @@ local items = {
         name = "Emplacement Gun",
         desc = "Rapid fire, powerful, chews through flesh, but not metal...\nOverheats quickly...",
         shCost = 0,
-        skullCost = 5,
+        shSkullCost = 5,
         cooldown = 0.5,
         tags = { "ITEMS", "Weapon", "SkullCost" },
         purchaseTimes = {
@@ -409,7 +414,7 @@ local items = {
         name = "Annabelle",
         desc = "IT KNOWS WHEN YOU MISS...",
         shCost = 0,
-        skullCost = 8,
+        shSkullCost = 5,
         cooldown = 0.5,
         tags = { "ITEMS", "Weapon", "SkullCost" },
         purchaseTimes = {
@@ -429,6 +434,40 @@ local items = {
             } )
         end,
     },
+    ["signalflare"] = {
+        name = "Signal Flare Gun",
+        desc = "Very bright flaregun, It could probably be seen from miles away...",
+        shCost = 0,
+        shSkullCost = function()
+            local costPerPurchase = 20
+            local purchaseCount = GetGlobalInt( "glee_SignalFlarePurchaseCount", 0 )
+            local cost = costPerPurchase + ( purchaseCount * costPerPurchase )
+            return cost
+
+        end,
+        cooldown = 0.5,
+        tags = { "ITEMS", "Utility", "SkullCost" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_INACTIVE,
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = 10000,
+        shPurchaseCheck = shopHelpers.aliveCheck,
+        svOnPurchaseFunc = function( purchaser )
+            shopHelpers.purchaseWeapon( purchaser, {
+                class = "termhunt_aeromatix_signalflare_gun",
+                confirmSoundWeight = 10,
+                ammoType = nil, -- auto
+                purchaseClips = 0,
+                resupplyClips = 1,
+
+            } )
+
+            local oldCount = GetGlobalInt( "glee_SignalFlarePurchaseCount", 0 )
+            SetGlobalInt( "glee_SignalFlarePurchaseCount", oldCount + 1 )
+
+        end,
+    }
 }
 
 GAMEMODE:GobbleShopItems( items )

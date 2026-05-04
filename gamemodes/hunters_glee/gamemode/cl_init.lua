@@ -32,6 +32,8 @@ local entMeta = FindMetaTable( "Entity" )
 
 local GAMEMODE = GAMEMODE or GM
 
+GAMEMODE.GLEE_FONT = "Arial"
+
 -- from https://github.com/Facepunch/garrysmod/blob/e189f14c088298ca800136fcfcfaf5d8535b6648/garrysmod/lua/includes/modules/killicon.lua#L202
 local killIconColor = Color( 255, 80, 0, 255 )
 killicon.Add( "glee_skullpickup", "vgui/hud/glee_skullpickup", killIconColor )

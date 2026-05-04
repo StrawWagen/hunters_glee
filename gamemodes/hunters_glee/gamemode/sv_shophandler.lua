@@ -36,6 +36,9 @@ function GM:purchaseItem( ply, toPurchase )
 
         end
 
+        local cost = self:shopItemCost( toPurchase, ply )
+        local skullCost = self:shopItemSkullCost( toPurchase, ply )
+
         local dat = self.shopItems[toPurchase]
 
         local noErrors, _ = ProtectedCall( function( dat2, ply2 )
@@ -63,8 +66,6 @@ function GM:purchaseItem( ply, toPurchase )
 
         end
 
-        local cost = self:shopItemCost( toPurchase, ply )
-
         -- cool purchase sound, kaching!
         self:sendPurchaseConfirm( ply, cost, toPurchase )
 
@@ -72,8 +73,6 @@ function GM:purchaseItem( ply, toPurchase )
             ply:GivePlayerScore( -cost )
 
         end
-
-        local skullCost = self:shopItemSkullCost( toPurchase, ply )
         if skullCost then
             ply:GivePlayerSkulls( -skullCost )
 

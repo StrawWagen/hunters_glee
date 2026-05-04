@@ -28,6 +28,16 @@ function GM:SpawnASkull( pos, ang, termSkull, parent )
 
 end
 
+function GM:HandleRagdollSkulling( ragdoll )
+    local canSkull = glee_RagdollHasASkull( ragdoll )
+    if not canSkull then return end
+
+    local skull = GAMEMODE:SpawnASkull( ragdoll:GetPos(), Angle( 0, 0, 0 ), nil )
+    if not skull then return end
+    if not skull:AttachToRagdollsSkull( ragdoll ) then SafeRemoveEntity( skull ) return end
+
+end
+
 local function spawnTermSkull( died, dmg, _ )
     if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
 
@@ -138,14 +148,7 @@ hook.Add( "huntersglee_round_into_active", "glee_loadpersistientskulls", functio
 
     -- a body, with a skull...?
     for _, skullRagdoll in ipairs( ents.FindByClass( "prop_ragdoll" ) ) do
-        local canSkull = glee_RagdollHasASkull( skullRagdoll )
-        if canSkull then
-            --print( "erm skull", skullRagdoll )
-            local skull = GAMEMODE:SpawnASkull( skullRagdoll:GetPos(), Angle( 0, 0, 0 ), nil )
-            if not skull then continue end
-            if not skull:AttachToRagdollsSkull( skullRagdoll ) then SafeRemoveEntity( skull ) continue end
-
-        end
+        GAMEMODE:HandleRagdollSkulling( skullRagdoll )
     end
 end )
 

@@ -1128,11 +1128,12 @@ function termHuntOpenTheShop()
                     if skullCost and skullCost >= 0 then
                         self.costString, self.costColor = GAMEMODE:translatedShopItemCost( ply, skullCost, "skull", identifierPaint )
                         local sOrNoS = "s"
-                        if skullCost <= 1 then
+                        if math.abs( skullCost ) == 1 then
                             sOrNoS = ""
 
                         end
                         self.costString = self.costString .. " Skull" .. sOrNoS .. "\n"
+
                     else
                         -- "decorative" cost that isn't applied when purchased
                         local decorativeCost = itemData.costDecorative

@@ -285,9 +285,16 @@ function ENT:OnTakeDamage( dmg )
         local pit = 120 + -( self.neckHealth / 4 ) + math.random( -5, 5 )
 
         if not isSkeleton then
+            local bldColor = 0
+            if parent.GetBloodColor then
+                bldColor = parent:GetBloodColor()
+
+            end
+
             self:EmitSound( "physics/body/body_medium_break" .. math.random( 2, 4 ) .. ".wav", 70, pit )
             local blood = EffectData()
             blood:SetOrigin( self:GetPos() )
+            blood:SetColor( bldColor )
             util.Effect( "BloodImpact", blood )
 
         end
@@ -344,6 +351,12 @@ function ENT:PhysicsCollide( colData, _ )
 end
 
 local angle_zero = Angle( 0, 0, 0 )
+local noSkullModels = {
+    ["models/crow.mdl"] = true,
+    ["models/seagull.mdl"] = true,
+    ["models/pigeon.mdl"] = true,
+    ["models/hunter.mdl"] = true,
+}
 
 function glee_RagdollHasASkull( ragdoll )
     if ragdoll.glee_skulldecapitated then return end
@@ -356,11 +369,17 @@ function glee_RagdollHasASkull( ragdoll )
     local model = ragdoll:GetModel()
 
     if IsValid( ragdoll.glee_skullpickup ) then return false end
+
+    if noSkullModels[model] then ragdoll.glee_skulldecapitated = true return end
+
     if string.find( model, "zombie_soldier" ) then ragdoll.glee_skulldecapitated = true return end
     if string.find( model, "headcrab" ) then ragdoll.glee_skulldecapitated = true return end
+    if string.find( model, "antlion" ) then ragdoll.glee_skulldecapitated = true return end
+    if string.find( model, "vortigaunt" ) then ragdoll.glee_skulldecapitated = true return end
 
     local ragdollsSkull
     local isSkeleton
+    local isMetallic
 
     for boneIndex = 0, ragdoll:GetBoneCount() - 1 do
         local name = ragdoll:GetBoneName( boneIndex )
@@ -381,6 +400,7 @@ function glee_RagdollHasASkull( ragdoll )
 
     ragdoll.glee_skullboneindex = ragdollsSkull
     ragdoll.glee_skullisskeleton = isSkeleton
+    ragdoll.glee_skullismetallic = isMetallic
     return true, ragdollsSkull, isSkeleton
 
 end

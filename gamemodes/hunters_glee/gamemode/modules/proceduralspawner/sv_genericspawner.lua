@@ -12,15 +12,15 @@ local vec_down = Vector( 0, 0, -1 )
 
 local function justSpawnTheDamnEnt( class, tr )
     local sentTbl = scripted_ents.GetStored( class )
-    local spawnFunc = scripted_ents.GetMember( class, "SpawnFunction" )
+    local SpawnFunction = scripted_ents.GetMember( class, "SpawnFunction" )
     local entitySpawned
     local data = GAMEMODE.genericSpawnTables[class]
 
-    if sentTbl and spawnFunc and not ( data and data.preSpawnedFunc ) then
+    if sentTbl and SpawnFunction and not ( data and data.preSpawnedFunc ) then
         -- you want a player, base_entity? fine.
         local fauxSpawner = GAMEMODE:anAlivePlayer()
         if not IsValid( fauxSpawner ) then return end
-        entitySpawned = spawnFunc( sentTbl, fauxSpawner, tr, class )
+        entitySpawned = SpawnFunction( sentTbl, fauxSpawner, tr, class )
 
     else
         entitySpawned = ents.Create( class )
@@ -31,10 +31,12 @@ local function justSpawnTheDamnEnt( class, tr )
 
         end
 
-        entitySpawned:Spawn()
-        entitySpawned:Activate()
-        entitySpawned:DropToFloor()
+        if not ( data and data.dontSpawn ) then
+            entitySpawned:Spawn()
+            entitySpawned:Activate()
+            entitySpawned:DropToFloor()
 
+        end
     end
     if data and data.postSpawnedFunc then
         data.postSpawnedFunc( entitySpawned )

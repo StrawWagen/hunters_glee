@@ -34,7 +34,7 @@ end
 
 function plyMeta:CacheNavArea()
     local myPos = self:GetPos()
-    if not util_IsInWorld( myPos ) then
+    if not util_IsInWorld( myPos ) then -- stuck!!!
         self.glee_CachedNavArea = nil
         self.glee_SqrDistToCachedNavArea = math.huge
         return
@@ -44,6 +44,10 @@ function plyMeta:CacheNavArea()
 
     self.glee_CachedNavArea = area
     if area then
+        if self:IsOnGround() then
+            GAMEMODE.navmeshActivityHeatmap[area] = ( GAMEMODE.navmeshActivityHeatmap[area] or 0 ) + 1
+
+        end
         self.glee_SqrDistToCachedNavArea = myPos:DistToSqr( area:GetClosestPointOnArea( myPos ) )
 
         local oldArea = self.glee_CachedOldNavArea

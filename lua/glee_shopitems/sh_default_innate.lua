@@ -880,6 +880,7 @@ if CLIENT then
 
         end )
         return stuffToSort
+
     end
 
     local sixthSenseHunter = Color( 255, 0, 0 )
@@ -898,6 +899,7 @@ if CLIENT then
             self.medkits = {}
             self.hunters = {}
             self.players = {}
+            self.weapons = {}
             self.ar2Balls = {}
             self.bearTraps = {}
             self.scoreBalls = {}
@@ -1363,7 +1365,7 @@ local items = {
         name = "Channel 666.",
         desc = "Your radio bridges life and death.\nYou can communicate with the dead, both ways.",
         shCost = 0,
-        skullCost = 1,
+        shSkullCost = 1,
         cooldown = math.huge,
         tags = { "INNATE" },
         purchaseTimes = {

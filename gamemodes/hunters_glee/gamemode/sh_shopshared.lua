@@ -220,6 +220,7 @@ function GM:shopItemCost( toPurchase, purchaser )
         end
     else
         cost = costRaw
+
     end
 
     if not isnumber( cost ) then
@@ -236,7 +237,7 @@ function GM:shopItemSkullCost( toPurchase, purchaser )
     if not toPurchase then return end
     local dat = GAMEMODE:GetShopItemData( toPurchase )
     if not dat then return end
-    local skullCostRaw = dat.skullCost
+    local skullCostRaw = dat.shSkullCost
     if not skullCostRaw then return end
     local skullCost = nil
 

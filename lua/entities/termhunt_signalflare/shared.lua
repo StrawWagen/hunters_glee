@@ -13,6 +13,8 @@ ENT.AdminOnly    = game.IsDedicated()
 ENT.Category = "Hunter's Glee"
 ENT.Model = "models/hunter/plates/plate.mdl"
 
+ENT.Lifetime = 50
+
 local className = "termhunt_signalflare"
 if CLIENT then
     terminator_Extras.glee_CL_SetupSent( ENT, className, "vgui/hud/killicon/" .. className .. ".png" )
@@ -73,6 +75,7 @@ if SERVER and terminator_Extras then
     ENT.SteppedTooCloseDist = 2000 -- start at 2k dist
     ENT.MinTooCloseDist = 400 -- step down to 400 if we dont find any good corridors to spawn heli at
     ENT.SteppedDirMaxZ = 0.15 -- start at 0.15
+    ENT.SteppedStartingOffset = 0 -- offset FROM the flare's origin to the start of the trace, in dir of trace
     ENT.MaxDirMaxZ = 0.75 -- stepped up every failure until it reaches this
 
     local function angerEverything()
@@ -213,7 +216,8 @@ if SERVER and terminator_Extras then
         local currMins = math.random( wayfindingHeliMins, callingHeliMins )
         local currMaxs = math.random( wayfindingHeliMaxs, callingHeliMaxs )
 
-        local myPosOffsetted = myPos + randDir * math.random( 25, callingHeliMaxs )
+        local offsetSize = self.SteppedStartingOffset + math.random( 25, callingHeliMaxs )
+        local myPosOffsetted = myPos + randDir * offsetSize
 
         local traceData = {
             start = myPosOffsetted,
@@ -244,13 +248,20 @@ if SERVER and terminator_Extras then
 
         end
 
-        if callTraceResult.HitPos:Distance( myPos ) < self.SteppedTooCloseDist then -- too close!
+        local badPlsStep = callTraceResult.StartSolid or callTraceResult.HitPos:Distance( myPos ) < self.SteppedTooCloseDist
+
+        if badPlsStep then -- too close!
             self.SteppedTooCloseDist = math.max( self.SteppedTooCloseDist - 250, self.MinTooCloseDist )
             self.SteppedDirMaxZ = math.Clamp( self.SteppedDirMaxZ + 0.05, 0, self.MaxDirMaxZ )
             return
 
         end
 
+        if callTraceResult.StartSolid then
+            self.SteppedStartingOffset = self.SteppedStartingOffset + math.random( 0, 100 )
+            return
+
+        end
         if not callTraceResult.HitSky then return end
 
         angerEverything()
@@ -1335,7 +1346,7 @@ local nextBlinkToggle = 0
 local blinkInterval = 0.5
 local flashlightSprite = Material( "engine/lightsprite" )
 local warningLightSprite = Material( "effects/blueflare1" )
-local flashlightMaterial = Material( "glee/FlashlightBeam" )
+local flashlightMaterial = Material( "sprites/glee/flashlight_beam" )
 
 local function CreateProjectedTextureForHelicopter( helicopter )
     if not IsValid( helicopter ) then return end

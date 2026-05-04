@@ -29,7 +29,8 @@ function GM:getDebugShopItemStructureTable()
         ["shopItemUniqueIdentifier"] = {
             name =              "Printed name that players see",
             desc =              "Description. Accepts a function or string.",
-            shCost =              "Cost, negative to give player score when purchasing, Accepts a function.",
+            shCost =            "Cost, negative to give player score when purchasing, Accepts a function.",
+            shSkullCost =       "Optional. Skull cost, same rules as shCost.",
             canGoInDebt =       "Optional. Can this item be bought when the player has no score? Can force players to buy innate debuffs, etc.",
             fakeCost =          "Optional. Whether to skip applying the cost within the purchasing system. Good if you want a shop item to more dynamically apply costs, but still show a cost.",
             simpleCostDisplay = "Optional. Client. Skip the coloring + formatting of an item's cost in the shop.",

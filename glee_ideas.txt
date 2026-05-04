@@ -113,6 +113,11 @@
 -- make homicidal glee cost more
 
 -- loan
+-- go into bank debt?
+-- forced to repay debt next round?
+
+-- investing
+-- invest into player's bank accounts
 
 -- server-based leaderboard
 -- quickest to 10 skulls
@@ -126,3 +131,11 @@
 -- barrels scoring confusing
 
 -- bhop perk?
+
+-- visual cohesiveness
+-- better defined goal
+
+-- slogan
+
+-- FIND lore for glee
+-- why are we here, where are we going

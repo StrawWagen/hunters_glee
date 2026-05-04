@@ -180,6 +180,7 @@ function GM:TermHuntSetup()
     self.deadPlayers                    = {}
     self.roundScore                     = {}
     self.roundExtraData                 = {} -- helper tbl that is reset on round end
+    self.navmeshActivityHeatmap         = {} -- what navareas are players sticking to this session?
 
     self.roundDiffBump                  = 0
     self.roundEarliestEnd               = 0

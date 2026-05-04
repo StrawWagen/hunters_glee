@@ -9,7 +9,7 @@ function GM:SendSolidSound( path, data )
 
     local initialPath = path
 
-    if string.StartsWith( path, "tracks/" ) then
+    if self:IsPathASoundTrack( path ) then
         local trackData
         path, trackData = GAMEMODE:GetASoundTrack( string.sub( path, 8 ) )
         data = table.Copy( trackData )  -- avoid mutating trackData
@@ -54,16 +54,16 @@ local soundTracks = {
             "hunters_glee/music/8.24.to_noone.ogg",
         },
         randomOrder = true,
-        priority = 50,
+        priority = 0,
         fadeInLength = 1,
     },
     roundEnd = {
         sounds   = { "hunters_glee/music/gleeroundendhoot6simple.ogg" },
-        priority = 50,
+        priority = 0,
     },
     roundWin = {
         sounds   = { "hunters_glee/music/qutedeath.mp3" },
-        priority = 100,
+        priority = 50,
     },
     roundPerfectWin = {
         sounds   = { "hunters_glee/music/8.25.ToWishToGlee.ogg" },
@@ -71,7 +71,7 @@ local soundTracks = {
     },
     mapvoteMusic = {
         sounds   = { "hunters_glee/music/SEWERSiN.mp3" },
-        priority = 50,
+        priority = 0,
     }
 }
 
@@ -96,5 +96,10 @@ function GM:GetASoundTrack( name )
     GAMEMODE.soundtrackIndices[name] = ( index % #trackData.sounds ) + 1
 
     return path, trackData
+
+end
+
+function GM:IsPathASoundTrack( path )
+    return string.StartsWith( path, "tracks/" )
 
 end

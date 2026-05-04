@@ -19,7 +19,7 @@ end
 
 local invis = Color( 255, 255, 255, 0 )
 
-local lifetime = 20
+ENT.Lifetime = 20
 
 function ENT:SetupDataTables()
     self:NetworkVar( "Float", 0, "DeathTime" )
@@ -57,7 +57,7 @@ function ENT:Initialize()
     self:SetMoveType( MOVETYPE_VPHYSICS )
     self:PhysicsInit( SOLID_VPHYSICS )
 
-    SafeRemoveEntityDelayed( self, lifetime )
+    SafeRemoveEntityDelayed( self, self.Lifetime )
 
     -- Wake up our physics object so we don't start asleep
     local phys = self:GetPhysicsObject()
@@ -79,7 +79,7 @@ function ENT:Initialize()
         flareReal:SetParent( self )
         flareReal:Spawn()
         flareReal:Activate()
-        flareReal:Fire( "Start", tostring( lifetime ), 0.1 )
+        flareReal:Fire( "Start", tostring( self.Lifetime ), 0.1 )
 
         self:DeleteOnRemove( flareReal )
 
@@ -94,13 +94,13 @@ function ENT:Initialize()
         flareLight:SetParent( self )
         flareLight:Spawn()
         flareLight:Activate()
-        flareLight:Fire( "Start", tostring( lifetime ), 0.1 )
+        flareLight:Fire( "Start", tostring( self.Lifetime ), 0.1 )
 
         self:DeleteOnRemove( flareLight )
 
     end
 
-    self:SetDeathTime( CurTime() + lifetime )
+    self:SetDeathTime( CurTime() + self.Lifetime )
 
     timer.Simple( 0, function()
         if not IsValid( self ) then return end
@@ -109,7 +109,7 @@ function ENT:Initialize()
 
         self.BurnSound = CreateSound( self, "weapons/flaregun/burn.wav" )
         self.BurnSound:Play()
-        self.BurnSound:ChangePitch( 80, lifetime )
+        self.BurnSound:ChangePitch( 80, self.Lifetime )
 
     end )
 
@@ -243,7 +243,7 @@ hook.Add( "RenderScreenspaceEffects", "glee_predraw_fogpiercing_flares", functio
 
         local distScalar = math.log( distanceToIt, 4 ) * 5
         local timeToDeath = math.abs( flare:GetDeathTime() - CurTime() )
-        local size = math.Clamp( ( timeToDeath / lifetime ) + 1, 0, 1 )
+        local size = math.Clamp( ( timeToDeath / flare.Lifetime ) + 1, 0, 1 )
         size = size * 75
 
         local width = size + -distScalar
