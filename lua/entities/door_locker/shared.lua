@@ -37,8 +37,8 @@ function ENT:GetNearestTarget()
     local doors = ents.FindInSphere( myPos, 2048 )
     for _, door in ipairs( doors ) do
         if doorClasses[ door:GetClass() ] then
-            if door:GetClass() == "prop_door_rotating" and not util.doorIsUsable( door ) then continue end
             if not door:IsSolid() then continue end
+            if door:GetClass() == "prop_door_rotating" and not util.doorIsUsable( door ) then continue end
             -- Calculate the distance between the door and the entity
             local distance = myPos:Distance( door:GetPos() )
             if distance < nearestDistance then
