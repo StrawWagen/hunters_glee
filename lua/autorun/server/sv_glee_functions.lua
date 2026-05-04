@@ -1,21 +1,21 @@
 terminator_Extras = terminator_Extras or {}
 
-util.doorIsUsable = function( door )
-    local center = door:WorldSpaceCenter()
-    local forward = door:GetForward()
-    local starOffset = forward * 50
-    local endOffset  = forward * 2
+local function checkDoorClearance( door, center, dir )
+    local startOffset = dir * 50
+    local endOffset  = dir * 2
 
     local traceDatF = {
         mask = MASK_SOLID_BRUSHONLY,
-        start = center + starOffset,
-        endpos = center + endOffset
+        start = center + startOffset,
+        endpos = center + endOffset,
+        filter = door,
     }
 
     local traceDatB = {
         mask = MASK_SOLID_BRUSHONLY,
-        start = center + -starOffset,
-        endpos = center + -endOffset
+        start = center + -startOffset,
+        endpos = center + -endOffset,
+        filter = door,
     }
 
     local traceBack = util.TraceLine( traceDatB )
@@ -23,6 +23,14 @@ util.doorIsUsable = function( door )
 
     local canSmash = not traceBack.Hit and not traceFront.Hit
     return canSmash
+end
+
+util.doorIsUsable = function( door )
+    local center = door:WorldSpaceCenter()
+
+    return checkDoorClearance( door, center, door:GetForward() ) or
+        checkDoorClearance( door, center, door:GetRight() ) or
+        checkDoorClearance( door, center, door:GetUp() )
 
 end
 
