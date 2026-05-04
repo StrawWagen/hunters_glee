@@ -77,14 +77,15 @@ function LockDoorAndRunAFunctionWhenTheDoorIsUsed( door, playerAttaching, functi
 
     if class == "prop_door_rotating" then
         wasOpen = door:GetInternalVariable( "m_eDoorState" ) == 2
+        if wasOpen then door:Fire( "Close" ) end
 
     elseif class == "func_door" then
-        wasOpen = door:GetInternalVariable( "m_toggle_state" ) == 0
+        wasOpen = util.IsInWorld( door:WorldSpaceCenter() )
+        if wasOpen then door:Fire( "Toggle" ) end -- Sometimes func_door states are inverse
 
     end
 
     -- fire the "lock" input to lock the door
-    door:Fire( "Close" )
     door:Fire( "Lock" )
     door:EmitSound( "doors/door_locked2.wav", 80 )
 
