@@ -506,7 +506,24 @@ function GAMEMODE:SendDeadPlayersToClients()
 end
 
 hook.Add( "PlayerDeath", "saveResurrectPos", function( victim )
-    GAMEMODE.deadPlayers[victim:GetCreationID()] = { ply = victim, pos = victim:GetPos() }
+    -- Manually trace down first so the ground check can have a larger distance than the nav snap.
+    local pos = victim:GetPos()
+    local tr = util.TraceHull( {
+        start = pos,
+        endpos = pos + Vector( 0, 0, -5000 ),
+        mins = victim:OBBMins() * Vector( 0, 0, 0.01 ),
+        maxs = victim:OBBMaxs() * Vector( 0, 0, 0.01 ),
+        mask = MASK_PLAYERSOLID_BRUSHONLY,
+    } )
+
+    local area = navmesh.GetNearestNavArea( tr.HitPos, false, 500, false, true )
+
+    if IsValid( area ) then
+        pos = area:GetClosestPointOnArea( pos )
+
+    end
+
+    GAMEMODE.deadPlayers[victim:GetCreationID()] = { ply = victim, pos = pos }
     GAMEMODE:SendDeadPlayersToClients()
 
 end )
