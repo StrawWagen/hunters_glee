@@ -13,8 +13,8 @@ local function checkDoorClearance( door, center, dir )
 
     local traceDatB = {
         mask = MASK_SOLID_BRUSHONLY,
-        start = center + -startOffset,
-        endpos = center + -endOffset,
+        start = center - startOffset,
+        endpos = center - endOffset,
         filter = door,
     }
 
