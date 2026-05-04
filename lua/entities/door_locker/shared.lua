@@ -54,7 +54,7 @@ function ENT:GetNearestTarget()
 end
 
 function ENT:UpdateGivenScore()
-    self:SetGivenScore( "-5" )
+    self:SetGivenScore( "-10" )
 
 end
 
