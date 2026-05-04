@@ -126,7 +126,7 @@ function SWEP:PrimaryAttack()
     for _, data in pairs( plys ) do
         if not IsValid( data.ply ) then continue end
         --print( data.ply, data.pos )
-        if data.ply:Health() > 0 then continue end
+        if not self:CanResurrect( data.ply ) then continue end
         if data.pos:DistToSqr( center ) < 75^2 then
             ent = data.ply
             resurrectPos = data.pos
@@ -151,7 +151,22 @@ function SWEP:PrimaryAttack()
 
 end
 
+function SWEP:CanResurrect( ply )
+    if not IsValid( ply ) then return false end
+    if not ply:IsPlayer() then return false end
+    if ply:Health() then return false end
+    if ply:HasEscaped() then return false end
+
+    local owner = self:GetOwner()
+    if not IsValid( owner ) then return false end
+    if owner:Health() <= 0 then return false end
+
+    return true
+end
+
 function SWEP:StartResurrect( ent, resurrectPos )
+    if not self:CanResurrect( ent ) then return end
+
     self:GetOwner().blockSwitchingWeaponsReviver = true
     self.resurrecting = true
     self.toResurrect = ent
@@ -177,11 +192,9 @@ function SWEP:StartResurrect( ent, resurrectPos )
 end
 
 function SWEP:ResurrectPly( ply )
-    if not IsValid( ply ) then return end
-    if not IsValid( self ) then return end
-    local owner = self:GetOwner()
-    if owner:Health() <= 0 then return end
+    if not self:CanResurrect( ply ) then return end
 
+    local owner = self:GetOwner()
     self:TakePrimaryAmmo( 1 )
 
     owner:SetNW2Bool( "gleereviver_resurrected", true )
@@ -408,7 +421,7 @@ if CLIENT then
         end )
         for _, data in ipairs( deads ) do
             if not IsValid( data.ply ) then continue end
-            if data.ply:Health() > 0 then continue end
+            if not self:CanResurrect( data.ply ) then continue end
             if not data.pos then continue end
             nearestDeadPly = data
             break
