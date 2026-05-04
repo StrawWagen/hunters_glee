@@ -38,7 +38,7 @@ function ENT:Initialize()
 
         self:ReflectScoreInAppearance()
 
-        self:SetCollisionGroup( COLLISION_GROUP_WEAPON )
+        self:SetCollisionGroup( COLLISION_GROUP_INTERACTIVE_DEBRIS )
 
         terminator_Extras.SmartSleepEntity( self, 10 )
 
