@@ -342,7 +342,6 @@ local function aliveHuntersCount()
         if hunter:Health() <= 0 then continue end
 
         -- only count hunters from the current spawnset
-        -- TODO: Make this better if its way too laggy
         if hunter.glee_SpawnsetThatMadeMe ~= currentSpawnsetsName then continue end
 
         aliveTermsCount = aliveTermsCount + 1

@@ -199,7 +199,7 @@ function GM:RewardSeedPly( seedPly, plyThatJoined )
         big = true
         local pit2 = 100 + ( -distToCutoff * 80 )
         seedPly:EmitSound( "buttons/lever7.wav", lvl, pit2 )
-        seedPly:EmitSound( "209578_zott820_cash-register-purchase.wav", lvl, pit2 )
+        seedPly:EmitSound( "hunters_glee/209578_zott820_cash-register-purchase.wav", lvl, pit2 )
 
     end
 

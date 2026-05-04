@@ -341,7 +341,7 @@ local function beatThink( ply, cur )
     nextBeat = cur + beatTime
 
     if ply:Health() > 0 then
-        ply:EmitSound( "418788_name_heartbeat_single.wav", 100, pitch, volume )
+        ply:EmitSound( "hunters_glee/418788_name_heartbeat_single.wav", 100, pitch, volume )
 
     end
 
@@ -449,7 +449,7 @@ local function paintMyTotalScore( ply, cur )
         if realDifference >= 500 then
             overrideColorTime = 8
             textShakeTime = 8
-            ply:EmitSound( "209578_zott820_cash-register-purchase.wav", 70, 70 )
+            ply:EmitSound( "hunters_glee/209578_zott820_cash-register-purchase.wav", 70, 70 )
 
         elseif realDifference >= 100 then
             overrideColorTime = 4

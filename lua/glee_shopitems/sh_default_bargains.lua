@@ -270,7 +270,7 @@ if SERVER then
     )
 
 
-    local slipSound = Sound( "482735__copyc4t__cartoon-long-throw.wav" )
+    local slipSound = Sound( "hunters_glee/482735__copyc4t__cartoon-long-throw.wav" )
 
     local function passesTheBpmTest( ply, added )
         added = added or 0

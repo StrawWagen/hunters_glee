@@ -40,7 +40,7 @@ SWEP.Secondary.Automatic   = false
 SWEP.Secondary.Ammo        = "none"
 
 -- https://freesound.org/people/nlux/sounds/620497/
--- "sound/620497__nlux__choir-of-weeping-angels-loop.mp3"
+-- "sound/hunters_glee/music/620497__nlux__choir-of-weeping-angels-loop.mp3"
 
 if CLIENT then
     terminator_Extras.glee_CL_SetupSwep( SWEP, "termhunt_divine_chosen", "materials/vgui/hud/termhunt_divine_chosen.png" )
@@ -348,7 +348,7 @@ function SWEP:ClipThink()
     end
 
     if ( not self.glee_chosenregen or ( self.glee_chosenregen and not self.glee_chosenregen:IsPlaying() ) ) and doSound then
-        self.glee_chosenregen = CreateSound( owner, "620497__nlux__choir-of-weeping-angels-loop.mp3", nil )
+        self.glee_chosenregen = CreateSound( owner, "hunters_glee/music/620497__nlux__choir-of-weeping-angels-loop.mp3", nil )
         self.glee_chosenregen:Play()
 
     elseif self.glee_chosenregen and not doSound then

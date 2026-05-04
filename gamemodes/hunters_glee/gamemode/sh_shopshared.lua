@@ -5,7 +5,7 @@ if SERVER then
 
 elseif CLIENT then
 
-    local purchaseSound = Sound( "209578_zott820_cash-register-purchase.wav" )
+    local purchaseSound = Sound( "hunters_glee/209578_zott820_cash-register-purchase.wav" )
     local takeSound = Sound( "buttons/lever7.wav" )
     local getSound = Sound( "buttons/button6.wav" )
 

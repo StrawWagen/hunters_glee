@@ -6,7 +6,7 @@ sound.Add( {
     channel = CHAN_STATIC,
     level = 140,
     volume = 0.8,
-    sound = "397952_kinoton_thunder-clap-and-rumble-1.wav"
+    sound = "hunters_glee/397952_kinoton_thunder-clap-and-rumble-1.wav"
 } )
 
 function glee_CanOvercharge( target )
@@ -113,7 +113,7 @@ function termHunt_ElectricalArcEffect( parent, startPos, targetDir, scale, initi
     end
 
     local loudOnePitch = 120 + pitOffs
-    local bigThunderClap = CreateSound( parent, "397952_kinoton_thunder-clap-and-rumble-1.wav", recipFilterEveryone )
+    local bigThunderClap = CreateSound( parent, "hunters_glee/397952_kinoton_thunder-clap-and-rumble-1.wav", recipFilterEveryone )
 
     bigThunderClap:SetSoundLevel( lvl )
     bigThunderClap:ChangeVolume( volume )

@@ -48,7 +48,7 @@ function ENT:Snap( snapped )
     timer.Simple( 0, function()
         if not IsValid( self ) then return end
         self:SetSequence( "ClosedIdle" )
-        self:EmitSound( "beartrap.wav", 90 )
+        self:EmitSound( "hunters_glee/weapons/beartrap.wav", 90 )
         self:EmitSound( "physics/metal/metal_box_strain1.wav", 65, 200 )
 
     end )
