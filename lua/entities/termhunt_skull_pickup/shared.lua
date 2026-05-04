@@ -329,7 +329,7 @@ function ENT:PhysicsCollide( colData, _ )
 
     local volume = colData.Speed / 100
 
-    local sndPath = "physics/cardboard/cardboard_cup_impact_hard2.wav"
+    local sndPath = "physics/cardboard/cardboard_cup_impact_hard" .. math.random( 1, 3 ) .. ".wav"
     if self:GetIsTerminatorSkull() then
         sndPath = "physics/metal/metal_canister_impact_soft1.wav"
 

@@ -22,6 +22,8 @@ if CLIENT then
 end
 
 local heliModel = "models/glee/combine_helicopter_glee.mdl"
+local heliArmModel = "models/props_trainstation/mount_connection001a.mdl"
+local heliMissileModel = "models/props_phx/amraam.mdl"
 
 --sandbox support
 function ENT:SpawnFunction( ply, tr )
@@ -40,6 +42,11 @@ function ENT:SpawnFunction( ply, tr )
 end
 
 if SERVER and terminator_Extras then
+
+    -- no lagspikes pls
+    util.PrecacheModel( heliModel )
+    util.PrecacheModel( heliArmModel )
+    util.PrecacheModel( heliMissileModel )
 
     local EntityPairs
 
@@ -69,8 +76,6 @@ if SERVER and terminator_Extras then
     end
 
     local debugging = CreateConVar( "huntersglee_debug_escapeheli", "0", { FCVAR_NONE }, "Enable debug info for the escape heli?" )
-
-    util.PrecacheModel( heliModel )
 
     ENT.SteppedTooCloseDist = 2000 -- start at 2k dist
     ENT.MinTooCloseDist = 400 -- step down to 400 if we dont find any good corridors to spawn heli at
@@ -562,7 +567,7 @@ if SERVER and terminator_Extras then
         heli.heli_Missiles = {}
 
         -- missile hardpoint support
-        local mountingRight = terminator_Extras.AttachParentedDetail( heli, "models/props_trainstation/mount_connection001a.mdl", Vector( 44.5, -83.2, -17.8 ), Angle( 0, -89.9, 164 ) )
+        local mountingRight = terminator_Extras.AttachParentedDetail( heli, heliArmModel, Vector( 44.5, -83.2, -17.8 ), Angle( 0, -89.9, 164 ) )
         if IsValid( mountingRight ) then
             local missileRight = ents.Create( "glee_helimissile" )
             missileRight:SetStartsInactive( true )
@@ -575,7 +580,7 @@ if SERVER and terminator_Extras then
 
         end
 
-        local mountingLeft = terminator_Extras.AttachParentedDetail( heli, "models/props_trainstation/mount_connection001a.mdl", Vector( 45, 83.2, -17.9 ), Angle( 0, 89.9, -164 ) )
+        local mountingLeft = terminator_Extras.AttachParentedDetail( heli, heliArmModel, Vector( 45, 83.2, -17.9 ), Angle( 0, 89.9, -164 ) )
         if IsValid( mountingLeft ) then
             local missileLeft = ents.Create( "glee_helimissile" )
             missileLeft:SetStartsInactive( true )

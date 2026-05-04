@@ -212,8 +212,18 @@ hook.Add( "huntersglee_player_pre_reset", "glee_escaping_rewards", function( ply
             huntersGlee_AnnounceDramatic( { ply }, 1001, 4, skullMsg )
 
         end
-        
-        -- TODO: play sounds when this happens
+
+        local filterOnlyThem = RecipientFilter()
+        filterOnlyThem:AddPlayer( ply )
+
+        local kachingPitch = 80
+        local add = -( ranCount / 10 )
+        kachingPitch = kachingPitch + add
+        ply:EmitSound( "209578_zott820_cash-register-purchase.wav", 75, kachingPitch, 1, CHAN_STATIC, SND_NOFLAGS, 0, filterOnlyThem )
+
+        local skullPitch = math.random( 75, 85 ) + -( ranCount / 5 )
+        local skullSound = "physics/cardboard/cardboard_cup_impact_hard" .. math.random( 1, 3 ) .. ".wav"
+        ply:EmitSound( skullSound, 75, skullPitch, 1, CHAN_BODY, SND_NOFLAGS, 0, filterOnlyThem )
 
         ranCount = ranCount + 1
         local newDelay = 1 / ranCount
