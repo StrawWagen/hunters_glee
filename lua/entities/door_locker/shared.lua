@@ -80,7 +80,7 @@ function LockDoorAndRunAFunctionWhenTheDoorIsUsed( door, playerAttaching, functi
         if wasOpen then door:Fire( "Close" ) end
 
     elseif class == "func_door" then
-        wasOpen = util.IsInWorld( door:WorldSpaceCenter() ) -- Naive, will fail on doors that never leave the world
+        wasOpen = not util.IsInWorld( door:WorldSpaceCenter() ) -- Naive, will fail on doors that never leave the world
         if wasOpen then door:Fire( "Toggle" ) end -- Sometimes func_door states are inverse
 
     end
