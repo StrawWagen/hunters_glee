@@ -40,7 +40,7 @@ function ENT:GetNearestTarget()
             if not door:IsSolid() then continue end
             if door:GetClass() == "prop_door_rotating" and not util.doorIsUsable( door ) then continue end
             -- Calculate the distance between the door and the entity
-            local distance = myPos:Distance( door:GetPos() )
+            local distance = myPos:Distance( door:NearestPoint( myPos ) )
             if distance < nearestDistance then
                 nearestDoor = door
                 nearestDistance = distance
