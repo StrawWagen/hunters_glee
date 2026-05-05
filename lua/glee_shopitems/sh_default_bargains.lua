@@ -586,7 +586,7 @@ local items = {
     -- increased bpm but you get heart attacks easier
     ["highcholesterol"] = {
         name = "37 Years of\nCholesterol",
-        desc = "Your body is weak, your heart, clogged...\nYour heart beats faster,\nbut you become succeptible to Heart Attacks." .. bargainDescrip,
+        desc = "All that delicious food, clogging everything up...\nYour heart beats much faster, but Heart Attacks may strike..." .. bargainDescrip,
         shCost = -175,
         markup = 0.25,
         cooldown = math.huge,
