@@ -22,6 +22,7 @@ ENT.noPurchaseReason_InDebt = "You're in debt."
 
 ENT.CanPlaceColor = Color( 0, 255, 0, 255 )
 ENT.CannotPlaceColor = Color( 255, 0, 0, 255 )
+ENT.OnlyNetworkToOwner = true
 
 local beaconVecOffset = Vector( 6.94, -8.67, 25.83 )
 local beaconAngOffset = Angle( 0, -90, 0 )
@@ -448,12 +449,16 @@ function ENT:Think()
     if not IsValid( self.player ) then
         self.player = self:GetOwner() or nil
         self:SetupPlayer( self.player )
-        if SERVER then
+        if SERVER and self.OnlyNetworkToOwner then
             for _, currentPly in ipairs( player.GetAll() ) do
                 local prevent = self.player ~= currentPly
                 self:SetPreventTransmit( currentPly, prevent )
 
             end
+        end
+
+        if not IsValid( self.player ) then
+            self:OwnerlessThink()
         end
     elseif IsValid( self.player ) and IsValid( self:GetOwner() ) then
         toReturn = self:ModifiableThink()
@@ -473,10 +478,15 @@ function ENT:Think()
             return toReturn
 
         end
+    else
+        self:OwnerlessThink()
     end
 end
 
 function ENT:ClientThink()
+end
+
+function ENT:OwnerlessThink()
 end
 
 if not SERVER then return end
