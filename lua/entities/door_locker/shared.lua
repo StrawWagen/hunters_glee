@@ -23,19 +23,24 @@ if not SERVER then return end
 ENT.HullCheckSize = Vector( 20, 20, 10 )
 ENT.PosOffset = Vector( 0, 0, 10 )
 
+local doorClasses = {
+    ["prop_door_rotating"] = true,
+    ["func_door"] = true,
+}
+
 function ENT:GetNearestTarget()
     local nearestDoor = nil
     local nearestDistance = math.huge
     local myPos = self:GetPos()
 
-    -- Find all prop_door_rotating entities within a radius of 2048 units
+    -- Find all applicable door entities within a radius of 2048 units
     local doors = ents.FindInSphere( myPos, 2048 )
     for _, door in ipairs( doors ) do
-        if door:GetClass() == "prop_door_rotating" then
-            if not util.doorIsUsable( door ) then continue end
+        if doorClasses[ door:GetClass() ] then
             if not door:IsSolid() then continue end
+            if door:GetClass() == "prop_door_rotating" and not util.doorIsUsable( door ) then continue end
             -- Calculate the distance between the door and the entity
-            local distance = myPos:Distance( door:GetPos() )
+            local distance = myPos:Distance( door:NearestPoint( myPos ) )
             if distance < nearestDistance then
                 nearestDoor = door
                 nearestDistance = distance
@@ -49,14 +54,13 @@ function ENT:GetNearestTarget()
 end
 
 function ENT:UpdateGivenScore()
-    self:SetGivenScore( "0" )
+    self:SetGivenScore( "-10" )
 
 end
 
 function ENT:CalculateCanPlace()
     local door = self:GetCurrTarget()
     if not IsValid( door ) then return false, "You need to aim at a door." end
-    if door:GetInternalVariable( "m_eDoorState" ) == 2 then return false, "That door is open." end
     if door:GetInternalVariable( "m_bLocked" ) == true then return false, "That door is already locked." end
 
     return true
@@ -65,8 +69,22 @@ end
 
 -- lock a prop_door_rotating
 -- then run a function when the door is used by something
+-- returns true if the door was open beforehand
 
 function LockDoorAndRunAFunctionWhenTheDoorIsUsed( door, playerAttaching, functionToRun )
+    local class = door:GetClass()
+    local wasOpen = false
+
+    if class == "prop_door_rotating" then
+        wasOpen = door:GetInternalVariable( "m_eDoorState" ) == 2
+        if wasOpen then door:Fire( "Close" ) end
+
+    elseif class == "func_door" then
+        wasOpen = not util.IsInWorld( door:WorldSpaceCenter() ) -- Naive, will fail on doors that never leave the world
+        if wasOpen then door:Fire( "Toggle" ) end -- Sometimes func_door states are inverse
+
+    end
+
     -- fire the "lock" input to lock the door
     door:Fire( "Lock" )
     door:EmitSound( "doors/door_locked2.wav", 80 )
@@ -118,6 +136,8 @@ function LockDoorAndRunAFunctionWhenTheDoorIsUsed( door, playerAttaching, functi
     hook.Add( "PlayerUse", hookName, UsedCheckIfIsDoor )
     hook.Add( "TerminatorUse", hookName, UsedCheckIfIsDoor )
 
+    return wasOpen
+
 end
 
 -- this is ran once on a door, when it's first used by something
@@ -162,8 +182,21 @@ end
 function ENT:Place()
     if not SERVER then return end
     local door = self:GetCurrTarget()
-    LockDoorAndRunAFunctionWhenTheDoorIsUsed( door, self.player, DoorOnUsedInitial )
+    local wasOpen = LockDoorAndRunAFunctionWhenTheDoorIsUsed( door, self.player, DoorOnUsedInitial )
     door:EmitSound( "doors/door_locked2.wav", 80 )
+
+    local score = self:GetGivenScore()
+
+    if self.player.GivePlayerScore and score then
+        if wasOpen then
+            score = score * 2
+
+        end
+
+        self.player:GivePlayerScore( score )
+        GAMEMODE:sendPurchaseConfirm( self.player, score )
+
+    end
 
     GAMEMODE:AddMischievousness( self.player, 1, "locked a door" )
 
