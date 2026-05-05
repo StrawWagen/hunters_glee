@@ -1,3 +1,6 @@
+
+if not terminator_Extras then return end
+
 AddCSLuaFile()
 
 if CLIENT then
@@ -80,10 +83,11 @@ function SWEP:PrimaryAttack()
     if not ( class == "prop_door_rotating" or ( ent:Health() and ent:Health() <= 90 ) ) then return end
     if trace.HitPos:Distance( Owner:GetShootPos() ) > 100 then return end
 
-    if SERVER and ( ent.huntersglee_breakablenails or ( class == "prop_door_rotating" and not util.doorIsUsable( ent ) ) ) then
+    if SERVER and ( ent.huntersglee_breakablenails or ( class == "prop_door_rotating" and not terminator_Extras.CanBashDoor( ent ) ) ) then
         ent:EmitSound( "doors/wood_stop1.wav", 60, math.random( 90, 100 ) )
         ent:Fire( "setanimation", "locked", 0 )
         return
+
     end
 
     self:SetHoldType( "pistol" )

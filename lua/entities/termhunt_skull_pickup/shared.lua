@@ -150,7 +150,7 @@ function ENT:DoScore( reciever )
 
     end
 
-    if not reciever.GivePlayerScore then SafeRemoveEntity( self ) return end
+    if not reciever.GivePlayerSkulls then SafeRemoveEntity( self ) return end
 
     reciever:GivePlayerSkulls( self:GetScore() )
     hook.Run( "glee_plypickedupskull", reciever, self )

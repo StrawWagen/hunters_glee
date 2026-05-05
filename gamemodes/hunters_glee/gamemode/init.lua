@@ -729,7 +729,7 @@ function GM:removeBlockers() -- mess up locked doors on door heavy maps
     if #doors > 30 then
         for _, door in ipairs( doors ) do
             if door:GetInternalVariable( "m_bLocked" ) ~= true then continue end
-            if not util.doorIsUsable( door ) then continue end -- door is decor
+            if not terminator_Extras.CanBashDoor( door ) then continue end -- door is decor
 
             local areaIsBig = nil
             local area = self:getNearestNavFloor( door:WorldSpaceCenter() )

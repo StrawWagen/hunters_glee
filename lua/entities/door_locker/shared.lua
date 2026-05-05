@@ -36,7 +36,8 @@ function ENT:GetNearestTarget()
     -- Find all applicable door entities within a radius of 2048 units
     local doors = ents.FindInSphere( myPos, 2048 )
     for _, door in ipairs( doors ) do
-        if doorClasses[ door:GetClass() ] then
+        if doorClasses[door:GetClass()] then
+            if not terminator_Extras.CanBashDoor( door ) then continue end
             if not door:IsSolid() then continue end
             if door:GetClass() == "prop_door_rotating" and not util.doorIsUsable( door ) then continue end
             -- Calculate the distance between the door and the entity

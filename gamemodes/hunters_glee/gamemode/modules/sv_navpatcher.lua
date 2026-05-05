@@ -670,7 +670,7 @@ function GAMEMODE:anyAreasOverlapStrict( crossArea, navsToCheck )
 end
 
 function GAMEMODE:doesDoorNeedANewNavArea( door )
-    if not util.doorIsUsable( door ) then return end
+    if not terminator_Extras.CanBashDoor( door ) then return end
     -- assume door divides navmesh
 
     local doorExtent = 50
