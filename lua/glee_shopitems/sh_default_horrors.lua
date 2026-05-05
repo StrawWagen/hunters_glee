@@ -1,0 +1,36 @@
+
+local shopHelpers = GAMEMODE.shopHelpers
+
+local function setupPlacable( class, purchaser, itemIdentifier )
+    local thing = ents.Create( class )
+    thing.itemIdentifier = itemIdentifier
+    thing:SetOwner( purchaser )
+    thing:Spawn()
+
+    return thing
+
+end
+
+
+local items = {
+    ["ghostly_wind"] = {
+        name = "Ghostly Wind",
+        desc = "Deploy a strong gust of wind.",
+        shCost = 0,
+        costDecorative = "-75",
+        markup = 1,
+        cooldown = 0.5,
+        tags = { "HORRORS", "CloseShopOnPurchase" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = 10,
+        svOnPurchaseFunc = function( purchaser, itemIdentifier )
+            setupPlacable( "glee_escapee_wind", purchaser, itemIdentifier )
+
+        end,
+        shCanShowInShop = shopHelpers.escapedCheck,
+    },
+}
+
+GAMEMODE:GobbleShopItems( items )

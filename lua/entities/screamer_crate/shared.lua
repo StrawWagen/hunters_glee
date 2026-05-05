@@ -20,6 +20,9 @@ ENT.noPurchaseReason_OffNavmesh = "The hunters can't path to that spot."
 ENT.noPurchaseReason_TooPoor = "You're too poor."
 ENT.noPurchaseReason_InDebt = "You're in debt."
 
+ENT.CanPlaceColor = Color( 0, 255, 0, 255 )
+ENT.CannotPlaceColor = Color( 255, 0, 0, 255 )
+
 local beaconVecOffset = Vector( 6.94, -8.67, 25.83 )
 local beaconAngOffset = Angle( 0, -90, 0 )
 
@@ -418,10 +421,10 @@ function ENT:ColorThink()
 
     if self.couldPlace ~= canPlace then
         if not canPlace then
-            self:SetColor( Color( 255, 0, 0, 255 ) )
+            self:SetColor( self.CannotPlaceColor )
 
         elseif canPlace then
-            self:SetColor( Color( 0, 255, 0, 255 ) )
+            self:SetColor( self.CanPlaceColor )
 
         end
     end
