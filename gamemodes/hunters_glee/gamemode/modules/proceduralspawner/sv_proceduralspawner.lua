@@ -84,8 +84,7 @@ local currJob
 
 --local nextPrint = 0
 
-hook.Add( "glee_sv_validgmthink", "glee_proceduralspawner", function( _, currState, _ )
-    if currState ~= GAMEMODE.ROUND_ACTIVE then return end
+hook.Add( "glee_sv_validgmthink_not_over", "glee_proceduralspawner", function()
 
     --[[
     if nextPrint < CurTime() then

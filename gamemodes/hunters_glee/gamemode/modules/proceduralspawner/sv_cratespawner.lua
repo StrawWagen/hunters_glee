@@ -31,7 +31,7 @@ local CurTime = CurTime
 
 local crates = {}
 
-hook.Add( "glee_sv_validgmthink_active", "glee_addcratejobs", function()
+hook.Add( "glee_sv_validgmthink_not_over", "glee_addcratejobs", function( _, currState )
     if #player.GetAll() > plysNeeded:GetInt() then return end
     if nextCrateSpawn > CurTime() then return end
 
@@ -144,7 +144,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_addcratejobs", function()
             return true
 
         end
-    elseif ( mod == 9 and proceduralCratePlaces > 10 and #GAMEMODE:getDeadPlayers() <= 0 ) or staleAndNeedsAScreamer then
+    elseif currState == GAMEMODE.ROUND_ACTIVE and ( ( mod == 9 and proceduralCratePlaces > 10 and #GAMEMODE:getDeadPlayers() <= 0 ) or staleAndNeedsAScreamer ) then
         staleAndNeedsAScreamer = nil
         crateJob.onPosFoundFunction = function( _, bestPosition )
             local crate = GAMEMODE:ScreamingCrate( bestPosition )
@@ -179,7 +179,14 @@ hook.Add( "glee_sv_validgmthink_active", "glee_addcratejobs", function()
     --print( "ADDED" )
     --PrintTable( crateJob )
 
-    nextCrateSpawn = CurTime() + GAMEMODE:ScaledGenericSpawnerRate( time )
+    local nextAdd = GAMEMODE:ScaledGenericSpawnerRate( time )
+
+    if currState ~= GAMEMODE.ROUND_ACTIVE then
+        nextAdd = nextAdd * math.Rand( 1, 2 )
+
+    end
+
+    nextCrateSpawn = CurTime() + nextAdd
 
 end )
 

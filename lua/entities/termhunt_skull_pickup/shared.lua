@@ -287,7 +287,7 @@ function ENT:OnTakeDamage( dmg )
         if not isSkeleton then
             local bldColor = 0
             if parent.GetBloodColor then
-                bldColor = parent:GetBloodColor()
+                bldColor = parent:GetBloodColor() or 0
 
             end
 

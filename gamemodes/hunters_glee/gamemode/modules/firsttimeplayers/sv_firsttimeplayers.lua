@@ -16,6 +16,7 @@ local function gleetings( ply )
     net.Start( "glee_askforgleetings" )
         net.WriteEntity( ply )
     net.Send( filterNotPly )
+
 end
 
 local function shelterPly( ply )

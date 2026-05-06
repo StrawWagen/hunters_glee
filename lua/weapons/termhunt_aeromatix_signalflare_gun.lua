@@ -107,6 +107,7 @@ function SWEP:ShootFlare()
         timer.Simple( 1, function()
             if not IsValid( self ) then return end
             if not IsValid( owner ) then return end
+            if owner:GetActiveWeapon() ~= self then return end
             owner:SelectWeapon( "termhunt_shove" )
 
         end )

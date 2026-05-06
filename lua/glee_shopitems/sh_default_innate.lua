@@ -904,6 +904,7 @@ if CLIENT then
             self.bearTraps = {}
             self.scoreBalls = {}
             self.itemCrates = {}
+            self.escapeFlareGuns = {}
             self.sixthSenseStuff = {}
             self.nextCache = 0
             self.nextSort = 0
@@ -933,6 +934,7 @@ if CLIENT then
 
                     self.scoreBalls = ents.FindByClass( "termhunt_score_pickup" )
                     self.itemCrates = ents.FindByClass( "item_item_crate" )
+                    self.escapeFlareGuns = ents.FindByClass( "termhunt_aeromatix_signalflare_gun" )
 
                 -- sort em and filter for stuff we actually care bout
                 elseif self.nextSort < curTime then
@@ -963,6 +965,7 @@ if CLIENT then
                     table.Add( self.sixthSenseStuff, self.bearTraps )
                     table.Add( self.sixthSenseStuff, self.scoreBalls )
                     table.Add( self.sixthSenseStuff, self.itemCrates )
+                    table.Add( self.sixthSenseStuff, self.escapeFlareGuns )
 
                     self.sixthSenseStuff = sortForClosestTo( myPos, self.sixthSenseStuff )
 
@@ -1016,6 +1019,8 @@ if CLIENT then
 
                     local isPly = sensed:IsPlayer()
 
+                    local goodGeneric = classOfSensed == "termhunt_aeromatix_signalflare_gun"
+
                     --gregori
                     if isPly and sensed:HasStatusEffect( "divine_chosen" ) then
                         if sensed:Health() <= 0 then continue end
@@ -1055,7 +1060,7 @@ if CLIENT then
                         end
 
                     -- player, always a player, never a sus player!
-                    elseif isPly or suspicious then
+                    elseif isPly or suspicious or goodGeneric then
                         if sensed:Health() <= 0 then continue end
                         sixthSenseColor = sixthSensePlayer
                         spriteSize = 100

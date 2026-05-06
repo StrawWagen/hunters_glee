@@ -329,6 +329,7 @@ function GM:Think()
             self.canScore   = false
 
             hook.Run( "glee_sv_validgmthink_inactive", players, currState, cur )
+            hook.Run( "glee_sv_validgmthink_not_over", players, currState, cur )
 
         end
         if doPatchingText then
@@ -376,6 +377,7 @@ function GM:Think()
             self.canScore   = true
 
             hook.Run( "glee_sv_validgmthink_active", players, currState, cur )
+            hook.Run( "glee_sv_validgmthink_not_over", players, currState, cur )
 
         end
         displayName = "Hunting... "

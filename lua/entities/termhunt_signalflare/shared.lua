@@ -1190,7 +1190,7 @@ if SERVER and terminator_Extras then
                 local colliding = collisionCheckTrace.Hit and not goodHit
                 local trySoftUnstuckOffset
                 if bestPos then
-                    trySoftUnstuckOffset = terminator_Extras.dirToPos( myPos, bestPos ) * 15
+                    trySoftUnstuckOffset = terminator_Extras.dirToPos( myPos, bestPos ) * 25
 
                 end
                 -- we're smashing into a wall!!!
