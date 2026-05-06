@@ -34,6 +34,14 @@ ENT.PushVariancePlayerMax = 1.2
 ENT.PushVarianceMiscMin = 0.75
 ENT.PushVarianceMiscMax = 1
 
+ENT.ParticleRampDuration = ENT.PushDelayMin * 0.75
+ENT.ParticleIntervalStart = 0.2
+ENT.ParticleIntervalEnd = 0.05
+ENT.ParticleSpeedStart = 400
+ENT.ParticleSpeedEnd = 800
+ENT.ParticleDieTimeStart = 1.25
+ENT.ParticleDieTimeEnd = 0.75
+
 ENT.CanPlaceColor = Color( 0, 200, 255, 150 )
 ENT.CannotPlaceColor = Color( 255, 0, 0, 150 )
 ENT.OnlyNetworkToOwner = false
@@ -44,7 +52,6 @@ ENT.WindHullMax = ENT.HullSize * 0.5
 
 --[[ TODO:
     - Better sounds + param tuning
-    - Effects
     - Temporarily ragdoll players on full gust
         - Will need a dedicated ragdoll system, out of scope for now
         - Could maybe ragdoll select nextbots as well to work around them being unpushable?
@@ -81,6 +88,7 @@ if CLIENT then
 
     function ENT:OwnerlessThink()
         self:SetNoDraw( true )
+        self:ParticleThink()
 
         -- Sync ghostEnt update with server since ghost wind doesn't delete immediately
         if LocalPlayer().ghostEnt == self then
@@ -90,11 +98,80 @@ if CLIENT then
 
     end
 
+    function ENT:ParticleThink()
+        local finalPush = self.windParticleFinalPush
+
+        if not self:GetParticlesActive() then
+            if not finalPush then return end
+
+            self.windParticleFinalPush = false -- Do a big wave of particles right at the end.
+
+        else
+            finalPush = false -- Not actually the final push until :GetParticlesActive() is false!
+
+        end
+
+        if not self.windParticleNextTime then -- First active tick, make emitter.
+            self.windParticleEmitter = ParticleEmitter( self:GetPos(), false )
+            self.windParticleStartTime = CurTime()
+            self.windParticleNextTime = 0
+            self.windParticleFinalPush = true
+
+        end
+
+        local emitter = self.windParticleEmitter
+        if not emitter then return end -- Got lost due to fullupdate + CallOnRemove.
+
+        local now = CurTime()
+        if now < self.windParticleNextTime then return end
+
+        local elapsed = now - self.windParticleStartTime
+        local frac = math.min( elapsed / self.ParticleRampDuration, 1 )
+        local speed = Lerp( frac, self.ParticleSpeedStart, self.ParticleSpeedEnd )
+        local dieTime = Lerp( frac, self.ParticleDieTimeStart, self.ParticleDieTimeEnd )
+
+        local center = self:GetPos()
+        local yaw = self:GetAngles()[2]
+        local memAng = Angle()
+        local hullMin = self.WindHullMin
+        local hullMax = self.WindHullMax
+        local amount = finalPush and 50 or math.random( 1, 3 )
+
+        self.windParticleNextTime = Lerp( frac, self.ParticleIntervalStart, self.ParticleIntervalEnd )
+
+        for _ = 1, amount do
+            memAng[1] = math.Rand( -1, 1 ) * 5
+            memAng[2] = math.Rand( -1, 1 ) * 5 + yaw
+
+            local isBlur = math.Rand( 0, 1 ) <= 0.3
+
+            local part = emitter:Add( isBlur and "sprites/heatwave" or "particle/Particle_Glow_04_Additive", center + Vector(
+                math.Rand( hullMin[1], hullMax[1] ),
+                math.Rand( hullMin[2], hullMax[2] ),
+                math.Rand( hullMin[3], hullMax[3] )
+            ) )
+
+            part:SetDieTime( dieTime )
+            part:SetStartAlpha( 20 )
+            part:SetEndAlpha( 0 )
+            part:SetAngles( memAng )
+            part:SetVelocity( memAng:Forward() * speed )
+            part:SetAirResistance( 5 )
+
+            part:SetStartSize(   isBlur and 60  or 2   )
+            part:SetEndSize(     isBlur and 0   or 20  )
+            part:SetStartLength( isBlur and 120 or 200 )
+            part:SetEndLength(   isBlur and 100 or 150 )
+        end
+
+    end
+
 end
 
 function ENT:PostInitializeFunc()
     self:SetMaterial( "models/props_lab/warp_sheet" )
     self:DrawShadow( false )
+    self:SetParticlesActive( false )
 
     if SERVER then return end
 
@@ -102,6 +179,20 @@ function ENT:PostInitializeFunc()
     matrix:Scale( self.HullSize )
     self:EnableMatrix( "RenderMultiply", matrix )
     self:SetRenderBounds( self.WindHullMin, self.WindHullMax )
+
+    self:CallOnRemove( "glee_escapeewind_removeemitter", function( ent )
+        if not IsValid( ent ) then return end
+        if not ent.windParticleEmitter then return end
+
+        ent.windParticleEmitter:Finish()
+        ent.windParticleEmitter = nil
+
+    end )
+
+end
+
+function ENT:SetupDataTablesExtra()
+    self:NetworkVar( "Bool", 2, "ParticlesActive" )
 
 end
 
@@ -174,8 +265,7 @@ function ENT:Place()
     self.pushOwner = owner
     self.miniPushActive = true
     self:SetPos( windPos + self.PosOffsetPostPlace ) -- Raise up so sounds don't play from the floor
-
-    -- TODO: Effects
+    self:SetParticlesActive( true )
 
     local score = self:GetGivenScore()
 
@@ -273,13 +363,12 @@ end
 function ENT:FinalGust()
     if not self.pushTargets then return end
 
-    -- TODO: Effects
-
     self.telegraphSound:ChangeVolume( 0, 1.5 )
     self.telegraphSound:ChangePitch( 90, 1.5 )
     self:EmitSound( "ambient/wind/windgust.wav", 85, 130, 1 )
 
     self:Gust( 1, 2, true )
+    self:SetParticlesActive( false )
     self.pushTargets = nil
     self.miniPushActive = false
 
