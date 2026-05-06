@@ -100,23 +100,12 @@ if CLIENT then
     end
 
     function ENT:ParticleThink()
-        local finalPush = self.windParticleFinalPush
-
-        if not self:GetParticlesActive() then
-            if not finalPush then return end
-
-            self.windParticleFinalPush = false -- Do a big wave of particles right at the end.
-
-        else
-            finalPush = false -- Not actually the final push until :GetParticlesActive() is false!
-
-        end
+        if not self:GetParticlesActive() then return end
 
         if not self.windParticleNextTime then -- First active tick, make emitter.
             self.windParticleEmitter = ParticleEmitter( self:GetPos(), false )
             self.windParticleStartTime = CurTime()
             self.windParticleNextTime = 0
-            self.windParticleFinalPush = true
 
         end
 
@@ -125,6 +114,9 @@ if CLIENT then
 
         local now = CurTime()
         if now < self.windParticleNextTime then return end
+
+        local bigPush = self:GetParticlesBigPush() and not self.windParticleBigPushDone
+        if bigPush then self.windParticleBigPushDone = true end
 
         local elapsed = now - self.windParticleStartTime
         local frac = math.min( elapsed / self.ParticleRampDuration, 1 )
@@ -136,7 +128,7 @@ if CLIENT then
         local memAng = Angle()
         local hullMin = self.WindHullMin
         local hullMax = self.WindHullMax
-        local amount = finalPush and 75 or math.random( 0, 1 )
+        local amount = bigPush and 75 or math.random( 0, 1 )
 
         self.windParticleNextTime = Lerp( frac, self.ParticleIntervalStart, self.ParticleIntervalEnd )
 
@@ -170,6 +162,7 @@ function ENT:PostInitializeFunc()
     self:SetMaterial( "models/props_lab/warp_sheet" )
     self:DrawShadow( false )
     self:SetParticlesActive( false )
+    self:SetParticlesBigPush( false )
 
     self.nextTargFind = 0
 
@@ -193,6 +186,7 @@ end
 
 function ENT:SetupDataTablesExtra()
     self:NetworkVar( "Bool", 2, "ParticlesActive" )
+    self:NetworkVar( "Bool", 3, "ParticlesBigPush" )
 
 end
 
@@ -381,6 +375,7 @@ function ENT:FinalGust()
     self:EmitSound( "ambient/wind/windgust.wav", 85, 130, 1 )
 
     self:Gust( 1, 2, true )
+    self:SetParticlesBigPush( true )
     self.pushTargets = nil
     self.miniPushActive = false
     self.autoFindActive = false
