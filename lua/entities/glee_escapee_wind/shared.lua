@@ -29,7 +29,7 @@ ENT.TargetRefindInterval = 0.25
 ENT.MiniPushStrengthMin = 0.1
 ENT.MiniPushStrengthMax = 0.2
 ENT.MiniPushIntervalMin = 0.1
-ENT.MiniPushIntervalMax = 0.5
+ENT.MiniPushIntervalMax = 0.3
 
 ENT.PushVariancePlayerMin = 1
 ENT.PushVariancePlayerMax = 1.2
