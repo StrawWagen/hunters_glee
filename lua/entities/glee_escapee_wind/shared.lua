@@ -43,7 +43,6 @@ ENT.ParticleSpeedStart = 400
 ENT.ParticleSpeedEnd = 800
 ENT.ParticleDieTimeStart = 1.25
 ENT.ParticleDieTimeEnd = 0.75
-ENT.ParticleBlurChance = 0.15
 
 ENT.CanPlaceColor = Color( 0, 200, 255, 150 )
 ENT.CannotPlaceColor = Color( 255, 0, 0, 150 )
