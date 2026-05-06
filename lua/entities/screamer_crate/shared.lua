@@ -460,6 +460,7 @@ function ENT:Think()
         if not IsValid( self.player ) then
             self:OwnerlessThink()
         end
+
     elseif IsValid( self.player ) and IsValid( self:GetOwner() ) then
         toReturn = self:ModifiableThink()
 
@@ -478,8 +479,10 @@ function ENT:Think()
             return toReturn
 
         end
+
     else
         self:OwnerlessThink()
+
     end
 end
 
