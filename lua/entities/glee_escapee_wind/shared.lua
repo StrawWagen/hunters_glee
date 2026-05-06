@@ -222,11 +222,12 @@ function ENT:UpdateGivenScore()
 end
 
 function ENT:OwnerlessThink()
-    if self.nextTargFind < CurTime() then
+    if self.autoFindActive and self.nextTargFind < CurTime() then
         self.nextTargFind = CurTime() + self.TargetRefindInterval
         self:FindGustTargets()
 
     end
+
     if self.miniPushActive then
         self:TryMiniGust()
 
@@ -273,6 +274,7 @@ function ENT:Place()
     local owner = self.player
     self.pushOwner = owner
     self.miniPushActive = true
+    self.autoFindActive = true
     self:SetPos( windPos + self.PosOffsetPostPlace ) -- Raise up so sounds don't play from the floor
     self:SetParticlesActive( true )
 
@@ -377,6 +379,7 @@ function ENT:FinalGust()
     self:Gust( 1, 2, true )
     self.pushTargets = nil
     self.miniPushActive = false
+    self.autoFindActive = false
 
     timer.Simple( 1, function()
         if not IsValid( self ) then return end
