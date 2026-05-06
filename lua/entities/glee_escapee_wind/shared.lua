@@ -41,6 +41,7 @@ ENT.ParticleSpeedStart = 400
 ENT.ParticleSpeedEnd = 800
 ENT.ParticleDieTimeStart = 1.25
 ENT.ParticleDieTimeEnd = 0.75
+ENT.ParticleBlurChance = 0.15
 
 ENT.CanPlaceColor = Color( 0, 200, 255, 150 )
 ENT.CannotPlaceColor = Color( 255, 0, 0, 150 )
@@ -129,6 +130,7 @@ if CLIENT then
         local frac = math.min( elapsed / self.ParticleRampDuration, 1 )
         local speed = Lerp( frac, self.ParticleSpeedStart, self.ParticleSpeedEnd )
         local dieTime = Lerp( frac, self.ParticleDieTimeStart, self.ParticleDieTimeEnd )
+        local blurChance = self.ParticleBlurChance
 
         local center = self:GetPos()
         local yaw = self:GetAngles()[2]
@@ -143,8 +145,7 @@ if CLIENT then
             memAng[1] = math.Rand( -1, 1 ) * 5
             memAng[2] = math.Rand( -1, 1 ) * 5 + yaw
 
-            local isBlur = math.Rand( 0, 1 ) <= 0.3
-
+            local isBlur = blurChance > 0 and math.Rand( 0, 1 ) <= blurChance
             local part = emitter:Add( isBlur and "sprites/heatwave" or "particle/Particle_Glow_04_Additive", center + Vector(
                 math.Rand( hullMin[1], hullMax[1] ),
                 math.Rand( hullMin[2], hullMax[2] ),
