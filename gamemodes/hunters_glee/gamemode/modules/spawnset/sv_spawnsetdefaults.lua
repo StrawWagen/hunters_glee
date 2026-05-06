@@ -20,6 +20,7 @@ return {
     roundEndSound = "tracks/roundEnd", -- parsed by sv_solidsounds.lua
     roundWinSound = "tracks/roundWin",
     roundPerfectWinSound = "tracks/roundPerfectWin",
+    earlyStartSound = "",
     roundStartSound = "", -- no sound for glee
     genericSpawnerRate = 1, -- speeds up or slows down the procedural item spawner
 }
