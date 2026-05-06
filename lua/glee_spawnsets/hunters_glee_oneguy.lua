@@ -12,6 +12,7 @@ local set = {
     maxSpawnDist = { 2500, 3500 }, -- CLOSE!
     roundEndSound = "default",
     roundStartSound = "default",
+    roundEarlyStartSound = "tracks/roundEarlyStart",
     chanceToBeVotable = 5,
     spawns = {
         {

@@ -21,6 +21,7 @@ if CLIENT then
 
 end
 
+-- heli model is from 2293373301, which got it from Codename CURE
 local heliModel = "models/glee/combine_helicopter_glee.mdl"
 local heliArmModel = "models/props_trainstation/mount_connection001a.mdl"
 local heliMissileModel = "models/props_phx/amraam.mdl"
