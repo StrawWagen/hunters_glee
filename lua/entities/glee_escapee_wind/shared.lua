@@ -37,7 +37,7 @@ ENT.PushVarianceMiscMin = 0.75
 ENT.PushVarianceMiscMax = 1
 
 ENT.ParticleRampDuration = ENT.PushDelayMin * 0.75
-ENT.ParticleIntervalStart = 0.2
+ENT.ParticleIntervalStart = 0.1
 ENT.ParticleIntervalEnd = 0.05
 ENT.ParticleSpeedStart = 400
 ENT.ParticleSpeedEnd = 800
@@ -128,7 +128,7 @@ if CLIENT then
         local memAng = Angle()
         local hullMin = self.WindHullMin
         local hullMax = self.WindHullMax
-        local amount = bigPush and 75 or math.random( 0, 1 )
+        local amount = bigPush and 75 or math.random( 0, 2 )
 
         self.windParticleNextTime = Lerp( frac, self.ParticleIntervalStart, self.ParticleIntervalEnd )
 
