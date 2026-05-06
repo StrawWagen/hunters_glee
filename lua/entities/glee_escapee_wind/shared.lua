@@ -266,7 +266,6 @@ function ENT:FindGustTargets()
 end
 
 function ENT:Place()
-
     self:FindGustTargets()
 
     local windPos = self:GetPos()
