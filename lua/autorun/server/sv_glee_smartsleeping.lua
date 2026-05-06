@@ -169,6 +169,11 @@ hook.Add( "RappelDrag", "glee_unchainsleepers", function( dragged )
 
 end )
 
+hook.Add( "glee_OnEscapeeWindPushed", "glee_unchainsleepers", function( pushed )
+    unchainSleeper( pushed )
+
+end )
+
 local maxDamaged = 8
 local damagedCount = 0
 local name = "glee_sleeper_blastdamageratelimit"
