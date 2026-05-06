@@ -68,6 +68,7 @@ function PLAYER:Loadout()
 
     self.Player:Give( "termhunt_shove" )
     self.Player:Give( "termhunt_radio" )
+    self.Player:Give( "termhunt_fists" )
     self.Player:Give( "weapon_crowbar" )
 
     self.Player:SelectWeapon( "weapon_crowbar" )
