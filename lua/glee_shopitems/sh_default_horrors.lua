@@ -15,7 +15,7 @@ end
 local items = {
     ["ghostly_wind"] = {
         name = "Ghostly Wind",
-        desc = "Deploy a strong gust of wind.",
+        desc = "Summon a strange gust of wind...",
         shCost = 0,
         costDecorative = "-75",
         markup = 1,

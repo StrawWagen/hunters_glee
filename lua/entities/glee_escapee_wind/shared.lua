@@ -12,20 +12,22 @@ ENT.AdminOnly    = game.IsDedicated()
 ENT.Category = "Hunter's Glee"
 ENT.Model = "models/glee/unit_cube.mdl"
 
-ENT.HullSize = Vector( 400, 300, 200 )
+ENT.HullSize = Vector( 600, 400, 200 )
 ENT.PosOffset = Vector( 0, 0, 0 )
 ENT.PosOffsetPostPlace = Vector( 0, 0, 65 ) -- Additional offset that applies after placing (mostly affects sound origin)
 ENT.Cooldown = 30
 
-ENT.PushDelayMin = 4
-ENT.PushDelayMax = 5
+ENT.PushDelayMin = 1.5
+ENT.PushDelayMax = 1.75
 ENT.PushPitch = -25 -- Negative is upwards
 ENT.PushStrengthPlayer = 590 -- Exact velocity for players
 ENT.PushStrengthNPC = 1000 -- Raw force for NPCs (NextBots don't work...)
 ENT.PushStrengthMisc = 10000 -- Raw force for everything else
 
+ENT.TargetRefindInterval = 0.25
+
 ENT.MiniPushStrengthMin = 0.1
-ENT.MiniPushStrengthMax = 0.4
+ENT.MiniPushStrengthMax = 0.2
 ENT.MiniPushIntervalMin = 0.1
 ENT.MiniPushIntervalMax = 0.5
 
@@ -96,7 +98,6 @@ if CLIENT then
             LocalPlayer().ghostEnt = nil
 
         end
-
     end
 
     function ENT:ParticleThink()
@@ -130,14 +131,13 @@ if CLIENT then
         local frac = math.min( elapsed / self.ParticleRampDuration, 1 )
         local speed = Lerp( frac, self.ParticleSpeedStart, self.ParticleSpeedEnd )
         local dieTime = Lerp( frac, self.ParticleDieTimeStart, self.ParticleDieTimeEnd )
-        local blurChance = self.ParticleBlurChance
 
         local center = self:GetPos()
         local yaw = self:GetAngles()[2]
         local memAng = Angle()
         local hullMin = self.WindHullMin
         local hullMax = self.WindHullMax
-        local amount = finalPush and 50 or math.random( 1, 3 )
+        local amount = finalPush and 75 or math.random( 0, 1 )
 
         self.windParticleNextTime = Lerp( frac, self.ParticleIntervalStart, self.ParticleIntervalEnd )
 
@@ -145,8 +145,7 @@ if CLIENT then
             memAng[1] = math.Rand( -1, 1 ) * 5
             memAng[2] = math.Rand( -1, 1 ) * 5 + yaw
 
-            local isBlur = blurChance > 0 and math.Rand( 0, 1 ) <= blurChance
-            local part = emitter:Add( isBlur and "sprites/heatwave" or "particle/Particle_Glow_04_Additive", center + Vector(
+            local part = emitter:Add( "particle/Particle_Glow_04_Additive", center + Vector(
                 math.Rand( hullMin[1], hullMax[1] ),
                 math.Rand( hullMin[2], hullMax[2] ),
                 math.Rand( hullMin[3], hullMax[3] )
@@ -159,20 +158,21 @@ if CLIENT then
             part:SetVelocity( memAng:Forward() * speed )
             part:SetAirResistance( 5 )
 
-            part:SetStartSize(   isBlur and 60  or 2   )
-            part:SetEndSize(     isBlur and 0   or 20  )
-            part:SetStartLength( isBlur and 120 or 200 )
-            part:SetEndLength(   isBlur and 100 or 150 )
+            part:SetStartSize( 2 )
+            part:SetEndSize( 20 )
+            part:SetStartLength( 200 )
+            part:SetEndLength( 150 )
+
         end
-
     end
-
 end
 
 function ENT:PostInitializeFunc()
     self:SetMaterial( "models/props_lab/warp_sheet" )
     self:DrawShadow( false )
     self:SetParticlesActive( false )
+
+    self.nextTargFind = 0
 
     if SERVER then return end
 
@@ -223,6 +223,11 @@ function ENT:UpdateGivenScore()
 end
 
 function ENT:OwnerlessThink()
+    if self.nextTargFind < CurTime() then
+        self.nextTargFind = CurTime() + self.TargetRefindInterval
+        self:FindGustTargets()
+
+    end
     if self.miniPushActive then
         self:TryMiniGust()
 
@@ -232,7 +237,7 @@ function ENT:OwnerlessThink()
 
 end
 
-function ENT:Place()
+function ENT:FindGustTargets()
     local windPos = self:GetPos()
     local windAng = self:GetAngles()
     local hullMin = self.WindHullMin
@@ -252,17 +257,22 @@ function ENT:Place()
             not util.IsOBBIntersectingOBB( target:GetPos(), target:GetAngles(), target:OBBMins(), target:OBBMaxs(), windPos, windAng, hullMin, hullMax )
 
         if badTarget then
-
             table.remove( targets, i )
 
         end
-
     end
 
-    if #targets == 0 then return end
+    self.pushTargets = targets
+
+end
+
+function ENT:Place()
+
+    self:FindGustTargets()
+
+    local windPos = self:GetPos()
 
     local owner = self.player
-    self.pushTargets = targets
     self.pushOwner = owner
     self.miniPushActive = true
     self:SetPos( windPos + self.PosOffsetPostPlace ) -- Raise up so sounds don't play from the floor
@@ -276,7 +286,7 @@ function ENT:Place()
 
     end
 
-    GAMEMODE:AddMischievousness( owner, 3, "used a gust of wind" )
+    GAMEMODE:AddMischievousness( owner, 1, "used a gust of wind" )
     GAMEMODE:doShopCooldown( owner, self.itemIdentifier, self.Cooldown )
 
     -- grrr this should be handled inside :doShopCooldown()
@@ -305,7 +315,6 @@ function ENT:Place()
         self:FinalGust()
 
     end )
-
 end
 
 function ENT:Gust( strength, shakeMult, countMischief )
@@ -345,11 +354,10 @@ function ENT:Gust( strength, shakeMult, countMischief )
 
         else
             target:GetPhysicsObject():ApplyForceCenter( pushVecMisc * math.Rand( self.PushVarianceMiscMin, self.PushVarianceMiscMax ) )
+            hook.Run( "glee_OnEscapeeWindPushed", target )
 
         end
-
     end
-
 end
 
 function ENT:TryMiniGust()
@@ -369,7 +377,11 @@ function ENT:FinalGust()
     self:EmitSound( "ambient/wind/windgust.wav", 85, 130, 1 )
 
     self:Gust( 1, 2, true )
-    self:SetParticlesActive( false )
+    timer.Simple( 1, function()
+        if not IsValid( self ) then return end
+        self:SetParticlesActive( false )
+
+    end )
     self.pushTargets = nil
     self.miniPushActive = false
 
@@ -385,5 +397,4 @@ function ENT:FinalGust()
         self:Remove()
 
     end )
-
 end
