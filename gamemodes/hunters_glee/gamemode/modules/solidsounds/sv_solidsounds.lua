@@ -57,6 +57,10 @@ local soundTracks = {
         priority = 0,
         fadeInLength = 1,
     },
+    roundEarlyStart = {
+        sounds = { "hunters_glee/music/roundstart2.ogg", },
+        priority = 0,
+    },
     roundEnd = {
         sounds   = { "hunters_glee/music/gleeroundendhoot6simple.ogg" },
         priority = 0,

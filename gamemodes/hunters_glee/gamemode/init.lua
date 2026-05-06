@@ -1000,6 +1000,8 @@ function GM:beginSetup()
         time = time / 8
 
     end
+    time = math.max( time, 10 )
+
     self.termHunt_roundStartTime = CurTime() + time
     self:SetRoundState( self.ROUND_INACTIVE )
     timer.Simple( 2, function()
@@ -1008,6 +1010,12 @@ function GM:beginSetup()
     end )
 
     self:ResetExtraData()
+
+    local tenSecondsBeforeStart = time - 10
+    timer.Simple( tenSecondsBeforeStart, function()
+        hook.Run( "huntersglee_round_tenseconds_before_active" )
+
+    end )
 
     hook.Run( "huntersglee_round_into_inactive" )
 

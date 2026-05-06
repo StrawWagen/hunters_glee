@@ -50,7 +50,8 @@ local defaultSpawnSet = {
     maxSpawnCount = "default", -- hard cap on count
     maxSpawnDist = "default",
     roundEndSound = "default",
-    roundStartSound = "default", -- the horn
+    roundStartSound = "default",
+    roundEarlyStartSound = "tracks/roundEarlyStart", -- plays 10s before round start
     genericSpawnerRate = "default", -- speeds up or slows down the crate/beartrap/etc spawner
     spawns = {
         {

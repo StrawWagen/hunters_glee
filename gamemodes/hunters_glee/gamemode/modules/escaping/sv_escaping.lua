@@ -186,16 +186,20 @@ local rewardPerSkull = 150
 hook.Add( "huntersglee_player_pre_reset", "glee_escaping_rewards", function( ply )
     if not ply:HasEscaped() then return end
 
-    local msg = "+" .. flatEscapingReward .. " Score..."
-    ply:GivePlayerScore( flatEscapingReward )
+    timer.Simple( 2, function()
+        if not IsValid( ply ) then return end
+        local msg = "+" .. flatEscapingReward .. " Score..."
+        ply:GivePlayerScore( flatEscapingReward )
 
-    huntersGlee_AnnounceDramatic( { ply }, 1000, 4, "You escaped!\n" .. msg )
+        huntersGlee_AnnounceDramatic( { ply }, 1000, 4, "You escaped!\n" .. msg )
+
+    end )
     local timerName = "glee_escaping_skullrewardgobbler_" .. ply:EntIndex()
     local totalSkulls = ply:GetSkulls()
     local skullReward = totalSkulls
     local ranCount = 0
     local rewardHinted
-    timer.Create( timerName, 4, 0, function()
+    timer.Create( timerName, 6, 0, function()
         if not IsValid( ply ) then
             timer.Remove( timerName )
             return

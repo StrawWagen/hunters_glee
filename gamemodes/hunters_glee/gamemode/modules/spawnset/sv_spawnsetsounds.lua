@@ -1,13 +1,24 @@
 
+local function playEarlyStartSound()
+    local _, spawnSet = GAMEMODE:GetSpawnSet()
+
+    local startSound = spawnSet.roundStartSound
+    if startSound and startSound ~= "" then return end -- let the roundStartSound take priority
+
+    local earlyStartSound = spawnSet.roundEarlyStartSound
+    if earlyStartSound == "" then return end
+
+    GAMEMODE:SendSolidSound( earlyStartSound )
+
+end
+
 local function playStartSound()
     local _, spawnSet = GAMEMODE:GetSpawnSet()
 
     local startSound = spawnSet.roundStartSound
     if startSound == "" then return end
 
-    local dsp = spawnSet.roundStartSoundDSP
-
-    GAMEMODE:SendSolidSound( startSound, { dsp = dsp } )
+    GAMEMODE:SendSolidSound( startSound )
 
 end
 
@@ -41,6 +52,11 @@ local function playPerfectWinSound()
 
 end
 
+
+hook.Add( "huntersglee_round_tenseconds_before_active", "glee_spawnset_earlystartsound", function()
+    playEarlyStartSound()
+
+end )
 
 hook.Add( "huntersglee_round_into_active", "glee_spawnset_startsound", function()
     playStartSound()
