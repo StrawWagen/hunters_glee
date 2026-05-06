@@ -1,7 +1,10 @@
+-- HUUUGE thanks to https://steamcommunity.com/id/Isemenuk27 for the better fist swep on the workshop
+-- Go give 'em love and follows and favorites!
+
 AddCSLuaFile()
 
 SWEP.PrintName    = "Hands & Fists"
-SWEP.Author       = "Boomertaters + Kilburn, robotboy655, MaxOfS2D & Tenrys"
+SWEP.Author       = "Boomertaters + Isemenuk27 + Kilburn, robotboy655, MaxOfS2D & Tenrys"
 SWEP.Category     = "Hunter's Glee"
 SWEP.Instructions = [[Chain punches to build up damage.
 Be sure to raise your guard, guards reduce more damage the harder you're hit.]]
