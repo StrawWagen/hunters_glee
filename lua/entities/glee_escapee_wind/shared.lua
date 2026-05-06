@@ -376,13 +376,14 @@ function ENT:FinalGust()
     self:EmitSound( "ambient/wind/windgust.wav", 85, 130, 1 )
 
     self:Gust( 1, 2, true )
+    self.pushTargets = nil
+    self.miniPushActive = false
+
     timer.Simple( 1, function()
         if not IsValid( self ) then return end
         self:SetParticlesActive( false )
 
     end )
-    self.pushTargets = nil
-    self.miniPushActive = false
 
     timer.Simple( 6, function()
         if not IsValid( self ) then return end
