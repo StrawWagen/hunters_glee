@@ -16,7 +16,7 @@ ENT.HullCheckSize = Vector( 20, 20, 10 )
 ENT.PosOffset = Vector( 0, 0, 10 )
 
 ENT.ExplosionDamage = 70
-ENT.ExplosionRadius = 180
+ENT.ExplosionRadius = 200
 ENT.ExplosionDelayMin = 2.5
 ENT.ExplosionDelayMax = 3.5
 ENT.ExplosionDamageMultNPC = 3 -- Applies to NPCs and NextBots.
@@ -147,7 +147,7 @@ local function makeBomb( crate, noLaunch )
         eff:SetFlags( 0 )
         util.Effect( "Explosion", eff )
 
-        eff:SetScale( 1 )
+        eff:SetScale( 1.5 )
         eff:SetNormal( Vector( 0, 0, 1 ) )
         util.Effect( "glee_huge_m9k_splode", eff )
 
