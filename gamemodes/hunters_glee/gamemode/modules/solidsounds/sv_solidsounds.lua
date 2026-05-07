@@ -50,31 +50,31 @@ end
 local soundTracks = {
     heliEvac = {
         sounds = {
-            "hunters_glee/music/8.23.GleeExp2.ogg",
-            "hunters_glee/music/8.24.to_noone.ogg",
+            "hunters_glee/music/VACANT/8.23.GleeExp2.ogg",
+            "hunters_glee/music/VACANT/8.24.to_noone.ogg",
         },
         randomOrder = true,
         priority = 0,
         fadeInLength = 1,
     },
     roundEarlyStart = {
-        sounds = { "hunters_glee/music/roundstart2.ogg", },
+        sounds = { "hunters_glee/music/VACANT/roundstart2.ogg", },
         priority = 0,
     },
     roundEnd = {
-        sounds   = { "hunters_glee/music/gleeroundendhoot6simple.ogg" },
+        sounds   = { "hunters_glee/music/VACANT/gleeroundendhoot6simple.ogg" },
         priority = 0,
     },
     roundWin = {
-        sounds   = { "hunters_glee/music/qutedeath.mp3" },
+        sounds   = { "hunters_glee/music/VACANT/qutedeath.mp3" },
         priority = 50,
     },
     roundPerfectWin = {
-        sounds   = { "hunters_glee/music/8.25.ToWishToGlee.ogg" },
+        sounds   = { "hunters_glee/music/VACANT/8.25.ToWishToGlee.ogg" },
         priority = 1000,
     },
     mapvoteMusic = {
-        sounds   = { "hunters_glee/music/SEWERSiN.mp3" },
+        sounds   = { "hunters_glee/music/VACANT/SEWERSiN.mp3" },
         priority = 0,
     }
 }

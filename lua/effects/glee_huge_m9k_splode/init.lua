@@ -13,6 +13,10 @@ function EFFECT:Init( data )
     self.Emitter:Finish()
 end
 
+-- dont draw evil error model
+function EFFECT:Render()
+end
+
 function EFFECT:Dust()
     local emitter = self.Emitter
     local dir = self.DirVec

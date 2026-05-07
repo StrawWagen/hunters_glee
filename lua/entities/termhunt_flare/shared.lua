@@ -170,6 +170,10 @@ function ENT:PhysicsCollide( colData, _ )
         dmgInfo:SetInflictor( self )
         hitEnt:TakeDamageInfo( dmgInfo )
 
+        if hitEnt:IsPlayer() and GAMEMODE.GivePanic then
+            GAMEMODE:GivePanic( hitEnt, impactDamage * 10 )
+
+        end
     end
 
     local igniteTime = impactDamage / 2.5

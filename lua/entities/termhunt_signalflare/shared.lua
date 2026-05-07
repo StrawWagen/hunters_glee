@@ -772,7 +772,7 @@ if SERVER and terminator_Extras then
             end
         end
 
-        if friendliesAroundEnemy > 1 then return end
+        if friendliesAroundEnemy > 0 then return end
         -- shoot if lots of enemies, or enemy is tanky
         local stronk = enemy:Health() > 1500 or enemy.ReallyHeavy
         if not stronk and hostilesAroundEnemy < 2 then return end

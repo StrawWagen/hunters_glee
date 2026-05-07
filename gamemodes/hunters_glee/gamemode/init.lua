@@ -1007,7 +1007,7 @@ function GM:beginSetup()
     self.termHunt_roundStartTime = CurTime() + time
 
     local tenSecondsBeforeStart = time - 10
-    timer.Simple( tenSecondsBeforeStart, function()
+    timer.Create( "glee_ten_seconds_before_start_timer", tenSecondsBeforeStart, 1, function()
         hook.Run( "huntersglee_round_tenseconds_before_active" )
 
     end )
@@ -1050,11 +1050,10 @@ function GM:setupFinish()
         self.termHunt_roundStartTime = CurTime() + time
 
         local tenSecondsBeforeStart = time - 10
-        timer.Simple( tenSecondsBeforeStart, function()
-            hook.Run( "huntersglee_round_tenseconds_before_active" )
+        timer.Create( "glee_ten_seconds_before_start_timer", tenSecondsBeforeStart, 1, function()
+             hook.Run( "huntersglee_round_tenseconds_before_active" )
 
         end )
-
     end
     if game.SinglePlayer() then
         self.termHunt_roundStartTime = CurTime() + self.roundStartAfterNavCheck

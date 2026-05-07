@@ -12,10 +12,10 @@ ENT.AdminOnly    = game.IsDedicated()
 ENT.Category = "Hunter's Glee"
 ENT.Model = "models/glee/unit_cube.mdl"
 
-ENT.HullSize = Vector( 600, 400, 200 )
+ENT.HullSize = Vector( 600, 400, 400 )
 ENT.PosOffset = Vector( 0, 0, 0 )
 ENT.PosOffsetPostPlace = Vector( 0, 0, 65 ) -- Additional offset that applies after placing (mostly affects sound origin)
-ENT.Cooldown = 30
+ENT.Cooldown = 15
 
 ENT.PushDelayMin = 1.5
 ENT.PushDelayMax = 1.75
@@ -36,14 +36,6 @@ ENT.PushVariancePlayerMax = 1.2
 ENT.PushVarianceMiscMin = 0.75
 ENT.PushVarianceMiscMax = 1
 
-ENT.ParticleRampDuration = ENT.PushDelayMin * 0.75
-ENT.ParticleIntervalStart = 0.1
-ENT.ParticleIntervalEnd = 0.05
-ENT.ParticleSpeedStart = 400
-ENT.ParticleSpeedEnd = 800
-ENT.ParticleDieTimeStart = 1.25
-ENT.ParticleDieTimeEnd = 0.75
-
 ENT.CanPlaceColor = Color( 0, 200, 255, 150 )
 ENT.CannotPlaceColor = Color( 255, 0, 0, 150 )
 ENT.OnlyNetworkToOwner = false
@@ -51,6 +43,11 @@ ENT.OnlyNetworkToOwner = false
 ENT.WindHullMin = ENT.HullSize * -0.5
 ENT.WindHullMax = ENT.HullSize * 0.5
 
+game.AddParticles( "particles/glee/glee_ghostly_wind.pcf" )
+PrecacheParticleSystem( "glee_ghostly_wind" )
+
+game.AddParticles( "particles/glee/glee_ghostly_wind_initial.pcf" )
+PrecacheParticleSystem( "glee_ghostly_wind_initial" )
 
 --[[ TODO:
     - Better sounds + param tuning
@@ -102,57 +99,28 @@ if CLIENT then
     function ENT:ParticleThink()
         if not self:GetParticlesActive() then return end
 
-        if not self.windParticleNextTime then -- First active tick, make emitter.
-            self.windParticleEmitter = ParticleEmitter( self:GetPos(), false )
-            self.windParticleStartTime = CurTime()
-            self.windParticleNextTime = 0
+        if not self.doneInitParticle then -- First active tick, make emitter.
+            self.doneInitParticle = true
+
+            local pushEffect = self:CreateParticleEffect( "glee_ghostly_wind_initial", PATTACH_ABSORIGIN_FOLLOW )
+            local size600 = 55
+            local myActualSize = self.HullSize.x
+            local size = size600 * ( myActualSize / 600 )
+
+            --pushEffect:SetControlPoint( 1, Vector( size, 0, 0 ) )
 
         end
 
-        local emitter = self.windParticleEmitter
-        if not emitter then return end -- Got lost due to fullupdate + CallOnRemove.
-
-        local now = CurTime()
-        if now < self.windParticleNextTime then return end
-
         local bigPush = self:GetParticlesBigPush() and not self.windParticleBigPushDone
-        if bigPush then self.windParticleBigPushDone = true end
+        if bigPush then
+            self.windParticleBigPushDone = true
 
-        local elapsed = now - self.windParticleStartTime
-        local frac = math.min( elapsed / self.ParticleRampDuration, 1 )
-        local speed = Lerp( frac, self.ParticleSpeedStart, self.ParticleSpeedEnd )
-        local dieTime = Lerp( frac, self.ParticleDieTimeStart, self.ParticleDieTimeEnd )
+            local pushEffect = self:CreateParticleEffect( "glee_ghostly_wind", PATTACH_ABSORIGIN_FOLLOW )
+            local size600 = 55
+            local myActualSize = self.HullSize.x
+            local size = size600 * ( myActualSize / 600 )
 
-        local center = self:GetPos()
-        local yaw = self:GetAngles()[2]
-        local memAng = Angle()
-        local hullMin = self.WindHullMin
-        local hullMax = self.WindHullMax
-        local amount = bigPush and 75 or math.random( 0, 2 )
-
-        self.windParticleNextTime = Lerp( frac, self.ParticleIntervalStart, self.ParticleIntervalEnd )
-
-        for _ = 1, amount do
-            memAng[1] = math.Rand( -1, 1 ) * 5
-            memAng[2] = math.Rand( -1, 1 ) * 5 + yaw
-
-            local part = emitter:Add( "particle/Particle_Glow_04_Additive", center + Vector(
-                math.Rand( hullMin[1], hullMax[1] ),
-                math.Rand( hullMin[2], hullMax[2] ),
-                math.Rand( hullMin[3], hullMax[3] )
-            ) )
-
-            part:SetDieTime( dieTime )
-            part:SetStartAlpha( 20 )
-            part:SetEndAlpha( 0 )
-            part:SetAngles( memAng )
-            part:SetVelocity( memAng:Forward() * speed )
-            part:SetAirResistance( 5 )
-
-            part:SetStartSize( 2 )
-            part:SetEndSize( 20 )
-            part:SetStartLength( 200 )
-            part:SetEndLength( 150 )
+            --pushEffect:SetControlPoint( 2, Vector( size, 0, 0 ) )
 
         end
     end

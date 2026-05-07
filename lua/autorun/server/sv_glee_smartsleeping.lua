@@ -144,6 +144,13 @@ local function unchainSleeper( sleeper ) -- wakes stuff up
 
 end
 
+local function unchainSleeperLazy( sleeper )
+    local lastSimTime = physenv.GetLastSimulationTime() * 1000
+    if lastSimTime > math.Rand( 1, 2 ) then return end
+    unchainSleeper( sleeper )
+
+end
+
 hook.Add( "GravGunPickupAllowed", "glee_unchainsleepers", function( _, pickedUp )
     unchainSleeper( pickedUp )
 
@@ -170,11 +177,11 @@ hook.Add( "RappelDrag", "glee_unchainsleepers", function( dragged )
 end )
 
 hook.Add( "glee_OnEscapeeWindPushed", "glee_unchainsleepers", function( pushed )
-    unchainSleeper( pushed )
+    unchainSleeperLazy( pushed )
 
 end )
 
-local maxDamaged = 8
+local maxDamaged = 10
 local damagedCount = 0
 local name = "glee_sleeper_blastdamageratelimit"
 
@@ -195,7 +202,7 @@ hook.Add( "EntityTakeDamage", "glee_unchainsleepers", function( damaged, info )
         end )
         return
     end
-    unchainSleeper( damaged )
+    unchainSleeperLazy( damaged )
 
 end )
 

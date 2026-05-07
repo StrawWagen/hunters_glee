@@ -57,6 +57,11 @@ local function onJobSuccced( spawned, className )
     local spawnedOfClass = created[className] or {}
     table_insert( spawnedOfClass, spawned )
 
+    local data = GAMEMODE.genericSpawnTables[className]
+    if data and data.minSpawnInterval then
+        data.nextSpawnTime = CurTime() + data.minSpawnInterval
+
+    end
 end
 local function onJobBail( className )
     currentlySpawning[className] = currentlySpawning[className] + -1
@@ -214,7 +219,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawner_managegenericspawns", fun
     nextCheck = CurTime() + GAMEMODE:ScaledGenericSpawnerRate( 5 ) -- check this every 5 seconds, slower/faster if the spawnset desires
 
     -- validate the spawned tables
-    for className, entsSpawned in ipairs( created ) do
+    for className, entsSpawned in pairs( created ) do
         if IsTableOfEntitiesValid( entsSpawned ) then continue end
         local rebuiltTable = {}
         for _, currEnt in ipairs( entsSpawned ) do
@@ -247,6 +252,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawner_managegenericspawns", fun
         local count = created[className] and #created[className] + currentlySpawning[className] or 0
         --print( count, maxCount, "AAAAAAAAAAAA" )
         if count >= maxCount then continue end
+        if curr.minSpawnInterval and curr.nextSpawnTime and curr.nextSpawnTime > CurTime() then continue end
 
         --print( "ADDED", className )
         addJob( curr )
@@ -316,6 +322,9 @@ GAMEMODE:RandomlySpawnEntTbl( "sent_ball", {
 
     -- won't spawn in areas thinner/smaller than this
     minAreaSize = 25,
+
+    -- optional, min time between spawns
+    -- minSpawnInterval = 30, -- nil by default
 
     -- optional, radius from players to spawn within
     -- radius = 5000, -- defaults to 5000

@@ -9,12 +9,13 @@ hook.Add( "huntersglee_round_beginsetup", "glee_resetpersistient_flarespawnlocat
 
 end )
 
--- TODO: make this respect spawnSet.genericSpawnerRate
 local minute = 60
 local idealFindTime = 5 * minute
 local bodyCheckDelay = 0.25 * minute
 local shelfCheckDelay = 0.5 * minute
 local randomlySpawnItDelay = idealFindTime
+
+-- these are then scaled by GAMEMODE:ScaledGenericSpawnerRate()
 
 local nextCheck = 0
 local nextBodyCheck = 0
@@ -62,23 +63,18 @@ local function spawnFlareGunInHand( ragdoll, potentialArea, flareGun )
 end
 
 local ragdollModels = {
-    "models/humans/group01/male_01.mdl",
-    "models/humans/group01/male_02.mdl",
-    "models/humans/group01/male_03.mdl",
-    "models/humans/group01/male_04.mdl",
-    "models/humans/group01/male_05.mdl",
-    "models/humans/group01/male_06.mdl",
-    "models/humans/group01/male_07.mdl",
-    "models/humans/group01/male_08.mdl",
-    "models/humans/group01/male_09.mdl",
-    "models/humans/group03/female_01.mdl",
-    "models/humans/group03/female_02.mdl",
-    "models/humans/group03/female_03.mdl",
-    "models/humans/group03/female_04.mdl",
+    "models/humans/group02/male_01.mdl",
+    "models/humans/group02/male_03.mdl",
+    "models/humans/group02/male_07.mdl",
+    "models/humans/group02/female_01.mdl",
     -- wheres model05... valve...
-    "models/humans/group03/female_06.mdl",
-    "models/humans/group03/female_07.mdl",
+    "models/humans/group02/female_06.mdl",
+    "models/humans/group02/female_07.mdl",
 }
+for _, model in ipairs( ragdollModels ) do
+    util.PrecacheModel( model )
+
+end
 
 local maleDeathSounds = {
     "vo/npc/male01/pain07.wav",
@@ -92,11 +88,6 @@ local femaleDeathSounds = {
     "vo/npc/female01/ow02.wav",
 }
 
-local shelfModel = "models/props_wasteland/kitchen_shelf001a.mdl"
-local shelfSpawnPositions = {
-    
-}
-
 local subMapCheckOffsets = { -200, -400, -800, -1500, -3000 }
 
 local function findSubMapPos( pos )
@@ -107,7 +98,6 @@ local function findSubMapPos( pos )
     end
 end
 
--- TODO: play rebel death sound on the ragdoll, so it's more findable
 local function spawnAndKillRebel( pos, model )
     local hunter = GAMEMODE:getNearestHunter( pos )
     if not IsValid( hunter ) then return end
@@ -117,6 +107,9 @@ local function spawnAndKillRebel( pos, model )
 
     local rebel = ents.Create( "npc_citizen" )
     if not IsValid( rebel ) then return end
+
+    rebel:SetKeyValue( "citizentype", "4" ) -- unique
+    rebel:SetKeyValue( "model", model )
 
     rebel:SetPos( spawnPos )
     rebel:SetModel( model )
@@ -140,12 +133,41 @@ local function spawnAndKillRebel( pos, model )
         end
 
     end )
+
+    return rebel
+
+end
+
+local shelfModel = "models/props_wasteland/kitchen_shelf001a.mdl"
+local shelfSpawnPositions = {
+    Vector( -15.9, -2.1, 12.1 ),
+    Vector( 17.8, 0.2, 12.2 ),
+    Vector( 21.8, -0.8, 33.8 ),
+    Vector( -14.1, -0.6, 97.7 ),
+
+}
+
+local function findUnoccupiedShelfPos( shelf )
+    for _, pos in ipairs( shelfSpawnPositions ) do
+        local potentialSpawnPos = shelf:LocalToWorld( pos )
+        local entsNearbySpawnPos = ents.FindInSphere( potentialSpawnPos, 16 )
+        local blocked = false
+        for _, ent in ipairs( entsNearbySpawnPos ) do
+            if ent == shelf then continue end
+            blocked = true
+            break
+
+        end
+        if blocked then continue end
+        return potentialSpawnPos
+
+    end
 end
 
 hook.Add( "glee_sv_validgmthink_active", "glee_rescueflarespawning", function()
     local cur = CurTime()
     if nextCheck > cur then return end
-    nextCheck = cur + 10
+    nextCheck = cur + GAMEMODE:ScaledGenericSpawnerRate( 10 )
 
     if not GAMEMODE.isSkyOnMap then return end
 
@@ -154,8 +176,8 @@ hook.Add( "glee_sv_validgmthink_active", "glee_rescueflarespawning", function()
     local flareGuns = ents.FindByClass( "termhunt_aeromatix_signalflare_gun" )
     if #flareGuns > 0 then return end
 
-    if remain > bodyCheckDelay and nextBodyCheck < cur then
-        nextBodyCheck = cur + 15
+    if remain > GAMEMODE:ScaledGenericSpawnerRate( bodyCheckDelay ) and nextBodyCheck < cur then
+        nextBodyCheck = cur + GAMEMODE:ScaledGenericSpawnerRate( 15 )
         local ragdolls = ents.FindByClass( "prop_ragdoll" )
         if #ragdolls >= 2 then
             -- spawn at lowest ragdolls first
@@ -183,15 +205,18 @@ hook.Add( "glee_sv_validgmthink_active", "glee_rescueflarespawning", function()
 
         local spawned = false
 
-        if #ragdolls >= 1 then
+        if #ragdolls >= 1000 then
             for _, ragdoll in ipairs( ragdolls ) do
                 if ragdoll.glee_skulldecapitated then continue end
                 if ragdoll.glee_createdARescueFlareGun then continue end
                 if ragdoll.glee_wasCheckedForARescueFlareGun and ragdoll.glee_wasCheckedForARescueFlareGun > cur then continue end
 
                 local ragsId = ragdoll:MapCreationID()
-                local fastestFoundAt = GAMEMODE.FastestFoundAt[ragsId]
-                if fastestFoundAt and fastestFoundAt < idealFindTime then continue end
+                if ragsId then
+                    local fastestFoundAt = GAMEMODE.FastestFoundAt[ragsId]
+                    if fastestFoundAt and fastestFoundAt < idealFindTime then continue end
+
+                end
 
                 local pos = ragdoll:GetPos()
                 local area = ragdoll.glee_rescueFlareNavArea
@@ -212,21 +237,20 @@ hook.Add( "glee_sv_validgmthink_active", "glee_rescueflarespawning", function()
                 flareGun.glee_RFlareCreatedByMapRagdoll = true
                 flareGun.glee_RFlareCreatorId = ragsId
 
-                nextBodyCheck = CurTime() + 60
+                nextBodyCheck = CurTime() + GAMEMODE:ScaledGenericSpawnerRate( 60 )
                 break
 
             end
         end
 
         if not spawned then
-            nextBodyCheck = CurTime() + 120
-            print( "shelf spawning!" )
+            nextBodyCheck = CurTime() + GAMEMODE:ScaledGenericSpawnerRate( 120 )
             spawnOnShelves = true
-            nextShelfCheck = cur + shelfCheckDelay / 10
+            nextShelfCheck = cur + GAMEMODE:ScaledGenericSpawnerRate( shelfCheckDelay / 10 )
 
         end
     end
-    if spawnOnShelves and remain > shelfCheckDelay then
+    if spawnOnShelves and remain > GAMEMODE:ScaledGenericSpawnerRate( shelfCheckDelay ) and nextShelfCheck < cur then
         local props = ents.FindByClass( "prop_physics*" )
         local shelves = {}
         for _, prop in ipairs( props ) do
@@ -276,12 +300,32 @@ hook.Add( "glee_sv_validgmthink_active", "glee_rescueflarespawning", function()
 
                 end
 
-                -- TODO: FINISH THIS!!!
+                local spawnPos = findUnoccupiedShelfPos( shelf )
+                if not spawnPos then continue end
+
+                debugoverlay.Cross( pos, 16, 30, Color( 0, 255, 0 ), true )
+
+                local spawnAng = Angle( 0, math.random( 0, 360 ), 0 )
+                local flareGun = ents.Create( "termhunt_aeromatix_signalflare_gun" )
+                if not IsValid( flareGun ) then continue end
+
+                flareGun:SetPos( spawnPos )
+                flareGun:SetAngles( spawnAng )
+
+                flareGun:Spawn()
+                flareGun:Activate()
+
+                flareGun.glee_RFlareCreatedByMapShelf = true
+                flareGun.glee_RFlareCreatorId = shelfsId
+
+                spawnOnShelves = false
+                nextShelfCheck = cur + GAMEMODE:ScaledGenericSpawnerRate( 60 )
+                break
 
             end
         end
     end
-    if remain > randomlySpawnItDelay then
+    if remain > GAMEMODE:ScaledGenericSpawnerRate( randomlySpawnItDelay ) then
         if GAMEMODE:IsGenericSpawning( "termhunt_aeromatix_signalflare_gun" ) then return end
 
         GAMEMODE:RandomlySpawnEntTbl( "termhunt_aeromatix_signalflare_gun", {
@@ -292,6 +336,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_rescueflarespawning", function()
             expireOnRoundEnd = true,
             -- spawn a rebel ragdoll, and put the flare into its hand
             dontSpawn = true,
+            minSpawnInterval = 60, -- 60s between attempts
             extraFlagsBlacklist = bit.bor( GAMEMODE.NavEFlags.UNDER_SKY, GAMEMODE.NavEFlags.LOW_CEILING ), -- spawn indoors but not in tight spaces
             preSpawnedFunc = function( flareGun )
                 local pos = flareGun:GetPos()
@@ -327,7 +372,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_rescueflarespawning", function()
                 end
                 local filterAllPlayers = RecipientFilter()
                 filterAllPlayers:AddAllPlayers()
-                ragdoll:EmitSound( deathSnd, 100, 100, 1, CHAN_STATIC, 0, 0, filterAllPlayers )
+                ragdoll:EmitSound( deathSnd, 110, 100, 1, CHAN_STATIC, SND_NOFLAGS, 10, filterAllPlayers )
 
             end,
         } )

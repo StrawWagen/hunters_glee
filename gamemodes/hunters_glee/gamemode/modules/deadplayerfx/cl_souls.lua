@@ -318,7 +318,7 @@ local function soulThink( ply )
                     soul = createSoul( ply )
                     if IsValid( soul ) and ply.gleeSouls_ReadyToPlaySound then
                         ply.gleeSouls_ReadyToPlaySound = false
-                        sound.Play( "hunters_glee/music/released_souls_(not_trumpet).wav", soul:GetPos(), 80, math.random( 75, 85 ) )
+                        sound.Play( "hunters_glee/music/VACANT/released_souls_(not_trumpet).wav", soul:GetPos(), 80, math.random( 75, 85 ) )
 
                     end
                 else
