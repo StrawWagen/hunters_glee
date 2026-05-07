@@ -33,7 +33,7 @@ local items = {
     },
     ["bomb_crate"] = {
         name = "Crate with Explosives",
-        desc = "Supply crate rigged with timed explosives.\nGives score when they damage something.\n\nUnlike manhacks, score is gained per bomb, not per crate.",
+        desc = "Supply crate rigged with timed explosives.\n\nEach bomb gives score if it damages something.",
         shCost = 0,
         markup = 1,
         cooldown = 100,
