@@ -17,6 +17,7 @@ ENT.PosOffset = Vector( 0, 0, 10 )
 
 ENT.ExplosionDamage = 80
 ENT.ExplosionRadius = 150
+ENT.ExplosionDelay = 3
 
 
 if CLIENT then
@@ -64,21 +65,26 @@ end
 
 hook.Add( "PropBreak", "glee_spawn_rewarding_bombcrate", function( _, broken )
     if not broken.glee_IsBombCrate then return end
-    if broken.glee_BombCrateOpened then return end -- Separate from spent check, avoids inf loop
 
-    broken.glee_BombCrateOpened = true
+    local owner = broken.glee_BombCrate_player
+    local damage = broken.glee_BombCrate_damage or 80
+    local radius = broken.glee_BombCrate_radius or 150
+    local delay = broken.glee_BombCrate_delay or 3
 
-    local attacker = IsValid( broken.glee_BombCrate_player ) and broken.glee_BombCrate_player or broken
-    local pos = broken:WorldSpaceCenter()
+    local bombAng = Angle( 0, math.Rand( -180, 180 ), 90 )
+    bombAng:RotateAroundAxis( bombAng:Up(), math.Rand( -180, 180 ) )
+    bombAng = broken:LocalToWorldAngles( bombAng )
 
-    util.BlastDamage( broken, attacker, pos, broken.glee_BombCrate_damage or 80, broken.glee_BombCrate_radius or 150 )
+    local bomb = ents.Create( "prop_physics" )
+    bomb:SetModel( "models/dav0r/tnt/tnttimed.mdl" )
 
-    local eff = EffectData()
-    eff:SetOrigin( pos )
-    eff:SetMagnitude( 1 )
-    eff:SetScale( 1 )
-    eff:SetFlags( 0 )
-    util.Effect( "Explosion", eff )
+    -- Center the bomb (it has a bad origin)
+    local bombPos = LocalToWorld( -bomb:OBBCenter(), Angle(), broken:WorldSpaceCenter(), bombAng )
+    bomb:SetAngles( bombAng )
+    bomb:SetPos( bombPos )
+    bomb:Spawn()
+
+    bomb.glee_IsBombCrateBomb = true
 
     for _ = 1, 5 do
         local creationPos = getCreationPos( broken )
@@ -88,6 +94,34 @@ hook.Add( "PropBreak", "glee_spawn_rewarding_bombcrate", function( _, broken )
         score:Spawn()
 
     end
+
+    timer.Simple( 0.2, function() -- Delay since sounds on fresh-spawned ents can fail networking
+        bomb:EmitSound( "ambient/machines/ticktock.wav", 80, 255, 1 )
+        bomb:EmitSound( "ambient/machines/ticktock.wav", 80, 255, 1 ) -- Quiet sound. Play it twice to boost the volume.
+
+    end )
+
+    timer.Simple( delay, function()
+        if not IsValid( bomb ) then return end
+
+        bomb:StopSound( "ambient/machines/ticktock.wav" )
+        bomb:StopSound( "ambient/machines/ticktock.wav" )
+
+        local pos = bomb:WorldSpaceCenter()
+        local attacker = IsValid( owner ) and owner or bomb -- Still need an attacker if the owner left
+
+        util.BlastDamage( bomb, attacker, pos, damage, radius )
+
+        local eff = EffectData()
+        eff:SetOrigin( pos )
+        eff:SetMagnitude( 1 )
+        eff:SetScale( 1 )
+        eff:SetFlags( 0 )
+        util.Effect( "Explosion", eff )
+
+        SafeRemoveEntity( bomb )
+
+    end )
 end )
 
 hook.Add( "PostEntityTakeDamage", "glee_rewarding_bombcrate_reward", function ( target, dmg, took )
@@ -97,7 +131,7 @@ hook.Add( "PostEntityTakeDamage", "glee_rewarding_bombcrate_reward", function ( 
 
     local crate = dmg:GetInflictor()
     if not IsValid( crate ) then return end
-    if not crate.glee_IsBombCrate then return end
+    if not crate.glee_IsBombCrateBomb then return end
     if crate.glee_BombCrateSpent then return end
 
     crate.glee_BombCrateSpent = true
@@ -130,6 +164,7 @@ function ENT:Place()
         crate.glee_BombCrate_player = self.player
         crate.glee_BombCrate_damage = self.ExplosionDamage
         crate.glee_BombCrate_radius = self.ExplosionRadius
+        crate.glee_BombCrate_delay = self.ExplosionDelay
         self.player:GivePlayerScore( betrayalScore )
         GAMEMODE:sendPurchaseConfirm( self.player, betrayalScore )
 
