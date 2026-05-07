@@ -148,6 +148,10 @@ local function makeBomb( crate, noLaunch )
         eff:SetFlags( 0 )
         util.Effect( "Explosion", eff )
 
+        eff:SetScale( 1 )
+        eff:SetNormal( Vector( 0, 0, 1 ) )
+        util.Effect( "glee_huge_m9k_splode", eff )
+
         SafeRemoveEntity( bomb )
 
     end )
