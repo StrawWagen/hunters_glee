@@ -123,6 +123,7 @@ local function makeBomb( crate, noLaunch )
 
     bomb:GetPhysicsObject():SetVelocity( vel )
     bomb.glee_IsBombCrateBomb = true
+    bomb.glee_BombCrate_player = owner
     bomb.glee_BombCrate_damageMultNPC = crate.glee_BombCrate_damageMultNPC
     bomb.glee_BombCrate_creditThreshold = damage * crate.glee_BombCrate_creditThreshold
 
@@ -137,9 +138,7 @@ local function makeBomb( crate, noLaunch )
         bomb:StopSound( "ambient/machines/ticktock.wav" )
 
         local pos = bomb:WorldSpaceCenter()
-        local attacker = IsValid( owner ) and owner or bomb -- Still need an attacker if the owner left
-
-        util.BlastDamage( bomb, attacker, pos, radius, damage )
+        util.BlastDamage( bomb, bomb, pos, radius, damage )
 
         local eff = EffectData()
         eff:SetOrigin( pos )
@@ -198,7 +197,7 @@ hook.Add( "EntityTakeDamage", "glee_rewarding_bombcrate_reward", function ( targ
 
     bomb.glee_BombCrateSpent = true
 
-    local owner = dmg:GetAttacker()
+    local owner = bomb.glee_BombCrate_player
     if not IsValid( owner ) then return end
     if not owner.GivePlayerScore then return end
 
