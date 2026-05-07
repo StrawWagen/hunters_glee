@@ -132,12 +132,12 @@ hook.Add( "PostEntityTakeDamage", "glee_rewarding_bombcrate_reward", function ( 
     if not dmg:IsExplosionDamage() then return end
     if not target:IsPlayer() and not target:IsNextBot() then return end
 
-    local crate = dmg:GetInflictor()
-    if not IsValid( crate ) then return end
-    if not crate.glee_IsBombCrateBomb then return end
-    if crate.glee_BombCrateSpent then return end
+    local bomb = dmg:GetInflictor()
+    if not IsValid( bomb ) then return end
+    if not bomb.glee_IsBombCrateBomb then return end
+    if bomb.glee_BombCrateSpent then return end
 
-    crate.glee_BombCrateSpent = true
+    bomb.glee_BombCrateSpent = true
 
     local owner = dmg:GetAttacker()
     if not IsValid( owner ) then return end
