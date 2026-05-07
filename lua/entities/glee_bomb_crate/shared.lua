@@ -20,6 +20,7 @@ ENT.ExplosionRadius = 150
 ENT.ExplosionDelayMin = 2.5
 ENT.ExplosionDelayMax = 3.5
 ENT.ExplosionDamageMultNPC = 3 -- Applies to NPCs and NextBots.
+ENT.ExplosionCreditThreshold = 0.2 -- At least this much (0-1) of the original damage must be dealt for score to count. Prevents cases where the victim is on the edge of the radius.
 
 ENT.BombCountMin = 3
 ENT.BombCountMax = 4
@@ -64,6 +65,7 @@ function GM:BombCrate( pos, crateStatsRef )
     crate.glee_BombCrate_delayMin = crateStatsRef.ExplosionDelayMin
     crate.glee_BombCrate_delayMax = crateStatsRef.ExplosionDelayMax
     crate.glee_BombCrate_damageMultNPC = crateStatsRef.ExplosionDamageMultNPC
+    crate.glee_BombCrate_creditThreshold = crateStatsRef.ExplosionCreditThreshold
 
     crate.glee_BombCrate_bombCount = math.random( crateStatsRef.BombCountMin, crateStatsRef.BombCountMax )
     crate.glee_BombCrate_bombLaunchMin = crateStatsRef.BombLaunchMin
@@ -122,6 +124,7 @@ local function makeBomb( crate, noLaunch )
     bomb:GetPhysicsObject():SetVelocity( vel )
     bomb.glee_IsBombCrateBomb = true
     bomb.glee_BombCrate_damageMultNPC = crate.glee_BombCrate_damageMultNPC
+    bomb.glee_BombCrate_creditThreshold = damage * crate.glee_BombCrate_creditThreshold
 
     timer.Simple( 0.2, function() -- Delay since sounds on fresh-spawned ents can fail networking
         bomb:EmitSound( "ambient/machines/ticktock.wav", 80, 255, 1 )
@@ -178,11 +181,14 @@ hook.Add( "EntityTakeDamage", "glee_rewarding_bombcrate_reward", function ( targ
     if not IsValid( bomb ) then return end
     if not bomb.glee_IsBombCrateBomb then return end
 
+    local didEnoughForCredit = dmg:GetDamage() >= bomb.glee_BombCrate_creditThreshold
+
     if target:IsNPC() or target:IsNextBot() then
         dmg:ScaleDamage( bomb.glee_BombCrate_damageMultNPC )
 
     end
 
+    if not didEnoughForCredit then return end
     if bomb.glee_BombCrateSpent then return end
     if target:IsNPC() then return end -- NPCs don't give score, so don't let them spend the bomb.
 
