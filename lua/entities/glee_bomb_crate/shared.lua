@@ -1,0 +1,142 @@
+AddCSLuaFile()
+
+ENT.Type = "anim"
+ENT.Base = "termhunt_manhack_crate"
+
+ENT.Category    = "Other"
+ENT.PrintName   = "Explosive Box"
+ENT.Author      = "TwoLemons"
+ENT.Purpose     = ""
+ENT.Spawnable    = true
+ENT.AdminOnly    = game.IsDedicated()
+ENT.Category = "Hunter's Glee"
+ENT.Model = "models/Items/item_item_crate.mdl"
+
+ENT.HullCheckSize = Vector( 20, 20, 10 )
+ENT.PosOffset = Vector( 0, 0, 10 )
+
+ENT.ExplosionDamage = 80
+ENT.ExplosionRadius = 150
+
+
+if CLIENT then
+    function ENT:DoHudStuff()
+        local screenMiddleW = ScrW() / 2
+        local screenMiddleH = ScrH() / 2
+
+        local scoreGained = math.Round( self:GetGivenScore() )
+
+        local scoreGainedString = "Explosive Surprise Cost: " .. tostring( scoreGained )
+        surface.drawShadowedTextBetter( scoreGainedString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
+
+    end
+end
+
+if not SERVER then return end
+
+local GM = GAMEMODE
+
+function GM:BombCrate( pos )
+    local crate = ents.Create( "prop_physics" )
+    crate:SetModel( "models/Items/item_item_crate.mdl" )
+    crate:SetPos( pos )
+    local random = math.random( -4, 4 ) * 45
+    crate:SetAngles( Angle( 0, random, 0 ) )
+    crate:Spawn()
+
+    crate.glee_IsBombCrate = true
+
+    crate.terminatorHunterInnateReaction = function()
+        return MEMORY_BREAKABLE
+    end
+
+    return crate
+
+end
+
+local function getCreationPos( ent )
+    local creationPos = ent:GetPos() + ( VectorRand() * ent:GetModelRadius() )
+    creationPos = ent:WorldToLocal( ent:NearestPoint( creationPos ) )
+    creationPos = creationPos * 0.6
+    return ent:LocalToWorld( creationPos )
+
+end
+
+hook.Add( "PropBreak", "glee_spawn_rewarding_bombcrate", function( _, broken )
+    if not broken.glee_IsBombCrate then return end
+    if broken.glee_BombCrateOpened then return end -- Separate from spent check, avoids inf loop
+
+    broken.glee_BombCrateOpened = true
+
+    local attacker = IsValid( broken.glee_BombCrate_player ) and broken.glee_BombCrate_player or broken
+    local pos = broken:WorldSpaceCenter()
+
+    util.BlastDamage( broken, attacker, pos, broken.glee_BombCrate_damage or 80, broken.glee_BombCrate_radius or 150 )
+
+    local eff = EffectData()
+    eff:SetOrigin( pos )
+    eff:SetMagnitude( 1 )
+    eff:SetScale( 1 )
+    eff:SetFlags( 0 )
+    util.Effect( "Explosion", eff )
+
+    for _ = 1, 5 do
+        local creationPos = getCreationPos( broken )
+        local score = ents.Create( "termhunt_score_pickup" )
+        score:SetPos( creationPos )
+        score:SetAngles( AngleRand() )
+        score:Spawn()
+
+    end
+end )
+
+hook.Add( "PostEntityTakeDamage", "glee_rewarding_bombcrate_reward", function ( target, dmg, took )
+    if not took then return end
+    if not dmg:IsExplosionDamage() then return end
+    if not target:IsPlayer() and not target:IsNextBot() then return end
+
+    local crate = dmg:GetInflictor()
+    if not IsValid( crate ) then return end
+    if not crate.glee_IsBombCrate then return end
+    if crate.glee_BombCrateSpent then return end
+
+    crate.glee_BombCrateSpent = true
+
+    local owner = dmg:GetAttacker()
+    if not IsValid( owner ) then return end
+    if not owner.GivePlayerScore then return end
+
+    if target:IsPlayer() then
+        if target == owner then
+            huntersGlee_Announce( { owner }, 5, 8, "You've been damaged by your own explosives..." )
+
+        else
+            owner:GivePlayerScore( 75 )
+            huntersGlee_Announce( { owner }, 5, 8, "The explosives have damaged a player! You gain 75 score!" )
+
+        end
+    elseif target:IsNextBot() then
+        owner:GivePlayerScore( 25 )
+        huntersGlee_Announce( { owner }, 5, 8, "The explosives have damaged " .. GAMEMODE:GetNameOfBot( target ) .. ". You only gain 25 score." )
+
+    end
+end )
+
+function ENT:Place()
+    local betrayalScore = self:GetGivenScore()
+    local crate = GM:BombCrate( self:OffsettedPlacingPos() )
+
+    if self.player and self.player.GivePlayerScore and betrayalScore then
+        crate.glee_BombCrate_player = self.player
+        crate.glee_BombCrate_damage = self.ExplosionDamage
+        crate.glee_BombCrate_radius = self.ExplosionRadius
+        self.player:GivePlayerScore( betrayalScore )
+        GAMEMODE:sendPurchaseConfirm( self.player, betrayalScore )
+
+    end
+
+    GAMEMODE:AddMischievousness( self.player, 4, "placed explosive supplies" )
+
+    SafeRemoveEntity( self )
+
+end
