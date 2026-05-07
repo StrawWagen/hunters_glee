@@ -15,8 +15,8 @@ ENT.Model = "models/Items/item_item_crate.mdl"
 ENT.HullCheckSize = Vector( 20, 20, 10 )
 ENT.PosOffset = Vector( 0, 0, 10 )
 
-ENT.ExplosionDamage = 80
-ENT.ExplosionRadius = 150
+ENT.ExplosionDamage = 60
+ENT.ExplosionRadius = 175
 ENT.ExplosionDelayMin = 2.5
 ENT.ExplosionDelayMax = 3.5
 ENT.ExplosionDamageMultNPC = 3 -- Applies to NPCs and NextBots.
