@@ -120,14 +120,12 @@ local function makeBomb( crate, noLaunch )
 
     timer.Simple( 0.2, function() -- Delay since sounds on fresh-spawned ents can fail networking
         bomb:EmitSound( "ambient/machines/ticktock.wav", 80, 255, 1 )
-        bomb:EmitSound( "ambient/machines/ticktock.wav", 80, 255, 1 ) -- Quiet sound. Play it twice to boost the volume.
 
     end )
 
     timer.Simple( delay, function()
         if not IsValid( bomb ) then return end
 
-        bomb:StopSound( "ambient/machines/ticktock.wav" )
         bomb:StopSound( "ambient/machines/ticktock.wav" )
 
         local pos = bomb:WorldSpaceCenter()
