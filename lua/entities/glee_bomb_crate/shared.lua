@@ -17,7 +17,8 @@ ENT.PosOffset = Vector( 0, 0, 10 )
 
 ENT.ExplosionDamage = 80
 ENT.ExplosionRadius = 150
-ENT.ExplosionDelay = 3
+ENT.ExplosionDelayMin = 2.5
+ENT.ExplosionDelayMax = 3.5
 
 ENT.BombCountMin = 3
 ENT.BombCountMax = 4
@@ -59,7 +60,8 @@ function GM:BombCrate( pos, crateStatsRef )
 
     crate.glee_BombCrate_damage = crateStatsRef.ExplosionDamage
     crate.glee_BombCrate_radius = crateStatsRef.ExplosionRadius
-    crate.glee_BombCrate_delay = crateStatsRef.ExplosionDelay
+    crate.glee_BombCrate_delayMin = crateStatsRef.ExplosionDelayMin
+    crate.glee_BombCrate_delayMax = crateStatsRef.ExplosionDelayMax
 
     crate.glee_BombCrate_bombCount = math.random( crateStatsRef.BombCountMin, crateStatsRef.BombCountMax )
     crate.glee_BombCrate_bombLaunchMin = crateStatsRef.BombLaunchMin
@@ -88,7 +90,7 @@ local function makeBomb( crate, noLaunch )
     local owner = crate.glee_BombCrate_player
     local damage = crate.glee_BombCrate_damage
     local radius = crate.glee_BombCrate_radius
-    local delay = crate.glee_BombCrate_delay
+    local delay = math.Rand( crate.glee_BombCrate_delayMin, crate.glee_BombCrate_delayMax )
     local vel = crate:GetPhysicsObject():GetVelocity()
 
     local bombAng = Angle( 0, math.Rand( -180, 180 ), 90 )
