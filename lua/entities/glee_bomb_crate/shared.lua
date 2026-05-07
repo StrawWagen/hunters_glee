@@ -15,12 +15,12 @@ ENT.Model = "models/Items/item_item_crate.mdl"
 ENT.HullCheckSize = Vector( 20, 20, 10 )
 ENT.PosOffset = Vector( 0, 0, 10 )
 
-ENT.ExplosionDamage = 60
-ENT.ExplosionRadius = 175
+ENT.ExplosionDamage = 70
+ENT.ExplosionRadius = 180
 ENT.ExplosionDelayMin = 2.5
 ENT.ExplosionDelayMax = 3.5
 ENT.ExplosionDamageMultNPC = 3 -- Applies to NPCs and NextBots.
-ENT.ExplosionCreditThreshold = 0.2 -- At least this much (0-1) of the original damage must be dealt for score to count. Prevents cases where the victim is on the edge of the radius.
+ENT.ExplosionCreditThreshold = 0.15 -- At least this much (0-1) of the original damage must be dealt for score to count. Prevents cases where the victim is on the edge of the radius.
 
 ENT.BombCountMin = 3
 ENT.BombCountMax = 4
