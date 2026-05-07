@@ -37,7 +37,7 @@ if not SERVER then return end
 
 local GM = GAMEMODE
 
-function GM:BombCrate( pos )
+function GM:BombCrate( pos, damage, radius, delay )
     local crate = ents.Create( "prop_physics" )
     crate:SetModel( "models/Items/item_item_crate.mdl" )
     crate:SetPos( pos )
@@ -46,6 +46,9 @@ function GM:BombCrate( pos )
     crate:Spawn()
 
     crate.glee_IsBombCrate = true
+    crate.glee_BombCrate_damage = damage or 80
+    crate.glee_BombCrate_radius = radius or 150
+    crate.glee_BombCrate_delay = delay or 3
 
     crate.terminatorHunterInnateReaction = function()
         return MEMORY_BREAKABLE
@@ -67,9 +70,9 @@ hook.Add( "PropBreak", "glee_spawn_rewarding_bombcrate", function( _, broken )
     if not broken.glee_IsBombCrate then return end
 
     local owner = broken.glee_BombCrate_player
-    local damage = broken.glee_BombCrate_damage or 80
-    local radius = broken.glee_BombCrate_radius or 150
-    local delay = broken.glee_BombCrate_delay or 3
+    local damage = broken.glee_BombCrate_damage
+    local radius = broken.glee_BombCrate_radius
+    local delay = broken.glee_BombCrate_delay
 
     local bombAng = Angle( 0, math.Rand( -180, 180 ), 90 )
     bombAng:RotateAroundAxis( bombAng:Up(), math.Rand( -180, 180 ) )
@@ -158,13 +161,10 @@ end )
 
 function ENT:Place()
     local betrayalScore = self:GetGivenScore()
-    local crate = GM:BombCrate( self:OffsettedPlacingPos() )
+    local crate = GM:BombCrate( self:OffsettedPlacingPos(), self.ExplosionDamage, self.ExplosionRadius, self.ExplosionDelay )
 
     if self.player and self.player.GivePlayerScore and betrayalScore then
         crate.glee_BombCrate_player = self.player
-        crate.glee_BombCrate_damage = self.ExplosionDamage
-        crate.glee_BombCrate_radius = self.ExplosionRadius
-        crate.glee_BombCrate_delay = self.ExplosionDelay
         self.player:GivePlayerScore( betrayalScore )
         GAMEMODE:sendPurchaseConfirm( self.player, betrayalScore )
 
