@@ -19,6 +19,14 @@ ENT.ExplosionDamage = 80
 ENT.ExplosionRadius = 150
 ENT.ExplosionDelay = 3
 
+ENT.BombCountMin = 3
+ENT.BombCountMax = 4
+ENT.BombLaunchMin = 200
+ENT.BombLaunchMax = 400
+ENT.BombLaunchPitchMin = -45 -- Negative is upwards
+ENT.BombLaunchPitchMax = 0 -- Negative is upwards
+ENT.FirstBombNoLaunch = true
+
 
 if CLIENT then
     function ENT:DoHudStuff()
@@ -37,7 +45,7 @@ if not SERVER then return end
 
 local GM = GAMEMODE
 
-function GM:BombCrate( pos, damage, radius, delay )
+function GM:BombCrate( pos, crateStatsRef )
     local crate = ents.Create( "prop_physics" )
     crate:SetModel( "models/Items/item_item_crate.mdl" )
     crate:SetPos( pos )
@@ -45,10 +53,20 @@ function GM:BombCrate( pos, damage, radius, delay )
     crate:SetAngles( Angle( 0, random, 0 ) )
     crate:Spawn()
 
+    crateStatsRef = crateStatsRef or baseclass.Get( "glee_bomb_crate" )
+
     crate.glee_IsBombCrate = true
-    crate.glee_BombCrate_damage = damage or 80
-    crate.glee_BombCrate_radius = radius or 150
-    crate.glee_BombCrate_delay = delay or 3
+
+    crate.glee_BombCrate_damage = crateStatsRef.ExplosionDamage
+    crate.glee_BombCrate_radius = crateStatsRef.ExplosionRadius
+    crate.glee_BombCrate_delay = crateStatsRef.ExplosionDelay
+
+    crate.glee_BombCrate_bombCount = math.random( crateStatsRef.BombCountMin, crateStatsRef.BombCountMax )
+    crate.glee_BombCrate_bombLaunchMin = crateStatsRef.BombLaunchMin
+    crate.glee_BombCrate_bombLaunchMax = crateStatsRef.BombLaunchMax
+    crate.glee_BombCrate_bombLaunchPitchMin = crateStatsRef.BombLaunchPitchMin
+    crate.glee_BombCrate_bombLaunchPitchMax = crateStatsRef.BombLaunchPitchMax
+    crate.glee_BombCrate_firstBombNoLaunch = crateStatsRef.FirstBombNoLaunch
 
     crate.terminatorHunterInnateReaction = function()
         return MEMORY_BREAKABLE
@@ -66,37 +84,39 @@ local function getCreationPos( ent )
 
 end
 
-hook.Add( "PropBreak", "glee_spawn_rewarding_bombcrate", function( _, broken )
-    if not broken.glee_IsBombCrate then return end
-
-    local owner = broken.glee_BombCrate_player
-    local damage = broken.glee_BombCrate_damage
-    local radius = broken.glee_BombCrate_radius
-    local delay = broken.glee_BombCrate_delay
+local function makeBomb( crate, noLaunch )
+    local owner = crate.glee_BombCrate_player
+    local damage = crate.glee_BombCrate_damage
+    local radius = crate.glee_BombCrate_radius
+    local delay = crate.glee_BombCrate_delay
+    local vel = crate:GetPhysicsObject():GetVelocity()
 
     local bombAng = Angle( 0, math.Rand( -180, 180 ), 90 )
     bombAng:RotateAroundAxis( bombAng:Up(), math.Rand( -180, 180 ) )
-    bombAng = broken:LocalToWorldAngles( bombAng )
+    bombAng = crate:LocalToWorldAngles( bombAng )
 
     local bomb = ents.Create( "prop_physics" )
     bomb:SetModel( "models/dav0r/tnt/tnttimed.mdl" )
 
     -- Center the bomb (it has a bad origin)
-    local bombPos = LocalToWorld( -bomb:OBBCenter(), Angle(), broken:WorldSpaceCenter(), bombAng )
+    local bombPos = LocalToWorld( -bomb:OBBCenter(), Angle(), crate:WorldSpaceCenter(), bombAng )
     bomb:SetAngles( bombAng )
     bomb:SetPos( bombPos )
     bomb:Spawn()
 
-    bomb.glee_IsBombCrateBomb = true
+    if not noLaunch then
+        local ang = Angle(
+            math.Rand( crate.glee_BombCrate_bombLaunchPitchMin, crate.glee_BombCrate_bombLaunchPitchMax ),
+            math.Rand( -180, 180 ),
+            0
+        )
 
-    for _ = 1, 5 do
-        local creationPos = getCreationPos( broken )
-        local score = ents.Create( "termhunt_score_pickup" )
-        score:SetPos( creationPos )
-        score:SetAngles( AngleRand() )
-        score:Spawn()
+        vel = vel + ang:Forward() * math.Rand( crate.glee_BombCrate_bombLaunchMin, crate.glee_BombCrate_bombLaunchMax )
 
     end
+
+    bomb:GetPhysicsObject():SetVelocity( vel )
+    bomb.glee_IsBombCrateBomb = true
 
     timer.Simple( 0.2, function() -- Delay since sounds on fresh-spawned ents can fail networking
         bomb:EmitSound( "ambient/machines/ticktock.wav", 80, 255, 1 )
@@ -125,6 +145,26 @@ hook.Add( "PropBreak", "glee_spawn_rewarding_bombcrate", function( _, broken )
         SafeRemoveEntity( bomb )
 
     end )
+end
+
+hook.Add( "PropBreak", "glee_spawn_rewarding_bombcrate", function( _, broken )
+    if not broken.glee_IsBombCrate then return end
+
+    local noFirstLaunch = broken.glee_BombCrate_firstBombNoLaunch
+
+    for i = 1, broken.glee_BombCrate_bombCount do
+        makeBomb( broken, noFirstLaunch and i == 1 )
+
+    end
+
+    for _ = 1, 5 do
+        local creationPos = getCreationPos( broken )
+        local score = ents.Create( "termhunt_score_pickup" )
+        score:SetPos( creationPos )
+        score:SetAngles( AngleRand() )
+        score:Spawn()
+
+    end
 end )
 
 hook.Add( "PostEntityTakeDamage", "glee_rewarding_bombcrate_reward", function ( target, dmg, took )
@@ -161,7 +201,7 @@ end )
 
 function ENT:Place()
     local betrayalScore = self:GetGivenScore()
-    local crate = GM:BombCrate( self:OffsettedPlacingPos(), self.ExplosionDamage, self.ExplosionRadius, self.ExplosionDelay )
+    local crate = GM:BombCrate( self:OffsettedPlacingPos(), self )
 
     if self.player and self.player.GivePlayerScore and betrayalScore then
         crate.glee_BombCrate_player = self.player
