@@ -19,6 +19,7 @@ ENT.ExplosionDamage = 80
 ENT.ExplosionRadius = 150
 ENT.ExplosionDelayMin = 2.5
 ENT.ExplosionDelayMax = 3.5
+ENT.ExplosionDamageMultNPC = 3 -- Applies to NPCs and NextBots.
 
 ENT.BombCountMin = 3
 ENT.BombCountMax = 4
@@ -62,6 +63,7 @@ function GM:BombCrate( pos, crateStatsRef )
     crate.glee_BombCrate_radius = crateStatsRef.ExplosionRadius
     crate.glee_BombCrate_delayMin = crateStatsRef.ExplosionDelayMin
     crate.glee_BombCrate_delayMax = crateStatsRef.ExplosionDelayMax
+    crate.glee_BombCrate_damageMultNPC = crateStatsRef.ExplosionDamageMultNPC
 
     crate.glee_BombCrate_bombCount = math.random( crateStatsRef.BombCountMin, crateStatsRef.BombCountMax )
     crate.glee_BombCrate_bombLaunchMin = crateStatsRef.BombLaunchMin
@@ -119,6 +121,7 @@ local function makeBomb( crate, noLaunch )
 
     bomb:GetPhysicsObject():SetVelocity( vel )
     bomb.glee_IsBombCrateBomb = true
+    bomb.glee_BombCrate_damageMultNPC = crate.glee_BombCrate_damageMultNPC
 
     timer.Simple( 0.2, function() -- Delay since sounds on fresh-spawned ents can fail networking
         bomb:EmitSound( "ambient/machines/ticktock.wav", 80, 255, 1 )
@@ -167,15 +170,21 @@ hook.Add( "PropBreak", "glee_spawn_rewarding_bombcrate", function( _, broken )
     end
 end )
 
-hook.Add( "PostEntityTakeDamage", "glee_rewarding_bombcrate_reward", function ( target, dmg, took )
-    if not took then return end
+hook.Add( "EntityTakeDamage", "glee_rewarding_bombcrate_reward", function ( target, dmg )
     if not dmg:IsExplosionDamage() then return end
-    if not target:IsPlayer() and not target:IsNextBot() then return end
+    if not target:IsPlayer() and not target:IsNPC() and not target:IsNextBot() then return end
 
     local bomb = dmg:GetInflictor()
     if not IsValid( bomb ) then return end
     if not bomb.glee_IsBombCrateBomb then return end
+
+    if target:IsNPC() or target:IsNextBot() then
+        dmg:ScaleDamage( bomb.glee_BombCrate_damageMultNPC )
+
+    end
+
     if bomb.glee_BombCrateSpent then return end
+    if target:IsNPC() then return end -- NPCs don't give score, so don't let them spend the bomb.
 
     bomb.glee_BombCrateSpent = true
 
