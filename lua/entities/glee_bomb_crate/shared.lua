@@ -110,7 +110,7 @@ hook.Add( "PropBreak", "glee_spawn_rewarding_bombcrate", function( _, broken )
         local pos = bomb:WorldSpaceCenter()
         local attacker = IsValid( owner ) and owner or bomb -- Still need an attacker if the owner left
 
-        util.BlastDamage( bomb, attacker, pos, damage, radius )
+        util.BlastDamage( bomb, attacker, pos, radius, damage )
 
         local eff = EffectData()
         eff:SetOrigin( pos )
