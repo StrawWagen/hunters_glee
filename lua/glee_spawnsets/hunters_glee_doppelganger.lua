@@ -12,7 +12,7 @@ local set = {
     startingSpawnCount = 1,
     roundEndSound = "default",
     roundStartSound = "default",
-    roundEarlyStartSound = "tracks/roundEarlyStart",
+    roundEarlyStartSound = "default",
     chanceToBeVotable = 1,
     spawns = {
         {

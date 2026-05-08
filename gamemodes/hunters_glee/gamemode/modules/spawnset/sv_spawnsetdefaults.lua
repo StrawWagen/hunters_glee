@@ -22,5 +22,6 @@ return {
     roundPerfectWinSound = "tracks/roundPerfectWin",
     earlyStartSound = "",
     roundStartSound = "", -- no sound for glee
+    roundEarlyStartSound = "tracks/roundEarlyStart", -- played 10 seconds before round starts, IF roundStartSound is empty
     genericSpawnerRate = 1, -- speeds up or slows down the procedural item spawner
 }

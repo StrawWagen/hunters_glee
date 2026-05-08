@@ -3,7 +3,7 @@ local function playEarlyStartSound()
     local _, spawnSet = GAMEMODE:GetSpawnSet()
 
     local startSound = spawnSet.roundStartSound
-    if startSound and startSound ~= "" then return end -- let the roundStartSound take priority
+    if startSound ~= "" then return end -- let the roundStartSound take priority
 
     local earlyStartSound = spawnSet.roundEarlyStartSound
     if earlyStartSound == "" then return end
