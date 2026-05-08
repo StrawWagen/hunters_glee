@@ -48,6 +48,10 @@ if not SERVER then return end
 
 local GM = GAMEMODE
 
+ENT.SuperCloseCost = -200
+ENT.CloseCost = -75
+ENT.FarCost = 50
+
 local MEMORY_BREAKABLE = terminator_Extras.botMemoryTypes.MEMORY_BREAKABLE
 
 function GM:BombCrate( pos, crateStatsRef )

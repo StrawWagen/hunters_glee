@@ -33,6 +33,10 @@ if not SERVER then return end
 
 local GM = GAMEMODE
 
+ENT.SuperCloseCost = -100
+ENT.CloseCost = -50
+ENT.FarCost = 0
+
 function ENT:UpdateGivenScore()
     local plys = player.GetAll()
     local smallestDist = math.huge
@@ -49,13 +53,13 @@ function ENT:UpdateGivenScore()
     local smallestDistLinear = math.sqrt( smallestDist )
 
     if smallestDistLinear < 400 then
-        scoreGiven = -100
+        scoreGiven = self.SuperCloseCost
 
     elseif smallestDistLinear < 1000 then
-        scoreGiven = -50
+        scoreGiven = self.CloseCost
 
     else
-        scoreGiven = 0
+        scoreGiven = self.FarCost
 
     end
     self:SetGivenScore( scoreGiven )
