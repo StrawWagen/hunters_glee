@@ -31,6 +31,23 @@ local items = {
         end,
         shCanShowInShop = shopHelpers.escapedCheck,
     },
+    ["bomb_crate"] = {
+        name = "Timed TNT Crate",
+        desc = "Supply crate with Timed TNT inside it.\nGives score when the TNT damages stuff.",
+        shCost = 0,
+        markup = 1,
+        cooldown = 100,
+        tags = { "HORRORS", "CloseShopOnPurchase" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = 10,
+        svOnPurchaseFunc = function( purchaser, itemIdentifier )
+            setupPlacable( "glee_tnt_crate", purchaser, itemIdentifier )
+
+        end,
+        shCanShowInShop = shopHelpers.escapedCheck,
+    },
 }
 
 GAMEMODE:GobbleShopItems( items )

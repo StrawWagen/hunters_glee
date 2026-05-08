@@ -62,6 +62,8 @@ function ENT:UpdateGivenScore()
 
 end
 
+local MEMORY_BREAKABLE = terminator_Extras.botMemoryTypes.MEMORY_BREAKABLE
+
 function GM:ManhackCrate( pos )
     local crate = ents.Create( "prop_physics" )
     crate:SetModel( "models/Items/item_item_crate.mdl" )
@@ -72,8 +74,10 @@ function GM:ManhackCrate( pos )
 
     crate.glee_IsManhackCrate = true
 
+    -- make the bots try to break this!
     crate.terminatorHunterInnateReaction = function()
         return MEMORY_BREAKABLE
+
     end
 
     return crate
@@ -143,7 +147,7 @@ hook.Add( "EntityTakeDamage", "glee_rewarding_manhacks_reward", function ( targe
             huntersGlee_Announce( { owner }, 5, 8, "The manhacks have damaged a player! You gain 75 score!" )
 
         end
-    elseif target:IsNextBot() then
+    elseif target:IsNextBot() or target:IsNPC() then
         owner:GivePlayerScore( 25 )
         huntersGlee_Announce( { owner }, 5, 8, "The manhacks have damaged " .. GAMEMODE:GetNameOfBot( target ) .. ". You only gain 25 score." )
 

@@ -253,12 +253,6 @@ function ENT:Place()
     if self.itemIdentifier then
         GAMEMODE:doShopCooldown( owner, self.itemIdentifier, self.Cooldown )
 
-        -- grrr this should be handled inside :doShopCooldown()
-        net.Start( "glee_sendshopcooldowntoplayer" )
-            net.WriteFloat( self.Cooldown )
-            net.WriteString( self.itemIdentifier )
-        net.Send( owner )
-
     end
 
     owner.placableTargeted = nil

@@ -33,7 +33,7 @@ if not SERVER then return end
 
 local GM = GAMEMODE
 
-local MEMORY_BREAKABLE = 4
+local MEMORY_BREAKABLE = terminator_Extras.botMemoryTypes.MEMORY_BREAKABLE
 local maxScoreDist = 3000
 local tooCloseToPlayer = 1500
 local cratePunishmentDist = 750
