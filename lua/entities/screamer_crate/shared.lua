@@ -532,7 +532,7 @@ hook.Add( "KeyPress", "glee_doplacables_placing", function( ply, key )
 end )
 
 
-local MEMORY_BREAKABLE = 4
+local MEMORY_BREAKABLE = terminator_Extras.botMemoryTypes.MEMORY_BREAKABLE
 local startGivingScoreDist = 3500
 local startGivingScoreDistSqr = startGivingScoreDist^2
 

@@ -32,8 +32,8 @@ local items = {
         shCanShowInShop = shopHelpers.escapedCheck,
     },
     ["bomb_crate"] = {
-        name = "Crate with Explosives",
-        desc = "Supply crate rigged with timed explosives.\n\nEach bomb gives score if it damages something.",
+        name = "Timed TNT Crate",
+        desc = "Supply crate with Timed TNT inside it.\nGives score when the TNT damages stuff.",
         shCost = 0,
         markup = 1,
         cooldown = 100,
@@ -43,7 +43,7 @@ local items = {
         },
         weight = 10,
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "glee_bomb_crate", purchaser, itemIdentifier )
+            setupPlacable( "glee_tnt_crate", purchaser, itemIdentifier )
 
         end,
         shCanShowInShop = shopHelpers.escapedCheck,

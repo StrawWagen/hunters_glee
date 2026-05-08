@@ -3,7 +3,7 @@ AddCSLuaFile( "cl_init.lua" )
 include( "shared.lua" )
 
 
-local MEMORY_BREAKABLE = 4
+local MEMORY_BREAKABLE = terminator_Extras.botMemoryTypes.MEMORY_BREAKABLE
 
 function ENT:Initialize()
     self:SetModel( "models/stiffy360/beartrap.mdl" )

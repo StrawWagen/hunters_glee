@@ -58,12 +58,6 @@ function GM:purchaseItem( ply, toPurchase )
         if theCooldown and theCooldown > 0 then
             self:doShopCooldown( ply, toPurchase, theCooldown )
 
-            net.Start( "glee_sendshopcooldowntoplayer" )
-                local cooldownClamped = math.Clamp( theCooldown, 0, 2147483645 ) -- if cooldown == 2147483645 then assume infinite, and only allow one purchase per round.
-                net.WriteFloat( cooldownClamped )
-                net.WriteString( toPurchase )
-            net.Send( ply )
-
         end
 
         -- cool purchase sound, kaching!

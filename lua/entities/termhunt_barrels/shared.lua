@@ -90,7 +90,7 @@ function ENT:PostInitializeFunc()
 
 end
 
-local MEMORY_VOLATILE = 8
+local MEMORY_VOLATILE = terminator_Extras.botMemoryTypes.MEMORY_VOLATILE
 local barrelPunishmentDist = 1250
 
 local tooCloseToPlySqr = 200^2

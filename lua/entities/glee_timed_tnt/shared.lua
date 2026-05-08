@@ -16,9 +16,8 @@ ENT.Damage = 70
 ENT.Radius = 200
 ENT.DelayMin = 2.5
 ENT.DelayMax = 3.5
-ENT.DamageMultNPC = 3 -- Applies to NPCs and NextBots.
 ENT.EffectScale = 1.5
-
+ENT.WarnNPCsInterval = 1
 
 if CLIENT then
     terminator_Extras.glee_CL_SetupSent( ENT, "glee_timed_tnt", "vgui/hud/killicon/glee_timed_tnt.png" )
@@ -30,28 +29,28 @@ function ENT:Initialize()
     self:SetModel( self.Model )
     self.glee_IsTimedTNT = true -- Faster than a :GetClass() string comparison
 
-    if CLIENT then
-        self:EmitSound( "ambient/machines/ticktock.wav", 80, 255, 1 )
-        return
-
-    end
+    if CLIENT then return end
 
     self:PhysicsInit( SOLID_VPHYSICS )
     self:SetMoveType( MOVETYPE_VPHYSICS )
     self:SetSolid( SOLID_VPHYSICS )
     self:PhysWake()
-    self:StartExplosionTimer()
+
+    local delay = math.Rand( self.DelayMin, self.DelayMax )
+    self.glee_DetonateAt = CurTime() + delay
+    self.glee_NextWarnNPCs = 0
+
+    self.tickSnd = CreateSound( self, "ambient/machines/ticktock.wav" )
+    self.tickSnd:PlayEx( 1, math.random( 120, 125 ) )
+    self.tickSnd:ChangePitch( 200, delay )
 
 end
 
-function ENT:OnRemove()
-    if SERVER then
-        timer.Remove( "glee_timedtnt_explodetimer_" .. self:GetCreationID() )
+local MEMORY_DAMAGING = terminator_Extras.botMemoryTypes.MEMORY_DAMAGING
 
-    else
-        self:StopSound( "ambient/machines/ticktock.wav" )
+function ENT:terminatorHunterInnateReaction()
+    return MEMORY_DAMAGING
 
-    end
 end
 
 function ENT:SetPosCentered( centerPos, ang )
@@ -65,26 +64,28 @@ end
 if not SERVER then return end
 
 
-function ENT:StartExplosionTimer()
-    timer.Create( "glee_timedtnt_explodetimer_" .. self:GetCreationID(), math.Rand( self.DelayMin, self.DelayMax ), 1, function()
-        if not IsValid( self ) then return end
+function ENT:Think()
+    local cur = CurTime()
+    if cur < self.glee_NextWarnNPCs then
+        self.glee_NextWarnNPCs = cur + self.WarnNPCsInterval
+        sound.EmitHint( SOUND_DANGER, self:GetPos(), self.Radius * 1.25, 1, self )
 
-        self:Detonate()
+    end
 
-    end )
+    if cur < self.glee_DetonateAt then return end
+
+    self:Detonate()
+
 end
 
 function ENT:Detonate()
     local pos = self:WorldSpaceCenter()
-    util.BlastDamage( self, self, pos, self.Radius, self.Damage )
+    local attacker = IsValid( self.glee_BombCrate_player ) and self.glee_BombCrate_player or self
+    terminator_Extras.GleeFancySplode( pos, self.Damage, self.Radius, attacker, self )
+
+    self:EmitSound( "C4.Explode" )
 
     local eff = EffectData()
-    eff:SetOrigin( pos )
-    eff:SetMagnitude( 1 )
-    eff:SetScale( 1 )
-    eff:SetFlags( 0 )
-    util.Effect( "Explosion", eff )
-
     eff:SetScale( self.EffectScale )
     eff:SetNormal( Vector( 0, 0, 1 ) )
     util.Effect( "glee_huge_m9k_splode", eff )
@@ -102,8 +103,4 @@ hook.Add( "EntityTakeDamage", "glee_timedtnt_scaledamage", function ( target, dm
 
     tnt.glee_TimedTNT_PreScaledDamage = dmg:GetDamage() -- For reading during PostEntityTakeDamage immediately after.
 
-    if target:IsNPC() or target:IsNextBot() then
-        dmg:ScaleDamage( tnt.DamageMultNPC )
-
-    end
 end )

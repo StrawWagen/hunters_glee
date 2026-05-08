@@ -336,11 +336,25 @@ function GM:doShopCooldown( ply, toPurchase, cooldown )
     if not isnumber( cooldown ) or cooldown <= 0 then return end
     ply.shopItemCooldowns[toPurchase] = CurTime() + cooldown
 
+    if not SERVER then return end
+    net.Start( "glee_sendshopcooldowntoplayer" )
+        local cooldownClamped = math.Clamp( cooldown, 0, 2147483645 ) -- if cooldown == 2147483645 then assume infinite, and only allow one purchase per round.
+        net.WriteFloat( cooldownClamped )
+        net.WriteString( toPurchase )
+    net.Send( ply )
+
 end
 
 function GM:noShopCooldown( ply, toPurchase )
     ply.shopItemCooldowns[toPurchase] = 0
 
+end
+
+if SERVER then
+    concommand.Add( "glee_test_resetcooldowns", function()
+        GAMEMODE:ResetShopItemCooldowns()
+
+    end, nil, "Reset all shop cooldowns", FCVAR_CHEAT )
 end
 
 local shopEnabled = CreateConVar( "huntersglee_enableshop", 1, FCVAR_REPLICATED, "Enables the shop.", 0, 1 )
