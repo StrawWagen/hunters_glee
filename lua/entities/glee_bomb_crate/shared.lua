@@ -21,6 +21,7 @@ ENT.ExplosionDelayMin = 2.5
 ENT.ExplosionDelayMax = 3.5
 ENT.ExplosionDamageMultNPC = 3 -- Applies to NPCs and NextBots.
 ENT.ExplosionCreditThreshold = 0.15 -- At least this much (0-1) of the original damage must be dealt for score to count. Prevents cases where the victim is on the edge of the radius.
+ENT.ExplosionEffectScale = 1.5
 
 ENT.BombCountMin = 3
 ENT.BombCountMax = 4
@@ -66,6 +67,7 @@ function GM:BombCrate( pos, crateStatsRef )
     crate.glee_BombCrate_delayMax = crateStatsRef.ExplosionDelayMax
     crate.glee_BombCrate_damageMultNPC = crateStatsRef.ExplosionDamageMultNPC
     crate.glee_BombCrate_creditThreshold = crateStatsRef.ExplosionCreditThreshold
+    crate.glee_BombCrate_effectScale = crateStatsRef.ExplosionEffectScale
 
     crate.glee_BombCrate_bombCount = math.random( crateStatsRef.BombCountMin, crateStatsRef.BombCountMax )
     crate.glee_BombCrate_bombLaunchMin = crateStatsRef.BombLaunchMin
@@ -93,22 +95,22 @@ end
 local function makeBomb( crate, noLaunch )
     local owner = crate.glee_BombCrate_player
     local damage = crate.glee_BombCrate_damage
-    local radius = crate.glee_BombCrate_radius
-    local delay = math.Rand( crate.glee_BombCrate_delayMin, crate.glee_BombCrate_delayMax )
     local vel = crate:GetPhysicsObject():GetVelocity()
 
     local bombAng = Angle( 0, math.Rand( -180, 180 ), 90 )
     bombAng:RotateAroundAxis( bombAng:Up(), math.Rand( -180, 180 ) )
     bombAng = crate:LocalToWorldAngles( bombAng )
 
-    local bomb = ents.Create( "prop_physics" )
-    bomb:SetModel( "models/dav0r/tnt/tnttimed.mdl" )
-
-    -- Center the bomb (it has a bad origin)
-    local bombPos = LocalToWorld( -bomb:OBBCenter(), Angle(), crate:WorldSpaceCenter(), bombAng )
-    bomb:SetAngles( bombAng )
-    bomb:SetPos( bombPos )
+    local bomb = ents.Create( "glee_timed_tnt" )
+    bomb:SetPosCentered( crate:WorldSpaceCenter(), bombAng )
     bomb:Spawn()
+    bomb.Damage = damage
+    bomb.Radius = crate.glee_BombCrate_radius
+    bomb.DelayMin = crate.glee_BombCrate_delayMin
+    bomb.DelayMax = crate.glee_BombCrate_delayMax
+    bomb.DamageMultNPC = crate.glee_BombCrate_damageMultNPC
+    bomb.EffectScale = crate.glee_BombCrate_effectScale
+    bomb:StartExplosionTimer()
 
     if not noLaunch then
         local ang = Angle(
@@ -124,36 +126,8 @@ local function makeBomb( crate, noLaunch )
     bomb:GetPhysicsObject():SetVelocity( vel )
     bomb.glee_IsBombCrateBomb = true
     bomb.glee_BombCrate_player = owner
-    bomb.glee_BombCrate_damageMultNPC = crate.glee_BombCrate_damageMultNPC
     bomb.glee_BombCrate_creditThreshold = damage * crate.glee_BombCrate_creditThreshold
 
-    timer.Simple( 0.2, function() -- Delay since sounds on fresh-spawned ents can fail networking
-        bomb:EmitSound( "ambient/machines/ticktock.wav", 80, 255, 1 )
-
-    end )
-
-    timer.Simple( delay, function()
-        if not IsValid( bomb ) then return end
-
-        bomb:StopSound( "ambient/machines/ticktock.wav" )
-
-        local pos = bomb:WorldSpaceCenter()
-        util.BlastDamage( bomb, bomb, pos, radius, damage )
-
-        local eff = EffectData()
-        eff:SetOrigin( pos )
-        eff:SetMagnitude( 1 )
-        eff:SetScale( 1 )
-        eff:SetFlags( 0 )
-        util.Effect( "Explosion", eff )
-
-        eff:SetScale( 1.5 )
-        eff:SetNormal( Vector( 0, 0, 1 ) )
-        util.Effect( "glee_huge_m9k_splode", eff )
-
-        SafeRemoveEntity( bomb )
-
-    end )
 end
 
 hook.Add( "PropBreak", "glee_spawn_rewarding_bombcrate", function( _, broken )
@@ -176,24 +150,18 @@ hook.Add( "PropBreak", "glee_spawn_rewarding_bombcrate", function( _, broken )
     end
 end )
 
-hook.Add( "EntityTakeDamage", "glee_rewarding_bombcrate_reward", function ( target, dmg )
+hook.Add( "PostEntityTakeDamage", "glee_rewarding_bombcrate_reward", function ( target, dmg, took )
+    if not took then return end
     if not dmg:IsExplosionDamage() then return end
-    if not target:IsPlayer() and not target:IsNPC() and not target:IsNextBot() then return end
+    if not target:IsPlayer() and not target:IsNextBot() then return end
 
     local bomb = dmg:GetInflictor()
     if not IsValid( bomb ) then return end
     if not bomb.glee_IsBombCrateBomb then return end
-
-    local didEnoughForCredit = dmg:GetDamage() >= bomb.glee_BombCrate_creditThreshold
-
-    if target:IsNPC() or target:IsNextBot() then
-        dmg:ScaleDamage( bomb.glee_BombCrate_damageMultNPC )
-
-    end
-
-    if not didEnoughForCredit then return end
     if bomb.glee_BombCrateSpent then return end
-    if target:IsNPC() then return end -- NPCs don't give score, so don't let them spend the bomb.
+
+    local preScaledDamage = bomb.glee_TimedTNT_PreScaledDamage or dmg:GetDamage()
+    if preScaledDamage < bomb.glee_BombCrate_creditThreshold then return end
 
     bomb.glee_BombCrateSpent = true
 
