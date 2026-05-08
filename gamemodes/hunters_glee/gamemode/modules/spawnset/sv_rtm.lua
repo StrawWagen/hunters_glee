@@ -198,7 +198,7 @@ local rounds = 0
 local printed
 hook.Add( "huntersglee_round_into_inactive", "glee_rockthemode_hint", function()
     rounds = rounds + 1
-    if rounds < math.random( 2, 4 ) then return end --dont print too much.
+    if rounds < math.random( 1, 3 ) then return end --dont print too much.
 
     if printed then return end
     printed = true -- one time per map

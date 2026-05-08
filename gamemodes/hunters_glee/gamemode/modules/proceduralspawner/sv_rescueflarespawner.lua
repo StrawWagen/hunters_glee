@@ -12,7 +12,7 @@ end )
 local minute = 60
 local idealFindTime = 5 * minute
 local bodyCheckDelay = 0.25 * minute
-local shelfCheckDelay = 0.5 * minute
+local shelfCheckDelay = 0.15 * minute -- blank time after bodyCheckDelay fails
 local randomlySpawnItDelay = idealFindTime
 
 -- these are then scaled by GAMEMODE:ScaledGenericSpawnerRate()
@@ -246,7 +246,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_rescueflarespawning", function()
         if not spawned then
             nextBodyCheck = CurTime() + GAMEMODE:ScaledGenericSpawnerRate( 120 )
             spawnOnShelves = true
-            nextShelfCheck = cur + GAMEMODE:ScaledGenericSpawnerRate( shelfCheckDelay / 10 )
+            nextShelfCheck = cur + GAMEMODE:ScaledGenericSpawnerRate( shelfCheckDelay )
 
         end
     end
