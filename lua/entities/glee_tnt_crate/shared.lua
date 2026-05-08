@@ -21,10 +21,10 @@ ENT.CrateLaunchMin = 50
 ENT.CrateLaunchMax = 125
 ENT.CrateLaunchPitchMin = -45 -- Negative is upwards
 ENT.CrateLaunchPitchMax = 0 -- Negative is upwards
-ENT.CreditThreshold = 0.15 -- At least this much (0-1) of the original damage must be dealt for score to count. Prevents cases where the victim is on the edge of the radius.
+ENT.CreditThreshold = 15 -- At least this much damage must be dealt for score to count. Gotta really get em!
 
 -- TNT Field Overrides
-ENT.TNTDamage = 70
+ENT.TNTDamage = 250
 ENT.TNTRadius = 400
 ENT.TNTDelayMin = 4
 ENT.TNTDelayMax = 4.5 -- just enough variance so they dont explode at the same exact time
@@ -157,7 +157,7 @@ hook.Add( "PostEntityTakeDamage", "glee_rewarding_tnt_crate_reward", function ( 
     if not bomb.glee_IsTNTCrateBomb then return end
     if bomb.glee_TNT_CrateSpent then return end
 
-    local preScaledDamage = bomb.glee_TimedTNT_PreScaledDamage or dmg:GetDamage()
+    local preScaledDamage = dmg:GetDamage()
     if preScaledDamage < bomb.glee_TNT_Crate_creditThreshold then return end
 
     bomb.glee_TNT_CrateSpent = true

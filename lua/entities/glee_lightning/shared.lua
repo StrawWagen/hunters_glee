@@ -12,6 +12,8 @@ ENT.Category = "Hunter's Glee"
 
 ENT.powa = 1
 
+ENT.glee_AlwaysFullPVPDamage = true
+
     -- "sounds/hunters_glee/wizardry_thunderimpact.wav" FROM SHADOW MONEY WIZARD https://steamcommunity.com/sharedfiles/filedetails/?id=3046835259
     -- "sounds/hunters_glee/wizardry_thunder.wav" -- DITTO!
 if CLIENT then

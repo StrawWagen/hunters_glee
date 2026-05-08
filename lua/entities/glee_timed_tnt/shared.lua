@@ -12,12 +12,14 @@ ENT.AdminOnly    = game.IsDedicated()
 ENT.Category = "Hunter's Glee"
 ENT.Model = "models/dav0r/tnt/tnttimed.mdl"
 
-ENT.Damage = 70
-ENT.Radius = 200
-ENT.DelayMin = 2.5
-ENT.DelayMax = 3.5
+ENT.Damage = 250
+ENT.Radius = 400
+ENT.DelayMin = 4
+ENT.DelayMax = 4.5
 ENT.EffectScale = 1.5
 ENT.WarnNPCsInterval = 1
+
+ENT.glee_AlwaysFullPVPDamage = true
 
 if CLIENT then
     terminator_Extras.glee_CL_SetupSent( ENT, "glee_timed_tnt", "vgui/hud/killicon/glee_timed_tnt.png" )
@@ -93,14 +95,3 @@ function ENT:Detonate()
     SafeRemoveEntity( self )
 
 end
-
-hook.Add( "EntityTakeDamage", "glee_timedtnt_scaledamage", function ( target, dmg )
-    if not dmg:IsExplosionDamage() then return end
-
-    local tnt = dmg:GetInflictor()
-    if not IsValid( tnt ) then return end
-    if not tnt.glee_IsTimedTNT then return end
-
-    tnt.glee_TimedTNT_PreScaledDamage = dmg:GetDamage() -- For reading during PostEntityTakeDamage immediately after.
-
-end )

@@ -1362,6 +1362,7 @@ hook.Add( "EntityTakeDamage", "huntersglee_makepvpreallybad", function( dmgTarg,
     local areBothPlayers = dmgTarg:IsPlayer() and attacker:IsPlayer()
     local selfDamage = dmgTarg == attacker
 
+    if selfDamage then return end -- they're damaging themselves? go ahead
     if not areBothPlayers then return end
 
     local attackerIsHorriblyEvil = GAMEMODE:IsHorriblyEvil( attacker )
@@ -1372,7 +1373,14 @@ hook.Add( "EntityTakeDamage", "huntersglee_makepvpreallybad", function( dmgTarg,
     if GAMEMODE.blockPvp == true then
         dmg:ScaleDamage( 0 )
 
-    elseif not selfDamage then
+    else
+        -- for items that should always do full damage
+        -- eg, items placed by dead players
+        if inflictor and inflictor.glee_AlwaysFullPVPDamage then
+            return
+
+        end
+
         if dmg:IsDamageType( DMG_DISSOLVE ) and inflictor and inflictor:GetClass() == "prop_combine_ball" then -- special cball case
             local nextpermittedballdamage = dmgTarg.huntersglee_nextpermittedballdamage or 0
             if nextpermittedballdamage > CurTime() then
