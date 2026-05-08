@@ -15,14 +15,6 @@ ENT.Model = "models/Items/item_item_crate.mdl"
 ENT.HullCheckSize = Vector( 20, 20, 10 )
 ENT.PosOffset = Vector( 0, 0, 10 )
 
-ENT.ExplosionDamage = 70
-ENT.ExplosionRadius = 200
-ENT.ExplosionDelayMin = 2.5
-ENT.ExplosionDelayMax = 3.5
-ENT.ExplosionDamageMultNPC = 3 -- Applies to NPCs and NextBots.
-ENT.ExplosionCreditThreshold = 0.15 -- At least this much (0-1) of the original damage must be dealt for score to count. Prevents cases where the victim is on the edge of the radius.
-ENT.ExplosionEffectScale = 1.5
-
 ENT.BombCountMin = 3
 ENT.BombCountMax = 4
 ENT.BombLaunchMin = 200
@@ -30,6 +22,15 @@ ENT.BombLaunchMax = 400
 ENT.BombLaunchPitchMin = -45 -- Negative is upwards
 ENT.BombLaunchPitchMax = 0 -- Negative is upwards
 ENT.FirstBombNoLaunch = true
+ENT.CreditThreshold = 0.15 -- At least this much (0-1) of the original damage must be dealt for score to count. Prevents cases where the victim is on the edge of the radius.
+
+-- TNT Field Overrides
+ENT.TNTDamage = 70
+ENT.TNTRadius = 200
+ENT.TNTDelayMin = 2.5
+ENT.TNTDelayMax = 3.5
+ENT.TNTDamageMultNPC = 3 -- Applies to NPCs and NextBots.
+ENT.TNTEffectScale = 1.5
 
 
 if CLIENT then
@@ -61,20 +62,20 @@ function GM:BombCrate( pos, crateStatsRef )
 
     crate.glee_IsBombCrate = true
 
-    crate.glee_BombCrate_damage = crateStatsRef.ExplosionDamage
-    crate.glee_BombCrate_radius = crateStatsRef.ExplosionRadius
-    crate.glee_BombCrate_delayMin = crateStatsRef.ExplosionDelayMin
-    crate.glee_BombCrate_delayMax = crateStatsRef.ExplosionDelayMax
-    crate.glee_BombCrate_damageMultNPC = crateStatsRef.ExplosionDamageMultNPC
-    crate.glee_BombCrate_creditThreshold = crateStatsRef.ExplosionCreditThreshold
-    crate.glee_BombCrate_effectScale = crateStatsRef.ExplosionEffectScale
-
     crate.glee_BombCrate_bombCount = math.random( crateStatsRef.BombCountMin, crateStatsRef.BombCountMax )
     crate.glee_BombCrate_bombLaunchMin = crateStatsRef.BombLaunchMin
     crate.glee_BombCrate_bombLaunchMax = crateStatsRef.BombLaunchMax
     crate.glee_BombCrate_bombLaunchPitchMin = crateStatsRef.BombLaunchPitchMin
     crate.glee_BombCrate_bombLaunchPitchMax = crateStatsRef.BombLaunchPitchMax
     crate.glee_BombCrate_firstBombNoLaunch = crateStatsRef.FirstBombNoLaunch
+    crate.glee_BombCrate_creditThreshold = crateStatsRef.CreditThreshold
+
+    crate.glee_BombCrate_damage = crateStatsRef.TNTDamage
+    crate.glee_BombCrate_radius = crateStatsRef.TNTRadius
+    crate.glee_BombCrate_delayMin = crateStatsRef.TNTDelayMin
+    crate.glee_BombCrate_delayMax = crateStatsRef.TNTDelayMax
+    crate.glee_BombCrate_damageMultNPC = crateStatsRef.TNTDamageMultNPC
+    crate.glee_BombCrate_effectScale = crateStatsRef.TNTEffectScale
 
     crate.terminatorHunterInnateReaction = function()
         return MEMORY_BREAKABLE
