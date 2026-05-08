@@ -107,7 +107,7 @@ if CLIENT then
             local myActualSize = self.HullSize.x
             local size = size600 * ( myActualSize / 600 )
 
-            --pushEffect:SetControlPoint( 1, Vector( size, 0, 0 ) )
+            pushEffect:SetControlPoint( 1, Vector( size, 0, 0 ) )
 
         end
 
@@ -120,7 +120,7 @@ if CLIENT then
             local myActualSize = self.HullSize.x
             local size = size600 * ( myActualSize / 600 )
 
-            --pushEffect:SetControlPoint( 2, Vector( size, 0, 0 ) )
+            pushEffect:SetControlPoint( 2, Vector( size, 0, 0 ) )
 
         end
     end
