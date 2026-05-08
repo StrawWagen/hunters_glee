@@ -38,7 +38,13 @@ if CLIENT then
 
         local scoreGained = math.Round( self:GetGivenScore() )
 
-        local scoreGainedString = "TNT Cost: " .. tostring( scoreGained )
+        local prefix = "TNT Cost: "
+        if scoreGained >= 0 then
+            prefix = "TNT Reward: "
+
+        end
+
+        local scoreGainedString = prefix .. tostring( scoreGained )
         surface.drawShadowedTextBetter( scoreGainedString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
 
     end
@@ -130,6 +136,8 @@ local function makeBomb( crate )
     bomb.glee_IsTNTCrateBomb = true
     bomb.glee_TNT_Crate_player = owner
     bomb.glee_TNT_Crate_creditThreshold = damage * crate.glee_TNT_CrateCreditThreshold
+
+    bomb.glee_AlwaysFullPVPDamage = true
 
 end
 

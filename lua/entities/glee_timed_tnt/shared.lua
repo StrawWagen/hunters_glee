@@ -19,8 +19,6 @@ ENT.DelayMax = 4.5
 ENT.EffectScale = 1.5
 ENT.WarnNPCsInterval = 1
 
-ENT.glee_AlwaysFullPVPDamage = true
-
 if CLIENT then
     terminator_Extras.glee_CL_SetupSent( ENT, "glee_timed_tnt", "vgui/hud/killicon/glee_timed_tnt.png" )
 
