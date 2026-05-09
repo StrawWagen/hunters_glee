@@ -50,7 +50,7 @@ local items = {
     },
     ["winners_might"] = {
         name = "Winner's Might",
-        desc = "Click and hold on a player to move them around.\n\nCost rises exponentially as it gets used.",
+        desc = "Click and hold on a player to move them around.\n\nCost rises exponentially as it gets used.", -- Not actually exponential, but it gets the point across.
         shCost = 0,
         costDecorative = "-100",
         markup = 1,
