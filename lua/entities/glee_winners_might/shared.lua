@@ -22,6 +22,8 @@ ENT.CostPerSec = 1
 ENT.CostPerSecPerSec = 1
 ENT.CostPerSecMax = 100
 ENT.CostInterval = 1.5
+ENT.CostHighColor = Color( 255, 100, 100, 255 )
+ENT.CostHighAmount = 800
 
 ENT.MoveStrengthMult = 30
 ENT.MoveStrengthMax = 8000
@@ -74,9 +76,10 @@ if CLIENT then
 
         local scoreGained = math.Round( self:GetGivenScore() )
         local cooldown = math.Round( self:GetGivenScoreAlt() )
+        local textColor = ( scoreGained <= -self.CostHighAmount ) and self.CostHighColor or color_white
 
         local scoreGainedString = "Total Cost: " .. tostring( scoreGained )
-        surface.drawShadowedTextBetter( scoreGainedString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + glee_sizeScaled( nil, 60 ) )
+        surface.drawShadowedTextBetter( scoreGainedString, "scoreGainedOnPlaceFont", textColor, screenMiddleW, screenMiddleH + glee_sizeScaled( nil, 60 ), true, 255 )
 
         local cooldownMins = math.floor( cooldown / 60 )
         local cooldownSecs = math.floor( cooldown - cooldownMins * 60 )
@@ -87,7 +90,7 @@ if CLIENT then
         end
 
         cooldownString = cooldownString .. cooldownSecs .. "s"
-        surface.drawShadowedTextBetter( cooldownString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + glee_sizeScaled( nil, 60 + 40 ) )
+        surface.drawShadowedTextBetter( cooldownString, "scoreGainedOnPlaceFont", textColor, screenMiddleW, screenMiddleH + glee_sizeScaled( nil, 60 + 40 ), true, 255 )
 
         if self:IsGrabbing() then
             draw.NoTexture()
