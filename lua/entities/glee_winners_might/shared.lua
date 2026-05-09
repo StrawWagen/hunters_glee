@@ -29,6 +29,7 @@ ENT.MoveStrengthMult = 30
 ENT.MoveStrengthMax = 8000
 ENT.MoveStrengthDownMult = 0.15 -- After the speed clamp, multiplies vertical force if it's pointing downwards. 0 to disable this feature.
 ENT.MoveDampingMult = 2
+ENT.MoveDistMax = 500 -- Max grab distance from the owner's eyes. Makes it not get stuck awkwardly far away.
 
 ENT.FallResistActive = 0.5 -- Resistance mult against fall damage while actively being grabbed.
 ENT.FallResistAfter = 0.5 -- Resistance mult that lingers once let go.
@@ -326,7 +327,7 @@ function ENT:Place()
     target.glee_WinnersMight_Ent = self
     target.glee_WinnersMight_FallResistActive = self.FallResistActive
 
-    self:SetHoldDist( math.max( target:WorldSpaceCenter():Distance( owner:EyePos() ), 1 ) )
+    self:SetHoldDist( math.Clamp( target:WorldSpaceCenter():Distance( owner:EyePos() ), 1, self.MoveDistMax ) )
     self:SetPos( target:WorldSpaceCenter() )
     target:EmitSound( "npc/advisor/advisorheadvx06.wav", 77, 100, 1 )
 
