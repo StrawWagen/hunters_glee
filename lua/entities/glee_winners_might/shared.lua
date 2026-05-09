@@ -63,6 +63,14 @@ if CLIENT then
 
     end
 
+    local function colorLerpFast( color, from, to, frac )
+        color.r = Lerp( frac, from.r, to.r )
+        color.g = Lerp( frac, from.g, to.g )
+        color.b = Lerp( frac, from.b, to.b )
+        color.a = Lerp( frac, from.a, to.a )
+
+    end
+
     function ENT:PostInitializeFunc()
         self:SetNoDraw( true )
         self.indicatorPolyOuter = makeDiamondPoly( ScrW() / 2, ScrH() / 2, glee_sizeScaled( nil, self.IndicatorRadiusOuter ) )
@@ -76,7 +84,15 @@ if CLIENT then
 
         local scoreGained = math.Round( self:GetGivenScore() )
         local cooldown = math.Round( self:GetGivenScoreAlt() )
-        local textColor = ( scoreGained <= -self.CostHighAmount ) and self.CostHighColor or color_white
+        local textColor = self.glee_WinnersMight_TextColor
+
+        if not textColor then
+            textColor = Color( 0, 0, 0, 0 )
+            self.glee_WinnersMight_TextColor = textColor
+
+        end
+
+        colorLerpFast( textColor, color_white, self.CostHighColor, -scoreGained / self.CostHighAmount )
 
         local scoreGainedString = "Total Cost: " .. tostring( scoreGained )
         surface.drawShadowedTextBetter( scoreGainedString, "scoreGainedOnPlaceFont", textColor, screenMiddleW, screenMiddleH + glee_sizeScaled( nil, 60 ), true, 255 )
