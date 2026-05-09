@@ -349,7 +349,7 @@ if SERVER and terminator_Extras then
 
         end )
 
-        hook.Add( "glee_PostRealCleanupMap", "glee_cancelrescuehelitimer_cleanup", function()
+        hook.Add( "glee_post_realcleanupmap", "glee_cancelrescuehelitimer_cleanup", function()
             if not timer.Exists( rescueTimerName ) then return end
             timer.Remove( rescueTimerName )
 
@@ -692,18 +692,23 @@ if SERVER and terminator_Extras then
 
         -- buff its damage when it decides to shoot
         local hookName = "glee_rescuehelishoot_" .. heli:GetCreationID()
-        hook.Add( "EntityTakeDamage", hookName, function( _target, dmgInfo )
+        hook.Add( "EntityTakeDamage", hookName, function( target, dmgInfo )
             if not IsValid( heli ) then
                 hook.Remove( "EntityTakeDamage", hookName )
                 return
 
             end
             local attacker = dmgInfo:GetAttacker()
-            if attacker ~= heli then return end
-            if not IsValid( attacker ) then return end
+            if attacker == heli then
+                dmgInfo:ScaleDamage( 10 )
 
-            dmgInfo:ScaleDamage( 10 )
+            elseif target == heli then
+                if not IsValid( attacker ) then return end
+                if not attacker:IsPlayer() then return end
+                if not GAMEMODE.SurfaceHomicidalGlee then return end
+                GAMEMODE:SurfaceHomicidalGlee( attacker, heli )
 
+            end
         end )
 
         terminator_Extras.glee_CurrentRescueHeli = heli

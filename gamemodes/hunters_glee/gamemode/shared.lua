@@ -65,11 +65,11 @@ function GM:PostCleanupMap()
         --GAMEMODE:removePorters()
         GAMEMODE:removeBlockers()
 
-        hook.Run( "glee_PostCleanupMap" )
+        hook.Run( "glee_post_cleanupmap" )
 
         if GAMEMODE.blockCleanupSetup then return end
 
-        hook.Run( "glee_PostRealCleanupMap" )
+        hook.Run( "glee_post_realcleanupmap" )
 
         GAMEMODE:StopAllSolidSounds()
 

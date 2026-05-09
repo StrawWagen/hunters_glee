@@ -1154,7 +1154,8 @@ function termHuntOpenTheShop()
                             self.costString = costDecorative
 
                         end
-                    elseif skullCost and skullCost >= 0 then
+                    -- 0 skullcost? display nothing, not "0 skulls"
+                    elseif skullCost and skullCost ~= 0 then
                         self.costString, self.costColor = GAMEMODE:translatedShopItemCost( ply, skullCost, "skull", identifierPaint )
                         local sOrNoS = "s"
                         if math.abs( skullCost ) == 1 then

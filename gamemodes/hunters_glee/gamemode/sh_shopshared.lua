@@ -223,6 +223,7 @@ function GM:shopItemCost( toPurchase, purchaser )
 
     end
 
+    -- always process this into a number
     if not isnumber( cost ) then
         cost = 0
 
@@ -257,7 +258,8 @@ function GM:shopItemSkullCost( toPurchase, purchaser )
 
     end
 
-    if not skullCost then return end
+    -- if skullcost is not a number, should fallback to nil and let score display 
+    if not isnumber( skullCost ) then return end
 
     skullCost = skullCost * GAMEMODE:shopMarkup( purchaser, toPurchase )
     return math.Round( skullCost )

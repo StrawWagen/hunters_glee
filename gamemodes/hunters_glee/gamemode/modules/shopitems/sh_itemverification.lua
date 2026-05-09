@@ -30,7 +30,7 @@ function GM:getDebugShopItemStructureTable()
             name =              "Printed name that players see",
             desc =              "Description. Accepts a function or string.",
             shCost =            "Cost, negative to give player score when purchasing, Accepts a function.",
-            shSkullCost =       "Optional. Skull cost, same rules as shCost.",
+            shSkullCost =       "Optional. Skull cost. Accepts number or function. Zero is ignored. Negative gives skulls on purchase.",
             canGoInDebt =       "Optional. Can this item be bought when the player has no score? Can force players to buy innate debuffs, etc.",
             fakeCost =          "Optional. Whether to skip applying the cost within the purchasing system. Good if you want a shop item to more dynamically apply costs, but still show a cost.",
             simpleCostDisplay = "Optional. Client. Skip the coloring + formatting of an item's cost in the shop.",
@@ -95,6 +95,7 @@ function GM:ConvertItemTags( shopItemData ) -- convert indexed table to mask
         newTags[tag] = true
 
     end
+
     shopItemData.tags = newTags
 end
 
@@ -102,11 +103,17 @@ function GM:PutItemInProperCategories( shopItemData ) -- put item in categories 
     local foundAHome
     local categories = GAMEMODE.shopCategories
     for tag, _ in pairs( shopItemData.tags ) do
+        local isAllCaps = string.upper( tag ) == tag
+        if not isAllCaps then continue end
         if categories[tag] then
             --print( "Putting " .. shopItemData.name .. " in category " .. tag )
             shopItemData.categories = shopItemData.categories or {}
             shopItemData.categories[tag] = true
             foundAHome = true
+
+        else
+            GAMEMODE:invalidateShopItem( shopItemData.identifier )
+            print( "HUNTER'S GLEE: " .. shopItemData.name .. " has category tag " .. tag .. " which doesn't match any categories!" )
 
         end
     end

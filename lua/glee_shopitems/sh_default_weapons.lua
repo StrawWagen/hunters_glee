@@ -17,8 +17,25 @@ local function canPurchaseSuitBattery( purchaser )
 
 end
 
-hook.Add( "glee_PostRealCleanupMap", "glee_shophandler_resetsignalflarepurchasecount", function()
+-- debug
+hook.Add( "glee_post_realcleanupmap", "glee_shophandler_resetsignalflarepurchasecount", function()
     SetGlobalInt( "glee_SignalFlarePurchaseCount", 0 )
+
+end )
+
+-- each spawnset has their own purchase count
+-- encourages fun spawnset switching
+hook.Add( "glee_post_set_spawnset", "glee_shophandler_resetsignalflarepurchasecount", function( newName, _set, oldName )
+    if not oldName then return end -- initalize
+
+    -- setup the tbl
+    GAMEMODE.shopHandler_signalFlarePurchaseCounts = GAMEMODE.shopHandler_signalFlarePurchaseCounts or {}
+
+    local oldSetsCount = GetGlobalInt( "glee_SignalFlarePurchaseCount", 0 )
+    local newSetsCount = GAMEMODE.shopHandler_signalFlarePurchaseCounts[newName] or 0
+
+    GAMEMODE.shopHandler_signalFlarePurchaseCounts[oldName] = oldSetsCount
+    SetGlobalInt( "glee_SignalFlarePurchaseCount", newSetsCount )
 
 end )
 
@@ -439,7 +456,7 @@ local items = {
         desc = "Very bright flaregun, It could probably be seen from miles away...",
         shCost = 0,
         shSkullCost = function()
-            local costPerPurchase = 20
+            local costPerPurchase = 15
             local purchaseCount = GetGlobalInt( "glee_SignalFlarePurchaseCount", 0 )
             local cost = costPerPurchase + ( purchaseCount * costPerPurchase )
             return cost

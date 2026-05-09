@@ -2,6 +2,8 @@
 local GM = GAMEMODE or GM
 local shopHelpers = GM.shopHelpers
 
+-- custom categories not supported rn
+
 function GM:SetupShopCategories()
     self.shopCategories = {
         ITEMS = { -- weapons, guns

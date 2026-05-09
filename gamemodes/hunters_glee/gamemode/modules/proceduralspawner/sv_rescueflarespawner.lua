@@ -205,7 +205,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_rescueflarespawning", function()
 
         local spawned = false
 
-        if #ragdolls >= 1000 then
+        if #ragdolls >= 1 then
             for _, ragdoll in ipairs( ragdolls ) do
                 if ragdoll.glee_skulldecapitated then continue end
                 if ragdoll.glee_createdARescueFlareGun then continue end
