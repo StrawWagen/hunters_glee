@@ -87,9 +87,9 @@ GAMEMODE:GobbleShopItems( items )
 | `cooldown` | ❌ | Seconds between purchases (`math.huge` = once per round) |
 | `weight` | ❌ | Sort order within category (lower = higher) |
 | `shCanShowInShop` | ❌ | Visibility function: `function(purchaser) -> bool` |
-| `costDecorative` | ❌ | Fake, decorative cost. string or function: `function(purchaser, itemID) -> string, color` |
-| `unpurchaseableReason` | ❌ | If the item has the `"unpurchaseable"` tag, this string can replace the default purchase failure reason. |
-| `identifier` | ❌ | Auto-generated. Same as the item ID used when defining the item |
+| `costDecorative` | ❌ | Fake, decorative cost. Accepts string, number, tables of strings, functions. Overrides `shSkullCost`, and `shCost` |
+| `unpurchaseableReason` | ❌ | Custom denial string. Only used if the item has the `unpurchaseable` tag |
+| `identifier` | ❌ | Auto-generated. The item's unique key |
 
 #### Category Tags
 

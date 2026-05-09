@@ -88,8 +88,9 @@ function SWEP:ShoveSound( PitMod )
     PitMod = PitMod or 0
     local Sound1 = table.Random( self.ShoveSounds1 )
     local Sound2 = table.Random( self.ShoveSounds2 )
-    self.Owner:EmitSound( Sound1, 66, math.random( 100, 120 ) + PitMod, 1, CHAN_STATIC )
-    self.Owner:EmitSound( Sound2, 70, math.random( 60, 80 ) + PitMod, 1, CHAN_STATIC )
+    local owner = self:GetOwner()
+    owner:EmitSound( Sound1, 66, math.random( 100, 120 ) + PitMod, 1, CHAN_STATIC )
+    owner:EmitSound( Sound2, 70, math.random( 60, 80 ) + PitMod, 1, CHAN_STATIC )
 
 end
 
@@ -111,7 +112,7 @@ end
 local gtfo = Vector( 1, 1, 1 ) * 65000
 
 function SWEP:GetViewModelPosition( _, ang )
-    return gtfo,ang
+    return gtfo, ang
 end
 
 function SWEP:PreDrawViewModel()

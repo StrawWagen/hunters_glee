@@ -1125,7 +1125,36 @@ function termHuntOpenTheShop()
                     self.costString = ""
                     self.costColor = white
 
-                    if skullCost and skullCost >= 0 then
+                    local costDecorative = itemData.costDecorative
+
+                    -- "decorative" cost that isn't applied when purchased
+                    if costDecorative then
+                        if isfunction( costDecorative ) then
+                            local str, color = costDecorative( ply, identifierPaint )
+                            self.costString = str or self.costString
+                            self.costColor = color or self.costColor
+
+                        elseif isnumber( costDecorative ) then
+                            self.costString, self.costColor = GAMEMODE:translatedShopItemCost( ply, costDecorative, "score", identifierPaint )
+
+                        -- display all entries with / between them
+                        elseif istable( costDecorative ) then
+                            local str = ""
+                            for i, entry in ipairs( costDecorative ) do
+                                if not isstring( entry ) then error( entry .. "Invalid decorative cost entry for " .. identifierPaint ) end
+                                str = str .. entry
+
+                                if i >= #costDecorative then continue end
+                                str = str .. " / "
+
+                            end
+                            self.costString = str
+
+                        elseif isstring( costDecorative ) then
+                            self.costString = costDecorative
+
+                        end
+                    elseif skullCost and skullCost >= 0 then
                         self.costString, self.costColor = GAMEMODE:translatedShopItemCost( ply, skullCost, "skull", identifierPaint )
                         local sOrNoS = "s"
                         if math.abs( skullCost ) == 1 then
@@ -1135,20 +1164,7 @@ function termHuntOpenTheShop()
                         self.costString = self.costString .. " Skull" .. sOrNoS .. "\n"
 
                     else
-                        -- "decorative" cost that isn't applied when purchased
-                        local decorativeCost = itemData.costDecorative
-                        if decorativeCost then
-                            if isfunction( decorativeCost ) then
-                                local str, color = decorativeCost( ply, identifierPaint )
-                                self.costString = str or self.costString
-                                self.costColor = color or self.costColor
-
-                            else
-                                self.costString = decorativeCost
-
-                            end
-
-                        elseif itemData.simpleCostDisplay then
+                        if itemData.simpleCostDisplay then
                             self.costString = tostring( cost )
 
                         else

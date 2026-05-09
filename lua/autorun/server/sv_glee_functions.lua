@@ -5,7 +5,6 @@ local down = Vector( 0, 0, -1 )
 
 function terminator_Extras.GleeFancySplode( pos, damage, radius, attacker, inflictor )
 
-    -- escape primary fire jankiness
     local splode = EffectData()
     splode:SetOrigin( pos )
     splode:SetMagnitude( damage )
