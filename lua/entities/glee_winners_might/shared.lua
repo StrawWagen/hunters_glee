@@ -41,11 +41,11 @@ ENT.TargetSoundPitchMax = 140 / 100
 ENT.TargetSoundVolumeMin = 0.5 -- Volume can go above 1 bc of IGModAudioChannel.
 ENT.TargetSoundVolumeMax = 2
 
-ENT.IndicatorColorOuter = Color( 0, 0, 0, 255 )
-ENT.IndicatorColorInner = Color( 255, 255, 255, 255 )
-ENT.IndicatorColorLine = Color( 255, 255, 255, 255 )
-ENT.IndicatorRadiusOuter = 10
-ENT.IndicatorRadiusInner = 8
+ENT.CrosshairColorOuter = Color( 0, 0, 0, 255 )
+ENT.CrosshairColorInner = Color( 255, 255, 255, 255 )
+ENT.CrosshairColorLine = Color( 255, 255, 255, 255 )
+ENT.CrosshairRadiusOuter = 10
+ENT.CrosshairRadiusInner = 8
 
 function ENT:DynamicCooldown( elapsed )
     return math.Clamp( math.pow( elapsed, 1.4 ), 50, 60 * 5 )
@@ -73,8 +73,8 @@ if CLIENT then
 
     function ENT:PostInitializeFunc()
         self:SetNoDraw( true )
-        self.indicatorPolyOuter = makeDiamondPoly( ScrW() / 2, ScrH() / 2, glee_sizeScaled( nil, self.IndicatorRadiusOuter ) )
-        self.indicatorPolyInner = makeDiamondPoly( ScrW() / 2, ScrH() / 2, glee_sizeScaled( nil, self.IndicatorRadiusInner ) )
+        self.crosshairPolyOuter = makeDiamondPoly( ScrW() / 2, ScrH() / 2, glee_sizeScaled( nil, self.CrosshairRadiusOuter ) )
+        self.crosshairPolyInner = makeDiamondPoly( ScrW() / 2, ScrH() / 2, glee_sizeScaled( nil, self.CrosshairRadiusInner ) )
 
     end
 
@@ -114,16 +114,16 @@ if CLIENT then
             local target = self:GetCurrTarget()
             if IsValid( target ) then
                 local scrPos = target:WorldSpaceCenter():ToScreen()
-                surface.SetDrawColor( self.IndicatorColorLine )
+                surface.SetDrawColor( self.CrosshairColorLine )
                 surface.DrawLine( scrPos.x, scrPos.y, ScrW() / 2, ScrH() / 2 )
 
             end
 
-            surface.SetDrawColor( self.IndicatorColorOuter )
-            surface.DrawPoly( self.indicatorPolyOuter )
+            surface.SetDrawColor( self.CrosshairColorOuter )
+            surface.DrawPoly( self.crosshairPolyOuter )
 
-            surface.SetDrawColor( self.IndicatorColorInner )
-            surface.DrawPoly( self.indicatorPolyInner )
+            surface.SetDrawColor( self.CrosshairColorInner )
+            surface.DrawPoly( self.crosshairPolyInner )
 
         end
 
