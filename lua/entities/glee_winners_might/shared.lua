@@ -328,7 +328,7 @@ function ENT:Place()
 
     self:SetHoldDist( math.max( target:WorldSpaceCenter():Distance( owner:EyePos() ), 1 ) )
     self:SetPos( target:WorldSpaceCenter() )
-    self:EmitSound( "npc/advisor/advisor_blast6.wav", 77, 100, 1 )
+    target:EmitSound( "npc/advisor/advisorheadvx06.wav", 77, 100, 1 )
 
 end
 
@@ -382,6 +382,8 @@ function ENT:ReleaseTarget()
     target.glee_WinnersMight_FallResistActive = nil
     target.glee_WinnersMight_FallResistAfter = self.FallResistAfter
     target.glee_WinnersMight_FallResistAfterEndTime = CurTime() + self.FallResistAfterDuration
+    target:EmitSound( "npc/advisor/advisor_blast6.wav", 80, 100, 1 )
+    target:EmitSound( "npc/advisor/advisor_blast6.wav", 80, 120, 1 )
 
 end
 
