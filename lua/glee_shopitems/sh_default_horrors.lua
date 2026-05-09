@@ -48,6 +48,24 @@ local items = {
         end,
         shCanShowInShop = shopHelpers.escapedCheck,
     },
+    ["winners_might"] = {
+        name = "Winner's Might",
+        desc = "Click and hold on a player to move them around.\n\nCost rises exponentially as it gets used.",
+        shCost = 0,
+        costDecorative = "-100",
+        markup = 1,
+        cooldown = 0.5,
+        tags = { "HORRORS", "CloseShopOnPurchase" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = 10,
+        svOnPurchaseFunc = function( purchaser, itemIdentifier )
+            setupPlacable( "glee_winners_might", purchaser, itemIdentifier )
+
+        end,
+        shCanShowInShop = shopHelpers.escapedCheck,
+    },
 }
 
 GAMEMODE:GobbleShopItems( items )
