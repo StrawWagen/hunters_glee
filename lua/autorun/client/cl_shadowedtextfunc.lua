@@ -12,7 +12,7 @@ local surface_SetTextColor = surface.SetTextColor
 local surface_SetTextPos = surface.SetTextPos
 local surface_DrawText = surface.DrawText
 
-function surface.drawShadowedTextBetter( textInitial, font, color, posx, posy, doCenter )
+function surface.drawShadowedTextBetter( textInitial, font, color, posx, posy, doCenter, shadowAlpha )
     local brokenUp = string_Explode( "\n", textInitial, false )
     local totalHeight = 0
     for _, text in ipairs( brokenUp ) do
@@ -28,10 +28,15 @@ function surface.drawShadowedTextBetter( textInitial, font, color, posx, posy, d
             centeringOffset = -( width * 0.5 )
 
         end
-        local shadowAlpha = 255
-        if color.a < 255 or color ~= color_white then
-            shadowAlpha = color.a / 4
 
+        if not shadowAlpha then
+            if color.a < 255 or color ~= color_white then
+                shadowAlpha = color.a / 4
+
+            else
+                shadowAlpha = 255
+
+            end
         end
 
         surface_SetTextColor( 0, 0, 0, shadowAlpha )
