@@ -557,7 +557,11 @@ local SCORE_BOARD = {
         self.HeaderLeft:SetMouseInputEnabled( true )
         self.HeaderLeft:SetTooltip( "Gamemode's Workshop" )
         self.HeaderLeft:SetTooltipDelay( 0 )
-        self.HeaderLeft.DoClick = function() gui.OpenURL( GAMEMODE_URL ) end
+        self.HeaderLeft.DoClick = function()
+            gui.OpenURL( GAMEMODE_URL )
+            print( "Opened URL; " .. GAMEMODE_URL )
+
+        end
         self.HeaderLeft.Paint = function( s )
             local fontHeight = draw.GetFontHeight( s:GetFont() )
             local gamemodeTextY = s:GetTall() / 2 - fontHeight / 2
@@ -592,7 +596,7 @@ local SCORE_BOARD = {
         local discordSize = glee_sizeScaled( nil, 32 )
         self.Header:InvalidateLayout( true )
         self.DiscordButton = self.HeaderRight:Add( "DImageButton" )
-        self.DiscordButton:SetPos( self.HeaderRight:GetWide() - discordSize, self.HeaderRight:GetTall() / 2 - discordSize / 2 )
+        self.DiscordButton:SetPos( self.HeaderRight:GetWide() - discordSize * 2.25, self.HeaderRight:GetTall() / 2 - discordSize / 2 )
         self.DiscordButton:SetImage( "icon32/glee_discord_32.png" )
         self.DiscordButton:SetSize( discordSize, discordSize )
         self.DiscordButton:SetVisible( false )
@@ -609,6 +613,7 @@ local SCORE_BOARD = {
             if url == "" then return end
 
             gui.OpenURL( url )
+            print( "Opened URL; " .. url )
 
         end
 
@@ -664,6 +669,7 @@ local SCORE_BOARD = {
 
 
         -- Scroll secret stuff
+        -- only triggers if server has many people online
         local scrollSecretReq = 50
         local scrollSecretDecay = 5
 
@@ -701,8 +707,12 @@ local SCORE_BOARD = {
             btn:SizeToContents()
             btn:SetTooltip( "Scoreboard made by Two Lemons" )
             btn:SetTooltipDelay( 1 )
-            btn.DoClick = function() gui.OpenURL( "https://github.com/legokidlogan" ) end
+            btn.DoClick = function()
+                local url = "https://github.com/legokidlogan"
+                gui.OpenURL( url )
+                print( "Opened URL; " .. url )
 
+            end
         end
 
         local function scrollSecretDelta( delta )

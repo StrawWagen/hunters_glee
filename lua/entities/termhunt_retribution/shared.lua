@@ -195,8 +195,8 @@ function GAMEMODE:SurfaceHomicidalGlee( dancer, surfacer )
 
     local validSurfacer = IsValid( surfacer )
     local oldSlight = 0
-    if validSurfacer then
-        GAMEMODE:HasSlighted( dancer, surfacer )
+    if validSurfacer and surfacer:IsPlayer() then
+        oldSlight = GAMEMODE:HasSlighted( dancer, surfacer )
 
     end
 

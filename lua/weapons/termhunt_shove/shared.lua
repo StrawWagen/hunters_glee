@@ -182,8 +182,10 @@ function SWEP:PrimaryAttack( firstMul )
                 end
                 owner:SetVelocity( owner:GetVelocity() + -( Force * 0.25 ) * firstMul )
                 self:SetNextPrimaryFire( CurTime() + 1 )
-                Hit.glee_lastShover = owner
+                if GAMEMODE.BlameForFallDamage then
+                    GAMEMODE:BlameForFallDamage( Hit, owner, self )
 
+                end
             else
                 local PlyForce = -Force * 125
                 Force = Force * math.Clamp( Phys:GetMass() / 400, 0.25, 1 )
@@ -242,25 +244,3 @@ function SWEP:OnDrop()
         self:Remove()
     end
 end
-
-hook.Add( "OnPlayerHitGround", "glee_shover_resetfalldamageblame", function( ply )
-    timer.Simple( 0, function()
-        if not IsValid( ply ) then return end
-        ply.glee_lastShover = nil
-
-    end )
-end )
-
-
-hook.Add( "EntityTakeDamage", "glee_shover_blamefalldamage", function( target, dmg )
-    local shover = target.glee_lastShover
-    if not IsValid( shover ) then return end
-    if not dmg:IsFallDamage() then return end
-
-    dmg:SetAttacker( shover )
-    local shoveSwep = shover:GetWeapon( "termhunt_shove" )
-    if IsValid( shoveSwep ) then
-        dmg:SetInflictor( shoveSwep )
-
-    end
-end )

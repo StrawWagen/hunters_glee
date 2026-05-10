@@ -3,7 +3,7 @@
 
 local GAMEMODE = GAMEMODE or GM
 
-hook.Add( "huntersglee_round_beginsetup", "glee_resetpersistient_flarespawnlocations", function() 
+hook.Add( "huntersglee_round_beginsetup", "glee_resetpersistent_flarespawnlocations", function() 
     GAMEMODE.FastestFoundAt = {}
 
 

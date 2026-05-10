@@ -1,5 +1,6 @@
 -- Tiny, clean taunt menu using the glee_radialselector VGUI element.
 -- Opened by a console command (DesktopWindows just triggers the command).
+-- rather ai sloppy because i dread vgui
 
 local panelName = "Taunts!"
 

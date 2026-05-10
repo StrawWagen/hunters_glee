@@ -24,6 +24,7 @@ include( "modules/deadplayerfx/cl_deaddesaturation.lua" )
 include( "modules/contextmenu_widgets/cl_banktop.lua" )
 include( "modules/contextmenu_widgets/cl_tauntmenu.lua" )
 include( "modules/contextmenu_widgets/cl_settingsmenu.lua" )
+include( "modules/contextmenu_widgets/cl_guiltchecker.lua" )
 
 include( "modules/bpm/cl_bpm.lua" )
 include( "modules/battery/cl_battery.lua" )

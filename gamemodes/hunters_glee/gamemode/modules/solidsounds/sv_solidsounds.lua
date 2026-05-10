@@ -50,8 +50,8 @@ end
 local soundTracks = {
     heliEvac = {
         sounds = {
-            "hunters_glee/music/VACANT/8.23.GleeExp2.ogg",
-            "hunters_glee/music/VACANT/8.24.to_noone.ogg",
+            "hunters_glee/music/VACANT/8.23.GleeExp2.ogg", -- played first evac of a round
+            "hunters_glee/music/VACANT/8.24.to_noone.ogg", -- played second evac of a round, then goes back to track no. 1
         },
         randomOrder = true,
         priority = 0,

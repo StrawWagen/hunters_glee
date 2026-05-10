@@ -13,6 +13,7 @@ gamemodes\hunters_glee\gamemode\modules\cl_spectateflashlight.lua
 gamemodes\hunters_glee\gamemode\modules\contextmenu_widgets\cl_banktop.lua
 gamemodes\hunters_glee\gamemode\modules\contextmenu_widgets\cl_tauntmenu.lua
 gamemodes\hunters_glee\gamemode\modules\contextmenu_widgets\cl_settingsmenu.lua
+gamemodes\hunters_glee\gamemode\modules\contextmenu_widgets\cl_guiltchecker.lua
 
 gamemodes\hunters_glee\gamemode\sh_player.lua
 
@@ -31,6 +32,8 @@ gamemodes\hunters_glee\gamemode\player_class\player_termrunnertaunt.lua
 
 gamemodes\hunters_glee\gamemode\modules\battery\cl_battery.lua
 gamemodes\hunters_glee\gamemode\modules\battery\sh_battery.lua
+
+gamemodes\hunters_glee\gamemode\modules\guilt\sh_guilt.lua
 
 gamemodes\hunters_glee\gamemode\modules\deadplayerfx\cl_souls.lua
 gamemodes\hunters_glee\gamemode\modules\deadplayerfx\cl_deaddesaturation.lua

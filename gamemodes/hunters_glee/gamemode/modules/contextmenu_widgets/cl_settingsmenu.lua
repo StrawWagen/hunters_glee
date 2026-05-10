@@ -1,6 +1,7 @@
 
 -- settings for CLIENT options
 -- not for cvars that affect serverside behavior
+-- rather ai sloppy because i dread vgui
 
 local GAMEMODE = GAMEMODE or GM
 

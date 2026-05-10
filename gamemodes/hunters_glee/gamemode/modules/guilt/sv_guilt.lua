@@ -89,8 +89,9 @@ function GM:IsInnocent( ply )
     -- have they been placing lots of beartraps?
     local totalEvilness = self.roundExtraData.generalMischievousness[plysId] or 0
 
-    local persistientEvilness = self:GetPersistientGuilt( ply ) * evilnessPerPersistGuilt
-    totalEvilness = totalEvilness + persistientEvilness
+    -- is this person a persistently evil presence?
+    local persistentEvilness = self:GetPersistentGuilt( ply ) * evilnessPerPersistGuilt
+    totalEvilness = totalEvilness + persistentEvilness
 
     -- have they been killing people? damaging people?
     local slightersSlights = self.roundExtraData.hasSlighted[plysId]
@@ -168,6 +169,9 @@ end
     @return: None
 --]]---------------------------------------------------------
 function GM:OnKilledTrulyInnocentSoul( attacker, died )
+
+    hook.Run( "glee_onkilledtrulyinnocentsoul", attacker, died )
+
     -- every 2 innocent player kills, it surfaces
     local currentEvilnessToSurface = GAMEMODE.roundExtraData.nextHomicidalGleeSurfaces[attacker:SteamID()] or autoHomicidalEvilnessIncrements
 
@@ -212,7 +216,10 @@ hook.Add( "PlayerDeath", "glee_storeslights", function( died, _, attacker )
     local slightAmnt, reason
 
     local hookResult, hookReason = hook.Run( "glee_slightsizeoverride", died, attacker )
-    if hookResult then
+    if hookResult ~= nil then
+        if hookResult == false then return end
+        if hookResult == 0 then return end
+
         if not hookReason then
             ErrorNoHaltWithStack( "glee_slightsizeoverride, no second arg(reason for slight) returned" )
             return
@@ -255,26 +262,52 @@ end )
 
 local dayInSeconds = 60 * 60 * 24
 
-function GM:GetPersistientGuilt( ply )
+local function getGuiltInDays( guiltSeconds )
     local currentTime = os.time()
-    local oldPersistientGuilt = ply:GetPData( "huntersglee_persistientguilt", currentTime )
-    local guiltInDays = math.Round( ( currentTime - oldPersistientGuilt ) / dayInSeconds, 1 )
+    local diffInSeconds = math.max( guiltSeconds - currentTime, 0 )
+    print( "diff", diffInSeconds, currentTime, guiltSeconds )
+    local guiltInDays = math.Round( diffInSeconds / dayInSeconds, 1 )
+
     return guiltInDays
 
 end
 
-function GM:IncrementPersistientGuilt( ply, add )
-    local daysToAdd = dayInSeconds * ( add or 1 )
-    local currentTime = os.time()
-    local oldPersistientGuilt = ply:GetPData( "huntersglee_persistientguilt", currentTime )
-    local newPersistientGuilt = oldPersistientGuilt + daysToAdd
-    ply:SetPData( "huntersglee_persistientguilt", newPersistientGuilt )
+function GM:GetPersistentGuilt( ply )
+    local oldPersistentGuilt = ply:GetPData( "glee_persistentguilt", 0 )
+    print( oldPersistentGuilt )
+    local guiltInDays = getGuiltInDays( oldPersistentGuilt )
+    return guiltInDays
 
 end
 
-hook.Add( "OnKilledTrulyInnocentSoul", "glee_incrementpersistientguilt", function( attacker, died )
-    if not game.IsDedicated() then return end -- local multi? who cares!
+function GM:IncrementPersistentGuilt( ply, add )
+    local daysToAdd = dayInSeconds * ( add or 1 )
+    local currentTime = os.time()
+    local oldPersistentGuilt = ply:GetPData( "glee_persistentguilt", currentTime )
+    local newPersistentGuilt = oldPersistentGuilt + daysToAdd
+    ply:SetPData( "glee_persistentguilt", newPersistentGuilt )
+    ply:SetNWInt( "glee_persistentguilt_days", getGuiltInDays( newPersistentGuilt ) )
+    print( "SETGUILTTTT", newPersistentGuilt, getGuiltInDays( newPersistentGuilt ) )
 
-    GAMEMODE:IncrementPersistientGuilt( attacker )
+end
+
+hook.Add( "glee_onkilledtrulyinnocentsoul", "glee_incrementpersistentguilt", function( attacker, _died )
+    --if not game.IsDedicated() then return end -- local multi? who cares!
+
+    GAMEMODE:IncrementPersistentGuilt( attacker )
 
 end )
+
+hook.Add( "PlayerInitialSpawn", "glee_checkpersistentguilt", function( ply )
+    local guiltInDays = GAMEMODE:GetPersistentGuilt( ply )
+    if guiltInDays <= 0 then return end
+
+    ply:SetNWInt( "glee_persistentguilt_days", guiltInDays )
+
+end )
+
+for _, ply in player.Iterator() do
+    print( ply )
+    print( GAMEMODE:GetPersistentGuilt( ply ) )
+
+end
