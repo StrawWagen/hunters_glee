@@ -42,27 +42,17 @@ ENT.TargetSoundPitchMax = 140 / 100
 ENT.TargetSoundVolumeMin = 0.5 -- Volume can go above 1 bc of IGModAudioChannel.
 ENT.TargetSoundVolumeMax = 2
 
-ENT.CrosshairColorOuter = Color( 0, 0, 0, 255 )
-ENT.CrosshairColorInner = Color( 255, 255, 255, 255 )
-ENT.CrosshairColorLine = Color( 255, 255, 255, 255 )
-ENT.CrosshairRadiusOuter = 10
-ENT.CrosshairRadiusInner = 8
-
 function ENT:DynamicCooldown( elapsed )
     return math.Clamp( math.pow( elapsed, 1.4 ), 50, 60 * 5 )
 end
 
 
 if CLIENT then
-    local function makeDiamondPoly( centerX, centerY, radius )
-        return {
-            { x = centerX, y = centerY - radius, },
-            { x = centerX + radius, y = centerY, },
-            { x = centerX, y = centerY + radius, },
-            { x = centerX - radius, y = centerY, },
-        }
+    local matCursorArrow = Material( "materials/icon24/hunters_glee_cursor_arrow.png" )
+    local matCursorHand = Material( "materials/icon24/hunters_glee_cursor_hand.png" )
+    local cursorSizeArrow = 24 * math.max( math.Round( ScrH() / 540 ), 1 ) -- Round to avoid pixel blurring.
+    local cursorSizeHand = 24 * math.max( math.Round( ScrH() / 540 ), 1 ) -- Round to avoid pixel blurring.
 
-    end
 
     local function colorLerpFast( color, from, to, frac )
         color.r = Lerp( frac, from.r, to.r )
@@ -72,10 +62,18 @@ if CLIENT then
 
     end
 
+    local function correctUVs( u0, v0, u1, v1 )
+        local du = 0.5 / 32 -- half pixel anticorrection
+        local dv = 0.5 / 32 -- half pixel anticorrection
+        u0, v0 = ( 0 - du ) / ( 1 - 2 * du ), ( 0 - dv ) / ( 1 - 2 * dv )
+        u1, v1 = ( 1 - du ) / ( 1 - 2 * du ), ( 1 - dv ) / ( 1 - 2 * dv )
+
+        return u0, v0, u1, v1
+
+    end
+
     function ENT:PostInitializeFunc()
         self:SetNoDraw( true )
-        self.crosshairPolyOuter = makeDiamondPoly( ScrW() / 2, ScrH() / 2, glee_sizeScaled( nil, self.CrosshairRadiusOuter ) )
-        self.crosshairPolyInner = makeDiamondPoly( ScrW() / 2, ScrH() / 2, glee_sizeScaled( nil, self.CrosshairRadiusInner ) )
 
     end
 
@@ -110,21 +108,20 @@ if CLIENT then
         surface.drawShadowedTextBetter( cooldownString, "scoreGainedOnPlaceFont", textColor, screenMiddleW, screenMiddleH + glee_sizeScaled( nil, 60 + 40 ), true, 255 )
 
         if self:IsGrabbing() then
-            draw.NoTexture()
-
             local target = self:GetCurrTarget()
             if IsValid( target ) then
                 local scrPos = target:WorldSpaceCenter():ToScreen()
-                surface.SetDrawColor( self.CrosshairColorLine )
-                surface.DrawLine( scrPos.x, scrPos.y, ScrW() / 2, ScrH() / 2 )
-
+                if scrPos.visible then
+                    surface.SetDrawColor( 255, 255, 255, 255 )
+                    surface.SetMaterial( matCursorHand )
+                    surface.DrawTexturedRectUV( scrPos.x, scrPos.y, cursorSizeHand, cursorSizeHand, correctUVs( 0, 0, 1, 1 ) )
+                end
             end
 
-            surface.SetDrawColor( self.CrosshairColorOuter )
-            surface.DrawPoly( self.crosshairPolyOuter )
-
-            surface.SetDrawColor( self.CrosshairColorInner )
-            surface.DrawPoly( self.crosshairPolyInner )
+        else
+            surface.SetDrawColor( 255, 255, 255, 255 )
+            surface.SetMaterial( matCursorArrow )
+            surface.DrawTexturedRectUV( ScrW() / 2, ScrH() / 2, cursorSizeArrow, cursorSizeArrow, correctUVs( 0, 0, 1, 1 ) )
 
         end
 
@@ -225,7 +222,6 @@ if CLIENT then
         local ghostEnt = LocalPlayer().ghostEnt
         if not IsValid( ghostEnt ) then return end
         if not ghostEnt._glee_WinnersMight_IsGhostEnt then return end
-        if not ghostEnt:IsGrabbing() then return end
 
         return false
 
