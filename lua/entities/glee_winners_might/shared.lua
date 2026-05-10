@@ -135,6 +135,13 @@ if CLIENT then
 
     end
 
+    function ENT:HighlightNearestTarget()
+        if self:IsGrabbing() then return end
+
+        return BaseClass.HighlightNearestTarget( self )
+
+    end
+
     function ENT:HandleOwnerSound()
         if not self:IsGrabbing() then return end
         if self.player ~= LocalPlayer() then return end
