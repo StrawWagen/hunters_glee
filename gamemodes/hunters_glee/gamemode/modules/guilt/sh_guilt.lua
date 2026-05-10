@@ -1,4 +1,5 @@
 
+-- TODO: IMPLIMENT GUILT EFFECTS
 
 GM.PermaGuiltInfo = {
     [0]  = {
