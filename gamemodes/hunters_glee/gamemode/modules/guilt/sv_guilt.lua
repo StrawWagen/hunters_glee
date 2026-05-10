@@ -260,12 +260,14 @@ hook.Add( "huntersglee_player_reset", "glee_reset_autohomicidalgleehint", functi
 end )
 
 
+
+-- PERSISTENT GUILT begin
+
 local dayInSeconds = 60 * 60 * 24
 
 local function getGuiltInDays( guiltSeconds )
     local currentTime = os.time()
     local diffInSeconds = math.max( guiltSeconds - currentTime, 0 )
-    print( "diff", diffInSeconds, currentTime, guiltSeconds )
     local guiltInDays = math.Round( diffInSeconds / dayInSeconds, 1 )
 
     return guiltInDays
@@ -274,7 +276,6 @@ end
 
 function GM:GetPersistentGuilt( ply )
     local oldPersistentGuilt = ply:GetPData( "glee_persistentguilt", 0 )
-    print( oldPersistentGuilt )
     local guiltInDays = getGuiltInDays( oldPersistentGuilt )
     return guiltInDays
 
@@ -286,28 +287,25 @@ function GM:IncrementPersistentGuilt( ply, add )
     local oldPersistentGuilt = ply:GetPData( "glee_persistentguilt", currentTime )
     local newPersistentGuilt = oldPersistentGuilt + daysToAdd
     ply:SetPData( "glee_persistentguilt", newPersistentGuilt )
-    ply:SetNWInt( "glee_persistentguilt_days", getGuiltInDays( newPersistentGuilt ) )
-    print( "SETGUILTTTT", newPersistentGuilt, getGuiltInDays( newPersistentGuilt ) )
+    ply:SetNWFloat( "glee_persistentguilt_days", getGuiltInDays( newPersistentGuilt ) )
 
 end
-
-hook.Add( "glee_onkilledtrulyinnocentsoul", "glee_incrementpersistentguilt", function( attacker, _died )
-    --if not game.IsDedicated() then return end -- local multi? who cares!
-
-    GAMEMODE:IncrementPersistentGuilt( attacker )
-
-end )
 
 hook.Add( "PlayerInitialSpawn", "glee_checkpersistentguilt", function( ply )
     local guiltInDays = GAMEMODE:GetPersistentGuilt( ply )
     if guiltInDays <= 0 then return end
 
-    ply:SetNWInt( "glee_persistentguilt_days", guiltInDays )
+    ply:SetNWFloat( "glee_persistentguilt_days", guiltInDays )
 
 end )
 
-for _, ply in player.Iterator() do
-    print( ply )
-    print( GAMEMODE:GetPersistentGuilt( ply ) )
+local developerVar = GetConVar( "developer" )
 
-end
+hook.Add( "glee_onkilledtrulyinnocentsoul", "glee_incrementpersistentguilt", function( attacker, _died )
+    -- persistent guilt is a dedicated server only mechanic
+    -- developer 1 enables it for testing
+    if not game.IsDedicated() and not developerVar:GetBool() then return end
+
+    GAMEMODE:IncrementPersistentGuilt( attacker )
+
+end )

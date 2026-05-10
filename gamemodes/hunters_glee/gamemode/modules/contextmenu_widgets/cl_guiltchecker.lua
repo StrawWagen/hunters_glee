@@ -1,3 +1,10 @@
+
+local developerVar = GetConVar( "developer" )
+-- guilt is a dedicated server only mechanic
+-- developer 1 enables it for testing
+if not game.IsDedicated() and not developerVar:GetBool() then return end
+
+
 local FRAME_W_1080P = 500
 local FRAME_H_1080P = 300
 
@@ -39,7 +46,7 @@ function guiltChecker:Create( container )
     local bobPx = glee_sizeScaled( nil, 2 * scale )
 
     function root:Paint( w, h )
-        local guiltDays = LocalPlayer():GetNWInt( "glee_persistentguilt_days", 0 )
+        local guiltDays = LocalPlayer():GetNWFloat( "glee_persistentguilt_days", 0 )
 
         -- Recompute tier-derived data only when guilt or panel width changes
         if guiltDays ~= self.lastGuiltDays or w ~= self.lastW then
@@ -142,7 +149,7 @@ local function createGuiltCheckerSafely()
     frame:SetSizable( true )
     guiltChecker:Create( frame )
     -- open sound pitched lower the guiltier you are
-    local guiltDays = LocalPlayer():GetNWInt( "glee_persistentguilt_days", 0 )
+    local guiltDays = LocalPlayer():GetNWFloat( "glee_persistentguilt_days", 0 )
     local pitch = math.Clamp( 200 - math.floor( guiltDays * 4 ), 80, 200 )
     LocalPlayer():EmitSound( "physics/wood/wood_crate_impact_soft3.wav", 50, pitch, 0.45 )
     return frame

@@ -1,5 +1,6 @@
 
-GAMEMODE.PermaGuiltInfo = {
+
+GM.PermaGuiltInfo = {
     [0]  = {
         message = "Your conscience is clear.",
         color = Color( 200, 200, 200 )
