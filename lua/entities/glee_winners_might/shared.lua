@@ -234,8 +234,6 @@ if CLIENT then
 
     end )
 
-    -- TODO: 3D effects?
-
 end
 
 
