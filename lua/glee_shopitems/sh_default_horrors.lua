@@ -48,9 +48,9 @@ local items = {
         end,
         shCanShowInShop = shopHelpers.escapedCheck,
     },
-    ["winners_might"] = {
-        name = "Winner's Might",
-        desc = "Click and hold on a player to move them around.\n\nCost rises exponentially as it gets used.", -- Not actually exponential, but it gets the point across.
+    ["point_and_click"] = {
+        name = "Point and Click",
+        desc = "Point, and click on players!\nCost rises exponentially as it gets used.", -- Not actually exponential, but it gets the point across.
         shCost = 0,
         costDecorative = "-100",
         markup = 1,
@@ -61,7 +61,7 @@ local items = {
         },
         weight = 10,
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "glee_winners_might", purchaser, itemIdentifier )
+            setupPlacable( "glee_point_and_click", purchaser, itemIdentifier )
 
         end,
         shCanShowInShop = shopHelpers.escapedCheck,

@@ -5,7 +5,7 @@ ENT.Type = "anim"
 ENT.Base = "player_swapper"
 
 ENT.Category    = "Other"
-ENT.PrintName   = "Winner's Might"
+ENT.PrintName   = "Point and Click"
 ENT.Author      = "TwoLemons"
 ENT.Purpose     = "Picks up living players"
 ENT.Spawnable    = true
@@ -83,11 +83,11 @@ if CLIENT then
 
         local scoreGained = math.Round( self:GetGivenScore() )
         local cooldown = math.Round( self:GetGivenScoreAlt() )
-        local textColor = self.glee_WinnersMight_TextColor
+        local textColor = self.glee_PointAndClick_TextColor
 
         if not textColor then
             textColor = Color( 0, 0, 0, 0 )
-            self.glee_WinnersMight_TextColor = textColor
+            self.glee_PointAndClick_TextColor = textColor
 
         end
 
@@ -131,7 +131,7 @@ if CLIENT then
         self:SetNoDraw( true )
         self:HandleOwnerSound()
         self:HandleTargetSound()
-        self._glee_WinnersMight_IsGhostEnt = true -- Set here instead of in init, as init doesn't run during fullupdate
+        self._glee_PointAndClick_IsGhostEnt = true -- Set here instead of in init, as init doesn't run during fullupdate
 
     end
 
@@ -146,21 +146,21 @@ if CLIENT then
         if not self:IsGrabbing() then return end
         if self.player ~= LocalPlayer() then return end
 
-        if not self.glee_WinnersMight_StartTime then
-            self.glee_WinnersMight_StartTime = CurTime()
+        if not self.glee_PointAndClick_StartTime then
+            self.glee_PointAndClick_StartTime = CurTime()
 
         end
 
-        local snd = self.glee_WinnersMight_OwnerSound
+        local snd = self.glee_PointAndClick_OwnerSound
         if not snd and self.player == LocalPlayer() then
             snd = CreateSound( game.GetWorld(), "ambient/machines/refinery_loop_1.wav" )
-            self.glee_WinnersMight_OwnerSound = snd
+            self.glee_PointAndClick_OwnerSound = snd
             snd:SetSoundLevel( 0 )
             snd:PlayEx( 0, 100 )
 
         end
 
-        local elapsed = CurTime() - self.glee_WinnersMight_StartTime
+        local elapsed = CurTime() - self.glee_PointAndClick_StartTime
         snd:ChangeVolume( Lerp( elapsed / 40, 0, 1 ) )
         snd:ChangePitch( Lerp( elapsed / 60, 100, 180 ) )
 
@@ -170,7 +170,7 @@ if CLIENT then
         if not self:IsGrabbing() then return end
 
         -- Update sound
-        local snd = self.glee_WinnersMight_TargetSound
+        local snd = self.glee_PointAndClick_TargetSound
         if IsValid( snd ) then
             local target = self:GetCurrTarget()
             if not IsValid( target ) then return end
@@ -185,16 +185,16 @@ if CLIENT then
 
         end
 
-        if self.glee_WinnersMight_LoadingTargetSound then return end
+        if self.glee_PointAndClick_LoadingTargetSound then return end
 
-        self.glee_WinnersMight_LoadingTargetSound = true
+        self.glee_PointAndClick_LoadingTargetSound = true
 
         -- Create sound
         sound.PlayFile( "sound/hunters_glee/hl2tweaks/ol07_advisor_00_36_25_loop.wav", "mono 3d noplay noblock", function( x )
-            self.glee_WinnersMight_LoadingTargetSound = nil
+            self.glee_PointAndClick_LoadingTargetSound = nil
             if not IsValid( x ) then return end
 
-            self.glee_WinnersMight_TargetSound = x
+            self.glee_PointAndClick_TargetSound = x
             self:HandleTargetSound() -- Initialize the pitch/volume
             x:EnableLooping( true )
             x:Play()
@@ -205,17 +205,17 @@ if CLIENT then
     function ENT:OnRemove()
         BaseClass.OnRemove( self )
 
-        local snd = self.glee_WinnersMight_OwnerSound
+        local snd = self.glee_PointAndClick_OwnerSound
         if snd then
             snd:Stop()
-            self.glee_WinnersMight_OwnerSound = nil
+            self.glee_PointAndClick_OwnerSound = nil
 
         end
 
-        snd = self.glee_WinnersMight_TargetSound
+        snd = self.glee_PointAndClick_TargetSound
         if IsValid( snd ) then
             snd:Stop()
-            self.glee_WinnersMight_TargetSound = nil
+            self.glee_PointAndClick_TargetSound = nil
 
         end
     end
@@ -223,12 +223,12 @@ if CLIENT then
 
     -- Hide default crosshair while grabbing.
     local crosshairLookup = { ["CHudCrosshair"] = true } -- Faster than string comparison
-    hook.Add( "HUDShouldDraw", "glee_winnersmight_overridecrosshair", function( name )
+    hook.Add( "HUDShouldDraw", "glee_pointandclick_overridecrosshair", function( name )
         if not crosshairLookup[name] then return end
 
         local ghostEnt = LocalPlayer().ghostEnt
         if not IsValid( ghostEnt ) then return end
-        if not ghostEnt._glee_WinnersMight_IsGhostEnt then return end
+        if not ghostEnt._glee_PointAndClick_IsGhostEnt then return end
 
         return false
 
@@ -244,7 +244,7 @@ function ENT:SetupDataTablesExtra()
 end
 
 function ENT:GetDynamicCooldown()
-    return self:DynamicCooldown( CurTime() - ( self.glee_WinnersMight_StartTime or CurTime() ) )
+    return self:DynamicCooldown( CurTime() - ( self.glee_PointAndClick_StartTime or CurTime() ) )
 
 end
 
@@ -319,14 +319,14 @@ function ENT:Place()
 
     GAMEMODE:AddMischievousness( owner, 3, "picked up a player" )
 
-    self.glee_WinnersMight_Target = target
-    self.glee_WinnersMight_CostPerSec = self.CostPerSec
-    self.glee_WinnersMight_StartTime = CurTime()
-    self.glee_WinnersMight_PrevCostTime = CurTime()
-    self.glee_WinnersMight_TotalCost = self.PurchaseCost
+    self.glee_PointAndClick_Target = target
+    self.glee_PointAndClick_CostPerSec = self.CostPerSec
+    self.glee_PointAndClick_StartTime = CurTime()
+    self.glee_PointAndClick_PrevCostTime = CurTime()
+    self.glee_PointAndClick_TotalCost = self.PurchaseCost
 
-    target.glee_WinnersMight_Ent = self
-    target.glee_WinnersMight_FallResistActive = self.FallResistActive
+    target.glee_PointAndClick_Ent = self
+    target.glee_PointAndClick_FallResistActive = self.FallResistActive
 
     self:SetHoldDist( math.Clamp( target:WorldSpaceCenter():Distance( owner:EyePos() ), 1, self.MoveDistMax ) )
     self:SetPos( target:WorldSpaceCenter() )
@@ -339,19 +339,19 @@ function ENT:CostTick( force )
     if not IsValid( owner ) then return end
 
     local now = CurTime()
-    local prevTime = self.glee_WinnersMight_PrevCostTime
+    local prevTime = self.glee_PointAndClick_PrevCostTime
     if not force and now < prevTime + self.CostInterval then return end
 
     local dt = now - prevTime
-    local costPerSec = math.min( self.glee_WinnersMight_CostPerSec + self.CostPerSecPerSec * dt, self.CostPerSecMax )
+    local costPerSec = math.min( self.glee_PointAndClick_CostPerSec + self.CostPerSecPerSec * dt, self.CostPerSecMax )
 
-    self.glee_WinnersMight_PrevCostTime = now
-    self.glee_WinnersMight_CostPerSec = costPerSec
+    self.glee_PointAndClick_PrevCostTime = now
+    self.glee_PointAndClick_CostPerSec = costPerSec
 
     local costDelta = math.Round( costPerSec * dt )
-    local totalCost = self.glee_WinnersMight_TotalCost + costDelta
+    local totalCost = self.glee_PointAndClick_TotalCost + costDelta
 
-    self.glee_WinnersMight_TotalCost = totalCost
+    self.glee_PointAndClick_TotalCost = totalCost
     self:SetGivenScore( "-" .. totalCost )
     self:SetGivenScoreAlt( self:GetDynamicCooldown() )
     owner:GivePlayerScore( -costDelta )
@@ -377,13 +377,13 @@ function ENT:ReleaseTarget()
 
     end
 
-    local target = self.glee_WinnersMight_Target
+    local target = self.glee_PointAndClick_Target
     if not IsValid( target ) then return end
 
-    target.glee_WinnersMight_Ent = nil
-    target.glee_WinnersMight_FallResistActive = nil
-    target.glee_WinnersMight_FallResistAfter = self.FallResistAfter
-    target.glee_WinnersMight_FallResistAfterEndTime = CurTime() + self.FallResistAfterDuration
+    target.glee_PointAndClick_Ent = nil
+    target.glee_PointAndClick_FallResistActive = nil
+    target.glee_PointAndClick_FallResistAfter = self.FallResistAfter
+    target.glee_PointAndClick_FallResistAfterEndTime = CurTime() + self.FallResistAfterDuration
     target:EmitSound( "npc/advisor/advisor_blast6.wav", 80, 100, 1 )
     target:EmitSound( "npc/advisor/advisor_blast6.wav", 80, 120, 1 )
 
@@ -396,7 +396,7 @@ function ENT:ModifiableThink()
     end
 
     local owner = self.player
-    local target = self.glee_WinnersMight_Target
+    local target = self.glee_PointAndClick_Target
 
     if not IsValid( owner ) or not IsValid( target ) or not owner:KeyDown( IN_ATTACK ) or owner:GetScore() <= 0 then
         self:CostTick( true )
@@ -447,18 +447,18 @@ function ENT:ModifiableThink()
 end
 
 
-hook.Add( "EntityTakeDamage", "glee_winnersmight_fallresist", function( target, dmg )
+hook.Add( "EntityTakeDamage", "glee_pointandclick_fallresist", function( target, dmg )
     if not dmg:IsFallDamage() then return end
     if not target:IsPlayer() then return end
 
-    local afterResist = target.glee_WinnersMight_FallResistAfter
-    if afterResist and CurTime() <= target.glee_WinnersMight_FallResistAfterEndTime then
+    local afterResist = target.glee_PointAndClick_FallResistAfter
+    if afterResist and CurTime() <= target.glee_PointAndClick_FallResistAfterEndTime then
         dmg:ScaleDamage( 1 - afterResist )
 
     end
 
-    local activeResist = target.glee_WinnersMight_FallResistActive
-    if activeResist and IsValid( target.glee_WinnersMight_Ent ) then
+    local activeResist = target.glee_PointAndClick_FallResistActive
+    if activeResist and IsValid( target.glee_PointAndClick_Ent ) then
         dmg:ScaleDamage( 1 - activeResist )
 
     end
