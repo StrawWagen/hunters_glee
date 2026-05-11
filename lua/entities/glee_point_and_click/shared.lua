@@ -136,6 +136,14 @@ if CLIENT then
 
     end
 
+    function ENT:OwnerlessThink()
+        if self:HasReleasedTarget() then
+            self:StopOwnerSound()
+            self:StopTargetSound()
+
+        end
+    end
+
     function ENT:HighlightNearestTarget()
         if self:IsGrabbing() then return end
 
@@ -203,22 +211,29 @@ if CLIENT then
         end )
     end
 
+    function ENT:StopOwnerSound()
+        local snd = self.glee_PointAndClick_OwnerSound
+        if not snd then return end
+
+        snd:Stop()
+        self.glee_PointAndClick_OwnerSound = nil
+    end
+
+    function ENT:StopTargetSound()
+        local snd = self.glee_PointAndClick_TargetSound
+        self.glee_PointAndClick_TargetSound = nil
+        if not IsValid( snd ) then return end
+
+        snd:Stop()
+
+    end
+
     function ENT:OnRemove()
         BaseClass.OnRemove( self )
 
-        local snd = self.glee_PointAndClick_OwnerSound
-        if snd then
-            snd:Stop()
-            self.glee_PointAndClick_OwnerSound = nil
+        self:StopOwnerSound()
+        self:StopTargetSound()
 
-        end
-
-        snd = self.glee_PointAndClick_TargetSound
-        if IsValid( snd ) then
-            snd:Stop()
-            self.glee_PointAndClick_TargetSound = nil
-
-        end
     end
 
 
@@ -254,6 +269,11 @@ function ENT:IsGrabbing()
 
 end
 
+function ENT:HasReleasedTarget()
+    return self:GetHoldDist() <= -1
+
+end
+
 
 if not SERVER then return end
 
@@ -262,6 +282,7 @@ function ENT:PostInitializeFunc()
     self:SetHoldDist( 0 )
     self:SetGivenScore( -self.PurchaseCost )
     self:SetGivenScoreAlt( self:GetDynamicCooldown() )
+    self._glee_PointAndClick_IsGhostEnt = true
 
 end
 
@@ -371,6 +392,8 @@ function ENT:ApplyDynamicCooldown()
 end
 
 function ENT:ReleaseTarget()
+    self:SetHoldDist( -1 )
+
     local baseOwner = self.player
     if IsValid( baseOwner ) then
         self:TellPlyToClearHighlighter()
@@ -397,6 +420,8 @@ function ENT:ReleaseTarget()
 end
 
 function ENT:ModifiableThink()
+    if self:HasReleasedTarget() then return end -- Shouldn't get here in that state, but just in case.
+
     if not self:IsGrabbing() then
         return BaseClass.ModifiableThink( self )
 
@@ -408,8 +433,7 @@ function ENT:ModifiableThink()
     if not IsValid( owner ) or not IsValid( target ) or not owner:KeyDown( IN_ATTACK ) or owner:GetScore() <= 0 then
         self:CostTick( true )
         self:ApplyDynamicCooldown()
-        self:ReleaseTarget()
-        SafeRemoveEntity( self )
+        self:ReleaseTarget() -- After this, the owner is lost, and :OwnerlessThink() takes over.
         return
 
     end
@@ -453,6 +477,31 @@ function ENT:ModifiableThink()
 
 end
 
+function ENT:OwnerlessThink()
+    if not self:HasReleasedTarget() then return end
+    local target = self.glee_PointAndClick_Target
+    local cleanupTime = self.glee_PointAndClick_CleanupTime
+
+    -- Wait for cleanup, or do it instantly if the target is invalid.
+    if not IsValid( target ) or ( cleanupTime or math.huge ) <= CurTime() then
+        SafeRemoveEntity( self ) -- Finally done!
+        return
+
+    end
+
+    -- Once the target lands or dies, delay the removal so killicons can network properly.
+    if not self.glee_PointAndClick_CleanupTime and ( target:IsOnGround() or target:Health() <= 0 ) then
+        self.glee_PointAndClick_CleanupTime = CurTime() + 3
+
+    end
+
+    -- Do nothing if target has been released but hasn't landed yet.
+    -- Otherwise, fall damage blame and killicons will break!
+    self:NextThink( CurTime() )
+    return true
+
+end
+
 
 hook.Add( "EntityTakeDamage", "glee_pointandclick_fallresist", function( target, dmg )
     if not dmg:IsFallDamage() then return end
@@ -487,7 +536,7 @@ end )
 
 hook.Add( "PlayerDeath", "glee_pointandclick_falldeathcost", function( target, inflictor, attacker )
     if not IsValid( inflictor ) then return end
-    if not inflictor.glee_PointAndClick_Ent then return end
+    if not inflictor._glee_PointAndClick_IsGhostEnt then return end
     if not IsValid( attacker ) then return end
     if not attacker:IsPlayer() then return end
 
