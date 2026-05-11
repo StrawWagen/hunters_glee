@@ -34,7 +34,7 @@ ENT.MoveDistMax = 500 -- Max grab distance from the owner's eyes. Makes it not g
 
 ENT.FallResistActive = 0.5 -- Resistance mult against fall damage while actively being grabbed.
 ENT.FallResistAfter = 0.5 -- Resistance mult that lingers once let go.
-ENT.FallResistAfterDuration = 10 -- How long the post-grab resistance should last for.
+ENT.FallResistAfterDuration = 10 -- How long the post-grab resistance should last for. Only protects against one instance of fall damage.
 
 ENT.TargetSoundSpeedMin = 300 -- What speed should correspond with minimum pitch/volume. Speeds below this will also get clamped to the minimum.
 ENT.TargetSoundSpeedMax = 2000
@@ -329,6 +329,7 @@ function ENT:Place()
 
     target.glee_PointAndClick_Ent = self
     target.glee_PointAndClick_FallResistActive = self.FallResistActive
+    target.glee_PointAndClick_FallResistAfter = nil -- Clear existing post-grab fall resist
 
     self:SetHoldDist( math.Clamp( target:WorldSpaceCenter():Distance( owner:EyePos() ), 1, self.MoveDistMax ) )
     self:SetPos( target:WorldSpaceCenter() )
@@ -460,6 +461,7 @@ hook.Add( "EntityTakeDamage", "glee_pointandclick_fallresist", function( target,
     local afterResist = target.glee_PointAndClick_FallResistAfter
     if afterResist and CurTime() <= target.glee_PointAndClick_FallResistAfterEndTime then
         dmg:ScaleDamage( 1 - afterResist )
+        target.glee_PointAndClick_FallResistAfter = nil -- Only resist falls caused directly from this item, don't linger any more.
 
     end
 
