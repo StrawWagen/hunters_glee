@@ -32,10 +32,6 @@ ENT.MoveStrengthDownMult = 0.15 -- After the speed clamp, multiplies vertical fo
 ENT.MoveDampingMult = 2
 ENT.MoveDistMax = 500 -- Max grab distance from the owner's eyes. Makes it not get stuck awkwardly far away.
 
-ENT.FallResistActive = 0.5 -- Resistance mult against fall damage while actively being grabbed.
-ENT.FallResistAfter = 0.5 -- Resistance mult that lingers once let go.
-ENT.FallResistAfterDuration = 10 -- How long the post-grab resistance should last for. Only protects against one instance of fall damage.
-
 ENT.TargetSoundSpeedMin = 300 -- What speed should correspond with minimum pitch/volume. Speeds below this will also get clamped to the minimum.
 ENT.TargetSoundSpeedMax = 2000
 ENT.TargetSoundPitchMin = 80 / 100 -- 0-1 scale for pitch bc of IGModAudioChannel.
@@ -349,8 +345,6 @@ function ENT:Place()
     self.glee_PointAndClick_TotalCost = self.PurchaseCost
 
     target.glee_PointAndClick_Ent = self
-    target.glee_PointAndClick_FallResistActive = self.FallResistActive
-    target.glee_PointAndClick_FallResistAfter = nil -- Clear existing post-grab fall resist
 
     self:SetHoldDist( math.Clamp( target:WorldSpaceCenter():Distance( owner:EyePos() ), 1, self.MoveDistMax ) )
     self:SetPos( target:WorldSpaceCenter() )
@@ -407,9 +401,6 @@ function ENT:ReleaseTarget()
     if not IsValid( target ) then return end
 
     target.glee_PointAndClick_Ent = nil
-    target.glee_PointAndClick_FallResistActive = nil
-    target.glee_PointAndClick_FallResistAfter = self.FallResistAfter
-    target.glee_PointAndClick_FallResistAfterEndTime = CurTime() + self.FallResistAfterDuration
     target:EmitSound( "npc/advisor/advisor_blast6.wav", 80, 100, 1 )
     target:EmitSound( "npc/advisor/advisor_blast6.wav", 80, 120, 1 )
 
@@ -502,27 +493,6 @@ function ENT:OwnerlessThink()
 
 end
 
-
-hook.Add( "EntityTakeDamage", "glee_pointandclick_fallresist", function( target, dmg )
-    if not dmg:IsFallDamage() then return end
-    if not target:IsPlayer() then return end
-
-    local afterResist = target.glee_PointAndClick_FallResistAfter
-    if afterResist and CurTime() <= target.glee_PointAndClick_FallResistAfterEndTime then
-        dmg:ScaleDamage( 1 - afterResist )
-        target.glee_PointAndClick_FallResistAfter = nil -- Only resist falls caused directly from this item, don't linger any more.
-
-    end
-
-    local activeResist = target.glee_PointAndClick_FallResistActive
-    if activeResist and IsValid( target.glee_PointAndClick_Ent ) then
-        dmg:ScaleDamage( 1 - activeResist )
-
-    end
-
-    if dmg:GetDamage() < 1 then return true end
-
-end )
 
 hook.Add( "glee_falldamageblame_hitground", "glee_pointandclick_falldamageblame", function( target, attacker, inflictor )
     if not IsValid( inflictor ) then return end
