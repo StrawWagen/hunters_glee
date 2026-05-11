@@ -649,7 +649,7 @@ net.Receive( "glee_starteddriving", function()
     LocalPlayer():EmitSound( "weapons/crossbow/bolt_fly4.wav", 100, 150, 1 )
     LocalPlayer():EmitSound( "ambient/levels/labs/electric_explosion5.wav", 100, 200, 1 )
     LocalPlayer():EmitSound( "ui/buttonclick.wav", 100, 80, 1 )
-    LocalPlayer().glee_HasControlledSomething = true
+    LocalPlayer().glee_NextControlSomethingHint = CurTime() + 60
 
     LocalPlayer().glee_SpectateOrbitDistance = nil
 
@@ -748,8 +748,13 @@ local function genericHints()
         elseif not hasEscaped and not me.glee_HasBoughtDivineIntervention and myScore >= GAMEMODE:shopItemCost( "resurrection", me ) then
             return true, "Buy Divine Intervention in the shop to resurrect yourself..."
 
-        elseif hasEscaped and not me.glee_HasControlledSomething and ( me.glee_NextControlSomethingHint or 0 ) < CurTime() then
+        elseif hasEscaped and ( me.glee_NextControlSomethingHint or 0 ) < CurTime() then
             if not me.glee_WasATerminatorOnTheMap then
+                if IsValid( me:GetDrivingEntity() ) then
+                    me.glee_NextControlSomethingHint = CurTime() + 60
+                    return
+
+                end
                 local wasBased
                 for _, ent in ents.Iterator() do
                     if not ent.isTerminatorHunterBased then continue end
@@ -767,7 +772,7 @@ local function genericHints()
                 end
             end
             local valid, phrase = GAMEMODE:TranslatedBind( "+zoom" )
-            if not valid then me.glee_HasControlledSomething = true return end
+            if not valid then me.glee_NextControlSomethingHint = CurTime() + 5 return end
             local obsTarg = me:GetObserverTarget()
             if IsValid( obsTarg ) and obsTarg.isTerminatorHunterBased then
                 return true, "Press " .. phrase .. " to POSESS the hunter you're spectating..."
