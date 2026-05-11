@@ -12,12 +12,18 @@ function GM:BlameForFallDamage( ply, attacker, inflictor )
 end
 
 hook.Add( "OnPlayerHitGround", "glee_resetfalldamageblame", function( ply )
+    if not ply.glee_fallDamageAttacker then return end
+
     timer.Create( "glee_resetfalldamageblame_" .. ply:EntIndex(), 0, 1, function()
         if not IsValid( ply ) then return end
         ply.glee_fallDamageAttacker = nil
         ply.glee_fallDamageInflictor = nil
 
     end )
+
+    -- Run a hook so blame can reliably be re-applied (if needed). Only applies to players.
+    hook.Run( "glee_falldamageblame_hitground", ply, ply.glee_fallDamageAttacker, ply.glee_fallDamageInflictor )
+
 end )
 
 
