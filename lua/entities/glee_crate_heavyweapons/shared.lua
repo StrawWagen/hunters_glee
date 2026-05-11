@@ -58,8 +58,6 @@ function ENT:Place()
 
     crate:EmitSound( "items/ammocrate_open.wav", 75, 100 )
 
-    print( crate )
-
     if self.player and self.player.GivePlayerScore and betrayalScore then
         self.player:GivePlayerScore( betrayalScore )
         GAMEMODE:sendPurchaseConfirm( self.player, betrayalScore )

@@ -60,7 +60,7 @@ local items = {
         },
         weight = 10,
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "glee_heavyweapons_crate", purchaser, itemIdentifier )
+            setupPlacable( "glee_crate_heavyweapons", purchaser, itemIdentifier )
 
         end,
         shCanShowInShop = shopHelpers.escapedCheck,

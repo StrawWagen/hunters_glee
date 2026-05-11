@@ -68,7 +68,7 @@ function GM:BombCrate( pos, crateStatsRef )
     crate:SetAngles( Angle( 0, random, 0 ) )
     crate:Spawn()
 
-    crateStatsRef = crateStatsRef or baseclass.Get( "glee_tnt_crate" )
+    crateStatsRef = crateStatsRef or baseclass.Get( "glee_crate_tnt" )
 
     crate.glee_IsTNTCrate = true
 
