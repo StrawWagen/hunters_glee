@@ -65,11 +65,10 @@ function GM:purchaseItem( ply, toPurchase )
 
         if not dat.fakeCost then
             ply:GivePlayerScore( -cost )
+            if skullCost then
+                ply:GivePlayerSkulls( -skullCost )
 
-        end
-        if skullCost then
-            ply:GivePlayerSkulls( -skullCost )
-
+            end
         end
 
         -- increment purchase count.. AFTER the cost is calculated...

@@ -30,7 +30,7 @@ function GM:getDebugShopItemStructureTable()
             name =              "Printed name that players see",
             desc =              "Description. Accepts a function or string.",
             shCost =            "Cost, negative to give player score when purchasing, Accepts a function.",
-            shSkullCost =       "Optional. Skull cost, same rules as shCost.",
+            shSkullCost =       "Optional. Skull cost. Accepts number or function. Zero is ignored. Negative gives skulls on purchase.",
             canGoInDebt =       "Optional. Can this item be bought when the player has no score? Can force players to buy innate debuffs, etc.",
             fakeCost =          "Optional. Whether to skip applying the cost within the purchasing system. Good if you want a shop item to more dynamically apply costs, but still show a cost.",
             simpleCostDisplay = "Optional. Client. Skip the coloring + formatting of an item's cost in the shop.",
@@ -40,10 +40,10 @@ function GM:getDebugShopItemStructureTable()
             tags =              "Tags that define attributes of this item, categories included. Accepts an indexed table of strings, converted to a mask after adding.",
             purchaseTimes =     "Item will only be purchasble in the round states specified by this table. Eg GAMEMODE.ROUND_ACTIVE ( hunting ).",
             weight =            "Optional. Where to order this relative to everything else in our category, accepts negative values.",
-            shPurchaseCheck =     "Optional. Function or table of functions checked to see if this is purchasable, ran clientside on every item, every frame when shop is open. ran once serverside when purchased",
-            svOnPurchaseFunc =    "Server. What function to run when the item is bought.",
-            shCanShowInShop =     "Optional. Function or table of functions checked to decide if this can be seen in the shop. Also prevents purchases.",
-            costDecorative =    "Optional. Fake cost string to display in the shop, or a function which returns a string and color.",
+            shPurchaseCheck =   "Optional. Function or table of functions checked to see if this is purchasable, ran clientside on every item, every frame when shop is open. ran once serverside when purchased",
+            svOnPurchaseFunc =  "Server. What function to run when the item is bought.",
+            shCanShowInShop =   "Optional. Function or table of functions checked to decide if this can be seen in the shop. Also prevents purchases.",
+            costDecorative =    "Optional. Overrides cost display. Accepts string, number, tables of strings, functions. Overrides shSkullCost and shCost.",
             unpurchaseableReason = "Optional. Custom denial string to use if the item has the 'unpurchaseable' tag.",
 
             --[[Auto-generated fields: (for internal use/reference)
@@ -95,6 +95,7 @@ function GM:ConvertItemTags( shopItemData ) -- convert indexed table to mask
         newTags[tag] = true
 
     end
+
     shopItemData.tags = newTags
 end
 
@@ -102,11 +103,17 @@ function GM:PutItemInProperCategories( shopItemData ) -- put item in categories 
     local foundAHome
     local categories = GAMEMODE.shopCategories
     for tag, _ in pairs( shopItemData.tags ) do
+        local isAllCaps = string.upper( tag ) == tag
+        if not isAllCaps then continue end
         if categories[tag] then
             --print( "Putting " .. shopItemData.name .. " in category " .. tag )
             shopItemData.categories = shopItemData.categories or {}
             shopItemData.categories[tag] = true
             foundAHome = true
+
+        else
+            GAMEMODE:invalidateShopItem( shopItemData.identifier )
+            print( "HUNTER'S GLEE: " .. shopItemData.name .. " has category tag " .. tag .. " which doesn't match any categories!" )
 
         end
     end

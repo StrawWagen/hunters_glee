@@ -271,11 +271,11 @@ function GM:SetSpawnSet( setName )
     SetGlobalString( "GLEE_SpawnSetPrettyName", spawnSet.prettyName )
 
     if oldSetName ~= setName then
-        hook.Run( "glee_post_set_spawnset", setName, spawnSet )
+        hook.Run( "glee_post_set_spawnset", setName, spawnSet, oldSetName )
         print( "GLEE: Mode set to, " .. setName )
 
     else
-        hook.Run( "glee_post_refresh_spawnset", setName, spawnSet )
+        hook.Run( "glee_post_refresh_spawnset", setName, spawnSet, oldSetName )
 
     end
 end
@@ -560,11 +560,16 @@ function GM:SpawnWaveSpawnIn()
 
         local idealTickrate = 1 / FrameTime()
         local currTickrate = 1 / engine.AbsoluteFrameTime()
-        local threshold = math.max( 2.5, idealTickrate * 0.5 )
+        local threshold = math.max( 2.5, idealTickrate * 0.65 )
         local lagging = currTickrate <= threshold
         if lagging then
             debugPrint( "not spawning hunter, laggy, tickrate is " .. currTickrate .. " threshold is " .. threshold )
             nextHunterSpawn = cur + 1
+
+            -- bump the difficulty up, unlock the harder enemies sooner!
+            local _, spawnSet = self:GetSpawnSet()
+            GAMEMODE:BumpRoundDifficulty( spawnSet.diffBumpWhenWaveKilled / 50 )
+
             return
 
         end

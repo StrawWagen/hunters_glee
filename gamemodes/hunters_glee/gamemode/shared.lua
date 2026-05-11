@@ -31,6 +31,8 @@ include( "modules/sh_deathsounds.lua" )
 include( "modules/sh_slowmopitch.lua" )
 include( "modules/sh_danceslowdown.lua" )
 include( "modules/sh_playerdrowning.lua" )
+
+include( "modules/guilt/sh_guilt.lua" )
 include( "modules/battery/sh_battery.lua" )
 include( "modules/sh_detecthunterkills.lua" )
 include( "modules/shopitems/sh_shophelpers.lua" )
@@ -65,11 +67,11 @@ function GM:PostCleanupMap()
         --GAMEMODE:removePorters()
         GAMEMODE:removeBlockers()
 
-        hook.Run( "glee_PostCleanupMap" )
+        hook.Run( "glee_post_cleanupmap" )
 
         if GAMEMODE.blockCleanupSetup then return end
 
-        hook.Run( "glee_PostRealCleanupMap" )
+        hook.Run( "glee_post_realcleanupmap" )
 
         GAMEMODE:StopAllSolidSounds()
 

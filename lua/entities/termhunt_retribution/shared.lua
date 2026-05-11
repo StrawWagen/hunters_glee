@@ -195,15 +195,20 @@ function GAMEMODE:SurfaceHomicidalGlee( dancer, surfacer )
 
     local validSurfacer = IsValid( surfacer )
     local oldSlight = 0
-    if validSurfacer then
-        GAMEMODE:HasSlighted( dancer, surfacer )
+    if validSurfacer and surfacer:IsPlayer() then
+        oldSlight = GAMEMODE:HasSlighted( dancer, surfacer )
 
     end
 
     local reason = ""
     local reasonGlobal = ""
     if validSurfacer then
-        if oldSlight >= 75 then
+        if validSurfacer:GetClass() == "npc_helicopter" then
+            reason = "The idea of stopping everyone from escaping...\nit just fills you with GUILTY HOMICIDAL GLEE!"
+            reasonGlobal = dancer:Nick() .. " is overcome with Guilty Homicidal Glee."
+            dancer.glee_evilHomicidalGlee = true
+
+        elseif oldSlight >= 75 then
             reason = "You can't help but dance as the GUILTY HOMICIDAL GLEE\nof killing " .. surfacer:Nick() .. "\nflashes through your mind..."
             reasonGlobal = dancer:Nick() .. " is overcome by their Guilty Homicidal Glee."
             dancer.glee_evilHomicidalGlee = true
@@ -228,7 +233,6 @@ function GAMEMODE:SurfaceHomicidalGlee( dancer, surfacer )
         dancer.glee_evilHomicidalGlee = true
 
     end
-
 
     huntersGlee_Announce( { dancer }, 10, 8, reason )
     huntersGlee_Announce( plysToAlert, 5, 6, reasonGlobal )

@@ -34,6 +34,8 @@ if not SERVER then return end
 
 local GM = GAMEMODE
 
+ENT.normCrateScoreMultiplier = 1
+
 local MEMORY_BREAKABLE = terminator_Extras.botMemoryTypes.MEMORY_BREAKABLE
 local maxScoreDist = 2500
 local tooCloseToPlayer = 1500
@@ -90,6 +92,8 @@ function ENT:UpdateGivenScore()
         scoreGiven = scoreGiven * 0.25
     end
 
+    scoreGiven = scoreGiven * self.normCrateScoreMultiplier
+
     self:SetGivenScore( scoreGiven )
 
 end
@@ -125,7 +129,9 @@ end
 
 function ENT:Place()
     local betrayalScore = self:GetGivenScore()
-    local crate = GAMEMODE:NormalCrate( self:OffsettedPlacingPos() )
+    local pos = self:OffsettedPlacingPos()
+    local crate = GAMEMODE:NormalCrate( pos )
+    terminator_Extras.DoEctoplasmAtPos( pos, 1.5 )
 
     crate:EmitSound( "items/ammocrate_open.wav", 75, 100 + -( self.placeCount * 10 ) )
 

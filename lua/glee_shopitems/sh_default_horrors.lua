@@ -43,7 +43,41 @@ local items = {
         },
         weight = 10,
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "glee_tnt_crate", purchaser, itemIdentifier )
+            setupPlacable( "glee_crate_tnt", purchaser, itemIdentifier )
+
+        end,
+        shCanShowInShop = shopHelpers.escapedCheck,
+    },
+    ["heavy_weapons_crate"] = {
+        name = "Heavy Weapons Crate",
+        desc = "Crate full of heavy weapons.\nPlace far from players for more score.",
+        shCost = 0,
+        markup = 1,
+        cooldown = 60,
+        tags = { "HORRORS", "CloseShopOnPurchase" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = 10,
+        svOnPurchaseFunc = function( purchaser, itemIdentifier )
+            setupPlacable( "glee_crate_heavyweapons", purchaser, itemIdentifier )
+
+        end,
+        shCanShowInShop = shopHelpers.escapedCheck,
+    },
+    ["score_crate"] = {
+        name = "Score Crate",
+        desc = "Crate full of score.\nIt contains as much score as you get from placing it.",
+        shCost = 0,
+        markup = 1,
+        cooldown = 15,
+        tags = { "HORRORS", "CloseShopOnPurchase" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = 10,
+        svOnPurchaseFunc = function( purchaser, itemIdentifier )
+            setupPlacable( "glee_crate_score", purchaser, itemIdentifier )
 
         end,
         shCanShowInShop = shopHelpers.escapedCheck,

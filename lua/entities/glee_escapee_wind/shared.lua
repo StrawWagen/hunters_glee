@@ -305,6 +305,7 @@ function ENT:Gust( strength, shakeMult, countMischief )
 
             target:SetVelocity( pushVecPlayer * math.Rand( self.PushVariancePlayerMin, self.PushVariancePlayerMax ) )
             if owner and countMischief then GAMEMODE:AddMischievousness( owner, 5, "pushed a player with wind" ) end
+            if GAMEMODE.BlameForFallDamage then GAMEMODE:BlameForFallDamage( target, owner, self ) end
 
         elseif target:IsNPC() or target:IsNextBot() then
             if not target:Alive() then continue end

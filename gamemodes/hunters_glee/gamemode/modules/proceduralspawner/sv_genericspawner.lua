@@ -59,7 +59,7 @@ local function onJobSuccced( spawned, className )
 
     local data = GAMEMODE.genericSpawnTables[className]
     if data and data.minSpawnInterval then
-        data.nextSpawnTime = CurTime() + data.minSpawnInterval
+        data.nextSpawnTime = CurTime() + GAMEMODE:ScaledGenericSpawnerRate( data.minSpawnInterval )
 
     end
 end

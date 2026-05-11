@@ -3,7 +3,7 @@
 
 local GAMEMODE = GAMEMODE or GM
 
-hook.Add( "huntersglee_round_beginsetup", "glee_resetpersistient_flarespawnlocations", function() 
+hook.Add( "huntersglee_round_beginsetup", "glee_resetpersistent_flarespawnlocations", function() 
     GAMEMODE.FastestFoundAt = {}
 
 
@@ -205,7 +205,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_rescueflarespawning", function()
 
         local spawned = false
 
-        if #ragdolls >= 1000 then
+        if #ragdolls >= 1 then
             for _, ragdoll in ipairs( ragdolls ) do
                 if ragdoll.glee_skulldecapitated then continue end
                 if ragdoll.glee_createdARescueFlareGun then continue end
@@ -336,7 +336,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_rescueflarespawning", function()
             expireOnRoundEnd = true,
             -- spawn a rebel ragdoll, and put the flare into its hand
             dontSpawn = true,
-            minSpawnInterval = 60, -- 60s between attempts
+            minSpawnInterval = 120, -- dont respawn these instantly pls
             extraFlagsBlacklist = bit.bor( GAMEMODE.NavEFlags.UNDER_SKY, GAMEMODE.NavEFlags.LOW_CEILING ), -- spawn indoors but not in tight spaces
             preSpawnedFunc = function( flareGun )
                 local pos = flareGun:GetPos()

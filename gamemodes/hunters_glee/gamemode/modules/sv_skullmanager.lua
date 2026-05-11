@@ -5,7 +5,7 @@ function GM:SpawnASkull( pos, ang, termSkull, parent )
     local skull = ents.Create( "termhunt_skull_pickup" )
     if not IsValid( skull ) then return end
     if IsValid( parent ) then
-        skull.persistientSkull = true
+        skull.persistentSkull = true
 
     end
     skull:SetPos( pos )
@@ -76,14 +76,14 @@ hook.Add( "PlayerDeath", "glee_dropplayerskulls", function( died, _, attacker )
 
 end )
 
-GM.persistientSkulls = {}
+GM.persistentSkulls = {}
 
 -- skulls from dead players/terms stick around
-hook.Add( "PreCleanupMap", "glee_savepersistientskulls", function()
-    table.Empty( GAMEMODE.persistientSkulls )
+hook.Add( "PreCleanupMap", "glee_savepersistentskulls", function()
+    table.Empty( GAMEMODE.persistentSkulls )
 
     for _, skull in ipairs( ents.FindByClass( "termhunt_skull_pickup" ) ) do
-        if not skull.persistientSkull then continue end
+        if not skull.persistentSkull then continue end
         local skullTbl = {}
         skullTbl.pos = skull:GetPos()
         skullTbl.ang = skull:GetAngles()
@@ -91,22 +91,22 @@ hook.Add( "PreCleanupMap", "glee_savepersistientskulls", function()
         skullTbl.termSkull = skull:GetIsTerminatorSkull()
         skullTbl.skullSteamId = skull.skullSteamId
 
-        table.insert( GAMEMODE.persistientSkulls, skullTbl )
+        table.insert( GAMEMODE.persistentSkulls, skullTbl )
 
     end
 end )
 
-hook.Add( "huntersglee_round_into_active", "glee_loadpersistientskulls", function()
+hook.Add( "huntersglee_round_into_active", "glee_loadpersistentskulls", function()
     -- restore skulls when hunt starts ( no cheeky skulls when setting up! )
-    for i, skullTbl in pairs( GAMEMODE.persistientSkulls ) do
-        local timerName = "glee_persistient_skullrespawn_" .. i
+    for i, skullTbl in pairs( GAMEMODE.persistentSkulls ) do
+        local timerName = "glee_persistent_skullrespawn_" .. i
         timer.Create( timerName, 1, 0, function()
             if terminator_Extras.posIsInterruptingAlive( skullTbl.pos ) then return end -- wait!
 
             local skull = ents.Create( "termhunt_skull_pickup" )
             if not IsValid( skull ) then timer.Remove( timerName ) return end
             if skullTbl.persist then
-                skull.persistientSkull = true
+                skull.persistentSkull = true
 
             end
             skull.skullSteamId = skullTbl.skullSteamId

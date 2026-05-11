@@ -78,18 +78,19 @@ GAMEMODE:GobbleShopItems( items )
 | `name` | ✅ | Display name in the shop |
 | `desc` | ✅ | Description (string or function) |
 | `shCost` | ✅ | Cost in score (negative = gives score) |
-| `tags` | ✅ | Category tags as indexed table (e.g., `{"ITEMS", "Weapon"}`) |
+| `tags` | ✅ | Category tags as indexed table, Capitalized tags define the item's categories (e.g., `{"ITEMS", "Weapon"}`) |
 | `purchaseTimes` | ✅ | When purchasable: `ROUND_INACTIVE`, `ROUND_ACTIVE` |
 | `svOnPurchaseFunc` | ✅ | Server function called on purchase: `function(purchaser, itemId)` |
+| `shSkullCost` | ❌ | Skull cost. Accepts number or function. Zero is ignored. Negative gives skulls on purchase |
 | `shPurchaseCheck` | ❌ | Validation function(s): `function(purchaser) -> bool, reason` |
 | `markup` | ❌ | Price multiplier during active hunt |
 | `markupPerPurchase` | ❌ | Additional markup per purchase |
 | `cooldown` | ❌ | Seconds between purchases (`math.huge` = once per round) |
 | `weight` | ❌ | Sort order within category (lower = higher) |
 | `shCanShowInShop` | ❌ | Visibility function: `function(purchaser) -> bool` |
-| `costDecorative` | ❌ | Fake, decorative cost. string or function: `function(purchaser, itemID) -> string, color` |
-| `unpurchaseableReason` | ❌ | If the item has the `"unpurchaseable"` tag, this string can replace the default purchase failure reason. |
-| `identifier` | ❌ | Auto-generated. Same as the item ID used when defining the item |
+| `costDecorative` | ❌ | Fake, decorative cost. Accepts string, number, tables of strings, functions. Overrides `shSkullCost`, and `shCost` |
+| `unpurchaseableReason` | ❌ | Custom denial string. Only used if the item has the `unpurchaseable` tag |
+| `identifier` | ❌ | Auto-generated. The item's unique key |
 
 #### Category Tags
 
