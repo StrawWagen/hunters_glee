@@ -20,6 +20,11 @@ function GM:ClearFallDamageBlame( ply )
 
 end
 
+function GM:GetFallDamageBlame( ply )
+    return ply.glee_fallDamageAttacker, ply.glee_fallDamageInflictor
+
+end
+
 hook.Add( "OnPlayerHitGround", "glee_resetfalldamageblame", function( ply )
     if not ply.glee_fallDamageAttacker then return end
 
