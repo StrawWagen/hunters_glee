@@ -24,6 +24,7 @@ ENT.CostPerSecMax = 100
 ENT.CostInterval = 1.5
 ENT.CostHighColor = Color( 255, 100, 100, 255 )
 ENT.CostHighAmount = 800
+ENT.CostOnFallDeath = 1000 -- Cost to incur if the target dies from fall damage. Can be negative to reward score instead.
 
 ENT.MoveStrengthMult = 30
 ENT.MoveStrengthMax = 8000
@@ -318,6 +319,7 @@ function ENT:Place()
     end
 
     GAMEMODE:AddMischievousness( owner, 3, "picked up a player" )
+    GAMEMODE:BlameForFallDamage( target, owner, self )
 
     self.glee_PointAndClick_Target = target
     self.glee_PointAndClick_CostPerSec = self.CostPerSec
@@ -387,6 +389,10 @@ function ENT:ReleaseTarget()
     target:EmitSound( "npc/advisor/advisor_blast6.wav", 80, 100, 1 )
     target:EmitSound( "npc/advisor/advisor_blast6.wav", 80, 120, 1 )
 
+    if target:IsOnGround() then
+        GAMEMODE:ClearFallDamageBlame( target )
+
+    end
 end
 
 function ENT:ModifiableThink()
@@ -464,5 +470,41 @@ hook.Add( "EntityTakeDamage", "glee_pointandclick_fallresist", function( target,
     end
 
     if dmg:GetDamage() < 1 then return true end
+
+end )
+
+hook.Add( "glee_falldamageblame_hitground", "glee_pointandclick_falldamageblame", function( target, attacker, inflictor )
+    if not IsValid( inflictor ) then return end
+    if not inflictor.glee_PointAndClick_Ent then return end
+    if not IsValid( attacker ) then return end
+    if not attacker:IsPlayer() then return end
+
+    GAMEMODE:BlameForFallDamage( target, attacker, inflictor ) -- Re-apply blame (they're still being grabbed!)
+
+end )
+
+hook.Add( "PlayerDeath", "glee_pointandclick_falldeathcost", function( target, inflictor, attacker )
+    if not IsValid( inflictor ) then return end
+    if not inflictor.glee_PointAndClick_Ent then return end
+    if not IsValid( attacker ) then return end
+    if not attacker:IsPlayer() then return end
+
+    local score = -math.Round( inflictor.CostOnFallDeath or 0 )
+    if attacker.GivePlayerScore and score ~= 0 then
+        attacker:GivePlayerScore( score )
+        GAMEMODE:sendPurchaseConfirm( attacker, score )
+
+        if score > 0 then
+            huntersGlee_Announce( { attacker }, 5, 8, "Entertained spirits reward you for your brutality...\nGained " .. score .. " score from Point and Click." )
+
+        else
+            huntersGlee_Announce( { attacker }, 5, 8, "Lighter pockets ease the weight of your guilt...\nLost " .. ( -score ) .. " score from Point and Click." )
+
+        end
+
+    end
+
+    GAMEMODE:AddMischievousness( attacker, 1, "pushed a player to their death with point and click" )
+    GAMEMODE:ClearFallDamageBlame( target )
 
 end )
