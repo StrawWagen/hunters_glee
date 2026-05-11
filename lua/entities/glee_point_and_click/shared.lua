@@ -50,6 +50,8 @@ if CLIENT then
     local cursorSizeArrow = 24 * math.max( math.Round( ScrH() / 540 ), 1 ) -- Round to avoid pixel blurring.
     local cursorSizeHand = 24 * math.max( math.Round( ScrH() / 540 ), 1 ) -- Round to avoid pixel blurring.
 
+    terminator_Extras.glee_CL_SetupSent( ENT, "glee_point_and_click", "vgui/hud/killicon/glee_point_and_click.png" )
+
 
     local function colorLerpFast( color, from, to, frac )
         color.r = Lerp( frac, from.r, to.r )
