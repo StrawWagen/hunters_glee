@@ -48,6 +48,23 @@ local items = {
         end,
         shCanShowInShop = shopHelpers.escapedCheck,
     },
+    ["heavy_weapons_crate"] = {
+        name = "Heavy Weapons Crate",
+        desc = "Crate full of heavy weapons.\nKeep away from players for more score.",
+        shCost = 0,
+        markup = 1,
+        cooldown = 60,
+        tags = { "HORRORS", "CloseShopOnPurchase" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = 10,
+        svOnPurchaseFunc = function( purchaser, itemIdentifier )
+            setupPlacable( "glee_heavyweapons_crate", purchaser, itemIdentifier )
+
+        end,
+        shCanShowInShop = shopHelpers.escapedCheck,
+    },
 }
 
 GAMEMODE:GobbleShopItems( items )
