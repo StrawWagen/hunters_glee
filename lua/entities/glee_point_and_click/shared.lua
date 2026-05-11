@@ -24,7 +24,7 @@ ENT.CostPerSecMax = 100
 ENT.CostInterval = 1.5
 ENT.CostHighColor = Color( 255, 100, 100, 255 )
 ENT.CostHighAmount = 800
-ENT.CostOnFallDeath = 1000 -- Cost to incur if the target dies from fall damage. Can be negative to reward score instead.
+ENT.CostOnFallDeath = 1000 -- Cost to incur if the target dies from fall damage. Can be negative to reward score instead. Only applies to player targets.
 
 ENT.MoveStrengthMult = 30
 ENT.MoveStrengthMax = 8000
@@ -38,6 +38,17 @@ ENT.TargetSoundPitchMin = 80 / 100 -- 0-1 scale for pitch bc of IGModAudioChanne
 ENT.TargetSoundPitchMax = 140 / 100
 ENT.TargetSoundVolumeMin = 0.5 -- Volume can go above 1 bc of IGModAudioChannel.
 ENT.TargetSoundVolumeMax = 2
+
+ENT.NPCAllow = true -- Allow NPCs to be picked up.
+ENT.NPCCostMult = 0.5 -- Applies to all costs when picking up NPCs.
+
+ENT.NextBotAllow = true -- Allow NextBots to be picked up.
+ENT.NextBotCostMult = 0.5 -- Applies to all costs when picking up NextBots.
+
+ENT.TargetBlacklist = {
+    ["npc_helicopter"] = true,
+    ["terminator_nextbot_homeless"] = true,
+}
 
 function ENT:DynamicCooldown( elapsed )
     return math.Clamp( math.pow( elapsed, 1.4 ), 50, 60 * 5 )
@@ -288,17 +299,21 @@ function ENT:GetNearestTarget()
     local nearestPly
     local nearestDistance = math.huge
     local myPos = self:GetPos()
+    local owner = self.player
+    local allowNPCs = self.NPCAllow
+    local allowNextBots = self.NextBotAllow
+    local blacklist = self.TargetBlacklist
 
-    -- Find all applicable door entities within a radius of 2048 units
-    local plys = ents.FindInSphere( myPos, 2048 )
-    for _, ply in ipairs( plys ) do
-        if ply:IsPlayer() then
-            if ply == self.player then continue end
-            if ply:Health() <= 0 then continue end
+    for _, ent in ipairs( ents.FindInSphere( myPos, 2048 ) ) do
+        if ent:IsPlayer() or ( allowNPCs and ent:IsNPC() ) or ( allowNextBots and ent:IsNextBot() ) then
+            if ent == owner then continue end
+            if ent:Health() <= 0 then continue end
+            if blacklist[ent:GetClass()] then continue end
+            if hook.Run( "glee_pointandclick_cantarget", self, ent ) == false then continue end
 
-            local distance = myPos:Distance( ply:NearestPoint( myPos ) )
+            local distance = myPos:Distance( ent:NearestPoint( myPos ) )
             if distance < nearestDistance then
-                nearestPly = ply
+                nearestPly = ent
                 nearestDistance = distance
 
             end
@@ -310,13 +325,13 @@ function ENT:GetNearestTarget()
 end
 
 function ENT:UpdateGivenScore()
-    self:SetGivenScore( "-" .. self.PurchaseCost )
+    self:SetGivenScore( "-" .. ( self.PurchaseCost * self:GetCostMult() ) )
 
 end
 
 function ENT:CalculateCanPlace()
     local target = self:GetCurrTarget()
-    if not IsValid( target ) then return false, "You need to aim at a living player." end
+    if not IsValid( target ) then return false, "You need to aim at a living " .. ( self.NextBotAllow and "(or mechanical) " or "" ) .. "being." end
     if target.glee_PointAndClick_Ent then return false, "That person is already being grabbed!" end
 
     return true
@@ -355,6 +370,16 @@ function ENT:Place()
 
 end
 
+function ENT:GetCostMult()
+    local target = self:GetCurrTarget()
+    if not IsValid( target ) then return 1 end
+    if target:IsNPC() then return self.NPCCostMult end
+    if target:IsNextBot() then return self.NextBotCostMult end
+
+    return 1
+
+end
+
 function ENT:CostTick( force )
     local owner = self.player
     if not IsValid( owner ) then return end
@@ -365,11 +390,12 @@ function ENT:CostTick( force )
 
     local dt = now - prevTime
     local costPerSec = math.min( self.glee_PointAndClick_CostPerSec + self.CostPerSecPerSec * dt, self.CostPerSecMax )
+    local costMult = self:GetCostMult()
 
     self.glee_PointAndClick_PrevCostTime = now
     self.glee_PointAndClick_CostPerSec = costPerSec
 
-    local costDelta = math.Round( costPerSec * dt )
+    local costDelta = math.Round( costPerSec * costMult * dt )
     local totalCost = self.glee_PointAndClick_TotalCost + costDelta
 
     self.glee_PointAndClick_TotalCost = totalCost
@@ -389,6 +415,8 @@ function ENT:ApplyDynamicCooldown()
 end
 
 function ENT:ReleaseTarget()
+    self:CostTick( true )
+    self:ApplyDynamicCooldown()
     self:SetHoldDist( -1 )
 
     local baseOwner = self.player
@@ -425,8 +453,6 @@ function ENT:ModifiableThink()
     local target = self.glee_PointAndClick_Target
 
     if not IsValid( owner ) or not IsValid( target ) or not owner:KeyDown( IN_ATTACK ) or owner:GetScore() <= 0 then
-        self:CostTick( true )
-        self:ApplyDynamicCooldown()
         self:ReleaseTarget() -- After this, the owner is lost, and :OwnerlessThink() takes over.
         return
 
@@ -436,7 +462,10 @@ function ENT:ModifiableThink()
     local goalPos = owner:EyePos() + owner:GetAimVector() * self:GetHoldDist()
     local toGoal = goalPos - curPos
     local dist = toGoal:Length()
-    local velToAdd = -target:GetVelocity() * self.MoveDampingMult
+
+    local nextbotLoco = target:IsNextBot() and target.loco
+    local curVel = nextbotLoco and nextbotLoco:GetVelocity() or target:GetVelocity()
+    local velToAdd = -curVel * self.MoveDampingMult
 
     if dist > 0.001 then
         local speed = math.min( dist * self.MoveStrengthMult, self.MoveStrengthMax )
@@ -454,7 +483,13 @@ function ENT:ModifiableThink()
 
     -- Ground is way too sticky in player movement
     if target:IsOnGround() and velToAdd[3] > 0 then
-        velToAdd = velToAdd + Vector( 0, 0, 300 / FrameTime() )
+        if nextbotLoco then
+            target:SetPos( target:GetPos() + Vector( 0, 0, 20 ) )
+
+        else
+            velToAdd = velToAdd + Vector( 0, 0, 300 / FrameTime() )
+
+        end
     end
 
     -- Anti-grav
@@ -462,7 +497,14 @@ function ENT:ModifiableThink()
     if gravMult == 0 then gravMult = 1 end -- Source moment
     velToAdd = velToAdd - physenv.GetGravity() * gravMult
 
-    target:SetVelocity( velToAdd * FrameTime() )
+    if nextbotLoco then
+        nextbotLoco:SetVelocity( curVel + velToAdd * FrameTime() )
+
+    else
+        target:SetVelocity( velToAdd * FrameTime() )
+
+    end
+
     self:CostTick()
     self:NextThink( CurTime() )
     self:SetPos( curPos ) -- Folllow player for sounds and PVS
