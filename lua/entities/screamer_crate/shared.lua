@@ -475,10 +475,9 @@ function ENT:Think()
                 return
 
             end
-
-            return toReturn
-
         end
+
+        return toReturn
 
     else
         return self:OwnerlessThink()
