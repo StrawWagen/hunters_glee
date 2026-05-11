@@ -496,7 +496,7 @@ end
 
 hook.Add( "glee_falldamageblame_hitground", "glee_pointandclick_falldamageblame", function( target, attacker, inflictor )
     if not IsValid( inflictor ) then return end
-    if not inflictor.glee_PointAndClick_Ent then return end
+    if not inflictor._glee_PointAndClick_IsGhostEnt then return end
     if not IsValid( attacker ) then return end
     if not attacker:IsPlayer() then return end
 
