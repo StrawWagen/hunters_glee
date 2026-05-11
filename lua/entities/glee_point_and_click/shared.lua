@@ -317,6 +317,7 @@ end
 function ENT:CalculateCanPlace()
     local target = self:GetCurrTarget()
     if not IsValid( target ) then return false, "You need to aim at a living player." end
+    if target.glee_PointAndClick_Ent then return false, "That person is already being grabbed!" end
 
     return true
 
