@@ -203,7 +203,7 @@ function GAMEMODE:SurfaceHomicidalGlee( dancer, surfacer )
     local reason = ""
     local reasonGlobal = ""
     if validSurfacer then
-        if validSurfacer:GetClass() == "npc_helicopter" then
+        if surfacer:GetClass() == "npc_helicopter" then
             reason = "The idea of stopping everyone from escaping...\nit just fills you with GUILTY HOMICIDAL GLEE!"
             reasonGlobal = dancer:Nick() .. " is overcome with Guilty Homicidal Glee."
             dancer.glee_evilHomicidalGlee = true
@@ -220,7 +220,7 @@ function GAMEMODE:SurfaceHomicidalGlee( dancer, surfacer )
 
         end
 
-        if GAMEMODE:IsInnocent( dancer ) then
+        if GAMEMODE:IsInnocent( dancer ) and surfacer:IsPlayer() then
             GAMEMODE:AddSlight( surfacer, dancer, 15, "forced to dance" )
 
         end
