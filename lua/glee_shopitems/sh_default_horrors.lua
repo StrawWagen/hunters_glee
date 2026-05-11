@@ -65,6 +65,23 @@ local items = {
         end,
         shCanShowInShop = shopHelpers.escapedCheck,
     },
+    ["score_crate"] = {
+        name = "Score Crate",
+        desc = "Crate full of score.\nIt contains as much score as you get from placing it.",
+        shCost = 0,
+        markup = 1,
+        cooldown = 15,
+        tags = { "HORRORS", "CloseShopOnPurchase" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = 10,
+        svOnPurchaseFunc = function( purchaser, itemIdentifier )
+            setupPlacable( "glee_crate_score", purchaser, itemIdentifier )
+
+        end,
+        shCanShowInShop = shopHelpers.escapedCheck,
+    },
 }
 
 GAMEMODE:GobbleShopItems( items )

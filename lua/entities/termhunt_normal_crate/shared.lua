@@ -34,6 +34,8 @@ if not SERVER then return end
 
 local GM = GAMEMODE
 
+ENT.normCrateScoreMultiplier = 1
+
 local MEMORY_BREAKABLE = terminator_Extras.botMemoryTypes.MEMORY_BREAKABLE
 local maxScoreDist = 2500
 local tooCloseToPlayer = 1500
@@ -89,6 +91,8 @@ function ENT:UpdateGivenScore()
     if distToClosestPlyLinear < tooCloseToPlayer then
         scoreGiven = scoreGiven * 0.25
     end
+
+    scoreGiven = scoreGiven * self.normCrateScoreMultiplier
 
     self:SetGivenScore( scoreGiven )
 
