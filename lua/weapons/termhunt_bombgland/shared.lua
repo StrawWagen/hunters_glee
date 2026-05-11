@@ -16,7 +16,7 @@ SWEP.HoldType = "normal"
 SWEP.MassForBomb = 12
 SWEP.AccumulatedMass = 0
 SWEP.OldBombBeats = 0
-SWEP.UnstableBombCount = 4
+SWEP.BombsPerBigBomb = 6
 SWEP.Instability = 0
 SWEP.MaxInstability = 3
 
@@ -39,7 +39,7 @@ if CLIENT then
 
         if not owner:GetNW2Bool( "bombgland_createdbomb", false ) and count >= 1 then return true, "Primary attack to drop a small bomb!" end
 
-        if not owner:GetNW2Bool( "bombgland_createdbigbomb", false ) and count >= 4 then return true, "Reload to drop a BIG bomb!\nYou will EXPLODE when damaged if you don't!" end
+        if not owner:GetNW2Bool( "bombgland_createdbigbomb", false ) and count >= self.BombsPerBigBomb then return true, "Reload to drop a BIG bomb!\nYou will EXPLODE when damaged if you don't!" end
 
         if not owner:GetNW2Bool( "bombgland_detonated", false ) and owner:GetNW2Bool( "bombgland_createdbomb", false ) then return true, "Secondary attack to explode your bombs!" end
 
@@ -143,7 +143,7 @@ function SWEP:Equip()
 
         end
 
-        if self:GetBombs() < self.UnstableBombCount then return end
+        if self:GetBombs() < self.BombsPerBigBomb then return end
 
         local add = 1
         if dmg:GetDamage() > 20 then
@@ -221,7 +221,7 @@ function SWEP:BoomUser()
 
     end
 
-    local dmg = math.Clamp( self:GetBombs(), 0, self.UnstableBombCount * 4 ) * 70
+    local dmg = math.Clamp( self:GetBombs(), 0, self.BombsPerBigBomb * 4 ) * 70
     terminator_Extras.GleeFancySplode( worldSpaceC, dmg, dmg + 100, self:GetOwner(), self )
 
     self:SetBombs( 0 )
@@ -281,13 +281,13 @@ function SWEP:Reload()
 
     local owner = self:GetOwner()
 
-    if self:GetBombs() < self.UnstableBombCount then
+    if self:GetBombs() < self.BombsPerBigBomb then
         self:PunchInvalid()
         owner:EmitSound( "physics/flesh/flesh_impact_hard3.wav", 55, 80 )
         return
     end
     self:PunchValid()
-    self:SetBombs( math.Clamp( self:GetBombs() + -self.UnstableBombCount, 0, math.huge ) )
+    self:SetBombs( math.Clamp( self:GetBombs() + -self.BombsPerBigBomb, 0, math.huge ) )
     owner:EmitSound( "npc/barnacle/barnacle_crunch2.wav", 75, 50 )
 
     if GAMEMODE.Bleed then
