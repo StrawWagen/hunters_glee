@@ -50,7 +50,7 @@ local items = {
     },
     ["heavy_weapons_crate"] = {
         name = "Heavy Weapons Crate",
-        desc = "Crate full of heavy weapons.\nKeep away from players for more score.",
+        desc = "Crate full of heavy weapons.\nPlace far from players for more score.",
         shCost = 0,
         markup = 1,
         cooldown = 60,
