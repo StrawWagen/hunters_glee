@@ -336,7 +336,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_rescueflarespawning", function()
             expireOnRoundEnd = true,
             -- spawn a rebel ragdoll, and put the flare into its hand
             dontSpawn = true,
-            minSpawnInterval = 60, -- 60s between attempts
+            minSpawnInterval = 120, -- dont respawn these instantly pls
             extraFlagsBlacklist = bit.bor( GAMEMODE.NavEFlags.UNDER_SKY, GAMEMODE.NavEFlags.LOW_CEILING ), -- spawn indoors but not in tight spaces
             preSpawnedFunc = function( flareGun )
                 local pos = flareGun:GetPos()
