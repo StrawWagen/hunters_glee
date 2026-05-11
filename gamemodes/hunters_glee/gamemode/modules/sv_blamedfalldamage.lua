@@ -2,8 +2,8 @@
 function GM:BlameForFallDamage( ply, attacker, inflictor )
     if not IsValid( ply ) then return end
     if not ply:IsPlayer() then return end
-    if not attacker or ( not IsValid( attacker ) and not attacker:IsWorld() ) then return end
-    if not inflictor or ( not IsValid( inflictor ) and not inflictor:IsWorld() ) then return end
+    if not attacker or ( not IsValid( attacker ) and not attacker:IsWorld() ) then return end -- Allow valid or world
+    if not inflictor or ( not IsValid( inflictor ) and not inflictor:IsWorld() ) then return end -- Allow valid or world
 
     ply.glee_fallDamageAttacker = attacker
     ply.glee_fallDamageInflictor = inflictor
