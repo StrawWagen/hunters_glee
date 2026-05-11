@@ -1,7 +1,7 @@
 
--- Also usable on NPCs/NextBots as ply, but will fail to clear if something blocks the damage too early.
 function GM:BlameForFallDamage( ply, attacker, inflictor )
     if not IsValid( ply ) then return end
+    if not ply:IsPlayer() then return end
     if not attacker or ( not IsValid( attacker ) and not attacker:IsWorld() ) then return end
     if not inflictor or ( not IsValid( inflictor ) and not inflictor:IsWorld() ) then return end
 
@@ -21,7 +21,7 @@ hook.Add( "OnPlayerHitGround", "glee_resetfalldamageblame", function( ply )
 
     end )
 
-    -- Run a hook so blame can reliably be re-applied (if needed). Only applies to players.
+    -- Run a hook so blame can reliably be re-applied (if needed).
     hook.Run( "glee_falldamageblame_hitground", ply, ply.glee_fallDamageAttacker, ply.glee_fallDamageInflictor )
 
 end )
@@ -39,11 +39,5 @@ hook.Add( "EntityTakeDamage", "glee_blamefalldamage", function( target, dmg )
     if not inflictor then return end
     if not IsValid( inflictor ) then inflictor = game.GetWorld() end
     dmg:SetInflictor( inflictor )
-
-    if not target:IsPlayer() then
-        target.glee_fallDamageAttacker = nil
-        target.glee_fallDamageInflictor = nil
-
-    end
 
 end, HOOK_HIGH )
