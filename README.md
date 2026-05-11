@@ -62,7 +62,17 @@ local items = {
         shPurchaseCheck = shopHelpers.aliveCheck,  -- Must be alive to buy
         svOnPurchaseFunc = function( purchaser )
             -- Server-side logic when purchased
-            purchaser:Give( "weapon_pistol" )
+            -- use the purchaseWeapon helper
+            -- it gives the ply the weapon if they dont have it, 
+            -- or gives them ammo if they already have it,
+            -- and plays a sound!
+            shopHelpers.purchaseWeapon( purchaser, {
+                class = "weapon_smg1",
+                ammoType = "SMG1",
+                purchaseClips = 2,      -- Extra Clips given on first purchase
+                resupplyClips = 4,      -- Clips given on repurchase
+                confirmSoundWeight = 1, -- sound intensity
+            } )
 
         end,
     },
@@ -125,8 +135,8 @@ shopHelpers.isCheats()                 -- Returns true if sv_cheats is on
 shopHelpers.purchaseWeapon( purchaser, {
     class = "weapon_smg1",
     ammoType = "SMG1",
-    purchaseClips = 4,      -- Clips given on first purchase
-    resupplyClips = 2,      -- Clips given on repurchase
+    purchaseClips = 2,      -- Clips given on first purchase
+    resupplyClips = 4,      -- Clips given on repurchase
     confirmSoundWeight = 1, -- Gun cock sound intensity
 } )
 ```
