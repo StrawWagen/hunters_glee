@@ -213,6 +213,7 @@ function ENT:FindGustTargets()
         local target = targets[i]
         local badTarget =
             not IsValid( target ) or
+            target:IsNextBot() or
             not IsValid( target:GetPhysicsObject() ) or
             not target:GetPhysicsObject():IsMotionEnabled() or
             ( target:IsPlayer() and not target:Alive() ) or
@@ -307,11 +308,11 @@ function ENT:Gust( strength, shakeMult, countMischief )
             if owner and countMischief then GAMEMODE:AddMischievousness( owner, 5, "pushed a player with wind" ) end
             if GAMEMODE.BlameForFallDamage then GAMEMODE:BlameForFallDamage( target, owner, self ) end
 
-        elseif target:IsNPC() or target:IsNextBot() then
+        elseif target:IsNPC() then
             if not target:Alive() then continue end
 
             local mult = math.max( 100 / physObj:GetMass(), 0.5 )
-            target:SetVelocity( physObj:GetVelocity() + pushVecNPC * mult )
+            target:SetVelocity( pushVecNPC * mult )
 
         else
             target:GetPhysicsObject():ApplyForceCenter( pushVecMisc * math.Rand( self.PushVarianceMiscMin, self.PushVarianceMiscMax ) )
