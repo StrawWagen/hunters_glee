@@ -98,6 +98,7 @@ end
 
 function ENT:Place()
     local beartrap = GAMEMODE:SpawnABearTrap( self:GetPos() )
+    terminator_Extras.DoPFXFromEnt( "glee_ghostly_ectoplasm_subtle", beartrap )
 
     beartrap:SetCreator( owner )
     beartrap.undeadbeartrap_placer = self.player

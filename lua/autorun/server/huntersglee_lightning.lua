@@ -44,6 +44,7 @@ hook.Add( "EntityTakeDamage", "glee_interceptlightningdamage", function( target,
         if math.random( 500, 10000 ) > dmgInfo:GetDamage() then return end
         dmgInfo:ScaleDamage( 0.1 )
         glee_Overcharge( target )
+
     end
 end )
 

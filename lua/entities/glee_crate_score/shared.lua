@@ -62,6 +62,7 @@ function ENT:Place()
 
     local scoreBallsToGive = math.ceil( betrayalScore / 15 )
     local crate = GAMEMODE:ScoreCrate( self:OffsettedPlacingPos(), scoreBallsToGive )
+    terminator_Extras.DoPFXFromEnt( "glee_ghostly_ectoplasm", crate )
 
     crate:EmitSound( "items/ammocrate_open.wav", 75, 100 )
 

@@ -291,7 +291,7 @@ function ENT:Gust( strength, shakeMult, countMischief )
     local pushVecPlayer = pushVec * self.PushStrengthPlayer
     local pushVecNPC = pushVec * self.PushStrengthNPC
     local pushVecMisc = pushVec * self.PushStrengthMisc
-    local owner = IsValid( self.pushOwner ) and self.pushOwner
+    local owner = IsValid( self.pushOwner ) and self.pushOwner or game.GetWorld()
     local targets = self.pushTargets
 
     for _, target in ipairs( targets ) do

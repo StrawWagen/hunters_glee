@@ -114,7 +114,8 @@ function ENT:OnRemove()
 
     end
 
-    terminator_Extras.GleeFancySplode( worldSpaceC, 115, 115 + 100, attacker, self )
+    terminator_Extras.GleeFancySplode( worldSpaceC, 115, 115 + 100, attacker, self, true )
+    terminator_Extras.DoPFXAtPos( "glee_gland_explosion_small", worldSpaceC )
 
     local BloodPlaster = self.BloodPlaster
 

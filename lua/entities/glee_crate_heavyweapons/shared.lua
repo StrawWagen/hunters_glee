@@ -33,6 +33,8 @@ if not SERVER then return end
 
 local GM = GAMEMODE
 
+ENT.weapCrateScoreMultiplier = 2
+
 function GM:HeavyWeaponsCrate( pos )
     if not pos then return end
 
@@ -55,6 +57,7 @@ end
 function ENT:Place()
     local betrayalScore = self:GetGivenScore()
     local crate = GAMEMODE:HeavyWeaponsCrate( self:OffsettedPlacingPos() )
+    terminator_Extras.DoPFXFromEnt( "glee_ghostly_ectoplasm", crate )
 
     crate:EmitSound( "items/ammocrate_open.wav", 75, 100 )
 

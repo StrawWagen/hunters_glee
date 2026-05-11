@@ -169,6 +169,7 @@ function ENT:Place()
     barrel:Spawn()
 
     terminator_Extras.SmartSleepEntity( barrel, 40 )
+    terminator_Extras.DoPFXFromEnt( "glee_ghostly_ectoplasm", barrel )
 
     self:GetBarrels()
 

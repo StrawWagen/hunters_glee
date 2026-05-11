@@ -248,9 +248,9 @@ hook.Add( "PlayerDeath", "glee_storeslights", function( died, _, attacker )
 
 end )
 
-hook.Add( "glee_shover_shove", "glee_shover_slights", function( shoved )
+hook.Add( "glee_shover_shove", "glee_shover_slights", function( shoved, shover )
     if not shoved:IsPlayer() then return end
-    GAMEMODE:AddSlight( shoved.glee_lastShover, shoved, 0.5, "shoved them" )
+    GAMEMODE:AddSlight( shover, shoved, 0.5, "shoved them" )
 
 end )
 

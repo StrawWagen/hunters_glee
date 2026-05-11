@@ -898,6 +898,7 @@ function GM:roundStart()
     SetGlobalInt( "glee_WinnerSkulls", 0 )
 
     SetGlobalInt( "glee_EscapedCount", 0 )
+    SetGlobalInt( "glee_RemainedCount", 0 )
 
     for _, ply in ipairs( player.GetAll() ) do
         ply:SetDeaths( 0 )
@@ -945,12 +946,16 @@ function GM:roundEnd()
         SetGlobalInt( "glee_TotalScore", math.Round( totalScore ) )
 
         local escapedCount = 0
+        local remainedCount = 0
         for _, ply in player.Iterator() do
-            if not ply:HasEscaped() then continue end
-            escapedCount = escapedCount + 1
-
+            if ply:HasEscaped() then
+                escapedCount = escapedCount + 1
+            else
+                remainedCount = remainedCount + 1
+            end
         end
         SetGlobalInt( "glee_EscapedCount", escapedCount )
+        SetGlobalInt( "glee_RemainedCount", remainedCount )
 
         if winner:GetSkulls() <= 0 then
             SetGlobalEntity( "glee_Winner", NULL )

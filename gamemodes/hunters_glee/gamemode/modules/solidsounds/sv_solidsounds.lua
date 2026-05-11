@@ -66,7 +66,7 @@ local soundTracks = {
         priority = 0,
     },
     roundWin = {
-        sounds   = { "hunters_glee/music/VACANT/qutedeath-re.mp3" },
+        sounds   = { "hunters_glee/music/VACANT/qutedeath-re.ogg" },
         priority = 50,
     },
     roundPerfectWin = {

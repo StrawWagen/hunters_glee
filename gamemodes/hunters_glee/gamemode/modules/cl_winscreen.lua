@@ -92,18 +92,26 @@ local function buildSections( startTime )
 
     -- SECTION 3: Souls Escaped
     local escapedCount = GetGlobalInt( "glee_EscapedCount", 0 )
+    local remainedCount = GetGlobalInt( "glee_RemainedCount", 0 )
 
-    local escapedEntries = {
-        { text = "Souls Escaped", font = "termhuntTriumphantFont", color = color_white },
-    }
+    local escapedEntries = {}
 
     if escapedCount <= 0 then
-        escapedEntries[#escapedEntries + 1] = { text = "None, Nobody Escaped", font = "termhuntTriumphantFont", color = color_red }
+        escapedEntries[1] = { text = "Nobody Escaped", font = "termhuntTriumphantFont", color = color_red }
 
     else
-        local sIfMultiple = escapedCount == 1 and "" or "s"
-        escapedEntries[#escapedEntries + 1] = { text = escapedCount .. " Soul" .. sIfMultiple .. " Escaped", font = "termhuntTriumphantFont", color = color_red }
+        local sIfMultipleEscaped = escapedCount == 1 and "" or "s"
+        escapedEntries[1] = { text = escapedCount .. " Soul" .. sIfMultipleEscaped .. " Escaped", font = "termhuntTriumphantFont", color = color_white }
+        if remainedCount <= 0 then
+            escapedEntries[2] = { text = "Every soul is blessed!", font = "termhuntTriumphantFont", color = color_white }
+            escapedEntries[3] = { text = "A great boon awaits...!", font = "termhuntTriumphantFont", color = color_white }
 
+        else
+            local sIfMultipleRemained = remainedCount == 1 and "" or "s"
+            local noSifMultiple = remainedCount <= 1 and "s" or ""
+            escapedEntries[2] = { text = remainedCount .. " Soul" .. sIfMultipleRemained .. " Remain" .. noSifMultiple, font = "termhuntTriumphantFont", color = color_red }
+
+        end
     end
 
     sections[3] = {

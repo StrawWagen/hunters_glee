@@ -39,7 +39,7 @@ function ENT:GetNearestTarget()
         if doorClasses[door:GetClass()] then
             if not terminator_Extras.CanBashDoor( door ) then continue end
             if not door:IsSolid() then continue end
-            if door:GetClass() == "prop_door_rotating" and not util.doorIsUsable( door ) then continue end
+            if door:GetClass() == "prop_door_rotating" and not terminator_Extras.CanBashDoor( door ) then continue end
             -- Calculate the distance between the door and the entity
             local distance = myPos:Distance( door:NearestPoint( myPos ) )
             if distance < nearestDistance then
@@ -200,6 +200,7 @@ function ENT:Place()
     end
 
     GAMEMODE:AddMischievousness( self.player, 1, "locked a door" )
+    terminator_Extras.DoPFXFromEnt( "glee_ghostly_ectoplasm_subtle", door )
 
     self:TellPlyToClearHighlighter()
 

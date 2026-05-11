@@ -266,7 +266,7 @@ local function PlayRepeatingSound( self, soundPath )
 
         util.ScreenShake( soundEmitter:GetPos(), 1, 20, 1, 1000 )
         local obj = soundEmitter:GetPhysicsObject()
-        if not obj then return end
+        if not IsValid( obj ) then return end
         obj:ApplyForceCenter( VectorRand() * obj:GetMass() * 100 * pitchMul )
         obj:ApplyTorqueCenter( VectorRand() * obj:GetMass() * 100 * pitchMul )
 
@@ -600,6 +600,8 @@ function ENT:Place()
     local crate = GAMEMODE:ScreamingCrate( self:OffsettedPlacingPos() )
     crate:EmitSound( "items/ammocrate_open.wav", 75 )
     crate.glee_player = self.player
+
+    terminator_Extras.DoPFXFromEnt( "glee_ghostly_ectoplasm", crate )
 
     crate.refundAndBonus = math.Round( self:GetGivenScore() )
 

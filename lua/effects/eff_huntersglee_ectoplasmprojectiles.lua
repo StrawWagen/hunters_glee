@@ -19,7 +19,7 @@ function EFFECT:Splat()
     local pos = self.Pos
     local scale = self.Scale
 
-    for _ = 1, 10 * scale do
+    for _ = 1, math.random( 1, 3 ) * scale do
         local plasm = emitter:Add( "particle/particle_ring_wave_8", pos )
         if plasm then
             local randVec = VectorRand()
@@ -31,12 +31,12 @@ function EFFECT:Splat()
             plasm:SetDieTime( math.Rand( 0.05, 0.25 ) )
             plasm:SetStartAlpha( 230 )
             plasm:SetEndAlpha( 0 )
-            plasm:SetStartSize( 5 * scale )
-            plasm:SetEndSize( 10 * scale )
+            plasm:SetStartSize( 1 * scale )
+            plasm:SetEndSize( 5 * scale )
             plasm:SetRoll( math.Rand( 150, 360 ) )
             plasm:SetRollDelta( math.Rand( -1, 1 ) )
             plasm:SetAirResistance( 5 )
-            plasm:SetGravity( Vector( 0, 0, math.Rand( -100, -400 ) ) )
+            plasm:SetGravity( Vector( 0, 0, -2000 ) )
             plasm:SetColor( 178, 245, 255 )
             plasm:SetCollide( true )
 

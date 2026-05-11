@@ -160,7 +160,9 @@ end )
 
 ### Adding Spawnsets
 
-Spawnsets define enemy waves and game parameters. They're defined in `lua/glee_spawnsets/` and auto-loaded.
+Spawnsets are the #1 way to change up the hunt.
+They're defined in `lua/glee_spawnsets/` and auto-loaded.
+Third party addons can define their own spawnsets, they just have to be in the right spot.
 
 #### Minimal Example
 
@@ -168,26 +170,37 @@ Spawnsets define enemy waves and game parameters. They're defined in `lua/glee_s
 -- lua/glee_spawnsets/my_spawnset.lua
 
 local mySpawnSet = {
-    name = "my_spawnset",                    -- Unique identifier
-    prettyName = "My Custom Mode",           -- Display name
-    description = "A custom enemy configuration.",
+    name = "my_spawnset",                       -- Unique identifier
+    prettyName = "My Custom Mode",              -- Display name
+    description = "It's my mode, it's custom!", -- Description, best used as a "hint" that teases the spawnset's content
     
     -- Use "default" to inherit base values, or "default*2" for multipliers
+    -- Difficulty is very dynamic, so it's best to use "default" or multipliers of it, unless you know what you're doing. 
     difficultyPerMin = "default",
     waveInterval = "default",
     startingBudget = "default",
-    maxSpawnCount = 8, -- 8 is pretty low, easy
+    maxSpawnCount = 6, -- 4 is pretty low, easy
     
     spawns = {
         {
             name = "hunter",                           -- Unique spawn identifier
             prettyName = "A Hunter",                   -- Display name
             class = "terminator_nextbot_snail",        -- Entity class to spawn
-            spawnType = "hunter",                      -- Spawn type
+            spawnType = "hunter",                      -- Spawn algorithm type, only "hunter" is supported rn
             difficultyCost = { 10, 15 },               -- Cost range (random)
             countClass = "terminator_nextbot_snail*",  -- Pattern for counting (* = wildcard)
             minCount = { 1 },                          -- Always maintain this many
-            maxCount = { 5 },                          -- Never exceed this many
+        },
+        {
+            hardRandomChance = { 5, 20 },              -- Only pick this x% of waves
+            name = "hunter",
+            prettyName = "A Scary Hunter",
+            class = "terminator_nextbot",              -- Spawns the "overcharged" terminator
+            spawnType = "hunter",
+            difficultyCost = { 25, 50 },
+            difficultyNeeded = { 50, 100 }             -- only consider spawning this after 5 - 10 minutes
+            countClass = "terminator_nextbot_snail*",
+            maxCount = { 1 },                          -- Never exceed this many
         },
     },
 }
@@ -220,8 +233,8 @@ Values can be:
 - `"nil"` -- Use base spawnset value
 - `"default"` - Explicity use base spawnset value
 - `"default*N"` - Multiply base value by N
-- `{ min, max }` - Random value in range
-- Direct number - 8, 10, 11.25, etc ( not recommended, random value in range is much more fun )
+- `{ min, max }` - Random value in range is chosen at the start of each round.
+- `Direct number` - 8, 10, 11.25, etc ( not recommended, random value in range is much more fun )
 
 #### Spawn Entry Fields
 
@@ -233,6 +246,7 @@ Values can be:
 | `spawnType` | ✅ | Spawning algorithm type, only supports `"hunter"` presently |
 | `difficultyCost` | ✅ | Budget cost to spawn ( number or `{min, max}` ) |
 | `countClass` | ✅ | Class pattern for counting ( `*` = wildcard ) |
+| `difficultyNeeded` | ❌ | Difficulty threshold needed to start spawning | 
 | `minCount` | ❌ | Minimum maintained count |
 | `maxCount` | ❌ | Maximum allowed count |
 | `hardRandomChance` | ❌ | `{ min, max }` percent chance to even consider |
@@ -271,8 +285,7 @@ local trueHorror = {
             difficultyCost = { 12, 18 },
             countClass = "terminator_nextbot_snail*",
             minCount = { 1 },
-            maxCount = { 6 },
-            postSpawnedFuncs = { applySynthflesh, announceArrival },
+            postSpawnedFuncs = { applySynthflesh, announceArrival }, -- run both of these after the ent's :Spawn is called
         },
     },
 }

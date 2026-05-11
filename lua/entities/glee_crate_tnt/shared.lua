@@ -197,6 +197,7 @@ end )
 function ENT:Place()
     local betrayalScore = self:GetGivenScore()
     local crate = GM:BombCrate( self:OffsettedPlacingPos(), self )
+    terminator_Extras.DoPFXFromEnt( "glee_ghostly_ectoplasm", crate )
 
     if self.player and self.player.GivePlayerScore and betrayalScore then
         crate.glee_TNT_Crate_player = self.player

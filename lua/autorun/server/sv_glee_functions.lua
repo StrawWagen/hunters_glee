@@ -3,13 +3,12 @@ terminator_Extras = terminator_Extras or {}
 local up = Vector( 0, 0, 1 )
 local down = Vector( 0, 0, -1 )
 
-function terminator_Extras.GleeFancySplode( pos, damage, radius, attacker, inflictor )
+function terminator_Extras.GleeFancySplode( pos, damage, radius, attacker, inflictor, nofx )
 
-    local splode = EffectData()
-    splode:SetOrigin( pos )
-    splode:SetMagnitude( damage )
-    splode:SetScale( radius )
-    util.Effect( "Explosion", splode, nil, true )
+    util.BlastDamage( inflictor, attacker, pos, radius, damage )
+    util.Decal( "FadingScorch", pos + up, pos + down * radius / 4, ent )
+
+    if nofx then return end
 
     local contents = util.PointContents( pos )
 
@@ -20,8 +19,12 @@ function terminator_Extras.GleeFancySplode( pos, damage, radius, attacker, infli
     end
 
     sound.Play( explSound, pos, 88, math.random( 95, 105 ) )
-    util.BlastDamage( inflictor, attacker, pos, radius, damage )
-    util.Decal( "FadingScorch", pos + up, pos + down * radius / 4, ent )
+
+    local splode = EffectData()
+    splode:SetOrigin( pos )
+    splode:SetMagnitude( damage )
+    splode:SetScale( radius )
+    util.Effect( "Explosion", splode, nil, true )
 
 end
 

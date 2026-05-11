@@ -211,7 +211,7 @@ end
 
 function ENT:Place()
     local yaw = math.Rand( -180, 180 )
-    local ang = Angle( 0, yaw ,0 )
+    local ang = Angle( 0, yaw, 0 )
 
     local placeTraceResult = self:BarnacleTrace()
 
@@ -220,6 +220,8 @@ function ENT:Place()
     barnacle:SetAngles( ang )
     barnacle:Spawn()
     barnacle:Activate()
+
+    terminator_Extras.DoPFXFromEnt( "glee_ghostly_ectoplasm", barnacle )
 
     barnacle.glee_PlacedBarnacle = true
     barnacle.barnacleCreator = self

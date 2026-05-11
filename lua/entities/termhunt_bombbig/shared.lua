@@ -133,19 +133,10 @@ function ENT:OnRemove()
 
     end
 
-    terminator_Extras.GleeFancySplode( worldSpaceC, 3 * 115, 6 * 115, attacker, self )
+    terminator_Extras.GleeFancySplode( worldSpaceC, 3 * 115, 6 * 115, attacker, self, true )
     util.BlastDamage( self, attacker, worldSpaceC, 200, 200 )
 
-    for _ = 1, 20 do
-        local grossSplat = EffectData()
-        grossSplat:SetOrigin( self:GetPos() )
-        grossSplat:SetScale( math.Rand( 1, 3.5 ) )
-        grossSplat:SetMagnitude( math.Rand( 10, 20 ) )
-        grossSplat:SetNormal( VectorRand() )
-
-        util.Effect( "StriderBlood", grossSplat )
-
-    end
+    terminator_Extras.DoPFXAtPos( "glee_gland_explosion_big", worldSpaceC )
 
     local BloodPlaster = self.BloodPlaster
 

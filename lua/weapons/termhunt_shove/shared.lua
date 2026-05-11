@@ -207,7 +207,7 @@ function SWEP:PrimaryAttack( firstMul )
             NoHit = true
 
         end
-        hook.Run( "glee_shover_shove", Hit )
+        hook.Run( "glee_shover_shove", Hit, owner )
 
     elseif Hit:IsWorld() and not Trace.HitSky and owner:GetEyeTrace().HitWorld then -- check eyetrace too, make sure we dont do the 5 sec cooldown when they just barely missed an entity
         self:SetNextPrimaryFire( CurTime() + 2.2 )
