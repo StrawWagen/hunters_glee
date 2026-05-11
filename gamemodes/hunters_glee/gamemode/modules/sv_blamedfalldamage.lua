@@ -11,6 +11,15 @@ function GM:BlameForFallDamage( ply, attacker, inflictor )
 
 end
 
+function GM:ClearFallDamageBlame( ply )
+    if not IsValid( ply ) then return end
+    if not ply:IsPlayer() then return end
+
+    ply.glee_fallDamageAttacker = nil
+    ply.glee_fallDamageInflictor = nil
+
+end
+
 hook.Add( "OnPlayerHitGround", "glee_resetfalldamageblame", function( ply )
     if not ply.glee_fallDamageAttacker then return end
 
