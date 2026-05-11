@@ -6,11 +6,12 @@ function GM:BlameForFallDamage( ply, attacker, inflictor )
 
     ply.glee_fallDamageAttacker = attacker
     ply.glee_fallDamageInflictor = inflictor
+    timer.Remove( "glee_resetfalldamageblame_" .. ply:EntIndex() )
 
 end
 
 hook.Add( "OnPlayerHitGround", "glee_resetfalldamageblame", function( ply )
-    timer.Simple( 0, function()
+    timer.Create( "glee_resetfalldamageblame_" .. ply:EntIndex(), 0, 1, function()
         if not IsValid( ply ) then return end
         ply.glee_fallDamageAttacker = nil
         ply.glee_fallDamageInflictor = nil
