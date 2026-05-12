@@ -309,6 +309,7 @@ function ENT:GetNearestTarget()
             if ent:Health() <= 0 then continue end
             if blacklist[ent:GetClass()] then continue end
             if ent.IsHomeless then continue end
+            if not IsValid( ent:GetPhysicsObject() ) then continue end
             if hook.Run( "glee_pointandclick_cantarget", self, ent ) == false then continue end
 
             local distance = myPos:Distance( ent:NearestPoint( myPos ) )
