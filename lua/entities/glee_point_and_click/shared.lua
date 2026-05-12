@@ -53,6 +53,26 @@ function ENT:DynamicCooldown( elapsed )
     return math.Clamp( math.pow( elapsed, 1.4 ), 50, 60 * 5 )
 end
 
+-- For a given +/- xyz position delta, return the spending cost. Will then be multiplied against the delta time (CostInterval).
+function ENT:CalcCostMovementPerSec( xd, yd, zd )
+    local cost = 0
+    local horizDist = math.sqrt( xd * xd + yd * yd )
+
+    if horizDist > 100 then
+        cost = cost + math.pow( horizDist / 100, 0.75 )
+
+    end
+
+    if zd > 100 then
+        zd = math.min( zd, 2000 )
+        cost = cost + math.pow( zd / 100, 2 )
+
+    end
+
+    return cost
+
+end
+
 
 if CLIENT then
     local matCursorArrow = Material( "materials/icon24/hunters_glee_cursor_arrow.png" )
@@ -365,6 +385,7 @@ function ENT:Place()
     self.glee_PointAndClick_CostPerSec = self.CostPerSec
     self.glee_PointAndClick_StartTime = CurTime()
     self.glee_PointAndClick_PrevCostTime = CurTime()
+    self.glee_PointAndClick_PrevCostPos = target:WorldSpaceCenter()
     self.glee_PointAndClick_TotalCost = self.PurchaseCost
 
     target.glee_PointAndClick_Ent = self
@@ -396,9 +417,24 @@ function ENT:CostTick( force )
     local dt = now - prevTime
     local costPerSec = math.min( self.glee_PointAndClick_CostPerSec + self.CostPerSecPerSec * dt, self.CostPerSecMax )
     local costMult = self:GetCostMult()
+    local target = self.glee_PointAndClick_Target
 
     self.glee_PointAndClick_PrevCostTime = now
-    self.glee_PointAndClick_CostPerSec = costPerSec
+    self.glee_PointAndClick_CostPerSec = costPerSec -- Store new cost rate before applying dynamic costs
+
+    if IsValid( target ) then
+        local prevPos = self.glee_PointAndClick_PrevCostPos
+        local curPos = target:WorldSpaceCenter()
+        self.glee_PointAndClick_PrevCostPos = curPos
+
+        costPerSec = costPerSec + self:CalcCostMovementPerSec(
+            curPos[1] - prevPos[1],
+            curPos[2] - prevPos[2],
+            curPos[3] - prevPos[3]
+        )
+
+
+    end
 
     local costDelta = math.Round( costPerSec * costMult * dt )
     local totalCost = self.glee_PointAndClick_TotalCost + costDelta
