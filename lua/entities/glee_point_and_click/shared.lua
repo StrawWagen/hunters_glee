@@ -32,6 +32,8 @@ ENT.MoveStrengthDownMult = 0.15 -- After the speed clamp, multiplies vertical fo
 ENT.MoveDampingMult = 2
 ENT.MoveDistMax = 500 -- Max grab distance from the owner's eyes. Makes it not get stuck awkwardly far away.
 
+ENT.OwnerSoundLerp = 0.3 -- How quickly the volume/pitch of the owner sound should change. It scales based on total cost vs CostHighAmount.
+
 ENT.TargetSoundSpeedMin = 300 -- What speed should correspond with minimum pitch/volume. Speeds below this will also get clamped to the minimum.
 ENT.TargetSoundSpeedMax = 2000
 ENT.TargetSoundPitchMin = 80 / 100 -- 0-1 scale for pitch bc of IGModAudioChannel.
@@ -185,13 +187,17 @@ if CLIENT then
         if not self:IsGrabbing() then return end
         if self.player ~= LocalPlayer() then return end
 
-        if not self.glee_PointAndClick_StartTime then
-            self.glee_PointAndClick_StartTime = CurTime()
+        if not self.glee_PointAndClick_OwnerSoundFrac then
+            self.glee_PointAndClick_OwnerSoundFrac = 0
 
         end
 
+        local oldFrac = self.glee_PointAndClick_OwnerSoundFrac
+        local forceUpdate = false
+
         local snd = self.glee_PointAndClick_OwnerSound
         if not snd and self.player == LocalPlayer() then
+            forceUpdate = true
             snd = CreateSound( game.GetWorld(), "ambient/machines/refinery_loop_1.wav" )
             self.glee_PointAndClick_OwnerSound = snd
             snd:SetSoundLevel( 0 )
@@ -199,9 +205,14 @@ if CLIENT then
 
         end
 
-        local elapsed = CurTime() - self.glee_PointAndClick_StartTime
-        snd:ChangeVolume( Lerp( elapsed / 40, 0, 1 ) )
-        snd:ChangePitch( Lerp( elapsed / 60, 100, 180 ) )
+        if oldFrac >= 1 and not forceUpdate then return end
+
+        local frac = math.Clamp( -self:GetGivenScore() / self.CostHighAmount, 0, 1 )
+        frac = Lerp( self.OwnerSoundLerp * FrameTime(), oldFrac, frac )
+
+        self.glee_PointAndClick_OwnerSoundFrac = frac
+        snd:ChangeVolume( Lerp( frac, 0, 1 ) )
+        snd:ChangePitch( Lerp( frac, 100, 180 ) )
 
     end
 
