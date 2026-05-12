@@ -102,6 +102,7 @@ if CLIENT then
 
         colorLerpFast( costColor, color_white, self.CostHighColor, -scoreGained / self.CostHighAmount )
 
+        -- Draw cursor
         if self:IsGrabbing() then
             local target = self:GetCurrTarget()
             if IsValid( target ) then
@@ -120,6 +121,7 @@ if CLIENT then
 
         end
 
+        -- Draw cost/cooldown
         local scoreGainedString = "Total Cost: " .. tostring( scoreGained )
         surface.drawShadowedTextBetter( scoreGainedString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + glee_sizeScaled( nil, 60 ), true, 255 )
 
