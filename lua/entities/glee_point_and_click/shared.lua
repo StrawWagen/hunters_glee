@@ -455,6 +455,23 @@ function ENT:Place()
     local target = self:GetCurrTarget()
     local score = self:GetGivenScore()
 
+    if target.InVehicle and target:InVehicle() then
+        target:ExitVehicle() -- Get out!
+
+        if target:InVehicle() then
+            -- Exit blocked for some reason :(
+            huntersGlee_Announce( { owner }, 5, 5, "Try as you might, you can't pull them out." )
+
+            if self.itemIdentifier then
+                GAMEMODE:RefundShopItemCooldown( owner, self.itemIdentifier )
+
+            end
+
+            return
+
+        end
+    end
+
     if owner.GivePlayerScore and score then
         owner:GivePlayerScore( score )
         GAMEMODE:sendPurchaseConfirm( owner, score )
