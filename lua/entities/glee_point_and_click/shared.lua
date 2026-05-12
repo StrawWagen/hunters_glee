@@ -86,8 +86,9 @@ end
 if CLIENT then
     local matCursorArrow = Material( "materials/icon24/hunters_glee_cursor_arrow.png" )
     local matCursorHand = Material( "materials/icon24/hunters_glee_cursor_hand.png" )
-    local cursorSizeArrow = 24 * math.max( math.Round( ScrH() / 540 ), 1 ) -- Round to avoid pixel blurring.
-    local cursorSizeHand = 24 * math.max( math.Round( ScrH() / 540 ), 1 ) -- Round to avoid pixel blurring.
+    local cursorSize2D = 24 * math.max( math.Round( ScrH() / 540 ), 1 ) -- Round to avoid pixel blurring.
+    local cursorSize3D = 24
+    local cursorSize2DTarget = cursorSize2D * 30
 
     terminator_Extras.glee_CL_SetupSent( ENT, "glee_point_and_click", "vgui/hud/killicon/glee_point_and_click.png" )
 
@@ -126,6 +127,38 @@ if CLIENT then
 
     end
 
+    function ENT:DrawCursor( x, y, size, arrowColor, handColor )
+        size = size or cursorSize2D
+
+        if self:IsGrabbing() then
+            surface.SetDrawColor( handColor or color_white )
+            surface.SetMaterial( matCursorHand )
+            surface.DrawTexturedRectUV( x, y, size, size, correctUVs( 0, 0, 1, 1 ) )
+
+        else
+            surface.SetDrawColor( arrowColor or color_white )
+            surface.SetMaterial( matCursorArrow )
+            surface.DrawTexturedRectUV( x, y, size, size, correctUVs( 0, 0, 1, 1 ) )
+
+        end
+    end
+
+    function ENT:DrawCursorOnTarget( hideIfNoTarget, size, arrowColor, handColor )
+        local targetX, targetY = self:GetTargetScreenPos()
+        self._glee_PointAndClick_TargetVisible = targetX or false
+
+        if not targetX then
+            if hideIfNoTarget then return end
+
+            targetX = ScrW() / 2
+            targetY = ScrH() / 2
+
+        end
+
+        self:DrawCursor( targetX, targetY, size, arrowColor, handColor )
+
+    end
+
     function ENT:DoHudStuff()
         local screenMiddleW = ScrW() / 2
         local screenMiddleH = ScrH() / 2
@@ -141,24 +174,7 @@ if CLIENT then
         end
 
         colorLerpFast( costColor, color_white, self.CostHighColor, -scoreGained / self.CostHighAmount )
-
-        -- Draw cursor
-        local targetX, targetY = self:GetTargetScreenPos()
-        self._glee_PointAndClick_TargetVisible = targetX or false
-
-        if self:IsGrabbing() then
-            if targetX then
-                surface.SetDrawColor( costColor )
-                surface.SetMaterial( matCursorHand )
-                surface.DrawTexturedRectUV( targetX, targetY, cursorSizeHand, cursorSizeHand, correctUVs( 0, 0, 1, 1 ) )
-
-            end
-        else
-            surface.SetDrawColor( 255, 255, 255, 255 )
-            surface.SetMaterial( matCursorArrow )
-            surface.DrawTexturedRectUV( targetX or ( ScrW() / 2 ), targetY or ( ScrH() / 2 ), cursorSizeArrow, cursorSizeArrow, correctUVs( 0, 0, 1, 1 ) )
-
-        end
+        self:DrawCursorOnTarget( self:IsGrabbing(), nil, color_white, costColor )
 
         -- Draw cost/cooldown
         local scoreGainedString = "Total Cost: " .. tostring( scoreGained )
@@ -177,12 +193,66 @@ if CLIENT then
 
     end
 
+    function ENT:DrawTranslucent()
+        return self:Draw()
+
+    end
+
+    function ENT:Draw()
+        if self:HasReleasedTarget() then return end
+        if self:GetOwner() == LocalPlayer() then return end -- Owner gets the special HUD, no 3D cursor
+
+        -- Draw real big in a corner of the HUD if viewer is the target being grabbed
+        local target = self:GetCurrTarget()
+        if target == LocalPlayer() and self:IsGrabbing() then
+            cam.Start2D()
+                self:DrawCursor( ScrW() - math.Round( cursorSize2DTarget * 0.5 ), ScrH() - math.Round( cursorSize2DTarget * 0.6 ), cursorSize2DTarget )
+            cam.End2D()
+            return
+
+        end
+
+        -- Non-owner 3D POV
+        local pos = ( self:IsGrabbing() and IsValid( target ) ) and target:WorldSpaceCenter() or self:GetPos()
+        local toEyes = EyePos() - pos
+        local x = 0
+        toEyes:Normalize()
+
+        local ang = toEyes:Angle()
+        ang[1] = 90
+        ang[3] = 0
+        ang:RotateAroundAxis( ang:Up(), 90 )
+
+        pos = pos + toEyes * 100
+
+        if self:IsGrabbing() then
+            x = x - cursorSize3D * 0.25
+
+        end
+
+        cam.Start3D2D( pos, ang, 1 )
+        render.PushFilterMag( TEXFILTER.POINT )
+        render.PushFilterMin( TEXFILTER.POINT )
+            self:DrawCursor( x, 0, cursorSize3D )
+        render.PopFilterMag()
+        render.PopFilterMin()
+        cam.End3D2D()
+
+    end
+
     function ENT:ClientThink()
-        self:SetNoDraw( true )
+        self:SetNoDraw( false )
+        self:DrawShadow( false )
         self:HandleOwnerSound()
         self:HandleTargetSound()
-        self._glee_PointAndClick_IsGhostEnt = true -- Set here instead of in init, as init doesn't run during fullupdate
 
+        -- Set here instead of in init, as init doesn't run during fullupdate
+        -- (could move to a NetworkEntityCreated hook, but that would use more perf long-term)
+        if not self._glee_PointAndClick_IsGhostEnt then
+            self._glee_PointAndClick_IsGhostEnt = true
+            self:SetRenderBounds( Vector( 0, 0, 0 ), Vector( 0, 0, 0 ), Vector( 500, 500, 500 ) ) -- BIG render bounds so grabbed target always renders it
+
+        end
     end
 
     function ENT:OwnerlessThink()
