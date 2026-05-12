@@ -47,7 +47,6 @@ ENT.NextBotCostMult = 0.5 -- Applies to all costs when picking up NextBots.
 
 ENT.TargetBlacklist = {
     ["npc_helicopter"] = true,
-    ["terminator_nextbot_homeless"] = true,
 }
 
 function ENT:DynamicCooldown( elapsed )
@@ -309,6 +308,7 @@ function ENT:GetNearestTarget()
             if ent == owner then continue end
             if ent:Health() <= 0 then continue end
             if blacklist[ent:GetClass()] then continue end
+            if ent.IsHomeless then continue end
             if hook.Run( "glee_pointandclick_cantarget", self, ent ) == false then continue end
 
             local distance = myPos:Distance( ent:NearestPoint( myPos ) )
