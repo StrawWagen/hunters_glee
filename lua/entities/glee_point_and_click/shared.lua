@@ -330,6 +330,8 @@ function ENT:UpdateGivenScore()
 end
 
 function ENT:CalculateCanPlace()
+    if not self:HasEnoughToPurchase() then return false, self.noPurchaseReason_TooPoor end
+
     local target = self:GetCurrTarget()
     if not IsValid( target ) then return false, "You need to aim at a living " .. ( self.NextBotAllow and "(or mechanical) " or "" ) .. "being." end
     if target.glee_PointAndClick_Ent then return false, "That person is already being grabbed!" end
