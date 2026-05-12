@@ -123,7 +123,7 @@ if CLIENT then
 
         -- Draw cost/cooldown
         local scoreGainedString = "Total Cost: " .. tostring( scoreGained )
-        surface.drawShadowedTextBetter( scoreGainedString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + glee_sizeScaled( nil, 80 ), true, 255 )
+        surface.drawShadowedTextBetter( scoreGainedString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + glee_sizeScaled( nil, 80 ), true )
 
         local cooldownMins = math.floor( cooldown / 60 )
         local cooldownSecs = math.floor( cooldown - cooldownMins * 60 )
@@ -134,7 +134,7 @@ if CLIENT then
         end
 
         cooldownString = cooldownString .. cooldownSecs .. "s"
-        surface.drawShadowedTextBetter( cooldownString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + glee_sizeScaled( nil, 80 + 40 ), true, 255 )
+        surface.drawShadowedTextBetter( cooldownString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + glee_sizeScaled( nil, 80 + 40 ), true )
 
     end
 
