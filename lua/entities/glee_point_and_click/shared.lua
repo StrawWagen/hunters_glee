@@ -300,11 +300,6 @@ function ENT:SetupDataTablesExtra()
 
 end
 
-function ENT:GetDynamicCooldown()
-    return self:DynamicCooldown( CurTime() - ( self.glee_PointAndClick_StartTime or CurTime() ) )
-
-end
-
 function ENT:IsGrabbing()
     return self:GetHoldDist() > 0
 
@@ -454,6 +449,11 @@ function ENT:CostTick( force )
     self:SetGivenScore( "-" .. totalCost )
     self:SetGivenScoreAlt( self:GetDynamicCooldown() )
     owner:GivePlayerScore( -costDelta )
+
+end
+
+function ENT:GetDynamicCooldown()
+    return self:DynamicCooldown( CurTime() - ( self.glee_PointAndClick_StartTime or CurTime() ) )
 
 end
 
