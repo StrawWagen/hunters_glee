@@ -104,6 +104,17 @@ if CLIENT then
 
     end
 
+    function ENT:GetTargetScreenPos()
+        local target = self:GetCurrTarget()
+        if not IsValid( target ) then return end
+
+        local scrPos = target:WorldSpaceCenter():ToScreen()
+        if not scrPos.visible then return end
+
+        return scrPos.x, scrPos.y
+
+    end
+
     function ENT:DoHudStuff()
         local screenMiddleW = ScrW() / 2
         local screenMiddleH = ScrH() / 2
@@ -121,21 +132,20 @@ if CLIENT then
         colorLerpFast( costColor, color_white, self.CostHighColor, -scoreGained / self.CostHighAmount )
 
         -- Draw cursor
-        if self:IsGrabbing() then
-            local target = self:GetCurrTarget()
-            if IsValid( target ) then
-                local scrPos = target:WorldSpaceCenter():ToScreen()
-                if scrPos.visible then
-                    surface.SetDrawColor( costColor )
-                    surface.SetMaterial( matCursorHand )
-                    surface.DrawTexturedRectUV( scrPos.x, scrPos.y, cursorSizeHand, cursorSizeHand, correctUVs( 0, 0, 1, 1 ) )
-                end
-            end
+        local targetX, targetY = self:GetTargetScreenPos()
+        self._glee_PointAndClick_TargetVisible = targetX or false
 
+        if self:IsGrabbing() then
+            if targetX then
+                surface.SetDrawColor( costColor )
+                surface.SetMaterial( matCursorHand )
+                surface.DrawTexturedRectUV( targetX, targetY, cursorSizeHand, cursorSizeHand, correctUVs( 0, 0, 1, 1 ) )
+
+            end
         else
             surface.SetDrawColor( 255, 255, 255, 255 )
             surface.SetMaterial( matCursorArrow )
-            surface.DrawTexturedRectUV( ScrW() / 2, ScrH() / 2, cursorSizeArrow, cursorSizeArrow, correctUVs( 0, 0, 1, 1 ) )
+            surface.DrawTexturedRectUV( targetX or ( ScrW() / 2 ), targetY or ( ScrH() / 2 ), cursorSizeArrow, cursorSizeArrow, correctUVs( 0, 0, 1, 1 ) )
 
         end
 
@@ -273,6 +283,7 @@ if CLIENT then
         local ghostEnt = LocalPlayer().ghostEnt
         if not IsValid( ghostEnt ) then return end
         if not ghostEnt._glee_PointAndClick_IsGhostEnt then return end
+        if not ghostEnt:IsGrabbing() and ghostEnt._glee_PointAndClick_TargetVisible then return end
 
         return false
 
