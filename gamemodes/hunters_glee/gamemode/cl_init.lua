@@ -464,6 +464,14 @@ local function paintMyTotalScore( ply, cur )
             overrideColorTime = 4
             textShakeTime = 3
 
+        elseif realDifference <= -100 then
+            overrideColorTime = 4
+            textShakeTime = 4
+
+        elseif realDifference <= -500 then
+            overrideColorTime = 8
+            textShakeTime = 8
+
         end
 
         ply.scoreColorOverride = overrideColor
@@ -750,11 +758,6 @@ local function genericHints()
 
         elseif hasEscaped and ( me.glee_NextControlSomethingHint or 0 ) < CurTime() then
             if not me.glee_WasATerminatorOnTheMap then
-                if IsValid( me:GetDrivingEntity() ) then
-                    me.glee_NextControlSomethingHint = CurTime() + 60
-                    return
-
-                end
                 local wasBased
                 for _, ent in ents.Iterator() do
                     if not ent.isTerminatorHunterBased then continue end
@@ -771,8 +774,19 @@ local function genericHints()
 
                 end
             end
+            if IsValid( me:GetDrivingEntity() ) then
+                me.glee_NextControlSomethingHint = CurTime() + 60
+                return
+
+            end
             local valid, phrase = GAMEMODE:TranslatedBind( "+zoom" )
-            if not valid then me.glee_NextControlSomethingHint = CurTime() + 5 return end
+            if not valid then
+                valid, phrase = GAMEMODE:TranslatedBind( "toggle_zoom" )
+                if not valid then
+                    return true, "If you had +zoom bound to anything, you could POSESS hunters right now..."
+
+                end
+            end
             local obsTarg = me:GetObserverTarget()
             if IsValid( obsTarg ) and obsTarg.isTerminatorHunterBased then
                 return true, "Press " .. phrase .. " to POSESS the hunter you're spectating..."

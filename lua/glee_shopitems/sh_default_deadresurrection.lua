@@ -240,6 +240,7 @@ if SERVER then
                     strength = strength * 0.9
 
                     GAMEMODE:Bleed( ply, strength )
+
                 end )
 
                 -- spawning sounds
