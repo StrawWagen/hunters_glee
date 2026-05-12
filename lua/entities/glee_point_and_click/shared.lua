@@ -147,8 +147,6 @@ if CLIENT then
 
     function ENT:DrawCursorOnTarget( hideIfNoTarget, size, arrowColor, handColor )
         local targetX, targetY = self:GetTargetScreenPos()
-        self._glee_PointAndClick_TargetVisible = targetX or false
-
         if not targetX then
             if hideIfNoTarget then return end
 
@@ -176,7 +174,14 @@ if CLIENT then
         end
 
         colorLerpFast( costColor, color_white, self.CostHighColor, -scoreGained / self.CostHighAmount )
-        self:DrawCursorOnTarget( self:IsGrabbing(), nil, color_white, costColor )
+
+        if self:IsGrabbing() then
+            self:DrawCursorOnTarget( self:IsGrabbing(), nil, color_white, costColor )
+
+        else
+            self:DrawCursor( ScrW() / 2, ScrH() / 2 )
+
+        end
 
         -- Draw cost/cooldown
         local scoreGainedString = "Total Cost: " .. tostring( scoreGained )
@@ -358,7 +363,7 @@ if CLIENT then
     end
 
 
-    -- Hide default crosshair while grabbing.
+    -- Hide default crosshair.
     local crosshairLookup = { ["CHudCrosshair"] = true } -- Faster than string comparison
     hook.Add( "HUDShouldDraw", "glee_pointandclick_overridecrosshair", function( name )
         if not crosshairLookup[name] then return end
@@ -366,7 +371,6 @@ if CLIENT then
         local ghostEnt = LocalPlayer().ghostEnt
         if not IsValid( ghostEnt ) then return end
         if not ghostEnt._glee_PointAndClick_IsGhostEnt then return end
-        if not ghostEnt:IsGrabbing() and ghostEnt._glee_PointAndClick_TargetVisible then return end
 
         return false
 
