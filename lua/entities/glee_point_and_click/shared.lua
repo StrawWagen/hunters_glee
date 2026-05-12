@@ -92,18 +92,18 @@ if CLIENT then
 
         local scoreGained = math.Round( self:GetGivenScore() )
         local cooldown = math.Round( self:GetGivenScoreAlt() )
-        local textColor = self.glee_PointAndClick_TextColor
+        local costColor = self.glee_PointAndClick_CostColor
 
-        if not textColor then
-            textColor = Color( 0, 0, 0, 0 )
-            self.glee_PointAndClick_TextColor = textColor
+        if not costColor then
+            costColor = Color( 0, 0, 0, 0 )
+            self.glee_PointAndClick_CostColor = costColor
 
         end
 
-        colorLerpFast( textColor, color_white, self.CostHighColor, -scoreGained / self.CostHighAmount )
+        colorLerpFast( costColor, color_white, self.CostHighColor, -scoreGained / self.CostHighAmount )
 
         local scoreGainedString = "Total Cost: " .. tostring( scoreGained )
-        surface.drawShadowedTextBetter( scoreGainedString, "scoreGainedOnPlaceFont", textColor, screenMiddleW, screenMiddleH + glee_sizeScaled( nil, 60 ), true, 255 )
+        surface.drawShadowedTextBetter( scoreGainedString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + glee_sizeScaled( nil, 60 ), true, 255 )
 
         local cooldownMins = math.floor( cooldown / 60 )
         local cooldownSecs = math.floor( cooldown - cooldownMins * 60 )
@@ -114,14 +114,14 @@ if CLIENT then
         end
 
         cooldownString = cooldownString .. cooldownSecs .. "s"
-        surface.drawShadowedTextBetter( cooldownString, "scoreGainedOnPlaceFont", textColor, screenMiddleW, screenMiddleH + glee_sizeScaled( nil, 60 + 40 ), true, 255 )
+        surface.drawShadowedTextBetter( cooldownString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + glee_sizeScaled( nil, 60 + 40 ), true, 255 )
 
         if self:IsGrabbing() then
             local target = self:GetCurrTarget()
             if IsValid( target ) then
                 local scrPos = target:WorldSpaceCenter():ToScreen()
                 if scrPos.visible then
-                    surface.SetDrawColor( 255, 255, 255, 255 )
+                    surface.SetDrawColor( costColor )
                     surface.SetMaterial( matCursorHand )
                     surface.DrawTexturedRectUV( scrPos.x, scrPos.y, cursorSizeHand, cursorSizeHand, correctUVs( 0, 0, 1, 1 ) )
                 end
