@@ -220,7 +220,11 @@ if CLIENT then
         if not self:IsGrabbing() then return end
 
         local target = self:GetCurrTarget()
-        if not IsValid( target ) then return end
+        if not IsValid( target ) then
+            self:StopTargetSound() -- nil-out the sound reference so we don't think it's still playing when they leave and re-enter PVS
+            return
+
+        end
 
         local snd = self.glee_PointAndClick_TargetSound
         if not snd then
