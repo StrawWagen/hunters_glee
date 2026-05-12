@@ -304,7 +304,7 @@ function ENT:GetNearestTarget()
     local blacklist = self.TargetBlacklist
 
     for _, ent in ipairs( ents.FindInSphere( myPos, 2048 ) ) do
-        if ent:IsPlayer() or ( allowNPCs and ent:IsNPC() ) or ( allowNextBots and ent:IsNextBot() ) then
+        if ent:IsPlayer() or ( allowNPCs and ent:IsNPC() and not ent:IsNextBot() ) or ( allowNextBots and ent:IsNextBot() ) then
             if ent == owner then continue end
             if ent:Health() <= 0 then continue end
             if blacklist[ent:GetClass()] then continue end
@@ -376,8 +376,8 @@ end
 function ENT:GetCostMult()
     local target = self:GetCurrTarget()
     if not IsValid( target ) then return 1 end
-    if target:IsNPC() then return self.NPCCostMult end
     if target:IsNextBot() then return self.NextBotCostMult end
+    if target:IsNPC() then return self.NPCCostMult end
 
     return 1
 
