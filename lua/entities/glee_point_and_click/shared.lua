@@ -52,7 +52,7 @@ end
 
 -- For the current distance from the target's pre-grab position, return the one-time cost.
 function ENT:CalcCostTotalDistance( dist )
-    if dist <= 100 then return end
+    if dist <= 100 then return 0 end
 
     dist = math.min( dist, 8000 )
     dist = math.pow( dist, 0.8 )
