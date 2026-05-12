@@ -484,12 +484,12 @@ function ENT:ReleaseTarget()
     self:ApplyDynamicCooldown()
     self:SetHoldDist( -1 )
 
-    local baseOwner = self.player
-    if IsValid( baseOwner ) then
-        baseOwner:GivePlayerScore( -self.glee_PointAndClick_BonusCost )
+    local owner = self.player
+    if IsValid( owner ) then
+        owner:GivePlayerScore( -self.glee_PointAndClick_BonusCost )
         self:TellPlyToClearHighlighter()
-        baseOwner.placableTargeted = nil
-        baseOwner.ghostEnt = nil
+        owner.placableTargeted = nil
+        owner.ghostEnt = nil
         self:SetOwner( NULL )
 
     end
