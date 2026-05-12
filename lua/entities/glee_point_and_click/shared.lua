@@ -588,7 +588,7 @@ function ENT:ReleaseTarget()
     target:EmitSound( "npc/advisor/advisor_blast6.wav", 80, 100, 1 )
     target:EmitSound( "npc/advisor/advisor_blast6.wav", 80, 120, 1 )
 
-    if target:IsOnGround() then
+    if target:IsOnGround() or ( target.InVehicle and target:InVehicle() ) then
         GAMEMODE:ClearFallDamageBlame( target )
 
     end
@@ -605,7 +605,7 @@ function ENT:ModifiableThink()
     local owner = self.player
     local target = self.glee_PointAndClick_Target
 
-    if not IsValid( owner ) or not IsValid( target ) or not owner:KeyDown( IN_ATTACK ) or owner:GetScore() <= 0 then
+    if not IsValid( owner ) or not IsValid( target ) or not owner:KeyDown( IN_ATTACK ) or owner:GetScore() <= 0 or ( target.InVehicle and target:InVehicle() ) then
         self:ReleaseTarget() -- After this, the owner is lost, and :OwnerlessThink() takes over.
         return
 
