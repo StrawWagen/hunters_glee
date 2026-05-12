@@ -61,19 +61,20 @@ function ENT:CalcCostTotalDistance( dist )
 
 end
 
--- For a given +/- xyz position delta, return the spending cost. Will then be multiplied against the delta time (CostInterval).
-function ENT:CalcCostMovementPerSec( xd, yd, zd )
+-- For a given +/- xyz velocity, return the spending cost. Will then be multiplied against the delta time (CostInterval).
+-- Note: the velocity is calculated from change in position between cost ticks, a better measure than the target's immediate velocity snapshot.
+function ENT:CalcCostMovementPerSec( xVel, yVel, zVel )
     local cost = 0
-    local horizDist = math.sqrt( xd * xd + yd * yd )
+    local horizSpeed = math.sqrt( xVel * xVel + yVel * yVel )
 
-    if horizDist > 100 then
-        cost = cost + math.pow( horizDist / 100, 0.75 )
+    if horizSpeed > 100 then
+        cost = cost + math.pow( horizSpeed / 100, 0.75 )
 
     end
 
-    if zd > 100 then
-        zd = math.min( zd, 2000 )
-        cost = cost + math.pow( zd / 100, 2 )
+    if zVel > 100 then
+        zVel = math.min( zVel, 2000 )
+        cost = cost + math.pow( zVel / 100, 2 )
 
     end
 
@@ -442,9 +443,9 @@ function ENT:CostTick( force )
         self.glee_PointAndClick_PrevCostPos = curPos
 
         costPerSec = costPerSec + self:CalcCostMovementPerSec(
-            curPos[1] - prevPos[1],
-            curPos[2] - prevPos[2],
-            curPos[3] - prevPos[3]
+            ( curPos[1] - prevPos[1] ) / dt,
+            ( curPos[2] - prevPos[2] ) / dt,
+            ( curPos[3] - prevPos[3] ) / dt
         )
 
         bonusCost = bonusCost + self:CalcCostTotalDistance( curPos:Distance( self.glee_PointAndClick_StartPos ) )
