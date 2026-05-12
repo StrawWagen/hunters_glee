@@ -401,6 +401,7 @@ function ENT:Place()
     self.glee_PointAndClick_PrevCostPos = target:WorldSpaceCenter()
     self.glee_PointAndClick_StartPos = target:WorldSpaceCenter()
     self.glee_PointAndClick_AccumCost = self.PurchaseCost
+    self.glee_PointAndClick_BonusCost = 0
 
     target.glee_PointAndClick_Ent = self
 
@@ -457,6 +458,7 @@ function ENT:CostTick( force )
     bonusCost = bonusCost * costMult
 
     self.glee_PointAndClick_AccumCost = accumCost
+    self.glee_PointAndClick_BonusCost = bonusCost
     self:SetGivenScore( "-" .. ( accumCost + bonusCost ) )
     self:SetGivenScoreAlt( self:GetDynamicCooldown() )
     owner:GivePlayerScore( -costDelta )
@@ -484,6 +486,7 @@ function ENT:ReleaseTarget()
 
     local baseOwner = self.player
     if IsValid( baseOwner ) then
+        baseOwner:GivePlayerScore( -self.glee_PointAndClick_BonusCost )
         self:TellPlyToClearHighlighter()
         baseOwner.placableTargeted = nil
         baseOwner.ghostEnt = nil
