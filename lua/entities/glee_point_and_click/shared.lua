@@ -604,8 +604,14 @@ function ENT:ModifiableThink()
 
     local owner = self.player
     local target = self.glee_PointAndClick_Target
+    local dropThem =
+        not IsValid( owner ) or
+        not IsValid( target ) or
+        not owner:KeyDown( IN_ATTACK ) or
+        owner:GetScore() <= 0 or
+        ( target.InVehicle and target:InVehicle() )
 
-    if not IsValid( owner ) or not IsValid( target ) or not owner:KeyDown( IN_ATTACK ) or owner:GetScore() <= 0 or ( target.InVehicle and target:InVehicle() ) then
+    if dropThem then
         self:ReleaseTarget() -- After this, the owner is lost, and :OwnerlessThink() takes over.
         return
 
