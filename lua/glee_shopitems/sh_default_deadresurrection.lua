@@ -100,18 +100,21 @@ local function divineIntervention( purchaser )
         purchaser:RemoveStatusEffect( "infernalintervention_rawendofthedeal" ) -- don't you get it? you're divine now!
 
     end
+    local interventionPos, anchor = divineInterventionPos( purchaser )
+    local wasValidAnchor = IsValid( anchor )
 
     timer.Simple( 1, function()
-        if not purchaser then return end
+        if not IsValid( purchaser ) then return end
         if purchaser:Health() > 0 then return end
+        if not interventionPos or ( wasValidAnchor and not IsValid( anchor ) ) then
+            interventionPos, anchor = divineInterventionPos( purchaser )
 
+        end
         if purchaser:HasStatusEffect( "divine_chosen" ) and purchaser.glee_divineChosenResurrect then
             purchaser:glee_divineChosenResurrect()
             return
 
         end
-
-        local interventionPos, anchor = divineInterventionPos( purchaser )
 
         if IsValid( anchor ) then
             huntersGlee_Announce( { purchaser }, 20, 5, "Respawned next to " .. anchor:Nick() )
