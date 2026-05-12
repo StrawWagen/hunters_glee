@@ -36,10 +36,10 @@ ENT.OwnerSoundLerp = 0.3 -- How quickly the volume/pitch of the owner sound shou
 
 ENT.TargetSoundSpeedMin = 300 -- What speed should correspond with minimum pitch/volume. Speeds below this will also get clamped to the minimum.
 ENT.TargetSoundSpeedMax = 2000
-ENT.TargetSoundPitchMin = 80 / 100 -- 0-1 scale for pitch bc of IGModAudioChannel.
-ENT.TargetSoundPitchMax = 140 / 100
-ENT.TargetSoundVolumeMin = 0.5 -- Volume can go above 1 bc of IGModAudioChannel.
-ENT.TargetSoundVolumeMax = 2
+ENT.TargetSoundPitchMin = 80
+ENT.TargetSoundPitchMax = 140
+ENT.TargetSoundVolumeMin = 0.35
+ENT.TargetSoundVolumeMax = 1
 
 ENT.NPCAllow = true -- Allow NPCs to be picked up.
 ENT.NPCCostMult = 0.5 -- Applies to all costs when picking up NPCs.
@@ -219,37 +219,23 @@ if CLIENT then
     function ENT:HandleTargetSound()
         if not self:IsGrabbing() then return end
 
-        -- Update sound
+        local target = self:GetCurrTarget()
+        if not IsValid( target ) then return end
+
         local snd = self.glee_PointAndClick_TargetSound
-        if IsValid( snd ) then
-            local target = self:GetCurrTarget()
-            if not IsValid( target ) then return end
-
-            local speed = target:GetVelocity():Length()
-            local frac = math.Remap( speed, self.TargetSoundSpeedMin, self.TargetSoundSpeedMax, 0, 1 )
-
-            snd:SetPos( target:WorldSpaceCenter() )
-            snd:SetPlaybackRate( Lerp( frac, self.TargetSoundPitchMin, self.TargetSoundPitchMax ) )
-            snd:SetVolume( Lerp( frac, self.TargetSoundVolumeMin, self.TargetSoundVolumeMax ) )
-            return
+        if not snd then
+            snd = CreateSound( target, "hunters_glee/hl2tweaks/ol07_advisor_00_36_25_loop.wav" )
+            self.glee_PointAndClick_TargetSound = snd
+            snd:PlayEx( 0, 100 )
 
         end
 
-        if self.glee_PointAndClick_LoadingTargetSound then return end
+        local speed = target:GetVelocity():Length()
+        local frac = math.Remap( speed, self.TargetSoundSpeedMin, self.TargetSoundSpeedMax, 0, 1 )
 
-        self.glee_PointAndClick_LoadingTargetSound = true
+        snd:ChangePitch( Lerp( frac, self.TargetSoundPitchMin, self.TargetSoundPitchMax ) )
+        snd:ChangeVolume( Lerp( frac, self.TargetSoundVolumeMin, self.TargetSoundVolumeMax ) )
 
-        -- Create sound
-        sound.PlayFile( "sound/hunters_glee/hl2tweaks/ol07_advisor_00_36_25_loop.wav", "mono 3d noplay noblock", function( x )
-            self.glee_PointAndClick_LoadingTargetSound = nil
-            if not IsValid( x ) then return end
-
-            self.glee_PointAndClick_TargetSound = x
-            self:HandleTargetSound() -- Initialize the pitch/volume
-            x:EnableLooping( true )
-            x:Play()
-
-        end )
     end
 
     function ENT:StopOwnerSound()
@@ -258,14 +244,15 @@ if CLIENT then
 
         snd:Stop()
         self.glee_PointAndClick_OwnerSound = nil
+
     end
 
     function ENT:StopTargetSound()
         local snd = self.glee_PointAndClick_TargetSound
-        self.glee_PointAndClick_TargetSound = nil
-        if not IsValid( snd ) then return end
+        if not snd then return end
 
         snd:Stop()
+        self.glee_PointAndClick_TargetSound = nil
 
     end
 
