@@ -102,20 +102,6 @@ if CLIENT then
 
         colorLerpFast( costColor, color_white, self.CostHighColor, -scoreGained / self.CostHighAmount )
 
-        local scoreGainedString = "Total Cost: " .. tostring( scoreGained )
-        surface.drawShadowedTextBetter( scoreGainedString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + glee_sizeScaled( nil, 60 ), true, 255 )
-
-        local cooldownMins = math.floor( cooldown / 60 )
-        local cooldownSecs = math.floor( cooldown - cooldownMins * 60 )
-        local cooldownString = "Cooldown: "
-
-        if cooldownMins > 0 then
-            cooldownString = cooldownString .. cooldownMins .. "m "
-        end
-
-        cooldownString = cooldownString .. cooldownSecs .. "s"
-        surface.drawShadowedTextBetter( cooldownString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + glee_sizeScaled( nil, 60 + 40 ), true, 255 )
-
         if self:IsGrabbing() then
             local target = self:GetCurrTarget()
             if IsValid( target ) then
@@ -133,6 +119,20 @@ if CLIENT then
             surface.DrawTexturedRectUV( ScrW() / 2, ScrH() / 2, cursorSizeArrow, cursorSizeArrow, correctUVs( 0, 0, 1, 1 ) )
 
         end
+
+        local scoreGainedString = "Total Cost: " .. tostring( scoreGained )
+        surface.drawShadowedTextBetter( scoreGainedString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + glee_sizeScaled( nil, 60 ), true, 255 )
+
+        local cooldownMins = math.floor( cooldown / 60 )
+        local cooldownSecs = math.floor( cooldown - cooldownMins * 60 )
+        local cooldownString = "Cooldown: "
+
+        if cooldownMins > 0 then
+            cooldownString = cooldownString .. cooldownMins .. "m "
+        end
+
+        cooldownString = cooldownString .. cooldownSecs .. "s"
+        surface.drawShadowedTextBetter( cooldownString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + glee_sizeScaled( nil, 60 + 40 ), true, 255 )
 
     end
 
