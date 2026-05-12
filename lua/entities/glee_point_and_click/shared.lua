@@ -53,6 +53,7 @@ function ENT:DynamicCooldown( elapsed )
 end
 
 -- For the current distance from the target's pre-grab position, return the one-time cost.
+-- Will ultimately use the largest value returned by this function.
 function ENT:CalcCostTotalDistance( dist )
     if dist <= 100 then return 0 end
 
@@ -503,7 +504,7 @@ function ENT:Place()
     self.glee_PointAndClick_StartPos = target:WorldSpaceCenter()
     self.glee_PointAndClick_AccumCost = self.PurchaseCost
     self.glee_PointAndClick_AccumCostExternal = 0 -- Accum cost that gets added to outside of CostThink
-    self.glee_PointAndClick_BonusCost = 0
+    self.glee_PointAndClick_DistCostMax = 0
 
     target.glee_PointAndClick_Ent = self
 
@@ -535,7 +536,8 @@ function ENT:CostTick( force )
     local costPerSec = math.min( self.glee_PointAndClick_CostPerSec + self.CostPerSecPerSec * dt, self.CostPerSecMax )
     local costMult = self:GetCostMult()
     local target = self.glee_PointAndClick_Target
-    local bonusCost = 0
+    local distCostPrev = self.glee_PointAndClick_DistCostMax
+    local distCost = distCostPrev
 
     self.glee_PointAndClick_PrevCostTime = now
     self.glee_PointAndClick_CostPerSec = costPerSec -- Store new cost rate before applying dynamic costs
@@ -551,12 +553,13 @@ function ENT:CostTick( force )
             ( curPos[3] - prevPos[3] ) / dt
         )
 
-        bonusCost = bonusCost + self:CalcCostTotalDistance( curPos:Distance( self.glee_PointAndClick_StartPos ) )
+        distCost = math.max( distCost, self:CalcCostTotalDistance( curPos:Distance( self.glee_PointAndClick_StartPos ) ) )
 
     end
 
     local costDelta = math.Round( costPerSec * costMult * dt )
     local externalAccum = self.glee_PointAndClick_AccumCostExternal
+    externalAccum = externalAccum + distCost - distCostPrev
 
     if externalAccum ~= 0 then
         self.glee_PointAndClick_AccumCostExternal = 0
@@ -565,11 +568,10 @@ function ENT:CostTick( force )
     end
 
     local accumCost = self.glee_PointAndClick_AccumCost + costDelta
-    bonusCost = bonusCost * costMult
 
     self.glee_PointAndClick_AccumCost = accumCost
-    self.glee_PointAndClick_BonusCost = bonusCost
-    self:SetGivenScore( "-" .. ( accumCost + bonusCost ) )
+    self.glee_PointAndClick_DistCostMax = distCost
+    self:SetGivenScore( "-" .. accumCost )
     self:SetGivenScoreAlt( self:GetDynamicCooldown() )
     owner:GivePlayerScore( -costDelta )
 
@@ -596,7 +598,6 @@ function ENT:ReleaseTarget()
 
     local owner = self.player
     if IsValid( owner ) then
-        owner:GivePlayerScore( -self.glee_PointAndClick_BonusCost )
         self:TellPlyToClearHighlighter()
         owner.placableTargeted = nil
         owner.ghostEnt = nil
