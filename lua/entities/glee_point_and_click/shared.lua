@@ -24,7 +24,6 @@ ENT.CostPerSecMax = 100
 ENT.CostInterval = 1.5
 ENT.CostHighColor = Color( 255, 100, 100, 255 )
 ENT.CostHighAmount = 800
-ENT.CostOnFallDeath = 1000 -- Cost to incur if the target dies from fall damage. Can be negative to reward score instead. Only applies to player targets.
 
 ENT.MoveStrengthMult = 30
 ENT.MoveStrengthMax = 8000
@@ -596,28 +595,10 @@ hook.Add( "glee_falldamageblame_hitground", "glee_pointandclick_falldamageblame"
 
 end )
 
-hook.Add( "PlayerDeath", "glee_pointandclick_falldeathcost", function( target, inflictor, attacker )
+hook.Add( "PlayerDeath", "glee_pointandclick_clearblame", function( target, inflictor )
     if not IsValid( inflictor ) then return end
     if not inflictor._glee_PointAndClick_IsGhostEnt then return end
-    if not IsValid( attacker ) then return end
-    if not attacker:IsPlayer() then return end
 
-    local score = -math.Round( inflictor.CostOnFallDeath or 0 )
-    if attacker.GivePlayerScore and score ~= 0 then
-        attacker:GivePlayerScore( score )
-        GAMEMODE:sendPurchaseConfirm( attacker, score )
-
-        if score > 0 then
-            huntersGlee_Announce( { attacker }, 5, 8, "Entertained spirits reward you for your brutality...\nGained " .. score .. " score from Point and Click." )
-
-        else
-            huntersGlee_Announce( { attacker }, 5, 8, "Lighter pockets ease the weight of your guilt...\nLost " .. ( -score ) .. " score from Point and Click." )
-
-        end
-
-    end
-
-    GAMEMODE:AddMischievousness( attacker, 1, "pushed a player to their death with point and click" )
-    GAMEMODE:ClearFallDamageBlame( target )
+    GAMEMODE:ClearFallDamageBlame( target ) -- Clear blame, since the other hook re-applies before we can tell if they're dead or not
 
 end )
