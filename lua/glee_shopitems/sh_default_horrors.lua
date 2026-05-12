@@ -84,7 +84,7 @@ local items = {
     },
     ["point_and_click"] = {
         name = "Point and Click",
-        desc = "Point, and click on players!\nCost rises exponentially as it gets used.\n\nWARNING: do NOT use on stick figures.", -- Not actually exponential, but it gets the point across.
+        desc = "Point, and click on players!\nCost rises as it gets used.\n\nWARNING: do NOT use on stick figures.",
         shCost = 0,
         costDecorative = "-100",
         markup = 1,
