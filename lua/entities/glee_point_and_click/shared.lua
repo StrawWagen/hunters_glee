@@ -47,10 +47,6 @@ ENT.NPCCostMult = 0.5 -- Applies to all costs when picking up NPCs.
 ENT.NextBotAllow = true -- Allow NextBots to be picked up.
 ENT.NextBotCostMult = 0.5 -- Applies to all costs when picking up NextBots.
 
-ENT.TargetBlacklist = {
-    ["npc_helicopter"] = true,
-}
-
 function ENT:DynamicCooldown( elapsed )
     return math.Clamp( math.pow( elapsed, 1.4 ), 50, 60 * 5 )
 end
@@ -320,14 +316,12 @@ function ENT:GetNearestTarget()
     local owner = self.player
     local allowNPCs = self.NPCAllow
     local allowNextBots = self.NextBotAllow
-    local blacklist = self.TargetBlacklist
 
     for _, ent in ipairs( ents.FindInSphere( myPos, 2048 ) ) do
         if ent:IsPlayer() or ( allowNPCs and ent:IsNPC() and not ent:IsNextBot() ) or ( allowNextBots and ent:IsNextBot() ) then
             if ent == owner then continue end
             if ent:Health() <= 0 then continue end
-            if blacklist[ent:GetClass()] then continue end
-            if ent.IsHomeless then continue end
+            if ent.IsHomeless or ent.isGleeRescueHeli then continue end
             if not IsValid( ent:GetPhysicsObject() ) then continue end
             if hook.Run( "glee_pointandclick_cantarget", self, ent ) == false then continue end
 
