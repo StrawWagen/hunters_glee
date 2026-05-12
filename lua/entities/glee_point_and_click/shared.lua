@@ -24,6 +24,8 @@ ENT.CostPerSecMax = 100
 ENT.CostInterval = 1.5
 ENT.CostHighColor = Color( 255, 100, 100, 255 )
 ENT.CostHighAmount = 800
+ENT.CostVehicleExitInit = 200 -- Cost to rip someone out of a vehicle if they are in one BEFORE the grab starts.
+ENT.CostVehicleExit = 50 -- Cost to auto-rip someone out of a vehicle while already grabbed.
 
 ENT.MoveStrengthMult = 30
 ENT.MoveStrengthMax = 8000
@@ -431,7 +433,15 @@ function ENT:GetNearestTarget()
 end
 
 function ENT:UpdateGivenScore()
-    self:SetGivenScore( "-" .. ( self.PurchaseCost * self:GetCostMult() ) )
+    local cost = self.PurchaseCost
+    local target = self:GetCurrTarget()
+
+    if IsValid( target ) and target.InVehicle and target:InVehicle() then
+        cost = cost + self.CostVehicleExitInit
+
+    end
+
+    self:SetGivenScore( "-" .. ( cost * self:GetCostMult() ) )
 
 end
 
@@ -488,6 +498,7 @@ function ENT:Place()
     self.glee_PointAndClick_PrevCostPos = target:WorldSpaceCenter()
     self.glee_PointAndClick_StartPos = target:WorldSpaceCenter()
     self.glee_PointAndClick_AccumCost = self.PurchaseCost
+    self.glee_PointAndClick_AccumCostExternal = 0 -- Accum cost that gets added to outside of CostThink
     self.glee_PointAndClick_BonusCost = 0
 
     target.glee_PointAndClick_Ent = self
@@ -541,6 +552,14 @@ function ENT:CostTick( force )
     end
 
     local costDelta = math.Round( costPerSec * costMult * dt )
+    local externalAccum = self.glee_PointAndClick_AccumCostExternal
+
+    if externalAccum ~= 0 then
+        self.glee_PointAndClick_AccumCostExternal = 0
+        costDelta = costDelta + externalAccum * costMult
+
+    end
+
     local accumCost = self.glee_PointAndClick_AccumCost + costDelta
     bonusCost = bonusCost * costMult
 
@@ -594,6 +613,12 @@ function ENT:ReleaseTarget()
     end
 end
 
+-- On the next CostThink, this score value will get deducted from the owner. Scales with :GetCostMult().
+function ENT:AddExternalCost( cost )
+    self.glee_PointAndClick_AccumCostExternal = self.glee_PointAndClick_AccumCostExternal + cost
+
+end
+
 function ENT:ModifiableThink()
     if self:HasReleasedTarget() then return end -- Shouldn't get here in that state, but just in case.
 
@@ -609,8 +634,19 @@ function ENT:ModifiableThink()
         not IsValid( target ) or
         not owner:KeyDown( IN_ATTACK ) or
         owner:GetScore() <= 0 or
-        target:Health() <= 0 or
-        ( target.InVehicle and target:InVehicle() )
+        target:Health() <= 0
+
+    if not dropThem and target.InVehicle and target:InVehicle() then
+        target:ExitVehicle()
+
+        if target:InVehicle() then
+            dropThem = true -- Failed to rip them out, drop.
+
+        else
+            self:AddExternalCost( self.CostVehicleExit )
+
+        end
+    end
 
     if dropThem then
         self:ReleaseTarget() -- After this, the owner is lost, and :OwnerlessThink() takes over.
