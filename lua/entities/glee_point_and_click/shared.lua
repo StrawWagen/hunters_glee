@@ -588,7 +588,7 @@ function ENT:ReleaseTarget()
     target:EmitSound( "npc/advisor/advisor_blast6.wav", 80, 100, 1 )
     target:EmitSound( "npc/advisor/advisor_blast6.wav", 80, 120, 1 )
 
-    if target:IsOnGround() or ( target.InVehicle and target:InVehicle() ) then
+    if target:IsOnGround() or target:Health() <= 0 or ( target.InVehicle and target:InVehicle() ) then
         GAMEMODE:ClearFallDamageBlame( target )
 
     end
@@ -609,6 +609,7 @@ function ENT:ModifiableThink()
         not IsValid( target ) or
         not owner:KeyDown( IN_ATTACK ) or
         owner:GetScore() <= 0 or
+        target:Health() <= 0 or
         ( target.InVehicle and target:InVehicle() )
 
     if dropThem then
