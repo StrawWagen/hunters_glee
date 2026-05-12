@@ -424,7 +424,6 @@ function ENT:CostTick( force )
             curPos[3] - prevPos[3]
         )
 
-
     end
 
     local costDelta = math.Round( costPerSec * costMult * dt )
