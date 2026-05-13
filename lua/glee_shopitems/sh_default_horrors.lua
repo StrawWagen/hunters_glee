@@ -84,9 +84,9 @@ local items = {
     },
     ["point_and_click"] = {
         name = "Point and Click",
-        desc = "Point, and click on players!\nCost rises as it gets used.\n\nWARNING: do NOT use on stick figures.",
+        desc = "Click on players, or hunters!\nCosts climb, the farther you drag...\n\nWARNING: do NOT use on stick figures.",
         shCost = 0,
-        costDecorative = "-100",
+        costDecorative = "-50 / -100",
         markup = 1,
         cooldown = 0.5,
         tags = { "HORRORS", "CloseShopOnPurchase" },

@@ -17,19 +17,24 @@ ENT.HullCheckSize = Vector( 20, 20, 10 )
 ENT.PosOffset = Vector( 0, 0, 10 )
 ENT.OnlyNetworkToOwner = false
 
-ENT.PurchaseCost = 100
-ENT.CostPerSec = 1
-ENT.CostPerSecPerSec = 1
-ENT.CostPerSecMax = 100
-ENT.CostInterval = 1.5
-ENT.CostHighColor = Color( 255, 100, 100, 255 )
-ENT.CostHighAmount = 800
+ENT.PurchaseCost = 100 -- inital purchase cost
+ENT.CostPerSec = 0.5 -- cost per second held
+ENT.CostPerSecPerSec = 2 -- added cost per second held, multiplied by how long you've been holding
+ENT.CostInterval = 0.5 -- interval at which we update cost
+ENT.CostPerDistance = 2 -- amount of score to add per distance dragged from start
+ENT.CostPerDistancePow = 0.8
+ENT.CostPerDistanceStart = 375 -- start applying distance cost after this far from the grab position
+ENT.CostPerAccel = 1
+
 ENT.CostVehicleExitInit = 200 -- Cost to rip someone out of a vehicle if they are in one BEFORE the grab starts.
 ENT.CostVehicleExit = 50 -- Cost to auto-rip someone out of a vehicle while already grabbed.
 
+ENT.CostHighColor = Color( 255, 100, 100, 255 )
+ENT.CostHighAmount = 800 -- "high cost", when to draw as CostHighColor
+
 ENT.MoveStrengthMult = 30
-ENT.MoveStrengthMax = 8000
-ENT.MoveStrengthDownMult = 0.15 -- After the speed clamp, multiplies vertical force if it's pointing downwards. 0 to disable this feature.
+ENT.MoveStrengthMax = 3500
+ENT.MoveStrengthDownMult = 0.25 -- After the speed clamp, multiplies vertical force if it's pointing downwards. 0 to disable this feature.
 ENT.MoveDampingMult = 2
 ENT.MoveDistMax = 500 -- Max grab distance from the owner's eyes. Makes it not get stuck awkwardly far away.
 
@@ -42,10 +47,7 @@ ENT.TargetSoundPitchMax = 140
 ENT.TargetSoundVolumeMin = 0.35
 ENT.TargetSoundVolumeMax = 1
 
-ENT.NPCAllow = true -- Allow NPCs to be picked up.
 ENT.NPCCostMult = 0.5 -- Applies to all costs when picking up NPCs.
-
-ENT.NextBotAllow = true -- Allow NextBots to be picked up.
 ENT.NextBotCostMult = 0.5 -- Applies to all costs when picking up NextBots.
 
 function ENT:DynamicCooldown( elapsed )
@@ -55,12 +57,15 @@ end
 -- For the current distance from the target's pre-grab position, return the one-time cost.
 -- Will ultimately use the largest value returned by this function.
 function ENT:CalcCostTotalDistance( dist )
-    if dist <= 100 then return 0 end
+    dist = dist - self.CostPerDistanceStart
+    if dist <= 0 then return 0 end
 
-    dist = math.min( dist, 8000 )
-    dist = math.pow( dist, 0.8 )
+    -- Make it so that the cost doesn't skyrocket as much at long distances, but still grows faster than linear
+    dist = math.pow( dist, self.CostPerDistancePow )
 
-    return dist
+    local distCost = dist * self.CostPerDistance
+
+    return distCost
 
 end
 
@@ -179,9 +184,6 @@ if CLIENT then
         if self:IsGrabbing() then
             self:DrawCursorOnTarget( self:IsGrabbing(), nil, color_white, costColor )
 
-        else
-            self:DrawCursor( ScrW() / 2, ScrH() / 2 )
-
         end
 
         -- Draw cost/cooldown
@@ -208,7 +210,7 @@ if CLIENT then
 
     function ENT:Draw()
         if self:HasReleasedTarget() then return end
-        if self:GetOwner() == LocalPlayer() then return end -- Owner gets the special HUD, no 3D cursor
+        if self:GetOwner() == LocalPlayer() and self:IsGrabbing() then return end -- Owner gets the special HUD, no 3D cursor
 
         -- Draw real big in a corner of the HUD if viewer is the target being grabbed
         local target = self:GetCurrTarget()
@@ -413,16 +415,15 @@ function ENT:GetNearestTarget()
     local nearestDistance = math.huge
     local myPos = self:GetPos()
     local owner = self.player
-    local allowNPCs = self.NPCAllow
-    local allowNextBots = self.NextBotAllow
 
     for _, ent in ipairs( ents.FindInSphere( myPos, 2048 ) ) do
-        if ent:IsPlayer() or ( allowNPCs and ent:IsNPC() and not ent:IsNextBot() ) or ( allowNextBots and ent:IsNextBot() ) then
+        if ent:IsPlayer() or ent:IsNPC() or ent:IsPlayer() then
             if ent == owner then continue end
             if ent:Health() <= 0 then continue end
             if ent.IsHomeless or ent.isGleeRescueHeli then continue end
             if not IsValid( ent:GetPhysicsObject() ) then continue end
             if hook.Run( "glee_pointandclick_cantarget", self, ent ) == false then continue end
+            if not terminator_Extras.PosCanSee( myPos, ent:WorldSpaceCenter() ) then continue end
 
             local distance = myPos:Distance( ent:NearestPoint( myPos ) )
             if distance < nearestDistance then
@@ -441,6 +442,12 @@ function ENT:UpdateGivenScore()
     local cost = self.PurchaseCost
     local target = self:GetCurrTarget()
 
+    if not IsValid( target ) then
+        self:SetGivenScore( "0" )
+        return
+
+    end
+
     if IsValid( target ) and target.InVehicle and target:InVehicle() then
         cost = cost + self.CostVehicleExitInit
 
@@ -454,7 +461,7 @@ function ENT:CalculateCanPlace()
     if not self:HasEnoughToPurchase() then return false, self.noPurchaseReason_TooPoor end
 
     local target = self:GetCurrTarget()
-    if not IsValid( target ) then return false, "You need to aim at a living " .. ( self.NextBotAllow and "(or mechanical) " or "" ) .. "being." end
+    if not IsValid( target ) then return false, "Put the cursor next to a player or hunter!" end
     if target.glee_PointAndClick_Ent then return false, "That person is already being grabbed!" end
 
     return true
@@ -512,6 +519,8 @@ function ENT:Place()
     self:SetPos( target:WorldSpaceCenter() )
     target:EmitSound( "npc/advisor/advisorheadvx06.wav", 77, 100, 1 )
 
+    if GAMEMODE.PanicSource then GAMEMODE:PanicSource( target:WorldSpaceCenter(), 75, 500 ) end
+
 end
 
 function ENT:GetCostMult()
@@ -533,7 +542,7 @@ function ENT:CostTick( force )
     if not force and now < prevTime + self.CostInterval then return end
 
     local dt = now - prevTime
-    local costPerSec = math.min( self.glee_PointAndClick_CostPerSec + self.CostPerSecPerSec * dt, self.CostPerSecMax )
+    local costPerSec = self.glee_PointAndClick_CostPerSec + self.CostPerSecPerSec * dt
     local costMult = self:GetCostMult()
     local target = self.glee_PointAndClick_Target
     local distCostPrev = self.glee_PointAndClick_DistCostMax
@@ -542,16 +551,18 @@ function ENT:CostTick( force )
     self.glee_PointAndClick_PrevCostTime = now
     self.glee_PointAndClick_CostPerSec = costPerSec -- Store new cost rate before applying dynamic costs
 
+    -- distance cost
     if IsValid( target ) then
         local prevPos = self.glee_PointAndClick_PrevCostPos
         local curPos = target:WorldSpaceCenter()
         self.glee_PointAndClick_PrevCostPos = curPos
 
-        costPerSec = costPerSec + self:CalcCostMovementPerSec(
+        local accelCost = self:CalcCostMovementPerSec(
             ( curPos[1] - prevPos[1] ) / dt,
             ( curPos[2] - prevPos[2] ) / dt,
             ( curPos[3] - prevPos[3] ) / dt
         )
+        costPerSec = costPerSec + accelCost
 
         distCost = math.max( distCost, self:CalcCostTotalDistance( curPos:Distance( self.glee_PointAndClick_StartPos ) ) )
 
@@ -627,7 +638,10 @@ end
 function ENT:ModifiableThink()
     if self:HasReleasedTarget() then return end -- Shouldn't get here in that state, but just in case.
 
+    local ourPos = self:GetPos()
+
     if not self:IsGrabbing() then
+        if GAMEMODE.PanicSource then GAMEMODE:PanicSource( ourPos, 1, 500 ) end
         return BaseClass.ModifiableThink( self )
 
     end
@@ -709,6 +723,8 @@ function ENT:ModifiableThink()
     self:CostTick()
     self:NextThink( CurTime() )
     self:SetPos( curPos ) -- Folllow player for sounds and PVS
+
+    if GAMEMODE.PanicSource then GAMEMODE:PanicSource( curPos, 10, 250 ) end
 
     return true
 
