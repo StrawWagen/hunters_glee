@@ -458,7 +458,7 @@ function ENT:Think()
         end
 
         if not IsValid( self.player ) then
-            self:OwnerlessThink()
+            return self:OwnerlessThink()
         end
 
     elseif IsValid( self.player ) and IsValid( self:GetOwner() ) then
@@ -475,13 +475,12 @@ function ENT:Think()
                 return
 
             end
-
-            return toReturn
-
         end
 
+        return toReturn
+
     else
-        self:OwnerlessThink()
+        return self:OwnerlessThink()
 
     end
 end
