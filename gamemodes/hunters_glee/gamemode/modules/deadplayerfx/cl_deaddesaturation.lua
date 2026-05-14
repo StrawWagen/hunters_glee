@@ -1,31 +1,49 @@
 
-local maxDesat = 0.5 -- How greyscale the screen gets at peak (0 = no effect, 1 = fully greyscale)
-local maxSaturate = 0.5 -- How much the screen saturates when escaped (0 = no effect, 1 = fully saturated)
-
 local desatAmount = 0
 local satAmount = 0
+local mulRAmount = 0
 
 hook.Add( "RenderScreenspaceEffects", "glee_deaddesaturate", function()
     local me = LocalPlayer()
     if not IsValid( me ) then return end
 
+    local targetDesat = 0
+    local targetSat = 0
+    local targetMulR = 0
+
     if me:HasEscaped() then
-        if satAmount < maxSaturate then
-            satAmount = math.Approach( satAmount, maxSaturate, RealFrameTime() * 0.5 )
+        targetDesat = 0
+        targetSat = 0.5
+        targetMulR = 0
 
-        end
     elseif me:Health() <= 0 then
-        if desatAmount < maxDesat then
-            desatAmount = math.Approach( desatAmount, maxDesat, RealFrameTime() * 0.5 )
+        targetDesat = 0.15
+        targetSat = 0
+        targetMulR = 0.5
 
-        end
     else
         desatAmount = 0
         satAmount = 0
+        mulRAmount = 0
 
     end
 
-    if desatAmount <= 0 and satAmount <= 0 then return end
+    if targetDesat == 0 and targetSat == 0 and targetMulR == 0 then return end
+
+    if desatAmount ~= targetDesat then
+        desatAmount = math.Approach( desatAmount, targetDesat, RealFrameTime() * 0.5 )
+
+    end
+
+    if satAmount ~= targetSat then
+        satAmount = math.Approach( satAmount, targetSat, RealFrameTime() * 0.5 )
+
+    end
+
+    if mulRAmount ~= targetMulR then
+        mulRAmount = math.Approach( mulRAmount, targetMulR, RealFrameTime() * 0.5 )
+
+    end
 
     DrawColorModify( {
         ["$pp_colour_addr"]       = 0,
@@ -34,7 +52,7 @@ hook.Add( "RenderScreenspaceEffects", "glee_deaddesaturate", function()
         ["$pp_colour_brightness"] = 0,
         ["$pp_colour_contrast"]   = 1,
         ["$pp_colour_colour"]     = 1 - desatAmount + satAmount,
-        ["$pp_colour_mulr"]       = 0,
+        ["$pp_colour_mulr"]       = mulRAmount,
         ["$pp_colour_mulg"]       = 0,
         ["$pp_colour_mulb"]       = 0,
     } )

@@ -103,8 +103,7 @@ local function buildSections( startTime )
         local sIfMultipleEscaped = escapedCount == 1 and "" or "s"
         escapedEntries[1] = { text = escapedCount .. " Soul" .. sIfMultipleEscaped .. " Escaped", font = "termhuntTriumphantFont", color = color_white }
         if remainedCount <= 0 then
-            escapedEntries[2] = { text = "Every soul is blessed!", font = "termhuntTriumphantFont", color = color_white }
-            escapedEntries[3] = { text = "A great boon awaits...!", font = "termhuntTriumphantFont", color = color_white }
+            escapedEntries[2] = { text = "A great boon awaits...", font = "termhuntTriumphantFont", color = color_white }
 
         else
             local sIfMultipleRemained = remainedCount == 1 and "" or "s"

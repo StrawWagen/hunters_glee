@@ -1,6 +1,4 @@
 
-if engine.ActiveGamemode() ~= "hunters_glee" then return end
-
 if not Glide then return end
 
 local vec_down = Vector( 0, 0, -1 )
@@ -9,6 +7,7 @@ local GAMEMODE = GAMEMODE or GM
 
 terminator_Extras.collected = false
 local glideClasses = {}
+local sizesPerClass = {}
 local glideVehicleTypes = {}
 
 local alwaysTooBig = {
@@ -37,12 +36,12 @@ local function collect()
         if Validate( t ) and t.GlideCategory and not alwaysTooBig[t.ClassName] then
             i = i + 1
             glideClasses[i] = t.ClassName
-            glideVehicleTypes[t.ClassName] = t.VehicleType
+            glideVehicleTypes[t.ClassName] = scripted_ents.GetMember( t.ClassName, "VehicleType" ) -- VehicleType is on glide_base_x ents
 
         end
     end
 
-    print( "GLEE: found " .. #glideClasses .. " glide vehicles to spawn..." )
+    permaPrint( "GLEE: found " .. #glideClasses .. " glide vehicles to spawn..." )
 
 end
 
@@ -56,14 +55,17 @@ hook.Add( "InitPostEntity", "glee_collect_glide_vehicles", function()
 
 end )
 
+local vTypes = Glide.VEHICLE_TYPE
+
 local extraFlagsForVehicleTypes = {
-    UNDEFINED = nil,
-    CAR = GAMEMODE.NavEFlags.HIGH_CEILING,
-    MOTORCYCLE = nil,
-    HELICOPTER = GAMEMODE.NavEFlags.LOCALE_RUNWAY,
-    PLANE = GAMEMODE.NavEFlags.LOCALE_RUNWAY,
-    TANK = GAMEMODE.NavEFlags.HIGH_CEILING,
-    BOAT = GAMEMODE.NavEFlags.LOCALE_BEACH
+    [vTypes.UNDEFINED] = nil,
+    [vTypes.CAR] = GAMEMODE.NavEFlags.HIGH_CEILING,
+    [vTypes.MOTORCYCLE] = nil,
+    [vTypes.HELICOPTER] = GAMEMODE.NavEFlags.LOCALE_RUNWAY,
+    [vTypes.PLANE] = GAMEMODE.NavEFlags.LOCALE_RUNWAY,
+    [vTypes.TANK] = GAMEMODE.NavEFlags.HIGH_CEILING,
+    [vTypes.BOAT] = GAMEMODE.NavEFlags.LOCALE_BEACH,
+
 }
 
 local gm_goldencitySky = 531714625
@@ -78,31 +80,41 @@ local vehiclePlacedAreas = {}
 -- for maintaining the desired count
 local spawnedGlideVehicles = {}
 
-local minVehAreaSize = 250
+local minVehAreaSize = 75
 
 hook.Add( "glee_blockjeepspawning", "glee_glide_blockjeeps", function() return true end )
 
 -- replace jeep spawning system with glide vehicle pool spawning
 hook.Add( "glee_navpatcher_finish", "glee_spawnaglideifwewant", function()
 
-    if not GAMEMODE.VehiclesThisRound then GAMEMODE.VehiclesThisRound = 0 end
+    if not GAMEMODE.glideSpawner_VehiclesThisRound then GAMEMODE.glideSpawner_VehiclesThisRound = 0 end
 
-    if GAMEMODE.navmeshUnderSkySurfaceArea < surfaceAreaPerVehicle then return end -- only spawn on maps with lots of space under the sky
+    if not GAMEMODE.isSkyOnMap then return end
 
     -- determine max vehicles for this map
     local vehiclesOnThisMap = GAMEMODE.navmeshUnderSkySurfaceArea / surfaceAreaPerVehicle
     vehiclesOnThisMap = vehiclesOnThisMap - bite
 
-    if vehiclesOnThisMap < 0.75 then return end
+    if #GAMEMODE:GetAreasWithEFlag( GAMEMODE.NavEFlags.LOCALE_BEACH ) > 4 then
+        if vehiclesOnThisMap < 0.75 then
+            GAMEMODE.glideSpawner_SpawnGlideBoatsOnly = true
+
+        end
+        vehiclesOnThisMap = math.max( vehiclesOnThisMap, math.Rand( 0.5, 1.5 ) )
+
+    end
+
+    if vehiclesOnThisMap < 0.75 then return end -- only spawn on maps with lots of space under the sky
 
     vehiclesOnThisMap = math.floor( vehiclesOnThisMap )
 
     hook.Add( "huntersglee_round_into_active", "glee_vehiclesthisroundcounter", function()
-        GAMEMODE.VehiclesThisRound = math.Rand( vehiclesOnThisMap * 0.1, vehiclesOnThisMap * 1 )
+        local roundCount = math.Rand( vehiclesOnThisMap * 0.1, vehiclesOnThisMap )
+        GAMEMODE.glideSpawner_VehiclesThisRound = math.max( roundCount, 1 )
 
     end )
 
-    print( "Maintaining " .. math.Round( vehiclesOnThisMap ) .. " active glide vehicles for map " .. game.GetMap() )
+    permaPrint( "Maintaining " .. math.Round( vehiclesOnThisMap ) .. " active glide vehicles for map " .. game.GetMap() )
 
     local nextVehicleSpawnCheck = 0
 
@@ -116,15 +128,34 @@ hook.Add( "glee_navpatcher_finish", "glee_spawnaglideifwewant", function()
             liveCount = liveCount + 1
 
         end
-        if liveCount >= GAMEMODE.VehiclesThisRound then
+        if liveCount >= GAMEMODE.glideSpawner_VehiclesThisRound then
             nextVehicleSpawnCheck = CurTime() + GAMEMODE:ScaledGenericSpawnerRate( 45 )
             return
+
+        else -- dont think too fast
+            nextVehicleSpawnCheck = CurTime() + GAMEMODE:ScaledGenericSpawnerRate( 5 )
 
         end
 
         local livePly = GAMEMODE:anAlivePlayer()
         if not IsValid( livePly ) then return end
 
+        local classWeWillSpawn
+        if GAMEMODE.glideSpawner_SpawnGlideBoatsOnly then
+            for _, class in RandomPairs( glideClasses ) do
+                local vType = glideVehicleTypes[class]
+                if vType ~= vTypes.BOAT then continue end
+                classWeWillSpawn = class
+                break
+
+            end
+        else
+            classWeWillSpawn = table.Random( glideClasses )
+
+        end
+        if not classWeWillSpawn then return end -- lol this is technically possible
+
+        -- new spots every round
         local function markAreaUsed( pos )
             local placedArea = GAMEMODE:getNearestNav( pos, 500 )
             if not IsValid( placedArea ) then return end
@@ -143,14 +174,34 @@ hook.Add( "glee_navpatcher_finish", "glee_spawnaglideifwewant", function()
 
             local veh = ents.Create( className )
             if not IsValid( veh ) then return false end
+
             veh:SetPos( pos )
             veh:SetAngles( Angle( 0, math.random( 0, 360 ), 0 ) )
             veh:Spawn()
 
-            if veh:GetModelRadius() > areaSize / 2.5 then
+            local size = veh:GetModelRadius()
+            sizesPerClass[className] = size
+
+            local sizeTarget
+            if glideVehicleTypes[className] == vTypes.BOAT then
+                sizeTarget = areaSize
+
+            else
+                sizeTarget = areaSize / 2.5
+
+            end
+
+            if size > sizeTarget then
                 SafeRemoveEntity( veh )
-                glideClasses[className] = nil
-                print( "GLEE: glide vehicle " .. className .. " is too big! not gonna spawn it." )
+                if size > 500 then
+                    glideClasses[className] = nil
+                    sizesPerClass[className] = nil
+                    permaPrint( "GLEE: glide vehicle " .. className .. " is too big (" .. size .. ")! not gonna spawn it, size target was " .. sizeTarget )
+
+                else
+                    permaPrint( "GLEE: glide vehicle " .. className .. " (" .. size .. "), was oversize, size target was " .. sizeTarget )
+
+                end
                 return false
 
             end
@@ -162,12 +213,14 @@ hook.Add( "glee_navpatcher_finish", "glee_spawnaglideifwewant", function()
 
             end )
 
+            hook.Run( "glee_onspawned_glidevehicle", veh )
+
             markAreaUsed( pos )
             return true
 
         end
 
-        local minAreaSize = math.random( minVehAreaSize, 550 )
+        local minAreaSize = sizesPerClass[classWeWillSpawn] or minVehAreaSize
         local offsetFromGround = Vector( 0, 0, minAreaSize / 2 )
         local hull = Vector( minAreaSize, minAreaSize, minAreaSize * 0.75 ) / 4
 
@@ -176,9 +229,6 @@ hook.Add( "glee_navpatcher_finish", "glee_spawnaglideifwewant", function()
             maxs = hull,
             mask = MASK_SOLID,
         }
-
-        local classWeWillSpawn = table.Random( glideClasses )
-        if not classWeWillSpawn then return end -- lol this is technically possible
 
         local vehicleType = glideVehicleTypes[classWeWillSpawn]
         local extraFlagsRequired = extraFlagsForVehicleTypes[vehicleType]

@@ -614,8 +614,7 @@ GM.TEAM_SPECTATE = 2 -- spectating, as a ghost
 GM.TEAM_ESCAPED = 3 -- spectating, but you can't respawn, get cooler items in the shop and free bot controlling
 --]]
 
-function GM:spectatifyPlayer( ply )
-    --ErrorNoHaltWithStack( "A ", ply )
+local function cleanupBeforeSpectating( ply )
     if ply:IsOnFire() then
         ply:Extinguish()
 
@@ -624,30 +623,32 @@ function GM:spectatifyPlayer( ply )
         ply:KillSilent()
 
     end
-    ply:SetNWInt( "glee_spectateteam", GAMEMODE.TEAM_SPECTATE )
+    local target = ply:GetObserverTarget()
+    if IsValid( target ) then
+        GAMEMODE:StopSpectatingThing( ply )
+
+    end
     ply:Spectate( OBS_MODE_ROAMING )
+
+end
+
+function GM:spectatifyPlayer( ply )
+    --ErrorNoHaltWithStack( "A ", ply )
+
+    cleanupBeforeSpectating( ply )
+    ply:SetNWInt( "glee_spectateteam", GAMEMODE.TEAM_SPECTATE )
+    ply.termHuntTeam = GAMEMODE.TEAM_SPECTATE
 
     ply.spectateDoFreecam = CurTime() + 8
     ply.spectateDoFreecamForced = CurTime() + 2
-    ply.termHuntTeam = GAMEMODE.TEAM_SPECTATE
 
 end
 
 function GM:escapifyPlayer( ply )
     --ErrorNoHaltWithStack( "B ", ply )
-    if ply:IsOnFire() then
-        ply:Extinguish()
 
-    end
-    if ply:Alive() then
-        ply:KillSilent()
-
-    end
+    cleanupBeforeSpectating( ply )
     ply:SetNWInt( "glee_spectateteam", GAMEMODE.TEAM_ESCAPED )
-    ply:Spectate( OBS_MODE_ROAMING )
-
-    ply.spectateDoFreecam = CurTime() + 8
-    ply.spectateDoFreecamForced = CurTime() + 2
     ply.termHuntTeam = GAMEMODE.TEAM_ESCAPED
 
     hook.Run( "glee_ply_escaped", ply )

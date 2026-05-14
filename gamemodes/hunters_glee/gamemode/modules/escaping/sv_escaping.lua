@@ -180,23 +180,33 @@ end )
 -- hook.Add( "huntersglee_round_pre_into_inactive", )
 
 -- reward for escaping
-local flatEscapingReward = 500
-local rewardPerSkull = 150
+local flatEscapingReward = 200
+local rewardEveryoneEscaped = 300
+local rewardPerSkull = 100
+local perSkullEveryoneEscaped = 50
 
 hook.Add( "huntersglee_player_pre_reset", "glee_escaping_rewards", function( ply )
     if not ply:HasEscaped() then return end
 
+    local everyoneEscaped = GAMEMODE.roundExtraData.everyoneEscaped
+
+    local baseReward = flatEscapingReward
+    if everyoneEscaped then
+        baseReward = baseReward + rewardEveryoneEscaped
+
+    end
+
     timer.Simple( 2, function()
         if not IsValid( ply ) then return end
-        local msg = "+" .. flatEscapingReward .. " Score..."
-        ply:GivePlayerScore( flatEscapingReward )
+        local msg = "+" .. baseReward .. " Score..."
+        ply:GivePlayerScore( baseReward )
 
         huntersGlee_AnnounceDramatic( { ply }, 1000, 4, "You escaped!\n" .. msg )
 
     end )
     local timerName = "glee_escaping_skullrewardgobbler_" .. ply:EntIndex()
     local totalSkulls = ply:GetSkulls()
-    local skullReward = totalSkulls
+    local totalSkullsToReward = totalSkulls
     local ranCount = 0
     local rewardHinted
     timer.Create( timerName, 6, 0, function()
@@ -205,7 +215,7 @@ hook.Add( "huntersglee_player_pre_reset", "glee_escaping_rewards", function( ply
             return
 
         end
-        if skullReward <= 0 then
+        if totalSkullsToReward <= 0 then
             timer.Remove( timerName )
             return
 
@@ -233,9 +243,13 @@ hook.Add( "huntersglee_player_pre_reset", "glee_escaping_rewards", function( ply
         local newDelay = 1 / ranCount
         timer.Adjust( timerName, newDelay, 0, nil )
 
-        local reward = rewardPerSkull
-        ply:GivePlayerScore( reward )
-        skullReward = skullReward - 1
+        local skullReward = rewardPerSkull
+        if everyoneEscaped then
+            skullReward = skullReward + perSkullEveryoneEscaped
+
+        end
+        ply:GivePlayerScore( skullReward )
+        totalSkullsToReward = totalSkullsToReward - 1
 
     end )
 end )

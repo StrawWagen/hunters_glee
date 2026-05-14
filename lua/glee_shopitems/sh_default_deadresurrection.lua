@@ -65,6 +65,11 @@ if SERVER then
         function( self, owner ) -- setup func
             self:SetRemoveOnDeath( true ) -- its not a persistent effect, remove it on death
 
+            self.reviveHolySound = CreateSound( owner, "music/hl2_song10.mp3" )
+            self.reviveHolySound:SetSoundLevel( 70 )
+            self.reviveHolySound:PlayEx( 1, math.random( 140, 150 ) )
+            self.reviveHolySound:FadeOut( 10 )
+
             local stopTime = CurTime() + dmgResistAfterRez
 
             self:Hook( "EntityTakeDamage", function( target, dmgInfo )
@@ -88,9 +93,17 @@ if SERVER then
                 owner:SetHealth( newHealth )
 
             end )
+        end,
+        function( self, owner ) -- teardown func
+            if self.reviveHolySound then
+                self.reviveHolySound:Stop()
+
+            end
         end
     )
 end
+
+
 
 local function divineIntervention( purchaser )
     if not SERVER then return end
@@ -101,13 +114,20 @@ local function divineIntervention( purchaser )
 
     end
     local interventionPos, anchor = divineInterventionPos( purchaser )
+    if not interventionPos then return end
+
+    local likelyBoxCenter = interventionPos + Vector( 0, 0, 24 )
+    terminator_Extras.DoPFXAtPos( "glee_divineintervention_spawn", likelyBoxCenter )
+    sound.Play( "ambient/levels/labs/electric_explosion3.wav", likelyBoxCenter, 82, math.random( 40, 50 ) )
+    sound.Play( "ambient/levels/labs/teleport_preblast_suckin1.wav", likelyBoxCenter, 85, 90 )
+
     local wasValidAnchor = IsValid( anchor )
 
     timer.Simple( 1, function()
         if not IsValid( purchaser ) then return end
         if purchaser:Health() > 0 then return end
-        if not interventionPos or ( wasValidAnchor and not IsValid( anchor ) ) then
-            interventionPos, anchor = divineInterventionPos( purchaser )
+        if wasValidAnchor and not IsValid( anchor ) then
+            _, anchor = divineInterventionPos( purchaser )
 
         end
         if purchaser:HasStatusEffect( "divine_chosen" ) and purchaser.glee_divineChosenResurrect then
@@ -121,11 +141,12 @@ local function divineIntervention( purchaser )
 
         end
 
+        purchaser:EmitSound( "ambient/levels/labs/teleport_winddown1.wav", 75, math.random( 75, 80 ), 0.5, CHAN_STATIC )
+        util.Decal( "Scorch", likelyBoxCenter, interventionPos + Vector( 0, 0, -16 ), purchaser )
         purchaser:Resurrect( interventionPos )
 
-        termHunt_ElectricalArcEffect( purchaser, interventionPos, vector_up, 4 )
-
         purchaser:GiveStatusEffect( "divineintervention_blessing" )
+
     end )
 
     GAMEMODE:CloseShopOnPly( purchaser )

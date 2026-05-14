@@ -77,6 +77,7 @@ include( "modules/sv_navmeshcategorizer.lua" )
 include( "modules/sv_doorbash.lua" )
 include( "modules/sv_mapvote.lua" )
 include( "modules/sv_modelscale.lua" )
+include( "modules/sv_gasmanager.lua" )
 include( "modules/sv_skullmanager.lua" )
 include( "modules/sv_hunterspawner.lua" )
 include( "modules/sv_scoredropping.lua" )
@@ -306,8 +307,7 @@ function GM:Think()
             self.canScore   = false
 
         end
-    end
-    if currState == self.ROUND_INACTIVE then --round is waiting to begin
+    elseif currState == self.ROUND_INACTIVE then --round is waiting to begin
 
         local doPatchingText = nil
 
@@ -345,8 +345,7 @@ function GM:Think()
             displayTime = self:getRemaining( self.termHunt_roundStartTime, cur )
 
         end
-    end
-    if currState == self.ROUND_LIMBO then -- look at what happened during the round
+    elseif currState == self.ROUND_LIMBO then -- look at what happened during the round
         if self.limboEnd < cur then
             hook.Run( "huntersglee_round_leave_limbo" )
             self:beginSetup()
@@ -361,8 +360,7 @@ function GM:Think()
         displayName = "--- "
         displayTime = 0
 
-    end
-    if currState == self.ROUND_ACTIVE then -- THE HUNT
+    elseif currState == self.ROUND_ACTIVE then -- THE HUNT
         local aliveCount = self:CountWinnablePlayers()
         local waitingForAFirstTimePlayer = self:WaitingForAFirstTimePlayer( players )
         local specificallyWaiting = ( self.roundEarliestEnd or 0 ) > cur
@@ -386,6 +384,10 @@ function GM:Think()
         end
         displayName = "Hunting... "
         displayTime = self:getRemaining( self.termHunt_roundBegunTime, cur )
+
+    elseif currState == self.ROUND_TESTSTATE then
+        displayName = "gmod_admin_cleanup to escape teststate. "
+        displayTime = 0
 
     end
 
@@ -1017,6 +1019,7 @@ function GM:beginSetup()
 
     local tenSecondsBeforeStart = time - 10
     timer.Create( "glee_ten_seconds_before_start_timer", tenSecondsBeforeStart, 1, function()
+        if GAMEMODE.RoundState() ~= GAMEMODE.ROUND_INACTIVE then return end
         hook.Run( "huntersglee_round_tenseconds_before_active" )
 
     end )
@@ -1060,7 +1063,8 @@ function GM:setupFinish()
 
         local tenSecondsBeforeStart = time - 10
         timer.Create( "glee_ten_seconds_before_start_timer", tenSecondsBeforeStart, 1, function()
-             hook.Run( "huntersglee_round_tenseconds_before_active" )
+            if GAMEMODE.RoundState() ~= GAMEMODE.ROUND_INACTIVE then return end
+            hook.Run( "huntersglee_round_tenseconds_before_active" )
 
         end )
     end
@@ -1085,3 +1089,10 @@ function GM:concmdSetup()
     RunConsoleCommand( "ai_ignoreplayers", "0" )
 
 end
+
+-- test command for setting to GAMEMODE.ROUND_TESTSTATE
+concommand.Add( "glee_test_roundstatetest", function()
+    GAMEMODE:SetRoundState( GAMEMODE.ROUND_TESTSTATE )
+    print( "GLEE: set to test state, gmod_admin_cleanup to restore" )
+
+end, nil, "Disables hunter spawner, everything.", FCVAR_CHEAT )

@@ -210,10 +210,40 @@ hook.Add( "glee_sv_validgmthink_not_over", "glee_proceduralspawner", function()
 
         end
 
-        local navAreas = navmesh.Find( currJob.spawningOrigin, spawnRadius, defaultStepSize, defaultStepSize )
+        local navAreas
+        local eFlagSpawning
+
+        if currJob.extraFlagsWhitelist then
+            local withFlag = GAMEMODE:GetAreasWithEFlag( currJob.extraFlagsWhitelist )
+            if #withFlag > 0 then
+                navAreas = {}
+                local radiusSqr = spawnRadius^2
+                for i, area in ipairs( withFlag ) do
+                    if i % 10 == 0 then coroutine.yield() end
+                    if not IsValid( area ) then continue end
+                    local areaCenter = area:GetCenter()
+                    if areaCenter:DistToSqr( currJob.spawningOrigin ) > radiusSqr then continue end
+                    table.insert( navAreas, area )
+
+                end
+                if #navAreas >= 1 then
+                    eFlagSpawning = true
+
+                end
+            else
+                failRoutine()
+                spawnJobInfo( jobsName, "Spawn job bailed, no areas that match job's .extraFlagsWhitelist" )
+
+            end
+        end
+
+        if not navAreas then
+            navAreas = navmesh.Find( currJob.spawningOrigin, spawnRadius, defaultStepSize, defaultStepSize )
+
+        end
 
         -- ok the spot we putting it is too small, maybe try placing next to a hunter?
-        if not navAreas or ( hideFromPlayers and ( #navAreas < defaultMinAreas ) ) then
+        if not navAreas or ( hideFromPlayers and ( #navAreas < defaultMinAreas ) and not eFlagSpawning ) then
             -- the job doesnt want us to do this!
             -- bail so the queue isnt held up!
             if currJob.originIsDefinitive then failRoutine() spawnJobInfo( jobsName, "Spawn job bailed, definitive origin was too small/invald." ) return end
@@ -227,7 +257,7 @@ hook.Add( "glee_sv_validgmthink_not_over", "glee_proceduralspawner", function()
         end
 
         -- dont spawn off navmesh or in really small isolated rooms/rooftops
-        if not navAreas or ( hideFromPlayers and ( #navAreas < defaultMinAreas ) ) then failRoutine() spawnJobInfo( jobsName, "Spawn job bailed, origin was too small/invalid." ) return end
+        if not navAreas or ( hideFromPlayers and ( #navAreas < defaultMinAreas ) and not eFlagSpawning ) then failRoutine() spawnJobInfo( jobsName, "Spawn job bailed, origin was too small/invalid." ) return end
 
         local areaDistances = {}
         for _, area in ipairs( navAreas ) do
@@ -316,13 +346,20 @@ hook.Add( "glee_sv_validgmthink_not_over", "glee_proceduralspawner", function()
 end )
 
 hook.Add( "huntersglee_round_into_limbo", "glee_cleanupproceduralspawner_jobs", function()
-    proceduralSpawnerJobs = nil
-    proceduralSpawnerJobs = {}
+    table.Empty( proceduralSpawnerJobs )
 
 end )
 
 hook.Add( "PreCleanupMap", "glee_cleanupproceduralspawner_jobs", function()
-    proceduralSpawnerJobs = nil
-    proceduralSpawnerJobs = {}
+    table.Empty( proceduralSpawnerJobs )
 
 end )
+
+
+concommand.Add( "glee_test_printactivespawnjobs", function()
+    print( "Active spawn jobs:" )
+    for i, job in ipairs( proceduralSpawnerJobs ) do
+        print( i .. ": " .. job.jobsName )
+
+    end
+end, nil, "Prints active procedural spawn job names to console.", FCVAR_CHEAT )

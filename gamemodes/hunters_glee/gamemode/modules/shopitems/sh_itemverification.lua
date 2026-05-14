@@ -133,11 +133,12 @@ end
 
 
 local timeTranslations = { -- translations for just the time reasons below
-    [-1] = "No navmesh", -- tell people to install a navmesh
-    [0]  = "Initial setup", -- wait until the navmesh has definitely spawned
-    [1]  = "Hunting", -- death has consequences and score can accumulate
-    [2]  = "Preparation", -- let players run around and prevent death
-    [3]  = "Podium", -- just display winners
+    [GM.ROUND_INVALID] = "No navmesh", -- tell people to install a navmesh
+    [GM.ROUND_SETUP]  = "Initial setup", -- wait until the navmesh has definitely spawned
+    [GM.ROUND_ACTIVE]  = "Hunting", -- death has consequences and score can accumulate
+    [GM.ROUND_INACTIVE]  = "Preparation", -- let players run around and prevent death
+    [GM.ROUND_LIMBO]  = "Podium", -- just display winners
+    [GM.ROUND_TESTSTATE]  = "Test State", -- test state for development
 }
 
 local function badTimeReasonTranslation( currentTime, validStages )

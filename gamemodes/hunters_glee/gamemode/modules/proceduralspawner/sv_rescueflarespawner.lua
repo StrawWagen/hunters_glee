@@ -196,7 +196,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_rescueflarespawning", function()
                     end
                 end
                 ragPunishments[ragdoll] = punishment
-                debugoverlay.Text( pos, tostring( math.Round( punishment ) ), 30, Color( 255, 0, 0 ), false )
+                --debugoverlay.Text( pos, tostring( math.Round( punishment ) ), 30, Color( 255, 0, 0 ), false )
 
             end
             table.sort( ragdolls, function( a, b ) return ragPunishments[a] < ragPunishments[b] end )
@@ -303,7 +303,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_rescueflarespawning", function()
                 local spawnPos = findUnoccupiedShelfPos( shelf )
                 if not spawnPos then continue end
 
-                debugoverlay.Cross( pos, 16, 30, Color( 0, 255, 0 ), true )
+                --debugoverlay.Cross( pos, 16, 30, Color( 0, 255, 0 ), true )
 
                 local spawnAng = Angle( 0, math.random( 0, 360 ), 0 )
                 local flareGun = ents.Create( "termhunt_aeromatix_signalflare_gun" )

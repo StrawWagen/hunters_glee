@@ -484,6 +484,11 @@ local items = {
             SetGlobalInt( "glee_SignalFlarePurchaseCount", oldCount + 1 )
 
         end,
+        shCanShowInShop = function()
+            if not GetGlobalBool( "glee_isSkyOnMap", false ) then return false, "There's nowhere to signal to..." end
+            return true, ""
+
+        end,
     }
 }
 

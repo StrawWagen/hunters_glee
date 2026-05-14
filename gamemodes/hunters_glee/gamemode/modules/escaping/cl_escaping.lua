@@ -4,7 +4,11 @@ killicon.Add( "glee_escapeicon", "vgui/hud/glee_escapeicon", killIconColor )
 
 if not Glide then return end
 
-local isGlideAircraftBasedCache = {}
+local glideBasedCache = {}
+local validBases = {
+    ["base_glide_aircraft"] = true,
+    ["base_glide_boat"] = true,
+}
 
 local function potentialEscapersCount()
     local escapablePlyCount = 0
@@ -34,29 +38,38 @@ hook.Add( "huntersglee_cl_displayhint_poststack", "glee_escapeglidevehiclehint",
 
     local ourClass = vehicle:GetClass()
 
-    if isGlideAircraftBasedCache[ourClass] == nil then
-        local isBased = false
+    if glideBasedCache[ourClass] == nil then
+        local basedClass = false
         local lastClass = ""
         local currentClass = vehicle:GetClass()
         while currentClass ~= lastClass do
             lastClass = currentClass
             currentClass = scripted_ents.GetMember( currentClass, "Base" )
-            if currentClass == "base_glide_aircraft" then
-                isBased = true
+            if validBases[currentClass] then
+                basedClass = currentClass
                 break
 
             end
         end
-        isGlideAircraftBasedCache[ourClass] = isBased
+        glideBasedCache[ourClass] = basedClass
 
     end
-    if isGlideAircraftBasedCache[ourClass] then
-        local hint = "Fly into the skybox to ESCAPE!"
+    local basedClass = glideBasedCache[ourClass]
+    if basedClass then
+        local hint
+        if basedClass == "base_glide_boat" then
+            hint = "Sail into the skybox to ESCAPE!"
+
+        else
+            hint = "Fly into the skybox to ESCAPE!"
+
+        end
         local escapablePlyCount = potentialEscapersCount()
         if escapablePlyCount > 1 then
             hint = hint .. "\nThe more souls you bring with you... the better!"
 
         end
         return true, hint
+
     end
 end )

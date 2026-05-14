@@ -21,13 +21,13 @@ flags.LOCALE_RUNWAY = 32 -- big areas with long sightlines in at least one direc
 flags.LOCALE_PEAK = 64 -- in highest 10% of the map, and higher center than all neighbors
 flags.LOCALE_DREG = 128 -- lowest 10% of the map, can be underwater
 
-concommand.Add( "huntersglee_debug_highlightallareaswithflag", function( ply, cmd, args )
+concommand.Add( "glee_test_highlightallareaswithflag", function( ply, cmd, args )
     if not ply:IsAdmin() then return end
 
     local flag = tonumber( args[1] )
     if not flag then return end
 
-    local areas = GAMEMODE:GetAreasWithFlag( flag )
+    local areas = GAMEMODE:GetAreasWithEFlag( flag )
     print( "Highlighting " .. #areas .. " areas with flag " .. flag )
 
     for _, area in ipairs( areas ) do
@@ -76,7 +76,7 @@ function GAMEMODE:HasExtraFlags( area, flag )
 
 end
 
-function GAMEMODE:GetAreasWithFlag( flag )
+function GAMEMODE:GetAreasWithEFlag( flag )
     return self.areasByExtraFlags[flag] or {}
 
 end
@@ -102,6 +102,7 @@ end
 -- navmesh understanding stuff
 local function reset()
     GAMEMODE.isSkyOnMap = false
+    SetGlobalBool( "glee_isSkyOnMap", false )
     GAMEMODE.areaExtraFlags = {}
     GAMEMODE.areasByExtraFlags = {}
     GAMEMODE.highestSkyZ = -math.huge -- highest z on map, probably skybox height
@@ -149,7 +150,11 @@ hook.Add( "glee_navmesh_visit", "glee_precache_extraflags", function( area )
 
     local underSky, hitPos, skyTraceResult = GAMEMODE:IsUnderSky( areasCenter + centerOffset )
     if underSky then
-        GAMEMODE.isSkyOnMap = true
+        if not GAMEMODE.isSkyOnMap then
+            GAMEMODE.isSkyOnMap = true
+            SetGlobalBool( "glee_isSkyOnMap", true )
+
+        end
         GAMEMODE.navmeshUnderSkySurfaceArea = GAMEMODE.navmeshUnderSkySurfaceArea + areasSurface
         GAMEMODE:RegisterFlagStatus( area, flags.UNDER_SKY )
 

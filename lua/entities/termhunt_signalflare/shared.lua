@@ -279,6 +279,7 @@ if SERVER and terminator_Extras then
 
         end
         local diffBump
+        local permaDiffBump
 
         local spawnPos = callTraceResult.HitPos
         local goalPos = myPos
@@ -304,7 +305,9 @@ if SERVER and terminator_Extras then
                     GAMEMODE:SendSolidSound( GAMEMODE:GetASoundTrack( "heliEvac" ) )
                     local _, spawnSet = GAMEMODE:GetSpawnSet()
                     diffBump = spawnSet.diffBumpWhenWaveKilled / 2
+                    permaDiffBump = spawnSet.diffBumpWhenWaveKilled / 10
                     GAMEMODE:BumpRoundDifficulty( diffBump ) -- send the spawner into overdrive
+                    GAMEMODE:BumpSessionDifficulty( permaDiffBump ) -- make the whole session harder, permanently
                     angerEverything()
 
                 end
@@ -315,6 +318,7 @@ if SERVER and terminator_Extras then
 
                 if not diffBump then return end
                 GAMEMODE:BumpRoundDifficulty( diffBump ) -- send the spawner into overdrive
+                GAMEMODE:BumpSessionDifficulty( permaDiffBump )
                 angerEverything()
 
             end
@@ -323,6 +327,7 @@ if SERVER and terminator_Extras then
 
                 if not diffBump then return end
                 GAMEMODE:BumpRoundDifficulty( diffBump )
+                GAMEMODE:BumpSessionDifficulty( permaDiffBump )
                 angerEverything()
 
             end
@@ -332,6 +337,7 @@ if SERVER and terminator_Extras then
 
                 if not diffBump then return end
                 GAMEMODE:BumpRoundDifficulty( diffBump )
+                GAMEMODE:BumpSessionDifficulty( permaDiffBump )
                 angerEverything()
 
             end

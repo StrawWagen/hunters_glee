@@ -28,6 +28,9 @@ local function doPrecache()
     game.AddParticles( "particles/glee/glee_gland_explosion_small.pcf" )
     PrecacheParticleSystem( "glee_gland_explosion_small" )
 
+    game.AddParticles( "particles/glee/glee_divineintervention_spawn.pcf" )
+    PrecacheParticleSystem( "glee_divineintervention_spawn" )
+
 end
 if engine.ActiveGamemode() == "hunters_glee" then
     doPrecache()
