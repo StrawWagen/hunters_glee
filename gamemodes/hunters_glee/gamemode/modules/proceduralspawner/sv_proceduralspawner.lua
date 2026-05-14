@@ -26,6 +26,7 @@ end
 
 local proceduralSpawnerJobs = {}
 local currJobCoroutine
+local currJobName
 
 local defaultStepSize = 50 * 3
 local defaultMinAreas = 60
@@ -108,8 +109,11 @@ hook.Add( "glee_sv_validgmthink_not_over", "glee_proceduralspawner", function()
             good, result = coroutine.resume( currJobCoroutine )
 
             if good == false then
-                ErrorNoHaltWithStack( result )
+                stackAfter = stackAfter or debug.traceback( currJobCoroutine )
+                result = result or "unknown error"
+                ErrorNoHalt( "GLEE PROC SPAWNER ERROR (" .. tostring( currJobName ) .. "): " .. result .. "\n" .. stackAfter .. "\n" )
                 currJobCoroutine = nil
+                currJobName = nil
                 table.remove( proceduralSpawnerJobs, 1 )
                 break
 
@@ -119,6 +123,7 @@ hook.Add( "glee_sv_validgmthink_not_over", "glee_proceduralspawner", function()
         -- finished or errored
         if result == "done" or good ~= true then
             currJobCoroutine = nil
+            currJobName = nil
             table.remove( proceduralSpawnerJobs, 1 )
 
         end
@@ -343,6 +348,9 @@ hook.Add( "glee_sv_validgmthink_not_over", "glee_proceduralspawner", function()
         coroutine.yield( "done" )
 
     end )
+
+    currJobName = jobsName
+
 end )
 
 hook.Add( "huntersglee_round_into_limbo", "glee_cleanupproceduralspawner_jobs", function()
