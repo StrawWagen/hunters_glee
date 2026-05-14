@@ -4,6 +4,8 @@ local scorePerRiderCvar = CreateConVar( "glee_score_perescaped_rider", -1, FCVAR
 
 local GAMEMODE = GAMEMODE or GM
 
+GM.IdealEscapingTime = 5 * 60 -- escaping should always take at least this long
+
 hook.Add( "glee_ply_escaped", "glee_escapersinkillfeed", function( picker )
     local inflic = "glee_escapeicon"
     if not GAMEMODE.SendDeathNotice then return end

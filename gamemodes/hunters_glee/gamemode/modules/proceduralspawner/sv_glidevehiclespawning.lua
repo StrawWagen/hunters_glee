@@ -17,6 +17,14 @@ local alwaysTooBig = {
 
 }
 
+local cheats = GetConVar( "sv_cheats" )
+
+local function debugPrint( ... )
+    if not cheats:GetBool() then return end
+    permaPrint( ... )
+
+end
+
 local function collect()
     terminator_Extras.collected = true
 
@@ -196,10 +204,10 @@ hook.Add( "glee_navpatcher_finish", "glee_spawnaglideifwewant", function()
                 if size > 500 then
                     glideClasses[className] = nil
                     sizesPerClass[className] = nil
-                    permaPrint( "GLEE: glide vehicle " .. className .. " is too big (" .. size .. ")! not gonna spawn it, size target was " .. sizeTarget )
+                    debugPrint( "GLEE: glide vehicle " .. className .. " is too big (" .. size .. ")! never gonna spawn it, size target was " .. sizeTarget )
 
                 else
-                    permaPrint( "GLEE: glide vehicle " .. className .. " (" .. size .. "), was oversize, size target was " .. sizeTarget )
+                    debugPrint( "GLEE: glide vehicle " .. className .. " (" .. size .. "), was oversize, size target was " .. sizeTarget )
 
                 end
                 return false

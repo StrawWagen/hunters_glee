@@ -3,17 +3,16 @@
 
 local GAMEMODE = GAMEMODE or GM
 
-hook.Add( "huntersglee_round_beginsetup", "glee_resetpersistent_flarespawnlocations", function() 
+hook.Add( "huntersglee_round_beginsetup", "glee_resetpersistent_flarespawnlocations", function()
     GAMEMODE.FastestFoundAt = {}
 
 
 end )
 
 local minute = 60
-local idealFindTime = 5 * minute
 local bodyCheckDelay = 0.25 * minute
 local shelfCheckDelay = 0.15 * minute -- blank time after bodyCheckDelay fails
-local randomlySpawnItDelay = idealFindTime
+local randomlySpawnItDelay = GM.IdealEscapingTime
 
 -- these are then scaled by GAMEMODE:ScaledGenericSpawnerRate()
 
@@ -214,7 +213,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_rescueflarespawning", function()
                 local ragsId = ragdoll:MapCreationID()
                 if ragsId then
                     local fastestFoundAt = GAMEMODE.FastestFoundAt[ragsId]
-                    if fastestFoundAt and fastestFoundAt < idealFindTime then continue end
+                    if fastestFoundAt and fastestFoundAt < GAMEMODE.IdealEscapingTime then continue end
 
                 end
 
@@ -287,7 +286,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_rescueflarespawning", function()
 
                 local shelfsId = shelf:MapCreationID()
                 local fastestFoundAt = GAMEMODE.FastestFoundAt[shelfsId]
-                if fastestFoundAt and fastestFoundAt < idealFindTime then continue end
+                if fastestFoundAt and fastestFoundAt < GAMEMODE.IdealEscapingTime then continue end
 
                 local pos = shelf:GetPos()
                 local area = shelf.glee_rescueFlareNavArea

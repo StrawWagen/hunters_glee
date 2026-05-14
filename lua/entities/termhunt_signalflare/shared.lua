@@ -306,8 +306,8 @@ if SERVER and terminator_Extras then
                     local _, spawnSet = GAMEMODE:GetSpawnSet()
                     diffBump = spawnSet.diffBumpWhenWaveKilled / 2
                     permaDiffBump = spawnSet.diffBumpWhenWaveKilled / 10
-                    GAMEMODE:BumpRoundDifficulty( diffBump ) -- send the spawner into overdrive
-                    GAMEMODE:BumpSessionDifficulty( permaDiffBump ) -- make the whole session harder, permanently
+                    GAMEMODE:BumpRoundDifficulty( diffBump, "rescue_heli1" ) -- send the spawner into overdrive
+                    GAMEMODE:BumpSessionDifficulty( permaDiffBump, "rescue_heli1" ) -- make the session harder, permanently
                     angerEverything()
 
                 end
@@ -317,8 +317,8 @@ if SERVER and terminator_Extras then
                 huntersGlee_AnnounceDramatic( player.GetAll(), 501, 10, "Rescue, entering the map in T-" .. heliSpawnDelay - secondWait .. " seconds..." )
 
                 if not diffBump then return end
-                GAMEMODE:BumpRoundDifficulty( diffBump ) -- send the spawner into overdrive
-                GAMEMODE:BumpSessionDifficulty( permaDiffBump )
+                GAMEMODE:BumpRoundDifficulty( diffBump, "rescue_heli2" ) -- send the spawner into overdrive
+                GAMEMODE:BumpSessionDifficulty( permaDiffBump, "rescue_heli2" )
                 angerEverything()
 
             end
@@ -326,8 +326,8 @@ if SERVER and terminator_Extras then
                 huntersGlee_Announce( player.GetAll(), 100, 5, "T-10 seconds till map entry..." )
 
                 if not diffBump then return end
-                GAMEMODE:BumpRoundDifficulty( diffBump )
-                GAMEMODE:BumpSessionDifficulty( permaDiffBump )
+                GAMEMODE:BumpRoundDifficulty( diffBump, "rescue_heli3" )
+                GAMEMODE:BumpSessionDifficulty( permaDiffBump, "rescue_heli3" )
                 angerEverything()
 
             end
@@ -336,8 +336,8 @@ if SERVER and terminator_Extras then
                 terminator_Extras.glee_SpawnTheRescueHeli( spawnPos, -randDir, goalPos )
 
                 if not diffBump then return end
-                GAMEMODE:BumpRoundDifficulty( diffBump )
-                GAMEMODE:BumpSessionDifficulty( permaDiffBump )
+                GAMEMODE:BumpRoundDifficulty( diffBump, "rescue_heli4" )
+                GAMEMODE:BumpSessionDifficulty( permaDiffBump, "rescue_heli4" )
                 angerEverything()
 
             end

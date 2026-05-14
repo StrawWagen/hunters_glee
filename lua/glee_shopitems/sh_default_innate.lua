@@ -976,7 +976,7 @@ if CLIENT then
                 local sharedColor = Color( 255, 255, 255, 255 ) -- just 1 color object!
 
                 for _, sensed in ipairs( self.sixthSenseStuff ) do -- put the blobs on stuff!
-                    if shown > 25 then return end
+                    if shown > 35 then return end
                     if not IsValid( sensed ) then continue end
                     if sensed == owner then continue end
 
@@ -1061,7 +1061,7 @@ if CLIENT then
 
                     -- player, always a player, never a sus player!
                     elseif isPly or suspicious or goodGeneric then
-                        if sensed:Health() <= 0 then continue end
+                        if not goodGeneric and sensed:Health() <= 0 then continue end
                         sixthSenseColor = sixthSensePlayer
                         spriteSize = 100
 

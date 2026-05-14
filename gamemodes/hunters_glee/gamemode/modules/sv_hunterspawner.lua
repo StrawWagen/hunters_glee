@@ -352,14 +352,53 @@ local function aliveHuntersCount()
 end
 
 
-function GM:BumpSessionDifficulty( amount )
-    self.sessionDiffBump = self.sessionDiffBump + amount
+function GM:BumpSessionDifficulty( amount, reason )
+    self.lastSessionDiffBumpReason = reason
+    self.sessionDiffBump = math.max( self.sessionDiffBump + amount, 0 )
 
 end
-function GM:BumpRoundDifficulty( amount )
+function GM:BumpRoundDifficulty( amount, reason )
+    self.lastRoundDiffBumpReason = reason
     self.roundDiffBump = self.roundDiffBump + amount
 
 end
+
+
+hook.Add( "huntersglee_everyone_escaped", "glee_bumpdiff_oneveryoneescaped", function()
+    local _, spawnSet = GAMEMODE:GetSpawnSet()
+    local diffBump
+    if GAMEMODE.roundExtraData.roundDuration < GAMEMODE.IdealEscapingTime then
+        diffBump = spawnSet.diffBumpWhenWaveKilled * 4 -- looks like we gotta make it harder
+
+    else
+        diffBump = spawnSet.diffBumpWhenWaveKilled
+
+    end
+    GAMEMODE:BumpSessionDifficulty( diffBump, "everyone_escaped" ) -- make the session harder, permanently
+
+end )
+
+hook.Add( "huntersglee_someone_escaped", "glee_bumpdiff_onsomeoneescaped", function()
+    local _, spawnSet = GAMEMODE:GetSpawnSet()
+    local diffBump
+    if GAMEMODE.roundExtraData.roundDuration < GAMEMODE.IdealEscapingTime then
+        diffBump = spawnSet.diffBumpWhenWaveKilled * 2
+
+    else
+        diffBump = spawnSet.diffBumpWhenWaveKilled * 0.5
+
+    end
+    GAMEMODE:BumpSessionDifficulty( diffBump, "someone_escaped" ) -- make the session a bit harder
+
+end )
+
+hook.Add( "huntersglee_no_one_escaped", "glee_chompdiff_onnoescape", function()
+    local _, spawnSet = GAMEMODE:GetSpawnSet()
+    local diffBump = -spawnSet.diffBumpWhenWaveKilled * 3
+    GAMEMODE:BumpSessionDifficulty( diffBump, "no_one_escaped" ) -- too hard, go easy on em
+
+end )
+
 
 local nextHunterSpawn = 0
 
@@ -398,7 +437,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
         GAMEMODE.waveWasAlive = nil
         GAMEMODE.nextSpawnWave = 0
         debugPrint( "bump", GAMEMODE.sessionDiffBump, spawnSet.diffBumpWhenWaveKilled )
-        GAMEMODE:BumpSessionDifficulty( spawnSet.diffBumpWhenWaveKilled )
+        GAMEMODE:BumpSessionDifficulty( spawnSet.diffBumpWhenWaveKilled, "wave_cleared" )
 
     end
 
@@ -568,7 +607,7 @@ function GM:SpawnWaveSpawnIn()
 
             -- bump the difficulty up, unlock the harder enemies sooner!
             local _, spawnSet = self:GetSpawnSet()
-            GAMEMODE:BumpRoundDifficulty( spawnSet.diffBumpWhenWaveKilled / 50 )
+            GAMEMODE:BumpRoundDifficulty( spawnSet.diffBumpWhenWaveKilled / 50, "lag_bump" )
 
             return
 
@@ -1092,7 +1131,7 @@ function GM:getValidHunterPos()
             fails = 0
             spawnSet.dynamicTooCloseFailCounts = -2
             if justSpawnSomething then
-                GAMEMODE:BumpSessionDifficulty( spawnSet.diffBumpWhenWaveKilled / 4 ) -- blast difficulty up
+                GAMEMODE:BumpSessionDifficulty( spawnSet.diffBumpWhenWaveKilled / 4, "just_spawn_something" ) -- blast difficulty up
 
             end
 
@@ -1238,3 +1277,11 @@ end )
 -- SPAWNSET TEMPLATE IN
 -- lua/glee_spawnsets/hunters_glee.lua
 -----------------------------------------
+
+
+concommand.Add( "glee_printcurrent_persistdifficulty", function( caller )
+    if IsValid( caller ) and not caller:IsAdmin() then return end
+    print( "Session diff bump:", GAMEMODE.sessionDiffBump, "With last reason:", GAMEMODE.lastSessionDiffBumpReason )
+    print( "Round diff bump:", GAMEMODE.roundDiffBump, "With last reason:", GAMEMODE.lastRoundDiffBumpReason )
+
+end )

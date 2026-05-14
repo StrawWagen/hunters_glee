@@ -921,6 +921,8 @@ function GM:roundEnd()
     self.limboEnd = CurTime() + 18 + timeAdd
     self.finishedRoundCount = self.finishedRoundCount + 1
 
+    GAMEMODE.roundExtraData.roundDuration = CurTime() - self.termHunt_roundBegunTime
+
     GAMEMODE.roundExtraData.everyoneEscaped = true
     GAMEMODE.roundExtraData.someoneEscaped = false
     for _, ply in player.Iterator() do
@@ -935,6 +937,18 @@ function GM:roundEnd()
     end
 
     SetGlobalBool( "glee_EveryoneEscapedLastRound", GAMEMODE.roundExtraData.everyoneEscaped )
+
+    if GAMEMODE.roundExtraData.everyoneEscaped then
+        hook.Run( "huntersglee_everyone_escaped" )
+
+    elseif GAMEMODE.roundExtraData.someoneEscaped then
+        hook.Run( "huntersglee_someone_escaped" )
+
+    elseif not GAMEMODE.roundExtraData.someoneEscaped then
+        hook.Run( "huntersglee_no_one_escaped" )
+
+    end
+
 
     self.deadPlayers = {}
     self:SetRoundState( self.ROUND_LIMBO )
