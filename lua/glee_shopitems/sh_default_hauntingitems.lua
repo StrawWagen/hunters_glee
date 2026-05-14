@@ -168,23 +168,6 @@ local items = {
 
         end,
     },
-    ["barnacle"] = {
-        name = "Barnacle",
-        desc = "Barnacle.\nYou gain 100 score the first time it grabs someone, and 45 score every further second it has someone grabbed.\nCosts more to place in groups, or place too close to players.",
-        shCost = 5,
-        markup = 1,
-        cooldown = 0.5,
-        tags = { "DEADSACRIFICES", "CloseShopOnPurchase" },
-        purchaseTimes = {
-            GAMEMODE.ROUND_ACTIVE,
-        },
-        weight = 10,
-        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
-        svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "placable_barnacle", purchaser, itemIdentifier )
-
-        end,
-    },
     ["doorlocker"] = {
         name = "Door Locker",
         desc = "Locks doors, you gain score when something uses it.\n\n150 score, default.\n250 score if a player fleeing a hunter uses it.\n\nDon't use your own locked doors...",
