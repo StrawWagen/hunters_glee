@@ -90,7 +90,7 @@ if SERVER then
                 healAmount = healAmount * 0.75
                 local newHealth = math.min( owner:Health() + healAmount, owner:GetMaxHealth() )
                 owner:SetHealth( newHealth )
-                ply.glee_LastHealthSetReason = "glee_divineintervention_blessing"
+                owner.glee_LastHealthSetReason = "glee_divineintervention_blessing"
 
                 local newArmor = math.min( owner:Armor() + healAmount * 0.5, owner:GetMaxArmor() )
                 owner:SetArmor( newArmor )
@@ -597,7 +597,7 @@ if SERVER then
                             if not IsValid( potentialChosen ) then return end
                             if potentialChosen:Health() <= 1 then return end
                             potentialChosen:SetHealth( 1 )
-                            ply.glee_LastHealthSetReason = "glee_divineintervention_patiencefail"
+                            potentialChosen.glee_LastHealthSetReason = "glee_divineintervention_patiencefail"
 
                         end )
                     end

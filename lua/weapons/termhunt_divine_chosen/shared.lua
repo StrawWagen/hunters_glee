@@ -258,7 +258,7 @@ function SWEP:ShutDown()
     if self.modifiedMaxHp and validOwner and owner:GetMaxHealth() == self.maxHpModifedTo and owner:Health() > 0 then
         owner:SetMaxHealth( owner.Glee_BaseHealth or 100 )
         owner:SetHealth( owner:GetMaxHealth() )
-        ply.glee_LastHealthSetReason = "glee_chosen_maxhpreset"
+        owner.glee_LastHealthSetReason = "glee_chosen_maxhpreset"
 
     end
 
@@ -300,7 +300,7 @@ function SWEP:ChosenThink()
         self.nextHealthRegen = CurTime() + 0.05
         if ownersHealth < maxHp then
             owner:SetHealth( math.Clamp( ownersHealth + 4, 0, maxHp ) )
-            ply.glee_LastHealthSetReason = "glee_chosen_regen"
+            owner.glee_LastHealthSetReason = "glee_chosen_regen"
 
         end
         if ownersArmor < maxArmor then

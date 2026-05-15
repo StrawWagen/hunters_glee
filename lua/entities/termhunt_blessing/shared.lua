@@ -127,7 +127,7 @@ function ENT:Place()
         local newHealth = math.Round( target:Health() + target.glee_BlessRegen )
         newHealth = math.min( newHealth, target:GetMaxHealth() )
         target:SetHealth( newHealth )
-        ply.glee_LastHealthSetReason = "glee_blessing"
+        target.glee_LastHealthSetReason = "glee_blessing"
 
         target:SetArmor( math.min( target:Armor() + 1, target:GetMaxArmor() ) ) -- :)
 

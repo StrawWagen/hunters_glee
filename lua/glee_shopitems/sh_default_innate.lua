@@ -32,7 +32,7 @@ if SERVER then
 
                 local newHealth = math.Clamp( owner:Health() + amount, 0, owner:GetMaxHealth() )
                 owner:SetHealth( newHealth )
-                ply.glee_LastHealthSetReason = "glee_superior_metabolism"
+                owner.glee_LastHealthSetReason = "glee_superior_metabolism"
 
             end )
         end
@@ -417,7 +417,7 @@ if SERVER then
 
                 owner:SetMaxHealth( newMaxHealth )
                 owner:SetHealth( newHealth )
-                ply.glee_LastHealthSetReason = "glee_juggernaut"
+                owner.glee_LastHealthSetReason = "glee_juggernaut"
 
                 owner:DoSpeedClamp( "juggernautclamp", 0 ) -- blocks speed modifiers from increasing speed beyond normal sprint speed
 

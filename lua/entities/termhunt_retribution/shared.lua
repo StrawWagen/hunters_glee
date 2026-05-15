@@ -225,7 +225,10 @@ function GAMEMODE:SurfaceHomicidalGlee( dancer, surfacer )
 
         end
 
-        GAMEMODE:AddSlight( dancer, surfacer, -25, "used homicidal glee, decay" ) -- slowly remove slight
+        if surfacer:IsPlayer() then
+            GAMEMODE:AddSlight( dancer, surfacer, -25, "used homicidal glee, decay" ) -- slowly remove slight
+
+        end
 
     else
         reason = "Killing all those innocent people has left you boiling with GUILTY HOMICIDAL GLEE...\nYou can't help but let it out!"
