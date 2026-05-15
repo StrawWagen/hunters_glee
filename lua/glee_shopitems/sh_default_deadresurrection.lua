@@ -89,8 +89,10 @@ if SERVER then
 
                 healAmount = healAmount * 0.75
                 local newHealth = math.min( owner:Health() + healAmount, owner:GetMaxHealth() )
-
                 owner:SetHealth( newHealth )
+
+                local newArmor = math.min( owner:Armor() + healAmount * 0.5, owner:GetMaxArmor() )
+                owner:SetArmor( newArmor )
 
             end )
         end,
@@ -122,6 +124,8 @@ local function divineIntervention( purchaser )
     sound.Play( "ambient/levels/labs/teleport_preblast_suckin1.wav", likelyBoxCenter, 85, 90 )
 
     local wasValidAnchor = IsValid( anchor )
+
+    GAMEMODE:DelayRoundEndingUntil( CurTime() + 1.15 )
 
     timer.Simple( 1, function()
         if not IsValid( purchaser ) then return end

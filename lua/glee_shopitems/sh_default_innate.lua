@@ -3,7 +3,7 @@ local shopHelpers = GAMEMODE.shopHelpers
 
 if SERVER then
 
-    local speedBoostBeginsAt = 95
+    local speedBoostBeginsAt = 87
     local bpmToSpeedScale = 4
 
     GAMEMODE:RegisterStatusEffect( "cold_blooded",
@@ -327,7 +327,7 @@ if SERVER then
                 local armor = owner:Armor()
 
                 local noArmorDecrease = -100
-                local addedByArmor = armor * 3.45
+                local addedByArmor = armor * 3.25
                 local speedMod = addedByArmor
 
                 -- apply the decrease only if the player runs out of armor
@@ -342,7 +342,7 @@ if SERVER then
                     local velLeng = owner:GetVelocity():Length()
                     if velLeng <= 25 then return end
 
-                    local drain = ( velLeng / 10000 ) * 0.5
+                    local drain = ( velLeng / 10000 ) * 0.75
                     owner:GivePlayerBatteryCharge( -drain )
 
                 end

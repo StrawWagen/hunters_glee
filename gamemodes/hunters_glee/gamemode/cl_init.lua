@@ -858,6 +858,9 @@ end
 -- Calls everything else above
 
 local lastDisplayWinners = false
+local nextHintCheck = 0
+local needsHints
+local hint
 
 function HUDPaint()
     local ply = LocalPlayer()
@@ -880,7 +883,11 @@ function HUDPaint()
         paintMyTotalScore( ply, cur )
         paintMyTotalSkulls( ply, cur )
 
-        local needsHints, hint = genericHints()
+        if nextHintCheck < cur then -- only check ~10 times a second
+            needsHints, hint = genericHints()
+            nextHintCheck = cur + math.Rand( 0.1, 0.09 )
+
+        end
         if needsHints then
             paintTheDamnHint( ply, hint, cur )
 

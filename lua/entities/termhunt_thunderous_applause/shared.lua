@@ -185,8 +185,8 @@ function ENT:DoCircle()
 
 end
 
-local flatten = Vector( 1,1,0 )
-local tinyUpOffset = Vector( 0,0,20 )
+local flatten = Vector( 1, 1, 0 )
+local tinyUpOffset = Vector( 0, 0, 20 )
 local interval = 60 * 4
 local tallOblong = Vector( 1, 1, 4 )
 

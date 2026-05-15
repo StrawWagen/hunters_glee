@@ -40,8 +40,6 @@ local function getRappelAnchorPos( rappeller )
 
 end
 
-local up5 = Vector( 0, 0, 5 )
-
 local function moveHook( ply, moveData )
     if CLIENT and not ply:GetNWBool( "glee_IsRappelling", false ) then return end
     if SERVER and not rappellers[ply] then return end
@@ -55,8 +53,32 @@ local function moveHook( ply, moveData )
     local ropeLength = ply:GetNWFloat( "glee_RappelRopeLength", dist )
 
     if moveData:KeyDown( IN_JUMP ) then
+        if SERVER then
+            local curr = ply:GetNWInt( "glee_RappellReeledInCount", 0 )
+            if curr < 150 then
+                ply:SetNWInt( "glee_RappellReeledInCount", curr + 1 )
+
+            end
+        end
         local tickInterval = engine.TickInterval()
-        ropeLength = math.max( ropeLength - glee_RappelSettings.ascendSpeed * tickInterval, 25 )
+        local ascendAdd = glee_RappelSettings.ascendSpeed * tickInterval
+        -- if on ground and holding jump, snap rope length to current distance
+        if ply:OnGround() then
+            ropeLength = math.min( dist - ascendAdd, ropeLength )
+
+            -- toggle IN_JUMP, get us OFF the ground damn it!
+            if not ply.glee_RappelWasJumping then
+                local currButtons = moveData:GetButtons()
+                currButtons = bit.bxor( currButtons, IN_JUMP )
+                moveData:SetButtons( currButtons )
+                ply.glee_RappelWasJumping = true
+
+            else
+                ply.glee_RappelWasJumping = nil
+
+            end
+        end
+        ropeLength = math.max( ropeLength - ascendAdd, 25 )
 
     elseif moveData:KeyDown( IN_DUCK ) then
         local tickInterval = engine.TickInterval()
@@ -86,12 +108,6 @@ local function moveHook( ply, moveData )
         vel = vel + pullDir * springForce
 
         moveData:SetVelocity( vel )
-
-        -- snap ply off the ground
-        if ply:OnGround() then
-            moveData:SetOrigin( moveData:GetOrigin() + up5 )
-
-        end
 
         -- pull on the anchor
         if IsValid( anchor ) then
@@ -142,6 +158,7 @@ if SERVER then
     hook.Add( "OnPlayerStopRappelling", "glee_Rappel_CacheOnStopRappel", function( ply )
         rappellers[ply] = nil
         rappellCount = table.Count( rappellers )
+        ply.glee_RappelWasJumping = nil
 
     end )
 
@@ -154,6 +171,17 @@ if SERVER then
         hook.Run( "OnPlayerCutRappelRope", ply, ply.glee_RappelRope )
         ply:StopRapelling()
         ply:EmitSound( glee_RappelSettings.ropeCutSound, 70 )
+
+    end )
+end
+
+if CLIENT then
+    hook.Add( "huntersglee_cl_displayhint_poststack", "glee_rappel_HOLDSPACEDAMNIT", function( ply )
+        if not IsValid( ply ) then return end
+        if not ply:GetNWBool( "glee_IsRappelling", false ) then return end
+        if ply:GetNWInt( "glee_RappellReeledInCount", 0 ) >= 150 then return end
+
+        return true, "Hold SPACE to ascend"
 
     end )
 end

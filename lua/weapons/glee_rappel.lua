@@ -8,8 +8,8 @@ if CLIENT then
 
 end
 
-SWEP.Category = "Rappelling"
-SWEP.Author = "wowm0d"
+SWEP.Category = "Hunter's Glee"
+SWEP.Author = "wowm0d + bloodycop + StrawWagen"
 SWEP.Instructions = "Primary Fire: Attach/Cut Rope"
 
 SWEP.Spawnable = true
@@ -63,7 +63,6 @@ function SWEP:PrimaryAttack()
 
     if hook.Run( "PlayerBlockRappel", owner, eyeTrace ) then return end
 
-    print("hi")
     if eyeTrace.HitPos:Distance( owner:GetPos() ) >= self.MaxDistance then return end
 
     local traceEnt = eyeTrace.Entity

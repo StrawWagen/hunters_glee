@@ -170,6 +170,15 @@ if SERVER and terminator_Extras then
 
     local rescueTimerName = "glee_rescueheli_countdown"
 
+    function ENT:ResetCallability()
+        self.wastedFlare = nil
+        self.triggerPushHits = nil
+        self.SteppedTooCloseDist = 2000
+        self.SteppedDirMaxZ = 0.15
+        self.SteppedStartingOffset = 0
+
+    end
+
     function ENT:AdditionalThink()
         if self.wastedFlare then return end
         if self.calledForHeli then return end
@@ -363,6 +372,12 @@ if SERVER and terminator_Extras then
 
     end
 
+    hook.Add( "GravGunOnPickedUp", "glee_signalflare_resetcall", function( _ply, ent )
+        if ent:GetClass() ~= "termhunt_signalflare" then return end
+        ent:ResetCallability()
+
+    end )
+
     local function makeHeliFriendlyWith( heli, thing )
         if not IsValid( heli ) then return end
         if not IsValid( thing ) then return end
@@ -385,19 +400,6 @@ if SERVER and terminator_Extras then
                 return seat, i
             end
         end
-    end
-
-    local function heliGetRiders( heli )
-        local riders = {}
-        for _, seat in EntityPairs( heli.glee_Seats ) do
-            local driver = seat:GetDriver()
-            if IsValid( driver ) then
-                table.insert( riders, driver )
-
-            end
-        end
-        return riders
-
     end
 
     local function heliAllSeatsFull( heli )
@@ -610,6 +612,7 @@ if SERVER and terminator_Extras then
         heli:Fire( "SetTrack", track.glee_HeliTrack_TargetName )
 
         heli.giveUpAndRunAwayTime = CurTime() + heli_TryAndRescueDuration
+        heli.goingAwayFromIdealCount = 0
         heli.rescueHeliArrivedFromPos = spawnPos
         heli.originalRescuePos = targetPos
         heli.currentHeliGoal = "rescue"
@@ -723,7 +726,7 @@ if SERVER and terminator_Extras then
 
     end
 
-    concommand.Add( "huntersglee_debug_spawnrescueheli", function( ply, cmd, args )
+    concommand.Add( "huntersglee_debug_spawnrescueheli", function( ply )
         if not ply:IsAdmin() then return end
         local spawnPos = ply:GetPos() + Vector( 0, 0, 50 )
         local faceDir = -ply:GetForward()
@@ -813,6 +816,40 @@ if SERVER and terminator_Extras then
     local vecUp400 = Vector( 0, 0, 400 )
     local vecUp200 = Vector( 0, 0, 200 )
 
+    local function heliLookForFlares( self )
+        local myPos = self:GetPos()
+        local flares = {}
+        local allFlares = ents.FindByClass( "termhunt_flare" )
+        local allSignalFlares = ents.FindByClass( "termhunt_signalflare" )
+        terminator_Extras.tableAdd( flares, allFlares )
+        terminator_Extras.tableAdd( flares, allSignalFlares )
+
+        if #flares > 0 then
+            local positions = {}
+            for _, flare in ipairs( flares ) do
+                positions[flare] = flare:GetPos()
+
+            end
+            table.sort( flares, function( a, b )
+                return myPos:Distance( positions[a] ) < myPos:Distance( positions[b] )
+
+            end )
+            for i = 1, math.min( #flares, 5 ) do
+                local flare = flares[i]
+                if not IsValid( flare ) then continue end
+                if not self:Visible( flare ) then continue end
+                self.lastSawAFlarePos = positions[flare] + vecUp200
+
+                if debugging:GetBool() then
+                    debugoverlay.Line( myPos, self.lastSawAFlarePos, 1, Color( 255, 0, 255 ), true )
+
+                end
+                return
+
+            end
+        end
+    end
+
     function terminator_Extras.glee_RescueHeliThink( self )
         local rescueTarget = self.currentRescueTarget
         local myPos = self:GetPos()
@@ -882,6 +919,7 @@ if SERVER and terminator_Extras then
 
         local idealMovePos
         local skysTheLimit
+        local currentTargPosName
 
         local currGoal = self.currentHeliGoal
         -- fly towards originalRescuePos
@@ -919,6 +957,7 @@ if SERVER and terminator_Extras then
                 idealMovePos.z = math.max( idealMovePos.z, rescueTargetsPos.z + 200 )
 
             elseif self.originalRescuePos then
+                currentTargPosName = "originalRescuePos"
                 self.currentHeliTask = "rescue_flyToFlare"
 
                 local distToOriginalRescuePos = myPos:Distance( self.originalRescuePos )
@@ -935,7 +974,10 @@ if SERVER and terminator_Extras then
 
             -- fly towards last place we saw a rescue target
             elseif self.lastSawARescueTargetPos then
+                currentTargPosName = "lastSawARescueTargetPos"
                 self.currentHeliTask = "rescue_approachLastSeenRescueTarget"
+
+                heliLookForFlares( self )
 
                 local distToLastSaw = myPos:Distance( self.lastSawARescueTargetPos )
                 if self:VisibleVec( self.lastSawARescueTargetPos ) and distToLastSaw < 1500 then
@@ -948,9 +990,28 @@ if SERVER and terminator_Extras then
                     idealMovePos = self.lastSawARescueTargetPos + vecUp200 + VectorRand() * 200
 
                 end
+            -- a flare was shot up, and we saw it, check it out!
+            elseif self.lastSawAFlarePos then
+                currentTargPosName = "lastSawAFlarePos"
+                self.currentHeliTask = "rescue_approachLastSeenFlare"
+
+                local distToFlare = myPos:Distance( self.lastSawAFlarePos )
+                if self:VisibleVec( self.lastSawAFlarePos ) and distToFlare < 1500 then
+                    self.lastSawAFlarePos = nil
+
+                elseif distToFlare < 800 then
+                    self.lastSawAFlarePos = nil
+
+                else
+                    idealMovePos = self.lastSawAFlarePos + vecUp200 + VectorRand() * 200
+
+                end
             -- go towards last sound hint
             elseif self.lastHeardSoundPos then
+                currentTargPosName = "lastHeardSoundPos"
                 self.currentHeliTask = "rescue_approachSoundHint"
+
+                heliLookForFlares( self )
 
                 local distToHint = myPos:Distance( self.lastHeardSoundPos )
                 if self:VisibleVec( self.lastHeardSoundPos ) and distToHint < 1500 then
@@ -965,13 +1026,26 @@ if SERVER and terminator_Extras then
             -- just wander forward
             else
                 self.currentHeliTask = "rescue_wanderForward"
+
+                heliLookForFlares( self )
+
                 local curMoveDir = ourVel:GetNormalized()
                 curMoveDir.z = math.Clamp( curMoveDir.z, -0.5, 0.5 ) -- dont go upwards too much when wandering
                 curMoveDir.z = curMoveDir.z * 0.5
                 curMoveDir:Normalize()
                 local forOffset = curMoveDir * 2000
-                local randOffset = VectorRand() * 150
-                idealMovePos = myPos + forOffset + randOffset
+                local randOffset = VectorRand() * 500
+                local potentialMovePos = myPos + forOffset + randOffset
+
+                local floorTr = terminator_Extras.getFloorTr( potentialMovePos )
+                local floorDist = floorTr.HitPos:Distance( potentialMovePos )
+                if floorDist > heli_TooFarFromGround then
+                    local returnToGroundOffset = ( floorDist - heli_TooFarFromGround ) * 0.5
+                    potentialMovePos.z = potentialMovePos.z - returnToGroundOffset
+
+                end
+
+                idealMovePos = potentialMovePos
 
             end
         -- fly towards any skybox surfaces next to us
@@ -1248,6 +1322,25 @@ if SERVER and terminator_Extras then
                     debugoverlay.Line( myPos, bestPos, 1, Color( 0, 255, 0 ), true )
 
                 end
+
+                local dirToBestPos = terminator_Extras.dirToPos( myPos, bestPos )
+
+                -- if going away from ideal pos
+                -- TODO: do this better
+                if dirToBestPos:Dot( dirToIdeal ) < 0 then
+                    local oldCount = self.goingAwayFromIdealCount
+                    self.goingAwayFromIdealCount = oldCount + 1
+
+                else
+                    self.goingAwayFromIdealCount = math.max( 0, self.goingAwayFromIdealCount - 1 )
+
+                end
+
+                if self.goingAwayFromIdealCount >= 10 then
+                    self.goingAwayFromIdealCount = 0
+                    self[currentTargPosName] = nil
+
+                end
             end
 
             manageHeliSpeedLimit( self, idealMovePos, skysTheLimit )
@@ -1285,10 +1378,9 @@ hook.Add( "RenderScreenspaceEffects", "glee_predraw_fogpiercing_signalflares", f
         if not pos2d.visible then continue end
 
         local distanceToIt = eyePos:Distance( flaresRealPos )
-        if distanceToIt < 450 then
-            sizeMul = sizeMul * 2
-
-        end
+        -- smoothly scale up as viewer gets closer (1x at 450+, 2x at 0)
+        local proxMul = 1 + ( 1 - math.Clamp( distanceToIt / 450, 0, 1 ) )
+        sizeMul = sizeMul * proxMul
 
         local canSee = terminator_Extras.PosCanSeeComplex( eyePos, flaresRealPos, me )
         if not canSee then continue end

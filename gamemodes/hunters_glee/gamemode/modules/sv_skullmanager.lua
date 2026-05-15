@@ -1,10 +1,10 @@
 
 local GAMEMODE = GAMEMODE or GM
 
-function GM:SpawnASkull( pos, ang, termSkull, parent )
+function GM:SpawnASkull( pos, ang, termSkull, persistParent )
     local skull = ents.Create( "termhunt_skull_pickup" )
     if not IsValid( skull ) then return end
-    if IsValid( parent ) then
+    if IsValid( persistParent ) then -- something died to make this skull, it will persist thru rounds
         skull.persistentSkull = true
 
     end
@@ -19,8 +19,8 @@ function GM:SpawnASkull( pos, ang, termSkull, parent )
 
     timer.Simple( 0, function()
         if not IsValid( skull ) then return end
-        if not IsValid( parent ) then return end
-        skull:GetPhysicsObject():SetVelocity( parent:GetVelocity() )
+        if not IsValid( persistParent ) then return end
+        skull:GetPhysicsObject():SetVelocity( persistParent:GetVelocity() )
 
     end )
 
