@@ -210,7 +210,7 @@ local function getNearestNavFloor( pos )
     if not pos then return NULL end
     local Dat = {
         start = pos,
-        endpos = pos + Vector( 0,0,-500 ),
+        endpos = pos + Vector( 0, 0, -500 ),
         mask = 131083
     }
     local Trace = util.TraceLine( Dat )
@@ -313,12 +313,25 @@ function ENT:ManageMyPos()
 end
 
 function ENT:BestPosToBe()
-    local radius = self:GetModelRadius()
-    local offset = radius * self.player:GetEyeTrace().HitNormal
-    offset.z = math.Clamp( offset.z, -radius, radius * 0.1 )
-    if not self.player:GetEyeTrace().Hit then return end
+    local trace = self.player:GetEyeTrace()
+    if not trace.Hit then return end
 
-    return self.player:GetEyeTrace().HitPos + offset
+    local radius = self:GetModelRadius()
+    local offset = radius * trace.HitNormal
+    offset.z = math.Clamp( offset.z, -radius, radius * 0.1 )
+
+    local pos = trace.HitPos + offset
+
+    local floorOff = self.OverrideOffsetFromFloor
+    if floorOff then
+        local floorTr = terminator_Extras.getFloorTr( pos )
+        if floorTr.Hit then
+            pos.z = math.max( pos.z, floorTr.HitPos.z + floorOff )
+
+        end
+    end
+
+    return pos
 
 end
 
@@ -334,10 +347,12 @@ function ENT:TooPoorString()
     end
 end
 
-local vec15Z = Vector( 0,0,15 )
+local vec15Z = Vector( 0, 0, 15 )
 
 function ENT:CalculateCanPlace()
     local checkPos = self:OffsettedPlacingPos() + vec15Z
+
+    --debugoverlay.Box( checkPos, -self.HullCheckSize, self.HullCheckSize, 1, Color( 255, 0, 0 ) )
 
     if IsHullTraceFull( checkPos, self.HullCheckSize, self ) then return false, self.noPurchaseReason_NoRoom end
     if getNearestNavFloor( checkPos ) == NULL then return false, self.noPurchaseReason_OffNavmesh end
@@ -459,6 +474,7 @@ function ENT:Think()
 
         if not IsValid( self.player ) then
             return self:OwnerlessThink()
+
         end
 
     elseif IsValid( self.player ) and IsValid( self:GetOwner() ) then

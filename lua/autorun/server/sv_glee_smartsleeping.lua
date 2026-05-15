@@ -121,7 +121,7 @@ hook.Add( "Think", "glee_dynamicfreezing_laggingthink", function() -- deal damag
 
 end )
 
-terminator_Extras.SmartSleepEntity = function( ent, interval )
+function terminator_Extras.SmartSleepEntity( ent, interval )
     interval = interval or 10
     table.insert( toFreeze, ent )
     ent.glee_issmartsleeping = true

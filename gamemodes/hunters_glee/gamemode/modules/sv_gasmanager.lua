@@ -175,7 +175,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_addgasjobs", function()
         if area:IsBlocked() then return end
         if area:IsUnderwater() then return end
         local distToOrigin = area:GetCenter():Distance( job.posFindingOrigin )
-        if distToOrigin < job.spawnRadius / 3 then return end -- TOO CLOSE
+        if distToOrigin < job.spawnRadius / 2 then return end -- TOO CLOSE
         return true
 
     end

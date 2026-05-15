@@ -62,12 +62,12 @@ end
 local function IsHullTraceFull( startPos, hullMaxs, ignoreEnt )
     local traceData = {
         start = startPos,
-        endpos = startPos + Vector(0,0,1),
+        endpos = startPos + Vector( 0, 0, 1 ),
         filter = ignoreEnt,
         mins = -hullMaxs,
         maxs = hullMaxs
     }
-    local trace = util.TraceHull(traceData)
+    local trace = util.TraceHull( traceData )
 
     return trace.Hit
 
@@ -78,7 +78,7 @@ local function getNearestNavFloor( pos )
     if not pos then return NULL end
     local Dat = {
         start = pos,
-        endpos = pos + Vector( 0,0,-500 ),
+        endpos = pos + Vector( 0, 0, -500 ),
         mask = 131083
     }
     local Trace = util.TraceLine( Dat )
@@ -94,8 +94,8 @@ function ENT:BarnacleTrace()
     local trace = self.player:GetEyeTrace()
     local eyePos = trace.HitPos
     local traceData = {
-        start = eyePos + Vector( 0,0,10 ),
-        endpos = eyePos + Vector( 0,0,2500 ),
+        start = eyePos + Vector( 0, 0, 10 ),
+        endpos = eyePos + Vector( 0, 0, 2500 ),
         mask = MASK_SOLID_BRUSHONLY,
 
     }
@@ -216,7 +216,7 @@ function ENT:Place()
     local placeTraceResult = self:BarnacleTrace()
 
     local barnacle = ents.Create( "npc_barnacle" )
-    barnacle:SetPos( placeTraceResult.HitPos + Vector( 0,0,-2 ) )
+    barnacle:SetPos( placeTraceResult.HitPos + Vector( 0, 0, -2 ) )
     barnacle:SetAngles( ang )
     barnacle:Spawn()
     barnacle:Activate()

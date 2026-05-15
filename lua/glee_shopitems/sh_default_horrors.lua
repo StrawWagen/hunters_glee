@@ -13,37 +13,20 @@ end
 
 
 local items = {
-    ["ghostly_wind"] = {
-        name = "Ghostly Wind",
-        desc = "Summon a strange gust of wind...",
+    ["point_and_click"] = {
+        name = "Point and Click",
+        desc = "Click on players, or hunters!\nCosts climb, the farther you drag...\n\nWARNING: do NOT use on stick figures.",
         shCost = 0,
-        costDecorative = "-75",
+        costDecorative = "-50 / -100",
         markup = 1,
         cooldown = 0.5,
         tags = { "HORRORS", "CloseShopOnPurchase" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },
-        weight = 10,
+        weight = -100,
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "glee_escapee_wind", purchaser, itemIdentifier )
-
-        end,
-        shCanShowInShop = shopHelpers.escapedCheck,
-    },
-    ["bomb_crate"] = {
-        name = "Timed TNT Crate",
-        desc = "Supply crate with Timed TNT inside it.\nGives score when the TNT damages stuff.",
-        shCost = 0,
-        markup = 1,
-        cooldown = 100,
-        tags = { "HORRORS", "CloseShopOnPurchase" },
-        purchaseTimes = {
-            GAMEMODE.ROUND_ACTIVE,
-        },
-        weight = 10,
-        svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "glee_crate_tnt", purchaser, itemIdentifier )
+            setupPlacable( "glee_point_and_click", purchaser, itemIdentifier )
 
         end,
         shCanShowInShop = shopHelpers.escapedCheck,
@@ -58,7 +41,7 @@ local items = {
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },
-        weight = 10,
+        weight = 50,
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
             setupPlacable( "glee_crate_heavyweapons", purchaser, itemIdentifier )
 
@@ -75,27 +58,44 @@ local items = {
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },
-        weight = 10,
+        weight = 50,
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
             setupPlacable( "glee_crate_score", purchaser, itemIdentifier )
 
         end,
         shCanShowInShop = shopHelpers.escapedCheck,
     },
-    ["point_and_click"] = {
-        name = "Point and Click",
-        desc = "Click on players, or hunters!\nCosts climb, the farther you drag...\n\nWARNING: do NOT use on stick figures.",
+    ["bomb_crate"] = {
+        name = "Timed TNT Crate",
+        desc = "Supply crate with Timed TNT inside it.\nGives score when the TNT damages stuff.",
         shCost = 0,
-        costDecorative = "-50 / -100",
+        markup = 1,
+        cooldown = 90,
+        tags = { "HORRORS", "CloseShopOnPurchase" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = 55,
+        svOnPurchaseFunc = function( purchaser, itemIdentifier )
+            setupPlacable( "glee_crate_tnt", purchaser, itemIdentifier )
+
+        end,
+        shCanShowInShop = shopHelpers.escapedCheck,
+    },
+    ["ghostly_wind"] = {
+        name = "Ghostly Wind",
+        desc = "Summon a strange gust of wind...",
+        shCost = 0,
+        costDecorative = "-75",
         markup = 1,
         cooldown = 0.5,
         tags = { "HORRORS", "CloseShopOnPurchase" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },
-        weight = 10,
+        weight = 100,
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "glee_point_and_click", purchaser, itemIdentifier )
+            setupPlacable( "glee_escapee_wind", purchaser, itemIdentifier )
 
         end,
         shCanShowInShop = shopHelpers.escapedCheck,
@@ -110,7 +110,7 @@ local items = {
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },
-        weight = 10,
+        weight = 100,
         shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
             setupPlacable( "placable_barnacle", purchaser, itemIdentifier )

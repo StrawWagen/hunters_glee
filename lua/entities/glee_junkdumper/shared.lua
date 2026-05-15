@@ -10,12 +10,20 @@ ENT.Purpose     = "Dumps Junk"
 ENT.Spawnable    = true
 ENT.AdminOnly    = game.IsDedicated()
 ENT.Category = "Hunter's Glee"
-ENT.Model = "models/props_c17/oildrum001_explosive.mdl"
+ENT.Model = "models/hunter/blocks/cube2x2x1.mdl"
 
-ENT.HullCheckSize = Vector( 20, 20, 10 )
-ENT.PosOffset = Vector( 0, 0, 10 )
+ENT.HullCheckSize = Vector( 47, 47, 19 )
+ENT.PosOffset = Vector( 0, 0, -19 )
+ENT.OverrideOffsetFromFloor = 100
 
-ENT.placeCount = 6
+ENT.JunkPerDrop = 6
+ENT.NearbyRadius = 650
+ENT.TooManyNearbyObjCount = 10 -- if above this count of nearby stuff, no longer profitable
+ENT.CleanAreaScore = 100 -- score given when there are 0 nearby objects, further multiplied by nook score
+ENT.ScoreMax = 100
+
+ENT.CanPlaceColor = Color( 0, 255, 0, 100 )
+ENT.CannotPlaceColor = Color( 255, 0, 0, 100 )
 
 if CLIENT then
     function ENT:DoHudStuff()
@@ -23,15 +31,8 @@ if CLIENT then
         local screenMiddleH = ScrH() / 2
 
         local scoreGained = math.Round( self:GetGivenScore() )
-        local scoreGainedAlt = math.Round( self:GetGivenScoreAlt() )
 
-        local scoreString = "Barreling Score: " .. tostring( scoreGained )
-        local stringPt2 = "\nToo far/close to players cost: "
-
-        if scoreGainedAlt ~= 0 then
-            scoreString = scoreString .. stringPt2 .. tostring( scoreGainedAlt )
-
-        end
+        local scoreString = "Junk Dumping Score: " .. tostring( scoreGained )
 
         surface.drawShadowedTextBetter( scoreString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
 
@@ -43,166 +44,207 @@ function ENT:SkinRandomize()
 
 end
 
-function ENT:BarrelRandomize()
-    local model = ""
-    if math.random( 0, 100 ) > 35 then
-        model = "models/props_c17/oildrum001_explosive.mdl"
-
-    else
-        model = "models/props_c17/oildrum001.mdl"
-
-    end
-
-    self:SetModel( model )
-
-    local yaw = math.Rand( -180, 180 )
-    local ang = Angle( 0, yaw, 0 )
-    self:SetAngles( ang )
-
-    timer.Simple( 0, function()
-        if not IsValid( self ) then return end
-        self:SkinRandomize()
-
-    end )
-end
-
 if not SERVER then return end
 
-local termhunt_barrels_spawned = {}
-
-function ENT:GetBarrels()
-    local potentialBarrels = ents.FindByClass( "prop_physics" )
-
-    termhunt_barrels_spawned = {}
-
-    potentialBarrels = table.Add( potentialBarrels )
-
-    for _, barrel in ipairs( potentialBarrels ) do
-        if barrel:GetNWBool( "placedbybarrel" ) == true then
-            table.insert( termhunt_barrels_spawned, barrel )
-
-        end
-    end
-end
-
 function ENT:PostInitializeFunc()
-    termhunt_barrels_spawned = self:GetBarrels()
+    self:SetMaterial( "lights/white002" )
 
 end
 
-local MEMORY_VOLATILE = terminator_Extras.botMemoryTypes.MEMORY_VOLATILE
-local barrelPunishmentDist = 1250
+ENT.JunkModels = {
+    "models/props_c17/bench01a.mdl",
+    "models/props_c17/FurnitureDrawer001a.mdl",
+    "models/props_c17/FurnitureDrawer001a_Chunk01.mdl",
+    "models/props_c17/FurnitureDrawer001a_Chunk02.mdl",
+    "models/props_c17/FurnitureDrawer001a_Chunk03.mdl",
+    "models/props_c17/FurnitureDrawer001a_Chunk05.mdl",
+    "models/props_c17/FurnitureDrawer001a_Chunk06.mdl",
+    "models/props_c17/FurnitureDrawer002a.mdl",
+    "models/props_c17/FurnitureDrawer003a.mdl",
+    "models/props_c17/FurnitureDresser001a.mdl",
+    "models/props_c17/FurnitureShelf001a.mdl",
+    "models/props_c17/FurnitureShelf001b.mdl",
+    "models/props_c17/FurnitureTable001a.mdl",
+    "models/props_c17/FurnitureTable002a.mdl",
+    "models/props_c17/FurnitureTable003a.mdl",
+    "models/props_interiors/Furniture_shelf01a.mdl",
+    "models/props_junk/cardboard_box001a.mdl",
+    "models/props_junk/cardboard_box001b.mdl",
+    "models/props_junk/cardboard_box002a.mdl",
+    "models/props_junk/cardboard_box002b.mdl",
+    "models/props_junk/cardboard_box004a.mdl",
+    "models/props_junk/wood_crate001a.mdl",
+    "models/props_junk/wood_crate001a_damagedmax.mdl",
+    "models/props_junk/wood_crate001a_damaged.mdl",
+    "models/props_junk/wood_crate002a.mdl",
+    "models/props_junk/wood_pallet001a.mdl",
+    "models/props_junk/wood_pallet001a_chunka.mdl",
+    "models/props_junk/wood_pallet001a_chunka3.mdl",
+    "models/props_junk/wood_pallet001a_chunka4.mdl",
+    "models/props_junk/wood_pallet001a_chunkb2.mdl",
+    "models/props_c17/furniturechair001a.mdl",
+    "models/props_interiors/Furniture_chair01a.mdl",
+    "models/props_interiors/Furniture_Couch01a.mdl",
+    "models/props_interiors/Furniture_Couch02a.mdl",
+    "models/props_c17/furniturearmchair001a.mdl",
+    "models/props_c17/frame002a.mdl",
+    "models/props_wasteland/barricade001a.mdl",
+    "models/props_wasteland/barricade001a_chunk01.mdl",
+    "models/props_wasteland/barricade001a_chunk02.mdl",
+    "models/props_wasteland/barricade002a.mdl",
+    "models/props_wasteland/barricade002a_chunk01.mdl",
+    "models/props_wasteland/barricade002a_chunk02.mdl",
+    "models/props_wasteland/cafeteria_bench001a.mdl",
+    "models/props_wasteland/cafeteria_bench001a_chunk01.mdl",
+    "models/props_wasteland/cafeteria_table001a.mdl",
+    "models/props_wasteland/cafeteria_table001a_chunk01.mdl",
+    "models/props_c17/playground_swingset_seat01a.mdl",
+    "models/props_c17/playground_teetertoter_seat.mdl",
+    "models/props_junk/garbage_coffeemug001a.mdl",
+    "models/props_junk/garbage_glassbottle001a.mdl",
+    "models/props_junk/garbage_glassbottle002a.mdl",
+    "models/props_junk/garbage_glassbottle003a.mdl",
+    "models/props_junk/glassjug01.mdl",
+    "models/props_junk/GlassBottle01a.mdl",
+    "models/props_junk/terracotta01.mdl",
+    "models/props_wasteland/wood_fence02a_board01a.mdl",
+    "models/props_wasteland/wood_fence02a_board03a.mdl",
+    "models/props_wasteland/wood_fence02a_board04a.mdl",
+    "models/props_wasteland/wood_fence02a_board05a.mdl",
+    "models/props_wasteland/wood_fence02a_board07a.mdl",
+    "models/props_wasteland/wood_fence02a_board08a.mdl",
+    "models/props_wasteland/wood_fence02a_board09a.mdl",
+    "models/props_wasteland/wood_fence02a.mdl",
+    "models/props_canal/boat001a_chunk01.mdl",
+    "models/props_canal/boat001a_chunk02.mdl",
+    "models/props_canal/boat001a_chunk03.mdl",
+    "models/props_canal/boat001a_chunk04.mdl",
+    "models/props_canal/boat001a_chunk05.mdl",
+    "models/props_canal/boat001a_chunk06.mdl",
+    "models/props_canal/boat001a_chunk07.mdl",
+    "models/props_canal/boat001a_chunk08.mdl",
+    "models/props_canal/boat001b_chunk01.mdl",
+    "models/props_canal/boat001b_chunk02.mdl",
+    "models/props_canal/boat001b_chunk03.mdl",
+    "models/props_canal/boat001b_chunk04.mdl",
+    "models/props_canal/boat001b_chunk05.mdl",
+    "models/props_canal/boat001b_chunk06.mdl",
+    "models/props_canal/boat001b_chunk07.mdl",
+    "models/props_canal/boat001b_chunk08.mdl",
 
-local tooCloseToPlySqr = 200^2
-local tooFarFromPlySqr = 1500^2
+    "models/props_debris/wood_board01a.mdl",
+    "models/props_debris/wood_board02a.mdl",
+    "models/props_debris/wood_board03a.mdl",
+    "models/props_debris/wood_board04a.mdl",
+    "models/props_debris/wood_board05a.mdl",
+    "models/props_debris/wood_board06a.mdl",
+    "models/props_debris/wood_board07a.mdl",
+
+    "models/props_wasteland/dockplank_chunk01a.mdl",
+    "models/props_docks/channelmarker_gib01.mdl",
+    "models/props_docks/channelmarker_gib02.mdl",
+
+    "models/props_wasteland/prison_toilet01.mdl",
+    "models/props_wasteland/prison_sink001b.mdl",
+    "models/props_junk/watermelon01.mdl",
+    "models/props_combine/breenbust.mdl",
+    "models/props_junk/watermelon01_chunk01c.mdl",
+    "models/props_junk/vent001.mdl",
+}
+
+ENT.RareJunkModels = {
+    "models/props_junk/flare.mdl",
+    "models/props_wasteland/interior_fence004b.mdl",
+    "models/props_c17/fence01b.mdl",
+    "models/props_c17/canister_propane01a.mdl",
+    "models/props_c17/streetsign004f.mdl",
+    "models/props_c17/oildrumchunk01a.mdl",
+    "models/props_wasteland/gear01.mdl",
+    "models/props_junk/Shoe001a.mdl",
+    "models/props_junk/garbage_bag001a.mdl",
+    "models/props_junk/gascan001a.mdl",
+    "models/props_junk/sawblade001a.mdl",
+    "models/props_vehicles/tire001c_car.mdl",
+    "models/props_junk/TrafficCone001a.mdl",
+    "models/props_junk/CinderBlock01a.mdl",
+    "models/props_c17/TrapPropeller_Engine.mdl",
+    "models/props_lab/hevplate.mdl",
+    "models/props_vehicles/carparts_door01a.mdl",
+    "models/props_debris/rebar_medthin02c.mdl",
+}
 
 function ENT:UpdateGivenScore()
-    local smallestPunishmentDist = barrelPunishmentDist^2
-    local tooCloseCount = 0
-    local punishmentCount = 0
-
     local myPos = self:GetPos()
-    local nearestPly, nearestPlyDistSqr
-    local roundCostPermanent
+    local nearby = ents.FindInSphere( myPos, self.NearbyRadius )
 
-    if GAMEMODE.ISHUNTERSGLEE then
-        nearestPly, nearestPlyDistSqr = GAMEMODE:nearestAlivePlayer( myPos )
-        roundCostPermanent = GAMEMODE.roundExtraData.BarrelPlacedCount or 0
-        roundCostPermanent = roundCostPermanent / 20 -- so barrels eventually always become unprofitable on super super long rounds
+    local floorPos = terminator_Extras.getFloorTr( myPos ).HitPos
+    local nearbyFloorPos = ents.FindInSphere( floorPos, self.NearbyRadius )
+    terminator_Extras.tableAdd( nearby, nearbyFloorPos )
 
-    end
+    local nearbyCount = 0
 
-    if termhunt_barrels_spawned then
-        for _, currentBarrel in ipairs( termhunt_barrels_spawned ) do
-            if not IsValid( currentBarrel ) then continue end -- table is validated elsewhere
-            local distToCurrentBarrelSqr = myPos:DistToSqr( currentBarrel:GetPos() )
-
-            if distToCurrentBarrelSqr < smallestPunishmentDist then
-                tooCloseCount = tooCloseCount + 1
-                if tooCloseCount < 6 then continue end
-                punishmentCount = tooCloseCount
-                smallestPunishmentDist = distToCurrentBarrelSqr
-
-            end
-        end
-    end
-
-    local punishmentLinear = math.sqrt( smallestPunishmentDist )
-
-    local punishmentGiven = math.abs( punishmentLinear - barrelPunishmentDist )
-    punishmentGiven = punishmentGiven / barrelPunishmentDist
-    punishmentGiven = punishmentGiven ^ 2
-    punishmentGiven = punishmentCount + punishmentGiven * 40
-
-    local barrelCount = 0
-    if termhunt_barrels_spawned and #termhunt_barrels_spawned then
-        barrelCount = #termhunt_barrels_spawned
+    for _, ent in ipairs( nearby ) do
+        if not IsValid( ent ) then continue end
+        if not IsValid( ent:GetPhysicsObject() ) then continue end
+        local mass = ent:GetPhysicsObject():GetMass()
+        if mass <= 5 then continue end
+        nearbyCount = nearbyCount + 1
 
     end
 
-    if IsValid( nearestPly ) and ( nearestPlyDistSqr < tooCloseToPlySqr or nearestPlyDistSqr > tooFarFromPlySqr ) then
-        local proxPenalty = 40
-        punishmentGiven = punishmentGiven + proxPenalty
-        self:SetGivenScoreAlt( -proxPenalty )
-
-    else
-        self:SetGivenScoreAlt( 0 )
-
-    end
-
-    local scoreGiven = 40 - barrelCount -- 40 score if 0 barrels, 0 score if 40
-    scoreGiven = scoreGiven + -roundCostPermanent -- always cost more, the more barrels placed
-    scoreGiven = scoreGiven + -punishmentGiven
-    scoreGiven = math.Clamp( scoreGiven, -75, 15 )
-    scoreGiven = scoreGiven + ( terminator_Extras.GetNookScore( myPos ) * 2 ) -- flat add if placed in nooks
+    -- Clean area = profit, cluttered area = cost. Break-even at TooManyNearbyObjCount.
+    local scoreGiven = self.CleanAreaScore * ( 1 - nearbyCount / self.TooManyNearbyObjCount )
+    scoreGiven = math.min( scoreGiven, self.ScoreMax )
+    scoreGiven = scoreGiven + ( terminator_Extras.GetNookScore( myPos ) * 2 )
 
     self:SetGivenScore( scoreGiven )
 
 end
 
 function ENT:Place()
-    local barrel = ents.Create( "prop_physics" )
-    barrel:SetPos( self:OffsettedPlacingPos() )
-    barrel:SetModel( self:GetModel() )
-    barrel:SetAngles( self:GetAngles() )
-    barrel:SetSkin( self:GetSkin() )
-    barrel:Spawn()
-
-    terminator_Extras.SmartSleepEntity( barrel, 40 )
-    terminator_Extras.DoPFXFromEnt( "glee_ghostly_ectoplasm", barrel )
-
-    self:GetBarrels()
-
-    barrel:SetNWBool( "placedbybarrel", true )
-    barrel:EmitSound( "Metal_Barrel.ImpactHard", 75, 100 + -( self.placeCount * 10 ) )
-
-    if barrel:Health() > 0 then
-        barrel.terminatorHunterInnateReaction = function()
-            return MEMORY_VOLATILE
-
-        end
-    end
-
     local betrayalScore = self:GetGivenScore()
 
     if self.player and self.player.GivePlayerScore and betrayalScore then
         self.player:GivePlayerScore( betrayalScore )
         GAMEMODE:sendPurchaseConfirm( self.player, betrayalScore )
 
-        GAMEMODE.roundExtraData.BarrelPlacedCount = ( GAMEMODE.roundExtraData.BarrelPlacedCount or 0 ) + 1
-
     end
 
-    GAMEMODE:AddMischievousness( self.player, 1, "placed a barrel" )
+    GAMEMODE:AddMischievousness( self.player, 1, "dumped junk" )
 
-    self.placeCount = self.placeCount + -1
+    for i = 1, self.JunkPerDrop do
+        timer.Simple( ( i - 1 ) * 0.1, function()
+            if not IsValid( self ) then return end
 
-    if self.placeCount > 0 then
-        self:BarrelRandomize()
+            local model
+            if math.random( 1, 100 ) <= 5 then
+                model = self.RareJunkModels[math.random( #self.RareJunkModels )]
+            else
+                model = self.JunkModels[math.random( #self.JunkModels )]
+            end
 
-        return
+            local junk = ents.Create( "prop_physics" )
+            junk:SetPos( self:GetPos() + Vector( math.Rand( -50, 50 ), math.Rand( -50, 50 ), 10 ) )
+            junk:SetModel( model )
+            junk:SetAngles( Angle( 0, math.Rand( -180, 180 ), 0 ) )
+            junk:Spawn()
+
+            terminator_Extras.SmartSleepEntity( junk, 10 )
+            timer.Simple( 0.1, function()
+                terminator_Extras.DoPFXFromEnt( "glee_ghostly_ectoplasm", junk )
+
+            end )
+
+            junk:EmitSound( "physics/wood/wood_box_impact_hard1.wav", 65, 90 + math.random( -10, 10 ) )
+
+        end )
     end
 
-    SafeRemoveEntity( self )
+    self.player = nil
+    self:SetOwner( NULL )
 
+    timer.Simple( ( self.JunkPerDrop - 1 ) * 0.1 + 0.1, function()
+        SafeRemoveEntity( self )
+
+    end )
 end

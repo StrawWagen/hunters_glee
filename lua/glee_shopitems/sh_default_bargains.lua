@@ -539,6 +539,7 @@ local items = {
             purchaser:GivePlayerScore( scoreGiven )
 
             purchaser:SetHealth( remainingHealth )
+            ply.glee_LastHealthSetReason = "glee_blood_donor"
 
             for _ = 0, 2 do
                 shopHelpers.playRandomSound( purchaser, shopHelpers.thwaps, 75, math.random( 100, 120 ) )

@@ -90,6 +90,7 @@ if SERVER then
                 healAmount = healAmount * 0.75
                 local newHealth = math.min( owner:Health() + healAmount, owner:GetMaxHealth() )
                 owner:SetHealth( newHealth )
+                ply.glee_LastHealthSetReason = "glee_divineintervention_blessing"
 
                 local newArmor = math.min( owner:Armor() + healAmount * 0.5, owner:GetMaxArmor() )
                 owner:SetArmor( newArmor )
@@ -234,12 +235,14 @@ if SERVER then
 
                 -- spawn in with 1 health
                 ply:SetHealth( 1 )
+                ply.glee_LastHealthSetReason = "glee_infernalintervention_spawn"
 
                 -- fix health just in case
                 timer.Simple( 0, function() -- juggernaut, etc
                     if not IsValid( ply ) then return end
                     if not ply:Alive() then return end -- this would be unlucky!
                     ply:SetHealth( 1 )
+                    ply.glee_LastHealthSetReason = "glee_infernalintervention_spawn_delayed"
 
                     GAMEMODE:GivePanic( ply, 50 )
                     GAMEMODE:EmulateHistoricHighBPM( ply ) -- spawn with a pounding heart
@@ -594,6 +597,7 @@ if SERVER then
                             if not IsValid( potentialChosen ) then return end
                             if potentialChosen:Health() <= 1 then return end
                             potentialChosen:SetHealth( 1 )
+                            ply.glee_LastHealthSetReason = "glee_divineintervention_patiencefail"
 
                         end )
                     end

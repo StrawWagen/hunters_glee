@@ -29,6 +29,9 @@ ENT.rareCreationChance = 15
 function ENT:rareCreationOptions()
     local tbl = {
         { class = "weapon_rpg" },
+        { class = "weapon_ar2" },
+        { class = "item_ammo_ar2_altfire", count = 8 },
+        { class = "item_ammo_ar2_altfire", count = 4 },
 
     }
     return tbl

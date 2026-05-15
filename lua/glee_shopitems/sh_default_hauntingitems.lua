@@ -56,7 +56,7 @@ if SERVER then
 
             end )
         end,
-        function( self, owner ) -- teardown func
+        function( self ) -- teardown func
             if IsValid( self.hunter ) then
                 self.hunter.linkedPlayer = nil
 
@@ -165,6 +165,23 @@ local items = {
         shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
             setupPlacable( "termhunt_barrels", purchaser, itemIdentifier )
+
+        end,
+    },
+    ["junkdump"] = {
+        name = "Junk",
+        desc = "Dump a pile of junk.\nDump it somewhere empty for best results.",
+        shCost = 0,
+        markup = 1,
+        cooldown = 30,
+        tags = { "DEADSACRIFICES", "CloseShopOnPurchase" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = 1,
+        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
+        svOnPurchaseFunc = function( purchaser, itemIdentifier )
+            setupPlacable( "glee_junkdumper", purchaser, itemIdentifier )
 
         end,
     },

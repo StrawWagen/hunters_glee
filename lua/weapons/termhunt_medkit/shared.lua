@@ -100,6 +100,7 @@ function SWEP:PrimaryAttack()
         self:TakePrimaryAmmo( need )
 
         ent:SetHealth( math.min( ent:GetMaxHealth(), ent:Health() + need ) )
+        ent.glee_LastHealthSetReason = "glee_medkit_heal"
         ent:EmitSound( HealSound )
 
         self:SendWeaponAnim( ACT_VM_PRIMARYATTACK )
@@ -142,6 +143,7 @@ function SWEP:SecondaryAttack()
         self:TakePrimaryAmmo( need )
 
         ent:SetHealth( math.min( ent:GetMaxHealth(), ent:Health() + need ) )
+        ent.glee_LastHealthSetReason = "glee_medkit_healself"
         ent:EmitSound( HealSound )
 
         self:SendWeaponAnim( ACT_VM_PRIMARYATTACK )

@@ -128,9 +128,10 @@ function SWEP:DumpCharge()
 
         end
 
-        dmginfo:SetDamageType( bit.bor( DMG_AIRBOAT,DMG_BLAST ) )
+        dmginfo:SetDamageType( bit.bor( DMG_AIRBOAT, DMG_BLAST ) )
         if chargeLevel == max_Charge and trace.Entity:GetClass() ~= "prop_vehicle_apc" then
             trace.Entity:SetHealth( 0 )
+            trace.Entity.glee_LastHealthSetReason = "glee_taucannon_overcharge_instantkill"
 
         end
         local effectdata = EffectData()
