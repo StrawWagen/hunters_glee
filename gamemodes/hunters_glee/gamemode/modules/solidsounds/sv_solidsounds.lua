@@ -50,34 +50,99 @@ end
 local soundTracks = {
     heliEvac = {
         sounds = {
-            "hunters_glee/music/VACANT/8.23.GleeExp2.ogg", -- played first evac of a round
-            "hunters_glee/music/VACANT/8.24.to_noone.ogg", -- played second evac of a round
-            "hunters_glee/music/VACANT/__more_glee.ogg", -- played third evac of a round, then goes back to track no. 1
+            { -- played first evac of a round
+                maxDifficulty = 75,
+                snd = "hunters_glee/music/VACANT/8.23.GleeExp2.ogg",
+            },
+            { -- played second evac of a round
+                maxDifficulty = 75,
+                snd = "hunters_glee/music/VACANT/__more_glee.ogg",
+            },
+            { -- played if difficulty is above 250, so if evac is late or difficulty is being bumped
+                minDifficulty = 75,
+                maxDifficulty = 150,
+                snd = "hunters_glee/music/VACANT/8.24.to_noone.ogg",
+            },
+            {
+                minDifficulty = 150,
+                snd = "hunters_glee/music/VACANT/8.26.GleeExp3.ogg",
+            },
         },
-        randomOrder = true,
         priority = 0,
         fadeInLength = 1,
     },
+    quarterAliveWaveWiped = {
+        sounds = {
+            {
+                maxDifficulty = 100,
+                snd = "hunters_glee/music/VACANT/8.23.GleeExp3.ogg",
+            },
+            {
+                minDifficulty = 100,
+                snd = "hunters_glee/music/VACANT/8.22.theGLEE.ogg",
+            },
+        },
+        priority = 0,
+    },
+    mapvoteMusic = {
+        sounds   = {
+            {
+                snd = "hunters_glee/music/VACANT/SEWERSiN.mp3",
+            },
+        },
+        priority = 0,
+    },
     roundEarlyStart = {
-        sounds = { "hunters_glee/music/VACANT/roundstart2.ogg", },
+        sounds = {
+            {
+                maxDifficulty = 50,
+                snd = "hunters_glee/music/VACANT/wmrs.ogg",
+            },
+            {
+                maxDifficulty = 100,
+                snd = "hunters_glee/music/VACANT/wmrs-crowbar.ogg",
+            },
+            {
+                minDifficulty = 50,
+                maxDifficulty = 150,
+                snd = "hunters_glee/music/VACANT/roundstart2.ogg",
+            },
+            {
+                minDifficulty = 100,
+                snd = "hunters_glee/music/VACANT/ROOT_ESTRANGE.ogg",
+            },
+        },
         priority = 0,
     },
     roundEnd = {
-        sounds   = { "hunters_glee/music/VACANT/gleeroundendhoot6simple.ogg" },
+        sounds   = {
+            {
+                snd = "hunters_glee/music/VACANT/gleeroundendhoot6simple.ogg",
+            }
+        },
         priority = 0,
     },
     roundWin = {
-        sounds   = { "hunters_glee/music/VACANT/qutedeath-re.ogg" },
+        sounds   = {
+            {
+                snd = "hunters_glee/music/VACANT/qutedeath-re.ogg",
+            }
+        },
         priority = 50,
     },
     roundPerfectWin = {
-        sounds   = { "hunters_glee/music/VACANT/8.25.ToWishToGlee.ogg" },
+        sounds = {
+            {
+                maxDifficulty = 200,
+                snd = "hunters_glee/music/VACANT/8.25.GleeFree-Early.ogg",
+            },
+            {
+                minDifficulty = 200,
+                snd = "hunters_glee/music/VACANT/8.25.ToWishToGlee.ogg",
+            }
+        },
         priority = 1000,
     },
-    mapvoteMusic = {
-        sounds   = { "hunters_glee/music/VACANT/SEWERSiN.mp3" },
-        priority = 0,
-    }
 }
 
 -- shuffle ones with .randomOrder
@@ -95,10 +160,30 @@ function GM:GetASoundTrack( name )
 
     GAMEMODE.soundtrackIndices = GAMEMODE.soundtrackIndices or {}
 
-    local index = GAMEMODE.soundtrackIndices[name] or 1
-    local path  = trackData.sounds[index]
+    local currDiff = self:GetCurrWaveDifficulty()
 
-    GAMEMODE.soundtrackIndices[name] = ( index % #trackData.sounds ) + 1
+    local sounds = trackData.sounds
+
+    local path
+    local count = 0
+
+    while not path and count < #sounds do
+        count = count + 1
+        local index = GAMEMODE.soundtrackIndices[name] or 1
+        GAMEMODE.soundtrackIndices[name] = ( index % #sounds ) + 1
+
+        local picked = sounds[index]
+
+        local minDiff = picked.minDifficulty
+        if minDiff and currDiff < minDiff then continue end
+
+        local maxDiff = picked.maxDifficulty
+        if maxDiff and currDiff > maxDiff then continue end
+
+        path = picked.snd
+        break
+
+    end
 
     return path, trackData
 

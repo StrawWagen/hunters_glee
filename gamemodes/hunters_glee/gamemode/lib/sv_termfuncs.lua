@@ -601,7 +601,7 @@ function GM:nearestAlivePlayer( pos )
 end
 
 
-function GM:CountWinnablePlayers()
+function GM:countWinnablePlayers()
     local aliveCount = 0
     for _, curr in pairs( player.GetAll() ) do
         if canWinTheRound( curr ) then

@@ -439,6 +439,8 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
         debugPrint( "bump", GAMEMODE.sessionDiffBump, spawnSet.diffBumpWhenWaveKilled )
         GAMEMODE:BumpSessionDifficulty( spawnSet.diffBumpWhenWaveKilled, "wave_cleared" )
 
+        hook.Run( "huntersglee_wave_wiped" )
+
     end
 
     -- wait!
@@ -454,8 +456,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
 
     local diffPerMin = spawnSet.difficultyPerMin
     local difficulty = diffPerMin * minutes
-    difficulty = difficulty + GAMEMODE.sessionDiffBump
-    difficulty = difficulty + GAMEMODE.roundDiffBump
+    difficulty = difficulty + GAMEMODE.sessionDiffBump + GAMEMODE.roundDiffBump
 
     local countWanted
     local overrideCount = overrideCountVar:GetInt()
@@ -480,6 +481,8 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
     end
 
     if aliveCount < countWanted then
+        GAMEMODE.currWaveDifficulty = difficulty
+
         local budget = difficulty + spawnSet.startingBudget
         local classCounts = {}
         local pickedSpawns = {}
@@ -554,6 +557,11 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
 
         end
         if #pickedSpawns >= 1 then
+            GAMEMODE.waveExtraData = {
+                waveSize = #pickedSpawns,
+                realKillCount = 0, -- how many of the spawned bots actually got killed by players
+            }
+
             if not GAMEMODE.currentSpawnWave then
                 GAMEMODE.currentSpawnWave = {}
                 hook.Add( "glee_sv_validgmthink_active", "glee_spawnawave", function() GAMEMODE:SpawnWaveSpawnIn() end )
@@ -818,12 +826,14 @@ hook.Add( "PlayerDeath", "glee_fodderenemy_catchkrangled", function( _, inflic, 
 
 end )
 
-hook.Add( "OnNPCKilled", "glee_fodderenemy_goodkilledhunters", function( npc, attacker )
+hook.Add( "OnNPCKilled", "glee_goodkilledhunters", function( npc, attacker )
     if not attacker:IsPlayer() then return end -- only mark spawns as great if the hunter died to a PLAYER!
     if not npc:GetNW2Bool( "glee_IsHunter" ) then return end
 
     if not npc.DistToEnemy then return end
     if npc.DistToEnemy > 750 then return end -- don't reward boring kills where the bot was far away
+
+    GAMEMODE.waveExtraData.realKillCount = ( GAMEMODE.waveExtraData.realKillCount or 0 ) + 1
 
     if debuggingVar:GetBool() and IsValid( npc.glee_SpawnArea ) then
         debugoverlay.Line( npc:GetPos(), npc.glee_SpawnArea:GetCenter(), 10, Color( 0, 255, 0 ), true )
@@ -1279,9 +1289,10 @@ end )
 -----------------------------------------
 
 
-concommand.Add( "glee_printcurrent_persistdifficulty", function( caller )
+concommand.Add( "glee_printcurrent_difficulty", function( caller )
     if IsValid( caller ) and not caller:IsAdmin() then return end
-    print( "Session diff bump:", GAMEMODE.sessionDiffBump, "With last reason:", GAMEMODE.lastSessionDiffBumpReason )
+    print( "Session diff:", GAMEMODE.currWaveDifficulty )
     print( "Round diff bump:", GAMEMODE.roundDiffBump, "With last reason:", GAMEMODE.lastRoundDiffBumpReason )
+    print( "Persistient session diff bump:", GAMEMODE.sessionDiffBump, "With last reason:", GAMEMODE.lastSessionDiffBumpReason )
 
 end )

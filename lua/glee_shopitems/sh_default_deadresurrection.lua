@@ -500,7 +500,7 @@ if CLIENT then
 end
 if SERVER then
     local function isStillGoing()
-        if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE or GAMEMODE:CountWinnablePlayers() <= 0 then return false end
+        if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE or GAMEMODE:countWinnablePlayers() <= 0 then return false end
         return true
 
     end

@@ -23,5 +23,6 @@ return {
     earlyStartSound = "",
     roundStartSound = "", -- no sound for glee
     roundEarlyStartSound = "tracks/roundEarlyStart", -- played 10 seconds before round starts, IF roundStartSound is empty
+    quarterAliveWaveWipedSound = "tracks/quarterAliveWaveWiped", -- played when a "spawn wave" is wiped, with no more than 1/4 of players alive
     genericSpawnerRate = 1, -- speeds up or slows down the procedural item spawner
 }

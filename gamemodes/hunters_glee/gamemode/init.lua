@@ -86,8 +86,8 @@ include( "modules/sv_firstfallgrace.lua" )
 include( "modules/sv_blamedfalldamage.lua" )
 include( "modules/sv_seeding_rewarder.lua" )
 include( "modules/solidsounds/sv_solidsounds.lua" )
+include( "modules/solidsounds/sv_tracktriggering.lua" )
 include( "modules/spawnset/sv_spawnsetvote.lua" )
-include( "modules/spawnset/sv_spawnsetsounds.lua" )
 include( "modules/statuseffects/sv_statuseffects.lua" )
 include( "modules/sv_falldamage_andgoomba.lua" )
 include( "modules/firsttimeplayers/sv_firsttimeplayers.lua" )
@@ -191,6 +191,7 @@ function GM:TermHuntSetup()
     self.roundEarliestEnd               = 0
     self.nextStateTransmit              = 0
     self.finishedRoundCount             = 0
+    self.currWaveDifficulty             = 0
 
     -- just in case!
     hook.Remove( "Think", "glee_DoGreedyPatchThinkHook" )
@@ -361,7 +362,7 @@ function GM:Think()
         displayTime = 0
 
     elseif currState == self.ROUND_ACTIVE then -- THE HUNT
-        local aliveCount = self:CountWinnablePlayers()
+        local aliveCount = self:countWinnablePlayers()
         local waitingForAFirstTimePlayer = self:WaitingForAFirstTimePlayer( players )
         local specificallyWaiting = ( self.roundEarliestEnd or 0 ) > cur
 
@@ -882,6 +883,11 @@ end
 function GM:ResetExtraData()
     self.roundExtraData = nil
     self.roundExtraData = {}
+
+end
+
+function GM:GetCurrWaveDifficulty()
+    return self.currWaveDifficulty
 
 end
 
