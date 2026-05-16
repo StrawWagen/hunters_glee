@@ -262,6 +262,7 @@ Values can be:
 | `hardRandomChance` | ❌ | `{ min, max }` percent chance to even consider |
 | `preSpawnedFuncs` | ❌ | Functions called before hunter:Spawn() : `function(spawnData, npc)` |
 | `postSpawnedFuncs` | ❌ | Functions called after hunter:Spawn() : `function(spawnData, npc)` |
+| `isBoss` | ❌ | `true` marks as boss; `false` opts out of auto-detection. When the boss is killed, all alive players escape. Auto-detected when `maxSpawnCount <= 1` (highest `difficultyCost` entry wins). |
 
 #### Example: Custom Behavior
 
