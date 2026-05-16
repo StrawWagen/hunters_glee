@@ -17,7 +17,7 @@ ENT.PosOffset = Vector( 0, 0, -19 )
 ENT.OverrideOffsetFromFloor = 100
 
 ENT.JunkPerDrop = 6
-ENT.NearbyRadius = 650
+ENT.NearbyRadius = 500
 ENT.TooManyNearbyObjCount = 10 -- if above this count of nearby stuff, no longer profitable
 ENT.CleanAreaScore = 100 -- score given when there are 0 nearby objects, further multiplied by nook score
 ENT.ScoreMax = 100
