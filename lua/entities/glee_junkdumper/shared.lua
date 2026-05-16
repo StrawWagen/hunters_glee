@@ -198,11 +198,11 @@ function ENT:UpdateGivenScore()
     local scoreGiven = self.CleanAreaScore * ( 1 - nearbyCount / self.TooManyNearbyObjCount )
     scoreGiven = math.min( scoreGiven, self.ScoreMax )
     local nookScore = terminator_Extras.GetNookScore( myPos )
-    if nookScore <= 3 then -- too open
+    if nookScore <= 2 then -- too open
         scoreGiven = -math.abs( scoreGiven ) * 0.5
 
     else
-        scoreGiven = scoreGiven * ( nookScore * 2 )
+        scoreGiven = scoreGiven + ( nookScore * 2 )
 
     end
 

@@ -236,10 +236,13 @@ end
 
 function GM:shopItemSkullCost( toPurchase, purchaser )
     if not toPurchase then return end
+
     local dat = GAMEMODE:GetShopItemData( toPurchase )
     if not dat then return end
+
     local skullCostRaw = dat.shSkullCost
     if not skullCostRaw then return end
+
     local skullCost = nil
 
     if isfunction( skullCostRaw ) then
