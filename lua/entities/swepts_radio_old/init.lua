@@ -214,6 +214,10 @@ function ENT:OnTakeDamage( dmg )
 end
 
 local GAMEMODE = GAMEMODE or GM
-if not GAMEMODE.RandomlySpawnEnt then return end
+if not GAMEMODE.RandomlySpawnEntTbl then return end
 
-GAMEMODE:RandomlySpawnEnt( "swepts_radio_old", 1, 50, 25 )
+GAMEMODE:RandomlySpawnEntTbl( "swepts_radio_old", {
+    maxCount = 1,
+    chance = 50,
+    minAreaSize = 25,
+} )

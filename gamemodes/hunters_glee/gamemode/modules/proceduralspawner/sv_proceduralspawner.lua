@@ -26,6 +26,7 @@ end
 
 local proceduralSpawnerJobs = {}
 local currJobCoroutine
+local currJobName
 
 local defaultStepSize = 50 * 3
 local defaultMinAreas = 60
@@ -84,8 +85,7 @@ local currJob
 
 --local nextPrint = 0
 
-hook.Add( "glee_sv_validgmthink", "glee_proceduralspawner", function( _, currState, _ )
-    if currState ~= GAMEMODE.ROUND_ACTIVE then return end
+hook.Add( "glee_sv_validgmthink_not_over", "glee_proceduralspawner", function()
 
     --[[
     if nextPrint < CurTime() then
@@ -97,7 +97,7 @@ hook.Add( "glee_sv_validgmthink", "glee_proceduralspawner", function( _, currSta
 
         end
     end
-    ]]--
+   ]]--
 
     -- tackle current job
     if currJobCoroutine then
@@ -109,8 +109,11 @@ hook.Add( "glee_sv_validgmthink", "glee_proceduralspawner", function( _, currSta
             good, result = coroutine.resume( currJobCoroutine )
 
             if good == false then
-                ErrorNoHaltWithStack( result )
+                stackAfter = stackAfter or debug.traceback( currJobCoroutine )
+                result = result or "unknown error"
+                ErrorNoHalt( "GLEE PROC SPAWNER ERROR (" .. tostring( currJobName ) .. "): " .. result .. "\n" .. stackAfter .. "\n" )
                 currJobCoroutine = nil
+                currJobName = nil
                 table.remove( proceduralSpawnerJobs, 1 )
                 break
 
@@ -120,6 +123,7 @@ hook.Add( "glee_sv_validgmthink", "glee_proceduralspawner", function( _, currSta
         -- finished or errored
         if result == "done" or good ~= true then
             currJobCoroutine = nil
+            currJobName = nil
             table.remove( proceduralSpawnerJobs, 1 )
 
         end
@@ -143,22 +147,40 @@ hook.Add( "glee_sv_validgmthink", "glee_proceduralspawner", function( _, currSta
     if not currJob.posFindingOrigin then spawnJobErr( jobsName, "No posFindingOrigin" ) return end
     -- currJob.originIsDefinitive
     -- will the origin fall back to near a hunter, if it's "invalid"? fixed no crates spawning when players are like high up, on a navmesh island/rooftop 
+
     -- currJob.spawnRadius
     -- searching radius, smaller = faster spawning.
+
     -- currJob.sortForNearest
     -- sort for nearest areas to the finding origin? allowed crates spawning in groups.
+
+    if currJob.attributeWhitelist and not isnumber( currJob.attributeWhitelist ) then spawnJobErr( jobsName, "attributeWhitelist is a bitflag" ) return end
+    if currJob.attributeBlacklist and not isnumber( currJob.attributeBlacklist ) then spawnJobErr( jobsName, "attributeBlacklist is a bitflag" ) return end
+    -- only spawn in areas with/without these NAV_ attributes
+
+    if currJob.extraFlagsWhitelist and not isnumber( currJob.extraFlagsWhitelist ) then spawnJobErr( jobsName, "extraFlagsWhitelist is a bitflag" ) return end
+    if currJob.extraFlagsBlacklist and not isnumber( currJob.extraFlagsBlacklist ) then spawnJobErr( jobsName, "extraFlagsBlacklist is a bitflag" ) return end
+    -- only spawn in areas with/without these custom flags, for spawning only on beaches, runways, etc
+    -- full list of flags in sv_navmeshcategorizer.lua
+
     if not currJob.areaFilteringFunction then spawnJobErr( jobsName, "No areaFilteringFunction" ) return end
     -- filters areas, use this to discard like underwater areas, too small areas
+
     -- currJob.hideFromPlayers
     -- NEVER spawn in front of players? will discard entire job if the final pos can be seen by players.
+
     if not currJob.posDerivingFunc then spawnJobErr( jobsName, "No posDerivingFunc" ) return end
     -- gets points inside the area, needs to return a table. if your thing spawns in the center of areas, return table with getcenter, random? random points.
+
     if not currJob.maxPositionsForScoring then spawnJobErr( jobsName, "No maxPositionsForScoring" ) return end
     -- how many points to find for the scorer? stops checking entire navmesh just to spawn one damn crate.
+
     if not currJob.posScoringFunction then spawnJobErr( jobsName, "No posScoringFunction" ) return end
     -- ran on every position returned true on filtering func, pos with best returned score is chosen!
+
     if not currJob.posScoringBudget then spawnJobErr( jobsName, "No posScoringBudget" ) return end
     -- how much budget to give the scoring function?
+
     if not currJob.onPosFoundFunction then spawnJobErr( jobsName, "No onPosFoundFunction" ) return end
     -- final function, use to place like crates.
 
@@ -193,10 +215,40 @@ hook.Add( "glee_sv_validgmthink", "glee_proceduralspawner", function( _, currSta
 
         end
 
-        local navAreas = navmesh.Find( currJob.spawningOrigin, spawnRadius, defaultStepSize, defaultStepSize )
+        local navAreas
+        local eFlagSpawning
+
+        if currJob.extraFlagsWhitelist then
+            local withFlag = GAMEMODE:GetAreasWithEFlag( currJob.extraFlagsWhitelist )
+            if #withFlag > 0 then
+                navAreas = {}
+                local radiusSqr = spawnRadius^2
+                for i, area in ipairs( withFlag ) do
+                    if i % 10 == 0 then coroutine.yield() end
+                    if not IsValid( area ) then continue end
+                    local areaCenter = area:GetCenter()
+                    if areaCenter:DistToSqr( currJob.spawningOrigin ) > radiusSqr then continue end
+                    table.insert( navAreas, area )
+
+                end
+                if #navAreas >= 1 then
+                    eFlagSpawning = true
+
+                end
+            else
+                failRoutine()
+                spawnJobInfo( jobsName, "Spawn job bailed, no areas that match job's .extraFlagsWhitelist" )
+
+            end
+        end
+
+        if not navAreas then
+            navAreas = navmesh.Find( currJob.spawningOrigin, spawnRadius, defaultStepSize, defaultStepSize )
+
+        end
 
         -- ok the spot we putting it is too small, maybe try placing next to a hunter?
-        if not navAreas or ( hideFromPlayers and ( #navAreas < defaultMinAreas ) ) then
+        if not navAreas or ( hideFromPlayers and ( #navAreas < defaultMinAreas ) and not eFlagSpawning ) then
             -- the job doesnt want us to do this!
             -- bail so the queue isnt held up!
             if currJob.originIsDefinitive then failRoutine() spawnJobInfo( jobsName, "Spawn job bailed, definitive origin was too small/invald." ) return end
@@ -210,7 +262,7 @@ hook.Add( "glee_sv_validgmthink", "glee_proceduralspawner", function( _, currSta
         end
 
         -- dont spawn off navmesh or in really small isolated rooms/rooftops
-        if not navAreas or ( hideFromPlayers and ( #navAreas < defaultMinAreas ) ) then failRoutine() spawnJobInfo( jobsName, "Spawn job bailed, origin was too small/invalid." ) return end
+        if not navAreas or ( hideFromPlayers and ( #navAreas < defaultMinAreas ) and not eFlagSpawning ) then failRoutine() spawnJobInfo( jobsName, "Spawn job bailed, origin was too small/invalid." ) return end
 
         local areaDistances = {}
         for _, area in ipairs( navAreas ) do
@@ -239,6 +291,12 @@ hook.Add( "glee_sv_validgmthink", "glee_proceduralspawner", function( _, currSta
         for _, area in ipairs( navAreas ) do
             coroutine.yield()
             if not IsValid( area ) then continue end
+            if currJob.attributeWhitelist and not area:HasAttributes( currJob.attributeWhitelist ) then continue end
+            if currJob.attributeBlacklist and area:HasAttributes( currJob.attributeBlacklist ) then continue end
+
+            if currJob.extraFlagsWhitelist and not GAMEMODE:HasExtraFlags( area, currJob.extraFlagsWhitelist ) then continue end
+            if currJob.extraFlagsBlacklist and GAMEMODE:HasExtraFlags( area, currJob.extraFlagsBlacklist ) then continue end
+
             if filteringFunc( currJob, area ) then
                 local toCheck = posDerivingFunc( currJob, area )
                 if not toCheck then continue end
@@ -268,13 +326,13 @@ hook.Add( "glee_sv_validgmthink", "glee_proceduralspawner", function( _, currSta
             coroutine.yield()
             local score = scoringFunc( currJob, toCheckPos, budget )
             if score then
-                scoredPositions[ math.Round( score, 2 ) ] = toCheckPos
+                scoredPositions[math.Round( score, 2 )] = toCheckPos
 
             end
         end
 
         local bestPositionKey = table.maxn( scoredPositions )
-        local bestPosition = scoredPositions[ bestPositionKey ]
+        local bestPosition = scoredPositions[bestPositionKey]
 
         if not bestPosition then failRoutine() spawnJobInfo( jobsName, "Spawn job bailed, found no best position." ) return end
 
@@ -290,16 +348,26 @@ hook.Add( "glee_sv_validgmthink", "glee_proceduralspawner", function( _, currSta
         coroutine.yield( "done" )
 
     end )
+
+    currJobName = jobsName
+
 end )
 
 hook.Add( "huntersglee_round_into_limbo", "glee_cleanupproceduralspawner_jobs", function()
-    proceduralSpawnerJobs = nil
-    proceduralSpawnerJobs = {}
+    table.Empty( proceduralSpawnerJobs )
 
 end )
 
 hook.Add( "PreCleanupMap", "glee_cleanupproceduralspawner_jobs", function()
-    proceduralSpawnerJobs = nil
-    proceduralSpawnerJobs = {}
+    table.Empty( proceduralSpawnerJobs )
 
 end )
+
+
+concommand.Add( "glee_test_printactivespawnjobs", function()
+    print( "Active spawn jobs:" )
+    for i, job in ipairs( proceduralSpawnerJobs ) do
+        print( i .. ": " .. job.jobsName )
+
+    end
+end, nil, "Prints active procedural spawn job names to console.", FCVAR_CHEAT )

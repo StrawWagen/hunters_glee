@@ -67,7 +67,13 @@ function ENT:Initialize()
         local phys = self:GetPhysicsObject()
         if IsValid( phys ) then
             phys:SetMass( 25 )
-            phys:Wake()
+            if not IsValid( self:GetParent() ) then
+                phys:Wake()
+
+            else -- weird ass bug
+                phys:EnableMotion( false )
+
+            end
 
             self:SetTrigger( true )
             self:UseTriggerBounds( true, self.TriggerBoundsNormal )
@@ -130,7 +136,7 @@ function ENT:DoScore( reciever )
     if reciever:Health() <= 0 then return end
 
     local parent = self:GetParent()
-    if IsValid( parent ) then return end
+    if IsValid( parent ) and parent:IsRagdoll() then return end
 
     local blockPickup = hook.Run( "glee_blockskullpickup", reciever, self )
     if blockPickup == true then return end
@@ -150,7 +156,7 @@ function ENT:DoScore( reciever )
 
     end
 
-    if not reciever.GivePlayerScore then SafeRemoveEntity( self ) return end
+    if not reciever.GivePlayerSkulls then SafeRemoveEntity( self ) return end
 
     reciever:GivePlayerSkulls( self:GetScore() )
     hook.Run( "glee_plypickedupskull", reciever, self )
@@ -177,22 +183,22 @@ function ENT:DoScore( reciever )
         reciever.glee_selfskullhinted = true
         reciever.glee_skullhinted = true
         huntersGlee_Announce( { reciever }, 10, 10, "My skull...\nWhy did I come back here?" )
-        GAMEMODE:GivePanic( purchaser, 80 )
+        GAMEMODE:GivePanic( reciever, 80 )
 
     elseif not reciever.glee_skullhinted and self:CanHintPly( reciever ) then
         reciever.glee_skullhinted = true
         huntersGlee_Announce( { reciever }, 10, 10, "You found a skull.\nSomeone must have died here..." )
-        GAMEMODE:GivePanic( purchaser, 40 )
+        GAMEMODE:GivePanic( reciever, 40 )
 
     elseif not reciever.glee_skullhinted then
         reciever.glee_skullhinted = true
         if self.skullSteamId then
             huntersGlee_Announce( { reciever }, 10, 10, "That's their skull..." )
-            GAMEMODE:GivePanic( purchaser, 60 )
+            GAMEMODE:GivePanic( reciever, 60 )
 
         else
             huntersGlee_Announce( { reciever }, 10, 10, "That's its skull..." )
-            GAMEMODE:GivePanic( purchaser, 50 )
+            GAMEMODE:GivePanic( reciever, 50 )
 
         end
     end
@@ -204,10 +210,12 @@ function ENT:Touch( touched )
 
     if self.nextPickup > CurTime() then return end
 
-    if not IsValid( self:GetParent() ) then
+    local parent = self:GetParent()
+
+    if not IsValid( parent ) then
         self:DoScore( touched )
 
-    elseif touched:IsPlayer() and touched.glee_skullhinted and not touched.glee_skullInBodyHint then
+    elseif parent:IsRagdoll() and touched:IsPlayer() and touched.glee_skullhinted and not touched.glee_skullInBodyHint then
         touched.glee_skullInBodyHint = true
         huntersGlee_Announce( { touched }, 11, 10, "A body...\nWith a skull...?" )
 
@@ -285,9 +293,16 @@ function ENT:OnTakeDamage( dmg )
         local pit = 120 + -( self.neckHealth / 4 ) + math.random( -5, 5 )
 
         if not isSkeleton then
+            local bldColor = 0
+            if parent.GetBloodColor then
+                bldColor = parent:GetBloodColor() or 0
+
+            end
+
             self:EmitSound( "physics/body/body_medium_break" .. math.random( 2, 4 ) .. ".wav", 70, pit )
             local blood = EffectData()
             blood:SetOrigin( self:GetPos() )
+            blood:SetColor( bldColor )
             util.Effect( "BloodImpact", blood )
 
         end
@@ -322,7 +337,7 @@ function ENT:PhysicsCollide( colData, _ )
 
     local volume = colData.Speed / 100
 
-    local sndPath = "physics/cardboard/cardboard_cup_impact_hard2.wav"
+    local sndPath = "physics/cardboard/cardboard_cup_impact_hard" .. math.random( 1, 3 ) .. ".wav"
     if self:GetIsTerminatorSkull() then
         sndPath = "physics/metal/metal_canister_impact_soft1.wav"
 
@@ -344,6 +359,12 @@ function ENT:PhysicsCollide( colData, _ )
 end
 
 local angle_zero = Angle( 0, 0, 0 )
+local noSkullModels = {
+    ["models/crow.mdl"] = true,
+    ["models/seagull.mdl"] = true,
+    ["models/pigeon.mdl"] = true,
+    ["models/hunter.mdl"] = true,
+}
 
 function glee_RagdollHasASkull( ragdoll )
     if ragdoll.glee_skulldecapitated then return end
@@ -356,11 +377,17 @@ function glee_RagdollHasASkull( ragdoll )
     local model = ragdoll:GetModel()
 
     if IsValid( ragdoll.glee_skullpickup ) then return false end
+
+    if noSkullModels[model] then ragdoll.glee_skulldecapitated = true return end
+
     if string.find( model, "zombie_soldier" ) then ragdoll.glee_skulldecapitated = true return end
     if string.find( model, "headcrab" ) then ragdoll.glee_skulldecapitated = true return end
+    if string.find( model, "antlion" ) then ragdoll.glee_skulldecapitated = true return end
+    if string.find( model, "vortigaunt" ) then ragdoll.glee_skulldecapitated = true return end
 
     local ragdollsSkull
     local isSkeleton
+    local isMetallic
 
     for boneIndex = 0, ragdoll:GetBoneCount() - 1 do
         local name = ragdoll:GetBoneName( boneIndex )
@@ -381,6 +408,7 @@ function glee_RagdollHasASkull( ragdoll )
 
     ragdoll.glee_skullboneindex = ragdollsSkull
     ragdoll.glee_skullisskeleton = isSkeleton
+    ragdoll.glee_skullismetallic = isMetallic
     return true, ragdollsSkull, isSkeleton
 
 end
@@ -473,7 +501,8 @@ end
 if not CLIENT then return end
 
 function ENT:Draw()
-    if IsValid( self:GetParent() ) then return end
+    local parent = self:GetParent()
+    if IsValid( parent ) and parent:IsRagdoll() then return end
     self:DrawModel()
 
 end

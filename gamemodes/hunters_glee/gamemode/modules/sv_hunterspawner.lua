@@ -34,29 +34,18 @@ GAMEMODE.RegisteredSpawnSets = GAMEMODE.RegisteredSpawnSets or {}
 
 local minute = 60
 
-local setDefaults = {
-    difficultyPerMin = { 100 / 10, 150 / 10 }, -- 100-150% diff at 10 mins
-    waveInterval = { minute, minute * 1.6 },
-    diffBumpWhenWaveKilled = { 10, 20 },
-    startingBudget = 20,
-    spawnCountPerDifficulty = { 0.08, 0.1 },
-    startingSpawnCount = { 1.8, 2 },
-    maxSpawnCount = 10,
-    maxSpawnDist = { 4500, 6500 },
-    minSpawnDist = 500, -- if you spawn closer than this, it feels unfair
-    roundEndSound = "53937_meutecee_trumpethit07.wav",
-    roundStartSound = "", -- no sound for glee
-    genericSpawnerRate = 1,
-}
+-- so the default-defining folder is easier to find
+local setDefaults = include( "spawnset/sv_spawnsetdefaults.lua" )
 
 local spawnDefaults = {
-    minCount = -1, -- makes it ignore these
-    maxCount = -1, -- respects maxSpawnCount tho
+    minCount = -1, -- if these aren't defined, sets to -1 which makes them ignored
+    maxCount = -1, -- just this is ignored, it still respects maxSpawnCount tho
 }
 
-local spawnIgnored = { -- these don't exist to be parsed
+local spawnIgnored = { -- dont parse these, they run on the ents during spawning
     preSpawnedFunc = true,
     postSpawnedFunc = true,
+    isBoss = true, -- boolean, handled by sv_bosshandler
 }
 
 local hardMinSpawnDist = 500 -- absolute minimum spawn distance
@@ -94,15 +83,21 @@ local function asParsed( toParse, name, defaultsTbl )
 
     end
 
+    -- number or parsed default
     if isnumber( toParse ) then return toParse * finalMul end
+
+    -- accepts functions
     if isfunction( toParse ) then return toParse end
 
+    -- allow strings if we expect them
     if isstring( default ) and isstring( toParse ) then
         return toParse
 
     end
 
+    -- 1 member table
     if #toParse <= 1 and isnumber( toParse[1] ) then return toParse[1] * finalMul end
+    -- 2 member tables, picked num will be between them, different each round
     if #toParse <= 2 and isnumber( toParse[1] ) and isnumber( toParse[2] ) then return math.Rand( toParse[1], toParse[2] ) * finalMul end
 
 end
@@ -146,11 +141,27 @@ function GM:IsValidSpawnSet( spawnSet )
         end
         if not isstring( spawn.prettyName ) then yapErr( spawnSet, ".spawns " .. name .. " invalid .prettyname" ) return end
         if not isstring( spawn.class ) then yapErr( spawnSet, ".spawns " .. name .. " invalid .class" ) return end
-        if not isstring( spawn.countClass ) then yapErr( spawnSet, ".spawns " .. name .. " invalid .countClass" ) return end
+
+        local minCount = asParsed( spawn.minCount, "minCount", spawnDefaults )
+        if not minCount then yapErr( spawnSet, ".spawns " .. name .. " invalid .minCount" ) return end
+        local maxCount = asParsed( spawn.maxCount, "maxCount", spawnDefaults )
+        if not maxCount then yapErr( spawnSet, ".spawns " .. name .. " invalid .maxCount" ) return end
+
+        local thisEntryHasMinMax = maxCount > -1 or minCount > -1
+        local countClass = spawn.countClass
+        -- if min or max count, .countClass needs to be a string
+        if thisEntryHasMinMax and not isstring( countClass ) then
+            yapErr( spawnSet, ".spawns " .. name .. " invalid .countClass" )
+            return
+
+        -- else, .countClass needs to be a string or nil
+        elseif not isstring( countClass ) and countClass ~= nil then
+            yapErr( spawnSet, ".spawns " .. name .. " invalid .countClass" )
+            return
+
+        end
 
         if not asParsed( spawn.difficultyCost, "difficultyCost", spawnDefaults ) then yapErr( spawnSet, ".spawns " .. name .. " invalid .difficultyCost" ) return end
-        if not asParsed( spawn.minCount, "minCount", spawnDefaults ) then yapErr( spawnSet, ".spawns " .. name .. " invalid .minCount" ) return end
-        if not asParsed( spawn.maxCount, "maxCount", spawnDefaults ) then yapErr( spawnSet, ".spawns " .. name .. " invalid .maxCount" ) return end
 
     end
 
@@ -164,7 +175,7 @@ local function parse( tbl, name, defaultsTbl, spawnSet )
 
     if isfunction( parsed ) then
         -- it accepts functions!!!!!!
-        --[[ eg,
+        --[[eg,
             .maxCount = function( spawnSet )
                 return spawnset.maxSpawnCount
             end,
@@ -212,6 +223,7 @@ function GM:ParsedSpawnSet( asRegistered )
     for _, currSpawn in ipairs( spawnSet.spawns ) do
         local spawnParsed = {}
         for name, _ in pairs( currSpawn ) do -- parse all existing spawnset variables
+            if spawnIgnored[name] then spawnParsed[name] = true continue end
             parse( currSpawn, name, spawnDefaults, spawnSet )
             spawnParsed[name] = true
 
@@ -254,6 +266,8 @@ function GM:SetSpawnSet( setName )
 
     local spawnSet = self:ParsedSpawnSet( asRegistered )
 
+    self:HandleBossDetection( spawnSet )
+
     self.CurrSpawnSetName = setName
     self.CurrSpawnSet = spawnSet
 
@@ -261,11 +275,11 @@ function GM:SetSpawnSet( setName )
     SetGlobalString( "GLEE_SpawnSetPrettyName", spawnSet.prettyName )
 
     if oldSetName ~= setName then
-        hook.Run( "glee_post_set_spawnset", setName, spawnSet )
+        hook.Run( "glee_post_set_spawnset", setName, spawnSet, oldSetName )
         print( "GLEE: Mode set to, " .. setName )
 
     else
-        hook.Run( "glee_post_refresh_spawnset", setName, spawnSet )
+        hook.Run( "glee_post_refresh_spawnset", setName, spawnSet, oldSetName )
 
     end
 end
@@ -307,12 +321,15 @@ function GM:GetPrettyNameOfSpawnSet( setName )
 
 end
 
+function GM:NewSpawnWaveNow()
+    self.nextSpawnWave = 0
+
+end
+
 local nextSpawnCheck = 0
 
-GAMEMODE.deadWaveDiffBump = 0 -- dont reset this, so cheesable maps get harder and harder 
-
 local function resetWave()
-    GAMEMODE.nextSpawnWave = 0
+    GAMEMODE:NewSpawnWaveNow()
     GAMEMODE.waveWasAlive = nil
     GAMEMODE.currentSpawnWave = nil
     GAMEMODE.currentSpawning = nil
@@ -334,7 +351,6 @@ local function aliveHuntersCount()
         if hunter:Health() <= 0 then continue end
 
         -- only count hunters from the current spawnset
-        -- TODO: Make this better if its way too laggy
         if hunter.glee_SpawnsetThatMadeMe ~= currentSpawnsetsName then continue end
 
         aliveTermsCount = aliveTermsCount + 1
@@ -343,6 +359,54 @@ local function aliveHuntersCount()
     return aliveTermsCount
 
 end
+
+
+function GM:BumpSessionDifficulty( amount, reason )
+    self.lastSessionDiffBumpReason = reason
+    self.sessionDiffBump = math.max( self.sessionDiffBump + amount, 0 )
+
+end
+function GM:BumpRoundDifficulty( amount, reason )
+    self.lastRoundDiffBumpReason = reason
+    self.roundDiffBump = self.roundDiffBump + amount
+
+end
+
+
+hook.Add( "huntersglee_everyone_escaped", "glee_bumpdiff_oneveryoneescaped", function()
+    local _, spawnSet = GAMEMODE:GetSpawnSet()
+    local diffBump
+    if GAMEMODE.roundExtraData.roundDuration < GAMEMODE.IdealEscapingTime then
+        diffBump = spawnSet.diffBumpWhenWaveKilled * 4 -- looks like we gotta make it harder
+
+    else
+        diffBump = spawnSet.diffBumpWhenWaveKilled
+
+    end
+    GAMEMODE:BumpSessionDifficulty( diffBump, "everyone_escaped" ) -- make the session harder, permanently
+
+end )
+
+hook.Add( "huntersglee_someone_escaped", "glee_bumpdiff_onsomeoneescaped", function()
+    local _, spawnSet = GAMEMODE:GetSpawnSet()
+    local diffBump
+    if GAMEMODE.roundExtraData.roundDuration < GAMEMODE.IdealEscapingTime then
+        diffBump = spawnSet.diffBumpWhenWaveKilled * 2
+
+    else
+        diffBump = spawnSet.diffBumpWhenWaveKilled * 0.5
+
+    end
+    GAMEMODE:BumpSessionDifficulty( diffBump, "someone_escaped" ) -- make the session a bit harder
+
+end )
+
+hook.Add( "huntersglee_no_one_escaped", "glee_chompdiff_onnoescape", function()
+    local _, spawnSet = GAMEMODE:GetSpawnSet()
+    local diffBump = -spawnSet.diffBumpWhenWaveKilled * 3
+    GAMEMODE:BumpSessionDifficulty( diffBump, "no_one_escaped" ) -- too hard, go easy on em
+
+end )
 
 
 local nextHunterSpawn = 0
@@ -354,14 +418,27 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
     if nextSpawnCheck > cur then return end
     nextSpawnCheck = cur + 0.2
 
-    -- :eyes:
-    if terminator_Extras.empty then -- homeless
-        if GAMEMODE:GetSpawnSet() == "explorers_glee" then return end
+    if player.GetCount() >= 1 then
+        local allScorned = true
+        for _, ply in player.Iterator() do
+            if not ply.homeless_Scorned then
+                allScorned = false
+                break
 
-        GAMEMODE:SetSpawnSet( "explorers_glee" )
-        return
+            end
+        end
+        local empty = terminator_Extras.empty or allScorned
+        -- :eyes:
+        if empty then -- homeless
+            if GAMEMODE:GetSpawnSet() == "explorers_glee" then return end
 
+            GAMEMODE:SetSpawnSet( "explorers_glee" )
+            return
+
+        end
     end
+
+    if GAMEMODE.roundExtraData.bossKilled then return end -- round is OVER!
 
     local _, spawnSet = GAMEMODE:GetSpawnSet()
     local aliveCount = aliveHuntersCount()
@@ -369,9 +446,11 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
     -- whether through all the bots being killed, or all the bots despawning!
     if aliveCount <= 1 and GAMEMODE.waveWasAlive and aliveCount < GAMEMODE.waveWasAlive then
         GAMEMODE.waveWasAlive = nil
-        GAMEMODE.nextSpawnWave = 0
-        debugPrint( "bump", GAMEMODE.deadWaveDiffBump, spawnSet.diffBumpWhenWaveKilled )
-        GAMEMODE.deadWaveDiffBump = GAMEMODE.deadWaveDiffBump + spawnSet.diffBumpWhenWaveKilled
+        GAMEMODE:NewSpawnWaveNow()
+        debugPrint( "bump", GAMEMODE.sessionDiffBump, spawnSet.diffBumpWhenWaveKilled )
+        GAMEMODE:BumpSessionDifficulty( spawnSet.diffBumpWhenWaveKilled, "wave_cleared" )
+
+        hook.Run( "huntersglee_wave_wiped" )
 
     end
 
@@ -388,7 +467,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
 
     local diffPerMin = spawnSet.difficultyPerMin
     local difficulty = diffPerMin * minutes
-    difficulty = difficulty + GAMEMODE.deadWaveDiffBump
+    difficulty = difficulty + GAMEMODE.sessionDiffBump + GAMEMODE.roundDiffBump
 
     local countWanted
     local overrideCount = overrideCountVar:GetInt()
@@ -413,6 +492,8 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
     end
 
     if aliveCount < countWanted then
+        GAMEMODE.currWaveDifficulty = difficulty
+
         local budget = difficulty + spawnSet.startingBudget
         local classCounts = {}
         local pickedSpawns = {}
@@ -455,12 +536,16 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
 
                 end
 
+                -- is this within the budget?
                 local good = currSpawn.difficultyCost <= budget
+
+                -- does it have a minCount we should respect?
                 if currSpawn.minCount > -1 and not good then -- minCount bypasses budget
                     good = count < currSpawn.minCount
                     freebie = true
 
                 end
+                -- does it have a personal maxCount?
                 if currSpawn.maxCount > -1 then
                     good = good and count < currSpawn.maxCount
 
@@ -483,6 +568,11 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
 
         end
         if #pickedSpawns >= 1 then
+            GAMEMODE.waveExtraData = {
+                waveSize = #pickedSpawns,
+                realKillCount = 0, -- how many of the spawned bots actually got killed by players
+            }
+
             if not GAMEMODE.currentSpawnWave then
                 GAMEMODE.currentSpawnWave = {}
                 hook.Add( "glee_sv_validgmthink_active", "glee_spawnawave", function() GAMEMODE:SpawnWaveSpawnIn() end )
@@ -525,7 +615,25 @@ function GM:SpawnWaveSpawnIn()
     if nextHunterSpawn > cur then return end
 
     if currSpawn.spawnType == "hunter" then
+
+        local idealTickrate = 1 / FrameTime()
+        local currTickrate = 1 / engine.AbsoluteFrameTime()
+        local threshold = math.max( 2.5, idealTickrate * 0.65 )
+        local lagging = currTickrate <= threshold
+        if lagging then
+            debugPrint( "not spawning hunter, laggy, tickrate is " .. currTickrate .. " threshold is " .. threshold )
+            nextHunterSpawn = cur + 1
+
+            -- bump the difficulty up, unlock the harder enemies sooner!
+            local _, spawnSet = self:GetSpawnSet()
+            GAMEMODE:BumpRoundDifficulty( spawnSet.diffBumpWhenWaveKilled / 50, "lag_bump" )
+
+            return
+
+        end
+
         local hunter = self:SpawnHunter( currSpawn.class, currSpawn )
+
         if IsValid( hunter ) then
             debugPrint( "spawned", hunter, currSpawn.name, currSpawn.prettyName )
             if currSpawn.postSpawnedFuncs then
@@ -729,12 +837,14 @@ hook.Add( "PlayerDeath", "glee_fodderenemy_catchkrangled", function( _, inflic, 
 
 end )
 
-hook.Add( "OnNPCKilled", "glee_fodderenemy_goodkilledhunters", function( npc, attacker )
+hook.Add( "OnNPCKilled", "glee_goodkilledhunters", function( npc, attacker )
     if not attacker:IsPlayer() then return end -- only mark spawns as great if the hunter died to a PLAYER!
     if not npc:GetNW2Bool( "glee_IsHunter" ) then return end
 
     if not npc.DistToEnemy then return end
     if npc.DistToEnemy > 750 then return end -- don't reward boring kills where the bot was far away
+
+    GAMEMODE.waveExtraData.realKillCount = ( GAMEMODE.waveExtraData.realKillCount or 0 ) + 1
 
     if debuggingVar:GetBool() and IsValid( npc.glee_SpawnArea ) then
         debugoverlay.Line( npc:GetPos(), npc.glee_SpawnArea:GetCenter(), 10, Color( 0, 255, 0 ), true )
@@ -770,12 +880,15 @@ function GM:SpawnHunter( class, currSpawn )
     hunter.glee_IsAHunter = true
     hunter.glee_SpawnArea = spawnArea -- so we can prefer to spawn enemies from this area, if this bot ends up killing someone!
     hunter.glee_SpawnsetThatMadeMe = self.CurrSpawnSetName
+    hunter.glee_IsBoss = currSpawn.isBoss
 
     print( hunter ) -- i like this print, you cannot make me remove it
     if debuggingVar:GetBool() then
         local nearestPly = self:nearestAlivePlayer( spawnPos )
-        debugoverlay.Line( spawnPos, nearestPly:GetShootPos() + nearestPly:GetAimVector() * 50, 10, color_white, true )
+        if IsValid( nearestPly ) then
+            debugoverlay.Line( spawnPos, nearestPly:GetShootPos() + nearestPly:GetAimVector() * 50, 10, color_white, true )
 
+        end
     end
 
     manageIfStale( hunter )
@@ -1040,7 +1153,7 @@ function GM:getValidHunterPos()
             fails = 0
             spawnSet.dynamicTooCloseFailCounts = -2
             if justSpawnSomething then
-                GAMEMODE.deadWaveDiffBump = GAMEMODE.deadWaveDiffBump + spawnSet.diffBumpWhenWaveKilled / 4 -- blast difficulty up
+                GAMEMODE:BumpSessionDifficulty( spawnSet.diffBumpWhenWaveKilled / 4, "just_spawn_something" ) -- blast difficulty up
 
             end
 
@@ -1065,7 +1178,7 @@ function GM:getValidHunterPos()
                 table.Shuffle( potentials )
                 for _, adjArea in ipairs( potentials ) do
                     if adjArea:GetSizeX() <= 25 or adjArea:GetSizeY() <= 25 then continue end -- too small
-                    if adjArea:IsVisible( nearestPlyPos ) then continue end -- dont regress
+                    if nearestPlyPos and adjArea:IsVisible( nearestPlyPos ) then continue end -- dont regress
                     spawnSet.lastGoodSpawnArea = adjArea
                     spawnSet.lastGoodSpawnAreaWeight = math.random( 5, 15 )
                     break
@@ -1186,3 +1299,12 @@ end )
 -- SPAWNSET TEMPLATE IN
 -- lua/glee_spawnsets/hunters_glee.lua
 -----------------------------------------
+
+
+concommand.Add( "glee_printcurrent_difficulty", function( caller )
+    if IsValid( caller ) and not caller:IsAdmin() then return end
+    print( "Session diff:", GAMEMODE.currWaveDifficulty )
+    print( "Round diff bump:", GAMEMODE.roundDiffBump, "With last reason:", GAMEMODE.lastRoundDiffBumpReason )
+    print( "Persistient session diff bump:", GAMEMODE.sessionDiffBump, "With last reason:", GAMEMODE.lastSessionDiffBumpReason )
+
+end )

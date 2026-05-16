@@ -216,7 +216,7 @@ hook.Add( "EntityTakeDamage", "nail_break_when_nailed_damaged", function( target
             end
         else
             if table.Count( target.huntersglee_breakablenails ) > 0 then
-                target.huntersglee_breakablenails[ nailsKey ] = nil
+                target.huntersglee_breakablenails[nailsKey] = nil
 
             else
                 target.huntersglee_breakablenails = nil

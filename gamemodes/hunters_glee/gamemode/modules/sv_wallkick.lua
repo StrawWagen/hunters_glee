@@ -126,10 +126,10 @@ hook.Add( "KeyPress", "WallKickKeyPress", function( ply, key )
                     
                     ply:SetVelocity( totalVel )
                     
-                    local footstep = footstepSounds[ math.random( 1, #footstepSounds ) ]
+                    local footstep = footstepSounds[math.random( 1, #footstepSounds )]
                     ply:EmitSound( footstep, 100, 100, 0.25 )
                     
-                    local snd = softSounds[ math.random( 1, #softSounds ) ]
+                    local snd = softSounds[math.random( 1, #softSounds )]
                     ply:EmitSound( snd )
 
                     ply.nextWallKick = CurTime() + 0.25

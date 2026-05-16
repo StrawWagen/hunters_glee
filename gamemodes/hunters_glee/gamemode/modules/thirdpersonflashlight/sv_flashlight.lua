@@ -49,7 +49,7 @@ local function TPF_SetupProjectedTexture( ply )
 	if SERVER then
 		local theLight = ents.Create( "env_projectedtexture" )
 		if not IsValid( theLight ) then return end
-		thrPFlash[ ply ] = theLight
+		thrPFlash[ply] = theLight
 
 		local attachmentId = ply:LookupAttachment( "eyes" )
 		local theFlashlightPos = ply:GetShootPos()
@@ -96,10 +96,10 @@ local function TPF_SetupProjectedTexture( ply )
 end
 
 local function TPF_RemoveProjectedTexture( ply )
-	local theirFlash = thrPFlash[ ply ] or ply.glee_Thirdperson_Flashlight
+	local theirFlash = thrPFlash[ply] or ply.glee_Thirdperson_Flashlight
 	if IsValid( theirFlash ) then
 		SafeRemoveEntity( theirFlash )
-		thrPFlash[ ply ] = nil
+		thrPFlash[ply] = nil
 		if not IsValid( ply ) then return end
 
 		ply.glee_Thirdperson_Flashlight = nil
@@ -130,7 +130,7 @@ end )
 hook.Add( "PlayerSwitchFlashlight", "TPF_HookFlashlightEnabled", function( ply, _ )
 	if not ply:Alive() then return end
 
-	if not IsValid( thrPFlash[ ply ] ) then
+	if not IsValid( thrPFlash[ply] ) then
 		local hookRes = hook.Run( "glee_PlayerSwitchFlashlight", ply, true )
 		if hookRes == false then return false end
 
@@ -148,7 +148,7 @@ hook.Add( "PlayerSwitchFlashlight", "TPF_HookFlashlightEnabled", function( ply, 
 end )
 
 local function checkFlashlight( ply )
-	local currFlash = thrPFlash[ ply ]
+	local currFlash = thrPFlash[ply]
 	if not IsValid( currFlash ) then return end
 
 end
@@ -163,7 +163,7 @@ end )
 local meta = FindMetaTable( "Player" )
 
 function meta:Glee_FlashlightIsOn()
-	return IsValid( thrPFlash[ self ] )
+	return IsValid( thrPFlash[self] )
 
 end
 

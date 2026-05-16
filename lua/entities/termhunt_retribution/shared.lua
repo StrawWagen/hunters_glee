@@ -92,8 +92,19 @@ function ENT:UpdateGivenScore()
     local slightRefund = slightSize * ( baseCost / 100 )
     slightRefund = math.Clamp( slightRefund, -baseCost * 1.5, baseCost )
 
+    local currBaseCost = baseCost
+
+    -- if not a huge slight, and target is in rescue heli, 1k base cost
+    if slightSize <= 50 then
+        local vehicle = currTarget:GetVehicle()
+        if IsValid( vehicle ) and vehicle.isARescueHeliSeat then
+            currBaseCost = 2000
+
+        end
+    end
+
     -- final cost
-    local cost = -baseCost + slightRefund
+    local cost = -currBaseCost + slightRefund
 
     self:SetGivenScore( cost )
 
@@ -195,15 +206,20 @@ function GAMEMODE:SurfaceHomicidalGlee( dancer, surfacer )
 
     local validSurfacer = IsValid( surfacer )
     local oldSlight = 0
-    if validSurfacer then
-        GAMEMODE:HasSlighted( dancer, surfacer )
+    if validSurfacer and surfacer:IsPlayer() then
+        oldSlight = GAMEMODE:HasSlighted( dancer, surfacer )
 
     end
 
     local reason = ""
     local reasonGlobal = ""
     if validSurfacer then
-        if oldSlight >= 75 then
+        if surfacer:GetClass() == "npc_helicopter" then
+            reason = "The idea of stopping everyone from escaping...\nit just fills you with GUILTY HOMICIDAL GLEE!"
+            reasonGlobal = dancer:Nick() .. " is overcome with Guilty Homicidal Glee."
+            dancer.glee_evilHomicidalGlee = true
+
+        elseif oldSlight >= 75 then
             reason = "You can't help but dance as the GUILTY HOMICIDAL GLEE\nof killing " .. surfacer:Nick() .. "\nflashes through your mind..."
             reasonGlobal = dancer:Nick() .. " is overcome by their Guilty Homicidal Glee."
             dancer.glee_evilHomicidalGlee = true
@@ -215,12 +231,15 @@ function GAMEMODE:SurfaceHomicidalGlee( dancer, surfacer )
 
         end
 
-        if GAMEMODE:IsInnocent( dancer ) then
+        if GAMEMODE:IsInnocent( dancer ) and surfacer:IsPlayer() then
             GAMEMODE:AddSlight( surfacer, dancer, 15, "forced to dance" )
 
         end
 
-        GAMEMODE:AddSlight( dancer, surfacer, -25, "used homicidal glee, decay" ) -- slowly remove slight
+        if surfacer:IsPlayer() then
+            GAMEMODE:AddSlight( dancer, surfacer, -25, "used homicidal glee, decay" ) -- slowly remove slight
+
+        end
 
     else
         reason = "Killing all those innocent people has left you boiling with GUILTY HOMICIDAL GLEE...\nYou can't help but let it out!"
@@ -228,7 +247,6 @@ function GAMEMODE:SurfaceHomicidalGlee( dancer, surfacer )
         dancer.glee_evilHomicidalGlee = true
 
     end
-
 
     huntersGlee_Announce( { dancer }, 10, 8, reason )
     huntersGlee_Announce( plysToAlert, 5, 6, reasonGlobal )

@@ -47,7 +47,7 @@ local function handleSleep( ent, curTime ) -- think func
             needsRemove = true
 
         -- if it landed on one of these, and there's no navarea nearby, remove it
-        elseif tr.HitWorld and noNavTextures[ tr.HitTexture ] and not IsValid( navmesh.GetNavArea( ent:GetPos() ) ) then
+        elseif tr.HitWorld and noNavTextures[tr.HitTexture] and not IsValid( navmesh.GetNavArea( ent:GetPos() ) ) then
             needsRemove = true
 
         end
@@ -98,17 +98,17 @@ local nextBreak = 0
 hook.Add( "Think", "glee_dynamicfreezing_laggingthink", function() -- deal damage to random sleepers if the server is lagging
     local curTime = CurTime()
     if nextBreak > curTime then return end
-    nextBreak = curTime + 1
+    nextBreak = curTime + 0.1
 
     local lagScale = physenv.GetLastSimulationTime() * 1000
 
-    local lagging = lagScale > 100
+    local lagging = lagScale > math.random( 50, 100 )
     if not lagging then return end
 
-    local randomFrozenEnt = toFreeze[ math.random( 1, #toFreeze ) ]
+    local randomFrozenEnt = toFreeze[math.random( 1, #toFreeze )]
     if not IsValid( randomFrozenEnt ) then return end
 
-    damaged.glee_smartsleepingdontwake = true
+    randomFrozenEnt.glee_smartsleepingdontwake = true
 
     local dmg = DamageInfo()
     dmg:SetAttacker( game.GetWorld() )
@@ -117,11 +117,11 @@ hook.Add( "Think", "glee_dynamicfreezing_laggingthink", function() -- deal damag
     dmg:SetDamageType( DMG_CRUSH )
     randomFrozenEnt:TakeDamageInfo( dmg )
 
-    damaged.glee_smartsleepingdontwake = nil
+    randomFrozenEnt.glee_smartsleepingdontwake = nil
 
 end )
 
-terminator_Extras.SmartSleepEntity = function( ent, interval )
+function terminator_Extras.SmartSleepEntity( ent, interval )
     interval = interval or 10
     table.insert( toFreeze, ent )
     ent.glee_issmartsleeping = true
@@ -141,6 +141,13 @@ local function unchainSleeper( sleeper ) -- wakes stuff up
     sleeper.glee_nextsmartsleepcheck = CurTime() + sleeper.glee_smartsleepinterval * 2
     obj:EnableMotion( true )
     --debugoverlay.Cross( sleeper:GetPos(), 20, 5, color_white, true )
+
+end
+
+local function unchainSleeperLazy( sleeper )
+    local lastSimTime = physenv.GetLastSimulationTime() * 1000
+    if lastSimTime > math.Rand( 1, 2 ) then return end
+    unchainSleeper( sleeper )
 
 end
 
@@ -164,7 +171,17 @@ hook.Add( "PlayerUse", "glee_unchainsleepers", function( _, used )
 
 end )
 
-local maxDamaged = 8
+hook.Add( "RappelDrag", "glee_unchainsleepers", function( dragged )
+    unchainSleeper( dragged )
+
+end )
+
+hook.Add( "glee_OnEscapeeWindPushed", "glee_unchainsleepers", function( pushed )
+    unchainSleeperLazy( pushed )
+
+end )
+
+local maxDamaged = 10
 local damagedCount = 0
 local name = "glee_sleeper_blastdamageratelimit"
 
@@ -185,7 +202,7 @@ hook.Add( "EntityTakeDamage", "glee_unchainsleepers", function( damaged, info )
         end )
         return
     end
-    unchainSleeper( damaged )
+    unchainSleeperLazy( damaged )
 
 end )
 
@@ -214,7 +231,7 @@ local function setupOnCreateHook()
         if not IsValid( ent ) then return end
         if ent.glee_issmartsleeping then return end
         local class = ent:GetClass()
-        if ent:IsWeapon() or fastSleepClasses[ class ] then
+        if ent:IsWeapon() or fastSleepClasses[class] then
             wepGibCount = wepGibCount + 1
             local sleepTime = 30
             -- map with npcs dropping weapons?

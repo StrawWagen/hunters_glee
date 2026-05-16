@@ -13,6 +13,7 @@ local terminatorSpawnSet = {
     maxSpawnDist = "default",
     roundEndSound = "default",
     roundStartSound = "default",
+    roundEarlyStartSound = "default",
     chanceToBeVotable = 15,
     spawns = {
         {

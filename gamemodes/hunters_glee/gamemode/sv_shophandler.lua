@@ -36,6 +36,9 @@ function GM:purchaseItem( ply, toPurchase )
 
         end
 
+        local cost = self:shopItemCost( toPurchase, ply )
+        local skullCost = self:shopItemSkullCost( toPurchase, ply )
+
         local dat = self.shopItems[toPurchase]
 
         local noErrors, _ = ProtectedCall( function( dat2, ply2 )
@@ -55,28 +58,17 @@ function GM:purchaseItem( ply, toPurchase )
         if theCooldown and theCooldown > 0 then
             self:doShopCooldown( ply, toPurchase, theCooldown )
 
-            net.Start( "glee_sendshopcooldowntoplayer" )
-                local cooldownClamped = math.Clamp( theCooldown, 0, 2147483645 ) -- if cooldown == 2147483645 then assume infinite, and only allow one purchase per round.
-                net.WriteFloat( cooldownClamped )
-                net.WriteString( toPurchase )
-            net.Send( ply )
-
         end
-
-        local cost = self:shopItemCost( toPurchase, ply )
 
         -- cool purchase sound, kaching!
         self:sendPurchaseConfirm( ply, cost, toPurchase )
 
         if not dat.fakeCost then
             ply:GivePlayerScore( -cost )
+            if skullCost then
+                ply:GivePlayerSkulls( -skullCost )
 
-        end
-
-        local skullCost = self:shopItemSkullCost( toPurchase, ply )
-        if skullCost then
-            ply:GivePlayerSkulls( -skullCost )
-
+            end
         end
 
         -- increment purchase count.. AFTER the cost is calculated...
@@ -155,4 +147,8 @@ hook.Add( "PlayerDeath", "glee_closeshopwhendead", function( died )
     net.Start( "glee_closetheshop" )
     net.Send( died )
 
+end )
+
+net.Receive( "glee_loadingtheshop", function( _, ply )
+    hook.Run( "glee_loadingtheshop", ply ) -- Starting to open the shop. For living players, it'll be a few seconds longer until it fully opens.
 end )

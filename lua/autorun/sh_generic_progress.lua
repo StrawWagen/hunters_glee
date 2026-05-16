@@ -81,24 +81,30 @@ if CLIENT then
 
     include( "autorun/client/cl_gleescalingfunc.lua" )
 
-    local fontData = {
-        font = "Arial",
-        extended = false,
-        size = glee_sizeScaled( nil, 30 ),
-        weight = 500,
-        blursize = 0,
-        scanlines = 0,
-        antialias = true,
-        underline = false,
-        italic = false,
-        strikeout = false,
-        symbol = false,
-        rotary = false,
-        shadow = true,
-        additive = false,
-        outline = false,
-    }
-    surface.CreateFont( "huntersglee_barinfo", fontData )
+    local function defineFont()
+        surface.CreateFont( "huntersglee_barinfo", {
+            font = GAMEMODE and GAMEMODE.GLEE_FONT or "Arial",
+            extended = false,
+            size = glee_sizeScaled( nil, 30 ),
+            weight = 500,
+            blursize = 0,
+            scanlines = 0,
+            antialias = true,
+            underline = false,
+            italic = false,
+            strikeout = false,
+            symbol = false,
+            rotary = false,
+            shadow = true,
+            additive = false,
+            outline = false,
+        } )
+    end
+    defineFont()
+    hook.Add( "glee_rebuildfonts", "glee_rebuild_barinfo_font", function()
+        defineFont()
+
+    end )
 
     local barColor = Color( 255, 255, 255, 255 )
     local barBackground = Color( 50, 50, 50, 100 )

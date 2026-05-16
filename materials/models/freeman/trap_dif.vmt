@@ -3,7 +3,7 @@
 	"$basetexture" "models/freeman/beartrap_diffuse"	
                 "$bumpmap" "models/freeman/beartrap_specular"
 "$normalmapalphaenvmapmask" "1"
-"$envmaptint" "[ 0.1 0.1 0.2 ]"
+"$envmaptint" "[0.1 0.1 0.2]"
 
 "$phong"     "1"
 "$phongexponent"  "30"

@@ -3,7 +3,7 @@ AddCSLuaFile( "cl_init.lua" )
 include( "shared.lua" )
 
 
-local MEMORY_BREAKABLE = 4
+local MEMORY_BREAKABLE = terminator_Extras.botMemoryTypes.MEMORY_BREAKABLE
 
 function ENT:Initialize()
     self:SetModel( "models/stiffy360/beartrap.mdl" )
@@ -48,7 +48,7 @@ function ENT:Snap( snapped )
     timer.Simple( 0, function()
         if not IsValid( self ) then return end
         self:SetSequence( "ClosedIdle" )
-        self:EmitSound( "beartrap.wav", 90 )
+        self:EmitSound( "hunters_glee/weapons/beartrap.wav", 90 )
         self:EmitSound( "physics/metal/metal_box_strain1.wav", 65, 200 )
 
     end )
@@ -120,6 +120,11 @@ function ENT:Touch( toucher )
 
             self:Hurt( toucherInt, attacker )
             self:Snap( toucherInt )
+
+            if GAMEMODE.GivePanic then
+                GAMEMODE:GivePanic( toucherInt, 50 )
+
+            end
 
             for _ = 1, 5 do
                 DoBleed( toucherInt )

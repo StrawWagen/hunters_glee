@@ -20,6 +20,10 @@ ENT.noPurchaseReason_OffNavmesh = "The hunters can't path to that spot."
 ENT.noPurchaseReason_TooPoor = "You're too poor."
 ENT.noPurchaseReason_InDebt = "You're in debt."
 
+ENT.CanPlaceColor = Color( 0, 255, 0, 255 )
+ENT.CannotPlaceColor = Color( 255, 0, 0, 255 )
+ENT.OnlyNetworkToOwner = true
+
 local beaconVecOffset = Vector( 6.94, -8.67, 25.83 )
 local beaconAngOffset = Angle( 0, -90, 0 )
 
@@ -95,7 +99,7 @@ ENT.PosOffset = Vector( 0, 0, 10 )
 if CLIENT then
     -- score gained on place
     local fontData = {
-        font = "Arial",
+        font = GAMEMODE.GLEE_FONT or "Arial",
         extended = false,
         size = glee_sizeScaled( nil, 40 ),
         weight = 500,
@@ -206,7 +210,7 @@ local function getNearestNavFloor( pos )
     if not pos then return NULL end
     local Dat = {
         start = pos,
-        endpos = pos + Vector( 0,0,-500 ),
+        endpos = pos + Vector( 0, 0, -500 ),
         mask = 131083
     }
     local Trace = util.TraceLine( Dat )
@@ -262,7 +266,7 @@ local function PlayRepeatingSound( self, soundPath )
 
         util.ScreenShake( soundEmitter:GetPos(), 1, 20, 1, 1000 )
         local obj = soundEmitter:GetPhysicsObject()
-        if not obj then return end
+        if not IsValid( obj ) then return end
         obj:ApplyForceCenter( VectorRand() * obj:GetMass() * 100 * pitchMul )
         obj:ApplyTorqueCenter( VectorRand() * obj:GetMass() * 100 * pitchMul )
 
@@ -309,12 +313,25 @@ function ENT:ManageMyPos()
 end
 
 function ENT:BestPosToBe()
-    local radius = self:GetModelRadius()
-    local offset = radius * self.player:GetEyeTrace().HitNormal
-    offset.z = math.Clamp( offset.z, -radius, radius * 0.1 )
-    if not self.player:GetEyeTrace().Hit then return end
+    local trace = self.player:GetEyeTrace()
+    if not trace.Hit then return end
 
-    return self.player:GetEyeTrace().HitPos + offset
+    local radius = self:GetModelRadius()
+    local offset = radius * trace.HitNormal
+    offset.z = math.Clamp( offset.z, -radius, radius * 0.1 )
+
+    local pos = trace.HitPos + offset
+
+    local floorOff = self.OverrideOffsetFromFloor
+    if floorOff then
+        local floorTr = terminator_Extras.getFloorTr( pos )
+        if floorTr.Hit then
+            pos.z = math.max( pos.z, floorTr.HitPos.z + floorOff )
+
+        end
+    end
+
+    return pos
 
 end
 
@@ -330,10 +347,12 @@ function ENT:TooPoorString()
     end
 end
 
-local vec15Z = Vector( 0,0,15 )
+local vec15Z = Vector( 0, 0, 15 )
 
 function ENT:CalculateCanPlace()
     local checkPos = self:OffsettedPlacingPos() + vec15Z
+
+    --debugoverlay.Box( checkPos, -self.HullCheckSize, self.HullCheckSize, 1, Color( 255, 0, 0 ) )
 
     if IsHullTraceFull( checkPos, self.HullCheckSize, self ) then return false, self.noPurchaseReason_NoRoom end
     if getNearestNavFloor( checkPos ) == NULL then return false, self.noPurchaseReason_OffNavmesh end
@@ -418,10 +437,10 @@ function ENT:ColorThink()
 
     if self.couldPlace ~= canPlace then
         if not canPlace then
-            self:SetColor( Color( 255, 0, 0, 255 ) )
+            self:SetColor( self.CannotPlaceColor )
 
         elseif canPlace then
-            self:SetColor( Color( 0, 255, 0, 255 ) )
+            self:SetColor( self.CanPlaceColor )
 
         end
     end
@@ -445,13 +464,19 @@ function ENT:Think()
     if not IsValid( self.player ) then
         self.player = self:GetOwner() or nil
         self:SetupPlayer( self.player )
-        if SERVER then
+        if SERVER and self.OnlyNetworkToOwner then
             for _, currentPly in ipairs( player.GetAll() ) do
                 local prevent = self.player ~= currentPly
                 self:SetPreventTransmit( currentPly, prevent )
 
             end
         end
+
+        if not IsValid( self.player ) then
+            return self:OwnerlessThink()
+
+        end
+
     elseif IsValid( self.player ) and IsValid( self:GetOwner() ) then
         toReturn = self:ModifiableThink()
 
@@ -466,14 +491,20 @@ function ENT:Think()
                 return
 
             end
-
-            return toReturn
-
         end
+
+        return toReturn
+
+    else
+        return self:OwnerlessThink()
+
     end
 end
 
 function ENT:ClientThink()
+end
+
+function ENT:OwnerlessThink()
 end
 
 if not SERVER then return end
@@ -516,7 +547,7 @@ hook.Add( "KeyPress", "glee_doplacables_placing", function( ply, key )
 end )
 
 
-local MEMORY_BREAKABLE = 4
+local MEMORY_BREAKABLE = terminator_Extras.botMemoryTypes.MEMORY_BREAKABLE
 local startGivingScoreDist = 3500
 local startGivingScoreDistSqr = startGivingScoreDist^2
 
@@ -569,28 +600,7 @@ function GM:ScreamingCrate( pos )
     PlayRepeatingSound( crate, "horrific_crate_scream" )
     crate:EmitSound( "npc/turret_floor/deploy.wav", 90, 120 )
 
-    local beaconOnCrate = ents.Create( "prop_physics" )
-    if IsValid( beaconOnCrate ) then
-        beaconOnCrate:SetModel( "models/props_lab/reciever01b.mdl" )
-        local beaconsPos = crate:LocalToWorld( beaconVecOffset )
-        local beaconsAng = crate:LocalToWorldAngles( beaconAngOffset )
-        beaconOnCrate:SetPos( beaconsPos )
-        beaconOnCrate:SetAngles( beaconsAng )
-        beaconOnCrate:SetCollisionGroup( COLLISION_GROUP_WEAPON )
-        beaconOnCrate:Spawn()
-        beaconOnCrate:SetParent( crate )
-
-        crate:CallOnRemove( "beaconedSuppliesBeaconFallOff", function( _, beacon )
-            local thePos = beacon:GetPos()
-            beacon:SetParent()
-            beacon:SetPos( thePos )
-            SafeRemoveEntityDelayed( beacon, 35 )
-            terminator_Extras.SmartSleepEntity( beacon, 3 )
-
-
-        end, beaconOnCrate )
-
-    end
+    terminator_Extras.AttachParentedDetail( crate, "models/props_lab/reciever01b.mdl", beaconVecOffset, beaconAngOffset, COLLISION_GROUP_WEAPON )
 
     crate.terminatorHunterInnateReaction = function()
         return MEMORY_BREAKABLE
@@ -605,6 +615,8 @@ function ENT:Place()
     local crate = GAMEMODE:ScreamingCrate( self:OffsettedPlacingPos() )
     crate:EmitSound( "items/ammocrate_open.wav", 75 )
     crate.glee_player = self.player
+
+    terminator_Extras.DoPFXFromEnt( "glee_ghostly_ectoplasm", crate )
 
     crate.refundAndBonus = math.Round( self:GetGivenScore() )
 

@@ -19,7 +19,7 @@ end
 
 local invis = Color( 255, 255, 255, 0 )
 
-local lifetime = 20
+ENT.Lifetime = 20
 
 function ENT:SetupDataTables()
     self:NetworkVar( "Float", 0, "DeathTime" )
@@ -42,6 +42,11 @@ function ENT:SpawnFunction( ply, tr )
 
 end
 
+function ENT:AdditionalInitialize()
+    -- stub
+
+end
+
 function ENT:Initialize()
     self:SetModel( self.Model )
 
@@ -52,19 +57,17 @@ function ENT:Initialize()
     self:SetMoveType( MOVETYPE_VPHYSICS )
     self:PhysicsInit( SOLID_VPHYSICS )
 
-    SafeRemoveEntityDelayed( self, lifetime )
+    SafeRemoveEntityDelayed( self, self.Lifetime )
 
     -- Wake up our physics object so we don't start asleep
     local phys = self:GetPhysicsObject()
     if IsValid( phys ) then
         phys:Wake()
         timer.Simple( 1, function()
-            if not phys or not phys:IsValid() then return end
-            phys:EnableDrag( true )
-            phys:SetDragCoefficient( 48 )
+            if not IsValid( self ) then return end
+            self:StartFlyingSlow()
 
         end )
-
     end
 
     -- the one that gives the big sprite
@@ -76,7 +79,7 @@ function ENT:Initialize()
         flareReal:SetParent( self )
         flareReal:Spawn()
         flareReal:Activate()
-        flareReal:Fire( "Start", tostring( lifetime ), 0.1 )
+        flareReal:Fire( "Start", tostring( self.Lifetime ), 0.1 )
 
         self:DeleteOnRemove( flareReal )
 
@@ -91,22 +94,26 @@ function ENT:Initialize()
         flareLight:SetParent( self )
         flareLight:Spawn()
         flareLight:Activate()
-        flareLight:Fire( "Start", tostring( lifetime ), 0.1 )
+        flareLight:Fire( "Start", tostring( self.Lifetime ), 0.1 )
 
         self:DeleteOnRemove( flareLight )
 
     end
 
-    self:SetDeathTime( CurTime() + lifetime )
+    self:SetDeathTime( CurTime() + self.Lifetime )
 
     timer.Simple( 0, function()
         if not IsValid( self ) then return end
+
+        self.StartingPos = self:GetPos()
+
         self.BurnSound = CreateSound( self, "weapons/flaregun/burn.wav" )
         self.BurnSound:Play()
-        self.BurnSound:ChangePitch( 80, lifetime )
-
+        self.BurnSound:ChangePitch( 80, self.Lifetime )
 
     end )
+
+    self:AdditionalInitialize()
 
 end
 
@@ -115,7 +122,35 @@ function ENT:UpdateTransmitState()
 
 end
 
+function ENT:StartFlyingSlow()
+    if self.FlyingSlow then return end
+    self.FlyingSlow = true
+
+    local phys = self:GetPhysicsObject()
+    if not phys or not phys:IsValid() then return end
+    phys:EnableDrag( true )
+    phys:SetDragCoefficient( 100 )
+
+end
+
 function ENT:PhysicsCollide( colData, _ )
+
+    if colData.TheirSurfaceProps == 76 then -- don't bounce off skybox ( default_silent )
+        self.HitSkyboxAtLeastOnce = true
+
+        timer.Simple( 0, function()
+            if not IsValid( self ) then return end
+            local myPhysObj = self:GetPhysicsObject()
+            if not IsValid( myPhysObj ) then return end
+
+            myPhysObj:SetVelocity( Vector( 0, 0, 0 ) )
+
+            self:StartFlyingSlow()
+
+        end )
+        return
+
+    end
 
     local hitEnt = colData.HitEntity
     if not IsValid( hitEnt ) then return end
@@ -131,10 +166,14 @@ function ENT:PhysicsCollide( colData, _ )
         local dmgInfo = DamageInfo()
         dmgInfo:SetDamage( impactDamage )
         dmgInfo:SetDamageType( DMG_BURN )
-        dmgInfo:SetAttacker( self.MyOwner or self )
+        dmgInfo:SetAttacker( IsValid( self.MyOwner ) and self.MyOwner or self )
         dmgInfo:SetInflictor( self )
         hitEnt:TakeDamageInfo( dmgInfo )
 
+        if hitEnt:IsPlayer() and GAMEMODE.GivePanic then
+            GAMEMODE:GivePanic( hitEnt, impactDamage * 10 )
+
+        end
     end
 
     local igniteTime = impactDamage / 2.5
@@ -159,6 +198,11 @@ function ENT:OnRemove()
     end
 end
 
+function ENT:AdditionalThink()
+    -- stub
+
+end
+
 function ENT:Think()
     local myPos = self:GetPos()
     local contents = util.PointContents( myPos )
@@ -168,6 +212,8 @@ function ENT:Think()
         SafeRemoveEntity( self )
 
     end
+    self:AdditionalThink()
+
 end
 
 if not CLIENT then return end
@@ -180,10 +226,10 @@ local slowSpeed = 10^2
 
 hook.Add( "RenderScreenspaceEffects", "glee_predraw_fogpiercing_flares", function()
 
-    if #flaresThatPierceFog <= 0 then return end
+    if not next( flaresThatPierceFog ) then return end
 
     local me = LocalPlayer()
-    local myShootPos = me:GetShootPos()
+    local eyePos = EyePos()
 
     for _, flare in pairs( flaresThatPierceFog ) do
 
@@ -193,15 +239,15 @@ hook.Add( "RenderScreenspaceEffects", "glee_predraw_fogpiercing_flares", functio
         if not pos2d.visible then continue end
         if flare:GetVelocity():LengthSqr() < slowSpeed then continue end
 
-        local distanceToIt = myShootPos:Distance( flaresRealPos )
+        local distanceToIt = eyePos:Distance( flaresRealPos )
         if distanceToIt < 1000 then continue end
 
-        local canSee = terminator_Extras.PosCanSeeComplex( myShootPos, flaresRealPos, me )
+        local canSee = terminator_Extras.PosCanSeeComplex( eyePos, flaresRealPos, me )
         if not canSee then continue end
 
         local distScalar = math.log( distanceToIt, 4 ) * 5
         local timeToDeath = math.abs( flare:GetDeathTime() - CurTime() )
-        local size = math.Clamp( ( timeToDeath / lifetime ) + 1, 0, 1 )
+        local size = math.Clamp( ( timeToDeath / flare.Lifetime ) + 1, 0, 1 )
         size = size * 75
 
         local width = size + -distScalar

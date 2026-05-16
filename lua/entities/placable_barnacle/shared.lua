@@ -62,12 +62,12 @@ end
 local function IsHullTraceFull( startPos, hullMaxs, ignoreEnt )
     local traceData = {
         start = startPos,
-        endpos = startPos + Vector(0,0,1),
+        endpos = startPos + Vector( 0, 0, 1 ),
         filter = ignoreEnt,
         mins = -hullMaxs,
         maxs = hullMaxs
     }
-    local trace = util.TraceHull(traceData)
+    local trace = util.TraceHull( traceData )
 
     return trace.Hit
 
@@ -78,7 +78,7 @@ local function getNearestNavFloor( pos )
     if not pos then return NULL end
     local Dat = {
         start = pos,
-        endpos = pos + Vector( 0,0,-500 ),
+        endpos = pos + Vector( 0, 0, -500 ),
         mask = 131083
     }
     local Trace = util.TraceLine( Dat )
@@ -94,8 +94,8 @@ function ENT:BarnacleTrace()
     local trace = self.player:GetEyeTrace()
     local eyePos = trace.HitPos
     local traceData = {
-        start = eyePos + Vector( 0,0,10 ),
-        endpos = eyePos + Vector( 0,0,2500 ),
+        start = eyePos + Vector( 0, 0, 10 ),
+        endpos = eyePos + Vector( 0, 0, 2500 ),
         mask = MASK_SOLID_BRUSHONLY,
 
     }
@@ -149,9 +149,9 @@ end
 if not SERVER then return end
 
 
-local tooCloseToPlayer = 350
-local sortaCloseToPlayers = 1000
-local barnaclePunishmentDist = 750
+local tooCloseToPlayer = 250
+local sortaCloseToPlayers = 750
+local barnaclePunishmentDist = 400
 
 function ENT:UpdateGivenScore()
     local plys = player.GetAll()
@@ -211,15 +211,17 @@ end
 
 function ENT:Place()
     local yaw = math.Rand( -180, 180 )
-    local ang = Angle( 0, yaw ,0 )
+    local ang = Angle( 0, yaw, 0 )
 
     local placeTraceResult = self:BarnacleTrace()
 
     local barnacle = ents.Create( "npc_barnacle" )
-    barnacle:SetPos( placeTraceResult.HitPos + Vector( 0,0,-2 ) )
+    barnacle:SetPos( placeTraceResult.HitPos + Vector( 0, 0, -2 ) )
     barnacle:SetAngles( ang )
     barnacle:Spawn()
     barnacle:Activate()
+
+    terminator_Extras.DoPFXFromEnt( "glee_ghostly_ectoplasm", barnacle )
 
     barnacle.glee_PlacedBarnacle = true
     barnacle.barnacleCreator = self

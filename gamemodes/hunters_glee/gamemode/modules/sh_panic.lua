@@ -87,6 +87,9 @@ elseif SERVER then
         if plysHealth <= 0 then
             panic = 0
 
+        elseif plysHealth <= 10 then
+            panicDrain = 0.1
+
         elseif plysHealth <= 20 then
             panicDrain = 0.25
 

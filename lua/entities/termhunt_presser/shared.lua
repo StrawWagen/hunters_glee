@@ -183,6 +183,8 @@ function ENT:Place()
 
     end
 
+    terminator_Extras.DoPFXFromEnt( "glee_ghostly_ectoplasm_subtle", thingToPress )
+
 
     local score = self:GetGivenScore()
 

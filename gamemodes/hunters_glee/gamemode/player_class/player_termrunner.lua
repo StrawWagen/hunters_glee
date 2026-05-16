@@ -42,7 +42,6 @@ function PLAYER:SetupPlayerFuncsCheck()
 
         hook.Run( "termhunt_plyresurrected", realPlayer )
 
-        GAMEMODE:unspectatifyPlayer( realPlayer )
         realPlayer:Spawn()
 
     end

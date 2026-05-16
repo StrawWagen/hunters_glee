@@ -1,6 +1,8 @@
 
 AddCSLuaFile()
 
+local math_Round = math.Round
+
 local uiScaleVert = ScrH() / 1080
 local uiScaleHoris = ScrW() / 1920
 
@@ -18,13 +20,13 @@ local uiScaleHoris = ScrW() / 1920
 --]]-------------------------------------
 function glee_sizeScaled( sizeX, sizeY )
     if sizeX and sizeY then
-        return sizeX * uiScaleHoris, sizeY * uiScaleVert
+        return math_Round( sizeX * uiScaleHoris ), math_Round( sizeY * uiScaleVert )
 
     elseif sizeX then
-        return sizeX * uiScaleHoris
+        return math_Round( sizeX * uiScaleHoris )
 
     elseif sizeY then
-        return sizeY * uiScaleVert
+        return math_Round( sizeY * uiScaleVert )
 
     end
 end

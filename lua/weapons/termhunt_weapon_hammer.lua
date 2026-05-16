@@ -411,6 +411,12 @@ function SWEP:SecondaryAttack() -- pull nails or melee attack
     local owner = self:GetOwner()
 
     local trace = owner:GetEyeTrace()
+    local tooFar = trace.HitPos:DistToSqr( owner:GetShootPos() ) > self.Primary.Distance^2
+    if tooFar then
+        self:Miss()
+        return
+
+    end
     local vOrigin = self:GetNailPos( owner, trace )
     local nearNails = self:FindNails( vOrigin )
 
@@ -449,8 +455,8 @@ local function nailUnregister( nail, ent )
 
     -- idk how this is gonna end up with a nil value but whatever
     local nails = ent.huntersglee_breakablenails or {}
-    if nails[ creationId ] then
-        nails[ creationId ] = nil
+    if nails[creationId] then
+        nails[creationId] = nil
 
     end
 
@@ -475,7 +481,7 @@ local function registerNail( nail, ent )
 
     local nails = ent.huntersglee_breakablenails or {}
     local creationId = nail:GetCreationID()
-    nails[ creationId ] = nail
+    nails[creationId] = nail
 
     ent.huntersglee_breakablenails = nails
 

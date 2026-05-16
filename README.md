@@ -62,7 +62,17 @@ local items = {
         shPurchaseCheck = shopHelpers.aliveCheck,  -- Must be alive to buy
         svOnPurchaseFunc = function( purchaser )
             -- Server-side logic when purchased
-            purchaser:Give( "weapon_pistol" )
+            -- use the purchaseWeapon helper
+            -- it gives the ply the weapon if they dont have it, 
+            -- or gives them ammo if they already have it,
+            -- and plays a sound!
+            shopHelpers.purchaseWeapon( purchaser, {
+                class = "weapon_smg1",
+                ammoType = "SMG1",
+                purchaseClips = 2,      -- Extra Clips given on first purchase
+                resupplyClips = 4,      -- Clips given on repurchase
+                confirmSoundWeight = 1, -- sound intensity
+            } )
 
         end,
     },
@@ -78,15 +88,19 @@ GAMEMODE:GobbleShopItems( items )
 | `name` | ✅ | Display name in the shop |
 | `desc` | ✅ | Description (string or function) |
 | `shCost` | ✅ | Cost in score (negative = gives score) |
-| `tags` | ✅ | Category tags as indexed table (e.g., `{"ITEMS", "Weapon"}`) |
+| `tags` | ✅ | Category tags as indexed table, Capitalized tags define the item's categories (e.g., `{"ITEMS", "Weapon"}`) |
 | `purchaseTimes` | ✅ | When purchasable: `ROUND_INACTIVE`, `ROUND_ACTIVE` |
 | `svOnPurchaseFunc` | ✅ | Server function called on purchase: `function(purchaser, itemId)` |
+| `shSkullCost` | ❌ | Skull cost. Accepts number or function. Zero is ignored. Negative gives skulls on purchase |
 | `shPurchaseCheck` | ❌ | Validation function(s): `function(purchaser) -> bool, reason` |
 | `markup` | ❌ | Price multiplier during active hunt |
 | `markupPerPurchase` | ❌ | Additional markup per purchase |
 | `cooldown` | ❌ | Seconds between purchases (`math.huge` = once per round) |
 | `weight` | ❌ | Sort order within category (lower = higher) |
 | `shCanShowInShop` | ❌ | Visibility function: `function(purchaser) -> bool` |
+| `costDecorative` | ❌ | Fake, decorative cost. Accepts string, number, tables of strings, functions. Overrides `shSkullCost`, and `shCost` |
+| `unpurchaseableReason` | ❌ | Custom denial string. Only used if the item has the `unpurchaseable` tag |
+| `identifier` | ❌ | Auto-generated. The item's unique key |
 
 #### Category Tags
 
@@ -96,11 +110,19 @@ Items appear in categories based on their first matching tag:
 |-----|----------|------------|
 | `ITEMS` | Items | Alive players |
 | `INNATE` | Innate | Alive players |
+| `BARGAINS` | Bargains | Alive players |
 | `DEADSACRIFICES` | Sacrifices | Dead players |
 | `DEADGIFTS` | Gifts | Dead players |
 | `BANK` | Bank | All players |
 
 Additional descriptive tags (e.g., `"Weapon"`, `"Utility"`) don't affect categorization.
+
+Some other tags automatically apply special properties to items:
+
+- `unpurchaseable`
+    - Causes the item to be completely unpurchaseable, but doesn't hide it from the shop.
+    - Good for using a shop slot to display information rather than provide an item.
+    - Adding the `unpurchaseableReason` field to the item will let you override the fail reason string.
 
 #### Shopping Helper Functions
 
@@ -108,22 +130,49 @@ Additional descriptive tags (e.g., `"Weapon"`, `"Utility"`) don't affect categor
 
 ```lua
 shopHelpers.aliveCheck( purchaser )      -- Returns true if alive
-shopHelpers.undeadCheck( purchaser )     -- Returns true if dead
+shopHelpers.deadCheck( purchaser )     -- Returns true if dead
 shopHelpers.isCheats()                 -- Returns true if sv_cheats is on
 shopHelpers.purchaseWeapon( purchaser, {
     class = "weapon_smg1",
     ammoType = "SMG1",
-    purchaseClips = 4,      -- Clips given on first purchase
-    resupplyClips = 2,      -- Clips given on repurchase
+    purchaseClips = 2,      -- Clips given on first purchase
+    resupplyClips = 4,      -- Clips given on repurchase
     confirmSoundWeight = 1, -- Gun cock sound intensity
 } )
 ```
+
+### Shopping Hooks
+
+Additional ways to control access to shop items.
+
+- `allow`, `failReason` = `glee_shop_canshow`( `ply`, `itemData` )
+  - Return `false`, `failReason` to block the item from showing.
+  - Behaves similarly to `shCanShowInShop`, but called on a global scale and with reference to the item.
+- `allow`, `failReason` = `glee_shop_canpurchase`( `ply`, `itemData` )
+  - Return `false`, `failReason` to block the item from being purchased.
+  - Behaves similarly to `shPurchaseCheck`, but called on a global scale and with reference to the item.
+- `newDescription` = `glee_shop_itemdescription`( `ply`, `itemData`, `description` )
+  - Return `newDescription`, to override the item description.
+  - Remember, only one hook listener can return non-nil at a time!
+
+Example:
+
+```lua
+hook.Add( "glee_shop_canshow", "i_really_hate_debuffs", function( ply, itemData )
+    if itemData.tags.Debuff then return false, "Debuffs are LAME" end
+
+end )
+
+```
+
 
 ---
 
 ### Adding Spawnsets
 
-Spawnsets define enemy waves and game parameters. They're defined in `lua/glee_spawnsets/` and auto-loaded.
+Spawnsets are the #1 way to change up the hunt.
+They're defined in `lua/glee_spawnsets/` and auto-loaded.
+Third party addons can define their own spawnsets, they just have to be in the right spot.
 
 #### Minimal Example
 
@@ -131,26 +180,37 @@ Spawnsets define enemy waves and game parameters. They're defined in `lua/glee_s
 -- lua/glee_spawnsets/my_spawnset.lua
 
 local mySpawnSet = {
-    name = "my_spawnset",                    -- Unique identifier
-    prettyName = "My Custom Mode",           -- Display name
-    description = "A custom enemy configuration.",
+    name = "my_spawnset",                       -- Unique identifier
+    prettyName = "My Custom Mode",              -- Display name
+    description = "It's my mode, it's custom!", -- Description, best used as a "hint" that teases the spawnset's content
     
     -- Use "default" to inherit base values, or "default*2" for multipliers
+    -- Difficulty is very dynamic, so it's best to use "default" or multipliers of it, unless you know what you're doing. 
     difficultyPerMin = "default",
     waveInterval = "default",
     startingBudget = "default",
-    maxSpawnCount = 8, -- 8 is pretty low, easy
+    maxSpawnCount = 6, -- 4 is pretty low, easy
     
     spawns = {
         {
             name = "hunter",                           -- Unique spawn identifier
             prettyName = "A Hunter",                   -- Display name
             class = "terminator_nextbot_snail",        -- Entity class to spawn
-            spawnType = "hunter",                      -- Spawn type
+            spawnType = "hunter",                      -- Spawn algorithm type, only "hunter" is supported rn
             difficultyCost = { 10, 15 },               -- Cost range (random)
             countClass = "terminator_nextbot_snail*",  -- Pattern for counting (* = wildcard)
             minCount = { 1 },                          -- Always maintain this many
-            maxCount = { 5 },                          -- Never exceed this many
+        },
+        {
+            hardRandomChance = { 5, 20 },              -- Only pick this x% of waves
+            name = "hunter",
+            prettyName = "A Scary Hunter",
+            class = "terminator_nextbot",              -- Spawns the "overcharged" terminator
+            spawnType = "hunter",
+            difficultyCost = { 25, 50 },
+            difficultyNeeded = { 50, 100 }             -- only consider spawning this after 5 - 10 minutes
+            countClass = "terminator_nextbot_snail*",
+            maxCount = { 1 },                          -- Never exceed this many
         },
     },
 }
@@ -183,8 +243,8 @@ Values can be:
 - `"nil"` -- Use base spawnset value
 - `"default"` - Explicity use base spawnset value
 - `"default*N"` - Multiply base value by N
-- `{ min, max }` - Random value in range
-- Direct number - 8, 10, 11.25, etc ( not recommended, random value in range is much more fun )
+- `{ min, max }` - Random value in range is chosen at the start of each round.
+- `Direct number` - 8, 10, 11.25, etc ( not recommended, random value in range is much more fun )
 
 #### Spawn Entry Fields
 
@@ -196,11 +256,13 @@ Values can be:
 | `spawnType` | ✅ | Spawning algorithm type, only supports `"hunter"` presently |
 | `difficultyCost` | ✅ | Budget cost to spawn ( number or `{min, max}` ) |
 | `countClass` | ✅ | Class pattern for counting ( `*` = wildcard ) |
+| `difficultyNeeded` | ❌ | Difficulty threshold needed to start spawning | 
 | `minCount` | ❌ | Minimum maintained count |
 | `maxCount` | ❌ | Maximum allowed count |
 | `hardRandomChance` | ❌ | `{ min, max }` percent chance to even consider |
 | `preSpawnedFuncs` | ❌ | Functions called before hunter:Spawn() : `function(spawnData, npc)` |
 | `postSpawnedFuncs` | ❌ | Functions called after hunter:Spawn() : `function(spawnData, npc)` |
+| `isBoss` | ❌ | `true` marks as boss; `false` opts out of auto-detection. When the boss is killed, all alive players escape. Auto-detected when `maxSpawnCount <= 1` (highest `difficultyCost` entry wins). |
 
 #### Example: Custom Behavior
 
@@ -234,8 +296,7 @@ local trueHorror = {
             difficultyCost = { 12, 18 },
             countClass = "terminator_nextbot_snail*",
             minCount = { 1 },
-            maxCount = { 6 },
-            postSpawnedFuncs = { applySynthflesh, announceArrival },
+            postSpawnedFuncs = { applySynthflesh, announceArrival }, -- run both of these after the ent's :Spawn is called
         },
     },
 }

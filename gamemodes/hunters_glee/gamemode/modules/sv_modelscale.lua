@@ -122,6 +122,7 @@ hook.Add( "PlayerSpawn", "GLEE_PDM:PlayerSpawn", function( ply )
     ply.PDM_Spawned = true
     timer.Simple( 0, function()
         ply:SetHealth( math.min( ply:Health(), ply:GetMaxHealth() ) )
+        ply.glee_LastHealthSetReason = "PDM_PlayerSpawn"
 
     end )
 end )

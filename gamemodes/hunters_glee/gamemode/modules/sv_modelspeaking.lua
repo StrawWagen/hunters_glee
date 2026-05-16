@@ -34,7 +34,7 @@ function GM:AddModelSounds( partName, newSounds )
 
             end
             for _, soundToAdd in ipairs( currAddingSounds ) do
-                if alreadyExists[ soundToAdd ] then continue end
+                if alreadyExists[soundToAdd] then continue end
                 local lower = string_lower( soundToAdd )
                 table.insert( existingSoundsForThis, lower )
 
@@ -145,7 +145,7 @@ local hardcodedFemale = {
 
 function GM:IsModelFemale( ply )
     local plyModel = GetModel( ply )
-    if hardcodedFemale[ plyModel ] or string_find( string_lower( plyModel ), "fem" ) then
+    if hardcodedFemale[plyModel] or string_find( string_lower( plyModel ), "fem" ) then
         return true
 
     end
@@ -157,7 +157,7 @@ function GM:GenderizeSound( ply, snd ) -- genderize
     if not string_find( snd, "male" ) then return snd, false end
 
     local plyModel = GetModel( ply )
-    if hardcodedFemale[ plyModel ] or string_find( string_lower( plyModel ), "fem" ) then
+    if hardcodedFemale[plyModel] or string_find( string_lower( plyModel ), "fem" ) then
         return string_replace( snd, "male", "female" ), true
 
     end

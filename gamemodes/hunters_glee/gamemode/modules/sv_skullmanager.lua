@@ -1,11 +1,11 @@
 
 local GAMEMODE = GAMEMODE or GM
 
-function GM:SpawnASkull( pos, ang, termSkull, parent )
+function GM:SpawnASkull( pos, ang, termSkull, persistParent )
     local skull = ents.Create( "termhunt_skull_pickup" )
     if not IsValid( skull ) then return end
-    if IsValid( parent ) then
-        skull.persistientSkull = true
+    if IsValid( persistParent ) then -- something died to make this skull, it will persist thru rounds
+        skull.persistentSkull = true
 
     end
     skull:SetPos( pos )
@@ -19,12 +19,22 @@ function GM:SpawnASkull( pos, ang, termSkull, parent )
 
     timer.Simple( 0, function()
         if not IsValid( skull ) then return end
-        if not IsValid( parent ) then return end
-        skull:GetPhysicsObject():SetVelocity( parent:GetVelocity() )
+        if not IsValid( persistParent ) then return end
+        skull:GetPhysicsObject():SetVelocity( persistParent:GetVelocity() )
 
     end )
 
     return skull
+
+end
+
+function GM:HandleRagdollSkulling( ragdoll )
+    local canSkull = glee_RagdollHasASkull( ragdoll )
+    if not canSkull then return end
+
+    local skull = GAMEMODE:SpawnASkull( ragdoll:GetPos(), Angle( 0, 0, 0 ), nil )
+    if not skull then return end
+    if not skull:AttachToRagdollsSkull( ragdoll ) then SafeRemoveEntity( skull ) return end
 
 end
 
@@ -66,14 +76,14 @@ hook.Add( "PlayerDeath", "glee_dropplayerskulls", function( died, _, attacker )
 
 end )
 
-GM.persistientSkulls = {}
+GM.persistentSkulls = {}
 
 -- skulls from dead players/terms stick around
-hook.Add( "PreCleanupMap", "glee_savepersistientskulls", function()
-    table.Empty( GAMEMODE.persistientSkulls )
+hook.Add( "PreCleanupMap", "glee_savepersistentskulls", function()
+    table.Empty( GAMEMODE.persistentSkulls )
 
     for _, skull in ipairs( ents.FindByClass( "termhunt_skull_pickup" ) ) do
-        if not skull.persistientSkull then continue end
+        if not skull.persistentSkull then continue end
         local skullTbl = {}
         skullTbl.pos = skull:GetPos()
         skullTbl.ang = skull:GetAngles()
@@ -81,22 +91,22 @@ hook.Add( "PreCleanupMap", "glee_savepersistientskulls", function()
         skullTbl.termSkull = skull:GetIsTerminatorSkull()
         skullTbl.skullSteamId = skull.skullSteamId
 
-        table.insert( GAMEMODE.persistientSkulls, skullTbl )
+        table.insert( GAMEMODE.persistentSkulls, skullTbl )
 
     end
 end )
 
-hook.Add( "huntersglee_round_into_active", "glee_loadpersistientskulls", function()
+hook.Add( "huntersglee_round_into_active", "glee_loadpersistentskulls", function()
     -- restore skulls when hunt starts ( no cheeky skulls when setting up! )
-    for i, skullTbl in pairs( GAMEMODE.persistientSkulls ) do
-        local timerName = "glee_persistient_skullrespawn_" .. i
+    for i, skullTbl in pairs( GAMEMODE.persistentSkulls ) do
+        local timerName = "glee_persistent_skullrespawn_" .. i
         timer.Create( timerName, 1, 0, function()
             if terminator_Extras.posIsInterruptingAlive( skullTbl.pos ) then return end -- wait!
 
             local skull = ents.Create( "termhunt_skull_pickup" )
             if not IsValid( skull ) then timer.Remove( timerName ) return end
             if skullTbl.persist then
-                skull.persistientSkull = true
+                skull.persistentSkull = true
 
             end
             skull.skullSteamId = skullTbl.skullSteamId
@@ -138,14 +148,8 @@ hook.Add( "huntersglee_round_into_active", "glee_loadpersistientskulls", functio
 
     -- a body, with a skull...?
     for _, skullRagdoll in ipairs( ents.FindByClass( "prop_ragdoll" ) ) do
-        local canSkull = glee_RagdollHasASkull( skullRagdoll )
-        if canSkull then
-            --print( "erm skull", skullRagdoll )
-            local skull = GAMEMODE:SpawnASkull( skullRagdoll:GetPos(), Angle( 0, 0, 0 ), nil )
-            if not skull then continue end
-            if not skull:AttachToRagdollsSkull( skullRagdoll ) then SafeRemoveEntity( skull ) continue end
+        GAMEMODE:HandleRagdollSkulling( skullRagdoll )
 
-        end
     end
 end )
 
@@ -186,7 +190,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_addskulljobs", function()
         if area:IsBlocked() then return end
         if area:IsUnderwater() then return end
         -- dont place skulls in spots twice per session!
-        if currJob.placedAlready[ area:GetID() ] then return end
+        if currJob.placedAlready[area:GetID()] then return end
         return true
 
     end
@@ -259,9 +263,9 @@ end )
 local function postPlaced( bestPosition )
     local placedArea = GAMEMODE:getNearestNav( bestPosition, 500 )
     if placedArea and placedArea.IsValid and placedArea:IsValid() then
-        placedAlready[ placedArea:GetID() ] = true
+        placedAlready[placedArea:GetID()] = true
         for _, area in ipairs( placedArea:GetAdjacentAreas() ) do
-            placedAlready[ area:GetID() ] = true
+            placedAlready[area:GetID()] = true
 
         end
     end
@@ -284,8 +288,8 @@ local function checkSkulls()
     -- wait until the skull has finished setting up
     timer.Simple( 0, function()
         local winner, tieBroken = GAMEMODE:calculateWinner()
-        SetGlobalEntity( "termHuntWinner", winner )
-        SetGlobalBool( "termHuntWinnerTied", tieBroken )
+        SetGlobalEntity( "glee_Winner", winner )
+        SetGlobalBool( "glee_WinnerTied", tieBroken )
 
     end )
 end
@@ -296,7 +300,7 @@ hook.Add( "huntersglee_round_into_active", "glee_broadcastnewfinestprey", checkS
 
 
 hook.Add( "PlayerDeath", "glee_winnerdropsskulls", function( victim )
-    local winner = GetGlobalEntity( "termHuntWinner" )
+    local winner = GetGlobalEntity( "glee_Winner" )
 
     if not IsValid( winner ) then return end
     if winner ~= victim then return end

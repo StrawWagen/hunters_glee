@@ -88,8 +88,9 @@ function SWEP:ShoveSound( PitMod )
     PitMod = PitMod or 0
     local Sound1 = table.Random( self.ShoveSounds1 )
     local Sound2 = table.Random( self.ShoveSounds2 )
-    self.Owner:EmitSound( Sound1, 66, math.random( 100, 120 ) + PitMod, 1, CHAN_STATIC )
-    self.Owner:EmitSound( Sound2, 70, math.random( 60, 80 ) + PitMod, 1, CHAN_STATIC )
+    local owner = self:GetOwner()
+    owner:EmitSound( Sound1, 66, math.random( 100, 120 ) + PitMod, 1, CHAN_STATIC )
+    owner:EmitSound( Sound2, 70, math.random( 60, 80 ) + PitMod, 1, CHAN_STATIC )
 
 end
 
@@ -111,7 +112,7 @@ end
 local gtfo = Vector( 1, 1, 1 ) * 65000
 
 function SWEP:GetViewModelPosition( _, ang )
-    return gtfo,ang
+    return gtfo, ang
 end
 
 function SWEP:PreDrawViewModel()
@@ -181,8 +182,10 @@ function SWEP:PrimaryAttack( firstMul )
                 end
                 owner:SetVelocity( owner:GetVelocity() + -( Force * 0.25 ) * firstMul )
                 self:SetNextPrimaryFire( CurTime() + 1 )
-                Hit.glee_lastShover = owner
+                if GAMEMODE.BlameForFallDamage then
+                    GAMEMODE:BlameForFallDamage( Hit, owner, self )
 
+                end
             else
                 local PlyForce = -Force * 125
                 Force = Force * math.Clamp( Phys:GetMass() / 400, 0.25, 1 )
@@ -204,7 +207,7 @@ function SWEP:PrimaryAttack( firstMul )
             NoHit = true
 
         end
-        hook.Run( "glee_shover_shove", Hit )
+        hook.Run( "glee_shover_shove", Hit, owner )
 
     elseif Hit:IsWorld() and not Trace.HitSky and owner:GetEyeTrace().HitWorld then -- check eyetrace too, make sure we dont do the 5 sec cooldown when they just barely missed an entity
         self:SetNextPrimaryFire( CurTime() + 2.2 )
@@ -241,25 +244,3 @@ function SWEP:OnDrop()
         self:Remove()
     end
 end
-
-hook.Add( "OnPlayerHitGround", "glee_shover_resetfalldamageblame", function( ply )
-    timer.Simple( 0, function()
-        if not IsValid( ply ) then return end
-        ply.glee_lastShover = nil
-
-    end )
-end )
-
-
-hook.Add( "EntityTakeDamage", "glee_shover_blamefalldamage", function( target, dmg )
-    local shover = target.glee_lastShover
-    if not IsValid( shover ) then return end
-    if not dmg:IsFallDamage() then return end
-
-    dmg:SetAttacker( shover )
-    local shoveSwep = shover:GetWeapon( "termhunt_shove" )
-    if IsValid( shoveSwep ) then
-        dmg:SetInflictor( shoveSwep )
-
-    end
-end )

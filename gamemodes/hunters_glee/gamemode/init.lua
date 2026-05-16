@@ -1,23 +1,29 @@
 -- ADDCS
 AddCSLuaFile( "shared.lua" )
 AddCSLuaFile( "cl_init.lua" )
-AddCSLuaFile( "modules/cl_souls.lua" )
 AddCSLuaFile( "modules/cl_targetid.lua" )
+AddCSLuaFile( "modules/cl_winscreen.lua" )
 AddCSLuaFile( "modules/cl_modelscale.lua" )
 AddCSLuaFile( "modules/cl_scoreboard.lua" )
 AddCSLuaFile( "modules/cl_obfuscation.lua" )
 AddCSLuaFile( "modules/cl_fallingwind.lua" )
 AddCSLuaFile( "modules/cl_killfeedoverride.lua" )
 
+AddCSLuaFile( "modules/deadplayerfx/cl_souls.lua" )
+AddCSLuaFile( "modules/deadplayerfx/cl_deaddesaturation.lua" )
+
 AddCSLuaFile( "modules/battery/cl_battery.lua" )
 AddCSLuaFile( "modules/bpm/cl_bpm.lua" )
+AddCSLuaFile( "modules/escaping/cl_escaping.lua" )
 AddCSLuaFile( "modules/cl_spectateflashlight.lua" )
+AddCSLuaFile( "modules/solidsounds/cl_solidsounds.lua" )
 AddCSLuaFile( "modules/thirdpersonflashlight/cl_flashlight.lua" )
 AddCSLuaFile( "modules/firsttimeplayers/cl_firsttimeplayers.lua" )
 
 AddCSLuaFile( "modules/contextmenu_widgets/cl_banktop.lua" )
 AddCSLuaFile( "modules/contextmenu_widgets/cl_tauntmenu.lua" )
 AddCSLuaFile( "modules/contextmenu_widgets/cl_settingsmenu.lua" )
+AddCSLuaFile( "modules/contextmenu_widgets/cl_guiltchecker.lua" )
 
 AddCSLuaFile( "cl_shopstandards.lua" )
 AddCSLuaFile( "cl_shoppinggui.lua" )
@@ -44,6 +50,7 @@ AddCSLuaFile( "modules/shopitems/sh_itemverification.lua" )
 AddCSLuaFile( "modules/statuseffects/cl_statuseffects.lua" )
 AddCSLuaFile( "modules/statuseffects/sh_statuseffectbase.lua" )
 
+AddCSLuaFile( "modules/guilt/sh_guilt.lua" )
 AddCSLuaFile( "modules/battery/sh_battery.lua" )
 AddCSLuaFile( "modules/spawnset/cl_spawnsetvote.lua" )
 AddCSLuaFile( "modules/spawnset/sh_spawnpoolutil.lua" )
@@ -69,19 +76,26 @@ include( "modules/sv_navpatcher.lua" )
 include( "modules/sv_navmeshcategorizer.lua" )
 include( "modules/sv_doorbash.lua" )
 include( "modules/sv_mapvote.lua" )
-include( "modules/sv_guilt.lua" )
 include( "modules/sv_modelscale.lua" )
+include( "modules/sv_gasmanager.lua" )
 include( "modules/sv_skullmanager.lua" )
 include( "modules/sv_hunterspawner.lua" )
 include( "modules/sv_scoredropping.lua" )
 include( "modules/sv_rejoinpersist.lua" )
 include( "modules/sv_firstfallgrace.lua" )
+include( "modules/sv_blamedfalldamage.lua" )
 include( "modules/sv_seeding_rewarder.lua" )
+include( "modules/solidsounds/sv_solidsounds.lua" )
+include( "modules/solidsounds/sv_tracktriggering.lua" )
 include( "modules/spawnset/sv_spawnsetvote.lua" )
-include( "modules/spawnset/sv_spawnsetsounds.lua" )
+include( "modules/spawnset/sv_bosshandler.lua" )
 include( "modules/statuseffects/sv_statuseffects.lua" )
 include( "modules/sv_falldamage_andgoomba.lua" )
 include( "modules/firsttimeplayers/sv_firsttimeplayers.lua" )
+
+include( "modules/guilt/sv_guilt.lua" )
+
+include( "modules/escaping/sv_escaping.lua" )
 
 include( "modules/battery/sv_battery.lua" )
 include( "modules/thirdpersonflashlight/sv_flashlight.lua" )
@@ -91,7 +105,9 @@ include( "modules/proceduralspawner/sv_genericspawner.lua" )
 include( "modules/proceduralspawner/sv_cratespawner.lua" )
 include( "modules/proceduralspawner/sv_beartrapspawner.lua" )
 include( "modules/proceduralspawner/sv_jeepspawner.lua" )
+include( "modules/proceduralspawner/sv_glidevehiclespawning.lua" )
 include( "modules/proceduralspawner/sv_raregenericspawns.lua" )
+include( "modules/proceduralspawner/sv_rescueflarespawner.lua" )
 
 include( "modules/weapondropper/sv_weapondropper.lua" )
 include( "modules/signalstrength/sv_signalstrength.lua" )
@@ -104,8 +120,12 @@ util.AddNetworkString( "glee_followedsomething" )
 util.AddNetworkString( "glee_followednexthing" )
 util.AddNetworkString( "glee_switchedspectatemodes" )
 util.AddNetworkString( "glee_stoppedspectating" )
+util.AddNetworkString( "glee_starteddriving" )
+util.AddNetworkString( "glee_stoppeddriving" )
 util.AddNetworkString( "glee_dropcurrentweapon" )
+util.AddNetworkString( "glee_fakeinzoom" )
 util.AddNetworkString( "glee_closetheshop" )
+util.AddNetworkString( "glee_loadingtheshop" )
 util.AddNetworkString( "glee_roundstate" )
 util.AddNetworkString( "glee_sendtruesoullocations" )
 util.AddNetworkString( "glee_requestallbankaccounts" )
@@ -133,12 +153,18 @@ GM.SpawnTypes = {
 
 GM.roundStartAfterNavCheck      = 75
 GM.roundStartNormal             = 30
+GM.roundStartNormalAllEscaped   = 60
 GM.IsReallyHuntersGlee          = true
+
+-- this is increased when all hunters are killed, or are being forced to spawn in front of players
+-- basically it makes the spawner get more aggressive the longer you stay on cheesable maps
+GM.sessionDiffBump = 0
 
 local CurTime = CurTime
 
 -- gamemode starts up, starts 5 second countdown to navmesh check.
--- also happens after hard map cleanup
+-- runs in Initialize,
+-- also ran after hard map cleanup, ( gmod_admin_cleanup ) for debugging
 function GM:TermHuntSetup()
     self.waitingOnNavoptimizerGen       = nil
     self.HuntersGleeDoneTheGreedyPatch  = self.HuntersGleeDoneTheGreedyPatch or nil -- do greedy patch once per session and play nice with autorefresh
@@ -160,12 +186,17 @@ function GM:TermHuntSetup()
     self.deadPlayers                    = {}
     self.roundScore                     = {}
     self.roundExtraData                 = {} -- helper tbl that is reset on round end
+    self.navmeshActivityHeatmap         = {} -- what navareas are players sticking to this session?
 
+    self.roundDiffBump                  = 0
+    self.roundEarliestEnd               = 0
     self.nextStateTransmit              = 0
+    self.finishedRoundCount             = 0
+    self.currWaveDifficulty             = 0
 
     -- just in case!
     hook.Remove( "Think", "glee_DoGreedyPatchThinkHook" )
-    SetGlobalBool( "termHuntDisplayWinners", false )
+    SetGlobalBool( "glee_DisplayWinners", false )
     game.SetTimeScale( 1 )
 
     for _, ply in ipairs( player.GetAll() ) do
@@ -278,8 +309,7 @@ function GM:Think()
             self.canScore   = false
 
         end
-    end
-    if currState == self.ROUND_INACTIVE then --round is waiting to begin
+    elseif currState == self.ROUND_INACTIVE then --round is waiting to begin
 
         local doPatchingText = nil
 
@@ -305,6 +335,7 @@ function GM:Think()
             self.canScore   = false
 
             hook.Run( "glee_sv_validgmthink_inactive", players, currState, cur )
+            hook.Run( "glee_sv_validgmthink_not_over", players, currState, cur )
 
         end
         if doPatchingText then
@@ -316,8 +347,7 @@ function GM:Think()
             displayTime = self:getRemaining( self.termHunt_roundStartTime, cur )
 
         end
-    end
-    if currState == self.ROUND_LIMBO then -- look at what happened during the round
+    elseif currState == self.ROUND_LIMBO then -- look at what happened during the round
         if self.limboEnd < cur then
             hook.Run( "huntersglee_round_leave_limbo" )
             self:beginSetup()
@@ -332,27 +362,34 @@ function GM:Think()
         displayName = "--- "
         displayTime = 0
 
-    end
-    if currState == self.ROUND_ACTIVE then -- THE HUNT BEGINS
-        local aliveCount = self:CountWinnablePlayers()
+    elseif currState == self.ROUND_ACTIVE then -- THE HUNT
+        local aliveCount = self:countWinnablePlayers()
         local waitingForAFirstTimePlayer = self:WaitingForAFirstTimePlayer( players )
+        local specificallyWaiting = ( self.roundEarliestEnd or 0 ) > cur
 
         nobodyAlive = aliveCount == 0
 
-        if nobodyAlive then
+        local win = nobodyAlive and not specificallyWaiting
+
+        if win then
             self:roundEnd()
 
-        elseif not waitingForAFirstTimePlayer then
+        elseif not waitingForAFirstTimePlayer then -- dont spawn hunters if someones still in the tutorial!
             self.blockPvp   = false
             self.doProxChat = true
             self.canRespawn = false
             self.canScore   = true
 
             hook.Run( "glee_sv_validgmthink_active", players, currState, cur )
+            hook.Run( "glee_sv_validgmthink_not_over", players, currState, cur )
 
         end
         displayName = "Hunting... "
         displayTime = self:getRemaining( self.termHunt_roundBegunTime, cur )
+
+    elseif currState == self.ROUND_TESTSTATE then
+        displayName = "gmod_admin_cleanup to escape teststate. "
+        displayTime = 0
 
     end
 
@@ -366,12 +403,12 @@ function GM:Think()
     self:RoundStateRepeat()
 
     if displayTime then
-        SetGlobalInt( "TERMHUNTER_PLAYERTIMEVALUE", displayTime )
+        SetGlobalInt( "TERMHUNT_PLAYERTIMEVALUE", displayTime )
 
     end
     -- this often desyncs, not really a big problem tho
     if displayName then
-        SetGlobalString( "TERMHUNTER_PLAYERVALUENAME", displayName )
+        SetGlobalString( "TERMHUNT_PLAYERVALUENAME", displayName )
 
     end
 end
@@ -426,7 +463,7 @@ function GM:calculateWinner()
     end
 
     local biggestCount = table.maxn( playersWithSkullCounts )
-    local bestPlayers = playersWithSkullCounts[ biggestCount ]
+    local bestPlayers = playersWithSkullCounts[biggestCount]
     local bestPlayer
     local tieBroken = false
     -- break ties with score count
@@ -485,7 +522,7 @@ end
 function GM:initDependenciesCheck()
     self.ValidNavarea = self:navmeshCheck()
 
-    SetGlobalBool( "termHuntDisplayWinners", false )
+    SetGlobalBool( "glee_DisplayWinners", false )
     self.hasNavmesh = self.ValidNavarea:IsValid() and navmesh.IsLoaded()
     return self.hasNavmesh
 
@@ -582,6 +619,8 @@ hook.Add( "glee_sv_validgmthink_active", "glee_checkhunters_areinvalidgroups", f
     end
 end )
 
+GM.HuntersGleeNeedsRepatching = true
+
 -- do the navmesh patching
 -- involves adding areas under doors, windows, and then finding sections of navmesh that are separate from the biggest section, then linking them back up to it.
 function GM:SetupTheLargestGroupsNStuff()
@@ -638,6 +677,7 @@ function GM:SetupTheLargestGroupsNStuff()
 
         self.navmeshGroups, _, navAreas = self:GetConnectedNavAreaGroups( navmesh.GetAllNavAreas() )
         self.biggestNavmeshGroups = self:FilterNavareaGroupsForGreaterThanPercent( self.navmeshGroups, self.biggestGroupsRatio )
+        self:BuildNavAreaReverseMap( self.biggestNavmeshGroups )
 
         --self:removePorters() -- remove teleporters that cross navmesh groups, or lead to non-navmeshed spots
 
@@ -669,7 +709,7 @@ function GM:removePorters() -- it was either do this, or make the terminator use
         if not portersGroup then SafeRemoveEntity( porter ) continue end
 
         local portersVals = porter:GetKeyValues()
-        local targetsName = portersVals[ "target" ]
+        local targetsName = portersVals["target"]
         local destTbl = ents.FindByName( targetsName )
 
         for _, dest in ipairs( destTbl ) do
@@ -699,7 +739,7 @@ function GM:removeBlockers() -- mess up locked doors on door heavy maps
     if #doors > 30 then
         for _, door in ipairs( doors ) do
             if door:GetInternalVariable( "m_bLocked" ) ~= true then continue end
-            if not util.doorIsUsable( door ) then continue end -- door is decor
+            if not terminator_Extras.CanBashDoor( door ) then continue end -- door is decor
 
             local areaIsBig = nil
             local area = self:getNearestNavFloor( door:WorldSpaceCenter() )
@@ -834,6 +874,24 @@ function GM:RemoveHunters()
     end
 end
 
+function GM:DelayRoundEndingUntil( time )
+    self.roundEarliestEnd = math.max( self.roundEarliestEnd, time )
+
+end
+
+-- reset on initial setup, after we wait for navmesh to load
+-- and is the final thing to go when the gamemode stops displaying winners
+function GM:ResetExtraData()
+    self.roundExtraData = nil
+    self.roundExtraData = {}
+
+end
+
+function GM:GetCurrWaveDifficulty()
+    return self.currWaveDifficulty
+
+end
+
 -- from where people can buy stuff with discounts, to the hunt
 function GM:roundStart()
     hook.Run( "huntersglee_round_pre_into_active" )
@@ -843,11 +901,13 @@ function GM:roundStart()
     self:SetRoundState( self.ROUND_ACTIVE )
     self.roundScore = nil
     self.roundScore = {}
-    self.roundExtraData = nil
-    self.roundExtraData = {}
+    self.roundDiffBump = 0
 
-    SetGlobalEntity( "termHuntWinner", NULL )
-    SetGlobalInt( "termHuntWinnerSkulls", 0 )
+    SetGlobalEntity( "glee_Winner", NULL )
+    SetGlobalInt( "glee_WinnerSkulls", 0 )
+
+    SetGlobalInt( "glee_EscapedCount", 0 )
+    SetGlobalInt( "glee_RemainedCount", 0 )
 
     for _, ply in ipairs( player.GetAll() ) do
         ply:SetDeaths( 0 )
@@ -866,27 +926,69 @@ function GM:roundEnd()
     local plyCount = #player.GetAll()
     local timeAdd = math.Clamp( plyCount * 0.7, 1, 15 ) -- give time for discussion
     self.limboEnd = CurTime() + 18 + timeAdd
+    self.finishedRoundCount = self.finishedRoundCount + 1
+
+    GAMEMODE.roundExtraData.roundDuration = CurTime() - self.termHunt_roundBegunTime
+
+    GAMEMODE.roundExtraData.everyoneEscaped = true
+    GAMEMODE.roundExtraData.someoneEscaped = false
+    for _, ply in player.Iterator() do
+        local hasEscaped = ply:HasEscaped()
+        if hasEscaped then
+            GAMEMODE.roundExtraData.someoneEscaped = true
+
+        else
+            GAMEMODE.roundExtraData.everyoneEscaped = false
+
+        end
+    end
+
+    SetGlobalBool( "glee_EveryoneEscapedLastRound", GAMEMODE.roundExtraData.everyoneEscaped )
+
+    if GAMEMODE.roundExtraData.everyoneEscaped then
+        hook.Run( "huntersglee_everyone_escaped" )
+
+    elseif GAMEMODE.roundExtraData.someoneEscaped then
+        hook.Run( "huntersglee_someone_escaped" )
+
+    elseif not GAMEMODE.roundExtraData.someoneEscaped then
+        hook.Run( "huntersglee_no_one_escaped" )
+
+    end
+
 
     self.deadPlayers = {}
     self:SetRoundState( self.ROUND_LIMBO )
-    timer.Simple( engine.TickInterval(), function()
+    timer.Simple( 0, function()
         if plyCount <= 0 then return end
 
         local winner = self:calculateWinner()
         local totalScore = self:calculateTotalScore()
 
-        SetGlobalBool( "termHuntDisplayWinners", true )
-        SetGlobalInt( "termHuntTotalScore", math.Round( totalScore ) )
+        SetGlobalBool( "glee_DisplayWinners", true )
+        SetGlobalInt( "glee_TotalScore", math.Round( totalScore ) )
+
+        local escapedCount = 0
+        local remainedCount = 0
+        for _, ply in player.Iterator() do
+            if ply:HasEscaped() then
+                escapedCount = escapedCount + 1
+            else
+                remainedCount = remainedCount + 1
+            end
+        end
+        SetGlobalInt( "glee_EscapedCount", escapedCount )
+        SetGlobalInt( "glee_RemainedCount", remainedCount )
 
         if winner:GetSkulls() <= 0 then
-            SetGlobalEntity( "termHuntWinner", NULL )
-            SetGlobalInt( "termHuntWinnerSkulls", 0 )
+            SetGlobalEntity( "glee_Winner", NULL )
+            SetGlobalInt( "glee_WinnerSkulls", 0 )
             return
 
         end
 
-        SetGlobalEntity( "termHuntWinner", winner )
-        SetGlobalInt( "termHuntWinnerSkulls", winner:GetSkulls() )
+        SetGlobalEntity( "glee_Winner", winner )
+        SetGlobalInt( "glee_WinnerSkulls", winner:GetSkulls() )
 
     end )
 
@@ -896,13 +998,18 @@ end
 
 -- from the part where finest prey & total score is displayed, into setup where people can buy stuff with discounts
 function GM:beginSetup()
+    hook.Run( "huntersglee_round_pre_into_inactive" )
+
     self:RemoveHunters()
+
     for _, ply in player.Iterator() do
+        hook.Run( "huntersglee_player_pre_reset", ply )
+
         ply.realRespawn = true -- wipe all shop attributes
         ply.shopItemCooldowns = {} -- reset wep cooldowns
         ply.isTerminatorHunterKiller = nil -- dont have this persist thru rounds
         ply:ResetSkulls()
-        self:unspectatifyPlayer( ply )
+        -- self:unspectatifyPlayer( ply ) -- don't unspectatify here, GAMEMODE.canRespawn handles it
         hook.Run( "huntersglee_player_reset", ply )
 
     end
@@ -911,12 +1018,40 @@ function GM:beginSetup()
     game.CleanUpMap( false, { "env_fire", "entityflame", "_firesmoke" } )
     self.blockCleanupSetup = nil
 
-    SetGlobalBool( "termHuntDisplayWinners", false )
-    self.termHunt_roundStartTime = CurTime() + self.roundStartNormal
+    SetGlobalBool( "glee_DisplayWinners", false )
+    SetGlobalBool( "glee_EveryoneEscapedLastRound", false )
+
+    local time
+    if self.roundExtraData.everyoneEscaped then
+        time = self.roundStartNormalAllEscaped
+
+    else
+        time = self.roundStartNormal
+
+    end
+    local var = GetConVar( "sv_cheats" )
+    if var:GetBool() == true then
+        time = time / 8
+
+    end
+    time = math.max( time, 10 )
+
+    self.termHunt_roundStartTime = CurTime() + time
+
+    local tenSecondsBeforeStart = time - 10
+    timer.Create( "glee_ten_seconds_before_start_timer", tenSecondsBeforeStart, 1, function()
+        if GAMEMODE.RoundState() ~= GAMEMODE.ROUND_INACTIVE then return end
+        hook.Run( "huntersglee_round_tenseconds_before_active" )
+
+    end )
+
     self:SetRoundState( self.ROUND_INACTIVE )
     timer.Simple( 2, function()
         self:TeleportRoomCheck()
+
     end )
+
+    self:ResetExtraData()
 
     hook.Run( "huntersglee_round_into_inactive" )
 
@@ -925,6 +1060,8 @@ end
 -- navmesh is not loaded at initialize so we wait
 -- from the 5 second countdown to the first buying period
 function GM:setupFinish()
+    self:ResetExtraData()
+
     self.termHunt_navmeshCheckTime = math.huge
     local HasNav = self:initDependenciesCheck()
     if HasNav ~= true then
@@ -938,12 +1075,19 @@ function GM:setupFinish()
         local var = GetConVar( "sv_cheats" )
         local time = self.roundStartAfterNavCheck
         if var:GetBool() == true then
-            time = time / 8
+            time = time / 10
 
         end
+        time = math.max( time, 10 )
 
         self.termHunt_roundStartTime = CurTime() + time
 
+        local tenSecondsBeforeStart = time - 10
+        timer.Create( "glee_ten_seconds_before_start_timer", tenSecondsBeforeStart, 1, function()
+            if GAMEMODE.RoundState() ~= GAMEMODE.ROUND_INACTIVE then return end
+            hook.Run( "huntersglee_round_tenseconds_before_active" )
+
+        end )
     end
     if game.SinglePlayer() then
         self.termHunt_roundStartTime = CurTime() + self.roundStartAfterNavCheck
@@ -960,8 +1104,16 @@ function GM:setupFinish()
     end
 end
 
+-- in case people left these on accidentally
 function GM:concmdSetup()
     RunConsoleCommand( "ai_disabled", "0" )
     RunConsoleCommand( "ai_ignoreplayers", "0" )
 
 end
+
+-- test command for setting to GAMEMODE.ROUND_TESTSTATE
+concommand.Add( "glee_test_roundstatetest", function()
+    GAMEMODE:SetRoundState( GAMEMODE.ROUND_TESTSTATE )
+    print( "GLEE: set to test state, gmod_admin_cleanup to restore" )
+
+end, nil, "Disables hunter spawner, everything.", FCVAR_CHEAT )

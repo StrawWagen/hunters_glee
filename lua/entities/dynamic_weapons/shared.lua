@@ -31,6 +31,15 @@ function ENT:commonCreationOptions()
 
 end
 
+ENT.rareCreationChance = 2
+function ENT:rareCreationOptions()
+    local tbl = {
+        { class = "termhunt_taucannon", count = 1 },
+        { class = "termhunt_annabelle", count = 1 },
+        { class = "termhunt_ar3", count = 1 },
 
-ENT.rareCreationChance = 0
+    }
+    return tbl
+
+end
 ENT.AmmoInsideWeaponsScale = 2

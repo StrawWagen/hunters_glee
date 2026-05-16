@@ -1,4 +1,5 @@
--- VIBE CODED SLOP
+
+-- rather ai sloppy because i dread vgui
 
 -- Clientside "Bank Top" UI
 -- Architecture mirrors cl_tauntmenu: command-owned window, single-instance holder, DesktopWindows just triggers the command.

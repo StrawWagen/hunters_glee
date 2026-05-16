@@ -132,15 +132,15 @@ function statusEffect:HookOnce( hookName, func )
 
     local fullHookIdentifier = "glee_statuseffect_" .. myName .. "_" .. hookName
 
-    activeEffectsCount[ fullHookIdentifier ] = activeEffectsCount[ fullHookIdentifier ] or 0
-    if activeEffectsCount[ fullHookIdentifier ] >= 1 then return end -- already hooked
+    activeEffectsCount[fullHookIdentifier] = activeEffectsCount[fullHookIdentifier] or 0
+    if activeEffectsCount[fullHookIdentifier] >= 1 then return end -- already hooked
     table.insert( self._teardownTasks, function()
-        activeEffectsCount[ fullHookIdentifier ] = activeEffectsCount[ fullHookIdentifier ] - 1
+        activeEffectsCount[fullHookIdentifier] = activeEffectsCount[fullHookIdentifier] - 1
         hook.Remove( hookName, fullHookIdentifier )
 
     end )
 
-    activeEffectsCount[ fullHookIdentifier ] = activeEffectsCount[ fullHookIdentifier ] + 1
+    activeEffectsCount[fullHookIdentifier] = activeEffectsCount[fullHookIdentifier] + 1
     hook.Add( hookName, fullHookIdentifier, func )
 
     return fullHookIdentifier

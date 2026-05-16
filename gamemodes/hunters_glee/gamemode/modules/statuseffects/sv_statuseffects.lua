@@ -85,7 +85,7 @@ hook.Add( "PlayerDisconnected", "glee_statuseffects_cleanup", function( ply )
     end
 end )
 
-hook.Add( "glee_PostCleanupMap", "glee_statuseffects_cleanup", function()
+hook.Add( "glee_post_cleanupmap", "glee_statuseffects_cleanup", function()
     for _, ply in ipairs( player.GetAll() ) do
         local plysEffects = ply.glee_StatusEffects
         if not plysEffects then continue end

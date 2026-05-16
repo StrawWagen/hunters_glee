@@ -33,6 +33,10 @@ if not SERVER then return end
 
 local GM = GAMEMODE
 
+ENT.SuperCloseCost = -100
+ENT.CloseCost = -50
+ENT.FarCost = 0
+
 function ENT:UpdateGivenScore()
     local plys = player.GetAll()
     local smallestDist = math.huge
@@ -48,19 +52,21 @@ function ENT:UpdateGivenScore()
 
     local smallestDistLinear = math.sqrt( smallestDist )
 
-    if smallestDistLinear < 500 then
-        scoreGiven = -100
+    if smallestDistLinear < 400 then
+        scoreGiven = self.SuperCloseCost
 
-    elseif smallestDistLinear < 1500 then
-        scoreGiven = -50
+    elseif smallestDistLinear < 1000 then
+        scoreGiven = self.CloseCost
 
     else
-        scoreGiven = 0
+        scoreGiven = self.FarCost
 
     end
     self:SetGivenScore( scoreGiven )
 
 end
+
+local MEMORY_BREAKABLE = terminator_Extras.botMemoryTypes.MEMORY_BREAKABLE
 
 function GM:ManhackCrate( pos )
     local crate = ents.Create( "prop_physics" )
@@ -72,8 +78,10 @@ function GM:ManhackCrate( pos )
 
     crate.glee_IsManhackCrate = true
 
+    -- make the bots try to break this!
     crate.terminatorHunterInnateReaction = function()
         return MEMORY_BREAKABLE
+
     end
 
     return crate
@@ -130,10 +138,10 @@ hook.Add( "EntityTakeDamage", "glee_rewarding_manhacks_reward", function ( targe
     if not canDamageTbl then return end
 
     -- already spent!
-    if not canDamageTbl[ attacker.glee_ManhackCrateDamagingId ] then return end
+    if not canDamageTbl[attacker.glee_ManhackCrateDamagingId] then return end
     if not owner.GivePlayerScore then return end
 
-    owner.glee_ManhacksThatCanDamage[ attacker.glee_ManhackCrateDamagingId ] = nil
+    owner.glee_ManhacksThatCanDamage[attacker.glee_ManhackCrateDamagingId] = nil
     if target:IsPlayer() then
         if target == owner then
             huntersGlee_Announce( { owner }, 5, 8, "You've been damaged by your own manhacks..." )
@@ -143,7 +151,7 @@ hook.Add( "EntityTakeDamage", "glee_rewarding_manhacks_reward", function ( targe
             huntersGlee_Announce( { owner }, 5, 8, "The manhacks have damaged a player! You gain 75 score!" )
 
         end
-    elseif target:IsNextBot() then
+    elseif target:IsNextBot() or target:IsNPC() then
         owner:GivePlayerScore( 25 )
         huntersGlee_Announce( { owner }, 5, 8, "The manhacks have damaged " .. GAMEMODE:GetNameOfBot( target ) .. ". You only gain 25 score." )
 
@@ -161,11 +169,12 @@ function ENT:Place()
 
     local betrayalScore = self:GetGivenScore()
     local crate = GM:ManhackCrate( self:OffsettedPlacingPos() )
+    terminator_Extras.DoPFXFromEnt( "glee_ghostly_ectoplasm", crate )
 
     if self.player and self.player.GivePlayerScore and betrayalScore then
         crate.glee_manhackcrate_player = self.player
         self.player.glee_ManhacksThatCanDamage = self.player.glee_ManhacksThatCanDamage or {}
-        self.player.glee_ManhacksThatCanDamage[ crate:GetCreationID() ] = true
+        self.player.glee_ManhacksThatCanDamage[crate:GetCreationID()] = true
         self.player:GivePlayerScore( betrayalScore )
         GAMEMODE:sendPurchaseConfirm( self.player, betrayalScore )
 

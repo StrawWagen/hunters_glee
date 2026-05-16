@@ -82,6 +82,7 @@ function ENT:Place()
     if targ.DoMetallicDamage then
         local newHealth = math.min( targ:Health() + 500, targ:GetMaxHealth() )
         targ:SetHealth( newHealth )
+        targ.glee_LastHealthSetReason = "glee_overcharger"
 
     end
 

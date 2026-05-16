@@ -5,7 +5,7 @@ if SERVER then
 
 elseif CLIENT then
 
-    local purchaseSound = Sound( "209578_zott820_cash-register-purchase.wav" )
+    local purchaseSound = Sound( "hunters_glee/209578_zott820_cash-register-purchase.wav" )
     local takeSound = Sound( "buttons/lever7.wav" )
     local getSound = Sound( "buttons/button6.wav" )
 
@@ -101,78 +101,76 @@ elseif CLIENT then
     end, autoComplete, "purchase an item" )
     -- ew ew
 
+
+    -- take cost number
+    -- return string that accurately describes what its gonna do
+    -- also return color
+    -- so cost -50 would be '+50' and yellow because it would give players 50 score for buying
+    -- cost 50 would be '-50' and depending on whether player can afford, green or red.
+    -- it reverses the number i know, it's stupid
+    function GM:translatedShopItemCost( purchaser, cost, compareType, identifier )
+        local standards = GAMEMODE.shopStandards
+
+        if not cost then return "", standards.shopCostNormal end
+
+        local color = standards.shopCostNormal
+        local preTextSymbol = ""
+        local theCost = ""
+        local compareVal
+        if compareType == "score" then
+            compareVal = purchaser:GetScore()
+
+        elseif compareType == "skull" then
+            compareVal = purchaser:GetSkulls()
+
+        end
+
+        -- add difference between "not enough money" and "you bought this already"
+        if identifier and purchaser and purchaser.shopItemCooldowns[identifier] == math.huge then
+            return "---", standards.shopCostNormal
+
+        end
+
+        if cost > 0 then
+            preTextSymbol = "-"
+            theCost = tostring( math.abs( cost ) )
+
+            canAfford = ( compareVal + -cost ) >= 0
+
+            if not canAfford then
+                color = standards.shopCostTooPoor
+
+            else
+                color = standards.shopCostCanBuy
+
+            end
+
+        elseif cost < 0 then
+            preTextSymbol = "+"
+            theCost = tostring( math.abs( cost ) )
+            color = standards.shopCostGivesMoney
+
+        elseif cost == 0 then
+            theCost = "N/A"
+            color = standards.shopCostNormal
+
+        end
+
+        local outString = preTextSymbol .. theCost
+
+        return outString, color
+
+    end
+
 end
+
 
 -- all below is shared
 
 function GM:GetShopItemData( identifier )
-    local dat = GAMEMODE.shopItems[ identifier ]
+    local dat = GAMEMODE.shopItems[identifier]
     if not istable( dat ) then return end
     return dat
-
-end
-
-local white = Vector( 255,255,255 )
-local red = Color( 220,0,0 )
-local yellow = Color( 255,255,0 )
-local sadGreen = Color( 106,190,9 )
-
--- take cost number
--- return string that accurately describes what its gonna do
--- also return color
--- so cost -50 would be '+50' and yellow because it would give players 50 score for buying
--- cost 50 would be '-50' and depending on whether player can afford, green or red.
--- it reverses the number i know, it's stupid
-function GM:translatedShopItemCost( purchaser, cost, compareType, identifier )
-
-    if not cost then return "", white end
-
-    local color = white
-    local preTextSymbol = ""
-    local theCost = ""
-    local compareVal
-    if compareType == "score" then
-        compareVal = purchaser:GetScore()
-
-    elseif compareType == "skull" then
-        compareVal = purchaser:GetSkulls()
-
-    end
-
-    -- add difference between "not enough money" and "you bought this already"
-    if identifier and purchaser and purchaser.shopItemCooldowns[ identifier ] == math.huge then
-        return "---", white
-
-    end
-
-    if cost > 0 then
-        preTextSymbol = "-"
-        theCost = tostring( math.abs( cost ) )
-
-        canAfford = ( compareVal + -cost ) >= 0
-
-        if not canAfford then
-            color = red
-
-        else
-            color = sadGreen
-
-        end
-
-    elseif cost < 0 then
-        preTextSymbol = "+"
-        theCost = tostring( math.abs( cost ) )
-        color = yellow
-
-    elseif cost == 0 then
-        theCost = "N/A"
-        color = white
-
-    end
-
-    local outString = preTextSymbol .. theCost
-
-    return outString, color
 
 end
 
@@ -185,6 +183,7 @@ end
 
 function GM:shopMarkup( purchaser, toPurchase )
     local dat = GAMEMODE:GetShopItemData( toPurchase )
+    if not dat then return 1 end
     if not dat.markup then return 1 end
     if GAMEMODE:RoundState() == GAMEMODE.ROUND_ACTIVE then
         if dat.markupPerPurchase then
@@ -221,8 +220,10 @@ function GM:shopItemCost( toPurchase, purchaser )
         end
     else
         cost = costRaw
+
     end
 
+    -- always process this into a number
     if not isnumber( cost ) then
         cost = 0
 
@@ -235,10 +236,13 @@ end
 
 function GM:shopItemSkullCost( toPurchase, purchaser )
     if not toPurchase then return end
+
     local dat = GAMEMODE:GetShopItemData( toPurchase )
     if not dat then return end
-    local skullCostRaw = dat.skullCost
+
+    local skullCostRaw = dat.shSkullCost
     if not skullCostRaw then return end
+
     local skullCost = nil
 
     if isfunction( skullCostRaw ) then
@@ -257,7 +261,8 @@ function GM:shopItemSkullCost( toPurchase, purchaser )
 
     end
 
-    if not skullCost then return end
+    -- if skullcost is not a number, should fallback to nil and let score display 
+    if not isnumber( skullCost ) then return end
 
     skullCost = skullCost * GAMEMODE:shopMarkup( purchaser, toPurchase )
     return math.Round( skullCost )
@@ -314,6 +319,20 @@ function GM:translateShopItemDescription( ply, toPurchase, descriptionRaw )
 
         end
     end
+
+    local itemData = GAMEMODE:GetShopItemData( toPurchase )
+    if not itemData then return description end -- No item???
+
+    local noErrors, returned = xpcall( hook.Run, errorCatchingMitt, "glee_shop_itemdescription", ply, itemData, description )
+    if noErrors == false then
+        -- Non-halting error
+        print( "GLEE: !!!!!!!!!! glee_shop_itemdescription hook errored for " .. toPurchase .. "!!!!!!!!!!!" )
+
+    elseif isstring( returned ) then
+        description = returned
+
+    end
+
     return description
 
 end
@@ -322,11 +341,25 @@ function GM:doShopCooldown( ply, toPurchase, cooldown )
     if not isnumber( cooldown ) or cooldown <= 0 then return end
     ply.shopItemCooldowns[toPurchase] = CurTime() + cooldown
 
+    if not SERVER then return end
+    net.Start( "glee_sendshopcooldowntoplayer" )
+        local cooldownClamped = math.Clamp( cooldown, 0, 2147483645 ) -- if cooldown == 2147483645 then assume infinite, and only allow one purchase per round.
+        net.WriteFloat( cooldownClamped )
+        net.WriteString( toPurchase )
+    net.Send( ply )
+
 end
 
 function GM:noShopCooldown( ply, toPurchase )
     ply.shopItemCooldowns[toPurchase] = 0
 
+end
+
+if SERVER then
+    concommand.Add( "glee_test_resetcooldowns", function()
+        GAMEMODE:ResetShopItemCooldowns()
+
+    end, nil, "Reset all shop cooldowns", FCVAR_CHEAT )
 end
 
 local shopEnabled = CreateConVar( "huntersglee_enableshop", 1, FCVAR_REPLICATED, "Enables the shop.", 0, 1 )

@@ -76,6 +76,8 @@ end
 function SWEP:Deploy()
     self:EmitSound( "hunters_glee/weapons/gauss/gauss_deploy.wav" )
 
+    return true
+
 end
 
 function SWEP:Holster()
@@ -126,9 +128,10 @@ function SWEP:DumpCharge()
 
         end
 
-        dmginfo:SetDamageType( bit.bor( DMG_AIRBOAT,DMG_BLAST ) )
+        dmginfo:SetDamageType( bit.bor( DMG_AIRBOAT, DMG_BLAST ) )
         if chargeLevel == max_Charge and trace.Entity:GetClass() ~= "prop_vehicle_apc" then
             trace.Entity:SetHealth( 0 )
+            trace.Entity.glee_LastHealthSetReason = "glee_taucannon_overcharge_instantkill"
 
         end
         local effectdata = EffectData()
@@ -545,6 +548,10 @@ function SWEP:SecondaryAttack()
 end
 
 if not SERVER then return end
-if not GAMEMODE.RandomlySpawnEnt then return end
+if not GAMEMODE.RandomlySpawnEntTbl then return end
 
-GAMEMODE:RandomlySpawnEnt( "termhunt_taucannon", 1, math.Rand( 0, 1 ), nil, math.random( 1000, 10000 ) )
+GAMEMODE:RandomlySpawnEntTbl( "termhunt_taucannon", {
+    maxCount = 1,
+    chance = math.Rand( 0, 1 ),
+    radius = math.random( 1000, 10000 ),
+} )

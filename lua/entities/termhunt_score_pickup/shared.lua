@@ -18,8 +18,8 @@ end
 
 util.PrecacheModel( "models/maxofs2d/hover_rings.mdl" )
 
-local color_good = Color( 0,255,0 )
-local color_bad = Color( 255,0,0 )
+local color_good = Color( 0, 255, 0 )
+local color_bad = Color( 255, 0, 0 )
 local defaultScore = 15
 
 function ENT:Initialize()
@@ -30,7 +30,7 @@ function ENT:Initialize()
         self.nextScoreClick = CurTime() + 3
         self.DoNotDuplicate = true
         if self:GetScore() == 0 then
-            self:SetScore( 15 )
+            self:SetScore( defaultScore )
 
         end
         self:SetModel( "models/maxofs2d/hover_rings.mdl" )

@@ -34,6 +34,12 @@ hook.Add( "glee_navpatcher_finish", "glee_spawnajeepifwewant", function()
 
     local jeepAreaSize = math.random( 350, 450 )
 
-    GAMEMODE:RandomlySpawnEnt( "prop_vehicle_jeep_old", jeepsOnThisMap, 100, jeepAreaSize, 16000, preSpawnJeepFunc )
+    GAMEMODE:RandomlySpawnEntTbl( "prop_vehicle_jeep_old", {
+        maxCount = jeepsOnThisMap,
+        chance = 100,
+        minAreaSize = jeepAreaSize,
+        radius = 16000,
+        preSpawnedFunc = preSpawnJeepFunc,
+    } )
 
 end )

@@ -1,0 +1,365 @@
+AddCSLuaFile()
+
+ENT.Type = "anim"
+ENT.Base = "screamer_crate"
+
+ENT.Category    = "Other"
+ENT.PrintName   = "Ghostly Wind"
+ENT.Author      = "TwoLemons"
+ENT.Purpose     = "A strong gust of wind"
+ENT.Spawnable    = true
+ENT.AdminOnly    = game.IsDedicated()
+ENT.Category = "Hunter's Glee"
+ENT.Model = "models/glee/unit_cube.mdl"
+
+ENT.HullSize = Vector( 600, 400, 400 )
+ENT.PosOffset = Vector( 0, 0, 0 )
+ENT.PosOffsetPostPlace = Vector( 0, 0, 65 ) -- Additional offset that applies after placing (mostly affects sound origin)
+ENT.Cooldown = 15
+
+ENT.PushDelayMin = 1.5
+ENT.PushDelayMax = 1.75
+ENT.PushPitch = -25 -- Negative is upwards
+ENT.PushStrengthPlayer = 590 -- Exact velocity for players
+ENT.PushStrengthNPC = 1000 -- Raw force for NPCs (NextBots don't work...)
+ENT.PushStrengthMisc = 10000 -- Raw force for everything else
+
+ENT.TargetRefindInterval = 0.25
+
+ENT.MiniPushStrengthMin = 0.1
+ENT.MiniPushStrengthMax = 0.2
+ENT.MiniPushIntervalMin = 0.1
+ENT.MiniPushIntervalMax = 0.3
+
+ENT.PushVariancePlayerMin = 1
+ENT.PushVariancePlayerMax = 1.2
+ENT.PushVarianceMiscMin = 0.75
+ENT.PushVarianceMiscMax = 1
+
+ENT.CanPlaceColor = Color( 0, 200, 255, 150 )
+ENT.CannotPlaceColor = Color( 255, 0, 0, 150 )
+ENT.OnlyNetworkToOwner = false
+
+ENT.WindHullMin = ENT.HullSize * -0.5
+ENT.WindHullMax = ENT.HullSize * 0.5
+
+game.AddParticles( "particles/glee/glee_ghostly_wind.pcf" )
+PrecacheParticleSystem( "glee_ghostly_wind" )
+
+game.AddParticles( "particles/glee/glee_ghostly_wind_initial.pcf" )
+PrecacheParticleSystem( "glee_ghostly_wind_initial" )
+
+--[[ TODO:
+    - Better sounds + param tuning
+    - Temporarily ragdoll players on full gust
+        - Will need a dedicated ragdoll system, out of scope for now
+        - Could maybe ragdoll select nextbots as well to work around them being unpushable?
+--]]
+
+if CLIENT then
+    function ENT:DoHudStuff()
+        local screenMiddleW = ScrW() / 2
+        local screenMiddleH = ScrH() / 2
+
+        local scoreGained = math.Round( self:GetGivenScore() )
+        local stringPt1 = ""
+        if scoreGained < 0 then
+            stringPt1 = "Cost: "
+
+        end
+
+        local scoreString = stringPt1 .. math.abs( scoreGained )
+
+        surface.drawShadowedTextBetter( scoreString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
+
+    end
+
+    function ENT:ClientThink()
+        if LocalPlayer() ~= self:GetOwner() then
+            self:SetNoDraw( true )
+            return
+
+        end
+
+        self:SetNoDraw( false )
+
+    end
+
+    function ENT:OwnerlessThink()
+        self:SetNoDraw( true )
+        self:ParticleThink()
+
+        -- Sync ghostEnt update with server since ghost wind doesn't delete immediately
+        if LocalPlayer().ghostEnt == self then
+            LocalPlayer().ghostEnt = nil
+
+        end
+    end
+
+    function ENT:ParticleThink()
+        if not self:GetParticlesActive() then return end
+
+        if not self.doneInitParticle then -- First active tick, make emitter.
+            self.doneInitParticle = true
+
+            local pushEffect = self:CreateParticleEffect( "glee_ghostly_wind_initial", PATTACH_ABSORIGIN_FOLLOW )
+            local size600 = 55
+            local myActualSize = self.HullSize.x
+            local size = size600 * ( myActualSize / 600 )
+
+            pushEffect:SetControlPoint( 2, Vector( size, 0, 0 ) )
+
+        end
+
+        local bigPush = self:GetParticlesBigPush() and not self.windParticleBigPushDone
+        if bigPush then
+            self.windParticleBigPushDone = true
+
+            local pushEffect = self:CreateParticleEffect( "glee_ghostly_wind", PATTACH_ABSORIGIN_FOLLOW )
+            local size600 = 55
+            local myActualSize = self.HullSize.x
+            local size = size600 * ( myActualSize / 600 )
+
+            pushEffect:SetControlPoint( 2, Vector( size, 0, 0 ) )
+
+        end
+    end
+end
+
+function ENT:PostInitializeFunc()
+    self:SetMaterial( "models/props_lab/warp_sheet" )
+    self:DrawShadow( false )
+    self:SetParticlesActive( false )
+    self:SetParticlesBigPush( false )
+
+    self.nextTargFind = 0
+
+    if SERVER then return end
+
+    local matrix = Matrix()
+    matrix:Scale( self.HullSize )
+    self:EnableMatrix( "RenderMultiply", matrix )
+    self:SetRenderBounds( self.WindHullMin, self.WindHullMax )
+
+    self:CallOnRemove( "glee_escapeewind_removeemitter", function( ent )
+        if not IsValid( ent ) then return end
+        if not ent.windParticleEmitter then return end
+
+        ent.windParticleEmitter:Finish()
+        ent.windParticleEmitter = nil
+
+    end )
+
+end
+
+function ENT:SetupDataTablesExtra()
+    self:NetworkVar( "Bool", 2, "ParticlesActive" )
+    self:NetworkVar( "Bool", 3, "ParticlesBigPush" )
+
+end
+
+function ENT:CalculateCanPlace()
+    if not self:HasEnoughToPurchase() then return false, self:TooPoorString() end
+    return true
+
+end
+
+function ENT:ManageMyPos()
+    local ang = self.player:EyeAngles()
+    ang[1] = 0
+    ang[3] = 0
+
+    self:SetPos( self.player:GetEyeTrace().HitPos + self.PosOffset )
+    self:SetAngles( ang )
+
+end
+
+
+if not SERVER then return end
+
+
+function ENT:UpdateGivenScore()
+    self:SetGivenScore( -75 )
+
+end
+
+function ENT:OwnerlessThink()
+    if self.autoFindActive and self.nextTargFind < CurTime() then
+        self.nextTargFind = CurTime() + self.TargetRefindInterval
+        self:FindGustTargets()
+
+    end
+
+    if self.miniPushActive then
+        self:TryMiniGust()
+
+    end
+
+    self:NextThink( CurTime() )
+
+end
+
+function ENT:FindGustTargets()
+    local windPos = self:GetPos()
+    local windAng = self:GetAngles()
+    local hullMin = self.WindHullMin
+    local hullMax = self.WindHullMax
+
+    -- Approximate search from AABB bounds
+    local aabbMins, aabbMaxs = self:GetRotatedAABB( hullMin, hullMax )
+    local targets = ents.FindInBox( aabbMins + windPos, aabbMaxs + windPos )
+
+    for i = #targets, 1, -1 do
+        local target = targets[i]
+        local badTarget =
+            not IsValid( target ) or
+            target:IsNextBot() or
+            not IsValid( target:GetPhysicsObject() ) or
+            not target:GetPhysicsObject():IsMotionEnabled() or
+            ( target:IsPlayer() and not target:Alive() ) or
+            not util.IsOBBIntersectingOBB( target:GetPos(), target:GetAngles(), target:OBBMins(), target:OBBMaxs(), windPos, windAng, hullMin, hullMax )
+
+        if badTarget then
+            table.remove( targets, i )
+
+        end
+    end
+
+    self.pushTargets = targets
+
+end
+
+function ENT:Place()
+    self:FindGustTargets()
+
+    local windPos = self:GetPos()
+
+    local owner = self.player
+    self.pushOwner = owner
+    self.miniPushActive = true
+    self.autoFindActive = true
+    self:SetPos( windPos + self.PosOffsetPostPlace ) -- Raise up so sounds don't play from the floor
+    self:SetParticlesActive( true )
+
+    local score = self:GetGivenScore()
+
+    if owner.GivePlayerScore and score then
+        owner:GivePlayerScore( score )
+        GAMEMODE:sendPurchaseConfirm( owner, score )
+
+    end
+
+    GAMEMODE:AddMischievousness( owner, 1, "used a gust of wind" )
+
+    if self.itemIdentifier then
+        GAMEMODE:doShopCooldown( owner, self.itemIdentifier, self.Cooldown )
+
+    end
+
+    owner.placableTargeted = nil
+    owner.ghostEnt = nil
+
+    self.player = nil
+    self:SetOwner( NULL )
+
+    local delay = math.Rand( self.PushDelayMin, self.PushDelayMax )
+    local telegraphSound = CreateSound( self, "ambient/wind/windgust_strong.wav" )
+    self.telegraphSound = telegraphSound
+    telegraphSound:SetSoundLevel( 85 )
+    telegraphSound:PlayEx( 0, 90 )
+    telegraphSound:ChangeVolume( 1, delay )
+    telegraphSound:ChangePitch( 150, delay )
+
+    timer.Simple( delay, function()
+        if not IsValid( self ) then return end
+
+        self:FinalGust()
+
+    end )
+end
+
+function ENT:Gust( strength, shakeMult, countMischief )
+    if not self.pushTargets then return end
+
+    local pushAng = self:GetAngles()
+    pushAng[1] = self.PushPitch
+    strength = strength or 1
+    shakeMult = shakeMult or 1
+
+    util.ScreenShake( self:GetPos(), 3 * strength * shakeMult, 40, 4 * math.max( strength, 0.5 ), 1000, true )
+
+    local pushVec = pushAng:Forward() * strength
+    local pushVecPlayer = pushVec * self.PushStrengthPlayer
+    local pushVecNPC = pushVec * self.PushStrengthNPC
+    local pushVecMisc = pushVec * self.PushStrengthMisc
+    local owner = IsValid( self.pushOwner ) and self.pushOwner or game.GetWorld()
+    local targets = self.pushTargets
+
+    for _, target in ipairs( targets ) do
+        if not IsValid( target ) then continue end
+
+        local physObj = target:GetPhysicsObject()
+        if not IsValid( physObj ) then continue end
+
+        if target:IsPlayer() then
+            if not target:Alive() then continue end
+
+            target:SetVelocity( pushVecPlayer * math.Rand( self.PushVariancePlayerMin, self.PushVariancePlayerMax ) )
+            if owner and countMischief then GAMEMODE:AddMischievousness( owner, 5, "pushed a player with wind" ) end
+            if GAMEMODE.BlameForFallDamage then GAMEMODE:BlameForFallDamage( target, owner, self ) end
+
+        elseif target:IsNPC() then
+            if not target:Alive() then continue end
+
+            local mult = math.max( 100 / physObj:GetMass(), 0.5 )
+            target:SetVelocity( pushVecNPC * mult )
+
+        else
+            target:GetPhysicsObject():ApplyForceCenter( pushVecMisc * math.Rand( self.PushVarianceMiscMin, self.PushVarianceMiscMax ) )
+            hook.Run( "glee_OnEscapeeWindPushed", target )
+
+        end
+    end
+end
+
+function ENT:TryMiniGust()
+    local now = CurTime()
+    if self.miniPushNextTime and self.miniPushNextTime > now then return end
+
+    self.miniPushNextTime = now + math.Rand( self.MiniPushIntervalMin, self.MiniPushIntervalMax )
+    self:Gust( math.Rand( self.MiniPushStrengthMin, self.MiniPushStrengthMax ) )
+
+end
+
+function ENT:FinalGust()
+    if not self.pushTargets then return end
+
+    self.telegraphSound:ChangeVolume( 0, 1.5 )
+    self.telegraphSound:ChangePitch( 90, 1.5 )
+    self:EmitSound( "ambient/wind/windgust.wav", 85, 130, 1 )
+
+    self:Gust( 1, 2, true )
+    self:SetParticlesBigPush( true )
+    self.pushTargets = nil
+    self.miniPushActive = false
+    self.autoFindActive = false
+
+    timer.Simple( 1, function()
+        if not IsValid( self ) then return end
+        self:SetParticlesActive( false )
+
+    end )
+
+    timer.Simple( 6, function()
+        if not IsValid( self ) then return end
+
+        if self.telegraphSound then
+            self.telegraphSound:Stop()
+            self.telegraphSound = nil
+
+        end
+
+        self:Remove()
+
+    end )
+end

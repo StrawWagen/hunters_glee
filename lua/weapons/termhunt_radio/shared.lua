@@ -75,7 +75,7 @@ function SWEP:GetChannelIndex()
 end
 
 function SWEP:GetChannelTranslated()
-    return legalChannels[ self:GetChannelIndex() ]
+    return legalChannels[self:GetChannelIndex()]
 
 end
 

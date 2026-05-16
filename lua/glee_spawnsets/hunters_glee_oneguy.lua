@@ -12,6 +12,7 @@ local set = {
     maxSpawnDist = { 2500, 3500 }, -- CLOSE!
     roundEndSound = "default",
     roundStartSound = "default",
+    roundEarlyStartSound = "default",
     chanceToBeVotable = 5,
     spawns = {
         {
@@ -23,6 +24,7 @@ local set = {
             difficultyCost = 1,
             maxCount = 1,
             countClass = "terminator_nextbot_snail",
+            isBoss = false, -- single hunter but not a boss round
         },
     }
 }

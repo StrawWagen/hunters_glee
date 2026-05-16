@@ -1,51 +1,37 @@
 
-hook.Add( "PostCleanupMap", "huntersglee_makeallthedoorsbashable", function()
-    for _, door in ipairs( ents.FindByClass( "prop_door_rotating" ) ) do
-        local doorDamageListener = ents.Create( "prop_physics" )
-        if not IsValid( doorDamageListener ) then continue end
+hook.Add( "EntityTakeDamage", "huntersglee_doorsexplode", function( target, dmg )
+    if not dmg:IsExplosionDamage() then return end
 
-        doorDamageListener.isDoorDamageListener = true
-        doorDamageListener.terminatorIgnoreEnt = true
+    local targsClass = target:GetClass()
+    if targsClass ~= "prop_door_rotating" then return end
 
-        doorDamageListener:SetModel( "models/hunter/blocks/cube025x025x025.mdl" )
-        doorDamageListener:SetPos( door:WorldSpaceCenter() )
-        doorDamageListener:SetOwner( door )
-        doorDamageListener:SetParent( door )
-        doorDamageListener:Spawn()
+    local locked = target:GetInternalVariable( "m_bLocked" ) == true
+    if dmg:GetDamage() < 40 then terminator_Extras.StrainSound( target ) return end
+    if dmg:GetDamage() < 80 then
+        if locked then
+            terminator_Extras.DoorHitSound( target )
+            terminator_Extras.StrainSound( target )
 
-        doorDamageListener:SetNoDraw( true )
-        doorDamageListener:SetCollisionGroup( COLLISION_GROUP_WORLD )
+        else
+            terminator_Extras.DoorHitSound( target )
+            terminator_Extras.OpenDoorQuicklyAwayFrom( target, dmg:GetInflictor() )
 
-        door.doorDamageListener = doorDamageListener
-        doorDamageListener.realDoor = door
-        doorDamageListener.isDoorDamageListener = true
+        end
+        return
 
     end
-end )
-
-
-hook.Add( "EntityTakeDamage", "huntersglee_doorsexplode", function( target, dmg )
-    if not target.isDoorDamageListener then return end
-    local atkIsBot = dmg:GetAttacker():IsNextBot()
-    if not dmg:IsExplosionDamage() and not atkIsBot then return end
-    if dmg:GetDamage() < 60 and not atkIsBot then terminator_Extras.StrainSound( target ) return end
     if not dmg:GetDamagePosition() then return end
-    if not target.realDoor:IsSolid() then return end
+    -- already bashed
+    if not target:IsSolid() then return end
     -- let nails do their thing
-    if target.realDoor.huntersglee_breakablenails then return end
-    if not terminator_Extras.CanBashDoor( target.realDoor ) then return end
+    if target.huntersglee_breakablenails then return end
+    if not terminator_Extras.CanBashDoor( target ) then terminator_Extras.StrainSound( target ) return end
 
-    terminator_Extras.DehingeDoor( dmg:GetAttacker(), target.realDoor )
+    if locked then
+        terminator_Extras.EmitSparksFromDoorHandle( target )
 
-end )
+    end
 
-hook.Add( "GravGunPickupAllowed", "glee_dontgravgun_doordamagelisteners", function( _, gravgunned )
-    if gravgunned.isDoorDamageListener then return false end
-
-end )
-
-hook.Add( "FindUseEntity", "huntersglee_dontusethedoorbashprops", function( user, used ) 
-    if not used.isDoorDamageListener then return end
-    return used.realDoor
+    terminator_Extras.DehingeDoor( dmg:GetAttacker(), target )
 
 end )

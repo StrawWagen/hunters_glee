@@ -31,7 +31,7 @@ local CurTime = CurTime
 
 local crates = {}
 
-hook.Add( "glee_sv_validgmthink_active", "glee_addcratejobs", function()
+hook.Add( "glee_sv_validgmthink_not_over", "glee_addcratejobs", function( _, currState )
     if #player.GetAll() > plysNeeded:GetInt() then return end
     if nextCrateSpawn > CurTime() then return end
 
@@ -60,7 +60,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_addcratejobs", function()
         if area:IsBlocked() then return end
         if area:IsUnderwater() then return end
         -- dont place anchor boxes in spots already taken!
-        if not currJob.sortForNearest and currJob.placedAlready[ area:GetID() ] then return end
+        if not currJob.sortForNearest and currJob.placedAlready[area:GetID()] then return end
         if nearbyGreaterThanCount( area:GetCenter(), 400, crates, 4 ) then return end
         return true
 
@@ -100,7 +100,6 @@ hook.Add( "glee_sv_validgmthink_active", "glee_addcratejobs", function()
 
     end
 
-    GAMEMODE.roundExtraData = GAMEMODE.roundExtraData or {}
     proceduralCratePlaces = GAMEMODE.roundExtraData.proceduralCratePlaces or 0
     GAMEMODE.roundExtraData.proceduralCratePlaces = proceduralCratePlaces + 1
 
@@ -145,7 +144,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_addcratejobs", function()
             return true
 
         end
-    elseif ( mod == 9 and proceduralCratePlaces > 10 and #GAMEMODE:getDeadPlayers() <= 0 ) or staleAndNeedsAScreamer then
+    elseif currState == GAMEMODE.ROUND_ACTIVE and ( ( mod == 9 and proceduralCratePlaces > 10 and #GAMEMODE:getDeadPlayers() <= 0 ) or staleAndNeedsAScreamer ) then
         staleAndNeedsAScreamer = nil
         crateJob.onPosFoundFunction = function( _, bestPosition )
             local crate = GAMEMODE:ScreamingCrate( bestPosition )
@@ -180,7 +179,14 @@ hook.Add( "glee_sv_validgmthink_active", "glee_addcratejobs", function()
     --print( "ADDED" )
     --PrintTable( crateJob )
 
-    nextCrateSpawn = CurTime() + GAMEMODE:ScaledGenericSpawnerRate( time )
+    local nextAdd = GAMEMODE:ScaledGenericSpawnerRate( time )
+
+    if currState ~= GAMEMODE.ROUND_ACTIVE then
+        nextAdd = nextAdd * math.Rand( 1, 2 )
+
+    end
+
+    nextCrateSpawn = CurTime() + nextAdd
 
 end )
 
@@ -188,9 +194,9 @@ end )
 local function postPlaced( bestPosition )
     local placedArea = GAMEMODE:getNearestNav( bestPosition, 500 )
     if placedArea and placedArea.IsValid and placedArea:IsValid() then
-        placedAlready[ placedArea:GetID() ] = true
+        placedAlready[placedArea:GetID()] = true
         for _, area in ipairs( placedArea:GetAdjacentAreas() ) do
-            placedAlready[ area:GetID() ] = true
+            placedAlready[area:GetID()] = true
 
         end
     end

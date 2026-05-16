@@ -1,0 +1,6 @@
+"VertexLitGeneric"
+{
+	"$baseTexture" "models/glee/weapons/annabelle/shell"
+	"$envmapmask" "models/glee/weapons/annabelle/shell_ref"
+	"$envmap" "env_cubemap"
+}

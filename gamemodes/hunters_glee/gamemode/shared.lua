@@ -2,11 +2,16 @@
 DeriveGamemode( "sandbox" )
 
 -- GLOBALS!
-GM.ROUND_INVALID          = -1 -- tell people to install a navmesh
+GM.ROUND_INVALID    = -1 -- tell people to install a navmesh
 GM.ROUND_SETUP      = 0 -- wait until the navmesh has definitely spawned
 GM.ROUND_ACTIVE     = 1 -- death has consequences and score can accumulate
 GM.ROUND_INACTIVE   = 2 -- let players run around and prevent death
 GM.ROUND_LIMBO      = 3 -- just display winners
+GM.ROUND_TESTSTATE  = 4 -- do nothing, no hunters, just exists for testing and development
+
+GM.TEAM_PLAYING = 1 -- alive
+GM.TEAM_SPECTATE = 2 -- spectating, as a ghost
+GM.TEAM_ESCAPED = 3 -- spectating, but you can't respawn, get cooler items in the shop and free bot controlling
 
 GM.ISHUNTERSGLEE = true
 
@@ -15,8 +20,9 @@ GM.Author = "StrawWagen"
 GM.Email = "N/A"
 GM.Website = "N/A"
 
-include( "player_class/player_termrunner.lua" )
+CreateConVar( "glee_discord_url", "", FCVAR_ARCHIVE + FCVAR_REPLICATED, "Adds a discord join link for your server in the glee scoreboard." )
 
+include( "player_class/player_termrunner.lua" )
 include( "sh_player.lua" )
 
 include( "modules/sh_panic.lua" )
@@ -26,6 +32,8 @@ include( "modules/sh_deathsounds.lua" )
 include( "modules/sh_slowmopitch.lua" )
 include( "modules/sh_danceslowdown.lua" )
 include( "modules/sh_playerdrowning.lua" )
+
+include( "modules/guilt/sh_guilt.lua" )
 include( "modules/battery/sh_battery.lua" )
 include( "modules/sh_detecthunterkills.lua" )
 include( "modules/shopitems/sh_shophelpers.lua" )
@@ -60,9 +68,13 @@ function GM:PostCleanupMap()
         --GAMEMODE:removePorters()
         GAMEMODE:removeBlockers()
 
-        hook.Run( "glee_PostCleanupMap" )
+        hook.Run( "glee_post_cleanupmap" )
 
         if GAMEMODE.blockCleanupSetup then return end
+
+        hook.Run( "glee_post_realcleanupmap" )
+
+        GAMEMODE:StopAllSolidSounds()
 
         for _, ply in ipairs( player.GetAll() ) do
             ply.isSetup = nil

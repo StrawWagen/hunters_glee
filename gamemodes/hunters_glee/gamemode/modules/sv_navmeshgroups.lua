@@ -1,7 +1,6 @@
 local GAMEMODE = GAMEMODE or GM
 GAMEMODE.isSkyOnMap = GAMEMODE.isSkyOnMap or nil
 GAMEMODE.highestZ = GAMEMODE.highestZ or nil
-GAMEMODE.areasUnderSky = GAMEMODE.areasUnderSky or nil
 
 local coroutine_running = coroutine.running
 local coroutine_yield = coroutine.yield
@@ -221,8 +220,20 @@ function GM:FilterNavareaGroupsForGreaterThanPercent( groups, targetPercent )
     end
 
     return finalGroups
+
 end
 
+function GM:BuildNavAreaReverseMap( groups )
+    local map = {}
+    for _, group in ipairs( groups ) do
+        for _, navAreaInGroup in ipairs( group ) do
+            map[navAreaInGroup] = group
+
+        end
+    end
+    GAMEMODE.biggestNavmeshGroupsByArea = map
+
+end
 
 -- find a navarea center that is on biggest navmesh groups, and is close ish to a spawnpoint.
 
@@ -242,19 +253,19 @@ function GM:FindValidNavAreaCenter( navAreaGroups )
     local randomSpawn
     local randomSpawnInd = math.random( 1, #spawns )
     for _ = 1, 10 do
-        randomSpawn = spawns[ randomSpawnInd ]
+        randomSpawn = spawns[randomSpawnInd]
         if IsValid( randomSpawn ) then break end
 
     end
 
     -- choose a random navarea group
-    local group = navAreaGroups[ math.random( #navAreaGroups ) ]
+    local group = navAreaGroups[math.random( #navAreaGroups )]
 
     -- add a random sample of 30 navarea centers to the array
     for _ = 1, 150 do
         if #navAreaCenters > 30 then break end
         -- choose a random navarea from the group
-        local navArea = group[ math.random( #group ) ]
+        local navArea = group[math.random( #group )]
         if not IsValid( navArea ) then continue end
 
         if navArea:IsUnderwater() then continue end
@@ -292,21 +303,24 @@ end
 
 -- used for finding out WHICH group player is in
 function GM:GetGroupThatNavareaExistsIn( navArea, navAreaGroups, yieldable )
-    -- iterate over each navarea group
-    if istable( navAreaGroups ) then
-        for _, group in ipairs( navAreaGroups ) do
-            if yieldable then
-                coroutine_yield()
+    if not istable( navAreaGroups ) then return end
 
-            end
-            if istable( group ) then
-                -- check if the navarea is in the group
-                for _, navAreaInGroup in ipairs( group ) do
-                    if navAreaInGroup == navArea then
-                        -- the navarea is in the group, so return true
-                        return group
+    if navAreaGroups == GAMEMODE.biggestNavmeshGroups and GAMEMODE.biggestNavmeshGroupsByArea then
+        return GAMEMODE.biggestNavmeshGroupsByArea[navArea]
 
-                    end
+    end
+
+    -- fallback
+    for _, group in ipairs( navAreaGroups ) do
+        if yieldable then
+            coroutine_yield()
+
+        end
+        if istable( group ) then
+            for _, navAreaInGroup in ipairs( group ) do
+                if navAreaInGroup == navArea then
+                    return group
+
                 end
             end
         end
@@ -324,6 +338,11 @@ local function areaThatIsntUnderwater( areas )
 
     end
     return bestArea
+
+end
+
+function GM:GetRandomGroup( groups )
+    return groups[math.random( 1, #groups )]
 
 end
 
@@ -382,8 +401,8 @@ function GM:GetAreaInOccupiedBigGroupOrRandomBigGroup( noUnderWater )
     -- nope, hunters aren't in big groups either, just a random area in a random big group
     ::getareainbigoroccupiedFail::
 
-    local randBigGroup = bigGroups[ math.random( 1, #bigGroups ) ]
-    local randAreaInRandGroup = randBigGroup[ math.random( 1, #randBigGroup ) ]
+    local randBigGroup = bigGroups[math.random( 1, #bigGroups )]
+    local randAreaInRandGroup = randBigGroup[math.random( 1, #randBigGroup )]
 
     if noUnderWater and randAreaInRandGroup:IsUnderwater() then
         randAreaInRandGroup = areaThatIsntUnderwater( randBigGroup )
@@ -398,7 +417,7 @@ function GM:GetNavmeshGroupsWithPlayers( yieldable )
     local bigGroups = GAMEMODE.biggestNavmeshGroups
     local alivePlayers = GAMEMODE:getAlivePlayers()
 
-    if #alivePlayers <= 0 then return end
+    if #alivePlayers <= 0 then return { GAMEMODE:GetRandomGroup( bigGroups ) } end
 
     local groupsWithPlayers = {}
     local doneGroups = {}
@@ -414,10 +433,10 @@ function GM:GetNavmeshGroupsWithPlayers( yieldable )
         local bigGroupThatSomeoneIsIn = GAMEMODE:GetGroupThatNavareaExistsIn( alivePlysNav, bigGroups )
 
         if not bigGroupThatSomeoneIsIn then continue end
-        if doneGroups[ #bigGroupThatSomeoneIsIn ] then continue end
+        if doneGroups[#bigGroupThatSomeoneIsIn] then continue end
 
         -- this can theoretically break, but i know it's very, very unlikely
-        doneGroups[ #bigGroupThatSomeoneIsIn ] = true
+        doneGroups[#bigGroupThatSomeoneIsIn] = true
         table.insert( groupsWithPlayers, bigGroupThatSomeoneIsIn )
 
     end
@@ -431,6 +450,7 @@ function GM:TeleportRoomCheck()
     if not GAMEMODE.biggestNavmeshGroups or not GAMEMODE.navmeshGroups then
         GAMEMODE.navmeshGroups = GAMEMODE:GetConnectedNavAreaGroups( navmesh.GetAllNavAreas() )
         GAMEMODE.biggestNavmeshGroups = GAMEMODE:FilterNavareaGroupsForGreaterThanPercent( GAMEMODE.navmeshGroups, GAMEMODE.biggestGroupsRatio or 0.4 )
+        GAMEMODE:BuildNavAreaReverseMap( GAMEMODE.biggestNavmeshGroups )
 
     end
 
