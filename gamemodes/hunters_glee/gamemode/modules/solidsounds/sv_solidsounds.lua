@@ -106,14 +106,6 @@ local soundTracks = {
         },
         priority = 0,
     },
-    mapvoteMusic = {
-        sounds   = {
-            {
-                snd = "hunters_glee/music/VACANT/SEWERSiN.mp3",
-            },
-        },
-        priority = 0,
-    },
     roundEarlyStart = {
         sounds = {
             {
@@ -164,6 +156,14 @@ local soundTracks = {
             }
         },
         priority = 1000,
+    },
+    mapvoteMusic = {
+        sounds   = {
+            {
+                snd = "hunters_glee/music/VACANT/SEWERSiN.mp3",
+            },
+        },
+        priority = 10000,
     },
 }
 
