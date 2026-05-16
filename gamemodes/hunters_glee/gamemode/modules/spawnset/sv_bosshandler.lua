@@ -5,7 +5,7 @@
 -- false — opt out of auto-detection.
 -- nil   — auto-detected: if spawnSet.maxSpawnCount <= 1, the highest difficultyCost entry becomes the boss.
 
-function GAMEMODE:HandleBossDetection( spawnSet )
+function GM:HandleBossDetection( spawnSet )
     -- if any entry already explicitly declares isBoss, leave it alone
     for _, spawn in ipairs( spawnSet.spawns ) do
         if spawn.isBoss then return end
