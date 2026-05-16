@@ -162,7 +162,7 @@ local soundTracks = {
                 snd = "hunters_glee/music/VACANT/SEWERSiN.mp3",
             },
         },
-        priority = 10000,
+        priority = 5000,
     },
 }
 
