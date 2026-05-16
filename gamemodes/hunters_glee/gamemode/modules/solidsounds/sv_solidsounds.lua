@@ -65,7 +65,6 @@ local soundTracks = {
             },
             { -- ditto
                 minDifficulty = 75,
-                maxDifficulty = 150,
                 snd = "hunters_glee/music/VACANT/HARD_EAS_gori_scuffle.ogg",
             },
             {
