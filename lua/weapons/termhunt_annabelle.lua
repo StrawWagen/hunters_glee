@@ -15,7 +15,7 @@ SWEP.Spawnable    = true
 SWEP.AdminOnly    = false
 SWEP.UseHands     = true
 
-SWEP.Primary.Damage         = 90
+SWEP.Primary.Damage         = 110
 SWEP.Primary.ClipSize       = 6
 SWEP.Primary.DefaultClip    = 36
 SWEP.Primary.NumShots       = 1
