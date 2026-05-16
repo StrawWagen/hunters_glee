@@ -362,7 +362,8 @@ function ENT:CalculateCanPlace()
 end
 
 function ENT:Cancel()
-    if not self.player then return end
+    if not IsValid( self.player ) then return end
+
     local preventCancel = self.preventCancel or 0
     if preventCancel > CurTime() then return end
     if self.player:GetObserverMode() == OBS_MODE_CHASE then self.preventCancel = CurTime() + 1 return end
