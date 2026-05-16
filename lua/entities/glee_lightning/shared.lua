@@ -29,13 +29,15 @@ end
 function ENT:Initialize()
     if not SERVER then return end
     self:SetNotSolid( true )
-    self:SetNoDraw( true )
 
     timer.Simple( 0, function()
         if not IsValid( self ) then return end
         termHunt_PowafulLightning( self, self:GetOwner(), self:GetPos() + ( vector_up * 10 ), self.powa )
 
-        SafeRemoveEntityDelayed( self, 0.1 )
+        SafeRemoveEntityDelayed( self, 15 )
 
     end )
+end
+
+function ENT:Draw() -- invis
 end
