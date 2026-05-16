@@ -880,7 +880,11 @@ function GM:SpawnHunter( class, currSpawn )
     hunter.glee_IsAHunter = true
     hunter.glee_SpawnArea = spawnArea -- so we can prefer to spawn enemies from this area, if this bot ends up killing someone!
     hunter.glee_SpawnsetThatMadeMe = self.CurrSpawnSetName
-    hunter.glee_IsBoss = currSpawn.isBoss
+
+    if currSpawn then
+        hunter.glee_IsBoss = currSpawn.isBoss
+
+    end
 
     print( hunter ) -- i like this print, you cannot make me remove it
     if debuggingVar:GetBool() then
