@@ -92,8 +92,19 @@ function ENT:UpdateGivenScore()
     local slightRefund = slightSize * ( baseCost / 100 )
     slightRefund = math.Clamp( slightRefund, -baseCost * 1.5, baseCost )
 
+    local currBaseCost = baseCost
+
+    -- if not a huge slight, and target is in rescue heli, 1k base cost
+    if slightSize <= 50 then
+        local vehicle = currTarget:GetVehicle()
+        if IsValid( vehicle ) and vehicle.isARescueHeliSeat then
+            currBaseCost = 2000
+
+        end
+    end
+
     -- final cost
-    local cost = -baseCost + slightRefund
+    local cost = -currBaseCost + slightRefund
 
     self:SetGivenScore( cost )
 
