@@ -328,6 +328,7 @@ if SERVER and terminator_Extras then
                 if not diffBump then return end
                 GAMEMODE:BumpRoundDifficulty( diffBump, "rescue_heli2" ) -- send the spawner into overdrive
                 GAMEMODE:BumpSessionDifficulty( permaDiffBump, "rescue_heli2" )
+                GAMEMODE:NewSpawnWaveNow()
                 angerEverything()
 
             end
@@ -347,6 +348,7 @@ if SERVER and terminator_Extras then
                 if not diffBump then return end
                 GAMEMODE:BumpRoundDifficulty( diffBump, "rescue_heli4" )
                 GAMEMODE:BumpSessionDifficulty( permaDiffBump, "rescue_heli4" )
+                GAMEMODE:NewSpawnWaveNow()
                 angerEverything()
 
             end

@@ -59,7 +59,8 @@ function terminator_Extras.AttachParentedDetail( parent, toSpawn, localPos, loca
         det:SetParent()
         det:SetPos( thePos )
         SafeRemoveEntityDelayed( det, 35 )
-        terminator_Extras.SmartSleepEntity( det, 3 )
+        terminator_Extras.SmartSleepEntity( det, 5 )
+
     end, detail )
 
     return detail

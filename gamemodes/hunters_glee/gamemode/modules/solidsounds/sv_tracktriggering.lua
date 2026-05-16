@@ -55,6 +55,11 @@ hook.Add( "huntersglee_wave_wiped", "glee_spawnset_wavewipedsound", function()
     local everyoneCount = player.GetCount()
     if aliveCount > everyoneCount / 4 then return end -- only play if 1/4 or less players are alive
 
-    playSpawnSetSound( "quarterAliveWaveWipedSound" )
+    playSpawnSetSound( "highIntensitySound" )
+
+end )
+
+hook.Add( "huntersglee_grigori_arrival", "glee_spawnset_grigoriarrival", function()
+    playSpawnSetSound( "grigoriArrivalSound" )
 
 end )

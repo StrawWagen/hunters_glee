@@ -67,6 +67,11 @@ function meta:HasEscaped()
 
 end
 
+function meta:GetEscapeCount()
+    return self:GetNWInt( "glee_escape_count", 0 )
+
+end
+
 function meta:SeesDeadPeople()
     return self:Health() <= 0 or self:GetNWInt( "glee_radiochannel", 0 ) == 666 or self:HasStatusEffect( "divine_chosen" )
 

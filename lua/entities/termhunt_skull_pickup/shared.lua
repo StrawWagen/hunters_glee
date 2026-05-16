@@ -67,7 +67,13 @@ function ENT:Initialize()
         local phys = self:GetPhysicsObject()
         if IsValid( phys ) then
             phys:SetMass( 25 )
-            phys:Wake()
+            if not IsValid( self:GetParent() ) then
+                phys:Wake()
+
+            else -- weird ass bug
+                phys:EnableMotion( false )
+
+            end
 
             self:SetTrigger( true )
             self:UseTriggerBounds( true, self.TriggerBoundsNormal )
@@ -130,7 +136,7 @@ function ENT:DoScore( reciever )
     if reciever:Health() <= 0 then return end
 
     local parent = self:GetParent()
-    if IsValid( parent ) then return end
+    if IsValid( parent ) and parent:IsRagdoll() then return end
 
     local blockPickup = hook.Run( "glee_blockskullpickup", reciever, self )
     if blockPickup == true then return end
@@ -177,22 +183,22 @@ function ENT:DoScore( reciever )
         reciever.glee_selfskullhinted = true
         reciever.glee_skullhinted = true
         huntersGlee_Announce( { reciever }, 10, 10, "My skull...\nWhy did I come back here?" )
-        GAMEMODE:GivePanic( purchaser, 80 )
+        GAMEMODE:GivePanic( reciever, 80 )
 
     elseif not reciever.glee_skullhinted and self:CanHintPly( reciever ) then
         reciever.glee_skullhinted = true
         huntersGlee_Announce( { reciever }, 10, 10, "You found a skull.\nSomeone must have died here..." )
-        GAMEMODE:GivePanic( purchaser, 40 )
+        GAMEMODE:GivePanic( reciever, 40 )
 
     elseif not reciever.glee_skullhinted then
         reciever.glee_skullhinted = true
         if self.skullSteamId then
             huntersGlee_Announce( { reciever }, 10, 10, "That's their skull..." )
-            GAMEMODE:GivePanic( purchaser, 60 )
+            GAMEMODE:GivePanic( reciever, 60 )
 
         else
             huntersGlee_Announce( { reciever }, 10, 10, "That's its skull..." )
-            GAMEMODE:GivePanic( purchaser, 50 )
+            GAMEMODE:GivePanic( reciever, 50 )
 
         end
     end
@@ -204,10 +210,12 @@ function ENT:Touch( touched )
 
     if self.nextPickup > CurTime() then return end
 
-    if not IsValid( self:GetParent() ) then
+    local parent = self:GetParent()
+
+    if not IsValid( parent ) then
         self:DoScore( touched )
 
-    elseif touched:IsPlayer() and touched.glee_skullhinted and not touched.glee_skullInBodyHint then
+    elseif parent:IsRagdoll() and touched:IsPlayer() and touched.glee_skullhinted and not touched.glee_skullInBodyHint then
         touched.glee_skullInBodyHint = true
         huntersGlee_Announce( { touched }, 11, 10, "A body...\nWith a skull...?" )
 
@@ -493,7 +501,8 @@ end
 if not CLIENT then return end
 
 function ENT:Draw()
-    if IsValid( self:GetParent() ) then return end
+    local parent = self:GetParent()
+    if IsValid( parent ) and parent:IsRagdoll() then return end
     self:DrawModel()
 
 end

@@ -149,6 +149,7 @@ hook.Add( "huntersglee_round_into_active", "glee_loadpersistentskulls", function
     -- a body, with a skull...?
     for _, skullRagdoll in ipairs( ents.FindByClass( "prop_ragdoll" ) ) do
         GAMEMODE:HandleRagdollSkulling( skullRagdoll )
+
     end
 end )
 

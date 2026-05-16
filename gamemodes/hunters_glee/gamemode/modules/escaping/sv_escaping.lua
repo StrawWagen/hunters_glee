@@ -176,6 +176,27 @@ hook.Add( "glee_rescueheliescape", "glee_escapeviarescueheli", function( heli )
 end )
 
 
+local white = Color( 255, 255, 255 )
+
+hook.Add( "glee_onbossdefeated", "glee_escapeviabossdefeat", function()
+    local alivePlayers = GAMEMODE:getAlivePlayers()
+    for _, ply in ipairs( alivePlayers ) do
+        timer.Simple( 0.5, function()
+            if not IsValid( ply ) then return end
+            if ply:Health() <= 0 then return end
+
+            ply:ScreenFade( SCREENFADE.OUT, white, 5, 1 )
+            timer.Simple( 5, function()
+                if not IsValid( ply ) then return end
+                if ply:Health() <= 0 then return end
+                GAMEMODE:escapifyPlayer( ply )
+
+            end )
+        end )
+    end
+end )
+
+
 -- begin escaping rewards
 
 -- flat 50% discount on all shop items if EVERYONE escaped
@@ -189,6 +210,9 @@ local perSkullEveryoneEscaped = 50
 
 hook.Add( "huntersglee_player_pre_reset", "glee_escaping_rewards", function( ply )
     if not ply:HasEscaped() then return end
+
+    local escapeCount = ply:GetEscapeCount()
+    ply:SetNWInt( "glee_escape_count", escapeCount + 1 )
 
     local everyoneEscaped = GAMEMODE.roundExtraData.everyoneEscaped
 

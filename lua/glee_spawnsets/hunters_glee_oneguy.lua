@@ -24,6 +24,7 @@ local set = {
             difficultyCost = 1,
             maxCount = 1,
             countClass = "terminator_nextbot_snail",
+            isBoss = false, -- single hunter but not a boss round
         },
     }
 }

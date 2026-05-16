@@ -74,6 +74,17 @@ hook.Add( "glee_sv_validgmthink", "glee_cachenavareas", function( players )
     end
 end )
 
+-- nuke from the heatmap if someone dies from, say falldamage on it
+hook.Add( "PlayerDeath", "glee_worlddeaths_invalidateheatmap", function( victim, inflictor )
+    if not inflictor:IsWorld() then return end
+
+    local area, sqrDist = victim:GetNavAreaData()
+    if sqrDist > distWayTooFarOffNavmesh then return end
+
+    GAMEMODE.navmeshActivityHeatmap[area] = nil
+
+end )
+
 
 -- manage the BPM of ppl HERE
 

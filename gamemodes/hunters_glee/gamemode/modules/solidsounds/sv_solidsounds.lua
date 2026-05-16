@@ -58,28 +58,50 @@ local soundTracks = {
                 maxDifficulty = 75,
                 snd = "hunters_glee/music/VACANT/__more_glee.ogg",
             },
-            { -- played if difficulty is above 250, so if evac is late or difficulty is being bumped
+            { -- played if difficulty is above 75, so if evac is late or difficulty is being bumped
                 minDifficulty = 75,
                 maxDifficulty = 150,
                 snd = "hunters_glee/music/VACANT/8.24.to_noone.ogg",
             },
+            { -- ditto
+                minDifficulty = 75,
+                maxDifficulty = 150,
+                snd = "hunters_glee/music/VACANT/HARD_EAS_gori_scuffle.ogg",
+            },
             {
                 minDifficulty = 150,
-                snd = "hunters_glee/music/VACANT/8.26.GleeExp3.ogg",
+                snd = "hunters_glee/music/VACANT/8.23.GleeExp3.ogg",
             },
         },
         priority = 0,
         fadeInLength = 1,
     },
-    quarterAliveWaveWiped = {
+    highIntensity = {
         sounds = {
             {
                 maxDifficulty = 100,
+                snd = "hunters_glee/music/VACANT/clocklore.mp3",
+            },
+            {
+                minDifficulty = 50,
+                maxDifficulty = 200,
                 snd = "hunters_glee/music/VACANT/8.23.GleeExp3.ogg",
             },
             {
                 minDifficulty = 100,
+                snd = "hunters_glee/music/COMPAKT/COMPAKT_Operating_Systems_05_Busy-Noisy.mp3",
+            },
+            {
+                minDifficulty = 100,
                 snd = "hunters_glee/music/VACANT/8.22.theGLEE.ogg",
+            },
+        },
+        priority = 0,
+    },
+    grigoriArrival = {
+        sounds = {
+            {
+                snd = "hunters_glee/music/VACANT/gorihaunt.ogg",
             },
         },
         priority = 0,
@@ -133,11 +155,11 @@ local soundTracks = {
     roundPerfectWin = {
         sounds = {
             {
-                maxDifficulty = 200,
+                maxDifficulty = 150,
                 snd = "hunters_glee/music/VACANT/8.25.GleeFree-Early.ogg",
             },
             {
-                minDifficulty = 200,
+                minDifficulty = 100,
                 snd = "hunters_glee/music/VACANT/8.25.ToWishToGlee.ogg",
             }
         },

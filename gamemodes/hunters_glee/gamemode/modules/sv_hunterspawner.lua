@@ -45,6 +45,7 @@ local spawnDefaults = {
 local spawnIgnored = { -- dont parse these, they run on the ents during spawning
     preSpawnedFunc = true,
     postSpawnedFunc = true,
+    isBoss = true, -- boolean, handled by sv_bosshandler
 }
 
 local hardMinSpawnDist = 500 -- absolute minimum spawn distance
@@ -222,6 +223,7 @@ function GM:ParsedSpawnSet( asRegistered )
     for _, currSpawn in ipairs( spawnSet.spawns ) do
         local spawnParsed = {}
         for name, _ in pairs( currSpawn ) do -- parse all existing spawnset variables
+            if spawnIgnored[name] then spawnParsed[name] = true continue end
             parse( currSpawn, name, spawnDefaults, spawnSet )
             spawnParsed[name] = true
 
@@ -263,6 +265,8 @@ function GM:SetSpawnSet( setName )
     if not asRegistered then ErrorNoHaltWithStack( "GLEE: Tried to enable invalid spawnset " .. setName ) return end
 
     local spawnSet = self:ParsedSpawnSet( asRegistered )
+
+    self:HandleBossDetection( spawnSet )
 
     self.CurrSpawnSetName = setName
     self.CurrSpawnSet = spawnSet
@@ -317,10 +321,15 @@ function GM:GetPrettyNameOfSpawnSet( setName )
 
 end
 
+function GM:NewSpawnWaveNow()
+    self.nextSpawnWave = 0
+
+end
+
 local nextSpawnCheck = 0
 
 local function resetWave()
-    GAMEMODE.nextSpawnWave = 0
+    GAMEMODE:NewSpawnWaveNow()
     GAMEMODE.waveWasAlive = nil
     GAMEMODE.currentSpawnWave = nil
     GAMEMODE.currentSpawning = nil
@@ -429,13 +438,15 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
         end
     end
 
+    if GAMEMODE.roundExtraData.bossKilled then return end -- round is OVER!
+
     local _, spawnSet = GAMEMODE:GetSpawnSet()
     local aliveCount = aliveHuntersCount()
     -- bump difficulty if a wave got cleared!
     -- whether through all the bots being killed, or all the bots despawning!
     if aliveCount <= 1 and GAMEMODE.waveWasAlive and aliveCount < GAMEMODE.waveWasAlive then
         GAMEMODE.waveWasAlive = nil
-        GAMEMODE.nextSpawnWave = 0
+        GAMEMODE:NewSpawnWaveNow()
         debugPrint( "bump", GAMEMODE.sessionDiffBump, spawnSet.diffBumpWhenWaveKilled )
         GAMEMODE:BumpSessionDifficulty( spawnSet.diffBumpWhenWaveKilled, "wave_cleared" )
 
@@ -869,6 +880,7 @@ function GM:SpawnHunter( class, currSpawn )
     hunter.glee_IsAHunter = true
     hunter.glee_SpawnArea = spawnArea -- so we can prefer to spawn enemies from this area, if this bot ends up killing someone!
     hunter.glee_SpawnsetThatMadeMe = self.CurrSpawnSetName
+    hunter.glee_IsBoss = currSpawn.isBoss
 
     print( hunter ) -- i like this print, you cannot make me remove it
     if debuggingVar:GetBool() then

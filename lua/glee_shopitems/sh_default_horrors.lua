@@ -100,6 +100,23 @@ local items = {
         end,
         shCanShowInShop = shopHelpers.escapedCheck,
     },
+    ["skull_cache"] = {
+        name = "Skull Cache",
+        desc = "Hide a cache of skulls.\nPlace far from players for more score.",
+        shCost = 0,
+        markup = 1,
+        cooldown = 120,
+        tags = { "HORRORS", "CloseShopOnPurchase" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = 200,
+        svOnPurchaseFunc = function( purchaser, itemIdentifier )
+            setupPlacable( "glee_skullcache_placer", purchaser, itemIdentifier )
+
+        end,
+        shCanShowInShop = shopHelpers.escapedCheck,
+    },
     ["barnacle"] = {
         name = "Barnacle",
         desc = "Barnacle.\nYou gain 100 score the first time it grabs someone, and 45 score every further second it has someone grabbed.\nCosts more to place in groups, or place too close to players.",

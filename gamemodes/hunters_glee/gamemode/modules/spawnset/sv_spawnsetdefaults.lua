@@ -17,12 +17,15 @@ return {
     maxSpawnCount = 10,
     maxSpawnDist = { 4500, 6500 },
     minSpawnDist = 500, -- if you spawn closer than this, it feels unfair
+    genericSpawnerRate = 1, -- speeds up or slows down the procedural item spawner
     roundEndSound = "tracks/roundEnd", -- parsed by sv_solidsounds.lua
     roundWinSound = "tracks/roundWin",
     roundPerfectWinSound = "tracks/roundPerfectWin",
     earlyStartSound = "",
-    roundStartSound = "", -- no sound for glee
+    roundStartSound = "", -- plays ON round start ( early start plays if this is empty )
     roundEarlyStartSound = "tracks/roundEarlyStart", -- played 10 seconds before round starts, IF roundStartSound is empty
-    quarterAliveWaveWipedSound = "tracks/quarterAliveWaveWiped", -- played when a "spawn wave" is wiped, with no more than 1/4 of players alive
-    genericSpawnerRate = 1, -- speeds up or slows down the procedural item spawner
+    highIntensitySound = "tracks/highIntensity",
+        -- played when gamemode is super high intensity
+        -- can play when a "spawn wave" is wiped, with no more than 1/4 of players alive
+    grigoriArrivalSound = "tracks/grigoriArrival", -- played when grigori arrives
 }

@@ -510,6 +510,10 @@ if SERVER then
 
     GAMEMODE:RegisterStatusEffect( "divine_chosen",
         function( self, owner ) -- setup func
+            if not GetGlobalBool( "chosenhasarrived", false ) then
+                hook.Run( "huntersglee_grigori_arrival", owner )
+
+            end
             SetGlobalBool( "chosenhasarrived", true )
             GAMEMODE.roundExtraData.grigoriWasPurchased = true
 

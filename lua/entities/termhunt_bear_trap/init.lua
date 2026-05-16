@@ -121,6 +121,11 @@ function ENT:Touch( toucher )
             self:Hurt( toucherInt, attacker )
             self:Snap( toucherInt )
 
+            if GAMEMODE.GivePanic then
+                GAMEMODE:GivePanic( toucherInt, 50 )
+
+            end
+
             for _ = 1, 5 do
                 DoBleed( toucherInt )
             end

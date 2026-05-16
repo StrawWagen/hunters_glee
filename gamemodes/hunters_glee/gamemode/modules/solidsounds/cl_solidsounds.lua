@@ -40,7 +40,7 @@ local function startSound( path, pitch, vol, offset, fadeInLength, fadeOutLength
         path      = path,
         pitch     = pitch,
         vol       = vol,
-        startTime = CurTime() - offset,
+        startTime = SysTime() - offset, -- use systime, so if a lagspike happens, song doesn't restart on finishing
         fade      = { active = false, startTime = 0, startVol = 0, duration = 0 },
         fadeIn    = { active = false, startTime = 0, duration  = 0, targetVol = 0 },
         fadeInLength = fadeInLength,
@@ -58,7 +58,7 @@ local function startSound( path, pitch, vol, offset, fadeInLength, fadeOutLength
     end
 
     -- channel won't be invalid for a couple frames as the sound loads
-    nextThink = CurTime() + THINK_INTERVAL
+    nextThink = SysTime() + THINK_INTERVAL
 
     sound.PlayFile( realPath, "noblock noplay", function( channel, errNum, _errStr )
         if errNum and errNum ~= 0 then return end
@@ -81,7 +81,7 @@ local function startSound( path, pitch, vol, offset, fadeInLength, fadeOutLength
             channel:SetVolume( 0 )
             currentSound.fadeIn = {
                 active    = true,
-                startTime = CurTime(),
+                startTime = SysTime(),
                 duration  = fadeInLength,
                 targetVol = targetVol,
             }
@@ -119,7 +119,7 @@ local function beginFade( path, pitch, vol, fadeInLength, fadeOutLength )
     -- Reset fade timer from current volume; if a fade is already running this restarts the countdown
     currentSound.fade = {
         active    = true,
-        startTime = CurTime(),
+        startTime = SysTime(),
         startVol  = currentSound.channel:GetVolume(),
         duration  = fadeOutLength,
     }
@@ -135,7 +135,7 @@ end
 
 hook.Add( "Think", "glee_solidsound_think", function()
     if not currentSound then return end
-    local now = CurTime()
+    local now = SysTime()
 
     -- Fade-in: ramps volume up after a new sound begins (runs every frame)
     if currentSound.fadeIn.active then
@@ -211,6 +211,8 @@ hook.Add( "Think", "glee_solidsound_think", function()
     end
 end )
 
+local developer = GetConVar( "developer" )
+
 net.Receive( "glee_sendsolidsound", function()
     local path          = net.ReadString()
     local pitch         = net.ReadFloat()
@@ -221,6 +223,11 @@ net.Receive( "glee_sendsolidsound", function()
 
     if priority < currentPriority then return end
     currentPriority = priority
+
+    if developer:GetBool() then
+        permaPrint( "GLEE: playing " .. path .. " with priority " .. priority )
+
+    end
 
     beginFade( path, pitch, vol, fadeInLength, fadeOutLength )
 

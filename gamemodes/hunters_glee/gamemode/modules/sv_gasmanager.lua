@@ -168,7 +168,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_addgasjobs", function()
     end
 
     gasJob.posFindingOrigin = aRandomUser:GetPos()
-    gasJob.spawnRadius = math.random( 2500, 5000 )
+    gasJob.spawnRadius = math.random( 4000, 8000 )
     gasJob.originIsDefinitive = true
     gasJob.sortForNearest = true
     gasJob.areaFilteringFunction = function( job, area )
@@ -216,7 +216,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_addgasjobs", function()
             if bit.band( util.PointContents( gasPos ), CONTENTS_WATER ) ~= 0 then SafeRemoveEntity( gas ) timer.Remove( timerName ) return end
             local nearest, distSqr = GAMEMODE:nearestAlivePlayer( gasPos )
             if not IsValid( nearest ) then SafeRemoveEntity( gas ) timer.Remove( timerName ) return end
-            if distSqr > 4000^2 then SafeRemoveEntity( gas ) timer.Remove( timerName ) return end
+            if distSqr > 6000^2 then SafeRemoveEntity( gas ) timer.Remove( timerName ) return end
 
         end )
 

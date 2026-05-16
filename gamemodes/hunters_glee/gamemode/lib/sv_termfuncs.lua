@@ -633,8 +633,10 @@ function GM:getNearestHunter( pos, hunters )
         local ADist = a:EyePos():DistToSqr( pos )
         local BDist = b:EyePos():DistToSqr( pos )
         return ADist < BDist
+
     end )
     return huntersCopy[1], huntersCopy
+
 end
 
 function GM:aRandomHunter( hunters )
