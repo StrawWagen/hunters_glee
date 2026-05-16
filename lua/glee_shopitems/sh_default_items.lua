@@ -72,27 +72,38 @@ local function purchaseSkullCache( purchaser )
     cache:SetAngles( Angle( 0, math.random( 0, 360 ), 0 ) )
     cache:Spawn()
 
+    local oldCount = GetGlobalInt( "glee_SkullCachePurchaseCount", 0 )
+    SetGlobalInt( "glee_SkullCachePurchaseCount", oldCount + 1 )
+
 end
 
 -- debug
-hook.Add( "glee_post_realcleanupmap", "glee_shophandler_resetsignalflarepurchasecount", function()
+hook.Add( "glee_post_realcleanupmap", "glee_shophandler_resetpersistpurchasecounts", function()
     SetGlobalInt( "glee_SignalFlarePurchaseCount", 0 )
+    SetGlobalInt( "glee_SkullCachePurchaseCount", 0 )
 
 end )
 
 -- each spawnset has their own purchase count
 -- encourages fun spawnset switching
-hook.Add( "glee_post_set_spawnset", "glee_shophandler_resetsignalflarepurchasecount", function( newName, _set, oldName )
+hook.Add( "glee_post_set_spawnset", "glee_shophandler_resetpersistpurchasecounts", function( newName, _set, oldName )
     if not oldName then return end -- initalize
 
     -- setup the tbl
     GAMEMODE.shopHandler_signalFlarePurchaseCounts = GAMEMODE.shopHandler_signalFlarePurchaseCounts or {}
+    GAMEMODE.shopHandler_skullCachePurchaseCounts = GAMEMODE.shopHandler_skullCachePurchaseCounts or {}
 
     local oldSetsCount = GetGlobalInt( "glee_SignalFlarePurchaseCount", 0 )
     local newSetsCount = GAMEMODE.shopHandler_signalFlarePurchaseCounts[newName] or 0
 
     GAMEMODE.shopHandler_signalFlarePurchaseCounts[oldName] = oldSetsCount
     SetGlobalInt( "glee_SignalFlarePurchaseCount", newSetsCount )
+
+    local oldCacheCount = GetGlobalInt( "glee_SkullCachePurchaseCount", 0 )
+    local newCacheCount = GAMEMODE.shopHandler_skullCachePurchaseCounts[newName] or 0
+
+    GAMEMODE.shopHandler_skullCachePurchaseCounts[oldName] = oldCacheCount
+    SetGlobalInt( "glee_SkullCachePurchaseCount", newCacheCount )
 
 end )
 
@@ -409,7 +420,12 @@ local items = {
     ["skullcache"] = {
         name = "Hidden Skull Cache",
         desc = "A hidden cache of skulls\nOnly purchasable if you've escaped at least once...\nWill be nearby your most remote death.",
-        shCost = 1000,
+        shCost = function()
+            local startingCost = 1000
+            local costPerPurchase = 500
+            local purchaseCount = GetGlobalInt( "glee_SkullCachePurchaseCount", 0 )
+            return startingCost + ( purchaseCount * costPerPurchase )
+        end,
         cooldown = math.huge,
         tags = { "ITEMS", "Utility", "NewGamePlus" },
         purchaseTimes = {
