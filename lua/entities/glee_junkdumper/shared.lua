@@ -152,6 +152,8 @@ ENT.JunkModels = {
     "models/props_junk/vent001.mdl",
 }
 
+ENT.RareJunkChance = 2
+
 ENT.RareJunkModels = {
     "models/props_junk/flare.mdl",
     "models/props_wasteland/interior_fence004b.mdl",
@@ -217,7 +219,7 @@ function ENT:Place()
             if not IsValid( self ) then return end
 
             local model
-            if math.random( 1, 100 ) <= 5 then
+            if math.random( 1, 100 ) <= self.RareJunkChance then
                 model = self.RareJunkModels[math.random( #self.RareJunkModels )]
             else
                 model = self.JunkModels[math.random( #self.JunkModels )]
