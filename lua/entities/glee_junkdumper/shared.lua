@@ -199,7 +199,7 @@ function ENT:UpdateGivenScore()
     scoreGiven = math.min( scoreGiven, self.ScoreMax )
     local nookScore = terminator_Extras.GetNookScore( myPos )
     if nookScore <= 3 then -- too open
-        scoreGiven = -scoreGiven * 0.5
+        scoreGiven = -math.abs( scoreGiven ) * 0.5
 
     else
         scoreGiven = scoreGiven * ( nookScore * 2 )
