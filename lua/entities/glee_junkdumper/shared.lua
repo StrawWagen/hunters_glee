@@ -197,7 +197,14 @@ function ENT:UpdateGivenScore()
     -- Clean area = profit, cluttered area = cost. Break-even at TooManyNearbyObjCount.
     local scoreGiven = self.CleanAreaScore * ( 1 - nearbyCount / self.TooManyNearbyObjCount )
     scoreGiven = math.min( scoreGiven, self.ScoreMax )
-    scoreGiven = scoreGiven + ( terminator_Extras.GetNookScore( myPos ) * 2 )
+    local nookScore = terminator_Extras.GetNookScore( myPos )
+    if nookScore <= 3 then -- too open
+        scoreGiven = -scoreGiven * 0.5
+
+    else
+        scoreGiven = scoreGiven * ( nookScore * 2 )
+
+    end
 
     self:SetGivenScore( scoreGiven )
 
