@@ -377,7 +377,7 @@ if SERVER then
     hook.Add( "glee_onescapehelicalled", "glee_increasepatience", function()
         if GAMEMODE.roundExtraData.grigoriWasPurchased then return end
         local startTimeOffset = GAMEMODE.roundExtraData.divineChosen_StartTimeOffset or 0
-        startTimeOffset = startTimeOffset + 6
+        startTimeOffset = startTimeOffset + 8
         GAMEMODE.roundExtraData.divineChosen_StartTimeOffset = startTimeOffset
 
         SetGlobal2Int( "glee_chosen_timeoffset", startTimeOffset )
