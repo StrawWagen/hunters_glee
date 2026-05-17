@@ -1161,12 +1161,6 @@ local spaceCheckHull = Vector( 17, 17, 2 )
 local occupiedSpawnAreas = {}
 
 function GM:PlayerSpawn( pl, transiton )
-
-    if pl:HasEscaped() then
-        ErrorNoHaltWithStack()
-
-    end
-
     if IsValid( pl:GetParent() ) then
         pl:SetParent( NULL )
 

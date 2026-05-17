@@ -249,7 +249,7 @@ function GAMEMODE:SurfaceHomicidalGlee( dancer, surfacer )
     end
 
     if dancer.glee_guiltyHomicidalGlee then
-        dancer:DropWeaponKeepAmmo( dancer:GetActiveWeapon() )
+        dancer:DropActiveWeaponKeepAmmo()
 
     end
 

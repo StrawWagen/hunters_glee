@@ -89,10 +89,8 @@ function plyMeta:DropActiveWeaponKeepAmmo( force )
 end
 
 function plyMeta:DropWeaponKeepAmmo( wep, force )
-    if not IsValid( wep ) then
-        wep = self:GetActiveWeapon()
 
-    end
+    -- use DropActiveWeaponKeepAmmo if you want to drop active wep, it has guards
 
     if not IsValid( wep ) then return end
 
