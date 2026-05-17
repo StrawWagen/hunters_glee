@@ -1,5 +1,5 @@
 -- SEE THIS ADDON FOR ORIGINAL CODE
--- https://steamcommunity.com/sharedfiles/filedetails/?id=1318285072
+-- CREDIT https://steamcommunity.com/sharedfiles/filedetails/?id=1318285072
 -- it looks like buzzofwar took it down and someone else reuploaded it
 -- buzz commented on that upload, may 1st 2023 "Huh i lost the files to this an extremely long time ago"
 

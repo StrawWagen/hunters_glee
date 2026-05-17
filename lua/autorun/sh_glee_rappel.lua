@@ -1,4 +1,4 @@
--- local table for fast comparison
+
 local rappellers = {}
 
 sound.Add( {
