@@ -344,6 +344,8 @@ local function isCheats()
 
 end
 
+local minute = 60
+
 if SERVER then
     SetGlobal2Int( "glee_chosen_timeoffset", 0 )
     local nextTimeOffsetNetwork = 0
@@ -373,11 +375,12 @@ if SERVER then
 
         end
     end )
-    -- increase patience by 3 minutes when escape heli is called
+    -- TODO: smarter than just 8m bump
+    -- increase patience by 8 minutes when escape heli is called
     hook.Add( "glee_onescapehelicalled", "glee_increasepatience", function()
         if GAMEMODE.roundExtraData.grigoriWasPurchased then return end
         local startTimeOffset = GAMEMODE.roundExtraData.divineChosen_StartTimeOffset or 0
-        startTimeOffset = startTimeOffset + 8
+        startTimeOffset = startTimeOffset + 8 * minute
         GAMEMODE.roundExtraData.divineChosen_StartTimeOffset = startTimeOffset
 
         SetGlobal2Int( "glee_chosen_timeoffset", startTimeOffset )
@@ -386,12 +389,12 @@ if SERVER then
 end
 
 local function divineChosenCanPurchase( purchaser )
-    local addedBySpending = GetGlobal2Int( "glee_chosen_timeoffset", 0 ) / 60
+    local addedBySpending = GetGlobal2Int( "glee_chosen_timeoffset", 0 ) / minute
     local minutes = minGrigoriMinutes + addedBySpending
     -- always purchasable after 30 minutes
     minutes = math.Clamp( minutes, minGrigoriMinutes, 30 )
 
-    local offset = 60 * minutes
+    local offset = minute * minutes
     local allowTime = GetGlobalInt( "huntersglee_round_begin_active" ) + offset
     local remaining = allowTime - CurTime()
     local formatted = string.FormattedTime( remaining, "%02i:%02i" )
