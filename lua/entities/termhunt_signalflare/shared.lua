@@ -719,6 +719,7 @@ if SERVER and terminator_Extras then
                 if not IsValid( attacker ) then return end
                 if not attacker:IsPlayer() then return end
                 if not GAMEMODE.SurfaceHomicidalGlee then return end
+                attacker:DropWeaponKeepAmmo( attacker:GetActiveWeapon() )
                 GAMEMODE:SurfaceHomicidalGlee( attacker, heli )
 
             end

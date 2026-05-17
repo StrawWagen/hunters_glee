@@ -89,6 +89,13 @@ function plyMeta:DropActiveWeaponKeepAmmo( force )
 end
 
 function plyMeta:DropWeaponKeepAmmo( wep, force )
+    if not IsValid( wep ) then
+        wep = self:GetActiveWeapon()
+
+    end
+
+    if not IsValid( wep ) then return end
+
     local newWep = wep
     self:DropWeapon( wep )
     newWep.glee_ammoInside = {}
