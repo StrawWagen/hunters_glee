@@ -655,6 +655,8 @@ function GM:spectatifyPlayer( ply )
     ply.spectateDoFreecam = CurTime() + 8
     ply.spectateDoFreecamForced = CurTime() + 2
 
+    ply.glee_needsRespawning = nil
+
 end
 
 function GM:escapifyPlayer( ply )
@@ -665,6 +667,8 @@ function GM:escapifyPlayer( ply )
     cleanupBeforeSpectating( ply )
     ply:SetNWInt( "glee_spectateteam", GAMEMODE.TEAM_ESCAPED )
     ply.termHuntTeam = GAMEMODE.TEAM_ESCAPED
+
+    ply.glee_needsRespawning = nil
 
 end
 
@@ -1132,7 +1136,6 @@ function GM:PlayerDeathThink( ply )
                         GAMEMODE.waitForSomeoneToLive = nil
                     end )
                     ply:Spawn()
-                    ply.glee_needsRespawning = nil
 
                     for _, currPly in ipairs( plys ) do
                         currPly.glee_nextForcedRespawn = CurTime() + math.Rand( 0.5, 1 )
@@ -1145,7 +1148,6 @@ function GM:PlayerDeathThink( ply )
             -- respawn players normally
             else
                 ply:Spawn()
-                ply.glee_needsRespawning = nil
                 GAMEMODE.waitForSomeoneToLive = nil
 
             end
@@ -1165,6 +1167,8 @@ function GM:PlayerSpawn( pl, transiton )
         pl:SetParent( NULL )
 
     end
+
+    pl.glee_needsRespawning = nil
 
     local anotherAlivePlayer = GAMEMODE:anotherAlivePlayer( pl )
     local newPos = nil
