@@ -1168,8 +1168,6 @@ function GM:PlayerSpawn( pl, transiton )
 
     end
 
-    pl.glee_needsRespawning = nil
-
     local anotherAlivePlayer = GAMEMODE:anotherAlivePlayer( pl )
     local newPos = nil
     local center, area = nil, nil
@@ -1256,6 +1254,8 @@ function GM:PlayerSpawn( pl, transiton )
 
     -- Stop observer mode
     GAMEMODE:unspectatifyPlayer( pl )
+
+    pl.glee_needsRespawning = nil
 
     player_manager.OnPlayerSpawn( pl, transiton )
     player_manager.RunClass( pl, "Spawn" )
