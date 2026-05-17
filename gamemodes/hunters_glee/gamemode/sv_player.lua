@@ -641,6 +641,8 @@ local function cleanupBeforeSpectating( ply )
     end
     ply:Spectate( OBS_MODE_ROAMING )
 
+    ply.glee_needsRespawning = nil
+
 end
 
 function GM:spectatifyPlayer( ply )
@@ -655,8 +657,6 @@ function GM:spectatifyPlayer( ply )
     ply.spectateDoFreecam = CurTime() + 8
     ply.spectateDoFreecamForced = CurTime() + 2
 
-    ply.glee_needsRespawning = nil
-
 end
 
 function GM:escapifyPlayer( ply )
@@ -667,8 +667,6 @@ function GM:escapifyPlayer( ply )
     cleanupBeforeSpectating( ply )
     ply:SetNWInt( "glee_spectateteam", GAMEMODE.TEAM_ESCAPED )
     ply.termHuntTeam = GAMEMODE.TEAM_ESCAPED
-
-    ply.glee_needsRespawning = nil
 
 end
 
