@@ -1111,7 +1111,9 @@ if SERVER and terminator_Extras then
                 idealMovePos = nearestSkyboxPos + dirToSkybox * 2000
                 skysTheLimit = true
 
-                if myPos:Distance( nearestSkyboxPos ) < 200 then
+                local distAdd = ourVel:Length() / 2 -- at 1000 speed, add 500
+
+                if myPos:Distance( nearestSkyboxPos ) < 200 + distAdd then
                     hook.Run( "glee_rescueheliescape", self )
                     SafeRemoveEntityDelayed( self, 0.1 )
 
