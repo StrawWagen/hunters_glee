@@ -16,6 +16,9 @@ ENT.Model = "models/crunchy/props/contagion_props/ammo_crate_b.mdl"
 ENT.HullCheckSize = Vector( 20, 20, 10 )
 ENT.PosOffset = Vector( 0, 0, 20 )
 
+ENT.MinSkullCount = 5
+ENT.MaxSkullCount = 10
+
 ENT.weapCrateScoreMultiplier = 2
 
 
@@ -48,6 +51,7 @@ function ENT:Place()
     local cache = ents.Create( "glee_skullcache" )
     cache:SetPos( self:OffsettedPlacingPos() )
     cache:SetAngles( self:GetAngles() )
+    cache.SkullCount = math.random( self.MinSkullCount, self.MaxSkullCount )
     cache:Spawn()
 
     cache:EmitSound( "items/ammocrate_open.wav", 75, 100 )
