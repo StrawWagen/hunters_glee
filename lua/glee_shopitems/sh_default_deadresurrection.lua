@@ -373,13 +373,23 @@ if SERVER then
 
         end
     end )
+    -- increase patience by 3 minutes when escape heli is called
+    hook.Add( "glee_onescapehelicalled", "glee_increasepatience", function()
+        if GAMEMODE.roundExtraData.grigoriWasPurchased then return end
+        local startTimeOffset = GAMEMODE.roundExtraData.divineChosen_StartTimeOffset or 0
+        startTimeOffset = startTimeOffset + 6
+        GAMEMODE.roundExtraData.divineChosen_StartTimeOffset = startTimeOffset
+
+        SetGlobal2Int( "glee_chosen_timeoffset", startTimeOffset )
+
+    end )
 end
 
 local function divineChosenCanPurchase( purchaser )
     local addedBySpending = GetGlobal2Int( "glee_chosen_timeoffset", 0 ) / 60
     local minutes = minGrigoriMinutes + addedBySpending
-    -- always purchasable after 20 minutes
-    minutes = math.Clamp( minutes, minGrigoriMinutes, 20 )
+    -- always purchasable after 30 minutes
+    minutes = math.Clamp( minutes, minGrigoriMinutes, 30 )
 
     local offset = 60 * minutes
     local allowTime = GetGlobalInt( "huntersglee_round_begin_active" ) + offset

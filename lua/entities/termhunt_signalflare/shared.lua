@@ -298,6 +298,8 @@ if SERVER and terminator_Extras then
 
         local shooter = self.MyOwner
 
+        hook.Run( "glee_onescapehelicalled", shooter )
+
         timer.Create( rescueTimerName, 1, heliSpawnDelay, function()
             local repsLeft = timer.RepsLeft( rescueTimerName )
             if repsLeft == heliSpawnDelay - firstWait then
