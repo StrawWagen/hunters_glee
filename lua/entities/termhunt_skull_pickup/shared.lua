@@ -280,7 +280,7 @@ end
 
 function ENT:OnTakeDamage( dmg )
     local parent = self:GetParent()
-    if IsValid( parent ) then
+    if IsValid( parent ) and parent:IsRagdoll() then
         local _, ragdollsSkull, isSkeleton = glee_RagdollHasASkull( parent )
 
         local dealt = dmg:GetDamage()
