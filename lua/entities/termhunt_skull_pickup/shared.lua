@@ -256,7 +256,8 @@ function ENT:UpdateExplainability()
 end
 
 function ENT:Crumble()
-    if IsValid( self:GetParent() ) then
+    local parent = self:GetParent()
+    if IsValid( parent ) and parent:IsRagdoll() then
         self:Decapitate()
 
     end
