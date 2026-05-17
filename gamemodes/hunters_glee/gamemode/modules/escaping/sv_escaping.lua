@@ -54,14 +54,14 @@ local function allRidersOf( vehicle )
 
     local rappellers = vehicle.glee_stuffRappellingOffMe
     if rappellers then
-        for rappeler, _ in pairs( rappellers ) do
-            if not IsValid( rappeler ) then continue end
-            if not rappeler:Alive() then continue end
-            if not rappeler:IsPlayer() then continue end
+        for rappeller, _ in pairs( rappellers ) do
+            if not IsValid( rappeller ) then continue end
+            if not rappeller:Alive() then continue end
+            if not rappeller:IsPlayer() then continue end
             if riderLookup[rappeller] then continue end
 
             riderLookup[rappeller] = true
-            table.insert( riders, rappeler )
+            table.insert( riders, rappeller )
 
         end
     end

@@ -1111,6 +1111,16 @@ function GM:concmdSetup()
 
 end
 
+function GM:IsLagging()
+    local idealTickrate = 1 / FrameTime()
+    local currTickrate = 1 / engine.AbsoluteFrameTime()
+    local threshold = math.max( 2.5, idealTickrate * 0.65 )
+    local lagging = currTickrate <= threshold
+
+    return lagging, currTickrate, threshold
+
+end
+
 -- test command for setting to GAMEMODE.ROUND_TESTSTATE
 concommand.Add( "glee_test_roundstatetest", function()
     GAMEMODE:SetRoundState( GAMEMODE.ROUND_TESTSTATE )

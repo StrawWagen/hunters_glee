@@ -111,6 +111,7 @@ function playerMeta:StopRapelling()
     local sourceEnt = self.glee_RappelSourceEnt
     if IsValid( sourceEnt ) and sourceEnt.glee_stuffRappellingOffMe then
         sourceEnt.glee_stuffRappellingOffMe[self] = nil
+
     end
     self.glee_RappelSourceEnt = nil
 

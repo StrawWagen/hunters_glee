@@ -1116,7 +1116,10 @@ function GM:PlayerDeathThink( ply )
     -- TODO: WHY does this happen?
     elseif not ( GAMEMODE.canRespawn or ply.glee_needsRespawning ) and hasHp and ply:HasEscaped() then
         ply:SetHealth( 0 )
+        if game.IsDedicated() then
+            ErrorNoHaltWithStack( "AAAAAAAAAA", ply )
 
+        end
     elseif GAMEMODE.canRespawn or ply.glee_needsRespawning or hasHp then
         local lastForced = ply.glee_nextForcedRespawn or 0
 

@@ -716,10 +716,13 @@ if SERVER and terminator_Extras then
                 dmgInfo:ScaleDamage( 10 )
 
             elseif target == heli then
+                if not dmgInfo:IsExplosionDamage() then -- nuke force from non-explosive damage
+                    dmgInfo:SetDamageForce( Vector( 0, 0, 0 ) )
+
+                end
                 if not IsValid( attacker ) then return end
                 if not attacker:IsPlayer() then return end
                 if not GAMEMODE.SurfaceHomicidalGlee then return end
-                attacker:DropWeaponKeepAmmo( attacker:GetActiveWeapon() )
                 GAMEMODE:SurfaceHomicidalGlee( attacker, heli )
 
             end
@@ -1108,7 +1111,7 @@ if SERVER and terminator_Extras then
                 idealMovePos = nearestSkyboxPos + dirToSkybox * 2000
                 skysTheLimit = true
 
-                if myPos:Distance( nearestSkyboxPos ) < 450 then
+                if myPos:Distance( nearestSkyboxPos ) < 200 then
                     hook.Run( "glee_rescueheliescape", self )
                     SafeRemoveEntityDelayed( self, 0.1 )
 
@@ -1178,6 +1181,11 @@ if SERVER and terminator_Extras then
 
                 elseif traceResult and traceResult.Hit then
                     penalty = penalty * 4
+
+                end
+                -- if bitflag contains water, avoid at all costs
+                if bit.band( util.PointContents( pos ), CONTENTS_WATER ) ~= 0 then
+                    penalty = penalty * 1000
 
                 end
                 return penalty

@@ -173,7 +173,7 @@ local items = {
         desc = "Dump a pile of junk.\nDump it somewhere empty for best results.",
         shCost = 0,
         markup = 1,
-        cooldown = 30,
+        cooldown = 45,
         tags = { "DEADSACRIFICES", "CloseShopOnPurchase" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,

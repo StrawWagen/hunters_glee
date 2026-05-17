@@ -144,7 +144,7 @@ end
 
 hook.Add( "glee_slightsizeoverride", "noguilt_forkilling_dancers", function( died )
     if not died:IsPlayingTaunt2() then return end
-    if not died.glee_evilHomicidalGlee then return end
+    if not died.glee_guiltyHomicidalGlee then return end
 
     return 25, "killed them while they were guiltily dancing"
 
@@ -181,12 +181,12 @@ function GAMEMODE:SurfaceHomicidalGlee( dancer, surfacer )
         -- F
         if dancer:Health() < 0 then
             timer.Remove( timerName )
-            dancer.glee_evilHomicidalGlee = nil
+            dancer.glee_guiltyHomicidalGlee = nil
             return
 
         end
         if not dancer:IsPlayingTaunt2() then
-            dancer.glee_evilHomicidalGlee = nil
+            dancer.glee_guiltyHomicidalGlee = nil
             timer.Remove( timerName )
             return
 
@@ -217,17 +217,17 @@ function GAMEMODE:SurfaceHomicidalGlee( dancer, surfacer )
         if surfacer:GetClass() == "npc_helicopter" then
             reason = "The idea of stopping everyone from escaping...\nit just fills you with GUILTY HOMICIDAL GLEE!"
             reasonGlobal = dancer:Nick() .. " is overcome with Guilty Homicidal Glee."
-            dancer.glee_evilHomicidalGlee = true
+            dancer.glee_guiltyHomicidalGlee = true
 
         elseif oldSlight >= 75 then
             reason = "You can't help but dance as the GUILTY HOMICIDAL GLEE\nof killing " .. surfacer:Nick() .. "\nflashes through your mind..."
             reasonGlobal = dancer:Nick() .. " is overcome by their Guilty Homicidal Glee."
-            dancer.glee_evilHomicidalGlee = true
+            dancer.glee_guiltyHomicidalGlee = true
 
         else
             reason = "You can't help but dance as " .. surfacer:Nick() .. "\nbrings your HOMICIDAL GLEE to the surface..."
             reasonGlobal = dancer:Nick() .. " is overcome with Homicidal Glee."
-            dancer.glee_evilHomicidalGlee = false
+            dancer.glee_guiltyHomicidalGlee = false
 
         end
 
@@ -244,7 +244,12 @@ function GAMEMODE:SurfaceHomicidalGlee( dancer, surfacer )
     else
         reason = "Killing all those innocent people has left you boiling with GUILTY HOMICIDAL GLEE...\nYou can't help but let it out!"
         reasonGlobal = dancer:Nick() .. "'s Guilty Homicidal Glee boils to the surface..."
-        dancer.glee_evilHomicidalGlee = true
+        dancer.glee_guiltyHomicidalGlee = true
+
+    end
+
+    if dancer.glee_guiltyHomicidalGlee then
+        dancer:DropWeaponKeepAmmo( dancer:GetActiveWeapon() )
 
     end
 

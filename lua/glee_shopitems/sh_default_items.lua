@@ -425,6 +425,7 @@ local items = {
             local costPerPurchase = 500
             local purchaseCount = GetGlobalInt( "glee_SkullCachePurchaseCount", 0 )
             return startingCost + ( purchaseCount * costPerPurchase )
+
         end,
         cooldown = math.huge,
         tags = { "ITEMS", "Utility", "NewGamePlus" },

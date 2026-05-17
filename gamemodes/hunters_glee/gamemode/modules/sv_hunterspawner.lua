@@ -593,6 +593,43 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
     end
 end )
 
+
+local nextLagCheck = 0
+
+hook.Add( "glee_sv_validgmthink_active", "glee_anti_abysmallag", function( _, _, cur )
+    if cur < nextLagCheck then return end
+    nextLagCheck = cur + 5
+
+    local _, currTickrate = GAMEMODE:IsLagging()
+
+    if currTickrate > 3 then return end -- not lagging abysmally? ok
+
+    debugPrint( "session is extremely laggy: REMOVING OLDEST BOT" )
+    nextLagCheck = cur + 1 -- FIX THE LAG
+
+    local allHunters = {}
+    terminator_Extras.tableAdd( allHunters, GAMEMODE.glee_Hunters )
+    terminator_Extras.tableAdd( allHunters, ents.FindByClass( "terminator_nextbot*" ) )
+    local oldest
+    local oldestTime = math.huge
+    for _, hunter in pairs( allHunters ) do
+        if not IsValid( hunter ) then continue end
+        if hunter:Health() <= 0 then continue end
+
+        local creationID = hunter:GetCreationID()
+        if creationID < oldestTime then
+            oldestTime = creationID
+            oldest = hunter
+
+        end
+    end
+    if IsValid( oldest ) then
+        SafeRemoveEntity( oldest )
+
+    end
+end )
+
+
 GAMEMODE.currentSpawning = nil
 
 function GM:SpawnWaveSpawnIn()
@@ -605,6 +642,7 @@ function GM:SpawnWaveSpawnIn()
             return
 
         else
+            -- take a spawn from the wave
             currSpawn = table.remove( wave, 1 )
             self.currentSpawning = currSpawn
 
@@ -615,11 +653,8 @@ function GM:SpawnWaveSpawnIn()
     if nextHunterSpawn > cur then return end
 
     if currSpawn.spawnType == "hunter" then
+        local lagging, currTickrate, threshold = self:IsLagging()
 
-        local idealTickrate = 1 / FrameTime()
-        local currTickrate = 1 / engine.AbsoluteFrameTime()
-        local threshold = math.max( 2.5, idealTickrate * 0.65 )
-        local lagging = currTickrate <= threshold
         if lagging then
             debugPrint( "not spawning hunter, laggy, tickrate is " .. currTickrate .. " threshold is " .. threshold )
             nextHunterSpawn = cur + 1
@@ -627,7 +662,6 @@ function GM:SpawnWaveSpawnIn()
             -- bump the difficulty up, unlock the harder enemies sooner!
             local _, spawnSet = self:GetSpawnSet()
             GAMEMODE:BumpRoundDifficulty( spawnSet.diffBumpWhenWaveKilled / 50, "lag_bump" )
-
             return
 
         end

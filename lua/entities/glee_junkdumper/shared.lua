@@ -187,6 +187,8 @@ function ENT:UpdateGivenScore()
 
     for _, ent in ipairs( nearby ) do
         if not IsValid( ent ) then continue end
+        if not ent:IsSolid() then continue end
+        if not ent:Alive() then continue end
         if not IsValid( ent:GetPhysicsObject() ) then continue end
         local mass = ent:GetPhysicsObject():GetMass()
         if mass <= 5 then continue end
@@ -202,7 +204,7 @@ function ENT:UpdateGivenScore()
         scoreGiven = -math.abs( scoreGiven ) * 0.5
 
     else
-        scoreGiven = scoreGiven + ( nookScore * 2 )
+        scoreGiven = scoreGiven + ( nookScore * 6 )
 
     end
 

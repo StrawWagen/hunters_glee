@@ -77,7 +77,7 @@ local soundTracks = {
             },
             {
                 minDifficulty = 200,
-                snd = "hunters_glee/music/VACANT/COMPAKT_Operating_Systems_09_Operator.mp3",
+                snd = "hunters_glee/music/COMPAKT/COMPAKT_Operating_Systems_09_Operator.mp3",
             },
         },
         priority = 0,
@@ -108,7 +108,7 @@ local soundTracks = {
     grigoriArrival = {
         sounds = {
             {
-                snd = "hunters_glee/music/VACANT/gorihaunt.ogg",
+                snd = "hunters_glee/music/VACANT/gorihaunt2.ogg",
             },
         },
         priority = 0,
@@ -116,21 +116,15 @@ local soundTracks = {
     roundEarlyStart = {
         sounds = {
             {
-                maxDifficulty = 50,
                 snd = "hunters_glee/music/VACANT/wmrs.ogg",
             },
             {
-                maxDifficulty = 100,
+                minDifficulty = 50,
                 snd = "hunters_glee/music/VACANT/wmrs-crowbar.ogg",
             },
             {
-                minDifficulty = 50,
-                maxDifficulty = 150,
-                snd = "hunters_glee/music/VACANT/roundstart2.ogg",
-            },
-            {
                 minDifficulty = 100,
-                snd = "hunters_glee/music/VACANT/ROOT_ESTRANGE.ogg",
+                snd = "hunters_glee/music/VACANT/roundstart2.ogg",
             },
         },
         priority = 0,
@@ -159,7 +153,7 @@ local soundTracks = {
             },
             {
                 minDifficulty = 100,
-                snd = "hunters_glee/music/VACANT/8.25.ToWishToGlee.ogg",
+                snd = "hunters_glee/music/VACANT/ROOT_ESTRANGE.ogg",
             }
         },
         priority = 1000,
@@ -201,6 +195,9 @@ function GM:GetASoundTrack( name )
     local path
     local count = 0
 
+    -- Cycle round-robin through the track list so the same song never plays twice in a row,
+    -- but skip entries that don't fit the current difficulty.
+    -- The loop limit stops us spinning forever if nothing in the list matches.
     while not path and count < #sounds do
         count = count + 1
         local index = GAMEMODE.soundtrackIndices[name] or 1
