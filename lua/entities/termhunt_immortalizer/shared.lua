@@ -55,9 +55,14 @@ function ENT:GetNearestTarget()
 end
 
 function ENT:CalculateCanPlace()
-    if not IsValid( self:GetCurrTarget() ) then return false, "Nothing to immortalize." end
-    if self:GetCurrTarget().glee_DamageResistant then return false, "That's already immortal." end
+    local targ = self:GetCurrTarget()
+    if not IsValid( targ ) then return false, "Nothing to immortalize." end
+    if targ.glee_DamageResistant then return false, "That's already immortal." end
     if not self:HasEnoughToPurchase() then return false, self:TooPoorString() end
+    local cooldown = targ.glee_immortCooldown
+    if cooldown and cooldown > CurTime() then
+        return false, "Cooldown: " .. math.ceil( targ.glee_immortCooldown - CurTime() ) .. "s."
+    end
     return true
 
 end
@@ -82,6 +87,7 @@ local rics = {
 
 local immortalTime = 21 -- seconds
 local immortalTimeBackup = 40 -- in case the timer errors
+local immortCooldown = 25 -- 4 seconds between immortalizing
 
 function ENT:Place()
     local target = self:GetCurrTarget()
@@ -202,6 +208,7 @@ function ENT:Place()
     self:TellPlyToClearHighlighter()
 
     self.player.ghostEnt = nil
+    target.glee_immortCooldown = CurTime() + immortCooldown
 
     self.player = nil
     self:SetOwner( NULL )

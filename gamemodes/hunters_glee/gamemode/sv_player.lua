@@ -646,6 +646,8 @@ end
 function GM:spectatifyPlayer( ply )
     --ErrorNoHaltWithStack( "A ", ply )
 
+    hook.Run( "glee_ply_spectated", ply )
+
     cleanupBeforeSpectating( ply )
     ply:SetNWInt( "glee_spectateteam", GAMEMODE.TEAM_SPECTATE )
     ply.termHuntTeam = GAMEMODE.TEAM_SPECTATE
@@ -658,17 +660,19 @@ end
 function GM:escapifyPlayer( ply )
     --ErrorNoHaltWithStack( "B ", ply )
 
+    hook.Run( "glee_ply_escaped", ply )
+
     cleanupBeforeSpectating( ply )
     ply:SetNWInt( "glee_spectateteam", GAMEMODE.TEAM_ESCAPED )
     ply.termHuntTeam = GAMEMODE.TEAM_ESCAPED
-
-    hook.Run( "glee_ply_escaped", ply )
 
 end
 
 function GM:unspectatifyPlayer( ply )
     --ErrorNoHaltWithStack( "C ", ply )
     if ply.termHuntTeam == GAMEMODE.TEAM_PLAYING then return end
+
+    hook.Run( "glee_ply_unspectated", ply )
 
     ply.spectateDoFreecam = nil
     ply.spectateDoFreecamForced = nil
@@ -1111,13 +1115,6 @@ function GM:PlayerDeathThink( ply )
         if ply.termHuntTeam == GAMEMODE.TEAM_PLAYING then
             GAMEMODE:spectatifyPlayer( ply )
             ply:SetObserverMode( OBS_MODE_DEATHCAM )
-
-        end
-    -- TODO: WHY does this happen?
-    elseif not ( GAMEMODE.canRespawn or ply.glee_needsRespawning ) and hasHp and ply:HasEscaped() then
-        ply:SetHealth( 0 )
-        if game.IsDedicated() then
-            ErrorNoHaltWithStack( "AAAAAAAAAA", ply )
 
         end
     elseif GAMEMODE.canRespawn or ply.glee_needsRespawning or hasHp then
