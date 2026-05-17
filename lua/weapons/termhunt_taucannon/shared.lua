@@ -93,6 +93,11 @@ function SWEP:Initialize()
 
 end
 
+local instaKillBlacklist = {
+    ["prop_vehicle_apc"] = true,
+    ["npc_helicopter"] = true,
+}
+
 function SWEP:DumpCharge()
     local owner = self:GetOwner()
 
@@ -129,7 +134,8 @@ function SWEP:DumpCharge()
         end
 
         dmginfo:SetDamageType( bit.bor( DMG_AIRBOAT, DMG_BLAST ) )
-        if chargeLevel == max_Charge and trace.Entity:GetClass() ~= "prop_vehicle_apc" then
+        local class = trace.Entity:GetClass()
+        if chargeLevel == max_Charge and not instaKillBlacklist[class] then
             trace.Entity:SetHealth( 0 )
             trace.Entity.glee_LastHealthSetReason = "glee_taucannon_overcharge_instantkill"
 
