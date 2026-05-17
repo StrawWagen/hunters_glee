@@ -695,7 +695,7 @@ do
     function GM:GetNameOfBot( bot )
         local name = ""
         if bot.Nick and isfunction( bot.Nick ) then
-            return bot:Nick()
+            return bot:Nick() or "Something"
 
         elseif bot.glee_PrettyName then
             name = bot.glee_PrettyName

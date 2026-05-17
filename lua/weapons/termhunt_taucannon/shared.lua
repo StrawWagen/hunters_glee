@@ -366,8 +366,11 @@ function SWEP:PrimaryAttack()
         local bullet = {}
 
         bullet.Callback = function( _, trace, dmginfo )
-            dmginfo:SetDamageType( bit.bor( DMG_AIRBOAT,DMG_BLAST ) )
+            local hitEnt = trace.Entity
+            if not hitEnt.isGleeRescueHeli then
+                dmginfo:SetDamageType( bit.bor( DMG_AIRBOAT, DMG_BLAST ) )
 
+            end
             if trace.Normal:Dot( trace.HitNormal ) < 0.5 then
                 timer.Simple( 0, function()
                     if not IsValid( self ) then return end
@@ -380,8 +383,10 @@ function SWEP:PrimaryAttack()
 
                     bullet = {}
 
-                    bullet.Callback = function( _, _, dmgInfo2 )
-                        dmgInfo2:SetDamageType( bit.bor( DMG_AIRBOAT,DMG_BLAST ) )
+                    bullet.Callback = function( _, trace2, dmgInfo2 )
+                        local hitEnt2 = trace2.Entity
+                        if hitEnt2.isGleeRescueHeli then return end
+                        dmgInfo2:SetDamageType( bit.bor( DMG_AIRBOAT, DMG_BLAST ) )
 
                     end
 
@@ -411,7 +416,7 @@ function SWEP:PrimaryAttack()
         bullet.Num = 1
         bullet.Dir = owner:GetAimVector()
         bullet.Src = owner:GetShootPos()
-        bullet.Force = 100 + self:GetChargeLevel()
+        bullet.Force = 100
         bullet.Spread = Vector( 0, 0, 0 )
         bullet.HullSize = 1
         bullet.Damage = 20
