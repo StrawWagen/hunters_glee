@@ -1431,8 +1431,11 @@ end )
 function GM:TakeOverControl( ply, target )
     if not target.isTerminatorHunterBased then return end
     if target.IsHomeless then return end
-    if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
+
     if not ply:HasEscaped() then return end
+
+    if target:IsControlledByPlayer() then return end
+    if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
     local drivemode = "drive_sandbox"
 
     if target.GetEntityDriveMode then
