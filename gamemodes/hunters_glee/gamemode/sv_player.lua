@@ -641,8 +641,6 @@ local function cleanupBeforeSpectating( ply )
     end
     ply:Spectate( OBS_MODE_ROAMING )
 
-    ply.glee_needsRespawning = nil
-
 end
 
 function GM:spectatifyPlayer( ply )
@@ -657,6 +655,8 @@ function GM:spectatifyPlayer( ply )
     ply.spectateDoFreecam = CurTime() + 8
     ply.spectateDoFreecamForced = CurTime() + 2
 
+    ply.glee_needsRespawning = nil
+
 end
 
 function GM:escapifyPlayer( ply )
@@ -667,6 +667,8 @@ function GM:escapifyPlayer( ply )
     cleanupBeforeSpectating( ply )
     ply:SetNWInt( "glee_spectateteam", GAMEMODE.TEAM_ESCAPED )
     ply.termHuntTeam = GAMEMODE.TEAM_ESCAPED
+
+    ply.glee_needsRespawning = nil
 
 end
 
@@ -682,6 +684,7 @@ function GM:unspectatifyPlayer( ply )
 
     ply:SetNWInt( "glee_spectateteam", GAMEMODE.TEAM_PLAYING )
     ply:UnSpectate() -- also sets observer mode to none
+
     ply.glee_needsRespawning = true
 
 end
@@ -1101,11 +1104,12 @@ end )
 
 
 -- respawning players when 
---    canRespawn is true
+--    autoRespawn is true
 --    or they've been forced out of spectate
 
 GM.waitForSomeoneToLive = nil
 
+-- responsible for hilarious short respawn delay during setup
 hook.Add( "PlayerDeath", "glee_default_waittospawn", function( ply )
     ply.glee_nextForcedRespawn = CurTime() + 0.25
 
@@ -1113,43 +1117,56 @@ end )
 
 function GM:PlayerDeathThink( ply )
     local hasHp = ply:Health() > 0
-    if not GAMEMODE.canRespawn and not hasHp then
+    if not GAMEMODE.autoRespawn and not hasHp then
         if ply.termHuntTeam == GAMEMODE.TEAM_PLAYING then
             GAMEMODE:spectatifyPlayer( ply )
             ply:SetObserverMode( OBS_MODE_DEATHCAM )
 
         end
-    elseif GAMEMODE.canRespawn or ply.glee_needsRespawning or hasHp then
-        local lastForced = ply.glee_nextForcedRespawn or 0
+        return
 
-        if lastForced < CurTime() then
-            local plys = player.GetAll()
-            local aliveCount = GAMEMODE:countAlive( plys )
+    end
 
-            -- let 1 person spawn so that the auto placement script can catch up
-            if aliveCount == 0 then
-                if not GAMEMODE.waitForSomeoneToLive then
-                    GAMEMODE.waitForSomeoneToLive = true
-                    timer.Simple( 5, function()
-                        GAMEMODE.waitForSomeoneToLive = nil
-                    end )
-                    ply:Spawn()
+    local naturalRespawn = GAMEMODE.autoRespawn
+    local forcedRespawn = ply.glee_needsRespawning and not ply:HasEscaped()
+    local weirdBuggedStateRespawn = hasHp and not ply:HasEscaped()
 
-                    for _, currPly in ipairs( plys ) do
-                        currPly.glee_nextForcedRespawn = CurTime() + math.Rand( 0.5, 1 )
+    if not ( naturalRespawn or forcedRespawn or weirdBuggedStateRespawn ) then return end
 
-                    end
-                else -- wait for someone to live, dont respawn yet
-                    return
+    -- are we waiting for first ply to spawn?
+    local nextForced = ply.glee_nextForcedRespawn or 0
+    if nextForced > CurTime() then return end
 
-                end
-            -- respawn players normally
-            else
-                ply:Spawn()
+    local plys = player.GetAll()
+    local aliveCount = GAMEMODE:countAlive( plys )
+
+    -- nobody is alive yet
+    -- spawn 1 person 'normally' as an anchor
+    if aliveCount == 0 then
+        if GAMEMODE.waitForSomeoneToLive then
+            return -- we are waiting for the first person to spawn
+
+        else
+            GAMEMODE.waitForSomeoneToLive = true
+            timer.Simple( 5, function() -- end this logic
                 GAMEMODE.waitForSomeoneToLive = nil
+
+            end )
+            ply:Spawn()
+
+            for _, currPly in ipairs( plys ) do
+                if currPly:Alive() then continue end
+                if currPly == ply then continue end
+                -- respawn all other players a moment after first ply spawns
+                currPly.glee_nextForcedRespawn = CurTime() + math.Rand( 0.5, 1 )
 
             end
         end
+    -- respawn players normally, end the waitForSomeoneToLive logic
+    else
+        ply:Spawn()
+        GAMEMODE.waitForSomeoneToLive = nil
+
     end
 end
 
@@ -1203,7 +1220,7 @@ function GM:PlayerSpawn( pl, transiton )
                 end
             end
         end
-    -- if map has tp rooms then override spawnpoints
+    -- no player to spawn around? and map has a tp room?
     elseif GAMEMODE.doNotUseMapSpawns and GAMEMODE.biggestNavmeshGroups then
         -- if we aren't the first person spawning, then always spawn us in occupied groups
         if IsValid( anotherAlivePlayer ) then
@@ -1222,6 +1239,8 @@ function GM:PlayerSpawn( pl, transiton )
 
         end
     end
+
+    -- if there was a good spawn pos to put us at..
     if newPos then
         local offsettedNewPos = newPos + Vector( 0, 0, 15 )
         timer.Simple( engine.TickInterval(), function()
@@ -1253,6 +1272,7 @@ function GM:PlayerSpawn( pl, transiton )
     -- Stop observer mode
     GAMEMODE:unspectatifyPlayer( pl )
 
+    -- TODO: is this glee_needsRespawning nil check needed?
     pl.glee_needsRespawning = nil
 
     player_manager.OnPlayerSpawn( pl, transiton )
@@ -1262,6 +1282,7 @@ function GM:PlayerSpawn( pl, transiton )
     if not transiton then
         -- Call item loadout function
         hook.Call( "PlayerLoadout", GAMEMODE, pl )
+
     end
 
     -- Set player model
@@ -1270,6 +1291,8 @@ function GM:PlayerSpawn( pl, transiton )
     pl:SetupHands()
 
     GAMEMODE.deadPlayers[pl:GetCreationID()] = nil
+
+    pl.glee_needsRespawning = nil
 
 end
 

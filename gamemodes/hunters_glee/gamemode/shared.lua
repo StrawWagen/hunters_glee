@@ -5,7 +5,7 @@ DeriveGamemode( "sandbox" )
 GM.ROUND_INVALID    = -1 -- tell people to install a navmesh
 GM.ROUND_SETUP      = 0 -- wait until the navmesh has definitely spawned
 GM.ROUND_ACTIVE     = 1 -- death has consequences and score can accumulate
-GM.ROUND_INACTIVE   = 2 -- let players run around and prevent death
+GM.ROUND_INACTIVE   = 2 -- let players run around, get discounts, and prevent death
 GM.ROUND_LIMBO      = 3 -- just display winners
 GM.ROUND_TESTSTATE  = 4 -- do nothing, no hunters, just exists for testing and development
 

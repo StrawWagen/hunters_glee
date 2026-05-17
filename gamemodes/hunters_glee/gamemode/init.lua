@@ -179,7 +179,7 @@ function GM:TermHuntSetup()
     self.doNotUseMapSpawns              = nil -- used in sv_players
     self.hasNavmesh                     = nil
     self.blockPvp                       = nil
-    self.canRespawn                     = nil
+    self.autoRespawn                    = nil
     self.canScore                       = nil
     self.doProxChat                     = nil -- used in playercomms
     self.glee_Hunters                   = {}
@@ -303,20 +303,20 @@ function GM:Think()
         else
             displayName = "--- "
             displayTime = 0
-            self.blockPvp   = true
-            self.doProxChat = false
-            self.canRespawn = true
-            self.canScore   = false
+            self.blockPvp       = true
+            self.doProxChat     = false
+            self.autoRespawn    = true
+            self.canScore       = false
 
         end
-    elseif currState == self.ROUND_INACTIVE then --round is waiting to begin
+    elseif currState == self.ROUND_INACTIVE then -- round is waiting to begin, discounts on shopitems
 
         local doPatchingText = nil
 
         if self.termHunt_roundStartTime < cur then
             if self.HuntersGleeDoneTheGreedyPatch then
                 self:roundStart() --
-                self.isBadSingleplayer = nil --display that message once!
+                self.isBadSingleplayer = nil -- display that message once!
 
             else
                 -- let the patcher be a bit more laggy
@@ -329,10 +329,10 @@ function GM:Think()
                 huntersGlee_Announce( players, 1000, 1, "This gamemode is at its best when started with at least 2 player slots.\nThat doesn't mean you need 2 people!\nJust click the green \"Single Player\" and choose another option!" )
 
             end
-            self.blockPvp   = true
-            self.doProxChat = false
-            self.canRespawn = true
-            self.canScore   = false
+            self.blockPvp       = true
+            self.doProxChat     = false
+            self.autoRespawn    = true
+            self.canScore       = false
 
             hook.Run( "glee_sv_validgmthink_inactive", players, currState, cur )
             hook.Run( "glee_sv_validgmthink_not_over", players, currState, cur )
@@ -353,10 +353,10 @@ function GM:Think()
             self:beginSetup()
 
         else
-            self.blockPvp   = true
-            self.doProxChat = false
-            self.canRespawn = false
-            self.canScore   = false
+            self.blockPvp       = true
+            self.doProxChat     = false
+            self.autoRespawn    = false
+            self.canScore       = false
 
         end
         displayName = "--- "
@@ -374,11 +374,11 @@ function GM:Think()
         if win then
             self:roundEnd()
 
-        elseif not waitingForAFirstTimePlayer then -- dont spawn hunters if someones still in the tutorial!
-            self.blockPvp   = false
-            self.doProxChat = true
-            self.canRespawn = false
-            self.canScore   = true
+        elseif not waitingForAFirstTimePlayer then -- dont spawn hunters if everyones still in the tutorial!
+            self.blockPvp       = false
+            self.doProxChat     = true
+            self.autoRespawn    = false
+            self.canScore       = true
 
             hook.Run( "glee_sv_validgmthink_active", players, currState, cur )
             hook.Run( "glee_sv_validgmthink_not_over", players, currState, cur )
