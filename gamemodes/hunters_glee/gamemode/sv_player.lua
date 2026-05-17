@@ -1113,6 +1113,10 @@ function GM:PlayerDeathThink( ply )
             ply:SetObserverMode( OBS_MODE_DEATHCAM )
 
         end
+    -- TODO: WHY does this happen?
+    elseif not ( GAMEMODE.canRespawn or ply.glee_needsRespawning ) and hasHp and ply:HasEscaped() then
+        ply:SetHealth( 0 )
+
     elseif GAMEMODE.canRespawn or ply.glee_needsRespawning or hasHp then
         local lastForced = ply.glee_nextForcedRespawn or 0
 
