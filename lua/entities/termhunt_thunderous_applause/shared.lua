@@ -154,8 +154,17 @@ local function SparkEffect( SparkPos )
 
 end
 
+local heliNearbyDist = 3000
+local baseCost = -600
+
 function ENT:UpdateGivenScore()
-    self:SetGivenScore( -600 )
+    local cost = baseCost
+    local heli = terminator_Extras and terminator_Extras.glee_CurrentRescueHeli
+    if IsValid( heli ) and heli:GetPos():DistToSqr( self:GetPos() ) < heliNearbyDist ^ 2 then
+        cost = cost * 4
+
+    end
+    self:SetGivenScore( cost )
 
 end
 
