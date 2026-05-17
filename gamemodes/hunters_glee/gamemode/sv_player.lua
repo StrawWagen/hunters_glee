@@ -1079,7 +1079,7 @@ function GM:managePlayerSpectating()
 
     for _, ply in player.Iterator() do
         local newMode = ply:GetObserverMode()
-        if ply.termHuntTeam == GAMEMODE.TEAM_SPECTATE or ply.termHuntTeam == GAMEMODE.TEAM_ESCAPED then
+        if ( ply.termHuntTeam == GAMEMODE.TEAM_SPECTATE ) or ( ply.termHuntTeam == GAMEMODE.TEAM_ESCAPED ) then
             GAMEMODE:SpectateThink( ply, newMode, soulListners )
 
         elseif newMode > 0 then -- ply is spectating but their team doesnt match!
