@@ -61,7 +61,7 @@ local soundTracks = {
             { -- played if difficulty is above 75, so if evac is late or difficulty is being bumped
                 minDifficulty = 75,
                 maxDifficulty = 150,
-                snd = "hunters_glee/music/VACANT/8.24.to_noone.ogg",
+                snd = "hunters_glee/music/VACANT/8.23.GleeExp3.ogg",
             },
             { -- ditto
                 minDifficulty = 75,
@@ -69,7 +69,15 @@ local soundTracks = {
             },
             {
                 minDifficulty = 150,
-                snd = "hunters_glee/music/VACANT/8.23.GleeExp3.ogg",
+                snd = "hunters_glee/music/VACANT/8.24.to_noone.ogg",
+            },
+            {
+                minDifficulty = 150,
+                snd = "hunters_glee/music/VACANT/8.22.theGLEE.ogg",
+            },
+            {
+                minDifficulty = 200,
+                snd = "hunters_glee/music/VACANT/COMPAKT_Operating_Systems_09_Operator.mp3",
             },
         },
         priority = 0,
@@ -159,6 +167,11 @@ local soundTracks = {
     mapvoteMusic = {
         sounds   = {
             {
+                maxDifficulty = 75,
+                snd = "hunters_glee/music/VACANT/wkc-rtm.ogg",
+            },
+            {
+                minDifficulty = 75,
                 snd = "hunters_glee/music/VACANT/SEWERSiN.mp3",
             },
         },

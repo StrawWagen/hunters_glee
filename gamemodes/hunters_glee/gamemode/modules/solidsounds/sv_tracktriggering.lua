@@ -43,6 +43,8 @@ hook.Add( "huntersglee_round_into_limbo", "glee_spawnset_endsound", function()
     end
 end )
 
+-- TODO: more ways for highIntensitySound to be played
+
 hook.Add( "huntersglee_wave_wiped", "glee_spawnset_wavewipedsound", function()
     local waveData = GAMEMODE.waveExtraData
     local waveSize = waveData.waveSize
