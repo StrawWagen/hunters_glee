@@ -45,6 +45,8 @@ local function startTheMapVoteTimer()
             mapVoteIncrement = 0
             doingMapVote = nil
 
+            hook.Run( "glee_mapvote_start" )
+
         end
     end )
 end
@@ -57,7 +59,13 @@ hook.Add( "huntersglee_emptyserver", "glee_mapvote_reset", function()
 
 end )
 
+-- play when !rtv threshold is reached
 hook.Add( "MapVote_RTVStart", "glee_stopsolidsounds_mapvote", function()
+    GAMEMODE:SendSolidSound( "tracks/mapvoteMusic" )
+
+end )
+
+hook.Add( "glee_mapvote_start", "glee_stopsolidsounds_mapvote", function()
     GAMEMODE:SendSolidSound( "tracks/mapvoteMusic" )
 
 end )
