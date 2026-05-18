@@ -723,6 +723,7 @@ if SERVER and terminator_Extras then
                 if not IsValid( attacker ) then return end
                 if not attacker:IsPlayer() then return end
                 if not GAMEMODE.SurfaceHomicidalGlee then return end
+                if attacker:HasStatusEffect( "divine_chosen" ) then return end -- dont call heli after grigori has spawned
                 GAMEMODE:SurfaceHomicidalGlee( attacker, heli )
 
             end
