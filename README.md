@@ -179,6 +179,51 @@ Spawnsets are the #1 way to change up the hunt.
 They're defined in `lua/glee_spawnsets/` and auto-loaded.
 Third party addons can define their own spawnsets, they just have to be in the right spot.
 
+#### Spawnset Example A: Your first spawnset
+
+```lua
+-- lua/glee_spawnsets/my_spawnset.lua
+
+local mySpawnSet = {
+    name = "my_spawnset",                       -- Unique identifier
+    prettyName = "My Custom Mode",              -- Display name
+    description = "It's my mode, it's custom!", -- Description, best used as a "hint" that teases the spawnset's content
+    
+    -- Use "default" to inherit base values, or "default*2" for multipliers
+    -- Difficulty is very dynamic, so it's best to use "default" or multipliers of it,
+    -- unless you know what you're doing. 
+    difficultyPerMin = "default",
+    waveInterval = "default",
+    startingBudget = "default",
+    maxSpawnCount = 4, -- 4 is pretty low, easy
+    
+    spawns = {
+        {
+            name = "hunter",                           -- Unique spawn identifier
+            prettyName = "A Hunter",                   -- Display name
+            class = "terminator_nextbot_snail",        -- Entity class to spawn
+            spawnType = "hunter",                      -- Spawn algorithm type, only "hunter" is supported
+            difficultyCost = { 10, 15 },               -- Cost range (random)
+            countClass = "terminator_nextbot_snail*",  -- Pattern for counting (* = wildcard)
+            minCount = { 1 },                          -- Always maintain this many
+        },
+        {
+            hardRandomChance = { 5, 20 },              -- Only pick this x% of waves
+            name = "hunter",
+            prettyName = "A Scary Hunter",
+            class = "terminator_nextbot",              -- Spawns the "overcharged" terminator
+            spawnType = "hunter",
+            difficultyCost = { 25, 50 },
+            difficultyNeeded = { 50, 100 }             -- only consider spawning this after 5 - 10 minutes
+            countClass = "terminator_nextbot_snail*",
+            maxCount = { 1 },                          -- Never exceed this many
+        },
+    },
+}
+
+table.insert( GLEE_SPAWNSETS, mySpawnSet )
+```
+
 #### Spawnset Fields
 
 | Field | Required | Description |
@@ -225,61 +270,19 @@ Values can be:
 | `postSpawnedFuncs` | ❌ | Functions called after hunter:Spawn() : `function(spawnData, npc)` |
 | `isBoss` | ❌ | `true` marks as boss; `false` opts out of auto-detection. When the boss is killed, all alive players escape. Auto-detected when `maxSpawnCount <= 1` (highest `difficultyCost` entry wins). |
 
-#### Example 1:
-
-```lua
--- lua/glee_spawnsets/my_spawnset.lua
-
-local mySpawnSet = {
-    name = "my_spawnset",                       -- Unique identifier
-    prettyName = "My Custom Mode",              -- Display name
-    description = "It's my mode, it's custom!", -- Description, best used as a "hint" that teases the spawnset's content
-    
-    -- Use "default" to inherit base values, or "default*2" for multipliers
-    -- Difficulty is very dynamic, so it's best to use "default" or multipliers of it,
-    -- unless you know what you're doing. 
-    difficultyPerMin = "default",
-    waveInterval = "default",
-    startingBudget = "default",
-    maxSpawnCount = 4, -- 4 is pretty low, easy
-    
-    spawns = {
-        {
-            name = "hunter",                           -- Unique spawn identifier
-            prettyName = "A Hunter",                   -- Display name
-            class = "terminator_nextbot_snail",        -- Entity class to spawn
-            spawnType = "hunter",                      -- Spawn algorithm type, only "hunter" is supported
-            difficultyCost = { 10, 15 },               -- Cost range (random)
-            countClass = "terminator_nextbot_snail*",  -- Pattern for counting (* = wildcard)
-            minCount = { 1 },                          -- Always maintain this many
-        },
-        {
-            hardRandomChance = { 5, 20 },              -- Only pick this x% of waves
-            name = "hunter",
-            prettyName = "A Scary Hunter",
-            class = "terminator_nextbot",              -- Spawns the "overcharged" terminator
-            spawnType = "hunter",
-            difficultyCost = { 25, 50 },
-            difficultyNeeded = { 50, 100 }             -- only consider spawning this after 5 - 10 minutes
-            countClass = "terminator_nextbot_snail*",
-            maxCount = { 1 },                          -- Never exceed this many
-        },
-    },
-}
-
-table.insert( GLEE_SPAWNSETS, mySpawnSet )
-```
-#### Example 2: Custom Behavior
+#### Spawnset Example B: Functions on spawn!
 
 ```lua
 -- lua/glee_spawnsets/the_true_machine.lua
 
 local function applySynthflesh( spawnData, npc )
     npc:SetMaterial( "phoenix_storms/wire/pcb_red" )
+
 end
 
 local function announceArrival( spawnData, npc )
     huntersGlee_Announce( player.GetAll(), 100, 10, "The facade is gone.\nOnly the machine remains." )
+
 end
 
 local trueHorror = {
