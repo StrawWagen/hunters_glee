@@ -27,6 +27,7 @@ if SERVER then
         function( self, owner ) -- setup func
             self:Hook( "huntersglee_heartbeat_beat", function( ply ) -- heal a bit on each heartbeat
                 if ply ~= owner then return end
+                if ply:Health() <= 0 then return end
 
                 local amount = 1
 
