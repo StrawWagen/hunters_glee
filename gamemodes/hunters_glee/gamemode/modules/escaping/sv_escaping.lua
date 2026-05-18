@@ -178,7 +178,10 @@ end )
 
 local white = Color( 255, 255, 255 )
 
-hook.Add( "glee_onbossdefeated", "glee_escapeviabossdefeat", function()
+hook.Add( "glee_onbossdefeated", "glee_escapeviabossdefeat", function( boss, attacker )
+    local msg = GAMEMODE:GetNameOfBot( boss ) .. "\nWAS KILLED BY\n" .. attacker:Nick() .. "\nYou're finally, truly safe..."
+    huntersGlee_AnnounceDramatic( player.GetAll(), 1000, 10, msg )
+
     local alivePlayers = GAMEMODE:getAlivePlayers()
     for _, ply in ipairs( alivePlayers ) do
         timer.Simple( 0.5, function()
