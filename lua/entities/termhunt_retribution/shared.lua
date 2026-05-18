@@ -97,9 +97,14 @@ function ENT:UpdateGivenScore()
     -- if not a huge slight, and target is in rescue heli, 1k base cost
     if slightSize <= 50 then
         local vehicle = currTarget:GetVehicle()
-        if IsValid( vehicle ) and vehicle.isARescueHeliSeat then
-            currBaseCost = 2000
+        if IsValid( vehicle ) then
+            if vehicle.isARescueHeliSeat then
+                currBaseCost = 2000
 
+            else
+                currBaseCost = 800
+
+            end
         end
     end
 
