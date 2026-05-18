@@ -45,6 +45,8 @@ hook.Add( "OnNPCKilled", "glee_bossKilled", function( npc, attacker )
     -- spawnset that made this boss isn't active anymore
     if npc.glee_SpawnsetThatMadeMe ~= GAMEMODE.CurrSpawnSetName then return end
 
+    huntersGlee_AnnounceDramatic( player.GetAll(), 1000, 10, GAMEMODE:GetNameOfBot( npc ) .. "\nIS DEAD." )
+
     GAMEMODE.roundExtraData.bossKilled = true
     hook.Run( "glee_onbossdefeated", npc, attacker )
 
