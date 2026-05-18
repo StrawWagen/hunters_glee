@@ -1,14 +1,14 @@
 local set = {
     name = "hunters_glee_easy", -- unique name
-    prettyName = "Baby's first Glee",
-    description = "Hunter's Glee with no overcharged hunters, less terminators overall.\nBasically story mode.",
+    prettyName = "Gleefully Relaxed Hunters",
+    description = "Hunter's Glee with no overcharged hunters, barely any terminators.\nBasically story mode.",
     difficultyPerMin = "default", -- difficulty per minute
     waveInterval = "default", -- time between spawn waves
     diffBumpWhenWaveKilled = { 5, 10 }, -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
     startingBudget = "default", -- so budget isnt 0
     spawnCountPerDifficulty = "default*0.5", -- max of ten at 10 minutes
     startingSpawnCount = 1,
-    maxSpawnCount = 3, -- hard cap on count
+    maxSpawnCount = 2, -- hard cap on count
     maxSpawnDist = "default",
     roundEndSound = "default",
     roundStartSound = "default",

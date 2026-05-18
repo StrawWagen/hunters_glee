@@ -47,7 +47,7 @@ local defaultSpawnSet = {
     startingBudget = "default", -- so budget isnt 0
     spawnCountPerDifficulty = "default", -- max of ten at 10 minutes
     startingSpawnCount = "default",
-    maxSpawnCount = "default", -- hard cap on count
+    maxSpawnCount = 4, -- hard cap on count, trying lowering this to 4
     maxSpawnDist = "default",
     roundEndSound = "default",
     roundStartSound = "default",
@@ -75,7 +75,6 @@ local defaultSpawnSet = {
             difficultyCost = { 15, 25 },
             countClass = "terminator_nextbot_snail*", -- class COUNTED, uses findbyclass
             minutesNeeded = { 4, 6 },
-            maxCount = { 10 }, -- will never exceed this count, uses findbycount
             postSpawnedFuncs = { postSpawnedOvercharge }, -- this can be nil
         },
         {
@@ -87,7 +86,6 @@ local defaultSpawnSet = {
             difficultyCost = { 20 },
             countClass = "terminator_nextbot_snail*",
             minCount = { 2 },
-            maxCount = { 10 },
             postSpawnedFuncs = { postSpawnedOvercharge },
         }
     }

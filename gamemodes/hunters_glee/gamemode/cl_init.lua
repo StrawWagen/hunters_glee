@@ -316,13 +316,20 @@ function huntersGlee_PaintPlayer( player, posOverride )
 
 end
 
-local function paintOtherPlayers( localPlayer )
+local function paintOtherPlayers( localPlayer, cur )
     local inEye = localPlayer:GetObserverMode() == OBS_MODE_IN_EYE
     for _, ply in ipairs( player.GetAll() ) do
         if ply == localPlayer then continue end
         if inEye then -- when spectating in eye
             if entMeta.Health( ply ) <= 0 then continue end -- dont show dead people's names
-            if not terminator_Extras.PosCanSee( localPlayer:WorldSpaceCenter(), ply:GetShootPos(), MASK_SOLID_BRUSHONLY ) then continue end -- dont show names behind walls
+
+            -- throttle the trace to avoid per-frame flickering at edges
+            if not ply.glee_wallCheckNext or ply.glee_wallCheckNext < cur then
+                ply.glee_wallCheckNext = cur + 0.15
+                ply.glee_wallCheckVisible = terminator_Extras.PosCanSee( EyePos(), ply:GetShootPos(), MASK_SOLID_BRUSHONLY )
+
+            end
+            if not ply.glee_wallCheckVisible then continue end -- dont show names behind walls
 
         end
         huntersGlee_PaintPlayer( ply )
@@ -868,7 +875,7 @@ function HUDPaint()
     local displayWinners = GetGlobalBool( "glee_DisplayWinners", false )
 
     if displayWinners then
-        paintOtherPlayers( ply )
+        paintOtherPlayers( ply, cur )
         hook.Run( "glee_paintWinScreen", ply, cur )
 
     else
@@ -896,7 +903,7 @@ function HUDPaint()
         local spectating = ply:Health() <= 0
 
         if spectating == true then
-            paintOtherPlayers( ply )
+            paintOtherPlayers( ply, cur )
 
         else
             hook.Run( "glee_cl_aliveplyhud", ply, cur )
