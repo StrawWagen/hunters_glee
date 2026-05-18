@@ -170,4 +170,16 @@ function statusEffect:Timer( timerName, delay, reps, func )
 
 end
 
+--[[---------------------------------------------------------
+    statusEffect:TimerRemove
+    @desc Removes a timer that is tied to this status effect.
+    @param timerName: The unique name for the timer to remove.
+    @return: None
+--]]---------------------------------------------------------
+function statusEffect:TimerRemove( timerName )
+    local fullTimerName = "glee_statuseffect_" .. self:GetPrintName() .. "_" .. timerName .. "_" .. tostring( self )
+    timer.Remove( fullTimerName )
+
+end
+
 return statusEffect

@@ -65,6 +65,11 @@ if SERVER then
         function( self, owner ) -- setup func
             self:SetRemoveOnDeath( true ) -- its not a persistent effect, remove it on death
 
+            self:Timer( "removeSelf", dmgResistAfterRez, 1, function()
+                owner:RemoveStatusEffect( "divineintervention_blessing" )
+
+            end )
+
             self.reviveHolySound = CreateSound( owner, "music/hl2_song10.mp3" )
             self.reviveHolySound:SetSoundLevel( 70 )
             self.reviveHolySound:PlayEx( 1, math.random( 140, 150 ) )
@@ -83,7 +88,8 @@ if SERVER then
 
             local healAmount = healAmountAfterRez
             self:Timer( "heal", 1, 0, function()
-                if healAmount <= 1 then return end
+                if healAmount <= 1 then self:TimerRemove( "heal" ) return end
+                if owner:Health() <= 0 then self:TimerRemove( "heal" ) return end -- they died
 
                 if math.random( 0, 100 ) > healAmount then return end
 
