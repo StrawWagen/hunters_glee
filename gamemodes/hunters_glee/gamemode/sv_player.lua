@@ -1129,7 +1129,14 @@ function GM:PlayerDeathThink( ply )
 
     local naturalRespawn = GAMEMODE.autoRespawn
     local forcedRespawn = ply.glee_needsRespawning and not ply:HasEscaped()
-    local weirdBuggedStateRespawn = hasHp and not ply:HasEscaped()
+    local weirdBuggedStateRespawn = hasHp
+
+    if weirdBuggedStateRespawn and ply:HasEscaped() then
+        ErrorNoHaltWithStack( "PLAYER GETTING HEALTH SET WHILE DEAD", ply, ply.glee_LastHealthSetReason )
+        ply:SetHealth( 0 )
+        ply.glee_LastHealthSetReason = "PlayerDeathThink escaped weirdBuggedStateRespawn"
+
+    end
 
     if not ( naturalRespawn or forcedRespawn or weirdBuggedStateRespawn ) then return end
 
