@@ -241,7 +241,7 @@ local mySpawnSet = {
     difficultyPerMin = "default",
     waveInterval = "default",
     startingBudget = "default",
-    maxSpawnCount = 6, -- 4 is pretty low, easy
+    maxSpawnCount = 4, -- 4 is pretty low, easy
     
     spawns = {
         {
