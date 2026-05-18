@@ -231,7 +231,7 @@ Each round was feeling the same,
 and I was updating spawnset values all over the place.
 My solution? Dynamic values.
 
-Values can be:
+Number values can be:
 - `"nil"` -- Use base spawnset value
 - `"default"` - Explicity use base spawnset value
 - `"default*N"` - Multiply base value by N
