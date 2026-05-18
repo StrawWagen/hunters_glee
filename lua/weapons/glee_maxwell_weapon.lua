@@ -267,8 +267,9 @@ if SERVER then
 		if not GAMEMODE.IsReallyHuntersGlee then return end
 
 		local maxCount = math.random( 1, 2 )
-		if math.random( 0, 100 ) < 5 then
+		if math.random( 0, 100 ) < 1 then
 			maxCount = math.random( 3, 6 )
+
 		end
 
 		GAMEMODE:RandomlySpawnEntTbl( "glee_maxwell_weapon", {

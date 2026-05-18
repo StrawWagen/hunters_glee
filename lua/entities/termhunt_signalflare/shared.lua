@@ -941,18 +941,29 @@ if SERVER and terminator_Extras then
         -- OR fly to where we last saw one
         -- OR fly to sound hint
         if currGoal == "rescue" then
-            local allPlayersAreEscaping = true
+            local noPlayersNeedRescuing = true
             for _, ply in player.Iterator() do
                 if not ply:Alive() then continue end
                 if IsValid( ply:GetVehicle() ) and ply:GetVehicle():GetParent() == self then continue end
-                allPlayersAreEscaping = false
+                noPlayersNeedRescuing = false
                 break
 
             end
             -- bail
-            if CurTime() > self.giveUpAndRunAwayTime or allPlayersAreEscaping or heliAllSeatsFull( self ) then
+            if CurTime() > self.giveUpAndRunAwayTime then
                 self.currentHeliTask = "rescue_switchToEscape"
                 self.currentHeliGoal = "escape"
+                huntersGlee_AnnounceDramatic( player.GetAll(), 502, 5, "Rescue is leaving, it's been here too long..." )
+
+            elseif noPlayersNeedRescuing then
+                self.currentHeliTask = "rescue_switchToEscape"
+                self.currentHeliGoal = "escape"
+                huntersGlee_AnnounceDramatic( player.GetAll(), 502, 5, "Rescue is departing!\nAll souls aboard!" )
+
+            elseif heliAllSeatsFull( self ) then
+                self.currentHeliTask = "rescue_switchToEscape"
+                self.currentHeliGoal = "escape"
+                huntersGlee_AnnounceDramatic( player.GetAll(), 502, 5, "Rescue is pulling out!\nIt's full..." )
 
             elseif IsValid( rescueTarget ) and rescueTarget:GetNWEntity( "glee_RappelSourceEnt", NULL ) == self then
                 self.currentHeliTask = "rescue_waitForRescueTargetToRappel"

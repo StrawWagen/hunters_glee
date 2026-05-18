@@ -33,6 +33,7 @@ local function allRidersOf( vehicle )
 
     local function recurse( ent )
         if explored[ent] or not IsValid( ent ) then return end
+        explored[ent] = true
 
         if ent.GetDriver then
             local rider = ent:GetDriver()
@@ -79,7 +80,9 @@ function GM:escapifyVehicle( vehicle )
 
     end
     local riders = allRidersOf( vehicle )
+    local ridersMask = {}
     local actualRidersNoDriver = {}
+    local everyoneElse = {}
     local riderCount = 0
 
     if #riders <= 0 then return end
@@ -88,12 +91,20 @@ function GM:escapifyVehicle( vehicle )
     GAMEMODE:DelayRoundEndingUntil( delayUntil )
 
     for _, rider in ipairs( riders ) do
+        ridersMask[rider] = true
         GAMEMODE:escapifyPlayer( rider )
         if rider ~= driver then
             riderCount = riderCount + 1
             table.insert( actualRidersNoDriver, rider )
 
         end
+    end
+
+    for _, ply in player.Iterator() do
+        if ridersMask[ply] then continue end
+
+        table.insert( everyoneElse, ply )
+
     end
 
     if riderCount > 0 then
@@ -111,10 +122,15 @@ function GM:escapifyVehicle( vehicle )
             local sOrNoS = riderCount == 1 and "" or "s"
             huntersGlee_AnnounceDramatic( { driver }, 1000, textDisplayDuration, "You helped " .. riderCount .. " soul" .. sOrNoS .. " escape...\n+" .. increase .. " Score." )
 
+            huntersGlee_AnnounceDramatic( everyoneElse, 50, textDisplayDuration, driver:Nick() .. " helped " .. riderCount .. " soul" .. sOrNoS .. " escape..." )
+
         else
             local escapablePlyCount = potentialEscapersCount()
-            if escapablePlyCount > 1 then
+            if escapablePlyCount > 0 then
                 huntersGlee_AnnounceDramatic( riders, 1000, textDisplayDuration, "You've escaped!\nBut who did you leave behind?" )
+
+                local sOrNoS = riderCount == 1 and "" or "s"
+                huntersGlee_AnnounceDramatic( everyoneElse, 50, textDisplayDuration, riderCount .. " soul" .. sOrNoS .. " have escaped the hunt..." )
 
             else
                 huntersGlee_AnnounceDramatic( riders, 1000, textDisplayDuration, "You've escaped!\nYou can finally leave this all behind..." )
@@ -123,8 +139,9 @@ function GM:escapifyVehicle( vehicle )
         end
     else
         local escapablePlyCount = potentialEscapersCount()
-        if escapablePlyCount > 1 then
+        if escapablePlyCount > 0 then
             huntersGlee_AnnounceDramatic( { driver }, 1000, textDisplayDuration, "You've escaped!\nBut who did you leave behind?" )
+            huntersGlee_AnnounceDramatic( everyoneElse, 50, textDisplayDuration, driver:Nick() .. " has escaped!" )
 
         else
             huntersGlee_AnnounceDramatic( { driver }, 1000, textDisplayDuration, "You've escaped!\nYou can finally leave this all behind..." )
