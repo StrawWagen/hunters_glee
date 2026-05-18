@@ -1277,28 +1277,34 @@ if SERVER and terminator_Extras then
                 end
 
                 -- are we smashing into a wall?
-                local collisionCheckTrace = util.TraceHull( {
+                local collideTrStruc = {
                     start = myPos,
-                    endpos = bestPos,
+                    endpos = myPos + VectorRand(),
                     mask = MASK_SOLID_BRUSHONLY,
                     mins = self:OBBMins() * 1.05,
                     maxs = self:OBBMaxs() * 1.05,
 
-                } )
+                }
+                local collisionCheckTrace = util.TraceHull( collideTrStruc )
                 -- dont explode if we're crashing into what we want to hit
                 local goodHit = collisionCheckTrace.HitSky and skysTheLimit
 
                 local colliding = collisionCheckTrace.Hit and not goodHit
                 local trySoftUnstuckOffset
+                local seeSoft
                 if bestPos then
                     trySoftUnstuckOffset = terminator_Extras.dirToPos( myPos, bestPos ) * 25
+                    seeSoft = terminator_Extras.PosCanSee( myPos, myPos + trySoftUnstuckOffset )
 
                 end
                 -- we're smashing into a wall!!!
+                -- 1,
+                -- not a wall here, just bumping something
                 -- try just nudging us out a bit
-                if colliding and curSpeed < 250 and bestPos and terminator_Extras.PosCanSee( myPos, myPos + trySoftUnstuckOffset ) then
+                if colliding and curSpeed < 250 and seeSoft then
                     self:SetPos( myPos + trySoftUnstuckOffset )
 
+                -- 2,
                 -- too fast or too stuck? taking damage time
                 elseif colliding then
                     local damageInfo = DamageInfo()
@@ -1309,7 +1315,34 @@ if SERVER and terminator_Extras then
                     damageInfo:SetDamagePosition( collisionCheckTrace.HitPos )
                     self:TakeDamageInfo( damageInfo )
 
+                -- 3,
+                -- stuck on something but not colliding, probably a npc or small prop
+                elseif not colliding and curSpeed <= 1 then
+                    local filter = { self }
+                    terminator_Extras.tableAdd( filter, player.GetAll() )
+                    terminator_Extras.tableAdd( filter, self:GetChildren() )
+
+                    collideTrStruc.mask = MASK_SOLID
+                    collideTrStruc.filter = filter
+                    local smashCheckResult = util.TraceHull( collideTrStruc )
+                    local smashEntity = smashCheckResult.Entity
+                    if IsValid( smashEntity ) then
+                        local damageInfo = DamageInfo()
+                        damageInfo:SetDamage( 5 )
+                        damageInfo:SetDamageType( DMG_CRUSH )
+                        damageInfo:SetAttacker( self )
+                        damageInfo:SetInflictor( self )
+                        damageInfo:SetDamagePosition( smashCheckResult.HitPos )
+                        smashEntity:TakeDamageInfo( damageInfo )
+
+                    end
+
+                    if seeSoft then
+                        self:SetPos( myPos + trySoftUnstuckOffset )
+
+                    end
                 end
+
             -- not stuck, find best result
             else
                 local smallestPenalty = math.huge

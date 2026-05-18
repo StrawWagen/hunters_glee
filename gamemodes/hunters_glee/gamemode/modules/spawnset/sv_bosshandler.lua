@@ -42,6 +42,9 @@ hook.Add( "OnNPCKilled", "glee_bossKilled", function( npc, attacker )
 
     if not npc.glee_IsBoss then return end
 
+    -- spawnset that made this boss isn't active anymore
+    if npc.glee_SpawnsetThatMadeMe ~= GAMEMODE.CurrSpawnSetName then return end
+
     GAMEMODE.roundExtraData.bossKilled = true
     hook.Run( "glee_onbossdefeated", npc, attacker )
 
