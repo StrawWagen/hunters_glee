@@ -162,7 +162,12 @@ local soundTracks = {
         sounds   = {
             {
                 maxDifficulty = 75,
-                snd = "hunters_glee/music/VACANT/wkc-rtm.ogg",
+                snd = "hunters_glee/music/VACANT/wkc-rtv.ogg",
+            },
+            {
+                minDifficulty = 75,
+                maxDifficulty = 100,
+                snd = "hunters_glee/music/VACANT/loop1-rtv.ogg",
             },
             {
                 minDifficulty = 75,
@@ -170,6 +175,7 @@ local soundTracks = {
             },
         },
         priority = 5000,
+        randomOrder = true,
     },
 }
 
