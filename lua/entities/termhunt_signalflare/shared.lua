@@ -263,7 +263,11 @@ if SERVER and terminator_Extras then
 
         end
 
-        local badPlsStep = callTraceResult.StartSolid or callTraceResult.HitPos:Distance( myPos ) < self.SteppedTooCloseDist
+        local tooClose = callTraceResult.HitPos:Distance( myPos ) < self.SteppedTooCloseDist
+        -- if the flare crashed into the skybox, this is a tight space, just call it!
+        tooClose = tooClose and not self.HitSkyboxAtLeastOnce
+
+        local badPlsStep = callTraceResult.StartSolid or tooClose
 
         if badPlsStep then -- too close!
             self.SteppedTooCloseDist = math.max( self.SteppedTooCloseDist - 250, self.MinTooCloseDist )
