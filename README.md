@@ -224,6 +224,20 @@ local mySpawnSet = {
 table.insert( GLEE_SPAWNSETS, mySpawnSet )
 ```
 
+#### Spawnset Values
+
+I had a problem when developing this.
+Each round was feeling the same,
+and I was updating spawnset values all over the place.
+My solution? Dynamic values.
+
+Values can be:
+- `"nil"` -- Use base spawnset value
+- `"default"` - Explicity use base spawnset value
+- `"default*N"` - Multiply base value by N
+- `{ min, max }` - Random value in range is chosen at the start of each round.
+- `Direct number` - 8, 10, 11.25, etc ( not recommended, random value in range is much more fun )
+
 #### Spawnset Fields
 
 | Field | Required | Description |
@@ -231,7 +245,7 @@ table.insert( GLEE_SPAWNSETS, mySpawnSet )
 | `name` | ✅ | Unique identifier, should match filename |
 | `prettyName` | ✅ | Display name for voting/UI |
 | `description` | ✅ | Description shown to players |
-| `spawns` | ✅ | Array of spawn definitions |
+| `spawns` | ✅ | THE indexed table of potential spawns ( see below ) |
 | `difficultyPerMin` | ❌ | How fast difficulty scales |
 | `waveInterval` | ❌ | Time between spawn waves, skipped if all hunters are cleared |
 | `diffBumpWhenWaveKilled` | ❌ | Difficulty boost when wave cleared |
@@ -245,14 +259,7 @@ table.insert( GLEE_SPAWNSETS, mySpawnSet )
 | `genericSpawnerRate` | ❌ | Crate/item spawn rate multiplier |
 | `chanceToBeVotable` | ❌ | Percent chance to appear in !rtm vote, 0-100, accepts float |
 
-Values can be:
-- `"nil"` -- Use base spawnset value
-- `"default"` - Explicity use base spawnset value
-- `"default*N"` - Multiply base value by N
-- `{ min, max }` - Random value in range is chosen at the start of each round.
-- `Direct number` - 8, 10, 11.25, etc ( not recommended, random value in range is much more fun )
-
-#### Spawn Entry Fields
+#### .spawns Entries
 
 | Field | Required | Description |
 |-------|----------|-------------|
@@ -260,15 +267,15 @@ Values can be:
 | `prettyName` | ✅ | Display name |
 | `class` | ✅ | Entity class to spawn |
 | `spawnType` | ✅ | Spawning algorithm type, only supports `"hunter"` presently |
-| `difficultyCost` | ✅ | Budget cost to spawn ( number or `{min, max}` ) |
+| `difficultyCost` | ✅ | Budget cost to spawn |
 | `countClass` | ✅ | Class pattern for counting ( `*` = wildcard ) |
 | `difficultyNeeded` | ❌ | Difficulty threshold needed to start spawning | 
 | `minCount` | ❌ | Minimum maintained count |
 | `maxCount` | ❌ | Maximum allowed count |
-| `hardRandomChance` | ❌ | `{ min, max }` percent chance to even consider |
+| `hardRandomChance` | ❌ | percent chance to even consider |
 | `preSpawnedFuncs` | ❌ | Functions called before hunter:Spawn() : `function(spawnData, npc)` |
 | `postSpawnedFuncs` | ❌ | Functions called after hunter:Spawn() : `function(spawnData, npc)` |
-| `isBoss` | ❌ | `true` marks as boss; `false` opts out of auto-detection. When the boss is killed, all alive players escape. Auto-detected when `maxSpawnCount <= 1` (highest `difficultyCost` entry wins). |
+| `isBoss` | ❌ | `true` marks as boss; `false` opts out of auto-detection. When the boss is killed, all alive players escape. Auto-detected when `spawnSet.maxSpawnCount <= 1` (highest `difficultyCost` entry becomes boss). |
 
 #### Spawnset Example B: Functions on spawn!
 
