@@ -1279,10 +1279,10 @@ if SERVER and terminator_Extras then
                 -- are we smashing into a wall?
                 local collideTrStruc = {
                     start = myPos,
-                    endpos = myPos + VectorRand(),
+                    endpos = myPos + VectorRand() * 10,
                     mask = MASK_SOLID_BRUSHONLY,
-                    mins = self:OBBMins() * 1.05,
-                    maxs = self:OBBMaxs() * 1.05,
+                    mins = self:OBBMins() * 1.1,
+                    maxs = self:OBBMaxs() * 1.1,
 
                 }
                 local collisionCheckTrace = util.TraceHull( collideTrStruc )
