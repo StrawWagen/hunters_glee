@@ -831,13 +831,13 @@ function termHuntOpenTheShop()
                     local tooltipsX = itemsX + -myCategoryPanel.OffsetX
                     coolTooltip.xPos, coolTooltip.yPos = tooltipsX, tooltipsY
                     -- pos under the text, not under the item
-                    local yPosUnder = tooltipsY + shopItem.shopItemNameHPadded * 3.5
+                    local yPosUnder = tooltipsY + shopItem.shopItemNameHPadded + shopItem.shopItemFontH * 3
 
                     coolTooltip:SetSize( myCategoryPanel.shopItemWidth, myCategoryPanel.shopItemHeight )
                     -- up up and away!
                     coolTooltip:SetPos( tooltipsX, -tooltipsY + -myCategoryPanel.shopItemHeight )
 
-                    coolTooltip.Paint = function ( self )
+                    coolTooltip.Paint = function( self )
                         if not self.hasSetup then return end
                         draw_RoundedBox( 0, 0, 0, self:GetWide(), self:GetTall(), shopItemColor )
                         draw_RoundedBox( 0, 0, 0, whiteIdentifierLineWidth, self:GetTall(), whiteFaded )
@@ -921,6 +921,7 @@ function termHuntOpenTheShop()
                                 self.fakeButton:SetPos( tooltipsX, yPosAbove )
                             else
                                 self:SetPos( tooltipsX, yPosUnder )
+                                -- todo, why is button's pos set to yPosAbove, bug?
                                 self.fakeButton:SetPos( tooltipsX, yPosAbove )
                             end
                         end
@@ -1056,6 +1057,9 @@ function termHuntOpenTheShop()
                     draw_RoundedBox( 0, 0, 0, whiteIdentifierLineWidth, self:GetTall(), whiteFaded )
 
                     surface.SetFont( "termhuntShopItemFont" )
+                    local _, shopItemFontH = surface.GetTextSize( "A" )
+                    self.shopItemFontH = shopItemFontH
+
                     local _, shopItemNameH = surface.GetTextSize( self.itemData.name )
 
                     local shopItemNameHPadded = shopItemNameH * 1.2
@@ -1064,9 +1068,9 @@ function termHuntOpenTheShop()
                     local _, shopMarkupH = surface.GetTextSize( self.markupString )
                     local shopMarkupHPadded = shopMarkupH * 1.2
 
-                    --item name
+                    -- item name
                     draw.DrawText( self.itemData.name, "termhuntShopItemFont", offsetNextToIdentifier, offsetNextToIdentifier, white, TEXT_ALIGN_LEFT )
-                    --item cost
+                    -- item cost
                     draw.DrawText( self.costString, "termhuntShopItemFont", offsetNextToIdentifier, shopItemNameHPadded + offsetNextToIdentifier, self.costColor, TEXT_ALIGN_LEFT )
                     -- current markup being applied
                     draw.DrawText( self.markupString, "termhuntShopItemFont", offsetNextToIdentifier, shopItemNameHPadded + shopMarkupHPadded + offsetNextToIdentifier, markupTextColor, TEXT_ALIGN_LEFT )
