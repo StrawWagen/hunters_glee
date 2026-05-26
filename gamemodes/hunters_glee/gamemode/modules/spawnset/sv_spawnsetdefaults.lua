@@ -18,7 +18,7 @@ return {
     maxSpawnDist = { 4500, 6500 },
     minSpawnDist = 500, -- if you spawn closer than this, it feels unfair
     genericSpawnerRate = 1, -- speeds up or slows down the procedural item spawner
-    roundEndSound = "tracks/roundEnd", -- parsed by sv_solidsounds.lua
+    roundEndSound = "tracks/roundEnd", -- parsed by sv_music.lua
     roundWinSound = "tracks/roundWin",
     roundPerfectWinSound = "tracks/roundPerfectWin",
     earlyStartSound = "",

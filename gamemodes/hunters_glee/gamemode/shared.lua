@@ -74,7 +74,7 @@ function GM:PostCleanupMap()
 
         hook.Run( "glee_post_realcleanupmap" )
 
-        GAMEMODE:StopAllSolidSounds()
+        GAMEMODE:StopAllMusic()
 
         for _, ply in ipairs( player.GetAll() ) do
             ply.isSetup = nil

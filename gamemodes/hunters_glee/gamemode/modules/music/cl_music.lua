@@ -233,7 +233,7 @@ net.Receive( "glee_sendsolidsound", function()
 
 end )
 
-net.Receive( "glee_stopsolidsounds", function()
+net.Receive( "glee_stopmusic", function()
     stopAndClear()
 
 end )

@@ -1,6 +1,6 @@
 
 util.AddNetworkString( "glee_sendsolidsound" )
-util.AddNetworkString( "glee_stopsolidsounds" )
+util.AddNetworkString( "glee_stopmusic" )
 
 local DEFAULT_FADE_IN  = 0
 local DEFAULT_FADE_OUT = 0.5
@@ -36,14 +36,14 @@ function GM:SendSolidSound( path, data )
 
 end
 
-function GM:StopAllSolidSounds()
-    net.Start( "glee_stopsolidsounds" )
+function GM:StopAllMusic()
+    net.Start( "glee_stopmusic" )
     net.Broadcast()
 
 end
 
-function GM:StopSolidSoundsFor( ply )
-    net.Start( "glee_stopsolidsounds" )
+function GM:StopMusicFor( ply )
+    net.Start( "glee_stopmusic" )
     net.Send( ply )
 
 end
