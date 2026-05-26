@@ -109,7 +109,7 @@ hook.Add( "glee_sv_validgmthink_not_over", "glee_proceduralspawner", function()
             good, result = coroutine.resume( currJobCoroutine )
 
             if good == false then
-                stackAfter = stackAfter or debug.traceback( currJobCoroutine )
+                local stackAfter = debug.traceback( currJobCoroutine )
                 result = result or "unknown error"
                 ErrorNoHalt( "GLEE PROC SPAWNER ERROR (" .. tostring( currJobName ) .. "): " .. result .. "\n" .. stackAfter .. "\n" )
                 currJobCoroutine = nil
@@ -121,7 +121,7 @@ hook.Add( "glee_sv_validgmthink_not_over", "glee_proceduralspawner", function()
         end
 
         -- finished or errored
-        if result == "done" or good ~= true then
+        if result == "done" or good == nil then
             currJobCoroutine = nil
             currJobName = nil
             table.remove( proceduralSpawnerJobs, 1 )
@@ -219,7 +219,7 @@ hook.Add( "glee_sv_validgmthink_not_over", "glee_proceduralspawner", function()
         local eFlagSpawning
 
         if currJob.extraFlagsWhitelist then
-            local withFlag = GAMEMODE:GetAreasWithEFlag( currJob.extraFlagsWhitelist )
+            local withFlag = GAMEMODE:GetAreasInOccupiedGroupWithEFlag( currJob.extraFlagsWhitelist )
             if #withFlag > 0 then
                 navAreas = {}
                 local radiusSqr = spawnRadius^2
@@ -236,13 +236,14 @@ hook.Add( "glee_sv_validgmthink_not_over", "glee_proceduralspawner", function()
 
                 end
             else
-                failRoutine()
                 spawnJobInfo( jobsName, "Spawn job bailed, no areas that match job's .extraFlagsWhitelist" )
+                failRoutine()
+                return
 
             end
         end
 
-        if not navAreas then
+        if not navAreas or not next( navAreas ) then
             navAreas = navmesh.Find( currJob.spawningOrigin, spawnRadius, defaultStepSize, defaultStepSize )
 
         end

@@ -74,6 +74,19 @@ function plyMeta:RemoveStatusEffect( name )
 
 end
 
+function GM:GetAllPlayersWithStatusEffect( name )
+    local playersWith = {}
+
+    for _, ply in ipairs( player.GetAll() ) do
+        if not ply:HasStatusEffect( name ) then continue end
+        table.insert( playersWith, ply )
+
+    end
+
+    return playersWith
+
+end
+
 
 hook.Add( "PlayerDisconnected", "glee_statuseffects_cleanup", function( ply )
     local plysEffects = ply.glee_StatusEffects

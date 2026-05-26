@@ -28,4 +28,6 @@ return {
         -- played when gamemode is super high intensity
         -- can play when a "spawn wave" is wiped, with no more than 1/4 of players alive
     grigoriArrivalSound = "tracks/grigoriArrival", -- played when grigori arrives
+    secondGrigoriArrivalSound = "tracks/secondGrigoriArrival", -- played when grigori arrives
+    noMoreGrigoriSound = "tracks/stoppers/grigori", -- played when there are no more grigori
 }

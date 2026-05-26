@@ -9,26 +9,26 @@ local ceilingHighThreshold = 300
 
 local runwayLength = 5000
 
-local flags = {}
-GM.NavEFlags = flags -- Nav Extra Flags
+local flagsEnums = {}
+GM.NavEFlags = flagsEnums -- Nav Extra Flags
 
-flags.FLAT = 1 -- flat ground
-flags.UNDER_SKY = 2 -- area is under sky
-flags.LOW_CEILING = 4 -- area has low ceiling
-flags.HIGH_CEILING = 8 -- area has high ceiling
-flags.LOCALE_BEACH = 16 -- right next to water
-flags.LOCALE_RUNWAY = 32 -- big areas with long sightlines in at least one direction, something can take off if spawned
-flags.LOCALE_PEAK = 64 -- in highest 10% of the map, and higher center than all neighbors
-flags.LOCALE_DREG = 128 -- lowest 10% of the map, can be underwater
+flagsEnums.FLAT = 1 -- flat ground
+flagsEnums.UNDER_SKY = 2 -- area is under sky
+flagsEnums.LOW_CEILING = 4 -- area has low ceiling
+flagsEnums.HIGH_CEILING = 8 -- area has high ceiling
+flagsEnums.LOCALE_BEACH = 16 -- right next to water
+flagsEnums.LOCALE_RUNWAY = 32 -- big areas with long sightlines in at least one direction, something can take off if spawned
+flagsEnums.LOCALE_PEAK = 64 -- in highest 10% of the map, and higher center than all neighbors
+flagsEnums.LOCALE_DREG = 128 -- lowest 10% of the map, can be underwater
 
 concommand.Add( "glee_test_highlightallareaswithflag", function( ply, cmd, args )
     if not ply:IsAdmin() then return end
 
-    local flag = tonumber( args[1] )
-    if not flag then return end
+    local flags = tonumber( args[1] )
+    if not flags then return end
 
-    local areas = GAMEMODE:GetAreasWithEFlag( flag )
-    print( "Highlighting " .. #areas .. " areas with flag " .. flag )
+    local areas = GAMEMODE:GetAreasWithEFlags( flags )
+    print( "Highlighting " .. #areas .. " areas with flag " .. flags )
 
     for _, area in ipairs( areas ) do
         local center = area:GetCenter()
@@ -76,8 +76,35 @@ function GAMEMODE:HasExtraFlags( area, flag )
 
 end
 
-function GAMEMODE:GetAreasWithEFlag( flag )
-    return self.areasByExtraFlags[flag] or {}
+function GAMEMODE:GetAreasWithEFlags( flagMask )
+    if flagMask == 0 then return {} end
+
+    -- walk each individual bit in the mask; find the narrowest single-flag list to iterate,
+    -- and short-circuit immediately if any flag in the mask has no registered areas
+    local narrowestList
+    local singleFlag = 1
+    while singleFlag <= flagMask do
+        if bit.band( flagMask, singleFlag ) ~= 0 then
+            local list = self.areasByExtraFlags[singleFlag]
+            if not list or #list == 0 then return {} end
+            if not narrowestList or #list < #narrowestList then
+                narrowestList = list
+
+            end
+        end
+        singleFlag = singleFlag * 2
+
+    end
+
+    local result = {}
+    for _, area in ipairs( narrowestList ) do
+        local areaFlags = self.areaExtraFlags[area]
+        if areaFlags and bit.band( areaFlags, flagMask ) == flagMask then
+            table.insert( result, area )
+
+        end
+    end
+    return result
 
 end
 
@@ -156,17 +183,17 @@ hook.Add( "glee_navmesh_visit", "glee_precache_extraflags", function( area )
 
         end
         GAMEMODE.navmeshUnderSkySurfaceArea = GAMEMODE.navmeshUnderSkySurfaceArea + areasSurface
-        GAMEMODE:RegisterFlagStatus( area, flags.UNDER_SKY )
+        GAMEMODE:RegisterFlagStatus( area, flagsEnums.UNDER_SKY )
 
     else
         -- Fraction * IsUnderSky_Distance gives clearance without a laggy Distance() call;
         -- ceiling flags only apply indoors; open-sky clearance is effectively infinite so we skip it
         local clearance = skyTraceResult.Fraction * GAMEMODE.IsUnderSky_Distance
         if clearance < ceilingLowThreshold then
-            GAMEMODE:RegisterFlagStatus( area, flags.LOW_CEILING )
+            GAMEMODE:RegisterFlagStatus( area, flagsEnums.LOW_CEILING )
 
         elseif clearance > ceilingHighThreshold then
-            GAMEMODE:RegisterFlagStatus( area, flags.HIGH_CEILING )
+            GAMEMODE:RegisterFlagStatus( area, flagsEnums.HIGH_CEILING )
 
         end
     end
@@ -193,7 +220,7 @@ hook.Add( "glee_navmesh_visit", "glee_precache_extraflags", function( area )
     local flat = areaIsFlat( area )
 
     if flat then
-        GAMEMODE:RegisterFlagStatus( area, flags.FLAT )
+        GAMEMODE:RegisterFlagStatus( area, flagsEnums.FLAT )
 
     end
 
@@ -206,7 +233,7 @@ hook.Add( "glee_navmesh_visit", "glee_precache_extraflags", function( area )
         for _, neighbor in ipairs( adjacents ) do
             if neighbor:IsUnderwater() then continue end
             if area:ComputeAdjacentConnectionHeightChange( neighbor ) > 36 then continue end
-            GAMEMODE:RegisterFlagStatus( neighbor, flags.LOCALE_BEACH )
+            GAMEMODE:RegisterFlagStatus( neighbor, flagsEnums.LOCALE_BEACH )
 
         end
     end
@@ -251,7 +278,7 @@ hook.Add( "glee_navmesh_visit", "glee_precache_extraflags", function( area )
 
         end
         if isAReallyLongDirection then
-            GAMEMODE:RegisterFlagStatus( area, flags.LOCALE_RUNWAY )
+            GAMEMODE:RegisterFlagStatus( area, flagsEnums.LOCALE_RUNWAY )
 
         end
     end
@@ -275,7 +302,7 @@ hook.Add( "glee_navmesh_postvisit", "glee_precache_extraflags", function( area )
 
     -- LOCALE_DREG: deepest parts of the map
     if currAreaZ <= GAMEMODE.dregCutoff then
-        GAMEMODE:RegisterFlagStatus( area, flags.LOCALE_DREG )
+        GAMEMODE:RegisterFlagStatus( area, flagsEnums.LOCALE_DREG )
 
     end
 
@@ -292,7 +319,7 @@ hook.Add( "glee_navmesh_postvisit", "glee_precache_extraflags", function( area )
         end
 
         if isHigherThanAllNeighbors then
-            GAMEMODE:RegisterFlagStatus( area, flags.LOCALE_PEAK )
+            GAMEMODE:RegisterFlagStatus( area, flagsEnums.LOCALE_PEAK )
 
         end
     end

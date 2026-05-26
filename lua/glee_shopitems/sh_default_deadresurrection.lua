@@ -529,14 +529,22 @@ if SERVER then
 
     GAMEMODE:RegisterStatusEffect( "divine_chosen",
         function( self, owner ) -- setup func
-            if not GetGlobalBool( "chosenhasarrived", false ) then
+            local HAS_ARRIVED = GetGlobalBool( "chosenhasarrived", false )
+            if not HAS_ARRIVED then
                 hook.Run( "huntersglee_grigori_arrival", owner )
+                huntersGlee_Announce( player.GetAll(), 500, 15, "The ultimate sacrifice has been made.\nBEWARE OF " .. string.upper( owner:Nick() ) )
+
+            elseif not GetGlobalBool( "twochosenshavearrived", false ) then
+                SetGlobalBool( "twochosenshavearrived", true )
+                hook.Run( "huntersglee_second_grigori_arrival", owner )
+                huntersGlee_Announce( player.GetAll(), 500, 8, "Everything is wrong.\nBEWARE OF " .. string.upper( owner:Nick() ) )
+
+            else
+                huntersGlee_Announce( player.GetAll(), 500, 8, "BEWARE OF " .. string.upper( owner:Nick() ) )
 
             end
             SetGlobalBool( "chosenhasarrived", true )
             GAMEMODE.roundExtraData.grigoriWasPurchased = true
-
-            huntersGlee_Announce( player.GetAll(), 500, 15, "The ultimate sacrifice has been made.\nBEWARE OF " .. string.upper( owner:Nick() ) )
 
             -- weapon maintenance timer
             self:Timer( "maintainWeapon", 0.1, 0, function()
@@ -680,12 +688,18 @@ if SERVER then
         end,
         function( self, owner ) -- teardown func
             owner.glee_divineChosenResurrect = nil
-            SetGlobalBool( "chosenhasarrived", false )
 
             owner:SetNW2Int( "glee_divineintervention_respawncount", 0 )
 
             local weap = owner:GetWeapon( "termhunt_divine_chosen" )
             SafeRemoveEntity( weap )
+
+            timer.Simple( 0, function()
+                if #GAMEMODE:GetAllPlayersWithStatusEffect( "divine_chosen" ) > 0 then return end
+                SetGlobalBool( "twochosenshavearrived", false )
+                SetGlobalBool( "chosenhasarrived", false )
+
+            end )
 
             -- Note: global hooks/timers are left for other potential chosen players
             -- They clean themselves up when round ends

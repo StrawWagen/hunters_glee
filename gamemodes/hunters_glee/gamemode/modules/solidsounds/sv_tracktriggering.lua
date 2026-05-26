@@ -61,7 +61,19 @@ hook.Add( "huntersglee_wave_wiped", "glee_spawnset_wavewipedsound", function()
 
 end )
 
+-- plays when we go from 0 grigori to 1
 hook.Add( "huntersglee_grigori_arrival", "glee_spawnset_grigoriarrival", function()
     playSpawnSetSound( "grigoriArrivalSound" )
+
+end )
+
+-- plays first time there's at least 2 grigori on the map
+hook.Add( "huntersglee_second_grigori_arrival", "glee_spawnset_second_grigoriarrival", function()
+    playSpawnSetSound( "secondGrigoriArrivalSound" )
+
+end )
+
+hook.Add( "huntersglee_grigori_failure", "glee_spawnset_grigorifailure", function()
+    playSpawnSetSound( "noMoreGrigoriSound" )
 
 end )

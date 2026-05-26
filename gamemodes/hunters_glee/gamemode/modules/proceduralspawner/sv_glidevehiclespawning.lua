@@ -103,7 +103,7 @@ hook.Add( "glee_navpatcher_finish", "glee_spawnaglideifwewant", function()
     local vehiclesOnThisMap = GAMEMODE.navmeshUnderSkySurfaceArea / surfaceAreaPerVehicle
     vehiclesOnThisMap = vehiclesOnThisMap - bite
 
-    if #GAMEMODE:GetAreasWithEFlag( GAMEMODE.NavEFlags.LOCALE_BEACH ) > 4 then
+    if #GAMEMODE:GetAreasWithEFlags( GAMEMODE.NavEFlags.LOCALE_BEACH ) > 4 then
         if vehiclesOnThisMap < 0.75 then
             GAMEMODE.glideSpawner_SpawnGlideBoatsOnly = true
 

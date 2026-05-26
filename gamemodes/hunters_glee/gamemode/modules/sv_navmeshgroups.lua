@@ -413,6 +413,37 @@ function GM:GetAreaInOccupiedBigGroupOrRandomBigGroup( noUnderWater )
 
 end
 
+function GM:GetAreasInOccupiedGroupWithEFlag( flagMask )
+    local allWithFlags = self:GetAreasWithEFlags( flagMask )
+    if #allWithFlags <= 0 then return {} end
+
+    local bigGroups = GAMEMODE.biggestNavmeshGroups
+    if not bigGroups or #bigGroups <= 0 then
+        local allWithFlagsSafe = terminator_Extras.tableCopySimple( allWithFlags )
+        return allWithFlagsSafe
+
+    end
+
+    local _, occupiedGroup = self:GetAreaInOccupiedBigGroupOrRandomBigGroup()
+
+    local groupLookup = {}
+    for _, groupArea in ipairs( occupiedGroup ) do
+        groupLookup[groupArea] = true
+
+    end
+
+    local result = {}
+    for _, flagArea in ipairs( allWithFlags ) do
+        if groupLookup[flagArea] then
+            table.insert( result, flagArea )
+
+        end
+    end
+
+    return result
+
+end
+
 function GM:GetNavmeshGroupsWithPlayers( yieldable )
     local bigGroups = GAMEMODE.biggestNavmeshGroups
     local alivePlayers = GAMEMODE:getAlivePlayers()

@@ -11,7 +11,8 @@ function GM:SendSolidSound( path, data )
 
     if self:IsPathASoundTrack( path ) then
         local trackData
-        path, trackData = GAMEMODE:GetASoundTrack( string.sub( path, 8 ) )
+        local trackName = string.sub( path, 8 )
+        path, trackData = GAMEMODE:GetASoundTrack( trackName )
         data = table.Copy( trackData )  -- avoid mutating trackData
 
     end
@@ -108,7 +109,22 @@ local soundTracks = {
     grigoriArrival = {
         sounds = {
             {
+                maxDifficulty = 200,
+                snd = "hunters_glee/music/VACANT/gorihaunt.ogg",
+            },
+            {
+                minDifficulty = 75,
                 snd = "hunters_glee/music/VACANT/gorihaunt2.ogg",
+            },
+        },
+        priority = 0,
+        randomOrder = true,
+    },
+    -- TODO: get song from vacancy
+    secondGrigoriArrival = {
+        sounds = {
+            {
+                snd = "",
             },
         },
         priority = 0,
@@ -183,6 +199,7 @@ local soundTracks = {
 hook.Add( "huntersglee_round_into_active", "glee_randomizesoundtracks", function()
     for _, trackData in ipairs( soundTracks ) do
         if not trackData.randomOrder then continue end
+        if #trackData.sounds <= 1 then continue end
         table.Shuffle( trackData.sounds )
 
     end
