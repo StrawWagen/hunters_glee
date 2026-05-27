@@ -211,7 +211,7 @@ hook.Add( "Think", "glee_music_think", function()
     -- keep playing thru stopsound calls
     if not IsValid( currentSound.channel ) then
         local offset = now - currentSound.startTime
-        startSound( currentSound.path, currentSound.pitch, currentSound.vol, offset, 0, currentSound.entity, currentSound.startFadeOutDist, currentSound.endFadeOutDist )
+        startSound( currentSound.path, currentSound.pitch, currentSound.vol, offset, 0, 0, currentSound.entity, currentSound.startFadeOutDist, currentSound.endFadeOutDist )
         return
 
     end
@@ -225,7 +225,7 @@ hook.Add( "Think", "glee_music_think", function()
 
         if len > 0 and expectedPos < len - 1 then
             -- Stopped before the track ended; restart from estimated position
-            startSound( currentSound.path, currentSound.pitch, currentSound.vol, expectedPos, 0, currentSound.entity, currentSound.startFadeOutDist, currentSound.endFadeOutDist )
+            startSound( currentSound.path, currentSound.pitch, currentSound.vol, expectedPos, 0, 0, currentSound.entity, currentSound.startFadeOutDist, currentSound.endFadeOutDist )
 
         else
             -- Natural end (or indeterminate length); clear currentSound
