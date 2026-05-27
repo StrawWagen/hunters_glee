@@ -126,9 +126,15 @@ local function divineIntervention( purchaser )
     if not interventionPos then return end
 
     local likelyBoxCenter = interventionPos + Vector( 0, 0, 24 )
-    terminator_Extras.DoPFXAtPos( "glee_divineintervention_spawn", likelyBoxCenter )
-    sound.Play( "ambient/levels/labs/electric_explosion3.wav", likelyBoxCenter, 82, math.random( 40, 50 ) )
-    sound.Play( "ambient/levels/labs/teleport_preblast_suckin1.wav", likelyBoxCenter, 85, 90 )
+    if purchaser:HasStatusEffect( "divine_chosen" ) then
+        purchaser:glee_divineChosenPreReviveHint( likelyBoxCenter )
+
+    else
+        terminator_Extras.DoPFXAtPos( "glee_divineintervention_spawn", likelyBoxCenter )
+        sound.Play( "ambient/levels/labs/electric_explosion3.wav", likelyBoxCenter, 82, math.random( 40, 50 ) )
+        sound.Play( "ambient/levels/labs/teleport_preblast_suckin1.wav", likelyBoxCenter, 85, 90 )
+
+    end
 
     local wasValidAnchor = IsValid( anchor )
 
@@ -666,6 +672,23 @@ if SERVER then
 
             -- also store on owner for external access (divine intervention check)
             owner.glee_divineChosenResurrect = self.resurrect
+            -- play sparks and broadcast panic
+            owner.glee_divineChosenPreReviveHint = function( hintPos )
+                if not IsValid( owner ) then return end
+                for i = 1, 8 do
+                    local pos = hintPos + VectorRand() * i * 2
+                    local Sparks = EffectData()
+                    Sparks:SetOrigin( pos )
+                    Sparks:SetMagnitude( 2 )
+                    Sparks:SetScale( 1 )
+                    Sparks:SetRadius( 6 )
+                    util.Effect( "Sparks", Sparks )
+
+                end
+                GAMEMODE:PanicSource( hit, 200, 200 )
+                GAMEMODE:PanicSource( hit, 50, 400 )
+
+            end
 
             -- resurrect immediately
             self.resurrect()
