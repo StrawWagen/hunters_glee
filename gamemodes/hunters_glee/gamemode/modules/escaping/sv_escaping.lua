@@ -175,6 +175,7 @@ hook.Add( "PlayerEnteredVehicle", "glee_findescapablevehicles", function( _drive
 
         end
         if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
+        if self.glee_IsWaitingForGas then return end -- need gas to start? need gas to escape
         GAMEMODE:escapifyVehicle( self )
 
     end
