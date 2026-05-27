@@ -35,12 +35,11 @@ function ENT:Attach( pos, ang, ent1, bone1, ent2, theConstraint )
     theConstraint:CallOnRemove( "constraint_removeallmynails", function()
         if not theConstraint.huntersGLEE_NAILS then return end
         for _, currNail in ipairs( theConstraint.huntersGLEE_NAILS ) do
-            if IsValid( currNail ) then
-                self:Break()
-            end
+            if not IsValid( currNail ) then continue end
+            currNail:Break()
+
         end
     end )
-
 end
 
 local invis = Color( 255, 255, 255, 0 )

@@ -50,3 +50,21 @@ function ENT:Think()
 	return true
 
 end
+
+hook.Add( "InitPostEntity", "maxwell_glee", function()
+	if not GAMEMODE.IsReallyHuntersGlee then return end
+
+	local maxCount = math.random( 1, 2 )
+	if math.random( 0, 100 ) <= 1 then
+		maxCount = math.random( 3, 6 )
+
+	end
+
+	GAMEMODE:RandomlySpawnEntTbl( "glee_maxwell_dancing", {
+		maxCount = maxCount,
+		chance = math.Rand( 1, 10 ),
+		minAreaSize = 25,
+		radius = math.random( 1000, 10000 ),
+
+	} )
+end )
