@@ -216,6 +216,10 @@ function ENT:SwapPlayerAndTerminator( player, terminator )
     beam:SetScale( 1.8 )
     util.Effect( "eff_huntersglee_dicebeam", beam, true )
 
+    if player:InVehicle() then
+        player:ExitVehicle()
+
+    end
     player:TeleportTo( terminatorPos )
     player:SetVelocity( terminator:GetVelocity() )
 
