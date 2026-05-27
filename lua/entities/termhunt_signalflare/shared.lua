@@ -184,6 +184,7 @@ if SERVER and terminator_Extras then
         if self.calledForHeli then return end
 
         local myPos = self:GetPos()
+        local startPos = myPos
 
         local myPhysObj = self:GetPhysicsObject()
         if IsValid( myPhysObj ) then
@@ -214,6 +215,47 @@ if SERVER and terminator_Extras then
 
         end
 
+        local nearestWallResult
+        local nearestWallDir
+        -- check 4 cardinal directions for nearest wall
+        for i = 1, 4 do
+            local dir = Vector( 0, 0, 0 )
+            if i == 1 then
+                dir.y = 1
+
+            elseif i == 2 then
+                dir.y = -1
+
+            elseif i == 3 then
+                dir.x = 1
+
+            else
+                dir.x = -1
+
+            end
+            local traceData = {
+                start = myPos,
+                endpos = myPos + dir * callingHeliMaxs,
+                mask = MASK_NPCSOLID_BRUSHONLY,
+
+            }
+            local traceResult = util.TraceLine( traceData )
+            -- if there's a wall here, and we haven't found a wall yet, or this wall is closer
+            if traceResult.Hit and ( not nearestWallResult or traceResult.Fraction < nearestWallResult.Fraction ) then
+                nearestWallResult = traceResult
+                nearestWallDir = dir
+
+            end
+        end
+
+        -- if hit, move start position away from the wall
+        if nearestWallResult then
+            local offsetDist = callingHeliMaxs * ( 1 - nearestWallResult.Fraction )
+            local offset = ( -nearestWallDir ) * offsetDist
+            startPos = myPos + offset
+
+        end
+
         local randDir = VectorRand()
         randDir.z = math.Rand( -0.05, self.SteppedDirMaxZ ) -- dont call heli upwards
         randDir:Normalize()
@@ -222,7 +264,7 @@ if SERVER and terminator_Extras then
 
         -- if EVERY direction is trigger pushed, just go ahead and ignore them
         local doHitPushCheck = not self.triggerPushHits or self.triggerPushHits < 25
-        if doHitPushCheck and rayHitsTriggerPush( myPos, offset ) then
+        if doHitPushCheck and rayHitsTriggerPush( startPos, offset ) then
             self.triggerPushHits = ( self.triggerPushHits or 0 ) + 1
             return
 
@@ -232,11 +274,11 @@ if SERVER and terminator_Extras then
         local currMaxs = math.random( wayfindingHeliMaxs, callingHeliMaxs )
 
         local offsetSize = self.SteppedStartingOffset + math.random( 25, callingHeliMaxs )
-        local myPosOffsetted = myPos + randDir * offsetSize
+        local startPosOffsetted = startPos + randDir * offsetSize
 
         local traceData = {
-            start = myPosOffsetted,
-            endpos = myPos + offset,
+            start = startPosOffsetted,
+            endpos = startPos + offset,
             mask = MASK_NPCSOLID_BRUSHONLY,
             mins = Vector( currMins, currMins, wayfindingHeliMins / 2 ),
             maxs = Vector( currMaxs, currMaxs, wayfindingHeliMaxs / 2 ),
@@ -263,7 +305,7 @@ if SERVER and terminator_Extras then
 
         end
 
-        local tooClose = callTraceResult.HitPos:Distance( myPos ) < self.SteppedTooCloseDist
+        local tooClose = callTraceResult.HitPos:Distance( startPos ) < self.SteppedTooCloseDist
         -- if the flare crashed into the skybox, this is a tight space, just call it!
         tooClose = tooClose and not self.HitSkyboxAtLeastOnce
 
@@ -295,7 +337,7 @@ if SERVER and terminator_Extras then
         local permaDiffBump
 
         local spawnPos = callTraceResult.HitPos
-        local goalPos = myPos
+        local goalPos = startPos
 
         local firstWait = 3
         local secondWait = 10
@@ -1128,6 +1170,8 @@ if SERVER and terminator_Extras then
                 skysTheLimit = true
 
                 local distAdd = ourVel:Length() / 2 -- at 1000 speed, add 500
+                local startAddingDistSpeed = 400
+                distAdd = math.max( 0, distAdd - startAddingDistSpeed )
 
                 if myPos:Distance( nearestSkyboxPos ) < 200 + distAdd then
                     hook.Run( "glee_rescueheliescape", self )
