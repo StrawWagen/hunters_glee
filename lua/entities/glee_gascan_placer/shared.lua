@@ -72,7 +72,7 @@ function ENT:Place()
     local gas = ents.Create( "prop_physics" )
     gas:SetModel( gasModels[math.random( #gasModels )] )
     gas:SetPos( self:OffsettedPlacingPos() )
-    gas:SetAngles( Angle( 0, math.random( 0, 360 ), 0 ) )
+    gas:SetAngles( Angle( 90, math.random( 0, 360 ), 0 ) )
     gas:Spawn()
     GAMEMODE:RegisterAsGas( gas )
 
