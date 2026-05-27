@@ -35,6 +35,14 @@ end
 
 if not SERVER then return end
 
+function ENT:ManageMyPos()
+    BaseClass.ManageMyPos( self )
+
+    local ang = Angle( 90, self.player:EyeAngles().y + 180, 0 )
+    self:SetAngles( ang )
+
+end
+
 local maxPlyDist    = 4000
 local minPlyDist    = 600
 local maxScore      = 175
