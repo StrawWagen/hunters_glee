@@ -718,7 +718,9 @@ if SERVER then
             SafeRemoveEntity( weap )
 
             timer.Simple( 0, function()
-                if #GAMEMODE:GetAllPlayersWithStatusEffect( "divine_chosen" ) > 0 then return end
+                for _, ply in ipairs( GAMEMODE:GetAllPlayersWithStatusEffect( "divine_chosen" ) ) do
+                    if ply ~= owner then return end -- someone else still has the effect
+                end
                 SetGlobalBool( "twochosenshavearrived", false )
                 SetGlobalBool( "chosenhasarrived", false )
 
