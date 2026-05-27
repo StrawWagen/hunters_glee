@@ -142,6 +142,11 @@ function GM:AddGasUser( ent )
 
 end
 
+function GM:GetGasUsers()
+    return self.GasUsers or {}
+
+end
+
 
 local nextGasSpawnCheck = 0
 local offsetFromGround = Vector( 0, 0, 25 )
