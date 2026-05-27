@@ -39,13 +39,14 @@ if not SERVER then return end
 function ENT:ManageMyPos()
     BaseClass.ManageMyPos( self )
 
-    local ang = Angle( 90, self.player:EyeAngles().y + 180, 0 )
+    -- random angle each time based on entity index
+    local ang = Angle( 90, ( self:EntIndex() * self:EntIndex() ) % 360, 0 )
     self:SetAngles( ang )
 
 end
 
 local maxPlyDist    = 4000
-local minPlyDist    = 600
+local minPlyDist    = 1600
 local maxScore      = 175
 local tooClosePenalty = 100
 
@@ -69,7 +70,19 @@ function ENT:UpdateGivenScore()
     end
 
     scoreGiven = scoreGiven + ( terminator_Extras.GetNookScore( myPos ) * 6 )
-    scoreGiven = math.Clamp( scoreGiven, -100, 200 )
+
+    -- vehicles near? lose a LOT, can't escape that easily!
+    local gasUsers = GAMEMODE.GasUsers
+    if gasUsers then
+        for _, user in ipairs( gasUsers ) do
+            if IsValid( user ) and myPos:Distance( user:GetPos() ) < 4740 then
+                scoreGiven = scoreGiven - 3000
+                break
+            end
+        end
+    end
+
+    scoreGiven = math.Clamp( scoreGiven, -3000, 175 )
 
     self:SetGivenScore( scoreGiven )
 
