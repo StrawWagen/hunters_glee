@@ -48,6 +48,8 @@ local maxPlyDist    = 4000
 local minPlyDist    = 1600
 local maxScore      = 175
 local tooClosePenalty = 100
+local maxVehPenalty = 3000
+local maxVehDist    = 3000
 
 function ENT:UpdateGivenScore()
     local myPos = self:GetPos()
@@ -74,14 +76,17 @@ function ENT:UpdateGivenScore()
     local gasUsers = GAMEMODE.GasUsers
     if gasUsers then
         for _, user in ipairs( gasUsers ) do
-            if IsValid( user ) and myPos:Distance( user:GetPos() ) < 4740 then
-                scoreGiven = scoreGiven - 3000
-                break
+            if IsValid( user ) then
+                local dist = myPos:Distance( user:GetPos() )
+                if dist < maxVehDist then
+                    local penalty = maxVehPenalty * (1 - dist / maxVehDist)
+                    scoreGiven = scoreGiven - penalty
+                end
             end
         end
     end
 
-    scoreGiven = math.Clamp( scoreGiven, -3000, 175 )
+    scoreGiven = math.Clamp( scoreGiven, -maxVehPenalty, maxScore )
 
     self:SetGivenScore( scoreGiven )
 
