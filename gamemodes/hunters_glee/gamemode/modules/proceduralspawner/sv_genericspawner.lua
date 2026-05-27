@@ -46,9 +46,11 @@ local function justSpawnTheDamnEnt( class, tr )
 
 end
 
-GAMEMODE.genericSpawnTables = GAMEMODE.genericSpawnTables or {}
-local currentlySpawning = {}
-local created = {}
+GAMEMODE.genericSpawnTables             = GAMEMODE.genericSpawnTables or {}
+GAMEMODE.genericSpawnCurrentlySpawning  = GAMEMODE.genericSpawnCurrentlySpawning or {}
+GAMEMODE.genericSpawnCreated            = GAMEMODE.genericSpawnCreated or {}
+local currentlySpawning = GAMEMODE.genericSpawnCurrentlySpawning
+local created = GAMEMODE.genericSpawnCreated
 
 local function onJobSuccced( spawned, className )
     --print( spawned, "AAAAAAAAAAAA" )
@@ -352,6 +354,10 @@ GAMEMODE:RandomlySpawnEntTbl( "sent_ball", {
     -- optional
     -- NAV_MESH attribute filtering, for all the default attributes like NAV_MESH_AVOID
     -- attributeWhitelist/attributeBlacklist
+
+    -- optional
+    -- if set, this class will also be checked for count of ents on map
+    -- secondCountClass
 
 } )
 

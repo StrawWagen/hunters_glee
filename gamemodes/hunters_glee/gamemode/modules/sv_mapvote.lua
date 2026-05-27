@@ -61,11 +61,11 @@ end )
 
 -- play when !rtv threshold is reached
 hook.Add( "MapVote_RTVStart", "glee_stopmusic_mapvote", function()
-    GAMEMODE:SendSolidSound( "tracks/mapvoteMusic" )
+    GAMEMODE:SendMusic( "tracks/mapvoteMusic" )
 
 end )
 
 hook.Add( "glee_mapvote_start", "glee_stopmusic_mapvote", function()
-    GAMEMODE:SendSolidSound( "tracks/mapvoteMusic" )
+    GAMEMODE:SendMusic( "tracks/mapvoteMusic" )
 
 end )

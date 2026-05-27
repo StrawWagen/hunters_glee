@@ -673,12 +673,12 @@ if SERVER then
             -- also store on owner for external access (divine intervention check)
             owner.glee_divineChosenResurrect = self.resurrect
             -- play sparks and broadcast panic
-            owner.glee_divineChosenPreReviveHint = function( hintPos )
+            owner.glee_divineChosenPreReviveHint = function( _self, hintPos )
                 if not IsValid( owner ) then return end
                 for i = 1, 8 do
-                    local pos = hintPos + VectorRand() * i * 2
+                    local offset = VectorRand() * ( i * 2 )
                     local Sparks = EffectData()
-                    Sparks:SetOrigin( pos )
+                    Sparks:SetOrigin( hintPos + offset )
                     Sparks:SetMagnitude( 2 )
                     Sparks:SetScale( 1 )
                     Sparks:SetRadius( 6 )

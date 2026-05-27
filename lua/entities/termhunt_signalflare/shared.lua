@@ -317,7 +317,7 @@ if SERVER and terminator_Extras then
                 end
                 huntersGlee_AnnounceDramatic( player.GetAll(), 500, secondWait - firstWait, name .. "\nHAS CALLED FOR RESCUE!" )
                 if GAMEMODE.IsReallyHuntersGlee then
-                    GAMEMODE:SendSolidSound( GAMEMODE:GetASoundTrack( "heliEvac" ) )
+                    GAMEMODE:SendMusic( "tracks/heliEvac" )
                     local _, spawnSet = GAMEMODE:GetSpawnSet()
                     diffBump = spawnSet.diffBumpWhenWaveKilled / 2
                     permaDiffBump = spawnSet.diffBumpWhenWaveKilled / 10

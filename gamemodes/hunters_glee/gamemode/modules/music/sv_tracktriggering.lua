@@ -5,13 +5,15 @@ local function playSpawnSetSound( field )
     local snd = spawnSet[field]
     if snd == "" then return end
 
-    GAMEMODE:SendSolidSound( snd )
+    GAMEMODE:SendMusic( snd )
 
 end
 
 hook.Add( "huntersglee_round_tenseconds_before_active", "glee_spawnset_earlystartsound", function()
     local _, spawnSet = GAMEMODE:GetSpawnSet()
-    if spawnSet.roundStartSound ~= "" then return end -- let the roundStartSound take priority
+    -- backwards compat
+    -- only play early start if roundStartSound is unset
+    if spawnSet.roundStartSound ~= "" then return end
 
     playSpawnSetSound( "roundEarlyStartSound" )
 

@@ -1,40 +1,122 @@
 
-util.AddNetworkString( "glee_sendsolidsound" )
+util.AddNetworkString( "glee_playmusic" )
 util.AddNetworkString( "glee_stopmusic" )
+util.AddNetworkString( "glee_stopmusic_track" )
 
 local DEFAULT_FADE_IN  = 0
 local DEFAULT_FADE_OUT = 0.5
 
-function GM:SendSolidSound( path, data )
+local function writeOverrideTable( t )
+    t = t or {}
+    net.WriteUInt( #t, 8 )
+    for _, name in ipairs( t ) do
+        net.WriteString( name )
 
-    local initialPath = path
+    end
+end
 
-    if self:IsPathASoundTrack( path ) then
-        local trackData
-        local trackName = string.sub( path, 8 )
-        path, trackData = GAMEMODE:GetASoundTrack( trackName )
-        data = table.Copy( trackData )  -- avoid mutating trackData
+local function broadcastMusic( trackName, path, data, recipients )
+    data.pitch         = data.pitch         or 100
+    data.vol           = data.vol           or 1
+    data.fadeInLength  = data.fadeInLength  or DEFAULT_FADE_IN
+    data.fadeOutLength = data.fadeOutLength or DEFAULT_FADE_OUT
+    data.priority      = data.priority      or 0
+
+    net.Start( "glee_playmusic" )
+        net.WriteString( trackName )
+        net.WriteString( path )
+        net.WriteFloat(  data.pitch )
+        net.WriteFloat(  data.vol )
+        net.WriteFloat(  data.fadeInLength )
+        net.WriteFloat(  data.fadeOutLength )
+        net.WriteUInt(   data.priority, 16 )
+        writeOverrideTable( data.neverOverrides )
+        writeOverrideTable( data.alwaysOverrides )
+        local hasEntity = IsValid( data.entity )
+        net.WriteBool( hasEntity )
+        if hasEntity then
+            net.WriteEntity( data.entity )
+            net.WriteFloat( data.startFadeOutDist or 500 )
+            net.WriteFloat( data.endFadeOutDist   or 1500 )
+
+        end
+    if recipients then
+        net.Send( recipients )
+
+    else
+        net.Broadcast()
 
     end
 
-    if not path then error( "invalid track: " .. initialPath ) end
+end
+
+function GM:SendMusic( path, data )
+    local initialPath = path
+    local trackName   = ""
+
+    if self:IsPathAMusicTrack( path ) then
+        local name = string.sub( path, 8 )
+        local resolvedPath, trackData = self:GetAMusicTrack( name )
+        if not resolvedPath then error( "glee_music: invalid track: " .. initialPath ) end
+        path      = resolvedPath
+        trackName = name
+        data      = table.Copy( trackData )  -- avoid mutating trackData
+
+    end
 
     data = data or {}
-    data.pitch         = data.pitch or 100
-    data.vol           = data.vol or 1
-    data.fadeInLength  = data.fadeInLength or DEFAULT_FADE_IN
-    data.fadeOutLength = data.fadeOutLength or DEFAULT_FADE_OUT
-    data.priority      = data.priority or 0
-    net.Start( "glee_sendsolidsound" )
-        net.WriteString( path )
-        net.WriteFloat( data.pitch )
-        net.WriteFloat( data.vol )
-        net.WriteFloat( data.fadeInLength )
-        net.WriteFloat( data.fadeOutLength )
-        net.WriteUInt( data.priority, 16 )
-    net.Broadcast()
+    broadcastMusic( trackName, path, data )
 
 end
+
+
+function GM:GetAMusicTrack( name )
+    local trackData = self.musicTracks[name]
+    if not trackData then return nil, nil end
+
+    self.soundtrackIndices = self.soundtrackIndices or {}
+
+    local currDiff = self:GetCurrWaveDifficulty()
+    local sounds   = trackData.sounds
+    local path
+    local checked  = 0
+
+    -- Cycle round-robin through the list, skipping entries that don't fit the current difficulty.
+    -- The loop limit stops us spinning forever if nothing in the list matches.
+    while not path and checked < #sounds do
+        checked = checked + 1
+        local index = self.soundtrackIndices[name] or 1
+        self.soundtrackIndices[name] = ( index % #sounds ) + 1
+
+        local picked = sounds[index]
+        if picked.minDifficulty and currDiff < picked.minDifficulty then continue end
+        if picked.maxDifficulty and currDiff > picked.maxDifficulty then continue end
+
+        path = picked.snd
+
+    end
+
+    return path, trackData
+
+end
+
+
+-- Shuffle randomOrder tracks at the start of each round.
+hook.Add( "huntersglee_round_into_active", "glee_randomize_music_tracks", function()
+    if not GAMEMODE.musicTracks then return end
+    for _, trackData in pairs( GAMEMODE.musicTracks ) do
+        if not trackData.randomOrder then continue end
+        if #trackData.sounds <= 1   then continue end
+        table.Shuffle( trackData.sounds )
+
+    end
+end )
+
+hook.Add( "huntersglee_round_firstsetup", "glee_music_gobble", function()
+    GAMEMODE:MusicInitialThink()
+
+end )
+
 
 function GM:StopAllMusic()
     net.Start( "glee_stopmusic" )
@@ -48,202 +130,21 @@ function GM:StopMusicFor( ply )
 
 end
 
-local soundTracks = {
-    heliEvac = {
-        sounds = {
-            { -- played first evac of a round
-                maxDifficulty = 75,
-                snd = "hunters_glee/music/VACANT/8.23.GleeExp2.ogg",
-            },
-            { -- played second evac of a round
-                maxDifficulty = 75,
-                snd = "hunters_glee/music/VACANT/__more_glee.ogg",
-            },
-            { -- played if difficulty is above 75, so if evac is late or difficulty is being bumped
-                minDifficulty = 75,
-                maxDifficulty = 150,
-                snd = "hunters_glee/music/VACANT/8.23.GleeExp3.ogg",
-            },
-            { -- ditto
-                minDifficulty = 75,
-                snd = "hunters_glee/music/VACANT/HARD_EAS_gori_scuffle.ogg",
-            },
-            {
-                minDifficulty = 150,
-                snd = "hunters_glee/music/VACANT/8.24.to_noone.ogg",
-            },
-            {
-                minDifficulty = 150,
-                snd = "hunters_glee/music/VACANT/8.22.theGLEE.ogg",
-            },
-            {
-                minDifficulty = 200,
-                snd = "hunters_glee/music/COMPAKT/COMPAKT_Operating_Systems_09_Operator.mp3",
-            },
-        },
-        priority = 0,
-        fadeInLength = 1,
-    },
-    highIntensity = {
-        sounds = {
-            {
-                maxDifficulty = 100,
-                snd = "hunters_glee/music/VACANT/clocklore.mp3",
-            },
-            {
-                minDifficulty = 50,
-                maxDifficulty = 200,
-                snd = "hunters_glee/music/VACANT/8.23.GleeExp3.ogg",
-            },
-            {
-                minDifficulty = 100,
-                snd = "hunters_glee/music/COMPAKT/COMPAKT_Operating_Systems_05_Busy-Noisy.mp3",
-            },
-            {
-                minDifficulty = 100,
-                snd = "hunters_glee/music/VACANT/8.22.theGLEE.ogg",
-            },
-        },
-        priority = 0,
-    },
-    grigoriArrival = {
-        sounds = {
-            {
-                maxDifficulty = 200,
-                snd = "hunters_glee/music/VACANT/gorihaunt.ogg",
-            },
-            {
-                minDifficulty = 75,
-                snd = "hunters_glee/music/VACANT/gorihaunt2.ogg",
-            },
-        },
-        priority = 0,
-        randomOrder = true,
-    },
-    -- TODO: get song from vacancy
-    secondGrigoriArrival = {
-        sounds = {
-            {
-                snd = "",
-            },
-        },
-        priority = 0,
-    },
-    roundEarlyStart = {
-        sounds = {
-            {
-                snd = "hunters_glee/music/VACANT/wmrs.ogg",
-            },
-            {
-                minDifficulty = 50,
-                snd = "hunters_glee/music/VACANT/wmrs-crowbar.ogg",
-            },
-            {
-                minDifficulty = 100,
-                snd = "hunters_glee/music/VACANT/roundstart2.ogg",
-            },
-        },
-        priority = 0,
-    },
-    roundEnd = {
-        sounds   = {
-            {
-                snd = "hunters_glee/music/VACANT/gleeroundendhoot6simple.ogg",
-            }
-        },
-        priority = 0,
-    },
-    roundWin = {
-        sounds   = {
-            {
-                snd = "hunters_glee/music/VACANT/qutedeath-re.ogg",
-            }
-        },
-        priority = 50,
-    },
-    roundPerfectWin = {
-        sounds = {
-            {
-                maxDifficulty = 150,
-                snd = "hunters_glee/music/VACANT/8.25.GleeFree-Early.ogg",
-            },
-            {
-                minDifficulty = 100,
-                snd = "hunters_glee/music/VACANT/ROOT_ESTRANGE.ogg",
-            }
-        },
-        priority = 1000,
-    },
-    mapvoteMusic = {
-        sounds   = {
-            {
-                maxDifficulty = 75,
-                snd = "hunters_glee/music/VACANT/wkc-rtv.ogg",
-            },
-            {
-                minDifficulty = 75,
-                maxDifficulty = 100,
-                snd = "hunters_glee/music/VACANT/loop1-rtv.ogg",
-            },
-            {
-                minDifficulty = 75,
-                snd = "hunters_glee/music/VACANT/SEWERSiN.mp3",
-            },
-        },
-        priority = 5000,
-        randomOrder = true,
-    },
-}
-
--- shuffle ones with .randomOrder
-hook.Add( "huntersglee_round_into_active", "glee_randomizesoundtracks", function()
-    for _, trackData in ipairs( soundTracks ) do
-        if not trackData.randomOrder then continue end
-        if #trackData.sounds <= 1 then continue end
-        table.Shuffle( trackData.sounds )
-
-    end
-end )
-
-function GM:GetASoundTrack( name )
-    local trackData = soundTracks[name]
-    if not trackData then return end
-
-    GAMEMODE.soundtrackIndices = GAMEMODE.soundtrackIndices or {}
-
-    local currDiff = self:GetCurrWaveDifficulty()
-
-    local sounds = trackData.sounds
-
-    local path
-    local count = 0
-
-    -- Cycle round-robin through the track list so the same song never plays twice in a row,
-    -- but skip entries that don't fit the current difficulty.
-    -- The loop limit stops us spinning forever if nothing in the list matches.
-    while not path and count < #sounds do
-        count = count + 1
-        local index = GAMEMODE.soundtrackIndices[name] or 1
-        GAMEMODE.soundtrackIndices[name] = ( index % #sounds ) + 1
-
-        local picked = sounds[index]
-
-        local minDiff = picked.minDifficulty
-        if minDiff and currDiff < minDiff then continue end
-
-        local maxDiff = picked.maxDifficulty
-        if maxDiff and currDiff > maxDiff then continue end
-
-        path = picked.snd
-        break
-
-    end
-
-    return path, trackData
+function GM:StopMusicTrack( trackName )
+    net.Start( "glee_stopmusic_track" )
+        net.WriteString( trackName )
+    net.Broadcast()
 
 end
 
-function GM:IsPathASoundTrack( path )
+function GM:StopMusicTrackFor( ply, trackName )
+    net.Start( "glee_stopmusic_track" )
+        net.WriteString( trackName )
+    net.Send( ply )
+
+end
+
+function GM:IsPathAMusicTrack( path )
     return string.StartsWith( path, "tracks/" )
 
 end
