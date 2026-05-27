@@ -17,7 +17,7 @@ local gasModels = {
 
 ENT.Model         = gasModels[1]
 ENT.HullCheckSize = Vector( 10, 10, 8 )
-ENT.PosOffset     = Vector( 0, 0, 40 )
+ENT.PosOffset     = Vector( 0, 0, 8 )
 ENT.placeCount    = 1
 ENT.OverrideOffsetFromFloor = 25
 
