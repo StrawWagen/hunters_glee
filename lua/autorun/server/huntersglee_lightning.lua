@@ -194,10 +194,10 @@ function termHunt_PowafulLightning( inflic, attacker, strikingPos, powa )
 
         if damageAmount < 1 then continue end
 
-        thing:SetNW2Bool( "glee_recentlyStruckByLightning", true )
+        thing:SetNWBool( "glee_recentlyStruckByLightning", true )
         timer.Simple( 0.1, function()
             if not IsValid( thing ) then return end
-            thing:SetNW2Bool( "glee_recentlyStruckByLightning", false )
+            thing:SetNWBool( "glee_recentlyStruckByLightning", false )
 
         end )
 

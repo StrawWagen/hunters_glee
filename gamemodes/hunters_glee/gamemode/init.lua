@@ -371,6 +371,7 @@ function GM:Think()
         nobodyAlive = aliveCount == 0
 
         local win = nobodyAlive and not specificallyWaiting
+        win = win or GAMEMODE.roundExtraData.forcedRoundEnd
 
         if win then
             self:roundEnd()
@@ -877,6 +878,11 @@ end
 
 function GM:DelayRoundEndingUntil( time )
     self.roundEarliestEnd = math.max( self.roundEarliestEnd, time )
+
+end
+
+function GM:ForceRoundEnd()
+    GAMEMODE.roundExtraData.forcedRoundEnd = true
 
 end
 

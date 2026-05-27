@@ -211,6 +211,7 @@ hook.Add( "glee_onbossdefeated", "glee_escapeviabossdefeat", function( boss, att
                 if not IsValid( ply ) then return end
                 if ply:Health() <= 0 then return end
                 GAMEMODE:escapifyPlayer( ply )
+                GAMEMODE:ForceRoundEnd()
 
             end )
         end )

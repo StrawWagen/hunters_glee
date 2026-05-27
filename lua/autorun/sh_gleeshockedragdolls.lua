@@ -54,7 +54,7 @@ end
 if SERVER then
     hook.Add( "CreateEntityRagdoll", "glee_shockragdoll_hook", function( ent, ragdoll )
         if not IsValid( ent ) then return end
-        if not ent:GetNW2Bool( "glee_recentlyStruckByLightning", false ) then return end
+        if not ent:GetNWBool( "glee_recentlyStruckByLightning", false ) then return end
 
         if not IsValid( ragdoll ) then return end
         shockRagdoll( ragdoll )
@@ -63,7 +63,7 @@ if SERVER then
 else
     hook.Add( "CreateClientsideRagdoll", "glee_shockragdoll_hook", function( ent, ragdoll )
         if not IsValid( ent ) then return end
-        if not ent:GetNW2Bool( "glee_recentlyStruckByLightning", false ) then return end
+        if not ent:GetNWBool( "glee_recentlyStruckByLightning", false ) then return end
 
         if not IsValid( ragdoll ) then return end
         shockRagdoll( ragdoll )

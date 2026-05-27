@@ -105,7 +105,7 @@ function ENT:Initialize()
     timer.Simple( 0, function()
         if not IsValid( self ) then return end
 
-        self.StartingPos = self:GetPos()
+        self.InitializedPos = self:GetPos()
 
         self.BurnSound = CreateSound( self, "weapons/flaregun/burn.wav" )
         self.BurnSound:Play()

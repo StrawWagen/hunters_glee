@@ -206,10 +206,10 @@ if SERVER and terminator_Extras then
         if timer.Exists( rescueTimerName ) then return end -- already called, just waiting
 
         if not self.HitSkyboxAtLeastOnce then
-            local startPos = self.StartingPos
-            if not startPos then return end
+            local initPos = self.InitializedPos
+            if not initPos then return end
 
-            local heightFromStart = myPos.z - startPos.z
+            local heightFromStart = myPos.z - initPos.z
 
             if heightFromStart < zHeightToStartCalling then return end
 
@@ -251,12 +251,22 @@ if SERVER and terminator_Extras then
         -- if hit, move start position away from the wall
         if nearestWallResult then
             local offsetDist = callingHeliMaxs * ( 1 - nearestWallResult.Fraction )
+            offsetDist = offsetDist * math.Rand( 1, 1.25 )
             local offset = ( -nearestWallDir ) * offsetDist
             startPos = myPos + offset
 
         end
 
-        local randDir = VectorRand()
+        local randDir
+        if nearestWallDir then
+            local awayYaw = ( -nearestWallDir ):Angle().y
+            local randYaw = awayYaw + math.Rand( -90, 90 )
+            randDir = Angle( 0, randYaw, 0 ):Forward()
+        else
+            randDir = VectorRand()
+            randDir.z = 0
+            randDir:Normalize()
+        end
         randDir.z = math.Rand( -0.05, self.SteppedDirMaxZ ) -- dont call heli upwards
         randDir:Normalize()
 
