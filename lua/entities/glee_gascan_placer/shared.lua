@@ -2,6 +2,7 @@ AddCSLuaFile()
 
 ENT.Type = "anim"
 ENT.Base = "screamer_crate"
+DEFINE_BASECLASS( ENT.Base )
 
 ENT.PrintName   = "Gas Can Placer"
 ENT.Author      = "Boomer T Tots"
