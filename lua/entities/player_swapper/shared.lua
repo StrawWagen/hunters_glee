@@ -220,7 +220,7 @@ function ENT:SwapPlayerAndTerminator( player, terminator )
         player:ExitVehicle()
 
     end
-    if ply:Health() > 0 then
+    if player:Health() > 0 then
         player:TeleportTo( terminatorPos )
         player:SetVelocity( terminator:GetVelocity() )
 
