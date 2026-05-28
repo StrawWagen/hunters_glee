@@ -91,7 +91,7 @@ end
 local function getCreationPos( ent )
     local creationPos = ent:GetPos() + ( VectorRand() * ent:GetModelRadius() )
     creationPos = ent:WorldToLocal( ent:NearestPoint( creationPos ) )
-    creationPos = creationPos * 0.6
+    creationPos = creationPos * 0.35
     return ent:LocalToWorld( creationPos )
 
 end
