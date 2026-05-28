@@ -22,7 +22,7 @@ local tracks = {
                 snd = "hunters_glee/music/VACANT/8.23.GleeExp3.ogg",
             },
             { -- ditto
-                minDifficulty = 75,
+                minDifficulty = 150,
                 author = vacant,
                 snd = "hunters_glee/music/VACANT/HARD_EAS_gori_scuffle.ogg",
             },

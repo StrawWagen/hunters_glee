@@ -1180,6 +1180,14 @@ end
 
 -- massive custom player respawn location logic
 
+-- ONLY SET THEM TO A LOCATION IF THEY ACTUALLY DIED!
+-- do not set ply's location if they, eg, stop being ragdolled by glide!
+hook.Add( "PostPlayerDeath", "glee_onlyfixspawn_ifdied", function( ply )
+    ply.glee_usedTrueRespawn = nil
+
+end )
+
+
 local spaceCheckUpOffset = Vector( 0, 0, 64 )
 local spaceCheckHull = Vector( 17, 17, 2 )
 local occupiedSpawnAreas = {}
@@ -1198,52 +1206,55 @@ function GM:PlayerSpawn( pl, transiton )
     if pl.glee_unstuckOrigin then
         newPos = pl.glee_unstuckOrigin
 
-    -- no special spot to respawn, we'll respawn somewhere near another player, if possible
-    elseif IsValid( anotherAlivePlayer ) and not hook.Run( "huntersglee_blockspawn_nearplayers", pl, anotherAlivePlayer ) and GAMEMODE.hasNavmesh then
-        for count = 1, 12 do
+    -- only set their pos if this :Spawn was caused by a death
+    elseif not pl.glee_usedTrueRespawn then
+        -- no special spot to respawn, we'll respawn somewhere near another player, if possible
+        if IsValid( anotherAlivePlayer ) and not hook.Run( "huntersglee_blockspawn_nearplayers", pl, anotherAlivePlayer ) and GAMEMODE.hasNavmesh then
+            for count = 1, 12 do
 
-            local start = anotherAlivePlayer:GetPos()
+                local start = anotherAlivePlayer:GetPos()
 
-            -- traces a path along the navmesh away from anotherAlivePlayer
-            -- won't go through playerclips 
-            center, area = GAMEMODE:GetNearbyWalkableArea( anotherAlivePlayer, start, count, occupiedSpawnAreas )
+                -- traces a path along the navmesh away from anotherAlivePlayer
+                -- won't go through playerclips 
+                center, area = GAMEMODE:GetNearbyWalkableArea( anotherAlivePlayer, start, count, occupiedSpawnAreas )
 
-            if center then
-                center = center + Vector( 0, 0, 10 )
+                if center then
+                    center = center + Vector( 0, 0, 10 )
 
-                local tDat = {}
-                tDat.start = center
-                tDat.endpos = center + spaceCheckUpOffset
-                tDat.mask = bit.bor( MASK_SOLID, CONTENTS_PLAYERCLIP )
-                tDat.maxs = spaceCheckHull
-                tDat.mins = -spaceCheckHull
-                local isClear = not util.TraceHull( tDat ).Hit
-                local valid = isClear
+                    local tDat = {}
+                    tDat.start = center
+                    tDat.endpos = center + spaceCheckUpOffset
+                    tDat.mask = bit.bor( MASK_SOLID, CONTENTS_PLAYERCLIP )
+                    tDat.maxs = spaceCheckHull
+                    tDat.mins = -spaceCheckHull
+                    local isClear = not util.TraceHull( tDat ).Hit
+                    local valid = isClear
 
-                if valid then
-                    newPos = center
-                    break
+                    if valid then
+                        newPos = center
+                        break
 
+                    end
                 end
             end
-        end
-    -- no player to spawn around? and map has a tp room?
-    elseif GAMEMODE.doNotUseMapSpawns and GAMEMODE.biggestNavmeshGroups then
-        -- if we aren't the first person spawning, then always spawn us in occupied groups
-        if IsValid( anotherAlivePlayer ) then
-            local randomUsedArea = GAMEMODE:GetAreaInOccupiedBigGroupOrRandomBigGroup()
-            if IsValid( randomUsedArea ) then
-                newPos = randomUsedArea:GetCenter()
+        -- no player to spawn around? and map has a tp room?
+        elseif GAMEMODE.doNotUseMapSpawns and GAMEMODE.biggestNavmeshGroups then
+            -- if we aren't the first person spawning, then always spawn us in occupied groups
+            if IsValid( anotherAlivePlayer ) then
+                local randomUsedArea = GAMEMODE:GetAreaInOccupiedBigGroupOrRandomBigGroup()
+                if IsValid( randomUsedArea ) then
+                    newPos = randomUsedArea:GetCenter()
 
-            -- fallback
+                -- fallback
+                else
+                    newPos = GAMEMODE:FindValidNavAreaCenter( GAMEMODE.biggestNavmeshGroups )
+
+                end
+            -- we are first person spawning, use a random group and then everyone will spawn around us
             else
                 newPos = GAMEMODE:FindValidNavAreaCenter( GAMEMODE.biggestNavmeshGroups )
 
             end
-        -- we are first person spawning, use a random group and then everyone will spawn around us
-        else
-            newPos = GAMEMODE:FindValidNavAreaCenter( GAMEMODE.biggestNavmeshGroups )
-
         end
     end
 
@@ -1281,6 +1292,9 @@ function GM:PlayerSpawn( pl, transiton )
 
     -- TODO: is this glee_needsRespawning nil check needed?
     pl.glee_needsRespawning = nil
+    -- they used up their 1 true respawn
+    -- don't set their pos until they die again
+    pl.glee_usedTrueRespawn = true
 
     player_manager.OnPlayerSpawn( pl, transiton )
     player_manager.RunClass( pl, "Spawn" )

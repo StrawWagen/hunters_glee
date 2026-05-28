@@ -270,7 +270,7 @@ if SERVER and terminator_Extras then
         randDir.z = math.Rand( -0.05, self.SteppedDirMaxZ ) -- dont call heli upwards
         randDir:Normalize()
 
-        local offset = randDir * 20000
+        local offset = randDir * 40000
 
         -- if EVERY direction is trigger pushed, just go ahead and ignore them
         local doHitPushCheck = not self.triggerPushHits or self.triggerPushHits < 25
@@ -1179,7 +1179,7 @@ if SERVER and terminator_Extras then
                 idealMovePos = nearestSkyboxPos + dirToSkybox * 2000
                 skysTheLimit = true
 
-                local distAdd = ourVel:Length() / 2 -- at 1000 speed, add 500
+                local distAdd = ourVel:Length() / 1.5 -- at 1000 speed, add 750
                 local startAddingDistSpeed = 400
                 distAdd = math.max( 0, distAdd - startAddingDistSpeed )
 
