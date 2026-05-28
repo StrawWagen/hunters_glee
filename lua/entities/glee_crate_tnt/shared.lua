@@ -26,8 +26,8 @@ ENT.CreditThreshold = 15 -- At least this much damage must be dealt for score to
 -- TNT Field Overrides
 ENT.TNTDamage = 250
 ENT.TNTRadius = 400
-ENT.TNTDelayMin = 4
-ENT.TNTDelayMax = 4.5 -- just enough variance so they dont explode at the same exact time
+ENT.TNTDelayMin = 2
+ENT.TNTDelayMax = 2.5 -- just enough variance so they dont explode at the same exact time
 ENT.TNTEffectScale = 2
 
 

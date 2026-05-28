@@ -220,8 +220,11 @@ function ENT:SwapPlayerAndTerminator( player, terminator )
         player:ExitVehicle()
 
     end
-    player:TeleportTo( terminatorPos )
-    player:SetVelocity( terminator:GetVelocity() )
+    if ply:Health() > 0 then
+        player:TeleportTo( terminatorPos )
+        player:SetVelocity( terminator:GetVelocity() )
+
+    end
 
     if terminator.SetPosNoTeleport then
         terminator_Extras.TeleportTermTo( terminator, playerPos ) -- sets their pos correctly, AND kills their coroutine
