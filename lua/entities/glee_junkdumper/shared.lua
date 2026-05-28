@@ -219,9 +219,9 @@ function ENT:Place()
         self.player:GivePlayerScore( betrayalScore )
         GAMEMODE:sendPurchaseConfirm( self.player, betrayalScore )
 
-    end
+        GAMEMODE:AddMischievousness( self.player, 1, "dumped junk" )
 
-    GAMEMODE:AddMischievousness( self.player, 1, "dumped junk" )
+    end
 
     for i = 1, self.JunkPerDrop do
         timer.Simple( ( i - 1 ) * 0.1, function()
