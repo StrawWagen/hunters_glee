@@ -146,11 +146,11 @@ if SERVER and terminator_Extras then
     local heli_RopeOriginOffset = Vector( -7.1, 50.8, -40.5 )
 
     -- hullsize for finding a corridor from flare to sky 
-    local callingHeliMaxs = 450
+    local callingHeliMaxs = 350
     local callingHeliMins = -callingHeliMaxs
 
     -- hullsize for nav traces
-    local wayfindingHeliMaxs = 325
+    local wayfindingHeliMaxs = 250
     local wayfindingHeliMins = -wayfindingHeliMaxs
 
     -- when flying less than heli_CloseToObstacleSpeedLimit, do smaller nav traces
@@ -193,11 +193,20 @@ if SERVER and terminator_Extras then
                 local floorCheck = terminator_Extras.getFloorTr( myPos ).HitPos
                 if floorCheck:Distance( myPos ) < 50 then
                     self.wastedFlare = true
+
+                    if self.flare_lastSkyboxHitPos then
+                        self:CallHeli( self.flare_lastSkyboxHitPos, startPos )
+
+                    end
+
                     if IsValid( self.MyOwner ) and self.MyOwner:IsPlayer() and not self.MyOwner.glee_SignalFlareHint then
                         self.MyOwner.glee_SignalFlareHint = true
                         huntersGlee_Announce( { self.MyOwner }, 500, 5, "God, that's bright\nI bet you could see it from miles away..." )
 
                     end
+
+                    return
+
                 end
             end
         end
@@ -298,13 +307,12 @@ if SERVER and terminator_Extras then
         }
         local callTraceResult = util.TraceHull( traceData )
 
-        local boxColor = Color( 0, 255, 0, 100 )
-        if callTraceResult.HitSky then
-            boxColor = Color( 0, 255, 0, 255 )
-
-        end
-
         if debugging:GetBool() then
+            local boxColor = Color( 255, 0, 0, 255 )
+            if callTraceResult.HitSky then
+                boxColor = Color( 0, 255, 0, 255 )
+
+            end
             debugoverlay.SweptBox(
                 traceData.start,
                 callTraceResult.HitPos,
@@ -315,6 +323,20 @@ if SERVER and terminator_Extras then
                 boxColor
             )
 
+        end
+
+        local hitPos = callTraceResult.HitPos
+        if callTraceResult.HitSky and util.IsInWorld( hitPos ) then
+            local oldHitPos = self.flare_lastSkyboxHitPos
+            -- no hit sky fallback yet?
+            if not oldHitPos then
+                self.flare_lastSkyboxHitPos = hitPos
+
+            -- there's already a fallback, use the new one if its further
+            elseif startPos:DistToSqr( hitPos ) > startPos:DistToSqr( oldHitPos ) then
+                self.flare_lastSkyboxHitPos = hitPos
+
+            end
         end
 
         local tooClose = callTraceResult.HitPos:Distance( startPos ) < self.SteppedTooCloseDist
@@ -341,6 +363,11 @@ if SERVER and terminator_Extras then
 
         end
 
+        self:CallHeli( callTraceResult.HitPos, startPos )
+
+    end
+
+    function ENT:CallHeli( spawnPos, goalPos )
         angerEverything()
         self.calledForHeli = true
 
@@ -352,9 +379,7 @@ if SERVER and terminator_Extras then
         local diffBump
         local permaDiffBump
 
-        local spawnPos = callTraceResult.HitPos
-        local goalPos = startPos
-
+        local faceDir = terminator_Extras.dirToPos( spawnPos, goalPos )
         local firstWait = 3
         local secondWait = 10
 
@@ -407,7 +432,7 @@ if SERVER and terminator_Extras then
             end
             if repsLeft == 0 then
                 huntersGlee_AnnounceDramatic( player.GetAll(), 100, 10, "Rescue has entered the map..." )
-                terminator_Extras.glee_SpawnTheRescueHeli( spawnPos, -randDir, goalPos )
+                terminator_Extras.glee_SpawnTheRescueHeli( spawnPos, faceDir, goalPos )
 
                 if not diffBump then return end
                 GAMEMODE:BumpRoundDifficulty( diffBump, "rescue_heli4" )
@@ -435,7 +460,6 @@ if SERVER and terminator_Extras then
             timer.Remove( rescueTimerName )
 
         end )
-
     end
 
     hook.Add( "GravGunOnPickedUp", "glee_signalflare_resetcall", function( _ply, ent )
@@ -1099,6 +1123,8 @@ if SERVER and terminator_Extras then
 
                 heliLookForFlares( self )
 
+                idealMovePos = self.lastHeardSoundPos + vecUp200 + VectorRand() * 200
+
                 local distToHint = myPos:Distance( self.lastHeardSoundPos )
                 if self:VisibleVec( self.lastHeardSoundPos ) and distToHint < 1500 then
                     self.lastHeardSoundPos = nil
@@ -1107,7 +1133,6 @@ if SERVER and terminator_Extras then
                     self.lastHeardSoundPos = nil
 
                 end
-                idealMovePos = self.lastHeardSoundPos + vecUp200 + VectorRand() * 200
 
             -- just wander forward
             else

@@ -1,6 +1,9 @@
 -- kill sandbox stuff
 
-hook.Add( "PlayerNoClip", "glee_blocknoclip", function( _, wantsToEnter )
+local cheatsVar = GetConVar( "sv_cheats" )
+
+hook.Add( "PlayerNoClip", "glee_blocknoclip", function( ply, wantsToEnter )
+    if cheatsVar:GetBool() and ply:IsAdmin() then return end
     if wantsToEnter then
         return false
 
