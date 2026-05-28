@@ -82,7 +82,7 @@ if SERVER and terminator_Extras then
     ENT.MinTooCloseDist = 400 -- step down to 400 if we dont find any good corridors to spawn heli at
     ENT.SteppedDirMaxZ = 0.15 -- start at 0.15
     ENT.SteppedStartingOffset = 0 -- offset FROM the flare's origin to the start of the trace, in dir of trace
-    ENT.MaxDirMaxZ = 0.75 -- stepped up every failure until it reaches this
+    ENT.MaxDirMaxZ = 1 -- stepped up every failure until it reaches this
 
     local function angerEverything()
         for _, ent in ents.Iterator() do
@@ -333,7 +333,11 @@ if SERVER and terminator_Extras then
             return
 
         end
-        if not callTraceResult.HitSky then return end
+        if not callTraceResult.HitSky then
+            self.SteppedDirMaxZ = math.Clamp( self.SteppedDirMaxZ + 0.05, 0, self.MaxDirMaxZ )
+            return
+
+        end
 
         angerEverything()
         self.calledForHeli = true
