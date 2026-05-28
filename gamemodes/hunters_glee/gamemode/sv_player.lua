@@ -280,10 +280,6 @@ function GM:calculateBPM( cur, players )
         if somewhereWrong then
             blockScore = true
             doBpmDecrease = true
-            if not terminator_Extras.IsLivePatching then
-                terminator_Extras.dynamicallyPatchPos( ply:GetPos() )
-
-            end
         end
         if onLadder then
             blockScore = true
@@ -398,6 +394,10 @@ function GM:calculateBPM( cur, players )
                     huntersGlee_Announce( { ply }, 100, 2.5, "Something is off.\nIt feels like you're somewhere wrong..." )
 
                     damaged = true
+
+                end
+                if somewhereWrong and not terminator_Extras.IsLivePatching then
+                    terminator_Extras.dynamicallyPatchPos( ply:GetPos() )
 
                 end
             end

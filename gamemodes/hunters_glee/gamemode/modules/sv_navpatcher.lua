@@ -463,7 +463,7 @@ function GAMEMODE:patchDoor( door )
     end
 end
 
-local down = Vector( 0,0,-1 )
+local down = Vector( 0, 0, -1 )
 
 function GAMEMODE:PlaceANavAreaUnderBreakable( breakable, breakableForward, isCrouch )
     local center = breakable:WorldSpaceCenter()
@@ -497,6 +497,11 @@ function GAMEMODE:patchBreakable( breakable, breakableNormal, zHeight )
     local _, behindNav, inFrontNav, navsWeCovered = GAMEMODE:doesEntDivideNavmesh( breakable, breakableNormal, breakableExtent )
 
     if not navsWeCovered then return end
+
+    -- breakable is in a wall somehow, don't patch
+    local myPos = breakable:WorldSpaceCenter()
+    if not behindNav:IsVisible( myPos ) then return end
+    if not inFrontNav:IsVisible( myPos ) then return end
 
     local breakableRight = breakableNormal:Angle():Right()
     local dividesNavmesh = GAMEMODE:noAreasThatCrossThis( breakable:WorldSpaceCenter(), breakableRight, breakable, navsWeCovered )
