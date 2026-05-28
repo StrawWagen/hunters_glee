@@ -219,8 +219,6 @@ function ENT:Place()
         self.player:GivePlayerScore( betrayalScore )
         GAMEMODE:sendPurchaseConfirm( self.player, betrayalScore )
 
-        GAMEMODE:AddMischievousness( self.player, 1, "dumped junk" )
-
     end
 
     for i = 1, self.JunkPerDrop do
