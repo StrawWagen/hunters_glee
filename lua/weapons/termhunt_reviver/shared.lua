@@ -450,6 +450,7 @@ if CLIENT then
             local bail = nil
             for _, deadDat in ipairs( self.validDeads ) do
                 if bail then break end
+                if not self:CanResurrect( deadDat.ply ) then continue end
                 -- draw one person far away
                 if deadDat.pos:DistToSqr( ownerPos ) > 1000^2 then bail = true end
                 huntersGlee_PaintPlayer( deadDat.ply, deadDat.pos )
