@@ -270,7 +270,8 @@ hook.Add( "huntersglee_player_pre_reset", "glee_escaping_rewards", function( ply
         end
         if not rewardHinted then
             rewardHinted = true
-            local skullMsg = "Cashing out your " .. totalSkulls .. " skulls..."
+            local sOrNoS = totalSkulls == 1 and "" or "s"
+            local skullMsg = "Cashing out your " .. totalSkulls .. " skull" .. sOrNoS .. "..."
             huntersGlee_AnnounceDramatic( { ply }, 1001, 4, skullMsg )
 
         end
