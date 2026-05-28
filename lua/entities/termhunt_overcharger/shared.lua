@@ -90,7 +90,7 @@ function ENT:Place()
 
     GAMEMODE:setTemporaryTrueBool( "glee_playerplaced_termovercharger", 180 )
 
-    huntersGlee_Announce( player.GetAll(), 80, 8, self.player:Nick() .. " has overcharged " .. GAMEMODE:GetNameOfBot( targ ) ..  "..." )
+    huntersGlee_Announce( player.GetAll(), 25, 8, self.player:Nick() .. " has overcharged " .. GAMEMODE:GetNameOfBot( targ ) ..  "..." )
 
     local score = self:GetGivenScore()
 

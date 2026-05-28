@@ -1634,7 +1634,7 @@ local function DrawHelicopterBeams( npc, bDepth, bSkybox )
         if not attachment then return end
 
         local attachmentsForward = attachment.Ang:Forward()
-        local startPos = attachment.Pos + ( attachmentsForward * 5 ) - ( attachment.Ang:Up() * 4 )
+        local startPos = attachment.Pos + ( attachmentsForward * 12 ) - ( attachment.Ang:Up() * 4 )
         local endPos = startPos + attachmentsForward * 2000
 
         -- Calculate dot product for scaling and visibility
