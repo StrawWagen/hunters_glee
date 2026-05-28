@@ -92,6 +92,7 @@ end
 
 local MEMORY_VOLATILE = terminator_Extras.botMemoryTypes.MEMORY_VOLATILE
 local barrelPunishmentDist = 1250
+local nearbyCheckDist = 150
 
 local tooCloseToPlySqr = 200^2
 local tooFarFromPlySqr = 1500^2
@@ -119,7 +120,7 @@ function ENT:UpdateGivenScore()
 
             if distToCurrentBarrelSqr < smallestPunishmentDist then
                 tooCloseCount = tooCloseCount + 1
-                if tooCloseCount < 6 then continue end
+                if tooCloseCount < 6 then continue end -- only start costing extra if there's 6 or more barrels nearby
                 punishmentCount = tooCloseCount
                 smallestPunishmentDist = distToCurrentBarrelSqr
 
@@ -133,6 +134,18 @@ function ENT:UpdateGivenScore()
     punishmentGiven = punishmentGiven / barrelPunishmentDist
     punishmentGiven = punishmentGiven ^ 2
     punishmentGiven = punishmentCount + punishmentGiven * 40
+
+    -- punish placing on bear traps
+    local nearbyEntPunishment = 0
+    local nearbyStuff = ents.FindInSphere( myPos, nearbyCheckDist )
+    for _, ent in ipairs( nearbyStuff ) do
+        local class = ent:GetClass()
+        if class == "termhunt_bear_trap" then
+            nearbyEntPunishment = nearbyEntPunishment + 150
+
+        end
+    end
+    punishmentGiven = punishmentGiven + nearbyEntPunishment
 
     local barrelCount = 0
     if termhunt_barrels_spawned and #termhunt_barrels_spawned then

@@ -308,7 +308,17 @@ function ENT:TellPlyToClearHighlighter()
 end
 
 function ENT:UpdateGivenScore()
-    self:SetGivenScore( -400 )
+    local currTarget = self:GetCurrTarget()
+    if not IsValid( currTarget ) then return end
+
+    local givenScore = -400
+    local vehicle = currTarget:GetVehicle()
+    if IsValid( vehicle ) and vehicle.isARescueHeliSeat then
+        givenScore = -1800
+
+    end
+
+    self:SetGivenScore( givenScore )
 
 end
 
