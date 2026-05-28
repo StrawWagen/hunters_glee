@@ -86,8 +86,9 @@ local function Update( ply )
     ply:SetStepSize( character_chars["stepsize"] )
 
     local newMaxHealth = character_chars["health"]
-    ply.Glee_BaseHealth = newMaxHealth
+    ply.glee_BaseHealth = newMaxHealth
     ply:SetMaxHealth( newMaxHealth )
+    ply.glee_LastSetMaxHealthReason = "PDM_Update"
 
     ply.PDM_charactername = ply:GetInfo( "cl_playermodel" )
 
