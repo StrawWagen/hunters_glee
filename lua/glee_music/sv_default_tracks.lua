@@ -5,13 +5,13 @@ local compakt = "COMPAKT"
 local tracks = {
     heliEvac = {
         sounds = {
-            { -- played first evac of a round
+            { -- played if difficulty is low, early evac
                 maxDifficulty = 75,
                 author = vacant,
                 snd = "hunters_glee/music/VACANT/8.23.GleeExp2.ogg",
             },
-            { -- played second evac of a round
-                maxDifficulty = 75,
+            {
+                maxDifficulty = 125,
                 author = vacant,
                 snd = "hunters_glee/music/VACANT/__more_glee.ogg",
             },
@@ -41,14 +41,26 @@ local tracks = {
                 author = compakt,
                 snd = "hunters_glee/music/COMPAKT/COMPAKT_Operating_Systems_09_Operator.mp3",
             },
+            {
+                minDifficulty = 200,
+                author = vacant,
+                snd = "hunters_glee/music/COMPAKT/without-Under-naN-oK.ogg",
+            },
         },
         priority     = 0,
+        randomOrder     = true,
         fadeInLength = 1,
         neverOverrides = { "grigoriArrival", "secondGrigoriArrival" },
+        alwaysOverrides = { "roundEnd", "roundWin", "roundPerfectWin" },
     },
 
     highIntensity = {
         sounds = {
+            {
+                maxDifficulty = 50,
+                author = vacant,
+                snd = "hunters_glee/music/VACANT/breakgash.ogg",
+            },
             {
                 maxDifficulty = 100,
                 author = vacant,
@@ -97,7 +109,7 @@ local tracks = {
         sounds = {
             {
                 author = vacant,
-                snd = "hunters_glee/music/VACANT/___gorymphony.ogg",
+                snd = "hunters_glee/music/VACANT/__gorymphony.ogg",
             },
         },
         priority = 0,
@@ -137,6 +149,11 @@ local tracks = {
         sounds = {
             {
                 author = vacant,
+                snd = "hunters_glee/music/VACANT/midi_rtv.mp3",
+            },
+            {
+                minDifficulty = 100,
+                author = vacant,
                 snd = "hunters_glee/music/VACANT/qutedeath-re.ogg",
             },
         },
@@ -167,13 +184,19 @@ local tracks = {
                 snd = "hunters_glee/music/VACANT/wkc-rtv.ogg",
             },
             {
-                minDifficulty = 75,
+                minDifficulty = 25,
                 maxDifficulty = 100,
+                author = vacant,
+                snd = "hunters_glee/music/VACANT/MBMCSLRTV.ogg",
+            },
+            {
+                minDifficulty = 75,
+                maxDifficulty = 150,
                 author = vacant,
                 snd = "hunters_glee/music/VACANT/loop1-rtv.ogg",
             },
             {
-                minDifficulty = 75,
+                minDifficulty = 100,
                 author = vacant,
                 snd = "hunters_glee/music/VACANT/SEWERSiN.mp3",
             },

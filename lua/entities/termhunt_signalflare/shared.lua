@@ -262,10 +262,12 @@ if SERVER and terminator_Extras then
             local awayYaw = ( -nearestWallDir ):Angle().y
             local randYaw = awayYaw + math.Rand( -90, 90 )
             randDir = Angle( 0, randYaw, 0 ):Forward()
+
         else
             randDir = VectorRand()
             randDir.z = 0
             randDir:Normalize()
+
         end
         randDir.z = math.Rand( -0.05, self.SteppedDirMaxZ ) -- dont call heli upwards
         randDir:Normalize()
@@ -534,11 +536,7 @@ if SERVER and terminator_Extras then
         local distToGoal = helisPos:Distance( idealMovePos )
 
         local newSpeed = math.Clamp( distToGoal * 1.5, heli_CloseToObstacleSpeedLimit, heli_SpeedLimit )
-
-        local oldPos = heli.glee_OldRescueHeliPos or helisPos
-        local heliVel = helisPos - oldPos -- ACTUAL VEL
-        heli.glee_OldRescueHeliPos = helisPos
-
+        local heliVel = heli:GetVelocity()
         local heliDir = heliVel:GetNormalized()
         local curSpeed = heliVel:Length()
 
@@ -798,7 +796,7 @@ if SERVER and terminator_Extras then
 
     end
 
-    concommand.Add( "huntersglee_debug_spawnrescueheli", function( ply )
+    concommand.Add( "glee_test_escapeheli", function( ply )
         if not ply:IsAdmin() then return end
         local spawnPos = ply:GetPos() + Vector( 0, 0, 50 )
         local faceDir = -ply:GetForward()
@@ -859,8 +857,9 @@ if SERVER and terminator_Extras then
         end
 
         if friendliesAroundEnemy > 0 then return end
-        -- shoot if lots of enemies, or enemy is tanky
+
         local stronk = enemy:Health() > 1500 or enemy.ReallyHeavy
+        -- shoot if lots of enemies, or enemy is tanky
         if not stronk and hostilesAroundEnemy < 2 then return end
 
         local missiles = self.heli_Missiles
@@ -925,7 +924,11 @@ if SERVER and terminator_Extras then
     function terminator_Extras.glee_RescueHeliThink( self )
         local rescueTarget = self.currentRescueTarget
         local myPos = self:GetPos()
-        local ourVel = self:GetVelocity()
+
+        local oldPos = self.glee_OldRescueHeliPos or myPos
+        local ourVel = myPos - oldPos -- ACTUAL VEL
+        self.glee_OldRescueHeliPos = myPos
+
         local validRescueTarget = IsValid( rescueTarget ) and rescueTarget:Alive()
         local visibleRescueTarget = validRescueTarget and self:Visible( rescueTarget )
         local trySwitchRescueTarget = not validRescueTarget or not visibleRescueTarget
@@ -1334,8 +1337,8 @@ if SERVER and terminator_Extras then
                 self.heli_lastBestPos = nil
                 self.heli_lastBestPosPenalty = nil
 
-            -- stuck!
-            elseif not oneWasClear then
+            -- cant find somewhere to goto or we are literally not moving
+            elseif not oneWasClear or curSpeed <= 1 then
                 -- is there somewhere next to us we can go to?
                 for _ = 1, 25 do
                     local dir = VectorRand()
@@ -1373,6 +1376,7 @@ if SERVER and terminator_Extras then
                     seeSoft = terminator_Extras.PosCanSee( myPos, myPos + trySoftUnstuckOffset )
 
                 end
+
                 -- we're smashing into a wall!!!
                 -- 1,
                 -- not a wall here, just bumping something
