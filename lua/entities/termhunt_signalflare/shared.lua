@@ -535,7 +535,10 @@ if SERVER and terminator_Extras then
 
         local newSpeed = math.Clamp( distToGoal * 1.5, heli_CloseToObstacleSpeedLimit, heli_SpeedLimit )
 
-        local heliVel = heli:GetVelocity()
+        local oldPos = heli.glee_OldRescueHeliPos or helisPos
+        local heliVel = helisPos - oldPos -- ACTUAL VEL
+        heli.glee_OldRescueHeliPos = helisPos
+
         local heliDir = heliVel:GetNormalized()
         local curSpeed = heliVel:Length()
 

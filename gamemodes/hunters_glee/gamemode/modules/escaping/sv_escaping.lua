@@ -226,9 +226,9 @@ end )
 
 -- reward for escaping
 local flatEscapingReward = 200
-local rewardEveryoneEscaped = 300
+local rewardEveryoneEscaped = 800
 local rewardPerSkull = 100
-local perSkullEveryoneEscaped = 50
+local perSkullEveryoneEscaped = 100
 
 hook.Add( "huntersglee_player_pre_reset", "glee_escaping_rewards", function( ply )
     if not ply:HasEscaped() then return end
