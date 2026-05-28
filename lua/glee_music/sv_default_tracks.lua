@@ -2,8 +2,7 @@
 local vacant = "VACANT"
 local compakt = "COMPAKT"
 
-GAMEMODE:GobbleMusicTracks( {
-
+local tracks = {
     heliEvac = {
         sounds = {
             { -- played first evac of a round
@@ -45,6 +44,7 @@ GAMEMODE:GobbleMusicTracks( {
         },
         priority     = 0,
         fadeInLength = 1,
+        neverOverrides = { "grigoriArrival", "secondGrigoriArrival" },
     },
 
     highIntensity = {
@@ -72,7 +72,7 @@ GAMEMODE:GobbleMusicTracks( {
             },
         },
         priority       = 0,
-        neverOverrides = { "highIntensity" },
+        neverOverrides = { "highIntensity", "grigoriArrival", "secondGrigoriArrival" },
     },
 
     grigoriArrival = {
@@ -92,10 +92,11 @@ GAMEMODE:GobbleMusicTracks( {
         randomOrder = true,
     },
 
-    -- TODO: get song from vacancy
+    -- TODO: get updated song from vacancy
     secondGrigoriArrival = {
         sounds = {
             {
+                author = vacant,
                 snd = "hunters_glee/music/VACANT/___gorymphony.ogg",
             },
         },
@@ -179,6 +180,7 @@ GAMEMODE:GobbleMusicTracks( {
         },
         priority        = 5000,
         randomOrder     = true,
-        alwaysOverrides = { "heliEvac", "highIntensity", "grigoriArrival", "secondGrigoriArrival", "roundEarlyStart", "roundEnd", "roundWin", "roundPerfectWin" },
     },
-} )
+}
+
+GAMEMODE:GobbleMusicTracks( tracks )

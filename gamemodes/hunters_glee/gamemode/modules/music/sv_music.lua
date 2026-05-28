@@ -1,7 +1,7 @@
 
 util.AddNetworkString( "glee_playmusic" )
 util.AddNetworkString( "glee_stopmusic" )
-util.AddNetworkString( "glee_stopmusic_track" )
+util.AddNetworkString( "glee_stopmusic_trackpart" )
 
 local DEFAULT_FADE_IN  = 0
 local DEFAULT_FADE_OUT = 0.5
@@ -53,8 +53,14 @@ end
 function GM:SendMusic( path, data )
     local initialPath = path
     local trackName   = ""
+    -- stop current track if it's name can be found in the path
+    if self:IsPathATrackStopper( path ) then -- tracks/stoppers/NAME
+        trackPart = string.sub( path, 17 )
+        self:StopMusicTrackPart( trackPart )
+        return
 
-    if self:IsPathAMusicTrack( path ) then
+    -- if it's a music track, resolve it to a path and data
+    elseif self:IsPathAMusicTrack( path ) then -- tracks/NAME
         local name = string.sub( path, 8 )
         local resolvedPath, trackData = self:GetAMusicTrack( name )
         if not resolvedPath then error( "glee_music: invalid track: " .. initialPath ) end
@@ -130,17 +136,22 @@ function GM:StopMusicFor( ply )
 
 end
 
-function GM:StopMusicTrack( trackName )
-    net.Start( "glee_stopmusic_track" )
-        net.WriteString( trackName )
+function GM:StopMusicTrackPart( trackPart )
+    net.Start( "glee_stopmusic_trackpart" )
+        net.WriteString( trackPart )
     net.Broadcast()
 
 end
 
-function GM:StopMusicTrackFor( ply, trackName )
-    net.Start( "glee_stopmusic_track" )
-        net.WriteString( trackName )
+function GM:StopMusicTrackPartFor( ply, trackPart )
+    net.Start( "glee_stopmusic_trackpart" )
+        net.WriteString( trackPart )
     net.Send( ply )
+
+end
+
+function GM:IsPathATrackStopper( path )
+    return string.StartsWith( path, "tracks/stopper/" )
 
 end
 

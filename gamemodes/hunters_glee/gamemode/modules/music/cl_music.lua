@@ -301,14 +301,25 @@ net.Receive( "glee_playmusic", function()
 end )
 
 net.Receive( "glee_stopmusic", function()
+    if developer:GetBool() then
+        permaPrint( "GLEE: stopping all music" )
+
+    end
     stopAndClear()
 
 end )
 
-net.Receive( "glee_stopmusic_track", function()
-    local trackName = net.ReadString()
-    if currentTrackName ~= trackName then return end
-    stopAndClear()
+net.Receive( "glee_stopmusic_trackpart", function()
+    local trackPart = net.ReadString()
+    if developer:GetBool() then
+        permaPrint( "GLEE: stopping music with track part " .. trackPart .. "..." )
 
+    end
+    if not string.find( currentTrackName, trackPart ) then return end
+    if developer:GetBool() then
+        permaPrint( "GLEE: match found, stopping current track " .. currentTrackName )
+
+    end
+    stopAndClear()
 
 end )

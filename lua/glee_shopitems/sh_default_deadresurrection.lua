@@ -623,6 +623,8 @@ if SERVER then
 
                     GAMEMODE.roundExtraData.divineChosenSpent = GAMEMODE.roundExtraData.divineChosenSpent or {}
 
+                    local failedChosen = {}
+
                     for _, potentialChosen in ipairs( player.GetAll() ) do
                         if not potentialChosen:HasStatusEffect( "divine_chosen" ) then continue end
 
@@ -636,9 +638,16 @@ if SERVER then
                             if potentialChosen:Health() <= 1 then return end
                             potentialChosen:SetHealth( 1 )
                             potentialChosen.glee_LastHealthSetReason = "glee_divineintervention_patiencefail"
+                            potentialChosen:GiveStatusEffect( "infernalintervention_rawendofthedeal" )
 
                         end )
+
+                        table.insert( failedChosen, potentialChosen )
+
                     end
+
+                    hook.Run( "huntersglee_grigori_failure", failedChosen )
+
                 end )
             end
 
@@ -685,8 +694,8 @@ if SERVER then
                     util.Effect( "Sparks", Sparks )
 
                 end
-                GAMEMODE:PanicSource( hit, 200, 200 )
-                GAMEMODE:PanicSource( hit, 50, 400 )
+                GAMEMODE:PanicSource( hintPos, 200, 200 )
+                GAMEMODE:PanicSource( hintPos, 50, 400 )
 
             end
 
