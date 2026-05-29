@@ -170,7 +170,7 @@ local items = {
     },
     ["junkdump"] = {
         name = "Junk",
-        desc = "Dump a pile of junk.\nDump it somewhere empty for best results.",
+        desc = "Dump a pile of junk.\nCosts climb if you dump it somewhere already full of junk.",
         shCost = 0,
         markup = 1,
         cooldown = 45,

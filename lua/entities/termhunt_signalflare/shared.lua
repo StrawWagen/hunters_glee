@@ -797,7 +797,7 @@ if SERVER and terminator_Extras then
 
             end
             local attacker = dmgInfo:GetAttacker()
-            if attacker == heli then
+            if attacker == heli and not target:IsPlayer() then
                 dmgInfo:ScaleDamage( 10 )
 
             elseif target == heli then
