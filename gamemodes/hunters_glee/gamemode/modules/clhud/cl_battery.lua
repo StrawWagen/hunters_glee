@@ -16,10 +16,10 @@ local noBatteryTexture = Material( "vgui/hud/nobattery.png", "smooth" )
 local drainingTexture = Material( "vgui/hud/losingcharge.png", "smooth" )
 
 
-local colorDraining = Color( 255, 235, 20, 250 )
-local colorDead = Color( 255, 50, 50, 200 )
-local boxColor = Color( 0, 0, 0, 76 )
-local boxColorJustAppeared = Color( 100, 100, 50, 76 )
+local colorDraining         = GM.hudStandards.colorHappyYellow
+local colorDead             = GM.hudStandards.colorRedUrgent
+local boxColor              = GM.hudStandards.colorBackground
+local boxColorJustAppeared  = GM.hudStandards.colorBackgroundUrgent
 
 local colorGUI = colorDraining
 local paintGUIFullAlpha = 0

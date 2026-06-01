@@ -26,8 +26,9 @@ include( "modules/contextmenu_widgets/cl_tauntmenu.lua" )
 include( "modules/contextmenu_widgets/cl_settingsmenu.lua" )
 include( "modules/contextmenu_widgets/cl_guiltchecker.lua" )
 
-include( "modules/bpm/cl_bpm.lua" )
-include( "modules/battery/cl_battery.lua" )
+include( "modules/clhud/cl_hudstandards.lua" )
+include( "modules/clhud/cl_battery.lua" )
+include( "modules/clhud/cl_bpm.lua" )
 
 local entMeta = FindMetaTable( "Entity" )
 

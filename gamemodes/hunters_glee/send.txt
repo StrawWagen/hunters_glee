@@ -30,7 +30,10 @@ gamemodes\hunters_glee\gamemode\modules\signalstrength\cl_signalstrength.lua
 gamemodes\hunters_glee\gamemode\player_class\player_termrunner.lua
 gamemodes\hunters_glee\gamemode\player_class\player_termrunnertaunt.lua
 
-gamemodes\hunters_glee\gamemode\modules\battery\cl_battery.lua
+gamemodes\hunters_glee\gamemode\modules\clhud\cl_hudstandards.lua
+gamemodes\hunters_glee\gamemode\modules\clhud\cl_bpm.lua
+gamemodes\hunters_glee\gamemode\modules\clhud\cl_battery.lua
+
 gamemodes\hunters_glee\gamemode\modules\battery\sh_battery.lua
 
 gamemodes\hunters_glee\gamemode\modules\guilt\sh_guilt.lua
@@ -41,8 +44,6 @@ gamemodes\hunters_glee\gamemode\modules\deadplayerfx\cl_deaddesaturation.lua
 gamemodes\hunters_glee\gamemode\modules\escaping\cl_escaping.lua
 
 gamemodes\hunters_glee\gamemode\modules\music\cl_music.lua
-
-gamemodes\hunters_glee\gamemode\modules\bpm\cl_bpm.lua
 
 gamemodes\hunters_glee\gamemode\modules\thirdpersonflashlight\cl_flashlight.lua
 

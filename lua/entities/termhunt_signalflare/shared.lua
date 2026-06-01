@@ -191,7 +191,7 @@ if SERVER and terminator_Extras then
             local velLengSqr = myPhysObj:GetVelocity():LengthSqr()
             if velLengSqr < 10^2 then
                 local floorCheck = terminator_Extras.getFloorTr( myPos ).HitPos
-                if floorCheck:Distance( myPos ) < 50 then
+                if floorCheck:Distance( myPos ) < 25 then
                     self.wastedFlare = true
 
                     if self.flare_lastSkyboxHitPos then
@@ -319,7 +319,7 @@ if SERVER and terminator_Extras then
                 traceData.mins,
                 traceData.maxs,
                 Angle( 0, 0, 0 ),
-                5,
+                10,
                 boxColor
             )
 
@@ -1408,7 +1408,18 @@ if SERVER and terminator_Extras then
                 -- try just nudging us out a bit
                 if colliding and curSpeed < 250 and seeSoft then
                     self:SetPos( myPos + trySoftUnstuckOffset )
+                    if debugging:GetBool() then
+                        debugoverlay.SweptBox(
+                            collideTrStruc.start,
+                            collideTrStruc.endpos,
+                            collideTrStruc.mins,
+                            collideTrStruc.maxs,
+                            Angle( 0, 0, 0 ),
+                            10,
+                            Color( 0, 255, 0 )
 
+                        )
+                    end
                 -- 2,
                 -- too fast or too stuck? taking damage time
                 elseif colliding then
@@ -1419,25 +1430,57 @@ if SERVER and terminator_Extras then
                     damageInfo:SetInflictor( self )
                     damageInfo:SetDamagePosition( collisionCheckTrace.HitPos )
                     self:TakeDamageInfo( damageInfo )
+                    if debugging:GetBool() then
+                        debugoverlay.SweptBox(
+                            collideTrStruc.start,
+                            collideTrStruc.endpos,
+                            collideTrStruc.mins,
+                            collideTrStruc.maxs,
+                            Angle( 0, 0, 0 ),
+                            10,
+                            Color( 255, 0, 0 )
+
+                        )
+                    end
 
                 -- 3,
                 -- stuck on something but not colliding, probably a npc or small prop
                 elseif not colliding and curSpeed <= 1 then
-                    local filter = { self }
-                    terminator_Extras.tableAdd( filter, player.GetAll() )
-                    terminator_Extras.tableAdd( filter, self:GetChildren() )
 
-                    collideTrStruc.mask = MASK_SOLID
-                    collideTrStruc.filter = filter
-                    local smashCheckResult = util.TraceHull( collideTrStruc )
-                    local smashEntity = smashCheckResult.Entity
+                    if debugging:GetBool() then
+                        debugoverlay.SweptBox(
+                            collideTrStruc.start,
+                            collideTrStruc.endpos,
+                            collideTrStruc.mins,
+                            collideTrStruc.maxs,
+                            Angle( 0, 0, 0 ),
+                            10,
+                            Color( 255, 255, 0 )
+
+                        )
+                    end
+
+                    local excluded = { [self] = true }
+                    for _, child in ipairs( self:GetChildren() ) do
+                        excluded[child] = true
+
+                    end
+                    local nearbyEnts = ents.FindAlongRay( collideTrStruc.start, collideTrStruc.endpos, self:OBBMins() * 1.1, self:OBBMaxs() * 1.1 )
+                    local smashEntity
+                    for _, ent in ipairs( nearbyEnts ) do
+                        if excluded[ent] then continue end
+                        if ent:IsPlayer() then continue end
+                        smashEntity = ent
+                        break
+
+                    end
                     if IsValid( smashEntity ) then
                         local damageInfo = DamageInfo()
                         damageInfo:SetDamage( 5 )
                         damageInfo:SetDamageType( DMG_CRUSH )
                         damageInfo:SetAttacker( self )
                         damageInfo:SetInflictor( self )
-                        damageInfo:SetDamagePosition( smashCheckResult.HitPos )
+                        damageInfo:SetDamagePosition( smashEntity:GetPos() )
                         smashEntity:TakeDamageInfo( damageInfo )
 
                     end

@@ -21,10 +21,10 @@ local backgroundSize = materialSize + overSize
 
 local heartTexture = Material( "vgui/hud/heartbeat.png", "smooth" )
 
-local colorHealthy = Color( 255, 235, 20, 250 )
-local boxColor = Color( 0, 0, 0, 76 )
-local colorDying = Color( 255, 50, 50, 200 )
-local boxColorDying = Color( 150, 25, 25, 76 )
+local colorHealthy  = GM.hudStandards.colorHappyYellow
+local colorDying    = GM.hudStandards.colorRedUrgent
+local boxColor      = GM.hudStandards.colorBackground
+local boxColorDying = GM.hudStandards.colorBackgroundUrgent
 
 local boxFlashTime = 0
 local colorBox = colorHealthy
