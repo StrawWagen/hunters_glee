@@ -48,8 +48,6 @@ cvars.AddChangeCallback( "cl_drawhud", function( cvarName, oldValue, newValue )
     end
 end, "glee_cl_drawhud_hideplayernames" )
 
-hook.Add()
-
 function GetAutoHidingHUDPanel()
     return autoHidingPanel
 
