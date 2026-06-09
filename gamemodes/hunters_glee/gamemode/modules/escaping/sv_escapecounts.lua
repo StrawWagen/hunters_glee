@@ -92,7 +92,7 @@ local function escapeRatioToMultiplier( escaped, remained, lastUpdateTime )
     local addedByRatio = 0
     if escaped <= 0 then -- NEVER BEEN ESCAPED!
         addedByRatio = 2 -- permanent 3x for first escapes
-        addedByRatio = addedByRatio + math.Clamp( remained * 0.01, 0, 1 ) -- up to 3x
+        addedByRatio = addedByRatio + math.Clamp( remained * 0.1, 0, 1 ) -- up to 3x
 
     else
         local escapedWeighted = escaped * 1.25
