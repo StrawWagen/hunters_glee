@@ -991,17 +991,7 @@ function GM:roundEnd()
         SetGlobalInt( "glee_EscapedCount", escapedCount )
         SetGlobalInt( "glee_RemainedCount", remainedCount )
 
-        -- escape rewards!
         hook.Run( "huntersglee_round_into_limbo_after" )
-        for _, ply in player.Iterator() do
-            if not ply:HasEscaped() then continue end
-
-            local escapeCount = ply:GetEscapeCount()
-            ply:SetNWInt( "glee_escape_count", escapeCount + 1 )
-
-            self:GiveEscapeRewardTo( ply )
-
-        end
 
         if winner:GetSkulls() <= 0 then
             SetGlobalEntity( "glee_Winner", NULL )
@@ -1013,9 +1003,6 @@ function GM:roundEnd()
         SetGlobalEntity( "glee_Winner", winner )
         SetGlobalInt( "glee_WinnerSkulls", winner:GetSkulls() )
 
-        -- update escape counts
-        hook.Run( "huntersglee_round_into_limbo_postafter" )
-
     end )
 
     hook.Run( "huntersglee_round_into_limbo" )
@@ -1025,6 +1012,18 @@ end
 -- from the part where finest prey & total score is displayed, into setup where people can buy stuff with discounts
 function GM:beginSetup()
     hook.Run( "huntersglee_round_pre_into_inactive" )
+
+    for _, ply in player.Iterator() do
+        if not ply:HasEscaped() then continue end
+
+        local escapeCount = ply:GetEscapeCount()
+        ply:SetNWInt( "glee_escape_count", escapeCount + 1 )
+
+        self:GiveEscapeRewardTo( ply )
+
+    end
+
+    self:UpdateEscapeCounts()
 
     self:RemoveHunters()
 

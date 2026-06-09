@@ -44,7 +44,7 @@ end
 
 local rawCountsCache = {}
 
-hook.Add( "huntersglee_round_into_limbo_postafter", "glee_escapecounts_record", function()
+function GM:UpdateEscapeCounts()
     local escaped = GetGlobalInt( "glee_EscapedCount" )
     local remained = GetGlobalInt( "glee_RemainedCount" )
 
@@ -64,7 +64,7 @@ hook.Add( "huntersglee_round_into_limbo_postafter", "glee_escapecounts_record", 
 
     GAMEMODE:SyncCurrEscapeMuls()
 
-end )
+end
 
 -- ============================================================
 -- Reading
