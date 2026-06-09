@@ -91,7 +91,7 @@ local function escapeRatioToMultiplier( escaped, remained, lastUpdateTime )
     local base = 1
     local addedByRatio = 0
     if escaped <= 0 then -- NEVER BEEN ESCAPED!
-        addedByRatio = 1 -- permanent 2x for first escapes
+        addedByRatio = 2 -- permanent 3x for first escapes
         addedByRatio = addedByRatio + math.Clamp( remained * 0.01, 0, 1 ) -- up to 3x
 
     else
@@ -116,7 +116,7 @@ local function escapeRatioToMultiplier( escaped, remained, lastUpdateTime )
 
     end
 
-    multiplier = math.max( multiplier, 0.05 ) -- floor: even the easiest map still pays out something
+    multiplier = math.max( multiplier, 0.25 ) -- floor: even the easiest map still pays out something
     multiplier = math.Round( multiplier, 2 )
 
     return multiplier
