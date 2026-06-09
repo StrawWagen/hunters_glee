@@ -15,7 +15,14 @@ local spawns = {
         prob = 0.005,
         minAreaSize = 150,
     },
-
+    ["npc_turret_floor"] = {
+        prob = 0.005,
+        minAreaSize = 100,
+    },
+    ["glee_skullcache"] = {
+        prob = 0.01,
+        minAreaSize = 100,
+    },
 }
 
 for className, data in pairs( spawns ) do

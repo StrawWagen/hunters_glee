@@ -57,7 +57,7 @@ function terminator_Extras.glee_PlayerNameColor( ply, visible )
     local color = nil
     local a = nil
     if ply:Health() <= 0 then
-        if ply:HasEscaped() then
+        if ply.HasEscaped and ply:HasEscaped() then
             color = terminator_Extras.glee_EscapedPlyColor
             a = 255
 

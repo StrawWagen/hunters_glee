@@ -34,6 +34,9 @@ function spawnSetVote:BeginVote( duration, maxOptions )
     local toAdd = { ["hunters_glee"] = toBrowse["hunters_glee"] } -- always include default
     toBrowse["hunters_glee"] = nil
 
+    local currentSpawnsetName = GAMEMODE:GetSpawnSet()
+    toBrowse[currentSpawnsetName] = nil -- remove current mode from options
+
     while table.Count( toBrowse ) > 0 do
         if ( #toAdd + 1 ) >= maxOptions then break end
 
