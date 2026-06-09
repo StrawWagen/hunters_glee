@@ -226,10 +226,10 @@ end )
 -- hook.Add( "huntersglee_round_pre_into_inactive", )
 
 -- reward for escaping
-local flatEscapingReward = 200
-local rewardEveryoneEscaped = 400 -- additional if everyone escaped
-local rewardPerSkull = 50
-local perSkullEveryoneEscaped = 100 -- additional per skull if everyone escaped
+local flatEscapingReward = 400
+local rewardEveryoneEscaped = 800 -- additional if everyone escaped
+local rewardPerSkull = 100
+local perSkullEveryoneEscaped = 200 -- additional per skull if everyone escaped
 
 function GM:GiveEscapeRewardTo( ply )
     local setName = GAMEMODE:GetSpawnSet()
