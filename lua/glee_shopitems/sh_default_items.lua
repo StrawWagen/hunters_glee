@@ -457,7 +457,8 @@ local items = {
             return startingCost + ( purchaseCount * costPerPurchase )
 
         end,
-        cooldown = math.huge,
+        markupPerPurchase = 0.5,
+        cooldown = 60,
         tags = { "ITEMS", "Utility", "NewGamePlus" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,

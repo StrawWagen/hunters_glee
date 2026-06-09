@@ -1309,7 +1309,7 @@ local items = {
         shCost = 1000,
         markup = 2,
         cooldown = math.huge,
-        tags = { "INNATE" },
+        tags = { "INNATE", "NewGamePlus" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
