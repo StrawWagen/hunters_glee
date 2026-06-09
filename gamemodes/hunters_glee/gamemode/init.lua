@@ -999,7 +999,7 @@ function GM:roundEnd()
             local escapeCount = ply:GetEscapeCount()
             ply:SetNWInt( "glee_escape_count", escapeCount + 1 )
 
-            ply:GiveEscapeRewardTo( ply )
+            self:GiveEscapeRewardTo( ply )
 
         end
 
