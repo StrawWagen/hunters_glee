@@ -248,7 +248,7 @@ function GM:DrawDeathNotice( x, y )
 	y = y * ScrH()
 
 	-- Draw
-	for _, Death in ipairs( Deaths ) do
+	for i, Death in ipairs( Deaths ) do
 
 		if ( Death.time + time > CurTime() ) then
 
@@ -260,6 +260,8 @@ function GM:DrawDeathNotice( x, y )
 			Death.lerp = Death.lerp or {}
 			Death.lerp.x = x
 			Death.lerp.y = y
+
+			if not ( x and y ) then Deaths[i] = nil return end -- invalid/tiny killicon
 
 			y = DrawDeath( math.floor( x ), math.floor( y ), Death, time )
 
