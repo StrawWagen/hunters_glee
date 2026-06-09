@@ -223,8 +223,8 @@ local function whileAlivePaintOtherEnts( localPlayer, cur )
     local onlyDoLookedAt = not nearbyPlayersHudVar:GetBool()
     local recentlyAttacked = hideNamesFor > cur
 
-    local trace     = localPlayer:GetEyeTrace()
-    local spectateTarg = localPlayer:GetObserverTarget()
+    local trace         = localPlayer:GetEyeTrace()
+    local spectateTarg  = localPlayer:GetObserverTarget()
 
     local focusEnt
     if IsValid( spectateTarg ) and spectateTarg.Nick then
