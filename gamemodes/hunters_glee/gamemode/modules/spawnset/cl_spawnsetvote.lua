@@ -231,7 +231,42 @@ function spawnSetVote:CreateVotePanel()
         currButton:SetFont( "termhuntShopItemFont" )
         currButton:SetText( ind .. ": " .. currButton.prettyName )
 
-        currButton:SetTooltip( currButton.description )
+        local tooltipText = currButton.description
+        local multiplier, escaped, remained = GAMEMODE:GetSpawnsetsEscapeMultiplier( currButton.name )
+        multiplier = math.Round( multiplier, 2 )
+
+        local escapeYap
+        if escaped == 0 then
+            escapeYap = "\nNobody has escaped this."
+
+        elseif escaped == 1 then
+            escapeYap = "\n" .. escaped .. " has escaped."
+
+        else
+            escapeYap = "\n" .. escaped .. " have escaped."
+
+        end
+
+        local remainYap
+        if remained == 0 then
+            remainYap = "\nNobody has perished to this."
+
+        elseif remained == 1 then
+            remainYap = "\n" .. remained .. " soul has perished."
+
+        else
+            remainYap = "\n" .. remained .. " souls have perished."
+
+        end
+
+        tooltipText = table.concat( {
+            tooltipText,
+            escapeYap,
+            remainYap,
+            "\n" .. multiplier .. "x escape reward.",
+        } )
+
+        currButton:SetTooltip( tooltipText )
         currButton:SetTooltipDelay( 0.1 )
 
         local oldBtnThink = currButton.Think

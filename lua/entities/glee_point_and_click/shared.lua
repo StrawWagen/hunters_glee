@@ -203,12 +203,12 @@ if CLIENT then
 
     end
 
-    function ENT:DrawTranslucent()
+    function ENT:MyDrawTranslucent()
         return self:Draw()
 
     end
 
-    function ENT:Draw()
+    function ENT:MyDraw()
         if self:HasReleasedTarget() then return end
         if self:GetOwner() == LocalPlayer() and self:IsGrabbing() then return end -- Owner gets the special HUD, no 3D cursor
 

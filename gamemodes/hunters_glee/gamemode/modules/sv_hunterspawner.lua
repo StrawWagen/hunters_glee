@@ -273,6 +273,7 @@ function GM:SetSpawnSet( setName )
 
     SetGlobalString( "GLEE_SpawnSetName", setName )
     SetGlobalString( "GLEE_SpawnSetPrettyName", spawnSet.prettyName )
+    SetGlobalString( "GLEE_SpawnSetDescription", spawnSet.description or "" )
 
     if oldSetName ~= setName then
         hook.Run( "glee_post_set_spawnset", setName, spawnSet, oldSetName )
@@ -1135,6 +1136,8 @@ function GM:getValidHunterPos()
         local tooClose
         local tooFar
 
+        -- always find nearest player to spawnpos
+        -- and check for visibility as we find that
         for _, pos in ipairs( playerShootPositions ) do
             cost = cost + 0.05 -- small cost nudge, dont go crazy on full servers
             local visible, visResult

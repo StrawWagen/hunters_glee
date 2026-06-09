@@ -25,8 +25,6 @@ if SERVER then
     local DIRECTHIT_DAMAGE = 1500
 
     local BLINDFIRE_MAXSPEED_TIME = 1
-    local BLIND_STABILITY_AT_MAXSPEED = 0.25
-    local BLIND_STABILITY_BEFORE_MAXSPEED = 0.10
     local BLINDFIRE_ANGVEL_DECAY = 0.99
     local MAX_BLINDFIRE_SPEED = 4000
 
@@ -65,20 +63,11 @@ if SERVER then
         local timeAlive = math.abs( self.ActiveTime - CurTime() )
         local tillFullSpeed = timeAlive / BLINDFIRE_MAXSPEED_TIME
 
-        local instability
-        if tillFullSpeed >= 1 then -- drift a LOT once we get to max speed
-            instability = BLIND_STABILITY_AT_MAXSPEED
-        else
-            instability = BLIND_STABILITY_BEFORE_MAXSPEED
-        end
-
         local speed = math.Clamp( tillFullSpeed * MAX_BLINDFIRE_SPEED, 0, MAX_BLINDFIRE_SPEED )
         local vel = ( speed * MOBILITY_MUL )
         pObj:SetVelocityInstantaneous( self:GetForward() * vel )
 
-        local angVel = pObj:GetAngleVelocity() * BLINDFIRE_ANGVEL_DECAY -- bias towards going straight, spiral out of turns
-        angVel = angVel + VectorRand() * instability -- but not too straight
-
+        local angVel = pObj:GetAngleVelocity() * BLINDFIRE_ANGVEL_DECAY
         pObj:SetAngleVelocity( angVel )
     end
 

@@ -59,6 +59,8 @@ function spawnSetVote:BeginVote( duration, maxOptions )
 
     end
 
+    GAMEMODE:SyncEscapeMultipliersForSpawnsets( table.GetKeys( options ) )
+
     net.Start( "glee_begin_spawnsetvote" )
         net.WriteInt( currVote.voteEnd, 20 )
         net.WriteInt( #optionsSeq, 16 )

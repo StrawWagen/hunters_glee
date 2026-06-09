@@ -44,7 +44,7 @@ local tracks = {
             {
                 minDifficulty = 200,
                 author = vacant,
-                snd = "hunters_glee/music/COMPAKT/without-Under-naN-oK.ogg",
+                snd = "hunters_glee/music/VACANT/xwithout-Under-naN-oK.ogg",
             },
         },
         priority     = 0,

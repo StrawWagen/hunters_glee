@@ -255,6 +255,7 @@ function GAMEMODE:SurfaceHomicidalGlee( dancer, surfacer )
 
     if dancer.glee_guiltyHomicidalGlee then
         dancer:DropActiveWeaponKeepAmmo()
+        hook.Run( "glee_homicidallygleeful", dancer, surfacer, reason, reasonGlobal )
 
     end
 

@@ -1,5 +1,17 @@
 -- mapvote module
 if not MapVote then return end
+
+hook.Add( "MapVote_VoteStarted", "glee_mapvote_detectandtransmit", function( voteState )
+    GAMEMODE:SyncEscapeMultipliersForMaps( voteState.currentMaps )
+
+end )
+
+-- play when vote is started
+hook.Add( "MapVote_VoteStarted", "glee_stopmusic_mapvote", function()
+    GAMEMODE:SendMusic( "tracks/mapvoteMusic" )
+
+end )
+
 if not game.IsDedicated() then return end
 
 local mavoteDefaultTime = 20
@@ -56,16 +68,5 @@ hook.Add( "huntersglee_round_firstsetup", "glee_mapvote_setup", startTheMapVoteT
 hook.Add( "huntersglee_emptyserver", "glee_mapvote_reset", function()
     if mapVoteIncrement ~= 0 then return end
     mapVoteIncrement = 0
-
-end )
-
--- play when !rtv threshold is reached
-hook.Add( "MapVote_RTVStart", "glee_stopmusic_mapvote", function()
-    GAMEMODE:SendMusic( "tracks/mapvoteMusic" )
-
-end )
-
-hook.Add( "glee_mapvote_start", "glee_stopmusic_mapvote", function()
-    GAMEMODE:SendMusic( "tracks/mapvoteMusic" )
 
 end )

@@ -41,12 +41,16 @@ end
 local function spawnTermSkull( died, dmg, _ )
     if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
 
-    local maxHealth = died:GetMaxHealth()
-    if died.IsFodder and maxHealth <= terminator_Extras.healthDefault then -- fodder bots drop less
-        local rand = math.Rand( 0, 1 )
-        local ratio = maxHealth / terminator_Extras.healthDefault
-        if rand > ratio then return end
+    if died.glee_NeverDropSkull then return end
 
+    if not died.glee_AlwaysDropSkull then
+        local maxHealth = died:GetMaxHealth()
+        if died.IsFodder and maxHealth <= terminator_Extras.healthDefault then -- fodder bots drop less
+            local rand = math.Rand( 0, 1 )
+            local ratio = maxHealth / terminator_Extras.healthDefault
+            if rand > ratio then return end
+
+        end
     end
 
     local newSkull = GAMEMODE:SpawnASkull( died:GetShootPos(), died:GetAimVector():Angle(), died.DoMetallicDamage, died )

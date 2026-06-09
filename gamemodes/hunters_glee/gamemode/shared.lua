@@ -118,3 +118,8 @@ function GM:GetSpawnSetName()
     return GetGlobalString( "GLEE_SpawnSetName", "N/A" ), GetGlobalString( "GLEE_SpawnSetPrettyName", "N/A" )
 
 end
+
+function GM:GetSpawnSetDescription()
+    return GetGlobalString( "GLEE_SpawnSetDescription", "" )
+
+end

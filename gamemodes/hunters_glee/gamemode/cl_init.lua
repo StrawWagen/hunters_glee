@@ -1,14 +1,12 @@
 include( "shared.lua" )
 include( "cl_shopstandards.lua" ) -- has to load almost first
 include( "cl_shoppinggui.lua" )
-include( "modules/cl_targetid.lua" )
 include( "modules/cl_winscreen.lua" )
 include( "modules/cl_scoreboard.lua" )
 include( "modules/cl_modelscale.lua" )
 include( "modules/cl_obfuscation.lua" )
 include( "modules/cl_fallingwind.lua" )
 include( "modules/cl_killfeedoverride.lua" )
-include( "modules/escaping/cl_escaping.lua" )
 include( "modules/cl_spectateflashlight.lua" )
 include( "modules/spawnset/cl_spawnsetvote.lua" )
 include( "modules/shopitems/cl_shopgobbler.lua" )
@@ -18,6 +16,9 @@ include( "modules/signalstrength/cl_signalstrength.lua" )
 include( "modules/thirdpersonflashlight/cl_flashlight.lua" )
 include( "modules/firsttimeplayers/cl_firsttimeplayers.lua" )
 
+include( "modules/escaping/cl_escaping.lua" )
+include( "modules/escaping/cl_escapecounts.lua" )
+
 include( "modules/deadplayerfx/cl_souls.lua" )
 include( "modules/deadplayerfx/cl_deaddesaturation.lua" )
 
@@ -26,97 +27,51 @@ include( "modules/contextmenu_widgets/cl_tauntmenu.lua" )
 include( "modules/contextmenu_widgets/cl_settingsmenu.lua" )
 include( "modules/contextmenu_widgets/cl_guiltchecker.lua" )
 
-include( "modules/clhud/cl_hudstandards.lua" )
-include( "modules/clhud/cl_battery.lua" )
-include( "modules/clhud/cl_bpm.lua" )
-
-local entMeta = FindMetaTable( "Entity" )
-
 local GAMEMODE = GAMEMODE or GM
 
 GAMEMODE.GLEE_FONT = "Arial"
+
+
+if IsValid( terminator_Extras.glee_AutoHidingPanel ) then terminator_Extras.glee_AutoHidingPanel:Remove() end
+terminator_Extras.glee_AutoHidingPanel = vgui.Create( "Panel", GetHUDPanel() )
+local autoHidingPanel = terminator_Extras.glee_AutoHidingPanel
+autoHidingPanel:Dock( FILL )
+
+cvars.AddChangeCallback( "cl_drawhud", function( cvarName, oldValue, newValue )
+    local shouldDraw = tobool( newValue )
+    if shouldDraw then
+        autoHidingPanel:SetVisible( true )
+
+    else
+        autoHidingPanel:SetVisible( false )
+
+    end
+end, "glee_cl_drawhud_hideplayernames" )
+
+hook.Add()
+
+function GetAutoHidingHUDPanel()
+    return autoHidingPanel
+
+end
+
+include( "modules/clhud/cl_topleftinfo.lua" )
+include( "modules/clhud/cl_bpm.lua" )
+include( "modules/clhud/cl_battery.lua" )
+include( "modules/clhud/cl_plynames.lua" )
+
 
 -- from https://github.com/Facepunch/garrysmod/blob/e189f14c088298ca800136fcfcfaf5d8535b6648/garrysmod/lua/includes/modules/killicon.lua#L202
 local killIconColor = Color( 255, 80, 0, 255 )
 killicon.Add( "glee_skullpickup", "vgui/hud/glee_skullpickup", killIconColor )
 
 local heartbeatVol = CreateClientConVar( "huntersglee_cl_heartbeat_volume", 1, true, false, "Heartbeat sound volume.", 0, 1 )
-local doHud = CreateClientConVar( "huntersglee_cl_showhud", 1, true, false, "Show the hud? Beats, score, round state...", 0, 1 )
 local baseDoHud = GetConVar( "cl_drawhud" )
-
-local paddingFromEdge = terminator_Extras.defaultHudTextPaddingFromEdge
-local scoreDisplayPadding = glee_sizeScaled( nil, 60 )
-local scoreMaxShakeSize = glee_sizeScaled( nil, 2 )
-local skullDisplayPadding = glee_sizeScaled( nil, 96 )
-local hintPadding = glee_sizeScaled( nil, 156 )
 
 local closestSpectateDistance = 15
 local defaultSpectateDistance = 100
 local maxSpectateZoomOut = 1500
 local spectateZoomRate = 10
-
-local CurTime = CurTime
-
--- TIME
-local fontData = {
-    font = GAMEMODE.GLEE_FONT,
-    extended = false,
-    size = glee_sizeScaled( nil, 30 ),
-    weight = 500,
-    blursize = 0,
-    scanlines = 1,
-    antialias = true,
-    underline = false,
-    italic = false,
-    strikeout = false,
-    symbol = false,
-    rotary = false,
-    shadow = true,
-    additive = false,
-    outline = false,
-}
-surface.CreateFont( "termhuntTimeFont", fontData )
-
-
--- BEAT COUNT
-fontData = {
-    font = GAMEMODE.GLEE_FONT,
-    extended = false,
-    size = glee_sizeScaled( nil, 30 ),
-    weight = 500,
-    blursize = 0,
-    scanlines = 0,
-    antialias = true,
-    underline = false,
-    italic = false,
-    strikeout = false,
-    symbol = false,
-    rotary = false,
-    shadow = true,
-    additive = false,
-    outline = false,
-}
-surface.CreateFont( "termhuntScoreFont", fontData )
-
--- SHOP hINT
-fontData = {
-    font = GAMEMODE.GLEE_FONT,
-    extended = false,
-    size = glee_sizeScaled( nil, 30 ),
-    weight = 500,
-    blursize = 0,
-    scanlines = 0,
-    antialias = true,
-    underline = false,
-    italic = false,
-    strikeout = false,
-    symbol = false,
-    rotary = false,
-    shadow = true,
-    additive = false,
-    outline = false,
-}
-surface.CreateFont( "termhuntShopHintFont", fontData )
 
 fontData = {
     font = GAMEMODE.GLEE_FONT,
@@ -177,26 +132,6 @@ fontData = {
 }
 surface.CreateFont( "termhuntTriumphantFont", fontData )
 
-local nextBeat = 0
-local screenMiddleW = ScrW() / 2
-local screenMiddleH = ScrH() / 2
-
-local nextDontDrawCheck = 0
-local dontDraw
-
-function GAMEMODE:DontDrawDefaultHud()
-    local cur = CurTime()
-    if nextDontDrawCheck < cur then
-        dontDraw = nil
-        nextDontDrawCheck = cur + 1
-        if hook.Run( "HUDShouldDraw", "CHudHealth" ) == false then dontDraw = true return true end
-        if hook.Run( "HUDShouldDraw", "CHudBattery" ) == false then dontDraw = true return true end
-
-    end
-    if dontDraw then return true end
-
-end
-
 GAMEMODE.currRoundState = GAMEMODE.currRoundState or GAMEMODE.ROUND_SETUP
 
 function GAMEMODE:RoundState()
@@ -227,116 +162,7 @@ function GAMEMODE:TranslatedBind( bind )
 
 end
 
-local deadPlyColor = Color( 87, 117, 117 )
-local escapedPlyColor = Color( 0, 190, 255 )
-
-local function playerSpectateColor( ply, visible )
-    local teamColor = GAMEMODE:GetTeamColor( ply )
-    local color = nil
-    local a = nil
-    if ply:Health() <= 0 then
-        if ply:HasEscaped() then
-            color = escapedPlyColor
-            a = 255
-        elseif visible then
-            color = deadPlyColor
-            a = 255
-        end
-    elseif ply:Health() > 0 then
-        if visible then
-            color = teamColor
-            a = 160
-        end
-    end
-    color.a = a
-    return color
-end
-
-function huntersGlee_PaintPlayer( player, posOverride )
-    if not GAMEMODE:CanShowDefaultHud() then return end
-
-    local text = "ERROR"
-    local font = "TargetID"
-
-    if not IsValid( player ) then return end
-
-    if ( player:IsPlayer() ) then
-        text = player:Nick()
-    else
-        return
-        --text = trace.Entity:GetClass()
-    end
-
-    local pos
-    if posOverride then
-        pos = posOverride
-
-    elseif player.glee_SoulDisplayPosTime and player.glee_SoulDisplayPosTime > CurTime() then
-        pos = player.glee_SoulDisplayPos
-
-    else
-        pos = player:GetPos()
-
-    end
-
-    local OnScreenDat = pos:ToScreen()
-    if not OnScreenDat.visible then return end
-
-    surface.SetFont( font )
-    local _, h = surface.GetTextSize( text )
-
-    local PosX = OnScreenDat.x
-    local PosY = OnScreenDat.y
-
-    if PosX == 0 and PosY == 0 then
-
-        PosX = ScrW() / 2
-        PosY = ScrH() / 2
-
-    end
-
-    local x = PosX
-    local y = PosY
-
-    y = y + -30
-
-    local textColor = playerSpectateColor( player, OnScreenDat.visible )
-    surface.drawShadowedTextBetter( text, font, textColor, x, y )
-
-    y = y + h + 5
-
-    if player:Health() <= 0 then
-        text = player:GetScore() .. " Score"
-
-    else
-        text = player:Health() .. "%"
-
-    end
-    font = "TargetIDSmall"
-    surface.drawShadowedTextBetter( text, font, textColor, x, y )
-
-end
-
-local function paintOtherPlayers( localPlayer, cur )
-    local inEye = localPlayer:GetObserverMode() == OBS_MODE_IN_EYE
-    for _, ply in ipairs( player.GetAll() ) do
-        if ply == localPlayer then continue end
-        if inEye then -- when spectating in eye
-            if entMeta.Health( ply ) <= 0 then continue end -- dont show dead people's names
-
-            -- throttle the trace to avoid per-frame flickering at edges
-            if not ply.glee_wallCheckNext or ply.glee_wallCheckNext < cur then
-                ply.glee_wallCheckNext = cur + 0.15
-                ply.glee_wallCheckVisible = terminator_Extras.PosCanSee( EyePos(), ply:GetShootPos(), MASK_SOLID_BRUSHONLY )
-
-            end
-            if not ply.glee_wallCheckVisible then continue end -- dont show names behind walls
-
-        end
-        huntersGlee_PaintPlayer( ply )
-
-    end
-end
+local nextBeat = 0
 
 local function beatThink( ply, cur )
     if nextBeat > cur then return end
@@ -359,524 +185,18 @@ local function beatThink( ply, cur )
 end
 
 
-local hour = 60 * 60
-
-local function paintRoundInfo( ply, cur )
-    local typeVal = GetGlobalString( "GLEE_SpawnSetPrettyName", "Hunter's Glee" )
-    local timeVal = GetGlobalInt( "TERMHUNT_PLAYERTIMEVALUE", 0 )
-    local infoVal = GetGlobalString( "TERMHUNT_PLAYERVALUENAME", "---" )
-    local infoColor = Color( 255, 255, 255 )
-    local resetTime = ply.resetColorTime or 0
-    if resetTime > cur then
-        infoColor = ply.infoColorOverride
-    end
-    if not ply.oldInfo then
-        ply.oldInfo = "---"
-    end
-
-    if timeVal == math.huge then
-        timeVal = 0
-    end
-
-    local combinedString = infoVal
-
-    if timeVal > hour then
-        local hours = math.floor( timeVal / hour )
-        combinedString = combinedString .. hours .. ":"
-
-    end
-
-    combinedString = combinedString .. string.ToMinutesSeconds( timeVal )
-
-    if typeVal ~= "Hunter's Glee" then
-        combinedString = typeVal .. " : " .. combinedString
-
-    end
-
-    if ply.oldInfo ~= infoVal then
-        ply.oldInfo = infoVal
-        ply.infoColorOverride = Color( 255, 50, 50 )
-        ply.resetColorTime = cur + 0.1
-        ply:EmitSound( "buttons/lightswitch2.wav" )
-
-    end
-
-    if not GAMEMODE:CanShowDefaultHud() then return end
-    if not doHud:GetBool() then return end
-
-    surface.drawShadowedTextBetter( combinedString, "termhuntTimeFont", infoColor, paddingFromEdge, paddingFromEdge, false )
-
-end
-
-
-local invisibleColor = Color( 0, 0, 0, 0 )
-local darkRed = Color( 200, 0, 0 )
-local brighterRed = Color( 255, 50, 50 )
-local superScoreColor = Color( 255, 255, 0 )
-
-local function paintMyTotalScore( ply, cur )
-    if not GAMEMODE:CanShowDefaultHud() then return end
-    if not doHud:GetBool() then return end
-
-    local myTotalScore = ply:GetScore()
-    local textCombo = "Score: " .. myTotalScore
-    if myTotalScore == 0 then
-        textCombo = "Score: " .. myTotalScore .. " ( Heartbeats Per Minute )"
-    end
-
-    local textColor = darkRed
-    local resetTime = ply.resetScoreColorTime or 0
-    local oldScore = ply.oldDisplayScore or 0
-    local scoreDisplayShakeTime = ply.scoreDisplayShakeTime or 0
-
-    if resetTime > cur then
-        textColor = ply.scoreColorOverride
-        if ply.scoreDisplayAddAtEnd then
-            textCombo = textCombo .. ply.scoreDisplayAddAtEnd
-        end
-    end
-
-    local scoreToCompare = ply.oldScoreToCompare or 0
-
-    if oldScore ~= myTotalScore then
-
-        local overrideColor = brighterRed
-        local overrideColorTime = 0.1
-        local scoreDisplayAddAtEnd = nil
-        local textShakeTime = 0
-
-        -- difference to show
-        local difference = myTotalScore - scoreToCompare
-        -- real difference, between score now and last time we checked
-        local realDifference = myTotalScore - oldScore
-
-        if difference >= 500 then
-            overrideColor = superScoreColor
-
-        end
-
-        if realDifference >= 500 then
-            overrideColorTime = 8
-            textShakeTime = 8
-            ply:EmitSound( "hunters_glee/209578_zott820_cash-register-purchase.wav", 70, 70 )
-
-        elseif realDifference >= 100 then
-            overrideColorTime = 4
-            textShakeTime = 3
-
-        elseif realDifference >= 10 then
-            overrideColorTime = 3
-            textShakeTime = 1
-
-        elseif realDifference <= -10 then
-            overrideColorTime = 4
-            textShakeTime = 3
-
-        elseif realDifference <= -100 then
-            overrideColorTime = 4
-            textShakeTime = 4
-
-        elseif realDifference <= -500 then
-            overrideColorTime = 8
-            textShakeTime = 8
-
-        end
-
-        ply.scoreColorOverride = overrideColor
-        ply.resetScoreColorTime = math.max( cur + overrideColorTime, math.Clamp( resetTime + overrideColorTime, 0, cur + 10 ) )
-        ply.scoreDisplayShakeTime = math.max( cur + textShakeTime, scoreDisplayShakeTime + textShakeTime / 2 )
-        ply.oldDisplayScore = myTotalScore
-
-        if difference > 0 then
-            scoreDisplayAddAtEnd = " +" .. difference
-
-        else
-            scoreDisplayAddAtEnd = " " .. difference
-
-        end
-        ply.scoreDisplayAddAtEnd = scoreDisplayAddAtEnd
-
-    end
-
-    -- no longer displaying the change, just reset it
-    if resetTime < cur then
-        ply.oldScoreToCompare = myTotalScore
-
-    end
-
-    local offset = scoreDisplayPadding
-    if scoreDisplayShakeTime > cur then
-        local scale = scoreDisplayShakeTime - cur
-        scale = scale * scoreMaxShakeSize
-        offset = offset + math.Rand( -scale, scale )
-
-    end
-
-    surface.SetFont( "termhuntScoreFont" )
-    surface.SetTextColor( textColor )
-    surface.SetTextPos( paddingFromEdge, paddingFromEdge + offset )
-    surface.DrawText( textCombo )
-
-end
-
-local function paintMyTotalSkulls( ply, cur )
-    if not GAMEMODE:CanShowDefaultHud() then return end
-    if not doHud:GetBool() then return end
-
-    local myTotalSkulls = ply:GetSkulls()
-    local textCombo = "Skulls: " .. myTotalSkulls
-
-    local textColor = invisibleColor
-    local resetTime = ply.resetSkullsColorTime or 0
-    local oldSkulls = ply.oldDisplaySkulls or 0
-    local skullsDisplayShakeTime = ply.skullsDisplayShakeTime or 0
-
-    if resetTime > cur then
-        textColor = ply.skullsColorOverride
-        if ply.skullsDisplayAddAtEnd then
-            textCombo = textCombo .. ply.skullsDisplayAddAtEnd
-        end
-    end
-
-    local skullsToCompare = ply.oldSkullsToCompare or 0
-
-    if myTotalSkulls >= 1 then
-        textColor = darkRed
-
-    end
-
-    if oldSkulls ~= myTotalSkulls then
-
-        local overrideColor = brighterRed
-        local overrideColorTime = 4
-        local skullsDisplayAddAtEnd = nil
-        local textShakeTime = 1
-
-        -- difference to show
-        local difference = myTotalSkulls - skullsToCompare
-
-        ply.skullsColorOverride = overrideColor
-        ply.resetSkullsColorTime = math.max( cur + overrideColorTime, math.Clamp( resetTime + overrideColorTime, 0, cur + 10 ) )
-        ply.skullsDisplayShakeTime = math.max( cur + textShakeTime, skullsDisplayShakeTime + textShakeTime )
-        ply.oldDisplaySkulls = myTotalSkulls
-
-        if difference > 0 then
-            skullsDisplayAddAtEnd = " +" .. difference
-
-        else
-            skullsDisplayAddAtEnd = " " .. difference
-
-        end
-        ply.skullsDisplayAddAtEnd = skullsDisplayAddAtEnd
-
-    end
-
-    -- no longer displaying the change, just reset it
-    if resetTime < cur then
-        ply.oldSkullsToCompare = myTotalSkulls
-
-    end
-
-    local offset = skullDisplayPadding
-    if skullsDisplayShakeTime > cur then
-        local scale = skullsDisplayShakeTime - cur
-        scale = scale * scoreMaxShakeSize
-        offset = offset + math.Rand( -scale, scale )
-
-    end
-
-    surface.SetFont( "termhuntScoreFont" )
-    surface.SetTextColor( textColor )
-    surface.SetTextPos( paddingFromEdge, paddingFromEdge + offset )
-    surface.DrawText( textCombo )
-
-end
-
-
--- oops i dropped my spaghetti
-local definitelyBoughtAnUndeadItem = CreateClientConVar( "cl_huntersgleehint_hasboughtundead", 0, true, false, "Player has seen the purchase undead stuff hint?", 0, 1 )
-local hasBoughtDivineIntervention = CreateClientConVar( "cl_huntersgleehint_hasboughtintervention", 0, true, false, "Player has seen 'its time for divine intervention'?", 0, 1 )
-local hasSpectatedSomeone = CreateClientConVar( "cl_huntersgleehint_hasspectatedsomeone", 0, true, false, "Player has seen 'its time for divine intervention'?", 0, 1 )
-local hasSwitchedSpectateModes = CreateClientConVar( "cl_huntersgleehint_hasswitchedspectatemodes", 0, true, false, "Player has seen from the eyes of something?", 0, 1 )
-local hasStoppedSpectating = CreateClientConVar( "cl_huntersgleehint_hasstoppedspectating", 0, true, false, "Player has stopped following something?", 0, 1 )
-
-
-hook.Add( "InitPostEntity", "glee_clreadhints", function()
-    LocalPlayer().glee_DefinitelyBoughtAnUndeadItem = definitelyBoughtAnUndeadItem:GetBool()
-    LocalPlayer().glee_HasBoughtDivineIntervention = hasBoughtDivineIntervention:GetBool()
-    LocalPlayer().glee_HasSpectatedSomeone = hasSpectatedSomeone:GetBool()
-    LocalPlayer().glee_HasSwitchedSpectateModes = hasSwitchedSpectateModes:GetBool()
-    LocalPlayer().glee_HasStoppedSpectatingSomething = hasStoppedSpectating:GetBool()
-    LocalPlayer().glee_HasDoneSpectateFlashlight = nil
-
-end )
-
-hook.Add( "glee_cl_confirmedpurchase", "storeIfPlayerBoughtUndeadItem", function( ply, id )
-    local itemData = GAMEMODE:GetShopItemData( id )
-    if itemData.tags["DEADGIFTS"] ~= true then return end
-    if ply:Health() > 0 then return end
-
-    ply.glee_DefinitelyBoughtAnUndeadItem = true
-    RunConsoleCommand( "cl_huntersgleehint_hasboughtundead", "1" )
-
-    if id == "resurrection" then
-        RunConsoleCommand( "cl_huntersgleehint_hasboughtintervention", "1" )
-        ply.glee_HasBoughtDivineIntervention = true
-
-    end
-end )
-
-
-net.Receive( "glee_followedsomething", function()
-    if not IsValid( LocalPlayer() ) then return end -- ???????
-    LocalPlayer():EmitSound( "ui/buttonrollover.wav", 100, 120, 0.8 )
-    LocalPlayer().glee_HasSpectatedSomeone = true
-    RunConsoleCommand( "cl_huntersgleehint_hasspectatedsomeone", "1" )
-
-    LocalPlayer().glee_SpectateOrbitDistance = nil
-
-end )
-net.Receive( "glee_followednexthing", function()
-    if not IsValid( LocalPlayer() ) then return end
-    LocalPlayer():EmitSound( "ui/buttonrollover.wav", 100, 200, 0.5 )
-
-    LocalPlayer().glee_SpectateOrbitDistance = nil
-
-end )
-net.Receive( "glee_switchedspectatemodes", function()
-    if not IsValid( LocalPlayer() ) then return end
-    LocalPlayer():EmitSound( "ui/buttonrollover.wav", 100, 180, 0.5 )
-    LocalPlayer().glee_HasSwitchedSpectateModes = true
-    RunConsoleCommand( "cl_huntersgleehint_hasswitchedspectatemodes", "1" )
-
-end )
-net.Receive( "glee_stoppedspectating", function()
-    if not IsValid( LocalPlayer() ) then return end
-    LocalPlayer():EmitSound( "ui/buttonrollover.wav", 100, 90, 0.8 )
-    LocalPlayer().glee_HasStoppedSpectatingSomething = true
-    RunConsoleCommand( "cl_huntersgleehint_hasstoppedspectating", "1" )
-
-    LocalPlayer().glee_SpectateOrbitDistance = nil
-
-end )
-net.Receive( "glee_starteddriving", function()
-    if not IsValid( LocalPlayer() ) then return end
-    if GAMEMODE:RoundState() == GAMEMODE.ROUND_LIMBO then return end -- hack fix to stop these sounds from overriding roundEndSound
-    LocalPlayer():EmitSound( "weapons/crossbow/bolt_fly4.wav", 100, 150, 1 )
-    LocalPlayer():EmitSound( "ambient/levels/labs/electric_explosion5.wav", 100, 200, 1 )
-    LocalPlayer():EmitSound( "ui/buttonclick.wav", 100, 80, 1 )
-    LocalPlayer().glee_NextControlSomethingHint = CurTime() + 60
-
-    LocalPlayer().glee_SpectateOrbitDistance = nil
-
-end )
-net.Receive( "glee_stoppeddriving", function()
-    if not IsValid( LocalPlayer() ) then return end
-    if GAMEMODE:RoundState() == GAMEMODE.ROUND_LIMBO then return end
-    LocalPlayer():EmitSound( "ui/buttonrollover.wav", 100, 100, 0.8 )
-    LocalPlayer():EmitSound( "weapons/crossbow/bolt_fly4.wav", 100, 50, 0.25 )
-    LocalPlayer():EmitSound( "ambient/levels/labs/electric_explosion5.wav", 100, 150, 0.25 )
-
-end )
-
-local function genericHints()
-    local me = LocalPlayer()
-
-    local wep = me:GetActiveWeapon()
-    if not IsValid( wep ) and IsValid( me.ghostEnt ) then
-        wep = me.ghostEnt
-
-    end
-
-    local wepOwnedByMe = IsValid( wep ) and wep:GetOwner() == me
-
-    local isWepHintPreStack, wepHintPreStack
-    if wep and wep.HintPreStack and wepOwnedByMe then
-        isWepHintPreStack, wepHintPreStack = wep:HintPreStack()
-
-    end
-    if isWepHintPreStack then
-        return true, wepHintPreStack
-    end
-
-    local inBetween = GAMEMODE:RoundState() == GAMEMODE.ROUND_INACTIVE
-    local dead = me:Health() <= 0
-
-    if inBetween then
-        -- hey you should open the shop!!!!
-        if not me.openedHuntersGleeShop and me:GetScore() >= 50 then
-            local clientsMenuKey = input.LookupBinding( "+menu" )
-            if not clientsMenuKey then me.openedHuntersGleeShop = true return end
-
-            clientsMenuKey = input.GetKeyCode( clientsMenuKey )
-            if not clientsMenuKey then me.openedHuntersGleeShop = true return end
-
-            local keyName = input.GetKeyName( clientsMenuKey )
-            local phrase = language.GetPhrase( keyName )
-
-            return true, "You have score to spend, things to buy!\nPress \" " .. string.upper( phrase ) .. " \" to open the shop."
-
-        end
-    -- hey you should mess with the alive people and revive yourself!!!
-    elseif dead then
-        local myScore = me:GetScore()
-
-        local result, hooksHint = hook.Run( "huntersglee_cl_displayhint_predeadhints", me )
-
-        local hasEscaped = me:HasEscaped()
-
-        if result then
-            return result, hooksHint
-
-        elseif not me.openedHuntersGleeShop then
-            local valid, phrase = GAMEMODE:TranslatedBind( "+menu" )
-            if not valid then me.openedHuntersGleeShop = true return end
-
-            return true, "Death is not the end.\nPress \" " .. string.upper( phrase ) .. " \" to open the shop."
-
-        elseif not me.glee_DefinitelyBoughtAnUndeadItem then
-            return true, "Purchase 'sacrifices' to make score while dead!"
-
-        elseif not me.glee_HasSpectatedSomeone then
-            local valid, phrase = GAMEMODE:TranslatedBind( "+attack" )
-            if not valid then me.glee_HasSpectatedSomeone = true return end
-
-            return true, "Press " .. phrase .. " to follow stuff!"
-
-        elseif not me.glee_HasSwitchedSpectateModes and IsValid( me:GetObserverTarget() ) then
-            local valid, phrase = GAMEMODE:TranslatedBind( "+jump" )
-            if not valid then me.glee_HasSwitchedSpectateModes = true return end
-
-            return true, "Press " .. phrase .. " to switch spectate modes!"
-
-        elseif not me.glee_HasStoppedSpectatingSomething and IsValid( me:GetObserverTarget() ) then
-            local valid, phrase = GAMEMODE:TranslatedBind( "+attack2" )
-            if not valid then me.glee_HasStoppedSpectatingSomething = true return end
-
-            return true, "Press " .. phrase .. " to stop following stuff!"
-
-        elseif not me.glee_HasDoneSpectateFlashlight and ( me.flashlightAdditive or 0 ) >= 100 and render.GetLightColor( me:GetPos() ):LengthSqr() < 0.008 then
-            local valid, phrase = GAMEMODE:TranslatedBind( "+impulse 100" )
-            if not valid then me.glee_HasDoneSpectateFlashlight = true return end
-
-            return true, "Press " .. phrase .. " to toggle the spectate flashlight!"
-
-        elseif not hasEscaped and not me.glee_HasBoughtDivineIntervention and myScore >= GAMEMODE:shopItemCost( "resurrection", me ) then
-            return true, "Buy Divine Intervention in the shop to resurrect yourself..."
-
-        elseif hasEscaped and ( me.glee_NextControlSomethingHint or 0 ) < CurTime() then
-            if not me.glee_WasATerminatorOnTheMap then
-                local wasBased
-                for _, ent in ents.Iterator() do
-                    if not ent.isTerminatorHunterBased then continue end
-                    wasBased = true
-                    break
-
-                end
-                if not wasBased then
-                    me.glee_NextControlSomethingHint = CurTime() + 15
-                    return
-
-                else
-                    me.glee_WasATerminatorOnTheMap = true
-
-                end
-            end
-            if IsValid( me:GetDrivingEntity() ) then
-                me.glee_NextControlSomethingHint = CurTime() + 60
-                return
-
-            end
-            local valid, phrase = GAMEMODE:TranslatedBind( "+zoom" )
-            if not valid then
-                valid, phrase = GAMEMODE:TranslatedBind( "toggle_zoom" )
-                if not valid then
-                    return true, "If you had +zoom bound to anything, you could POSESS hunters right now..."
-
-                end
-            end
-            local obsTarg = me:GetObserverTarget()
-            if IsValid( obsTarg ) and obsTarg.isTerminatorHunterBased then
-                return true, "Press " .. phrase .. " to POSESS the hunter you're spectating..."
-
-            elseif not IsValid( obsTarg ) or not obsTarg.isTerminatorHunterBased then
-                return true, "Spectate a hunter!\nYou'll be able to posess them..."
-
-            end
-        end
-
-        -- dont spam flicker the flashlight hint
-        if not me.glee_HasDoneSpectateFlashlight and render.GetLightColor( me:GetPos() ):LengthSqr() < 0.005 then
-            me.flashlightAdditive = ( me.flashlightAdditive or 0 ) + 1
-
-        else
-            me.flashlightAdditive = 0
-
-        end
-
-        result, hooksHint = hook.Run( "huntersglee_cl_displayhint_postdeadhints", me )
-        if result then
-            return result, hooksHint
-
-        end
-    end
-    local isWepHintPostStack, wepHintPostStack
-    if wep and wep.HintPostStack and wepOwnedByMe then
-        isWepHintPostStack, wepHintPostStack = wep:HintPostStack()
-
-    end
-    if isWepHintPostStack then
-        return true, wepHintPostStack
-
-    end
-    local result, hooksHint = hook.Run( "huntersglee_cl_displayhint_poststack", me )
-    if result then
-        return result, hooksHint
-
-    end
-end
-
--- click, click, click, read this text!
-local openTheDamnShopSound = Sound( "buttons/lightswitch2.wav" )
-local openTheDamnShopState = nil
-
-local function paintTheDamnHint( _, theHint, cur )
-    if not GAMEMODE:CanShowDefaultHud() then return end
-    if not doHud:GetBool() then return end
-
-    local textColor = Color( 255, 255, 255 )
-
-    if ( cur % 8 ) > 7.75 then
-        textColor = Color( 100, 100, 100 )
-        if not openTheDamnShopState then
-            openTheDamnShopState = true
-            LocalPlayer():EmitSound( openTheDamnShopSound, 60, 80, 0.8 )
-
-        end
-    else
-        openTheDamnShopState = nil
-
-    end
-
-    surface.drawShadowedTextBetter( theHint, "termhuntShopHintFont", textColor, paddingFromEdge, paddingFromEdge + hintPadding, false )
-
-end
-
 -- THE BIG ONE!
 -- Calls everything else above
 
 local lastDisplayWinners = false
-local nextHintCheck = 0
-local needsHints
-local hint
 
-function HUDPaint()
+function doGleeHud()
     local ply = LocalPlayer()
     local cur = UnPredictedCurTime()
     local displayWinners = GetGlobalBool( "glee_DisplayWinners", false )
 
     if displayWinners then
-        paintOtherPlayers( ply, cur )
+        hook.Run( "glee_cl_paintplayers_stop", ply, cur )
         hook.Run( "glee_paintWinScreen", ply, cur )
 
     else
@@ -887,26 +207,15 @@ function HUDPaint()
             lastDisplayWinners = displayWinners
             return
         end
-        paintRoundInfo( ply, cur )
-        paintMyTotalScore( ply, cur )
-        paintMyTotalSkulls( ply, cur )
-
-        if nextHintCheck < cur then -- only check ~10 times a second
-            needsHints, hint = genericHints()
-            nextHintCheck = cur + math.Rand( 0.1, 0.09 )
-
-        end
-        if needsHints then
-            paintTheDamnHint( ply, hint, cur )
-
-        end
+        hook.Run( "glee_cl_topleftinfo", ply, cur )
 
         local spectating = ply:Health() <= 0
 
         if spectating == true then
-            paintOtherPlayers( ply, cur )
+            hook.Run( "glee_cl_paintplayers", ply, cur )
 
         else
+            hook.Run( "glee_cl_paintplayers_whilealive", ply, cur )
             hook.Run( "glee_cl_aliveplyhud", ply, cur )
 
         end
@@ -914,7 +223,20 @@ function HUDPaint()
     lastDisplayWinners = displayWinners
 
 end
-hook.Add( "HUDPaint", "termhunt_guicaller", HUDPaint )
+
+-- override HudPaint to remove HUDDrawTargetID hook run
+function GM:HUDPaint()
+    doGleeHud()
+    hook.Run( "HUDDrawPickupHistory" )
+    hook.Run( "DrawDeathNotice", 0.85, 0.04 )
+
+end
+
+-- return in it for any addons that check it
+hook.Add( "HUDDrawTargetID", "glee_no_targetid", function()
+    return true
+
+end )
 
 
 -- manage heartbeat sounds

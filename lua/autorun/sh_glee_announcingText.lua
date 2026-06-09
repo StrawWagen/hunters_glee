@@ -49,7 +49,7 @@ end
 
 if not CLIENT then return end
 
-include( "autorun/client/cl_gleescalingfunc.lua" )
+include( "autorun/client/cl_gleehud.lua" )
 
 local function defineFont()
     surface.CreateFont( "huntersglee_announcingtext", {

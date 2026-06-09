@@ -134,18 +134,25 @@ function SWEP:DumpCharge()
         end
 
         dmginfo:SetDamageType( bit.bor( DMG_AIRBOAT, DMG_BLAST ) )
-        local class = trace.Entity:GetClass()
-        if chargeLevel == max_Charge and not instaKillBlacklist[class] then
-            trace.Entity:SetHealth( 0 )
-            trace.Entity.glee_LastHealthSetReason = "glee_taucannon_overcharge_instantkill"
-
-        end
         local effectdata = EffectData()
         for _ = 0, max_Charge, chargeLevel * max_Charge do
             effectdata:SetNormal( trace.HitNormal )
             effectdata:SetOrigin( trace.HitPos )
             util.Effect( "StunstickImpact", effectdata )
 
+        end
+
+        if not SERVER then return end
+
+        local class = trace.Entity:GetClass()
+        if chargeLevel == max_Charge then
+            terminator_Extras.DoPFXAtPos( "glee_taucannon_explosion", trace.HitPos )
+
+            if not instaKillBlacklist[class] then
+                trace.Entity:SetHealth( 0 )
+                trace.Entity.glee_LastHealthSetReason = "glee_taucannon_overcharge_instantkill"
+
+            end
         end
     end
 

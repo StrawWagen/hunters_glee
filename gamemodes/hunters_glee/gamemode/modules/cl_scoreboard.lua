@@ -111,7 +111,8 @@ local PLY_INFOS = { -- From right to left on the scoreboard.
 local GAMEMODE_TITLE_HEIGHT = HEADER_HEIGHT * 0.55
 
 local function setupFonts()
-    local theFont = GAMEMODE and GAMEMODE.GLEE_FONT or "Arial"
+    local GM = GM or GAMEMODE
+    local theFont = GM.GLEE_FONT or "Arial"
     surface.CreateFont( "ScoreboardServerName", {
         font      = theFont,
         size      = glee_sizeScaled( nil, 30 ),
@@ -577,14 +578,22 @@ local SCORE_BOARD = {
 
         self:InvalidateLayout( true ) -- Update header width from docking
 
+        -- All four labels on one centered row. Widths are dynamic (sized to content in Think).
+        -- Layout: [map name] [map mul]  [spawnset name] [spawnset mul]
+        local infoLabelH = glee_sizeScaled( nil, 20 )
+        self._infoRowY   = self.Header:GetTall() - infoLabelH - headerPadding
+        self._infoGapX   = glee_sizeScaled( 6 )  -- gap between a name and its multiplier
+        self._groupGapX  = glee_sizeScaled( 20 ) -- gap between the map group and spawnset group
+
+
         self.MapLabel = self.Header:Add( "DLabel" )
-        self.MapLabel:SetSize( glee_sizeScaled( 200, 20 ) ) -- v Manual dock since auto would get misaligned by the sizes of left/right headers
-        self.MapLabel:SetPos( self.Header:GetWide() / 2 - self.MapLabel:GetWide() / 2, self.Header:GetTall() - self.MapLabel:GetTall() - headerPadding )
+        self.MapLabel:SetHeight( infoLabelH )
         self.MapLabel:SetPaintBackground( false )
-        self.MapLabel:SetContentAlignment( 2 )
+        self.MapLabel:SetContentAlignment( 4 )
         self.MapLabel:SetFont( "ScoreboardMapName" )
         self.MapLabel:SetTextColor( COLOR_TEXT )
         self.MapLabel:SetText( game.GetMap() )
+        self.MapLabel:SizeToContents()
         self.MapLabel:SetMouseInputEnabled( true )
         self.MapLabel:SetTooltip( "" )
         self.MapLabel:SetTooltipDelay( 0 )
@@ -592,6 +601,37 @@ local SCORE_BOARD = {
             copyTextAndNotify( game.GetMap() )
 
         end
+
+        self.MapMultiplierLabel = self.Header:Add( "DLabel" )
+        self.MapMultiplierLabel:SetHeight( infoLabelH )
+        self.MapMultiplierLabel:SetPaintBackground( false )
+        self.MapMultiplierLabel:SetContentAlignment( 4 )
+        self.MapMultiplierLabel:SetFont( "ScoreboardMapName" )
+        self.MapMultiplierLabel:SetTextColor( COLOR_TEXT )
+        self.MapMultiplierLabel:SetText( "" )
+        self.MapMultiplierLabel:SetMouseInputEnabled( true )
+        self.MapMultiplierLabel:SetTooltipDelay( 0 )
+
+        self.SpawnSetLabel = self.Header:Add( "DLabel" )
+        self.SpawnSetLabel:SetHeight( infoLabelH )
+        self.SpawnSetLabel:SetPaintBackground( false )
+        self.SpawnSetLabel:SetContentAlignment( 4 )
+        self.SpawnSetLabel:SetFont( "ScoreboardMapName" )
+        self.SpawnSetLabel:SetTextColor( COLOR_TEXT )
+        self.SpawnSetLabel:SetText( "" )
+        self.SpawnSetLabel:SetMouseInputEnabled( true )
+        self.SpawnSetLabel:SetTooltipDelay( 0 )
+
+        self.SpawnSetMultiplierLabel = self.Header:Add( "DLabel" )
+        self.SpawnSetMultiplierLabel:SetHeight( infoLabelH )
+        self.SpawnSetMultiplierLabel:SetPaintBackground( false )
+        self.SpawnSetMultiplierLabel:SetContentAlignment( 4 )
+        self.SpawnSetMultiplierLabel:SetFont( "ScoreboardMapName" )
+        self.SpawnSetMultiplierLabel:SetTextColor( COLOR_TEXT )
+        self.SpawnSetMultiplierLabel:SetText( "" )
+        self.SpawnSetMultiplierLabel:SetMouseInputEnabled( true )
+        self.SpawnSetMultiplierLabel:SetTooltipDelay( 0 )
+
 
         local discordSize = glee_sizeScaled( nil, 32 )
         self.Header:InvalidateLayout( true )
@@ -837,6 +877,152 @@ local SCORE_BOARD = {
         self.MapLabel:SetTooltip( tooltip )
         self.DiscordButton:SetVisible( discordConvar:GetString() ~= "" )
 
+        -- Escape multiplier labels
+        local currentMap      = game.GetMap()
+        local currentSpawnset = GetGlobalString( "GLEE_SpawnSetName", "" )
+
+        local mulRequest = { { isSpawnset = false, key = currentMap } }
+        if currentSpawnset ~= "" then
+            mulRequest[#mulRequest + 1] = { isSpawnset = true, key = currentSpawnset }
+
+        end
+        GAMEMODE:RequestEscapeMultipliers( mulRequest )
+
+        local mapMul,       mapEscaped,         mapRemained         = GAMEMODE:GetMapsEscapeMultiplier( currentMap )
+        local spawnsetMul,  spawnsetEscaped,    spawnsetRemained    = GAMEMODE:GetSpawnsetsEscapeMultiplier( currentSpawnset )
+
+        local mapEscapedYap
+        if mapEscaped <= 0 then
+            mapEscapedYap = "Nobody has escaped."
+
+        elseif mapRemained <= 1 then
+            mapEscapedYap = "One soul has escaped."
+
+        else
+            mapEscapedYap = string.format( "%d souls have escaped.", mapEscaped )
+
+        end
+
+        local mapRemainedYap
+        if mapRemained <= 0 then
+            mapRemainedYap = "This map has claimed no souls."
+
+        elseif mapRemained <= 1 then
+            mapRemainedYap = "Yet it has claimed one soul."
+
+        else
+            mapRemainedYap = string.format( "%d souls have perished.", mapRemained )
+
+        end
+
+        local mapMulTip = table.concat( {
+            "Escape reward multiplier for this map.\n",
+            "Higher = players escape here less often, so escaping is worth more.\n",
+            mapEscapedYap .. "\n",
+            mapRemainedYap,
+        } )
+        self.MapMultiplierLabel:SetTooltip( mapMulTip )
+
+        local setEscapedYap
+        if spawnsetEscaped <= 0 then
+            setEscapedYap = "Nobody has escaped this mode."
+
+        elseif spawnsetRemained <= 1 then
+            setEscapedYap = "One soul has escaped this mode."
+
+        else
+            setEscapedYap = string.format( "%d souls have escaped this mode.", spawnsetEscaped )
+
+        end
+
+        local setRemainedYap
+        if spawnsetRemained <= 0 then
+            setRemainedYap = "This mode has claimed no souls."
+
+        elseif spawnsetRemained <= 1 then
+            setRemainedYap = "One soul has been claimed by this mode."
+
+        else
+            setRemainedYap = string.format( "%d souls have perished to this mode.", spawnsetRemained )
+
+        end
+
+        local spawnsetMulTip = table.concat( {
+            "Escape reward multiplier for this mode.\n",
+            "Higher = players escape with this mode less often, so escaping is worth more.\n",
+            setEscapedYap .. "\n",
+            setRemainedYap,
+        } )
+        self.SpawnSetMultiplierLabel:SetTooltip( spawnsetMulTip )
+
+        local mapMulText = math.Round( mapMul, 2 ) .. "x"
+        self.MapMultiplierLabel:SetText( mapMulText )
+
+        local spawnsetPrettyName  = GetGlobalString( "GLEE_SpawnSetPrettyName", "" )
+        local spawnsetDescription = GAMEMODE:GetSpawnSetDescription()
+        local spawnsetTooltip     = spawnsetDescription .. "\nLeft click to copy identifier"
+        self.SpawnSetLabel:SetText( spawnsetPrettyName )
+        self.SpawnSetLabel:SetTooltip( spawnsetTooltip )
+        self.SpawnSetLabel.DoClick = function()
+            copyTextAndNotify( currentSpawnset )
+
+        end
+
+        local spawnsetMulText = math.Round( spawnsetMul, 2 ) .. "x"
+        self.SpawnSetMultiplierLabel:SetText( spawnsetMulText )
+
+        -- Size each label to its text, then reposition the group centered in the header.
+        self.MapLabel:SizeToContents()
+        self.MapMultiplierLabel:SizeToContents()
+        self.SpawnSetLabel:SizeToContents()
+        self.SpawnSetMultiplierLabel:SizeToContents()
+
+        local infoGapX  = self._infoGapX
+        local groupGapX = self._groupGapX
+        local infoRowY  = self._infoRowY
+
+        local mapMulW    = 0
+        if mapMul ~= nil then
+            mapMulW = infoGapX + self.MapMultiplierLabel:GetWide()
+        end
+        local mapGroupW = self.MapLabel:GetWide() + mapMulW
+
+        local spawnsetMulW = 0
+        if spawnsetMul ~= nil then
+            spawnsetMulW = infoGapX + self.SpawnSetMultiplierLabel:GetWide()
+        end
+        local spawnsetGroupW = self.SpawnSetLabel:GetWide() + spawnsetMulW
+
+        local hasBothGroups   = spawnsetGroupW > 0
+        local spawnsetOffsetW = 0
+        if hasBothGroups then
+            spawnsetOffsetW = groupGapX + spawnsetGroupW
+        end
+        local groupTotalW = mapGroupW + spawnsetOffsetW
+
+        local curX = self.Header:GetWide() / 2 - groupTotalW / 2
+
+        self.MapLabel:SetPos( curX, infoRowY )
+        curX = curX + self.MapLabel:GetWide()
+
+        if mapMul ~= nil then
+            curX = curX + infoGapX
+            self.MapMultiplierLabel:SetPos( curX, infoRowY )
+            curX = curX + self.MapMultiplierLabel:GetWide()
+
+        end
+
+        if hasBothGroups then
+            curX = curX + groupGapX
+            self.SpawnSetLabel:SetPos( curX, infoRowY )
+            curX = curX + self.SpawnSetLabel:GetWide()
+
+            if spawnsetMul ~= nil then
+                curX = curX + infoGapX
+                self.SpawnSetMultiplierLabel:SetPos( curX, infoRowY )
+
+            end
+        end
     end
 }
 

@@ -20,6 +20,8 @@ ENT.MinSkullCount = 5
 ENT.MaxSkullCount = 10
 
 ENT.weapCrateScoreMultiplier = 2
+ENT.weapCrateNearbyClass = "termhunt_skull_pickup"
+ENT.weapCrateNearbyBlameReason = "Other Skulls"
 
 
 if CLIENT then

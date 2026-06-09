@@ -402,7 +402,7 @@ if SERVER then
 
             end )
         end,
-        function( self, owner ) -- teardown func
+        function( _, owner ) -- teardown func
             owner:DoSpeedModifier( "mechalegs", nil )
 
         end
@@ -489,7 +489,7 @@ if SERVER then
 
             self:Chameleonize()
 
-            self:Timer( "manageChamelonize",0.1, 0, function()
+            self:Timer( "manageChamelonize", 0.1, 0, function()
                 if owner:Health() <= 0 then return end
                 if owner:GetColor().a == 20 then return end
 

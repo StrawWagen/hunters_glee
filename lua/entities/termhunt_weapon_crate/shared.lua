@@ -34,6 +34,8 @@ if not SERVER then return end
 local GM = GAMEMODE
 
 ENT.weapCrateScoreMultiplier = 1
+ENT.weapCrateNearbyClass = "item_item_crate"
+ENT.weapCrateNearbyBlameReason = "Other crates"
 
 local MEMORY_BREAKABLE = terminator_Extras.botMemoryTypes.MEMORY_BREAKABLE
 local maxScoreDist = 3000
@@ -43,14 +45,17 @@ local maxInProximity = 2
 
 function ENT:UpdateGivenScore()
     local plys = player.GetAll()
-    local distToClosestPly = maxScoreDist^2
     local myPos = self:GetPos()
+    local distToClosestPly = maxScoreDist^2
+    local nearestPly
 
     for _, currentPly in ipairs( plys ) do
         if currentPly:Health() <= 0 then continue end
         local distToCurrentPlySqr = myPos:DistToSqr( currentPly:GetPos() )
         if distToCurrentPlySqr < distToClosestPly then
             distToClosestPly = distToCurrentPlySqr
+            nearestPly = currentPly
+
         end
     end
 
@@ -58,7 +63,7 @@ function ENT:UpdateGivenScore()
     local tooCloseCount = 0
     local punishmentCount = 0
 
-    for _, currentCrate in ipairs( ents.FindByClass( "item_item_crate" ) ) do
+    for _, currentCrate in ipairs( ents.FindByClass( self.weapCrateNearbyClass ) ) do
         local distToCurrentCrateSqr = myPos:DistToSqr( currentCrate:GetPos() )
         if distToCurrentCrateSqr < closestCrateDist then
             tooCloseCount = tooCloseCount + 1
@@ -66,6 +71,10 @@ function ENT:UpdateGivenScore()
             if tooCloseCount < maxInProximity then continue end
             punishmentCount = tooCloseCount
             closestCrateDist = distToCurrentCrateSqr
+
+            local overCount = tooCloseCount - maxInProximity
+            self:AddBlameReason( currentCrate, -25 / ( overCount + 1 ), self.weapCrateNearbyBlameReason )
+
         end
     end
 
@@ -92,6 +101,8 @@ function ENT:UpdateGivenScore()
     if distToClosestPlyLinear < tooCloseToPlayer then
         scoreGiven = scoreGiven * 0.25
         scoreGiven = scoreGiven + -25
+        self:AddBlameReason( nearestPly, -25, "Player" )
+
     end
 
     scoreGiven = scoreGiven * self.weapCrateScoreMultiplier

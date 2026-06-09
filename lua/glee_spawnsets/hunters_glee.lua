@@ -41,7 +41,7 @@ local defaultSpawnSet = {
     name = "hunters_glee", -- unique name
     prettyName = "Hunter's Glee",
     description = "The default Hunter's Glee experience.",
-    difficultyPerMin = "default", -- difficulty per minute
+    difficultyPerMin = 0.05, -- very little difficulty per minute, let wave clears primarily bump difficulty 
     waveInterval = "default", -- time between spawn waves
     diffBumpWhenWaveKilled = "default", -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
     startingBudget = "default", -- so budget isnt 0

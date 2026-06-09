@@ -139,3 +139,18 @@
 
 -- FIND lore for glee
 -- why are we here, where are we going
+
+
+-- pull players back into the map when they aren't moving outside the bounds of the map
+
+-- impliment taucannon fullcharge effect
+
+-- sight jacking item?
+
+-- act command while driving npcs
+
+-- ATM
+-- buy in shop, costs 1000 score
+-- crashes thru ceiling, headcrab cannister style
+-- or just teleports
+-- half of the 10% deposit cut gets stored in the atm, for caller to take out

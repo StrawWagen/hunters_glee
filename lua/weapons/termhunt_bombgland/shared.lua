@@ -216,7 +216,14 @@ function SWEP:BoomUser()
 
     local worldSpaceC = self:GetOwner():WorldSpaceCenter()
 
-    for _ = 1, 4 + ( self:GetBombs() * 3 ) do
+    local bombCount = self:GetBombs()
+
+    if bombCount > self.BombsPerBigBomb then
+        terminator_Extras.DoPFXAtPos( "glee_gland_explosion_big", worldSpaceC )
+
+    end
+
+    for _ = 1, 4 + ( bombCount * 3 ) do
         self:GetOwner():EmitSound( "npc/antlion_grub/squashed.wav", 100, math.random( 50, 150 ), 1, CHAN_STATIC )
 
     end

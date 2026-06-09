@@ -16,7 +16,7 @@ ENT.HullCheckSize = Vector( 47, 47, 19 )
 ENT.PosOffset = Vector( 0, 0, -19 )
 ENT.OverrideOffsetFromFloor = 100
 
-ENT.JunkPerDrop = 6
+ENT.JunkPerDrop = 8
 ENT.NearbyRadius = 500
 ENT.TooManyNearbyObjCount = 10 -- if above this count of nearby stuff, no longer profitable
 ENT.CleanAreaScore = 100 -- score given when there are 0 nearby objects, further multiplied by nook score
@@ -152,6 +152,13 @@ ENT.JunkModels = {
     "models/props_junk/vent001.mdl",
 }
 
+if GAMEMODE.IsReallyHuntersGlee then
+    for _, mdl in ipairs( ENT.JunkModels ) do
+        util.PrecacheModel( mdl )
+
+    end
+end
+
 ENT.RareJunkChance = 2
 
 ENT.RareJunkModels = {
@@ -184,6 +191,8 @@ function ENT:UpdateGivenScore()
     terminator_Extras.tableAdd( nearby, nearbyFloorPos )
 
     local nearbyCount = 0
+    local nearestJunk = nil
+    local closestDist = math.huge
 
     for _, ent in ipairs( nearby ) do
         if not IsValid( ent ) then continue end
@@ -193,6 +202,16 @@ function ENT:UpdateGivenScore()
         local mass = ent:GetPhysicsObject():GetMass()
         if mass <= 5 then continue end
         nearbyCount = nearbyCount + 1
+
+        local dist = myPos:DistToSqr( ent:GetPos() )
+        if not nearestJunk or ( dist < closestDist ) then
+            closestDist = dist
+            nearestJunk = ent
+
+        end
+    end
+    if nearestJunk then
+        self:AddBlameReason( nearestJunk, -25 + -nearbyCount, "Other Junk" )
 
     end
 

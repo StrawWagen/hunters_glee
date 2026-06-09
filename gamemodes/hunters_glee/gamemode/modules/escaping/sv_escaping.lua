@@ -130,7 +130,8 @@ function GM:escapifyVehicle( vehicle )
                 huntersGlee_AnnounceDramatic( riders, 1000, textDisplayDuration, "You've escaped!\nBut who did you leave behind?" )
 
                 local sOrNoS = riderCount == 1 and "" or "s"
-                huntersGlee_AnnounceDramatic( everyoneElse, 50, textDisplayDuration, riderCount .. " soul" .. sOrNoS .. " have escaped the hunt..." )
+                local eOrS = escapablePlyCount == 1 and "s" or "e"
+                huntersGlee_AnnounceDramatic( everyoneElse, 50, textDisplayDuration, riderCount .. " soul" .. sOrNoS .. " hav" .. eOrS .. " escaped the hunt..." )
 
             else
                 huntersGlee_AnnounceDramatic( riders, 1000, textDisplayDuration, "You've escaped!\nYou can finally leave this all behind..." )
@@ -226,15 +227,21 @@ end )
 
 -- reward for escaping
 local flatEscapingReward = 200
-local rewardEveryoneEscaped = 800
-local rewardPerSkull = 100
-local perSkullEveryoneEscaped = 100
+local rewardEveryoneEscaped = 400 -- additional if everyone escaped
+local rewardPerSkull = 50
+local perSkullEveryoneEscaped = 100 -- additional per skull if everyone escaped
 
-hook.Add( "huntersglee_player_pre_reset", "glee_escaping_rewards", function( ply )
-    if not ply:HasEscaped() then return end
+function GM:GiveEscapeRewardTo( ply )
+    local setName = GAMEMODE:GetSpawnSet()
 
-    local escapeCount = ply:GetEscapeCount()
-    ply:SetNWInt( "glee_escape_count", escapeCount + 1 )
+    local mapsEscapeMultiplier, mapsEscCount, mapsRemCount = GAMEMODE:GetMapsEscapeMultiplier( game.GetMap() )
+    local spawnsetsEscapeMultiplier, spawnsetsEscCount, spawnsetsRemCount = GAMEMODE:GetSpawnsetsEscapeMultiplier( setName )
+
+    local theMultiplier = mapsEscapeMultiplier * spawnsetsEscapeMultiplier
+
+    local mapHasNeverEscaped = mapsEscCount <= 1
+    local spawnsetHasNeverEscaped = spawnsetsEscCount <= 1
+
 
     local everyoneEscaped = GAMEMODE.roundExtraData.everyoneEscaped
 
@@ -243,8 +250,54 @@ hook.Add( "huntersglee_player_pre_reset", "glee_escaping_rewards", function( ply
         baseReward = baseReward + rewardEveryoneEscaped
 
     end
+    baseReward = baseReward * theMultiplier
+
+
+    local skullReward = rewardPerSkull
+    if everyoneEscaped then
+        skullReward = skullReward + perSkullEveryoneEscaped
+
+    end
+    skullReward = skullReward * theMultiplier
+
 
     timer.Simple( 2, function()
+        if not IsValid( ply ) then return end
+
+        if mapHasNeverEscaped or spawnsetHasNeverEscaped then
+            local neverBoth = mapHasNeverEscaped and spawnsetHasNeverEscaped
+            local subject   = neverBoth and "This map and spawnset have" or mapHasNeverEscaped and "This map has" or "This spawnset has"
+            huntersGlee_AnnounceDramatic( { ply }, 1001, 5, subject .. " never been escaped before!" )
+            return
+
+        end
+
+        local difficulty
+        if theMultiplier > 4 then
+            difficulty = "impossible..."
+
+        elseif theMultiplier > 3 then
+            difficulty = "a nightmare"
+
+        elseif theMultiplier > 2 then
+            difficulty = "horrible"
+
+        elseif theMultiplier > 1 then
+            difficulty = "hard"
+
+        elseif theMultiplier >= 0.5 then
+            difficulty = "easy"
+
+        else
+            difficulty = "trivial"
+
+        end
+
+        huntersGlee_AnnounceDramatic( { ply }, 999, 2, "Escaping here was " .. difficulty .. "..." )
+
+    end )
+
+    timer.Simple( 4, function()
         if not IsValid( ply ) then return end
         local msg = "+" .. baseReward .. " Score..."
         ply:GivePlayerScore( baseReward )
@@ -252,12 +305,13 @@ hook.Add( "huntersglee_player_pre_reset", "glee_escaping_rewards", function( ply
         huntersGlee_AnnounceDramatic( { ply }, 1000, 4, "You escaped!\n" .. msg )
 
     end )
+
     local timerName = "glee_escaping_skullrewardgobbler_" .. ply:EntIndex()
     local totalSkulls = ply:GetSkulls()
     local totalSkullsToReward = totalSkulls
     local ranCount = 0
     local rewardHinted
-    timer.Create( timerName, 6, 0, function()
+    timer.Create( timerName, 8, 0, function()
         if not IsValid( ply ) then
             timer.Remove( timerName )
             return
@@ -282,7 +336,7 @@ hook.Add( "huntersglee_player_pre_reset", "glee_escaping_rewards", function( ply
         local kachingPitch = 80
         local add = -( ranCount / 10 )
         kachingPitch = kachingPitch + add
-        ply:EmitSound( "209578_zott820_cash-register-purchase.wav", 75, kachingPitch, 1, CHAN_STATIC, SND_NOFLAGS, 0, filterOnlyThem )
+        ply:EmitSound( "hunters_glee/209578_zott820_cash-register-purchase.wav", 75, kachingPitch, 1, CHAN_STATIC, SND_NOFLAGS, 0, filterOnlyThem )
 
         local skullPitch = math.random( 75, 85 ) + -( ranCount / 5 )
         local skullSound = "physics/cardboard/cardboard_cup_impact_hard" .. math.random( 1, 3 ) .. ".wav"
@@ -292,13 +346,8 @@ hook.Add( "huntersglee_player_pre_reset", "glee_escaping_rewards", function( ply
         local newDelay = 1 / ranCount
         timer.Adjust( timerName, newDelay, 0, nil )
 
-        local skullReward = rewardPerSkull
-        if everyoneEscaped then
-            skullReward = skullReward + perSkullEveryoneEscaped
-
-        end
         ply:GivePlayerScore( skullReward )
         totalSkullsToReward = totalSkullsToReward - 1
 
     end )
-end )
+end

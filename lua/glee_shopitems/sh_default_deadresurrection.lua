@@ -536,21 +536,34 @@ if SERVER then
     GAMEMODE:RegisterStatusEffect( "divine_chosen",
         function( self, owner ) -- setup func
             local HAS_ARRIVED = GetGlobalBool( "chosenhasarrived", false )
+            local PANICEVERYONE
+
             if not HAS_ARRIVED then
                 hook.Run( "huntersglee_grigori_arrival", owner )
-                huntersGlee_Announce( player.GetAll(), 500, 15, "The ultimate sacrifice has been made.\nBEWARE OF " .. string.upper( owner:Nick() ) )
+                huntersGlee_AnnounceDramatic( player.GetAll(), 500, 15, "The ultimate sacrifice has been made.\nBEWARE OF " .. string.upper( owner:Nick() ) )
+                SetGlobalBool( "chosenhasarrived", true )
+                GAMEMODE.roundExtraData.grigoriWasPurchased = true
+                PANICEVERYONE = true
 
             elseif not GetGlobalBool( "twochosenshavearrived", false ) then
                 SetGlobalBool( "twochosenshavearrived", true )
                 hook.Run( "huntersglee_second_grigori_arrival", owner )
-                huntersGlee_Announce( player.GetAll(), 500, 8, "Everything is wrong.\nBEWARE OF " .. string.upper( owner:Nick() ) )
+                huntersGlee_AnnounceDramatic( player.GetAll(), 500, 8, "Everything is wrong.\nBEWARE OF " .. string.upper( owner:Nick() ) )
+                PANICEVERYONE = true
 
             else
-                huntersGlee_Announce( player.GetAll(), 500, 8, "BEWARE OF " .. string.upper( owner:Nick() ) )
+                huntersGlee_AnnounceDramatic( player.GetAll(), 500, 8, "BEWARE OF " .. string.upper( owner:Nick() ) )
+                PANICEVERYONE = true
 
             end
-            SetGlobalBool( "chosenhasarrived", true )
-            GAMEMODE.roundExtraData.grigoriWasPurchased = true
+            if PANICEVERYONE then
+                for _, ply in ipairs( player.GetAll() ) do
+                    if ply:HasStatusEffect( "divine_chosen" ) then continue end
+
+                    GAMEMODE:GivePanic( ply, 100 )
+
+                end
+            end
 
             -- weapon maintenance timer
             self:Timer( "maintainWeapon", 0.1, 0, function()

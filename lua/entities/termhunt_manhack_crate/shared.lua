@@ -40,13 +40,16 @@ ENT.FarCost = 0
 function ENT:UpdateGivenScore()
     local plys = player.GetAll()
     local smallestDist = math.huge
-    local scoreGiven = nil
+    local nearestPly
+    local scoreGiven
 
     for _, currentPly in ipairs( plys ) do
         if currentPly:Health() <= 0 then continue end
         local distToCurrentPlySqr = self:GetPos():DistToSqr( currentPly:GetPos() )
         if distToCurrentPlySqr < smallestDist then
             smallestDist = distToCurrentPlySqr
+            nearestPly = currentPly
+
         end
     end
 
@@ -54,9 +57,11 @@ function ENT:UpdateGivenScore()
 
     if smallestDistLinear < 400 then
         scoreGiven = self.SuperCloseCost
+        self:AddBlameReason( nearestPly, self.SuperCloseCost, "Player" )
 
     elseif smallestDistLinear < 1000 then
         scoreGiven = self.CloseCost
+        self:AddBlameReason( nearestPly, self.CloseCost, "Player" )
 
     else
         scoreGiven = self.FarCost

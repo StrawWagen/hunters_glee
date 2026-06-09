@@ -149,20 +149,23 @@ end
 if not SERVER then return end
 
 
-local tooCloseToPlayer = 250
-local sortaCloseToPlayers = 750
-local barnaclePunishmentDist = 400
+local tooCloseToPlayer = 175
+local sortaCloseToPlayers = 500
+local barnaclePunishmentDist = 300
 
 function ENT:UpdateGivenScore()
     local plys = player.GetAll()
 
     local smallestDist = 16000^2
+    local worstPly = nil
 
     for _, currentPly in ipairs( plys ) do
         if currentPly:Health() <= 0 then continue end
         local distToCurrentPlySqr = self:GetPos():DistToSqr( currentPly:GetPos() )
         if distToCurrentPlySqr < smallestDist then
             smallestDist = distToCurrentPlySqr
+            worstPly = currentPly
+
         end
     end
 
@@ -178,6 +181,8 @@ function ENT:UpdateGivenScore()
             if tooCloseCount < 2 then continue end
             punishmentCount = tooCloseCount
             smallestPunishmentDist = distToCurrentBarnacleSqr
+            self:AddBlameReason( currentBarnacle, -punishmentCount * 3, "Overpopulation" )
+
         end
     end
 
@@ -194,10 +199,12 @@ function ENT:UpdateGivenScore()
     if smallestDistLinear < tooCloseToPlayer then
         playerPenalty = -125
         scoreGiven = scoreGiven + playerPenalty
+        self:AddBlameReason( worstPly, playerPenalty, "Player" )
 
     elseif smallestDistLinear < sortaCloseToPlayers then
         playerPenalty = -40
         scoreGiven = scoreGiven + playerPenalty
+        self:AddBlameReason( worstPly, playerPenalty, "Player" )
 
     end
 

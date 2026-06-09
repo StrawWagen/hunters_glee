@@ -15,6 +15,7 @@ hook.Add( "PlayerDisconnected", "glee_preservedeath", function( leaver )
     leavers[leaver:SteamID()] = {
         score = leaver:GetScore(),
         alive = leaver:Alive(),
+        escaped = leaver:HasEscaped(),
     }
 
 end )
@@ -36,7 +37,13 @@ hook.Add( "PlayerInitialSpawn", "glee_rejoin_dead", function( ply )
 
     end
 
-    if not leftData.alive then
+    if leftData.escaped then
+        timer.Simple( 0, function()
+            if not IsValid( ply ) then return end
+            GAMEMODE:escapifyPlayer( ply )
+
+        end )
+    elseif not leftData.alive then
         timer.Simple( 0, function()
             if not IsValid( ply ) then return end
             ply:TakeDamage( math.huge, game.GetWorld(), game.GetWorld() )

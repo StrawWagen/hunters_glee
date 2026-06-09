@@ -95,7 +95,7 @@ local barrelPunishmentDist = 1250
 local nearbyCheckDist = 150
 
 local tooCloseToPlySqr = 200^2
-local tooFarFromPlySqr = 1500^2
+local tooFarFromPlySqr = 2500^2
 
 function ENT:UpdateGivenScore()
     local smallestPunishmentDist = barrelPunishmentDist^2
@@ -114,15 +114,17 @@ function ENT:UpdateGivenScore()
     end
 
     if termhunt_barrels_spawned then
+        local tooManyClose = 6
         for _, currentBarrel in ipairs( termhunt_barrels_spawned ) do
             if not IsValid( currentBarrel ) then continue end -- table is validated elsewhere
             local distToCurrentBarrelSqr = myPos:DistToSqr( currentBarrel:GetPos() )
 
             if distToCurrentBarrelSqr < smallestPunishmentDist then
                 tooCloseCount = tooCloseCount + 1
-                if tooCloseCount < 6 then continue end -- only start costing extra if there's 6 or more barrels nearby
+                if tooCloseCount < tooManyClose then continue end -- only start costing extra if there's 6 or more barrels nearby
                 punishmentCount = tooCloseCount
                 smallestPunishmentDist = distToCurrentBarrelSqr
+                self:AddBlameReason( currentBarrel, -100 / tooCloseCount, "Too many Barrels" )
 
             end
         end
@@ -142,6 +144,7 @@ function ENT:UpdateGivenScore()
         local class = ent:GetClass()
         if class == "termhunt_bear_trap" then
             nearbyEntPunishment = nearbyEntPunishment + 150
+            self:AddBlameReason( ent, -80, "Bear Trap" )
 
         end
     end
@@ -154,20 +157,23 @@ function ENT:UpdateGivenScore()
     end
 
     if IsValid( nearestPly ) and ( nearestPlyDistSqr < tooCloseToPlySqr or nearestPlyDistSqr > tooFarFromPlySqr ) then
-        local proxPenalty = 40
+        local proxPenalty = 30
         punishmentGiven = punishmentGiven + proxPenalty
         self:SetGivenScoreAlt( -proxPenalty )
 
     else
         self:SetGivenScoreAlt( 0 )
+        if IsValid( nearestPly ) then
+            self:AddBlameReason( nearestPly, 50, "Player Proximity" )
 
+        end
     end
 
     local scoreGiven = 40 - barrelCount -- 40 score if 0 barrels, 0 score if 40
     scoreGiven = scoreGiven + -roundCostPermanent -- always cost more, the more barrels placed
-    scoreGiven = scoreGiven + -punishmentGiven
     scoreGiven = math.Clamp( scoreGiven, -75, 15 )
     scoreGiven = scoreGiven + ( terminator_Extras.GetNookScore( myPos ) * 2 ) -- flat add if placed in nooks
+    scoreGiven = scoreGiven + -punishmentGiven
 
     self:SetGivenScore( scoreGiven )
 

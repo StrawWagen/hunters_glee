@@ -77,10 +77,40 @@ local function purchaseSkullCache( purchaser )
 
 end
 
+-- decrease skullcache cost when round ends with everyone dead
+hook.Add( "huntersglee_no_one_escaped", "glee_shophandler_resetpersistpurchasecounts", function()
+    local oldCount = GetGlobalInt( "glee_SkullCachePurchaseCount", 0 )
+    local newCount = oldCount - 1
+    if newCount < 0 then return end
+    SetGlobalInt( "glee_SkullCachePurchaseCount", newCount )
+
+end )
+
 -- debug
 hook.Add( "glee_post_realcleanupmap", "glee_shophandler_resetpersistpurchasecounts", function()
     SetGlobalInt( "glee_SignalFlarePurchaseCount", 0 )
     SetGlobalInt( "glee_SkullCachePurchaseCount", 0 )
+
+end )
+
+-- buff some weapons against npcs
+local buffs = {
+    ["npc_tripmine"] = 1.75,
+    ["npc_grenade_frag"] = 1.75,
+    ["weapon_357"] = 2,
+    ["weapon_smg1"] = 1.5,
+    ["rpg_missile"] = 1.5,
+}
+hook.Add( "EntityTakeDamage", "glee_default_items_buff", function( target, dmgInfo )
+    if not target:IsNPC() then return end
+
+    local inflictor = dmgInfo:GetInflictor()
+    if not IsValid( inflictor ) then return end
+
+    local buffMult = buffs[inflictor:GetClass()]
+    if not buffMult then return end
+
+    dmgInfo:ScaleDamage( buffMult )
 
 end )
 
@@ -257,8 +287,8 @@ local items = {
                 class = "weapon_ar2",
                 confirmSoundWeight = 1,
                 ammoType = "AR2",
-                purchaseClips = 96,
-                resupplyClips = 156,
+                purchaseClips = 5,
+                resupplyClips = 10,
                 secondaryAmmoType = "AR2AltFire",
                 purchaseSecondaryClips = 2,
                 resupplySecondaryClips = 4,
@@ -526,7 +556,7 @@ local items = {
                 confirmSoundWeight = 6,
                 ammoType = "AR2",
                 purchaseClips = 0,
-                resupplyClips = 2,
+                resupplyClips = 4,
 
             } )
         end,

@@ -698,6 +698,11 @@ if SERVER and terminator_Extras then
 
         end
 
+        hook.Add( "PlayerInitialSpawn", heli, function( self, ply )
+            makeHeliFriendlyWith( self, ply )
+
+        end )
+
         heli:Fire( "SetTrack", track.glee_HeliTrack_TargetName )
 
         heli.giveUpAndRunAwayTime = CurTime() + heli_TryAndRescueDuration
@@ -1566,6 +1571,8 @@ hook.Add( "RenderScreenspaceEffects", "glee_predraw_fogpiercing_signalflares", f
     local me = LocalPlayer()
     local eyePos = EyePos()
 
+    local startMakingBiggerDist = 450
+
     for _, flare in pairs( signalFlaresThatPierceFog ) do
         local sizeMul = 400
 
@@ -1576,7 +1583,7 @@ hook.Add( "RenderScreenspaceEffects", "glee_predraw_fogpiercing_signalflares", f
 
         local distanceToIt = eyePos:Distance( flaresRealPos )
         -- smoothly scale up as viewer gets closer (1x at 450+, 2x at 0)
-        local proxMul = 1 + ( 1 - math.Clamp( distanceToIt / 450, 0, 1 ) )
+        local proxMul = 1 + ( 1 - math.Clamp( distanceToIt / startMakingBiggerDist, 0, 1 ) )
         sizeMul = sizeMul * proxMul
 
         local canSee = terminator_Extras.PosCanSeeComplex( eyePos, flaresRealPos, me )
@@ -1683,10 +1690,10 @@ local function CreateProjectedTextureForHelicopter( helicopter )
     end
 
     helicopter.ProjectedTexture:SetNearZ( 200 )
-    helicopter.ProjectedTexture:SetFarZ( 5000 ) -- Increased range for helicopters
+    helicopter.ProjectedTexture:SetFarZ( 5000 )
     helicopter.ProjectedTexture:SetFOV( 40 )
     helicopter.ProjectedTexture:SetBrightness( 1 )
-    helicopter.ProjectedTexture:SetTexture( "effects/spotlight" )
+    helicopter.ProjectedTexture:SetTexture( "effects/flashlight/hard" )
     helicopter.ProjectedTexture:Update()
 
 end

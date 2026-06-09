@@ -1,109 +1,82 @@
-
 local GAMEMODE = GAMEMODE or GM
-local dontDrawDefaultHud
 
 local math_Clamp = math.Clamp
-local CurTime = CurTime
+local CurTime    = CurTime
 
 -- draw heart synced with beats
--- 
 
-local paddingFromEdge = terminator_Extras.defaultHudPaddingFromEdge
-local screenHeight = ScrH()
-
+local paddingFromEdge    = terminator_Extras.defaultHudPaddingFromEdge
+local screenHeight       = ScrH()
 local paddingAboveHealth = glee_sizeScaled( 96, nil )
 
-local materialSize = glee_sizeScaled( nil, 55 )
-materialSize = math.Clamp( materialSize, 0, 128 )
-local overSize = materialSize * 0.6 -- box edge offset from material
-local backgroundSize = materialSize + overSize
-
+local materialSize = math.Clamp( glee_sizeScaled( nil, 55 ), 0, terminator_Extras.hl2hud.iconMaxSize )
 
 local heartTexture = Material( "vgui/hud/heartbeat.png", "smooth" )
 
-local colorHealthy  = GM.hudStandards.colorHappyYellow
-local colorDying    = GM.hudStandards.colorRedUrgent
-local boxColor      = GM.hudStandards.colorBackground
-local boxColorDying = GM.hudStandards.colorBackgroundUrgent
-
-local boxFlashTime = 0
-local colorBox = colorHealthy
-local boxAlphaDefault = boxColor.a
-local boxAlpha = 0
+local colorHealthy = terminator_Extras.hl2hud.colorHappyYellow:Copy()
+local colorDying   = terminator_Extras.hl2hud.colorRedUrgent:Copy()
 
 local notBeatingTime = 0
-local colorImage = colorHealthy
-local imageAlpha = 0
+local imageAlpha     = 0
+
+local function createBpmBox()
+    if IsValid( terminator_Extras.gleeHud_BpmBox ) then terminator_Extras.gleeHud_BpmBox:Remove() end
+
+    local box = vgui.Create( "glee_hl2hudbox", GetAutoHidingHUDPanel() )
+    terminator_Extras.gleeHud_BpmBox = box
+
+    box:SetIconSize( materialSize )
+    box:SetPaddingRatio( 0.6 )
+    box:SetMaterial( heartTexture )
+    box:SetNormalBoxColor( terminator_Extras.hl2hud.colorBackground:Copy() )
+    box:SetUrgentBoxColor( terminator_Extras.hl2hud.colorBackgroundUrgent:Copy() )
+    box:SetFlashDuration( 0.08 )
+
+    local bgSize       = box:GetWide()
+    local innerPadding = paddingFromEdge / 2
+    local boxPosX      = paddingFromEdge + innerPadding
+    local boxPosY      = screenHeight - paddingFromEdge - bgSize - paddingAboveHealth
+    box:SetPos( boxPosX, boxPosY )
+
+    function box:AdditionalThink()
+        if LocalPlayer():Health() <= 0 then
+            self:SetState( self.STATE_HIDDEN )
+            return
+
+        end
+    end
+
+end
+
+hook.Add( "OnGamemodeLoaded", "glee_bpm_create", createBpmBox )
+if terminator_Extras.gleeHud_BpmBox then createBpmBox() end
+
 
 hook.Add( "glee_cl_aliveplyhud", "glee_drawbpmcooler", function( ply, cur )
+    local bpmBox = terminator_Extras.gleeHud_BpmBox
+    if not IsValid( bpmBox ) then return end
 
-    if not dontDrawDefaultHud then
-        if GAMEMODE.DontDrawDefaultHud then
-            dontDrawDefaultHud = GAMEMODE.DontDrawDefaultHud
+    local noHeartBeats = notBeatingTime < cur
 
-        end
-        return
+    -- Icon alpha is beat-driven and managed here; state alpha scales it further.
+    if noHeartBeats then -- HEART ATTACK: icon fades in to full red
+        imageAlpha   = math_Clamp( imageAlpha + 1, 0, 255 )
+        colorDying.a = imageAlpha
+        bpmBox:SetIconColor( colorDying )
+        bpmBox:SetState( bpmBox.STATE_URGENT )
 
-    elseif dontDrawDefaultHud() then
-        return
-
-    end
-
-    local noHeartBeats
-
-    if notBeatingTime < cur then
-        noHeartBeats = true
-        colorImage = colorDying
-        imageAlpha = math_Clamp( imageAlpha + 1, 0, 255 )
-        colorImage.a = imageAlpha
-
-    else
-        local decrease = 4
-        if imageAlpha < 100 then
-            decrease = 0.5
-
-        end
-
-        colorImage = colorHealthy
-        imageAlpha = math_Clamp( imageAlpha - decrease, 0, 255 )
-        colorImage.a = imageAlpha
+    else -- healthy: icon fades out between beats
+        local decrease = imageAlpha < 100 and 0.5 or 4
+        imageAlpha      = math_Clamp( imageAlpha - decrease, 0, 255 )
+        colorHealthy.a  = imageAlpha
+        bpmBox:SetIconColor( colorHealthy )
+        bpmBox:SetState( bpmBox.STATE_NORMAL )
 
     end
-
-    if boxFlashTime > cur then
-        if noHeartBeats then
-            colorBox = boxColorDying
-
-        end
-    else
-        colorBox = boxColor
-        if noHeartBeats and boxFlashTime < cur - 0.1 then
-            boxFlashTime = cur + 0.1
-            boxAlpha = 150
-
-        else
-            boxAlpha = boxAlphaDefault
-
-        end
-    end
-
-    colorBox.a = boxAlpha
-
-    local offsetX = paddingFromEdge
-    local texture = heartTexture
-
-    local boxPosX = offsetX + paddingFromEdge / 2
-    local boxPosY = screenHeight + -paddingFromEdge + -backgroundSize + -paddingAboveHealth
-
-    draw.RoundedBox( 10, boxPosX, boxPosY, backgroundSize, backgroundSize, colorBox )
-
-    surface.SetDrawColor( colorImage )
-    surface.SetMaterial( texture )
-
-    surface.DrawTexturedRect( boxPosX + overSize / 2, boxPosY + overSize / 2, materialSize, materialSize )
-
 end )
 
+
+-- beat just happened, pulse the heart
 hook.Add( "glee_cl_heartbeat", "glee_updatebeatindicator", function( ply )
     if ply:GetNWInt( "termHuntPlyBPM" ) <= 0 then
         notBeatingTime = CurTime()
@@ -111,9 +84,12 @@ hook.Add( "glee_cl_heartbeat", "glee_updatebeatindicator", function( ply )
 
     end
 
-    imageAlpha = 255
-
-    boxFlashTime = CurTime() + 0.08
+    imageAlpha     = 255
     notBeatingTime = CurTime() + 1
 
+    local bpmBox = terminator_Extras.gleeHud_BpmBox
+    if IsValid( bpmBox ) then
+        bpmBox:SetState( bpmBox.STATE_FLASH )
+
+    end
 end )

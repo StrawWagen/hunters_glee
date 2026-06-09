@@ -97,6 +97,9 @@ ENT.HullCheckSize = Vector( 20, 20, 10 )
 ENT.PosOffset = Vector( 0, 0, 10 )
 
 if CLIENT then
+
+    local hidePlacingBeamHints = CreateClientConVar( "huntersglee_hideplacingbeamhints", "0", true, false )
+
     -- score gained on place
     local fontData = {
         font = GAMEMODE.GLEE_FONT or "Arial",
@@ -183,6 +186,63 @@ if CLIENT then
 
         surface.drawShadowedTextBetter( scoreString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
         surface.drawShadowedTextBetter( placinCostStr, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 60 )
+
+    end
+
+    function ENT:MyDrawTranslucent()
+        self:DrawModel()
+
+    end
+
+    function ENT:DrawTranslucent()
+        self:DrawBlame()
+        self:MyDrawTranslucent()
+
+    end
+
+    local happyBlameMat = Material( "sprites/bluelaser1" )
+    local badBlameMat = Material( "sprites/tp_beam001" )
+    local color_red = Color( 255, 0, 0, 150 )
+    local color_green = Color( 0, 255, 0, 150 )
+
+    function ENT:DrawBlame()
+        if hidePlacingBeamHints:GetBool() then return end
+
+        local ourPos
+        local worstBlamer = self:GetNW2Entity( "worstBlamer", NULL )
+        if IsValid( worstBlamer ) then
+            render.SetMaterial( badBlameMat )
+            local blamerPos = worstBlamer:WorldSpaceCenter()
+            ourPos = self:WorldSpaceCenter()
+            local width = math.abs( self:GetNW2Int( "worstBlamerWidth", 0 ) )
+            render.StartBeam( 2 )
+                render.AddBeam( blamerPos, width, 0, color_red )
+                render.AddBeam( ourPos, width, 1, color_red )
+
+            render.EndBeam()
+
+        end
+
+        local bestBlamer = self:GetNW2Entity( "bestBlamer", NULL )
+        if IsValid( bestBlamer ) then
+            render.SetMaterial( happyBlameMat )
+            local blamerPos = bestBlamer:WorldSpaceCenter()
+            ourPos = ourPos or self:WorldSpaceCenter()
+            local width = math.abs( self:GetNW2Int( "bestBlamerWidth", 0 ) )
+            render.StartBeam( 2 )
+                render.AddBeam( blamerPos, width, 0, color_green )
+                render.AddBeam( ourPos, width, 1, color_green )
+
+            render.EndBeam()
+        end
+    end
+
+    function ENT:MyDraw()
+        self:DrawModel()
+
+    end
+    function ENT:Draw()
+        self:MyDraw()
 
     end
 end
@@ -394,7 +454,17 @@ function ENT:DoScoreThink()
     if nextScoreThink > CurTime() then return true end
     self.nextScoreThink = CurTime() + 0.15
 
+
+    if not self.BlameReasons then
+        self.BlameReasons = {}
+
+    else
+        table.Empty( self.BlameReasons )
+
+    end
+
     self:UpdateGivenScore()
+    self:BlamingThink()
 
     local canPlace, noBuyReason = self:CalculateCanPlace()
     self.cannotPurchaseReason = noBuyReason
@@ -404,6 +474,80 @@ function ENT:DoScoreThink()
 
     return true
 
+end
+
+-- add an entity that is either giving us score or taking score
+function ENT:AddBlameReason( ent, width, reason )
+    local currReason = {
+        ent = ent,
+        width = width,
+        reason = reason
+    }
+    table.insert( self.BlameReasons, currReason )
+
+end
+
+function ENT:BlamingThink()
+    local blamers = self.BlameReasons
+    if #blamers == 0 then
+        if self.BlamesNeedResetting then
+            self.BlamesNeedResetting = nil
+            self:SetNW2Entity( "worstBlamer", NULL )
+            self:SetNW2Int( "worstBlamerWidth", 0 )
+            self:SetNW2String( "worstBlamerReason", "" )
+
+            self:SetNW2Entity( "bestBlamer", NULL )
+            self:SetNW2Int( "bestBlamerWidth", 0 )
+            self:SetNW2String( "bestBlamerReason", "" )
+
+        end
+
+        return
+
+    end
+
+    local worstBlamer -- the worst bad one
+    local bestBlamer -- the best good one
+    for _, currentBlamer in ipairs( blamers ) do
+        if currentBlamer.width < 0 then
+            if not worstBlamer or currentBlamer.width < worstBlamer.width then
+                worstBlamer = currentBlamer
+
+            end
+
+        elseif currentBlamer.width > 0 then
+            if not bestBlamer or currentBlamer.width > bestBlamer.width then
+                bestBlamer = currentBlamer
+
+            end
+        end
+    end
+
+    if worstBlamer then
+        self:SetNW2Entity( "worstBlamer", worstBlamer.ent )
+        self:SetNW2Int( "worstBlamerWidth", worstBlamer.width )
+        self:SetNW2String( "worstBlamerReason", worstBlamer.reason )
+        self.BlamesNeedResetting = true
+
+    else
+        self:SetNW2Entity( "worstBlamer", NULL )
+        self:SetNW2Int( "worstBlamerWidth", 0 )
+        self:SetNW2String( "worstBlamerReason", "" )
+
+    end
+
+    if bestBlamer then
+        self:SetNW2Entity( "bestBlamer", bestBlamer.ent )
+        self:SetNW2Int( "bestBlamerWidth", bestBlamer.width )
+        self:SetNW2String( "bestBlamerReason", bestBlamer.reason )
+        self.BlamesNeedResetting = true
+
+    else
+        self:SetNW2Entity( "bestBlamer", NULL )
+        self:SetNW2Int( "bestBlamerWidth", 0 )
+        self:SetNW2String( "bestBlamerReason", "" )
+
+    end
 end
 
 function ENT:ModifiableThink()
@@ -555,13 +699,29 @@ local startGivingScoreDistSqr = startGivingScoreDist^2
 function ENT:UpdateGivenScore()
     local plys = player.GetAll()
     local smallestDist = math.huge
+    local myPos = self:GetPos()
+    local closestPly
 
     for _, currentPly in ipairs( plys ) do
         if currentPly:Health() <= 0 then continue end
-        local distToCurrentPlySqr = self:GetPos():DistToSqr( currentPly:GetPos() )
+        local distToCurrentPlySqr = myPos:DistToSqr( currentPly:GetPos() )
         if distToCurrentPlySqr < smallestDist then
             smallestDist = distToCurrentPlySqr
+            closestPly = currentPly
+
         end
+    end
+
+    if IsValid( closestPly ) then
+        local width = -5
+        local reason = "Player"
+        if smallestDist < startGivingScoreDistSqr then
+            width = math.sqrt( startGivingScoreDistSqr - smallestDist ) / 100
+            reason = "Player, Too Close"
+
+        end
+        self:AddBlameReason( closestPly, width, reason )
+
     end
 
     if smallestDist > startGivingScoreDistSqr then self:SetGivenScore( -5 ) return end

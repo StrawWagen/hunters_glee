@@ -96,6 +96,9 @@ function plyMeta:DropWeaponKeepAmmo( wep, force )
 
     local newWep = wep
     self:DropWeapon( wep )
+
+    self:SelectWeapon( "termhunt_shove" )
+
     newWep.glee_ammoInside = {}
     local primaryAmmoType = wep:GetPrimaryAmmoType()
 

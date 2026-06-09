@@ -17,10 +17,10 @@ local items = {
         name = "Point and Click",
         desc = "Click on players, or hunters!\nCosts climb, the farther you drag...\n\nWARNING: do NOT use on stick figures.",
         shCost = 0,
-        costDecorative = "-50 / -100",
+        costDecorative = { "-50", "-100", "-???" },
         markup = 1,
         cooldown = 0.5,
-        tags = { "HORRORS", "CloseShopOnPurchase" },
+        tags = { "HORRORS", "CloseShopOnPurchase", "DelayedCost" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },
@@ -71,7 +71,7 @@ local items = {
         shCost = 0,
         markup = 1,
         cooldown = 90,
-        tags = { "HORRORS", "CloseShopOnPurchase" },
+        tags = { "HORRORS", "CloseShopOnPurchase", "DelayedReward" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },

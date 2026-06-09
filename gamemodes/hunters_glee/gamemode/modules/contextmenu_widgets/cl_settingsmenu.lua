@@ -9,7 +9,7 @@ local settingsMenu = {}
 
 -- 1080p baseline sizes (auto-scaled via glee_sizeScaled)
 local FRAME_W_1080P          = 720
-local FRAME_H_1080P          = 700
+local FRAME_H_1080P          = 775
 -- Shared border padding comes from GAMEMODE.shopStandards.borderPadding (unscaled value).
 -- Name it as UNSCALED to avoid implying it's a hardcoded 1080p constant.
 local SHOP_BORDER_PAD_UNSCALED = GAMEMODE.shopStandards.borderPadding
@@ -32,6 +32,7 @@ local function reopenSettingsMenu()
     end
     timer.Simple( 0, function()
         RunConsoleCommand( "glee_settings_open" )
+
     end )
 end
 
@@ -47,12 +48,6 @@ local settingsCategories = {
                 decimals = 1,
                 prettyName = "Music volume",
                 desc = "Change the music's volume. Default is -1 which translates to 0.75",
-            },
-            {
-                cvar = "huntersglee_cl_showhud",
-                type = "check",
-                prettyName = "Show top left info",
-                desc = "Show score, round type, and skull count?",
             },
             {
                 cvar = "cl_huntersglee_guiscale",
@@ -81,6 +76,47 @@ local settingsCategories = {
                 desc = "Get a chat print when someone who's never played glee joins?",
             },
         }
+    },
+    {
+        name = "HUD",
+        items = {
+            {
+                cvar = "huntersglee_cl_nevershowtoplefthud",
+                type = "check",
+                prettyName = "Never show top left info",
+                desc = "Never show score, round type, and skull count? (unless tab was held)",
+            },
+            {
+                cvar = "huntersglee_cl_alwaysshowtoplefthud",
+                type = "check",
+                prettyName = "Always show top left info",
+                desc = "Always show round info, score, and skull count?",
+            },
+            {
+                cvar = "huntersglee_hideplacingbeamhints",
+                type = "check",
+                prettyName = "Hide placing beam hints?",
+                desc = "Hide the beam hints when placing items?",
+            },
+            {
+                cvar = "cl_huntersglee_draw_nearby_players",
+                type = "check",
+                prettyName = "Reveal nearby player locations?",
+                desc = "Draw the location of nearby players on your HUD?\n(Note, this requires suit to be above 0)",
+            },
+            {
+                cvar = "cl_huntersglee_draw_nearby_friendsonly",
+                type = "check",
+                prettyName = "Only reveal the location of friends?",
+                desc = "Only draw the location of nearby players on your HUD if they're on your friends list?",
+            },
+            {
+                cvar = "cl_huntersglee_draw_playernames_whendead",
+                type = "check",
+                prettyName = "Draw player names when dead?",
+                desc = "Draw player names on the HUD when you're dead?",
+            },
+        },
     },
     {
         name = "Souls",
@@ -402,7 +438,9 @@ local function createSettingsMenuSafely()
     frame:SetSizable( true )
     settingsMenu:Create( frame )
     LocalPlayer():EmitSound( "physics/wood/wood_crate_impact_soft3.wav", 50, 200, 0.45 )
+
     return frame
+
 end
 
 concommand.Add( "glee_settings_open", function()
@@ -417,6 +455,7 @@ concommand.Add( "glee_settings_open", function()
     function newFrame:OnRemove()
         if GAMEMODE.glee_SettingsMenu_Holder == self then
             GAMEMODE.glee_SettingsMenu_Holder = nil
+
         end
     end
 end )
@@ -431,6 +470,7 @@ list.Set( "DesktopWindows", "HuntersGlee_Settings", {
     init = function( _, window )
         if IsValid( window ) then window:Remove() end
         RunConsoleCommand( "glee_settings_open" )
+
     end
 } )
 

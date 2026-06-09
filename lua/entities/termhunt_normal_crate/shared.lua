@@ -44,14 +44,17 @@ local maxInProximity = 4
 
 function ENT:UpdateGivenScore()
     local plys = player.GetAll()
-    local distToClosestPly = maxScoreDist^2
     local myPos = self:GetPos()
+    local distToClosestPly = maxScoreDist^2
+    local nearestPly
 
     for _, currentPly in ipairs( plys ) do
         if currentPly:Health() <= 0 then continue end
         local distToCurrentPlySqr = myPos:DistToSqr( currentPly:GetPos() )
         if distToCurrentPlySqr < distToClosestPly then
             distToClosestPly = distToCurrentPlySqr
+            nearestPly = currentPly
+
         end
     end
 
@@ -67,6 +70,10 @@ function ENT:UpdateGivenScore()
             if tooCloseCount < maxInProximity then continue end
             punishmentCount = tooCloseCount
             closestCrateDist = distToCurrentCrateSqr
+
+            local overCount = tooCloseCount - maxInProximity
+            self:AddBlameReason( currentCrate, -25 / ( overCount + 1 ), "Other Crates" )
+
         end
     end
 

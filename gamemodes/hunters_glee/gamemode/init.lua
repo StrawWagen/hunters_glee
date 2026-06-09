@@ -1,7 +1,6 @@
 -- ADDCS
 AddCSLuaFile( "shared.lua" )
 AddCSLuaFile( "cl_init.lua" )
-AddCSLuaFile( "modules/cl_targetid.lua" )
 AddCSLuaFile( "modules/cl_winscreen.lua" )
 AddCSLuaFile( "modules/cl_modelscale.lua" )
 AddCSLuaFile( "modules/cl_scoreboard.lua" )
@@ -12,10 +11,13 @@ AddCSLuaFile( "modules/cl_killfeedoverride.lua" )
 AddCSLuaFile( "modules/deadplayerfx/cl_souls.lua" )
 AddCSLuaFile( "modules/deadplayerfx/cl_deaddesaturation.lua" )
 
-AddCSLuaFile( "modules/clhud/cl_hudstandards.lua" )
-AddCSLuaFile( "modules/clhud/cl_battery.lua" )
-AddCSLuaFile( "modules/clhud/cl_bpm.lua" )
 AddCSLuaFile( "modules/escaping/cl_escaping.lua" )
+AddCSLuaFile( "modules/escaping/cl_escapecounts.lua" )
+
+AddCSLuaFile( "modules/clhud/cl_topleftinfo.lua" )
+AddCSLuaFile( "modules/clhud/cl_bpm.lua" )
+AddCSLuaFile( "modules/clhud/cl_battery.lua" )
+AddCSLuaFile( "modules/clhud/cl_plynames.lua" )
 AddCSLuaFile( "modules/cl_spectateflashlight.lua" )
 AddCSLuaFile( "modules/music/cl_music.lua" )
 AddCSLuaFile( "modules/thirdpersonflashlight/cl_flashlight.lua" )
@@ -97,6 +99,7 @@ include( "modules/firsttimeplayers/sv_firsttimeplayers.lua" )
 
 include( "modules/guilt/sv_guilt.lua" )
 
+include( "modules/escaping/sv_escapecounts.lua" )
 include( "modules/escaping/sv_escaping.lua" )
 
 include( "modules/battery/sv_battery.lua" )
@@ -988,6 +991,18 @@ function GM:roundEnd()
         SetGlobalInt( "glee_EscapedCount", escapedCount )
         SetGlobalInt( "glee_RemainedCount", remainedCount )
 
+        -- escape rewards!
+        hook.Run( "huntersglee_round_into_limbo_after" )
+        for _, ply in player.Iterator() do
+            if not ply:HasEscaped() then continue end
+
+            local escapeCount = ply:GetEscapeCount()
+            ply:SetNWInt( "glee_escape_count", escapeCount + 1 )
+
+            ply:GiveEscapeRewardTo( ply )
+
+        end
+
         if winner:GetSkulls() <= 0 then
             SetGlobalEntity( "glee_Winner", NULL )
             SetGlobalInt( "glee_WinnerSkulls", 0 )
@@ -997,6 +1012,9 @@ function GM:roundEnd()
 
         SetGlobalEntity( "glee_Winner", winner )
         SetGlobalInt( "glee_WinnerSkulls", winner:GetSkulls() )
+
+        -- update escape counts
+        hook.Run( "huntersglee_round_into_limbo_postafter" )
 
     end )
 

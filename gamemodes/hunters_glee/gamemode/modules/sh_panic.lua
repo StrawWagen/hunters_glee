@@ -197,6 +197,7 @@ elseif SERVER then
                     if canResetPanic then -- reset panic with a scream
                         panic = 50
                         ply:EmitSound( screamSound, 130, math.Rand( 99, 106 ), 1, CHAN_VOICE )
+                        ply.glee_ScreamingUntil = CurTime() + SoundDuration( screamSound )
 
                     else -- let panic get overflown, we just take little bites
                         panic = panic + -25
@@ -229,6 +230,7 @@ elseif SERVER then
                     local screamSound = table.remove( ply.screamPanicSounds, math.random( 1, #ply.screamPanicSounds ) )
                     if screamSound and not underwater then
                         ply:EmitSound( screamSound, 88, 100, 1, CHAN_VOICE )
+                        ply.glee_ScreamingUntil = CurTime() + SoundDuration( screamSound )
 
                     end
                     ply:ViewPunch( AngleRand() * 0.05 )
@@ -307,6 +309,24 @@ elseif SERVER then
 
     end
 
+    -- fix panic screams getting nuked by burnt pain sounds
+    hook.Add( "EntityEmitSound", "glee_fleshburn_dont_interrupt_panicsounds", function( data )
+        local ply = data.Entity
+        if not IsValid( ply ) then return end
+        if not ply:IsPlayer() then return end
+        if data.OriginalSoundName ~= "HL2Player.BurnPain" then return end
+
+        local screamingUntil = ply.glee_ScreamingUntil
+        if not screamingUntil then return end -- never screamed? dont mess with sound
+        if screamingUntil < CurTime() then return end -- not screaming anymore? dont mess with sound
+
+        data.Channel = CHAN_ITEM
+        data.Volume = data.Volume * 0.5
+
+        return true
+
+    end )
+
     local panicTimer = "huntersglee_panicmanagethinkserver"
     function GM:DoPanicThinkTimer( timerName )
         timer.Create( timerName, 0.2, 0, function()
@@ -346,7 +366,7 @@ elseif SERVER then
 
         end
         if victim:IsOnFire() and damage:IsDamageType( DMG_BURN ) then
-            panic = panic * 2
+            panic = math.max( panic * 2, 30 )
 
         end
         GAMEMODE:GivePanic( victim, panic )

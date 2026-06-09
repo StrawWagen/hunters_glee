@@ -48,14 +48,17 @@ local tooCloseToPlayer = 600
 
 function ENT:UpdateGivenScore()
     local plys = player.GetAll()
-    local distToClosestPly = maxScoreDist^2
     local myPos = self:GetPos()
+    local distToClosestPly = maxScoreDist^2
+    local nearestPly
 
     for _, currentPly in ipairs( plys ) do
         if currentPly:Health() <= 0 then continue end
         local distToCurrentPlySqr = myPos:DistToSqr( currentPly:GetPos() )
         if distToCurrentPlySqr < distToClosestPly then
             distToClosestPly = distToCurrentPlySqr
+            nearestPly = currentPly
+
         end
     end
 
@@ -74,6 +77,7 @@ function ENT:UpdateGivenScore()
     local punishmentGiven = 0
     if isUnderSomething then
         punishmentGiven = 100
+        self:AddBlameReason( result.Entity, -100, "Intersecting Something" )
 
     end
     self:SetNW2Int( "glee_additionalcontext1", punishmentGiven )
@@ -86,6 +90,7 @@ function ENT:UpdateGivenScore()
 
     if distToClosestPlyLinear < tooCloseToPlayer then
         proxCost = ( cost * 5 ) + 200
+        self:AddBlameReason( nearestPly, -proxCost / 10, "Too close to Player" )
 
     end
     cost = cost + proxCost
@@ -94,6 +99,7 @@ function ENT:UpdateGivenScore()
     self:SetNW2Int( "glee_additionalcontext2", proxCost )
 
     self:SetGivenScore( -cost )
+
 end
 
 function ENT:Place()

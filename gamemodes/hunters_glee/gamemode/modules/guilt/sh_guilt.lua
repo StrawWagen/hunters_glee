@@ -27,3 +27,15 @@ GM.PermaGuiltInfo = {
         color = Color( 200,   0,   0 )
     },
 }
+
+if CLIENT then
+    net.Receive( "glee_dealtpvpdamage", function()
+        local damage = net.ReadInt( 16 )
+        hook.Run( "glee_dealtpvpdamage", damage )
+
+    end )
+    net.Receive( "glee_homicidallygleeful", function()
+        hook.Run( "glee_homicidallygleeful" )
+
+    end )
+end

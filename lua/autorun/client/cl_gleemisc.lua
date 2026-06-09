@@ -1,6 +1,7 @@
 
 AddCSLuaFile()
 terminator_Extras = terminator_Extras or {}
+
 local input_IsKeyDown = input.IsKeyDown
 local input_IsMouseDown = input.IsMouseDown
 

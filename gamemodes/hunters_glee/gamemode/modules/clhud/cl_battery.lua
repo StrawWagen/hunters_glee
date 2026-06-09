@@ -1,107 +1,86 @@
 -- draw battery indicator
--- 
-
-local math_Clamp = math.Clamp
 
 local paddingFromEdge = terminator_Extras.defaultHudPaddingFromEdge
-local screenHeight = ScrH()
+local paddingFromBottom  = terminator_Extras.defaultHudPaddingFromBottom
+local screenHeight    = ScrH()
 
-local materialSize = glee_sizeScaled( nil, 48 )
-materialSize = math.Clamp( materialSize, 0, 128 )
-local overSize = materialSize * 0.4 -- box edge offset from material
-local backgroundSize = materialSize + overSize
-
+local materialSize = math.Clamp( glee_sizeScaled( nil, 48 ), 0, terminator_Extras.hl2hud.iconMaxSize )
 
 local noBatteryTexture = Material( "vgui/hud/nobattery.png", "smooth" )
-local drainingTexture = Material( "vgui/hud/losingcharge.png", "smooth" )
+local drainingTexture  = Material( "vgui/hud/losingcharge.png", "smooth" )
 
-
-local colorDraining         = GM.hudStandards.colorHappyYellow
-local colorDead             = GM.hudStandards.colorRedUrgent
-local boxColor              = GM.hudStandards.colorBackground
-local boxColorJustAppeared  = GM.hudStandards.colorBackgroundUrgent
-
-local colorGUI = colorDraining
-local paintGUIFullAlpha = 0
-local guiAlphaDefault = colorGUI.a
-local guiAlpha = 0
-local oldTexture
-local guiDead = 0
+local colorDraining = terminator_Extras.hl2hud.colorHappyYellow:Copy()
+local colorDead     = terminator_Extras.hl2hud.colorRedUrgent:Copy()
 
 local paddingJustHealth = glee_sizeScaled( nil, 260 )
 local paddingHpAndArmor = glee_sizeScaled( nil, 550 )
+
+local paintExpireTime = 0 -- CurTime() value until which the indicator should stay visible
+
 local GAMEMODE = GAMEMODE or GM
-local dontDrawDefaultHud
+
+local function createBatteryBox()
+    if IsValid( terminator_Extras.gleeHud_BatteryBox ) then terminator_Extras.gleeHud_BatteryBox:Remove() end
+
+    local box = vgui.Create( "glee_hl2hudbox", GetAutoHidingHUDPanel() )
+    terminator_Extras.gleeHud_BatteryBox = box
+
+    box:SetIconSize( materialSize )
+    box:SetPaddingRatio( 0.4 )
+    box:SetNormalBoxColor( terminator_Extras.hl2hud.colorBackground:Copy() )
+    box:SetFlashBoxColor( terminator_Extras.hl2hud.colorBackgroundUrgent:Copy() )
+    box:SetFlashDuration( 0.15 )
+
+    function box:AdditionalThink()
+        if LocalPlayer():Health() <= 0 then
+            self:SetState( self.STATE_HIDDEN )
+            return
+
+        end
+    end
+
+end
+
+hook.Add( "OnGamemodeLoaded", "glee_battery_create", createBatteryBox )
+if terminator_Extras.gleeHud_BatteryBox then createBatteryBox() end
 
 hook.Add( "glee_cl_aliveplyhud", "glee_drawbatterynotifs", function( ply, cur )
+    local batteryBox = terminator_Extras.gleeHud_BatteryBox
+    if not IsValid( batteryBox ) then return end
 
-    if not dontDrawDefaultHud then
-        if GAMEMODE.DontDrawDefaultHud then
-            dontDrawDefaultHud = GAMEMODE.DontDrawDefaultHud
+    -- texture and icon color follow armor state
+    local hasBattery = ply:Armor() > 0
+    local texture    = hasBattery and drainingTexture or noBatteryTexture
+    local iconColor  = hasBattery and colorDraining or colorDead
 
-        end
-        return
+    batteryBox:SetMaterial( texture )
+    batteryBox:SetIconColor( iconColor )
 
-    elseif dontDrawDefaultHud() then
-        return
+    -- position shifts right when the armor bar is also visible
+    local outOfWaySize = hasBattery and paddingHpAndArmor or paddingJustHealth
+    local outOfWayAndExtraPadding   = paddingFromEdge + outOfWaySize
+    local bgSize         = batteryBox:GetWide()
+    local boxPosX        = outOfWayAndExtraPadding + paddingFromEdge -- double padding, one to get away from edge of screen, one to get away from other elements
+    local boxPosY        = screenHeight - paddingFromBottom - bgSize
+    batteryBox:SetPos( boxPosX, boxPosY )
 
-    end
-
-    -- flash when first showing up
-    if guiAlpha <= 0 then guiDead = 17 return end
-    local boxColorInt = boxColor
-    if guiDead > 0 then
-        guiDead = guiDead + -1
-        boxColorInt = boxColorJustAppeared
-
-    end
-
-    if paintGUIFullAlpha > cur then
-        guiAlpha = guiAlphaDefault
-        colorGUI.a = guiAlpha
+    if paintExpireTime > cur then
+        batteryBox:SetState( batteryBox.STATE_NORMAL )
 
     else
-        guiAlpha = math_Clamp( guiAlpha + -2, 0, guiAlphaDefault )
-        colorGUI.a = guiAlpha
+        batteryBox:SetState( batteryBox.STATE_FADING )
 
     end
-
-    local offsetX = paddingFromEdge + paddingJustHealth
-    local texture = noBatteryTexture
-    local hasBattery = ply:Armor() > 0
-    if hasBattery then
-        offsetX = paddingFromEdge + paddingHpAndArmor
-        texture = drainingTexture
-
-    end
-
-    if texture ~= oldTexture then
-        if hasBattery then
-            colorGUI = colorDraining
-
-        else
-            colorGUI = colorDead
-
-        end
-    end
-
-    oldTexture = texture
-
-    local boxPosX = offsetX + paddingFromEdge
-    local boxPosY = screenHeight + -paddingFromEdge + -backgroundSize
-
-    draw.RoundedBox( 10, boxPosX, boxPosY, backgroundSize, backgroundSize, boxColorInt )
-
-    surface.SetDrawColor( colorGUI )
-    surface.SetMaterial( texture )
-
-    surface.DrawTexturedRect( boxPosX + overSize / 2, boxPosY + overSize / 2, materialSize, materialSize )
-
 end )
 
-net.Receive( "glee_batterychangedcharge", function()
-    local expireTime = net.ReadFloat()
-    paintGUIFullAlpha = expireTime
-    guiAlpha = guiAlphaDefault
 
+-- battery charge just changed, wake up the indicator
+net.Receive( "glee_batterychangedcharge", function()
+    paintExpireTime = net.ReadFloat()
+
+    local batteryBox = terminator_Extras.gleeHud_BatteryBox
+    if IsValid( batteryBox ) then
+        batteryBox:SetState( batteryBox.STATE_FLASH )
+
+    end
 end )

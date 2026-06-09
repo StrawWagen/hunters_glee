@@ -1,6 +1,9 @@
 
 -- keep track of who's pissed off who this round
 
+util.AddNetworkString( "glee_dealtpvpdamage" )
+util.AddNetworkString( "glee_homicidallygleeful" )
+
 hook.Add( "huntersglee_round_into_active", "glee_slighting_initialize", function()
     GAMEMODE.roundExtraData.hasSlighted = {}
     GAMEMODE.roundExtraData.slightReasons = {}
@@ -259,6 +262,74 @@ hook.Add( "huntersglee_player_reset", "glee_reset_autohomicidalgleehint", functi
 
 end )
 
+
+hook.Add( "EntityTakeDamage", "huntersglee_makepvpreallybad", function( dmgTarg, dmg )
+    if dmg:IsFallDamage() then return end -- shoving and goomba doesnt get scaled
+
+    local attacker = dmg:GetAttacker()
+    local inflictor = dmg:GetInflictor()
+    local areBothPlayers = dmgTarg:IsPlayer() and attacker:IsPlayer()
+    local selfDamage = dmgTarg == attacker
+
+    if selfDamage then return end -- they're damaging themselves? go ahead
+    if not areBothPlayers then return end
+
+    local attackerIsHorriblyEvil = GAMEMODE:IsHorriblyEvil( attacker )
+    local targIsHorriblyEvil = GAMEMODE:IsHorriblyEvil( dmgTarg )
+
+    if attackerIsHorriblyEvil and targIsHorriblyEvil then return end -- if both are evil, they can fight eachother fine
+
+    if GAMEMODE.blockPvp == true then
+        dmg:ScaleDamage( 0 )
+
+    else
+        -- for items that should always do full damage
+        -- eg, items placed by dead players
+        if inflictor and inflictor.glee_AlwaysFullPVPDamage then
+            return
+
+        end
+
+        if dmg:IsDamageType( DMG_DISSOLVE ) and inflictor and inflictor:GetClass() == "prop_combine_ball" then -- special cball case
+            local nextpermittedballdamage = dmgTarg.huntersglee_nextpermittedballdamage or 0
+            if nextpermittedballdamage > CurTime() then
+                dmg:ScaleDamage( 0 )
+                return
+
+            end
+            dmgTarg.huntersglee_nextpermittedballdamage = CurTime() + 0.5
+
+            dmg:SetDamage( dmgTarg:GetMaxHealth() * 0.9 )
+            dmg:SetDamageForce( dmg:GetDamageForce() * 12 )
+            dmgTarg:EmitSound( "NPC_CombineBall.KillImpact" )
+
+            damagedplayercount = inflictor.huntersglee_ball_damagedplayercount or 0
+            inflictor.huntersglee_ball_damagedplayercount = damagedplayercount + 1
+
+            if inflictor.huntersglee_ball_damagedplayercount >= 6 then
+                inflictor:Fire( "Explode" )
+
+            end
+        elseif dmg:IsExplosionDamage() then
+            dmg:ScaleDamage( 0.75 )
+
+        else
+            dmg:ScaleDamage( 0.5 )
+
+        end
+
+        net.Start( "glee_dealtpvpdamage" )
+            net.WriteInt( math.Round( dmg:GetDamage() ), 16 )
+        net.Send( attacker )
+
+    end
+end )
+
+hook.Add( "glee_homicidallygleeful", "glee_homicidalglee_sendtodancer", function( dancer )
+    net.Start( "glee_homicidallygleeful" )
+    net.Send( dancer )
+
+end )
 
 
 -- PERSISTENT GUILT begin
