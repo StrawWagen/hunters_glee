@@ -895,7 +895,7 @@ local SCORE_BOARD = {
         if mapEscaped <= 0 then
             mapEscapedYap = "Nobody has escaped."
 
-        elseif mapRemained <= 1 then
+        elseif mapEscapedYap <= 1 then
             mapEscapedYap = "One soul has escaped."
 
         else
@@ -927,7 +927,7 @@ local SCORE_BOARD = {
         if spawnsetEscaped <= 0 then
             setEscapedYap = "Nobody has escaped this mode."
 
-        elseif spawnsetRemained <= 1 then
+        elseif spawnsetEscaped <= 1 then
             setEscapedYap = "One soul has escaped this mode."
 
         else

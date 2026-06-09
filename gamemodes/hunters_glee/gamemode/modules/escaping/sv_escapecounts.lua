@@ -168,7 +168,7 @@ function GM:SyncCurrEscapeMuls( ply )
     local mapName = game.GetMap()
     local mapMul, mapEscaped, mapRemained = GAMEMODE:GetMapsEscapeMultiplier( mapName )
 
-    local spawnSetName = GAMEMODE:GetSpawnSet() or ""
+    local spawnSetName = GAMEMODE:GetSpawnSet()
     local spawnSetMul, spawnSetEscaped, spawnSetRemained = GAMEMODE:GetSpawnsetsEscapeMultiplier( spawnSetName )
 
     local entries = {
