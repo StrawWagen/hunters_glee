@@ -226,8 +226,8 @@ end )
 -- hook.Add( "huntersglee_round_pre_into_inactive", )
 
 -- reward for escaping
-local flatEscapingReward = 400
-local rewardEveryoneEscaped = 800 -- additional if everyone escaped
+local flatEscapingReward = 500
+local rewardEveryoneEscaped = 1000 -- additional if everyone escaped
 local rewardPerSkull = 100
 local perSkullEveryoneEscaped = 200 -- additional per skull if everyone escaped
 
@@ -267,7 +267,7 @@ function GM:GiveEscapeRewardTo( ply )
         if mapHasNeverEscaped or spawnsetHasNeverEscaped then
             local neverBoth = mapHasNeverEscaped and spawnsetHasNeverEscaped
             local subject   = neverBoth and "This map and spawnset have" or mapHasNeverEscaped and "This map has" or "This spawnset has"
-            huntersGlee_AnnounceDramatic( { ply }, 1001, 5, subject .. " never been escaped before!" )
+            huntersGlee_AnnounceDramatic( { ply }, 1001, 4, subject .. " never been escaped before!" )
             return
 
         end
