@@ -38,6 +38,16 @@ function shopHelpers.escapedCheck( purchaser )
 
 end
 
+-- escaped at least once this session
+function shopHelpers.hasEscapedOnceCheck( purchaser )
+    if purchaser:GetEscapeCount() < 1 then
+        return false, "You haven't escaped yet..."
+
+    end
+    return true, ""
+
+end
+
 local gunCock = Sound( "items/ammo_pickup.wav" )
 function shopHelpers.loadoutConfirm( ply, count )
     for _ = 0, count do

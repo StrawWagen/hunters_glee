@@ -326,6 +326,8 @@ if SERVER then
             self.originalJumpPower = owner:GetJumpPower()
 
             self:Timer( "manage_mechalegs", 0.1, 0, function()
+                if owner:Health() <= 0 then return end
+
                 local armor = owner:Armor()
 
                 local noArmorDecrease = -100
@@ -336,6 +338,7 @@ if SERVER then
                 -- it's better to have big dramatic changes from mechanics like this imo
                 if armor <= 0 then
                     speedMod = noArmorDecrease
+
                 end
 
                 owner:DoSpeedModifier( "mechalegs", speedMod )
@@ -364,8 +367,10 @@ if SERVER then
                     if armor > 0 then
                         ply:GivePlayerBatteryCharge( -0.25 )
                         jumpBoost = self.originalJumpPower * 0.3
+
                     else
                         jumpBoost = self.originalJumpPower * -0.3
+
                     end
                     -- Applies velocity, thanks plymeta
                     ply:SetVelocity( Vector( 0, 0, jumpBoost ) )
@@ -1300,7 +1305,7 @@ local items = {
     -- reframe gaining score, because i thought it could be fun
     ["marcopolo"] = {
         name = "Marco Polo",
-        desc = "You gain score for exploring new parts of the map.\nBPM gives no score.\nGains per area explored start out trivial, but as you progress, the rewards become greater.",
+        desc = "You gain score for exploring new parts of the map.\nBPM gives no score.\nGains per area explored start out trivial, but as you progress, the rewards become greater.\nYou've escaped once, and unlocked this.",
         shCost = 25,
         cooldown = math.huge,
         tags = { "INNATE" },
@@ -1313,6 +1318,7 @@ local items = {
             ply:GiveStatusEffect( "marco_polo" )
 
         end,
+        shCanShowInShop = shopHelpers.hasEscapedOnceCheck,
     },
     -- flat upgrade
     ["froglegs"] = {

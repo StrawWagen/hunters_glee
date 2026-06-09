@@ -449,7 +449,7 @@ local items = {
     },
     ["skullcache"] = {
         name = "Hidden Skull Cache",
-        desc = "A hidden cache of skulls\nOnly purchasable if you've escaped at least once...\nWill be nearby your most remote death.",
+        desc = "A hidden cache of skulls\nOnly purchasable if you've escaped at least once...\nWill be nearby your most remote death.\nYou've escaped once, and unlocked this.",
         shCost = function()
             local startingCost = 1000
             local costPerPurchase = 500
@@ -476,11 +476,7 @@ local items = {
 
             end,
         },
-        shCanShowInShop = function( ply )
-            if ply:GetEscapeCount() < 1 then return false, "You haven't escaped yet..." end
-            return true, ""
-
-        end,
+        shCanShowInShop = shopHelpers.hasEscapedOnceCheck,
         svOnPurchaseFunc = purchaseSkullCache,
     },
     -- funny cam
