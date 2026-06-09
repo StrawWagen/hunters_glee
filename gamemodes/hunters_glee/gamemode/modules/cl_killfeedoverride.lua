@@ -270,7 +270,7 @@ function GM:DrawDeathNotice( x, y )
 	-- We want to maintain the order of the table so instead of removing
 	-- expired entries one by one we will just clear the entire table
 	-- once everything is expired.
-	for k, Death in ipairs( Deaths ) do
+	for _, Death in ipairs( Deaths ) do
 		if ( Death.time + time > CurTime() ) then
 			return
 		end

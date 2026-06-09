@@ -595,7 +595,7 @@ if SERVER then
 
             -- patience system - global timer, but we track if we created it
             -- always reset patience for a newly chosen player, even if a previous one already expired it
-            GAMEMODE.roundExtraData.divinePatienceEnds = CurTime() + 90
+            GAMEMODE.roundExtraData.divinePatienceEnds = CurTime() + 120
 
             -- increase patience on player deaths (global hook, only create once)
             if not GAMEMODE.roundExtraData.createdThePatienceIncreaseHook then
