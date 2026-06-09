@@ -895,7 +895,7 @@ local SCORE_BOARD = {
         if mapEscaped <= 0 then
             mapEscapedYap = "Nobody has escaped."
 
-        elseif mapEscapedYap <= 1 then
+        elseif mapEscaped <= 1 then
             mapEscapedYap = "One soul has escaped."
 
         else
