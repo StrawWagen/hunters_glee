@@ -224,7 +224,16 @@ local function whileAlivePaintOtherEnts( localPlayer, cur )
     local recentlyAttacked = hideNamesFor > cur
 
     local trace     = localPlayer:GetEyeTrace()
-    local tracedEnt = IsValid( trace.Entity ) and trace.Entity.Nick and trace.Entity or nil
+    local spectateTarg = localPlayer:GetObserverTarget()
+
+    local focusEnt
+    if IsValid( spectateTarg ) and spectateTarg.Nick then
+        focusEnt = spectateTarg
+
+    elseif IsValid( trace.Entity ) and trace.Entity.Nick then
+        focusEnt = trace.Entity
+
+    end
 
     for ent, panel in pairs( terminator_Extras.glee_EntNamePanels ) do
         if not IsValid( panel ) then continue end
@@ -232,7 +241,7 @@ local function whileAlivePaintOtherEnts( localPlayer, cur )
         if ent == localPlayer then continue end
         if ent:Health() <= 0 then panel:SetVisible( false ) continue end
 
-        local isLookedAt = tracedEnt == ent
+        local isLookedAt = focusEnt == ent
         panel:SetMode( isLookedAt and panel.MODE_FULL or panel.MODE_WORLD )
         panel:SetNameAlwaysReadable( false )
 

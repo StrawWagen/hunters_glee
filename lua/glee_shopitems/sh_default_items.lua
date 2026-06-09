@@ -555,7 +555,7 @@ local items = {
                 class = "termhunt_ar3",
                 confirmSoundWeight = 6,
                 ammoType = "AR2",
-                purchaseClips = 0,
+                purchaseClips = 1,
                 resupplyClips = 4,
 
             } )
