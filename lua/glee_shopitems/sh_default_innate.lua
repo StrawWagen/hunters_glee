@@ -1306,11 +1306,13 @@ local items = {
     ["marcopolo"] = {
         name = "Marco Polo",
         desc = "You gain score for exploring new parts of the map.\nBPM gives no score.\nGains per area explored start out trivial, but as you progress, the rewards become greater.\nYou've escaped once, and unlocked this.",
-        shCost = 25,
+        shCost = 1000,
+        markup = 2,
         cooldown = math.huge,
         tags = { "INNATE" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
+            GAMEMODE.ROUND_ACTIVE,
         },
         weight = 180,
         shPurchaseCheck = shopHelpers.aliveCheck,
