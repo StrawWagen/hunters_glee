@@ -324,7 +324,12 @@ function ENT:OnTakeDamage( dmg )
     else
         self:TakePhysicsDamage( dmg )
         if self:GetIsTerminatorSkull() then return end
-        if dmg:GetDamage() < 75 then return end
+        local crumbleDmg = dmg:GetDamage()
+        if dmg:IsExplosionDamage() then -- let skulls survive some explosions pls
+            crumbleDmg = crumbleDmg * 0.5
+
+        end
+        if crumbleDmg < 75 then return end
 
         if self.crushImmunityTime > CurTime() then return end
         self:Crumble()
