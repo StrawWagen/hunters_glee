@@ -89,7 +89,7 @@ local function getSpectatePromptPanel()
     panel:SetMouseInputEnabled( false )
 
     panel.Paint = function( _self, w, h )
-        if showEntPromptWait > CurTime() then return end
+        if showEntPromptWait > CurTime() then return end -- visual bug fix
         draw.RoundedBox( hud.boxCornerRadius, 0, 0, w, h, hud.colorBackground )
         draw.SimpleText( spectatePromptText, font, w * 0.5, h * 0.5, hud.colorRedUrgent, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
 
@@ -115,11 +115,20 @@ local function whileDeadPaintOtherPlys( localPlayer, cur )
     local hasObsTarg = IsValid( localPlayer:GetObserverTarget() )
 
     local trace     = localPlayer:GetEyeTrace()
-    local traceEnt = trace.Entity
-    local goodTraceEnt = IsValid( traceEnt ) and traceEnt.Nick and traceEnt or nil
+    local spectateTarg  = localPlayer:GetObserverTarget()
+
+    local focusEnt
+    if IsValid( spectateTarg ) and spectateTarg.Nick then
+        focusEnt = spectateTarg
+
+    elseif IsValid( trace.Entity ) and trace.Entity.Nick then
+        focusEnt = trace.Entity
+
+    end
     local paintedSpecHint
 
     local drawWhenDead = drawPlayerNamesWhenDead:GetBool()
+    local paintData = {}
 
     for _, ply in ipairs( player.GetAll() ) do
         if ply == localPlayer then continue end
@@ -127,7 +136,7 @@ local function whileDeadPaintOtherPlys( localPlayer, cur )
         local panel = ply.gleeEntNamePanel
         if not IsValid( panel ) then continue end
 
-        local isLookedAt = goodTraceEnt == ply
+        local isLookedAt = focusEnt == ply
         if not isLookedAt and not drawWhenDead then
             panel:SetVisible( false )
             continue
@@ -173,19 +182,25 @@ local function whileDeadPaintOtherPlys( localPlayer, cur )
 
         paintedSpecHint = pleasePaintSpectateHint
 
-        panel:UpdateForPlayer( ply, cur, infoLine, extraLine, true, isLookedAt )
+
+        paintData.infoLine = infoLine
+        paintData.extraLine = extraLine
+        paintData.ignoreDist = true
+        paintData.isLookedAt = isLookedAt
+
+        panel:UpdateForPlayer( ply, cur, paintData )
 
     end
 
     local obsMode = localPlayer:GetObserverMode()
-    local spectateable = traceEnt:IsNPC() or traceEnt:IsNextBot()
+    local spectateable = focusEnt and ( focusEnt:IsNPC() or focusEnt:IsNextBot() )
     local showEntPrompt  = spectateable and not paintedSpecHint and obsMode == OBS_MODE_ROAMING
 
     local rawPanel = terminator_Extras.glee_SpectatePromptPanel
 
     if showEntPrompt then
         keepShowingEntPrompt = cur + 0.5
-        promptTarget = traceEnt
+        promptTarget = focusEnt
 
     end
 
@@ -195,7 +210,7 @@ local function whileDeadPaintOtherPlys( localPlayer, cur )
         if screenData.visible then
             local pw, ph = promptPanel:GetSize()
             promptPanel:SetPos( screenData.x - pw * 0.5, screenData.y - ph * 0.5 )
-            if not promptPanel:IsVisible() then
+            if not promptPanel:IsVisible() then -- let it reposition itself
                 showEntPromptWait = cur + 0.01
 
             end
@@ -221,29 +236,33 @@ local function whileAlivePaintOtherEnts( localPlayer, cur )
 
     local friendsOnly = nearbyFriendsOnly:GetBool()
     local onlyDoLookedAt = not nearbyPlayersHudVar:GetBool()
-    local recentlyAttacked = hideNamesFor > cur
 
-    local trace         = localPlayer:GetEyeTrace()
-    local spectateTarg  = localPlayer:GetObserverTarget()
+    local recentlyAttacked = hideNamesFor > cur
+    if recentlyAttacked and localPlayer:HasStatusEffect( "divine_chosen" ) then
+        hideNamesFor = 0
+
+    end
+
+    local trace = localPlayer:GetEyeTrace()
 
     local focusEnt
-    if IsValid( spectateTarg ) and spectateTarg.Nick then
-        focusEnt = spectateTarg
-
-    elseif IsValid( trace.Entity ) and trace.Entity.Nick then
+    if IsValid( trace.Entity ) and trace.Entity.Nick then
         focusEnt = trace.Entity
 
     end
+
+    local paintData = {}
 
     for ent, panel in pairs( terminator_Extras.glee_EntNamePanels ) do
         if not IsValid( panel ) then continue end
 
         if ent == localPlayer then continue end
-        if ent:Health() <= 0 then panel:SetVisible( false ) continue end
-
         local isLookedAt = focusEnt == ent
+
+        local posOverride, ignoreDist, paintDead = hook.Run( "glee_cl_shouldpaintply_whilealive", ent, panel, isLookedAt )
+        if not paintDead and ent:Health() <= 0 then panel:SetVisible( false ) continue end
+
         panel:SetMode( isLookedAt and panel.MODE_FULL or panel.MODE_WORLD )
-        panel:SetNameAlwaysReadable( false )
 
         local infoLine
         if isLookedAt then
@@ -260,7 +279,10 @@ local function whileAlivePaintOtherEnts( localPlayer, cur )
 
         else
             local badNotLooking
-            if noPower or recentlyAttacked or onlyDoLookedAt then
+            if ignoreDist then
+                badNotLooking = false
+
+            elseif noPower or recentlyAttacked or onlyDoLookedAt then
                 badNotLooking = true
 
             elseif friendsOnly then
@@ -275,7 +297,13 @@ local function whileAlivePaintOtherEnts( localPlayer, cur )
             end
         end
 
-        panel:UpdateForPlayer( ent, cur, infoLine, nil, nil, isLookedAt, fadeoutFaster )
+        paintData.posOverride = posOverride
+        paintData.infoLine = infoLine
+        paintData.extraLine = nil
+        paintData.ignoreDist = ignoreDist
+        paintData.isLookedAt = isLookedAt
+
+        panel:UpdateForPlayer( ent, cur, paintData )
 
     end
 
@@ -293,6 +321,7 @@ hook.Add( "huntersglee_cl_displayhint_poststack", "glee_hintafterattacking", fun
 end )
 
 hook.Add( "glee_dealtpvpdamage", "glee_hidenames_afterdamaging", function( dmgAmount )
+    if LocalPlayer():HasStatusEffect( "divine_chosen" ) then return end
     if dmgAmount <= 50 then return end
     if hideNamesFor < CurTime() then
         dontShootHintFor = CurTime() + 3
@@ -303,6 +332,7 @@ hook.Add( "glee_dealtpvpdamage", "glee_hidenames_afterdamaging", function( dmgAm
 end )
 
 hook.Add( "glee_homicidallygleeful", "glee_hidenames_afterdamaging", function()
+    if LocalPlayer():HasStatusEffect( "divine_chosen" ) then return end
     dontShootHintFor = CurTime() + 10
     hideNamesFor = math.max( CurTime() + 120, hideNamesFor + 120 )
 

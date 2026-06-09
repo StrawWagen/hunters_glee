@@ -28,7 +28,6 @@ if SERVER then
     end
 
     hook.Add( "glee_post_set_spawnset", "glee_spawnset_sync", resetPool )
-    hook.Add( "glee_post_refresh_spawnset", "glee_spawnset_sync", resetPool )
 
     hook.Add( "glee_full_load", "glee_spawnset_sync", function( ply )
         local _, spawnSet = GAMEMODE:GetSpawnSet()

@@ -16,10 +16,11 @@
         SetFadeEndDist        panel is invisible
 
     Per-frame call:
-        panel:UpdateForPlayer( ply, cur, infoLine, extraLine, isLookedAt )
+        panel:UpdateForPlayer( ply, cur, infoLine, extraLine, ignoreDist, isLookedAt )
 
         infoLine   string|nil   Shown always in MODE_FULL. Only shown when isLookedAt in MODE_WORLD.
         extraLine  string|nil   Shown only when isLookedAt is true in either mode.
+        ignoreDist bool         If true, distance-based fading is ignored.
         isLookedAt  bool         Controls MODE_WORLD infoLine visibility, extraLine visibility,
                                 and "????" name substitution when text has faded.
 
@@ -41,10 +42,6 @@ function PANEL:Init()
     local hud = terminator_Extras.hl2hud
 
     self._mode = MODE_FULL
-
-    -- True: name always fully readable regardless of distance (dead/spectator).
-    -- False: name still distance-fades even when panel is MODE_FULL (alive + looking).
-    self._nameAlwaysReadable = true
 
     -- Distance thresholds, MODE_WORLD only (world units)
     self._nameFadeStartDist = 575
@@ -95,7 +92,6 @@ function PANEL:Init()
 end
 
 function PANEL:SetMode( mode )              self._mode               = mode end
-function PANEL:SetNameAlwaysReadable( val ) self._nameAlwaysReadable  = val  end
 function PANEL:SetNameFadeStartDist( d )    self._nameFadeStartDist   = d    end
 function PANEL:SetNameFadeEndDist( d )      self._nameFadeEndDist   = d    end
 function PANEL:SetFadeStartDist( d )        self._fadeStartDist     = d    end
@@ -143,10 +139,19 @@ end
 
 -- Called every frame from the hook. Resolves world position, computes all
 -- animated values, and repositions the panel on screen.
-function PANEL:UpdateForPlayer( ply, cur, infoLine, extraLine, ignoreDist, isLookedAt )
-    -- Honour soul display position override
+function PANEL:UpdateForPlayer( ply, cur, data )
+    local posOverride = data.posOverride
+    local infoLine = data.infoLine
+    local extraLine = data.extraLine
+    local ignoreDist = data.ignoreDist
+    local isLookedAt = data.isLookedAt
+
     local pos
-    if ply.glee_SoulDisplayPosTime and ply.glee_SoulDisplayPosTime > cur then
+    if posOverride then
+        pos = posOverride
+
+    -- soul pos, this is networked more frequently than real pos when player is dead
+    elseif ply.glee_SoulDisplayPosTime and ply.glee_SoulDisplayPosTime > cur then
         pos = ply.glee_SoulDisplayPos
 
     else
@@ -201,9 +206,7 @@ function PANEL:UpdateForPlayer( ply, cur, infoLine, extraLine, ignoreDist, isLoo
         self._textAlpha = 255
 
     else
-        -- Text alpha: 255 -> 0 across the name-fade zone
-        -- nameAlwaysReadable overrides the fade (dead/spectator always see real names)
-        if self._nameAlwaysReadable or dist <= nameFadeStartDist then
+        if dist <= nameFadeStartDist then
             self._textAlpha = 255
 
         elseif dist >= nameFadeEndDist then
@@ -274,7 +277,10 @@ function PANEL:UpdateForPlayer( ply, cur, infoLine, extraLine, ignoreDist, isLoo
         end
 
         -- Panel alpha: 255 -> 0 across the fade zone
-        if dist <= fadeStartDist then
+        if ignoreDist then
+            self._panelAlpha = 255
+
+        elseif dist <= fadeStartDist then
             self._panelAlpha = 255
 
         elseif dist >= fadeEndDist then

@@ -145,16 +145,15 @@ end
 
 local function sendEscapeMulData( entries, toSend )
     net.Start( "glee_escapemul_data" )
+        net.WriteUInt( #entries, 8 ) -- up to 255 entries synced at once
+        for _, entry in ipairs( entries ) do
+            net.WriteBool( entry.isSpawnset )
+            net.WriteString( entry.key )
+            net.WriteFloat( entry.mul )
+            net.WriteUInt( entry.escaped,  32 )
+            net.WriteUInt( entry.remained, 32 )
 
-    net.WriteUInt( #entries, 8 ) -- up to 255 entries synced at once
-    for _, entry in ipairs( entries ) do
-        net.WriteBool( entry.isSpawnset )
-        net.WriteString( entry.key )
-        net.WriteFloat( entry.mul )
-        net.WriteUInt( entry.escaped,  32 )
-        net.WriteUInt( entry.remained, 32 )
-
-    end
+        end
     if toSend then
         net.Send( toSend )
 
@@ -164,18 +163,18 @@ local function sendEscapeMulData( entries, toSend )
     end
 end
 
-function GM:SyncCurrEscapeMuls( ply )
+function GM:SyncCurrEscapeMuls( toSync )
     local mapName = game.GetMap()
     local mapMul, mapEscaped, mapRemained = GAMEMODE:GetMapsEscapeMultiplier( mapName )
 
-    local spawnSetName = GAMEMODE:GetSpawnSet()
+    local spawnSetName = GAMEMODE:GetSpawnSet() or "" -- can be nil if called before self.ROUND_SETUP finishes
     local spawnSetMul, spawnSetEscaped, spawnSetRemained = GAMEMODE:GetSpawnsetsEscapeMultiplier( spawnSetName )
 
     local entries = {
         { isSpawnset = false, key = mapName,      mul = mapMul,      escaped = mapEscaped,      remained = mapRemained },
         { isSpawnset = true,  key = spawnSetName, mul = spawnSetMul, escaped = spawnSetEscaped, remained = spawnSetRemained },
     }
-    sendEscapeMulData( entries, ply )
+    sendEscapeMulData( entries, toSync )
 
 end
 
@@ -242,6 +241,11 @@ end )
 
 hook.Add( "glee_full_load", "glee_escapemul_syncnew", function( ply )
     GAMEMODE:SyncCurrEscapeMuls( ply )
+
+end )
+
+hook.Add( "glee_post_new_spawnset", "glee_escapemul_syncnew_spawnset", function()
+    GAMEMODE:SyncCurrEscapeMuls( player.GetAll() )
 
 end )
 

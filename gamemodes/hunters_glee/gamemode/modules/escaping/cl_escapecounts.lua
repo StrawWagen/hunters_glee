@@ -1,6 +1,5 @@
 local mapCache      = {}
 local spawnsetCache = {}
-local requested     = {}
 
 net.Receive( "glee_escapemul_data", function()
     local count = math.min( net.ReadUInt( 8 ), 64 )
@@ -12,6 +11,8 @@ net.Receive( "glee_escapemul_data", function()
         local remained   = net.ReadUInt( 32 )
 
         local entry = { mul = mul, escaped = escaped, remained = remained }
+        if key == "" then continue end
+
         if isSpawnset then
             spawnsetCache[key] = entry
 
@@ -19,9 +20,6 @@ net.Receive( "glee_escapemul_data", function()
             mapCache[key] = entry
 
         end
-
-        requested[key] = nil
-
     end
 end )
 
@@ -33,9 +31,7 @@ function GM:RequestEscapeMultipliers( list )
     for _, entry in ipairs( list ) do
         local cache = entry.isSpawnset and spawnsetCache or mapCache
         if cache[entry.key] then continue end
-        if requested[entry.key] then continue end
 
-        requested[entry.key] = true
         toRequest[#toRequest + 1] = entry
 
     end

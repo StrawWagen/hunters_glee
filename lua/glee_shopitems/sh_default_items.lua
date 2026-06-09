@@ -116,7 +116,7 @@ end )
 
 -- each spawnset has their own purchase count
 -- encourages fun spawnset switching
-hook.Add( "glee_post_set_spawnset", "glee_shophandler_resetpersistpurchasecounts", function( newName, _set, oldName )
+hook.Add( "glee_post_new_spawnset", "glee_shophandler_resetpersistpurchasecounts", function( newName, _set, oldName )
     if not oldName then return end -- initalize
 
     -- setup the tbl

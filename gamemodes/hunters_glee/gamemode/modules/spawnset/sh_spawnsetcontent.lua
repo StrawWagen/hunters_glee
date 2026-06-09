@@ -25,7 +25,7 @@ if SERVER then
 
     end
 
-    hook.Add( "glee_post_set_spawnset", "glee_spawnset_content", function( _, spawnSet )
+    hook.Add( "glee_post_new_spawnset", "glee_spawnset_content", function( _, spawnSet )
         if not ( spawnSet.resourcesAdded and #spawnSet.resourcesAdded >= 0 ) then return end
 
         SetGlobalInt( "GLEE_SpawnSet_ContentCount", #spawnSet.resourcesAdded )

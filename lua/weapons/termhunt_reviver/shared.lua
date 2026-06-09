@@ -432,7 +432,6 @@ if CLIENT then
 
         end
 
-        if not huntersGlee_PaintPlayer then return end
         local nextPlayersCheck = self.nextPlayersCheck or 0
         if nextPlayersCheck < CurTime() then
             self.nextPlayersCheck = CurTime() + 1
@@ -442,21 +441,42 @@ if CLIENT then
                 if not IsValid( data.ply ) then continue end
                 if data.ply == LocalPlayer() then continue end
                 if data.ply:Health() > 0 then continue end
-                table.insert( self.validDeads, data )
+                self.validDeads[data.ply] = data
 
             end
         end
-        if self.validDeads then
-            local bail = nil
-            for _, deadDat in ipairs( self.validDeads ) do
-                if bail then break end
-                if not self:CanResurrect( deadDat.ply ) then continue end
-                -- draw one person far away
-                if deadDat.pos:DistToSqr( ownerPos ) > 1000^2 then bail = true end
-                huntersGlee_PaintPlayer( deadDat.ply, deadDat.pos )
+
+        if self.PaintPlyHooking then return end
+        self.PaintPlyHooking = true
+
+        local ownerWhenHookCreated = self:GetOwner()
+
+        -- pls paint everyones icons
+        hook.Add( "glee_cl_shouldpaintply_whilealive", self, function( _self, ent )
+            local currentOwner = self:GetOwner()
+            if currentOwner ~= ownerWhenHookCreated then
+                self.PaintPlyHooking = nil
+                hook.Remove( "glee_cl_shouldpaintply_whilealive", self )
+                return
 
             end
-        end
+            local ownersActiveWeapon = currentOwner:GetActiveWeapon()
+            if ownersActiveWeapon ~= self then
+                self.PaintPlyHooking = nil
+                hook.Remove( "glee_cl_shouldpaintply_whilealive", self )
+                return
+
+            end
+
+            local deadDat = self.validDeads[ent]
+
+            if not deadDat then return end
+            if not self:CanResurrect( deadDat.ply ) then return end
+            if deadDat.pos:DistToSqr( owner:GetPos() ) > 1000^2 then return end
+
+            return deadDat.pos, true, true -- pos override, draw at any distance, and draw even if dead
+
+        end )
     end
 
     potentialResurrectionData = {}

@@ -276,13 +276,16 @@ function GM:SetSpawnSet( setName )
     SetGlobalString( "GLEE_SpawnSetDescription", spawnSet.description or "" )
 
     if oldSetName ~= setName then
-        hook.Run( "glee_post_set_spawnset", setName, spawnSet, oldSetName )
+        hook.Run( "glee_post_new_spawnset", setName, spawnSet, oldSetName )
         print( "GLEE: Mode set to, " .. setName )
 
     else
         hook.Run( "glee_post_refresh_spawnset", setName, spawnSet, oldSetName )
 
     end
+
+    hook.Run( "glee_post_set_spawnset", setName, spawnSet, oldSetName )
+
 end
 
 function GM:RegisterSpawnSet( spawnSet )
@@ -340,7 +343,7 @@ end
 -- set the variables to their defaults on startup, and spawn a wave NOW if autorefreshed
 resetWave()
 
-hook.Add( "glee_post_set_spawnset", "glee_resetwave_onnew_spawnset", function() resetWave() end )
+hook.Add( "glee_post_new_spawnset", "glee_resetwave_onnew_spawnset", function() resetWave() end )
 
 -- simple counter
 local function aliveHuntersCount()

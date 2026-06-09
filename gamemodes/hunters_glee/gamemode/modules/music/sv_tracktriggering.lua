@@ -24,7 +24,7 @@ hook.Add( "huntersglee_round_into_active", "glee_spawnset_startsound", function(
 
 end )
 
-hook.Add( "glee_post_set_spawnset", "glee_spawnset_startsound", function() -- when spawnset is set within the 1min grace after round starts
+hook.Add( "glee_post_new_spawnset", "glee_spawnset_startsound", function() -- when spawnset is set within the 1min grace after round starts
     if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
     playSpawnSetSound( "roundStartSound" )
 

@@ -543,33 +543,24 @@ function SWEP:OnDrop()
 end
 
 function SWEP:DrawHUD()
-    if not huntersGlee_PaintPlayer then return end
-    local nextPlayerCheck = self.nextPlayerCheck or 0
-    if nextPlayerCheck < CurTime() then
-        self.nextPlayerCheck = CurTime() + 1
-        self.alives = {}
-        local plys = player.GetAll()
-        local alives = {}
+    if self.PaintPlyHooking then return end
+    self.PaintPlyHooking = true
 
-        for _, ply in ipairs( plys ) do
-            if not IsValid( ply ) then continue end
-            if ply == LocalPlayer() then continue end
-            if ply:Health() <= 0 then continue end
-            table.insert( alives, ply )
+    local ownerWhenHookCreated = self:GetOwner()
 
-        end
-        for _, ply in ipairs( alives ) do
-            if not IsValid( ply ) then continue end
-            table.insert( self.alives, ply )
+    -- pls paint everyones icons
+    hook.Add( "glee_cl_shouldpaintply_whilealive", self, function( _self, _ent )
+        local currentOwner = self:GetOwner()
+        if currentOwner ~= ownerWhenHookCreated then
+            self.PaintPlyHooking = nil
+            hook.Remove( "glee_cl_shouldpaintply_whilealive", self )
+            return
 
         end
-    end
-    if self.alives then
-        for _, ply in ipairs( self.alives ) do
-            huntersGlee_PaintPlayer( ply )
 
-        end
-    end
+        return false, true, true -- no pos override, draw at any distance, and draw even if dead
+
+    end )
 end
 
 local spriteOffsets = {
