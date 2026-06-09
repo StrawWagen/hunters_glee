@@ -38,11 +38,6 @@ local tracks = {
             },
             {
                 minDifficulty = 200,
-                author = compakt,
-                snd = "hunters_glee/music/COMPAKT/COMPAKT_Operating_Systems_09_Operator.mp3",
-            },
-            {
-                minDifficulty = 200,
                 author = vacant,
                 snd = "hunters_glee/music/VACANT/xwithout-Under-naN-oK.ogg",
             },
