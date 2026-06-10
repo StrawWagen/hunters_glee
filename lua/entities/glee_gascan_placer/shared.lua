@@ -96,7 +96,6 @@ function ENT:UpdateGivenScore()
 
 end
 
--- had to add this so it would play the ectoplasm effect 
 function ENT:Place()
     local betrayalScore = self:GetGivenScore()
 
