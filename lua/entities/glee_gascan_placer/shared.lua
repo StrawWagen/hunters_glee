@@ -76,13 +76,14 @@ function ENT:UpdateGivenScore()
     local gasUsers = GAMEMODE.GasUsers
     if gasUsers then
         for _, user in ipairs( gasUsers ) do
-            if IsValid( user ) then
-                local dist = myPos:Distance( user:GetPos() )
-                if dist < maxVehDist then
-                    local penalty = maxVehPenalty * (1 - dist / maxVehDist)
-                    scoreGiven = scoreGiven - penalty
-                end
-            end
+            if not IsValid( user ) then continue end
+
+            local dist = myPos:Distance( user:GetPos() )
+            if dist > maxVehDist then continue end
+
+            local penalty = maxVehPenalty * (1 - dist / maxVehDist)
+            scoreGiven = scoreGiven - penalty
+
         end
     end
 
