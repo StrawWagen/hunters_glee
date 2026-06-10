@@ -116,9 +116,6 @@ function ENT:Place()
 
     GAMEMODE:AddMischievousness( self.player, 1, "placed a gas can" )
 
-    self.placeCount = self.placeCount + -1
-    if self.placeCount > 0 then return end
-
     SafeRemoveEntity( self )
 
 end
