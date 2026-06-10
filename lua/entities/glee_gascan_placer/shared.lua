@@ -45,12 +45,12 @@ function ENT:ManageMyPos()
 
 end
 
-local maxPlyDist    = 4000
-local minPlyDist    = 1600
-local maxScore      = 175
-local tooClosePenalty = 100
-local maxVehPenalty = 3000
-local maxVehDist    = 3000
+local maxPlyDist    = 4000      -- players past this distance give no score
+local minPlyDist    = 1600      -- players closer than this = penalty instead of reward
+local maxScore      = 175       -- best score you can get from a player
+local tooClosePenalty = 100     -- negative score if player is too close
+local maxVehPenalty = 3000      -- max points a vehicle can subtract
+local maxVehDist    = 3000      -- vehicles inside this distance start hurting your score
 
 function ENT:UpdateGivenScore()
     local myPos = self:GetPos()
