@@ -95,6 +95,7 @@ local items = {
         weight = 75,
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
             setupPlacable( "glee_gascan_placer", purchaser, itemIdentifier )
+
         end,
         shCanShowInShop = shopHelpers.escapedCheck,
     },
