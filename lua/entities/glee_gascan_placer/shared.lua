@@ -39,6 +39,7 @@ if not SERVER then return end
 function ENT:ManageMyPos()
     BaseClass.ManageMyPos( self )
 
+    -- on it's side, pointed in a random direction
     local ang = Angle( 90, ( self:EntIndex() * self:EntIndex() ) % 360, 0 )
     self:SetAngles( ang )
 
