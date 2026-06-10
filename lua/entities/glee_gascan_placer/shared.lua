@@ -64,10 +64,12 @@ function ENT:UpdateGivenScore()
         if dist < minPlyDist then
             -- way too close, hard punish
             scoreGiven = -tooClosePenalty
+
         else
             -- scale score with distance up to maxPlyDist
             local t = math.Clamp( ( dist - minPlyDist ) / ( maxPlyDist - minPlyDist ), 0, 1 )
             scoreGiven = t * maxScore
+
         end
     end
 
