@@ -143,7 +143,7 @@ function ENT:UpdateGivenScore()
     for _, ent in ipairs( nearbyStuff ) do
         local class = ent:GetClass()
         if class == "termhunt_bear_trap" then
-            nearbyEntPunishment = nearbyEntPunishment + 150
+            nearbyEntPunishment = nearbyEntPunishment + 100
             self:AddBlameReason( ent, -80, "Bear Trap" )
 
         end

@@ -104,7 +104,7 @@ local tracks = {
         sounds = {
             {
                 author = vacant,
-                snd = "hunters_glee/music/VACANT/__gorymphony.ogg",
+                snd = "hunters_glee/music/VACANT/__gorymphony_AMP.ogg",
             },
         },
         priority = 0,
