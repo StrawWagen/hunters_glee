@@ -28,7 +28,7 @@ if CLIENT then
 
         local scoreGained = math.Round( self:GetGivenScore() )
 
-        local scoreGainedString = "Gas Can Score: " .. tostring( scoreGained )
+        local scoreGainedString = "Gas Can (In)Convenience Score: " .. tostring( scoreGained )
         surface.drawShadowedTextBetter( scoreGainedString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
 
     end
