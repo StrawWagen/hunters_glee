@@ -50,6 +50,11 @@ local minPlyDist    = 1600      -- players closer than this = penalty instead of
 local maxScore      = 175       -- best score you can get from a player
 local tooClosePenalty = 100     -- negative score if player is too close
 local maxVehPenalty = 3000      -- max points a vehicle can subtract
+local maxPlyDist    = 6000      -- players past this distance give no score
+local minPlyDist    = 2500      -- players closer than this = penalty instead of reward
+local maxScore      = 200       -- best score you can get from a player
+local tooClosePenalty = 500     -- negative score if player is too close
+local maxVehPenalty = 2000      -- max points a vehicle can subtract
 local maxVehDist    = 3000      -- vehicles inside this distance start hurting your score
 
 function ENT:UpdateGivenScore()
