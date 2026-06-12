@@ -114,7 +114,7 @@ function ENT:Place()
     terminator_Extras.DoPFXFromEnt( "glee_ghostly_ectoplasm", gas )
 
     if self.player and self.player.GivePlayerScore and inconvenienceScore then
-        self.player:GivePlayerScore( betrayalScore )
+        self.player:GivePlayerScore( inconvenienceScore )
         GAMEMODE:sendPurchaseConfirm( self.player, inconvenienceScore )
 
     end
