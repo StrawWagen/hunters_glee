@@ -1,12 +1,10 @@
-if SERVER then
-	AddCSLuaFile()
-else
-	SWEP.PrintName = "Maxwell"
-	SWEP.Slot = 2
-	SWEP.SlotPos = 7
-	SWEP.DrawCrosshair = false
-	SWEP.BounceWeaponIcon = true
-end
+
+AddCSLuaFile()
+SWEP.PrintName = "Maxwell"
+SWEP.Slot = 1
+SWEP.SlotPos = 7
+SWEP.DrawCrosshair = false
+SWEP.BounceWeaponIcon = true
 
 -- CREDIT https://steamcommunity.com/sharedfiles/filedetails/?id=2878054450 by bean
 
@@ -47,8 +45,6 @@ SWEP.VElements = {
 SWEP.WElements = {
 	["catty"] = { type = "Model", model = "models/glee/dingus/dingus.mdl", bone = "ValveBiped.Bip01_R_Hand", rel = "", pos = Vector(-0.644, 8.807, 0), angle = Angle(90, -4.545, -8.801), size = Vector(0.824, 0.824, 0.824), color = Color(255, 255, 255, 255), material = "", skin = 0, bodygroup = {} }
 }
-SWEP.Slot = 4
-SWEP.SlotPos = 8
 SWEP.Primary.ClipSize = -1
 SWEP.Primary.DefaultClip = -1
 SWEP.Primary.Automatic = true

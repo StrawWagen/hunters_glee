@@ -364,6 +364,7 @@ local PANEL = {
         local iconSrc = self._iconColor
         if state == FLASH then
             iconSrc = self._flashIconColor
+
         end
 
         local dIcon   = self._drawIcon

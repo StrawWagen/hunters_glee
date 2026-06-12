@@ -4,7 +4,7 @@ if not terminator_Extras then return end
 AddCSLuaFile()
 
 if CLIENT then
-    SWEP.Slot = 2
+    SWEP.Slot = 0
     SWEP.SlotPos = 1
     SWEP.DrawAmmo = false
     SWEP.DrawCrosshair = true

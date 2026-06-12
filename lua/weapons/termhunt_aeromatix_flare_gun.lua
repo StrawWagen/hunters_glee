@@ -9,7 +9,7 @@ SWEP.Category           = "Hunter's Glee"
 SWEP.HoldType           = "pistol"
 SWEP.Weight             = 3
 SWEP.Range              = 2000
-SWEP.Slot               = 2
+SWEP.Slot               = 1
 SWEP.SlotPos            = 3
 
 SWEP.AutoSwitchFrom     = true

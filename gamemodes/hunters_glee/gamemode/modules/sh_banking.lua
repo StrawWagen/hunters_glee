@@ -20,6 +20,20 @@ function gleefunc_BankChargePerPeriod()
     end
 end
 
+-- % processing fee applied to deposits
+local glee_BankProcessingFee = CreateConVar( "huntersglee_bank_processingfee", "-1", { FCVAR_ARCHIVE, FCVAR_REPLICATED }, "What percent of player's bank account is charged as a processing fee. -1 is default, 10%", -1, 100 )
+local default_BankProcessingFee = 10
+function gleefunc_BankProcessingFee()
+    local theVal = glee_BankProcessingFee:GetFloat()
+    if theVal ~= -1 then
+        return math.Round( theVal, 2 )
+
+    else
+        return default_BankProcessingFee
+
+    end
+end
+
 -- charge period
 local glee_BankChargePeriod = CreateConVar( "huntersglee_bank_chargeperiod", "-1", { FCVAR_ARCHIVE, FCVAR_REPLICATED }, "Period that the player's bank account is charged, in seconds. -1 for default, 86400, 1 day.", -1, 999999999999 )
 local default_BankChargePeriod = 172800 -- 2 days

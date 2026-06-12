@@ -45,6 +45,9 @@ terminator_Extras.glee_EscapedPlyColor = Color( 0, 190, 255 )
 terminator_Extras.hl2hud = {
     iconMaxSize     = 128,
     boxCornerRadius = 10,
+    blockPadding    = glee_sizeScaled( nil, 8 ),  -- y-padding between box edge and text
+    laneSpacing     = glee_sizeScaled( nil, 6 ),  -- gap between stacked hud boxes
+    fontName        = "Trebuchet MS",
 
     colorHappyYellow      = Color( 255, 230, 0, 220 ),
     colorUnHappyYellow    = Color( 225, 200, 0, 220 ),
@@ -52,6 +55,33 @@ terminator_Extras.hl2hud = {
     colorBackground       = Color( 0, 0, 0, 76 ),
     colorBackgroundUrgent = Color( 100, 100, 50, 76 ),
 }
+
+surface.CreateFont( "termhuntTimeFont", {
+    font      = "Trebuchet MS",
+    size      = glee_sizeScaled( nil, 34 ),
+    weight    = 2000,
+    blursize  = 0,
+    scanlines = 1,
+    antialias = true,
+} )
+
+surface.CreateFont( "termhuntScoreFont", {
+    font      = "Trebuchet MS",
+    size      = glee_sizeScaled( nil, 28 ),
+    weight    = 1000,
+    blursize  = 0,
+    scanlines = 0,
+    antialias = true,
+} )
+
+surface.CreateFont( "termhuntHintFont", {
+    font      = "Trebuchet MS",
+    size      = glee_sizeScaled( nil, 28 ),
+    weight    = 1000,
+    blursize  = 0,
+    scanlines = 0,
+    antialias = true,
+} )
 
 function terminator_Extras.glee_PlayerNameColor( ply, visible )
     local color = nil

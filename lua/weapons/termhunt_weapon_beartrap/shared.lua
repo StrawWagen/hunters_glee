@@ -1,6 +1,6 @@
 if CLIENT then
     SWEP.DrawCrosshair   = false
-    SWEP.Slot      = 2
+    SWEP.Slot      = 1
     SWEP.ViewModelFlip        = false
     SWEP.ViewModelFOV        = 54
 

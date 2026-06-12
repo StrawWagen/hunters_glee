@@ -6,40 +6,12 @@ local CurTime  = CurTime
 local neverShowInfo = CreateClientConVar( "huntersglee_cl_nevershowtoplefthud", 0, true, false, "Never show round info, score, and skull count?", 0, 1 )
 local alwaysShowInfo = CreateClientConVar( "huntersglee_cl_alwaysshowtoplefthud", 0, true, false, "Always show round info, score, and skull count?", 0, 1 )
 
-local gleeFontName = "Trebuchet MS" --( GAMEMODE and GAMEMODE.GLEE_FONT ) or "Arial"
-
 local paddingFromEdge   = terminator_Extras.defaultHudPaddingFromEdge
-local paddingFromBottom  = terminator_Extras.defaultHudPaddingFromBottom
+local paddingFromBottom = terminator_Extras.defaultHudPaddingFromBottom
 local scoreMaxShakeSize = glee_sizeScaled( nil, 2 )
-local laneSpacing       = glee_sizeScaled( nil, 6 )
-local blockPadding      = glee_sizeScaled( nil, 8 ) -- y padding between edge of block and text
-
-surface.CreateFont( "termhuntTimeFont", {
-    font      = gleeFontName,
-    size      = glee_sizeScaled( nil, 34 ),
-    weight    = 2000,
-    blursize  = 0,
-    scanlines = 1,
-    antialias = true,
-} )
-
-surface.CreateFont( "termhuntScoreFont", {
-    font      = gleeFontName,
-    size      = glee_sizeScaled( nil, 28 ),
-    weight    = 1000,
-    blursize  = 0,
-    scanlines = 0,
-    antialias = true,
-} )
-
-surface.CreateFont( "termhuntHintFont", {
-    font      = gleeFontName,
-    size      = glee_sizeScaled( nil, 28 ),
-    weight    = 1000,
-    blursize  = 0,
-    scanlines = 0,
-    antialias = true,
-} )
+local laneSpacing       = terminator_Extras.hl2hud.laneSpacing
+local blockPadding      = terminator_Extras.hl2hud.blockPadding
+-- fonts are now defined in cl_gleehud.lua
 
 local hour = 60 * 60
 

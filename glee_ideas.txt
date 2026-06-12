@@ -107,6 +107,13 @@
 -- give notifs when people break your crates/barrels? --no
 -- PULL ALL SPECTATORS TO GRIGORI -- done
 
+-- ghostly wind undead item - DONE
+-- barrels scoring confusing - DONE
+
+-- slogan -DONE
+
+-- impliment taucannon fullcharge effect -DONE
+
 -- effigy
 -- pushes dead people away, makes them look away
 -- steals their money when they get close, or aim near it
@@ -127,15 +134,10 @@
 
 -- radio draw channel instead of ammo
 
--- ghostly wind undead item
--- barrels scoring confusing
-
 -- bhop perk?
 
 -- visual cohesiveness
 -- better defined goal
-
--- slogan
 
 -- FIND lore for glee
 -- why are we here, where are we going
@@ -143,14 +145,61 @@
 
 -- pull players back into the map when they aren't moving outside the bounds of the map
 
--- impliment taucannon fullcharge effect
-
 -- sight jacking item?
 
 -- act command while driving npcs
 
 -- ATM
 -- buy in shop, costs 1000 score
--- crashes thru ceiling, headcrab cannister style
--- or just teleports
--- half of the 10% deposit cut gets stored in the atm, for caller to take out
+-- arrives by itself if someone has more than 10k score
+-- arrives somewhere nearby purchaser, ( or first player with >10k score )
+-- exists as restricted way to make large deposits/withdrawls
+-- press E to open it's gui, has buttons for deposits/withdrawls of size 100, 500, 1000
+-- burrows itself out of the ground
+-- half of the x% deposit cut gets stored in the atm
+-- if atm was purchased, the purchaser gets an extra option to withdraw the deposit cut
+-- can also destroy atm to get the cut ( very tanky )
+-- atm burrows out in a shell of two models/hunter/tubes/tube1x1x2c.mdl, and topped by one models/hunter/misc/cone1x1.mdl
+-- when it fully exits the ground, the shell explodes off of it
+
+
+-- samus ball powerup
+
+-- WAIT HINT HUD UNTIL ESCAPE IS CLOSED
+
+-- directly say that roll of the dice is for unstucking
+-- hint to flash tab?
+
+-- voting for modes is not that new user friendly
+-- find skulls hint?
+-- zambies glee is better starting mode
+-- sixth sense conflicts with new proximity hud
+
+-- skull place while dead item
+-- show skulls when aiming at players
+-- skulls from enemies makes sense, but not from other ways
+-- push skulls into people's face, becomes compelling once 
+
+-- split sixth sense?
+-- sixth sense will only be for enemies
+-- loot finding replacement
+--    hoarder sense for nearby props
+--    ghosts know where loot is at all times?
+--    ghosts way to communicate?
+--    ghosts as knowledge brokers?
+
+-- astral projection
+--    become ghost, leave body
+--    real body, drop server ragdoll, with skull
+--    cannot be revived
+
+-- remove pistol from loadout
+
+-- groups
+-- make it easier to see friends
+-- taunt with eachother
+-- pins skull counts to eachother?
+-- add pinging
+-- team gui for friends?
+
+-- make the hints guide people into making profit at least once while dead

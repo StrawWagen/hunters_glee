@@ -48,6 +48,7 @@ local items = {
             chargePeriodDays = math.Round( chargePeriodDays, 2 )
 
             local periodCharge = gleefunc_BankChargePerPeriod()
+            local processingFee = gleefunc_BankProcessingFee()
 
             local days = "days."
             if chargePeriodDays == 1 then
@@ -57,7 +58,7 @@ local items = {
 
             local descTbl = {
                 "Deposit score for another time.\n",
-                "The bank has a 10% procesing fee when depositing.\n",
+                "The bank has a " .. processingFee .. "% processing fee when depositing.\n",
                 "Idle FEES! of \"" .. periodCharge .. "\"% of your entire balance, ",
                 "will apply every \"" .. chargePeriodDays .. "\" real-time " .. days,
 
@@ -83,7 +84,9 @@ local items = {
             local toDeposit = math.Clamp( purchaser:GetScore(), 10, 200 )
             purchaser:GivePlayerScore( -toDeposit )
 
-            toDeposit = toDeposit * 0.9 -- ten percent processing fee
+            local percentFee = gleefunc_BankProcessingFee()
+            local percentToMul = 1 - ( percentFee / 100 )
+            toDeposit = toDeposit * percentToMul -- apply processing fee
             purchaser:BankDepositScore( toDeposit )
 
         end,
