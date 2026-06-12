@@ -477,6 +477,8 @@ function ENT:DoScoreThink()
 end
 
 -- add an entity that is either giving us score or taking score
+-- width is how much score it is giving/taking, used for sorting and beam width
+-- positive width = good, negative width = bad
 function ENT:AddBlameReason( ent, width, reason )
     local currReason = {
         ent = ent,

@@ -40,22 +40,19 @@ function ENT:ManageMyPos()
     BaseClass.ManageMyPos( self )
 
     -- on it's side, pointed in a random direction
-    local ang = Angle( 90, ( self:EntIndex() * self:EntIndex() ) % 360, 0 )
+    local entIndex = self:EntIndex()
+    local yaw = ( entIndex * entIndex ) % 360
+    local ang = Angle( 90, yaw, 0 )
     self:SetAngles( ang )
 
 end
 
-local maxPlyDist    = 4000      -- players past this distance give no score
-local minPlyDist    = 1600      -- players closer than this = penalty instead of reward
-local maxScore      = 175       -- best score you can get from a player
-local tooClosePenalty = 100     -- negative score if player is too close
-local maxVehPenalty = 3000      -- max points a vehicle can subtract
-local maxPlyDist    = 6000      -- players past this distance give no score
-local minPlyDist    = 2500      -- players closer than this = penalty instead of reward
-local maxScore      = 200       -- best score you can get from a player
-local tooClosePenalty = 500     -- negative score if player is too close
-local maxVehPenalty = 2000      -- max points a vehicle can subtract
-local maxVehDist    = 3000      -- vehicles inside this distance start hurting your score
+local maxPlyDist      = 6000      -- players past this distance give no score
+local minPlyDist      = 2000      -- players closer than this = penalty instead of reward
+local maxScore        = 200       -- best score you can get from a player
+local tooClosePenalty = 500       -- negative score if player is too close (full penalty when right next to player, half at minPlyDist)
+local maxVehPenalty   = 2000      -- max points a vehicle can subtract
+local maxVehDist      = 3000      -- vehicles inside this distance start hurting your score
 
 function ENT:UpdateGivenScore()
     local myPos = self:GetPos()
@@ -67,13 +64,23 @@ function ENT:UpdateGivenScore()
         local dist = math.sqrt( nearestPlyDistSqr )
 
         if dist < minPlyDist then
-            -- way too close, hard punish
-            scoreGiven = -tooClosePenalty
+            -- scale penalty from half at minPlyDist up to full when right next to a player
+            local closeFraction = 1 - dist / minPlyDist
+            local penalty = tooClosePenalty * ( 0.5 + closeFraction * 0.5 )
+            scoreGiven = -penalty
+
+            local width = ( scoreGiven / maxPlyDist ) * 500
+            self:AddBlameReason( nearestPly, width, "Player" )
 
         else
             -- scale score with distance up to maxPlyDist
-            local t = math.Clamp( ( dist - minPlyDist ) / ( maxPlyDist - minPlyDist ), 0, 1 )
-            scoreGiven = t * maxScore
+            local distPastMin    = dist - minPlyDist
+            local scorableRange  = maxPlyDist - minPlyDist
+            local distanceFraction = math.Clamp( distPastMin / scorableRange, 0, 1 )
+            scoreGiven = distanceFraction * maxScore
+
+            local width = ( scoreGiven / maxPlyDist ) * 500
+            self:AddBlameReason( nearestPly, width, "Player" )
 
         end
     end
@@ -89,8 +96,12 @@ function ENT:UpdateGivenScore()
             local dist = myPos:Distance( user:GetPos() )
             if dist > maxVehDist then continue end
 
-            local penalty = maxVehPenalty * (1 - dist / maxVehDist)
+            local vehDistFraction = dist / maxVehDist
+            local penalty = maxVehPenalty * ( 1 - vehDistFraction )
             scoreGiven = scoreGiven - penalty
+
+            local width = ( -penalty / maxVehPenalty ) * 500
+            self:AddBlameReason( user, width, "Gas User" )
 
         end
     end
@@ -105,7 +116,8 @@ function ENT:Place()
     local inconvenienceScore = self:GetGivenScore()
 
     local gas = ents.Create( "prop_physics" )
-    gas:SetModel( gasModels[math.random( #gasModels )] )
+    local gasModel = gasModels[math.random( #gasModels )]
+    gas:SetModel( gasModel )
     gas:SetPos( self:OffsettedPlacingPos() )
     gas:SetAngles( Angle( 90, math.random( 0, 360 ), 0 ) )
     gas:Spawn()

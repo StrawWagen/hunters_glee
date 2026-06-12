@@ -84,7 +84,7 @@ local items = {
     },
     ["gas_can"] = {
         name = "Gas Can",
-        desc = "Gas.\nPlace it far away from players, and anything that uses gas.",
+        desc = "Gas.\nFor fueling things.\nPlace it far away from players, and anything that uses gas.",
         shCost = 0,
         markup = 1,
         cooldown = 90,
