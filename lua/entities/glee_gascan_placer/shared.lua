@@ -97,7 +97,7 @@ function ENT:UpdateGivenScore()
 end
 
 function ENT:Place()
-    local betrayalScore = self:GetGivenScore()
+    local inconvenienceScore = self:GetGivenScore()
 
     local gas = ents.Create( "prop_physics" )
     gas:SetModel( gasModels[math.random( #gasModels )] )
@@ -108,9 +108,9 @@ function ENT:Place()
 
     terminator_Extras.DoPFXFromEnt( "glee_ghostly_ectoplasm", gas )
 
-    if self.player and self.player.GivePlayerScore and betrayalScore then
+    if self.player and self.player.GivePlayerScore and inconvenienceScore then
         self.player:GivePlayerScore( betrayalScore )
-        GAMEMODE:sendPurchaseConfirm( self.player, betrayalScore )
+        GAMEMODE:sendPurchaseConfirm( self.player, inconvenienceScore )
 
     end
 
