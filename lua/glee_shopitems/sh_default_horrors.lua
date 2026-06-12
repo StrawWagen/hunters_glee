@@ -82,6 +82,23 @@ local items = {
         end,
         shCanShowInShop = shopHelpers.escapedCheck,
     },
+    ["gas_can"] = {
+        name = "Gas Can",
+        desc = "Gas.\nPlace it far away from players, and anything that uses gas.",
+        shCost = 0,
+        markup = 1,
+        cooldown = 90,
+        tags = { "HORRORS", "CloseShopOnPurchase" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = 75,
+        svOnPurchaseFunc = function( purchaser, itemIdentifier )
+            setupPlacable( "glee_gascan_placer", purchaser, itemIdentifier )
+
+        end,
+        shCanShowInShop = shopHelpers.escapedCheck,
+    },
     ["ghostly_wind"] = {
         name = "Ghostly Wind",
         desc = "Summon a strange gust of wind...",
