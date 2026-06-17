@@ -50,7 +50,7 @@ function ENT:CanWithdraw( ply )
     local cap        = ply:Alive() and self.TransactionAmount or self.DeadTransactionAmount
     local toWithdraw = math.min( cap, math.max( 0, bankFunds - minFunds ) )
 
-    if toWithdraw < 1000 then return false, "Your funds are too low.\nThe ATM's withdrawl threshold is 1000 score." end
+    if toWithdraw < cap then return false, "Your funds are too low.\nThe ATM's withdrawl threshold is 1000 score." end
     return true
 
 end
