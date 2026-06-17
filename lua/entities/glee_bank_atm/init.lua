@@ -78,8 +78,13 @@ net.Receive( "glee_atm_deposit", function( _, ply )
     if ply.glee_atmNextTransaction and ply.glee_atmNextTransaction > cur then return end
     ply.glee_atmNextTransaction = cur + cooldown
 
-    atm:DepositToATM( ply )
+    local _success, message = atm:DepositToATM( ply )
 
+    if game.IsDedicated() then -- 'log' shop item purchases 
+        local nameAndId = ply:GetName() .. "[" .. ply:SteamID() .. "]"
+        print( nameAndId .. " ATM Deposited: " .. message )
+
+    end
 end )
 
 net.Receive( "glee_atm_withdraw", function( _, ply )
@@ -94,8 +99,13 @@ net.Receive( "glee_atm_withdraw", function( _, ply )
     if ply.glee_atmNextTransaction and ply.glee_atmNextTransaction > cur then return end
     ply.glee_atmNextTransaction = cur + cooldown
 
-    atm:WithdrawFromBank( ply )
+    local _success, message = atm:WithdrawFromBank( ply )
 
+    if game.IsDedicated() then -- 'log' shop item purchases 
+        local nameAndId = ply:GetName() .. "[" .. ply:SteamID() .. "]"
+        print( nameAndId .. " ATM Withdrew: " .. message )
+
+    end
 end )
 
 net.Receive( "glee_atm_claimownercut", function( _, ply )
@@ -105,8 +115,13 @@ net.Receive( "glee_atm_claimownercut", function( _, ply )
     if not IsValid( ply ) then return end
     if ply:GetPos():DistToSqr( atm:GetPos() ) > ATM_USE_RANGE_SQR then return end
 
-    atm:ClaimOwnersCut( ply )
+    local _success, message = atm:ClaimOwnersCut( ply )
 
+    if game.IsDedicated() then -- 'log' shop item purchases 
+        local nameAndId = ply:GetName() .. "[" .. ply:SteamID() .. "]"
+        print( nameAndId .. " ATM Owner's Cut: " .. message )
+
+    end
 end )
 
 -- sandbox spawn

@@ -85,3 +85,43 @@ concommand.Add( "huntersglee_print_byremained", function( ply )
     printEscapeTable( "glee_escape_by_spawnset", "spawnset", "remained" )
 
 end )
+
+local function printMultiplierTable( tblName, keyCol, getMul )
+    local rows = sql.Query( "SELECT " .. keyCol .. " FROM " .. tblName )
+    if not rows then
+        print( "  (none)" )
+        return
+
+    end
+
+    local entries = {}
+    for _, row in ipairs( rows ) do
+        local key = row[keyCol]
+        local mul, escaped, remained = getMul( key )
+        entries[#entries + 1] = { key = key, mul = mul, escaped = escaped, remained = remained }
+
+    end
+
+    table.sort( entries, function( a, b ) return a.mul > b.mul end )
+
+    for i, e in ipairs( entries ) do
+        print( string.format( "  #%-3d  %-42s  mul: %-5s  escaped: %-6s  remained: %s",
+            i, e.key, e.mul, e.escaped, e.remained ) )
+
+    end
+end
+
+concommand.Add( "huntersglee_print_bymultiplier", function( ply )
+    if IsValid( ply ) and not ply:IsAdmin() then return end
+
+    print( "=== Maps (by multiplier) ===" )
+    printMultiplierTable( "glee_escape_by_map", "mapname", function( key )
+        return GAMEMODE:GetMapsEscapeMultiplier( key )
+    end )
+
+    print( "=== Spawnsets (by multiplier) ===" )
+    printMultiplierTable( "glee_escape_by_spawnset", "spawnset", function( key )
+        return GAMEMODE:GetSpawnsetsEscapeMultiplier( key )
+    end )
+
+end )

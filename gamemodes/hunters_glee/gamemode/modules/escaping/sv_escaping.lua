@@ -197,6 +197,8 @@ end )
 
 local white = Color( 255, 255, 255 )
 
+-- TODO: make everyone invincible after the boss is defeated?
+
 hook.Add( "glee_onbossdefeated", "glee_escapeviabossdefeat", function( boss, attacker )
     local msg = GAMEMODE:GetNameOfBot( boss ) .. "\nWAS KILLED BY\n" .. attacker:Nick() .. "\nYou're finally, truly safe..."
     huntersGlee_AnnounceDramatic( player.GetAll(), 1000, 10, msg )
