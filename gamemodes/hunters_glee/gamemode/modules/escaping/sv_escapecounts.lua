@@ -92,7 +92,8 @@ local function escapeRatioToMultiplier( escaped, remained, lastUpdateTime )
     local addedByRatio = 0
     if escaped <= 0 then -- NEVER BEEN ESCAPED!
         addedByRatio = 1.5 -- permanent 2.5x for first escapes
-        addedByRatio = addedByRatio + math.Clamp( remained * 0.025, 0, 1 ) -- map is unescapable, up to 3.5x
+        addedByRatio = addedByRatio + math.Clamp( remained * 0.049, 0, 1 ) -- map is unescapable, up to 3.5x at first
+        addedByRatio = addedByRatio + math.Clamp( remained * 0.001, 0, 1.5 ) -- and continue up to 5x for really miserable maps
 
     else
         local escapedWeighted = escaped * 1.25
