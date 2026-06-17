@@ -207,3 +207,4 @@
 -- funny interaction when grigorified players try to escape?
 
 -- change ATM color to blue?
+-- make atm not error when used in sandbox?
