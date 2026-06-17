@@ -46,7 +46,7 @@ local function isGoodATMPos( pos, tooClosePos )
 
             end
         end
-        if solid then return nil end
+        if not solid then return nil end
 
     end
 
