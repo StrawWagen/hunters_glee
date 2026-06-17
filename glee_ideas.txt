@@ -203,3 +203,7 @@
 -- team gui for friends?
 
 -- make the hints guide people into making profit at least once while dead
+
+-- funny interaction when grigorified players try to escape?
+
+-- change ATM color to blue?

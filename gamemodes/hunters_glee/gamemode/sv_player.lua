@@ -1,5 +1,4 @@
 local IsValid = IsValid
-local util_IsInWorld = util.IsInWorld
 local math = math
 
 local punishEscaping = CreateConVar( "huntersglee_punish_navmesh_escapers", 1, bit.bor( FCVAR_NOTIFY, FCVAR_ARCHIVE ), "Should the life of players who tread off the navmesh be sapped away?.", 0, 32 )
@@ -18,61 +17,6 @@ local bpmStartScreamingLikeCrazy = 225
 
 local entMeta = FindMetaTable( "Entity" )
 
-local plyMeta = FindMetaTable( "Player" )
-
-
--- navarea caching, we get player's navmeshes alot, so it's worth it to cache
-
-function plyMeta:GetNavAreaData()
-    if not IsValid( self.glee_CachedNavArea ) then
-        self:CacheNavArea()
-
-    end
-    return self.glee_CachedNavArea, self.glee_SqrDistToCachedNavArea
-
-end
-
-function plyMeta:CacheNavArea()
-    local myPos = self:GetPos()
-    if not util_IsInWorld( myPos ) then -- stuck!!!
-        self.glee_CachedNavArea = nil
-        self.glee_SqrDistToCachedNavArea = math.huge
-        return
-
-    end
-    local area = navmesh.GetNearestNavArea( myPos, true, navCheckDist, false, true )
-
-    self.glee_CachedNavArea = area
-    if area then
-        if self:IsOnGround() then
-            GAMEMODE.navmeshActivityHeatmap[area] = ( GAMEMODE.navmeshActivityHeatmap[area] or 0 ) + 1
-
-        end
-        self.glee_SqrDistToCachedNavArea = myPos:DistToSqr( area:GetClosestPointOnArea( myPos ) )
-
-        local oldArea = self.glee_CachedOldNavArea
-        if oldArea and oldArea ~= area then
-            hook.Run( "glee_ply_changednavareas", self, oldArea, area )
-            self.glee_CachedOldNavArea = area
-
-        elseif not oldArea then
-            self.glee_CachedOldNavArea = area
-
-        end
-    else
-        self.glee_SqrDistToCachedNavArea = math.huge
-
-    end
-end
-
-hook.Add( "glee_sv_validgmthink", "glee_cachenavareas", function( players )
-    for _, ply in ipairs( players ) do
-        if ply:Health() > 0 then
-            ply:CacheNavArea()
-
-        end
-    end
-end )
 
 -- nuke from the heatmap if someone dies from, say falldamage on it
 hook.Add( "PlayerDeath", "glee_worlddeaths_invalidateheatmap", function( victim, inflictor )
@@ -492,7 +436,7 @@ function GM:EmulateHistoricHighBPM( ply )
 end
 
 -- used by hunts tally
-hook.Add( "huntersglee_givescore", "huntersglee_storealivescoring", function( scorer, addedscore )
+hook.Add( "huntersglee_givenscore", "huntersglee_storealivescoring", function( scorer, addedscore )
     if not IsValid( scorer ) then return end
     if scorer:Health() <= 0 then return end
     if addedscore < 1 then return end
@@ -892,6 +836,7 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
         local alivePlayers = GAMEMODE:returnAliveInTable( players )
         local protoStuffToSpectate = alivePlayers
         table.Add( protoStuffToSpectate, table.Copy( GAMEMODE.glee_Hunters ) )
+        table.Add( protoStuffToSpectate, table.Copy( ents.FindByClass( "glee_bank_atm" ) ) )
 
         local stuffToSpectate = {}
         for _, thing in ipairs( protoStuffToSpectate ) do
@@ -931,7 +876,23 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
             local thingToFollow = nil
             local eyeTrace = ply:GetEyeTrace()
             local eyeTraceHit = eyeTrace.Entity
-            if IsValid( eyeTraceHit ) and eyeTraceHit:IsPlayer() or eyeTraceHit:IsNextBot() or eyeTraceHit:IsNPC() then
+            local spectatable
+            local valid = IsValid( eyeTraceHit )
+            if valid then
+                spectatable = eyeTraceHit:GetNW2Bool( "glee_IsSpectatable", false )
+                    or eyeTraceHit:IsPlayer()
+                    or eyeTraceHit:IsNextBot()
+                    or eyeTraceHit:IsNPC()
+
+                local parent = eyeTraceHit:GetParent()
+                if not spectateable and IsValid( parent ) and parent:GetNW2Bool( "glee_IsSpectatable", false ) then
+                    eyeTraceHit = parent
+                    spectatable = true
+
+                end
+            end
+
+            if IsValid( eyeTraceHit ) and ( eyeTraceHit:GetNW2Bool( "glee_IsSpectatable", false ) or eyeTraceHit:IsPlayer() or eyeTraceHit:IsNextBot() or eyeTraceHit:IsNPC() ) then
                 thingToFollow = eyeTraceHit
 
             else

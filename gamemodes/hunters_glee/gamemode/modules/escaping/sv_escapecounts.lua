@@ -92,7 +92,7 @@ local function escapeRatioToMultiplier( escaped, remained, lastUpdateTime )
     local addedByRatio = 0
     if escaped <= 0 then -- NEVER BEEN ESCAPED!
         addedByRatio = 1.5 -- permanent 2.5x for first escapes
-        addedByRatio = addedByRatio + math.Clamp( remained * 0.1, 0, 1 ) -- map is unescapable, up to 3.5x
+        addedByRatio = addedByRatio + math.Clamp( remained * 0.025, 0, 1 ) -- map is unescapable, up to 3.5x
 
     else
         local escapedWeighted = escaped * 1.25
@@ -246,51 +246,5 @@ end )
 
 hook.Add( "glee_post_new_spawnset", "glee_escapemul_syncnew_spawnset", function()
     GAMEMODE:SyncCurrEscapeMuls( player.GetAll() )
-
-end )
-
-
-concommand.Add( "huntersglee_debug_printescapemuls", function( ply, cmd, args )
-    if IsValid( ply ) and not ply:IsAdmin() then return end
-
-    local mapName = args[1] or game.GetMap()
-    local spawnSetName = args[2] or GAMEMODE:GetSpawnSet()
-
-    print( "Map:", mapName, " | ", GAMEMODE:GetMapsEscapeMultiplier( mapName ) )
-    print( "Spawnset:", spawnSetName, " | ", GAMEMODE:GetSpawnsetsEscapeMultiplier( spawnSetName ) )
-
-end )
-
-concommand.Add( "huntersglee_resetescapecount_map", function( ply, cmd, args )
-    if IsValid( ply ) and not ply:IsAdmin() then return end
-
-    local mapName = args[1]
-    if not mapName or mapName == "" then
-        print( "Usage: huntersglee_resetescapecount_map <mapname>" )
-        return
-    end
-
-    sql.Query( "DELETE FROM glee_escape_by_map WHERE mapname = " .. sql.SQLStr( mapName ) )
-    rawCountsCache[mapName] = nil
-    GAMEMODE:SyncCurrEscapeMuls()
-
-    print( "Reset escape counts for map:", mapName )
-
-end )
-
-concommand.Add( "huntersglee_resetescapecount_spawnset", function( ply, cmd, args )
-    if IsValid( ply ) and not ply:IsAdmin() then return end
-
-    local spawnSetName = args[1]
-    if not spawnSetName or spawnSetName == "" then
-        print( "Usage: huntersglee_resetescapecount_spawnset <spawnsetname>" )
-        return
-    end
-
-    sql.Query( "DELETE FROM glee_escape_by_spawnset WHERE spawnset = " .. sql.SQLStr( spawnSetName ) )
-    rawCountsCache[spawnSetName] = nil
-    GAMEMODE:SyncCurrEscapeMuls()
-
-    print( "Reset escape counts for spawnset:", spawnSetName )
 
 end )

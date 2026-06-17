@@ -81,6 +81,20 @@ function meta:GetSignalStrength( area )
 
     end
 
+    if terminator_Extras.glee_SignalStrengthSources then
+        for _, source in ipairs( terminator_Extras.glee_SignalStrengthSources ) do
+            if not IsValid( source.ent ) then continue end
+            local dist = source.ent:GetPos():Distance( pos )
+            if dist > source.radius then continue end
+
+            local proximity = math.Clamp( ( source.radius - dist ) / source.radius, 0, 1 )
+
+            signalFinal = signalFinal + proximity * source.strengthAdd
+            staticFinal = math.max( 0, staticFinal - proximity * source.staticReduction )
+
+        end
+    end
+
     signalFinal = math.Clamp( signalFinal, 0, 100 )
 
     return signalFinal, staticFinal
@@ -122,5 +136,18 @@ net.Receive( "glee_updatesignalstrength", function( _, ply )
     hook.Run( "glee_signalstrength_used", ply )
 
     ply:UpdateSignalStrength()
+
+end )
+
+hook.Add( "glee_atm_finishedBurrowing", "glee_signalstrength_fromatm", function( atm )
+    local source = {
+        ent = atm,
+        radius = 1500,
+        strengthAdd = 75,
+        staticReduction = 20,
+
+    }
+    terminator_Extras.glee_SignalStrengthSources = terminator_Extras.glee_SignalStrengthSources or {}
+    table.insert( terminator_Extras.glee_SignalStrengthSources, source )
 
 end )

@@ -1,7 +1,7 @@
 
-local doSoulRagdolls = CreateClientConVar( "huntersglee_cl_dosoulragdolls", 1, true, false, "Enable funny client ragdolls on dead players", 0, 1 )
-local doOwnSoul = CreateClientConVar( "huntersglee_cl_seeownsoul", 1, true, false, "See your own soul?", 0, 1 )
-local ownSoulNearFade = CreateClientConVar( "huntersglee_cl_ownsoul_nearfade", 0.1, true, false, "How transparent should your own soul be when it's near you?", 0, 1 )
+local doSoulRagdolls = CreateClientConVar( "cl_huntersglee_dosoulragdolls", 1, true, false, "Enable funny client ragdolls on dead players", 0, 1 )
+local doOwnSoul = CreateClientConVar( "cl_huntersglee_seeownsoul", 1, true, false, "See your own soul?", 0, 1 )
+local ownSoulNearFade = CreateClientConVar( "cl_huntersglee_ownsoul_nearfade", 0.1, true, false, "How transparent should your own soul be when it's near you?", 0, 1 )
 
 local LocalPlayer = LocalPlayer
 local IsValid = IsValid

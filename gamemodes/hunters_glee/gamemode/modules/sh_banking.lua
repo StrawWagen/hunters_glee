@@ -392,6 +392,21 @@ function meta:BankDepositScore( toDeposit )
 
 end
 
+-- deposit score with processing fee handled
+-- return the amount cut from the deposit as fee
+function meta:BankDepositScoreFullHandle( toDeposit )
+    local percentFee = gleefunc_BankProcessingFee()
+    local cut = toDeposit * ( percentFee / 100 )
+    toDeposit = toDeposit - cut
+
+    cut = math.ceil( cut )
+    toDeposit = math.floor( toDeposit )
+
+    self:BankDepositScore( toDeposit )
+    return cut
+
+end
+
 function meta:BankOpenAccount()
     bankFunctions.createAccount( self )
     timer.Simple( 0, function()

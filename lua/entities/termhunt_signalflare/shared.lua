@@ -716,6 +716,8 @@ if SERVER and terminator_Extras then
 
         heli.glee_PrettyName = "The Rescue Heli"
 
+        heli:SetNW2Bool( "glee_IsSpectatable", true )
+
         for _, data in ipairs( heli_seatPositions ) do
             heliSpawnSeat( heli, data.pos, data.ang )
 
@@ -1045,6 +1047,11 @@ if SERVER and terminator_Extras then
                 self.currentHeliTask = "rescue_switchToEscape"
                 self.currentHeliGoal = "escape"
                 huntersGlee_AnnounceDramatic( player.GetAll(), 502, 5, "Rescue is leaving, it's been here too long..." )
+
+            elseif self:Health() < self:GetMaxHealth() * 0.5 then
+                self.currentHeliTask = "rescue_switchToEscape"
+                self.currentHeliGoal = "escape"
+                huntersGlee_AnnounceDramatic( player.GetAll(), 502, 5, "Rescue op SCRAMBLED, too much resistance!" )
 
             elseif noPlayersNeedRescuing then
                 self.currentHeliTask = "rescue_switchToEscape"
@@ -1538,7 +1545,7 @@ if SERVER and terminator_Extras then
 
                 end
 
-                if self.goingAwayFromIdealCount >= 10 then
+                if self.goingAwayFromIdealCount >= 10 and currentTargPosName then
                     self.goingAwayFromIdealCount = 0
                     self[currentTargPosName] = nil
 
@@ -1559,10 +1566,11 @@ local lifetime = 20
 
 local signalFlaresThatPierceFog = {}
 
-local bigFlareMatId = surface.GetTextureID( "effects/strider_bulge_dudv_dx60" )
-local flareColorBig = Color( 255, 255, 255, 255 )
+local bigFlareMatId   = surface.GetTextureID( "effects/strider_bulge_dudv_dx60" )
+local flareColorBig   = Color( 255, 255, 255, 255 )
 local smallFlareMatId = surface.GetTextureID( "effects/huntermuzzle" )
 local flareColorSmall = Color( 150, 150, 255, 255 )
+local maxFlareSize = 400
 
 hook.Add( "RenderScreenspaceEffects", "glee_predraw_fogpiercing_signalflares", function()
 
@@ -1596,8 +1604,10 @@ hook.Add( "RenderScreenspaceEffects", "glee_predraw_fogpiercing_signalflares", f
         local size = math.Clamp( timeToDeath / lifetime, 0, 1 )
         size = size * sizeMul
 
-        local width = size + -distBite
-        local height = size + -distBite
+        local width  = size - distBite
+        local height = size - distBite
+        width  = math.min( width, maxFlareSize )
+        height = math.min( height, maxFlareSize )
 
         local bigJitter = width * 0.05
         local bigJitterx = math.Rand( -bigJitter, bigJitter )

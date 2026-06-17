@@ -42,7 +42,7 @@ terminator_Extras.defaultHudTextPaddingFromEdge = glee_sizeScaled( nil, 54 ) -- 
 terminator_Extras.glee_DeadPlyColor = Color( 87, 117, 117 )
 terminator_Extras.glee_EscapedPlyColor = Color( 0, 190, 255 )
 
-terminator_Extras.hl2hud = {
+terminator_Extras.glee_HL2Hud = {
     iconMaxSize     = 128,
     boxCornerRadius = 10,
     blockPadding    = glee_sizeScaled( nil, 8 ),  -- y-padding between box edge and text
@@ -52,12 +52,13 @@ terminator_Extras.hl2hud = {
     colorHappyYellow      = Color( 255, 230, 0, 220 ),
     colorUnHappyYellow    = Color( 225, 200, 0, 220 ),
     colorRedUrgent        = Color( 255, 50, 50, 200 ),
-    colorBackground       = Color( 0, 0, 0, 76 ),
+    colorBackground       = Color( 0, 0, 0, 76 ), -- for hud elements that should fade into the background
+    colorBackgroundDark   = Color( 0, 0, 0, 150 ), -- for gui elements that need visibility
     colorBackgroundUrgent = Color( 100, 100, 50, 76 ),
 }
 
-surface.CreateFont( "termhuntTimeFont", {
-    font      = "Trebuchet MS",
+surface.CreateFont( "glee_mediumLargeHL2Font", {
+    font      = terminator_Extras.glee_HL2Hud.fontName,
     size      = glee_sizeScaled( nil, 34 ),
     weight    = 2000,
     blursize  = 0,
@@ -65,8 +66,8 @@ surface.CreateFont( "termhuntTimeFont", {
     antialias = true,
 } )
 
-surface.CreateFont( "termhuntScoreFont", {
-    font      = "Trebuchet MS",
+surface.CreateFont( "glee_mediumHL2Font", {
+    font      = terminator_Extras.glee_HL2Hud.fontName,
     size      = glee_sizeScaled( nil, 28 ),
     weight    = 1000,
     blursize  = 0,
@@ -74,12 +75,10 @@ surface.CreateFont( "termhuntScoreFont", {
     antialias = true,
 } )
 
-surface.CreateFont( "termhuntHintFont", {
-    font      = "Trebuchet MS",
-    size      = glee_sizeScaled( nil, 28 ),
+surface.CreateFont( "glee_smallHL2Font", {
+    font      = terminator_Extras.glee_HL2Hud.fontName,
+    size      = glee_sizeScaled( nil, 22 ),
     weight    = 1000,
-    blursize  = 0,
-    scanlines = 0,
     antialias = true,
 } )
 

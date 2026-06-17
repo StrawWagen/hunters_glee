@@ -1,8 +1,8 @@
 --[[
     glee_hl2hudplayer
 
-    World-space player name-tag panel. Anchored to the player's feet position
-    on screen, offset upward by _headOffset pixels.
+    World-space player name-tag panel. Anchored to the player's WorldSpaceCenter
+    on screen (or data.posOverride / glee_SoulDisplayPos if set).
 
     Modes:
         MODE_FULL  (1)  Always visible at full size. Used in dead/spectator view.
@@ -11,21 +11,27 @@
 
     Distance thresholds for MODE_WORLD (all configurable via Set* methods, world units):
         SetNameFadeStartDist  text starts fading; bg starts shifting toward player color
-        SetNameFadeEndDist    text gone; bg fully player color; panel starts shrinking
-        SetFadeStartDist      panel fully a dot; starts fading out entirely
+        SetNameFadeEndDist    text gone; bg fully player color; panel starts shrinking toward dot
+        SetBecomeCircleDist   panel is fully a dot
+        SetFadeStartDist      panel starts fading out
         SetFadeEndDist        panel is invisible
 
-    Per-frame call:
-        panel:UpdateForPlayer( ply, cur, infoLine, extraLine, ignoreDist, isLookedAt )
+    Dormant players: effective distance is inflated by (timeSinceAwake * 100) to auto-fade them.
 
-        infoLine   string|nil   Shown always in MODE_FULL. Only shown when isLookedAt in MODE_WORLD.
-        extraLine  string|nil   Shown only when isLookedAt is true in either mode.
-        ignoreDist bool         If true, distance-based fading is ignored.
-        isLookedAt  bool         Controls MODE_WORLD infoLine visibility, extraLine visibility,
-                                and "????" name substitution when text has faded.
+    Per-frame call:
+        panel:UpdateForPlayer( ply, cur, data )
+
+        data.posOverride  Vector|nil   Overrides the world anchor position.
+        data.infoLine     string|nil   Shown always in MODE_FULL; only when isLookedAt in MODE_WORLD.
+        data.extraLine    string|nil   Shown only when isLookedAt is true in either mode.
+        data.ignoreDist   bool         If true, distance fading is skipped (text always visible).
+        data.isLookedAt   bool         Controls infoLine/extraLine visibility and "????" name
+                                       substitution when text alpha has faded to zero.
 
     Background lerps from hl2hud.colorBackground toward ply:GetPlayerColor() as distance
-    increases through the name-fade zone. Text always uses team/state color.
+    increases through the name-fade zone; background alpha also rises with the lerp.
+    Dead player panels stay near the neutral background color. When isLookedAt, bg snaps
+    back to neutral. Text always uses team/state color.
 ]]
 
 
@@ -39,7 +45,7 @@ local PANEL = {
 }
 
 function PANEL:Init()
-    local hud = terminator_Extras.hl2hud
+    local hud = terminator_Extras.glee_HL2Hud
 
     self._mode = MODE_FULL
 

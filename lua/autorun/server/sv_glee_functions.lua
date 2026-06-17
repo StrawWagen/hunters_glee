@@ -52,6 +52,9 @@ function terminator_Extras.AttachParentedDetail( parent, toSpawn, localPos, loca
     detail:Spawn()
     detail:SetParent( parent )
 
+    detail.glee_isGleeDetail = true
+    detail.glee_gleeDetailParent = parent
+
     parent:CallOnRemove( "glee_detailFallOff_" .. detail:GetCreationID(), function( _, det )
         if not IsValid( det ) then return end
         if parent:Health() > 0 then SafeRemoveEntity( det ) return end  -- if parent is removed while still alive, delete it
@@ -63,6 +66,23 @@ function terminator_Extras.AttachParentedDetail( parent, toSpawn, localPos, loca
 
 end
 
+-- redirect uses to the parent
+hook.Add( "PlayerUse", "glee_parentedDetailUseRedirect", function( ply, used )
+    local parent = used.glee_gleeDetailParent
+    if not IsValid( parent ) then return end
+
+    parent:Use( ply, parent )
+
+end )
+
+hook.Add( "glee_PresserUsed", "glee_parentedDetailUseRedirect", function( ply, used )
+    local parent = used.glee_gleeDetailParent
+    if not IsValid( parent ) then return end
+
+    parent:Use( ply, parent )
+
+end )
+
 function terminator_Extras.ParentedDetailFallOff( parent, detail )
     if not IsValid( parent ) or not IsValid( detail ) then return end
     local thePos = detail:GetPos()
@@ -70,5 +90,8 @@ function terminator_Extras.ParentedDetailFallOff( parent, detail )
     detail:SetPos( thePos )
     SafeRemoveEntityDelayed( detail, 35 )
     terminator_Extras.SmartSleepEntity( detail, 5 )
+
+    detail.glee_isGleeDetail = nil
+    detail.glee_gleeDetailParent = nil
 
 end

@@ -63,13 +63,14 @@ local PANEL = {
     STATE_FLASH  = 3,
     STATE_URGENT = 4,
     Init = function( self )
-        self._iconSize     = math.Clamp( glee_sizeScaled( nil, 48 ), 0, terminator_Extras.hl2hud.iconMaxSize )
+        local scaledIconSize = glee_sizeScaled( nil, 48 )
+        self._iconSize       = math.min( scaledIconSize, terminator_Extras.glee_HL2Hud.iconMaxSize )
         self._paddingRatio = 0.4
         self._mat          = nil
         self._text         = nil
         self._font         = "DermaDefault"
         self._textPadding  = glee_sizeScaled( nil, 8 )
-        self._cornerRadius = terminator_Extras.hl2hud.boxCornerRadius
+        self._cornerRadius = terminator_Extras.glee_HL2Hud.boxCornerRadius
 
         -- State machine
         self._state        = HIDDEN
@@ -92,7 +93,7 @@ local PANEL = {
         self._fadeStartTime = 0
 
         -- Colors
-        local hud            = terminator_Extras.hl2hud
+        local hud            = terminator_Extras.glee_HL2Hud
         self._normalBoxColor = hud.colorBackground:Copy()
         self._flashBoxColor  = hud.colorBackgroundUrgent:Copy()
         self._urgentBoxColor = hud.colorBackgroundUrgent:Copy()
@@ -180,8 +181,8 @@ local PANEL = {
 
         for line in ( self._text .. "\n" ):gmatch( "([^\n]*)\n" ) do
             lineCount    = lineCount + 1
-            local lw     = surface.GetTextSize( line )
-            if lw > maxWidth then maxWidth = lw end
+            local lineWidth = surface.GetTextSize( line )
+            if lineWidth > maxWidth then maxWidth = lineWidth end
 
         end
 
@@ -278,7 +279,8 @@ local PANEL = {
 
         end
 
-        -- Honor pending state (cannot interrupt an active flash)
+        -- Honor pending state (cannot interrupt an active flash).
+        -- Also fires when flash just expired above; harmlessly re-applies pendingState.
         if state ~= FLASH then
             self._state = self._pendingState
             state       = self._state
@@ -301,6 +303,7 @@ local PANEL = {
 
         elseif state == FADING then
             goinAway = true
+            -- Hold at full alpha until the configured fade-start delay elapses
             if self._doFadeDelays and self._fadeStartDelay and self._fadeStartTime > cur then
                 self._stateAlpha = 255
 
@@ -381,10 +384,11 @@ local PANEL = {
             surface.DrawTexturedRect( padding, padding, self._iconSize, self._iconSize )
 
         elseif self._text and #self._text > 0 then
-            local fontHeight = draw.GetFontHeight( self._font )
-            local lines      = string.Explode( "\n", self._text )
-            local totalH     = fontHeight * #lines
-            local startY     = h * 0.5 - totalH * 0.5
+            -- Center the text block vertically; each line steps down by fontHeight
+            local fontHeight      = draw.GetFontHeight( self._font )
+            local lines           = string.Explode( "\n", self._text )
+            local totalTextHeight = fontHeight * #lines
+            local startY          = h * 0.5 - totalTextHeight * 0.5
             for i, line in ipairs( lines ) do
                 draw.SimpleText( line, self._font, w * 0.5, startY + ( i - 1 ) * fontHeight, dIcon, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
 

@@ -179,6 +179,9 @@ function ENT:Place()
         thingToPress:TraitorUse( self.player )
 
     else
+        local hooked = hook.Run( "glee_PresserUsed", self.player, thingToPress )
+        if hooked then return end
+
         thingToPress:Use( self.player, self.player, USE_ON )
 
     end
