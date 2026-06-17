@@ -36,7 +36,16 @@ local tooCloseDist = 200^2
 
 local function isGoodATMPos( pos, tooClosePos )
     for _, check in ipairs( belowCenterChecks ) do
-        if bit.band( util.PointContents( pos + check ), CONTENTS_SOLID ) == 0 then return nil end
+        local checkPos = pos + check
+        local solid = bit.band( util.PointContents( checkPos ), CONTENTS_SOLID ) ~= 0
+        if not solid then
+            local underDisplacement = terminator_Extras.posIsUnderDisplacement( checkPos )
+            if underDisplacement then
+                solid = true
+
+            end
+        end
+        if solid then return nil end
 
     end
 
