@@ -363,7 +363,7 @@ if SERVER then
     local nextTimeOffsetNetwork = 0
 
     -- when people earn score, it 'increases patience', meaning grigori happens later if people are earning alot
-    hook.Add( "huntersglee_givescore", "glee_chosentrackscore", function( ply, scoreGivenRaw )
+    hook.Add( "huntersglee_givenscore", "glee_chosentrackscore", function( ply, scoreGivenRaw )
         if GAMEMODE.roundExtraData.grigoriWasPurchased then return end -- end increase if someone's bought grigori
         if ply:Health() <= 0 then return end -- don't increase time if earner is dead
 

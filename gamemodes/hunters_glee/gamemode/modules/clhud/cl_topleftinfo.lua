@@ -3,52 +3,21 @@
 local GAMEMODE = GAMEMODE or GM
 local CurTime  = CurTime
 
-local neverShowInfo = CreateClientConVar( "huntersglee_cl_nevershowtoplefthud", 0, true, false, "Never show round info, score, and skull count?", 0, 1 )
-local alwaysShowInfo = CreateClientConVar( "huntersglee_cl_alwaysshowtoplefthud", 0, true, false, "Always show round info, score, and skull count?", 0, 1 )
-
-local gleeFontName = "Trebuchet MS" --( GAMEMODE and GAMEMODE.GLEE_FONT ) or "Arial"
+local neverShowInfo = CreateClientConVar( "cl_huntersglee_nevershowtoplefthud", 0, true, false, "Never show round info, score, and skull count?", 0, 1 )
+local alwaysShowInfo = CreateClientConVar( "cl_huntersglee_alwaysshowtoplefthud", 0, true, false, "Always show round info, score, and skull count?", 0, 1 )
 
 local paddingFromEdge   = terminator_Extras.defaultHudPaddingFromEdge
-local paddingFromBottom  = terminator_Extras.defaultHudPaddingFromBottom
-local scoreMaxShakeSize = glee_sizeScaled( nil, 2 )
-local laneSpacing       = glee_sizeScaled( nil, 6 )
-local blockPadding      = glee_sizeScaled( nil, 8 ) -- y padding between edge of block and text
-
-surface.CreateFont( "termhuntTimeFont", {
-    font      = gleeFontName,
-    size      = glee_sizeScaled( nil, 34 ),
-    weight    = 2000,
-    blursize  = 0,
-    scanlines = 1,
-    antialias = true,
-} )
-
-surface.CreateFont( "termhuntScoreFont", {
-    font      = gleeFontName,
-    size      = glee_sizeScaled( nil, 28 ),
-    weight    = 1000,
-    blursize  = 0,
-    scanlines = 0,
-    antialias = true,
-} )
-
-surface.CreateFont( "termhuntHintFont", {
-    font      = gleeFontName,
-    size      = glee_sizeScaled( nil, 28 ),
-    weight    = 1000,
-    blursize  = 0,
-    scanlines = 0,
-    antialias = true,
-} )
+local paddingFromBottom = terminator_Extras.defaultHudPaddingFromBottom
+local laneSpacing      = terminator_Extras.glee_HL2Hud.laneSpacing
+local blockPadding     = terminator_Extras.glee_HL2Hud.blockPadding
+-- fonts are now defined in cl_gleehud.lua
 
 local hour = 60 * 60
 
-local hl2Hud = terminator_Extras.hl2hud
+local hl2Hud = terminator_Extras.glee_HL2Hud
 
-local defaultHudColor   = hl2Hud.colorHappyYellow
-local unhappyHudColor   = hl2Hud.colorUnHappyYellow
-local infoChangedColor  = Color( 255, 50, 50 )
-local superScoreColor   = Color( 255, 255, 0 )
+local defaultHudColor  = hl2Hud.colorHappyYellow
+local infoChangedColor = Color( 255, 50, 50 )
 
 
 -- ---------------------------------------------------------------------------
@@ -98,171 +67,6 @@ local function thinkRoundInfo( ply, cur )
 end
 
 
--- ---------------------------------------------------------------------------
--- Score
--- think returns: text, stayPresent, doFlash, xOffset, textColor
--- ---------------------------------------------------------------------------
-
-local scoreColorOverride    = nil
-local scoreColorExpiry      = 0
-local scoreVisibleUntil     = 0
-local scoreDisplayShakeTime = 0
-local scoreDisplayAddAtEnd  = nil
-local oldDisplayScore       = 0
-local oldScoreToCompare     = 0
-
-local function thinkScore( ply, cur )
-    local myTotalScore = ply:GetScore()
-    local textCombo    = "Score: " .. myTotalScore
-
-    if myTotalScore == 0 then
-        textCombo = "Score: " .. myTotalScore .. " ( Heartbeats Per Minute )"
-
-    end
-
-    local textColor = unhappyHudColor
-    local doFlash   = false
-
-    if scoreColorExpiry > cur then
-        textColor = scoreColorOverride
-
-        if scoreDisplayAddAtEnd then
-            textCombo = textCombo .. scoreDisplayAddAtEnd
-
-        end
-    end
-
-    if oldDisplayScore ~= myTotalScore then
-        doFlash = true
-
-        local overrideColor     = defaultHudColor
-        local overrideColorTime = 0.1
-        local textShakeTime     = 0
-
-        -- difference to show
-        local difference    = myTotalScore - oldScoreToCompare
-        -- real difference, between score now and last time we checked
-        local realDifference = myTotalScore - oldDisplayScore
-        local absDifference  = math.abs( realDifference )
-
-        if difference >= 500 then
-            overrideColor = superScoreColor
-
-        end
-
-        if absDifference >= 500 then
-            overrideColorTime = 8
-            textShakeTime     = 8
-            ply:EmitSound( "hunters_glee/209578_zott820_cash-register-purchase.wav", 70, 70 )
-
-        elseif absDifference >= 100 then
-            overrideColorTime = 4
-            textShakeTime     = 3
-
-        elseif absDifference >= 10 then
-            overrideColorTime = 3
-            textShakeTime     = 1
-
-        end
-
-        scoreColorOverride    = overrideColor
-        scoreColorExpiry      = math.max( cur + overrideColorTime, math.Clamp( scoreColorExpiry + overrideColorTime, 0, cur + 10 ) )
-        scoreDisplayShakeTime = math.max( cur + textShakeTime, scoreDisplayShakeTime + textShakeTime / 2 )
-        oldDisplayScore       = myTotalScore
-
-        if absDifference >= 25 then
-            scoreVisibleUntil = math.max( cur + overrideColorTime, scoreVisibleUntil )
-
-        end
-
-        if difference > 0 then
-            scoreDisplayAddAtEnd = " +" .. difference
-
-        else
-            scoreDisplayAddAtEnd = " " .. difference
-
-        end
-    end
-
-    if scoreColorExpiry < cur then
-        oldScoreToCompare = myTotalScore
-
-    end
-
-    local xOffset = 0
-    if scoreDisplayShakeTime > cur then
-        local shakeScale = ( scoreDisplayShakeTime - cur ) * scoreMaxShakeSize
-        xOffset          = math.Rand( -shakeScale, shakeScale )
-
-    end
-
-    local stayPresent = scoreVisibleUntil > cur
-
-    stayPresent = stayPresent or myTotalScore <= 10
-
-    doFlash = doFlash and stayPresent -- flash also wakes it up
-
-    return textCombo, stayPresent, doFlash, xOffset, textColor
-
-end
-
-
--- ---------------------------------------------------------------------------
--- Skulls
--- think returns: text, stayPresent, doFlash, xOffset, textColor
--- ---------------------------------------------------------------------------
-
-local skullsColorOverride   = nil
-local skullsColorExpiry     = 0
-local skullsDisplayAddAtEnd = nil
-local oldDisplaySkulls      = 0
-local oldSkullsToCompare    = 0
-
-local function thinkSkulls( ply, cur )
-    local myTotalSkulls = ply:GetSkulls()
-    local textCombo     = "Skulls: " .. myTotalSkulls
-
-    local textColor = unhappyHudColor
-    local doFlash   = false
-
-    if skullsColorExpiry > cur then
-        textColor = skullsColorOverride
-
-        if skullsDisplayAddAtEnd then
-            textCombo = textCombo .. skullsDisplayAddAtEnd
-
-        end
-    end
-
-    if oldDisplaySkulls ~= myTotalSkulls then
-        doFlash = true
-
-        local overrideColorTime = 4
-        local difference        = myTotalSkulls - oldSkullsToCompare
-
-        skullsColorOverride   = defaultHudColor
-        skullsColorExpiry     = math.max( cur + overrideColorTime, math.Clamp( skullsColorExpiry + overrideColorTime, 0, cur + 10 ) )
-        oldDisplaySkulls      = myTotalSkulls
-
-        if difference > 0 then
-            skullsDisplayAddAtEnd = " +" .. difference
-
-        else
-            skullsDisplayAddAtEnd = " " .. difference
-
-        end
-    end
-
-    if skullsColorExpiry < cur then
-        oldSkullsToCompare = myTotalSkulls
-
-    end
-
-    local stayPresent = skullsColorExpiry > cur
-
-    return textCombo, stayPresent, doFlash, 0, textColor
-
-end
 
 
 -- Hint system
@@ -456,8 +260,14 @@ local function genericHints()
 
             return true, "Press " .. phrase .. " to toggle the spectate flashlight!"
 
-        elseif not hasEscaped and not me.glee_HasBoughtDivineIntervention and myScore >= GAMEMODE:shopItemCost( "resurrection", me ) then
-            return true, "Buy Divine Intervention in the shop to resurrect yourself..."
+        elseif not hasEscaped and not me.glee_HasBoughtDivineIntervention then
+            if myScore >= GAMEMODE:shopItemCost( "resurrection", me ) then
+                return true, "Buy Divine Intervention in the shop to resurrect yourself..."
+
+            else
+                return true, "Place sacrifices, all of them can earn you Score,\nif you're clever with them..."
+
+            end
 
         elseif hasEscaped and ( me.glee_NextControlSomethingHint or 0 ) < CurTime() and GAMEMODE:RoundState() == GAMEMODE.ROUND_ACTIVE and player.GetCount() > 1 then
             if not me.glee_WasATerminatorOnTheMap then
@@ -585,7 +395,7 @@ end
 local hudEntries = {
     {
         key             = "roundInfo",
-        font            = "termhuntTimeFont",
+        font            = "glee_mediumLargeHL2Font",
         textPadding     = blockPadding,
         flashDuration   = 0.4,
         fadeSpeed       = 0.15,
@@ -596,32 +406,47 @@ local hudEntries = {
         think           = thinkRoundInfo,
     },
     {
-        key             = "score",
-        font            = "termhuntScoreFont",
-        textPadding     = blockPadding,
-        flashDuration   = 0.15,
-        fadeSpeed       = 0.4,
-        fadeStartDelay  = 4,
-        normalColor     = hl2Hud.colorBackground:Copy(),
-        flashColor      = hl2Hud.colorBackgroundUrgent:Copy(),
-        iconColor       = hl2Hud.colorHappyYellow:Copy(),
-        think           = thinkScore,
+        key            = "score",
+        panelClass     = "glee_hl2hudscorecount",
+        font           = "glee_mediumHL2Font",
+        textPadding    = blockPadding,
+        flashDuration  = 0.15,
+        fadeSpeed      = 0.4,
+        fadeStartDelay = 4,
+        normalColor    = hl2Hud.colorBackground:Copy(),
+        flashColor     = hl2Hud.colorBackgroundUrgent:Copy(),
+        iconColor      = hl2Hud.colorHappyYellow:Copy(),
+        setup = function( box )
+            box:SetLabel( "Score: " )
+            box:SetCountFunc( function( ply ) return ply:GetScore() end )
+            box:SetSuffix0( " ( Heartbeats Per Minute )" )
+            box:SetSmallCountThreshold( 10 )
+            box:SetLargePositiveChangeSound( "hunters_glee/209578_zott820_cash-register-purchase.wav" )
+            box:SetLargeNegativeChangeSound( "buttons/lever7.wav" )
+
+        end,
     },
     {
-        key             = "skulls",
-        font            = "termhuntScoreFont",
-        textPadding     = blockPadding,
-        flashDuration   = 0.15,
-        fadeSpeed       = 0.3,
-        fadeStartDelay  = 6,
-        normalColor     = hl2Hud.colorBackground:Copy(),
-        flashColor      = hl2Hud.colorBackgroundUrgent:Copy(),
-        iconColor       = hl2Hud.colorHappyYellow:Copy(),
-        think           = thinkSkulls,
+        key            = "skulls",
+        panelClass     = "glee_hl2hudscorecount",
+        font           = "glee_mediumHL2Font",
+        textPadding    = blockPadding,
+        flashDuration  = 0.15,
+        fadeSpeed      = 0.3,
+        fadeStartDelay = 6,
+        normalColor    = hl2Hud.colorBackground:Copy(),
+        flashColor     = hl2Hud.colorBackgroundUrgent:Copy(),
+        iconColor      = hl2Hud.colorHappyYellow:Copy(),
+        setup = function( box )
+            box:SetLabel( "Skulls: " )
+            box:SetCountFunc( function( ply ) return ply:GetSkulls() end )
+            box:SetChangeVisibleDuration( 4 )
+
+        end,
     },
     {
         key             = "hint",
-        font            = "termhuntHintFont",
+        font            = "glee_mediumHL2Font",
         textPadding     = blockPadding,
         flashDuration   = 0.15,
         normalColor     = hl2Hud.colorBackground:Copy(),
@@ -637,7 +462,7 @@ local function createTopLeftBoxes()
         local storageKey = "gleeHud_TL_" .. entry.key
         if IsValid( terminator_Extras[storageKey] ) then terminator_Extras[storageKey]:Remove() end
 
-        local box = vgui.Create( "glee_hl2hudbox", GetAutoHidingHUDPanel() )
+        local box = vgui.Create( entry.panelClass or "glee_hl2hudbox", GetAutoHidingHUDPanel() )
         terminator_Extras[storageKey] = box
 
         box:SetIconFont( entry.font )
@@ -658,6 +483,10 @@ local function createTopLeftBoxes()
             box:SetFadeStartDelay( entry.fadeStartDelay )
 
         end
+        if entry.setup then
+            entry.setup( box )
+
+        end
     end
 end
 
@@ -668,6 +497,8 @@ if GAMEMODE then createTopLeftBoxes() end
 -- ---------------------------------------------------------------------------
 -- Manager
 -- ---------------------------------------------------------------------------
+
+local pleasePaintFor = {}
 
 hook.Add( "glee_cl_topleftinfo", "glee_topleftinfo_draw", function( ply, cur )
     if not GAMEMODE:CanShowDefaultHud() then
@@ -692,36 +523,50 @@ hook.Add( "glee_cl_topleftinfo", "glee_topleftinfo_draw", function( ply, cur )
         local box = terminator_Extras["gleeHud_TL_" .. entry.key]
         if not IsValid( box ) then continue end
 
-        local doFadeDelays = true
-        local text, stayPresent, doFlash, xOffset, textColor = entry.think( ply, cur )
+        local xOffset      = 0
+        local forceThisKey = alwaysShow
 
-        if textColor then box:SetIconColor( textColor ) end
-
-        box:SetText( text or "" )
-        box:AutoSize()
-
-        if alwaysShow and text ~= "" then
-            stayPresent = true
-
-        elseif neverShow then
-            stayPresent = false
-            doFlash = false
-            doFadeDelays = false
+        local plsPaint = pleasePaintFor[entry.key]
+        if plsPaint and plsPaint > cur then
+            forceThisKey = true
 
         end
 
-        if stayPresent then
-            if doFlash then box:SetState( box.STATE_FLASH ) end
-
-            box:SetState( box.STATE_NORMAL )
+        if box.ManageHudState then
+            xOffset = box:ManageHudState( ply, cur, forceThisKey, neverShow ) or 0
 
         else
-            box:SetDoFadeDelays( doFadeDelays )
-            box:SetState( box.STATE_FADING )
+            local doFadeDelays = true
+            local text, stayPresent, doFlash, textColor
+            text, stayPresent, doFlash, xOffset, textColor = entry.think( ply, cur )
 
+            if textColor then box:SetIconColor( textColor ) end
+
+            box:SetText( text or "" )
+            box:AutoSize()
+
+            if forceThisKey and text ~= "" then
+                stayPresent = true
+
+            elseif neverShow then
+                stayPresent = false
+                doFlash      = false
+                doFadeDelays = false
+
+            end
+
+            if stayPresent then
+                if doFlash then box:SetState( box.STATE_FLASH ) end
+                box:SetState( box.STATE_NORMAL )
+
+            else
+                box:SetDoFadeDelays( doFadeDelays )
+                box:SetState( box.STATE_FADING )
+
+            end
         end
 
-        box:SetPos( x + ( xOffset or 0 ), laneY )
+        box:SetPos( x + xOffset, laneY )
 
         local stateAlpha = box:GetStateAlpha()
 
@@ -739,4 +584,13 @@ hook.Add( "glee_cl_topleftinfo", "glee_topleftinfo_draw", function( ply, cur )
 
         end
     end
+
+end )
+
+
+-- so other code can request specific elements to stay visible
+
+hook.Add( "glee_cl_pleasepainttopleft_for", "glee_topleftinfo_forcepaint", function( key, add )
+    pleasePaintFor[key] = CurTime() + add
+
 end )

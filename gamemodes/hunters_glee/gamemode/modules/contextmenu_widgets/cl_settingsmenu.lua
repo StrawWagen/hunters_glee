@@ -41,7 +41,7 @@ local settingsCategories = {
         name = "GLEE",
         items = {
             {
-                cvar = "huntersglee_musicvolume",
+                cvar = "cl_huntersglee_musicvolume",
                 type = "slider",
                 min = 0,
                 max = 1,
@@ -61,7 +61,7 @@ local settingsCategories = {
                 postChangedFunc = reopenSettingsMenu,
             },
             {
-                cvar = "huntersglee_cl_heartbeat_volume",
+                cvar = "cl_huntersglee_heartbeat_volume",
                 type = "slider",
                 min = 0,
                 max = 1,
@@ -70,7 +70,16 @@ local settingsCategories = {
                 desc = "Turn down the beat.",
             },
             {
-                cvar = "huntersglee_cl_gleetingsask",
+                cvar = "cl_glee_fallingwind_volume",
+                type = "slider",
+                min = 0,
+                max = 1,
+                decimals = 2,
+                prettyName = "Wind sound volume",
+                desc = "Volume of the wind sound when falling at high speed.",
+            },
+            {
+                cvar = "cl_huntersglee_gleetingsask",
                 type = "check",
                 prettyName = "Gleetings message?",
                 desc = "Get a chat print when someone who's never played glee joins?",
@@ -81,19 +90,19 @@ local settingsCategories = {
         name = "HUD",
         items = {
             {
-                cvar = "huntersglee_cl_nevershowtoplefthud",
+                cvar = "cl_huntersglee_nevershowtoplefthud",
                 type = "check",
                 prettyName = "Never show top left info",
                 desc = "Never show score, round type, and skull count? (unless tab was held)",
             },
             {
-                cvar = "huntersglee_cl_alwaysshowtoplefthud",
+                cvar = "cl_huntersglee_alwaysshowtoplefthud",
                 type = "check",
                 prettyName = "Always show top left info",
                 desc = "Always show round info, score, and skull count?",
             },
             {
-                cvar = "huntersglee_hideplacingbeamhints",
+                cvar = "cl_huntersglee_hideplacingbeamhints",
                 type = "check",
                 prettyName = "Hide placing beam hints?",
                 desc = "Hide the beam hints when placing items?",
@@ -122,19 +131,19 @@ local settingsCategories = {
         name = "Souls",
         items = {
             {
-                cvar = "huntersglee_cl_dosoulragdolls",
+                cvar = "cl_huntersglee_dosoulragdolls",
                 type = "check",
                 prettyName = "Enable 'Souls'",
                 desc = "Enable funny client ragdolls on dead players",
             },
             {
-                cvar = "huntersglee_cl_seeownsoul",
+                cvar = "cl_huntersglee_seeownsoul",
                 type = "check",
                 prettyName = "Draw your own soul?",
                 desc = "Let your own soul be visible to you",
             },
             {
-                cvar = "huntersglee_cl_ownsoul_nearfade",
+                cvar = "cl_huntersglee_ownsoul_nearfade",
                 type = "slider",
                 min = 0,
                 max = 1,

@@ -100,6 +100,7 @@ include( "modules/firsttimeplayers/sv_firsttimeplayers.lua" )
 include( "modules/guilt/sv_guilt.lua" )
 
 include( "modules/escaping/sv_escapecounts.lua" )
+include( "modules/escaping/sv_escapecountcmds.lua" )
 include( "modules/escaping/sv_escaping.lua" )
 
 include( "modules/battery/sv_battery.lua" )
@@ -685,8 +686,6 @@ function GM:SetupTheLargestGroupsNStuff()
         self.biggestNavmeshGroups = self:FilterNavareaGroupsForGreaterThanPercent( self.navmeshGroups, self.biggestGroupsRatio )
         self:BuildNavAreaReverseMap( self.biggestNavmeshGroups )
 
-        --self:removePorters() -- remove teleporters that cross navmesh groups, or lead to non-navmeshed spots
-
         -- fix maps with separate spawn rooms w/ teleporters
         self:TeleportRoomCheck()
 
@@ -695,45 +694,6 @@ function GM:SetupTheLargestGroupsNStuff()
         hook.Remove( "Think", "glee_DoGreedyPatchThinkHook" )
 
     end )
-end
-
-local upOffset = Vector( 0, 0, 25 )
-
-function GM:removePorters() -- it was either do this, or make the terminator use teleporters, this is easier. 
-    local teleporters = ents.FindByClass( "trigger_teleport" )
-    for _, porter in ipairs( teleporters ) do
-
-        -- do a bunch of checks to see if porter just teleports between the same, big navmesh group.
-        local portersPos = porter:WorldSpaceCenter()
-        local portersArea = self:getNearestNav( portersPos, 1000 )
-        if not portersArea or not portersArea.IsValid or not portersArea:IsValid() then SafeRemoveEntity( porter ) continue end
-
-        local portersPosFloored = self:getFloor( portersPos )
-        if not portersArea:IsVisible( portersPosFloored + upOffset ) then SafeRemoveEntity( porter ) continue end
-
-        local portersGroup = self:GetGroupThatNavareaExistsIn( portersArea, self.biggestNavmeshGroups )
-        if not portersGroup then SafeRemoveEntity( porter ) continue end
-
-        local portersVals = porter:GetKeyValues()
-        local targetsName = portersVals["target"]
-        local destTbl = ents.FindByName( targetsName )
-
-        for _, dest in ipairs( destTbl ) do
-            if not IsValid( dest ) then SafeRemoveEntity( porter ) break end
-            local destPos = dest:WorldSpaceCenter()
-            local area = self:getNearestNav( destPos, 1000 )
-            if not area or not area.IsValid or not area:IsValid() then SafeRemoveEntity( porter ) break end
-
-            local destPosFloored = self:getFloor( destPos )
-            if not area:IsVisible( destPosFloored + upOffset ) then SafeRemoveEntity( porter ) break end
-
-            local exitsGroup = self:GetGroupThatNavareaExistsIn( area, self.biggestNavmeshGroups )
-            if not exitsGroup then SafeRemoveEntity( porter ) break end
-
-            if exitsGroup ~= portersGroup then SafeRemoveEntity( porter ) break end
-
-        end
-    end
 end
 
 function GM:removeBlockers() -- mess up locked doors on door heavy maps
@@ -835,6 +795,7 @@ function GM:GenerateANavmeshPls()
     self.waitingOnNavoptimizerGen = true
     timer.Simple( 1, function()
         superIncrementalGeneration( nil, true, true )
+
     end )
 
     -- when generation is done
@@ -1010,6 +971,7 @@ function GM:roundEnd()
 end
 
 -- from the part where finest prey & total score is displayed, into setup where people can buy stuff with discounts
+-- also happens once on first startup/after gmod_admin_cleanup refresh
 function GM:beginSetup()
     hook.Run( "huntersglee_round_pre_into_inactive" )
 

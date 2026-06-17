@@ -9,12 +9,12 @@ local paddingFromEdge    = terminator_Extras.defaultHudPaddingFromEdge
 local screenHeight       = ScrH()
 local paddingAboveHealth = glee_sizeScaled( 96, nil )
 
-local materialSize = math.Clamp( glee_sizeScaled( nil, 55 ), 0, terminator_Extras.hl2hud.iconMaxSize )
+local materialSize = math.Clamp( glee_sizeScaled( nil, 55 ), 0, terminator_Extras.glee_HL2Hud.iconMaxSize )
 
 local heartTexture = Material( "vgui/hud/heartbeat.png", "smooth" )
 
-local colorHealthy = terminator_Extras.hl2hud.colorHappyYellow:Copy()
-local colorDying   = terminator_Extras.hl2hud.colorRedUrgent:Copy()
+local colorHealthy = terminator_Extras.glee_HL2Hud.colorHappyYellow:Copy()
+local colorDying   = terminator_Extras.glee_HL2Hud.colorRedUrgent:Copy()
 
 local notBeatingTime = 0
 local imageAlpha     = 0
@@ -28,8 +28,8 @@ local function createBpmBox()
     box:SetIconSize( materialSize )
     box:SetPaddingRatio( 0.6 )
     box:SetMaterial( heartTexture )
-    box:SetNormalBoxColor( terminator_Extras.hl2hud.colorBackground:Copy() )
-    box:SetUrgentBoxColor( terminator_Extras.hl2hud.colorBackgroundUrgent:Copy() )
+    box:SetNormalBoxColor( terminator_Extras.glee_HL2Hud.colorBackground:Copy() )
+    box:SetUrgentBoxColor( terminator_Extras.glee_HL2Hud.colorBackgroundUrgent:Copy() )
     box:SetFlashDuration( 0.08 )
 
     local bgSize       = box:GetWide()

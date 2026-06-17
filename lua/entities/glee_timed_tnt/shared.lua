@@ -86,8 +86,9 @@ function ENT:Detonate()
     self:EmitSound( "C4.Explode" )
 
     local eff = EffectData()
-    eff:SetScale( self.EffectScale )
-    eff:SetNormal( Vector( 0, 0, 1 ) )
+        eff:SetOrigin( pos )
+        eff:SetScale( self.EffectScale )
+        eff:SetNormal( Vector( 0, 0, 1 ) )
     util.Effect( "glee_huge_m9k_splode", eff )
 
     SafeRemoveEntity( self )

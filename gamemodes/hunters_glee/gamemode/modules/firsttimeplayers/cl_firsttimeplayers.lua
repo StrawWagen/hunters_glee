@@ -192,7 +192,7 @@ net.Receive( "glee_dothefirsttimemessage", function()
     end )
 end )
 
-local gleetingsAsk = CreateClientConVar( "huntersglee_cl_gleetingsask", 1, true, true, "Get a chat print when someone who's never played glee joins?" )
+local gleetingsAsk = CreateClientConVar( "cl_huntersglee_gleetingsask", 1, true, true, "Get a chat print when someone who's never played glee joins?" )
 
 if not game.IsDedicated() then return end
 

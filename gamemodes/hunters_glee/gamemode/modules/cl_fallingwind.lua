@@ -36,16 +36,16 @@ end
 glee_FallingWind = {}
 glee_FallingWind.Sound          = nil
 glee_FallingWind.SoundList      = {}
-glee_FallingWind.Enable         = CreateClientConVar( "cl_fallingwind_enable", "1", true, false, "", 0, 1 )
-glee_FallingWind.SoundID        = CreateClientConVar( "cl_fallingwind_soundid", "fallingwind/glee_woosh0.wav", true, false, "" )
-glee_FallingWind.StopVehicle    = CreateClientConVar( "cl_fallingwind_stop_in_vehicle", "0", true, false, "", 0, 1 )
-glee_FallingWind.DoShake        = CreateClientConVar( "cl_fallingwind_shake", "1", true, false, "", 0, 1 )
-glee_FallingWind.Volume         = CreateClientConVar( "cl_fallingwind_volume", "0.75", true, false, "", 0, 1 )
-glee_FallingWind.MinThreshold   = CreateClientConVar( "cl_fallingwind_minthreshold", "650", true, false, "", 0, nil )
-glee_FallingWind.MaxThreshold   = CreateClientConVar( "cl_fallingwind_maxthreshold", "1500", true, false, "", 1, nil )
-glee_FallingWind.VelXFactor     = CreateClientConVar( "cl_fallingwind_vfactorx", "1", true, false, "", 0, 1 )
-glee_FallingWind.VelYFactor     = CreateClientConVar( "cl_fallingwind_vfactory", "1", true, false, "", 0, 1 )
-glee_FallingWind.VelZFactor     = CreateClientConVar( "cl_fallingwind_vfactorz", "1", true, false, "", 0, 1 )
+glee_FallingWind.Enable         = CreateClientConVar( "cl_glee_fallingwind_enable", "1", true, false, "", 0, 1 )
+glee_FallingWind.SoundID        = CreateClientConVar( "cl_glee_fallingwind_soundid", "fallingwind/glee_woosh0.wav", true, false, "" )
+glee_FallingWind.StopVehicle    = CreateClientConVar( "cl_glee_fallingwind_stop_in_vehicle", "0", true, false, "", 0, 1 )
+glee_FallingWind.DoShake        = CreateClientConVar( "cl_glee_fallingwind_shake", "1", true, false, "", 0, 1 )
+glee_FallingWind.Volume         = CreateClientConVar( "cl_glee_fallingwind_volume", "0.75", true, false, "", 0, 1 )
+glee_FallingWind.MinThreshold   = CreateClientConVar( "cl_glee_fallingwind_minthreshold", "650", true, false, "", 0, nil )
+glee_FallingWind.MaxThreshold   = CreateClientConVar( "cl_glee_fallingwind_maxthreshold", "1500", true, false, "", 1, nil )
+glee_FallingWind.VelXFactor     = CreateClientConVar( "cl_glee_fallingwind_vfactorx", "1", true, false, "", 0, 1 )
+glee_FallingWind.VelYFactor     = CreateClientConVar( "cl_glee_fallingwind_vfactory", "1", true, false, "", 0, 1 )
+glee_FallingWind.VelZFactor     = CreateClientConVar( "cl_glee_fallingwind_vfactorz", "1", true, false, "", 0, 1 )
 
 hook.Add( "InitPostEntity", "glee_InitPostEntity_fallingwind", function()
 
@@ -60,6 +60,8 @@ local nextThink = 0
 local vel_Averages = {}
 local average_Extent = 5
 local averagedVelocity = Vector()
+local vol_Averages = {}
+local average_VolExtent = 8
 
 hook.Add( "Think", "glee_Think_fallingwind", function()
     local cur = CurTime()
@@ -74,6 +76,7 @@ hook.Add( "Think", "glee_Think_fallingwind", function()
             resetVelocityBulletproof( myTbl )
             nextThink = cur + 0.01
             vel_Averages = {}
+            vol_Averages = {}
 
             if glee_FallingWind.Sound then
                 glee_FallingWind.Sound:ChangeVolume( 0 )
@@ -86,6 +89,9 @@ hook.Add( "Think", "glee_Think_fallingwind", function()
     nextThink = cur + math.Rand( 0.005, 0.01 )
 
     if not glee_FallingWind.Enable:GetBool() or not IsValid( me ) then return end
+
+    local varsVolume = glee_FallingWind.Volume:GetFloat()
+    if varsVolume <= 0 then return end
 
     if not glee_FallingWind.Sound then
         if string.len( glee_FallingWind.SoundID:GetString() ) == 1 then
@@ -136,7 +142,7 @@ hook.Add( "Think", "glee_Think_fallingwind", function()
         }
 
         -- find a bone
-        for _,boneName in pairs( boneNamesToTry ) do
+        for _, boneName in pairs( boneNamesToTry ) do
             if IsValid( bonePhys ) then continue end
 
             local boneID = rgObj:LookupBone( boneName )
@@ -220,11 +226,26 @@ hook.Add( "Think", "glee_Think_fallingwind", function()
 
     end
 
-    local newVolume = glee_FallingWind.Volume:GetFloat() * math.Clamp( velocityProgress, 0, 1 )
+    local newVolume = varsVolume * math.Clamp( velocityProgress, 0, 1 )
 
-    if glee_FallingWind.Sound:GetVolume() == 0 and newVolume == 0 then return end
+    -- average volume
+    -- stops grating, loud wind rush sound
+    table.insert( vol_Averages, 1, newVolume )
+    while #vol_Averages > average_VolExtent do
+        table.remove( vol_Averages )
 
-    glee_FallingWind.Sound:ChangeVolume( newVolume )
+    end
+
+    local volTotal = 0
+    for _, v in ipairs( vol_Averages ) do
+        volTotal = volTotal + v
+
+    end
+    local smoothedVolume = volTotal / #vol_Averages
+
+    if glee_FallingWind.Sound:GetVolume() == 0 and smoothedVolume == 0 then return end
+
+    glee_FallingWind.Sound:ChangeVolume( smoothedVolume )
     glee_FallingWind.Sound:ChangePitch( Lerp( velocityProgress, 40, 140 ) + math.sin( CurTime() ) * 10 )
 
 end )
@@ -248,7 +269,7 @@ table.insert( glee_FallingWind.SoundList, {
 
 
 -- Con-Vars
-cvars.AddChangeCallback( "cl_fallingwind_soundid", function()
+cvars.AddChangeCallback( "cl_glee_fallingwind_soundid", function()
     -- Make the sound regenerate
     if ( glee_FallingWind.Sound ) then
         glee_FallingWind.Sound:Stop()

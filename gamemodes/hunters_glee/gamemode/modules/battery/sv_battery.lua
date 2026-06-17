@@ -197,7 +197,7 @@ hook.Add( "KeyPress", "glee_zoomcost", function( ply, key )
 end )
 
 
-local minCharge = 40
+local minCharge = 100
 
 hook.Add( "huntersglee_round_into_inactive", "glee_chargeplayersbatteries", function()
     local alivePlayers = GAMEMODE:getAlivePlayers()
@@ -208,11 +208,25 @@ hook.Add( "huntersglee_round_into_inactive", "glee_chargeplayersbatteries", func
     end
 end )
 
+local hasSpawned = {}
+
 hook.Add( "PlayerSpawn", "glee_chargeplayersbatteries", function( spawned )
-    if GAMEMODE:RoundState() == GAMEMODE.ROUND_ACTIVE then return end
+    -- fully charge while round is inactive
+    -- or if this is their first time spawning into the session
+    if hasSpawned[spawned] and GAMEMODE:RoundState() == GAMEMODE.ROUND_ACTIVE then return end
+    hasSpawned[spawned] = true
+
     timer.Simple( 0, function()
         if not IsValid( spawned ) then return end
         spawned:SetBatteryCharge( minCharge )
 
     end )
+end )
+
+
+-- seal the leak
+hook.Add( "PlayerDisconnected", "glee_clearbatterydata", function( ply )
+    batteryChargesLocal[ply] = nil
+    hasSpawned[ply] = nil
+
 end )

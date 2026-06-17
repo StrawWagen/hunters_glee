@@ -29,7 +29,7 @@ function terminator_Extras.GleeFancySplode( pos, damage, radius, attacker, infli
 end
 
 -- Creates a prop_physics parented to `parent`, positioned/angled via local-space offsets.
--- On parent removal the detail unparents, falls to the world, then is cleaned up.
+-- On parent removal, the detail unparents, falls to the world, then is cleaned up.
 function terminator_Extras.AttachParentedDetail( parent, toSpawn, localPos, localAng )
     local detail
     if isstring( toSpawn ) then
@@ -52,17 +52,46 @@ function terminator_Extras.AttachParentedDetail( parent, toSpawn, localPos, loca
     detail:Spawn()
     detail:SetParent( parent )
 
+    detail.glee_isGleeDetail = true
+    detail.glee_gleeDetailParent = parent
+
     parent:CallOnRemove( "glee_detailFallOff_" .. detail:GetCreationID(), function( _, det )
         if not IsValid( det ) then return end
         if parent:Health() > 0 then SafeRemoveEntity( det ) return end  -- if parent is removed while still alive, delete it
-        local thePos = det:GetPos()
-        det:SetParent()
-        det:SetPos( thePos )
-        SafeRemoveEntityDelayed( det, 35 )
-        terminator_Extras.SmartSleepEntity( det, 5 )
+        terminator_Extras.ParentedDetailFallOff( parent, det )
 
     end, detail )
 
     return detail
+
+end
+
+-- redirect uses to the parent
+hook.Add( "PlayerUse", "glee_parentedDetailUseRedirect", function( ply, used )
+    local parent = used.glee_gleeDetailParent
+    if not IsValid( parent ) then return end
+
+    parent:Use( ply, parent )
+
+end )
+
+hook.Add( "glee_PresserUsed", "glee_parentedDetailUseRedirect", function( ply, used )
+    local parent = used.glee_gleeDetailParent
+    if not IsValid( parent ) then return end
+
+    parent:Use( ply, parent )
+
+end )
+
+function terminator_Extras.ParentedDetailFallOff( parent, detail )
+    if not IsValid( parent ) or not IsValid( detail ) then return end
+    local thePos = detail:GetPos()
+    detail:SetParent()
+    detail:SetPos( thePos )
+    SafeRemoveEntityDelayed( detail, 35 )
+    terminator_Extras.SmartSleepEntity( detail, 5 )
+
+    detail.glee_isGleeDetail = nil
+    detail.glee_gleeDetailParent = nil
 
 end

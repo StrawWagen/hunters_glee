@@ -63,7 +63,7 @@ include( "modules/clhud/cl_plynames.lua" )
 local killIconColor = Color( 255, 80, 0, 255 )
 killicon.Add( "glee_skullpickup", "vgui/hud/glee_skullpickup", killIconColor )
 
-local heartbeatVol = CreateClientConVar( "huntersglee_cl_heartbeat_volume", 1, true, false, "Heartbeat sound volume.", 0, 1 )
+local heartbeatVol = CreateClientConVar( "cl_huntersglee_heartbeat_volume", 1, true, false, "Heartbeat sound volume.", 0, 1 )
 local baseDoHud = GetConVar( "cl_drawhud" )
 
 local closestSpectateDistance = 15
@@ -346,6 +346,14 @@ hook.Add( "CalcView", "glee_override_spectating_angles", function( ply, _, ang, 
             filter[#filter + 1] = vehicle
             if IsValid( vehicle:GetParent() ) then
                 filter[#filter + 1] = vehicle:GetParent()
+
+            end
+        end
+
+        local children = spectateTarget:GetChildren()
+        if children and #children > 0 then
+            for _, child in ipairs( children ) do
+                filter[#filter + 1] = child
 
             end
         end

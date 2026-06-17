@@ -10,7 +10,7 @@ SWEP.Category           = "Hunter's Glee"
 SWEP.HoldType           = "pistol"
 SWEP.Weight             = 1 -- less weight, pls dont steal this npcs!!
 SWEP.Range              = 2000
-SWEP.Slot               = 2
+SWEP.Slot               = 1
 SWEP.SlotPos            = 3
 
 SWEP.Purpose            = "Extremely bright, could probably be seen from miles away."

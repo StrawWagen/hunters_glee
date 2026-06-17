@@ -58,7 +58,11 @@ local function spawnTermSkull( died, dmg, _ )
     -- makes "erm something must have died here" hints better
     newSkull.fromSomethingWitnessable = true
     newSkull.nextPickup = CurTime() + 1
-    local attackersCreationID = dmg:GetAttacker():GetCreationID()
+
+    local attacker = dmg:GetAttacker()
+    if not IsValid( attacker ) then return end
+
+    local attackersCreationID = attacker:GetCreationID()
     newSkull.killersCreationID = attackersCreationID
 
 end

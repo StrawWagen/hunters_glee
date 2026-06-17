@@ -98,7 +98,7 @@ ENT.PosOffset = Vector( 0, 0, 10 )
 
 if CLIENT then
 
-    local hidePlacingBeamHints = CreateClientConVar( "huntersglee_hideplacingbeamhints", "0", true, false )
+    local hidePlacingBeamHints = CreateClientConVar( "cl_huntersglee_hideplacingbeamhints", "0", true, false )
 
     -- score gained on place
     local fontData = {
@@ -127,6 +127,7 @@ if CLIENT then
         if not IsValid( LocalPlayer().ghostEnt ) then return end
 
         LocalPlayer().ghostEnt:DoHudStuff()
+        hook.Run( "glee_cl_pleasepainttopleft_for", "score", 0.5 )
 
     end )
 
@@ -140,7 +141,7 @@ if CLIENT then
             local valid, translated = GAMEMODE:TranslatedBind( "+attack" )
             if valid then
                 good = true
-                hint = hint .. "Press " .. translated .. " to place an undead item.\n"
+                hint = hint .. "Press " .. translated .. " to place an undead item."
 
             else
                 ply:SetNW2Bool( "glee_placedundead", true )
@@ -152,6 +153,10 @@ if CLIENT then
             local valid, translated = GAMEMODE:TranslatedBind( "+attack2" )
             if valid then
                 good = true
+                if #hint > 0 then
+                    hint = hint .. "\n"
+
+                end
                 hint = hint .. "Press " .. translated .. " to cancel the placing of an undead item."
 
             else

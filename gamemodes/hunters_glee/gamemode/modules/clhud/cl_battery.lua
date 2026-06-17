@@ -4,13 +4,13 @@ local paddingFromEdge = terminator_Extras.defaultHudPaddingFromEdge
 local paddingFromBottom  = terminator_Extras.defaultHudPaddingFromBottom
 local screenHeight    = ScrH()
 
-local materialSize = math.Clamp( glee_sizeScaled( nil, 48 ), 0, terminator_Extras.hl2hud.iconMaxSize )
+local materialSize = math.Clamp( glee_sizeScaled( nil, 48 ), 0, terminator_Extras.glee_HL2Hud.iconMaxSize )
 
 local noBatteryTexture = Material( "vgui/hud/nobattery.png", "smooth" )
 local drainingTexture  = Material( "vgui/hud/losingcharge.png", "smooth" )
 
-local colorDraining = terminator_Extras.hl2hud.colorHappyYellow:Copy()
-local colorDead     = terminator_Extras.hl2hud.colorRedUrgent:Copy()
+local colorDraining = terminator_Extras.glee_HL2Hud.colorHappyYellow:Copy()
+local colorDead     = terminator_Extras.glee_HL2Hud.colorRedUrgent:Copy()
 
 local paddingJustHealth = glee_sizeScaled( nil, 260 )
 local paddingHpAndArmor = glee_sizeScaled( nil, 550 )
@@ -27,8 +27,8 @@ local function createBatteryBox()
 
     box:SetIconSize( materialSize )
     box:SetPaddingRatio( 0.4 )
-    box:SetNormalBoxColor( terminator_Extras.hl2hud.colorBackground:Copy() )
-    box:SetFlashBoxColor( terminator_Extras.hl2hud.colorBackgroundUrgent:Copy() )
+    box:SetNormalBoxColor( terminator_Extras.glee_HL2Hud.colorBackground:Copy() )
+    box:SetFlashBoxColor( terminator_Extras.glee_HL2Hud.colorBackgroundUrgent:Copy() )
     box:SetFlashDuration( 0.15 )
 
     function box:AdditionalThink()
@@ -80,7 +80,7 @@ net.Receive( "glee_batterychangedcharge", function()
 
     local batteryBox = terminator_Extras.gleeHud_BatteryBox
     if IsValid( batteryBox ) then
-        batteryBox:SetState( batteryBox.STATE_FLASH )
+        batteryBox:SetState( batteryBox.STATE_NORMAL )
 
     end
 end )

@@ -1,6 +1,6 @@
 
 local defaultMusicVolume = 0.75
-local volumeVar = CreateClientConVar( "huntersglee_musicvolume", "-1", true, false, "Glee music volume, -1 for default, " .. defaultMusicVolume, -1, 1 )
+local volumeVar = CreateClientConVar( "cl_huntersglee_musicvolume", "-1", true, false, "Glee music volume, -1 for default, " .. defaultMusicVolume, -1, 1 )
 
 -- All active-sound state lives here; nil means nothing is playing.
 local currentSound     = nil
@@ -22,7 +22,7 @@ local function getEffectiveVol( baseVol )
 
 end
 
-cvars.AddChangeCallback( "huntersglee_musicvolume", function( _, _, _ )
+cvars.AddChangeCallback( "cl_huntersglee_musicvolume", function( _, _, _ )
     if not currentSound then return end
     if currentSound.fadeIn.active then return end  -- next Think will pick up the new value naturally
     if currentSound.fade.active   then return end  -- fading out, new sound will get correct volume when it starts

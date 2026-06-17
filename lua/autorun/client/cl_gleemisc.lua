@@ -56,8 +56,10 @@ function terminator_Extras.easyClosePanel( pnl, callFirst )
 
         end
 
-        -- bail if they open any menu, or press use
+        -- bail if they press escape
         if input_IsKeyDown( KEY_ESCAPE ) then ShutDownPanel( self ) return end
+
+        -- bail if they open any menu, or press use
         if clientsUseKey then
             if input_IsKeyDown( clientsUseKey ) then
                 if not pnl.keyWasDown[clientsUseKey] then

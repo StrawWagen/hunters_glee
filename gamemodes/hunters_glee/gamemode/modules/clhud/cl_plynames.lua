@@ -73,7 +73,7 @@ local showEntPromptWait = 0
 local function getSpectatePromptPanel()
     if IsValid( terminator_Extras.glee_SpectatePromptPanel ) then return terminator_Extras.glee_SpectatePromptPanel end
 
-    local hud        = terminator_Extras.hl2hud
+    local hud        = terminator_Extras.glee_HL2Hud
     local textPad    = glee_sizeScaled( nil, 5 )
     local font       = "TargetID"
     surface.SetFont( font )
@@ -121,7 +121,7 @@ local function whileDeadPaintOtherPlys( localPlayer, cur )
     if IsValid( spectateTarg ) and spectateTarg.Nick then
         focusEnt = spectateTarg
 
-    elseif IsValid( trace.Entity ) and trace.Entity.Nick then
+    elseif IsValid( trace.Entity ) and ( trace.Entity.Nick or trace.Entity:GetNW2Bool( "glee_IsSpectatable", false ) ) then
         focusEnt = trace.Entity
 
     end
@@ -193,7 +193,7 @@ local function whileDeadPaintOtherPlys( localPlayer, cur )
     end
 
     local obsMode = localPlayer:GetObserverMode()
-    local spectateable = focusEnt and ( focusEnt:IsNPC() or focusEnt:IsNextBot() )
+    local spectateable = focusEnt and ( focusEnt:GetNW2Bool( "glee_IsSpectatable", false ) or focusEnt:IsNPC() or focusEnt:IsNextBot() )
     local showEntPrompt  = spectateable and not paintedSpecHint and obsMode == OBS_MODE_ROAMING
 
     local rawPanel = terminator_Extras.glee_SpectatePromptPanel
@@ -269,7 +269,7 @@ local function whileAlivePaintOtherEnts( localPlayer, cur )
             local health
             -- health normalized to 0-100
             if not ent:IsPlayer() then
-                health = math.Round( ent:Health() / ent:GetMaxHealth() * 100 )
+                health = math.ceil( ent:Health() / ent:GetMaxHealth() * 100 )
 
             else
                 health = ent:Health()
