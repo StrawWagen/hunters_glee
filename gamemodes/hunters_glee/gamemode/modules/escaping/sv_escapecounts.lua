@@ -96,7 +96,7 @@ local function escapeRatioToMultiplier( escaped, remained, lastUpdateTime )
         addedByRatio = addedByRatio + math.Clamp( remained * 0.001, 0, 1.5 ) -- and continue up to 5x for really miserable maps
 
     else
-        local escapedWeighted = escaped * 1.25
+        local escapedWeighted = escaped * 1.35
         local ratio = remained / escapedWeighted
         ratio = ratio - 1
         -- if 10 escaped and 0 remained, ratio is -1
