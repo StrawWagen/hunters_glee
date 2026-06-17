@@ -85,7 +85,8 @@ local function getRawCounts( tblName, keyCol, keyVal )
 
 end
 
-local rewardPerStaleWeek = 0.15
+local rewardPerStaleWeek = 0.25
+local maxStaleReward = 1.5
 
 local function escapeRatioToMultiplier( escaped, remained, lastUpdateTime )
     local base = 1
@@ -113,7 +114,10 @@ local function escapeRatioToMultiplier( escaped, remained, lastUpdateTime )
     if lastUpdateTime then
         local secondsElapsed = math.max( 0, os.time() - lastUpdateTime )
         local weeksElapsed   = math.floor( secondsElapsed / ( 7 * 24 * 3600 ) )
-        multiplier = multiplier + weeksElapsed * rewardPerStaleWeek
+        -- stale weeks can only nudge the multiplier UP TO maxStaleReward, not past it
+        local headroom    = math.max( 0, maxStaleReward - multiplier )
+        local staleReward = math.min( weeksElapsed * rewardPerStaleWeek, headroom )
+        multiplier = multiplier + staleReward
 
     end
 
