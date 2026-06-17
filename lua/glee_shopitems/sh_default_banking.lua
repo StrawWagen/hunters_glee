@@ -155,12 +155,16 @@ if SERVER then
         end )
     end
 
+    local nextCheck = 0
+
     hook.Add( "huntersglee_givenscore", "glee_atm_autospawn_check", function( scorer, addedscore )
         if not IsValid( scorer ) then return end
         if addedscore < 1 then return end
 
         local newScore = scorer:GetScore()
         if newScore >= ATM_AUTO_SCORE then
+            if nextCheck > CurTime() then return end
+            nextCheck = CurTime() + 1
             if atmAlreadyExists() then return end
             ATMArriveFor( scorer )
 
