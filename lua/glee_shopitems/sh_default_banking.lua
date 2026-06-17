@@ -38,6 +38,7 @@ local function isGoodATMPos( pos, tooClosePos )
     for _, check in ipairs( belowCenterChecks ) do
         local checkPos = pos + check
         local solid = bit.band( util.PointContents( checkPos ), CONTENTS_SOLID ) ~= 0
+        -- TODO: optimize
         if not solid then
             local underDisplacement = terminator_Extras.posIsUnderDisplacement( checkPos )
             if underDisplacement then
