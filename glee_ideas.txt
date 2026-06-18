@@ -208,3 +208,52 @@
 
 -- change ATM color to blue?
 -- make atm not error when used in sandbox?
+
+-- icon in C menu to vote for RTM
+-- sticky fingers, ratelimit changing weapons
+
+-- fresh skulls create blood decals?
+
+-- rewrite HINTS
+-- make them refresh if away from game for too long
+
+-- do pass on intro, make sure player is invisible
+-- fast weapon switch should be on by default
+
+-- better feedback from shooting players
+
+-- CREATE bank account inside atms
+
+-- no ammo hints on all custom weapons
+
+-- NEED STRONGER HINT TO SCROLL in shop
+
+-- drop money all the time, 50% of score?
+
+-- SHOW THE GOAL AT THE START
+-- not knowing the goal is not fun
+
+-- selecting weapons is hard
+-- REMOVE weapons
+-- move flaregun to utility slot
+
+shop rewrite
+categories vertically
+recently purchased items on main page
+tabs to navigate pages
+rename innate to mutations?
+innate makes it sound like you have it from the beginning
+
+lifelong shrimp but you gain score faster?
+
+channel 666 by default
+ghost arms really long and extended?
+viewing ghosts while alive has them lower transparency
+
+no panic in helicopter
+unless it takes damage
+
+start by default not being able to hold more than 2 items per slot
+purchase innate that lets you carry more weapons
+
+afk fakeout doppleganger

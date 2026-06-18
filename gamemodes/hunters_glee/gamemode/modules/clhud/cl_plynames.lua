@@ -130,13 +130,16 @@ local function whileDeadPaintOtherPlys( localPlayer, cur )
     local drawWhenDead = drawPlayerNamesWhenDead:GetBool()
     local paintData = {}
 
-    for _, ply in ipairs( player.GetAll() ) do
-        if ply == localPlayer then continue end
-
-        local panel = ply.gleeEntNamePanel
+    for ent, panel in pairs( terminator_Extras.glee_EntNamePanels ) do
         if not IsValid( panel ) then continue end
+        if not ent:IsPlayer() then
+            panel:SetVisible( false )
+            continue
 
-        local isLookedAt = focusEnt == ply
+        end
+        if ent == localPlayer then continue end
+
+        local isLookedAt = focusEnt == ent
         if not isLookedAt and not drawWhenDead then
             panel:SetVisible( false )
             continue
@@ -144,19 +147,19 @@ local function whileDeadPaintOtherPlys( localPlayer, cur )
         end
 
         if inEye then
-            if entMeta.Health( ply ) <= 0 then
+            if entMeta.Health( ent ) <= 0 then
                 panel:SetVisible( false )
                 continue
 
             end
 
             -- throttle the wall check to avoid per-frame flickering at edges
-            if not ply.glee_wallCheckNext or ply.glee_wallCheckNext < cur then
-                ply.glee_wallCheckNext    = cur + 0.15
-                ply.glee_wallCheckVisible = terminator_Extras.PosCanSee( EyePos(), ply:GetShootPos(), MASK_SOLID_BRUSHONLY )
+            if not ent.glee_wallCheckNext or ent.glee_wallCheckNext < cur then
+                ent.glee_wallCheckNext    = cur + 0.15
+                ent.glee_wallCheckVisible = terminator_Extras.PosCanSee( EyePos(), ent:GetShootPos(), MASK_SOLID_BRUSHONLY )
 
             end
-            if not ply.glee_wallCheckVisible then
+            if not ent.glee_wallCheckVisible then
                 panel:SetVisible( false )
                 continue
 
@@ -166,10 +169,10 @@ local function whileDeadPaintOtherPlys( localPlayer, cur )
         panel:SetMode( panel.MODE_FULL )
 
         -- infoLine: dead -> score, alive -> health%
-        local health = ply:Health()
+        local health = ent:Health()
         local infoLine
         if health <= 0 then
-            infoLine = ply:GetScore() .. " Score"
+            infoLine = ent:GetScore() .. " Score"
 
         else
             infoLine = health .. "%"
@@ -188,7 +191,7 @@ local function whileDeadPaintOtherPlys( localPlayer, cur )
         paintData.ignoreDist = true
         paintData.isLookedAt = isLookedAt
 
-        panel:UpdateForPlayer( ply, cur, paintData )
+        panel:UpdateForPlayer( ent, cur, paintData )
 
     end
 

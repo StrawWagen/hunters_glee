@@ -35,13 +35,23 @@ local belowCenterChecks = {
 local tooCloseDist = 200^2
 
 local function isGoodATMPos( pos, tooClosePos )
+    -- is there continuous solid geometry for ATM to burrow through?
     for _, check in ipairs( belowCenterChecks ) do
         local checkPos = pos + check
         local solid = bit.band( util.PointContents( checkPos ), CONTENTS_SOLID ) ~= 0
         -- TODO: optimize
         if not solid then
+            -- if it's under a displacement, it's solid
             local underDisplacement = terminator_Extras.posIsUnderDisplacement( checkPos )
             if underDisplacement then
+                solid = true
+
+            end
+        end
+        if not solid then
+            -- non-solid part, but there's no navarea here, not a void worth worrying about
+            local visibleNearbyNav = navmesh.GetNearestNavArea( checkPos, false, 250, true, true )
+            if not IsValid( visibleNearbyNav ) then
                 solid = true
 
             end
