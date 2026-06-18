@@ -25,9 +25,6 @@ end
 local ATM_AUTO_SCORE = 10000
 local spawnATMNearPlayer
 local belowCenterChecks = {
-    Vector( 0, 0, -100 ),
-    Vector( 0, 0, -200 ),
-    Vector( 0, 0, -300 ),
     Vector( 0, 0, -400 ),
     Vector( 0, 0, -800 ),
 }
@@ -44,14 +41,6 @@ local function isGoodATMPos( pos, tooClosePos )
             -- if it's under a displacement, it's solid
             local underDisplacement = terminator_Extras.posIsUnderDisplacement( checkPos )
             if underDisplacement then
-                solid = true
-
-            end
-        end
-        if not solid then
-            -- non-solid part, but there's no navarea here, not a void worth worrying about
-            local visibleNearbyNav = navmesh.GetNearestNavArea( checkPos, false, 250, true, true )
-            if not IsValid( visibleNearbyNav ) then
                 solid = true
 
             end
