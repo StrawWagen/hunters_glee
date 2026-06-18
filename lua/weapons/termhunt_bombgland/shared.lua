@@ -16,7 +16,7 @@ SWEP.HoldType = "normal"
 SWEP.MassForBomb = 12
 SWEP.AccumulatedMass = 0
 SWEP.OldBombBeats = 0
-SWEP.BombsPerBigBomb = 6
+SWEP.BombsPerBigBomb = 5
 SWEP.Instability = 0
 SWEP.MaxInstability = 3
 
@@ -37,7 +37,7 @@ if CLIENT then
         local owner = self:GetOwner()
         local count = self:GetBombs()
 
-        if not owner:GetNW2Bool( "bombgland_createdbomb", false ) and count >= 1 then return true, "Primary attack to drop a small bomb!" end
+        if not owner:GetNW2Bool( "bombgland_createdbomb", false ) and not owner:GetNW2Bool( "bombgland_createdbigbomb", false ) and count >= 1 then return true, "Primary attack to drop a small bomb!" end
 
         if not owner:GetNW2Bool( "bombgland_createdbigbomb", false ) and count >= self.BombsPerBigBomb then return true, "Reload to drop a BIG bomb!\nYou will EXPLODE when damaged if you don't!" end
 
@@ -110,7 +110,7 @@ function SWEP:PunchValid()
 end
 
 function SWEP:PunchInvalid()
-    self:GetOwner():ViewPunch( Angle( 2,0,0 ) )
+    self:GetOwner():ViewPunch( Angle( 2, 0, 0 ) )
     self:DoAnimEvent( ACT_FLINCH )
 
 end
@@ -137,7 +137,7 @@ function SWEP:Equip()
         if owner:Health() <= 0 then return end
 
         if dmg:GetDamage() >= owner:Health() then
-            self:BoomUser()
+            self:BoomUser( dmg:GetAttacker() )
             hookBreak()
             return
 
@@ -148,6 +148,7 @@ function SWEP:Equip()
         local add = 1
         if dmg:GetDamage() > 20 then
             add = 2
+
         end
 
         self.Instability = self.Instability + add
@@ -155,7 +156,7 @@ function SWEP:Equip()
         local pit = 20 + ( self.Instability * 10 )
 
         if self.Instability >= self.MaxInstability then
-            self:BoomUser()
+            self:BoomUser( dmg:GetAttacker() )
             hookBreak()
             return
 
@@ -201,7 +202,7 @@ function SWEP:Equip()
     end )
 end
 
-function SWEP:BoomUser()
+function SWEP:BoomUser( attacker )
 
     if self:GetBombs() < 1 then return end
     -- stupid
@@ -229,7 +230,10 @@ function SWEP:BoomUser()
     end
 
     local dmg = math.Clamp( self:GetBombs(), 0, self.BombsPerBigBomb * 4 ) * 70
-    terminator_Extras.GleeFancySplode( worldSpaceC, dmg, dmg + 100, self:GetOwner(), self )
+
+    attacker = IsValid( attacker ) and attacker or self:GetOwner()
+
+    terminator_Extras.GleeFancySplode( worldSpaceC, dmg, dmg + 100, attacker, self )
 
     self:SetBombs( 0 )
 
