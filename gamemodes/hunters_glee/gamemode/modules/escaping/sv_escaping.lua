@@ -130,8 +130,8 @@ function GM:escapifyVehicle( vehicle )
                 huntersGlee_AnnounceDramatic( riders, 1000, textDisplayDuration, "You've escaped!\nBut who did you leave behind?" )
 
                 local sOrNoS = riderCount == 1 and "" or "s"
-                local eOrS = escapablePlyCount == 1 and "s" or "e"
-                huntersGlee_AnnounceDramatic( everyoneElse, 50, textDisplayDuration, riderCount .. " soul" .. sOrNoS .. " hav" .. eOrS .. " escaped the hunt..." )
+                local veOrS = escapablePlyCount == 1 and "s" or "ve"
+                huntersGlee_AnnounceDramatic( everyoneElse, 50, textDisplayDuration, riderCount .. " soul" .. sOrNoS .. " ha" .. veOrS .. " escaped the hunt..." )
 
             else
                 huntersGlee_AnnounceDramatic( riders, 1000, textDisplayDuration, "You've escaped!\nYou can finally leave this all behind..." )

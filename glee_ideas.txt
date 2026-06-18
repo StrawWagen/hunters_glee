@@ -257,3 +257,4 @@ start by default not being able to hold more than 2 items per slot
 purchase innate that lets you carry more weapons
 
 afk fakeout doppleganger
+attach balloons to stuff as ghost
