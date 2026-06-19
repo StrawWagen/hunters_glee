@@ -1086,7 +1086,7 @@ end )
 function GM:PlayerDeathThink( ply )
     local hasHp = ply:Health() > 0
     local hookSaysYes = self:PlyCanRespawn( ply )
-    local naturalRespawn = GAMEMODE.autoRespawn and hookSaysYes
+    local naturalRespawn = GAMEMODE.autoRespawn and ( hookSaysYes or ply.glee_newRoundSpawn )
 
     if not naturalRespawn and not hasHp then
         if ply.termHuntTeam == GAMEMODE.TEAM_PLAYING then
@@ -1262,6 +1262,9 @@ function GM:PlayerSpawn( pl, transiton )
 
     -- TODO: is this glee_needsRespawning nil check needed?
     pl.glee_needsRespawning = nil
+    -- this one is needed
+    pl.glee_newRoundSpawn = nil
+
     -- they used up their 1 true respawn
     -- don't set their pos until they die again
     pl.glee_usedTrueRespawn = true

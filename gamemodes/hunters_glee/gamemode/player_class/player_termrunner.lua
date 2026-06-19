@@ -91,10 +91,10 @@ function PLAYER:Spawn()
     if not IsValid( realPlayer ) then return end
     realPlayer:unstuckFullHandle()
 
-    if not realPlayer.realRespawn then return end
+    if not realPlayer.glee_newRoundSpawn then return end
 
     -- hook + weird table of functions
-    hook.Run( "termhunt_realrespawn", realPlayer )
+    hook.Run( "termhunt_newroundspawn", realPlayer )
 
 end
 

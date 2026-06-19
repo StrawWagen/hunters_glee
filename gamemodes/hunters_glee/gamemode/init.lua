@@ -992,7 +992,7 @@ function GM:beginSetup()
     for _, ply in player.Iterator() do
         hook.Run( "huntersglee_player_pre_reset", ply )
 
-        ply.realRespawn = true -- wipe all shop attributes
+        ply.glee_newRoundSpawn = true -- wipe all shop attributes
         ply.shopItemCooldowns = {} -- reset wep cooldowns
         ply.isTerminatorHunterKiller = nil -- dont have this persist thru rounds
         ply:ResetSkulls()
