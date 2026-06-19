@@ -1,4 +1,6 @@
 
+local GAMEMODE = GAMEMODE or GM
+
 local function defineFont()
     surface.CreateFont( "huntersglee_welcometext", {
         font = GAMEMODE and GAMEMODE.GLEE_FONT or "Arial",
