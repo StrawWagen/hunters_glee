@@ -1,0 +1,9 @@
+VertexLitGeneric
+{
+$baseTexture "models\glee\atm\atm_monitor_placeholder"
+
+
+$envmap env_cubemap
+$envmaptint "[ .8 .8 .8 ]"
+$envmapcontrast ".5"
+}

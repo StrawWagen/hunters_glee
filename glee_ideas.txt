@@ -114,6 +114,28 @@
 
 -- impliment taucannon fullcharge effect -DONE
 
+-- SHOW THE GOAL AT THE START -DONE
+    -- not knowing the goal is not fun
+    -- find skulls hint?
+
+-- ATM -DONE
+    -- buy in shop, costs 1000 score
+    -- arrives by itself if someone has more than 10k score
+    -- arrives somewhere nearby purchaser, ( or first player with >10k score )
+    -- exists as restricted way to make large deposits/withdrawls
+    -- press E to open it's gui, has buttons for deposits/withdrawls of size 100, 500, 1000
+    -- burrows itself out of the ground
+    -- half of the x% deposit cut gets stored in the atm
+    -- if atm was purchased, the purchaser gets an extra option to withdraw the deposit cut
+    -- can also destroy atm to get the cut ( very tanky )
+    -- atm burrows out in a shell of two models/hunter/tubes/tube1x1x2c.mdl, and topped by one models/hunter/misc/cone1x1.mdl
+    -- when it fully exits the ground, the shell explodes off of it
+
+-- astral projection -DONE
+--    become ghost, leave body
+--    real body, drop server ragdoll, with skull
+--    cannot be revived
+
 -- effigy
 -- pushes dead people away, makes them look away
 -- steals their money when they get close, or aim near it
@@ -149,29 +171,15 @@
 
 -- act command while driving npcs
 
--- ATM
--- buy in shop, costs 1000 score
--- arrives by itself if someone has more than 10k score
--- arrives somewhere nearby purchaser, ( or first player with >10k score )
--- exists as restricted way to make large deposits/withdrawls
--- press E to open it's gui, has buttons for deposits/withdrawls of size 100, 500, 1000
--- burrows itself out of the ground
--- half of the x% deposit cut gets stored in the atm
--- if atm was purchased, the purchaser gets an extra option to withdraw the deposit cut
--- can also destroy atm to get the cut ( very tanky )
--- atm burrows out in a shell of two models/hunter/tubes/tube1x1x2c.mdl, and topped by one models/hunter/misc/cone1x1.mdl
--- when it fully exits the ground, the shell explodes off of it
-
 
 -- samus ball powerup
 
--- WAIT HINT HUD UNTIL ESCAPE IS CLOSED
+-- make first time hint defer to escape menu
 
 -- directly say that roll of the dice is for unstucking
 -- hint to flash tab?
 
 -- voting for modes is not that new user friendly
--- find skulls hint?
 -- zambies glee is better starting mode
 -- sixth sense conflicts with new proximity hud
 
@@ -187,11 +195,6 @@
 --    ghosts know where loot is at all times?
 --    ghosts way to communicate?
 --    ghosts as knowledge brokers?
-
--- astral projection
---    become ghost, leave body
---    real body, drop server ragdoll, with skull
---    cannot be revived
 
 -- remove pistol from loadout
 
@@ -209,13 +212,13 @@
 -- change ATM color to blue?
 -- make atm not error when used in sandbox?
 
--- icon in C menu to vote for RTM
+-- icon in C menu that aliases !rtm in chat
 -- sticky fingers, ratelimit changing weapons
 
 -- fresh skulls create blood decals?
 
 -- rewrite HINTS
--- make them refresh if away from game for too long
+-- make them refresh if rejoining after >10 days of not playing
 
 -- do pass on intro, make sure player is invisible
 -- fast weapon switch should be on by default
@@ -228,13 +231,10 @@
 
 -- NEED STRONGER HINT TO SCROLL in shop
 
--- drop money all the time, 50% of score?
-
--- SHOW THE GOAL AT THE START
--- not knowing the goal is not fun
+-- drop money all the time, 50% of score? -no
 
 -- selecting weapons is hard
--- REMOVE weapons
+-- REMOVE redundant weapons?
 -- move flaregun to utility slot
 
 shop rewrite

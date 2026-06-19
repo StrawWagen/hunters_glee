@@ -13,7 +13,7 @@ ENT.TransactionCooldown     = 0.25
 ENT.TransactionCooldownDead = 1
 
 function ENT:SetupDataTables()
-    self:NetworkVar( "String", "State" )    -- "usable" | "burrowing"
+    self:NetworkVar( "String", "State" )    -- "usable" | "burrowing" | "broken"
     self:NetworkVar( "Int",    "OwnersCut" ) -- score accumulating for the ATM owner
     self:NetworkVar( "Entity", "AtmOwner" ) -- purchasing player; NULL for auto-spawned ATMs
 

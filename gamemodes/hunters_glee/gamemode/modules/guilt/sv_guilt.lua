@@ -93,7 +93,7 @@ function GM:IsInnocent( ply )
     local totalEvilness = self.roundExtraData.generalMischievousness[plysId] or 0
 
     -- is this person a persistently evil presence?
-    local persistentEvilness = self:GetPersistentGuilt( ply ) * evilnessPerPersistGuilt
+    local persistentEvilness = self:GetStoredPersistentGuilt( ply ) * evilnessPerPersistGuilt
     totalEvilness = totalEvilness + persistentEvilness
 
     -- have they been killing people? damaging people?
@@ -345,7 +345,7 @@ local function getGuiltInDays( guiltSeconds )
 
 end
 
-function GM:GetPersistentGuilt( ply )
+function GM:GetStoredPersistentGuilt( ply )
     local oldPersistentGuilt = ply:GetPData( "glee_persistentguilt", 0 )
     local guiltInDays = getGuiltInDays( oldPersistentGuilt )
     return guiltInDays
@@ -363,7 +363,7 @@ function GM:IncrementPersistentGuilt( ply, add )
 end
 
 hook.Add( "PlayerInitialSpawn", "glee_checkpersistentguilt", function( ply )
-    local guiltInDays = GAMEMODE:GetPersistentGuilt( ply )
+    local guiltInDays = GAMEMODE:GetStoredPersistentGuilt( ply )
     if guiltInDays <= 0 then return end
 
     ply:SetNWFloat( "glee_persistentguilt_days", guiltInDays )

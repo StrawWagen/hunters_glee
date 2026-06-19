@@ -129,7 +129,7 @@ function SWEP:DumpCharge()
         if needsSplode then
             isFirstBullet = nil
             local attacker = IsValid( owner ) and owner or self
-            terminator_Extras.GleeFancySplode( trace.HitPos + trace.HitNormal * 5, 10 * chargeLevel, 8 * chargeLevel, attacker, self )
+            terminator_Extras.GleeFancySplode( trace.HitPos + trace.HitNormal * 10, 10 * chargeLevel, 8 * chargeLevel, attacker, self )
 
         end
 
@@ -160,7 +160,7 @@ function SWEP:DumpCharge()
     hullSizeMul = hullSizeMul + chargeLevel / 2
 
     local num = 1 + chargeLevel / 4
-    local dmg = gauss_Dmg * chargeLevel
+    local damage = gauss_Dmg * ( chargeLevel^1.1 )
     local dir = validOwner and owner:GetAimVector() or self:GetForward()
     local start = validOwner and owner:GetShootPos() or ( self:GetPos() + dir * 25 )
 
@@ -170,7 +170,7 @@ function SWEP:DumpCharge()
     bullet.Force    = 500 + chargeLevel * 5
     bullet.Spread   = Vector( 0, 0, 0 )
     bullet.HullSize = 1
-    bullet.Damage   = dmg
+    bullet.Damage   = damage
     bullet.Tracer	= 1
     bullet.TracerName = "HL1GaussBeam_GMOD"
     bullet.Attacker = owner

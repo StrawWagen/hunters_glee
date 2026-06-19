@@ -206,6 +206,20 @@ end
 
 local forceUpOffset = Vector( 0, 0, 75 )
 
+function ENT:EjectEntity( ejecting, forceMul, forceOrigin )
+    local shellPos = ejecting:GetPos()
+    ejecting:SetParent()
+    ejecting:SetPos( shellPos )
+    ejecting:SetCollisionGroup( COLLISION_GROUP_NONE )
+
+    local phys = ejecting:GetPhysicsObject()
+    if not IsValid( phys ) then return end
+
+    local dir = ( shellPos - forceOrigin ):GetNormalized()
+    phys:ApplyForceOffset( dir * forceMul, forceOrigin )
+
+end
+
 function ENT:EjectShells()
     if not self.ShellEnts then return end
 
@@ -226,16 +240,7 @@ function ENT:EjectShells()
     for _, shellEnt in ipairs( self.ShellEnts ) do
         if not IsValid( shellEnt ) then continue end
 
-        local shellPos = shellEnt:GetPos()
-        shellEnt:SetParent()
-        shellEnt:SetPos( shellPos )
-        shellEnt:SetCollisionGroup( COLLISION_GROUP_NONE )
-
-        local phys = shellEnt:GetPhysicsObject()
-        if not IsValid( phys ) then continue end
-
-        local dir = ( shellPos - atmPos ):GetNormalized()
-        phys:ApplyForceOffset( dir * self.ShellImpulseForce, forceOrigin )
+        self:EjectEntity( shellEnt, self.ShellImpulseForce, forceOrigin )
 
     end
 
@@ -383,7 +388,7 @@ function ENT:ClaimOwnersCut( ply )
 end
 
 function ENT:OnTakeDamage( dmg )
-    if self.ATMDead then return end
+    if self:GetState() ~= "usable" then return end
 
     local damage = dmg:GetDamage()
     self:SetHealth( self:Health() - damage )
@@ -447,11 +452,14 @@ function ENT:OnTakeDamage( dmg )
 
 end
 
+local scoreDumpOffset = Vector( -16, 0, 40 )
+local alwaysInsideATM = { 50, 1000 }
+
 function ENT:Die()
-    self.ATMDead = true
+    self:SetState( "broken" )
 
     local pos       = self:GetPos()
-    local poolFunds = self:GetOwnersCut()
+    local poolFunds = self:GetOwnersCut() + math.random( alwaysInsideATM[1], alwaysInsideATM[2] )
 
     terminator_Extras.GleeFancySplode( pos, 1500, 350, self, self )
     terminator_Extras.GleeFancySplode( pos, 25, 750, self, self )
@@ -463,21 +471,30 @@ function ENT:Die()
             eff:SetNormal( Vector( 0, 0, 1 ) )
 
         util.Effect( "glee_huge_m9k_splode", eff )
+
     end )
 
-    if poolFunds > 0 then
+    self:SetBodygroup( 0, 1 ) -- disable model door
+    local door = terminator_Extras.AttachParentedDetail( self, "models/glee/atm/atm01_door.mdl", Vector( 0, 0, 0 ), Angle( 0, 0, 0 ) )
+    self:EjectEntity( door, self.ShellImpulseForce * 2, self:WorldSpaceCenter() )
+
+    local reps = 0
+    local scorePos = self:LocalToWorld( scoreDumpOffset )
+    while poolFunds > 0 do
+        reps = reps + 1
+        local scoreForThisBall = math.min( 25 * reps, poolFunds )
+        poolFunds = poolFunds - scoreForThisBall
+
         local pickup = ents.Create( "termhunt_score_pickup" )
         if IsValid( pickup ) then
-            pickup:SetPos( pos + Vector( 0, 0, 50 ) )
+            local offset = -self:GetForward() * math.Rand( 0, 20 ) + self:GetRight() * math.Rand( -10, 10 )
+            pickup:SetPos( scorePos + offset )
             pickup:Spawn()
-            pickup:SetScore( poolFunds )
+            pickup:SetScore( scoreForThisBall )
             pickup:UpdateScoreLive()
 
         end
         self:SetOwnersCut( 0 )
 
     end
-
-    SafeRemoveEntity( self )
-
 end

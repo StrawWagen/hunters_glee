@@ -188,8 +188,10 @@ function GM:shopMarkup( purchaser, toPurchase )
     if GAMEMODE:RoundState() == GAMEMODE.ROUND_ACTIVE then
         if dat.markupPerPurchase then
             return dat.markup + dat.markupPerPurchase * GAMEMODE:purchaseCount( purchaser, toPurchase )
+
         else
             return dat.markup
+
         end
     end
     return 1

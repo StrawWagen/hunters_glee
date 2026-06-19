@@ -24,7 +24,7 @@ function ENT:commonCreationOptions()
 end
 
 
-ENT.rareCreationChance = 35
+ENT.rareCreationChance = 30
 
 function ENT:rareCreationOptions()
     local tbl = {

@@ -34,7 +34,7 @@ function ENT:rareCreationOptions()
         { class = "weapon_flechettegun" },
         { class = "manhack_welder" },
         { class = "weapon_physgun" },
-        
+
     }
     return tbl
 

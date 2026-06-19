@@ -513,14 +513,14 @@ local items = {
         name = "Tau Cannon",
         desc = "High risk, High reward.\nDon't let it overcharge!",
         shCost = 0,
-        shSkullCost = 5,
+        shSkullCost = 6,
         cooldown = 0.5,
         tags = { "ITEMS", "Weapon", "SkullCost" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
         },
-        weight = 1000,
+        weight = 1100,
         shPurchaseCheck = shopHelpers.aliveCheck,
         svOnPurchaseFunc = function( purchaser )
             shopHelpers.purchaseWeapon( purchaser, {
@@ -528,7 +528,7 @@ local items = {
                 confirmSoundWeight = 4,
                 ammoType = "Uranium_235",
                 purchaseClips = 0,
-                resupplyClips = 1,
+                resupplyClips = 2,
 
             } )
         end,
@@ -569,7 +569,7 @@ local items = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
         },
-        weight = 1100,
+        weight = 1000,
         shPurchaseCheck = shopHelpers.aliveCheck,
         svOnPurchaseFunc = function( purchaser )
             shopHelpers.purchaseWeapon( purchaser, {

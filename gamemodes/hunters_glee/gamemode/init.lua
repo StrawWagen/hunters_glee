@@ -14,6 +14,9 @@ AddCSLuaFile( "modules/deadplayerfx/cl_deaddesaturation.lua" )
 AddCSLuaFile( "modules/escaping/cl_escaping.lua" )
 AddCSLuaFile( "modules/escaping/cl_escapecounts.lua" )
 
+AddCSLuaFile( "modules/statuseffects/cl_statuseffects.lua" )
+AddCSLuaFile( "modules/statuseffects/sh_statuseffectbase.lua" )
+
 AddCSLuaFile( "modules/clhud/cl_topleftinfo.lua" )
 AddCSLuaFile( "modules/clhud/cl_bpm.lua" )
 AddCSLuaFile( "modules/clhud/cl_battery.lua" )
@@ -50,9 +53,6 @@ AddCSLuaFile( "modules/shopitems/sh_shoptags.lua" )
 AddCSLuaFile( "modules/shopitems/sh_shopcategories.lua" )
 AddCSLuaFile( "modules/shopitems/sh_itemverification.lua" )
 
-AddCSLuaFile( "modules/statuseffects/cl_statuseffects.lua" )
-AddCSLuaFile( "modules/statuseffects/sh_statuseffectbase.lua" )
-
 AddCSLuaFile( "modules/guilt/sh_guilt.lua" )
 AddCSLuaFile( "modules/battery/sh_battery.lua" )
 AddCSLuaFile( "modules/spawnset/cl_spawnsetvote.lua" )
@@ -70,6 +70,8 @@ include( "sv_playercommunication.lua" )
 
 include( "modules/sv_modelspeaking.lua" )
 include( "modules/sv_fullload.lua" )
+
+include( "modules/statuseffects/sv_statuseffects.lua" )
 
 include( "modules/sv_unstucker.lua" )
 include( "modules/sv_wallkick.lua" )
@@ -93,7 +95,6 @@ include( "modules/music/sv_musicgobbler.lua" )
 include( "modules/music/sv_tracktriggering.lua" )
 include( "modules/spawnset/sv_spawnsetvote.lua" )
 include( "modules/spawnset/sv_bosshandler.lua" )
-include( "modules/statuseffects/sv_statuseffects.lua" )
 include( "modules/sv_falldamage_andgoomba.lua" )
 include( "modules/firsttimeplayers/sv_firsttimeplayers.lua" )
 

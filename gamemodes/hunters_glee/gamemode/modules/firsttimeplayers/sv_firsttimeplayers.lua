@@ -10,6 +10,7 @@ util.AddNetworkString( "glee_askforgleetings" )
 
 local function gleetings( ply )
     if not game.IsDedicated() then return end
+
     local filterNotPly = RecipientFilter()
     filterNotPly:AddAllPlayers()
     filterNotPly:RemovePlayer( ply )
@@ -19,27 +20,29 @@ local function gleetings( ply )
 
 end
 
-function GM:ShelterPlyFromHarm( ply )
-    ply.glee_sheltering_normalCollisionGroup = ply.glee_sheltering_normalCollisionGroup or ply:GetCollisionGroup()
-    ply:SetNoTarget( true )
-    ply:GodEnable()
-    ply:SetCollisionGroup( COLLISION_GROUP_IN_VEHICLE )
-    ply:Fire( "alpha", 0, 0 )
+GAMEMODE:RegisterStatusEffect( "spawn_protection",
+    function( _self, owner )
+        owner.glee_sheltering_normalCollisionGroup = owner.glee_sheltering_normalCollisionGroup or owner:GetCollisionGroup()
+        owner:SetNoTarget( true )
+        owner:GodEnable()
+        owner:SetCollisionGroup( COLLISION_GROUP_IN_VEHICLE )
+        owner:Fire( "alpha", 0, 0 )
+        owner:SetNWBool( "glee_firstowner_sheltering", true )
 
-end
+    end,
+    function( _self, owner )
+        owner:SetNoTarget( false )
+        owner:GodDisable()
+        owner:SetCollisionGroup( owner.glee_sheltering_normalCollisionGroup or COLLISION_GROUP_PLAYER )
+        owner:Fire( "alpha", 255, 0 )
 
-function GM:StopShelteringPlyFromHarm( ply )
-    ply:SetNoTarget( false )
-    ply:GodDisable()
-    ply:SetCollisionGroup( ply.glee_sheltering_normalCollisionGroup )
-    ply:Fire( "alpha", 255, 0 )
-
-end
+    end
+)
 
 local function shelterPly( ply )
     if ply:IsBot() then return end
 
-    GAMEMODE:ShelterPlyFromHarm( ply )
+    ply:GiveStatusEffect( "spawn_protection" )
 
     local wait = 2
     wait = wait + ply:Ping() / 50
@@ -59,7 +62,7 @@ local function shelterPly( ply )
                math.AngleDifference( currAng.y, startingAng.y ) < 5 and
                math.AngleDifference( currAng.r, startingAng.r ) < 5 then return end
 
-            GAMEMODE:StopShelteringPlyFromHarm( ply )
+            ply:RemoveStatusEffect( "spawn_protection" )
 
             timer.Remove( timerName )
             gleetings( ply )
@@ -155,13 +158,13 @@ function GAMEMODE:WaitingForAFirstTimePlayer( players )
 end
 
 hook.Add( "PlayerInitialSpawn", "glee_firsttimeply_shelterwhenloading", function( ply )
-    GAMEMODE:ShelterPlyFromHarm( ply )
+    ply:GiveStatusEffect( "spawn_protection" )
 
 end )
 
 hook.Add( "glee_full_load", "glee_firsttimeplayercheck", function( ply )
     timer.Simple( 2, function() -- try delaying, so player is definitely ready to create the panel
-        GAMEMODE:StopShelteringPlyFromHarm( ply )
+        ply:RemoveStatusEffect( "spawn_protection" )
         spawned[ply] = true
 
     end )

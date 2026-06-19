@@ -31,7 +31,7 @@ function ENT:commonCreationOptions()
 
 end
 
-ENT.rareCreationChance = 2
+ENT.rareCreationChance = 1.5
 function ENT:rareCreationOptions()
     local tbl = {
         { class = "termhunt_taucannon", count = 1 },

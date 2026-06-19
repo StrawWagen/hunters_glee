@@ -417,54 +417,66 @@ function ENT:Think()
         end
     end
 
+
     if self:GetPos():DistToSqr( EyePos() ) > checkDist then
         self.nextAtmMusicThink = CurTime() + 1
         return
 
     end
 
-    local path
-
-    if self:IsDormant() then
-        path = ""
-
-    -- in-gui music
-    elseif IsValid( LocalPlayer().glee_AtmGui ) then
-        path = "hunters_glee/music/VACANT/gleetm.wav"
-        is3d = false
-
-    -- from-atm music
-    else
-        path = "hunters_glee/music/VACANT/gleetm-hum_AMP.wav"
-        is3d = true
-
-    end
-
-    if self.currentAtmMusic ~= path then
+    local state = self:GetState()
+    if state == "broken" then
+        self.nextAtmMusicThink = math.huge
         if self.oldAtmMusic then
-            self.oldAtmMusic:Stop()
+            self.oldAtmMusic:ChangePitch( 0, 5 )
+            self.oldAtmMusic:FadeOut( 10 )
+
+        end
+    elseif state == "usable" then
+
+        local path
+
+        if self:IsDormant() then
+            path = ""
+
+        -- in-gui music
+        elseif IsValid( LocalPlayer().glee_AtmGui ) then
+            path = "hunters_glee/music/VACANT/gleetm.wav"
+            is3d = false
+
+        -- from-atm music
+        else
+            path = "hunters_glee/music/VACANT/gleetm-hum_AMP.wav"
+            is3d = true
 
         end
 
-        if path == "" then return end
+        if self.currentAtmMusic ~= path then
+            if self.oldAtmMusic then
+                self.oldAtmMusic:Stop()
 
-        self.currentAtmMusic = path
-        local source = LocalPlayer()
-        if is3d then
-            source = self
+            end
 
+            if path == "" then return end
+
+            self.currentAtmMusic = path
+            local source = LocalPlayer()
+            if is3d then
+                source = self
+
+            end
+            local music = CreateSound( source, path )
+            music:SetSoundLevel( 70 )
+            music:PlayEx( 1, 100 )
+
+            self.oldAtmMusic = music
+            self:CallOnRemove( "glee_atm_stopmusic", function()
+                local musicRemoving = self.oldAtmMusic
+                if not musicRemoving then return end
+                musicRemoving:Stop()
+
+            end )
         end
-        local music = CreateSound( source, path )
-        music:SetSoundLevel( 70 )
-        music:PlayEx( 1, 100 )
-
-        self.oldAtmMusic = music
-        self:CallOnRemove( "glee_atm_stopmusic", function()
-            local musicRemoving = self.oldAtmMusic
-            if not musicRemoving then return end
-            musicRemoving:Stop()
-
-        end )
     end
 end
 
