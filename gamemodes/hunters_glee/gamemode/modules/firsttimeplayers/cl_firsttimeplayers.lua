@@ -100,7 +100,7 @@ local function doMessageIfWeCan()
     button.nextFlash = 0
 
     local stages
-    if player.GetCount() >= 4 then
+    if player.GetCount() >= 2 then
         stages = stagesMultiplayer
 
     else
