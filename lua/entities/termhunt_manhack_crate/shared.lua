@@ -92,12 +92,15 @@ function GM:ManhackCrate( pos )
     return crate
 
 end
+local flatUpOffset = Vector( 0, 0, 25 )
 
 local function getCreationPos( ent )
     local creationPos = ent:GetPos() + ( VectorRand() * ent:GetModelRadius() )
     creationPos = ent:WorldToLocal( ent:NearestPoint( creationPos ) )
     creationPos = creationPos * 0.35
-    return ent:LocalToWorld( creationPos )
+    creationPos = ent:LocalToWorld( creationPos )
+    creationPos = creationPos + flatUpOffset -- STOP SPAWNING IN DISPLACEMENTS!!!!1!!!!!!
+    return creationPos
 
 end
 
