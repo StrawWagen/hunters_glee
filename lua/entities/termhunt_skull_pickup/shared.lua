@@ -502,6 +502,9 @@ function ENT:Decapitate()
         myObj:ApplyForceCenter( self:GetUp() * 10000 )
 
     end )
+
+    hook.Run( "glee_ragdollskulldecapitated", parent, self )
+
 end
 
 if not CLIENT then return end

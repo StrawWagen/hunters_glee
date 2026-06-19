@@ -36,6 +36,13 @@ hook.Add( "NetworkEntityCreated", "glee_entnames_tracknewents", function( ent )
     end )
 end )
 
+hook.Add( "glee_cl_proxyhud_pleasepaintthis", "glee_proxyhud", function( ent )
+    if not IsValid( ent ) then return end
+    if not ent.Nick then return end
+    createNamePanel( ent )
+
+end )
+
 local function refreshNamePanels()
     for _, ent in ipairs( ents.GetAll() ) do
         if not ent.Nick then continue end
@@ -43,7 +50,6 @@ local function refreshNamePanels()
         createNamePanel( ent )
 
     end
-
 end
 
 refreshNamePanels()
@@ -176,7 +182,11 @@ local function whileDeadPaintOtherPlys( localPlayer, cur )
 
         else
             infoLine = health .. "%"
+            local armor = ent:Armor()
+            if armor > 0 then
+                infoLine = infoLine .. " " .. armor .. "%"
 
+            end
         end
 
         -- extraLine: spectate prompt when looking directly at them with no current target
@@ -265,21 +275,29 @@ local function whileAlivePaintOtherEnts( localPlayer, cur )
         local posOverride, ignoreDist, paintDead = hook.Run( "glee_cl_shouldpaintply_whilealive", ent, panel, isLookedAt )
         if not paintDead and ent:Health() <= 0 then panel:SetVisible( false ) continue end
 
-        panel:SetMode( isLookedAt and panel.MODE_FULL or panel.MODE_WORLD )
+        local myMode = panel.MODE_WORLD
+        if isLookedAt then
+            myMode = panel.MODE_FULL
+
+        end
+        panel:SetMode( myMode )
 
         local infoLine
         if isLookedAt then
-            local health
-            -- health normalized to 0-100
-            if not ent:IsPlayer() then
-                health = math.ceil( ent:Health() / ent:GetMaxHealth() * 100 )
+            infoLine = ent:GetNWString( "glee_lookedat_statusline", "" )
+            if #infoLine == 0 then
+                -- faker, health normalized to 0-100
+                if not ent:IsPlayer() then
+                    infoLine = math.ceil( ent:Health() / ent:GetMaxHealth() * 100 ) .. "%"
 
-            else
-                health = ent:Health()
+                else
+                    infoLine = ent:Health() .. "%"
+                    if ent:Armor() > 0 then
+                        infoLine = infoLine .. " " .. ent:Armor() .. "%"
 
+                    end
+                end
             end
-            infoLine = health .. "%"
-
         else
             local badNotLooking
             if ignoreDist then

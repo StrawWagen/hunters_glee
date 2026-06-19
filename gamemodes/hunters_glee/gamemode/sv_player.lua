@@ -558,6 +558,8 @@ end )
 
 function GM:PlyCanRespawn( ply )
     if ply:HasEscaped() then return false end
+    local blockRespawn = hook.Run( "glee_block_respawn", ply )
+    if blockRespawn then return false end
     return true
 
 end
@@ -1083,7 +1085,10 @@ end )
 
 function GM:PlayerDeathThink( ply )
     local hasHp = ply:Health() > 0
-    if not GAMEMODE.autoRespawn and not hasHp then
+    local hookSaysYes = self:PlyCanRespawn( ply )
+    local naturalRespawn = GAMEMODE.autoRespawn and hookSaysYes
+
+    if not naturalRespawn and not hasHp then
         if ply.termHuntTeam == GAMEMODE.TEAM_PLAYING then
             GAMEMODE:spectatifyPlayer( ply )
             ply:SetObserverMode( OBS_MODE_DEATHCAM )
@@ -1093,8 +1098,7 @@ function GM:PlayerDeathThink( ply )
 
     end
 
-    local naturalRespawn = GAMEMODE.autoRespawn
-    local forcedRespawn = ply.glee_needsRespawning and not ply:HasEscaped()
+    local forcedRespawn = ply.glee_needsRespawning and hookSaysYes
     local weirdBuggedStateRespawn = hasHp
 
     if weirdBuggedStateRespawn and ply:HasEscaped() then

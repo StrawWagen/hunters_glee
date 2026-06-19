@@ -1,4 +1,4 @@
-local function setDropWeapons( ply, _, _ )
+function GM:DropAllWeapons( ply, _, _ )
     for _, wep in pairs( ply:GetWeapons() ) do
 
         if not ply:CanDropWeaponKeepAmmo( wep ) then continue end
@@ -10,7 +10,10 @@ local function setDropWeapons( ply, _, _ )
     end
 end
 
-hook.Add( "DoPlayerDeath", "glee_dropper_dropweaponoverride", setDropWeapons )
+hook.Add( "DoPlayerDeath", "glee_dropper_dropweaponoverride", function( ply )
+    GAMEMODE:DropAllWeapons( ply )
+
+end )
 
 
 local function checkAndRestoreWeapsAmmo( wep, ply )

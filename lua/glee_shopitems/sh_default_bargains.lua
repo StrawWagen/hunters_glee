@@ -147,9 +147,12 @@ else -- CLIENT
 end
 
 
+local cheatsVar = GetConVar( "sv_cheats" )
+
 -- Only show bargains that are on offer.
 hook.Add( "glee_shop_canshow", "glee_shopitems_bargainoffers", function( ply, itemData )
     if not itemData.tags.Bargain then return end -- Not a bargain, don't care.
+    if SERVER and cheatsVar:GetBool() then return end -- cheats, serverside? let them buy it with termhunt_purchase 
     if not GAMEMODE:IsBargainOffered( itemData.identifier, ply ) then return false, "This bargain is not on offer." end
 
 end )
@@ -360,6 +363,120 @@ if SERVER then
     )
 end
 
+if SERVER then
+    -- cannot respawn
+    GAMEMODE:RegisterStatusEffect( "astrallyprojected",
+        function( self, owner ) -- setup func
+            self:HookOnce( "glee_block_respawn", function( ply ) -- block respawn
+                if not ply:HasStatusEffect( "astrallyprojected" ) then return end
+                return true
+
+            end )
+
+            GAMEMODE:DropAllWeapons( owner )
+
+            owner:ScreenFade( SCREENFADE.OUT, Color( 0, 0, 0, 255 ), 1, 0 )
+
+            timer.Simple( 1, function()
+                if not IsValid( owner ) then return end
+
+                local ragdoll = ents.Create( "prop_ragdoll" )
+                if IsValid( ragdoll ) then
+
+                    ragdoll.glee_isAstralprojectionRagdoll = true
+
+                    ragdoll:SetMaxHealth( 100 )
+                    ragdoll:SetHealth( 100 )
+
+                    ragdoll:SetModel( owner:GetModel() )
+                    ragdoll:SetPos( owner:GetPos() )
+                    ragdoll:SetAngles( owner:GetAngles() )
+                    ragdoll:Spawn()
+
+                    -- Ragdolls only have physics objects for SOME bones (not all of them).
+                    -- TranslatePhysBoneToBone maps physics-bone-index → model bone index,
+                    -- so we iterate physics objects and look up the player bone for each one.
+                    local physCount = ragdoll:GetPhysicsObjectCount()
+                    for physBoneID = 0, physCount - 1 do
+                        local currPhysObj = ragdoll:GetPhysicsObjectNum( physBoneID )
+                        if not IsValid( currPhysObj ) then continue end
+
+                        local boneID = ragdoll:TranslatePhysBoneToBone( physBoneID )
+                        local bonePos, boneAng = owner:GetBonePosition( boneID )
+                        if not bonePos then continue end
+
+                        currPhysObj:SetPos( bonePos )
+                        currPhysObj:SetAngles( boneAng )
+
+                    end
+
+                    GAMEMODE:HandleRagdollSkulling( ragdoll )
+
+                    ragdoll:SetNW2Entity( "glee_astralprojection_ragdoll_owner", owner )
+                    ragdoll:SetNWString( "glee_lookedat_statusline", "Just sleeping..." )
+
+                    ragdoll.GetPlayerColor = function()
+                        return owner:GetPlayerColor()
+
+                    end
+                    ragdoll.Nick = function()
+                        return owner:Nick()
+
+                    end
+                end
+
+                owner:KillSilent()
+
+            end )
+
+            self:HookOnce( "glee_ragdollskulldecapitated", function( ragdoll, skull )
+                if not ragdoll.glee_isAstralprojectionRagdoll then return end
+
+                ragdoll:SetNWString( "glee_lookedat_statusline", "Dead." )
+
+                GAMEMODE:PanicSource( skull:GetPos(), 75, 200 )
+
+            end )
+        end
+    )
+else
+    -- cannot respawn
+    local backupPlyColor = Vector( 1, 1, 1 )
+    GAMEMODE:RegisterStatusEffect( "astrallyprojected",
+        function( self, _owner ) -- setup func
+            self:HookOnce( "EntityNetworkedVarChanged", function( ent, valname, _, new )
+                if valname ~= "glee_astralprojection_ragdoll_owner" then return end
+                ent.GetPlayerColor = function()
+                    local owner = ent:GetNW2Entity( "glee_astralprojection_ragdoll_owner" )
+                    if not IsValid( owner ) then return backupPlyColor end
+                    return owner:GetPlayerColor()
+
+                end
+                ent.Nick = function()
+                    local owner = ent:GetNW2Entity( "glee_astralprojection_ragdoll_owner" )
+                    if not IsValid( owner ) then return "???" end
+                    return owner:Nick()
+
+                end
+                timer.Simple( 0, function()
+                    if not IsValid( ent ) then return end
+                    hook.Run( "glee_cl_proxyhud_pleasepaintthis", ent )
+
+                end )
+
+                if not IsValid( new ) then return end -- owner
+                ent.glee_PlayerNameColorOverride = GAMEMODE:GetTeamColor( new )
+
+            end )
+            self:HookOnce( "glee_block_respawn", function( ply ) -- block respawn
+                if not ply:HasStatusEffect( "astrallyprojected" ) then return end
+                return true
+
+            end )
+        end
+    )
+end
+
 
 -- blindness stuff
 -- this is how you do clientside effects btw
@@ -477,10 +594,27 @@ if SERVER then
             end
 
             self:MakeEyesCloudy()
-            self:Hook( "PlayerSpawn", function( ply )
-                if ply ~= owner then return end
-                timer.Simple( 0, function() -- next frame
-                    if not IsValid( ply ) then return end
+            self.OwnersOldModel = owner:GetModel()
+
+            self:Hook( "Think", function()
+                local currModel = owner:GetModel()
+                if currModel == self.OwnersOldModel then return end
+                self.OwnersOldModel = currModel
+
+                if owner:Health() <= 0 then return end
+
+                timer.Simple( 0, function()
+                    self:RestoreEyes()
+                    self:MakeEyesCloudy()
+
+                end )
+            end )
+
+            self:HookOnce( "PlayerSpawn", function( spawned )
+                if not spawned:HasStatusEffect( "blindness" ) then return end
+                timer.Simple( 0, function()
+                    if not IsValid( spawned ) then return end
+                    self:RestoreEyes()
                     self:MakeEyesCloudy()
 
                 end )
@@ -657,6 +791,25 @@ local items = {
         shCanShowInShop = shopHelpers.terminatorInSpawnPool,
         svOnPurchaseFunc = function( ply )
             ply:GiveStatusEffect( "beacon" )
+
+        end,
+    },
+    ["astralprojection"] = {
+        name = "Astral Projection",
+        desc = "Astrally project yourself.",
+        shCost = -250,
+        markup = 0.25,
+        cooldown = math.huge,
+        tags = { "INNATE", "Debuff", "Bargain" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_INACTIVE,
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = -90,
+        shPurchaseCheck = { shopHelpers.aliveCheck, },
+        shCanShowInShop = shopHelpers.hasMultiplePeople,
+        svOnPurchaseFunc = function( ply )
+            ply:GiveStatusEffect( "astrallyprojected" )
 
         end,
     },

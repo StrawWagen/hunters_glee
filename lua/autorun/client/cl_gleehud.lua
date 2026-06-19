@@ -103,6 +103,12 @@ function terminator_Extras.glee_PlayerNameColor( ply, visible )
         end
     end
 
+    if ply.glee_PlayerNameColorOverride then
+        color = ply.glee_PlayerNameColorOverride
+        a = 255
+
+    end
+
     if not color then return terminator_Extras.glee_DeadPlyColor end
     color.a = a
 

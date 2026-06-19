@@ -29,22 +29,25 @@ local hasSeenMessage = CreateClientConVar( "cl_huntersglee_firsttimetutorial", 0
 
 local stagesSingleplayer = {
     [1] = "Welcome.\nTo the hunt!",
-    [2] = "YOU ARE NOT ALONE.",
-    [3] = "Listen, see, flee...",
-    [4] = "Listen, to your heart.",
-    [5] = "See them, if they don't see you first.",
-    [6] = "Flee, but to where?",
-    [7] = "Just, above all else.",
-    [8] = "GIVE THEM GLEE!",
+    [2] = "You're here to survive?",
+    [3] = "You will treasure SKULLS.\nTo ESCAPE?",
+    [4] = "You will...\nDIE?",
+    [5] = "Oh, you will die...",
+    [6] = "Just, don't forget WHERE you die...",
+    [7] = "Have a gleeful hunt,\nand be careful!",
+    [8] = "Because they're already on your tail...",
 }
 
-local stagesMultiplayer = { -- way less tense in multiplayer
+local stagesMultiplayer = {
     [1] = "Welcome.\nTo the hunt!",
-    [2] = "You're here to survive.",
-    [3] = "You're here to... DIE?",
-    [4] = "Death will not be the end.",
-    [5] = "Until, then...",
-    [6] = "SURVIVE."
+    [2] = "You're here to survive?",
+    [3] = "You will treasure skulls, to escape?",
+    [4] = "You will...\nDIE?",
+    [5] = "But don't let death worry you.",
+    [6] = "You're here...\nTo HAUNT those left alive.",
+    [7] = "Here, to BUY yourself back alive?",
+    [8] = "After all...",
+    [9] = "The hunt MUST GO ON.",
 }
 
 local function doMessageIfWeCan()
@@ -75,7 +78,14 @@ local function doMessageIfWeCan()
 
         end
         self:oldRemove()
-        RunConsoleCommand( "cl_huntersglee_firsttimetutorial", "1" )
+
+        local status = "1"
+        if game.IsDedicated() then
+            status = "2"
+
+        end
+
+        RunConsoleCommand( "cl_huntersglee_firsttimetutorial", status )
 
     end
 

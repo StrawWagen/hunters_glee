@@ -788,7 +788,7 @@ local items = {
 
             end
         end,
-        tags = { "DEADGIFTS", "Resurrecting", "CloseShopOnPurchase" },
+        tags = { "DEADGIFTS", "Divine", "Resurrecting", "CloseShopOnPurchase" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },
@@ -818,7 +818,7 @@ local items = {
         markup = 1,
         markupPerPurchase = 1,
         cooldown = 5,
-        tags = { "DEADGIFTS", "Resurrecting", "CloseShopOnPurchase" },
+        tags = { "DEADGIFTS", "Infernal", "Resurrecting", "CloseShopOnPurchase" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },
@@ -875,7 +875,7 @@ local items = {
         markup = 1,
         markupPerPurchase = 0,
         cooldown = 0,
-        tags = { "DEADGIFTS", "CloseShopOnPurchase" },
+        tags = { "DEADGIFTS", "Divine", "CloseShopOnPurchase" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },

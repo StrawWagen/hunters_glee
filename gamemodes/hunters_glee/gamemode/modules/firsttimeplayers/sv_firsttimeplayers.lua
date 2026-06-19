@@ -22,38 +22,39 @@ end
 local function shelterPly( ply )
     if ply:IsBot() then return end
 
-    local startingAng = ply:GetAngles()
-    startingAng.p = math.Round( startingAng.p, 0 )
-    startingAng.y = math.Round( startingAng.y, 0 )
-    startingAng.r = math.Round( startingAng.r, 0 )
-
-    local startPos = ply:GetPos()
-
     ply:SetNoTarget( true )
     ply:GodEnable()
     local oldGroup = ply:GetCollisionGroup()
     ply:SetCollisionGroup( COLLISION_GROUP_IN_VEHICLE )
-    ply:Fire( "alpha", 0 )
+    ply:Fire( "alpha", 1, 0 )
 
-    local timerName = "glee_tutorialshelter_" .. ply:GetCreationID()
-    timer.Create( timerName, 0.1, 0, function()
-        if not IsValid( ply ) then timer.Remove( timerName ) return end
-        local currAng = ply:GetAngles()
-        currAng.p = math.Round( currAng.p, 0 )
-        currAng.y = math.Round( currAng.y, 0 )
-        currAng.r = math.Round( currAng.r, 0 )
+    local wait = 2
+    wait = wait + ply:Ping() / 50
 
-        local currPos = ply:GetPos()
-        if currPos:Distance( startPos ) < 50 and currAng == startingAng then return end
+    timer.Simple( wait, function() -- wait until the gui gets em
+        if not IsValid( ply ) then return end
 
-        ply:SetNoTarget( false )
-        ply:GodDisable()
-        ply:SetCollisionGroup( oldGroup )
-        ply:Fire( "alpha", 255 )
+        local startingAng = ply:GetAngles()
 
-        timer.Remove( timerName )
-        gleetings( ply )
+        local timerName = "glee_tutorialshelter_" .. ply:GetCreationID()
+        timer.Create( timerName, 0.1, 0, function()
+            if not IsValid( ply ) then timer.Remove( timerName ) return end
+            local currAng = ply:GetAngles()
 
+            -- remove godmode when tutorial lets go and allows them to aim again
+            if math.AngleDifference( currAng.p, startingAng.p ) < 5 and
+               math.AngleDifference( currAng.y, startingAng.y ) < 5 and
+               math.AngleDifference( currAng.r, startingAng.r ) < 5 then return end
+
+            ply:SetNoTarget( false )
+            ply:GodDisable()
+            ply:SetCollisionGroup( oldGroup )
+            ply:Fire( "alpha", 255, 0 )
+
+            timer.Remove( timerName )
+            gleetings( ply )
+
+        end )
     end )
 end
 
@@ -64,7 +65,7 @@ local function tutorialize( ply )
 
     end
     asked[ply] = true
-    if not alreadyDone[ply:SteamID()] then -- only give them god/notarg once per round
+    if not alreadyDone[ply:SteamID()] then -- NEVER give god/notarg more than once per session
         alreadyDone[ply:SteamID()] = true
         shelterPly( ply )
 
@@ -81,7 +82,12 @@ local function needsToAsk( ply )
     if ply:IsBot() then return end
 
     local sawIt = ply:GetInfoNum( "cl_huntersglee_firsttimetutorial", 0 )
-    if sawIt == 0 then return true end
+    local minSawIt = 0
+    if game.IsDedicated() then
+        minSawIt = 1
+
+    end
+    if sawIt <= minSawIt then return true end
 
 end
 
@@ -92,9 +98,14 @@ function GAMEMODE:WaitingForAFirstTimePlayer( players )
     if blockSpawning then
         local sawTutorialCount = 0
         local didntSeeTutorialCount = 0
+        local minSawIt = 0
+        if game.IsDedicated() then
+            minSawIt = 1
+
+        end
         for _, ply in ipairs( players ) do
             local sawIt = ply:GetInfoNum( "cl_huntersglee_firsttimetutorial", 0 )
-            if sawIt >= 1 and not ply:IsBot() then
+            if sawIt >= minSawIt and not ply:IsBot() then
                 sawTutorialCount = sawTutorialCount + 1
 
             else
@@ -137,3 +148,13 @@ hook.Add( "glee_full_load", "glee_firsttimeplayercheck", function( ply )
     spawned[ply] = true
 
 end )
+
+concommand.Add( "glee_test_tutorial", function( ply )
+    if not IsValid( ply ) then return end
+    asked[ply] = nil
+    alreadyDone[ply:SteamID()] = nil
+    spawned[ply] = true
+
+    ply:ConCommand( "cl_huntersglee_firsttimetutorial 0" )
+
+end, nil, nil, FCVAR_CHEAT )
