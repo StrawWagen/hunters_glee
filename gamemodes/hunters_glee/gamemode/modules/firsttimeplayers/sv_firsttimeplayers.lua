@@ -76,7 +76,7 @@ local function tutorialize( ply )
 end
 
 local function needsToAsk( ply )
-    --if not spawned[ply] then return end
+    if not spawned[ply] then return end
     if asked[ply] then return end
 
     if ply:IsBot() then return end
