@@ -19,14 +19,27 @@ local function gleetings( ply )
 
 end
 
+function GM:ShelterPlyFromHarm( ply )
+    ply.glee_sheltering_normalCollisionGroup = ply.glee_sheltering_normalCollisionGroup or ply:GetCollisionGroup()
+    ply:SetNoTarget( true )
+    ply:GodEnable()
+    ply:SetCollisionGroup( COLLISION_GROUP_IN_VEHICLE )
+    ply:Fire( "alpha", 0, 0 )
+
+end
+
+function GM:StopShelteringPlyFromHarm( ply )
+    ply:SetNoTarget( false )
+    ply:GodDisable()
+    ply:SetCollisionGroup( ply.glee_sheltering_normalCollisionGroup )
+    ply:Fire( "alpha", 255, 0 )
+
+end
+
 local function shelterPly( ply )
     if ply:IsBot() then return end
 
-    ply:SetNoTarget( true )
-    ply:GodEnable()
-    local oldGroup = ply:GetCollisionGroup()
-    ply:SetCollisionGroup( COLLISION_GROUP_IN_VEHICLE )
-    ply:Fire( "alpha", 1, 0 )
+    GAMEMODE:ShelterPlyFromHarm( ply )
 
     local wait = 2
     wait = wait + ply:Ping() / 50
@@ -46,10 +59,7 @@ local function shelterPly( ply )
                math.AngleDifference( currAng.y, startingAng.y ) < 5 and
                math.AngleDifference( currAng.r, startingAng.r ) < 5 then return end
 
-            ply:SetNoTarget( false )
-            ply:GodDisable()
-            ply:SetCollisionGroup( oldGroup )
-            ply:Fire( "alpha", 255, 0 )
+            GAMEMODE:StopShelteringPlyFromHarm( ply )
 
             timer.Remove( timerName )
             gleetings( ply )
@@ -76,18 +86,18 @@ local function tutorialize( ply )
 end
 
 local function needsToAsk( ply )
-    if not spawned[ply] then return end
+    if not spawned[ply] then return end -- wait until ply has full loaded
     if asked[ply] then return end
 
     if ply:IsBot() then return end
 
     local sawIt = ply:GetInfoNum( "cl_huntersglee_firsttimetutorial", 0 )
-    local minSawIt = 0
+    local minSawIt = 1
     if game.IsDedicated() then
-        minSawIt = 1
+        minSawIt = 2
 
     end
-    if sawIt <= minSawIt then return true end
+    if sawIt < minSawIt then return true end
 
 end
 
@@ -144,9 +154,17 @@ function GAMEMODE:WaitingForAFirstTimePlayer( players )
     end
 end
 
-hook.Add( "glee_full_load", "glee_firsttimeplayercheck", function( ply )
-    spawned[ply] = true
+hook.Add( "PlayerInitialSpawn", "glee_firsttimeply_shelterwhenloading", function( ply )
+    GAMEMODE:ShelterPlyFromHarm( ply )
 
+end )
+
+hook.Add( "glee_full_load", "glee_firsttimeplayercheck", function( ply )
+    timer.Simple( 2, function() -- try delaying, so player is definitely ready to create the panel
+        GAMEMODE:StopShelteringPlyFromHarm( ply )
+        spawned[ply] = true
+
+    end )
 end )
 
 concommand.Add( "glee_test_tutorial", function( ply )
