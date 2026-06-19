@@ -363,7 +363,8 @@ if SERVER then
     )
 end
 
-hook.Add( "glee_shop_canpurchase", "glee_shoptags_astralprojection", function( _, itemData )
+hook.Add( "glee_shop_canpurchase", "glee_shoptags_astralprojection", function( purchaser, itemData )
+    if not purchaser:HasStatusEffect( "astrallyprojected" ) then return end
     if itemData.tags.SelfResurrecting then return false, "Astral Projection only goes one way..." end
 
 end )
