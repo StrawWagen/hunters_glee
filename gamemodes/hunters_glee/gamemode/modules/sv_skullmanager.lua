@@ -59,6 +59,8 @@ local function spawnTermSkull( died, dmg, _ )
     newSkull.fromSomethingWitnessable = true
     newSkull.nextPickup = CurTime() + 1
 
+    if not dmg then return end
+
     local attacker = dmg:GetAttacker()
     if not IsValid( attacker ) then return end
 
