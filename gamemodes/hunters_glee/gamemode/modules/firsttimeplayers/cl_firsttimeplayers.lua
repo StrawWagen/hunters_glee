@@ -53,7 +53,14 @@ local stagesMultiplayer = {
 local function doMessageIfWeCan()
     if not IsValid( LocalPlayer() ) then return end -- erm
     -- double check!
-    if hasSeenMessage:GetBool() then return true end
+
+    local target = 1
+    if game.IsDedicated() then
+        target = 2
+
+    end
+
+    if hasSeenMessage:GetInt() >= target then return true end
 
     imNewMyself = true
 
