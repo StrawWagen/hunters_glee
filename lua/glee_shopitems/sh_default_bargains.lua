@@ -363,6 +363,11 @@ if SERVER then
     )
 end
 
+hook.Add( "glee_shop_canpurchase", "glee_shoptags_astralprojection", function( _, itemData )
+    if itemData.tags.SelfResurrecting then return false, "Astral Projection only goes one way..." end
+
+end )
+
 if SERVER then
     -- cannot respawn
     GAMEMODE:RegisterStatusEffect( "astrallyprojected",
