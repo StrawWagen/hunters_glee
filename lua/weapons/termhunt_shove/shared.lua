@@ -324,7 +324,7 @@ do
 
         -- turning camera breaks boost
         if lastYaw[ply] and math.abs( math.AngleDifference( curYaw, lastYaw[ply] ) ) > allowedTurnRate then
-            earnedSpeed[ply] = earned and earned * 0.5 or nil
+            newSpeeds[ply] = earned and earned * 0.5 or nil
             lastYaw[ply] = curYaw
             return
 
@@ -344,7 +344,7 @@ do
                 or mv:KeyDown( IN_MOVERIGHT )
             )
         then
-            earnedSpeed[ply] = earned and earned * 0.5 or nil
+            newSpeeds[ply] = earned and earned * 0.5 or nil
             return
 
         end
@@ -355,7 +355,7 @@ do
         local vel = mv:GetVelocity()
         local actualSpeed = vel:Length()
         if actualSpeed < runSpeed * 0.9 then -- hit a wall or smth
-            earnedSpeed[ply] = nil
+            newSpeeds[ply] = nil
             return
 
         end
