@@ -86,8 +86,12 @@ if SERVER then
             local area = queue[i]
             i = i + 1
 
-            local pos = isGoodATMPos( area:GetCenter(), tooClosePos )
-            if pos then return pos end
+
+            if math.min( area:GetSizeX(), area:GetSizeY() ) > 50 then
+                local pos = isGoodATMPos( area:GetCenter(), tooClosePos )
+                if pos then return pos end
+
+            end
 
             for _, adj in ipairs( area:GetAdjacentAreas() ) do
                 if checked[adj] then continue end
