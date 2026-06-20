@@ -308,7 +308,7 @@ local items = {
              .. "Half of the deposit fee gets set aside, a cut for YOU, as the owner.\n"
              .. "But it can be stolen...\n"
              .. "A Complimentary ATM will arrive if anyone exceeds " .. ATM_AUTO_SCORE .. " score!",
-        shCost    = 1000,
+        shCost    = 750,
         cooldown  = 0,
         tags      = { "BANK" },
         purchaseTimes = {
