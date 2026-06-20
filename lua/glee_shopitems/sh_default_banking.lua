@@ -36,11 +36,10 @@ local function isGoodATMPos( pos, tooClosePos )
     for _, check in ipairs( belowCenterChecks ) do
         local checkPos = pos + check
         local solid = bit.band( util.PointContents( checkPos ), CONTENTS_SOLID ) ~= 0
-        -- TODO: optimize
         if not solid then
             -- if it's under a displacement, it's solid
-            local underDisplacement = terminator_Extras.posIsUnderDisplacement( checkPos )
-            if underDisplacement then
+            local definitelyUnder, probablyUnder = terminator_Extras.posIsUnderDisplacement( checkPos )
+            if definitelyUnder or probablyUnder then
                 solid = true
 
             end
@@ -260,7 +259,7 @@ local items = {
         end,
         fakeCost = true, -- score removal is handled in svOnPurchaseFunc
         shCost = function( purchaser )
-            return math.Clamp( purchaser:GetScore(), 10, 200 )
+            return math.Clamp( purchaser:GetScore(), 10, 100 )
 
         end,
         cooldown = 0.5,
@@ -272,7 +271,7 @@ local items = {
         weight = 100,
         shPurchaseCheck = hasBankAccount,
         svOnPurchaseFunc = function( purchaser )
-            local toDeposit = math.Clamp( purchaser:GetScore(), 10, 200 )
+            local toDeposit = math.Clamp( purchaser:GetScore(), 10, 100 )
             purchaser:GivePlayerScore( -toDeposit )
 
             purchaser:BankDepositScoreFullHandle( toDeposit )
