@@ -312,12 +312,21 @@ do
             return
 
         end
-        if not mv:KeyDown( IN_SPEED ) then return end
+        if not mv:KeyDown( IN_SPEED ) then
+            earnedSpeed[ply] = nil
+            return
+
+        end
+
+        local earned = earnedSpeed[ply]
 
         local curYaw = mv:GetAngles().y
 
+        -- turning camera breaks boost
         if lastYaw[ply] and math.abs( math.AngleDifference( curYaw, lastYaw[ply] ) ) > allowedTurnRate then
-            earnedSpeed[ply] = nil
+            earnedSpeed[ply] = earned and earned * 0.5 or nil
+            lastYaw[ply] = curYaw
+            return
 
         end
         lastYaw[ply] = curYaw
@@ -335,7 +344,7 @@ do
                 or mv:KeyDown( IN_MOVERIGHT )
             )
         then
-            earnedSpeed[ply] = nil
+            earnedSpeed[ply] = earned and earned * 0.5 or nil
             return
 
         end
