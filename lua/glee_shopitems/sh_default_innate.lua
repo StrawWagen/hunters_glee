@@ -345,9 +345,11 @@ if SERVER then
 
                 if armor > 0 and owner:OnGround() then
                     local velLeng = owner:GetVelocity():Length()
-                    if velLeng <= 25 then return end
+                    if velLeng <= 50 then return end
 
-                    local drain = ( velLeng / 10000 ) * 0.75
+                    local drain = ( velLeng / 100 ) ^ 1.15
+                    drain = lengthDivided / 100
+
                     owner:GivePlayerBatteryCharge( -drain )
 
                 end

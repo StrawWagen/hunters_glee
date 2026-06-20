@@ -22,12 +22,19 @@ local color_good = Color( 0, 255, 0 )
 local color_bad = Color( 255, 0, 0 )
 local defaultScore = 15
 
+local scoreBallsCantPickUp = {}
+
 function ENT:Initialize()
     if SERVER then
         self.nextAllowedMerge = CurTime() + 1
         self.nextScoreDecay = CurTime() + 30
-        self.canBePickedUpTime = CurTime() + 0.1
         self.nextScoreClick = CurTime() + 3
+        scoreBallsCantPickUp[self] = true
+        timer.Simple( 0.1, function()
+            if not IsValid( self ) then return end
+            scoreBallsCantPickUp[self] = nil
+
+        end )
         self.DoNotDuplicate = true
         if self:GetScore() == 0 then
             self:SetScore( defaultScore )
@@ -245,7 +252,7 @@ function ENT:DoScore( reciever )
 end
 
 function ENT:Touch( touched )
-    if self.canBePickedUpTime > CurTime() then return end
+    if scoreBallsCantPickUp[self] then return end
     self:DoScore( touched )
 
 end
@@ -283,7 +290,6 @@ function ENT:PhysicsCollide( colData, _ )
     end
     if colData.Speed < 30 then return end
     self:SoundThink( colData.Speed / 100 )
-
 
 end
 

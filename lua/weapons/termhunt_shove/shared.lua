@@ -141,6 +141,16 @@ function SWEP:ShoveAnim()
     end )
 end
 
+function SWEP:MissAnim()
+    timer.Simple( 0, function()
+        if not IsValid( self ) then return end
+        local owner = self:GetOwner()
+        if not IsValid( owner ) then return end
+        owner:DoAnimationEvent( ACT_FLINCH )
+
+    end )
+end
+
 function SWEP:PrimaryAttack( firstMul )
     if not SERVER then return end
     if not self:CanPrimaryAttack() then return end
@@ -227,6 +237,7 @@ function SWEP:PrimaryAttack( firstMul )
         self:SetNextPrimaryFire( CurTime() + 0.5 )
         owner:ViewPunch( Angle( -1, 0, 0 ) )
         owner:EmitSound( "weapons/slam/throw.wav", 66, 120 )
+        self:MissAnim()
 
     else
         if firstMul >= 1 then
@@ -242,5 +253,141 @@ end
 function SWEP:OnDrop()
     if SERVER then
         self:Remove()
+    end
+end
+
+do
+    local CurTime = CurTime
+    local IsValid = IsValid
+    local entMeta = FindMetaTable( "Entity" )
+    local sprintingUntil = {}
+    local earnedSpeed = {}
+    local newSpeeds = {}
+    local lastYaw = {}
+
+    local allowedTurnRate = 8
+    local fullSprintSpeedAdd = 150 -- doesn't buff quite up to this, probably the engine trying to slow down the player
+    local startPlayingFastRun = fullSprintSpeedAdd / 4
+    local sprintRamp = 1.003
+
+    function SWEP:TranslateActivity( act )
+        local fastRunning
+        if act == ACT_MP_RUN then
+            local owner = entMeta.GetOwner( self )
+            if IsValid( owner ) and entMeta.OnGround( owner ) then
+                local add = 0.1 + owner:Ping() / 100
+                sprintingUntil[owner] = CurTime() + add
+                local speedLengthSqr = owner:GetVelocity():LengthSqr()
+                local thresholdSqr = ( owner:GetRunSpeed() + startPlayingFastRun ) ^ 2
+                fastRunning = speedLengthSqr > thresholdSqr
+
+            end
+        end
+        if fastRunning then
+            return ACT_HL2MP_RUN_FAST
+
+        end
+        return act
+
+    end
+
+    local function cleanup( ply )
+        sprintingUntil[ply] = nil
+        earnedSpeed[ply] = nil
+        newSpeeds[ply] = nil
+        lastYaw[ply] = nil
+
+    end
+
+    hook.Add( "Move", "glee_shove_sprint", function( ply, mv )
+        if not sprintingUntil[ply] then return end
+        if sprintingUntil[ply] < CurTime() then
+            if earnedSpeed[ply] then
+                earnedSpeed[ply] = nil
+                lastYaw[ply] = nil
+
+            end
+            return
+
+        end
+        if not mv:KeyDown( IN_SPEED ) then return end
+
+        local curYaw = mv:GetAngles().y
+
+        if lastYaw[ply] and math.abs( math.AngleDifference( curYaw, lastYaw[ply] ) ) > allowedTurnRate then
+            earnedSpeed[ply] = nil
+
+        end
+        lastYaw[ply] = curYaw
+
+        local onGround = entMeta.OnGround( ply )
+        -- dont mess with movement if they're in air with no speedboost
+        if not onGround and not earnedSpeed[ply] then return end
+
+        -- if on ground and not going forward anymore, remove speedboost
+        if
+            onGround and (
+                not mv:KeyDown( IN_FORWARD )
+                or mv:KeyDown( IN_BACK )
+                or mv:KeyDown( IN_MOVELEFT )
+                or mv:KeyDown( IN_MOVERIGHT )
+            )
+        then
+            earnedSpeed[ply] = nil
+            return
+
+        end
+
+        local runSpeed = ply:GetRunSpeed()
+        local fullSprintSpeed = runSpeed + fullSprintSpeedAdd
+
+        local oldSpeed = earnedSpeed[ply] or runSpeed
+        local newSpeed = math.Clamp( oldSpeed * sprintRamp, 0, fullSprintSpeed )
+
+        newSpeeds[ply] = newSpeed
+
+        local vel = mv:GetVelocity()
+        local fwd
+        if onGround then
+            fwd = mv:GetAngles():Forward()
+            fwd.z = 0
+            fwd:Normalize()
+
+        else
+            fwd = vel:GetNormalized()
+
+        end
+
+        vel.x = fwd.x * newSpeed
+        vel.y = fwd.y * newSpeed
+        mv:SetVelocity( vel )
+
+    end )
+
+    hook.Add( "FinishMove", "glee_shove_sprint_finishmove", function( ply, mv )
+        if not newSpeeds[ply] then return end
+        if not IsFirstTimePredicted() then return end
+        earnedSpeed[ply] = newSpeeds[ply]
+        newSpeeds[ply] = nil
+
+    end )
+
+    local baseStepTime = 400
+    local baseSpeed    = 250
+    hook.Add( "PlayerStepSoundTime", "glee_shove_sprintsteps", function( ply )
+        local speed = earnedSpeed[ply]
+        if not speed then return end
+
+        local time = baseStepTime * ( baseSpeed / speed )
+
+        return time
+
+    end )
+
+    if SERVER then
+        hook.Add( "PlayerDisconnected", "glee_shove_sprint_cleanup", function( ply )
+            cleanup( ply )
+
+        end )
     end
 end

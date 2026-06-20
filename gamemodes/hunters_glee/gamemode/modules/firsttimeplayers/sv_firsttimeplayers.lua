@@ -21,7 +21,9 @@ local function gleetings( ply )
 end
 
 GAMEMODE:RegisterStatusEffect( "spawn_protection",
-    function( _self, owner )
+    function( self, owner )
+        self:SetRemoveOnDeath( true ) -- in case it gets stuck, will make it remove on owner killbind
+
         owner.glee_sheltering_normalCollisionGroup = owner.glee_sheltering_normalCollisionGroup or owner:GetCollisionGroup()
         owner:SetNoTarget( true )
         owner:GodEnable()
