@@ -105,8 +105,13 @@ local function escapeRatioToMultiplier( escaped, remained, lastUpdateTime )
         -- if 40 escaped and 60 remained, ratio is -0.25
         -- if 80 escaped and 60 remained, ratio is -0.625
 
-        addedByRatio = math.Clamp( ratio, -1, 1 ) -- up to 2x
+        if ratio <= 0 then
+            addedByRatio = math.Clamp( ratio, -1, 0 ) -- easy map, down to 0x
+        else
+            addedByRatio = math.min( ratio, 1 ) -- hard map, up to 2x
+            addedByRatio = addedByRatio + math.Clamp( ratio * 0.01, 0, 1.5 ) -- very hard: slow tail, up to 3.5x
 
+        end
     end
 
     local multiplier = base + addedByRatio
