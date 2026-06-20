@@ -77,6 +77,7 @@ function ENT:GetNearestTarget()
     local stuff = ents.FindInSphere( myPos, 512 )
     for _, thing in ipairs( stuff ) do
         if not IsValid( thing ) then continue end
+
         local veryGood
         local class = thing:GetClass()
         local good = string.find( class, "button" ) or string.find( class, "door" ) or thing.Use
@@ -104,7 +105,14 @@ function ENT:GetNearestTarget()
         end
     end
 
+    local hookSays = hook.Run( "glee_presser_redirecttarget", nearestTarg )
+    if hookSays and IsValid( hookSays ) then
+        nearestTarg = hookSays
+
+    end
+
     return nearestTarg
+
 end
 
 function ENT:OnNewTarget( _, newTarg )

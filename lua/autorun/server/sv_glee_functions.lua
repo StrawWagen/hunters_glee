@@ -75,11 +75,12 @@ hook.Add( "PlayerUse", "glee_parentedDetailUseRedirect", function( ply, used )
 
 end )
 
-hook.Add( "glee_PresserUsed", "glee_parentedDetailUseRedirect", function( ply, used )
+hook.Add( "glee_presser_redirecttarget", "glee_parentedDetailUseRedirect", function( used )
     local parent = used.glee_gleeDetailParent
+    if not parent then return end
     if not IsValid( parent ) then return end
 
-    parent:Use( ply, parent )
+    return parent
 
 end )
 
