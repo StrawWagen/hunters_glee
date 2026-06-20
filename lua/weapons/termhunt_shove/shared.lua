@@ -321,8 +321,8 @@ do
         lastYaw[ply] = curYaw
 
         local onGround = entMeta.OnGround( ply )
-        -- dont mess with movement if they're in air with no speedboost
-        if not onGround and not earnedSpeed[ply] then return end
+        -- dont mess with movement if they're in air
+        if not onGround then return end
 
         -- if on ground and not going forward anymore, remove speedboost
         if
@@ -341,20 +341,12 @@ do
         local runSpeed = ply:GetRunSpeed()
         local fullSprintSpeed = runSpeed + fullSprintSpeedAdd
 
-        local vel = mv:GetVelocity()
-        -- let go of speed if they're faster than the buff
-        local currSpeedSqr = vel:LengthSqr()
-        if currSpeedSqr > fullSprintSpeed ^ 2 then
-            earnedSpeed[ply] = nil
-            return
-
-        end
-
         local oldSpeed = earnedSpeed[ply] or runSpeed
         local newSpeed = math.Clamp( oldSpeed * sprintRamp, 0, fullSprintSpeed )
 
         newSpeeds[ply] = newSpeed
 
+        local vel = mv:GetVelocity()
         local fwd
         if onGround then
             fwd = mv:GetAngles():Forward()
