@@ -310,11 +310,13 @@ function ENT:OnTakeDamage( dmg )
 
         self:EmitSound( "hunters_glee/bones/break4.wav", 70, pit )
 
-        local objId = parent:TranslateBoneToPhysBone( ragdollsSkull )
-        local obj = parent:GetPhysicsObjectNum( objId )
-        if IsValid( obj ) then
-            obj:ApplyForceCenter( dmg:GetDamageForce() )
+        if ragdollsSkull then
+            local objId = parent:TranslateBoneToPhysBone( ragdollsSkull )
+            local obj = parent:GetPhysicsObjectNum( objId )
+            if IsValid( obj ) then
+                obj:ApplyForceCenter( dmg:GetDamageForce() )
 
+            end
         end
 
         if self.neckHealth > 0 then return end
@@ -467,10 +469,15 @@ function ENT:Decapitate()
     local parent = self:GetParent()
     local _, ragdollsSkull, isSkeleton = glee_RagdollHasASkull( parent )
 
-    local skullsPos = parent:GetBonePosition( ragdollsSkull )
+    local skullsPos = parent:WorldSpaceCenter()
 
-    parent:ManipulateBoneScale( ragdollsSkull, vec_zero )
-    self:FollowBone( nil, ragdollsSkull )
+    if ragdollsSkull then
+        skullsPos = parent:GetBonePosition( ragdollsSkull )
+
+        parent:ManipulateBoneScale( ragdollsSkull, vec_zero )
+        self:FollowBone( nil, ragdollsSkull )
+
+    end
     self:SetParent( nil )
     self:UseTriggerBounds( true, self.TriggerBoundsNormal )
 
