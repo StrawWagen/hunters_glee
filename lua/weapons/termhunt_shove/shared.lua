@@ -354,7 +354,7 @@ do
 
         local vel = mv:GetVelocity()
         local actualSpeed = vel:Length()
-        if actualSpeed < runSpeed then -- hit a wall or smth
+        if actualSpeed < runSpeed * 0.9 then -- hit a wall or smth
             earnedSpeed[ply] = nil
             return
 
