@@ -22,7 +22,7 @@ local function noExistingAtm()
 
 end
 
-local ATM_AUTO_SCORE = 10000
+local ATM_AUTO_SCORE = 5000
 local spawnATMNearPlayer
 local belowCenterChecks = {
     Vector( 0, 0, -400 ),
