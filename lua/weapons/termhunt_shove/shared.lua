@@ -324,7 +324,7 @@ do
 
         -- turning camera breaks boost
         if lastYaw[ply] and math.abs( math.AngleDifference( curYaw, lastYaw[ply] ) ) > allowedTurnRate then
-            newSpeeds[ply] = earned and earned * 0.5 or nil
+            newSpeeds[ply] = earned and earned * 0.5 or 0
             lastYaw[ply] = curYaw
             return
 
@@ -344,7 +344,7 @@ do
                 or mv:KeyDown( IN_MOVERIGHT )
             )
         then
-            newSpeeds[ply] = earned and earned * 0.5 or nil
+            newSpeeds[ply] = earned and earned * 0.5 or 0
             return
 
         end
@@ -355,7 +355,7 @@ do
         local vel = mv:GetVelocity()
         local actualSpeed = vel:Length()
         if actualSpeed < runSpeed * 0.9 then -- hit a wall or smth
-            newSpeeds[ply] = nil
+            newSpeeds[ply] = 0
             return
 
         end
@@ -386,7 +386,12 @@ do
     hook.Add( "FinishMove", "glee_shove_sprint_finishmove", function( ply, mv )
         if not newSpeeds[ply] then return end
         if not IsFirstTimePredicted() then return end
-        earnedSpeed[ply] = newSpeeds[ply]
+        local newVal = newSpeeds[ply]
+        if newVal <= 0 then
+            newVal = nil
+
+        end
+        earnedSpeed[ply] = newVal
         newSpeeds[ply] = nil
 
     end )
