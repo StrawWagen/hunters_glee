@@ -274,7 +274,7 @@ do
         local fastRunning
         if act == ACT_MP_RUN then
             local owner = entMeta.GetOwner( self )
-            if IsValid( owner ) and entMeta.OnGround( owner ) then
+            if IsValid( owner ) and entMeta.OnGround( owner ) and not owner:IsPlayingTaunt2() then
                 local add = 0.1 + owner:Ping() / 100
                 sprintingUntil[owner] = CurTime() + add
                 local speedLengthSqr = owner:GetVelocity():LengthSqr()
