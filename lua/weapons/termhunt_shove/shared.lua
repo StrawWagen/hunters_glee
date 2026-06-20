@@ -265,6 +265,8 @@ do
     local newSpeeds = {}
     local lastYaw = {}
 
+    local isGlee = GAMEMODE.ISHUNTERSGLEE
+
     local allowedTurnRate = 8
     local fullSprintSpeedAdd = 150 -- doesn't buff quite up to this, probably the engine trying to slow down the player
     local startPlayingFastRun = fullSprintSpeedAdd / 4
@@ -274,7 +276,7 @@ do
         local fastRunning
         if act == ACT_MP_RUN then
             local owner = entMeta.GetOwner( self )
-            if IsValid( owner ) and entMeta.OnGround( owner ) and not owner:IsPlayingTaunt2() then
+            if IsValid( owner ) and entMeta.OnGround( owner ) and ( not isGlee or not owner:IsPlayingTaunt2() ) then
                 local add = 0.1 + owner:Ping() / 100
                 sprintingUntil[owner] = CurTime() + add
                 local speedLengthSqr = owner:GetVelocity():LengthSqr()
