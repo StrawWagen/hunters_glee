@@ -348,8 +348,9 @@ if SERVER then
                     if velLeng <= 50 then return end
 
                     local drain = ( velLeng / 100 ) ^ 1.15
-                    drain = lengthDivided / 100
+                    drain = drain / 100
 
+                    -- TODO: test before merge, was erroring
                     owner:GivePlayerBatteryCharge( -drain )
 
                 end
