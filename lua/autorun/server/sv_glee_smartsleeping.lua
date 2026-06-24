@@ -206,7 +206,7 @@ hook.Add( "EntityTakeDamage", "glee_unchainsleepers", function( damaged, info )
 
 end )
 
-hook.Add( "glee_shover_shove", "glee_unchainsleepers", function( shoved )
+hook.Add( "glee_shover_preshove", "glee_unchainsleepers", function( shoved )
     unchainSleeper( shoved )
 
 end )

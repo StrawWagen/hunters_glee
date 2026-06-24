@@ -181,6 +181,7 @@ function SWEP:PrimaryAttack( firstMul )
     local Force = AimVector
 
     if IsValid( Hit ) then
+        hook.Run( "glee_shover_preshove", Hit, owner )
         local Phys = Hit:GetPhysicsObject()
         if Phys and IsValid( Phys ) then
             Force.z = math.Clamp( Force.z, 0.5, 1 )

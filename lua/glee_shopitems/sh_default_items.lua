@@ -2,7 +2,6 @@
 local shopHelpers = GAMEMODE.shopHelpers
 
 local loadoutLoadout = {
-    "weapon_pistol",
     "weapon_shotgun",
     "weapon_smg1",
     "weapon_crossbow",

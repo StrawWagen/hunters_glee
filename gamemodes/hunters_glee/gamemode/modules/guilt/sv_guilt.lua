@@ -1,6 +1,7 @@
 
 -- keep track of who's pissed off who this round
 
+util.AddNetworkString( "glee_persistguiltincreased" )
 util.AddNetworkString( "glee_dealtpvpdamage" )
 util.AddNetworkString( "glee_homicidallygleeful" )
 
@@ -346,7 +347,8 @@ local function getGuiltInDays( guiltSeconds )
 end
 
 function GM:GetStoredPersistentGuilt( ply )
-    local oldPersistentGuilt = ply:GetPData( "glee_persistentguilt", 0 )
+    local currentTime = os.time()
+    local oldPersistentGuilt = ply:GetPData( "glee_persistentguilt", currentTime )
     local guiltInDays = getGuiltInDays( oldPersistentGuilt )
     return guiltInDays
 
@@ -356,11 +358,18 @@ function GM:IncrementPersistentGuilt( ply, add )
     local daysToAdd = dayInSeconds * ( add or 1 )
     local currentTime = os.time()
     local oldPersistentGuilt = ply:GetPData( "glee_persistentguilt", currentTime )
-    local newPersistentGuilt = oldPersistentGuilt + daysToAdd
+    local newPersistentGuilt = math.max( oldPersistentGuilt, currentTime ) + daysToAdd
     ply:SetPData( "glee_persistentguilt", newPersistentGuilt )
-    ply:SetNWFloat( "glee_persistentguilt_days", getGuiltInDays( newPersistentGuilt ) )
+
+    local inDays = getGuiltInDays( newPersistentGuilt )
+
+    net.Start( "glee_persistguiltincreased" )
+        net.WriteFloat( inDays )
+    net.Send( ply )
 
 end
+
+
 
 hook.Add( "PlayerInitialSpawn", "glee_checkpersistentguilt", function( ply )
     local guiltInDays = GAMEMODE:GetStoredPersistentGuilt( ply )
@@ -371,6 +380,29 @@ hook.Add( "PlayerInitialSpawn", "glee_checkpersistentguilt", function( ply )
 end )
 
 local developerVar = GetConVar( "developer" )
+
+concommand.Add( "glee_resetguilt", function( caller, _, args )
+    if IsValid( caller ) and not caller:IsAdmin() then return end
+
+    local steamId = args[1]
+    if not steamId then
+        print( "Usage: glee_resetguilt <steamid>" )
+        return
+
+    end
+
+    util.SetPData( steamId, "glee_persistentguilt", 0 )
+
+    local ply = player.GetBySteamID( steamId )
+    if IsValid( ply ) then
+        ply:SetNWFloat( "glee_persistentguilt_days", 0 )
+        print( "GLEE: Reset guilt for " .. ply:Nick() .. " (" .. steamId .. ")" )
+
+    else
+        print( "GLEE: Reset guilt for offline player " .. steamId )
+
+    end
+end )
 
 hook.Add( "glee_onkilledtrulyinnocentsoul", "glee_incrementpersistentguilt", function( attacker, _died )
     -- persistent guilt is a dedicated server only mechanic

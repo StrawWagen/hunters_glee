@@ -100,10 +100,10 @@ local function escapeRatioToMultiplier( escaped, remained, lastUpdateTime )
         local escapedWeighted = escaped * 1.35
         local ratio = remained / escapedWeighted
         ratio = ratio - 1
-        -- if 10 escaped and 0 remained, ratio is -1
-        -- if 20 escaped and 60 remained, ratio is 0.5
-        -- if 40 escaped and 60 remained, ratio is -0.25
-        -- if 80 escaped and 60 remained, ratio is -0.625
+        -- if 10 escaped and 0 remained,  ratio is -1
+        -- if 20 escaped and 60 remained, ratio is 1.22
+        -- if 40 escaped and 60 remained, ratio is 0.11
+        -- if 80 escaped and 60 remained, ratio is -0.44
 
         if ratio <= 0 then
             addedByRatio = math.Clamp( ratio, -1, 0 ) -- easy map, down to 0x

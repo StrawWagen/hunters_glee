@@ -171,6 +171,7 @@ local function runChecks( ply, itemData, hookName, checkFuncs, funcName )
     local itemID = itemData.identifier
 
     -- Run hook
+    -- hook.Add( "blah", "blahblah", function( purchaser, itemData ) end )
     local success, returned, reason = xpcall( hook.Run, errorCatchingMitt, hookName, ply, itemData )
     if not success then
         GAMEMODE:invalidateShopItem( itemID )
@@ -198,9 +199,7 @@ local function runChecks( ply, itemData, hookName, checkFuncs, funcName )
                 return false, reason
 
             end
-
         end
-
     end
 
     return true

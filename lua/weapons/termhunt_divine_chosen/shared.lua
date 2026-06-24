@@ -96,6 +96,7 @@ function SWEP:Initialize()
 
     self:DrawShadow( false )
 
+    -- this guy won't hold up the round
     hook.Add( "huntersglee_blockwinning", self, function( _, ply )
         local owner = entMeta.GetOwner( self )
         if not IsValid( owner ) then return end

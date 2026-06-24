@@ -332,6 +332,8 @@ local function infernalIntervention( purchaser )
 end
 
 
+
+
 -- grigori stuff 
 local defaultDivisor = 10
 local minGrigoriMinutes = 5 -- 5
@@ -731,7 +733,7 @@ if SERVER then
                 end )
             end
         end,
-        function( self, owner ) -- teardown func
+        function( _self, owner ) -- teardown func
             owner.glee_divineChosenResurrect = nil
 
             owner:SetNW2Int( "glee_divineintervention_respawncount", 0 )
@@ -754,6 +756,9 @@ if SERVER then
         end
     )
 end
+
+
+
 
 local items = {
     -- lets dead people take the initiative

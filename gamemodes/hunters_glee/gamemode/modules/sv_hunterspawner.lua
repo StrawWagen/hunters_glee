@@ -876,20 +876,23 @@ hook.Add( "PlayerDeath", "glee_fodderenemy_catchkrangled", function( _, inflic, 
 end )
 
 hook.Add( "OnNPCKilled", "glee_goodkilledhunters", function( npc, attacker )
-    if not attacker:IsPlayer() then return end -- only mark spawns as great if the hunter died to a PLAYER!
     if not npc:GetNW2Bool( "glee_IsHunter" ) then return end
+    if attacker:IsPlayer() then -- only mark spawns as great if the hunter died to a PLAYER!
+        if not npc.DistToEnemy then return end
+        if npc.DistToEnemy > 750 then return end -- don't reward boring kills where the bot was far away
 
-    if not npc.DistToEnemy then return end
-    if npc.DistToEnemy > 750 then return end -- don't reward boring kills where the bot was far away
+        GAMEMODE.waveExtraData.realKillCount = ( GAMEMODE.waveExtraData.realKillCount or 0 ) + 1
 
-    GAMEMODE.waveExtraData.realKillCount = ( GAMEMODE.waveExtraData.realKillCount or 0 ) + 1
+        if debuggingVar:GetBool() and IsValid( npc.glee_SpawnArea ) then
+            debugoverlay.Line( npc:GetPos(), npc.glee_SpawnArea:GetCenter(), 10, Color( 0, 255, 0 ), true )
 
-    if debuggingVar:GetBool() and IsValid( npc.glee_SpawnArea ) then
-        debugoverlay.Line( npc:GetPos(), npc.glee_SpawnArea:GetCenter(), 10, Color( 0, 255, 0 ), true )
+        end
+        GAMEMODE:MarkSpawnAreaAsGreat( npc.glee_SpawnArea )
+
+    elseif attacker:IsNPC() or attacker:IsNextBot() then
+        GAMEMODE:UnmarkSpawnAreaAsGreat( npc.glee_SpawnArea )
 
     end
-    GAMEMODE:MarkSpawnAreaAsGreat( npc.glee_SpawnArea )
-
 end )
 
 

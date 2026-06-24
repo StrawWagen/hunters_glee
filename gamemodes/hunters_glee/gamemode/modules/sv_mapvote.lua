@@ -14,7 +14,7 @@ end )
 
 if not game.IsDedicated() then return end
 
-local mavoteDefaultTime = 40
+local mavoteDefaultTime = 30
 local mapvoteVar = CreateConVar( "huntersglee_activetimeneededfor_mapvote", -1, bit.bor( FCVAR_NOTIFY, FCVAR_ARCHIVE ), "minutes. added length of all ROUND_ACTIVE needed to force map vote (-1 for default, " .. mavoteDefaultTime .. ")", 0, math.huge )
 -- added length of all ROUND_ACTIVE needed to force map vote, if gamemode was waiting for players to join, this stops the first round from kicking them to a new map.
 -- also accounts for multiple short rounds
