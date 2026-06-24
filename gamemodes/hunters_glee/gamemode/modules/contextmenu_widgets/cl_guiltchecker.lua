@@ -1,9 +1,6 @@
 
 -- TODO: impliment guilt effects
 
-if true then return end
-
-
 local developerVar = GetConVar( "developer" )
 -- guilt is a dedicated server only mechanic
 -- developer 1 enables it for testing

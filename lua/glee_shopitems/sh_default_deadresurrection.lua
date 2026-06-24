@@ -892,6 +892,25 @@ local items = {
         end,
         shCanShowInShop = shopHelpers.deadNotEscapedCheck,
     },
+    ["infernalchosen"] = {
+        name = "charple",
+        desc = "charple.",
+        shCost = 2000,
+        markup = 1,
+        markupPerPurchase = 0,
+        cooldown = 0,
+        tags = { "DEADGIFTS", "Infernal", "CloseShopOnPurchase" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = 29,
+        svPurchaseCheck = { shopHelpers.deadCheck, infernalChosenCanPurchase },
+        svOnPurchaseFunc = function( purchaser )
+            purchaser:GiveStatusEffect( "infernal_chosen" )
+
+        end,
+        shCanShowInShop = shopHelpers.deadNotEscapedCheck,
+    }
 }
 
 GAMEMODE:GobbleShopItems( items )

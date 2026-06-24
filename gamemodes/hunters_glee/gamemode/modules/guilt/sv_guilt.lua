@@ -362,6 +362,7 @@ function GM:IncrementPersistentGuilt( ply, add )
     ply:SetPData( "glee_persistentguilt", newPersistentGuilt )
 
     local inDays = getGuiltInDays( newPersistentGuilt )
+    ply:SetNWFloat( "glee_persistentguilt_days", inDays )
 
     net.Start( "glee_persistguiltincreased" )
         net.WriteFloat( inDays )
