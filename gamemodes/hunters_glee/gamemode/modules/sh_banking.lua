@@ -214,6 +214,8 @@ if SERVER then
     end
 
     bankFunctions.setAccountsFunds = function( account, newFunds )
+        -- store rounded to 1 decimal place, so the saved bank data file stays readable
+        newFunds = math.Round( newFunds, 1 )
         if isCheats() then
             account.cheatsFunds = newFunds
 
@@ -288,6 +290,36 @@ if SERVER then
         net.Send( ply )
 
     end )
+
+    -- admin tool: print the highest-balance bank accounts to the console, lowest to highest
+    concommand.Add( "glee_bank_printtop", function( ply )
+        if IsValid( ply ) and not ply:IsAdmin() then return end
+
+        local sorted = {}
+        for steamID, account in pairs( GAMEMODE.bankInfoTable.accounts ) do
+            sorted[#sorted + 1] = {
+                steamID = steamID,
+                ownersName = account.ownersName or "Unknown",
+                funds = account.funds or 0,
+            }
+        end
+
+        -- lowest to highest balance
+        table.sort( sorted, function( a, b ) return a.funds < b.funds end )
+
+        -- when there are more than 25, keep the 25 highest ( still shown lowest to highest )
+        local maxToPrint = 25
+        local printCount = math.min( #sorted, maxToPrint )
+        local startIndex = #sorted - printCount + 1
+
+        print( "GLEE: Showing " .. printCount .. " of " .. #sorted .. " bank accounts ( lowest to highest balance ):" )
+        for i = startIndex, #sorted do
+            local entry = sorted[i]
+            print( string.format( "  %2d. %12.1f  %s  ( %s )", i - startIndex + 1, entry.funds, entry.ownersName, entry.steamID ) )
+
+        end
+    end )
+
 end
 if CLIENT then
     local nextAsk = 0

@@ -86,7 +86,6 @@ if SERVER then
             local area = queue[i]
             i = i + 1
 
-
             if math.min( area:GetSizeX(), area:GetSizeY() ) > 50 then
                 local pos = isGoodATMPos( area:GetCenter(), tooClosePos )
                 if pos then return pos end

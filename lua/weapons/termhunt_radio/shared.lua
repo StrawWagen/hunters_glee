@@ -187,7 +187,7 @@ end
 
 function SWEP:Reload()
     if self:GetChannelIndex() == 1 then return end
-    nextReload = self.nextReload or 0
+    local nextReload = self.nextReload or 0
     if nextReload > CurTime() then return end
 
     self.nextReload = CurTime() + 0.3

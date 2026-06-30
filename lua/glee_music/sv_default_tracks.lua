@@ -34,7 +34,7 @@ local tracks = {
             {
                 minDifficulty = 150,
                 author = vacant,
-                snd = "hunters_glee/music/VACANT/8.22.theGLEE.ogg",
+                snd = "hunters_glee/music/VACANT/8.22.theGLEE_reduce.ogg",
             },
             {
                 minDifficulty = 200,
@@ -75,7 +75,7 @@ local tracks = {
             {
                 minDifficulty = 100,
                 author = vacant,
-                snd = "hunters_glee/music/VACANT/8.22.theGLEE.ogg",
+                snd = "hunters_glee/music/VACANT/8.22.theGLEE_reduce.ogg",
             },
         },
         priority       = 0,

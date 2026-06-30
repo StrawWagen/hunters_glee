@@ -100,7 +100,7 @@ hook.Add( "glee_sv_validgmthink_not_over", "glee_addcratejobs", function( _, cur
 
     end
 
-    proceduralCratePlaces = GAMEMODE.roundExtraData.proceduralCratePlaces or 0
+    local proceduralCratePlaces = GAMEMODE.roundExtraData.proceduralCratePlaces or 0
     GAMEMODE.roundExtraData.proceduralCratePlaces = proceduralCratePlaces + 1
 
     local mod = GAMEMODE.roundExtraData.proceduralCratePlaces % 12

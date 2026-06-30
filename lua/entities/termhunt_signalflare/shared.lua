@@ -908,6 +908,8 @@ if SERVER and terminator_Extras then
             local dirToEnemy = terminator_Extras.dirToPos( missilesPreUnparentedPos, enemy:GetPos() )
             missile:SetAngles( dirToEnemy:Angle() )
 
+            terminator_Extras.ParentedDetailFallOff( self, missile )
+
             missile:MissileActivate()
             self.nextMissileFire = CurTime() + 15
             break

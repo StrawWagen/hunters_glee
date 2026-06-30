@@ -61,6 +61,9 @@ hook.Add( "huntersglee_wave_wiped", "glee_spawnset_wavewipedsound", function()
 
     playSpawnSetSound( "highIntensitySound" )
 
+    local _, spawnSet = GAMEMODE:GetSpawnSet()
+    GAMEMODE:BumpRoundDifficulty( spawnSet.diffBumpWhenWaveKilled * 2, "high_intensitysong" )
+
 end )
 
 -- plays when we go from 0 grigori to 1

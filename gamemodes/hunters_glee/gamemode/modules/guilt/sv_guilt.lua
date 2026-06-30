@@ -209,13 +209,17 @@ end
 
 hook.Add( "PlayerDeath", "glee_storeslights", function( died, _, attacker )
     if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
+
+    if not IsValid( attacker ) then return end
+    if attacker == died then return end
+
     if not attacker:IsPlayer() then return end
 
     -- the chosen doesn't get guilt
     if attacker:HasStatusEffect( "divine_chosen" ) then return end
 
-    if not IsValid( attacker ) then return end
-    if attacker == died then return end
+    -- this player was guilty enough to trigger homicidal glee
+    if died.glee_guiltyHomicidalGlee then return end
 
     local slightAmnt, reason
 
@@ -291,6 +295,12 @@ hook.Add( "EntityTakeDamage", "huntersglee_makepvpreallybad", function( dmgTarg,
 
         end
 
+        -- they were guilty enough to trigger homicidal glee, no protect for this guy
+        if dmgTarg.glee_guiltyHomicidalGlee then
+            return
+
+        end
+
         if dmg:IsDamageType( DMG_DISSOLVE ) and inflictor and inflictor:GetClass() == "prop_combine_ball" then -- special cball case
             local nextpermittedballdamage = dmgTarg.huntersglee_nextpermittedballdamage or 0
             if nextpermittedballdamage > CurTime() then
@@ -304,7 +314,7 @@ hook.Add( "EntityTakeDamage", "huntersglee_makepvpreallybad", function( dmgTarg,
             dmg:SetDamageForce( dmg:GetDamageForce() * 12 )
             dmgTarg:EmitSound( "NPC_CombineBall.KillImpact" )
 
-            damagedplayercount = inflictor.huntersglee_ball_damagedplayercount or 0
+            local damagedplayercount = inflictor.huntersglee_ball_damagedplayercount or 0
             inflictor.huntersglee_ball_damagedplayercount = damagedplayercount + 1
 
             if inflictor.huntersglee_ball_damagedplayercount >= 6 then
@@ -410,6 +420,12 @@ hook.Add( "glee_onkilledtrulyinnocentsoul", "glee_incrementpersistentguilt", fun
     -- developer 1 enables it for testing
     if not game.IsDedicated() and not developerVar:GetBool() then return end
 
-    GAMEMODE:IncrementPersistentGuilt( attacker )
+    local daysToAdd = 1
+    if GAMEMODE:IsFirstTimePlayer( attacker ) then
+        daysToAdd = 4
+
+    end
+
+    GAMEMODE:IncrementPersistentGuilt( attacker, daysToAdd )
 
 end )

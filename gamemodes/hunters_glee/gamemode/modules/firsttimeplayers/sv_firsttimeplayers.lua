@@ -88,6 +88,8 @@ local function tutorialize( ply )
     net.Start( "glee_dothefirsttimemessage" )
     net.Send( ply )
 
+    ply.glee_IsFirstTimePlayer = true
+
 end
 
 local function needsToAsk( ply )
@@ -103,6 +105,11 @@ local function needsToAsk( ply )
 
     end
     if sawIt < minSawIt then return true end
+
+end
+
+function GAMEMODE:IsFirstTimePlayer( ply )
+    return ply.glee_IsFirstTimePlayer
 
 end
 
@@ -166,6 +173,7 @@ end )
 
 hook.Add( "glee_full_load", "glee_firsttimeplayercheck", function( ply )
     timer.Simple( 2, function() -- try delaying, so player is definitely ready to create the panel
+        if not IsValid( ply ) then return end
         ply:RemoveStatusEffect( "spawn_protection" )
         spawned[ply] = true
 

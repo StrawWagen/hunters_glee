@@ -72,5 +72,21 @@
             "type"        "Numeric"
             "default"     "8"
         }
+        9
+        {
+            "name"        "huntersglee_playermodelscaling"
+            "text"        "Tiny collisions for tiny playermodels?"
+            "help"        "Disable the system that makes smaller playermodels have less health, be physically smaller?"
+            "type"        "CheckBox"
+            "default"     "1"
+        }
+        10
+        {
+            "name"        "huntersglee_playermodelscaling"
+            "text"        "Less health for tiny playermodels?"
+            "help"        "Disable the system that makes smaller playermodels have less health."
+            "type"        "CheckBox"
+            "default"     "1"
+        }
     }
 }

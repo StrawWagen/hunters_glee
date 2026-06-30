@@ -341,6 +341,7 @@ do
                 or mv:KeyDown( IN_BACK )
                 or mv:KeyDown( IN_MOVELEFT )
                 or mv:KeyDown( IN_MOVERIGHT )
+                or mv:KeyDown( IN_DUCK )
             )
         then
             newSpeeds[ply] = 0

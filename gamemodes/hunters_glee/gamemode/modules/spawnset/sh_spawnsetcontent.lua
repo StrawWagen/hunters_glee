@@ -15,8 +15,8 @@ if SERVER then
         local contentTbl = content()
         if not contentTbl then return end
 
-        SetGlobalInt( "GLEE_SpawnSet_ContentCount", #contentTbl )
         net.Start( "glee_spawnsetcontent_asker", false )
+            net.WriteUInt( #contentTbl, 8 )
             for _, contentStr in ipairs( contentTbl ) do
                 net.WriteString( contentStr )
 
@@ -26,9 +26,7 @@ if SERVER then
     end
 
     hook.Add( "glee_post_new_spawnset", "glee_spawnset_content", function( _, spawnSet )
-        if not ( spawnSet.resourcesAdded and #spawnSet.resourcesAdded >= 0 ) then return end
-
-        SetGlobalInt( "GLEE_SpawnSet_ContentCount", #spawnSet.resourcesAdded )
+        if not ( spawnSet.resourcesAdded and #spawnSet.resourcesAdded > 0 ) then return end
 
         timer.Simple( 1, function()
             updateContent( player.GetAll() )
@@ -42,7 +40,7 @@ if SERVER then
                 updateContent( { ply } )
 
             end )
-            timer.Create( "glee_contentbackup", 60, 0, function() -- putting this here because im especially worried about GlobalInt not working right, it often doesn't
+            timer.Create( "glee_contentbackup", 60, 0, function() -- just in case, keep trying to sync
                 if not content() then timer.Remove( "glee_contentbackup" ) return end
                 updateContent( player.GetAll() )
 
@@ -68,7 +66,8 @@ else
     local nextThink = 0
     local thinking
 
-    -- catch invalid Material() calls, store invalid materials, so we can rebuild them after the content is downloaded
+    -- catch invalid Material() calls, store invalid materials
+    -- this is the only way to catch and potentially fix broken materials 
     terminator_Extras.glee_InvalidMats = {}
     terminator_Extras.glee_OldMaterial = terminator_Extras.glee_OldMaterial or Material
     local oldMaterial = terminator_Extras.glee_OldMaterial
@@ -106,7 +105,7 @@ else
         local fixed = {}
         for _, mountedName in ipairs( materialsMounted ) do
             for invalidMatName, matData in pairs( terminator_Extras.glee_InvalidMats ) do
-                if string.find( mountedName, invalidMatName ) then -- all the mounted stuff is gonna be like material.vmt, etc
+                if string.find( mountedName, invalidMatName, 1, true ) then -- all the mounted stuff is gonna be like material.vmt, etc
                     if fixed[invalidMatName] then continue end -- already fixed this one
                     local mat = matData.mat
 
@@ -156,6 +155,7 @@ else
 
         if contentTried[currContent] then return end
 
+        -- only attempt once, tried count based approach, was too fragile
         contentTried[currContent] = true
         thinking = true
         nextThink = CurTime() + 0.1
@@ -177,12 +177,8 @@ else
         end )
     end
 
-    local nextRecieve = 0
     net.Receive( "glee_spawnsetcontent_asker", function()
-        if nextRecieve > CurTime() then return end
-        nextRecieve = CurTime() + 0.5
-
-        local count = GetGlobalInt( "GLEE_SpawnSet_ContentCount", 0 )
+        local count = net.ReadUInt( 8 )
         if count <= 0 then return end
 
         for _ = 1, count do

@@ -31,7 +31,7 @@ function spawnSetVote:BeginVote( duration, maxOptions )
     local spawnSets = GAMEMODE:GetSpawnSets()
     local toBrowse = table.Copy( spawnSets )
 
-    local toAdd = { ["hunters_glee"] = toBrowse["hunters_glee"] } -- always include default
+    local toAdd = { [1] = toBrowse["hunters_glee"] } -- always include default
     toBrowse["hunters_glee"] = nil
 
     local currentSpawnsetName = GAMEMODE:GetSpawnSet()
@@ -43,7 +43,16 @@ function spawnSetVote:BeginVote( duration, maxOptions )
         local option, key = table.Random( toBrowse )
         toBrowse[key] = nil
 
-        local notVotableRand = isnumber( option.chanceToBeVotable ) and option.chanceToBeVotable < math.random( 0, 100 )
+        local chance = option.chanceToBeVotable
+        if option.chanceToBeVotableWhenHard then -- make spawnsets fade into the background if they aren't challenging people
+            local escapeMul = GAMEMODE:GetEscapeMultiplier( key )
+            if escapeMul > 1.5 then
+                chance = option.chanceToBeVotableWhenHard
+
+            end
+        end
+
+        local notVotableRand = isnumber( chance ) and chance < math.random( 0, 100 )
         local wouldBeOverfilled = ( table.Count( toBrowse ) + #toAdd ) > maxOptions -- always meet maxOptions
 
         if wouldBeOverfilled and notVotableRand then continue end

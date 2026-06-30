@@ -57,6 +57,7 @@ if SERVER then
     function terminator_Extras.DoPFXFromEnt( effString, ent )
         if not precached then doPrecache() end
         timer.Simple( 0, function()
+            if not IsValid( ent ) then return end
             local recipFilter = RecipientFilter()
             recipFilter:AddPAS( ent:WorldSpaceCenter() )
             net.Start( "glee_peffect_play" )

@@ -396,7 +396,7 @@ function GAMEMODE:TakePotentialLinkagesAndLinkTheValidOnes( groupLinkages )
         if currentData.linkageDistance > powTwo200 then continue end -- discard linkages that are definitely too far
         if not IsValid( currentData.linkageArea1 ) then continue end
         if not IsValid( currentData.linkageArea2 ) then continue end
-        if math.abs( currentData.linkageArea1:GetCenter().z - currentData.linkageArea1:GetCenter().z ) > 800 then continue end
+        if math.abs( currentData.linkageArea1:GetCenter().z - currentData.linkageArea2:GetCenter().z ) > 800 then continue end
 
         if connectionDataVisOffsetCheck( currentData ) <= 3 then continue end -- areas can't see eachother
         --debugoverlay.Line( currentData.area1Closest, currentData.area2Closest, 120, Color( 255,255,255 ), true )

@@ -189,12 +189,18 @@
 -- push skulls into people's face, becomes compelling once 
 
 -- split sixth sense?
--- sixth sense will only be for enemies
+-- enemy finding powerup
+--    show sound direction?
+--    
 -- loot finding replacement
 --    hoarder sense for nearby props
 --    ghosts know where loot is at all times?
 --    ghosts way to communicate?
 --    ghosts as knowledge brokers?
+-- loot finding as SNIFF/scent?
+-- gaussian blobs
+-- pie slices
+
 
 -- remove pistol from loadout
 
@@ -243,6 +249,8 @@ recently purchased items on main page
 tabs to navigate pages
 rename innate to mutations?
 innate makes it sound like you have it from the beginning
+different orders per spawnset?
+HIDE items with ???? until you have the money to buy them
 
 lifelong shrimp but you gain score faster?
 
@@ -258,3 +266,31 @@ purchase innate that lets you carry more weapons
 
 afk fakeout doppleganger
 attach balloons to stuff as ghost
+
+terminator mode
+beartraps more prominent in shop
+SLAMS prominent in shop
+
+spawnsets get hints?
+Rename AR2 to Pulse-Rifle
+USE hint on weapons on the ground?
+
+weapons spawn later, longer buildup for terminator modes
+
+tutorial/getting ready mode
+spawns in the tutorial mode
+players cannot buy anything?
+people load into the mode
+BIG RTM HINT to ready up
+
+
+change MODE to...
+    Misery
+    Scenario
+    Misfortune
+
+harmless misery with terminators that never get angry?
+
+put big messages ON TOP OF OTHER ELEMENTS
+
+roll of the dice as point return item?

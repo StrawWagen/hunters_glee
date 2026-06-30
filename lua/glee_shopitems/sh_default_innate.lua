@@ -331,7 +331,7 @@ if SERVER then
                 local armor = owner:Armor()
 
                 local noArmorDecrease = -100
-                local addedByArmor = armor * 3.25
+                local addedByArmor = armor * 3.15
                 local speedMod = addedByArmor
 
                 -- apply the decrease only if the player runs out of armor

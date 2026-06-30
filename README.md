@@ -258,6 +258,7 @@ Number values can be:
 | `roundEndSound` | ❌ | Sound on round end |
 | `genericSpawnerRate` | ❌ | Crate/item spawn rate multiplier |
 | `chanceToBeVotable` | ❌ | Percent chance to appear in !rtm vote, 0-100, accepts float |
+| `chanceToBeVotableWhenHard` | ❌ | Percent chance to appear in !rtm when this mode's escape multiplier >1.5x, for making spawnsets fade into the background when they no longer challenge the host |
 
 #### .spawns Entries
 

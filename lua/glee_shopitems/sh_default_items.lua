@@ -268,7 +268,7 @@ local items = {
     },
     -- terminator doesnt like taking damage from this, will save your ass
     ["ar2"] = {
-        name = "Ar2",
+        name = "Pulse Rifle",
         desc = "Ar2 + Balls.\nIt takes 2 AR2 balls to kill a terminator.",
         shCost = 75,
         markup = 2,
