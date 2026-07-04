@@ -38,14 +38,14 @@ function spawnSetVote:BeginVote( duration, maxOptions )
     toBrowse[currentSpawnsetName] = nil -- remove current mode from options
 
     while table.Count( toBrowse ) > 0 do
-        if ( #toAdd + 1 ) >= maxOptions then break end
+        if ( #toAdd + 1 ) > maxOptions then break end
 
         local option, key = table.Random( toBrowse )
         toBrowse[key] = nil
 
         local chance = option.chanceToBeVotable
         if option.chanceToBeVotableWhenHard then -- make spawnsets fade into the background if they aren't challenging people
-            local escapeMul = GAMEMODE:GetEscapeMultiplier( key )
+            local escapeMul = GAMEMODE:GetSpawnsetsEscapeMultiplier( key )
             if escapeMul > 1.5 then
                 chance = option.chanceToBeVotableWhenHard
 

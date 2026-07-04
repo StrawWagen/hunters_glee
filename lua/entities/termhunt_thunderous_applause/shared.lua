@@ -15,29 +15,11 @@ ENT.Model = "models/hunter/tubes/tube1x1x2.mdl"
 ENT.HullCheckSize = Vector( 20, 20, 10 )
 ENT.PosOffset = Vector( 0, 0, 10 )
 
-if SERVER then
-    util.AddNetworkString( "glee_nomorethunderousapplause" )
-
-end
-
 if CLIENT then
-    local nextNoMoreApplause = 0
+    function ENT:OnDetachedFromOwner()
+        self:CircleAway()
 
-    net.Receive( "glee_nomorethunderousapplause", function()
-        if nextNoMoreApplause > CurTime() then return end
-        nextNoMoreApplause = CurTime() + 0.1
-
-        local toWipe = net.ReadEntity()
-        if IsValid( toWipe ) then
-            toWipe:CircleAway()
-
-        end
-
-        if toWipe ~= LocalPlayer().ghostEnt then return end
-        LocalPlayer().ghostEnt = nil
-
-    end )
-
+    end
     function ENT:CircleAway()
         if not CLIENT then return end
         if not IsValid( self.circle ) then return end
@@ -131,14 +113,13 @@ local function getNearestNavFloor( pos )
     if not pos then return NULL end
     local Dat = {
         start = pos,
-        endpos = pos + Vector( 0,0,-500 ),
+        endpos = pos + Vector( 0, 0, -500 ),
         mask = 131083
     }
     local Trace = util.TraceLine( Dat )
     if not Trace.HitWorld then return NULL end
     local navArea = navmesh.GetNearestNavArea( Trace.HitPos, false, 25, false, true, -2 )
-    if not navArea then return NULL end
-    if not navArea:IsValid() then return NULL end
+    if not IsValid( navArea ) then return NULL end
     return navArea
 
 end
@@ -162,19 +143,27 @@ function ENT:UpdateGivenScore()
     local heli = terminator_Extras and terminator_Extras.glee_CurrentRescueHeli
     if IsValid( heli ) and heli:GetPos():DistToSqr( self:GetPos() ) < heliNearbyDist ^ 2 then
         cost = cost * 4
+        self:AddBlameReason( heli, -200, "Escape Heli" )
 
     end
     self:SetGivenScore( cost )
 
 end
 
+local sv_cheats = GetConVar( "sv_cheats" )
+
+local function isCheats()
+    return sv_cheats:GetBool()
+
+end
+
 function ENT:CalculateCanPlace()
-    local checkPos = self:OffsettedPlacingPos() + Vector( 0,0,15 )
+    local checkPos = self:OffsettedPlacingPos() + Vector( 0, 0, 15 )
 
     if IsHullTraceFull( checkPos, self.HullCheckSize, self ) then return false, self.noPurchaseReason_NoRoom end
     if getNearestNavFloor( checkPos ) == NULL then return false, self.noPurchaseReason_OffNavmesh end
     if not GAMEMODE:IsUnderSky( checkPos ) then return false, "Needs to be placed under the sky." end
-    if GAMEMODE:isTemporaryTrueBool( "termhunt_thunderous_applause" ) then return false, "Applause was just recently given. Wait until it's time again." end
+    if not isCheats() and GAMEMODE:isTemporaryTrueBool( "termhunt_thunderous_applause" ) then return false, "Applause was just recently given. Wait until it's time again." end
     if not self:HasEnoughToPurchase() then return false, self:TooPoorString() end
     return true
 
@@ -196,7 +185,7 @@ end
 
 local flatten = Vector( 1, 1, 0 )
 local tinyUpOffset = Vector( 0, 0, 20 )
-local interval = 60 * 4
+local interval = 60 * 2
 local tallOblong = Vector( 1, 1, 4 )
 
 function ENT:Place()
@@ -270,7 +259,7 @@ function ENT:Place()
 
                 if GAMEMODE.PanicSource then
                     GAMEMODE:PanicSource( sparkPos, 100, 200 )
- 
+
                 end
                 SparkEffect( sparkPos )
                 sound.Play( "LoudSpark", sparkPos )
@@ -333,15 +322,7 @@ function ENT:Place()
 
     self.attackerInflictor = self.player
 
-    net.Start( "glee_nomorethunderousapplause" )
-        net.WriteEntity( self )
-
-    net.Send( self.player )
-
-    self.player.ghostEnt = nil
-
-    self.player = nil
-    self:SetOwner( NULL )
+    self:DetachFromOwner()
 
     GAMEMODE:setTemporaryTrueBool( "termhunt_thunderous_applause", interval )
 

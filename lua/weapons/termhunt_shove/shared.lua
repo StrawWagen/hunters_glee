@@ -40,14 +40,18 @@ if CLIENT then
     function SWEP:HintPostStack()
         local owner = self:GetOwner()
 
-        if owner.glee_DefinitelyShoved then return end
-        local nwBool = owner:GetNW2Bool( "gleeshove_primaryattacked", false )
-        if not nwBool then
-            return true, "Primary attack to do a big shove!"
+        if not owner.glee_DefinitelyShoved then
+            local nwBool = owner:GetNW2Bool( "gleeshove_primaryattacked", false )
+            if not nwBool then
+                return true, "Primary attack to do a big shove!"
 
-        elseif nwBool then
-            owner.glee_DefinitelyShoved = true
-            RunConsoleCommand( "cl_huntersgleehint_hasshoved", "1" )
+            elseif nwBool then
+                owner.glee_DefinitelyShoved = true
+                RunConsoleCommand( "cl_huntersgleehint_hasshoved", "1" )
+
+            end
+        elseif not owner.glee_DefinitelySprinted then
+            return true, "Keep running straight forward to build up momentum!"
 
         end
     end
@@ -269,7 +273,7 @@ do
     local isGlee = GAMEMODE.ISHUNTERSGLEE
 
     local allowedTurnRate = 8
-    local fullSprintSpeedAdd = 150 -- doesn't buff quite up to this, probably the engine trying to slow down the player
+    local fullSprintSpeedAdd = 250 -- doesn't buff quite up to this, probably the engine trying to slow down the player
     local startPlayingFastRun = fullSprintSpeedAdd / 4
     local sprintRamp = 1.003
 
@@ -283,7 +287,10 @@ do
                 local speedLengthSqr = owner:GetVelocity():LengthSqr()
                 local thresholdSqr = ( owner:GetRunSpeed() + startPlayingFastRun ) ^ 2
                 fastRunning = speedLengthSqr > thresholdSqr
+                if CLIENT and fastRunning then
+                    owner.glee_DefinitelySprinted = true
 
+                end
             end
         end
         if fastRunning then

@@ -34,6 +34,10 @@ local function doPrecache()
     game.AddParticles( "particles/glee/glee_taucannon_explosion.pcf" )
     PrecacheParticleSystem( "glee_taucannon_explosion" )
 
+    game.AddParticles( "particles/glee/glee_atm_burrow.pcf" )
+    PrecacheParticleSystem( "glee_atm_burrow_pebbles" )
+    PrecacheParticleSystem( "glee_atm_burrow_breach" )
+
 end
 if engine.ActiveGamemode() == "hunters_glee" then
     doPrecache()

@@ -151,6 +151,29 @@ local items = {
 
         end,
     },
+    ["thunderousapplause"] = {
+        name = "Thunderous Applause",
+        desc = "Let the Living, hear your utmost, divine gratitiude.\nUnlocks after 2 minutes, then a global 2 minute cooldown between uses.",
+        costDecorative = "-600",
+        shCost = 0,
+        markup = 1,
+        cooldown = 0,
+        tags = { "HORRORS", "Divine", "CloseShopOnPurchase" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = 100,
+        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase, function()
+            if GAMEMODE:isTemporaryTrueBool( "termhunt_thunderous_applause_initial" ) then return nil, "It's too soon for the applause to begin." end
+            if GAMEMODE:isTemporaryTrueBool( "termhunt_thunderous_applause" ) then return nil, "Applause must be spaced out. Wait.." end
+            return true, nil
+
+        end },
+        svOnPurchaseFunc = function( purchaser, itemIdentifier )
+            setupPlacable( "termhunt_thunderous_applause", purchaser, itemIdentifier )
+
+        end,
+    },
 }
 
 GAMEMODE:GobbleShopItems( items )

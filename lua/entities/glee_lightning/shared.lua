@@ -29,6 +29,7 @@ end
 function ENT:Initialize()
     if not SERVER then return end
     self:SetNotSolid( true )
+    self:DrawShadow( false )
 
     timer.Simple( 0, function()
         if not IsValid( self ) then return end

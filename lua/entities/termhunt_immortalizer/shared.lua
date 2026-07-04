@@ -205,13 +205,8 @@ function ENT:Place()
 
     end
 
-    self:TellPlyToClearHighlighter()
-
-    self.player.ghostEnt = nil
+    self:DetachFromOwner()
     target.glee_immortCooldown = CurTime() + immortCooldown
-
-    self.player = nil
-    self:SetOwner( NULL )
 
     SafeRemoveEntity( self )
 

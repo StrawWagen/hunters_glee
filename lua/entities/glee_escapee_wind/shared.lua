@@ -89,11 +89,6 @@ if CLIENT then
         self:SetNoDraw( true )
         self:ParticleThink()
 
-        -- Sync ghostEnt update with server since ghost wind doesn't delete immediately
-        if LocalPlayer().ghostEnt == self then
-            LocalPlayer().ghostEnt = nil
-
-        end
     end
 
     function ENT:ParticleThink()
@@ -256,11 +251,7 @@ function ENT:Place()
 
     end
 
-    owner.placableTargeted = nil
-    owner.ghostEnt = nil
-
-    self.player = nil
-    self:SetOwner( NULL )
+    self:DetachFromOwner()
 
     local delay = math.Rand( self.PushDelayMin, self.PushDelayMax )
     local telegraphSound = CreateSound( self, "ambient/wind/windgust_strong.wav" )

@@ -18,6 +18,13 @@ local function setupPlacable( class, purchaser, itemIdentifier )
 
 end
 
+local sv_cheats = GetConVar( "sv_cheats" )
+
+local function isCheats()
+    return sv_cheats:GetBool()
+
+end
+
 if SERVER then
     GAMEMODE:RegisterStatusEffect( "linked_hunter",
         function( self, owner ) -- setup func
@@ -356,10 +363,10 @@ local items = {
 
         end,
     },
-    ["thunderousapplause"] = {
-        name = "Thunderous Applause",
-        desc = "Let the Living, hear your utmost gratitiude.\nUnlocks after 4 minutes, then a global 4 minute cooldown between uses.",
-        costDecorative = "-600",
+    ["gleefullsmite"] = {
+        name = "Divine Clap",
+        desc = "Show your gratitude to those left alive, in one condensed bolt.\nUnlocks after 4 minutes, then a global 4 minute cooldown between uses.",
+        costDecorative = "-500",
         shCost = 0,
         markup = 1,
         cooldown = 0,
@@ -369,13 +376,14 @@ local items = {
         },
         weight = 20,
         shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase, function()
-            if GAMEMODE:isTemporaryTrueBool( "termhunt_thunderous_applause_initial" ) then return nil, "It's too soon for the applause to begin." end
-            if GAMEMODE:isTemporaryTrueBool( "termhunt_thunderous_applause" ) then return nil, "Applause must be spaced out. Wait.." end
+            if isCheats() then return true, nil end
+            if GAMEMODE:isTemporaryTrueBool( "termhunt_divine_clap_initial" ) then return nil, "It's too soon to clap." end
+            if GAMEMODE:isTemporaryTrueBool( "termhunt_divine_clap" ) then return nil, "It must recharge. Wait.." end
             return true, nil
 
         end },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "termhunt_thunderous_applause", purchaser, itemIdentifier )
+            setupPlacable( "glee_divine_clap", purchaser, itemIdentifier )
 
         end,
     },

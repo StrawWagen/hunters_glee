@@ -609,10 +609,7 @@ function ENT:ReleaseTarget()
 
     local owner = self.player
     if IsValid( owner ) then
-        self:TellPlyToClearHighlighter()
-        owner.placableTargeted = nil
-        owner.ghostEnt = nil
-        self:SetOwner( NULL )
+        self:DetachFromOwner()
 
     end
 

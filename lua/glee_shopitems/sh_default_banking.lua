@@ -25,8 +25,8 @@ end
 local ATM_AUTO_SCORE = 5000
 local spawnATMNearPlayer
 local belowCenterChecks = {
-    Vector( 0, 0, -400 ),
-    Vector( 0, 0, -800 ),
+    Vector( 0, 0, -300 ),
+    Vector( 0, 0, -600 ),
 }
 
 local tooCloseDist = 200^2
@@ -44,6 +44,16 @@ local function isGoodATMPos( pos, tooClosePos )
 
             end
         end
+        if not solid then -- detect skybox boxes underneath them
+            local underSky, skyPos = GAMEMODE:IsUnderSky( checkPos )
+            -- if this under a skybox brush that's below the checkpos
+            -- it's likely a skybox box beneath the map
+            if underSky and skyPos.z < pos.z then
+                solid = true
+
+            end
+        end
+
         if not solid then return nil end
 
     end
@@ -57,6 +67,7 @@ local function isGoodATMPos( pos, tooClosePos )
     } )
 
     if tr.Hit then return nil end
+
     return pos
 
 end
@@ -70,6 +81,9 @@ end
 
 if SERVER then
 
+    -- how the ATM ranks candidate spots: foot traffic matters more than being close
+    local heatScoreWeight = 0.7 -- 0 = only care about proximity, 1 = only care about foot traffic
+
     local function marchForSurfacePos( startArea, tooClosePos )
         -- skip the player's own area; march outward through adjacent areas
         local checked = { [startArea] = true }
@@ -81,6 +95,11 @@ if SERVER then
 
         end
 
+        -- gather every valid spot within reach, then score them all against each other
+        local candidates = {}
+        local maxHeat = 0
+        local maxDist = 1
+
         local i = 1
         while i <= #queue and i <= 80 do
             local area = queue[i]
@@ -88,8 +107,15 @@ if SERVER then
 
             if math.min( area:GetSizeX(), area:GetSizeY() ) > 50 then
                 local pos = isGoodATMPos( area:GetCenter(), tooClosePos )
-                if pos then return pos end
+                if pos then
+                    local heat = GAMEMODE.navmeshActivityHeatmap[area] or 0
+                    local dist = pos:Distance( tooClosePos )
 
+                    candidates[#candidates + 1] = { pos = pos, heat = heat, dist = dist }
+                    if heat > maxHeat then maxHeat = heat end
+                    if dist > maxDist then maxDist = dist end
+
+                end
             end
 
             for _, adj in ipairs( area:GetAdjacentAreas() ) do
@@ -100,7 +126,24 @@ if SERVER then
             end
         end
 
-        return nil
+        if #candidates == 0 then return nil end
+
+        -- best blend of foot traffic ( want lots ) and distance ( want little ), both scaled to 0-1
+        local bestPos
+        local bestScore = -math.huge
+        for _, candidate in ipairs( candidates ) do
+            local heatScore = maxHeat > 0 and ( candidate.heat / maxHeat ) or 0
+            local nearScore = 1 - ( candidate.dist / maxDist )
+            local score = heatScoreWeight * heatScore + ( 1 - heatScoreWeight ) * nearScore
+
+            if score > bestScore then
+                bestScore = score
+                bestPos = candidate.pos
+
+            end
+        end
+
+        return bestPos
 
     end
 

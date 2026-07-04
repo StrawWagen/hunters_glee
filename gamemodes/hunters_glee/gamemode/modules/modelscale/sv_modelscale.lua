@@ -2,14 +2,17 @@
 
 local characters_chars = {}
 
-local enabledVar = CreateConVar( "huntersglee_playermodelscaling", 0, { FCVAR_ARCHIVE, FCVAR_NOTIFY }, "Scale player hulls/view based on their playermodel?", 0, 1 )
-local doMaxHealthVar = CreateConVar( "huntersglee_playermodelscaling_maxhealth", 0, { FCVAR_ARCHIVE, FCVAR_NOTIFY }, "Have playermodel scale change their max health? Requires restart to apply.", 0, 1 )
+local enabledVar = CreateConVar( "huntersglee_playermodelscaling", 1, { FCVAR_ARCHIVE, FCVAR_NOTIFY }, "Scale player hulls/view based on their playermodel?", 0, 1 )
+local doMaxHealthVar = CreateConVar( "huntersglee_playermodelscaling_maxhealth", 1, { FCVAR_ARCHIVE, FCVAR_NOTIFY }, "Have playermodel scale change their max health? Requires restart to apply.", 0, 1 )
 
 util.AddNetworkString( "GLEE_PDM:UpdatePlyHull" )
 
+-- gate a bunch of the extra setters for players bigger/smaller than usual
 -- default hullz is 72
 local dontActivateMax = 78
 local dontActivateMin = 65
+
+local defaultWidthMul = 0.75
 
 local function SetupCharacterChars( name )
     local character_chars = { -- default character stats
@@ -17,7 +20,7 @@ local function SetupCharacterChars( name )
         ["heightduck"] = 28,
         ["hullz"] = 72,
         ["hullzduck"] = 36,
-        ["hull"] = 16,
+        ["hull"] = 13,
         ["stepsize"] = 18,
         ["health"] = 100
     }
@@ -48,6 +51,8 @@ local function SetupCharacterChars( name )
 
     end
 
+    character_chars["hull"] = math.Round( math.Min( entity:OBBMaxs().x, entity:OBBMaxs().y ) ) * defaultWidthMul
+
     if character_chars["hullz"] > dontActivateMin and character_chars["hullz"] < dontActivateMax then -- close enough, dont do anything weird
         entity:Remove()
         characters_chars[name] = character_chars
@@ -65,9 +70,7 @@ local function SetupCharacterChars( name )
 
     end
 
-    character_chars["hull"] = math.Round( math.Min( entity:OBBMaxs().x, entity:OBBMaxs().y ) )
-
-    local scaleMagicNum = 79
+    local scaleMagicNum = 79 / defaultWidthMul
     local mul = ( ( character_chars["hullz"] + character_chars["hull"] ) / scaleMagicNum )
     character_chars["stepsize"] = math.Round( character_chars["stepsize"] * mul )
 
@@ -87,7 +90,15 @@ local function Update( ply )
     local name = ply:GetInfo( "cl_playermodel" )
     local character_chars = characters_chars[name]
 
+    if not character_chars then -- bot probably
+        local plysModel = ply:GetModel()
+        name = player_manager.TranslateToPlayerModelName( plysModel )
+        character_chars = characters_chars[name]
+
+    end
+
     if not character_chars then return end
+
     if enabledVar:GetBool() then
         ply:SetViewOffsetDucked( Vector( 0, 0, character_chars["heightduck"] ) )
         ply:SetViewOffset( Vector( 0, 0, character_chars["height"] ) )

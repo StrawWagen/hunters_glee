@@ -1,5 +1,5 @@
-local minusFiveHundred = Vector( 0,0,-500 )
-local minusOne = Vector( 0,0,-500 )
+local minusFiveHundred = Vector( 0, 0, -500 )
+local minusOne = Vector( 0, 0, -500 )
 local IsValid = IsValid
 local entMeta = FindMetaTable( "Entity" )
 
@@ -252,33 +252,6 @@ function GM:findValidNavResult( data, start, radius, scoreFunc, noMoreOptionsMin
     end
 end
 
-GM.IsUnderSky_Distance = 12000
-
-local fiftyPowerOfTwo = 50^2
-local vec12kZ = Vector( 0, 0, GM.IsUnderSky_Distance )
-local vecNeg1K = Vector( 0, 0, -1000 )
-
-function GM:IsUnderSky( pos )
-    -- get the sky
-    local skyTraceDat = {
-        start = pos,
-        endpos = pos + vec12kZ,
-        mask = CONTENTS_SOLID,
-    }
-    local skyTraceResult = util.TraceLine( skyTraceDat )
-
-    if skyTraceResult.HitSky then
-        return true, skyTraceResult.HitPos, skyTraceResult
-
-    elseif not skyTraceResult.Hit then
-        return true, skyTraceResult.HitPos, skyTraceResult
-
-    else
-        return nil, skyTraceResult.HitPos, skyTraceResult
-
-    end
-end
-
 function GM:IsOverDisplacement( pos )
     local tr = terminator_Extras.getFloorTr( pos )
     if tr.HitTexture ~= "**displacement**" then return nil, tr end
@@ -286,37 +259,10 @@ function GM:IsOverDisplacement( pos )
 
 end
 
+local posIsUnderDisplacement = terminator_Extras.posIsUnderDisplacement
+
 function GM:IsUnderDisplacement( pos )
-    -- get the sky
-    local firstTraceDat = {
-        start = pos,
-        endpos = pos + vec12kZ,
-        mask = MASK_SOLID_BRUSHONLY,
-    }
-    local firstTraceResult = util.TraceLine( firstTraceDat )
-
-    -- go back down
-    local secondTraceDat = {
-        start = firstTraceResult.HitPos,
-        endpos = pos,
-        mask = MASK_SOLID_BRUSHONLY,
-    }
-    local secondTraceResult = util.TraceLine( secondTraceDat )
-    if secondTraceResult.HitTexture ~= "**displacement**" then return nil, nil end
-
-    -- final check to make sure
-    local thirdTraceDat = {
-        start = pos,
-        endpos = pos + vecNeg1K,
-        mask = MASK_SOLID_BRUSHONLY,
-    }
-    local thirdTraceResult = util.TraceLine( thirdTraceDat )
-    local isANestedDisplacement = thirdTraceResult.HitTexture == "**displacement**" and secondTraceResult.HitPos:DistToSqr( thirdTraceResult.HitPos ) > fiftyPowerOfTwo
-
-    if thirdTraceResult.Hit and thirdTraceResult.HitTexture ~= "TOOLS/TOOLSNODRAW" and not isANestedDisplacement then return nil, true end -- we are probably under a displacement
-
-    -- we are DEFINITely under one
-    return true, nil
+    return posIsUnderDisplacement( pos )
 
 end
 
@@ -325,7 +271,7 @@ local underDisplacementOffset = Vector()
 -- check the actual pos + visible spots nearby to truly know if a point is under a displacement
 -- rather expensive! but it works!
 function GM:IsUnderDisplacementExtensive( pos )
-    local underBasic, underNested = self:IsUnderDisplacement( pos )
+    local underBasic, underNested = posIsUnderDisplacement( pos )
     if underBasic or underNested then return true end
 
     local traceStruct = {

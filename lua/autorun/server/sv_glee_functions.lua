@@ -68,6 +68,8 @@ end
 
 -- redirect uses to the parent
 hook.Add( "PlayerUse", "glee_parentedDetailUseRedirect", function( ply, used )
+    if not IsValid( used ) then return end
+
     local detailParent = used.glee_gleeDetailParent
     if not IsValid( detailParent ) then return end
 
@@ -79,6 +81,8 @@ hook.Add( "PlayerUse", "glee_parentedDetailUseRedirect", function( ply, used )
 end )
 
 hook.Add( "glee_presser_redirecttarget", "glee_parentedDetailUseRedirect", function( used )
+    if not IsValid( used ) then return end
+
     local detailParent = used.glee_gleeDetailParent
     if not detailParent then return end
     if not IsValid( detailParent ) then return end

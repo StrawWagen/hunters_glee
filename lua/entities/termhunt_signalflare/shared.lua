@@ -170,6 +170,12 @@ if SERVER and terminator_Extras then
 
     local rescueTimerName = "glee_rescueheli_countdown"
 
+    local function cancelRescueTimer()
+        if not timer.Exists( rescueTimerName ) then return end
+        timer.Remove( rescueTimerName )
+
+    end
+
     function ENT:ResetCallability()
         self.wastedFlare = nil
         self.triggerPushHits = nil
@@ -443,23 +449,9 @@ if SERVER and terminator_Extras then
             end
         end )
 
-        hook.Add( "huntersglee_round_leave_limbo", "glee_cancelrescuehelitimer_limboend", function()
-            if not timer.Exists( rescueTimerName ) then return end
-            timer.Remove( rescueTimerName )
-
-        end )
-
-        hook.Add( "huntersglee_round_into_limbo", "glee_cancelrescuehelitimer_limboend", function()
-            if not timer.Exists( rescueTimerName ) then return end
-            timer.Remove( rescueTimerName )
-
-        end )
-
-        hook.Add( "glee_post_realcleanupmap", "glee_cancelrescuehelitimer_cleanup", function()
-            if not timer.Exists( rescueTimerName ) then return end
-            timer.Remove( rescueTimerName )
-
-        end )
+        hook.Add( "huntersglee_round_leave_limbo", "glee_cancelrescuehelitimer_limboend", cancelRescueTimer )
+        hook.Add( "huntersglee_round_into_limbo", "glee_cancelrescuehelitimer_limboend", cancelRescueTimer )
+        hook.Add( "glee_post_realcleanupmap", "glee_cancelrescuehelitimer_cleanup", cancelRescueTimer )
     end
 
     hook.Add( "GravGunOnPickedUp", "glee_signalflare_resetcall", function( _ply, ent )
@@ -484,10 +476,66 @@ if SERVER and terminator_Extras then
 
     end
 
+    local heliHateAttackThreshold = 2 -- hate anyone who attacks us more times than this
+
+    -- HasStatusEffect only exists on the glee gamemode, guard it for sandbox etc.
+    local function heliPlayerHasEffect( ply, effect )
+        return ply.HasStatusEffect and ply:HasStatusEffect( effect )
+
+    end
+
+    local function heliPlayerAttackCount( heli, ply )
+        return heli.glee_HeliAttackers and heli.glee_HeliAttackers[ply] or 0
+
+    end
+
+    -- has this player earned the heli's hate?
+    local function heliHatesPlayer( heli, ply )
+        local attackCount = heliPlayerAttackCount( heli, ply )
+
+        -- the divine chosen get ignored, but one shot at the heli ends that truce
+        if heliPlayerHasEffect( ply, "divine_chosen" ) and attackCount >= 1 then return true end
+
+        -- anyone who keeps taking shots at us
+        if attackCount > heliHateAttackThreshold then return true end
+
+        return false
+
+    end
+
+    -- someone the heli refuses to pick up: the divine chosen, or anyone it's come to hate
+    local function heliWontRescue( heli, ply )
+        if heliPlayerHasEffect( ply, "divine_chosen" ) then return true end
+        if heliHatesPlayer( heli, ply ) then return true end
+
+        return false
+
+    end
+
+    local function heliUpdatePlayerRelationship( heli, ply )
+        if not IsValid( heli ) then return end
+        if not IsValid( ply ) then return end
+
+        -- hate the ones who earned it ( divine chosen who shot us, or repeat attackers )
+        if heliHatesPlayer( heli, ply ) then
+            makeFeudWith( heli, ply )
+
+        -- ignore the divine chosen otherwise
+        elseif heliPlayerHasEffect( ply, "divine_chosen" ) then
+            heli:AddEntityRelationship( ply, D_NU, 99 )
+
+        -- everyone else is a rescuee
+        else
+            makeHeliFriendlyWith( heli, ply )
+
+        end
+    end
+
     local function heliGetFreeSeat( heli )
         for i, seat in EntityPairs( heli.glee_Seats ) do
             if not IsValid( seat:GetDriver() ) then
                 return seat, i
+
             end
         end
     end
@@ -694,14 +742,9 @@ if SERVER and terminator_Extras then
         heli.nextMissileFire = 0
 
         for _, ply in player.Iterator() do
-            makeHeliFriendlyWith( heli, ply )
+            heliUpdatePlayerRelationship( heli, ply )
 
         end
-
-        hook.Add( "PlayerInitialSpawn", heli, function( self, ply )
-            makeHeliFriendlyWith( self, ply )
-
-        end )
 
         heli:Fire( "SetTrack", track.glee_HeliTrack_TargetName )
 
@@ -804,8 +847,8 @@ if SERVER and terminator_Extras then
 
             end
             local attacker = dmgInfo:GetAttacker()
-            if attacker == heli and not target:IsPlayer() then
-                dmgInfo:ScaleDamage( 10 )
+            if attacker == heli and ( not target:IsPlayer() or heliHatesPlayer( heli, target ) ) then
+                dmgInfo:ScaleDamage( 15 )
 
             elseif target == heli then
                 if not dmgInfo:IsExplosionDamage() then -- nuke force from non-explosive damage
@@ -814,8 +857,16 @@ if SERVER and terminator_Extras then
                 end
                 if not IsValid( attacker ) then return end
                 if not attacker:IsPlayer() then return end
+
+                -- tally the hit, then re-judge them ( a divine chosen truce ends now, repeat attackers earn hate )
+                heli.glee_HeliAttackers = heli.glee_HeliAttackers or {}
+                heli.glee_HeliAttackers[attacker] = ( heli.glee_HeliAttackers[attacker] or 0 ) + 1
+                heliUpdatePlayerRelationship( heli, attacker )
+
+                -- the divine chosen were being ignored; don't also taunt them for shooting
+                if heliPlayerHasEffect( attacker, "divine_chosen" ) then return end
+
                 if not GAMEMODE.SurfaceHomicidalGlee then return end
-                if attacker:HasStatusEffect( "divine_chosen" ) then return end -- dont call heli after grigori has spawned
                 GAMEMODE:SurfaceHomicidalGlee( attacker, heli )
 
             end
@@ -962,6 +1013,12 @@ if SERVER and terminator_Extras then
         local ourVel = myPos - oldPos -- ACTUAL VEL
         self.glee_OldRescueHeliPos = myPos
 
+        -- keep everyone's standing current; divine_chosen can be gained or lost mid round
+        for _, ply in player.Iterator() do
+            heliUpdatePlayerRelationship( self, ply )
+
+        end
+
         local validRescueTarget = IsValid( rescueTarget ) and rescueTarget:Alive()
         local visibleRescueTarget = validRescueTarget and self:Visible( rescueTarget )
         local trySwitchRescueTarget = not validRescueTarget or not visibleRescueTarget
@@ -982,6 +1039,7 @@ if SERVER and terminator_Extras then
             local closestDist = math.huge
             for _, ply in player.Iterator() do
                 if not ply:Alive() then continue end
+                if heliWontRescue( self, ply ) then continue end
                 local plysPos = ply:GetShootPos()
                 local dist = myPos:Distance( plysPos )
                 if dist > closestDist then continue end
@@ -1000,10 +1058,6 @@ if SERVER and terminator_Extras then
 
         local currEnemy = self:GetEnemy()
         if IsValid( currEnemy ) then
-            if currEnemy:IsPlayer() then
-                makeHeliFriendlyWith( self, currEnemy )
-
-            end
             if currEnemy.ReallyAnger and not currEnemy:IsAngry() then
                 currEnemy:ReallyAnger( 30 )
 
@@ -1039,6 +1093,7 @@ if SERVER and terminator_Extras then
             local noPlayersNeedRescuing = true
             for _, ply in player.Iterator() do
                 if not ply:Alive() then continue end
+                if heliWontRescue( self, ply ) then continue end
                 if IsValid( ply:GetVehicle() ) and ply:GetVehicle():GetParent() == self then continue end
                 noPlayersNeedRescuing = false
                 break

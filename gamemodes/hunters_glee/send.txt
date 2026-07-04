@@ -3,11 +3,12 @@ gamemodes\hunters_glee\gamemode\cl_shoppinggui.lua
 
 gamemodes\hunters_glee\gamemode\modules\cl_winscreen.lua
 gamemodes\hunters_glee\gamemode\modules\cl_scoreboard.lua
-gamemodes\hunters_glee\gamemode\modules\cl_modelscale.lua
 gamemodes\hunters_glee\gamemode\modules\cl_obfuscation.lua
 gamemodes\hunters_glee\gamemode\modules\cl_fallingwind.lua
 gamemodes\hunters_glee\gamemode\modules\cl_killfeedoverride.lua
 gamemodes\hunters_glee\gamemode\modules\cl_spectateflashlight.lua
+
+gamemodes\hunters_glee\gamemode\modules\modelscale\cl_modelscale.lua
 
 gamemodes\hunters_glee\gamemode\modules\contextmenu_widgets\cl_banktop.lua
 gamemodes\hunters_glee\gamemode\modules\contextmenu_widgets\cl_tauntmenu.lua

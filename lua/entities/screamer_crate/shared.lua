@@ -250,6 +250,22 @@ if CLIENT then
         self:MyDraw()
 
     end
+
+    function ENT:OnDetachedFromOwner()
+    end
+
+    net.Receive( "glee_placable_detachclientside", function()
+        local toWipe = net.ReadEntity()
+        if not IsValid( toWipe ) then return end
+
+        local us = LocalPlayer()
+        if toWipe ~= us.ghostEnt then return end
+        if not toWipe.OnDetachedFromOwner then return end
+
+        toWipe:OnDetachedFromOwner( us )
+        LocalPlayer().ghostEnt = nil
+
+    end )
 end
 
 function ENT:OffsettedPlacingPos()
@@ -452,6 +468,32 @@ function ENT:Cancel()
 
 end
 
+
+if SERVER then
+    util.AddNetworkString( "glee_placable_detachclientside" )
+
+end
+
+function ENT:OnDetachedFromOwner( _owner )
+end
+
+function ENT:DetachFromOwner()
+    local owner = self.player
+    if not IsValid( owner ) then return end
+
+    net.Start( "glee_placable_detachclientside" )
+        net.WriteEntity( self )
+    net.Send( owner )
+
+    owner.ghostEnt = nil
+    self.player = nil
+    self:SetOwner( NULL )
+
+    self:OnDetachedFromOwner( owner )
+
+end
+
+
 function ENT:DoScoreThink()
     self:NextThink( CurTime() + engine.TickInterval() )
 
@@ -635,12 +677,11 @@ function ENT:Think()
         if CLIENT then
             self:ClientThink()
 
-        elseif SERVER then
-
+        elseif SERVER and IsValid( self.player ) then -- owner could be cleared during ModifiableThink
             local mode = self.player:GetObserverMode()
             if mode ~= OBS_MODE_ROAMING then
                 self.nextPlaceThink = CurTime() + 1
-                return
+                return toReturn
 
             end
         end

@@ -557,6 +557,7 @@ end )
 
 
 function GM:PlyCanRespawn( ply )
+    if GAMEMODE.autoRespawn then return true end
     if ply:HasEscaped() then return false end
     local blockRespawn = hook.Run( "glee_block_respawn", ply )
     if blockRespawn then return false end
@@ -839,6 +840,10 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
         local protoStuffToSpectate = alivePlayers
         table.Add( protoStuffToSpectate, table.Copy( GAMEMODE.glee_Hunters ) )
         table.Add( protoStuffToSpectate, table.Copy( ents.FindByClass( "glee_bank_atm" ) ) )
+        if IsValid( terminator_Extras.glee_CurrentRescueHeli ) then
+            table.insert( protoStuffToSpectate, terminator_Extras.glee_CurrentRescueHeli )
+
+        end
 
         local stuffToSpectate = {}
         for _, thing in ipairs( protoStuffToSpectate ) do
@@ -894,26 +899,43 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
                 end
             end
 
-            if IsValid( eyeTraceHit ) and ( eyeTraceHit:GetNW2Bool( "glee_IsSpectatable", false ) or eyeTraceHit:IsPlayer() or eyeTraceHit:IsNextBot() or eyeTraceHit:IsNPC() ) then
+            if spectatable then
                 thingToFollow = eyeTraceHit
 
             else
                 if #stuffToSpectate <= 0 then return end
-                local sortedStuffToSpectate = table.Copy( stuffToSpectate )
-                local sortPos = ply:GetPos()
-                if eyeTrace.Hit then
-                    sortPos = eyeTrace.HitPos
+                local startPos = ply:GetPos()
+                local aimVector = ply:GetAimVector()
+
+                local endPos = startPos + aimVector * 25000
+                local smallestScore = math.huge
+
+                local nearestToLine
+
+                for _, ent in ipairs( stuffToSpectate ) do
+                    local entsPos = ent:WorldSpaceCenter()
+                    local myDistToLine = util.DistanceToLine( startPos, endPos, entsPos )
+                    local score = myDistToLine
+                    if myDistToLine > 250 then -- if not aiming directly at this, punish for distance
+                        local myDist = startPos:Distance( entsPos )
+                        score = score + myDist / 250
+
+                    end
+
+                    -- stuff behind us can be close to the line's start, punish it because thats not what people expect
+                    if ( entsPos - startPos ):Dot( aimVector ) < 0 then
+                        score = score + 1000000
+
+                    end
+
+                    if score > smallestScore then continue end
+
+                    smallestScore = score
+                    nearestToLine = ent
 
                 end
 
-                table.sort( sortedStuffToSpectate, function( a, b ) -- sort followable stuff by distance to pos
-                    local ADist = a:EyePos():DistToSqr( sortPos )
-                    local BDist = b:EyePos():DistToSqr( sortPos )
-                    return ADist < BDist
-
-                end )
-
-                thingToFollow = sortedStuffToSpectate[1]
+                thingToFollow = nearestToLine
 
             end
 
@@ -1109,6 +1131,8 @@ function GM:PlayerDeathThink( ply )
     end
 
     if not ( naturalRespawn or forcedRespawn or weirdBuggedStateRespawn ) then return end
+
+    print( naturalRespawn )
 
     -- are we waiting for first ply to spawn?
     local nextForced = ply.glee_nextForcedRespawn or 0

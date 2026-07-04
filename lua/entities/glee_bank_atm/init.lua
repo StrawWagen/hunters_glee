@@ -18,20 +18,25 @@ ENT.Shells = {
         model = "models/hunter/tubes/tube1x1x2c.mdl",
         offset = Vector( 0.2, -0.3, -0.3 ),
         angle = Angle( 0, -90, 0 ),
-        mat = "phoenix_storms/cube"
+        mat = "phoenix_storms/cube",
+        name = "atmShell1",
 
     },
     {
         model = "models/hunter/tubes/tube1x1x2c.mdl",
         offset = Vector( 0.2, -0.3, -0.3 ),
         angle = Angle( 0,  90, 0 ),
-        mat = "phoenix_storms/cube"
+        mat = "phoenix_storms/cube",
+        name = "atmShell2",
+
     },
     {
         model = "models/hunter/misc/cone1x1.mdl",
         offset = Vector( 0.1, -0.3, 94.6 ),
         angle = Angle( 0, -90, 0 ),
-        mat = "models/glee/atm/atm_drillbit"
+        mat = "models/glee/atm/atm_drillbit",
+        name = "atmBit",
+
     },
 }
 
@@ -162,6 +167,8 @@ function ENT:StartBurrowingToPos( targetPos, duration, ownerPly )
 
     self:SpawnShells()
 
+    terminator_Extras.DoPFXAtPos( "glee_atm_burrow_pebbles", targetPos + Vector( 0, 0, 1 ) )
+
 end
 
 -- NOTE: dead players CAN use this
@@ -194,6 +201,8 @@ function ENT:SpawnShells()
             shellEnt:SetMaterial( shellDef.mat )
 
         end
+
+        self["glee_atmpart_" .. shellDef.name] = shellEnt
 
         local phys = shellEnt:GetPhysicsObject()
         if not IsValid( phys ) then continue end
@@ -266,6 +275,23 @@ function ENT:EjectShells()
 
     hook.Run( "glee_atm_finishedBurrowing", self )
 
+    terminator_Extras.DoPFXAtPos( "glee_atm_burrow_breach", atmPos + Vector( 0, 0, 5 ) )
+    self:EmitSound( "ambient/levels/outland/ol09_biggundestroy.wav", 88, math.random( 130, 140 ) )
+
+    util.Decal( "Scorch", atmPos, atmPos + Vector( 0, 0, -100 ), self )
+
+    local shell1 = self.glee_atmpart_atmShell1
+    if IsValid( shell1 ) then
+        shell1:EmitSound( "physics/metal/metal_large_debris1.wav", 75, math.random( 120, 130 ) )
+
+    end
+    local shell2 = self.glee_atmpart_atmShell2
+    if IsValid( shell2 ) then
+        shell2:EmitSound( "physics/metal/metal_large_debris2.wav", 75, math.random( 120, 140 ) )
+
+    end
+
+
 end
 
 local collideLength = 50
@@ -314,6 +340,12 @@ function ENT:UpdateBurrow()
     if cur > self.NextBurrowSound then
         self.NextBurrowSound = cur + math.Rand( 0.4, 0.8 )
         sound.Play( "npc/antlion/digdown1.wav", self.BurrowTargetPos + Vector( 0, 0, 25 ), 75, math.random( 70, 90 ), progress )
+
+    end
+
+    if progress > 0.85 and not self.PlayedPreEmergeSound then
+        self.PlayedPreEmergeSound = true
+        sound.Play( "ambient/levels/dog_v_strider/dvs_dogslamstrider_00_30_07.wav", self.BurrowTargetPos + Vector( 0, 0, 25 ), 88, math.random( 90, 95 ) )
 
     end
 

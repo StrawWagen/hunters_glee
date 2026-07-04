@@ -279,7 +279,7 @@ local items = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
         },
-        weight = -150,
+        weight = -200,
         shPurchaseCheck = shopHelpers.aliveCheck,
         svOnPurchaseFunc = function( purchaser )
             shopHelpers.purchaseWeapon( purchaser, {
@@ -561,7 +561,7 @@ local items = {
         name = "Annabelle",
         desc = "IT KNOWS WHEN YOU MISS...",
         shCost = 0,
-        shSkullCost = 5,
+        shSkullCost = 4,
         cooldown = 0.5,
         tags = { "ITEMS", "Weapon", "SkullCost" },
         purchaseTimes = {

@@ -122,3 +122,29 @@ function GM:GetSpawnSetDescription()
     return GetGlobalString( "GLEE_SpawnSetDescription", "" )
 
 end
+
+
+GM.IsUnderSky_Distance = 12000
+
+local vec12kZ = Vector( 0, 0, GM.IsUnderSky_Distance )
+
+function GM:IsUnderSky( pos )
+    -- get the sky
+    local skyTraceDat = {
+        start = pos,
+        endpos = pos + vec12kZ,
+        mask = CONTENTS_SOLID,
+    }
+    local skyTraceResult = util.TraceLine( skyTraceDat )
+
+    if skyTraceResult.HitSky then
+        return true, skyTraceResult.HitPos, skyTraceResult
+
+    elseif not skyTraceResult.Hit then
+        return true, skyTraceResult.HitPos, skyTraceResult
+
+    else
+        return nil, skyTraceResult.HitPos, skyTraceResult
+
+    end
+end
