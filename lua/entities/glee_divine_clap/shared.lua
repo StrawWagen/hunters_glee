@@ -15,13 +15,22 @@ ENT.Model = "models/hunter/tubes/tube1x1x2.mdl"
 ENT.HullCheckSize = Vector( 20, 20, 10 )
 ENT.PosOffset = Vector( 0, 0, 10 )
 
--- balance knobs
-local heliNearbyDist = 2000
-local baseCost = -500
+-- balance knobs, overridable by derived entities ( eg termhunt_thunderous_applause )
+local interval = 60 * 4 -- initial lock, and the global cooldown between uses
+
+ENT.baseCost = -500
+ENT.heliCostMult = 3 -- cost multiplier when placed near the escape heli
+ENT.heliNearbyDist = 2000
+ENT.interval = interval
+ENT.cooldownBool = "termhunt_divine_clap" -- temporary bool gating reuse
+ENT.cooldownMessage = "It's too soon to clap again. Wait."
+ENT.mischiefOnPlace = 2
+ENT.mischiefReason = "called down a smite"
+
+-- only used by the default ( clap ) telegraph/strike, which derived entities override
 local strikePowa = 8
 local chargeTime = 3 -- seconds of telegraph before the bolt lands
-local interval = 60 * 4 -- initial lock, and the global cooldown between uses
-local sparkRadius = 120 -- max spread of the telegraph sparks from the strike point, at full charge
+local sparkRadius = 120 -- max spread of the telegraph sparks from the strike point
 
 if CLIENT then
     function ENT:DoHudStuff()
@@ -77,7 +86,7 @@ local function getNearestNavFloor( pos )
 
 end
 
-local function SparkEffect( SparkPos )
+function ENT:SparkEffect( SparkPos )
     local Sparks = EffectData()
     Sparks:SetOrigin( SparkPos )
     Sparks:SetNormal( VectorRand() )
@@ -89,10 +98,10 @@ local function SparkEffect( SparkPos )
 end
 
 function ENT:UpdateGivenScore()
-    local cost = baseCost
+    local cost = self.baseCost
     local heli = terminator_Extras and terminator_Extras.glee_CurrentRescueHeli
-    if IsValid( heli ) and heli:GetPos():DistToSqr( self:GetPos() ) < heliNearbyDist ^ 2 then
-        cost = cost * 3
+    if IsValid( heli ) and heli:GetPos():DistToSqr( self:GetPos() ) < self.heliNearbyDist ^ 2 then
+        cost = cost * self.heliCostMult
         self:AddBlameReason( heli, -200, "Escape Heli" )
 
     end
@@ -113,7 +122,7 @@ function ENT:CalculateCanPlace()
     if IsHullTraceFull( checkPos, self.HullCheckSize, self ) then return false, self.noPurchaseReason_NoRoom end
     if getNearestNavFloor( checkPos ) == NULL then return false, self.noPurchaseReason_OffNavmesh end
     if not GAMEMODE:IsUnderSky( checkPos ) then return false, "Needs to be placed under the sky." end
-    if not isCheats() and GAMEMODE:isTemporaryTrueBool( "termhunt_divine_clap" ) then return false, "It's too soon to clap again. Wait." end
+    if not isCheats() and GAMEMODE:isTemporaryTrueBool( self.cooldownBool ) then return false, self.cooldownMessage end
     if not self:HasEnoughToPurchase() then return false, self:TooPoorString() end
     return true
 
@@ -122,24 +131,9 @@ end
 local flatten = Vector( 1, 1, 0 )
 local tinyUpOffset = Vector( 0, 0, 20 )
 
-function ENT:Place()
-
-    local underSky = GAMEMODE:IsUnderSky( self:GetPos() )
-    if not underSky then return end
-
-    local strikePos = self:GetPos()
-    local timerKey = "divine_clap_" .. self:GetCreationID()
-
-    local timerEnd = function()
-        timer.Stop( timerKey )
-
-    end
-
-    -- who lands the bolt, kept even after we detach from the placer
-    self.attackerInflictor = self.player
-    local placerNick = IsValid( self.player ) and self.player:Nick() or "Someone"
-
-    -- warn the living standing near the strike, tell the dead what's coming
+-- warn the living standing near the strike, tell the dead what's coming
+-- derived entities override this to change the shape/wording of the warning
+function ENT:WarnNearbyPlayers( strikePos, placerNick )
     local warningDistSqr = ( strikePowa * 400 ) ^ 2
     local softwarnPlayers = {}
     local hardwarnPlayers = {}
@@ -157,7 +151,24 @@ function ENT:Place()
     huntersGlee_Announce( softwarnPlayers, 100, chargeTime, "Weird, it feels like your hair's standing up..." )
     huntersGlee_Announce( hardwarnPlayers, 100, chargeTime, placerNick .. " has begun a Divine Clap." )
 
-    -- pay out and stir the pot now, like the applause does
+end
+
+-- shared placeable-lightning routine: warn, pay out, detach, then telegraph and strike
+-- override WarnNearbyPlayers / BeginStrike to reflavor it
+function ENT:Place()
+
+    local underSky = GAMEMODE:IsUnderSky( self:GetPos() )
+    if not underSky then return end
+
+    local strikePos = self:GetPos()
+
+    -- who lands the bolt, kept even after we detach from the placer
+    self.attackerInflictor = self.player
+    local placerNick = IsValid( self.player ) and self.player:Nick() or "Someone"
+
+    self:WarnNearbyPlayers( strikePos, placerNick )
+
+    -- pay out and stir the pot now
     local betrayalScore = self:GetGivenScore()
     if self.player and self.player.GivePlayerScore and betrayalScore then
         self.player:GivePlayerScore( betrayalScore )
@@ -165,14 +176,26 @@ function ENT:Place()
 
     end
 
-    GAMEMODE:AddMischievousness( self.player, 2, "called down a smite" )
+    GAMEMODE:AddMischievousness( self.player, self.mischiefOnPlace, self.mischiefReason )
 
     -- start the cooldown, then detach so the strike is committed no matter what the placer does
-    GAMEMODE:setTemporaryTrueBool( "termhunt_divine_clap", interval )
+    GAMEMODE:setTemporaryTrueBool( self.cooldownBool, self.interval )
 
     self:DetachFromOwner()
 
-    -- charge for chargeTime, sparks building at the spot, then ONE strike
+    self:BeginStrike( strikePos )
+
+end
+
+-- charge for chargeTime, sparks building at the spot, then ONE strike
+function ENT:BeginStrike( strikePos )
+    local timerKey = "divine_clap_" .. self:GetCreationID()
+
+    local timerEnd = function()
+        timer.Stop( timerKey )
+
+    end
+
     local strikeAt = CurTime() + chargeTime
 
     timer.Create( timerKey, 0.06, 0, function()
@@ -201,7 +224,7 @@ function ENT:Place()
 
                 end
 
-                SparkEffect( sparkPos )
+                self:SparkEffect( sparkPos )
                 sound.Play( "LoudSpark", sparkPos )
                 sound.EmitHint( SOUND_DANGER, sparkPos, 500, 6, self.attackerInflictor )
 

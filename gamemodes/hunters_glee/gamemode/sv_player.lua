@@ -238,7 +238,16 @@ function GM:calculateBPM( cur, players )
         local nonRestingScale = hook.Run( "termhunt_scaleaddedbpm", ply, initialScale ) or initialScale
 
         local scaredBpm = mentosBPM + canSeeBPM + targettedBPM
-        local speedAndScaredBPM = ( speedBPM + scaredBpm ) * nonRestingScale
+        local speedAndScaredBPM = ( speedBPM + scaredBpm )
+
+        local currBoost = self:GetFullBoostedSprint( ply )
+        if currBoost then
+            local boostAdd = currBoost * ( bpmPerSpeed * 2 )
+            speedAndScaredBPM = speedAndScaredBPM + boostAdd
+
+        end
+
+        speedAndScaredBPM = speedAndScaredBPM * nonRestingScale
 
         local minBPMHealth = 0
         if plyHealth <= 1 then
@@ -327,7 +336,7 @@ function GM:calculateBPM( cur, players )
 
                     end
 
-                    if ply.glee_Blessed then -- more decrease if blessed is fighting it
+                    if ply.glee_DamageResistant then -- more decrease if immortal is fighting it
                         divisor = divisor / 2
 
                     end
@@ -771,7 +780,7 @@ function GM:StopSpectatingThing( ply )
 
 end
 
-hook.Add( "StartEntityDriving", "glee_unparentbeforedriving", function( ent, ply )
+hook.Add( "StartEntityDriving", "glee_unparentbeforedriving", function( _ent, ply )
     if ply.termHuntTeam == GAMEMODE.TEAM_PLAYING then return end
     if not IsValid( ply:GetParent() ) then return end
     ply:SetParent( NULL )
@@ -1132,8 +1141,6 @@ function GM:PlayerDeathThink( ply )
 
     if not ( naturalRespawn or forcedRespawn or weirdBuggedStateRespawn ) then return end
 
-    print( naturalRespawn )
-
     -- are we waiting for first ply to spawn?
     local nextForced = ply.glee_nextForcedRespawn or 0
     if nextForced > CurTime() then return end
@@ -1186,24 +1193,25 @@ local spaceCheckUpOffset = Vector( 0, 0, 64 )
 local spaceCheckHull = Vector( 17, 17, 2 )
 local occupiedSpawnAreas = {}
 
-function GM:PlayerSpawn( pl, transiton )
-    if IsValid( pl:GetParent() ) then
-        pl:SetParent( NULL )
+function GM:PlayerSpawn( ply, transiton )
+    if IsValid( ply:GetParent() ) then
+        ply:SetParent( NULL )
 
     end
 
-    local anotherAlivePlayer = GAMEMODE:anotherAlivePlayer( pl )
+    local anotherAlivePlayer = GAMEMODE:anotherAlivePlayer( ply )
     local newPos = nil
     local center, area = nil, nil
 
     -- something's telling us to respawn here!
-    if pl.glee_unstuckOrigin then
-        newPos = pl.glee_unstuckOrigin
+    if ply.glee_unstuckOrigin then
+        newPos = ply.glee_unstuckOrigin
 
     -- only set their pos if this :Spawn was caused by a death
-    elseif not pl.glee_usedTrueRespawn then
+    elseif not ply.glee_usedTrueRespawn then
+        hook.Run( "glee_true_PlayerSpawn", ply )
         -- no special spot to respawn, we'll respawn somewhere near another player, if possible
-        if IsValid( anotherAlivePlayer ) and not hook.Run( "huntersglee_blockspawn_nearplayers", pl, anotherAlivePlayer ) and GAMEMODE.hasNavmesh then
+        if IsValid( anotherAlivePlayer ) and not hook.Run( "huntersglee_blockspawn_nearplayers", ply, anotherAlivePlayer ) and GAMEMODE.hasNavmesh then
             for count = 1, 12 do
 
                 local start = anotherAlivePlayer:GetPos()
@@ -1256,18 +1264,18 @@ function GM:PlayerSpawn( pl, transiton )
     if newPos then
         local offsettedNewPos = newPos + Vector( 0, 0, 15 )
         timer.Simple( engine.TickInterval(), function()
-            if not IsValid( pl ) then return end
-            pl:TeleportTo( offsettedNewPos )
+            if not IsValid( ply ) then return end
+            ply:TeleportTo( offsettedNewPos )
 
         end )
         -- look at our anchor ply so its easy to find eachother
         timer.Simple( engine.TickInterval() * 2, function()
-            if not IsValid( pl ) then return end
+            if not IsValid( ply ) then return end
             if not IsValid( anotherAlivePlayer ) then return end
-            local dirToMainPlayer = terminator_Extras.dirToPos( pl:GetShootPos(), anotherAlivePlayer:GetShootPos() )
+            local dirToMainPlayer = terminator_Extras.dirToPos( ply:GetShootPos(), anotherAlivePlayer:GetShootPos() )
             local ang = dirToMainPlayer:Angle()
             ang.r = 0
-            pl:SetEyeAngles( ang )
+            ply:SetEyeAngles( ang )
 
         end )
         -- dont put another player here!
@@ -1282,35 +1290,35 @@ function GM:PlayerSpawn( pl, transiton )
     end
 
     -- Stop observer mode
-    GAMEMODE:unspectatifyPlayer( pl )
+    GAMEMODE:unspectatifyPlayer( ply )
 
     -- TODO: is this glee_needsRespawning nil check needed?
-    pl.glee_needsRespawning = nil
+    ply.glee_needsRespawning = nil
     -- this one is needed
-    pl.glee_newRoundSpawn = nil
+    ply.glee_newRoundSpawn = nil
 
     -- they used up their 1 true respawn
     -- don't set their pos until they die again
-    pl.glee_usedTrueRespawn = true
+    ply.glee_usedTrueRespawn = true
 
-    player_manager.OnPlayerSpawn( pl, transiton )
-    player_manager.RunClass( pl, "Spawn" )
+    player_manager.OnPlayerSpawn( ply, transiton )
+    player_manager.RunClass( ply, "Spawn" )
 
     -- If we are in transition, do not touch player's weapons
     if not transiton then
         -- Call item loadout function
-        hook.Call( "PlayerLoadout", GAMEMODE, pl )
+        hook.Call( "PlayerLoadout", GAMEMODE, ply )
 
     end
 
     -- Set player model
-    hook.Call( "PlayerSetModel", GAMEMODE, pl )
+    hook.Call( "PlayerSetModel", GAMEMODE, ply )
 
-    pl:SetupHands()
+    ply:SetupHands()
 
-    GAMEMODE.deadPlayers[pl:GetCreationID()] = nil
+    GAMEMODE.deadPlayers[ply:GetCreationID()] = nil
 
-    pl.glee_needsRespawning = nil
+    ply.glee_needsRespawning = nil
 
 end
 
@@ -1350,7 +1358,7 @@ local goodPickupClasses = {
 
 }
 
-hook.Add( "PlayerUse", "useToAllowDoublePickup", function( user, used )
+hook.Add( "PlayerUse", "useToAllowDoublePickup", function( _user, used )
     if not used:IsWeapon() then return end
     used.glee_bypassPickupBlock = CurTime() + 0.5
 
@@ -1400,13 +1408,13 @@ hook.Add( "WeaponEquip", "glee_fixignitedweapons", function( wep, ply )
 
 end )
 
-hook.Add( "Term_OnStartedDriving", "glee_startdrivingsounds", function( driver, driven )
+hook.Add( "Term_OnStartedDriving", "glee_startdrivingsounds", function( driver, _driven )
     net.Start( "glee_starteddriving" )
     net.Send( driver )
 
 end )
 
-hook.Add( "Term_OnStoppedDriving", "glee_stopdrivingsounds", function( driver, driven )
+hook.Add( "Term_OnStoppedDriving", "glee_stopdrivingsounds", function( driver, _driven )
     net.Start( "glee_stoppeddriving" )
     net.Send( driver )
 

@@ -30,15 +30,12 @@ if CLIENT then
         "fire_small_03",
     }
 
-    function ENT:Think()
-        if entMeta.IsDormant( self ) then return end
-        local myTbl = entMeta.GetTable( self )
-        if not myTbl.setupCL then
-            myTbl.setupCL = true
-            local fire = self.FireEffects[math.random( 1, #self.FireEffects )]
-            CreateParticleSystem( self, fire, PATTACH_ABSORIGIN_FOLLOW, 0, offsetVec )
+    function ENT:AdditionalClientInitialize()
+        if math.random( 0, 100 ) > 25 then return end
 
-        end
+        local fire = self.FireEffects[math.random( 1, #self.FireEffects )]
+        CreateParticleSystem( self, fire, PATTACH_ABSORIGIN_FOLLOW, 0, offsetVec )
+
     end
 
     local emptool_Glow = Material( "models/alyx/emptool_glow" )
@@ -86,6 +83,8 @@ ENT.TERM_WEAPON_PROFICIENCY = WEAPON_PROFICIENCY_POOR
 ENT.term_DMG_ImmunityMask = bit.bor( DMG_BURN, DMG_RADIATION, DMG_POISON )
 ENT.DoMetallicDamage = false -- metallic fx like bullet ricochet sounds
 ENT.Term_BloodColor = DONT_BLEED
+ENT.FriendlyFireMul = 0.1
+ENT.isTerminatorHunterChummy = "infernal_powers"
 ENT.MetallicMoveSounds = false
 ENT.ReallyStrong = false
 ENT.ReallyHeavy = false
@@ -186,18 +185,25 @@ local skins = {
     3,
 }
 
+local wakeUpGestures = {
+    ACT_HL2MP_ZOMBIE_SLUMP_RISE,
+    ACT_HL2MP_ZOMBIE_SLUMP_ALT_RISE_FAST,
+}
+
+ENT.SpawnHeadlessChance = 75
+
 ENT.MyClassTask = {
     OnCreated = function( self, data )
         self.WalkSpeed = math.random( 80, 100 )
-        self.MoveSpeed = math.random( 240, 340 )
-        self.RunSpeed = math.random( 380, 480 )
+        self.MoveSpeed = math.random( 200, 240 )
+        self.RunSpeed = math.random( 380, 320 )
         self.DuelEnemyDist = math.random( 500, 1500 )
         self.term_SoundPitchShift = math.random( -10, 10 )
 
         self:SetSkin( skins[math.random( 1, #skins )] )
 
         local isHeadless
-        local wantsHeadless = math.random( 0, 100 ) < 75
+        local wantsHeadless = math.random( 0, 100 ) < self.SpawnHeadlessChance
         if wantsHeadless then
             local headBone = self:LookupBone( "ValveBiped.Bip01_Head1" )
             if headBone then
@@ -213,9 +219,16 @@ ENT.MyClassTask = {
 
         end
 
+        local wakeUpGesture = wakeUpGestures[math.random( 1, #wakeUpGestures )]
+        self:DoGesture( wakeUpGesture, 1.25, true )
+        data.HasSetup = true
+
     end,
-    OnKilled = function( self, data )
-        if not self.glee_AlwaysDropSkull then return end
+    OnKilled = function( self, data ) -- TODO: move this to ondamaged?
+        if not self.glee_AlwaysDropSkull then
+            self:EmitSound( "npc/stalker/stalker_pain" .. math.random( 1, 3 ) .. ".wav", 75, math.random( 120, 150 ) )
+
+        end
 
         local headBone = self:LookupBone( "ValveBiped.Bip01_Head1" )
         if headBone then
@@ -224,12 +237,36 @@ ENT.MyClassTask = {
 
         end
     end,
+    GetDeathAnim = function( self, data )
+        if not self.glee_AlwaysDropSkull then return end
+
+        self:EmitSound( "npc/stalker/stalker_scream1.wav", 80, math.random( 120, 150 ) )
+
+        return {
+            act = ACT_GMOD_DEATH,
+            rate = 2,
+        }
+    end,
+    NewWaterLevelWhileFalling = function( self, data, waterLevel )
+        if waterLevel < 3 then return end
+        self:TakeDamage( self:Health(), game.GetWorld(), game.GetWorld() )
+
+    end,
     Think = function( self, data )
         if self:IsSpeaking() then return end
         local idleSound = self.infernSkele_IdleSounds[math.random( 1, #self.infernSkele_IdleSounds )]
         self:Term_SpeakSound( idleSound )
 
     end,
+    TranslateActivity = function( self, data, act )
+        if data.HasSetup then return end
+
+        if act == ACT_MP_STAND_IDLE then
+            return ACT_HL2MP_ZOMBIE_SLUMP_IDLE
+
+        end
+
+    end
 }
 
 local coroutine_yield = coroutine.yield
@@ -243,7 +280,26 @@ function ENT:DoCustomTasks( defaultTasks )
             StartsOnInitialize = true,
 
             BehaveUpdateMotion = function( self, data )
-                if self.IsSeeEnemy then
+                local myTbl = entMeta.GetTable( self )
+                local myNav = myTbl.GetCurrentNavArea( self, myTbl )
+                if not IsValid( myNav ) then
+                    local goDir = myTbl.loco:GetVelocity()
+                    local speed = goDir:Length()
+                    if speed < 10 then
+                        goDir = VectorRand()
+
+                    else
+                        goDir.x = goDir.x / speed
+                        goDir.y = goDir.y / speed
+                        goDir.z = goDir.z / speed
+
+                    end
+
+                    local goPos = self:GetPos() + goDir * 100
+
+                    myTbl.GotoPosSimple( self, myTbl, goPos, 35, true )
+
+                elseif self.IsSeeEnemy then
                     self:TaskComplete( "movement_handler" )
                     self:StartTask( "movement_duelenemy", "i found an enemy" )
 
@@ -298,12 +354,17 @@ function ENT:DoCustomTasks( defaultTasks )
                 -- avoid returning to LastWanderArea > 75% of the time
 
                 local needsNewPathGoal = not data.CurrentTaskGoalPos
-                needsNewPathGoal = needsNewPathGoal or entMeta.GetPos( self ):Distance( data.CurrentTaskGoalPos ) < 35
+                needsNewPathGoal = needsNewPathGoal or entMeta.GetPos( self ):Distance2D( data.CurrentTaskGoalPos ) < 35
                 needsNewPathGoal = needsNewPathGoal or ( myTbl.GetCurrentSpeed( self ) < 10 and CurTime() > data.NextWanderChooseTime )
 
                 if needsNewPathGoal then
                     coroutine_yield()
                     local myNav = myTbl.GetCurrentNavArea( self, myTbl )
+                    if not IsValid( myNav ) then
+                        self:TaskComplete( "movement_wander" )
+                        self:StartTask( "movement_handler", "i ended up somewhere wrong!" )
+
+                    end
                     local areasToCheck = myNav:GetAdjacentAreas()
                     areasToCheck[#areasToCheck + 1] = myNav
                     local areasAlreadyAdded = {}
@@ -344,7 +405,7 @@ function ENT:DoCustomTasks( defaultTasks )
                         if not visible then continue end
                         chosenPos = area:GetCenter()
                         chosenArea = area
-                        debugoverlay.Line( self:WorldSpaceCenter(), chosenPos, 1, color_white, true )
+                        --debugoverlay.Line( self:WorldSpaceCenter(), chosenPos, 5, Color( 0, 255, 0 ), true )
                         break
 
                     end

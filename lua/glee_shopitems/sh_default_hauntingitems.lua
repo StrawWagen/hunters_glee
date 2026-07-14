@@ -8,16 +8,6 @@ local function ghostCanPurchase( purchaser )
 
 end
 
-local function setupPlacable( class, purchaser, itemIdentifier )
-    local thing = ents.Create( class )
-    thing.itemIdentifier = itemIdentifier
-    thing:SetOwner( purchaser )
-    thing:Spawn()
-
-    return thing
-
-end
-
 local sv_cheats = GetConVar( "sv_cheats" )
 
 local function isCheats()
@@ -87,7 +77,7 @@ local items = {
         weight = -5,
         shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "screamer_crate", purchaser, itemIdentifier )
+            shopHelpers.setupPlacable( "screamer_crate", purchaser, itemIdentifier )
 
         end,
     },
@@ -105,7 +95,7 @@ local items = {
         weight = -4,
         shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "termhunt_normal_crate", purchaser, itemIdentifier )
+            shopHelpers.setupPlacable( "termhunt_normal_crate", purchaser, itemIdentifier )
 
         end,
     },
@@ -123,7 +113,7 @@ local items = {
         weight = 1,
         shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "termhunt_weapon_crate", purchaser, itemIdentifier )
+            shopHelpers.setupPlacable( "termhunt_weapon_crate", purchaser, itemIdentifier )
 
         end,
     },
@@ -141,7 +131,7 @@ local items = {
         weight = 10,
         shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "termhunt_manhack_crate", purchaser, itemIdentifier )
+            shopHelpers.setupPlacable( "termhunt_manhack_crate", purchaser, itemIdentifier )
 
         end,
     },
@@ -159,7 +149,7 @@ local items = {
         weight = 1,
         shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "termhunt_undead_beartrap", purchaser, itemIdentifier )
+            shopHelpers.setupPlacable( "termhunt_undead_beartrap", purchaser, itemIdentifier )
 
         end,
     },
@@ -177,7 +167,7 @@ local items = {
         weight = 1,
         shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "termhunt_barrels", purchaser, itemIdentifier )
+            shopHelpers.setupPlacable( "termhunt_barrels", purchaser, itemIdentifier )
 
         end,
     },
@@ -195,7 +185,7 @@ local items = {
         weight = 1,
         shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "glee_junkdumper", purchaser, itemIdentifier )
+            shopHelpers.setupPlacable( "glee_junkdumper", purchaser, itemIdentifier )
 
         end,
     },
@@ -213,7 +203,7 @@ local items = {
         weight = 10,
         shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "door_locker", purchaser, itemIdentifier )
+            shopHelpers.setupPlacable( "door_locker", purchaser, itemIdentifier )
 
         end,
     },
@@ -264,7 +254,7 @@ local items = {
         weight = -4,
         shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "termhunt_presser", purchaser, itemIdentifier )
+            shopHelpers.setupPlacable( "termhunt_presser", purchaser, itemIdentifier )
 
         end,
     },
@@ -282,7 +272,7 @@ local items = {
         weight = 0,
         shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "termhunt_retribution", purchaser, itemIdentifier )
+            shopHelpers.setupPlacable( "termhunt_retribution", purchaser, itemIdentifier )
 
         end,
     },
@@ -300,7 +290,24 @@ local items = {
         weight = 19,
         shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "termhunt_overcharger", purchaser, itemIdentifier )
+            shopHelpers.setupPlacable( "termhunt_overcharger", purchaser, itemIdentifier )
+
+        end,
+    },
+    ["ghostly_wind"] = {
+        name = "Ghostly Wind",
+        desc = "Summon a strange gust of wind...",
+        shCost = 0,
+        costDecorative = "-150",
+        markup = 1,
+        cooldown = 0.5,
+        tags = { "DEADGIFTS", "CloseShopOnPurchase" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = 19,
+        svOnPurchaseFunc = function( purchaser, itemIdentifier )
+            shopHelpers.setupPlacable( "glee_escapee_wind", purchaser, itemIdentifier )
 
         end,
     },
@@ -323,7 +330,7 @@ local items = {
 
         end },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "player_swapper", purchaser, itemIdentifier )
+            shopHelpers.setupPlacable( "player_swapper", purchaser, itemIdentifier )
 
         end,
     },
@@ -341,7 +348,7 @@ local items = {
         weight = 20,
         shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "termhunt_immortalizer", purchaser, itemIdentifier )
+            shopHelpers.setupPlacable( "termhunt_immortalizer", purchaser, itemIdentifier )
 
         end,
     },
@@ -359,7 +366,25 @@ local items = {
         weight = 20,
         shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "termhunt_blessing", purchaser, itemIdentifier )
+            shopHelpers.setupPlacable( "termhunt_blessing", purchaser, itemIdentifier )
+
+        end,
+    },
+    ["infernalhecklers"] = {
+        name = "Infernal Hecklers",
+        desc = "Summon 3-4 infernal agents to heckle the living.\nIncreases Permanent Guilt\nCosts more to summon near innocent people, less when near evil souls.",
+        costDecorative = { "-50", "-800" },
+        shCost = 0,
+        markup = 1,
+        cooldown = 120,
+        tags = { "DEADGIFTS", "CloseShopOnPurchase" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = 30,
+        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
+        svOnPurchaseFunc = function( purchaser, itemIdentifier )
+            shopHelpers.setupPlacable( "glee_infernal_hecklers", purchaser, itemIdentifier )
 
         end,
     },
@@ -370,11 +395,11 @@ local items = {
         shCost = 0,
         markup = 1,
         cooldown = 0,
-        tags = { "DEADGIFTS", "CloseShopOnPurchase" },
+        tags = { "DEADGIFTS", "Divine", "CloseShopOnPurchase" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },
-        weight = 20,
+        weight = 31,
         shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase, function()
             if isCheats() then return true, nil end
             if GAMEMODE:isTemporaryTrueBool( "termhunt_divine_clap_initial" ) then return nil, "It's too soon to clap." end
@@ -383,7 +408,7 @@ local items = {
 
         end },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "glee_divine_clap", purchaser, itemIdentifier )
+            shopHelpers.setupPlacable( "glee_divine_clap", purchaser, itemIdentifier )
 
         end,
     },

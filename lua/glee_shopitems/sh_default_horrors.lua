@@ -1,16 +1,6 @@
 
 local shopHelpers = GAMEMODE.shopHelpers
 
-local function setupPlacable( class, purchaser, itemIdentifier )
-    local thing = ents.Create( class )
-    thing.itemIdentifier = itemIdentifier
-    thing:SetOwner( purchaser )
-    thing:Spawn()
-
-    return thing
-
-end
-
 
 local items = {
     ["point_and_click"] = {
@@ -26,7 +16,7 @@ local items = {
         },
         weight = -100,
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "glee_point_and_click", purchaser, itemIdentifier )
+            shopHelpers.setupPlacable( "glee_point_and_click", purchaser, itemIdentifier )
 
         end,
         shCanShowInShop = shopHelpers.escapedCheck,
@@ -43,7 +33,7 @@ local items = {
         },
         weight = 50,
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "glee_crate_heavyweapons", purchaser, itemIdentifier )
+            shopHelpers.setupPlacable( "glee_crate_heavyweapons", purchaser, itemIdentifier )
 
         end,
         shCanShowInShop = shopHelpers.escapedCheck,
@@ -60,7 +50,7 @@ local items = {
         },
         weight = 50,
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "glee_crate_score", purchaser, itemIdentifier )
+            shopHelpers.setupPlacable( "glee_crate_score", purchaser, itemIdentifier )
 
         end,
         shCanShowInShop = shopHelpers.escapedCheck,
@@ -77,7 +67,7 @@ local items = {
         },
         weight = 55,
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "glee_crate_tnt", purchaser, itemIdentifier )
+            shopHelpers.setupPlacable( "glee_crate_tnt", purchaser, itemIdentifier )
 
         end,
         shCanShowInShop = shopHelpers.escapedCheck,
@@ -94,25 +84,7 @@ local items = {
         },
         weight = 75,
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "glee_gascan_placer", purchaser, itemIdentifier )
-
-        end,
-        shCanShowInShop = shopHelpers.escapedCheck,
-    },
-    ["ghostly_wind"] = {
-        name = "Ghostly Wind",
-        desc = "Summon a strange gust of wind...",
-        shCost = 0,
-        costDecorative = "-75",
-        markup = 1,
-        cooldown = 0.5,
-        tags = { "HORRORS", "CloseShopOnPurchase" },
-        purchaseTimes = {
-            GAMEMODE.ROUND_ACTIVE,
-        },
-        weight = 100,
-        svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "glee_escapee_wind", purchaser, itemIdentifier )
+            shopHelpers.setupPlacable( "glee_gascan_placer", purchaser, itemIdentifier )
 
         end,
         shCanShowInShop = shopHelpers.escapedCheck,
@@ -129,7 +101,7 @@ local items = {
         },
         weight = 200,
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "glee_skullcache_placer", purchaser, itemIdentifier )
+            shopHelpers.setupPlacable( "glee_skullcache_placer", purchaser, itemIdentifier )
 
         end,
         shCanShowInShop = shopHelpers.escapedCheck,
@@ -147,13 +119,13 @@ local items = {
         weight = 100,
         shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "placable_barnacle", purchaser, itemIdentifier )
+            shopHelpers.setupPlacable( "placable_barnacle", purchaser, itemIdentifier )
 
         end,
     },
     ["thunderousapplause"] = {
-        name = "Thunderous Applause",
-        desc = "Let the Living, hear your utmost, divine gratitiude.\nUnlocks after 2 minutes, then a global 2 minute cooldown between uses.",
+        name = "Divine Applause",
+        desc = "Thunderous Applause.\nLet the Living, hear your utmost, thunderous gratitude.\nUnlocks after 2 minutes, then a global 2 minute cooldown between uses.",
         costDecorative = "-600",
         shCost = 0,
         markup = 1,
@@ -170,7 +142,7 @@ local items = {
 
         end },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "termhunt_thunderous_applause", purchaser, itemIdentifier )
+            shopHelpers.setupPlacable( "termhunt_thunderous_applause", purchaser, itemIdentifier )
 
         end,
     },

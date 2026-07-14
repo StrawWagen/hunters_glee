@@ -621,6 +621,17 @@ hook.Add( "OnNPCKilled", "glee_goodkilledhunters", function( npc, attacker )
 end )
 
 
+function GM:RegisterAsSpawnedHunter( hunter )
+    table.insert( self.glee_Hunters, hunter )
+    hunter:SetNW2Bool( "glee_IsHunter", true )
+    hunter.glee_IsAHunter = true
+    hunter.glee_SpawnsetThatMadeMe = self.CurrSpawnSetName
+
+    manageIfStale( hunter )
+
+end
+
+
 local randYawAng = Angle( 0, 0, 0 )
 
 function GM:SpawnHunter( class, currSpawn )
@@ -641,16 +652,13 @@ function GM:SpawnHunter( class, currSpawn )
     randYawAng.y = math.random( -180, 180 )
     hunter:SetAngles( randYawAng )
     hunter:Spawn()
-    table.insert( self.glee_Hunters, hunter )
-    hunter:SetNW2Bool( "glee_IsHunter", true )
-    hunter.glee_IsAHunter = true
     hunter.glee_SpawnArea = spawnArea -- so we can prefer to spawn enemies from this area, if this bot ends up killing someone!
-    hunter.glee_SpawnsetThatMadeMe = self.CurrSpawnSetName
-
     if currSpawn then
         hunter.glee_IsBoss = currSpawn.isBoss
 
     end
+
+    self:RegisterAsSpawnedHunter( hunter )
 
     print( hunter ) -- i like this print, you cannot make me remove it
     if debuggingVar:GetBool() then
@@ -660,8 +668,6 @@ function GM:SpawnHunter( class, currSpawn )
 
         end
     end
-
-    manageIfStale( hunter )
 
     return hunter
 

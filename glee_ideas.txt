@@ -296,3 +296,40 @@ put big messages ON TOP OF OTHER ELEMENTS
 roll of the dice as point return item?
 
 FAKE ATMS
+
+
+VAN teleport sequence
+find static beacon in map ( combine theme? )
+need to gas it up?
+starts countdown
+van will arrive after 60s
+violently arrives, dissolves anything near, in the room, massive explosion
+beep beep
+covered in friendly turrets?
+van is ready to pick people up
+sticks around for 30s
+then starts teleport away countdown
+fucks off
+
+if you teleport the gnome out you get +1000 score
+
+big room teleporter
+massive combine block of shit
+Need to find sacrificial models/props_combine/stalkerpod.mdl in the map
+
+
+rapture escape method
+on maps with skies
+submit yourself for judgement
+can only do it once a day? hour?
+
+
+self-ritual escape method
+infernal players can begin a ritual
+they, and other infernal players, cannot escape via it
+only way to reduce guilt
+also very profitable, like very very
+
+
+doritos playermodel nextbots
+term crowbars always swing if throw mul is low, unless really angry

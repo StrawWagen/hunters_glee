@@ -438,6 +438,7 @@ function ENT:Think()
     elseif state == "usable" then
 
         local path
+        local volume = 1
 
         if self:IsDormant() then
             path = ""
@@ -451,6 +452,11 @@ function ENT:Think()
         else
             path = "hunters_glee/music/VACANT/gleetm-hum_AMP.wav"
             is3d = true
+
+        end
+
+        if GAMEMODE.IsMusicPlaying and GAMEMODE:IsMusicPlaying() then
+            volume = 0.1
 
         end
 
@@ -470,7 +476,7 @@ function ENT:Think()
             end
             local music = CreateSound( source, path )
             music:SetSoundLevel( 70 )
-            music:PlayEx( 1, 100 )
+            music:PlayEx( volume, 100 )
 
             self.oldAtmMusic = music
             self:CallOnRemove( "glee_atm_stopmusic", function()
@@ -479,6 +485,9 @@ function ENT:Think()
                 musicRemoving:Stop()
 
             end )
+        else
+            self.oldAtmMusic:ChangeVolume( volume )
+
         end
     end
 end

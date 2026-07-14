@@ -90,7 +90,7 @@ function GM:IsInnocent( ply )
 
     local plysId = ply:SteamID()
 
-    -- have they been placing lots of beartraps?
+    -- have they been placing lots of evil items while dead?
     local totalEvilness = self.roundExtraData.generalMischievousness[plysId] or 0
 
     -- is this person a persistently evil presence?
@@ -207,13 +207,16 @@ function GM:OnKilledTrulyInnocentSoul( attacker, died )
     end )
 end
 
-hook.Add( "PlayerDeath", "glee_storeslights", function( died, _, attacker )
+hook.Add( "PlayerDeath", "glee_storeslights", function( died, inflictor, attacker )
     if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
 
     if not IsValid( attacker ) then return end
     if attacker == died then return end
 
     if not attacker:IsPlayer() then return end
+
+    -- this inflictor is guilt-free
+    if inflictor.glee_GuiltFreeInflictor then return end
 
     -- the chosen doesn't get guilt
     if attacker:HasStatusEffect( "divine_chosen" ) then return end
@@ -290,7 +293,7 @@ hook.Add( "EntityTakeDamage", "huntersglee_makepvpreallybad", function( dmgTarg,
     else
         -- for items that should always do full damage
         -- eg, items placed by dead players
-        if inflictor and inflictor.glee_AlwaysFullPVPDamage then
+        if inflictor and inflictor.glee_GuiltFreeInflictor then
             return
 
         end
@@ -392,12 +395,12 @@ end )
 
 local developerVar = GetConVar( "developer" )
 
-concommand.Add( "glee_resetguilt", function( caller, _, args )
+concommand.Add( "glee_test_guilt_reset", function( caller, _, args )
     if IsValid( caller ) and not caller:IsAdmin() then return end
 
     local steamId = args[1]
     if not steamId then
-        print( "Usage: glee_resetguilt <steamid>" )
+        print( "Usage: glee_test_guilt_reset <steamid>" )
         return
 
     end
@@ -413,6 +416,30 @@ concommand.Add( "glee_resetguilt", function( caller, _, args )
         print( "GLEE: Reset guilt for offline player " .. steamId )
 
     end
+end )
+
+concommand.Add( "glee_test_guilt_adddays", function( caller, _, args )
+    if IsValid( caller ) and not caller:IsAdmin() then return end
+
+    local steamId = args[1]
+    local days = tonumber( args[2] )
+    if not steamId or not days then
+        print( "Usage: glee_test_guilt_adddays <steamid> <days>" )
+        return
+
+    end
+
+    -- IncrementPersistentGuilt works off a live player ( GetPData/SetPData/net ), so they must be online
+    local ply = player.GetBySteamID( steamId )
+    if not IsValid( ply ) then
+        print( "GLEE: glee_test_guilt_adddays needs " .. steamId .. " to be online." )
+        return
+
+    end
+
+    GAMEMODE:IncrementPersistentGuilt( ply, days )
+    print( "GLEE: Added " .. days .. " guilt days to " .. ply:Nick() .. " (" .. steamId .. "), now at " .. GAMEMODE:GetStoredPersistentGuilt( ply ) .. " days." )
+
 end )
 
 hook.Add( "glee_onkilledtrulyinnocentsoul", "glee_incrementpersistentguilt", function( attacker, _died )

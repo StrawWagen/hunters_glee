@@ -210,7 +210,7 @@ end )
 
 local hasSpawned = {}
 
-hook.Add( "PlayerSpawn", "glee_chargeplayersbatteries", function( spawned )
+hook.Add( "glee_true_PlayerSpawn", "glee_chargeplayersbatteries", function( spawned )
     -- fully charge while round is inactive
     -- or if this is their first time spawning into the session
     if hasSpawned[spawned] and GAMEMODE:RoundState() == GAMEMODE.ROUND_ACTIVE then return end

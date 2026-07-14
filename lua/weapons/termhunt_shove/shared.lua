@@ -272,10 +272,20 @@ do
 
     local isGlee = GAMEMODE.ISHUNTERSGLEE
 
-    local allowedTurnRate = 8
-    local fullSprintSpeedAdd = 250 -- doesn't buff quite up to this, probably the engine trying to slow down the player
+    local allowedTurnRate = 10
+    local fullSprintSpeedAdd = 200 -- doesn't buff quite up to this, probably the engine trying to slow down the player
     local startPlayingFastRun = fullSprintSpeedAdd / 4
     local sprintRamp = 1.003
+
+    if isGlee then
+        GAMEMODE.FullSprintSpeedAdd = fullSprintSpeedAdd
+
+        function GAMEMODE:GetFullBoostedSprint( ply )
+            local boost = earnedSpeed[ply]
+            return boost
+
+        end
+    end
 
     function SWEP:TranslateActivity( act )
         local fastRunning
@@ -390,7 +400,7 @@ do
 
     end )
 
-    hook.Add( "FinishMove", "glee_shove_sprint_finishmove", function( ply, mv )
+    hook.Add( "FinishMove", "glee_shove_sprint_finishmove", function( ply )
         if not newSpeeds[ply] then return end
         if not IsFirstTimePredicted() then return end
         local newVal = newSpeeds[ply]
@@ -416,9 +426,38 @@ do
     end )
 
     if SERVER then
+        hook.Add( "PlayerFootstep", "glee_shove_sprintstepshake", function( ply, _, foot )
+            local speed = earnedSpeed[ply]
+            if not speed then return end
+
+            local boost = speed - ply:GetRunSpeed()
+
+            local pitch = -boost / 750
+            local yaw = pitch / 2
+            if foot == 0 then -- left
+                yaw = -yaw
+
+            end
+
+            ply:ViewPunch( Angle( pitch, yaw ) )
+
+        end )
         hook.Add( "PlayerDisconnected", "glee_shove_sprint_cleanup", function( ply )
             cleanup( ply )
 
         end )
+    elseif CLIENT then
+        function SWEP:CalcView( ply, _pos, _ang, fov )
+            local speed = earnedSpeed[ply]
+            if speed then
+                local boost = speed - ply:GetRunSpeed()
+                local fovDivisorBite = ply:GetFOV() / 2 -- bigger bite if players have wider default fov
+                local fovBite = boost / ( 200 - fovDivisorBite )
+                fov = fov - fovBite
+
+            end
+            return _pos, _ang, fov
+
+        end
     end
 end

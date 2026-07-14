@@ -12,7 +12,7 @@ util.AddNetworkString( "GLEE_PDM:UpdatePlyHull" )
 local dontActivateMax = 78
 local dontActivateMin = 65
 
-local defaultWidthMul = 0.75
+local defaultWidthMul = 0.85
 
 local function SetupCharacterChars( name )
     local character_chars = { -- default character stats

@@ -173,6 +173,7 @@ function shopHelpers.getItemsInCategory( category )
     end
 
     return items
+
 end
 
 function shopHelpers.getItemsByTag( tag )
@@ -187,4 +188,15 @@ function shopHelpers.getItemsByTag( tag )
     end
 
     return items
+
+end
+
+function shopHelpers.setupPlacable( class, purchaser, itemIdentifier )
+    local thing = ents.Create( class )
+    thing.itemIdentifier = itemIdentifier
+    thing:SetOwner( purchaser )
+    thing:Spawn()
+
+    return thing
+
 end

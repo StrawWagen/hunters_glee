@@ -21,8 +21,8 @@ local RESET_ICON_PATH   = "icon16/arrow_rotate_anticlockwise.png"
 local RESET_ICON_SIZE   = 16   -- static pixels
 local RESET_ICON_PADTOP = 4    -- distance from top edge of a row
 local RESET_ICON_PADR   = 4    -- distance from right edge of a row
-local RESET_ICON_COLOR  = Color(255, 255, 255, 255)
-local RESET_ICON_COLOR_HOVER = Color(255, 255, 255, 255)
+local RESET_ICON_COLOR  = Color( 255, 255, 255, 255 )
+local RESET_ICON_COLOR_HOVER = Color( 255, 255, 255, 255 )
 local resetIconMat = Material( RESET_ICON_PATH, "smooth" )
 
 -- Helper to close and reopen the settings menu (useful after scale changes)

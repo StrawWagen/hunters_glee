@@ -22,11 +22,23 @@ local function getEffectiveVol( baseVol )
 
 end
 
-cvars.AddChangeCallback( "cl_huntersglee_musicvolume", function( _, _, _ )
+local function isPlaying()
     if not currentSound then return end
+    if not IsValid( currentSound.channel ) then return end
+
+    return true
+
+end
+
+function GM:IsMusicPlaying()
+    return isPlaying()
+
+end
+
+cvars.AddChangeCallback( "cl_huntersglee_musicvolume", function( _, _, _ )
+    if not isPlaying() then return end
     if currentSound.fadeIn.active then return end  -- next Think will pick up the new value naturally
     if currentSound.fade.active   then return end  -- fading out, new sound will get correct volume when it starts
-    if not IsValid( currentSound.channel ) then return end
     currentSound.channel:SetVolume( getEffectiveVol( currentSound.vol ) )
 
 end, "huntersglee_musicvolume_update" )
@@ -113,7 +125,7 @@ local function stopAndClear()
 end
 
 local function beginFade( path, pitch, vol, fadeInLength, fadeOutLength, entity, startFadeOutDist, endFadeOutDist )
-    if not currentSound or not IsValid( currentSound.channel ) then
+    if not isPlaying() then
         startSound( path, pitch, vol, 0, fadeInLength, fadeOutLength, entity, startFadeOutDist, endFadeOutDist )
         return
 

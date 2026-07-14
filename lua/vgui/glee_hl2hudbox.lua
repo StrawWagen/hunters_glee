@@ -56,6 +56,38 @@ local function syncSize( self )
 end
 
 
+-- Greedy word wrap. Returns the text with newlines inserted, so AutoSize and
+-- Paint keep treating it as a plain multi-line string.
+local function wrapToWidth( text, font, maxWidth )
+    surface.SetFont( font )
+
+    local lines = {}
+
+    for _, paragraph in ipairs( string.Explode( "\n", text ) ) do
+        local line = ""
+
+        for _, word in ipairs( string.Explode( " ", paragraph ) ) do
+            local try = ( line == "" ) and word or ( line .. " " .. word )
+
+            if line ~= "" and surface.GetTextSize( try ) > maxWidth then
+                lines[#lines + 1] = line
+                line = word
+
+            else
+                line = try
+
+            end
+        end
+
+        lines[#lines + 1] = line
+
+    end
+
+    return table.concat( lines, "\n" )
+
+end
+
+
 local PANEL = {
     STATE_HIDDEN = 0,
     STATE_FADING = 1,
@@ -68,6 +100,8 @@ local PANEL = {
         self._paddingRatio = 0.4
         self._mat          = nil
         self._text         = nil
+        self._rawText      = nil
+        self._maxTextWidth = nil
         self._font         = "DermaDefault"
         self._textPadding  = glee_sizeScaled( nil, 8 )
         self._cornerRadius = terminator_Extras.glee_HL2Hud.boxCornerRadius
@@ -153,14 +187,28 @@ local PANEL = {
     end,
 
     -- Sets text to draw centered. Clears any active material.
+    -- Wrapped to SetMaxTextWidth if one is set.
     SetText = function( self, text )
-        self._text = text
-        self._mat  = nil
+        self._rawText = text
+        self._text    = self._maxTextWidth and wrapToWidth( text, self._font, self._maxTextWidth ) or text
+        self._mat     = nil
+
+    end,
+
+    -- Wrap text at this pixel width. nil ( the default ) leaves text unwrapped.
+    SetMaxTextWidth = function( self, width )
+        self._maxTextWidth = width
+        if not self._rawText then return end
+
+        self:SetText( self._rawText )
 
     end,
 
     SetIconFont = function( self, font )
         self._font = font
+        if not self._rawText then return end
+
+        self:SetText( self._rawText ) -- widths changed, so any wrap is stale
 
     end,
 

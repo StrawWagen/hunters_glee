@@ -15,6 +15,11 @@ function GM:RegisterStatusEffect( name, setup, teardown, data )
     }
 end
 
+function GM:GetRegisteredStatusEffect( name )
+    return self.RegisteredStatusEffects[name]
+
+end
+
 function plyMeta:HasStatusEffect( name )
     if not self.glee_StatusEffects then return end
 
@@ -57,6 +62,8 @@ function plyMeta:GiveStatusEffect( name )
     local nw2Name = nw2NamePrefix .. name
     self:SetNW2Bool( nw2Name, true )
 
+    return effect
+
 end
 
 function plyMeta:RemoveStatusEffect( name )
@@ -79,6 +86,25 @@ function GM:GetAllPlayersWithStatusEffect( name )
 
     for _, ply in ipairs( player.GetAll() ) do
         if not ply:HasStatusEffect( name ) then continue end
+        table.insert( playersWith, ply )
+
+    end
+
+    return playersWith
+
+end
+
+function GM:GetAllPlayersWithAStatusEffect( names )
+    local playersWith = {}
+
+    for _, ply in ipairs( player.GetAll() ) do
+        local has
+        for _, name in ipairs( names ) do
+            if not ply:HasStatusEffect( name ) then continue end
+            has = true
+
+        end
+        if not has then continue end
         table.insert( playersWith, ply )
 
     end
