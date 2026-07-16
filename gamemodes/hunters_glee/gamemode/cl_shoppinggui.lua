@@ -319,7 +319,7 @@ function termHuntOpenTheShop()
                 textFirstHalf = "Sending Credentials"
 
             elseif percent < 90 then
-                textFirstHalf = "Recieving Catalog"
+                textFirstHalf = "Receiving Catalog"
 
             else
                 textFirstHalf = "Verifying Cache"
