@@ -232,6 +232,7 @@ local flatEscapingReward = 500
 local rewardEveryoneEscaped = 1000 -- additional if everyone escaped
 local rewardPerSkull = 100
 local perSkullEveryoneEscaped = 200 -- additional per skull if everyone escaped
+local rewardForMaxwell = 1000
 
 function GM:GiveEscapeRewardTo( ply )
     local setName = GAMEMODE:GetSpawnSet()
@@ -321,6 +322,15 @@ function GM:GiveEscapeRewardTo( ply )
         end
         if totalSkullsToReward <= 0 then
             timer.Remove( timerName )
+            if string.find( ply:GetEscapeSweps(), "glee_maxwell_weapon", 1, false ) then
+                timer.Simple(2,function()
+                    if not IsValid( ply ) then return end
+                    local rewardMsg = "+" .. rewardForMaxwell.. " Score for saving Maxwell last round!"
+                    huntersGlee_AnnounceDramatic( { ply }, 1001, 4, rewardMsg )
+                    ply:EmitSound( "hunters_glee/209578_zott820_cash-register-purchase.wav", 75, 1, 1, CHAN_STATIC, SND_NOFLAGS, 0, ply )
+                    ply:GivePlayerScore( rewardForMaxwell )
+                end )
+            end
             return
 
         end

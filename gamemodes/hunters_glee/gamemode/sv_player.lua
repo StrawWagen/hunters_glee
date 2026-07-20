@@ -607,6 +607,7 @@ end
 
 function GM:escapifyPlayer( ply )
     --ErrorNoHaltWithStack( "B ", ply )
+    ply:SetEscapeSweps( ply:GetWeapons() )
 
     hook.Run( "glee_ply_escaped", ply )
 

@@ -64,6 +64,11 @@ function meta:GetSkulls()
 
 end
 
+function meta:GetEscapeSweps()
+    return self:GetNWString( "huntersglee_escapesweps", "" )
+
+end
+
 function meta:HasEscaped()
     return self:GetNWInt( "glee_spectateteam", 0 ) == GAMEMODE.TEAM_ESCAPED
 
@@ -119,6 +124,11 @@ if SERVER then
     function meta:ResetSkulls()
         self:SetNWInt( "huntersglee_skulls", 0 )
 
+    end
+
+    function meta:SetEscapeSweps( sweps )
+        local str = table.ToString( sweps, nil, nil)
+        self:SetNWString( "huntersglee_escapesweps", str )
     end
 
     local math = math
