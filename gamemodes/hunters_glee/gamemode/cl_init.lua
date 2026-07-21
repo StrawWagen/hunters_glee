@@ -539,3 +539,17 @@ function GM:SendFakeInZoom()
     net.SendToServer()
 
 end
+
+net.Receive( "ChameleonHands", function()
+    local bool = net.ReadBool()
+        
+    hook.Add( "PreDrawPlayerHands", "DrawChameleonHands", function()
+        if bool == true then
+            render.SetBlend( 0.5 )
+        else
+            render.SetBlend( 1 )
+            hook.Remove( "PreDrawPlayerHands", "DrawChameleonHands" )
+        end
+    end )
+end )
+
