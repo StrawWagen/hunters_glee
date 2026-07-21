@@ -485,11 +485,17 @@ if SERVER then
             function self:Chameleonize()
                 owner:Fire( "alpha", 20, 0 )
                 owner:SetRenderMode( RENDERMODE_TRANSALPHA )
+                net.Start( "ChameleonHands" )
+                    net.WriteBool( true )
+                net.Send( owner )
 
             end
             function self:UnChameleonize()
                 owner:Fire( "alpha", 255, 0 )
                 owner:SetRenderMode( RENDERMODE_NORMAL )
+                net.Start( "ChameleonHands" )
+                    net.WriteBool( false )
+                net.Send( owner )
 
             end
 
