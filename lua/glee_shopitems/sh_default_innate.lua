@@ -490,7 +490,7 @@ if SERVER then
             function self:UnChameleonize()
                 owner:Fire( "alpha", 255, 0 )
                 owner:SetRenderMode( RENDERMODE_NORMAL )
-                
+
             end
 
             self.chameleonColorRestore = chameleonColorRestore
