@@ -1364,7 +1364,7 @@ local items = {
     },
     ["temporaldiceroll"] = {
         name = "Roll of the dice.",
-        desc = "Roll the temporal dice.\n8 seconds after purchasing, you are teleported to a completely random part of the map.",
+        desc = "Roll the temporal dice, get yourself unstuck.\n8 seconds after purchasing, you are teleported to a completely random part of the map.",
         shCost = 75,
         markup = 1.5,
         markupPerPurchase = 1,

@@ -82,7 +82,7 @@
 -- dont respawn next to people you have homicided -- DONE!
 -- does bot over-predict when people juke it towards it --no, done
 
--- pull nails rclick? --NO
+-- pull nails rclick? --DONE
 
 -- do intro if 1 player online and its their first time --DONE!
 -- check brutalist kfc doors -- DONE
@@ -97,7 +97,6 @@
 -- bot avoid damaging ents idea, needs path building pass. -- done
 -- bot placing of slams + beartrap --done
 
--- Replace stupid temp bools with ints, polish conduit/inversion cooldowns
 -- fix stupid visual immortalizer bug -- done?
 
 -- blessing -- done
@@ -135,6 +134,10 @@
 --    become ghost, leave body
 --    real body, drop server ragdoll, with skull
 --    cannot be revived
+
+-- directly say that roll of the dice is for unstucking -done
+
+-- Replace stupid temp bools with ints, polish conduit/inversion cooldowns
 
 -- effigy
 -- pushes dead people away, makes them look away
@@ -176,7 +179,6 @@
 
 -- make first time hint defer to escape menu
 
--- directly say that roll of the dice is for unstucking
 -- hint to flash tab?
 
 -- voting for modes is not that new user friendly

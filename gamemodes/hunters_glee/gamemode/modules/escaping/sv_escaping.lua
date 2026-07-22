@@ -236,8 +236,8 @@ local perSkullEveryoneEscaped = 200 -- additional per skull if everyone escaped
 function GM:GiveEscapeRewardTo( ply )
     local setName = GAMEMODE:GetSpawnSet()
 
-    local mapsEscapeMultiplier, mapsEscCount, mapsRemCount = GAMEMODE:GetMapsEscapeMultiplier( game.GetMap() )
-    local spawnsetsEscapeMultiplier, spawnsetsEscCount, spawnsetsRemCount = GAMEMODE:GetSpawnsetsEscapeMultiplier( setName )
+    local mapsEscapeMultiplier, mapsEscCount, _mapsRemCount = GAMEMODE:GetMapsEscapeMultiplier( game.GetMap() )
+    local spawnsetsEscapeMultiplier, spawnsetsEscCount, _spawnsetsRemCount = GAMEMODE:GetSpawnsetsEscapeMultiplier( setName )
 
     local theMultiplier = mapsEscapeMultiplier * spawnsetsEscapeMultiplier
 
