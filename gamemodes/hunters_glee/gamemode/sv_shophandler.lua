@@ -25,7 +25,7 @@ function GM:purchaseItem( ply, toPurchase )
         if not purchasable then
             if not notPurchasableReason then return end
             if ply:IsBot() then
-                print( notPurchasableReason ) -- we need to know WHY!!!
+                permaPrint( notPurchasableReason ) -- we need to know WHY!!!
 
             else
                 ply:PrintMessage( HUD_PRINTTALK, notPurchasableReason )
@@ -84,7 +84,7 @@ function GM:purchaseItem( ply, toPurchase )
 
         if game.IsDedicated() then -- 'log' shop item purchases 
             local nameAndId = ply:GetName() .. "[" .. ply:SteamID() .. "]"
-            print( nameAndId .. " Bought: " .. dat.name  )
+            permaPrint( nameAndId .. " Bought: " .. dat.name  )
 
         end
 

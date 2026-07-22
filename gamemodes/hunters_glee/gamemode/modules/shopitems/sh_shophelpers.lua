@@ -192,8 +192,10 @@ function shopHelpers.getItemsByTag( tag )
 end
 
 function shopHelpers.setupPlacable( class, purchaser, itemIdentifier )
+    local itemData = GAMEMODE:GetShopItemData( itemIdentifier )
     local thing = ents.Create( class )
     thing.itemIdentifier = itemIdentifier
+    thing.canGoInDebt = itemData.canGoInDebt
     thing:SetOwner( purchaser )
     thing:Spawn()
 

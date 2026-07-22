@@ -28,7 +28,7 @@ concommand.Add( "glee_test_highlightallareaswithflag", function( ply, cmd, args 
     if not flags then return end
 
     local areas = GAMEMODE:GetAreasWithEFlags( flags )
-    print( "Highlighting " .. #areas .. " areas with flag " .. flags )
+    permaPrint( "Highlighting " .. #areas .. " areas with flag " .. flags )
 
     for _, area in ipairs( areas ) do
         local center = area:GetCenter()

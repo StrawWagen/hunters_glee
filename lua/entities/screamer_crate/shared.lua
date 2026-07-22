@@ -184,9 +184,11 @@ if CLIENT then
             placinCostStr = "Deposit: " .. tostring( deposit )
 
             scoreString = stringPt1 .. tostring( scoreGained + deposit )
+
         else
             stringPt1 = "Hunter luring cost: "
             scoreString = stringPt1 .. tostring( scoreGained )
+
         end
 
         surface.drawShadowedTextBetter( scoreString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
@@ -437,7 +439,7 @@ function ENT:CalculateCanPlace()
 
     if IsHullTraceFull( checkPos, self.HullCheckSize, self ) then return false, self.noPurchaseReason_NoRoom end
     if getNearestNavFloor( checkPos ) == NULL then return false, self.noPurchaseReason_OffNavmesh end
-    if not self:HasEnoughToPurchase() then return false, self:TooPoorString() end
+    if not self:HasEnoughToPurchase() and not self.canGoInDebt then return false, self:TooPoorString() end
     return true
 
 end
@@ -627,7 +629,8 @@ function ENT:ColorThink()
     end
     self.canShow = canShow
 
-    local canPlace = self:GetCanPlace()
+    local canPlace = self:GetCanPlace() and self:HasEnoughToPurchase()
+    canPlace = canPlace or false -- never nil
 
     if self.couldPlace ~= canPlace then
         if not canPlace then

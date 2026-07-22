@@ -8,7 +8,7 @@ local GAMEMODE = GAMEMODE or GM
 local debuggingVar = CreateConVar( "huntersglee_debug_hunterspawner", 0 )
 local function debugPrint( ... )
     if not debuggingVar:GetBool() then return end
-    print( ... )
+    permaPrint( ... )
 
 end
 
@@ -660,7 +660,7 @@ function GM:SpawnHunter( class, currSpawn )
 
     self:RegisterAsSpawnedHunter( hunter )
 
-    print( hunter ) -- i like this print, you cannot make me remove it
+    permaPrint( hunter ) -- i like this print, you cannot make me remove it
     if debuggingVar:GetBool() then
         local nearestPly = self:nearestAlivePlayer( spawnPos )
         if IsValid( nearestPly ) then
@@ -997,8 +997,8 @@ end
 
 concommand.Add( "glee_printcurrent_difficulty", function( caller )
     if IsValid( caller ) and not caller:IsAdmin() then return end
-    print( "Session diff:", GAMEMODE.currWaveDifficulty )
-    print( "Round diff bump:", GAMEMODE.roundDiffBump, "With last reason:", GAMEMODE.lastRoundDiffBumpReason )
-    print( "Persistient session diff bump:", GAMEMODE.sessionDiffBump, "With last reason:", GAMEMODE.lastSessionDiffBumpReason )
+    permaPrint( "Session diff:", GAMEMODE.currWaveDifficulty )
+    permaPrint( "Round diff bump:", GAMEMODE.roundDiffBump, "With last reason:", GAMEMODE.lastRoundDiffBumpReason )
+    permaPrint( "Persistient session diff bump:", GAMEMODE.sessionDiffBump, "With last reason:", GAMEMODE.lastSessionDiffBumpReason )
 
 end )

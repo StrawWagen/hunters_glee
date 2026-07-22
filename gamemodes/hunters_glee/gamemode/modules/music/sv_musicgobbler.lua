@@ -17,7 +17,7 @@ function GM:MusicInitialThink()
     end
 
     local count = table.Count( self.musicTracks )
-    print( "GLEE: Gobbled " .. count .. " music tracks..." )
+    permaPrint( "GLEE: Gobbled " .. count .. " music tracks..." )
 
     self.GobbledMusicTracks = true
     hook.Run( "glee_post_musicgobble" )
@@ -33,7 +33,7 @@ function GM:GobbleMusicTracks( tracks )
 
     -- Alert, should only happen if something misuses the gobbler or if files are being re-run for dev testing.
     if self.GobbledMusicTracks then
-        print( "GLEE: !!!!!!!!!! Gobbled music tracks late, you must run gmod_admin_cleanup to apply the changes !!!!!!!!!!!" )
+        permaPrint( "GLEE: !!!!!!!!!! Gobbled music tracks late, you must run gmod_admin_cleanup to apply the changes !!!!!!!!!!!" )
 
     end
 end

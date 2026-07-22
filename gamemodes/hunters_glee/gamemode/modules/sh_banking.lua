@@ -117,12 +117,12 @@ if SERVER then
                 if bankFunctions.shouldPeriodChargeAccount( account ) ~= true then continue end
 
                 local chargedAmount = bankFunctions.periodChargeBankAccount( account )
-                print( "GLEE: " .. steamID .. "'s bank account was charged " .. chargedAmount .. " " .. account.funds .. " in idle fees." )
+                permaPrint( "GLEE: " .. steamID .. "'s bank account was charged " .. chargedAmount .. " " .. account.funds .. " in idle fees." )
 
                 --this doesnt care about cheat funds
                 if account.funds >= gleefunc_BankMinFunds() then continue end
 
-                print( "GLEE: " .. steamID .. "'s bank account was closed." )
+                permaPrint( "GLEE: " .. steamID .. "'s bank account was closed." )
                 bankFunctions.closeAccount( steamID )
 
             end
@@ -312,10 +312,10 @@ if SERVER then
         local printCount = math.min( #sorted, maxToPrint )
         local startIndex = #sorted - printCount + 1
 
-        print( "GLEE: Showing " .. printCount .. " of " .. #sorted .. " bank accounts ( lowest to highest balance ):" )
+        permaPrint( "GLEE: Showing " .. printCount .. " of " .. #sorted .. " bank accounts ( lowest to highest balance ):" )
         for i = startIndex, #sorted do
             local entry = sorted[i]
-            print( string.format( "  %2d. %12.1f  %s  ( %s )", i - startIndex + 1, entry.funds, entry.ownersName, entry.steamID ) )
+            permaPrint( string.format( "  %2d. %12.1f  %s  ( %s )", i - startIndex + 1, entry.funds, entry.ownersName, entry.steamID ) )
 
         end
     end )

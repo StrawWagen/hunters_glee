@@ -370,21 +370,26 @@ local items = {
 
         end,
     },
-    ["infernalhecklers"] = {
-        name = "Infernal Hecklers",
-        desc = "Summon 3-4 infernal agents to heckle the living.\nIncreases Permanent Guilt\nCosts more to summon near innocent people, less when near evil souls.",
-        costDecorative = { "-50", "-800" },
+    ["infernalheckler"] = {
+        name = "Infernal Heckler",
+        desc = "Summon an infernal agent\nCosts more to summon near innocent people, less when near evil souls.",
+        costDecorative = { "-50", "-400" },
         shCost = 0,
+        canGoInDebt = true,
         markup = 1,
-        cooldown = 120,
-        tags = { "DEADGIFTS", "CloseShopOnPurchase" },
+        cooldown = function( purchaser )
+            if purchaser:HasEscaped() then return 5 end
+            return 120
+
+        end,
+        tags = { "DEADGIFTS", "Infernal", "CloseShopOnPurchase" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = 30,
         shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            shopHelpers.setupPlacable( "glee_infernal_hecklers", purchaser, itemIdentifier )
+            shopHelpers.setupPlacable( "glee_infernal_heckler", purchaser, itemIdentifier )
 
         end,
     },

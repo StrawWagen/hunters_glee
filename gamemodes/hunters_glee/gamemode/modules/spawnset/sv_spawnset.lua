@@ -108,7 +108,7 @@ function GM:IsValidSpawnSet( spawnSet )
         local name = spawn.name
         if not isstring( name ) then
             PrintTable( spawn )
-            print( spawn.name )
+            permaPrint( spawn.name )
             yapErr( spawnSet, "entry " .. ind .. " has invalid .name in .spawns" )
             return
 
@@ -239,7 +239,7 @@ function GM:SetSpawnSet( setName )
 
     if oldSetName ~= setName then
         hook.Run( "glee_post_new_spawnset", setName, spawnSet, oldSetName )
-        print( "GLEE: Mode set to, " .. setName )
+        permaPrint( "GLEE: Mode set to, " .. setName )
 
     else
         hook.Run( "glee_post_refresh_spawnset", setName, spawnSet, oldSetName )
@@ -251,10 +251,10 @@ function GM:SetSpawnSet( setName )
 end
 
 function GM:RegisterSpawnSet( spawnSet )
-    if not self:IsValidSpawnSet( spawnSet ) then print( "GLEE: tried to register inavlid spawnset" ) return end
+    if not self:IsValidSpawnSet( spawnSet ) then permaPrint( "GLEE: tried to register inavlid spawnset" ) return end
 
     local exists = self.RegisteredSpawnSets[spawnSet.name]
-    if exists then print( "GLEE, overriding old " .. spawnSet.name .. " spawnSet" ) end
+    if exists then permaPrint( "GLEE, overriding old " .. spawnSet.name .. " spawnSet" ) end
 
     self.RegisteredSpawnSets[spawnSet.name] = spawnSet
 
@@ -292,9 +292,9 @@ local function postSetSpawnset( new ) -- validate the spawnset cvar
     if not GAMEMODE:IsValidSpawnSet( new ) then
         if GAMEMODE:IsValidSpawnSet( defaultSpawnSetName ) then
             RunConsoleCommand( "huntersglee_spawnset", defaultSpawnSetName )
-            print( "Valid spawnsets are..." )
+            permaPrint( "Valid spawnsets are..." )
             for _, set in SortedPairsByMemberValue( GAMEMODE:GetSpawnSets(), "name" ) do
-                print( set.name )
+                permaPrint( set.name )
 
             end
         end
@@ -336,7 +336,7 @@ function GM:SpawnSetInitialThink()
 
         end
     end
-    print( "GLEE: Gobbled " .. count .. " spawnsets..." )
+    permaPrint( "GLEE: Gobbled " .. count .. " spawnsets..." )
     GLEE_SPAWNSETS = nil
 
     self.GobbledSpawnsets = true
@@ -344,7 +344,7 @@ function GM:SpawnSetInitialThink()
 
     local spawnSetPicked = spawnSetVar:GetString()
     if not self:IsValidSpawnSet( spawnSetPicked ) then
-        print( "GLEE: INVALID SPAWNSET " .. spawnSetPicked )
+        permaPrint( "GLEE: INVALID SPAWNSET " .. spawnSetPicked )
         spawnSetPicked = defaultSpawnSetName
         RunConsoleCommand( "huntersglee_spawnset", spawnSetPicked )
 
@@ -367,6 +367,6 @@ hook.Add( "huntersglee_emptyserver", "glee_reset_spawnset", function( wasEmpty )
     local name = GAMEMODE:GetSpawnSet()
     if name == defaultSpawnSetName then return end
     RunConsoleCommand( "huntersglee_spawnset", defaultSpawnSetName )
-    print( "GLEE: reset spawnset on empty server" )
+    permaPrint( "GLEE: reset spawnset on empty server" )
 
 end )

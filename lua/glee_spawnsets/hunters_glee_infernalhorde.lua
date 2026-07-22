@@ -10,7 +10,7 @@ local set = {
     spawnCountPerDifficulty = "default",
     startingSpawnCount = "default*5",
     maxSpawnCount = { 40 }, -- hard cap on count
-    maxSpawnDist = "default*0.5",
+    maxSpawnDist = "default*0.5", -- spawn close, these cant pathfind
     roundEndSound = "default",
     roundStartSound = "default",
     chanceToBeVotable = 1,
@@ -19,7 +19,7 @@ local set = {
         {
             hardRandomChance = nil,
             name = "infernalskele", -- unique name
-            prettyName = "An Infernal Skeleton",
+            prettyName = "An Infernal Heckler",
             class = "terminator_nextbot_infernalskeleton", -- class spawned
             spawnType = "hunter",
             difficultyCost = 2,
@@ -27,6 +27,26 @@ local set = {
                 spawned.SpawnHeadlessChance = 85
 
             end,
+        },
+        {
+            hardRandomChance = nil,
+            name = "infernalskele_big_EARLY", -- unique name
+            prettyName = "An Infernal Sentinel",
+            class = "terminator_nextbot_infernalskeleton_big", -- class spawned
+            spawnType = "hunter",
+            difficultyCost = { 100, 200 },
+            countClass = "terminator_nextbot_infernalskeleton_big",
+            maxCount = { 1 },
+        },
+        {
+            hardRandomChance = nil,
+            name = "infernalskele_big_LATE", -- unique name
+            prettyName = "An Infernal Sentinel",
+            class = "terminator_nextbot_infernalskeleton_big", -- class spawned
+            spawnType = "hunter",
+            difficultyCost = { 500, 1000 },
+            countClass = "terminator_nextbot_infernalskeleton_big",
+            maxCount = { 10 },
         },
     }
 }

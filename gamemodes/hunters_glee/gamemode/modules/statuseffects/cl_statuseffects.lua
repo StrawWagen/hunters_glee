@@ -54,7 +54,7 @@ function plyMeta:StatusEffectApplyCL( name ) -- no way to give status effects on
 
     self:CallOnRemove( "glee_statuseffectcleanup_" .. name, function()
         if developerVar:GetBool() then
-            print( "statuseffect ", name, " being removed on ply removal for ", self )
+            permaPrint( "statuseffect ", name, " being removed on ply removal for ", self )
 
         end
 
@@ -84,7 +84,7 @@ do
 
         local effectName = string.sub( varName, #nw2NamePrefix + 1 )
         if developerVar:GetBool() then
-            print( "statuseffect ", effectName, " changed to ", new, "for ", ent )
+            permaPrint( "statuseffect ", effectName, " changed to ", new, "for ", ent )
 
         end
 

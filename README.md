@@ -170,6 +170,159 @@ end )
 
 ```
 
+---
+
+### Status Effects
+
+A status effect is a named bundle of hooks and timers living on one player.
+It's the best way to modify player stats, behaviour.
+Used by innate items, spawn protection, etc.
+The point is teardown: you never have to remember the hook identifiers or timer names you made, removing the effect removes all of them.
+
+Register the effect once at load time, then hand it out at runtime:
+
+```lua
+if SERVER then
+    GAMEMODE:RegisterStatusEffect( "caffeinated",
+        function( self, owner ) -- setup
+            owner:DoSpeedModifier( "caffeinated", 100 ) -- speed boost
+
+            self:Timer( "the_jitters", 3, 0, function() -- play a random sound on em
+                owner:EmitSound( "buttons/blip1.wav", 60, math.random( 90, 130 ) )
+
+            end )
+
+            -- example of statusEffect:Hook, creates a hook for everyone with this statuseffect
+            self:Hook( "PlayerSay", function( speaker, text )
+                if speaker ~= owner then return end -- every effect gets a hook
+
+                return string.upper( text ) .. "!!!"
+
+            end )
+
+            -- example of statusEffect:HookOnce, creates only 1 hook, cleans it up when nobody has the status effect anymore
+            self:HookOnce( "PlayerFootstep", function( ply )
+                if not ply:HasStatusEffect( "caffeinated" ) then return end -- only one hook exists, owner is useless
+
+                ply:EmitSound( "buttons/blip1.wav", 50, 140 )
+
+            end )
+        end,
+        function( _, owner ) -- teardown, optional
+            owner:DoSpeedModifier( "caffeinated", nil ) -- back to normal speed
+
+        end
+    )
+
+    ply:GiveStatusEffect( "caffeinated" )
+end
+```
+
+The timer and both hooks are removed for you when the effect is. Only write a teardown
+func for things you didn't make through `self`, like that speed modifier.
+
+`Hook` gives every affected player their own copy of the hook, which is why it can filter
+on `owner`. `HookOnce` adds a single hook no matter how many players have the effect, so
+prefer it for anything that fires a lot. The catch is you have to check `ply:HasStatusEffect`
+since owner is useless with HookOnce.
+
+#### Giving and Removing
+
+Effects can only be given on the **server**, but you can check for them anywhere.
+
+```lua
+-- server
+if SERVER then
+    local effect = ply:GiveStatusEffect( "caffeinated" ) -- returns the effect object
+    effect.cupsDrank = 1 -- it's just a table, can pass stuff to the effect
+
+end
+
+-- shared
+ply:HasStatusEffect( "caffeinated" )
+
+GAMEMODE:GetAllPlayersWithStatusEffect( "caffeinated" )
+GAMEMODE:GetAllPlayersWithAStatusEffect( { "caffeinated", "decaffeinated" } ) -- any of these
+
+-- server
+if SERVER then
+    ply:RemoveStatusEffect( "caffeinated" )
+
+end
+```
+
+#### Inside setup/teardown
+
+| Method | Description |
+|--------|-------------|
+| `self:Hook( hookName, func )` | A `hook.Add` scoped to this effect. The identifier is made for you, don't pass one |
+| `self:HookOnce( hookName, func )` | Same, but hooks only once no matter how many players have the effect |
+| `self:Timer( timerName, delay, reps, func )` | A `timer.Create` scoped to this effect. `reps` of 0 is infinite |
+| `self:TimerRemove( timerName )` | Kill one of this effect's timers early |
+| `self:SetRemoveOnDeath( bool )` | **Server only.** Strip the effect when the owner dies. Default is to persist |
+| `self:GetOwner()` | The player. Same as the `owner` argument |
+
+Effects are also torn down automatically on disconnect and on round change.
+
+#### Clientside
+
+Status effects are *always* networked to players.
+Defining them again on CLIENT lets you add extra, clientside behaviour
+
+##### Clientside Example A: Messing with the HUD
+
+```lua
+if CLIENT then
+    GAMEMODE:RegisterStatusEffect( "caffeinated",
+        function( self, owner )
+            -- this is hud stuff
+            -- just don't setup the hooks if we aren't the one with the effect
+            if LocalPlayer() ~= owner then return end
+
+            -- use self:Hook, this is an expensive hook,
+            -- but we're not gonna be hooking it more than once 
+            self:Hook( "HUDShouldDraw", function( element )
+                if element ~= "CHudCrosshair" then return end
+                if not LocalPlayer() then return end
+
+                return false
+
+            end )
+        end
+    )
+end
+```
+
+##### Clientside Example B: Seeing effects on other players
+
+```lua
+if CLIENT then
+    GAMEMODE:RegisterStatusEffect( "caffeinated",
+        function( self, _owner )
+            local twitching = {}
+
+            self:HookOnce( "PrePlayerDraw", function( ply )
+                if not ply:HasStatusEffect( "caffeinated" ) then return end
+                twitching[ply] = true
+
+                local shudder = 1 + math.random() * 0.3
+                render.SetColorModulation( shudder, shudder, shudder )
+
+            end )
+            self:HookOnce( "PostPlayerDraw", function( ply )
+                if not twitching[ply] then return end -- did we brighten this one?
+                twitching[ply] = nil
+
+                render.SetColorModulation( 1, 1, 1 )
+
+            end )
+        end
+    )
+end
+```
+
+A client registration is entirely optional, plenty of effects are server-only. You can
+also register with no funcs at all ( like channel_666 ), if you just want a flag other code can check.
 
 ---
 
@@ -256,6 +409,7 @@ Number values can be:
 | `maxSpawnDist` | ❌ | Hard cap on the dynamically marching spawn distance |
 | `roundStartSound` | ❌ | Sound on round start |
 | `roundEndSound` | ❌ | Sound on round end |
+| `roundEarlyStartSound` | ❌ | Alt start sound, played 10s before start, only plays if roundStartSound is "" |
 | `genericSpawnerRate` | ❌ | Crate/item spawn rate multiplier |
 | `chanceToBeVotable` | ❌ | Percent chance to appear in !rtm vote, 0-100, accepts float |
 | `chanceToBeVotableWhenHard` | ❌ | Percent chance to appear in !rtm when this mode's escape multiplier >1.5x, for making spawnsets fade into the background when they no longer challenge the host |

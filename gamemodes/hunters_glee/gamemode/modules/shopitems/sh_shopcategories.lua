@@ -69,7 +69,7 @@ function GM:CategoryCanShow( identifier, purchaser )
         for _, theCurrentShowFunc in ipairs( categoryCanShow ) do
             local noErrors, returned = xpcall( theCurrentShowFunc, errorCatchingMitt, purchaser )
             if noErrors == false then
-                print( "GLEE: !!!!!!!!!! " .. catData.name .. "'s shCanShowInShop function errored!!!!!!!!!!!" )
+                permaPrint( "GLEE: !!!!!!!!!! " .. catData.name .. "'s shCanShowInShop function errored!!!!!!!!!!!" )
                 return nil, REASON_ERROR
 
             else

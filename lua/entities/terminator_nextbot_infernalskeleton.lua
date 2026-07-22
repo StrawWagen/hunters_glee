@@ -2,18 +2,17 @@ AddCSLuaFile()
 
 ENT.Base = "terminator_nextbot"
 DEFINE_BASECLASS( ENT.Base )
-ENT.PrintName = "Infernal Skeleton"
+ENT.PrintName = "Infernal Heckler"
 ENT.Spawnable = false
 
 ENT.TERM_FISTS = "weapon_infernalskeleton_fists"
 ENT.PlayerColorVec = Vector( 1, 0, 0 ) -- used for player color
 
-local className = "terminator_nextbot_infernalskeleton"
-list.Set( "NPC", className, {
-    Name = "Infernal Skeleton",
-    Class = className,
-    Category = "Hunter's Glee",
-    Weapons = { ENT.TERM_FISTS },
+ENT.SubCategory = "Hunter's Glee"
+
+terminator_Extras.RegisterNPC( "terminator_nextbot_infernalskeleton", ENT, {
+    Weapons = { "weapon_infernalskeleton_fists" },
+
 } )
 
 local entMeta = FindMetaTable( "Entity" )
@@ -21,7 +20,6 @@ local CurTime = CurTime
 local math = math
 
 if CLIENT then
-    language.Add( className, ENT.PrintName )
 
     local offsetVec = Vector( 0, 0, 5 )
     ENT.FireEffects = {
@@ -29,9 +27,10 @@ if CLIENT then
         "fire_small_02",
         "fire_small_03",
     }
+    ENT.FireParticleChance = 25
 
     function ENT:AdditionalClientInitialize()
-        if math.random( 0, 100 ) > 25 then return end
+        if math.random( 0, 100 ) > self.FireParticleChance then return end
 
         local fire = self.FireEffects[math.random( 1, #self.FireEffects )]
         CreateParticleSystem( self, fire, PATTACH_ABSORIGIN_FOLLOW, 0, offsetVec )
@@ -71,7 +70,6 @@ ENT.StepHeight = ENT.StandingStepHeight
 ENT.PathGoalToleranceFinal = 50
 ENT.SpawnHealth = 50
 ENT.AimSpeed = 300
-ENT.AccelerationSpeed = 1200
 
 ENT.CanUseStuff = false
 
@@ -159,6 +157,17 @@ function ENT:PostHitObject( object )
 
 end
 
+ENT.AccelerationSpeed = 1200
+
+function ENT:SetupSkeletonMoveSpeeds()
+    self.WalkSpeed = math.random( 80, 100 )
+    self.MoveSpeed = math.random( 200, 240 )
+    self.RunSpeed = math.random( 320, 380 )
+    self.DuelEnemyDist = math.random( 500, 1500 )
+    self.term_SoundPitchShift = math.random( -10, 10 )
+
+end
+
 ENT.AlwaysPlayLooping = true
 ENT.IdleLoopingSounds = { "ambient/levels/citadel/datatransmalevx01.wav", "ambient/levels/citadel/datatransmalevx02.wav" }
 ENT.AngryLoopingSounds = { "ambient/levels/citadel/datatransmission04_loop.wav" }
@@ -194,11 +203,7 @@ ENT.SpawnHeadlessChance = 75
 
 ENT.MyClassTask = {
     OnCreated = function( self, data )
-        self.WalkSpeed = math.random( 80, 100 )
-        self.MoveSpeed = math.random( 200, 240 )
-        self.RunSpeed = math.random( 380, 320 )
-        self.DuelEnemyDist = math.random( 500, 1500 )
-        self.term_SoundPitchShift = math.random( -10, 10 )
+        self:SetupSkeletonMoveSpeeds()
 
         self:SetSkin( skins[math.random( 1, #skins )] )
 

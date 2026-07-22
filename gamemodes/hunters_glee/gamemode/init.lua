@@ -213,7 +213,7 @@ function GM:TermHuntSetup()
 
     end
 
-    print( "GLEE: init" )
+    permaPrint( "GLEE: init" )
     self:SetRoundState( self.ROUND_SETUP )
     self.termHunt_navmeshCheckTime = CurTime() + 5
 
@@ -737,13 +737,13 @@ do
         local empt = #players == 0
         if empt and ( currState == self.ROUND_ACTIVE or currState == self.ROUND_LIMBO ) then
             -- bots are expensive, save cpu power pls
-            print( "Empty server!\nRemoving bots..." )
+            permaPrint( "Empty server!\nRemoving bots..." )
             self:roundEnd()
             self:beginSetup()
             return true
 
         elseif empt and game.IsDedicated() and not self.waitingOnNavoptimizerGen and navmesh.GetNavAreaCount() <= 0 and NAVOPTIMIZER_tbl and GetConVar( "sv_cheats" ):GetBool() then
-            print( "GLEE: Automatically generating navmesh & optimizing with Navmesh Optimizer" )
+            permaPrint( "GLEE: Automatically generating navmesh & optimizing with Navmesh Optimizer" )
             self:GenerateANavmeshPls()
 
         elseif empt then -- empty
@@ -771,7 +771,7 @@ function GM:handleGenerating( currState )
         return true
 
     elseif generating and ( currState == self.ROUND_ACTIVE or currState == self.ROUND_LIMBO ) then
-        print( "Navmesh generation detected, rebuilding." )
+        permaPrint( "Navmesh generation detected, rebuilding." )
         self:roundEnd()
         self:beginSetup()
         self.biggestNavmeshGroups = nil
@@ -828,7 +828,7 @@ function GM:GenerateANavmeshPls()
         hook.Remove( "navoptimizer_done_globalmerge", "glee_detectrealnavgenfinish" )
         if game.IsDedicated() then
             navmesh.Save()
-            print( "GLEE: Saved navmesh." )
+            permaPrint( "GLEE: Saved navmesh." )
 
         end
     end )
@@ -1113,6 +1113,6 @@ end
 -- test command for setting to GAMEMODE.ROUND_TESTSTATE
 concommand.Add( "glee_test_roundstatetest", function()
     GAMEMODE:SetRoundState( GAMEMODE.ROUND_TESTSTATE )
-    print( "GLEE: set to test state, gmod_admin_cleanup to restore" )
+    permaPrint( "GLEE: set to test state, gmod_admin_cleanup to restore" )
 
 end, nil, "Disables hunter spawner, everything.", FCVAR_CHEAT )

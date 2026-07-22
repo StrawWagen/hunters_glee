@@ -74,7 +74,7 @@ local function shelterPly( ply )
 end
 
 local function tutorialize( ply )
-    print( "GLEE: Tutorializing ", ply )
+    permaPrint( "GLEE: Tutorializing ", ply )
     if ply:Glee_FlashlightIsOn() then
         ply:Glee_Flashlight( false )
 

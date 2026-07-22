@@ -25,7 +25,7 @@ if SERVER then
     local DIRECTHIT_DAMAGE = 1500
 
     local BLINDFIRE_MAXSPEED_TIME = 1
-    local BLINDFIRE_ANGVEL_DECAY = 0.99
+    local BLINDFIRE_ANGVEL_DECAY = 0.5
     local MAX_BLINDFIRE_SPEED = 4000
 
     sound.Add( {

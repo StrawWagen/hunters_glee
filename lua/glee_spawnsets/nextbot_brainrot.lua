@@ -21,11 +21,11 @@ local set = {
     roundStartSound = "default",
     resourcesAdded = {},
     spawns = {},
-    chanceToBeVotable = 15,
+    chanceToBeVotable = 1,
+    chanceToBeVotableIfHard = 15,
 }
 
 if hasSanic then
-
     local function randomizeVar()
         local dist = math.random( 2500, 6000 )
         if math.random( 0, 100 ) < 50 then

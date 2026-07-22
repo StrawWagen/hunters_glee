@@ -182,7 +182,7 @@ end
 
 local function copyTextAndNotify( text )
     SetClipboardText( text )
-    print( "Copied; " .. text )
+    permaPrint( "Copied; " .. text )
 
 end
 
@@ -560,7 +560,7 @@ local SCORE_BOARD = {
         self.HeaderLeft:SetTooltipDelay( 0 )
         self.HeaderLeft.DoClick = function()
             gui.OpenURL( GAMEMODE_URL )
-            print( "Opened URL; " .. GAMEMODE_URL )
+            permaPrint( "Opened URL; " .. GAMEMODE_URL )
 
         end
         self.HeaderLeft.Paint = function( s )
@@ -653,7 +653,7 @@ local SCORE_BOARD = {
             if url == "" then return end
 
             gui.OpenURL( url )
-            print( "Opened URL; " .. url )
+            permaPrint( "Opened URL; " .. url )
 
         end
 
@@ -750,7 +750,7 @@ local SCORE_BOARD = {
             btn.DoClick = function()
                 local url = "https://github.com/legokidlogan"
                 gui.OpenURL( url )
-                print( "Opened URL; " .. url )
+                permaPrint( "Opened URL; " .. url )
 
             end
         end

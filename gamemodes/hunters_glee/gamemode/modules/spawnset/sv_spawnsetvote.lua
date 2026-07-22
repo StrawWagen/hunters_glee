@@ -84,7 +84,7 @@ function spawnSetVote:BeginVote( duration, maxOptions )
         end
     net.Send( player.GetAll() )
 
-    print( "GLEE: A mode vote has begun" )
+    permaPrint( "GLEE: A mode vote has begun" )
 
     timer.Create( "glee_spawnsetvote_end", duration, 1, function() -- one timername
         spawnSetVote:OnVoteEnd()
@@ -148,7 +148,7 @@ function spawnSetVote:OnVoteEnd()
     end
 
     -- print in console!
-    print( "GLEE: Mode vote is over, winner is, " .. spawnSetVote.winner )
+    permaPrint( "GLEE: Mode vote is over, winner is, " .. spawnSetVote.winner )
     -- and in people's chat!
     GAMEMODE:SpeakAsHuntersGlee( "Mode vote over! Winner is " .. GAMEMODE:GetPrettyNameOfSpawnSet( spawnSetVote.winner ) )
 

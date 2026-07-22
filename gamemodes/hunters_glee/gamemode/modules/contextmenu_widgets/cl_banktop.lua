@@ -516,18 +516,21 @@ end
 concommand.Add( "glee_banktop_open", function()
     local newFrame, err = createBankTopSafely()
     if not IsValid( newFrame ) then
-        if err then print( "[Hunters Glee] Failed to open bank top:", err ) end
+        if err then permaPrint( "[Hunters Glee] Failed to open bank top:", err ) end
         return
+
     end
 
     if IsValid( GAMEMODE.glee_BankTop_Holder ) then
         GAMEMODE.glee_BankTop_Holder:Remove()
+
     end
 
     GAMEMODE.glee_BankTop_Holder = newFrame
     function newFrame:OnRemove()
         if GAMEMODE.glee_BankTop_Holder == self then
             GAMEMODE.glee_BankTop_Holder = nil
+
         end
     end
 end )
@@ -544,5 +547,6 @@ list.Set( "DesktopWindows", "HuntersGlee_BankTop", {
     init = function( _, window )
     if IsValid( window ) then window:Remove() end
         RunConsoleCommand( "glee_banktop_open" )
+
     end
 } )

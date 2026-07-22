@@ -19,8 +19,8 @@ if SERVER then
 
             ply.glee_Announcement_Priority = priority
 
-            if ply:IsBot() then -- for easier debuggxing
-                print( "GLEEBOTANNOUNCE ", ply, announcement )
+            if ply:IsBot() then -- for easier debugging
+                permaPrint( "GLEEBOTANNOUNCE ", ply, announcement )
 
             else
                 net.Start( "glee_clean_announcement" )

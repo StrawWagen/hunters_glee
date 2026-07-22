@@ -87,7 +87,7 @@ net.Receive( "glee_atm_deposit", function( _, ply )
 
     if game.IsDedicated() then -- 'log' shop item purchases 
         local nameAndId = ply:GetName() .. "[" .. ply:SteamID() .. "]"
-        print( nameAndId .. " ATM Deposited: " .. message )
+        permaPrint( nameAndId .. " ATM Deposited: " .. message )
 
     end
 end )
@@ -108,7 +108,7 @@ net.Receive( "glee_atm_withdraw", function( _, ply )
 
     if game.IsDedicated() then -- 'log' shop item purchases 
         local nameAndId = ply:GetName() .. "[" .. ply:SteamID() .. "]"
-        print( nameAndId .. " ATM Withdrew: " .. message )
+        permaPrint( nameAndId .. " ATM Withdrew: " .. message )
 
     end
 end )
@@ -124,7 +124,7 @@ net.Receive( "glee_atm_claimownercut", function( _, ply )
 
     if game.IsDedicated() then -- 'log' shop item purchases 
         local nameAndId = ply:GetName() .. "[" .. ply:SteamID() .. "]"
-        print( nameAndId .. " ATM Owner's Cut: " .. message )
+        permaPrint( nameAndId .. " ATM Owner's Cut: " .. message )
 
     end
 end )

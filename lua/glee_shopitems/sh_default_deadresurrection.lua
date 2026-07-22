@@ -840,11 +840,6 @@ local items = {
         weight = -201,
         shPurchaseCheck = {
             shopHelpers.deadCheck,
-            function( purchaser )
-                if purchaser:HasStatusEffect( "infernal_chosen" ) then return false, "You have sided with the infernal powers" end
-                return true, nil
-
-            end,
             -- death cooldown
             function( purchaser )
                 -- skip if grigori
@@ -887,10 +882,6 @@ local items = {
             end,
             -- death cooldown
             function( purchaser )
-                -- skip if charple
-                local isChosen = purchaser:HasStatusEffect( "infernal_chosen" )
-                if isChosen then return true end
-
                 local lastDeathTime = purchaser:GetNW2Int( "glee_divineintervetion_lastdietime", 0 )
                 local reviveTime = lastDeathTime + minTimeBetweenResurrections / 2
                 local timeTillRevive = math.abs( reviveTime - CurTime() )
@@ -920,41 +911,9 @@ local items = {
         shPurchaseCheck = {
             shopHelpers.deadCheck,
             chosenCanPurchase,
-            function( purchaser )
-                if purchaser:HasStatusEffect( "infernal_chosen" ) then return false, "You have sided with the infernal powers" end
-                return true, nil
-
-            end,
         },
         svOnPurchaseFunc = function( purchaser )
             purchaser:GiveStatusEffect( "divine_chosen" )
-
-        end,
-        shCanShowInShop = shopHelpers.deadNotEscapedCheck,
-    },
-    ["infernalchosen"] = {
-        name = "charple",
-        desc = "charple.",
-        shCost = 1500,
-        markup = 1,
-        markupPerPurchase = 0,
-        cooldown = 0,
-        tags = { "DEADGIFTS", "Infernal", "CloseShopOnPurchase" },
-        purchaseTimes = {
-            GAMEMODE.ROUND_ACTIVE,
-        },
-        weight = 100,
-        svPurchaseCheck = {
-            shopHelpers.deadCheck,
-            infernalChosenCanPurchase,
-            function( purchaser )
-                if purchaser:HasStatusEffect( "divine_chosen" ) then return false, "You are not of infernal nature." end
-                return true, nil
-
-            end,
-        },
-        svOnPurchaseFunc = function( purchaser )
-            purchaser:GiveStatusEffect( "infernal_chosen" )
 
         end,
         shCanShowInShop = shopHelpers.deadNotEscapedCheck,

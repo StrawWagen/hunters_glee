@@ -123,6 +123,25 @@ local items = {
 
         end,
     },
+    ["infernalpersecutors"] = {
+        name = "Infernal Persecutors",
+        desc = "Summon 3-4 infernal agents to persecute the living.\nIncreases Permanent Guilt\nCosts more to summon near innocent people, less when near evil souls.",
+        costDecorative = { "-350", "-1200" },
+        shCost = 0,
+        canGoInDebt = true,
+        markup = 1,
+        cooldown = 80,
+        tags = { "HORRORS", "Infernal", "CloseShopOnPurchase" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = 1000,
+        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
+        svOnPurchaseFunc = function( purchaser, itemIdentifier )
+            shopHelpers.setupPlacable( "glee_infernal_persecutors", purchaser, itemIdentifier )
+
+        end,
+    },
     ["thunderousapplause"] = {
         name = "Divine Applause",
         desc = "Thunderous Applause.\nLet the Living, hear your utmost, thunderous gratitude.\nUnlocks after 2 minutes, then a global 2 minute cooldown between uses.",
@@ -134,7 +153,7 @@ local items = {
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },
-        weight = 100,
+        weight = 1001,
         shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase, function()
             if GAMEMODE:isTemporaryTrueBool( "termhunt_thunderous_applause_initial" ) then return nil, "It's too soon for the applause to begin." end
             if GAMEMODE:isTemporaryTrueBool( "termhunt_thunderous_applause" ) then return nil, "Applause must be spaced out. Wait.." end

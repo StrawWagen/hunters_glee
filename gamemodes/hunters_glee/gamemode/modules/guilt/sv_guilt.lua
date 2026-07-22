@@ -400,7 +400,7 @@ concommand.Add( "glee_test_guilt_reset", function( caller, _, args )
 
     local steamId = args[1]
     if not steamId then
-        print( "Usage: glee_test_guilt_reset <steamid>" )
+        permaPrint( "Usage: glee_test_guilt_reset <steamid>" )
         return
 
     end
@@ -410,10 +410,10 @@ concommand.Add( "glee_test_guilt_reset", function( caller, _, args )
     local ply = player.GetBySteamID( steamId )
     if IsValid( ply ) then
         ply:SetNWFloat( "glee_persistentguilt_days", 0 )
-        print( "GLEE: Reset guilt for " .. ply:Nick() .. " (" .. steamId .. ")" )
+        permaPrint( "GLEE: Reset guilt for " .. ply:Nick() .. " (" .. steamId .. ")" )
 
     else
-        print( "GLEE: Reset guilt for offline player " .. steamId )
+        permaPrint( "GLEE: Reset guilt for offline player " .. steamId )
 
     end
 end )
@@ -424,7 +424,7 @@ concommand.Add( "glee_test_guilt_adddays", function( caller, _, args )
     local steamId = args[1]
     local days = tonumber( args[2] )
     if not steamId or not days then
-        print( "Usage: glee_test_guilt_adddays <steamid> <days>" )
+        permaPrint( "Usage: glee_test_guilt_adddays <steamid> <days>" )
         return
 
     end
@@ -432,13 +432,13 @@ concommand.Add( "glee_test_guilt_adddays", function( caller, _, args )
     -- IncrementPersistentGuilt works off a live player ( GetPData/SetPData/net ), so they must be online
     local ply = player.GetBySteamID( steamId )
     if not IsValid( ply ) then
-        print( "GLEE: glee_test_guilt_adddays needs " .. steamId .. " to be online." )
+        permaPrint( "GLEE: glee_test_guilt_adddays needs " .. steamId .. " to be online." )
         return
 
     end
 
     GAMEMODE:IncrementPersistentGuilt( ply, days )
-    print( "GLEE: Added " .. days .. " guilt days to " .. ply:Nick() .. " (" .. steamId .. "), now at " .. GAMEMODE:GetStoredPersistentGuilt( ply ) .. " days." )
+    permaPrint( "GLEE: Added " .. days .. " guilt days to " .. ply:Nick() .. " (" .. steamId .. "), now at " .. GAMEMODE:GetStoredPersistentGuilt( ply ) .. " days." )
 
 end )
 

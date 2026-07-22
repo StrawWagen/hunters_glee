@@ -57,7 +57,7 @@ else
 
     local function devPrint( ... )
         if not isDeveloping() then return end
-        print( ... )
+        permaPrint( ... )
 
     end
 
@@ -95,9 +95,10 @@ else
         devPrint( "GLEE: trying to fix " .. #materialsMounted .. " materials" )
 
         if isDeveloping() then
+            permaPrint( "GLEE-SpawnsetContentMounting" )
             PrintTable( materialsMounted )
             for invalidMatName, _ in pairs( terminator_Extras.glee_InvalidMats ) do
-                print( invalidMatName )
+                permaPrint( invalidMatName )
 
             end
         end
