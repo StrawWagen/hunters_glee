@@ -1173,14 +1173,18 @@ if SERVER then
 end
 
 if CLIENT then
-    GAMEMODE:RegisterStatusEffect( "chameleon",
-        function(self, owner )
-            if LocalPlayer() ~= owner then return end
+    GAMEMODE:RegisterStatusEffect( "chameleon", function( self, owner )
+        if LocalPlayer() ~= owner then return end
 
-            self:Hook( "PreDrawPlayerHands", function()
-                    render.SetBlend( 0.5 )
-            end )
+        self:Hook( "PreDrawPlayerHands", function()
+                render.SetBlend( 0.5 )
+
         end )
+        self:Hook( "PostDrawPlayerHands", function()
+                render.SetBlend( 1 )
+
+        end )
+    end )
 
 end
 
