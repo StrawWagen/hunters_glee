@@ -485,18 +485,12 @@ if SERVER then
             function self:Chameleonize()
                 owner:Fire( "alpha", 20, 0 )
                 owner:SetRenderMode( RENDERMODE_TRANSALPHA )
-                net.Start( "ChameleonHands" )
-                    net.WriteBool( true )
-                net.Send( owner )
 
             end
             function self:UnChameleonize()
                 owner:Fire( "alpha", 255, 0 )
                 owner:SetRenderMode( RENDERMODE_NORMAL )
-                net.Start( "ChameleonHands" )
-                    net.WriteBool( false )
-                net.Send( owner )
-
+                
             end
 
             self.chameleonColorRestore = chameleonColorRestore
@@ -1178,6 +1172,17 @@ if SERVER then
     )
 end
 
+if CLIENT then
+    GAMEMODE:RegisterStatusEffect( "chameleon",
+        function(self, owner )
+            if LocalPlayer() ~= owner then return end
+
+            self:Hook( "PreDrawPlayerHands", function()
+                    render.SetBlend( 0.5 )
+            end )
+        end )
+
+end
 
 local items = {
     -- this is to give the noobs in a lobby a huge score boost, also it's cool
