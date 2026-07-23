@@ -9,14 +9,14 @@ ENT.DefaultWeapon = {
 
 ENT.Base = "terminator_nextbot_csoldier"
 DEFINE_BASECLASS( ENT.Base )
-ENT.PrintName = "Soldier"
+ENT.PrintName = "Grunt"
 ENT.Author = "Boomertaters"
 ENT.Spawnable = false -- dont show up in entity spawn category
 ENT.SubCategory = "Hunter's Glee"
 
 ENT.PlayerColorVec = Vector( 0, 0, 0 ) -- used for player color
 
-terminator_Extras.RegisterNPC( "terminator_nextbot_gleesoldier", ENT, { Weapons = ENT.DefaultWeapon } )
+terminator_Extras.RegisterNPC( "terminator_nextbot_gleesoldier_grunt", ENT, { Weapons = ENT.DefaultWeapon } )
 
 if CLIENT then return end
 
@@ -25,8 +25,8 @@ ENT.CoroutineThresh = terminator_Extras.baseCoroutineThresh / 22
 ENT.MaxPathingIterations = 3500
 ENT.ThreshMulIfDueling = 4 -- CoroutineThresh is multiplied by this amount if we're closer than DuelEnemyDist
 ENT.ThreshMulIfClose = 2.5 -- if we're closer than DuelEnemyDist * 2
-ENT.IsFodder = false
-ENT.HasBrains = true
+ENT.IsFodder = true
+ENT.HasBrains = false
 
 ENT.JumpHeight = 68
 ENT.SpawnHealth = 310
