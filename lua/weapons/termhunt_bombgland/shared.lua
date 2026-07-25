@@ -54,7 +54,7 @@ function SWEP:Initialize()
     self.Bombs = 0
     self.BombTable = {}
 
-    if not GAMEMODE.ISHUNTERSGLEE then
+    if not GAMEMODE.IsReallyHuntersGlee then
         self.Bombs = 100
 
     end

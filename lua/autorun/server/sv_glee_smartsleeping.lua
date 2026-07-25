@@ -289,7 +289,7 @@ local function setupOnCreateHook()
 end
 
 hook.Add( "InitPostEntity", "glee_setupsmartsleeping", function()
-    if gmod.GetGamemode().ISHUNTERSGLEE then
+    if gmod.GetGamemode().IsReallyHuntersGlee then
         setupOnCreateHook()
 
     end
@@ -298,7 +298,7 @@ end )
 local theGamemode = gmod.GetGamemode()
 
 -- autorefresh
-if theGamemode and theGamemode.ISHUNTERSGLEE then
+if theGamemode and theGamemode.IsReallyHuntersGlee then
     setupOnCreateHook()
 
 end

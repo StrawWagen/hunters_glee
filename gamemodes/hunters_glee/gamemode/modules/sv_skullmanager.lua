@@ -395,6 +395,7 @@ hook.Add( "OnEntityCreated", "glee_detectotherskulls", function( ent )
     timer.Simple( 0, function()
         if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
         if not IsValid( ent ) then return end
+        if ent:IsWeapon() then return end
         if ent:GetModel() ~= "models/gibs/hgibs.mdl" then return end
 
         -- make barnacles not OP
@@ -404,4 +405,13 @@ hook.Add( "OnEntityCreated", "glee_detectotherskulls", function( ent )
         SafeRemoveEntity( ent )
 
     end )
+end )
+
+hook.Add( "huntersglee_givenskulls", "glee_giveskullthrower", function( ply )
+    if ply:GetSkulls() <= 0 then return end
+
+    if ply:HasWeapon( "glee_throwable_skull" ) then return end
+
+    ply:Give( "glee_throwable_skull", false )
+
 end )

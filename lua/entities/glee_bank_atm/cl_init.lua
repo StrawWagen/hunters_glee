@@ -45,7 +45,7 @@ end
 -----------------------------------------------------------]]
 
 local function openAtmGui( atm )
-    if not GAMEMODE.ISHUNTERSGLEE then return end
+    if not GAMEMODE.IsReallyHuntersGlee then return end
     closeGui()
     if not IsValid( atm ) then return end
 

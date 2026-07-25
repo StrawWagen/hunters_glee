@@ -51,7 +51,7 @@ if CLIENT then
 end
 
 function ENT:PostInitializeFunc()
-    if not GAMEMODE.ISHUNTERSGLEE then SafeRemoveEntity( self ) return end
+    if not GAMEMODE.IsReallyHuntersGlee then SafeRemoveEntity( self ) return end
     self:SetMaterial( "lights/white002" )
 
 end

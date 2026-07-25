@@ -163,7 +163,6 @@ GM.SpawnTypes = {
 GM.roundStartAfterNavCheck      = 75
 GM.roundStartNormal             = 30
 GM.roundStartNormalAllEscaped   = 60
-GM.IsReallyHuntersGlee          = true
 
 -- this is increased when all hunters are killed, or are being forced to spawn in front of players
 -- basically it makes the spawner get more aggressive the longer you stay on cheesable maps

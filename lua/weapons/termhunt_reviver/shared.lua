@@ -500,7 +500,7 @@ end
 
 if not SERVER then return end
 
-if not GAMEMODE.ISHUNTERSGLEE then return end
+if not GAMEMODE.IsReallyHuntersGlee then return end
 
 util.AddNetworkString( "glee_storeresurrectpos" )
 

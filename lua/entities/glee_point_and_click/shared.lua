@@ -27,6 +27,7 @@ ENT.CostPerDistanceStart = 375 -- start applying distance cost after this far fr
 ENT.CostPerAccel = 1
 
 ENT.CostVehicleExitInit = 200 -- Cost to rip someone out of a vehicle if they are in one BEFORE the grab starts.
+ENT.CostInnocentEscapeHeliRider = 5000 -- Cost to rip an innocent player out of the escape heli
 ENT.CostVehicleExit = 50 -- Cost to auto-rip someone out of a vehicle while already grabbed.
 
 ENT.CostHighColor = Color( 255, 100, 100, 255 )
@@ -449,8 +450,14 @@ function ENT:UpdateGivenScore()
     end
 
     if IsValid( target ) and target.InVehicle and target:InVehicle() then
-        cost = cost + self.CostVehicleExitInit
+        local theirVehicle = target:GetVehicle()
+        if IsValid( theirVehicle ) and theirVehicle.isARescueHeliSeat and GAMEMODE:IsInnocent( target ) then
+            cost = cost + self.CostInnocentEscapeHeliRider
 
+        else
+            cost = cost + self.CostVehicleExitInit
+
+        end
     end
 
     self:SetGivenScore( "-" .. ( cost * self:GetCostMult() ) )

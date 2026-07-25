@@ -270,7 +270,7 @@ do
     local newSpeeds = {}
     local lastYaw = {}
 
-    local isGlee = GAMEMODE.ISHUNTERSGLEE
+    local isGlee = GAMEMODE.IsReallyHuntersGlee
 
     local allowedTurnRate = 10
     local fullSprintSpeedAdd = 200 -- doesn't buff quite up to this, probably the engine trying to slow down the player

@@ -5,8 +5,9 @@ ENT.Base = "glee_divine_clap"
 
 ENT.PrintName   = "Divine Applause"
 ENT.Purpose     = "Applause of the highest order"
-ENT.Spawnable    = true
-ENT.AdminOnly    = game.IsDedicated()
+ENT.Category    = "Hunter's Glee"
+ENT.Spawnable   = true
+ENT.AdminOnly   = game.IsDedicated()
 
 -- many claps that land over a wide area
 local interval = 60 * 2

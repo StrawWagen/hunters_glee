@@ -21,14 +21,21 @@ ENT.MySpecialActions = {
         ratelimit = 8, -- Minimum 2 seconds between uses
 
         svAction = function( driveController, driver, bot )
-            bot:EmitSound( "ambient/levels/streetwar/gunship_distant2.wav", 120, 120, 1, CHAN_STATIC, SND_NOFLAGS, 0, terminator_Extras.recipFilterAllTargetablePlayers() )
+            local allPlyFilter = terminator_Extras.recipFilterAllTargetablePlayers()
+            bot:EmitSound( "ambient/levels/streetwar/gunship_distant2.wav", 120, 120, 1, CHAN_STATIC, SND_NOFLAGS, 0, allPlyFilter )
+            bot:EmitSound( "npc/stalker/go_alert2a.wav", 120, 15, 0.5, CHAN_STATIC, SND_NOFLAGS, 0, allPlyFilter )
             bot:EmitSound( "npc/combine_gunship/see_enemy.wav", 90, 30, 1, CHAN_STATIC )
             bot:EmitSound( "npc/stalker/stalker_die2.wav", 90, 50, 1, CHAN_STATIC )
 
             -- Do the gesture, with a slower rate, and dont block movement while it happens
             bot:DoGesture( ACT_GMOD_GESTURE_TAUNT_ZOMBIE, 0.75, false )
 
+            bot:Anger( 8 )
+
+            util.ScreenShake( bot:WorldSpaceCenter(), 5, 20, 5, 2000, true )
+
         end,
+
     }
 }
 
@@ -128,7 +135,7 @@ ENT.LooksForwardWhenRunning = true
 function ENT:SetupSkeletonMoveSpeeds()
     self.WalkSpeed = 100
     self.MoveSpeed = 200
-    self.RunSpeed = 700
+    self.RunSpeed = 1000
     self.DuelEnemyDist = 800
     self.term_SoundPitchShift = -40
 
@@ -147,8 +154,6 @@ ENT.infernSkele_IdleSounds = {
     "ambient/levels/citadel/datatransrandom02.wav",
     "ambient/levels/citadel/datatransrandom03.wav",
 }
-
-local checkDist = Vector( 0, 0, -18 )
 
 ENT.MyClassTask = {
     OnStart = function( self, data )
@@ -175,9 +180,18 @@ ENT.MyClassTask = {
         if act ~= ACT_MP_RUN then return end
         if self:GetIdealMoveSpeed() < self.RunSpeed * 0.9 then return end
 
+        if not self:IsAngry() then
+            self:Anger( 1 )
+
+        end
+
         return ACT_HL2MP_RUN_FAST
 
     end,
     -- circle of fire
     --OnLandOnGround = 
 }
+
+-- does not flinch
+function ENT:HandleFlinching()
+end

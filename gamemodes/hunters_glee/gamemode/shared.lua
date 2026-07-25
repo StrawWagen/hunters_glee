@@ -13,7 +13,7 @@ GM.TEAM_PLAYING = 1 -- alive
 GM.TEAM_SPECTATE = 2 -- spectating, as a ghost
 GM.TEAM_ESCAPED = 3 -- spectating, but you can't respawn, get cooler items in the shop and free bot controlling
 
-GM.ISHUNTERSGLEE = true
+GM.IsReallyHuntersGlee = true
 
 GM.Name = "Hunter's Glee"
 GM.Author = "StrawWagen"

@@ -155,7 +155,8 @@ Additional ways to control access to shop items.
   - Behaves similarly to `shCanShowInShop`, but called on a global scale and with reference to the item.
 - `allow`, `failReason` = `glee_shop_canpurchase`( `ply`, `itemData` )
   - Return `false`, `failReason` to block the item from being purchased.
-  - Behaves similarly to `shPurchaseCheck`, but called on a global scale and with reference to the item.
+  - Use this hook if you want to programatically make, all items with X tag not purchasable, etc. 
+  - DONT use this to define when a single item will be purchasable. Use `shopItem.shPurchaseCheck` to manage that.
 - `newDescription` = `glee_shop_itemdescription`( `ply`, `itemData`, `description` )
   - Return `newDescription`, to override the item description.
   - Remember, only one hook listener can return non-nil at a time!

@@ -106,7 +106,7 @@ function ENT:UpdateGivenScore()
     local nearestPly, nearestPlyDistSqr
     local roundCostPermanent
 
-    if GAMEMODE.ISHUNTERSGLEE then
+    if GAMEMODE.IsReallyHuntersGlee then
         nearestPly, nearestPlyDistSqr = GAMEMODE:nearestAlivePlayer( myPos )
         roundCostPermanent = GAMEMODE.roundExtraData.BarrelPlacedCount or 0
         roundCostPermanent = roundCostPermanent / 20 -- so barrels eventually always become unprofitable on super super long rounds
