@@ -59,9 +59,11 @@ end
 function SWEP:UpdateColor()
     local resurrects = self:Clip1()
     if resurrects > 0 then
-        color = Color( 255,255,255 )
+        color = Color( 255, 255, 255 )
+
     else
-        color = Color( 160,160,160 )
+        color = Color( 160, 160, 160 )
+
     end
     self:SetColor( color )
 
@@ -91,6 +93,7 @@ end
 function SWEP:OnEmpty()
     self:GetOwner():EmitSound( DenySound, 75, 80 )
     self:SetNextPrimaryFire( CurTime() + 0.5 )
+
 end
 
 function SWEP:PrimaryAttack()
@@ -131,6 +134,7 @@ function SWEP:PrimaryAttack()
             ent = data.ply
             resurrectPos = data.pos
             break
+
         end
     end
 
@@ -162,6 +166,7 @@ function SWEP:CanResurrect( ply )
     if owner:Health() <= 0 then return false end
 
     return true
+
 end
 
 function SWEP:StartResurrect( ent, resurrectPos )
@@ -209,7 +214,8 @@ function SWEP:ResurrectPly( ply )
     end )
 
     if owner.GivePlayerScore then
-        local reward = 300
+        local fullReward = 300
+        local reward = fullReward
         -- dont give as much score if owner killed who they reviving
         if ply:HasStatusEffect( "infernalintervention_rawendofthedeal" ) then
             reward = 150
@@ -246,6 +252,13 @@ function SWEP:ResurrectPly( ply )
         -- this forgiveness cant be too high, because we dont know HOW the player died
         GAMEMODE:AddMischievousness( owner, -1, "revived a player" )
 
+        GAMEMODE.roundExtraData.hasRevivedTbl = GAMEMODE.roundExtraData.hasRevivedTbl or {}
+        if reward == fullReward and GAMEMODE:GetStoredPersistentGuilt( owner ) > 0 and not GAMEMODE.roundExtraData.hasRevivedTbl[ply] then
+            GAMEMODE.roundExtraData.hasRevivedTbl[ply] = true
+            GAMEMODE:IncrementPersistentGuilt( owner, -0.15 )
+
+        end
+
         ply.glee_resurrectDecreasingScore = math.max( CurTime() + 60, ply.glee_resurrectDecreasingScore + 60 )
 
     end
@@ -258,11 +271,14 @@ end
 function SWEP:GetViewModelPosition( pos, ang )
     local offset = Vector( 0 )
     if self:Clip1() <= 0 then
-        offset = Vector( 0,0,-10 )
+        offset = Vector( 0, 0, -10 )
+
     elseif self:GetNWBool( "RevivingPly", false ) then
-        offset = Vector( 0,0,-10 )
+        offset = Vector( 0, 0, -10 )
+
     end
     return pos + offset, ang
+
 end
 
 function SWEP:Think()

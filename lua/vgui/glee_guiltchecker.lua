@@ -1,12 +1,12 @@
 --[[
-    glee_guiltchecker — extends glee_hl2hudbox
+    glee_guiltchecker — extends glee_hl2layoutpanel
 
     The persistent guilt readout, laid out like the HL2 suit cluster: the skull
     sits to the LEFT of a column holding the day count and the evil meter. The
     tier's description sits under the whole cluster.
 
-    Every element is a glee_hl2hudbox ( glee_hl2meter is one too ), and this panel
-    is one as well: its box is the base panel the others sit on, like the ATM gui.
+    Every element inside is a glee_hl2hudbox ( glee_hl2meter is one too ). This panel
+    paints nothing itself; whatever frame holds it draws the background behind it.
     The "you are evil" throb is those boxes' own URGENT state.
 
     Nothing here sizes itself. The frame is a fixed size, this fills it, and the
@@ -40,26 +40,14 @@ local THROB_SLOWEST = 0.5  -- seconds between blinks the moment they turn evil
 local THROB_FASTEST = 0.15 -- ...and once they hit the worst tier
 
 
--- Every colour this panel picks, in one place. Built on first use because the
--- HL2 palette isn't loaded yet when this file is.
--- The accent ( skull, day count, description, meter fill ) is deliberately
--- absent: it comes from the guilt tier itself, so recolour tiers in
--- PermaGuiltInfo, sh_guilt.lua.
-local colors
-
-local function guiltColors()
-    if colors then return colors end
-
-    local hud = terminator_Extras.glee_HL2Hud
-
-    colors = {
-        container  = hud.colorBackgroundDark,
-        boxNormal  = hud.colorBackground,
-        boxUrgent  = hud.colorBackgroundUrgent,
-        meterUnlit = hud.colorBackgroundDark, -- darker than the box it sits in, so unlit reads as recessed
-    }
-
-    return colors
+-- The boxes take their own normal and urgent colours from the palette. The accent
+-- ( skull, day count, description, meter fill ) comes from the guilt tier itself, so
+-- recolour tiers in PermaGuiltInfo, sh_guilt.lua.
+-- Only the meter needs a colour of its own, and it can't be read at file load because
+-- the HL2 palette doesn't exist yet.
+local function meterUnlitColor()
+    -- darker than the box it sits in, so unlit chunks read as recessed
+    return terminator_Extras.glee_HL2Hud.colorBackgroundDark
 
 end
 
@@ -79,36 +67,21 @@ local function evilFraction( days )
 end
 
 
--- a transparent panel that exists purely to be docked into
-local function layoutPanel( parent )
-    local panel = vgui.Create( "DPanel", parent )
-    panel:SetMouseInputEnabled( false )
-    function panel:Paint() end
-
-    return panel
-
-end
-
-
 local PANEL = {}
 
 PANEL.Init = function( self )
     self.BaseClass.Init( self )
 
-    local cfg = guiltColors()
     local hud = terminator_Extras.glee_HL2Hud
     local gap = hud.laneSpacing
     local pad = hud.blockPadding
 
-    -- the base panel never throbs, so its urgent colour is its normal one
-    self:SetNormalBoxColor( cfg.container )
-    self:SetUrgentBoxColor( cfg.container )
     self:DockPadding( pad, pad, pad, pad )
 
     self._lastLevel = nil
     self._lastDays  = nil
 
-    self._cluster = layoutPanel( self )
+    self._cluster = vgui.Create( "glee_hl2layoutpanel", self )
     self._cluster:Dock( TOP )
 
     self._skull = vgui.Create( "glee_hl2hudbox", self._cluster )
@@ -117,7 +90,7 @@ PANEL.Init = function( self )
     self._skull:Dock( LEFT )
     self._skull:DockMargin( 0, 0, gap, 0 )
 
-    self._column = layoutPanel( self._cluster )
+    self._column = vgui.Create( "glee_hl2layoutpanel", self._cluster )
     self._column:Dock( FILL )
 
     self._days = vgui.Create( "glee_hl2hudbox", self._column )
@@ -126,7 +99,7 @@ PANEL.Init = function( self )
 
     self._meter = vgui.Create( "glee_hl2meter", self._column )
     self._meter:SetChunks( METER_CHUNKS )
-    self._meter:SetEmptyColor( cfg.meterUnlit )
+    self._meter:SetEmptyColor( meterUnlitColor() )
     self._meter:Dock( TOP )
     self._meter:DockMargin( 0, gap, 0, 0 )
 
@@ -139,9 +112,6 @@ PANEL.Init = function( self )
     self._throbbers = { self._skull, self._days, self._meter }
 
     for _, box in ipairs( self._boxes ) do
-        box:SetNormalBoxColor( cfg.boxNormal )
-        box:SetUrgentBoxColor( cfg.boxUrgent )
-        box:SetTextPadding( pad )
         box:SetDoFadeDelays( false )
 
     end
@@ -186,7 +156,7 @@ PANEL.Refresh = function( self )
     if not IsValid( ply ) then return end
 
     local level, tierData = GAMEMODE:GetPlysGuiltLevel( ply )
-    local days = GAMEMODE:GetPersistentGuilt( ply )
+    local days = math.Round( GAMEMODE:GetPersistentGuilt( ply ), 2 )
 
     if level ~= self._lastLevel then
         self._lastLevel = level
@@ -204,25 +174,21 @@ PANEL.Refresh = function( self )
 
 end
 
--- the base calls this at the end of its Think
-PANEL.AdditionalThink = function( self )
+PANEL.Think = function( self )
     local level, days = self:Refresh()
     if not level then return end
-
-    self:SetState( self.STATE_NORMAL )
 
     -- the description stays steady; it's the guilt itself that throbs
     self._desc:SetState( self._desc.STATE_NORMAL )
 
     local evil = level >= GAMEMODE.PermaGuiltLevels.ALMOST_GUILTY
-    local throbState = evil and self.STATE_URGENT or self.STATE_NORMAL
 
     -- only read in URGENT, so it costs nothing to set while they're still innocent
     local throbInterval = Lerp( evilFraction( days ), THROB_SLOWEST, THROB_FASTEST )
 
     for _, box in ipairs( self._throbbers ) do
         box:SetUrgentInterval( throbInterval )
-        box:SetState( throbState )
+        box:SetState( evil and box.STATE_URGENT or box.STATE_NORMAL )
 
     end
 end
@@ -268,4 +234,4 @@ PANEL.PerformLayout = function( self, w, _h )
 
 end
 
-vgui.Register( "glee_guiltchecker", PANEL, "glee_hl2hudbox" )
+vgui.Register( "glee_guiltchecker", PANEL, "glee_hl2layoutpanel" )

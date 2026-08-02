@@ -77,41 +77,85 @@ end
 if not SERVER then return end
 
 local baseCost = 400
+local inVehicleCost = 800
+local inRescueHeliCost = 2000
+
+-- killing an innocent is a slight of 100, so being killed pays off the whole base cost
+local refundPerSlight = baseCost / 100
+local maxSurcharge = baseCost * 1.5 -- a negative slight means the placer is the one who owes
+
+-- above this they've earned it, and whatever they're sitting in doesn't protect them
+local slightThatEarnsIt = 50
+
+-- with no slight at all they're picking on someone who never wronged them, so every
+-- one of those this round costs this much more than the last
+local unjustifiedCostMul = 3
+
+-- How much currTarget has wronged the placer. Zero outside hunters glee, where nobody
+-- is keeping score.
+local function slightAgainstPlacer( currTarget, placer )
+    if not GAMEMODE.HasSlighted then return 0 end
+
+    return GAMEMODE:HasSlighted( currTarget, placer )
+
+end
+
+-- Times this placer has surfaced someone's glee for no reason. Kept in roundExtraData
+-- so it is wiped by the same round change that wipes the slights it is judged against.
+local function unjustifiedPlaces( placer )
+    local roundData = GAMEMODE.roundExtraData
+    if not roundData then return 0 end
+
+    local counts = roundData.unjustifiedGleePlaces
+    if not counts then return 0 end
+
+    return counts[placer:SteamID()] or 0
+
+end
+
+local function countUnjustifiedPlace( placer )
+    local roundData = GAMEMODE.roundExtraData
+    if not roundData then return end
+
+    local counts = roundData.unjustifiedGleePlaces or {}
+    roundData.unjustifiedGleePlaces = counts
+
+    local placersId = placer:SteamID()
+    counts[placersId] = ( counts[placersId] or 0 ) + 1
+
+end
+
+hook.Add( "huntersglee_round_into_active", "glee_reset_unjustifiedgleeplaces", function()
+    GAMEMODE.roundExtraData.unjustifiedGleePlaces = {}
+
+end )
 
 function ENT:UpdateGivenScore()
     local currTarget = self:GetCurrTarget()
     if not IsValid( currTarget ) then return end
 
-    local slightSize = 0
-    if GAMEMODE.HasSlighted then
-        slightSize = GAMEMODE:HasSlighted( currTarget, self.player )
-
-    end
+    local slightSize = slightAgainstPlacer( currTarget, self.player )
 
     -- eventually make this free
-    local slightRefund = slightSize * ( baseCost / 100 )
-    slightRefund = math.Clamp( slightRefund, -baseCost * 1.5, baseCost )
+    local refund = math.Clamp( slightSize * refundPerSlight, -maxSurcharge, baseCost )
 
-    local currBaseCost = baseCost
+    local cost = baseCost
 
-    -- if not a huge slight, and target is in rescue heli, 1k base cost
-    if slightSize <= 50 then
+    if slightSize <= slightThatEarnsIt then
         local vehicle = currTarget:GetVehicle()
+
         if IsValid( vehicle ) then
-            if vehicle.isARescueHeliSeat then
-                currBaseCost = 2000
+            cost = vehicle.isARescueHeliSeat and inRescueHeliCost or inVehicleCost
 
-            else
-                currBaseCost = 800
-
-            end
         end
     end
 
-    -- final cost
-    local cost = -currBaseCost + slightRefund
+    if slightSize <= 0 then
+        cost = cost * unjustifiedCostMul ^ unjustifiedPlaces( self.player )
 
-    self:SetGivenScore( cost )
+    end
+
+    self:SetGivenScore( refund - cost )
 
 end
 
@@ -132,14 +176,23 @@ local cheers = {
 }
 
 function ENT:Place()
+    local currTarget = self:GetCurrTarget()
 
-    GAMEMODE:SurfaceHomicidalGlee( self:GetCurrTarget(), self.player )
+    -- read before surfacing, which decays the very slight this is judged on
+    local wasUnjustified = slightAgainstPlacer( currTarget, self.player ) <= 0
+
+    GAMEMODE:SurfaceHomicidalGlee( currTarget, self.player )
 
     local score = self:GetGivenScore()
 
     if self.player.GivePlayerScore and score then
         self.player:GivePlayerScore( score )
         GAMEMODE:sendPurchaseConfirm( self.player, score )
+
+    end
+
+    if wasUnjustified then
+        countUnjustifiedPlace( self.player )
 
     end
 

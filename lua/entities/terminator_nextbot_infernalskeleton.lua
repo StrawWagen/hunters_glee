@@ -229,7 +229,7 @@ ENT.MyClassTask = {
         data.HasSetup = true
 
     end,
-    OnKilled = function( self, data ) -- TODO: move this to ondamaged?
+    OnKilled = function( self, data )
         if not self.glee_AlwaysDropSkull then
             self:Term_SpeakSoundNow( "npc/stalker/stalker_pain" .. math.random( 1, 3 ) .. ".wav", math.random( 20, 50 ) )
 
@@ -242,7 +242,7 @@ ENT.MyClassTask = {
 
         end
     end,
-    GetDeathAnim = function( self, data )
+    GetDeathAnim = function( self, data ) -- fixes some jank with skull dropping / bone manipulation
         if not self.glee_AlwaysDropSkull then return end
 
         self:Term_SpeakSoundNow( "npc/stalker/stalker_scream1.wav", math.random( 20, 50 ) )

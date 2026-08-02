@@ -128,7 +128,7 @@ function spawnSetVote:OnVoteEnd()
     spawnSetVote.winner = spawnSetVote:GetWinningKey( voteCounts )
 
     if spawnSetVote.winner == GAMEMODE:GetSpawnSet() then
-        huntersGlee_AnnounceDramatic( player.GetAll(), 1001, 5, "Mode will remain " .. GAMEMODE:GetPrettyNameOfSpawnSet( spawnSetVote.winner ) .. "..." )
+        huntersGlee_AnnounceDramatic( player.GetAll(), 1001, 5, "Your Misery will remain; " .. GAMEMODE:GetPrettyNameOfSpawnSet( spawnSetVote.winner ) .. "..." )
         spawnSetVote.currVote = nil
 
         return
@@ -140,20 +140,22 @@ function spawnSetVote:OnVoteEnd()
         hook.Remove( "MapVote_VoteStarted", "glee_setvotedspawnset" )
         hook.Remove( "ShutDown", "glee_setvotedspawnset" )
         game.ConsoleCommand( "huntersglee_spawnset " .. set .. "\n" )
-        huntersGlee_Announce( player.GetAll(), 150, 3, "Setting mode..." )
+        GAMEMODE.rtmWaitingForRoundEnd = nil
+        huntersGlee_Announce( player.GetAll(), 150, 3, "NEW MISERY..." )
         timer.Simple( 2, function()
-            huntersGlee_AnnounceDramatic( player.GetAll(), 1001, 5, "Mode changed to " .. GAMEMODE:GetPrettyNameOfSpawnSet( set ) )
+            huntersGlee_AnnounceDramatic( player.GetAll(), 1001, 5, GAMEMODE:GetPrettyNameOfSpawnSet( set ) .. "\nis your new Misery..." )
 
         end )
     end
 
     -- print in console!
-    permaPrint( "GLEE: Mode vote is over, winner is, " .. spawnSetVote.winner )
+    permaPrint( "GLEE: Misery vote is over, winner is, " .. spawnSetVote.winner )
     -- and in people's chat!
-    GAMEMODE:SpeakAsHuntersGlee( "Mode vote over! Winner is " .. GAMEMODE:GetPrettyNameOfSpawnSet( spawnSetVote.winner ) )
+    GAMEMODE:SpeakAsHuntersGlee( "the Misery vote winner; " .. GAMEMODE:GetPrettyNameOfSpawnSet( spawnSetVote.winner ) )
 
     if GAMEMODE:RoundState() == GAMEMODE.ROUND_ACTIVE and GAMEMODE:getRemaining( GAMEMODE.termHunt_roundBegunTime, CurTime() ) > 60 then -- if round has properly started
-        huntersGlee_AnnounceDramatic( player.GetAll(), 1001, 10, "Mode will be changed to " .. GAMEMODE:GetPrettyNameOfSpawnSet( spawnSetVote.winner ) .. "\n on round end." )
+        huntersGlee_AnnounceDramatic( player.GetAll(), 1001, 10, "The next Misery; " .. GAMEMODE:GetPrettyNameOfSpawnSet( spawnSetVote.winner ) .. "\nwill arrive upon round end..." )
+        GAMEMODE.rtmWaitingForRoundEnd = spawnSetVote.winner
         hook.Add( "huntersglee_round_into_inactive", "glee_setvotedspawnset", function()
             setSpawnSet( spawnSetVote.winner )
 

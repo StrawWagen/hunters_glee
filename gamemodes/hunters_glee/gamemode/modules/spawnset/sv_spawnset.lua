@@ -239,7 +239,7 @@ function GM:SetSpawnSet( setName )
 
     if oldSetName ~= setName then
         hook.Run( "glee_post_new_spawnset", setName, spawnSet, oldSetName )
-        permaPrint( "GLEE: Mode set to, " .. setName )
+        permaPrint( "GLEE: Misery set to, " .. setName )
 
     else
         hook.Run( "glee_post_refresh_spawnset", setName, spawnSet, oldSetName )

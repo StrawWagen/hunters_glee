@@ -80,47 +80,20 @@ local function openAtmGui( atm )
     -----------------------------------------------------------]]
     local function baseHudBox()
         local box = vgui.Create( "glee_hl2hudbox" )
-        box:SetIconFont( "glee_mediumHL2Font" )
-        box:SetTextPadding( pad )
-        box:SetNormalBoxColor( hud.colorBackground:Copy() )
-        box:SetFlashBoxColor( hud.colorBackgroundUrgent:Copy() )
         box:SetFlashDuration( 0.12 )
-        box:SetFlashIconColor( hud.colorHappyYellow:Copy() )
-        box:SetIconColor( hud.colorHappyYellow:Copy() )
+        box:SetFlashIconColor( hud.colorHappyYellow:Copy() ) -- the box defaults this to red
         box:SetDoFadeDelays( false )
         return box
 
     end
 
-    --[[---------------------------------------------------------
-        "Bank:" heading: auto-sized hudbox anchored inside a transparent row
-        The transparent container is docked TOP (full-width) so the dock layout works.
-        The visible hudbox is positioned at (0,0) inside it, sized only to its text.
-    -----------------------------------------------------------]]
-    local bankHeadingRow = vgui.Create( "DPanel" )
-    bankHeadingRow:SetTall( rowH )
-    bankHeadingRow:SetMouseInputEnabled( false )
-    function bankHeadingRow:Paint() end
-
-    local bankHeadingBox = baseHudBox()
-    bankHeadingBox:SetParent( bankHeadingRow )
-    bankHeadingBox:SetText( "Bank:" )
-    bankHeadingBox:AutoSize()   -- width = textW("Bank:") + pad*4, height = rowH
-    bankHeadingBox:SetPos( 0, 0 )
-    function bankHeadingBox:AdditionalThink()
-        self:SetState( self.STATE_NORMAL )
-
-    end
+    local bankHeadingRow = vgui.Create( "glee_hl2hudheading" )
+    bankHeadingRow:SetText( "Bank:" )
 
     --[[---------------------------------------------------------
         Bank balance count-up (number-only row, full-width)
     -----------------------------------------------------------]]
     local bankBox = vgui.Create( "glee_hl2hudscorecount" )
-    bankBox:SetIconFont( "glee_mediumHL2Font" )
-    bankBox:SetTextPadding( pad )
-    bankBox:SetNormalBoxColor( hud.colorBackground:Copy() )
-    bankBox:SetFlashBoxColor( hud.colorBackgroundUrgent:Copy() )
-    bankBox:SetIconColor( hud.colorHappyYellow:Copy() )
     bankBox:SetDoFadeDelays( false )
     bankBox:SetLabel( "" )        -- "Bank:" is the heading row above
     bankBox:SetNilLabel( "none" )
@@ -195,25 +168,31 @@ local function openAtmGui( atm )
         Build action rows
     -----------------------------------------------------------]]
     local nextTransactionTime = 0
+    local accountPurchaseWait = 1
+
+    -- Returns whether they can transact, and starts buying them an account when they
+    -- can't. Neither button does anything without one, so both double as the way in.
+    -- The shop prints its own refusal in chat, hence the wait on a failed attempt.
+    local function requireAccount()
+        if ply:GetNW2Bool( "Glee_HasBankAccount", false ) then return true end
+
+        nextTransactionTime = CurTime() + accountPurchaseWait
+        RunConsoleCommand( "termhunt_purchase", "bankopenaccount" )
+
+    end
 
     local depositRow = makeActionRow( "DEPOSIT", function()
         if CurTime() < nextTransactionTime then return end
-        if not ply:GetNW2Bool( "Glee_HasBankAccount", false ) then
-            ply:EmitSound( "buttons/button10.wav", 75, 100, 0.25 )
-            return
+        if not requireAccount() then return end
 
-        end
         local cooldown      = ply:Alive() and atm.TransactionCooldown or atm.TransactionCooldownDead
         nextTransactionTime = CurTime() + cooldown
         sendDeposit( atm )
     end )
     local withdrawRow = makeActionRow( "WITHDRAW", function()
         if CurTime() < nextTransactionTime then return end
-        if not ply:GetNW2Bool( "Glee_HasBankAccount", false ) then
-            ply:EmitSound( "buttons/button10.wav", 75, 100, 0.25 )
-            return
+        if not requireAccount() then return end
 
-        end
         local cooldown      = ply:Alive() and atm.TransactionCooldown or atm.TransactionCooldownDead
         nextTransactionTime = CurTime() + cooldown
         sendWithdraw( atm )
@@ -255,19 +234,9 @@ local function openAtmGui( atm )
     --[[---------------------------------------------------------
         Frame
     -----------------------------------------------------------]]
-    local frame = vgui.Create( "DFrame" )
+    local frame = vgui.Create( "glee_hl2frame" )
     frame:SetSize( frameW, totalH )
     frame:Center()
-    frame:MakePopup()
-    frame:SetTitle( "" )
-    frame:ShowCloseButton( false )
-    frame:SetDraggable( false )
-    frame:DockPadding( pad, pad, pad, pad )
-
-    function frame:Paint( w, h )
-        draw.RoundedBox( hud.boxCornerRadius, 0, 0, w, h, hud.colorBackgroundDark )
-
-    end
 
     function frame:Think()
         hook.Run( "glee_cl_pleasepainttopleft_for", "score", 0.5 )

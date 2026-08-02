@@ -108,6 +108,24 @@ if SERVER then
 
     end
 
+    function GM:GetRichestPlayer()
+        local richest      = nil
+        local richestScore = 0
+
+        for _, ply in ipairs( player.GetAll() ) do
+            if not ply:IsPlayer() then continue end
+            if ply:Health() <= 0 then continue end
+            local s = ply:GetScore()
+            if s <= richestScore then continue end
+
+            richestScore = s
+            richest = ply
+
+        end
+        return richest, richestScore
+
+    end
+
     function meta:GivePlayerSkulls( add )
         if hook.Run( "huntersglee_giveskulls", self, add ) == false then return end
         local skulls = self:GetSkulls()

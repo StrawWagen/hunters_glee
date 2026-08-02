@@ -45,7 +45,7 @@ ENT.LightOffset = Vector( 0, 0, 75 )
 
 function ENT:Initialize()
     self:SetNW2Bool( "glee_IsSpectatable", true )
-    self.glee_PrettyName = "The Bank ATM" -- will only ever be 1 of these
+    self.glee_PrettyName = "The Bank ATM" -- will only ever be 1 of these, hence THE
 
     self:SetModel( self.Model )
     self:SetState( "usable" )

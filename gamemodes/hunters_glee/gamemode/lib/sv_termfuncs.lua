@@ -58,7 +58,7 @@ function GM:getNearestPosOnNav( pos, distance )
     local distIn = distance or 2000
     local result = { pos = nil, area = NULL }
     if not pos then return result end
-    local navFound = GAMEMODE:getNearestNav( pos, distIn )
+    local navFound = self:getNearestNav( pos, distIn )
     if not navFound then return result end
     if not navFound:IsValid() then return result end
     result = { pos = navFound:GetClosestPointOnArea( pos ), area = navFound }
@@ -132,7 +132,7 @@ function GM:findValidNavResult( data, start, radius, scoreFunc, noMoreOptionsMin
     local cur = nil
     if isvector( start ) then
         pos = start
-        res = GAMEMODE:getNearestPosOnNav( pos )
+        res = self:getNearestPosOnNav( pos )
         cur = res.area
 
     elseif start and start.IsValid and start:IsValid() then
@@ -300,7 +300,7 @@ function GM:IsUnderDisplacementExtensive( pos )
 end
 
 function GM:getFurthestConnectedNav( start, dist, ignoreBlocker )
-    local res = GAMEMODE:getNearestPosOnNav( start, 20000 )
+    local res = self:getNearestPosOnNav( start, 20000 )
     local startArea = res.area
 
     if not startArea:IsValid() then return end
@@ -330,7 +330,7 @@ function GM:getFurthestConnectedNav( start, dist, ignoreBlocker )
         return score
 
     end
-    return GAMEMODE:findValidNavResult( scoreData, start, dist, scoreFunction )
+    return self:findValidNavResult( scoreData, start, dist, scoreFunction )
 
 end
 
@@ -338,7 +338,7 @@ local vec40Z = Vector( 0, 0, 40 )
 
 function GM:GetNearbyWalkableArea( playerReference, start, count, occupiedSpawnAreas )
     local spawnTraceOffset = vec40Z
-    local res = GAMEMODE:getNearestPosOnNav( start, 20000 )
+    local res = self:getNearestPosOnNav( start, 20000 )
     local startArea = res.area
 
     if not IsValid( startArea ) then return end
@@ -398,7 +398,7 @@ function GM:GetNearbyWalkableArea( playerReference, start, count, occupiedSpawnA
 
     local radAdd = count * 100
 
-    local outPos, outArea = GAMEMODE:findValidNavResult( scoreData, start, math.random( 300, 800 ) + radAdd, scoreFunction )
+    local outPos, outArea = self:findValidNavResult( scoreData, start, math.random( 300, 800 ) + radAdd, scoreFunction )
 
     if not outPos then return end
 
@@ -508,7 +508,7 @@ end
 
 function GM:getDeadPlayers()
     local players = player.GetAll()
-    local deadPlayers = GAMEMODE:returnDeadInTable( players )
+    local deadPlayers = self:returnDeadInTable( players )
 
     return deadPlayers
 
@@ -516,7 +516,7 @@ end
 
 function GM:getDeadListeners()
     local players = player.GetAll()
-    local deadPlayers = GAMEMODE:returnDeadListenersInTable( players )
+    local deadPlayers = self:returnDeadListenersInTable( players )
 
     return deadPlayers
 
@@ -524,7 +524,7 @@ end
 
 function GM:getAlivePlayers()
     local players = player.GetAll()
-    local alivePlayers = GAMEMODE:returnAliveInTable( players )
+    local alivePlayers = self:returnAliveInTable( players )
 
     return alivePlayers
 
@@ -534,7 +534,25 @@ function GM:nearestAlivePlayer( pos )
     local nearestPlyDistSqr = math.huge
     local nearestPly = nil
 
-    for _, alivePly in ipairs( GAMEMODE:getAlivePlayers() ) do
+    for _, alivePly in ipairs( self:getAlivePlayers() ) do
+        local distToPlySqr = alivePly:GetPos():DistToSqr( pos )
+        if distToPlySqr < nearestPlyDistSqr then
+            nearestPlyDistSqr = distToPlySqr
+            nearestPly = alivePly
+
+        end
+    end
+
+    return nearestPly, nearestPlyDistSqr
+end
+
+function GM:nearestNonInfernalAlivePlayer( pos )
+    local nearestPlyDistSqr = math.huge
+    local nearestPly = nil
+
+    for _, alivePly in ipairs( self:getAlivePlayers() ) do
+        if alivePly:HasStatusEffect( "infernalintervention_rawendofthedeal" ) then continue end
+
         local distToPlySqr = alivePly:GetPos():DistToSqr( pos )
         if distToPlySqr < nearestPlyDistSqr then
             nearestPlyDistSqr = distToPlySqr
@@ -571,7 +589,7 @@ function GM:allAlivePlayerShootPositions()
 end
 
 function GM:getNearestHunter( pos, hunters )
-    hunters = hunters or GAMEMODE.glee_Hunters
+    hunters = hunters or self.glee_Hunters
     local huntersCopy = table.Copy( hunters )
     table.sort( huntersCopy, function( a, b ) -- sort HUNTERS by distance to pos
         if not IsValid( a ) then return false end
@@ -586,7 +604,7 @@ function GM:getNearestHunter( pos, hunters )
 end
 
 function GM:aRandomHunter( hunters )
-    hunters = hunters or table.Copy( GAMEMODE.glee_Hunters )
+    hunters = hunters or table.Copy( self.glee_Hunters )
 
     table.Shuffle( hunters )
 

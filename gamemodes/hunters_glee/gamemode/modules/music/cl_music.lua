@@ -1,5 +1,5 @@
 
-local defaultMusicVolume = 0.35
+local defaultMusicVolume = 0.5
 local volumeVar = CreateClientConVar( "cl_huntersglee_musicvolume", "-1", true, false, "Glee music volume, -1 for default, " .. defaultMusicVolume, -1, 1 )
 
 -- All active-sound state lives here; nil means nothing is playing.

@@ -19,13 +19,13 @@ function ENT:SetupDataTables()
 
 end
 
+-- cl_plynames module draws a name panel for anything with a Nick
 function ENT:Nick()
     return "The ATM"
 
 end
 
-local atmColor = Vector( 255, 20, 20 ) / 255
-
+local atmColor = Vector( 255, 190, 0 ) / 255
 function ENT:GetPlayerColor()
     return atmColor
 
@@ -34,7 +34,7 @@ end
 -- Returns true, or false + reason if the player cannot deposit right now.
 function ENT:CanDeposit( ply )
     if self:GetState() ~= "usable" then return false, "ATM is not usable right now" end
-    if not ply:BankHasAccount() then return false, "Open a bank account first" end
+    if not ply:BankHasAccount() then return false, "Click to open a bank account." end
     if ply:GetScore() <= 0 then return false, "No score to deposit" end
     return true
 
@@ -43,7 +43,7 @@ end
 -- Returns true, or false + reason if the player cannot withdraw right now.
 function ENT:CanWithdraw( ply )
     if self:GetState() ~= "usable" then return false, "ATM is not usable right now" end
-    if not ply:BankHasAccount() then return false, "Open a bank account first" end
+    if not ply:BankHasAccount() then return false, "Click to open a bank account." end
 
     local bankFunds  = ply:GetNW2Int( "Glee_BankFunds", 0 )
     local minFunds   = gleefunc_BankMinFunds()

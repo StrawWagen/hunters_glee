@@ -56,12 +56,14 @@ GM.PermaGuiltInfo = {
         color = colorMixCl( hud.colorHappyYellow, hud.colorRedUrgent, 0.5 ),
         message = "You're evil.\nThe divine actors are displeased.",
         divineCostMul = 1.5,
+        canPurchaseForgivenessRitual = true,
     },
     [PermaGuiltLevels.VERY_GUILTY] = {
         desc = "You're very evil. Divine paths are almost out of your reach.",
         color = colorMixCl( hud.colorHappyYellow, hud.colorRedUrgent, 0.25 ),
         message = "You're very evil.\nThe divine paths are closing...",
         divineCostMul = 2.5,
+        canPurchaseForgivenessRitual = true,
     },
     [PermaGuiltLevels.EXTREMELY_GUILTY] = {
         desc = "You're extremely evil. The divine ways are closed to you. You are always one with the infernal powers.",
@@ -69,6 +71,7 @@ GM.PermaGuiltInfo = {
         color = hud.colorRedUrgent,
         divineItemsNotPurchaseable = true,
         alwaysTakingTheDeal = true,
+        canPurchaseForgivenessRitual = true,
     },
 }
 
@@ -138,10 +141,16 @@ hook.Add( "glee_shop_canpurchase", "glee_guiltycantbuydivine", function( purchas
 end )
 
 if CLIENT then
-    net.Receive( "glee_persistguiltincreased", function()
-        local guiltInDays = net.ReadFloat()
-        hook.Run( "glee_persistentguilt_increased", guiltInDays )
+    net.Receive( "glee_persistguiltchanged", function()
+        local oldGuiltInDays = net.ReadFloat()
+        local newGuiltInDays = net.ReadFloat()
+        if newGuiltInDays > oldGuiltInDays then
+            hook.Run( "glee_persistentguilt_increased", newGuiltInDays )
 
+        else
+            hook.Run( "glee_persistentguilt_decreased", newGuiltInDays )
+
+        end
     end )
     net.Receive( "glee_dealtpvpdamage", function()
         local damage = net.ReadInt( 16 )
@@ -177,6 +186,14 @@ if CLIENT then
                 notification.AddLegacy( msg, NOTIFY_ERROR, 10 )
 
             end
+        end )
+    end )
+    hook.Add( "glee_persistentguilt_decreased", "glee_guiltnotif", function( _newGuiltInDays )
+        if not active then return end
+        timer.Create( "glee_persistguilt_delayeddesc", 0.1, 1, function()
+            local msg = "You feel some of your guilt fade..."
+            notification.AddLegacy( msg, NOTIFY_HINT, 10 )
+
         end )
     end )
 end

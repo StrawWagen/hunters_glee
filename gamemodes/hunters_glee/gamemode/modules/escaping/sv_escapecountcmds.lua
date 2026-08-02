@@ -122,6 +122,7 @@ concommand.Add( "huntersglee_print_bymultiplier", function( ply )
     permaPrint( "=== Spawnsets (by multiplier) ===" )
     printMultiplierTable( "glee_escape_by_spawnset", "spawnset", function( key )
         return GAMEMODE:GetSpawnsetsEscapeMultiplier( key )
+
     end )
 
 end )

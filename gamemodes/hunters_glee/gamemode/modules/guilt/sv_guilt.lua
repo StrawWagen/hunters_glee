@@ -1,7 +1,7 @@
 
 -- keep track of who's pissed off who this round
 
-util.AddNetworkString( "glee_persistguiltincreased" )
+util.AddNetworkString( "glee_persistguiltchanged" )
 util.AddNetworkString( "glee_dealtpvpdamage" )
 util.AddNetworkString( "glee_homicidallygleeful" )
 
@@ -374,10 +374,12 @@ function GM:IncrementPersistentGuilt( ply, add )
     local newPersistentGuilt = math.max( oldPersistentGuilt, currentTime ) + daysToAdd
     ply:SetPData( "glee_persistentguilt", newPersistentGuilt )
 
+    local inDaysOld = getGuiltInDays( oldPersistentGuilt )
     local inDays = getGuiltInDays( newPersistentGuilt )
     ply:SetNWFloat( "glee_persistentguilt_days", inDays )
 
-    net.Start( "glee_persistguiltincreased" )
+    net.Start( "glee_persistguiltchanged" )
+        net.WriteFloat( inDaysOld )
         net.WriteFloat( inDays )
     net.Send( ply )
 
@@ -449,7 +451,7 @@ hook.Add( "glee_onkilledtrulyinnocentsoul", "glee_incrementpersistentguilt", fun
 
     local daysToAdd = 1
     if GAMEMODE:IsFirstTimePlayer( attacker ) then
-        daysToAdd = 4
+        daysToAdd = 6
 
     end
 

@@ -457,7 +457,7 @@ local items = {
 
         end,
         markupPerPurchase = 0.5,
-        cooldown = 60,
+        cooldown = 30,
         tags = { "ITEMS", "Utility", "NewGamePlus" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,

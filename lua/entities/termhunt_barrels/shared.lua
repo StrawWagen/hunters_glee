@@ -56,7 +56,7 @@ function ENT:BarrelRandomize()
     self:SetModel( model )
 
     local yaw = math.Rand( -180, 180 )
-    local ang = Angle( 0, yaw ,0 )
+    local ang = Angle( 0, yaw, 0 )
     self:SetAngles( ang )
 
     timer.Simple( 0, function()

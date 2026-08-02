@@ -1,6 +1,4 @@
 
--- TODO: impliment guilt effects
-
 local developerVar = GetConVar( "developer" )
 -- guilt effects are a dedicated server only mechanic
 -- developer 1 enables them for testing
@@ -19,26 +17,13 @@ local function openGuiltChecker()
     local scale  = GAMEMODE.shopStandards.shpScale or 1
     local frameW = glee_sizeScaled( FRAME_W_1080P * scale )
 
-    local frame = vgui.Create( "DFrame" )
-    frame:MakePopup()
-    frame:SetTitle( "" )
-    frame:ShowCloseButton( false )
-    frame:SetDraggable( false )
+    local frame = vgui.Create( "glee_hl2frame" )
 
-    -- the checker's own box is the background, as it is a glee_hl2hudbox itself
-    function frame:Paint() end
+    -- the checker brings its own padding, and its height is measured including it
+    frame:DockPadding( 0, 0, 0, 0 )
 
     local checker = vgui.Create( "glee_guiltchecker", frame )
-
-    -- DFrame re-applies its own DockPadding ( 5, 29, 5, 5 ) as it lays out, so a
-    -- docked child gets pushed down under the title bar and hangs off the bottom.
-    -- We have no title bar, so the checker is placed by hand instead, and DFrame's
-    -- layout is left unrun.
-    function frame:PerformLayout( w, h )
-        checker:SetPos( 0, 0 )
-        checker:SetSize( w, h )
-
-    end
+    checker:Dock( FILL )
 
     local function fitToChecker()
         frame:SetSize( frameW, checker:LayoutForWidth( frameW ) )

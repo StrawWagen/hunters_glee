@@ -164,10 +164,6 @@ GM.roundStartAfterNavCheck      = 75
 GM.roundStartNormal             = 30
 GM.roundStartNormalAllEscaped   = 60
 
--- this is increased when all hunters are killed, or are being forced to spawn in front of players
--- basically it makes the spawner get more aggressive the longer you stay on cheesable maps
-GM.sessionDiffBump = 0
-
 local CurTime = CurTime
 
 -- gamemode starts up, starts 5 second countdown to navmesh check.
@@ -201,6 +197,10 @@ function GM:TermHuntSetup()
     self.nextStateTransmit              = 0
     self.finishedRoundCount             = 0
     self.currWaveDifficulty             = 0
+
+    -- this is increased when the round is won, all hunters are killed, or are being forced to spawn in front of players
+    -- basically it makes the spawner get more aggressive the longer you stay on cheesable maps
+    self.sessionDiffBump = 0
 
     -- just in case!
     hook.Remove( "Think", "glee_DoGreedyPatchThinkHook" )

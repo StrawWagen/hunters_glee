@@ -1091,9 +1091,12 @@ if SERVER and terminator_Extras then
         -- OR fly to sound hint
         if currGoal == "rescue" then
             local noPlayersNeedRescuing = true
+            local someoneRescuable = nil
             for _, ply in player.Iterator() do
                 if not ply:Alive() then continue end
                 if heliWontRescue( self, ply ) then continue end
+                someoneRescuable = true
+
                 if IsValid( ply:GetVehicle() ) and ply:GetVehicle():GetParent() == self then continue end
                 noPlayersNeedRescuing = false
                 break
@@ -1113,8 +1116,13 @@ if SERVER and terminator_Extras then
             elseif noPlayersNeedRescuing then
                 self.currentHeliTask = "rescue_switchToEscape"
                 self.currentHeliGoal = "escape"
-                huntersGlee_AnnounceDramatic( player.GetAll(), 502, 5, "Rescue is departing!\nAll souls aboard!" )
+                if someoneRescuable then
+                    huntersGlee_AnnounceDramatic( player.GetAll(), 502, 5, "Rescue is departing!\nAll souls aboard!" )
 
+                else
+                    huntersGlee_AnnounceDramatic( player.GetAll(), 502, 5, "Rescue is departing!\nThere's nobody left to save..." )
+
+                end
             elseif heliAllSeatsFull( self ) then
                 self.currentHeliTask = "rescue_switchToEscape"
                 self.currentHeliGoal = "escape"

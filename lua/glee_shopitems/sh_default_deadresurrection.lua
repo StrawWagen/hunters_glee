@@ -550,14 +550,6 @@ if CLIENT then
                     end
                 end
             end )
-
-            self:Hook( "huntersglee_cl_displayhint_predeadhints", function( me )
-                if me ~= owner then return end
-                if owner:GetNW2Int( "glee_divineintervetion_respawncount", 0 ) >= 3 then return end
-
-                return true, "Stop wasting time, RESPAWN YOURSELF.\nYou are true DIVINE INTERVENTION."
-
-            end )
         end
     )
 end
@@ -686,16 +678,20 @@ if SERVER then
             end )
 
             -- dont play the sv_modelspeaking lines, termhunt_divine_chosen plays its own
-            self:Hook( "glee_block_modellines", function( ply )
-                if ply ~= owner then return end
-                return true
+            self:HookOnce( "glee_block_modellines", function( ply )
+                if ply:HasStatusEffect( "divine_chosen" ) then return true end
 
             end )
 
             -- this person is NOT a safe spawn anchor
-            self:Hook( "huntersglee_blockspawn_nearplayers", function( spawner, _ )
-                if spawner ~= owner then return end
-                return true
+            self:HookOnce( "huntersglee_blockspawn_nearplayers", function( spawner, _ )
+                if spawner:HasStatusEffect( "divine_chosen" ) then return true end
+
+            end )
+
+            -- grigori cannot escape
+            self:HookOnce( "glee_blockescape_invehicle", function( escaper, _ )
+                if escaper:HasStatusEffect( "divine_chosen" ) then return true end
 
             end )
 
@@ -771,6 +767,24 @@ if SERVER then
                     end
                 end )
             end
+
+            self:HookOnce( "PlayerDeath", function( died )
+                if not died:HasStatusEffect( "divine_chosen" ) then return end
+
+                died.glee_DivineChosenForcedResurrect = CurTime() + 5
+
+            end )
+
+            self:HookOnce( "PlayerDeathThink", function( dead )
+                if not dead:HasStatusEffect( "divine_chosen" ) then return end
+
+                if not dead.glee_DivineChosenForcedResurrect then return end
+                if dead.glee_DivineChosenForcedResurrect > CurTime() then return end
+
+                dead.glee_DivineChosenForcedResurrect = CurTime() + 5 -- dont spam sound
+                dead:ConCommand( "termhunt_purchase resurrection" )
+
+            end )
         end,
         function( _self, owner ) -- teardown func
             owner.glee_divineChosenResurrect = nil

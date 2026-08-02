@@ -137,6 +137,22 @@
 
 -- directly say that roll of the dice is for unstucking -done
 
+tutorial/getting ready misery
+DONE, new plys forced to revamped oneguy mode
+    spawns in the tutorial misery
+    players cannot buy anything?
+    people load into the misery
+    BIG RTM HINT to ready up
+
+change MODE to...
+    Misery -- DONE
+    Scenario
+    Misfortune
+harmless misery with terminators that never get angry?
+
+-- make radio a purchasable item
+-- make voicechat a settings menu thing
+
 -- Replace stupid temp bools with ints, polish conduit/inversion cooldowns
 
 -- effigy
@@ -156,8 +172,6 @@
 -- most skulls
 -- flat, most hunter kills
 -- most skulls, additive ( all players skulls in one session, added up )
-
--- radio draw channel instead of ammo
 
 -- bhop perk?
 
@@ -181,8 +195,8 @@
 
 -- hint to flash tab?
 
--- voting for modes is not that new user friendly
--- zambies glee is better starting mode
+-- voting for miseries is not that new user friendly
+-- zambies glee is better starting misery
 -- sixth sense conflicts with new proximity hud
 
 -- skull place while dead item
@@ -269,7 +283,7 @@ purchase innate that lets you carry more weapons
 afk fakeout doppleganger
 attach balloons to stuff as ghost
 
-terminator mode
+terminator misery
 beartraps more prominent in shop
 SLAMS prominent in shop
 
@@ -277,21 +291,7 @@ spawnsets get hints?
 Rename AR2 to Pulse-Rifle
 USE hint on weapons on the ground?
 
-weapons spawn later, longer buildup for terminator modes
-
-tutorial/getting ready mode
-spawns in the tutorial mode
-players cannot buy anything?
-people load into the mode
-BIG RTM HINT to ready up
-
-
-change MODE to...
-    Misery
-    Scenario
-    Misfortune
-
-harmless misery with terminators that never get angry?
+weapons spawn later, longer buildup for terminator miseries
 
 put big messages ON TOP OF OTHER ELEMENTS
 
@@ -328,9 +328,13 @@ can only do it once a day? hour?
 
 self-ritual escape method
 infernal players can begin a ritual
+throw skulls at a skull posessing ragdoll in the map
+throw 5 skulls at it, it's head lights on fire and drops an infernal skull
+infernal skull yaps at you?
+throw infernal skull to open the infernal portal
 they, and other infernal players, cannot escape via it
-only way to reduce guilt
-also very profitable, like very very
+reduces 0.5 days of guilt per escaped player
+also very profitable?
 
 
 doritos playermodel nextbots

@@ -22,7 +22,7 @@ hunters_glee/
 ├── gamemodes/hunters_glee/gamemode/   # Core gamemode logic
 ├── lua/
 │   ├── glee_shopitems/                # Shop item definitions (auto-loaded)
-│   ├── glee_spawnsets/                # Enemy spawnset definitions (auto-loaded)
+│   ├── glee_spawnsets/                # Enemy spawnset(misery) definitions (auto-loaded)
 │   ├── entities/                      # Custom entities
 │   ├── weapons/                       # Custom weapons
 │   └── effects/                       # Visual effects
@@ -329,7 +329,7 @@ also register with no funcs at all ( like channel_666 ), if you just want a flag
 
 ### Adding Spawnsets
 
-Spawnsets are the #1 way to change up the hunt.
+Spawnsets(Miseries) are the #1 way to change up the hunt.
 They're defined in `lua/glee_spawnsets/` and auto-loaded.
 Third party addons can define their own spawnsets, they just have to be in the right spot.
 
@@ -339,9 +339,9 @@ Third party addons can define their own spawnsets, they just have to be in the r
 -- lua/glee_spawnsets/my_spawnset.lua
 
 local mySpawnSet = {
-    name = "my_spawnset",                       -- Unique identifier
-    prettyName = "My Custom Mode",              -- Display name
-    description = "It's my mode, it's custom!", -- Description, best used as a "hint" that teases the spawnset's content
+    name = "my_spawnset",                           -- Unique identifier
+    prettyName = "My Custom Misery",                -- Display name
+    description = "It's my misery, it's custom!",   -- Description, best used as a "hint" that teases the spawnset's content
     
     -- Use "default" to inherit base values, or "default*2" for multipliers
     -- Difficulty is very dynamic, so it's best to use "default" or multipliers of it,
@@ -413,7 +413,7 @@ Number values can be:
 | `roundEarlyStartSound` | ❌ | Alt start sound, played 10s before start, only plays if roundStartSound is "" |
 | `genericSpawnerRate` | ❌ | Crate/item spawn rate multiplier |
 | `chanceToBeVotable` | ❌ | Percent chance to appear in !rtm vote, 0-100, accepts float |
-| `chanceToBeVotableWhenHard` | ❌ | Percent chance to appear in !rtm when this mode's escape multiplier >1.5x, for making spawnsets fade into the background when they no longer challenge the host |
+| `chanceToBeVotableWhenHard` | ❌ | Percent chance to appear in !rtm when this misery's escape multiplier >1.5x, for making spawnsets fade into the background when they no longer challenge the host |
 
 #### .spawns Entries
 

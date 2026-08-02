@@ -476,6 +476,7 @@ local FKeyBinds = {
     ["invnext"] = "HandleZoomOut",
     ["invprev"] = "HandleZoomIn",
     ["toggle_zoom"] = "SendFakeInZoom",
+    ["gm_showspare2"] = "OpenSettingsMenu"
 
 }
 
@@ -540,3 +541,19 @@ function GM:SendFakeInZoom()
     net.SendToServer()
 
 end
+
+local ChatCommandAliases = {
+    ["!settings"] = "glee_settings_open",
+}
+
+hook.Add( "OnPlayerChat", "glee_chatcommandaliases", function( ply, text )
+    if ply ~= LocalPlayer() then return end
+
+    local command = ChatCommandAliases[string.lower( string.Trim( text ) )]
+    if not command then return end
+
+    RunConsoleCommand( command )
+
+    return false
+
+end )

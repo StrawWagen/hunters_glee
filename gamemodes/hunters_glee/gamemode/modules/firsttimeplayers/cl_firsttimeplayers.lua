@@ -29,6 +29,18 @@ end )
 local imNewMyself = nil
 local hasSeenMessage = CreateClientConVar( "cl_huntersglee_firsttimetutorial", 0, true, true, "Has the player seen the one-time tutorial series of messages?" )
 
+local spawnsetCvar = GetConVar( "huntersglee_spawnset" )
+
+local stagesOneGuy = {
+    [1] = "Welcome.\nTo the hunt!",
+    [2] = "You're here to DIE",
+    [3] = "You will bring it ceaceless glee...",
+    [4] = "It's kill or be killed in the HUNT",
+    [5] = "Only one of you will get out of here alive...",
+    [6] = "Give IT a gleeful hunt,\nand be careful!",
+    [7] = "IT's already on your tail...",
+}
+
 local stagesSingleplayer = {
     [1] = "Welcome.\nTo the hunt!",
     [2] = "You're here to survive?",
@@ -109,7 +121,10 @@ local function doMessageIfWeCan()
     button.nextFlash = 0
 
     local stages
-    if player.GetCount() >= 2 then
+    if spawnsetCvar:GetString() == "hunters_glee_oneguy" then
+        stages = stagesOneGuy
+
+    elseif player.GetCount() >= 2 then
         stages = stagesMultiplayer
 
     else

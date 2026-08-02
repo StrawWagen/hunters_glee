@@ -119,11 +119,36 @@ function ENT:WarnNearbyPlayers( strikePos, placerNick )
 
 end
 
+-- The applause timeline, as the length of each phase.
+local tickRate          = 0.06
+local baseSparkRampTime = 6         -- sparks climb from never to every tick across this
+local baseSparkRampTimeNoPlys = baseSparkRampTime * 0.25 -- faster striking if nobodys nearby
+local sparkFullTime     = 0.6       -- sparks every tick, once the ramp is done
+local silenceTime       = 0.6       -- dead air between the last spark and the first bolt
+local strikesFullTime   = 1.8
+local strikesThinTime   = 1.8       -- getting rarer, but the bolts are still strong
+local weakStrikesTime   = 0.6       -- past here every bolt is a weak one
+local strikesTailTime   = 9         -- second fade stacks onto the first, so it peters out
+
 -- a sustained barrage of strikes scattered across the radius, instead of one bolt
 function ENT:BeginStrike( strikePos )
-    local divineIncrement = 0
+    local startTime = CurTime()
     local timerKey = "thunderousapplause_" .. self:GetCreationID()
     local strikeRad = self.radius
+
+    local sparkRampTime = baseSparkRampTimeNoPlys
+    local _, nearestPlyDistSqr = GAMEMODE:nearestAlivePlayer( self:GetPos() )
+    if nearestPlyDistSqr < ( strikeRad * 1.75 ) ^ 2 then
+        sparkRampTime = baseSparkRampTime
+
+    end
+
+    local sparksEndTime       = sparkRampTime + sparkFullTime
+    local strikesStartTime    = sparksEndTime + silenceTime
+    local strikesThinFrom     = strikesStartTime + strikesFullTime
+    local weakStrikesFrom     = strikesThinFrom + strikesThinTime
+    local strikesThinHardFrom = weakStrikesFrom + weakStrikesTime
+    local applauseEndTime     = strikesThinHardFrom + strikesTailTime
 
     local timerEnd = function()
         timer.Stop( timerKey )
@@ -147,17 +172,15 @@ function ENT:BeginStrike( strikePos )
 
     end
 
-    local max = 300
-
-    timer.Create( timerKey, 0.06, 0, function()
+    timer.Create( timerKey, tickRate, 0, function()
         if not IsValid( self ) then timerEnd() return end
 
-        divineIncrement = divineIncrement + 1
+        local elapsed = CurTime() - startTime
 
         -- sparks
-        if divineIncrement < 70 then
+        if elapsed < sparksEndTime then
             for _ = 1, 2 do
-                if math.random( 1, 60 ) > divineIncrement then continue end
+                if math.Rand( 0, sparkRampTime ) > elapsed then continue end
 
                 local sparkPos = getRandomSnappedPos()
 
@@ -178,10 +201,9 @@ function ENT:BeginStrike( strikePos )
                 self:EmitSound( "LoudSpark", 90, 100, 1, CHAN_STATIC )
 
             end
-        -- start striking after 80
-        elseif ( divineIncrement > 80 ) and ( divineIncrement < max ) then
-            if math.random( 110, max ) < divineIncrement then return end
-            if math.random( 150, max ) < divineIncrement then return end
+        elseif ( elapsed > strikesStartTime ) and ( elapsed < applauseEndTime ) then
+            if math.Rand( strikesThinFrom, applauseEndTime ) < elapsed then return end
+            if math.Rand( strikesThinHardFrom, applauseEndTime ) < elapsed then return end
 
             if math.random( 0, 100 ) >= 40 then return end
 
@@ -198,7 +220,7 @@ function ENT:BeginStrike( strikePos )
                     powa = 7
 
                 end
-                if divineIncrement > 140 then
+                if elapsed > weakStrikesFrom then
                     powa = 0.75
 
                 end
@@ -211,7 +233,7 @@ function ENT:BeginStrike( strikePos )
 
             end
 
-        elseif divineIncrement > max then
+        elseif elapsed > applauseEndTime then
             SafeRemoveEntity( self )
             timerEnd()
 

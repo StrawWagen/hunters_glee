@@ -29,7 +29,8 @@ ENT.mischiefReason = "called down a smite"
 
 -- only used by the default ( clap ) telegraph/strike, which derived entities override
 local strikePowa = 8
-local chargeTime = 3 -- seconds of telegraph before the bolt lands
+local chargeTime = 4 -- seconds of telegraph before the bolt lands
+local chargeTimeNoPlayers = 1 -- telegraph if there's no players nearby
 local sparkRadius = 120 -- max spread of the telegraph sparks from the strike point
 
 if CLIENT then
@@ -196,7 +197,14 @@ function ENT:BeginStrike( strikePos )
 
     end
 
-    local strikeAt = CurTime() + chargeTime
+    local time = chargeTimeNoPlayers
+    local _, nearestPlyDistSqr = GAMEMODE:nearestNonInfernalAlivePlayer( self:GetPos() )
+    if nearestPlyDistSqr < 800^2 then
+        time = chargeTime
+
+    end
+
+    local strikeAt = CurTime() + time
 
     timer.Create( timerKey, 0.06, 0, function()
         if not IsValid( self ) then timerEnd() return end

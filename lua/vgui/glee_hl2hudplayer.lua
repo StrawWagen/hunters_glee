@@ -152,6 +152,13 @@ function PANEL:UpdateForPlayer( ply, cur, data )
     local ignoreDist = data.ignoreDist
     local isLookedAt = data.isLookedAt
 
+    self._name      = ply:Nick()
+    if not self._name then
+        self:Remove()
+        return
+
+    end
+
     local pos
     if posOverride then
         pos = posOverride
@@ -201,7 +208,6 @@ function PANEL:UpdateForPlayer( ply, cur, data )
     self._bgTargetG     = plyColorVec.y * 255
     self._bgTargetB     = plyColorVec.z * 255
 
-    self._name      = ply:Nick()
     self._infoLine  = infoLine
     self._extraLine = extraLine
     self._isLookedAt = isLookedAt

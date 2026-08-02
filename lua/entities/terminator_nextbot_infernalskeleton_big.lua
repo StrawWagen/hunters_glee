@@ -7,6 +7,9 @@ DEFINE_BASECLASS( ENT.Base )
 ENT.PrintName = "Infernal Sentinel"
 ENT.Spawnable = false
 
+ENT.IsEldritch = true
+ENT.glee_SkullWorthMul = 2 -- makes dropped skull worth more
+
 terminator_Extras.RegisterNPC( "terminator_nextbot_infernalskeleton_big", ENT, {
     Weapons = { "weapon_infernalskeleton_fists" },
 
@@ -35,7 +38,6 @@ ENT.MySpecialActions = {
             util.ScreenShake( bot:WorldSpaceCenter(), 5, 20, 5, 2000, true )
 
         end,
-
     }
 }
 

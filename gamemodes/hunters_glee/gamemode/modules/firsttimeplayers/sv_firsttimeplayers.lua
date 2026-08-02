@@ -60,9 +60,9 @@ local function shelterPly( ply )
             local currAng = ply:GetAngles()
 
             -- remove godmode when tutorial lets go and allows them to aim again
-            if math.AngleDifference( currAng.p, startingAng.p ) < 5 and
-               math.AngleDifference( currAng.y, startingAng.y ) < 5 and
-               math.AngleDifference( currAng.r, startingAng.r ) < 5 then return end
+            if math.abs( math.AngleDifference( currAng.p, startingAng.p ) ) < 5 and
+               math.abs( math.AngleDifference( currAng.y, startingAng.y ) ) < 5 and
+               math.abs( math.AngleDifference( currAng.r, startingAng.r ) ) < 5 then return end
 
             ply:RemoveStatusEffect( "spawn_protection" )
 
@@ -92,19 +92,32 @@ local function tutorialize( ply )
 
 end
 
+local function tutorialKnowledgeLevel( ply )
+    return ply:GetInfoNum( "cl_huntersglee_firsttimetutorial", 0 )
+
+end
+
+-- two different tutorials for singleplayer/multiplayer
+local function requiredKnowledgeLevel()
+    if game.IsDedicated() then return 2 end
+    return 1
+
+end
+
 local function needsToAsk( ply )
     if not spawned[ply] then return end -- wait until ply has full loaded
     if asked[ply] then return end
 
     if ply:IsBot() then return end
 
-    local sawIt = ply:GetInfoNum( "cl_huntersglee_firsttimetutorial", 0 )
-    local minSawIt = 1
-    if game.IsDedicated() then
-        minSawIt = 2
+    return tutorialKnowledgeLevel( ply ) < requiredKnowledgeLevel()
 
-    end
-    if sawIt < minSawIt then return true end
+end
+
+local function isEducated( ply )
+    if ply:IsBot() then return end
+
+    return tutorialKnowledgeLevel( ply ) >= requiredKnowledgeLevel()
 
 end
 
@@ -116,46 +129,35 @@ end
 function GAMEMODE:WaitingForAFirstTimePlayer( players )
     if #players <= 0 then return end
 
-    -- start spawning hunters if at least one person got through the tutorial
+    local halfTheServer = #players / 2
+
+    -- Already waiting, so the only question is whether it's over yet.
     if blockSpawning then
-        local sawTutorialCount = 0
-        local didntSeeTutorialCount = 0
-        local minSawIt = 0
-        if game.IsDedicated() then
-            minSawIt = 1
+        local sawIt = 0
 
-        end
         for _, ply in ipairs( players ) do
-            local sawIt = ply:GetInfoNum( "cl_huntersglee_firsttimetutorial", 0 )
-            if sawIt >= minSawIt and not ply:IsBot() then
-                sawTutorialCount = sawTutorialCount + 1
-
-            else
-                didntSeeTutorialCount = didntSeeTutorialCount + 1
-
-            end
-        end
-        if sawTutorialCount >= didntSeeTutorialCount then -- ok, enough saw
-            blockSpawning = false
+            if isEducated( ply ) then sawIt = sawIt + 1 end
 
         end
+
+        blockSpawning = sawIt < halfTheServer
         return blockSpawning
 
     end
 
-    -- if half of all players need the tutorial, block hunter spawning
-    local needsToAskCount = 0
     local nonKnowers = {}
-    for _, ply in ipairs( players ) do
-        local needs = needsToAsk( ply )
-        if needs then
-            table.insert( nonKnowers, ply )
-            needsToAskCount = needsToAskCount + 1
 
-        end
+    for _, ply in ipairs( players ) do
+        if needsToAsk( ply ) then nonKnowers[#nonKnowers + 1] = ply end
+
     end
 
-    if needsToAskCount >= #players / 2 then
+    -- >50% of the session are new players
+    -- if this happens, stop spawning until at least half the session finishes the tutorial
+    -- and set the mode to the easiest terminator mode
+    local needsToBlock = #nonKnowers >= halfTheServer
+    if needsToBlock then
+        RunConsoleCommand( "huntersglee_spawnset", "hunters_glee_oneguy" )
         blockSpawning = true
 
     end
@@ -166,15 +168,21 @@ function GAMEMODE:WaitingForAFirstTimePlayer( players )
     end
 end
 
+-- shelter until they are done loading
 hook.Add( "PlayerInitialSpawn", "glee_firsttimeply_shelterwhenloading", function( ply )
     ply:GiveStatusEffect( "spawn_protection" )
 
 end )
 
+-- they're done loading
 hook.Add( "glee_full_load", "glee_firsttimeplayercheck", function( ply )
-    timer.Simple( 2, function() -- try delaying, so player is definitely ready to create the panel
+    -- wait a couple seconds
+    timer.Simple( 2, function()
         if not IsValid( ply ) then return end
+        -- then remove their spawn protection
         ply:RemoveStatusEffect( "spawn_protection" )
+
+        -- and mark them as ready for the tutorial
         spawned[ply] = true
 
     end )

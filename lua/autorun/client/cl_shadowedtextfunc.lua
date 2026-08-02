@@ -1,6 +1,4 @@
 
-AddCSLuaFile()
-
 if not CLIENT then return end
 
 local string_Explode = string.Explode

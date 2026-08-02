@@ -25,6 +25,21 @@ if CLIENT then
         local scoreGained = math.Round( self:GetGivenScore() )
 
         local scoreGainedString = "(In)Convenience Score: " .. tostring( scoreGained )
+
+        local scoreBallsToDrop = math.ceil( scoreGained / 15 )
+        local toDropStr
+        if scoreBallsToDrop == 0 then
+            toDropStr = "\n(0 Orbs inside)"
+
+        elseif scoreBallsToDrop == 1 then
+            toDropStr = "\n(1 Orb inside)"
+
+        else
+            toDropStr = "\n(" .. scoreBallsToDrop ..  " Orbs inside)"
+
+        end
+        scoreGainedString = scoreGainedString .. toDropStr
+
         surface.drawShadowedTextBetter( scoreGainedString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
 
     end
@@ -34,7 +49,7 @@ if not SERVER then return end
 
 local GM = GAMEMODE
 
-ENT.normCrateScoreMultiplier = 2
+ENT.normCrateScoreMultiplier = 2.5
 
 function GM:ScoreCrate( pos, scoreBallsToGive )
     if not pos then return end

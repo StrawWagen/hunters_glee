@@ -1,6 +1,4 @@
 
-AddCSLuaFile()
-
 sound.Add( {
     name = "loud_asf_thunder",
     channel = CHAN_STATIC,
@@ -50,80 +48,9 @@ end )
 
 if not SERVER then return end
 
+util.AddNetworkString( "glee_lightning_sound" )
+
 local recipFilterEveryone = RecipientFilter()
-
-function termHunt_ElectricalArcEffect( parent, startPos, targetDir, scale, initialDir, dist )
-    recipFilterEveryone:AddAllPlayers()
-
-    local ToVector = targetDir
-    local Dist = dist or 25000
-    local WanderDirection = initialDir or targetDir
-    local NumPoints = 50
-    local PointTable = {}
-    local OldPoint = startPos
-    local inWallCount = 0
-
-    local lastNotInWall = startPos
-
-    PointTable[1] = startPos
-
-    for i = 2, NumPoints do
-        local NewPoint = OldPoint + WanderDirection * ( Dist / NumPoints )
-
-        PointTable[i] = NewPoint
-        OldPoint = NewPoint
-        WanderDirection = ( WanderDirection + VectorRand() + ToVector * 0.4 ):GetNormalized()
-
-        if not util.IsInWorld( NewPoint ) then
-            inWallCount = inWallCount + 1
-            if inWallCount > 10 then break end
-        else
-            lastNotInWall = OldPoint
-            inWallCount = 0
-        end
-    end
-
-    for key, point in ipairs( PointTable ) do
-        local next = PointTable[key + 1]
-        if point and next then
-            local Beam = EffectData()
-            Beam:SetStart( point )
-            Beam:SetOrigin( next )
-            Beam:SetScale( scale )
-            util.Effect( "eff_termhunt_plasmaarc", Beam, recipFilterEveryone )
-
-        end
-    end
-
-    local pitOffs = math.abs( scale - 4 )
-    pitOffs = -pitOffs * 10
-    -- pitoffs goes from 0 at 4 scale
-    -- to +40 at 0 scale
-
-    local _, hitTr = terminator_Extras.PosCanSee( lastNotInWall, OldPoint )
-
-    if scale < 1 then return hitTr end
-
-    local lvl = 140
-    local volume = 0.6
-    if scale >= 4 then
-        lvl = 140
-        volume = 1
-        parent:EmitSound( "loud_asf_thunder" )
-
-    end
-
-    local loudOnePitch = 120 + pitOffs
-    local bigThunderClap = CreateSound( parent, "hunters_glee/397952_kinoton_thunder-clap-and-rumble-1.wav", recipFilterEveryone )
-
-    bigThunderClap:SetSoundLevel( lvl )
-    bigThunderClap:ChangeVolume( volume )
-    bigThunderClap:ChangePitch( loudOnePitch )
-    bigThunderClap:Play()
-
-    return hitTr
-
-end
 
 local function dirToPos( startPos, endPos )
     if not startPos then return vec_zero end
@@ -169,7 +96,45 @@ function termHunt_PowafulLightning( inflic, attacker, strikingPos, powa )
     flash:SetOrigin( strikingPos + vector_up )
     util.Effect( "eff_huntersglee_strikeeffect", flash )
 
-    termHunt_ElectricalArcEffect( inflic, strikingPos, vector_up, powa )
+    -- the arc wanders up out of the strike, one beam per step, and gives up once it has
+    -- spent 10 steps running outside the map
+    recipFilterEveryone:AddAllPlayers()
+
+    local arcDist = 25000
+    local arcPoints = 50
+    local wanderDir = vector_up
+    local oldPoint = strikingPos
+    local pointTable = { strikingPos }
+    local inWallCount = 0
+
+    for i = 2, arcPoints do
+        local newPoint = oldPoint + wanderDir * ( arcDist / arcPoints )
+
+        pointTable[i] = newPoint
+        oldPoint = newPoint
+        wanderDir = ( wanderDir + VectorRand() + vector_up * 0.4 ):GetNormalized()
+
+        if not util.IsInWorld( newPoint ) then
+            inWallCount = inWallCount + 1
+            if inWallCount > 10 then break end
+
+        else
+            inWallCount = 0
+
+        end
+    end
+
+    for key, point in ipairs( pointTable ) do
+        local nextPoint = pointTable[key + 1]
+        if nextPoint then
+            local beam = EffectData()
+            beam:SetStart( point )
+            beam:SetOrigin( nextPoint )
+            beam:SetScale( powa )
+            util.Effect( "eff_termhunt_plasmaarc", beam, recipFilterEveryone )
+
+        end
+    end
 
     for _, thing in ipairs( ents.FindInSphere( strikingPos, 400 ) ) do
         if not IsValid( thing ) then continue end
@@ -215,30 +180,15 @@ function termHunt_PowafulLightning( inflic, attacker, strikingPos, powa )
 
         end
     end
-    if powa >= 4 then
-        inflic:EmitSound( "ambient/levels/labs/electric_explosion3.wav", 140, math.random( 80, 120 ) + -powa * 4, 0.8, CHAN_STATIC )
 
-    end
+    -- every clap, woosh and thud is picked and played in cl_huntersglee_lightning.lua,
+    -- so a listener can turn the whole strike down without the server knowing
+    net.Start( "glee_lightning_sound" )
+        net.WriteVector( strikingPos )
+        net.WriteFloat( powa )
+    net.Broadcast()
 
     if powa >= 5.5 then
-        local bigHit = CreateSound( inflic, "hunters_glee/wizardry_thunderimpact.wav", recipFilterEveryone )
-        bigHit:SetSoundLevel( 150 )
-        bigHit:ChangeVolume( 1 )
-        bigHit:ChangePitch( 100 )
-        bigHit:Play()
-
-        local bigEcho = CreateSound( inflic, "ambient/levels/labs/teleport_postblast_thunder1.wav", recipFilterEveryone )
-        bigEcho:SetSoundLevel( 150 )
-        bigEcho:ChangeVolume( 1 )
-        bigEcho:ChangePitch( 80 )
-        bigEcho:Play()
-
-        local biggHIT = CreateSound( inflic, "hunters_glee/wizardry_thunder.wav", recipFilterEveryone )
-        biggHIT:SetSoundLevel( 150 )
-        biggHIT:ChangeVolume( 1 )
-        biggHIT:ChangePitch( 80 )
-        biggHIT:Play()
-
         util.ScreenShake( strikingPos, 20, 20, 2, 16000, true )
 
     end

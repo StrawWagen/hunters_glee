@@ -14,6 +14,11 @@
         URGENT (4) - level-triggered; box alternates between normalBoxColor and
                      urgentBoxColor at full brightness
 
+    Every colour, the font, and the text padding default to the hl2 hud palette, so a
+    caller only names what it wants different. Worth knowing that the flash icon colour
+    defaults to colorRedUrgent, which is what the top left hud wants but not what the
+    menus do, so those set it to yellow themselves.
+
     Icon color (SetIconColor) is set by the caller and may be updated every frame.
     The state alpha scales both the box and icon multiplicatively, so:
       - in NORMAL/FADING: effective alpha  = color.a * stateAlpha / 255
@@ -102,7 +107,7 @@ local PANEL = {
         self._text         = nil
         self._rawText      = nil
         self._maxTextWidth = nil
-        self._font         = "DermaDefault"
+        self._font         = "glee_mediumHL2Font"
         self._textPadding  = glee_sizeScaled( nil, 8 )
         self._cornerRadius = terminator_Extras.glee_HL2Hud.boxCornerRadius
 

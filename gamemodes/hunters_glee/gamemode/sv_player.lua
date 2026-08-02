@@ -615,6 +615,14 @@ function GM:spectatifyPlayer( ply )
 
 end
 
+function GM:CanEscape( ply )
+    local blockEscape = hook.Run( "glee_blockescape", ply )
+    if blockEscape == true then return end
+
+    return true
+
+end
+
 function GM:escapifyPlayer( ply )
     --ErrorNoHaltWithStack( "B ", ply )
 

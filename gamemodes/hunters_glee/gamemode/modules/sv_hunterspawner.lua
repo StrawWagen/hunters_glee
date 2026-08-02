@@ -93,6 +93,7 @@ end
 function GM:BumpSessionDifficulty( amount, reason )
     self.lastSessionDiffBumpReason = reason
     self.sessionDiffBump = math.max( self.sessionDiffBump + amount, 0 )
+    SetGlobal2Float( "bumpedSessionDifficulty", self.sessionDiffBump )
 
 end
 function GM:BumpRoundDifficulty( amount, reason )

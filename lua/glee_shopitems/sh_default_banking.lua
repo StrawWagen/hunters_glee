@@ -220,21 +220,9 @@ if SERVER then
             if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_INACTIVE then return end
             if atmAlreadyExists() then timer.Remove( "glee_atm_autospawn" ) return end
 
-            local richest      = nil
-            local richestScore = ATM_AUTO_SCORE
+            local richest, richestScore = GAMEMODE:GetRichestPlayer()
 
-            for _, ply in ipairs( player.GetAll() ) do
-                if not ply:IsPlayer() then continue end
-                if ply:Health() <= 0 then continue end
-                local s = ply:GetScore()
-                if s <= richestScore then continue end
-
-                richestScore = s
-                richest = ply
-
-            end
-
-            if not IsValid( richest ) then return end
+            if richestScore < ATM_AUTO_SCORE then return end
 
             ATMArriveFor( richest )
 

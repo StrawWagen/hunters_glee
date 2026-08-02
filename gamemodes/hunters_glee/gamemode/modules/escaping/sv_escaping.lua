@@ -88,11 +88,16 @@ function GM:escapifyVehicle( vehicle )
     if #riders <= 0 then return end
 
     local delayUntil = CurTime() + textDisplayDuration + 0.15
-    GAMEMODE:DelayRoundEndingUntil( delayUntil )
+    self:DelayRoundEndingUntil( delayUntil )
 
     for _, rider in ipairs( riders ) do
+        if not self:CanEscape( rider ) then return end
+
+        local blockEscape = hook.Run( "glee_blockescape_invehicle", rider, vehicle )
+        if blockEscape == true then return end
+
         ridersMask[rider] = true
-        GAMEMODE:escapifyPlayer( rider )
+        self:escapifyPlayer( rider )
         if rider ~= driver then
             riderCount = riderCount + 1
             table.insert( actualRidersNoDriver, rider )
@@ -197,15 +202,36 @@ end )
 
 local white = Color( 255, 255, 255 )
 
--- TODO: make everyone invincible after the boss is defeated?
+GAMEMODE:RegisterStatusEffect( "boss_defeat_resistance",
+    function( self, _owner )
+        self:SetRemoveOnDeath( true )
+        self:HookOnce( "EntityTakeDamage", function( target, dmg )
+            if not target.HasStatusEffect then return end
+            if not target:HasStatusEffect( "boss_defeat_resistance" ) then return end
+
+            dmg:ScaleDamage( 0.05 )
+
+        end )
+    end
+)
 
 hook.Add( "glee_onbossdefeated", "glee_escapeviabossdefeat", function( boss, attacker )
-    local msg = GAMEMODE:GetNameOfBot( boss ) .. "\nWAS KILLED BY\n" .. attacker:Nick() .. "\nYou're finally, truly safe..."
-    huntersGlee_AnnounceDramatic( player.GetAll(), 1000, 10, msg )
+    local playerCount = player.GetCount()
+    local msg
+    if playerCount <= 1 then
+        msg = "You've HUNTED " .. GAMEMODE:GetNameOfBot( boss ) .. "\nYou're finally, truly safe..."
+
+    else
+        msg = GAMEMODE:GetNameOfBot( boss ) .. "\nWAS KILLED BY\n" .. attacker:Nick() .. "\nYou're finally, truly safe..."
+
+    end
+    huntersGlee_AnnounceDramatic( player.GetAll(), 1000, 8, msg )
 
     local alivePlayers = GAMEMODE:getAlivePlayers()
     for _, ply in ipairs( alivePlayers ) do
-        timer.Simple( 0.5, function()
+        ply:GiveStatusEffect( "boss_defeat_resistance" )
+
+        timer.Simple( 2, function()
             if not IsValid( ply ) then return end
             if ply:Health() <= 0 then return end
 

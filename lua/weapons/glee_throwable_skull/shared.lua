@@ -38,6 +38,11 @@ SWEP.HeldModelAngOffset = Angle( -90, 180, 0 )
 SWEP.AutoSwitchFrom = true
 SWEP.AutoSwitchTo = false
 
+function SWEP:ShouldDropOnDie()
+    return false
+
+end
+
 function SWEP:EmitThrowSound()
     self:EmitSound( "WeaponFrag.Throw", 75, 120, 1, CHAN_WEAPON, SND_CHANGE_PITCH )
 

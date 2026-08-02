@@ -10,6 +10,10 @@ function GM:SpawnASkull( pos, ang, termSkull, persistParent )
         local mdlScale = persistParent:GetModelScale()
         if mdlScale >= terminator_Extras.MDLSCALE_LARGE then
             local skullWorth = mdlScale
+            if persistParent.glee_SkullWorthMul then
+                skullWorth = skullWorth * persistParent.glee_SkullWorthMul
+
+            end
             local spawnHealth = persistParent.SpawnHealth
             if spawnHealth > 10000 then
                 skullWorth = skullWorth * 2

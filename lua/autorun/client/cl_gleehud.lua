@@ -1,6 +1,4 @@
 
-AddCSLuaFile()
-
 local math_Round = math.Round
 
 local uiScaleVert = ScrH() / 1080
