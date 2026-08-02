@@ -771,7 +771,7 @@ if SERVER then
             self:HookOnce( "PlayerDeath", function( died )
                 if not died:HasStatusEffect( "divine_chosen" ) then return end
 
-                died.glee_DivineChosenForcedResurrect = CurTime() + 5
+                died.glee_DivineChosenForcedResurrect = CurTime() + 10
 
             end )
 
@@ -781,7 +781,7 @@ if SERVER then
                 if not dead.glee_DivineChosenForcedResurrect then return end
                 if dead.glee_DivineChosenForcedResurrect > CurTime() then return end
 
-                dead.glee_DivineChosenForcedResurrect = CurTime() + 5 -- dont spam sound
+                dead.glee_DivineChosenForcedResurrect = CurTime() + 10 -- dont spam sound
                 dead:ConCommand( "termhunt_purchase resurrection" )
 
             end )

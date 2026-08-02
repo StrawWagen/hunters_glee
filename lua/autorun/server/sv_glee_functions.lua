@@ -21,9 +21,9 @@ function terminator_Extras.GleeFancySplode( pos, damage, radius, attacker, infli
     sound.Play( explSound, pos, 88, math.random( 95, 105 ) )
 
     local splode = EffectData()
-    splode:SetOrigin( pos )
-    splode:SetMagnitude( damage )
-    splode:SetScale( radius )
+        splode:SetOrigin( pos )
+        splode:SetMagnitude( damage )
+        splode:SetScale( radius )
     util.Effect( "Explosion", splode, nil, true )
 
 end

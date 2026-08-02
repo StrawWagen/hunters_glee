@@ -125,7 +125,7 @@ local baseSparkRampTime = 6         -- sparks climb from never to every tick acr
 local baseSparkRampTimeNoPlys = baseSparkRampTime * 0.25 -- faster striking if nobodys nearby
 local sparkFullTime     = 0.6       -- sparks every tick, once the ramp is done
 local silenceTime       = 0.6       -- dead air between the last spark and the first bolt
-local strikesFullTime   = 1.8
+local strikesFullTime   = 2
 local strikesThinTime   = 1.8       -- getting rarer, but the bolts are still strong
 local weakStrikesTime   = 0.6       -- past here every bolt is a weak one
 local strikesTailTime   = 9         -- second fade stacks onto the first, so it peters out
@@ -214,10 +214,10 @@ function ENT:BeginStrike( strikePos )
 
                 if not GAMEMODE:IsUnderSky( strikingPos ) then return end
 
-                local powa = math.random( 1, 4 )
+                local powa = math.Rand( 1, 5.5 )
                 if not self.firstPowafulStrike then
                     self.firstPowafulStrike = true
-                    powa = 7
+                    powa = 8
 
                 end
                 if elapsed > weakStrikesFrom then
