@@ -225,7 +225,7 @@ end
 
 local rounds = 0
 local printed
-hook.Add( "huntersglee_round_into_inactive", "glee_rockthemode_hint", function()
+hook.Add( "huntersglee_round_into_inactive", "glee_rockthemisery_hint", function()
     rounds = rounds + 1
     if rounds < math.random( 1, 3 ) then return end --dont print too much.
 
@@ -236,7 +236,7 @@ hook.Add( "huntersglee_round_into_inactive", "glee_rockthemode_hint", function()
 
 end )
 
-hook.Add( "huntersglee_round_into_inactive", "glee_rockthemode_hint", function()
+hook.Add( "huntersglee_round_into_inactive", "glee_rockthemisery_hint", function()
     timer.Simple( 10, function()
         local spawnsetName = GAMEMODE:GetSpawnSet()
         local spawnsetMul = GAMEMODE:GetSpawnsetsEscapeMultiplier( spawnsetName )
