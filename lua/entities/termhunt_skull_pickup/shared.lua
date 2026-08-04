@@ -78,6 +78,8 @@ function ENT:Initialize()
         self.nextPickup = 0
         self.nextCrushRoll = 0
 
+        self:SetName( "gleeskull" )
+
         self:SetModel( "models/Gibs/HGIBS.mdl" )
 
         self:PhysicsInit( SOLID_VPHYSICS )

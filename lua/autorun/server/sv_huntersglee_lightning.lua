@@ -95,8 +95,8 @@ function termHunt_PowafulLightning( inflic, attacker, strikingPos, powa )
     end )
 
     local flash = EffectData()
-    flash:SetScale( powa / 2 )
-    flash:SetOrigin( strikingPos + vector_up )
+        flash:SetScale( powa / 2 )
+        flash:SetOrigin( strikingPos + vector_up )
     util.Effect( "eff_huntersglee_strikeeffect", flash )
 
     -- the arc wanders up out of the strike, one beam per step, and gives up once it has

@@ -34,6 +34,8 @@ end
 function meta:IsStuckBasic()
     if self:IsOnGround() then return end
 
+    if self.fake and IsValid( self:GetNWEntity( "DeathRagdoll" ) ) then return end
+
     -- 15^2
     if self:GetVelocity():LengthSqr() > 225 then return end
     local move = self:GetMoveType()
