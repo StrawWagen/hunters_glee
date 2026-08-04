@@ -46,6 +46,7 @@ function EFFECT:Dust()
             Flash:SetRollDelta( math.Rand( -1, 1 ) )
             Flash:SetColor( 255, 255, 255 )
             Flash:SetCollide( true )
+
         end
     end
 
@@ -63,6 +64,7 @@ function EFFECT:Dust()
             Debris:SetColor( 60, 60, 60 )
             Debris:SetGravity( Vector( 0, 0, -600 ) )
             Debris:SetCollide( true )
+
         end
     end
 
@@ -81,6 +83,7 @@ function EFFECT:Dust()
             Dust:SetGravity( Vector( 0, 0, math.Rand( -100, -400 ) ) )
             Dust:SetColor( 80, 80, 80 )
             Dust:SetCollide( true )
+
         end
     end
 
@@ -99,6 +102,7 @@ function EFFECT:Dust()
             Dust:SetGravity( Vector( math.Rand( -200, 200 ), math.Rand( -200, 200 ), math.Rand( 10, 100 ) ) )
             Dust:SetColor( 90, 85, 75 )
             Dust:SetCollide( true )
+
         end
     end
 end

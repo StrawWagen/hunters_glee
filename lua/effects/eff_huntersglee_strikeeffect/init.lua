@@ -20,6 +20,7 @@ function EFFECT:Init( data )
         rollparticle:SetGravity( Vector( 0, 0, 0 ) )
         rollparticle:SetCollide( false )
         rollparticle:SetLighting( false )
+
     end
 
     local rollparticle2 = self.Emitter:Add( "sprites/animglow02", vOffset + vector_up * self.Scayul )
@@ -38,6 +39,7 @@ function EFFECT:Init( data )
         rollparticle2:SetGravity( Vector( 0, 0, 0 ) )
         rollparticle2:SetCollide( false )
         rollparticle2:SetLighting( false )
+
     end
 
     self:Dust()
@@ -66,6 +68,7 @@ function EFFECT:Dust()
             Debris:SetColor( 60, 60, 60 )
             Debris:SetGravity( Vector( 0, 0, -600 ) )
             Debris:SetCollide( true )
+
         end
     end
     for _ = 1, 50 * scale do
@@ -83,6 +86,7 @@ function EFFECT:Dust()
             Debris:SetGravity( Vector( 0, 0, -600 ) )
             Debris:SetCollide( true )
             Debris:SetLighting( false )
+
         end
     end
     for _ = 1, 2 * scale do
@@ -100,6 +104,7 @@ function EFFECT:Dust()
             Debris:SetGravity( Vector( 0, 0, 600 ) )
             Debris:SetCollide( true )
             Debris:SetLighting( false )
+
         end
     end
 end

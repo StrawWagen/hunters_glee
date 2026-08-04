@@ -11,8 +11,10 @@ end
 function EFFECT:Think()
     if self.EndTime < CurTime() then
         return false
+
     else
         return true
+
     end
 end
 

@@ -33,6 +33,7 @@ function EFFECT:Init( data )
 
     self.OldPos = ent:LocalToWorld( self.Offset )
     self.Emitter = ParticleEmitter( self.OldPos, false )
+
 end
 
 function EFFECT:doFX( pos )
@@ -54,6 +55,7 @@ function EFFECT:doFX( pos )
         particle:SetRoll( math_Rand( -1, 1 ) )
         particle:SetColor( 50, 50, 50 )
         particle:SetCollide( false )
+
     end
 
     particle = emitter:Add( "particles/flamelet" .. math_random( 1, 5 ), pos )
@@ -68,6 +70,7 @@ function EFFECT:doFX( pos )
         particle:SetColor( 255, 255, 255 )
         particle:SetGravity( vectorZero )
         particle:SetCollide( false )
+
     end
 end
 
@@ -90,6 +93,7 @@ function EFFECT:doFXbroken( pos )
         particle:SetRoll( math_Rand( -1, 1 ) )
         particle:SetColor( 50, 50, 50 )
         particle:SetCollide( false )
+
     end
 
     particle = emitter:Add( "particles/flamelet" .. math_random( 1, 5 ), pos )
@@ -104,6 +108,7 @@ function EFFECT:doFXbroken( pos )
         particle:SetColor( 255, 255, 255 )
         particle:SetGravity( vectorZero )
         particle:SetCollide( false )
+
     end
 end
 
@@ -111,12 +116,12 @@ function EFFECT:Think()
     local ent = self.Entity
     local emitter = self.Emitter
     if not IsValid( ent ) then
-
         if emitter then
             emitter:Finish()
         end
 
         return false
+
     end
 
     local nextDFX = self.nextDFX or 0
@@ -142,12 +147,15 @@ function EFFECT:Think()
 
         if disabled then
             self:doFXbroken( pos )
+
         else
             self:doFX( pos )
+
         end
     end
 
     return true
+
 end
 
 local render = render
@@ -159,4 +167,5 @@ function EFFECT:Render() -- draw sprite
 
     render.SetMaterial( self.mat )
     render.DrawSprite( pos, 256, 256, spriteColor )
+
 end

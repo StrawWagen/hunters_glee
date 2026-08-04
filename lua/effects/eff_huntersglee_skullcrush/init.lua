@@ -27,6 +27,7 @@ function EFFECT:Init( data )
     end
 
     emitter:Finish()
+
 end
 
 function EFFECT:Render()
