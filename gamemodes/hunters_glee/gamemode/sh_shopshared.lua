@@ -77,7 +77,6 @@ elseif CLIENT then
         if itemData and itemData.canGoInDebt and cost < 0 and us:GetScore() < 0 then
             us:EmitSound( debtSound, 60, 120, 0.50 )
 
-
         end
 
         hook.Run( "glee_cl_confirmedpurchase", us, itemId )

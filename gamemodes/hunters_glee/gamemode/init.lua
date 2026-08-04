@@ -201,6 +201,7 @@ function GM:TermHuntSetup()
     -- this is increased when the round is won, all hunters are killed, or are being forced to spawn in front of players
     -- basically it makes the spawner get more aggressive the longer you stay on cheesable maps
     self.sessionDiffBump = 0
+    SetGlobal2Float( "bumpedSessionDifficulty", self.sessionDiffBump )
 
     -- just in case!
     hook.Remove( "Think", "glee_DoGreedyPatchThinkHook" )
