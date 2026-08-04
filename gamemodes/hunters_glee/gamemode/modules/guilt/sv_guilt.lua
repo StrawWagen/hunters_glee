@@ -371,6 +371,8 @@ function GM:IncrementPersistentGuilt( ply, add )
     local daysToAdd = dayInSeconds * ( add or 1 )
     local currentTime = os.time()
     local oldPersistentGuilt = ply:GetPData( "glee_persistentguilt", currentTime )
+    if oldPersistentGuilt < currentTime then return end
+
     local newPersistentGuilt = math.max( oldPersistentGuilt, currentTime ) + daysToAdd
     ply:SetPData( "glee_persistentguilt", newPersistentGuilt )
 
@@ -449,9 +451,9 @@ hook.Add( "glee_onkilledtrulyinnocentsoul", "glee_incrementpersistentguilt", fun
     -- developer 1 enables it for testing
     if not game.IsDedicated() and not developerVar:GetBool() then return end
 
-    local daysToAdd = 1
+    local daysToAdd = 0.5
     if GAMEMODE:IsFirstTimePlayer( attacker ) then
-        daysToAdd = 6
+        daysToAdd = 10
 
     end
 

@@ -28,6 +28,7 @@ local function colorMixCl( col1, col2, ratio )
         math.Round( Lerp( ratio, col1.b, col2.b ) ),
         math.Round( Lerp( ratio, col1.a, col2.a ) )
     )
+
 end
 
 GM.PermaGuiltInfo = {
