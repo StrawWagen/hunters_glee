@@ -2,6 +2,7 @@ function EFFECT:Init( data )
     local vOffset = data:GetOrigin()
     self.Ent = data:GetEntity()
     if not IsValid( self.Ent ) then return end
+
     self.Position = vOffset
     self.Scayul = data:GetScale()
     local emitter = ParticleEmitter( data:GetOrigin() )
@@ -23,6 +24,7 @@ function EFFECT:Init( data )
         rollparticle:SetGravity( Vector( 0, 0, 0 ) )
         rollparticle:SetCollide( false )
         rollparticle:SetLighting( false )
+
     end
 
     local rollparticle2 = emitter:Add( "sprites/animglow02", vOffset )
@@ -43,6 +45,7 @@ function EFFECT:Init( data )
         rollparticle2:SetGravity( Vector( 0, 0, 0 ) )
         rollparticle2:SetCollide( false )
         rollparticle2:SetLighting( false )
+
     end
 
     emitter:Finish()
@@ -58,6 +61,7 @@ function EFFECT:Init( data )
         dlight.Decay = 3500 * self.Scayul
         dlight.DieTime = CurTime() + .5 * self.Scayul ^ 0.25
         dlight.Style = 0
+
     end
 end
 

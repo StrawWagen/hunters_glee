@@ -166,9 +166,7 @@ function ENT:Place()
 
     end
 
-    self:TellPlyToClearHighlighter()
-
-    self.player.ghostEnt = nil
+    self:DetachFromOwner()
 
     if target:IsPlayer() then
         GAMEMODE:AddMischievousness( self.player, -5, "blessed a player, reduction" )

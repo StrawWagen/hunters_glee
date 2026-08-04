@@ -12,8 +12,10 @@ end
 function EFFECT:Think()
     if self.EndTime < CurTime() then
         return false
+
     else
         return true
+
     end
 end
 
@@ -29,4 +31,5 @@ function EFFECT:Render()
 
     render.SetMaterial( Beamtwo )
     render.DrawBeam( self.StartPos, self.EndPos, Lerp( ( self.EndTime - CurTime() ) / self.Delay, 0, 8 * self.Scayul ), 0, 0, Color( 100, 255, 0, self.Mag * 255 ) )
+
 end

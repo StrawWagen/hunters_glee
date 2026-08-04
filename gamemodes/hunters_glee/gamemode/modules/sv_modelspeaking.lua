@@ -62,7 +62,7 @@ local yapped = {}
 local function yap( key, ... )
     if yapped[key] then return end
     yapped[key] = true
-    print( ... )
+    permaPrint( ... )
 
 end
 

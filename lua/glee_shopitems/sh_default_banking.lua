@@ -1,4 +1,6 @@
 
+local shopHelpers = GAMEMODE.shopHelpers
+
 -- shared between deposit and withdraw
 local function hasBankAccount( purchaser )
     if not purchaser:BankHasAccount() then return false, "You haven't opened a bank account yet." end
@@ -6,71 +8,64 @@ local function hasBankAccount( purchaser )
 
 end
 
-local function atmAlreadyExists()
-    for _, ent in ipairs( ents.FindByClass( "glee_bank_atm" ) ) do
-        if CLIENT and ent:IsDormant() then continue end
-        if IsValid( ent ) then return true end
-
-    end
-    return false
+local function noExistingAtm()
+    if terminator_Extras.glee_ATMExists() then return false, "The ATM is already active." end
+    return true
 
 end
 
-local function noExistingAtm()
-    if atmAlreadyExists() then return false, "The ATM is already active." end
+local function ghostCanPurchase( purchaser )
+    if IsValid( purchaser.ghostEnt ) then return false, "You're already placing something!\nPlace it, or right click to CANCEL placing it!" end
     return true
 
 end
 
 local ATM_AUTO_SCORE = 5000
 local spawnATMNearPlayer
-local belowCenterChecks = {
-    Vector( 0, 0, -400 ),
-    Vector( 0, 0, -800 ),
-}
 
 local tooCloseDist = 200^2
 
-local function isGoodATMPos( pos, tooClosePos )
-    -- is there continuous solid geometry for ATM to burrow through?
-    for _, check in ipairs( belowCenterChecks ) do
-        local checkPos = pos + check
-        local solid = bit.band( util.PointContents( checkPos ), CONTENTS_SOLID ) ~= 0
-        if not solid then
-            -- if it's under a displacement, it's solid
-            local definitelyUnder, probablyUnder = terminator_Extras.posIsUnderDisplacement( checkPos )
-            if definitelyUnder or probablyUnder then
-                solid = true
-
-            end
-        end
-        if not solid then return nil end
-
-    end
-
-    if tooClosePos and pos:DistToSqr( tooClosePos ) < tooCloseDist then return nil end
-
-    local tr = util.TraceLine( {
-        start  = pos,
-        endpos = pos + Vector( 0, 0, 45 ),
-        mask   = MASK_SOLID_BRUSHONLY,
-    } )
-
-    if tr.Hit then return nil end
-    return pos
-
-end
-
+-- A cheap approximation of the sweep, which only the server can afford to run. It
+-- passes players the sweep will then fail, hence the refund in svOnPurchaseFunc.
 local function isATMPlacable( purchaser )
     if not purchaser:IsOnNavmesh() then return false, "You're somewhere wrong... The ATM has nowhere to surface..." end
-    if not isGoodATMPos( purchaser:GetPos() ) then return false, "You're somewhere wrong... There's some kind of void or overhang below you..." end
+
+    local cheapest = terminator_Extras.glee_CheapestATMCost()
+    if purchaser:GetScore() < cheapest then return false, "The ATM costs at least " .. cheapest .. " to bring in." end
+
     return true
 
 end
 
 if SERVER then
 
-    local function marchForSurfacePos( startArea, tooClosePos )
+    -- how the ATM ranks candidate spots: foot traffic matters more than being close
+    local heatScoreWeight = 0.7 -- 0 = only care about proximity, 1 = only care about foot traffic
+
+    -- An area's center as a priced candidate, or nil if the ATM has no business there.
+    local function priceAreaSpot( area, tooClosePos, maxSpend )
+        if math.min( area:GetSizeX(), area:GetSizeY() ) <= 50 then return end
+
+        local pos = area:GetCenter()
+        if pos:DistToSqr( tooClosePos ) < tooCloseDist then return end
+
+        local method, cost = terminator_Extras.glee_ATMArrivalAt( pos )
+        if not method then return end
+        if cost > maxSpend then return end
+
+        return {
+            pos    = pos,
+            method = method,
+            cost   = cost,
+            heat   = GAMEMODE.navmeshActivityHeatmap[area] or 0,
+            dist   = pos:Distance( tooClosePos ),
+        }
+
+    end
+
+    -- Every spot within reach, priced. The cheapest arrival wins outright; heat and
+    -- proximity only decide between spots that cost the same.
+    local function marchForSurfaceSpot( startArea, tooClosePos, maxSpend )
         -- skip the player's own area; march outward through adjacent areas
         local checked = { [startArea] = true }
         local queue   = {}
@@ -81,15 +76,18 @@ if SERVER then
 
         end
 
+        local candidates = {}
+        local cheapestCost = math.huge
+
         local i = 1
         while i <= #queue and i <= 80 do
             local area = queue[i]
             i = i + 1
 
-
-            if math.min( area:GetSizeX(), area:GetSizeY() ) > 50 then
-                local pos = isGoodATMPos( area:GetCenter(), tooClosePos )
-                if pos then return pos end
+            local candidate = priceAreaSpot( area, tooClosePos, maxSpend )
+            if candidate then
+                candidates[#candidates + 1] = candidate
+                if candidate.cost < cheapestCost then cheapestCost = candidate.cost end
 
             end
 
@@ -101,24 +99,61 @@ if SERVER then
             end
         end
 
-        return nil
+        if #candidates == 0 then return nil end
 
-    end
+        local cheapest = {}
+        local maxHeat = 0
+        local maxDist = 1
 
-    spawnATMNearPlayer = function( ply, isOwner )
-        local startArea = ply:GetNavAreaData()
-        if not IsValid( startArea ) then return end
+        for _, candidate in ipairs( candidates ) do
+            if candidate.cost ~= cheapestCost then continue end
 
-        local surfacePos = marchForSurfacePos( startArea, ply:WorldSpaceCenter() )
-
-        -- no good pos? try under player!
-        -- very evil
-        if not surfacePos then
-            surfacePos = ply:GetPos()
-            if not isGoodATMPos( surfacePos ) then return end
+            cheapest[#cheapest + 1] = candidate
+            if candidate.heat > maxHeat then maxHeat = candidate.heat end
+            if candidate.dist > maxDist then maxDist = candidate.dist end
 
         end
 
+        -- best blend of foot traffic ( want lots ) and distance ( want little ), both scaled to 0-1
+        local bestSpot
+        local bestScore = -math.huge
+        for _, candidate in ipairs( cheapest ) do
+            local heatScore = maxHeat > 0 and ( candidate.heat / maxHeat ) or 0
+            local nearScore = 1 - ( candidate.dist / maxDist )
+            local score = heatScoreWeight * heatScore + ( 1 - heatScoreWeight ) * nearScore
+
+            if score > bestScore then
+                bestScore = score
+                bestSpot = candidate
+
+            end
+        end
+
+        return bestSpot
+
+    end
+
+    -- Returns the ATM, the method it is arriving by, and what that costs. maxSpend
+    -- rules out arrivals the player can't pay for, so the purchase never has to be
+    -- taken back after the sweep has already run.
+    spawnATMNearPlayer = function( ply, isOwner, maxSpend )
+        local startArea = ply:GetNavAreaData()
+        if not IsValid( startArea ) then return end
+
+        local spot = marchForSurfaceSpot( startArea, ply:WorldSpaceCenter(), maxSpend )
+
+        -- no good pos? try under player!
+        -- very evil
+        if not spot then
+            local pos = ply:GetPos()
+            local method, cost = terminator_Extras.glee_ATMArrivalAt( pos )
+            if not method or cost > maxSpend then return end
+
+            spot = { pos = pos, method = method, cost = cost }
+
+        end
+
+        local surfacePos = spot.pos
         surfacePos.z = surfacePos.z - 2 -- bit into the ground
 
         local toPlayer = ply:GetPos() - surfacePos
@@ -135,19 +170,20 @@ if SERVER then
         local ent = ents.Create( "glee_bank_atm" )
         if not IsValid( ent ) then return end
 
-        ent:SetPos( surfacePos + Vector( 0, 0, -ent.BurrowDepth ) )
+        ent:SetPos( surfacePos )
         ent:SetAngles( toPlayer:Angle() )
         ent:Spawn()
-        ent:StartBurrowingToPos( surfacePos, ent.BurrowDuration, isOwner and ply or nil )
+        ent:StartArrival( spot.method, surfacePos, isOwner and ply or nil )
 
-        return ent
+        return ent, spot.method, spot.cost
 
     end
 
-    -- Auto-spawn: arrive when any alive player exceeds 10 000 score.
+    -- Auto-spawn: the house buys one, whatever the arrival ends up costing, once
+    -- anyone passes ATM_AUTO_SCORE.
 
     local function ATMArriveFor( ply )
-        local atm = spawnATMNearPlayer( ply, false ) -- no owner for auto-spawns
+        local atm = spawnATMNearPlayer( ply, false, math.huge ) -- no owner for auto-spawns, and the house pays
         if not IsValid( atm ) then return end
 
         timer.Simple( 2, function()
@@ -167,7 +203,7 @@ if SERVER then
         if newScore >= ATM_AUTO_SCORE then
             if nextCheck > CurTime() then return end
             nextCheck = CurTime() + 1
-            if atmAlreadyExists() then return end
+            if terminator_Extras.glee_ATMExists() then return end
             ATMArriveFor( scorer )
 
         end
@@ -176,23 +212,11 @@ if SERVER then
     hook.Add( "huntersglee_round_pre_into_inactive", "glee_atm_autospawn", function()
         timer.Create( "glee_atm_autospawn", 5, 10, function()
             if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_INACTIVE then return end
-            if atmAlreadyExists() then timer.Remove( "glee_atm_autospawn" ) return end
+            if terminator_Extras.glee_ATMExists() then timer.Remove( "glee_atm_autospawn" ) return end
 
-            local richest      = nil
-            local richestScore = ATM_AUTO_SCORE
+            local richest, richestScore = GAMEMODE:GetRichestPlayer()
 
-            for _, ply in ipairs( player.GetAll() ) do
-                if not ply:IsPlayer() then continue end
-                if ply:Health() <= 0 then continue end
-                local s = ply:GetScore()
-                if s <= richestScore then continue end
-
-                richestScore = s
-                richest = ply
-
-            end
-
-            if not IsValid( richest ) then return end
+            if richestScore < ATM_AUTO_SCORE then return end
 
             ATMArriveFor( richest )
 
@@ -311,8 +335,11 @@ local items = {
              .. "The one stop shop for large deposits, withdrawls\n"
              .. "Half of the deposit fee gets set aside, a cut for YOU, as the owner.\n"
              .. "But it can be stolen...\n"
+             .. "Cost varies, requests on solid ground are the cheapest...\n"
              .. "A Complimentary ATM will arrive if anyone exceeds " .. ATM_AUTO_SCORE .. " score!",
-        shCost    = 750,
+        shCost    = 0,
+        fakeCost  = true, -- the sweep decides the price, so it is charged in svOnPurchaseFunc
+        costDecorative = { "-750", "-1500" },
         cooldown  = 0,
         tags      = { "BANK" },
         purchaseTimes = {
@@ -320,10 +347,40 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = 200,
-        shCanShowInShop = { hasBankAccount },
-        shPurchaseCheck = { hasBankAccount, noExistingAtm, isATMPlacable },
-        svOnPurchaseFunc = function( purchaser )
-            spawnATMNearPlayer( purchaser, true )
+        shCanShowInShop = { hasBankAccount, shopHelpers.aliveCheck },
+        shPurchaseCheck = { hasBankAccount, shopHelpers.aliveCheck, noExistingAtm, isATMPlacable },
+        svOnPurchaseFunc = function( purchaser, itemIdentifier )
+            local atm, _method, cost = spawnATMNearPlayer( purchaser, true, purchaser:GetScore() )
+
+            if not IsValid( atm ) then
+                GAMEMODE:RefundShopItemCooldown( purchaser, itemIdentifier )
+                huntersGlee_Announce( { purchaser }, 10, 5, "The ATM has nowhere to arrive that you can afford." )
+                return
+
+            end
+
+            purchaser:GivePlayerScore( -cost )
+            GAMEMODE:sendPurchaseConfirm( purchaser, -cost )
+
+        end,
+    },
+    ["bankatmplace"] = {
+        name = "The ATM",
+        desc = "Send the ATM somewhere of your choosing.\n"
+             .. "Place wisely.\n"
+             .. "Burrowing is cheapest...",
+        shCost = 0,
+        costDecorative = { "-750", "-1500" },
+        cooldown = 0,
+        tags = { "BANK", "CloseShopOnPurchase" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = 201,
+        shCanShowInShop = { hasBankAccount, shopHelpers.deadCheck },
+        shPurchaseCheck = { hasBankAccount, shopHelpers.deadCheck, ghostCanPurchase, noExistingAtm },
+        svOnPurchaseFunc = function( purchaser, itemIdentifier )
+            shopHelpers.setupPlacable( "glee_atm_placer", purchaser, itemIdentifier )
 
         end,
     },

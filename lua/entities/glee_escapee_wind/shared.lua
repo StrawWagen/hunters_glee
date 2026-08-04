@@ -15,7 +15,7 @@ ENT.Model = "models/glee/unit_cube.mdl"
 ENT.HullSize = Vector( 600, 400, 400 )
 ENT.PosOffset = Vector( 0, 0, 0 )
 ENT.PosOffsetPostPlace = Vector( 0, 0, 65 ) -- Additional offset that applies after placing (mostly affects sound origin)
-ENT.Cooldown = 15
+ENT.Cooldown = 45
 
 ENT.PushDelayMin = 1.5
 ENT.PushDelayMax = 1.75
@@ -89,11 +89,6 @@ if CLIENT then
         self:SetNoDraw( true )
         self:ParticleThink()
 
-        -- Sync ghostEnt update with server since ghost wind doesn't delete immediately
-        if LocalPlayer().ghostEnt == self then
-            LocalPlayer().ghostEnt = nil
-
-        end
     end
 
     function ENT:ParticleThink()
@@ -179,7 +174,7 @@ if not SERVER then return end
 
 
 function ENT:UpdateGivenScore()
-    self:SetGivenScore( -75 )
+    self:SetGivenScore( -150 )
 
 end
 
@@ -256,11 +251,7 @@ function ENT:Place()
 
     end
 
-    owner.placableTargeted = nil
-    owner.ghostEnt = nil
-
-    self.player = nil
-    self:SetOwner( NULL )
+    self:DetachFromOwner()
 
     local delay = math.Rand( self.PushDelayMin, self.PushDelayMax )
     local telegraphSound = CreateSound( self, "ambient/wind/windgust_strong.wav" )

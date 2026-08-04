@@ -100,7 +100,7 @@ hook.Add( "glee_sv_validgmthink_not_over", "glee_addcratejobs", function( _, cur
 
     end
 
-    proceduralCratePlaces = GAMEMODE.roundExtraData.proceduralCratePlaces or 0
+    local proceduralCratePlaces = GAMEMODE.roundExtraData.proceduralCratePlaces or 0
     GAMEMODE.roundExtraData.proceduralCratePlaces = proceduralCratePlaces + 1
 
     local mod = GAMEMODE.roundExtraData.proceduralCratePlaces % 12
@@ -155,7 +155,7 @@ hook.Add( "glee_sv_validgmthink_not_over", "glee_addcratejobs", function( _, cur
 
         end
         crateJob.spawnRadiusOverride = 3500
-    elseif ( mod == 6 and proceduralCratePlaces > 12 ) or ( mod == 3 and proceduralCratePlaces > 20 ) then
+    elseif ( mod == 6 and proceduralCratePlaces > 12 ) or ( mod == 3 and ( GAMEMODE.sessionDiffBump > math.random( 100, 200 ) or proceduralCratePlaces > 20 ) ) then
         crateJob.onPosFoundFunction = function( _, bestPosition )
             local crate = GAMEMODE:WeaponsCrate( bestPosition )
             if not IsValid( crate ) then return false end

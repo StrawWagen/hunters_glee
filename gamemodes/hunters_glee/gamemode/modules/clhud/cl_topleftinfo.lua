@@ -9,7 +9,6 @@ local alwaysShowInfo = CreateClientConVar( "cl_huntersglee_alwaysshowtoplefthud"
 local paddingFromEdge   = terminator_Extras.defaultHudPaddingFromEdge
 local paddingFromBottom = terminator_Extras.defaultHudPaddingFromBottom
 local laneSpacing      = terminator_Extras.glee_HL2Hud.laneSpacing
-local blockPadding     = terminator_Extras.glee_HL2Hud.blockPadding
 -- fonts are now defined in cl_gleehud.lua
 
 local hour = 60 * 60
@@ -383,7 +382,7 @@ local function thinkHint( _ply, cur )
 
     end
 
-    return hint, true, doFlash, 0
+    return hint, true, doFlash, 0 -- dont override color
 
 end
 
@@ -392,30 +391,23 @@ end
 -- Entry table and creation
 -- ---------------------------------------------------------------------------
 
+-- Order here is top to bottom on screen. An entry needs either a think, or a panelClass
+-- whose panel has ManageHudState; the manager calls think on anything without one.
 local hudEntries = {
     {
         key             = "roundInfo",
         font            = "glee_mediumLargeHL2Font",
-        textPadding     = blockPadding,
         flashDuration   = 0.4,
         fadeSpeed       = 0.15,
         fadeStartDelay  = 6,
-        normalColor     = hl2Hud.colorBackground:Copy(),
-        flashColor      = hl2Hud.colorBackgroundUrgent:Copy(),
-        iconColor       = hl2Hud.colorHappyYellow:Copy(),
         think           = thinkRoundInfo,
     },
     {
         key            = "score",
         panelClass     = "glee_hl2hudscorecount",
-        font           = "glee_mediumHL2Font",
-        textPadding    = blockPadding,
         flashDuration  = 0.15,
         fadeSpeed      = 0.4,
         fadeStartDelay = 4,
-        normalColor    = hl2Hud.colorBackground:Copy(),
-        flashColor     = hl2Hud.colorBackgroundUrgent:Copy(),
-        iconColor      = hl2Hud.colorHappyYellow:Copy(),
         setup = function( box )
             box:SetLabel( "Score: " )
             box:SetCountFunc( function( ply ) return ply:GetScore() end )
@@ -429,14 +421,9 @@ local hudEntries = {
     {
         key            = "skulls",
         panelClass     = "glee_hl2hudscorecount",
-        font           = "glee_mediumHL2Font",
-        textPadding    = blockPadding,
         flashDuration  = 0.15,
         fadeSpeed      = 0.3,
         fadeStartDelay = 6,
-        normalColor    = hl2Hud.colorBackground:Copy(),
-        flashColor     = hl2Hud.colorBackgroundUrgent:Copy(),
-        iconColor      = hl2Hud.colorHappyYellow:Copy(),
         setup = function( box )
             box:SetLabel( "Skulls: " )
             box:SetCountFunc( function( ply ) return ply:GetSkulls() end )
@@ -446,13 +433,7 @@ local hudEntries = {
     },
     {
         key             = "hint",
-        font            = "glee_mediumHL2Font",
-        textPadding     = blockPadding,
         flashDuration   = 0.15,
-        normalColor     = hl2Hud.colorBackground:Copy(),
-        flashColor      = hl2Hud.colorBackgroundUrgent:Copy(),
-        iconColor       = hl2Hud.colorHappyYellow:Copy(),
-        flashIconColor  = hl2Hud.colorRedUrgent:Copy(),
         think           = thinkHint,
     },
 }
@@ -465,14 +446,9 @@ local function createTopLeftBoxes()
         local box = vgui.Create( entry.panelClass or "glee_hl2hudbox", GetAutoHidingHUDPanel() )
         terminator_Extras[storageKey] = box
 
-        box:SetIconFont( entry.font )
-        box:SetTextPadding( entry.textPadding )
         box:SetFlashDuration( entry.flashDuration )
-        box:SetNormalBoxColor( entry.normalColor )
-        box:SetFlashBoxColor( entry.flashColor )
-        box:SetIconColor( entry.iconColor )
-        if entry.flashIconColor then
-            box:SetFlashIconColor( entry.flashIconColor )
+        if entry.font then
+            box:SetIconFont( entry.font )
 
         end
         if entry.fadeSpeed then
@@ -537,8 +513,8 @@ hook.Add( "glee_cl_topleftinfo", "glee_topleftinfo_draw", function( ply, cur )
 
         else
             local doFadeDelays = true
-            local text, stayPresent, doFlash, textColor
-            text, stayPresent, doFlash, xOffset, textColor = entry.think( ply, cur )
+            local text, stayPresent, doFlash, textColor -- localize these so...
+            text, stayPresent, doFlash, xOffset, textColor = entry.think( ply, cur ) -- xOffset can leak out of this scope
 
             if textColor then box:SetIconColor( textColor ) end
 

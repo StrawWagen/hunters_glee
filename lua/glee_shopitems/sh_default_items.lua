@@ -268,7 +268,7 @@ local items = {
     },
     -- terminator doesnt like taking damage from this, will save your ass
     ["ar2"] = {
-        name = "Ar2",
+        name = "Pulse Rifle",
         desc = "Ar2 + Balls.\nIt takes 2 AR2 balls to kill a terminator.",
         shCost = 75,
         markup = 2,
@@ -279,7 +279,7 @@ local items = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
         },
-        weight = -150,
+        weight = -200,
         shPurchaseCheck = shopHelpers.aliveCheck,
         svOnPurchaseFunc = function( purchaser )
             shopHelpers.purchaseWeapon( purchaser, {
@@ -457,7 +457,7 @@ local items = {
 
         end,
         markupPerPurchase = 0.5,
-        cooldown = 60,
+        cooldown = 30,
         tags = { "ITEMS", "Utility", "NewGamePlus" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
@@ -507,27 +507,26 @@ local items = {
             } )
         end,
     },
-    -- ka BOOOOOM
-    ["taucannon"] = {
-        name = "Tau Cannon",
-        desc = "High risk, High reward.\nDon't let it overcharge!",
+    ["grigorigun"] = {
+        name = "Annabelle",
+        desc = "IT KNOWS WHEN YOU MISS...",
         shCost = 0,
-        shSkullCost = 6,
+        shSkullCost = 4,
         cooldown = 0.5,
         tags = { "ITEMS", "Weapon", "SkullCost" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
         },
-        weight = 1100,
+        weight = 950,
         shPurchaseCheck = shopHelpers.aliveCheck,
         svOnPurchaseFunc = function( purchaser )
             shopHelpers.purchaseWeapon( purchaser, {
-                class = "termhunt_taucannon",
-                confirmSoundWeight = 4,
-                ammoType = "Uranium_235",
+                class = "termhunt_annabelle",
+                confirmSoundWeight = 5,
+                ammoType = nil, -- auto
                 purchaseClips = 0,
-                resupplyClips = 2,
+                resupplyClips = 8,
 
             } )
         end,
@@ -557,26 +556,27 @@ local items = {
             } )
         end,
     },
-    ["grigorigun"] = {
-        name = "Annabelle",
-        desc = "IT KNOWS WHEN YOU MISS...",
+    -- ka BOOOOOM
+    ["taucannon"] = {
+        name = "Tau Cannon",
+        desc = "High risk, High reward.\nDon't let it overcharge!",
         shCost = 0,
-        shSkullCost = 5,
+        shSkullCost = 6,
         cooldown = 0.5,
         tags = { "ITEMS", "Weapon", "SkullCost" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
         },
-        weight = 1000,
+        weight = 1100,
         shPurchaseCheck = shopHelpers.aliveCheck,
         svOnPurchaseFunc = function( purchaser )
             shopHelpers.purchaseWeapon( purchaser, {
-                class = "termhunt_annabelle",
-                confirmSoundWeight = 5,
-                ammoType = nil, -- auto
+                class = "termhunt_taucannon",
+                confirmSoundWeight = 4,
+                ammoType = "Uranium_235",
                 purchaseClips = 0,
-                resupplyClips = 6,
+                resupplyClips = 2,
 
             } )
         end,

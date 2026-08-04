@@ -34,6 +34,10 @@ local function doPrecache()
     game.AddParticles( "particles/glee/glee_taucannon_explosion.pcf" )
     PrecacheParticleSystem( "glee_taucannon_explosion" )
 
+    game.AddParticles( "particles/glee/glee_atm_burrow.pcf" )
+    PrecacheParticleSystem( "glee_atm_burrow_pebbles" )
+    PrecacheParticleSystem( "glee_atm_burrow_breach" )
+
 end
 if engine.ActiveGamemode() == "hunters_glee" then
     doPrecache()
@@ -57,6 +61,7 @@ if SERVER then
     function terminator_Extras.DoPFXFromEnt( effString, ent )
         if not precached then doPrecache() end
         timer.Simple( 0, function()
+            if not IsValid( ent ) then return end
             local recipFilter = RecipientFilter()
             recipFilter:AddPAS( ent:WorldSpaceCenter() )
             net.Start( "glee_peffect_play" )

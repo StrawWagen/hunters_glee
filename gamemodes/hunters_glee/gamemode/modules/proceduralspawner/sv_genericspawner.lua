@@ -197,7 +197,7 @@ local function addJob( curr )
 
         if not IsValid( spawned ) then
             onJobInvalid( className )
-            print( "procedural class spawning job \"" .. className ..  "\" failed, ent didnt spawn." )
+            permaPrint( "procedural class spawning job \"" .. className ..  "\" failed, ent didnt spawn." )
             return false
 
         end
@@ -334,13 +334,13 @@ GAMEMODE:RandomlySpawnEntTbl( "sent_ball", {
     -- optional
     -- called on ent BEFORE it's spawned, also blocks this spawn from trying to find a "SpawnFunction" on the sent's ENT table
     -- preSpawnedFunc = function( spawned )
-    --     print( "you will soon be unable to escape the", spawned )
+        --print( "you will soon be unable to escape the", spawned )
     -- end,
 
     -- optional
     -- called on ent after it's spawned
     -- postSpawnedFunc = function( spawned )
-    --     print( "you cannot escape the", spawned )
+        --print( "you cannot escape the", spawned )
     -- end,
 
     -- optional

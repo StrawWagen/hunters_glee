@@ -82,7 +82,7 @@
 -- dont respawn next to people you have homicided -- DONE!
 -- does bot over-predict when people juke it towards it --no, done
 
--- pull nails rclick? --NO
+-- pull nails rclick? --DONE
 
 -- do intro if 1 player online and its their first time --DONE!
 -- check brutalist kfc doors -- DONE
@@ -97,7 +97,6 @@
 -- bot avoid damaging ents idea, needs path building pass. -- done
 -- bot placing of slams + beartrap --done
 
--- Replace stupid temp bools with ints, polish conduit/inversion cooldowns
 -- fix stupid visual immortalizer bug -- done?
 
 -- blessing -- done
@@ -136,6 +135,26 @@
 --    real body, drop server ragdoll, with skull
 --    cannot be revived
 
+-- directly say that roll of the dice is for unstucking -done
+
+tutorial/getting ready misery
+DONE, new plys forced to revamped oneguy mode
+    spawns in the tutorial misery
+    players cannot buy anything?
+    people load into the misery
+    BIG RTM HINT to ready up
+
+change MODE to...
+    Misery -- DONE
+    Scenario
+    Misfortune
+harmless misery with terminators that never get angry?
+
+-- make radio a purchasable item
+-- make voicechat a settings menu thing
+
+-- Replace stupid temp bools with ints, polish conduit/inversion cooldowns
+
 -- effigy
 -- pushes dead people away, makes them look away
 -- steals their money when they get close, or aim near it
@@ -153,8 +172,6 @@
 -- most skulls
 -- flat, most hunter kills
 -- most skulls, additive ( all players skulls in one session, added up )
-
--- radio draw channel instead of ammo
 
 -- bhop perk?
 
@@ -176,11 +193,10 @@
 
 -- make first time hint defer to escape menu
 
--- directly say that roll of the dice is for unstucking
 -- hint to flash tab?
 
--- voting for modes is not that new user friendly
--- zambies glee is better starting mode
+-- voting for miseries is not that new user friendly
+-- zambies glee is better starting misery
 -- sixth sense conflicts with new proximity hud
 
 -- skull place while dead item
@@ -189,12 +205,18 @@
 -- push skulls into people's face, becomes compelling once 
 
 -- split sixth sense?
--- sixth sense will only be for enemies
+-- enemy finding powerup
+--    show sound direction?
+--    
 -- loot finding replacement
 --    hoarder sense for nearby props
 --    ghosts know where loot is at all times?
 --    ghosts way to communicate?
 --    ghosts as knowledge brokers?
+-- loot finding as SNIFF/scent?
+-- gaussian blobs
+-- pie slices
+
 
 -- remove pistol from loadout
 
@@ -243,6 +265,8 @@ recently purchased items on main page
 tabs to navigate pages
 rename innate to mutations?
 innate makes it sound like you have it from the beginning
+different orders per spawnset?
+HIDE items with ???? until you have the money to buy them
 
 lifelong shrimp but you gain score faster?
 
@@ -258,3 +282,99 @@ purchase innate that lets you carry more weapons
 
 afk fakeout doppleganger
 attach balloons to stuff as ghost
+
+terminator misery
+beartraps more prominent in shop
+SLAMS prominent in shop
+
+spawnsets get hints?
+Rename AR2 to Pulse-Rifle
+USE hint on weapons on the ground?
+
+weapons spawn later, longer buildup for terminator miseries
+
+put big messages ON TOP OF OTHER ELEMENTS
+
+roll of the dice as point return item?
+
+FAKE ATMS
+
+
+VAN teleport sequence
+find static beacon in map ( combine theme? )
+need to gas it up?
+starts countdown
+van will arrive after 60s
+violently arrives, dissolves anything near, in the room, massive explosion
+beep beep
+covered in friendly turrets?
+van is ready to pick people up
+sticks around for 30s
+then starts teleport away countdown
+fucks off
+
+if you teleport the gnome out you get +1000 score
+
+big room teleporter
+massive combine block of shit
+Need to find sacrificial models/props_combine/stalkerpod.mdl in the map
+
+
+rapture escape method
+on maps with skies
+submit yourself for judgement
+can only do it once a day? hour?
+
+
+self-ritual escape method
+infernal players can begin a ritual
+throw skulls at a skull posessing ragdoll in the map
+throw 5 skulls at it, it's head lights on fire and drops an infernal skull
+infernal skull yaps at you?
+throw infernal skull to open the infernal portal
+they, and other infernal players, cannot escape via it
+reduces 0.5 days of guilt per escaped player
+also very profitable?
+
+
+doritos playermodel nextbots
+term crowbars always swing if throw mul is low, unless really angry
+
+
+music did not convey the urgency of round grace period
+
+
+illustrate the way in that game design is interconnected
+adding one mechanic can overshadow and hide others 
+
+the road to implimentation comes with known hurdles and curves, and also unknown curves and trials
+adding things can take incentive and attention value from other mechanics
+a good game is in balance with itself
+a player is the main fulcrum, adding something is going to change everything else
+the player is the single nexus of a game
+
+Deceive Inc.
+
+lore drop types
+environmental storytelling
+voice logs
+emails
+
+
+ragdolling as player
+
+ghost ability, inhabit ragdolls
+
+show "SPECTATING X" while spectating things
+so third party watchers can know what is happening
+
+
+escape mul weights?
+track how long players live
+what kills players, npcs, players?
+
+
+swoleify arms if you shove someone?
+babysitter that is the patron saint of all new players
+
+

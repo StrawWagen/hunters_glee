@@ -40,14 +40,18 @@ if CLIENT then
     function SWEP:HintPostStack()
         local owner = self:GetOwner()
 
-        if owner.glee_DefinitelyShoved then return end
-        local nwBool = owner:GetNW2Bool( "gleeshove_primaryattacked", false )
-        if not nwBool then
-            return true, "Primary attack to do a big shove!"
+        if not owner.glee_DefinitelyShoved then
+            local nwBool = owner:GetNW2Bool( "gleeshove_primaryattacked", false )
+            if not nwBool then
+                return true, "Primary attack to do a big shove!"
 
-        elseif nwBool then
-            owner.glee_DefinitelyShoved = true
-            RunConsoleCommand( "cl_huntersgleehint_hasshoved", "1" )
+            elseif nwBool then
+                owner.glee_DefinitelyShoved = true
+                RunConsoleCommand( "cl_huntersgleehint_hasshoved", "1" )
+
+            end
+        elseif not owner.glee_DefinitelySprinted then
+            return true, "Keep running straight forward to build up momentum!"
 
         end
     end
@@ -266,12 +270,22 @@ do
     local newSpeeds = {}
     local lastYaw = {}
 
-    local isGlee = GAMEMODE.ISHUNTERSGLEE
+    local isGlee = GAMEMODE.IsReallyHuntersGlee
 
-    local allowedTurnRate = 8
-    local fullSprintSpeedAdd = 150 -- doesn't buff quite up to this, probably the engine trying to slow down the player
+    local allowedTurnRate = 10
+    local fullSprintSpeedAdd = 200 -- doesn't buff quite up to this, probably the engine trying to slow down the player
     local startPlayingFastRun = fullSprintSpeedAdd / 4
     local sprintRamp = 1.003
+
+    if isGlee then
+        GAMEMODE.FullSprintSpeedAdd = fullSprintSpeedAdd
+
+        function GAMEMODE:GetFullBoostedSprint( ply )
+            local boost = earnedSpeed[ply]
+            return boost
+
+        end
+    end
 
     function SWEP:TranslateActivity( act )
         local fastRunning
@@ -283,7 +297,10 @@ do
                 local speedLengthSqr = owner:GetVelocity():LengthSqr()
                 local thresholdSqr = ( owner:GetRunSpeed() + startPlayingFastRun ) ^ 2
                 fastRunning = speedLengthSqr > thresholdSqr
+                if CLIENT and fastRunning then
+                    owner.glee_DefinitelySprinted = true
 
+                end
             end
         end
         if fastRunning then
@@ -341,6 +358,7 @@ do
                 or mv:KeyDown( IN_BACK )
                 or mv:KeyDown( IN_MOVELEFT )
                 or mv:KeyDown( IN_MOVERIGHT )
+                or mv:KeyDown( IN_DUCK )
             )
         then
             newSpeeds[ply] = 0
@@ -382,7 +400,7 @@ do
 
     end )
 
-    hook.Add( "FinishMove", "glee_shove_sprint_finishmove", function( ply, mv )
+    hook.Add( "FinishMove", "glee_shove_sprint_finishmove", function( ply )
         if not newSpeeds[ply] then return end
         if not IsFirstTimePredicted() then return end
         local newVal = newSpeeds[ply]
@@ -408,9 +426,38 @@ do
     end )
 
     if SERVER then
+        hook.Add( "PlayerFootstep", "glee_shove_sprintstepshake", function( ply, _, foot )
+            local speed = earnedSpeed[ply]
+            if not speed then return end
+
+            local boost = speed - ply:GetRunSpeed()
+
+            local pitch = -boost / 750
+            local yaw = pitch / 2
+            if foot == 0 then -- left
+                yaw = -yaw
+
+            end
+
+            ply:ViewPunch( Angle( pitch, yaw ) )
+
+        end )
         hook.Add( "PlayerDisconnected", "glee_shove_sprint_cleanup", function( ply )
             cleanup( ply )
 
         end )
+    elseif CLIENT then
+        function SWEP:CalcView( ply, _pos, _ang, fov )
+            local speed = earnedSpeed[ply]
+            if speed then
+                local boost = speed - ply:GetRunSpeed()
+                local fovDivisorBite = ply:GetFOV() / 2 -- bigger bite if players have wider default fov
+                local fovBite = boost / ( 200 - fovDivisorBite )
+                fov = fov - fovBite
+
+            end
+            return _pos, _ang, fov
+
+        end
     end
 end

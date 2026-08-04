@@ -20,7 +20,7 @@ end
 local function spawnJobInfo( name, reason )
     if not isCheats() then return end
     name = name or ""
-    print( name .. " " .. reason )
+    permaPrint( name .. " " .. reason )
 
 end
 
@@ -91,9 +91,9 @@ hook.Add( "glee_sv_validgmthink_not_over", "glee_proceduralspawner", function()
     if nextPrint < CurTime() then
         nextPrint = CurTime() + 1
         local count = #proceduralSpawnerJobs
-        print( count )
+        --print( count )
         if count >= 1 then
-            print( proceduralSpawnerJobs[1].jobsName )
+            --print( proceduralSpawnerJobs[1].jobsName )
 
         end
     end
@@ -366,9 +366,9 @@ end )
 
 
 concommand.Add( "glee_test_printactivespawnjobs", function()
-    print( "Active spawn jobs:" )
+    permaPrint( "Active spawn jobs:" )
     for i, job in ipairs( proceduralSpawnerJobs ) do
-        print( i .. ": " .. job.jobsName )
+        permaPrint( i .. ": " .. job.jobsName )
 
     end
 end, nil, "Prints active procedural spawn job names to console.", FCVAR_CHEAT )

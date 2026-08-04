@@ -31,19 +31,28 @@ function spawnSetVote:BeginVote( duration, maxOptions )
     local spawnSets = GAMEMODE:GetSpawnSets()
     local toBrowse = table.Copy( spawnSets )
 
-    local toAdd = { ["hunters_glee"] = toBrowse["hunters_glee"] } -- always include default
+    local toAdd = { [1] = toBrowse["hunters_glee"] } -- always include default
     toBrowse["hunters_glee"] = nil
 
     local currentSpawnsetName = GAMEMODE:GetSpawnSet()
     toBrowse[currentSpawnsetName] = nil -- remove current mode from options
 
     while table.Count( toBrowse ) > 0 do
-        if ( #toAdd + 1 ) >= maxOptions then break end
+        if ( #toAdd + 1 ) > maxOptions then break end
 
         local option, key = table.Random( toBrowse )
         toBrowse[key] = nil
 
-        local notVotableRand = isnumber( option.chanceToBeVotable ) and option.chanceToBeVotable < math.random( 0, 100 )
+        local chance = option.chanceToBeVotable
+        if option.chanceToBeVotableWhenHard then -- make spawnsets fade into the background if they aren't challenging people
+            local escapeMul = GAMEMODE:GetSpawnsetsEscapeMultiplier( key )
+            if escapeMul > 1.5 then
+                chance = option.chanceToBeVotableWhenHard
+
+            end
+        end
+
+        local notVotableRand = isnumber( chance ) and chance < math.random( 0, 100 )
         local wouldBeOverfilled = ( table.Count( toBrowse ) + #toAdd ) > maxOptions -- always meet maxOptions
 
         if wouldBeOverfilled and notVotableRand then continue end
@@ -75,7 +84,7 @@ function spawnSetVote:BeginVote( duration, maxOptions )
         end
     net.Send( player.GetAll() )
 
-    print( "GLEE: A mode vote has begun" )
+    permaPrint( "GLEE: A mode vote has begun" )
 
     timer.Create( "glee_spawnsetvote_end", duration, 1, function() -- one timername
         spawnSetVote:OnVoteEnd()
@@ -119,7 +128,7 @@ function spawnSetVote:OnVoteEnd()
     spawnSetVote.winner = spawnSetVote:GetWinningKey( voteCounts )
 
     if spawnSetVote.winner == GAMEMODE:GetSpawnSet() then
-        huntersGlee_AnnounceDramatic( player.GetAll(), 1001, 5, "Mode will remain " .. GAMEMODE:GetPrettyNameOfSpawnSet( spawnSetVote.winner ) .. "..." )
+        huntersGlee_AnnounceDramatic( player.GetAll(), 1001, 5, "Your Misery will remain; " .. GAMEMODE:GetPrettyNameOfSpawnSet( spawnSetVote.winner ) .. "..." )
         spawnSetVote.currVote = nil
 
         return
@@ -131,20 +140,22 @@ function spawnSetVote:OnVoteEnd()
         hook.Remove( "MapVote_VoteStarted", "glee_setvotedspawnset" )
         hook.Remove( "ShutDown", "glee_setvotedspawnset" )
         game.ConsoleCommand( "huntersglee_spawnset " .. set .. "\n" )
-        huntersGlee_Announce( player.GetAll(), 150, 3, "Setting mode..." )
+        GAMEMODE.rtmWaitingForRoundEnd = nil
+        huntersGlee_Announce( player.GetAll(), 150, 3, "NEW MISERY..." )
         timer.Simple( 2, function()
-            huntersGlee_AnnounceDramatic( player.GetAll(), 1001, 5, "Mode changed to " .. GAMEMODE:GetPrettyNameOfSpawnSet( set ) )
+            huntersGlee_AnnounceDramatic( player.GetAll(), 1001, 5, GAMEMODE:GetPrettyNameOfSpawnSet( set ) .. "\nis your new Misery..." )
 
         end )
     end
 
     -- print in console!
-    print( "GLEE: Mode vote is over, winner is, " .. spawnSetVote.winner )
+    permaPrint( "GLEE: Misery vote is over, winner is, " .. spawnSetVote.winner )
     -- and in people's chat!
-    GAMEMODE:SpeakAsHuntersGlee( "Mode vote over! Winner is " .. GAMEMODE:GetPrettyNameOfSpawnSet( spawnSetVote.winner ) )
+    GAMEMODE:SpeakAsHuntersGlee( "the Misery vote winner; " .. GAMEMODE:GetPrettyNameOfSpawnSet( spawnSetVote.winner ) )
 
     if GAMEMODE:RoundState() == GAMEMODE.ROUND_ACTIVE and GAMEMODE:getRemaining( GAMEMODE.termHunt_roundBegunTime, CurTime() ) > 60 then -- if round has properly started
-        huntersGlee_AnnounceDramatic( player.GetAll(), 1001, 10, "Mode will be changed to " .. GAMEMODE:GetPrettyNameOfSpawnSet( spawnSetVote.winner ) .. "\n on round end." )
+        huntersGlee_AnnounceDramatic( player.GetAll(), 1001, 10, "The next Misery; " .. GAMEMODE:GetPrettyNameOfSpawnSet( spawnSetVote.winner ) .. "\nwill arrive upon round end..." )
+        GAMEMODE.rtmWaitingForRoundEnd = spawnSetVote.winner
         hook.Add( "huntersglee_round_into_inactive", "glee_setvotedspawnset", function()
             setSpawnSet( spawnSetVote.winner )
 

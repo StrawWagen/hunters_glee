@@ -56,7 +56,7 @@ function ENT:BarrelRandomize()
     self:SetModel( model )
 
     local yaw = math.Rand( -180, 180 )
-    local ang = Angle( 0, yaw ,0 )
+    local ang = Angle( 0, yaw, 0 )
     self:SetAngles( ang )
 
     timer.Simple( 0, function()
@@ -106,7 +106,7 @@ function ENT:UpdateGivenScore()
     local nearestPly, nearestPlyDistSqr
     local roundCostPermanent
 
-    if GAMEMODE.ISHUNTERSGLEE then
+    if GAMEMODE.IsReallyHuntersGlee then
         nearestPly, nearestPlyDistSqr = GAMEMODE:nearestAlivePlayer( myPos )
         roundCostPermanent = GAMEMODE.roundExtraData.BarrelPlacedCount or 0
         roundCostPermanent = roundCostPermanent / 20 -- so barrels eventually always become unprofitable on super super long rounds

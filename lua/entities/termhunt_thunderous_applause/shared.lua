@@ -1,63 +1,36 @@
 AddCSLuaFile()
 
 ENT.Type = "anim"
-ENT.Base = "screamer_crate"
+ENT.Base = "glee_divine_clap"
 
-ENT.Category    = "Other"
-ENT.PrintName   = "Thunderous Applause"
-ENT.Author      = "StrawWagen"
+ENT.PrintName   = "Divine Applause"
 ENT.Purpose     = "Applause of the highest order"
-ENT.Spawnable    = true
-ENT.AdminOnly    = game.IsDedicated()
-ENT.Category = "Hunter's Glee"
-ENT.Model = "models/hunter/tubes/tube1x1x2.mdl"
+ENT.Category    = "Hunter's Glee"
+ENT.Spawnable   = true
+ENT.AdminOnly   = game.IsDedicated()
 
-ENT.HullCheckSize = Vector( 20, 20, 10 )
-ENT.PosOffset = Vector( 0, 0, 10 )
+-- many claps that land over a wide area
+local interval = 60 * 2
 
-if SERVER then
-    util.AddNetworkString( "glee_nomorethunderousapplause" )
-
-end
+ENT.baseCost = -600
+ENT.heliCostMult = 4
+ENT.heliNearbyDist = 3000
+ENT.interval = interval
+ENT.cooldownBool = "termhunt_thunderous_applause"
+ENT.cooldownMessage = "Applause was just recently given. Wait until it's time again."
+ENT.mischiefOnPlace = 10
+ENT.mischiefReason = "applauded thunderously"
+ENT.radius = 1050
 
 if CLIENT then
-    local nextNoMoreApplause = 0
+    function ENT:OnDetachedFromOwner()
+        self:CircleAway()
 
-    net.Receive( "glee_nomorethunderousapplause", function()
-        if nextNoMoreApplause > CurTime() then return end
-        nextNoMoreApplause = CurTime() + 0.1
-
-        local toWipe = net.ReadEntity()
-        if IsValid( toWipe ) then
-            toWipe:CircleAway()
-
-        end
-
-        if toWipe ~= LocalPlayer().ghostEnt then return end
-        LocalPlayer().ghostEnt = nil
-
-    end )
-
+    end
     function ENT:CircleAway()
         if not CLIENT then return end
         if not IsValid( self.circle ) then return end
         SafeRemoveEntity( self.circle )
-
-    end
-
-    function ENT:DoHudStuff()
-        local screenMiddleW = ScrW() / 2
-        local screenMiddleH = ScrH() / 2
-        local scoreGained = math.Round( self:GetGivenScore() )
-        local stringPt1 = ""
-        if scoreGained < 0 then
-            stringPt1 = "Cost: "
-        end
-
-        local scoreString = stringPt1 .. tostring( scoreGained )
-
-        surface.SetFont( "scoreGainedOnPlaceFont" )
-        surface.drawShadowedTextBetter( scoreString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
 
     end
 
@@ -98,6 +71,18 @@ if CLIENT then
             end
         end
     end
+
+    function ENT:DoCircle()
+        local circle = ClientsideModel( "models/hunter/tubes/tube2x2x025.mdl", RENDERGROUP_OPAQUE )
+        circle:SetMaterial( "lights/white002" )
+        circle:SetPos( self:GetPos() )
+        circle:SetParent( self )
+        self:CallOnRemove( "removeradiusthing", function()
+            self:CircleAway()
+        end )
+        self.circle = circle
+
+    end
 end
 
 function ENT:OnRemove()
@@ -107,106 +92,63 @@ function ENT:OnRemove()
     end
 end
 
-function ENT:PostInitializeFunc()
-    if not GAMEMODE.ISHUNTERSGLEE then SafeRemoveEntity( self ) return end
-    self:SetMaterial( "lights/white002" )
-
-end
-
-local function IsHullTraceFull( startPos, hullMaxs, ignoreEnt )
-    local traceData = {
-        start = startPos,
-        endpos = startPos + Vector( 0, 0, 1 ),
-        filter = ignoreEnt,
-        mins = -hullMaxs,
-        maxs = hullMaxs
-    }
-    local trace = util.TraceHull( traceData )
-
-    return trace.Hit
-
-end
-
-local function getNearestNavFloor( pos )
-    if not pos then return NULL end
-    local Dat = {
-        start = pos,
-        endpos = pos + Vector( 0,0,-500 ),
-        mask = 131083
-    }
-    local Trace = util.TraceLine( Dat )
-    if not Trace.HitWorld then return NULL end
-    local navArea = navmesh.GetNearestNavArea( Trace.HitPos, false, 25, false, true, -2 )
-    if not navArea then return NULL end
-    if not navArea:IsValid() then return NULL end
-    return navArea
-
-end
-
-
-local function SparkEffect( SparkPos )
-    local Sparks = EffectData()
-    Sparks:SetOrigin( SparkPos )
-    Sparks:SetMagnitude( 2 )
-    Sparks:SetScale( 1 )
-    Sparks:SetRadius( 6 )
-    util.Effect( "Sparks", Sparks )
-
-end
-
-local heliNearbyDist = 3000
-local baseCost = -600
-
-function ENT:UpdateGivenScore()
-    local cost = baseCost
-    local heli = terminator_Extras and terminator_Extras.glee_CurrentRescueHeli
-    if IsValid( heli ) and heli:GetPos():DistToSqr( self:GetPos() ) < heliNearbyDist ^ 2 then
-        cost = cost * 4
-
-    end
-    self:SetGivenScore( cost )
-
-end
-
-function ENT:CalculateCanPlace()
-    local checkPos = self:OffsettedPlacingPos() + Vector( 0,0,15 )
-
-    if IsHullTraceFull( checkPos, self.HullCheckSize, self ) then return false, self.noPurchaseReason_NoRoom end
-    if getNearestNavFloor( checkPos ) == NULL then return false, self.noPurchaseReason_OffNavmesh end
-    if not GAMEMODE:IsUnderSky( checkPos ) then return false, "Needs to be placed under the sky." end
-    if GAMEMODE:isTemporaryTrueBool( "termhunt_thunderous_applause" ) then return false, "Applause was just recently given. Wait until it's time again." end
-    if not self:HasEnoughToPurchase() then return false, self:TooPoorString() end
-    return true
-
-end
-
-ENT.radius = 1050
-
-function ENT:DoCircle()
-    local circle = ClientsideModel( "models/hunter/tubes/tube2x2x025.mdl", RENDERGROUP_OPAQUE )
-    circle:SetMaterial( "lights/white002" )
-    circle:SetPos( self:GetPos() )
-    circle:SetParent( self )
-    self:CallOnRemove( "removeradiusthing", function()
-        self:CircleAway()
-    end )
-    self.circle = circle
-
-end
-
 local flatten = Vector( 1, 1, 0 )
 local tinyUpOffset = Vector( 0, 0, 20 )
-local interval = 60 * 4
 local tallOblong = Vector( 1, 1, 4 )
 
-function ENT:Place()
+-- wider, mentos-shaped warning volume, and applause-flavored wording
+function ENT:WarnNearbyPlayers( strikePos, placerNick )
+    local warningDist = self.radius * 4
+    local softwarnPlayers = {}
+    local hardwarnPlayers = {}
+    for _, ply in ipairs( player.GetAll() ) do
+        if ply:Health() > 0 then
+            local subtProduct = ply:GetPos() - strikePos
+            subtProduct = subtProduct * tallOblong
+            if subtProduct:LengthSqr() < warningDist then
+                table.insert( softwarnPlayers, ply )
 
-    local underSky, strikePos = GAMEMODE:IsUnderSky( self:GetPos() )
-    if not underSky then return end
+            end
+        else
+            table.insert( hardwarnPlayers, ply )
 
-    local divineIncrement = 0
+        end
+    end
+    huntersGlee_Announce( softwarnPlayers, 100, 15, "Something isn't right...\nYour hair is standing on end... " )
+    huntersGlee_Announce( hardwarnPlayers, 100, 15, placerNick .. " is.. Applauding! Thunderously!" )
+
+end
+
+-- The applause timeline, as the length of each phase.
+local tickRate          = 0.06
+local baseSparkRampTime = 6         -- sparks climb from never to every tick across this
+local baseSparkRampTimeNoPlys = baseSparkRampTime * 0.25 -- faster striking if nobodys nearby
+local sparkFullTime     = 0.6       -- sparks every tick, once the ramp is done
+local silenceTime       = 0.6       -- dead air between the last spark and the first bolt
+local strikesFullTime   = 2
+local strikesThinTime   = 1.8       -- getting rarer, but the bolts are still strong
+local weakStrikesTime   = 0.6       -- past here every bolt is a weak one
+local strikesTailTime   = 9         -- second fade stacks onto the first, so it peters out
+
+-- a sustained barrage of strikes scattered across the radius, instead of one bolt
+function ENT:BeginStrike( strikePos )
+    local startTime = CurTime()
     local timerKey = "thunderousapplause_" .. self:GetCreationID()
     local strikeRad = self.radius
+
+    local sparkRampTime = baseSparkRampTimeNoPlys
+    local _, nearestPlyDistSqr = GAMEMODE:nearestAlivePlayer( self:GetPos() )
+    if nearestPlyDistSqr < ( strikeRad * 1.75 ) ^ 2 then
+        sparkRampTime = baseSparkRampTime
+
+    end
+
+    local sparksEndTime       = sparkRampTime + sparkFullTime
+    local strikesStartTime    = sparksEndTime + silenceTime
+    local strikesThinFrom     = strikesStartTime + strikesFullTime
+    local weakStrikesFrom     = strikesThinFrom + strikesThinTime
+    local strikesThinHardFrom = weakStrikesFrom + weakStrikesTime
+    local applauseEndTime     = strikesThinHardFrom + strikesTailTime
 
     local timerEnd = function()
         timer.Stop( timerKey )
@@ -230,37 +172,15 @@ function ENT:Place()
 
     end
 
-    local plys = player.GetAll()
-    local warningDist = self.radius * 4
-    local softwarnPlayers = {}
-    local hardwarnPlayers = {}
-    for _, ply in ipairs( plys ) do
-        if ply:Health() > 0 then
-            local subtProduct = ply:GetPos() - strikePos
-            subtProduct = subtProduct * tallOblong
-            if subtProduct:LengthSqr() < warningDist then
-                table.insert( softwarnPlayers, ply )
-
-            end
-        elseif ply:Health() <= 0 then
-            table.insert( hardwarnPlayers, ply )
-
-        end
-    end
-    huntersGlee_Announce( softwarnPlayers, 100, 15, "Something isn't right...\nYour hair is standing on end... " )
-    huntersGlee_Announce( hardwarnPlayers, 100, 15, self.player:Nick() .. " is.. Applauding! Thunderously!" )
-
-    local max = 300
-
-    timer.Create( timerKey, 0.06, 0, function()
+    timer.Create( timerKey, tickRate, 0, function()
         if not IsValid( self ) then timerEnd() return end
 
-        divineIncrement = divineIncrement + 1
+        local elapsed = CurTime() - startTime
 
         -- sparks
-        if divineIncrement < 70 then
+        if elapsed < sparksEndTime then
             for _ = 1, 2 do
-                if math.random( 1, 60 ) > divineIncrement then continue end
+                if math.Rand( 0, sparkRampTime ) > elapsed then continue end
 
                 local sparkPos = getRandomSnappedPos()
 
@@ -270,21 +190,20 @@ function ENT:Place()
 
                 if GAMEMODE.PanicSource then
                     GAMEMODE:PanicSource( sparkPos, 100, 200 )
- 
+
                 end
-                SparkEffect( sparkPos )
+                self:SparkEffect( sparkPos )
                 sound.Play( "LoudSpark", sparkPos )
-                sound.EmitHint( SOUND_DANGER, sparkPos, 500, 6, self:GetOwner() )
+                sound.EmitHint( SOUND_DANGER, sparkPos, 500, 6, self.attackerInflictor )
 
                 if math.random( 0, 100 ) > 50 then continue end
 
                 self:EmitSound( "LoudSpark", 90, 100, 1, CHAN_STATIC )
 
             end
-        -- start striking after 80
-        elseif ( divineIncrement > 80 ) and ( divineIncrement < max ) then
-            if math.random( 110, max ) < divineIncrement then return end
-            if math.random( 150, max ) < divineIncrement then return end
+        elseif ( elapsed > strikesStartTime ) and ( elapsed < applauseEndTime ) then
+            if math.Rand( strikesThinFrom, applauseEndTime ) < elapsed then return end
+            if math.Rand( strikesThinHardFrom, applauseEndTime ) < elapsed then return end
 
             if math.random( 0, 100 ) >= 40 then return end
 
@@ -295,13 +214,13 @@ function ENT:Place()
 
                 if not GAMEMODE:IsUnderSky( strikingPos ) then return end
 
-                local powa = math.random( 1, 4 )
+                local powa = math.Rand( 1, 5.5 )
                 if not self.firstPowafulStrike then
                     self.firstPowafulStrike = true
-                    powa = 7
+                    powa = 8
 
                 end
-                if divineIncrement > 140 then
+                if elapsed > weakStrikesFrom then
                     powa = 0.75
 
                 end
@@ -314,36 +233,12 @@ function ENT:Place()
 
             end
 
-        elseif divineIncrement > max then
+        elseif elapsed > applauseEndTime then
             SafeRemoveEntity( self )
             timerEnd()
 
         end
     end )
-
-    local betrayalScore = self:GetGivenScore()
-
-    if self.player.GivePlayerScore and betrayalScore then
-        self.player:GivePlayerScore( betrayalScore )
-        GAMEMODE:sendPurchaseConfirm( self.player, betrayalScore )
-
-    end
-
-    GAMEMODE:AddMischievousness( self.player, 10, "applauded thunderously" )
-
-    self.attackerInflictor = self.player
-
-    net.Start( "glee_nomorethunderousapplause" )
-        net.WriteEntity( self )
-
-    net.Send( self.player )
-
-    self.player.ghostEnt = nil
-
-    self.player = nil
-    self:SetOwner( NULL )
-
-    GAMEMODE:setTemporaryTrueBool( "termhunt_thunderous_applause", interval )
 
 end
 

@@ -2,11 +2,12 @@
 AddCSLuaFile( "shared.lua" )
 AddCSLuaFile( "cl_init.lua" )
 AddCSLuaFile( "modules/cl_winscreen.lua" )
-AddCSLuaFile( "modules/cl_modelscale.lua" )
 AddCSLuaFile( "modules/cl_scoreboard.lua" )
 AddCSLuaFile( "modules/cl_obfuscation.lua" )
 AddCSLuaFile( "modules/cl_fallingwind.lua" )
 AddCSLuaFile( "modules/cl_killfeedoverride.lua" )
+
+AddCSLuaFile( "modules/modelscale/cl_modelscale.lua" )
 
 AddCSLuaFile( "modules/deadplayerfx/cl_souls.lua" )
 AddCSLuaFile( "modules/deadplayerfx/cl_deaddesaturation.lua" )
@@ -81,17 +82,18 @@ include( "modules/sv_navpatcher.lua" )
 include( "modules/sv_navmeshcategorizer.lua" )
 include( "modules/sv_doorbash.lua" )
 include( "modules/sv_mapvote.lua" )
-include( "modules/sv_modelscale.lua" )
 include( "modules/sv_gasmanager.lua" )
 include( "modules/sv_skullmanager.lua" )
 include( "modules/sv_hunterspawner.lua" )
 include( "modules/sv_scoredropping.lua" )
 include( "modules/sv_rejoinpersist.lua" )
 include( "modules/sv_firstfallgrace.lua" )
+include( "modules/spawnset/sv_spawnset.lua" )
 include( "modules/sv_blamedfalldamage.lua" )
 include( "modules/sv_seeding_rewarder.lua" )
 include( "modules/music/sv_music.lua" )
 include( "modules/music/sv_musicgobbler.lua" )
+include( "modules/modelscale/sv_modelscale.lua" )
 include( "modules/music/sv_tracktriggering.lua" )
 include( "modules/spawnset/sv_spawnsetvote.lua" )
 include( "modules/spawnset/sv_bosshandler.lua" )
@@ -161,11 +163,6 @@ GM.SpawnTypes = {
 GM.roundStartAfterNavCheck      = 75
 GM.roundStartNormal             = 30
 GM.roundStartNormalAllEscaped   = 60
-GM.IsReallyHuntersGlee          = true
-
--- this is increased when all hunters are killed, or are being forced to spawn in front of players
--- basically it makes the spawner get more aggressive the longer you stay on cheesable maps
-GM.sessionDiffBump = 0
 
 local CurTime = CurTime
 
@@ -201,6 +198,11 @@ function GM:TermHuntSetup()
     self.finishedRoundCount             = 0
     self.currWaveDifficulty             = 0
 
+    -- this is increased when the round is won, all hunters are killed, or are being forced to spawn in front of players
+    -- basically it makes the spawner get more aggressive the longer you stay on cheesable maps
+    self.sessionDiffBump = 0
+    SetGlobal2Float( "bumpedSessionDifficulty", self.sessionDiffBump )
+
     -- just in case!
     hook.Remove( "Think", "glee_DoGreedyPatchThinkHook" )
     SetGlobalBool( "glee_DisplayWinners", false )
@@ -211,7 +213,7 @@ function GM:TermHuntSetup()
 
     end
 
-    print( "GLEE: init" )
+    permaPrint( "GLEE: init" )
     self:SetRoundState( self.ROUND_SETUP )
     self.termHunt_navmeshCheckTime = CurTime() + 5
 
@@ -735,13 +737,13 @@ do
         local empt = #players == 0
         if empt and ( currState == self.ROUND_ACTIVE or currState == self.ROUND_LIMBO ) then
             -- bots are expensive, save cpu power pls
-            print( "Empty server!\nRemoving bots..." )
+            permaPrint( "Empty server!\nRemoving bots..." )
             self:roundEnd()
             self:beginSetup()
             return true
 
         elseif empt and game.IsDedicated() and not self.waitingOnNavoptimizerGen and navmesh.GetNavAreaCount() <= 0 and NAVOPTIMIZER_tbl and GetConVar( "sv_cheats" ):GetBool() then
-            print( "GLEE: Automatically generating navmesh & optimizing with Navmesh Optimizer" )
+            permaPrint( "GLEE: Automatically generating navmesh & optimizing with Navmesh Optimizer" )
             self:GenerateANavmeshPls()
 
         elseif empt then -- empty
@@ -769,7 +771,7 @@ function GM:handleGenerating( currState )
         return true
 
     elseif generating and ( currState == self.ROUND_ACTIVE or currState == self.ROUND_LIMBO ) then
-        print( "Navmesh generation detected, rebuilding." )
+        permaPrint( "Navmesh generation detected, rebuilding." )
         self:roundEnd()
         self:beginSetup()
         self.biggestNavmeshGroups = nil
@@ -826,7 +828,7 @@ function GM:GenerateANavmeshPls()
         hook.Remove( "navoptimizer_done_globalmerge", "glee_detectrealnavgenfinish" )
         if game.IsDedicated() then
             navmesh.Save()
-            print( "GLEE: Saved navmesh." )
+            permaPrint( "GLEE: Saved navmesh." )
 
         end
     end )
@@ -1111,6 +1113,6 @@ end
 -- test command for setting to GAMEMODE.ROUND_TESTSTATE
 concommand.Add( "glee_test_roundstatetest", function()
     GAMEMODE:SetRoundState( GAMEMODE.ROUND_TESTSTATE )
-    print( "GLEE: set to test state, gmod_admin_cleanup to restore" )
+    permaPrint( "GLEE: set to test state, gmod_admin_cleanup to restore" )
 
 end, nil, "Disables hunter spawner, everything.", FCVAR_CHEAT )

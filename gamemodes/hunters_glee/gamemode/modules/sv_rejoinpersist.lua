@@ -32,7 +32,7 @@ hook.Add( "PlayerInitialSpawn", "glee_rejoin_dead", function( ply )
 
     leavers[ply:SteamID()] = nil
 
-    if leftData.score <= 0 then -- TODO, open this hole after debuff items can be made persist
+    if leftData.score <= 0 then -- TODO, open this hole and persist positive score, after debuff items can be made persist
         ply:SetScore( leftData.score )
 
     end

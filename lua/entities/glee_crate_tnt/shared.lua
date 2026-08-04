@@ -137,7 +137,7 @@ local function makeBomb( crate )
     bomb.glee_TNT_Crate_player = owner
     bomb.glee_TNT_Crate_creditThreshold = damage * crate.glee_TNT_CrateCreditThreshold
 
-    bomb.glee_AlwaysFullPVPDamage = true
+    bomb.glee_GuiltFreeInflictor = true
 
 end
 

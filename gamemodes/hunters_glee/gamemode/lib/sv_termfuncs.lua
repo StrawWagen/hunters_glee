@@ -1,5 +1,5 @@
-local minusFiveHundred = Vector( 0,0,-500 )
-local minusOne = Vector( 0,0,-500 )
+local minusFiveHundred = Vector( 0, 0, -500 )
+local minusOne = Vector( 0, 0, -500 )
 local IsValid = IsValid
 local entMeta = FindMetaTable( "Entity" )
 
@@ -58,7 +58,7 @@ function GM:getNearestPosOnNav( pos, distance )
     local distIn = distance or 2000
     local result = { pos = nil, area = NULL }
     if not pos then return result end
-    local navFound = GAMEMODE:getNearestNav( pos, distIn )
+    local navFound = self:getNearestNav( pos, distIn )
     if not navFound then return result end
     if not navFound:IsValid() then return result end
     result = { pos = navFound:GetClosestPointOnArea( pos ), area = navFound }
@@ -132,7 +132,7 @@ function GM:findValidNavResult( data, start, radius, scoreFunc, noMoreOptionsMin
     local cur = nil
     if isvector( start ) then
         pos = start
-        res = GAMEMODE:getNearestPosOnNav( pos )
+        res = self:getNearestPosOnNav( pos )
         cur = res.area
 
     elseif start and start.IsValid and start:IsValid() then
@@ -252,33 +252,6 @@ function GM:findValidNavResult( data, start, radius, scoreFunc, noMoreOptionsMin
     end
 end
 
-GM.IsUnderSky_Distance = 12000
-
-local fiftyPowerOfTwo = 50^2
-local vec12kZ = Vector( 0, 0, GM.IsUnderSky_Distance )
-local vecNeg1K = Vector( 0, 0, -1000 )
-
-function GM:IsUnderSky( pos )
-    -- get the sky
-    local skyTraceDat = {
-        start = pos,
-        endpos = pos + vec12kZ,
-        mask = CONTENTS_SOLID,
-    }
-    local skyTraceResult = util.TraceLine( skyTraceDat )
-
-    if skyTraceResult.HitSky then
-        return true, skyTraceResult.HitPos, skyTraceResult
-
-    elseif not skyTraceResult.Hit then
-        return true, skyTraceResult.HitPos, skyTraceResult
-
-    else
-        return nil, skyTraceResult.HitPos, skyTraceResult
-
-    end
-end
-
 function GM:IsOverDisplacement( pos )
     local tr = terminator_Extras.getFloorTr( pos )
     if tr.HitTexture ~= "**displacement**" then return nil, tr end
@@ -286,37 +259,10 @@ function GM:IsOverDisplacement( pos )
 
 end
 
+local posIsUnderDisplacement = terminator_Extras.posIsUnderDisplacement
+
 function GM:IsUnderDisplacement( pos )
-    -- get the sky
-    local firstTraceDat = {
-        start = pos,
-        endpos = pos + vec12kZ,
-        mask = MASK_SOLID_BRUSHONLY,
-    }
-    local firstTraceResult = util.TraceLine( firstTraceDat )
-
-    -- go back down
-    local secondTraceDat = {
-        start = firstTraceResult.HitPos,
-        endpos = pos,
-        mask = MASK_SOLID_BRUSHONLY,
-    }
-    local secondTraceResult = util.TraceLine( secondTraceDat )
-    if secondTraceResult.HitTexture ~= "**displacement**" then return nil, nil end
-
-    -- final check to make sure
-    local thirdTraceDat = {
-        start = pos,
-        endpos = pos + vecNeg1K,
-        mask = MASK_SOLID_BRUSHONLY,
-    }
-    local thirdTraceResult = util.TraceLine( thirdTraceDat )
-    local isANestedDisplacement = thirdTraceResult.HitTexture == "**displacement**" and secondTraceResult.HitPos:DistToSqr( thirdTraceResult.HitPos ) > fiftyPowerOfTwo
-
-    if thirdTraceResult.Hit and thirdTraceResult.HitTexture ~= "TOOLS/TOOLSNODRAW" and not isANestedDisplacement then return nil, true end -- we are probably under a displacement
-
-    -- we are DEFINITely under one
-    return true, nil
+    return posIsUnderDisplacement( pos )
 
 end
 
@@ -325,7 +271,7 @@ local underDisplacementOffset = Vector()
 -- check the actual pos + visible spots nearby to truly know if a point is under a displacement
 -- rather expensive! but it works!
 function GM:IsUnderDisplacementExtensive( pos )
-    local underBasic, underNested = self:IsUnderDisplacement( pos )
+    local underBasic, underNested = posIsUnderDisplacement( pos )
     if underBasic or underNested then return true end
 
     local traceStruct = {
@@ -354,7 +300,7 @@ function GM:IsUnderDisplacementExtensive( pos )
 end
 
 function GM:getFurthestConnectedNav( start, dist, ignoreBlocker )
-    local res = GAMEMODE:getNearestPosOnNav( start, 20000 )
+    local res = self:getNearestPosOnNav( start, 20000 )
     local startArea = res.area
 
     if not startArea:IsValid() then return end
@@ -384,7 +330,7 @@ function GM:getFurthestConnectedNav( start, dist, ignoreBlocker )
         return score
 
     end
-    return GAMEMODE:findValidNavResult( scoreData, start, dist, scoreFunction )
+    return self:findValidNavResult( scoreData, start, dist, scoreFunction )
 
 end
 
@@ -392,7 +338,7 @@ local vec40Z = Vector( 0, 0, 40 )
 
 function GM:GetNearbyWalkableArea( playerReference, start, count, occupiedSpawnAreas )
     local spawnTraceOffset = vec40Z
-    local res = GAMEMODE:getNearestPosOnNav( start, 20000 )
+    local res = self:getNearestPosOnNav( start, 20000 )
     local startArea = res.area
 
     if not IsValid( startArea ) then return end
@@ -452,7 +398,7 @@ function GM:GetNearbyWalkableArea( playerReference, start, count, occupiedSpawnA
 
     local radAdd = count * 100
 
-    local outPos, outArea = GAMEMODE:findValidNavResult( scoreData, start, math.random( 300, 800 ) + radAdd, scoreFunction )
+    local outPos, outArea = self:findValidNavResult( scoreData, start, math.random( 300, 800 ) + radAdd, scoreFunction )
 
     if not outPos then return end
 
@@ -562,7 +508,7 @@ end
 
 function GM:getDeadPlayers()
     local players = player.GetAll()
-    local deadPlayers = GAMEMODE:returnDeadInTable( players )
+    local deadPlayers = self:returnDeadInTable( players )
 
     return deadPlayers
 
@@ -570,7 +516,7 @@ end
 
 function GM:getDeadListeners()
     local players = player.GetAll()
-    local deadPlayers = GAMEMODE:returnDeadListenersInTable( players )
+    local deadPlayers = self:returnDeadListenersInTable( players )
 
     return deadPlayers
 
@@ -578,7 +524,7 @@ end
 
 function GM:getAlivePlayers()
     local players = player.GetAll()
-    local alivePlayers = GAMEMODE:returnAliveInTable( players )
+    local alivePlayers = self:returnAliveInTable( players )
 
     return alivePlayers
 
@@ -588,7 +534,25 @@ function GM:nearestAlivePlayer( pos )
     local nearestPlyDistSqr = math.huge
     local nearestPly = nil
 
-    for _, alivePly in ipairs( GAMEMODE:getAlivePlayers() ) do
+    for _, alivePly in ipairs( self:getAlivePlayers() ) do
+        local distToPlySqr = alivePly:GetPos():DistToSqr( pos )
+        if distToPlySqr < nearestPlyDistSqr then
+            nearestPlyDistSqr = distToPlySqr
+            nearestPly = alivePly
+
+        end
+    end
+
+    return nearestPly, nearestPlyDistSqr
+end
+
+function GM:nearestNonInfernalAlivePlayer( pos )
+    local nearestPlyDistSqr = math.huge
+    local nearestPly = nil
+
+    for _, alivePly in ipairs( self:getAlivePlayers() ) do
+        if alivePly:HasStatusEffect( "infernalintervention_rawendofthedeal" ) then continue end
+
         local distToPlySqr = alivePly:GetPos():DistToSqr( pos )
         if distToPlySqr < nearestPlyDistSqr then
             nearestPlyDistSqr = distToPlySqr
@@ -625,7 +589,7 @@ function GM:allAlivePlayerShootPositions()
 end
 
 function GM:getNearestHunter( pos, hunters )
-    hunters = hunters or GAMEMODE.glee_Hunters
+    hunters = hunters or self.glee_Hunters
     local huntersCopy = table.Copy( hunters )
     table.sort( huntersCopy, function( a, b ) -- sort HUNTERS by distance to pos
         if not IsValid( a ) then return false end
@@ -640,7 +604,7 @@ function GM:getNearestHunter( pos, hunters )
 end
 
 function GM:aRandomHunter( hunters )
-    hunters = hunters or table.Copy( GAMEMODE.glee_Hunters )
+    hunters = hunters or table.Copy( self.glee_Hunters )
 
     table.Shuffle( hunters )
 

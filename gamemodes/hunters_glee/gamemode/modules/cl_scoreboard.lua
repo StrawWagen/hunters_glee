@@ -182,7 +182,7 @@ end
 
 local function copyTextAndNotify( text )
     SetClipboardText( text )
-    print( "Copied; " .. text )
+    permaPrint( "Copied; " .. text )
 
 end
 
@@ -560,7 +560,7 @@ local SCORE_BOARD = {
         self.HeaderLeft:SetTooltipDelay( 0 )
         self.HeaderLeft.DoClick = function()
             gui.OpenURL( GAMEMODE_URL )
-            print( "Opened URL; " .. GAMEMODE_URL )
+            permaPrint( "Opened URL; " .. GAMEMODE_URL )
 
         end
         self.HeaderLeft.Paint = function( s )
@@ -632,6 +632,13 @@ local SCORE_BOARD = {
         self.SpawnSetMultiplierLabel:SetMouseInputEnabled( true )
         self.SpawnSetMultiplierLabel:SetTooltipDelay( 0 )
 
+        -- Screen order, left to right; mul is optional. These labels aren't docked,
+        -- Think sizes and positions them every frame.
+        self.InfoGroups = {
+            { main = self.MapLabel,      mul = self.MapMultiplierLabel },
+            { main = self.SpawnSetLabel, mul = self.SpawnSetMultiplierLabel },
+        }
+
 
         local discordSize = glee_sizeScaled( nil, 32 )
         self.Header:InvalidateLayout( true )
@@ -653,7 +660,7 @@ local SCORE_BOARD = {
             if url == "" then return end
 
             gui.OpenURL( url )
-            print( "Opened URL; " .. url )
+            permaPrint( "Opened URL; " .. url )
 
         end
 
@@ -750,7 +757,7 @@ local SCORE_BOARD = {
             btn.DoClick = function()
                 local url = "https://github.com/legokidlogan"
                 gui.OpenURL( url )
-                print( "Opened URL; " .. url )
+                permaPrint( "Opened URL; " .. url )
 
             end
         end
@@ -925,31 +932,31 @@ local SCORE_BOARD = {
 
         local setEscapedYap
         if spawnsetEscaped <= 0 then
-            setEscapedYap = "Nobody has escaped this mode."
+            setEscapedYap = "Nobody has escaped this Misery."
 
         elseif spawnsetEscaped <= 1 then
-            setEscapedYap = "One soul has escaped this mode."
+            setEscapedYap = "One soul has escaped this Misery."
 
         else
-            setEscapedYap = string.format( "%d souls have escaped this mode.", spawnsetEscaped )
+            setEscapedYap = string.format( "%d souls have escaped this Misery.", spawnsetEscaped )
 
         end
 
         local setRemainedYap
         if spawnsetRemained <= 0 then
-            setRemainedYap = "This mode has claimed no souls."
+            setRemainedYap = "This Misery has claimed no souls."
 
         elseif spawnsetRemained <= 1 then
-            setRemainedYap = "One soul has been claimed by this mode."
+            setRemainedYap = "One soul has been claimed by this Misery."
 
         else
-            setRemainedYap = string.format( "%d souls have perished to this mode.", spawnsetRemained )
+            setRemainedYap = string.format( "%d souls have perished to this Misery.", spawnsetRemained )
 
         end
 
         local spawnsetMulTip = table.concat( {
-            "Escape reward multiplier for this mode.\n",
-            "Higher = players escape with this mode less often, so escaping is worth more.\n",
+            "Escape reward multiplier for this Misery.\n",
+            "Higher = players escape this Misery less often, so escaping is worth more.\n",
             setEscapedYap .. "\n",
             setRemainedYap,
         } )
@@ -971,55 +978,53 @@ local SCORE_BOARD = {
         local spawnsetMulText = math.Round( spawnsetMul, 2 ) .. "x"
         self.SpawnSetMultiplierLabel:SetText( spawnsetMulText )
 
-        -- Size each label to its text, then reposition the group centered in the header.
-        self.MapLabel:SizeToContents()
-        self.MapMultiplierLabel:SizeToContents()
-        self.SpawnSetLabel:SizeToContents()
-        self.SpawnSetMultiplierLabel:SizeToContents()
-
         local infoGapX  = self._infoGapX
         local groupGapX = self._groupGapX
         local infoRowY  = self._infoRowY
 
-        local mapMulW    = 0
-        if mapMul ~= nil then
-            mapMulW = infoGapX + self.MapMultiplierLabel:GetWide()
-        end
-        local mapGroupW = self.MapLabel:GetWide() + mapMulW
+        -- An empty label sizes to zero wide, so a group with no text drops out of the
+        -- row entirely, gap included.
+        local activeGroups = {}
+        local groupTotalW  = 0
 
-        local spawnsetMulW = 0
-        if spawnsetMul ~= nil then
-            spawnsetMulW = infoGapX + self.SpawnSetMultiplierLabel:GetWide()
-        end
-        local spawnsetGroupW = self.SpawnSetLabel:GetWide() + spawnsetMulW
+        for _, group in ipairs( self.InfoGroups ) do
+            group.main:SizeToContents()
 
-        local hasBothGroups   = spawnsetGroupW > 0
-        local spawnsetOffsetW = 0
-        if hasBothGroups then
-            spawnsetOffsetW = groupGapX + spawnsetGroupW
+            local groupW = group.main:GetWide()
+
+            if group.mul then
+                group.mul:SizeToContents()
+
+                if group.mul:GetWide() > 0 then
+                    groupW = groupW + infoGapX + group.mul:GetWide()
+
+                end
+            end
+
+            if groupW > 0 then
+                activeGroups[#activeGroups + 1] = group
+                groupTotalW = groupTotalW + groupW
+
+            end
         end
-        local groupTotalW = mapGroupW + spawnsetOffsetW
+
+        groupTotalW = groupTotalW + groupGapX * math.max( #activeGroups - 1, 0 )
 
         local curX = self.Header:GetWide() / 2 - groupTotalW / 2
 
-        self.MapLabel:SetPos( curX, infoRowY )
-        curX = curX + self.MapLabel:GetWide()
+        for i, group in ipairs( activeGroups ) do
+            group.main:SetPos( curX, infoRowY )
+            curX = curX + group.main:GetWide()
 
-        if mapMul ~= nil then
-            curX = curX + infoGapX
-            self.MapMultiplierLabel:SetPos( curX, infoRowY )
-            curX = curX + self.MapMultiplierLabel:GetWide()
-
-        end
-
-        if hasBothGroups then
-            curX = curX + groupGapX
-            self.SpawnSetLabel:SetPos( curX, infoRowY )
-            curX = curX + self.SpawnSetLabel:GetWide()
-
-            if spawnsetMul ~= nil then
+            if group.mul and group.mul:GetWide() > 0 then
                 curX = curX + infoGapX
-                self.SpawnSetMultiplierLabel:SetPos( curX, infoRowY )
+                group.mul:SetPos( curX, infoRowY )
+                curX = curX + group.mul:GetWide()
+
+            end
+
+            if i < #activeGroups then
+                curX = curX + groupGapX
 
             end
         end

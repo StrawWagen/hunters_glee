@@ -139,7 +139,7 @@ net.Receive( "glee_updatesignalstrength", function( _, ply )
 
 end )
 
-hook.Add( "glee_atm_finishedBurrowing", "glee_signalstrength_fromatm", function( atm )
+hook.Add( "glee_atm_arrived", "glee_signalstrength_fromatm", function( atm )
     local source = {
         ent = atm,
         radius = 1500,

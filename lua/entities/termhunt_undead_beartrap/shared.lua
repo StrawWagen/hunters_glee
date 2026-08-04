@@ -110,7 +110,7 @@ function ENT:Place()
     beartrap.undeadbeartrap_placer = self.player
     beartrap:EmitSound( "items/ammocrate_open.wav", 75, 100 )
 
-    beartrap.glee_AlwaysFullPVPDamage = true
+    beartrap.glee_GuiltFreeInflictor = true
 
     local betrayalScore = self:GetGivenScore()
 

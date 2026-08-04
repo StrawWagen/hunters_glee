@@ -9,7 +9,9 @@ local overchargedChanceAtMinutes = {
 
 }
 
+-- overcomplicated difficulty scaling logic, you dont need this for your custom mode
 local function postSpawnedOvercharge( spawnDat, spawned )
+
     local overchargedChance = 0
     local minutesWhenAdded = spawnDat.minutesWhenAdded
     for minutesNeeded, currChance in pairs( overchargedChanceAtMinutes ) do
@@ -18,20 +20,63 @@ local function postSpawnedOvercharge( spawnDat, spawned )
 
         end
     end
+    local tooLong = overchargedChance >= 5
 
-    if math.Rand( 0, 100 ) > overchargedChance then return end
-    glee_Overcharge( spawned )
+    local _, richestScore = GAMEMODE:GetRichestPlayer()
 
-    local lightning = ents.Create( "glee_lightning" )
-    lightning:SetOwner( spawned )
-    lightning:SetPos( spawned:GetPos() )
-    lightning:SetPowa( 12 )
-    lightning:Spawn()
+    local spawnInPissed = GAMEMODE.sessionDiffBump > 100 or richestScore > 5000
+    local tooDifficult = GAMEMODE.sessionDiffBump > 200
+    local wayTooRich = richestScore > 10000
 
-    if overchargedChance >= 5 and not GAMEMODE.roundExtraData.overchargedWarning then
-        GAMEMODE.roundExtraData.overchargedWarning = true
-        huntersGlee_Announce( player.GetAll(), 100, 10, "This hunt has gone on too long...\nOvercharged Hunters are on the prowl..." )
+    if spawnInPissed then
+        overchargedChance = overchargedChance + 1
 
+    end
+    if tooDifficult then
+        overchargedChance = overchargedChance + 5
+
+    end
+    if wayTooRich then
+        overchargedChance = overchargedChance + 10
+
+    end
+
+    local overcharge = math.Rand( 0, 100 ) < overchargedChance
+
+    if spawnInPissed then
+        spawned:ReallyAnger( 60 )
+        spawned:GetTheBestWeapon()
+
+    end
+
+    if overcharge then
+        glee_Overcharge( spawned )
+
+        local lightning = ents.Create( "glee_lightning" )
+        lightning:SetOwner( spawned )
+        lightning:SetPos( spawned:GetPos() )
+        lightning:SetPowa( 12 )
+        lightning:Spawn()
+
+        timer.Simple( 0.1, function()
+            if not IsValid( spawned ) then return end
+            spawned:SetHealth( spawned:GetMaxHealth() )
+
+        end )
+
+        if not GAMEMODE.roundExtraData.overchargedWarning then
+            GAMEMODE.roundExtraData.overchargedWarning = true
+            if tooLong then
+                huntersGlee_AnnounceDramatic( player.GetAll(), 1000, 10, "This hunt has gone on too long...\nOvercharged Hunters are on the prowl..." )
+
+            elseif tooRich then
+                huntersGlee_AnnounceDramatic( player.GetAll(), 1000, 10, "There's too much score in play...\nOvercharged Hunters are on the prowl..." )
+
+            elseif tooDifficult then
+                huntersGlee_AnnounceDramatic( player.GetAll(), 1000, 10, "The hunters have been pushed to their limits...\nOvercharged Hunters are on the prowl..." )
+
+            end
+        end
     end
 end
 

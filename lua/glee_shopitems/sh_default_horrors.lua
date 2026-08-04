@@ -1,16 +1,6 @@
 
 local shopHelpers = GAMEMODE.shopHelpers
 
-local function setupPlacable( class, purchaser, itemIdentifier )
-    local thing = ents.Create( class )
-    thing.itemIdentifier = itemIdentifier
-    thing:SetOwner( purchaser )
-    thing:Spawn()
-
-    return thing
-
-end
-
 
 local items = {
     ["point_and_click"] = {
@@ -26,7 +16,7 @@ local items = {
         },
         weight = -100,
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "glee_point_and_click", purchaser, itemIdentifier )
+            shopHelpers.setupPlacable( "glee_point_and_click", purchaser, itemIdentifier )
 
         end,
         shCanShowInShop = shopHelpers.escapedCheck,
@@ -43,7 +33,7 @@ local items = {
         },
         weight = 50,
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "glee_crate_heavyweapons", purchaser, itemIdentifier )
+            shopHelpers.setupPlacable( "glee_crate_heavyweapons", purchaser, itemIdentifier )
 
         end,
         shCanShowInShop = shopHelpers.escapedCheck,
@@ -60,7 +50,7 @@ local items = {
         },
         weight = 50,
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "glee_crate_score", purchaser, itemIdentifier )
+            shopHelpers.setupPlacable( "glee_crate_score", purchaser, itemIdentifier )
 
         end,
         shCanShowInShop = shopHelpers.escapedCheck,
@@ -77,7 +67,7 @@ local items = {
         },
         weight = 55,
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "glee_crate_tnt", purchaser, itemIdentifier )
+            shopHelpers.setupPlacable( "glee_crate_tnt", purchaser, itemIdentifier )
 
         end,
         shCanShowInShop = shopHelpers.escapedCheck,
@@ -94,25 +84,7 @@ local items = {
         },
         weight = 75,
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "glee_gascan_placer", purchaser, itemIdentifier )
-
-        end,
-        shCanShowInShop = shopHelpers.escapedCheck,
-    },
-    ["ghostly_wind"] = {
-        name = "Ghostly Wind",
-        desc = "Summon a strange gust of wind...",
-        shCost = 0,
-        costDecorative = "-75",
-        markup = 1,
-        cooldown = 0.5,
-        tags = { "HORRORS", "CloseShopOnPurchase" },
-        purchaseTimes = {
-            GAMEMODE.ROUND_ACTIVE,
-        },
-        weight = 100,
-        svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "glee_escapee_wind", purchaser, itemIdentifier )
+            shopHelpers.setupPlacable( "glee_gascan_placer", purchaser, itemIdentifier )
 
         end,
         shCanShowInShop = shopHelpers.escapedCheck,
@@ -129,7 +101,7 @@ local items = {
         },
         weight = 200,
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "glee_skullcache_placer", purchaser, itemIdentifier )
+            shopHelpers.setupPlacable( "glee_skullcache_placer", purchaser, itemIdentifier )
 
         end,
         shCanShowInShop = shopHelpers.escapedCheck,
@@ -147,7 +119,49 @@ local items = {
         weight = 100,
         shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            setupPlacable( "placable_barnacle", purchaser, itemIdentifier )
+            shopHelpers.setupPlacable( "placable_barnacle", purchaser, itemIdentifier )
+
+        end,
+    },
+    ["infernalpersecutors"] = {
+        name = "Infernal Persecutors",
+        desc = "Summon 3-4 infernal agents to persecute the living.\nIncreases Permanent Guilt\nCosts more to summon near innocent people, less when near evil souls.",
+        costDecorative = { "-350", "-1200" },
+        shCost = 0,
+        canGoInDebt = true,
+        markup = 1,
+        cooldown = 80,
+        tags = { "HORRORS", "Infernal", "CloseShopOnPurchase" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = 1000,
+        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
+        svOnPurchaseFunc = function( purchaser, itemIdentifier )
+            shopHelpers.setupPlacable( "glee_infernal_persecutors", purchaser, itemIdentifier )
+
+        end,
+    },
+    ["thunderousapplause"] = {
+        name = "Divine Applause",
+        desc = "Thunderous Applause.\nLet the Living, hear your utmost, thunderous gratitude.\nUnlocks after 2 minutes, then a global 2 minute cooldown between uses.",
+        costDecorative = "-600",
+        shCost = 0,
+        markup = 1,
+        cooldown = 0,
+        tags = { "HORRORS", "Divine", "CloseShopOnPurchase" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = 1001,
+        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase, function()
+            if GAMEMODE:isTemporaryTrueBool( "termhunt_thunderous_applause_initial" ) then return nil, "It's too soon for the applause to begin." end
+            if GAMEMODE:isTemporaryTrueBool( "termhunt_thunderous_applause" ) then return nil, "Applause must be spaced out. Wait.." end
+            return true, nil
+
+        end },
+        svOnPurchaseFunc = function( purchaser, itemIdentifier )
+            shopHelpers.setupPlacable( "termhunt_thunderous_applause", purchaser, itemIdentifier )
 
         end,
     },

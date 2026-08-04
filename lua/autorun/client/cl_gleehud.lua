@@ -1,6 +1,4 @@
 
-AddCSLuaFile()
-
 local math_Round = math.Round
 
 local uiScaleVert = ScrH() / 1080
@@ -49,12 +47,13 @@ terminator_Extras.glee_HL2Hud = {
     laneSpacing     = glee_sizeScaled( nil, 6 ),  -- gap between stacked hud boxes
     fontName        = "Trebuchet MS",
 
-    colorHappyYellow      = Color( 255, 230, 0, 220 ),
-    colorUnHappyYellow    = Color( 225, 200, 0, 220 ),
-    colorRedUrgent        = Color( 255, 50, 50, 200 ),
-    colorBackground       = Color( 0, 0, 0, 76 ), -- for hud elements that should fade into the background
-    colorBackgroundDark   = Color( 0, 0, 0, 150 ), -- for gui elements that need visibility
-    colorBackgroundUrgent = Color( 100, 100, 50, 76 ),
+    colorHappyYellow            = Color( 255, 230, 0, 220 ),
+    colorUnHappyYellow          = Color( 225, 200, 0, 220 ),
+    colorRedUrgent              = Color( 255, 50, 50, 200 ),
+    colorBackground             = Color( 0, 0, 0, 76 ), -- for hud elements that should fade into the background
+    colorBackgroundDark         = Color( 0, 0, 0, 150 ), -- for gui elements that need visibility
+    colorBackgroundUrgent       = Color( 100, 100, 50, 76 ),
+    colorBackgroundDarkUrgent   = Color( 100, 100, 50, 150 ),
 }
 
 surface.CreateFont( "glee_mediumLargeHL2Font", {

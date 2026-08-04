@@ -17,7 +17,8 @@
         wheel:SetTitle( "Pick One" ) -- optional center text
 
         wheel.OnItemSelected = function( self, item )
-            print( "Selected:", item.key, item.label )
+            --print( "Selected:", item.key, item.label )
+
         end
 ]]
 

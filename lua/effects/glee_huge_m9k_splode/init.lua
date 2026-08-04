@@ -1,12 +1,21 @@
 -- Slimmed down version of m9k_gdcw_cinematicboom from M9K, cause that addon is the goat
 
+local NO_SOUND = 1
+local bit_band = bit.band
+
 function EFFECT:Init( data )
     self.Pos = data:GetOrigin() -- Origin determines the global position of the effect
     self.Scale = data:GetScale() -- Scale determines how large the effect is
     self.DirVec = data:GetNormal() -- Normal determines the direction of impact for the effect
     self.Emitter = ParticleEmitter( self.Pos ) -- Emitter must be there so you don't get an error
 
-    sound.Play( "ambient/explosions/explode_" .. math.random( 1, 4 ) .. ".wav", self.Pos, 100, 100 )
+    local flags = data:GetFlags()
+    self.NoSound = bit_band( flags, NO_SOUND ) ~= 0
+
+    if not self.NoSound then
+        sound.Play( "ambient/explosions/explode_" .. math.random( 1, 4 ) .. ".wav", self.Pos, 100, 100 )
+
+    end
 
     self:Dust()
 
@@ -37,6 +46,25 @@ function EFFECT:Dust()
             Flash:SetRollDelta( math.Rand( -1, 1 ) )
             Flash:SetColor( 255, 255, 255 )
             Flash:SetCollide( true )
+
+        end
+    end
+
+    for _ = 1, 12 * scale do
+        local Debris = emitter:Add( "effects/fleck_cement" .. math.random( 1, 2 ), pos )
+        if Debris then
+            Debris:SetVelocity( dir * math.random( 0, 700 ) * scale + VectorRand():GetNormalized() * math.random( 0, 700 ) * scale )
+            Debris:SetDieTime( math.random( 1, 2 ) * scale )
+            Debris:SetStartAlpha( 255 )
+            Debris:SetEndAlpha( 0 )
+            Debris:SetStartSize( math.random( 5, 10 ) * scale )
+            Debris:SetRoll( math.Rand( 0, 360 ) )
+            Debris:SetRollDelta( math.Rand( -5, 5 ) )
+            Debris:SetAirResistance( 40 )
+            Debris:SetColor( 60, 60, 60 )
+            Debris:SetGravity( Vector( 0, 0, -600 ) )
+            Debris:SetCollide( true )
+
         end
     end
 
@@ -55,6 +83,7 @@ function EFFECT:Dust()
             Dust:SetGravity( Vector( 0, 0, math.Rand( -100, -400 ) ) )
             Dust:SetColor( 80, 80, 80 )
             Dust:SetCollide( true )
+
         end
     end
 
@@ -73,23 +102,7 @@ function EFFECT:Dust()
             Dust:SetGravity( Vector( math.Rand( -200, 200 ), math.Rand( -200, 200 ), math.Rand( 10, 100 ) ) )
             Dust:SetColor( 90, 85, 75 )
             Dust:SetCollide( true )
-        end
-    end
 
-    for _ = 1, 12 * scale do
-        local Debris = emitter:Add( "effects/fleck_cement" .. math.random( 1, 2 ), pos )
-        if Debris then
-            Debris:SetVelocity( dir * math.random( 0, 700 ) * scale + VectorRand():GetNormalized() * math.random( 0, 700 ) * scale )
-            Debris:SetDieTime( math.random( 1, 2 ) * scale )
-            Debris:SetStartAlpha( 255 )
-            Debris:SetEndAlpha( 0 )
-            Debris:SetStartSize( math.random( 5, 10 ) * scale )
-            Debris:SetRoll( math.Rand( 0, 360 ) )
-            Debris:SetRollDelta( math.Rand( -5, 5 ) )
-            Debris:SetAirResistance( 40 )
-            Debris:SetColor( 60, 60, 60 )
-            Debris:SetGravity( Vector( 0, 0, -600 ) )
-            Debris:SetCollide( true )
         end
     end
 end

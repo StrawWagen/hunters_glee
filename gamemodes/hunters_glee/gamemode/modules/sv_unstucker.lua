@@ -34,6 +34,8 @@ end
 function meta:IsStuckBasic()
     if self:IsOnGround() then return end
 
+    if self.fake and IsValid( self:GetNWEntity( "DeathRagdoll" ) ) then return end
+
     -- 15^2
     if self:GetVelocity():LengthSqr() > 225 then return end
     local move = self:GetMoveType()
@@ -250,7 +252,7 @@ hook.Add( "glee_sv_validgmthink", "glee_manageunstucking", function( players )
                 ply:EmitSound( "physics/rubber/rubber_tire_impact_hard2.wav", 65, math.random( 80, 100 ) )
                 GAMEMODE:GivePanic( ply, 25 )
 
-                print( "GLEE: unstucking " .. ply:Nick() )
+                permaPrint( "GLEE: unstucking " .. ply:Nick() )
 
             elseif ply:IsStuckBasic() then
                 ply.glee_basicStuckCount = basicStuckCount + 1

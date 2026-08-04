@@ -109,7 +109,7 @@ concommand.Add( "glee_taunts_open", function()
 
     if not IsValid( newFrame ) then
         if err then
-            print( "[Hunters Glee] Failed to open taunt menu:", err )
+            permaPrint( "[Hunters Glee] Failed to open taunt menu:", err )
 
         end
         return

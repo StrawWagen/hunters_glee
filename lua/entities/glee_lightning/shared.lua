@@ -12,7 +12,7 @@ ENT.Category = "Hunter's Glee"
 
 ENT.powa = 1
 
-ENT.glee_AlwaysFullPVPDamage = true
+ENT.glee_GuiltFreeInflictor = true
 
     -- "sounds/hunters_glee/wizardry_thunderimpact.wav" FROM SHADOW MONEY WIZARD https://steamcommunity.com/sharedfiles/filedetails/?id=3046835259
     -- "sounds/hunters_glee/wizardry_thunder.wav" -- DITTO!
@@ -29,6 +29,7 @@ end
 function ENT:Initialize()
     if not SERVER then return end
     self:SetNotSolid( true )
+    self:DrawShadow( false )
 
     timer.Simple( 0, function()
         if not IsValid( self ) then return end

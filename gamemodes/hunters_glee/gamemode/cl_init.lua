@@ -4,7 +4,6 @@ include( "cl_shoppinggui.lua" )
 include( "modules/statuseffects/cl_statuseffects.lua" )
 include( "modules/cl_winscreen.lua" )
 include( "modules/cl_scoreboard.lua" )
-include( "modules/cl_modelscale.lua" )
 include( "modules/cl_obfuscation.lua" )
 include( "modules/cl_fallingwind.lua" )
 include( "modules/cl_killfeedoverride.lua" )
@@ -15,6 +14,8 @@ include( "modules/music/cl_music.lua" )
 include( "modules/signalstrength/cl_signalstrength.lua" )
 include( "modules/thirdpersonflashlight/cl_flashlight.lua" )
 include( "modules/firsttimeplayers/cl_firsttimeplayers.lua" )
+
+include( "modules/modelscale/cl_modelscale.lua" )
 
 include( "modules/escaping/cl_escaping.lua" )
 include( "modules/escaping/cl_escapecounts.lua" )
@@ -475,6 +476,7 @@ local FKeyBinds = {
     ["invnext"] = "HandleZoomOut",
     ["invprev"] = "HandleZoomIn",
     ["toggle_zoom"] = "SendFakeInZoom",
+    ["gm_showspare2"] = "OpenSettingsMenu"
 
 }
 
@@ -539,3 +541,19 @@ function GM:SendFakeInZoom()
     net.SendToServer()
 
 end
+
+local ChatCommandAliases = {
+    ["!settings"] = "glee_settings_open",
+}
+
+hook.Add( "OnPlayerChat", "glee_chatcommandaliases", function( ply, text )
+    if ply ~= LocalPlayer() then return end
+
+    local command = ChatCommandAliases[string.lower( string.Trim( text ) )]
+    if not command then return end
+
+    RunConsoleCommand( command )
+
+    return false
+
+end )

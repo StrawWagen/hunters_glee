@@ -14,7 +14,8 @@ local terminatorSpawnSet = {
     roundEndSound = "default",
     roundStartSound = "default",
     roundEarlyStartSound = "default",
-    chanceToBeVotable = 15,
+    chanceToBeVotable = 4, -- and fade into the background if this host isn't challenged by this
+    chanceToBeVotableWhenHard = 15, -- stick around
     spawns = {
         {
             name = "terminator_invisible",

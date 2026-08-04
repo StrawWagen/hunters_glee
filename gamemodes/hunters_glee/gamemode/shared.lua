@@ -13,7 +13,7 @@ GM.TEAM_PLAYING = 1 -- alive
 GM.TEAM_SPECTATE = 2 -- spectating, as a ghost
 GM.TEAM_ESCAPED = 3 -- spectating, but you can't respawn, get cooler items in the shop and free bot controlling
 
-GM.ISHUNTERSGLEE = true
+GM.IsReallyHuntersGlee = true
 
 GM.Name = "Hunter's Glee"
 GM.Author = "StrawWagen"
@@ -121,4 +121,30 @@ end
 function GM:GetSpawnSetDescription()
     return GetGlobalString( "GLEE_SpawnSetDescription", "" )
 
+end
+
+
+GM.IsUnderSky_Distance = 12000
+
+local vec12kZ = Vector( 0, 0, GM.IsUnderSky_Distance )
+
+function GM:IsUnderSky( pos )
+    -- get the sky
+    local skyTraceDat = {
+        start = pos,
+        endpos = pos + vec12kZ,
+        mask = CONTENTS_SOLID,
+    }
+    local skyTraceResult = util.TraceLine( skyTraceDat )
+
+    if skyTraceResult.HitSky then
+        return true, skyTraceResult.HitPos, skyTraceResult
+
+    elseif not skyTraceResult.Hit then
+        return true, skyTraceResult.HitPos, skyTraceResult
+
+    else
+        return nil, skyTraceResult.HitPos, skyTraceResult
+
+    end
 end

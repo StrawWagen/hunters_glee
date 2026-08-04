@@ -162,7 +162,7 @@ function spawnSetVote:CreateVotePanel()
 
     infoLabel:SetContentAlignment( 8 )
     infoLabel:SetWrap( true )
-    infoLabel:SetText( "Vote to change up the hunt..." )
+    infoLabel:SetText( "CHOOSE your Misery..." )
 
 
     -- countdown

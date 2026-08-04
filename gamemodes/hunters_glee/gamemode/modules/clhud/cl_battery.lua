@@ -26,10 +26,6 @@ local function createBatteryBox()
     terminator_Extras.gleeHud_BatteryBox = box
 
     box:SetIconSize( materialSize )
-    box:SetPaddingRatio( 0.4 )
-    box:SetNormalBoxColor( terminator_Extras.glee_HL2Hud.colorBackground:Copy() )
-    box:SetFlashBoxColor( terminator_Extras.glee_HL2Hud.colorBackgroundUrgent:Copy() )
-    box:SetFlashDuration( 0.15 )
 
     function box:AdditionalThink()
         if LocalPlayer():Health() <= 0 then

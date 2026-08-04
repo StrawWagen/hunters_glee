@@ -45,6 +45,7 @@ if CLIENT then
     terminator_Extras.glee_CL_SetupSwep( SWEP, "termhunt_annabelle", "materials/vgui/hud/killicon/termhunt_annabelle.png" )
 
     language.Add( "GLEE_ANNABELLE_SLUGS_ammo", "Slugs" )
+
 end
 
 function SWEP:SetupDataTables()
@@ -53,25 +54,29 @@ function SWEP:SetupDataTables()
     self:NetworkVar( "Bool",  2, "CancellingReload" )
     self:NetworkVar( "Float", 0, "DamageMult" )
     self:NetworkVar( "Float", 1, "SpeedMult" )
+
 end
 
 function SWEP:ResetStats()
     self:SetDamageMult( 1 )
     self:SetSpeedMult( 1 )
+
 end
 
-SWEP.MaxDamageMult = 4
-SWEP.MaxSpeedMult = 2
-SWEP.MinDamageMult = 0.9
-SWEP.MinSpeedMult = 0.9
+SWEP.MaxDamageMult = 3.5
+SWEP.MaxSpeedMult = 3
+SWEP.MinDamageMult = 0.75
+SWEP.MinSpeedMult = 0.75
 
 function SWEP:AdjustStats( hitLiving )
     if hitLiving then
-        self:SetDamageMult( math.min( self:GetDamageMult() + 0.50, self.MaxDamageMult ) )
-        self:SetSpeedMult( math.min( self:GetSpeedMult() + 0.10, self.MaxSpeedMult ) )
+        self:SetDamageMult( math.min( self:GetDamageMult() + 0.4, self.MaxDamageMult ) )
+        self:SetSpeedMult( math.min( self:GetSpeedMult() + 0.075, self.MaxSpeedMult ) )
+
     else
-        self:SetDamageMult( math.max( self:GetDamageMult() - 0.60, self.MinDamageMult ) )
-        self:SetSpeedMult( math.max( self:GetSpeedMult() - 0.12, self.MinSpeedMult ) )
+        self:SetDamageMult( math.max( self:GetDamageMult() - 1, self.MinDamageMult ) )
+        self:SetSpeedMult( math.max( self:GetSpeedMult() - 0.2, self.MinSpeedMult ) )
+
     end
 end
 
@@ -84,6 +89,7 @@ function SWEP:Initialize()
         self:SetReloading( false )
         self:SetFiring( false )
         self:SetCancellingReload( false )
+
     end
 end
 
@@ -95,6 +101,7 @@ function SWEP:Deploy()
         self:SetReloading( false )
         self:SetFiring( false )
         self:SetCancellingReload( false )
+
     end
 
     return true
@@ -105,6 +112,7 @@ function SWEP:Holster()
         self:SetReloading( false )
         self:SetFiring( false )
         self:SetCancellingReload( false )
+
     end
 
     return true
@@ -136,6 +144,7 @@ function SWEP:PrimaryAttack()
 
             self:EmitSound( "hunters_glee/annabelle/rifle_pump.wav", 82, 100 * self:GetSpeedMult(), 0.75, CHAN_ITEM )
             self:SetFiring( false )
+
         end )
     end
 
@@ -156,6 +165,7 @@ function SWEP:Think()
 
     if owner:KeyDown( IN_ATTACK ) and self:Clip1() > 0 then
         self:SetCancellingReload( true )
+
     end
 end
 
@@ -175,10 +185,6 @@ function SWEP:ShootBullet( owner )
     end
 
     self:EmitSound( "hunters_glee/annabelle/rifle_fire.wav", 88, 100 * speedMult, 0.75, CHAN_WEAPON )
-    if speedMult > 1 then
-        self:EmitSound( "weapons/shotgun/shotgun_dbl_fire.wav", 88, 100 / speedMult, 0.5, CHAN_STATIC )
-
-    end
 
     local hitLiving
 
@@ -196,9 +202,44 @@ function SWEP:ShootBullet( owner )
             if not SERVER then return end
 
             local ent = trace.Entity
+
+            if not IsValid( ent ) then return end
+
             if not hitLiving then
-                hitLiving = IsValid( ent ) and ( ent:IsPlayer() or ent:IsNPC() or ent:IsNextBot() )
+                hitLiving =  ent:IsPlayer() or ent:IsNPC() or ent:IsNextBot()
+                timer.Simple( 0, function()
+                    if not IsValid( self ) then return end
+                    self:EmitSound( "weapons/shotgun/shotgun_dbl_fire.wav", 88, 100 / ( speedMult * 0.9 ), 0.5, CHAN_STATIC )
+
+                end )
             end
+
+            local pos = trace.HitPos
+            local normal = trace.HitNormal
+
+            local bloodColor = ent:GetBloodColor()
+
+            timer.Simple( 0, function()
+                if bloodColor == BLOOD_COLOR_MECH then
+                    local effect = EffectData()
+                    effect:SetColor( bloodColor )
+                    effect:SetScale( 1 )
+                    effect:SetMagnitude( 4 )
+                    effect:SetOrigin( pos )
+                    effect:SetNormal( normal )
+                    util.Effect( "Sparks", effect )
+
+                else
+                    local effect = EffectData()
+                    effect:SetColor( bloodColor )
+                    effect:SetFlags( 3 )
+                    effect:SetScale( 12 )
+                    effect:SetOrigin( pos )
+                    effect:SetNormal( normal )
+                    util.Effect( "bloodspray", effect )
+
+                end
+            end )
         end
     } )
 
@@ -226,12 +267,12 @@ function SWEP:Reload()
         self.ReloadSpeedMult = speedMult
         self:SetReloading( true )
         self:SetCancellingReload( false )
-        self:ResetStats()
         self:SetNextPrimaryFire( CurTime() + 2 / speedMult )
 
         timer.Simple( 0.45 / speedMult, function()
             if not IsValid( self ) then return end
             self:ReloadLoop()
+
         end )
     end
 end
@@ -247,6 +288,7 @@ function SWEP:ReloadLoop()
         self:FinishReload()
 
         return
+
     end
 
     local speedMult = self.ReloadSpeedMult or 1
@@ -260,6 +302,7 @@ function SWEP:ReloadLoop()
     timer.Create( "glee_annabelle_reloadloop" .. self:GetCreationID(), 0.60 / speedMult, 1, function()
         if not IsValid( self ) then return end
         self:ReloadLoop()
+
     end )
 end
 
@@ -283,6 +326,7 @@ function SWEP:FinishReload()
         self:EmitSound( "weapons/smg1/switch_single.wav", 80, 100 * speedMult, 1, CHAN_ITEM )
 
         self:SendWeaponAnim( ACT_VM_IDLE )
+
     end )
 end
 

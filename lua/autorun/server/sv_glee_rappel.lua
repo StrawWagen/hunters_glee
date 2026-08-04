@@ -74,9 +74,12 @@ function playerMeta:RappelTo( ent, hitPos )
                 start  = plysShoot,
                 endpos = nearestPointOnVehicle,
                 filter = self,
+                mask = MASK_PLAYERSOLID,
 
             } )
-            if tr.Entity ~= ent then return end
+            -- hit heli or hit player clip brush
+            local hitGood = tr.Entity == ent or bit.band( tr.Contents, CONTENTS_PLAYERCLIP ) ~= 0
+            if not hitGood then return end
             if plysShoot:Distance( tr.HitPos ) > glee_RappelSettings.boardDistance then return end
 
             hook.Run( "OnPlayerRappelBoardVehicle", self, ent )

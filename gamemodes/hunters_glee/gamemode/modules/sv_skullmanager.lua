@@ -7,7 +7,27 @@ function GM:SpawnASkull( pos, ang, termSkull, persistParent )
     if IsValid( persistParent ) then -- something died to make this skull, it will persist thru rounds
         skull.persistentSkull = true
 
+        local mdlScale = persistParent:GetModelScale()
+        if mdlScale >= terminator_Extras.MDLSCALE_LARGE then
+            local skullWorth = mdlScale
+            if persistParent.glee_SkullWorthMul then
+                skullWorth = skullWorth * persistParent.glee_SkullWorthMul
+
+            end
+            local spawnHealth = persistParent.SpawnHealth
+            if spawnHealth > 10000 then
+                skullWorth = skullWorth * 2
+
+            elseif spawnHealth > 5000 then
+                skullWorth = skullWorth * 1.5
+
+            end
+            skullWorth = math.floor( skullWorth )
+            skull:SetSkulls( skullWorth )
+
+        end
     end
+
     skull:SetPos( pos )
     skull:SetAngles( ang )
     if termSkull == true then
@@ -38,8 +58,13 @@ function GM:HandleRagdollSkulling( ragdoll )
 
 end
 
+local spawnableStates = {
+    [GAMEMODE.ROUND_ACTIVE] = true,
+    [GAMEMODE.ROUND_LIMBO] = true,
+}
+
 local function spawnTermSkull( died, dmg, _ )
-    if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
+    if not spawnableStates[GAMEMODE:RoundState()] then return end
 
     if died.glee_NeverDropSkull then return end
 
@@ -374,6 +399,7 @@ hook.Add( "OnEntityCreated", "glee_detectotherskulls", function( ent )
     timer.Simple( 0, function()
         if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
         if not IsValid( ent ) then return end
+        if ent:IsWeapon() then return end
         if ent:GetModel() ~= "models/gibs/hgibs.mdl" then return end
 
         -- make barnacles not OP
@@ -383,4 +409,13 @@ hook.Add( "OnEntityCreated", "glee_detectotherskulls", function( ent )
         SafeRemoveEntity( ent )
 
     end )
+end )
+
+hook.Add( "huntersglee_givenskulls", "glee_giveskullthrower", function( ply )
+    if ply:GetSkulls() <= 0 then return end
+
+    if ply:HasWeapon( "glee_throwable_skull" ) then return end
+
+    ply:Give( "glee_throwable_skull", false )
+
 end )

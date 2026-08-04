@@ -401,7 +401,7 @@ elseif SERVER then
         end
     end )
 
-    hook.Add( "PlayerSpawn", "glee_panic_resetsounds", function( ply )
+    hook.Add( "glee_true_PlayerSpawn", "glee_panic_resetsounds", function( ply )
         resetPanicSounds( ply )
 
     end )

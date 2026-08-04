@@ -27,7 +27,7 @@ local function postSpawnedOvercharge( spawnDat, spawned )
 
     if overchargedChance >= 5 and not GAMEMODE.roundExtraData.overchargedWarning then
         GAMEMODE.roundExtraData.overchargedWarning = true
-        huntersGlee_Announce( player.GetAll(), 100, 10, "The nightmare has begun..." )
+        huntersGlee_AnnounceDramatic( player.GetAll(), 100, 10, "The nightmare has begun..." )
 
     end
 end

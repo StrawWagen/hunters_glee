@@ -113,7 +113,7 @@ function GM:PutItemInProperCategories( shopItemData ) -- put item in categories 
 
         else
             GAMEMODE:invalidateShopItem( shopItemData.identifier )
-            print( "HUNTER'S GLEE: " .. shopItemData.name .. " has category tag " .. tag .. " which doesn't match any categories!" )
+            permaPrint( "HUNTER'S GLEE: " .. shopItemData.name .. " has category tag " .. tag .. " which doesn't match any categories!" )
 
         end
     end
@@ -175,7 +175,7 @@ local function runChecks( ply, itemData, hookName, checkFuncs, funcName )
     local success, returned, reason = xpcall( hook.Run, errorCatchingMitt, hookName, ply, itemData )
     if not success then
         GAMEMODE:invalidateShopItem( itemID )
-        print( "GLEE: !!!!!!!!!! " .. hookName .. " errored for " .. itemID .. "!!!!!!!!!!!" )
+        permaPrint( "GLEE: !!!!!!!!!! " .. hookName .. " errored for " .. itemID .. "!!!!!!!!!!!" )
         return false, REASON_ERROR
 
     end
@@ -191,7 +191,7 @@ local function runChecks( ply, itemData, hookName, checkFuncs, funcName )
             success, returned, reason = xpcall( checkFunc, errorCatchingMitt, ply )
             if not success then
                 GAMEMODE:invalidateShopItem( itemID )
-                print( "GLEE: !!!!!!!!!! " .. itemID .. "'s " .. funcName .. " function errored!!!!!!!!!!!" )
+                permaPrint( "GLEE: !!!!!!!!!! " .. itemID .. "'s " .. funcName .. " function errored!!!!!!!!!!!" )
                 return false, REASON_ERROR
 
             else

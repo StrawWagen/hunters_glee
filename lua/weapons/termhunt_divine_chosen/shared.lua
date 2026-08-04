@@ -697,6 +697,8 @@ local superHighIntensity = {
 
 }
 
+local zzarpColor = Angle( 102, 153, 255 )
+
 -- how epic is the player being rn?
 function SWEP:DoEpicness( amount )
     if not amount then return end
@@ -735,11 +737,52 @@ function SWEP:DoEpicness( amount )
         if nextEpicZzarp > CurTime() then return end
         self.nextEpicZzarp = CurTime() + math.Rand( .1, .5 )
 
+        local hitboxSetCount = owner:GetHitboxSetCount()
+        local randomSet = math.random( 0, hitboxSetCount - 1 )
+
+        local hitboxCount = owner:GetHitBoxCount( randomSet )
+        local randomHitboxId = math.random( 0, hitboxCount - 1 )
+
+        local bone = owner:GetHitBoxBone( randomHitboxId, randomSet )
+
+        local randomBone = owner:GetBonePosition( bone )
+
+        local startPos = owner:WorldSpaceCenter()
+        if randomBone then
+            startPos = randomBone
+
+        end
+
         local startingDir = vector_up + VectorRand()
         startingDir:Normalize()
 
-        local hitTr = termHunt_ElectricalArcEffect( owner, owner:WorldSpaceCenter(), -vector_up, math.Rand( 0.5, 1 ), startingDir, 1000 )
-        local zzarpedEnt = hitTr.Entity
+        local endingDir = VectorRand()
+        endingDir.z = math.min( endingDir.z, math.Rand( -1, 0.25 ) ) -- mostly down
+        endingDir:Normalize()
+        local endPos = startPos + endingDir * math.Rand( 256, 700 )
+
+        local fx = EffectData()
+            fx:SetOrigin( startPos )
+            fx:SetStart( endPos )
+            fx:SetNormal( startingDir ) -- starting direction
+            fx:SetScale( math.Rand( 1, 2 ) ) -- beam scale
+            fx:SetMagnitude( math.random( 4, 12 ) ) -- arc segs
+            fx:SetAngles( zzarpColor ) -- color
+            fx:SetRadius( 20 ) -- arc pos jitter
+            fx:SetDamageType( math.random( 1, 4 ) ) -- branch count
+            fx:SetEntity( owner ) -- parent entity
+            fx:SetFlags( 0 ) -- don't disable anything
+        util.Effect( "eff_term_goodarc", fx )
+
+        -- the effect only stops itself on world brushes, so the burning is our own trace
+        local zzarpTr = util.TraceLine( {
+            start = startPos,
+            endpos = endPos,
+            filter = owner,
+            mask = MASK_SOLID,
+        } )
+
+        local zzarpedEnt = zzarpTr.Entity
 
         if not IsValid( zzarpedEnt ) then return end
         zzarpedEnt:Fire( "IgniteLifetime", 1 )

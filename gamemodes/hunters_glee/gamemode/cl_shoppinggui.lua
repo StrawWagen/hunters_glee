@@ -919,10 +919,12 @@ function termHuntOpenTheShop()
                                 yPosAbove = tooltipsY + -scaledSizeY
                                 self:SetPos( tooltipsX, yPosAbove )
                                 self.fakeButton:SetPos( tooltipsX, yPosAbove )
+
                             else
                                 self:SetPos( tooltipsX, yPosUnder )
                                 -- todo, why is button's pos set to yPosAbove, bug?
                                 self.fakeButton:SetPos( tooltipsX, yPosAbove )
+
                             end
                         end
 

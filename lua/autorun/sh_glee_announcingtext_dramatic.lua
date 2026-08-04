@@ -17,7 +17,7 @@ if SERVER then
             ply.glee_DramaticAnnouncement_Priority = priority
 
             if ply:IsBot() then
-                print( "GLEEBOTANNOUNCE_DRAMATIC ", ply, announcement )
+                permaPrint( "GLEEBOTANNOUNCE_DRAMATIC ", ply, announcement )
 
             else
                 net.Start( "glee_dramatic_announcement" )

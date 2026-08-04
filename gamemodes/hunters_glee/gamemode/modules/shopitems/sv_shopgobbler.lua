@@ -58,7 +58,7 @@ function GM:ShopInitialThink()
         end
     end
 
-    print( "GLEE: SV Gobbled " .. count .. " shop items..." )
+    permaPrint( "GLEE: SV Gobbled " .. count .. " shop items..." )
 
     self.GobbledShopItems = true
     hook.Run( "glee_post_shopitemgobble" )
@@ -117,7 +117,7 @@ function GM:GobbleShopItems( items )
 
     -- Alert, should only happen if something misuses the shop gobbler or if files are being re-run for dev testing.
     if self.GobbledShopItems then
-        print( "GLEE: !!!!!!!!!! Gobbled shop items late, you must run gmod_admin_cleanup to apply the changes !!!!!!!!!!!" )
+        permaPrint( "GLEE: !!!!!!!!!! Gobbled shop items late, you must run gmod_admin_cleanup to apply the changes !!!!!!!!!!!" )
         -- Calling GM:ShopInitialThink() in luapad also works!
 
     end

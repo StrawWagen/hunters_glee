@@ -116,7 +116,7 @@ function ENT:GetNearestTarget()
 end
 
 function ENT:OnNewTarget( _, newTarg )
-    if not GAMEMODE.ISHUNTERSGLEE then return end
+    if not GAMEMODE.IsReallyHuntersGlee then return end
     if not IsValid( newTarg ) then return end
     local myPos = self:GetPos()
 

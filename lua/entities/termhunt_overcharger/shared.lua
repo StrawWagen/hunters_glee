@@ -103,12 +103,7 @@ function ENT:Place()
 
     GAMEMODE:AddMischievousness( self.player, 5, "overcharged a hunter" )
 
-    self:TellPlyToClearHighlighter()
-
-    self.player.ghostEnt = nil
-
-    self.player = nil
-    self:SetOwner( NULL )
+    self:DetachFromOwner()
 
     SafeRemoveEntity( self )
 

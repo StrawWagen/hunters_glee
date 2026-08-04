@@ -1,41 +1,35 @@
+--[[
+    The client settings menu. Client convars only.
 
--- settings for CLIENT options
--- not for cvars that affect serverside behavior
--- rather ai sloppy because i dread vgui
+    Rows are glee_hl2hudbox, sliders are glee_hl2meter, laid out in hl2 style.
+    Add a setting by adding to settingsCategories; nothing else needs touching.
+
+    Every other glee gui scales with cl_huntersglee_guiscale. This one must not: it is
+    the only menu that can undo a bad guiscale, so it has to stay readable at values
+    that make the shop unusable. Never multiply anything here by shopStandards.shpScale.
+
+    Opened by the glee_settings_open concommand.
+]]
 
 local GAMEMODE = GAMEMODE or GM
 
-local settingsMenu = {}
+local ROW_FONT    = "glee_mediumHL2Font"
+local HEADER_FONT = "glee_mediumLargeHL2Font"
 
--- 1080p baseline sizes (auto-scaled via glee_sizeScaled)
-local FRAME_W_1080P          = 720
-local FRAME_H_1080P          = 775
--- Shared border padding comes from GAMEMODE.shopStandards.borderPadding (unscaled value).
--- Name it as UNSCALED to avoid implying it's a hardcoded 1080p constant.
-local SHOP_BORDER_PAD_UNSCALED = GAMEMODE.shopStandards.borderPadding
-local ROW_H_1080P              = 48
-local GAP_Y_1080P              = 6
+local FRAME_H_1080P     = 775
+local METER_MIN_W_1080P = 200
 
--- Static reset icon config (edit here to tweak look/placement)
-local RESET_ICON_PATH   = "icon16/arrow_rotate_anticlockwise.png"
-local RESET_ICON_SIZE   = 16   -- static pixels
-local RESET_ICON_PADTOP = 4    -- distance from top edge of a row
-local RESET_ICON_PADR   = 4    -- distance from right edge of a row
-local RESET_ICON_COLOR  = Color(255, 255, 255, 255)
-local RESET_ICON_COLOR_HOVER = Color(255, 255, 255, 255)
-local resetIconMat = Material( RESET_ICON_PATH, "smooth" )
+-- a 0.01 step setting has 80 steps, and 80 chunks is a smear, so the bar is coarser
+-- than the value it shows: clicking chunk 7 of 20 still lands on an exact step
+local METER_CHUNKS_MAX = 20
 
--- Helper to close and reopen the settings menu (useful after scale changes)
-local function reopenSettingsMenu()
-    if IsValid( GAMEMODE.glee_SettingsMenu_Holder ) then
-        GAMEMODE.glee_SettingsMenu_Holder:Remove()
-    end
-    timer.Simple( 0, function()
-        RunConsoleCommand( "glee_settings_open" )
+-- the widest string a value column can print, reserved so no bar runs under a number
+local WIDEST_VALUE = "(0.00)"
 
-    end )
-end
-
+-- min/max are the ends of the bar, not the convar's own limits: music accepts -1, its
+-- bar starts at 0. decimals sets the step size as well as the print precision.
+-- defaultValue is only for convars that default to -1, and is what -1 means to the
+-- feature that owns it. changeWhenDone writes on release instead of during the drag.
 local settingsCategories = {
     {
         name = "GLEE",
@@ -46,8 +40,9 @@ local settingsCategories = {
                 min = 0,
                 max = 1,
                 decimals = 1,
+                defaultValue = 0.5, -- what the -1 default resolves to, see cl_music.lua
                 prettyName = "Music volume",
-                desc = "Change the music's volume. Default is -1 which translates to 0.75",
+                desc = "Change the music's volume. Default is -1 which translates to 0.5",
             },
             {
                 cvar = "cl_huntersglee_guiscale",
@@ -55,10 +50,10 @@ local settingsCategories = {
                 min = 0.2,
                 max = 1,
                 decimals = 2,
+                defaultValue = 0.9, -- what the -1 default resolves to, see cl_shopstandards.lua
                 prettyName = "GUI scale",
                 desc = "Scale all GUIs, shop, bank leaderboard, etc. Default is -1, which translates to 0.9",
-                changeWhenDone = true,
-                postChangedFunc = reopenSettingsMenu,
+                changeWhenDone = true, -- every write rebuilds all the shop fonts
             },
             {
                 cvar = "cl_huntersglee_heartbeat_volume",
@@ -74,15 +69,25 @@ local settingsCategories = {
                 type = "slider",
                 min = 0,
                 max = 1,
-                decimals = 2,
+                decimals = 1,
                 prettyName = "Wind sound volume",
                 desc = "Volume of the wind sound when falling at high speed.",
+            },
+            {
+                cvar = "cl_huntersglee_lightningvolume",
+                type = "slider",
+                min = 0,
+                max = 1,
+                decimals = 1,
+                prettyName = "Lightning volume",
+                desc = "Volume of lightning.",
             },
             {
                 cvar = "cl_huntersglee_gleetingsask",
                 type = "check",
                 prettyName = "Gleetings message?",
                 desc = "Get a chat print when someone who's never played glee joins?",
+                showSettingFunc = function() return game.IsDedicated() end,
             },
         }
     },
@@ -155,321 +160,422 @@ local settingsCategories = {
     },
 }
 
+
 local function emitUISound( pitch )
-    local snd = GAMEMODE and GAMEMODE.shopStandards and GAMEMODE.shopStandards.switchSound
-    if not snd then return end
-    LocalPlayer():EmitSound( snd, 60, pitch or 85, 0.14 )
+    LocalPlayer():EmitSound( GAMEMODE.shopStandards.switchSound, 60, pitch, 0.14 )
+
 end
 
-function settingsMenu:Create( container )
-    local scale = GAMEMODE.shopStandards.shpScale or 1
+local function stepSize( def )
+    return 1 / ( 10 ^ ( def.decimals or 0 ) )
 
-    -- Unify all shop GUI paddings via shopStandards.borderPadding (shared across menus)
-    local padding = glee_sizeScaled( nil, SHOP_BORDER_PAD_UNSCALED * scale )
-    local rowH      = glee_sizeScaled( nil, ROW_H_1080P * scale )
-    local gapY      = glee_sizeScaled( nil, GAP_Y_1080P * scale )
+end
 
-    container:DockPadding( 0, 0, 0, 0 )
-    container:DockMargin( padding, padding, padding, padding )
-    container:SetTitle( "" )
-    container:ShowCloseButton( false )
-    container:SetDraggable( false )
-    function container:Paint() end
+local function roundToStep( def, value )
+    local step = stepSize( def )
+    return math.Round( value / step ) * step
 
-    local root = vgui.Create( "DPanel", container )
-    root:Dock( FILL )
-    root:DockMargin( 0, padding, 0, padding )
-    function root:Paint( w, h )
-        surface.SetDrawColor( GAMEMODE.shopStandards.backgroundColor )
-        surface.DrawRect( 0, 0, w, h )
+end
+
+local function formatValue( def, value )
+    return string.format( "%." .. ( def.decimals or 0 ) .. "f", value )
+
+end
+
+-- brackets mean "still the shipped default", whether that default is a number or -1
+local function bracketed( text )
+    return "(" .. text .. ")"
+
+end
+
+local function isAtDefault( cvarRef )
+    local default = tonumber( cvarRef:GetDefault() )
+    if not default then return false end -- a non numeric setting can't be compared this way
+
+    return cvarRef:GetFloat() == default
+
+end
+
+-- Returns the number to fill the bar to, and the text to print beside it. Both differ
+-- from the convar when it holds -1, which means "whatever the feature picked itself".
+local function readSetting( def, cvarRef )
+    local raw       = cvarRef:GetFloat()
+    local autoing   = def.defaultValue and raw < 0
+    local value     = math.Clamp( autoing and def.defaultValue or raw, def.min, def.max )
+
+    -- 0.35 through a one decimal slider's own format would print as 0.3, so an
+    -- auto-default prints itself rather than what the bar can express
+    local text = autoing and tostring( def.defaultValue ) or formatValue( def, value )
+
+    if isAtDefault( cvarRef ) then
+        text = bracketed( text )
+
     end
 
-    local scroll = vgui.Create( "DScrollPanel", root )
-    scroll:Dock( FILL )
-    scroll:DockMargin( padding, padding, padding, padding )
+    return value, text
 
-    local settingsList = vgui.Create( "DListLayout", scroll )
-    settingsList:Dock( FILL )
+end
 
-    local function addGap( h )
-        -- Spacer panel: used because DListLayout lacks SetSpacing; keep empty.
-        local spacer = vgui.Create( "DPanel", settingsList )
-        spacer:SetTall( h )
-        function spacer:Paint() end
-        settingsList:Add( spacer )
-    end
+-- Runs at open time, never at file load: the HL2 fonts and palette do not exist yet
+-- when this file is read.
+local function measureLayout()
+    local hud = terminator_Extras.glee_HL2Hud
 
-    local function addRow( def )
-        local row = vgui.Create( "DPanel", settingsList )
-        row:SetTall( rowH )
-        row:Dock( TOP )
-        row:DockMargin( 0, 0, 0, 0 )
-        row:SetTooltip( def.desc or "" )
-        function row:Paint( w, h )
-            -- Subtle row background separation
-            surface.SetDrawColor( GAMEMODE.shopStandards.itemBackground or Color( 0, 0, 0, 100 ) )
-            surface.DrawRect( 0, 0, w, h )
-        end
+    surface.SetFont( ROW_FONT )
+    local _, fontH = surface.GetTextSize( "A" )
 
-        -- Label on the left
-        local nameLbl = vgui.Create( "DLabel", row )
-        nameLbl:SetFont( "termhuntShopItemFont" )
-        nameLbl:SetText( def.prettyName or def.cvar or "Setting" )
-        nameLbl:SetTextColor( GAMEMODE.shopStandards.white )
-        nameLbl:Dock( LEFT )
-        nameLbl:DockMargin( padding, 0, padding, 0 )
-        nameLbl:SizeToContentsX()
+    -- only a slider's label shares its row with a bar, so only sliders set the column
+    local labelW      = 0
+    local checkLabelW = 0
 
-        -- Control on the right
-        if def.type == "check" then
-            local cvarRef = GetConVar( def.cvar )
-
-            local chk = vgui.Create( "DCheckBox", row )
-            chk:Dock( RIGHT )
-            chk:DockMargin( padding, 0, padding, 0 )
-            chk:SetWide( rowH )
-            chk:SetChecked( cvarRef and cvarRef:GetBool() or false )
-            function chk:OnChange( val )
-                if def.cvar then RunConsoleCommand( def.cvar, val and "1" or "0" ) end
-                emitUISound( val and 95 or 80 )
-                if isfunction( def.postChangedFunc ) then def.postChangedFunc() end
-            end
-            -- Clicking the label toggles too
-            function nameLbl:OnMousePressed()
-                chk:Toggle()
-            end
-
-            -- Row-level reset handler for overlay button
-            row._glee_doReset = function()
-                if not cvarRef then return end
-                local defaultStr = cvarRef:GetDefault() or "0"
-                local numDefault = tonumber( defaultStr )
-                local defaultBool = ( numDefault and numDefault ~= 0 ) or ( not numDefault and defaultStr ~= "0" and string.lower( defaultStr ) ~= "false" )
-                chk:SetChecked( defaultBool )
-                if def.cvar then RunConsoleCommand( def.cvar, defaultStr ) end
-                emitUISound( 100 )
-                if isfunction( def.postChangedFunc ) then def.postChangedFunc() end
-            end
-
-        elseif def.type == "slider" then
-            local cvarRef = GetConVar( def.cvar )
-            local min, max = def.min or 0, def.max or 1
-            local decimals = def.decimals or 0
-
-            local slider = vgui.Create( "DNumSlider", row )
-            slider:Dock( FILL )
-            slider:DockMargin( padding, 0, padding, 0 )
-            slider:SetText( "" )
-            slider:SetMin( min )
-            slider:SetMax( max )
-            slider:SetDecimals( decimals )
-            slider:SetValue( cvarRef and cvarRef:GetFloat() or min )
-            function slider:PaintOver()
-                if not ( cvarRef and cvarRef:GetFloat() == -1 ) then return end
-                if math.abs( self:GetValue() - min ) > 0.0001 then return end
-                -- only cover the track portion (Slider child), not the TextArea
-                local sld = self.Slider
-                if not IsValid( sld ) then return end
-                local sx, sy = sld:GetPos()
-                local sw, sh = sld:GetSize()
-                draw.SimpleText( "DEFAULT", "termhuntShopItemFont", sx + sw * 0.5, sy + sh * 0.5,
-                    GAMEMODE.shopStandards.white or color_white, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
-            end
-            function slider:OnValueChanged( val )
-                if def.changeWhenDone then
-                    self._pendingVal = val
-                    self._dirty = true
-                    return
-                end
-                if def.cvar then
-                    RunConsoleCommand( def.cvar, tostring( val ) )
-                end
-            end
-
-            -- Row-level reset handler for overlay button
-            row._glee_doReset = function()
-                if not cvarRef then return end
-                local defaultStr = cvarRef:GetDefault()
-                local defaultNum = tonumber( defaultStr ) or min
-                if defaultNum ~= -1 then -- auto-defaulting
-                    defaultNum = math.Clamp( defaultNum, min, max )
-                end
-                slider:SetValue( defaultNum )
-                -- Apply immediately regardless of changeWhenDone (explicit reset intent)
-                if def.cvar then RunConsoleCommand( def.cvar, tostring( defaultNum ) ) end
-                slider._dirty = nil
-                emitUISound( 100 )
-                if isfunction( def.postChangedFunc ) then def.postChangedFunc() end
-            end
-            if def.changeWhenDone then
-                -- We can't rely on DNumSlider:OnMouseReleased; instead, buffer changes
-                -- and commit when the left mouse is released (via Think), or when the
-                -- TextArea confirms input (OnEnter/OnLoseFocus). This avoids mid-drag
-                -- GUI scale reflows and matches how cl_banktop avoids mid-interaction churn.
-                local function commitSlider()
-                    if not def.cvar then return end
-                    if not slider._dirty then return end
-                    slider._dirty = nil
-                    local v = slider._pendingVal or slider:GetValue()
-                    RunConsoleCommand( def.cvar, tostring( v ) )
-                    if isfunction( def.postChangedFunc ) then
-                        def.postChangedFunc()
-                    end
-                    emitUISound( 90 )
-                end
-                function slider:Think()
-                    self._wasDown = self._wasDown or false
-                    local isDown = input.IsMouseDown( MOUSE_LEFT )
-                    if self._wasDown and not isDown then
-                        commitSlider()
-                    end
-                    self._wasDown = isDown
-                end
-                if IsValid( slider.TextArea ) then
-                    function slider.TextArea:OnEnter()
-                        local parent = self:GetParent()
-                        parent._pendingVal = tonumber( self:GetValue() ) or parent:GetValue()
-                        parent._dirty = true
-                        commitSlider()
-                    end
-                    function slider.TextArea:OnLoseFocus()
-                        local parent = self:GetParent()
-                        parent._pendingVal = tonumber( self:GetValue() ) or parent:GetValue()
-                        parent._dirty = true
-                        commitSlider()
-                    end
-                end
-            end
-
-        else
-            -- Unknown type: show a placeholder
-            local warn = vgui.Create( "DLabel", row )
-            warn:SetFont( "termhuntShopItemFont" )
-            warn:SetText( string.format( "Unsupported setting type: %s", tostring( def.type ) ) )
-            warn:SetTextColor( Color( 255, 80, 80 ) )
-            warn:Dock( RIGHT )
-            warn:SizeToContentsX()
-        end
-
-        -- reset icon defs
-        local padR = RESET_ICON_PADR * scale
-        local size = RESET_ICON_SIZE * scale
-        local padT = RESET_ICON_PADTOP * scale
-
-        -- Add reset overlay: draw the icon above children and capture clicks in a tiny hitbox.
-        function row:PaintOver( w )
-            -- icon rect (top-right of the row)
-            local ix = w - padR - size
-            local iy = padT
-            surface.SetMaterial( resetIconMat )
-            -- simple hover effect
-            local mx, my = self:CursorPos()
-            local hover = mx >= ix and mx <= ix + size and my >= iy and my <= iy + size
-            local col = hover and RESET_ICON_COLOR_HOVER or RESET_ICON_COLOR
-            surface.SetDrawColor( col )
-            surface.DrawTexturedRect( ix, iy, size, size )
-        end
-
-        -- small invisible button to capture clicks reliably over children
-        if not IsValid( row._glee_resetHitbox ) then
-            local hit = vgui.Create( "DButton", row )
-            hit:SetText( "" )
-            hit:SetCursor( "hand" )
-            function hit:Paint() end
-            hit:SetZPos( 10000 )
-            hit:SetTooltip( "Reset to default." )
-            row._glee_resetHitbox = hit
-        end
-        function row:PerformLayout()
-            -- position hitbox to match icon rect
-            local w = self:GetWide()
-            local ix = w - padR - size
-            local iy = padT
-            local hit = self._glee_resetHitbox
-            if IsValid( hit ) then
-                hit:SetPos( ix, iy )
-                hit:SetSize( size, size )
-            end
-        end
-        if IsValid( row._glee_resetHitbox ) then
-            function row._glee_resetHitbox:DoClick()
-                if isfunction( row._glee_doReset ) then row._glee_doReset() end
-            end
-            row:InvalidateLayout( true )
-        end
-
-        -- Add row to list and follow with a spacer gap
-        settingsList:Add( row )
-        addGap( gapY )
-        return row
-    end
-
-    -- Category header helper
-    local function addCategoryHeader( name )
-        local headerRow = vgui.Create( "DPanel", settingsList )
-        headerRow:SetTall( math.floor( rowH * 0.9 ) )
-        headerRow:Dock( TOP )
-        headerRow:DockMargin( 0, math.floor( gapY * 1.5 ), 0, math.floor( gapY * 0.5 ) )
-        function headerRow:Paint( _, h )
-            -- Match left indent of row labels by using the same padding value.
-            surface.SetFont( "termhuntShopItemFontShadowed" )
-            local _, textH = surface.GetTextSize( name )
-            local textY = math.floor( ( h - textH ) * 0.5 )
-            draw.SimpleText( name, "termhuntShopItemFontShadowed", padding, textY, GAMEMODE.shopStandards.white, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP )
-        end
-        settingsList:Add( headerRow )
-        addGap( math.floor( gapY * 0.5 ) )
-    end
-
-    -- Build categories and rows
     for _, cat in ipairs( settingsCategories ) do
-        if istable( cat ) and isstring( cat.name ) then
-            addCategoryHeader( cat.name )
-        end
-        if istable( cat ) and istable( cat.items ) then
-            for _, def in ipairs( cat.items ) do
-                if istable( def ) and def.cvar and def.type then
-                    addRow( def )
-                end
+        for _, def in ipairs( cat.items ) do
+            local nameW = surface.GetTextSize( def.prettyName )
+
+            if def.type == "slider" then
+                labelW = math.max( labelW, nameW )
+
+            else
+                checkLabelW = math.max( checkLabelW, nameW )
+
             end
         end
     end
+
+    local valueW = surface.GetTextSize( WIDEST_VALUE )
+    local pad    = hud.blockPadding
+    local gap    = hud.laneSpacing
+
+    local sliderRowW = labelW + glee_sizeScaled( METER_MIN_W_1080P ) + valueW + pad * 6
+    local checkRowW  = checkLabelW + gap + valueW + pad * 4
+
+    return {
+        pad      = pad,
+        gap      = gap,
+        rowH     = fontH + pad * 2,
+        labelW   = labelW,
+        valueW   = valueW,
+        contentW = math.max( sliderRowW, checkRowW ),
+    }
+
 end
 
--- Command-owned window creation (mirrors cl_banktop simplified flow)
-local function createSettingsMenuSafely()
-    local frame = vgui.Create( "DFrame" )
-    terminator_Extras.easyClosePanel( frame )
-    local w, h = glee_sizeScaled( FRAME_W_1080P * ( GAMEMODE.shopStandards.shpScale or 1 ), FRAME_H_1080P * ( GAMEMODE.shopStandards.shpScale or 1 ) )
-    frame:SetSize( w, h )
+
+-- Shared by both row types. Returns the row and its convar; the caller has to override
+-- UpdateFromCvar, which AdditionalThink calls every frame.
+local function makeRow( def, layout )
+    local hud = terminator_Extras.glee_HL2Hud
+    local cvarRef = GetConVar( def.cvar )
+
+    local row = vgui.Create( "glee_hl2hudbox" )
+    row:SetFlashIconColor( hud.colorHappyYellow:Copy() ) -- the box defaults this to red
+    row:SetFlashDuration( 0.12 )
+    row:SetDoFadeDelays( false )
+    row:SetText( "" ) -- the base paints text centered, and this row paints its own
+    row:SetTall( layout.rowH )
+    row:SetMouseInputEnabled( true )
+    row:SetState( row.STATE_NORMAL )
+    row:SetTooltip( ( def.desc or "" ) .. "\n\nRight click to reset to default." )
+
+    row._labelText  = def.prettyName or def.cvar
+    row._valueText  = ""
+    row._hoveredOld = false
+
+    local basePaint = row.Paint
+
+    function row:Paint( w, h )
+        basePaint( self, w, h ) -- background, alpha, flash
+        if self:GetStateAlpha() <= 0 then return end
+
+        local innerPad = layout.pad * 2
+        local midY     = h * 0.5
+        local col      = self._drawIcon -- basePaint resolved this for this frame
+
+        draw.SimpleText( self._labelText, ROW_FONT, innerPad,     midY, col, TEXT_ALIGN_LEFT,  TEXT_ALIGN_CENTER )
+        draw.SimpleText( self._valueText, ROW_FONT, w - innerPad, midY, col, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER )
+
+    end
+
+    -- stub, the subtypes read the cvar their own way
+    function row:UpdateFromCvar()
+    end
+
+    function row:AdditionalThink()
+        local hovered = self:IsHovered()
+
+        if hovered ~= self._hoveredOld then
+            self._hoveredOld = hovered
+            emitUISound( hovered and 90 or 80 )
+
+        end
+
+        self:SetNormalBoxColor( hovered and hud.colorBackgroundUrgent or hud.colorBackground )
+        self:SetState( self.STATE_NORMAL )
+        self:UpdateFromCvar()
+
+    end
+
+    function row:ResetToDefault()
+        -- written verbatim so the -1 sliders go back to meaning "let the feature decide"
+        RunConsoleCommand( def.cvar, cvarRef:GetDefault() )
+
+        self:SetState( self.STATE_FLASH )
+        emitUISound( 100 )
+
+    end
+
+    return row, cvarRef
+
+end
+
+
+local function makeSliderRow( def, layout )
+    local hud = terminator_Extras.glee_HL2Hud
+    local row, cvarRef = makeRow( def, layout )
+
+    local span  = def.max - def.min
+    local steps = span / stepSize( def )
+
+    local transparent = Color( 0, 0, 0, 0 )
+
+    -- The row is the box, so the meter contributes chunks only.
+    local meter = vgui.Create( "glee_hl2meter", row )
+    meter:SetChunks( math.min( steps, METER_CHUNKS_MAX ) )
+    meter:SetNormalBoxColor( transparent )
+    meter:SetUrgentBoxColor( transparent )
+    meter:SetFlashBoxColor( transparent )
+    meter:SetEmptyColor( hud.colorBackgroundDark )
+    meter:SetFillColor( hud.colorHappyYellow )
+    meter:SetState( meter.STATE_NORMAL )
+    meter:Dock( FILL )
+    meter:DockMargin( layout.labelW + layout.pad * 3, layout.pad, layout.valueW + layout.pad * 3, layout.pad )
+
+    row._meter = meter
+
+    function row:ShowValue( value )
+        self._valueText = formatValue( def, value )
+        meter:SetFill( ( value - def.min ) / span )
+
+    end
+
+    function row:UpdateFromCvar()
+        if self._dragging then return end -- their hand is on it, the cvar is behind
+
+        -- the convar no longer holds what this row last wrote, so someone else moved
+        -- it, and the value we remember must stop suppressing clicks. see ApplyValue
+        if self._appliedValue and self._appliedValue ~= cvarRef:GetFloat() then
+            self._appliedValue = nil
+
+        end
+
+        local value, text = readSetting( def, cvarRef )
+        self._valueText = text
+        meter:SetFill( ( value - def.min ) / span )
+
+    end
+
+    -- The bar has no grip to grab, so the value is wherever along it they clicked.
+    function row:ValueFromCursor()
+        local pad  = terminator_Extras.glee_HL2Hud.blockPadding
+        local barW = meter:GetWide() - pad * 2 -- the meter insets its own bar by this
+        if barW <= 0 then return def.min end
+
+        local mx   = meter:CursorPos()
+        local frac = math.Clamp( ( mx - pad ) / barW, 0, 1 )
+
+        return roundToStep( def, def.min + frac * span )
+
+    end
+
+    -- only writes when the value moved, so a drag doesn't fire a console command every
+    -- frame. UpdateFromCvar drops the remembered value when the convar stops matching it
+    function row:ApplyValue( value )
+        if value == self._appliedValue then return end
+        self._appliedValue = value
+
+        self:ShowValue( value )
+
+        if def.changeWhenDone then return end
+
+        RunConsoleCommand( def.cvar, tostring( value ) )
+
+    end
+
+    function row:CommitValue()
+        if not def.changeWhenDone then return end
+        if not self._appliedValue then return end
+
+        RunConsoleCommand( def.cvar, tostring( self._appliedValue ) )
+
+    end
+
+    function row:OnMousePressed( code )
+        if code == MOUSE_RIGHT then
+            self._appliedValue = nil
+            self:ResetToDefault()
+            return
+
+        end
+
+        if code ~= MOUSE_LEFT then return end
+
+        self:SetState( self.STATE_FLASH )
+        surface.PlaySound( "common/wpn_select.wav" )
+
+        self._dragging = true
+        self:MouseCapture( true ) -- so a drag that leaves the row still ends here
+        self:ApplyValue( self:ValueFromCursor() )
+
+    end
+
+    function row:OnCursorMoved()
+        if not self._dragging then return end
+
+        self:ApplyValue( self:ValueFromCursor() )
+
+    end
+
+    function row:OnMouseReleased( code )
+        if code ~= MOUSE_LEFT then return end
+        if not self._dragging then return end
+
+        self._dragging = false
+        self:MouseCapture( false )
+        self:CommitValue()
+
+    end
+
+    row:UpdateFromCvar()
+
+    return row
+
+end
+
+
+local function makeCheckRow( def, layout )
+    local hud = terminator_Extras.glee_HL2Hud
+    local row, cvarRef = makeRow( def, layout )
+
+    function row:UpdateFromCvar()
+        local on   = cvarRef:GetBool()
+        local text = on and "ON" or "OFF"
+
+        if isAtDefault( cvarRef ) then
+            text = bracketed( text )
+
+        end
+
+        self._valueText = text
+        self:SetIconColor( on and hud.colorHappyYellow or hud.colorUnHappyYellow )
+
+    end
+
+    function row:OnMousePressed( code )
+        if code == MOUSE_RIGHT then
+            self:ResetToDefault()
+            return
+
+        end
+
+        if code ~= MOUSE_LEFT then return end
+
+        self:SetState( self.STATE_FLASH )
+        surface.PlaySound( "common/wpn_select.wav" )
+        RunConsoleCommand( def.cvar, cvarRef:GetBool() and "0" or "1" )
+
+    end
+
+    row:UpdateFromCvar()
+
+    return row
+
+end
+
+
+local function makeHeaderRow( name )
+    local heading = vgui.Create( "glee_hl2hudheading" )
+    heading:SetFont( HEADER_FONT )
+    heading:SetText( name )
+
+    return heading
+
+end
+
+
+local function buildSettingsMenu()
+    local layout = measureLayout()
+
+    local frameH = math.min( glee_sizeScaled( nil, FRAME_H_1080P ), ScrH() * 0.9 )
+
+    local frame = vgui.Create( "glee_hl2frame" )
+    frame:SetSize( layout.contentW + layout.pad * 2, frameH )
     frame:Center()
-    frame:MakePopup()
-    frame:SetSizable( true )
-    settingsMenu:Create( frame )
+
+    local scroll = vgui.Create( "glee_hl2hudscrollpanel", frame )
+    scroll:Dock( FILL )
+
+    local function addToList( panel, topGap )
+        scroll:Add( panel )
+        panel:Dock( TOP )
+        panel:DockMargin( 0, topGap or 0, layout.pad, layout.gap )
+
+    end
+
+    for catIndex, cat in ipairs( settingsCategories ) do
+        addToList( makeHeaderRow( cat.name ), catIndex > 1 and layout.gap * 3 or nil )
+
+        for _, def in ipairs( cat.items ) do
+            if not GetConVar( def.cvar ) then
+                ErrorNoHaltWithStack( "glee settings menu: no such convar, " .. tostring( def.cvar ) .. "\n" )
+
+            elseif def.showSettingFunc and not def.showSettingFunc() then
+                continue
+
+            elseif def.type == "slider" then
+                addToList( makeSliderRow( def, layout ) )
+
+            elseif def.type == "check" then
+                addToList( makeCheckRow( def, layout ) )
+
+            end
+        end
+    end
+
+    terminator_Extras.easyClosePanel( frame )
     LocalPlayer():EmitSound( "physics/wood/wood_crate_impact_soft3.wav", 50, 200, 0.45 )
 
     return frame
 
 end
 
+
 concommand.Add( "glee_settings_open", function()
-    local newFrame = createSettingsMenuSafely()
+    local newFrame = buildSettingsMenu()
     if not IsValid( newFrame ) then return end
 
+    -- the old frame's OnRemove clears the holder, so it has to go before the new one
+    -- is stored, not after
     if IsValid( GAMEMODE.glee_SettingsMenu_Holder ) then
         GAMEMODE.glee_SettingsMenu_Holder:Remove()
+
     end
 
     GAMEMODE.glee_SettingsMenu_Holder = newFrame
-    function newFrame:OnRemove()
-        if GAMEMODE.glee_SettingsMenu_Holder == self then
-            GAMEMODE.glee_SettingsMenu_Holder = nil
 
-        end
+    function newFrame:OnRemove()
+        if GAMEMODE.glee_SettingsMenu_Holder ~= self then return end
+
+        GAMEMODE.glee_SettingsMenu_Holder = nil
+
     end
 end )
 
-local width, height = glee_sizeScaled( FRAME_W_1080P, FRAME_H_1080P )
+function GAMEMODE:OpenSettingsMenu()
+    RunConsoleCommand( "glee_settings_open" )
+
+end
+
+local width, height = glee_sizeScaled( 720, FRAME_H_1080P )
 list.Set( "DesktopWindows", "HuntersGlee_Settings", {
     title = "Glee Settings",
     icon = "icon16/wrench.png",
@@ -477,9 +583,9 @@ list.Set( "DesktopWindows", "HuntersGlee_Settings", {
     height = height,
     onewindow = true,
     init = function( _, window )
+        -- the list gives us a window we don't want, the concommand builds the real one
         if IsValid( window ) then window:Remove() end
         RunConsoleCommand( "glee_settings_open" )
 
     end
 } )
-

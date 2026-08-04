@@ -196,7 +196,7 @@ function SWEP:BadHit( tr )
     local rnda = self.Primary.Recoil * -0.5
     local rndb = self.Primary.Recoil * math.Rand( -0.5, 1 )
 
-    bullet = {}
+    local bullet = {}
     bullet.Num    = 1
     bullet.Src    = owner:GetShootPos()
     bullet.Dir    = owner:GetAimVector()
@@ -236,22 +236,21 @@ function SWEP:ValidEntityToNail( ent, physBone )
     if not IsValid( ent ) and not ent:IsWorld() then return end
     if ent:IsPlayer() then return end
     if ent:IsNextBot() then return end
-    if ent:GetClass() == "gmod_glee_nail" then return end
     if ent.isDoorDamageListener then return end
+    if ent:GetClass() == "gmod_glee_nail" then return end
+
     if SERVER then
         local validBone = util.IsValidPhysicsObject( ent, physBone )
         local isNpc = ent:IsNPC()
 
-        if validBone and isNpc then
-            -- manhack or something
-        elseif validbone == true then -- wtf?
+        local physObjNPC = validBone and isNpc -- manhack or smth
+
+        if isNpc and not physObjNPC then
             return
-        elseif isNpc then
-            return
+
         end
 
     end
-    if ent:GetClass() == "gmod_glee_nail" then return end
 
     return true
 
@@ -337,7 +336,7 @@ function SWEP:Swing( owner, noNail ) -- create nail or melee attack
 
     self:SetNextPrimaryFire( CurTime() + self.Primary.Delay )
 
-    bullet = {}
+    local bullet = {}
     bullet.Num    = 1
     bullet.Src    = owner:GetShootPos()
     bullet.Dir    = owner:GetAimVector()

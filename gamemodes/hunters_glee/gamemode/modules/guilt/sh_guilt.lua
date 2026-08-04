@@ -1,5 +1,5 @@
 
--- TODO: IMPLIMENT GUILT EFFECTS
+local infernalSEffectName = "infernalintervention_rawendofthedeal"
 
 local PermaGuiltLevels = {
     NOT_GUILTY = 0,
@@ -12,39 +12,74 @@ local PermaGuiltLevels = {
 }
 GM.PermaGuiltLevels = PermaGuiltLevels
 
+local hud = terminator_Extras.glee_HL2Hud or {}
+
+-- mixes color 1 with color 2, returns new color object
+-- ratio 0 is entirely col1, ratio 1 is entirely col2
+-- hack since glee_HL2Hud doesnt exist on client
+local function colorMixCl( col1, col2, ratio )
+    if SERVER then return end
+    if not col1 or not col2 then return Color( 255, 255, 255, 255 ) end
+    ratio = math.Clamp( ratio, 0, 1 )
+
+    return Color(
+        math.Round( Lerp( ratio, col1.r, col2.r ) ),
+        math.Round( Lerp( ratio, col1.g, col2.g ) ),
+        math.Round( Lerp( ratio, col1.b, col2.b ) ),
+        math.Round( Lerp( ratio, col1.a, col2.a ) )
+    )
+
+end
+
 GM.PermaGuiltInfo = {
     [PermaGuiltLevels.NOT_GUILTY]  = {
-        message = "Your conscience is clear.",
-        color = Color( 200, 200, 200 ),
+        desc = "Your conscience is clear.",
+        color = hud.colorHappyYellow,
     },
     [PermaGuiltLevels.SLIGHTLY_GUILTY]  = {
-        message = "Your conscience is still.. a bit clear...",
-        color = Color( 210, 200, 120 ),
+        desc = "Your conscience is still.. a bit clear...",
+        color = colorMixCl( hud.colorHappyYellow, hud.colorRedUrgent, 0.9 ),
     },
     [PermaGuiltLevels.SOMEWHAT_GUILTY]  = {
-        message = "You're a bit evil. But you are still forgiven.",
-        color = Color( 210, 200, 120 ),
+        desc = "You're a bit evil. But you are still forgiven.",
+        message = "Your guilt grows.\nYou're a bit evil.",
+        color = colorMixCl( hud.colorHappyYellow, hud.colorRedUrgent, 0.8 ),
+        divineCostMul = 1.15,
     },
     [PermaGuiltLevels.ALMOST_GUILTY]  = {
-        message = "Things can't continue like this. You're almost evil.",
-        color = Color( 215, 180, 0 ),
+        desc = "Things can't continue like this. You're almost evil.",
+        color = colorMixCl( hud.colorHappyYellow, hud.colorRedUrgent, 0.7 ),
+        message = "Your guilt grows.\nYou're almost evil.",
+        divineCostMul = 1.25,
     },
     [PermaGuiltLevels.GUILTY]  = {
-        message = "You're evil. Your access to divine avenues is limited.",
-        color = Color( 220, 140,   0 ),
+        desc = "You're evil. Your access to divine avenues is limited.",
+        color = colorMixCl( hud.colorHappyYellow, hud.colorRedUrgent, 0.5 ),
+        message = "You're evil.\nThe divine actors are displeased.",
         divineCostMul = 1.5,
+        canPurchaseForgivenessRitual = true,
     },
     [PermaGuiltLevels.VERY_GUILTY] = {
-        message = "You're very evil. Divine paths are almost out of your reach.",
-        color = Color( 220,  50,   0 ),
+        desc = "You're very evil. Divine paths are almost out of your reach.",
+        color = colorMixCl( hud.colorHappyYellow, hud.colorRedUrgent, 0.25 ),
+        message = "You're very evil.\nThe divine paths are closing...",
         divineCostMul = 2.5,
+        canPurchaseForgivenessRitual = true,
     },
     [PermaGuiltLevels.EXTREMELY_GUILTY] = {
-        message = "You're extremely evil. The divine ways are closed to you. You are always at one with the infernal powers.",
-        color = Color( 200,   0,   0 ),
+        desc = "You're extremely evil. The divine ways are closed to you. You are always one with the infernal powers.",
+        message = "You're extremely evil.\nYou are now one with the infernal powers.",
+        color = hud.colorRedUrgent,
         divineItemsNotPurchaseable = true,
+        alwaysTakingTheDeal = true,
+        canPurchaseForgivenessRitual = true,
     },
 }
+
+local developerVar = GetConVar( "developer" )
+-- guilt effects are a dedicated server only mechanic
+-- developer 1 enables them for testing
+local active = game.IsDedicated() or developerVar:GetBool()
 
 function GM:GetPersistentGuilt( ply )
     local guiltInDays = ply:GetNWFloat( "glee_persistentguilt_days", 0 )
@@ -54,7 +89,7 @@ end
 
 function getGuiltLevel( guiltInDays )
     local guiltLevel = 0
-    local guiltData
+    local guiltData = GAMEMODE.PermaGuiltInfo[PermaGuiltLevels.NOT_GUILTY]
     for level, data in pairs( GAMEMODE.PermaGuiltInfo ) do
         if guiltInDays >= level and level > guiltLevel then
             guiltLevel = level
@@ -69,8 +104,8 @@ end
 
 function GM:GetPlysGuiltLevel( ply )
     local guiltInDays = self:GetPersistentGuilt( ply )
-    local old_cachedDays = ply.glee_cachedGuiltDays or 0
-    if guiltInDays ~= old_cachedDays then
+    local old_cachedDays = ply.glee_cachedGuiltDays
+    if not old_cachedDays or guiltInDays ~= old_cachedDays then
         local guiltLevel, guiltData = getGuiltLevel( guiltInDays )
 
         ply.glee_cachedGuiltDays = guiltInDays
@@ -85,7 +120,8 @@ function GM:GetPlysGuiltLevel( ply )
 end
 
 hook.Add( "glee_shop_itemcostmul", "glee_guiltycost", function( purchaser, itemData, costMulTbl )
-    if not itemData.Divine then return end
+    if not active then return end
+    if not itemData.tags.Divine then return end
 
     local _, guiltData = GAMEMODE:GetPlysGuiltLevel( purchaser )
     if not guiltData.divineCostMul then return end
@@ -95,7 +131,8 @@ hook.Add( "glee_shop_itemcostmul", "glee_guiltycost", function( purchaser, itemD
 end )
 
 hook.Add( "glee_shop_canpurchase", "glee_guiltycantbuydivine", function( purchaser, itemData )
-    if not itemData.Divine then return end
+    if not active then return end
+    if not itemData.tags.Divine then return end
 
     local _, guiltData = GAMEMODE:GetPlysGuiltLevel( purchaser )
     if not guiltData.divineItemsNotPurchaseable then return end
@@ -105,10 +142,16 @@ hook.Add( "glee_shop_canpurchase", "glee_guiltycantbuydivine", function( purchas
 end )
 
 if CLIENT then
-    net.Receive( "glee_persistguiltincreased", function()
-        local guiltInDays = net.ReadFloat()
-        hook.Run( "glee_persistentguilt_increased", guiltInDays )
+    net.Receive( "glee_persistguiltchanged", function()
+        local oldGuiltInDays = net.ReadFloat()
+        local newGuiltInDays = net.ReadFloat()
+        if newGuiltInDays > oldGuiltInDays then
+            hook.Run( "glee_persistentguilt_increased", newGuiltInDays )
 
+        else
+            hook.Run( "glee_persistentguilt_decreased", newGuiltInDays )
+
+        end
     end )
     net.Receive( "glee_dealtpvpdamage", function()
         local damage = net.ReadInt( 16 )
@@ -120,13 +163,20 @@ if CLIENT then
 
     end )
 
+    local oldLevel
+
     hook.Add( "glee_persistentguilt_increased", "glee_guiltnotif", function( days )
-        timer.Create( "glee_persistguilt_delayedmessage", 0.1, 1, function()
+        if not active then return end
+        timer.Create( "glee_persistguilt_delayeddesc", 0.1, 1, function()
             local msg
-            if days <= 1 then
+            local level, levelData = GAMEMODE:GetPlysGuiltLevel( LocalPlayer() )
+            if oldLevel and level ~= oldLevel and level > oldLevel then -- play transition message if this teir has one
+                msg = levelData.message
+
+            elseif days <= 1 then -- first day of guilt
                 msg = "Killing an innocent soul...\nYou feel... Guilty?"
 
-            elseif days <= 5 then
+            elseif days <= 5 then -- first 5 days
                 msg = "Your guilt grows"
                 for _ = 1, math.floor( days ) do
                     msg = msg .. "."
@@ -138,5 +188,41 @@ if CLIENT then
 
             end
         end )
+    end )
+    hook.Add( "glee_persistentguilt_decreased", "glee_guiltnotif", function( _newGuiltInDays )
+        if not active then return end
+        timer.Create( "glee_persistguilt_delayeddesc", 0.1, 1, function()
+            local msg = "You feel some of your guilt fade..."
+            notification.AddLegacy( msg, NOTIFY_HINT, 10 )
+
+        end )
+    end )
+end
+if SERVER then
+    local function applyPermaInfernal( spawned )
+        if not GAMEMODE:GetRegisteredStatusEffect( infernalSEffectName ) then return end
+        if spawned:HasStatusEffect( infernalSEffectName ) then return end
+
+        local _, guiltData = GAMEMODE:GetPlysGuiltLevel( spawned )
+        if not guiltData.alwaysTakingTheDeal then return end
+
+        local effect = spawned:GiveStatusEffect( infernalSEffectName )
+        effect.fromPermaGuiltLevel = true
+
+    end
+    hook.Add( "glee_true_PlayerSpawn", "glee_permainfernal", function( spawned )
+        if not active then return end
+        ProtectedCall( function( spawnedP )
+            applyPermaInfernal( spawnedP )
+
+        end, spawned )
+    end )
+    hook.Add( "PlayerInitialSpawn", "glee_permainfernal", function( spawned )
+        if not active then return end
+        -- get out of this hook, it's dangerous to error in it
+        ProtectedCall( function( spawnedP )
+            applyPermaInfernal( spawnedP )
+
+        end, spawned )
     end )
 end

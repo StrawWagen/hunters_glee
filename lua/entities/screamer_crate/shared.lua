@@ -68,7 +68,7 @@ function ENT:SpawnFunction( ply, tr, ClassName )
     ent:Spawn()
     ent:Activate()
 
-    if not GAMEMODE.ISHUNTERSGLEE then
+    if not GAMEMODE.IsReallyHuntersGlee then
         ent:Place()
     end
 
@@ -184,9 +184,11 @@ if CLIENT then
             placinCostStr = "Deposit: " .. tostring( deposit )
 
             scoreString = stringPt1 .. tostring( scoreGained + deposit )
+
         else
             stringPt1 = "Hunter luring cost: "
             scoreString = stringPt1 .. tostring( scoreGained )
+
         end
 
         surface.drawShadowedTextBetter( scoreString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
@@ -250,6 +252,22 @@ if CLIENT then
         self:MyDraw()
 
     end
+
+    function ENT:OnDetachedFromOwner()
+    end
+
+    net.Receive( "glee_placable_detachclientside", function()
+        local toWipe = net.ReadEntity()
+        if not IsValid( toWipe ) then return end
+
+        local us = LocalPlayer()
+        if toWipe ~= us.ghostEnt then return end
+        if not toWipe.OnDetachedFromOwner then return end
+
+        toWipe:OnDetachedFromOwner( us )
+        LocalPlayer().ghostEnt = nil
+
+    end )
 end
 
 function ENT:OffsettedPlacingPos()
@@ -287,70 +305,81 @@ local function getNearestNavFloor( pos )
 
 end
 
-local function PlayRepeatingSound( self, soundPath )
+-- Pays the placer back once the crate has stood long enough to be worth the deposit.
+-- Only ever pays once, refundAndBonus is the flag as well as the amount.
+local function payOutDeposit( crate )
+    local placer = crate.glee_player
+    if not IsValid( placer ) then return end
+    if not placer.GivePlayerScore then return end
 
-    local crateEveryoneFilter = RecipientFilter()
-    crateEveryoneFilter:AddAllPlayers()
+    local bonus = crate.refundAndBonus
+    if not bonus or bonus <= 0 then return end
 
-    self.horrificSound = CreateSound( self, soundPath, crateEveryoneFilter )
+    placer:GivePlayerScore( bonus )
+    huntersGlee_Announce( { placer }, 5, 10, "The beacon survives, you profit " .. bonus - placingCost .. " score." )
+    crate.refundAndBonus = nil
 
-    -- Create a unique timer name for this entity
-    local timerName = "SoundTimer_" .. self:GetClass() .. self:EntIndex()
+end
 
-    timer.Simple( beepInterval * 0.35, function()
-        if not IsValid( self ) then return end
+-- Beeps the crate loudly enough to pull hunters across the map, on a loop, until it
+-- runs out of beeps or loses its beacon. The first beep comes early, and is when the
+-- placer gets paid for it having survived.
+local function PlayRepeatingSound( crate, soundPath )
+    local function beep( pitchMul )
+        local everyone = RecipientFilter()
+        everyone:AddAllPlayers()
+        local scream = CreateSound( crate, soundPath, everyone )
+        scream:Stop()
+        scream:PlayEx( 0.7, math.random( 120, 130 ) * pitchMul )
 
-        self:doSoundComprehensive()
+        local cratePos = crate:GetPos()
 
-        if self.glee_player and self.glee_player.GivePlayerScore and self.refundAndBonus and self.refundAndBonus > 0 then
-            self.glee_player:GivePlayerScore( self.refundAndBonus )
-            huntersGlee_Announce( { self.glee_player }, 5, 10, "The beacon survives, you profit " .. self.refundAndBonus + -placingCost .. " score." )
-            self.refundAndBonus = nil
+        sound.EmitHint( SOUND_COMBAT, cratePos, 20000, 1, crate )
+        crate:EmitSound( soundPath, 120, math.random( 140, 150 ) * pitchMul, 1, CHAN_STATIC )
+        util.ScreenShake( cratePos, 1, 20, 1, 1000 )
 
-        end
+        local obj = crate:GetPhysicsObject()
+        if not IsValid( obj ) then return end
 
-    end )
+        local force = obj:GetMass() * 100 * pitchMul
+        obj:ApplyForceCenter( VectorRand() * force )
+        obj:ApplyTorqueCenter( VectorRand() * force )
 
-    self.doSoundComprehensive = function()
-        self:doSound( 1 )
+    end
+
+    -- two beeps, the second higher, so people can turn their heads, find the supplies easier
+    local function beepTwice()
+        beep( 1 )
 
         timer.Simple( 0.75, function()
-            if not IsValid( self ) then return end
-            self:doSound( 1.2 )
+            if not IsValid( crate ) then return end
+
+            beep( 1.2 )
 
         end )
     end
 
-    self.doSound = function( soundEmitter, pitchMul )
-        soundEmitter.horrificSound:Stop()
-        soundEmitter.horrificSound:PlayEx( 0.7, math.random( 120, 130 ) * pitchMul )
+    -- first beep
+    timer.Simple( beepInterval * 0.35, function()
+        if not IsValid( crate ) then return end
 
-        sound.EmitHint( SOUND_COMBAT, soundEmitter:GetPos(), 20000, 1, soundEmitter )
+        beepTwice()
+        payOutDeposit( crate )
 
-        soundEmitter:EmitSound( soundPath, 120, math.random( 140, 150 ) * pitchMul, 1, CHAN_STATIC )
+    end )
 
-        util.ScreenShake( soundEmitter:GetPos(), 1, 20, 1, 1000 )
-        local obj = soundEmitter:GetPhysicsObject()
-        if not IsValid( obj ) then return end
-        obj:ApplyForceCenter( VectorRand() * obj:GetMass() * 100 * pitchMul )
-        obj:ApplyTorqueCenter( VectorRand() * obj:GetMass() * 100 * pitchMul )
+    local timerName = "glee_cratescream_" .. crate:GetCreationID()
 
-    end
-
-    -- don't play right away
-    --self:doSound( soundPath )
-
-    -- Set the timer to repeat the sound
     timer.Create( timerName, beepInterval, beepsPerCrate, function()
-        if IsValid( self ) then
-            -- Only play the sound if the entity is still valid
-            self:doSoundComprehensive()
-
-        else
-            -- If the entity is no longer valid, stop the timer ( ai slop comment )
+        -- beeping comes from the beacon
+        if not IsValid( crate ) or not IsValid( crate.CratesBeacon ) then
             timer.Remove( timerName )
+            return
 
         end
+
+        beepTwice()
+
     end )
 end
 
@@ -421,7 +450,7 @@ function ENT:CalculateCanPlace()
 
     if IsHullTraceFull( checkPos, self.HullCheckSize, self ) then return false, self.noPurchaseReason_NoRoom end
     if getNearestNavFloor( checkPos ) == NULL then return false, self.noPurchaseReason_OffNavmesh end
-    if not self:HasEnoughToPurchase() then return false, self:TooPoorString() end
+    if not self:HasEnoughToPurchase() and not self.canGoInDebt then return false, self:TooPoorString() end
     return true
 
 end
@@ -451,6 +480,32 @@ function ENT:Cancel()
     SafeRemoveEntity( self )
 
 end
+
+
+if SERVER then
+    util.AddNetworkString( "glee_placable_detachclientside" )
+
+end
+
+function ENT:OnDetachedFromOwner( _owner )
+end
+
+function ENT:DetachFromOwner()
+    local owner = self.player
+    if not IsValid( owner ) then return end
+
+    net.Start( "glee_placable_detachclientside" )
+        net.WriteEntity( self )
+    net.Send( owner )
+
+    owner.ghostEnt = nil
+    self.player = nil
+    self:SetOwner( NULL )
+
+    self:OnDetachedFromOwner( owner )
+
+end
+
 
 function ENT:DoScoreThink()
     self:NextThink( CurTime() + engine.TickInterval() )
@@ -585,7 +640,8 @@ function ENT:ColorThink()
     end
     self.canShow = canShow
 
-    local canPlace = self:GetCanPlace()
+    local canPlace = self:GetCanPlace() and self:HasEnoughToPurchase()
+    canPlace = canPlace or false -- never nil
 
     if self.couldPlace ~= canPlace then
         if not canPlace then
@@ -635,12 +691,11 @@ function ENT:Think()
         if CLIENT then
             self:ClientThink()
 
-        elseif SERVER then
-
+        elseif SERVER and IsValid( self.player ) then -- owner could be cleared during ModifiableThink
             local mode = self.player:GetObserverMode()
             if mode ~= OBS_MODE_ROAMING then
                 self.nextPlaceThink = CurTime() + 1
-                return
+                return toReturn
 
             end
         end
@@ -765,10 +820,12 @@ function GM:ScreamingCrate( pos )
     crate:SetKeyValue( "ItemClass", "dynamic_super_resupply_fake" ) -- has a good chance to spawn a strong weapon
     crate:SetKeyValue( "ItemCount", 8 )
     crate:Spawn()
+    local beepingFor = ( beepsPerCrate + 1 ) * beepInterval
     PlayRepeatingSound( crate, "horrific_crate_scream" )
     crate:EmitSound( "npc/turret_floor/deploy.wav", 90, 120 )
 
-    terminator_Extras.AttachParentedDetail( crate, "models/props_lab/reciever01b.mdl", beaconVecOffset, beaconAngOffset, COLLISION_GROUP_WEAPON )
+    crate.CratesBeacon = terminator_Extras.AttachParentedDetail( crate, ents.Create( "glee_crate_beacon" ), beaconVecOffset, beaconAngOffset )
+    crate.CratesBeacon:SetChargedUntil( CurTime() + beepingFor )
 
     crate.terminatorHunterInnateReaction = function()
         return MEMORY_BREAKABLE

@@ -228,26 +228,48 @@ if SERVER then
                 end
             end )
 
-            -- apply effects on spawn
-            self:HookOnce( "PlayerSpawn", function( ply )
-                if not ply:HasStatusEffect( "infernalintervention_rawendofthedeal" ) then return end
-
+            function self:ApplyEffects()
                 -- shrivel all bones
-                local bc = ply:GetBoneCount() or 0
+                local bc = owner:GetBoneCount() or 0
                 for i = 0, bc - 1 do
-                    ply:ManipulateBoneScale( i, shriveledScale * math.Rand( 0.5, 1.75 ) )
+                    owner:ManipulateBoneScale( i, shriveledScale * math.Rand( 0.5, 1.75 ) )
 
                 end
 
                 -- apply speed mod
-                ply:DoSpeedModifier( "infernalintervention", -25 )
+                owner:DoSpeedModifier( "infernalintervention", -25 )
+
+                -- deal made, 1 health
+                owner:SetHealth( 1 )
+                owner.glee_LastHealthSetReason = "glee_infernalintervention_spawn"
+
+                -- bleeding effect on apply, just visual
+                local timerName = "glee_devilbleed_" .. owner:GetCreationID()
+                local strength = 100
+                timer.Create( timerName, 0.05, 200, function()
+                    if not IsValid( owner ) then return end
+                    if not owner:Alive() then timer.Remove( timerName ) return end
+                    if math.random( 0, 100 ) > strength then return end
+                    strength = strength * 0.9
+
+                    GAMEMODE:Bleed( owner, strength )
+
+                end )
+
+                -- applying sounds
+                owner:EmitSound( "ambient/levels/labs/electric_explosion5.wav", 75, math.random( 70, 80 ) )
+                owner:EmitSound( "npc/antlion/digdown1.wav", 75, math.random( 150, 160 ) )
+
+            end
+
+            -- apply effects on spawn
+            self:HookOnce( "glee_true_PlayerSpawn", function( ply )
+                if not ply:HasStatusEffect( "infernalintervention_rawendofthedeal" ) then return end
+
+                self:ApplyEffects()
 
                 -- wake up screaming with terror!
                 GAMEMODE:GivePanic( ply, 100 )
-
-                -- spawn in with 1 health
-                ply:SetHealth( 1 )
-                ply.glee_LastHealthSetReason = "glee_infernalintervention_spawn"
 
                 -- fix health just in case
                 timer.Simple( 0, function() -- juggernaut, etc
@@ -269,40 +291,51 @@ if SERVER then
 
                     end )
                 end )
-
-                -- bleeding effect on spawn, just visual
-                local timerName = "glee_devilbleed_" .. ply:GetCreationID()
-                local strength = 100
-                timer.Create( timerName, 0.05, 200, function()
-                    if not IsValid( ply ) then return end
-                    if not ply:Alive() then timer.Remove( timerName ) return end
-                    if math.random( 0, 100 ) > strength then return end
-                    strength = strength * 0.9
-
-                    GAMEMODE:Bleed( ply, strength )
-
-                end )
-
-                -- spawning sounds
-                ply:EmitSound( "ambient/levels/labs/electric_explosion5.wav", 75, math.random( 70, 80 ) )
-                ply:EmitSound( "npc/antlion/digdown1.wav", 75, math.random( 150, 160 ) )
-
             end )
+
+            if owner:Health() > 0 then
+                self:ApplyEffects()
+
+            end
 
             -- check if player reaches full health to end the deal
             self:Timer( "check_full_health", 1, 0, function()
-                if not owner:Alive() then return end
-                if owner:Health() < owner:GetMaxHealth() + -1 then return end
+                if self.fromPermaGuiltLevel then
+                    local _, guiltData = GAMEMODE:GetPlysGuiltLevel( owner )
+                    if guiltData.alwaysTakingTheDeal then -- they are still evil enough to be infernal
+                        if not owner.glee_InfernalDealPermaGuiltHinted then
+                            if not owner:Alive() then return end
+                            if owner:Health() < owner:GetMaxHealth() + -1 then return end
 
-                owner:RemoveStatusEffect( "infernalintervention_rawendofthedeal" )
+                            owner.glee_InfernalDealPermaGuiltHinted = true
+                            huntersGlee_Announce( { owner }, 100, 10, "The deal isn't lifing...\nYou have harmed too many innocent souls.\nYou are one with the infernal powers." )
 
-                huntersGlee_Announce( { owner }, 20, 5, "Is the deal over?\nIt's like a weight has been lifted..." )
+                        end
+                        return
 
+                    end
+
+                    -- no longer held up by guiltData.alwaysTakingTheDeal
+                    owner:RemoveStatusEffect( "infernalintervention_rawendofthedeal" )
+                    huntersGlee_Announce( { owner }, 1000, 5, "Your guilt is lifing.\nIt feels... wonderful?" )
+
+                else
+                    if not owner:Alive() then return end
+                    if owner:Health() < owner:GetMaxHealth() + -1 then return end
+
+                    owner:RemoveStatusEffect( "infernalintervention_rawendofthedeal" )
+
+                    huntersGlee_Announce( { owner }, 20, 5, "Is the deal over?\nIt's like a weight has been lifted..." )
+
+                end
             end )
         end,
         function( _self, owner ) -- teardown func
             owner:DoSpeedModifier( "infernalintervention", nil )
-            GAMEMODE:FixAnglesOf( owner ) -- the TauntDance may leave them tilted, wait until teardown to fix lol
+
+            -- the TauntDance may leave them tilted
+            -- decided to leave it as part of the deal
+            GAMEMODE:FixAnglesOf( owner )
 
             local bc = owner:GetBoneCount() or 0
             for i = 0, bc - 1 do
@@ -336,10 +369,10 @@ end
 
 -- grigori stuff 
 local defaultDivisor = 10
-local minGrigoriMinutes = 5 -- 5
+local minChosenMinutes = 5 -- 5
 
 -- overcomplicated way to make grigori happen later if rounds are 'interesting' ( people earning lots of score )
--- basically, grigori cannot happen sooner than the default "patience" minGrigoriMinutes
+-- basically, grigori cannot happen sooner than the default "patience" minChosenMinutes
 -- and every score earned / divisor, adds to "patience" 
 local glee_scoretochosentimeoffset_divisor = CreateConVar(
     "huntersglee_scoretochosentime_offsetdivisor",
@@ -402,11 +435,11 @@ if SERVER then
     end )
 end
 
-local function divineChosenCanPurchase( purchaser )
+local function chosenCanPurchase( purchaser )
     local addedBySpending = GetGlobal2Int( "glee_chosen_timeoffset", 0 ) / minute
-    local minutes = minGrigoriMinutes + addedBySpending
+    local minutes = minChosenMinutes + addedBySpending
     -- always purchasable after 30 minutes
-    minutes = math.Clamp( minutes, minGrigoriMinutes, 30 )
+    minutes = math.Clamp( minutes, minChosenMinutes, 30 )
 
     local offset = minute * minutes
     local allowTime = GetGlobalInt( "huntersglee_round_begin_active" ) + offset
@@ -517,14 +550,6 @@ if CLIENT then
                     end
                 end
             end )
-
-            self:Hook( "huntersglee_cl_displayhint_predeadhints", function( me )
-                if me ~= owner then return end
-                if owner:GetNW2Int( "glee_divineintervetion_respawncount", 0 ) >= 3 then return end
-
-                return true, "Stop wasting time, RESPAWN YOURSELF.\nYou are true DIVINE INTERVENTION."
-
-            end )
         end
     )
 end
@@ -533,6 +558,77 @@ if SERVER then
         if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE or GAMEMODE:countWinnablePlayers() <= 0 then return false end
         return true
 
+    end
+
+    -- patience system - global timer, start it if we're the first chosen
+    local function beginChosenPatience()
+
+        -- increase patience on player deaths (global hook, only create once)
+        if not GAMEMODE.roundExtraData.createdThePatienceIncreaseHook then
+            GAMEMODE.roundExtraData.createdThePatienceIncreaseHook = true
+
+            hook.Add( "PlayerDeath", "hunterslgee_increasedivinepatience", function( victim, _, _ )
+                if victim:HasStatusEffect( "divine_chosen" ) then return end
+                if isStillGoing() == false then
+                    hook.Remove( "PlayerDeath", "hunterslgee_increasedivinepatience" )
+
+                else
+                    if not GAMEMODE.roundExtraData.divinePatienceEnds then
+                        hook.Remove( "PlayerDeath", "hunterslgee_increasedivinepatience" )
+                        return
+
+                    end
+                    GAMEMODE.roundExtraData.divinePatienceEnds = math.max( CurTime() + 90, GAMEMODE.roundExtraData.divinePatienceEnds + 40 )
+
+                end
+            end )
+        end
+
+        -- hard limit on how long you get to be grigori
+        if not timer.Exists( "huntersglee_divinepatiencetimer" ) then
+            timer.Create( "huntersglee_divinepatiencetimer", 1, 0, function()
+                if isStillGoing() == false then -- round ended
+                    timer.Remove( "huntersglee_divinepatiencetimer" )
+                    SetGlobal2Int( "divineChosenPatienceEnds", nil )
+
+                    return
+
+                end
+
+                -- still going
+
+                SetGlobal2Int( "divineChosenPatienceEnds", GAMEMODE.roundExtraData.divinePatienceEnds )
+                if GAMEMODE.roundExtraData.divinePatienceEnds > CurTime() + -5 then return end
+
+                GAMEMODE.roundExtraData.divineChosenSpent = GAMEMODE.roundExtraData.divineChosenSpent or {}
+
+                local failedChosen = {}
+
+                for _, potentialChosen in ipairs( player.GetAll() ) do
+                    if not potentialChosen:HasStatusEffect( "divine_chosen" ) then continue end
+
+                    GAMEMODE.roundExtraData.divineChosenSpent[potentialChosen:GetCreationID()] = true
+                    potentialChosen:RemoveStatusEffect( "divine_chosen" )
+
+                    huntersGlee_Announce( player.GetAll(), 500, 15, string.upper( potentialChosen:Nick() ) .. " has FAILED their divine task..." )
+
+                    timer.Simple( 0.1, function()
+                        if not IsValid( potentialChosen ) then return end
+                        if potentialChosen:Health() <= 1 then return end
+                        potentialChosen:SetHealth( 1 )
+                        potentialChosen.glee_LastHealthSetReason = "glee_divineintervention_patiencefail"
+                        potentialChosen:GiveStatusEffect( "infernalintervention_rawendofthedeal" )
+
+                    end )
+
+                    table.insert( failedChosen, potentialChosen )
+
+                end
+
+                hook.Run( "huntersglee_grigori_failure", failedChosen )
+
+            end )
+        end
     end
 
     GAMEMODE:RegisterStatusEffect( "divine_chosen",
@@ -582,88 +678,44 @@ if SERVER then
             end )
 
             -- dont play the sv_modelspeaking lines, termhunt_divine_chosen plays its own
-            self:Hook( "glee_block_modellines", function( ply )
-                if ply ~= owner then return end
-                return true
+            self:HookOnce( "glee_block_modellines", function( ply )
+                if ply:HasStatusEffect( "divine_chosen" ) then return true end
 
             end )
 
             -- this person is NOT a safe spawn anchor
-            self:Hook( "huntersglee_blockspawn_nearplayers", function( spawner, _ )
-                if spawner ~= owner then return end
-                return true
+            self:HookOnce( "huntersglee_blockspawn_nearplayers", function( spawner, _ )
+                if spawner:HasStatusEffect( "divine_chosen" ) then return true end
 
             end )
 
-            -- patience system - global timer, but we track if we created it
+            -- grigori cannot escape
+            self:HookOnce( "glee_blockescape_invehicle", function( escaper, _ )
+                if escaper:HasStatusEffect( "divine_chosen" ) then return true end
+
+            end )
+
             -- always reset patience for a newly chosen player, even if a previous one already expired it
             GAMEMODE.roundExtraData.divinePatienceEnds = CurTime() + 120
+            beginChosenPatience()
 
-            -- increase patience on player deaths (global hook, only create once)
-            if not GAMEMODE.roundExtraData.createdThePatienceIncreaseHook then
-                GAMEMODE.roundExtraData.createdThePatienceIncreaseHook = true
+            -- pre-resurrect warning
+            -- play sparks and broadcast panic
+            owner.glee_divineChosenPreReviveHint = function( _self, hintPos )
+                if not IsValid( owner ) then return end
+                for i = 1, 8 do
+                    local offset = VectorRand() * ( i * 2 )
+                    local Sparks = EffectData()
+                    Sparks:SetOrigin( hintPos + offset )
+                    Sparks:SetMagnitude( 2 )
+                    Sparks:SetScale( 1 )
+                    Sparks:SetRadius( 6 )
+                    util.Effect( "Sparks", Sparks )
 
-                hook.Add( "PlayerDeath", "hunterslgee_increasedivinepatience", function( victim, _, _ )
-                    if victim:HasStatusEffect( "divine_chosen" ) then return end
-                    if isStillGoing() == false then
-                        hook.Remove( "PlayerDeath", "hunterslgee_increasedivinepatience" )
+                end
+                GAMEMODE:PanicSource( hintPos, 200, 200 )
+                GAMEMODE:PanicSource( hintPos, 50, 400 )
 
-                    else
-                        if not GAMEMODE.roundExtraData.divinePatienceEnds then
-                            hook.Remove( "PlayerDeath", "hunterslgee_increasedivinepatience" )
-                            return
-
-                        end
-                        GAMEMODE.roundExtraData.divinePatienceEnds = math.max( CurTime() + 90, GAMEMODE.roundExtraData.divinePatienceEnds + 40 )
-
-                    end
-                end )
-            end
-
-            -- hard limit on how long you get to be grigori
-            if not timer.Exists( "huntersglee_divinepatiencetimer" ) then
-                timer.Create( "huntersglee_divinepatiencetimer", 1, 0, function()
-                    if isStillGoing() == false then -- round ended
-                        timer.Remove( "huntersglee_divinepatiencetimer" )
-                        SetGlobal2Int( "divineChosenPatienceEnds", nil )
-
-                        return
-
-                    end
-
-                    -- still going
-
-                    SetGlobal2Int( "divineChosenPatienceEnds", GAMEMODE.roundExtraData.divinePatienceEnds )
-                    if GAMEMODE.roundExtraData.divinePatienceEnds > CurTime() + -5 then return end
-
-                    GAMEMODE.roundExtraData.divineChosenSpent = GAMEMODE.roundExtraData.divineChosenSpent or {}
-
-                    local failedChosen = {}
-
-                    for _, potentialChosen in ipairs( player.GetAll() ) do
-                        if not potentialChosen:HasStatusEffect( "divine_chosen" ) then continue end
-
-                        GAMEMODE.roundExtraData.divineChosenSpent[potentialChosen:GetCreationID()] = true
-                        potentialChosen:RemoveStatusEffect( "divine_chosen" )
-
-                        huntersGlee_Announce( player.GetAll(), 500, 15, string.upper( potentialChosen:Nick() ) .. " has FAILED their divine task..." )
-
-                        timer.Simple( 0.1, function()
-                            if not IsValid( potentialChosen ) then return end
-                            if potentialChosen:Health() <= 1 then return end
-                            potentialChosen:SetHealth( 1 )
-                            potentialChosen.glee_LastHealthSetReason = "glee_divineintervention_patiencefail"
-                            potentialChosen:GiveStatusEffect( "infernalintervention_rawendofthedeal" )
-
-                        end )
-
-                        table.insert( failedChosen, potentialChosen )
-
-                    end
-
-                    hook.Run( "huntersglee_grigori_failure", failedChosen )
-
-                end )
             end
 
             -- resurrect function stored on self
@@ -696,23 +748,6 @@ if SERVER then
 
             -- also store on owner for external access (divine intervention check)
             owner.glee_divineChosenResurrect = self.resurrect
-            -- play sparks and broadcast panic
-            owner.glee_divineChosenPreReviveHint = function( _self, hintPos )
-                if not IsValid( owner ) then return end
-                for i = 1, 8 do
-                    local offset = VectorRand() * ( i * 2 )
-                    local Sparks = EffectData()
-                    Sparks:SetOrigin( hintPos + offset )
-                    Sparks:SetMagnitude( 2 )
-                    Sparks:SetScale( 1 )
-                    Sparks:SetRadius( 6 )
-                    util.Effect( "Sparks", Sparks )
-
-                end
-                GAMEMODE:PanicSource( hintPos, 200, 200 )
-                GAMEMODE:PanicSource( hintPos, 50, 400 )
-
-            end
 
             -- resurrect immediately
             self.resurrect()
@@ -732,6 +767,24 @@ if SERVER then
                     end
                 end )
             end
+
+            self:HookOnce( "PlayerDeath", function( died )
+                if not died:HasStatusEffect( "divine_chosen" ) then return end
+
+                died.glee_DivineChosenForcedResurrect = CurTime() + 10
+
+            end )
+
+            self:HookOnce( "PlayerDeathThink", function( dead )
+                if not dead:HasStatusEffect( "divine_chosen" ) then return end
+
+                if not dead.glee_DivineChosenForcedResurrect then return end
+                if dead.glee_DivineChosenForcedResurrect > CurTime() then return end
+
+                dead.glee_DivineChosenForcedResurrect = CurTime() + 10 -- dont spam sound
+                dead:ConCommand( "termhunt_purchase resurrection" )
+
+            end )
         end,
         function( _self, owner ) -- teardown func
             owner.glee_divineChosenResurrect = nil
@@ -744,6 +797,7 @@ if SERVER then
             timer.Simple( 0, function()
                 for _, ply in ipairs( GAMEMODE:GetAllPlayersWithStatusEffect( "divine_chosen" ) ) do
                     if ply ~= owner then return end -- someone else still has the effect
+
                 end
                 SetGlobalBool( "twochosenshavearrived", false )
                 SetGlobalBool( "chosenhasarrived", false )
@@ -798,19 +852,24 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = -201,
-        shPurchaseCheck = { shopHelpers.deadCheck, function( purchaser )
-            local isChosen = purchaser:HasStatusEffect( "divine_chosen" )
-            if isChosen then return true end
+        shPurchaseCheck = {
+            shopHelpers.deadCheck,
+            -- death cooldown
+            function( purchaser )
+                -- skip if grigori
+                local isChosen = purchaser:HasStatusEffect( "divine_chosen" )
+                if isChosen then return true end
 
-            local lastDeathTime = purchaser:GetNW2Int( "glee_divineintervetion_lastdietime", 0 )
-            local reviveTime = lastDeathTime + minTimeBetweenResurrections
-            local timeTillRevive = math.abs( reviveTime - CurTime() )
-            timeTillRevive = math.Round( timeTillRevive, 1 )
+                local lastDeathTime = purchaser:GetNW2Int( "glee_divineintervetion_lastdietime", 0 )
+                local reviveTime = lastDeathTime + minTimeBetweenResurrections
+                local timeTillRevive = math.abs( reviveTime - CurTime() )
+                timeTillRevive = math.Round( timeTillRevive, 1 )
 
-            if reviveTime > CurTime() then return false, "Death cooldown.\nPurchasable in " .. tostring( timeTillRevive ) .. " seconds." end
-            return true
+                if reviveTime > CurTime() then return false, "Death cooldown.\nPurchasable in " .. tostring( timeTillRevive ) .. " seconds." end
+                return true
 
-        end, },
+            end,
+        },
         svOnPurchaseFunc = divineIntervention,
         shCanShowInShop = shopHelpers.deadNotEscapedCheck,
     },
@@ -828,17 +887,49 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = -200,
-        shPurchaseCheck = { shopHelpers.deadCheck, function( purchaser )
-            local lastDeathTime = purchaser:GetNW2Int( "glee_divineintervetion_lastdietime", 0 )
-            local reviveTime = lastDeathTime + minTimeBetweenResurrections / 2
-            local timeTillRevive = math.abs( reviveTime - CurTime() )
-            timeTillRevive = math.Round( timeTillRevive, 1 )
+        shPurchaseCheck = {
+            shopHelpers.deadCheck,
+            function( purchaser )
+                if purchaser:HasStatusEffect( "divine_chosen" ) then return false, "You are not of infernal nature" end
+                return true, nil
 
-            if reviveTime > CurTime() then return false, "Death cooldown.\nPurchasable in " .. tostring( timeTillRevive ) .. " seconds." end
-            return true
+            end,
+            -- death cooldown
+            function( purchaser )
+                local lastDeathTime = purchaser:GetNW2Int( "glee_divineintervetion_lastdietime", 0 )
+                local reviveTime = lastDeathTime + minTimeBetweenResurrections / 2
+                local timeTillRevive = math.abs( reviveTime - CurTime() )
+                timeTillRevive = math.Round( timeTillRevive, 1 )
 
-        end, },
+                if reviveTime > CurTime() then return false, "Death cooldown.\nPurchasable in " .. tostring( timeTillRevive ) .. " seconds." end
+                return true
+
+            end,
+        },
         svOnPurchaseFunc = infernalIntervention,
+        shCanShowInShop = shopHelpers.deadNotEscapedCheck,
+    },
+    -- END THE ROUND!!!
+    ["divinechosen"] = {
+        name = "grigori",
+        desc = "grigori.",
+        shCost = 2000,
+        markup = 1,
+        markupPerPurchase = 0,
+        cooldown = 0,
+        tags = { "DEADGIFTS", "Divine", "CloseShopOnPurchase" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = 101,
+        shPurchaseCheck = {
+            shopHelpers.deadCheck,
+            chosenCanPurchase,
+        },
+        svOnPurchaseFunc = function( purchaser )
+            purchaser:GiveStatusEffect( "divine_chosen" )
+
+        end,
         shCanShowInShop = shopHelpers.deadNotEscapedCheck,
     },
     -- soft reason to get around the map, go places people have died 
@@ -871,26 +962,6 @@ local items = {
             end
         end,
         shCanShowInShop = shopHelpers.hasMultiplePeople,
-    },
-    -- END THE ROUND!!!
-    ["divinechosen"] = {
-        name = "grigori",
-        desc = "grigori.",
-        shCost = 2000,
-        markup = 1,
-        markupPerPurchase = 0,
-        cooldown = 0,
-        tags = { "DEADGIFTS", "Divine", "CloseShopOnPurchase" },
-        purchaseTimes = {
-            GAMEMODE.ROUND_ACTIVE,
-        },
-        weight = 30,
-        shPurchaseCheck = { shopHelpers.deadCheck, divineChosenCanPurchase },
-        svOnPurchaseFunc = function( purchaser )
-            purchaser:GiveStatusEffect( "divine_chosen" )
-
-        end,
-        shCanShowInShop = shopHelpers.deadNotEscapedCheck,
     },
 }
 

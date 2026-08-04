@@ -152,12 +152,10 @@ hook.Add( "Move", "glee_Rappel_Move", function( ... ) moveHook( ... ) end )
 if SERVER then
     hook.Add( "OnPlayerStartRappellingTo", "glee_Rappel_CacheOnStartRappel", function( ply )
         rappellers[ply] = true
-        rappellCount = table.Count( rappellers )
 
     end )
     hook.Add( "OnPlayerStopRappelling", "glee_Rappel_CacheOnStopRappel", function( ply )
         rappellers[ply] = nil
-        rappellCount = table.Count( rappellers )
         ply.glee_RappelWasJumping = nil
 
     end )

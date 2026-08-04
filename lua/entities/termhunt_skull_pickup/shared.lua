@@ -17,10 +17,30 @@ ENT.TriggerBoundsNormal = 12
 ENT.TriggerBoundsRagdoll = 56
 
 function ENT:SetupDataTables()
-    self:NetworkVar( "Bool", 0, "IsTerminatorSkull" )
+    self:NetworkVar( "Bool", "IsTerminatorSkull" )
+    self:NetworkVar( "Int", "Skulls" )
+
+    if SERVER then
+        self:SetSkulls( 1 )
+        self:NetworkVarNotify( "Skulls", function( self2 )
+            if not self2.HasSetup then return end -- :Initialize will take care of this for us
+            self2:ApplyScale()
+
+        end )
+    end
+end
+
+util.PrecacheModel( "models/Gibs/HGIBS.mdl" )
+
+function ENT:ApplyScale()
+    local amountAbove1 = self:GetSkulls() - 1
+    local scaleAdded = amountAbove1 / 2
+    local scale = 1 + scaleAdded
+
+    self:SetModelScale( scale )
+    self:Activate()
 
 end
-util.PrecacheModel( "models/Gibs/HGIBS.mdl" )
 
 --sandbox support
 function ENT:SpawnFunction( ply, tr, ClassName )
@@ -57,6 +77,8 @@ function ENT:Initialize()
         self.DoNotDuplicate = true
         self.nextPickup = 0
         self.nextCrushRoll = 0
+
+        self:SetName( "gleeskull" )
 
         self:SetModel( "models/Gibs/HGIBS.mdl" )
 
@@ -102,6 +124,13 @@ function ENT:Initialize()
         self:NextThink( CurTime() + 5 )
 
     end
+
+    self.HasSetup = true
+
+    if self:GetSkulls() ~= 1 then
+        self:ApplyScale()
+
+    end
 end
 
 function ENT:Think()
@@ -125,9 +154,19 @@ function ENT:CanHintPly( ply )
 
 end
 
+function ENT:GetSoundPitchDiv()
+    local myWorth = self:GetSkulls()
+    return 1 + ( ( myWorth - 1 ) / 2 )
+
+end
+
 function ENT:GetScore()
-    if self:GetIsTerminatorSkull() then return 2 end
-    return 1
+    local score = self:GetSkulls()
+    if self:GetIsTerminatorSkull() then
+        score = score * 2
+
+    end
+    return score
 
 end
 
@@ -144,15 +183,18 @@ function ENT:DoScore( reciever )
     if self.skullUsed then return end
     self.skullUsed = true
 
-    reciever:EmitSound( "npc/antlion/shell_impact4.wav", 72, 80 )
+    local worth = self:GetSkulls()
+    local pitDiv = self:GetSoundPitchDiv()
+
+    reciever:EmitSound( "npc/antlion/shell_impact4.wav", 72 + worth, 80 / pitDiv )
 
     if self:GetIsTerminatorSkull() then
-        reciever:EmitSound( "physics/metal/metal_canister_impact_hard2.wav", 72, math.random( 110, 120 ) )
-        util.ScreenShake( self:GetPos(), 5, 20, 0.75, 500 )
+        reciever:EmitSound( "physics/metal/metal_canister_impact_hard2.wav", 72 + worth, math.random( 110, 120 ) / pitDiv )
+        util.ScreenShake( self:GetPos(), 5 * worth, 20, 0.75, 500 )
 
     else
-        reciever:EmitSound( "physics/cardboard/cardboard_cup_impact_hard2.wav", 72, math.random( 75, 85 ) )
-        util.ScreenShake( self:GetPos(), 1, 20, 0.5, 500 )
+        reciever:EmitSound( "physics/cardboard/cardboard_cup_impact_hard2.wav", 72 + worth, math.random( 75, 85 ) / pitDiv )
+        util.ScreenShake( self:GetPos(), 1 * worth, 20, 0.5, 500 )
 
     end
 
@@ -261,12 +303,13 @@ function ENT:Crumble()
         self:Decapitate()
 
     end
-    self:EmitSound( "hunters_glee/bones/skullcrush.wav", 76, 80 )
 
-    util.ScreenShake( self:GetPos(), 0.2, 20, 0.2, 600, true )
+    self:EmitSound( "hunters_glee/bones/skullcrush.wav", 76 + self:GetSkulls(), 80 / self:GetSoundPitchDiv() )
+
+    util.ScreenShake( self:GetPos(), 0.2 * self:GetSkulls(), 20, 0.2, 600, true )
 
     local crush = EffectData()
-    crush:SetScale( 0.25 )
+    crush:SetScale( 0.25 * self:GetSkulls() )
     crush:SetOrigin( self:WorldSpaceCenter() )
     util.Effect( "eff_huntersglee_skullcrush", crush )
 
@@ -362,8 +405,17 @@ function ENT:PhysicsCollide( colData, _ )
 
     end
 
-    self:EmitSound( sndPath, 65, 150 + -volume )
+    local pit = 150 + -volume
+    pit = pit / self:GetSoundPitchDiv()
 
+    local worth = self:GetScore()
+
+    self:EmitSound( sndPath, 65 + worth, pit )
+
+    if worth >= 2 then
+        util.ScreenShake( self:GetPos(), 1 * worth, 20, 0.5, 500 )
+
+    end
 end
 
 local angle_zero = Angle( 0, 0, 0 )

@@ -2,6 +2,7 @@ function EFFECT:Init( data )
     local vOffset = data:GetOrigin()
     self.Position = vOffset
     self.Scayul = data:GetScale()
+    local scale = self.Scayul or 1
     local emitter = ParticleEmitter( data:GetOrigin() )
 
     for _ = 1, 10 do
@@ -9,14 +10,14 @@ function EFFECT:Init( data )
         local vel = VectorRand()
         vel.z = 0
         vel:Normalize()
-        vel = vel * math.Rand( 5, 25 )
+        vel = vel * math.Rand( 5, 25 ) * scale
         rollparticle:SetVelocity( vel )
         rollparticle:SetDieTime( math.Rand( 4, 8 ) )
         rollparticle:SetColor( 250, 255, 220 )
         rollparticle:SetStartAlpha( 50 )
         rollparticle:SetEndAlpha( 0 )
-        rollparticle:SetStartSize( 8 )
-        rollparticle:SetEndSize( 30 )
+        rollparticle:SetStartSize( 8 * scale )
+        rollparticle:SetEndSize( 30 * scale )
         rollparticle:SetRoll( math.Rand( -360, 360 ) )
         rollparticle:SetRollDelta( math.Rand( -1, 1 ) * 2 )
         rollparticle:SetAirResistance( 10 )
@@ -26,6 +27,7 @@ function EFFECT:Init( data )
     end
 
     emitter:Finish()
+
 end
 
 function EFFECT:Render()

@@ -21,9 +21,9 @@ function terminator_Extras.GleeFancySplode( pos, damage, radius, attacker, infli
     sound.Play( explSound, pos, 88, math.random( 95, 105 ) )
 
     local splode = EffectData()
-    splode:SetOrigin( pos )
-    splode:SetMagnitude( damage )
-    splode:SetScale( radius )
+        splode:SetOrigin( pos )
+        splode:SetMagnitude( damage )
+        splode:SetScale( radius )
     util.Effect( "Explosion", splode, nil, true )
 
 end
@@ -68,19 +68,29 @@ end
 
 -- redirect uses to the parent
 hook.Add( "PlayerUse", "glee_parentedDetailUseRedirect", function( ply, used )
-    local parent = used.glee_gleeDetailParent
+    if not IsValid( used ) then return end
+
+    local detailParent = used.glee_gleeDetailParent
+    if not IsValid( detailParent ) then return end
+
+    local parent = used:GetParent()
     if not IsValid( parent ) then return end
 
-    parent:Use( ply, parent )
+    detailParent:Use( ply, detailParent )
 
 end )
 
 hook.Add( "glee_presser_redirecttarget", "glee_parentedDetailUseRedirect", function( used )
-    local parent = used.glee_gleeDetailParent
-    if not parent then return end
+    if not IsValid( used ) then return end
+
+    local detailParent = used.glee_gleeDetailParent
+    if not detailParent then return end
+    if not IsValid( detailParent ) then return end
+
+    local parent = used:GetParent()
     if not IsValid( parent ) then return end
 
-    return parent
+    return detailParent
 
 end )
 
@@ -88,6 +98,7 @@ function terminator_Extras.ParentedDetailFallOff( parent, detail )
     if not IsValid( parent ) or not IsValid( detail ) then return end
     local thePos = detail:GetPos()
     detail:SetParent()
+    parent:RemoveCallOnRemove( "glee_detailFallOff_" .. detail:GetCreationID() )
     detail:SetPos( thePos )
     SafeRemoveEntityDelayed( detail, 35 )
     terminator_Extras.SmartSleepEntity( detail, 5 )

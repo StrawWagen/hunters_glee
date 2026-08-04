@@ -1,7 +1,7 @@
 
 -- keep track of who's pissed off who this round
 
-util.AddNetworkString( "glee_persistguiltincreased" )
+util.AddNetworkString( "glee_persistguiltchanged" )
 util.AddNetworkString( "glee_dealtpvpdamage" )
 util.AddNetworkString( "glee_homicidallygleeful" )
 
@@ -90,7 +90,7 @@ function GM:IsInnocent( ply )
 
     local plysId = ply:SteamID()
 
-    -- have they been placing lots of beartraps?
+    -- have they been placing lots of evil items while dead?
     local totalEvilness = self.roundExtraData.generalMischievousness[plysId] or 0
 
     -- is this person a persistently evil presence?
@@ -207,15 +207,22 @@ function GM:OnKilledTrulyInnocentSoul( attacker, died )
     end )
 end
 
-hook.Add( "PlayerDeath", "glee_storeslights", function( died, _, attacker )
+hook.Add( "PlayerDeath", "glee_storeslights", function( died, inflictor, attacker )
     if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
+
+    if not IsValid( attacker ) then return end
+    if attacker == died then return end
+
     if not attacker:IsPlayer() then return end
+
+    -- this inflictor is guilt-free
+    if inflictor.glee_GuiltFreeInflictor then return end
 
     -- the chosen doesn't get guilt
     if attacker:HasStatusEffect( "divine_chosen" ) then return end
 
-    if not IsValid( attacker ) then return end
-    if attacker == died then return end
+    -- this player was guilty enough to trigger homicidal glee
+    if died.glee_guiltyHomicidalGlee then return end
 
     local slightAmnt, reason
 
@@ -286,7 +293,13 @@ hook.Add( "EntityTakeDamage", "huntersglee_makepvpreallybad", function( dmgTarg,
     else
         -- for items that should always do full damage
         -- eg, items placed by dead players
-        if inflictor and inflictor.glee_AlwaysFullPVPDamage then
+        if inflictor and inflictor.glee_GuiltFreeInflictor then
+            return
+
+        end
+
+        -- they were guilty enough to trigger homicidal glee, no protect for this guy
+        if dmgTarg.glee_guiltyHomicidalGlee then
             return
 
         end
@@ -304,7 +317,7 @@ hook.Add( "EntityTakeDamage", "huntersglee_makepvpreallybad", function( dmgTarg,
             dmg:SetDamageForce( dmg:GetDamageForce() * 12 )
             dmgTarg:EmitSound( "NPC_CombineBall.KillImpact" )
 
-            damagedplayercount = inflictor.huntersglee_ball_damagedplayercount or 0
+            local damagedplayercount = inflictor.huntersglee_ball_damagedplayercount or 0
             inflictor.huntersglee_ball_damagedplayercount = damagedplayercount + 1
 
             if inflictor.huntersglee_ball_damagedplayercount >= 6 then
@@ -358,12 +371,17 @@ function GM:IncrementPersistentGuilt( ply, add )
     local daysToAdd = dayInSeconds * ( add or 1 )
     local currentTime = os.time()
     local oldPersistentGuilt = ply:GetPData( "glee_persistentguilt", currentTime )
+    if oldPersistentGuilt < currentTime then return end
+
     local newPersistentGuilt = math.max( oldPersistentGuilt, currentTime ) + daysToAdd
     ply:SetPData( "glee_persistentguilt", newPersistentGuilt )
 
+    local inDaysOld = getGuiltInDays( oldPersistentGuilt )
     local inDays = getGuiltInDays( newPersistentGuilt )
+    ply:SetNWFloat( "glee_persistentguilt_days", inDays )
 
-    net.Start( "glee_persistguiltincreased" )
+    net.Start( "glee_persistguiltchanged" )
+        net.WriteFloat( inDaysOld )
         net.WriteFloat( inDays )
     net.Send( ply )
 
@@ -381,12 +399,12 @@ end )
 
 local developerVar = GetConVar( "developer" )
 
-concommand.Add( "glee_resetguilt", function( caller, _, args )
+concommand.Add( "glee_test_guilt_reset", function( caller, _, args )
     if IsValid( caller ) and not caller:IsAdmin() then return end
 
     local steamId = args[1]
     if not steamId then
-        print( "Usage: glee_resetguilt <steamid>" )
+        permaPrint( "Usage: glee_test_guilt_reset <steamid>" )
         return
 
     end
@@ -396,12 +414,36 @@ concommand.Add( "glee_resetguilt", function( caller, _, args )
     local ply = player.GetBySteamID( steamId )
     if IsValid( ply ) then
         ply:SetNWFloat( "glee_persistentguilt_days", 0 )
-        print( "GLEE: Reset guilt for " .. ply:Nick() .. " (" .. steamId .. ")" )
+        permaPrint( "GLEE: Reset guilt for " .. ply:Nick() .. " (" .. steamId .. ")" )
 
     else
-        print( "GLEE: Reset guilt for offline player " .. steamId )
+        permaPrint( "GLEE: Reset guilt for offline player " .. steamId )
 
     end
+end )
+
+concommand.Add( "glee_test_guilt_adddays", function( caller, _, args )
+    if IsValid( caller ) and not caller:IsAdmin() then return end
+
+    local steamId = args[1]
+    local days = tonumber( args[2] )
+    if not steamId or not days then
+        permaPrint( "Usage: glee_test_guilt_adddays <steamid> <days>" )
+        return
+
+    end
+
+    -- IncrementPersistentGuilt works off a live player ( GetPData/SetPData/net ), so they must be online
+    local ply = player.GetBySteamID( steamId )
+    if not IsValid( ply ) then
+        permaPrint( "GLEE: glee_test_guilt_adddays needs " .. steamId .. " to be online." )
+        return
+
+    end
+
+    GAMEMODE:IncrementPersistentGuilt( ply, days )
+    permaPrint( "GLEE: Added " .. days .. " guilt days to " .. ply:Nick() .. " (" .. steamId .. "), now at " .. GAMEMODE:GetStoredPersistentGuilt( ply ) .. " days." )
+
 end )
 
 hook.Add( "glee_onkilledtrulyinnocentsoul", "glee_incrementpersistentguilt", function( attacker, _died )
@@ -409,6 +451,12 @@ hook.Add( "glee_onkilledtrulyinnocentsoul", "glee_incrementpersistentguilt", fun
     -- developer 1 enables it for testing
     if not game.IsDedicated() and not developerVar:GetBool() then return end
 
-    GAMEMODE:IncrementPersistentGuilt( attacker )
+    local daysToAdd = 0.5
+    if GAMEMODE:IsFirstTimePlayer( attacker ) then
+        daysToAdd = 10
+
+    end
+
+    GAMEMODE:IncrementPersistentGuilt( attacker, daysToAdd )
 
 end )

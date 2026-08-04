@@ -25,19 +25,10 @@ if SERVER then
 end
 
 if CLIENT then
-    local nextNoMoreInversion = 0
-    net.Receive( "glee_cleartargetedplacable", function()
-        if nextNoMoreInversion > CurTime() then return end
-        nextNoMoreInversion = CurTime() + 0.1
+    function ENT:OnDetachedFromOwner( owner )
+        owner.placableTargeted = nil
 
-        local toWipe = net.ReadEntity()
-
-        if toWipe ~= LocalPlayer().ghostEnt then return end
-
-        LocalPlayer().placableTargeted = nil
-        LocalPlayer().ghostEnt = nil
-
-    end )
+    end
 
     function ENT:DoHudStuff()
         local screenMiddleW = ScrW() / 2
@@ -418,10 +409,8 @@ function ENT:Place()
     self:TellPlyToClearHighlighter()
 
     self.player.placableTargeted = nil
-    self.player.ghostEnt = nil
 
-    self.player = nil
-    self:SetOwner( NULL )
+    self:DetachFromOwner()
 
     GAMEMODE:setTemporaryTrueBool( "termhunt_player_swapper", interval + steps )
 

@@ -140,14 +140,22 @@ local function unchainSleeper( sleeper ) -- wakes stuff up
 
     sleeper.glee_nextsmartsleepcheck = CurTime() + sleeper.glee_smartsleepinterval * 2
     obj:EnableMotion( true )
+
     --debugoverlay.Cross( sleeper:GetPos(), 20, 5, color_white, true )
 
 end
 
 local function unchainSleeperLazy( sleeper )
+    if not IsValid( sleeper ) then return end
+    if not sleeper.glee_issmartsleeping then return end
     local lastSimTime = physenv.GetLastSimulationTime() * 1000
     if lastSimTime > math.Rand( 1, 2 ) then return end
     unchainSleeper( sleeper )
+
+end
+
+function terminator_Extras.SmartSleepWakeEntity( sleeper )
+    unchainSleeperLazy( sleeper )
 
 end
 
@@ -281,7 +289,7 @@ local function setupOnCreateHook()
 end
 
 hook.Add( "InitPostEntity", "glee_setupsmartsleeping", function()
-    if gmod.GetGamemode().ISHUNTERSGLEE then
+    if gmod.GetGamemode().IsReallyHuntersGlee then
         setupOnCreateHook()
 
     end
@@ -290,7 +298,7 @@ end )
 local theGamemode = gmod.GetGamemode()
 
 -- autorefresh
-if theGamemode and theGamemode.ISHUNTERSGLEE then
+if theGamemode and theGamemode.IsReallyHuntersGlee then
     setupOnCreateHook()
 
 end

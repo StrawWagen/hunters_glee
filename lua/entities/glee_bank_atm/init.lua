@@ -7,40 +7,15 @@ util.AddNetworkString( "glee_atm_deposit" )
 util.AddNetworkString( "glee_atm_withdraw" )
 util.AddNetworkString( "glee_atm_claimownercut" )
 
-ENT.Model          = "models/glee/atm/atm01.mdl"
-ENT.BurrowDuration = 3
-ENT.BurrowDepth    = 1000
-ENT.EjectDelay = 0.25
+ENT.Model = "models/glee/atm/atm01.mdl"
 ENT.ATMHealth = 5000
-
-ENT.Shells = {
-    {
-        model = "models/hunter/tubes/tube1x1x2c.mdl",
-        offset = Vector( 0.2, -0.3, -0.3 ),
-        angle = Angle( 0, -90, 0 ),
-        mat = "phoenix_storms/cube"
-
-    },
-    {
-        model = "models/hunter/tubes/tube1x1x2c.mdl",
-        offset = Vector( 0.2, -0.3, -0.3 ),
-        angle = Angle( 0,  90, 0 ),
-        mat = "phoenix_storms/cube"
-    },
-    {
-        model = "models/hunter/misc/cone1x1.mdl",
-        offset = Vector( 0.1, -0.3, 94.6 ),
-        angle = Angle( 0, -90, 0 ),
-        mat = "models/glee/atm/atm_drillbit"
-    },
-}
 
 ENT.ShellImpulseForce = 500000
 ENT.LightOffset = Vector( 0, 0, 75 )
 
 function ENT:Initialize()
     self:SetNW2Bool( "glee_IsSpectatable", true )
-    self.glee_PrettyName = "The Bank ATM" -- will only ever be 1 of these
+    self.glee_PrettyName = "The Bank ATM" -- will only ever be 1 of these, hence THE
 
     self:SetModel( self.Model )
     self:SetState( "usable" )
@@ -82,7 +57,7 @@ net.Receive( "glee_atm_deposit", function( _, ply )
 
     if game.IsDedicated() then -- 'log' shop item purchases 
         local nameAndId = ply:GetName() .. "[" .. ply:SteamID() .. "]"
-        print( nameAndId .. " ATM Deposited: " .. message )
+        permaPrint( nameAndId .. " ATM Deposited: " .. message )
 
     end
 end )
@@ -103,7 +78,7 @@ net.Receive( "glee_atm_withdraw", function( _, ply )
 
     if game.IsDedicated() then -- 'log' shop item purchases 
         local nameAndId = ply:GetName() .. "[" .. ply:SteamID() .. "]"
-        print( nameAndId .. " ATM Withdrew: " .. message )
+        permaPrint( nameAndId .. " ATM Withdrew: " .. message )
 
     end
 end )
@@ -119,7 +94,7 @@ net.Receive( "glee_atm_claimownercut", function( _, ply )
 
     if game.IsDedicated() then -- 'log' shop item purchases 
         local nameAndId = ply:GetName() .. "[" .. ply:SteamID() .. "]"
-        print( nameAndId .. " ATM Owner's Cut: " .. message )
+        permaPrint( nameAndId .. " ATM Owner's Cut: " .. message )
 
     end
 end )
@@ -131,36 +106,20 @@ function ENT:SpawnFunction( ply, tr, ClassName )
     local spawnPos = tr.HitPos + tr.HitNormal
     spawnPos.z = spawnPos.z - 2 -- bit into the ground
 
+    local method = terminator_Extras.glee_ATMArrivalAt( spawnPos )
+    if not method then return end
+
     local ent = ents.Create( ClassName )
     if not IsValid( ent ) then return end
 
     local aimDir = -ply:GetAimVector()
     aimDir.z = 0
-    ent:SetPos( spawnPos + Vector( 0, 0, -ent.BurrowDepth ) )
+    ent:SetPos( spawnPos )
     ent:SetAngles( aimDir:Angle() )
     ent:Spawn()
-    ent:StartBurrowingToPos( spawnPos, ent.BurrowDuration, ply )
+    ent:StartArrival( method, spawnPos, ply )
 
     return ent
-
-end
-
-function ENT:StartBurrowingToPos( targetPos, duration, ownerPly )
-    self.BurrowStartPos  = self:GetPos()
-    self.BurrowTargetPos = targetPos
-    self.BurrowStartTime = CurTime()
-    self.BurrowDuration  = duration or self.BurrowDuration
-    self.NextBurrowSound = CurTime() + 0.5
-    self:SetState( "burrowing" )
-
-    self.EjectTime = CurTime() + self.BurrowDuration + self.EjectDelay
-
-    if IsValid( ownerPly ) then
-        self:SetAtmOwner( ownerPly )
-
-    end
-
-    self:SpawnShells()
 
 end
 
@@ -181,19 +140,24 @@ function ENT:Use( activator )
 
 end
 
-function ENT:SpawnShells()
+function ENT:SpawnShells( method )
     self.ShellEnts = {}
+    if not method.shells then return end
 
-    for _, shellDef in ipairs( self.Shells ) do
+    for _, shellDef in ipairs( method.shells ) do
         local shellEnt = terminator_Extras.AttachParentedDetail( self, shellDef.model, shellDef.offset, shellDef.angle )
         if not IsValid( shellEnt ) then continue end
 
         self.ShellEnts[#self.ShellEnts + 1] = shellEnt
+        shellEnt.glee_ejectSounds = shellDef.ejectSounds
+        shellEnt.glee_shellName = shellDef.name
 
         if shellDef.mat then
             shellEnt:SetMaterial( shellDef.mat )
 
         end
+
+        self["glee_atmpart_" .. shellDef.name] = shellEnt
 
         local phys = shellEnt:GetPhysicsObject()
         if not IsValid( phys ) then continue end
@@ -220,41 +184,198 @@ function ENT:EjectEntity( ejecting, forceMul, forceOrigin )
 
 end
 
-function ENT:EjectShells()
+local breachOffset = Vector( 0, 0, 5 )
+
+-- Ejects the shells whose name contains nameFilter, or all of them when it is nil.
+-- Ejected shells leave the list, so a shell can only ever go once.
+function ENT:EjectShells( nameFilter )
     if not self.ShellEnts then return end
 
     local atmPos = self:GetPos()
+    local forceOrigin = atmPos + forceUpOffset
 
-    terminator_Extras.GleeFancySplode( self:WorldSpaceCenter(), 0, 200, game.GetWorld(), game.GetWorld(), false )
+    local stillAttached = {}
 
+    for _, shellEnt in ipairs( self.ShellEnts ) do
+        if not IsValid( shellEnt ) then continue end
+
+        -- plain find, so a filter is read as the literal text it looks like
+        if nameFilter and not string.find( shellEnt.glee_shellName, nameFilter, 1, true ) then
+            stillAttached[#stillAttached + 1] = shellEnt
+            continue
+
+        end
+
+        self:EjectEntity( shellEnt, self.ShellImpulseForce, forceOrigin )
+
+        local ejectSounds = shellEnt.glee_ejectSounds
+        if not ejectSounds then continue end
+
+        for _, ejectSound in ipairs( ejectSounds ) do
+            shellEnt:EmitSound( ejectSound.path, ejectSound.level, math.random( ejectSound.pitch[1], ejectSound.pitch[2] ) )
+
+        end
+    end
+
+    if #stillAttached <= 0 then
+        self.ShellEnts = nil
+        return
+
+    end
+
+    self.ShellEnts = stillAttached
+
+end
+
+function ENT:AttachDecorations()
     terminator_Extras.AttachParentedDetail( self, "models/props_wasteland/speakercluster01a.mdl", Vector( -9.4, 1.3, 69 ), Angle( -46, 149.2, 110.7 ) )
     terminator_Extras.AttachParentedDetail( self, "models/props_wasteland/speakercluster01a.mdl", Vector( -10.8, 7.5, 16.8 ), Angle( 15.7, 138.7, -139.6 ) )
     terminator_Extras.AttachParentedDetail( self, "models/props_c17/light_cagelight01_on.mdl", Vector( -11.3, 11.3, 76.7 ), Angle( 0, 90.3, -90 ) )
     terminator_Extras.AttachParentedDetail( self, "models/props_c17/light_cagelight01_on.mdl", Vector( -11.2, -11.5, 76 ), Angle( 0, -89.5, 90 ) )
     terminator_Extras.AttachParentedDetail( self, "models/props_rooftop/satellitedish02.mdl", Vector( -17.6, 18.7, 78.9 ), Angle( -12.1, 147, 2.4 ) )
 
-    self:EmitSound( "doors/vent_open1.wav", 80, 120, 1, CHAN_STATIC )
-
-    local forceOrigin = atmPos + forceUpOffset
-
-    for _, shellEnt in ipairs( self.ShellEnts ) do
-        if not IsValid( shellEnt ) then continue end
-
-        self:EjectEntity( shellEnt, self.ShellImpulseForce, forceOrigin )
-
-    end
-
-    self:SetState( "usable" )
-
-    local brightness = 2
-    -- bright red light
     local dlight = ents.Create( "light_dynamic" )
-    dlight:SetKeyValue( "_light", "255 25 25 200" )
+    dlight:SetKeyValue( "_light", "255 25 25 200" ) -- bright red
     dlight:SetKeyValue( "distance", "450" )
-    dlight:SetKeyValue( "brightness", tostring( brightness ) )
+    dlight:SetKeyValue( "brightness", "2" )
     dlight:SetPos( self:LocalToWorld( self.LightOffset ) )
     dlight:SetParent( self )
     dlight:Spawn()
+
+end
+
+local collideLength = 50
+local collideSize = 17
+local collideMaxs = Vector( collideSize, collideSize, collideLength )
+local collideMins = -collideMaxs
+
+local crushLookahead = 100
+local crushDamage = 150
+local crushForce = 10000
+
+-- Sweeps the whole distance travelled, not a window ahead, so nothing is tunnelled
+-- through at arrival speeds.
+function ENT:CrushBetween( fromPos, toPos )
+    local travel = toPos - fromPos
+    if travel:IsZero() then return end
+
+    local dir = travel:GetNormalized()
+
+    local inTheWay = ents.FindAlongRay( fromPos, toPos + dir * crushLookahead, collideMins, collideMaxs )
+    for _, ent in ipairs( inTheWay ) do
+        if not IsValid( ent ) then continue end
+        if ent == self then continue end
+
+        local entsParent = ent:GetParent()
+        if IsValid( entsParent ) and entsParent == self then continue end
+
+        local entsObj = ent:GetPhysicsObject()
+        if not IsValid( entsObj ) then continue end
+
+        entsObj:ApplyForceCenter( dir * crushForce )
+
+        local dmg = DamageInfo()
+        dmg:SetDamage( crushDamage )
+        dmg:SetDamageType( DMG_CRUSH )
+        dmg:SetAttacker( self )
+        dmg:SetInflictor( self )
+        dmg:SetDamagePosition( ent:WorldSpaceCenter() )
+        dmg:SetDamageForce( dir * crushForce )
+        ent:TakeDamageInfo( dmg )
+
+    end
+end
+
+function ENT:StartArrival( methodName, targetPos, ownerPly )
+    local method = self.ArrivalMethods[methodName]
+    if not method then return end
+
+    self:SetArrivalMethod( methodName )
+    self:SetState( "arriving" )
+
+    self.ArrivalTargetPos = targetPos
+    self.ArrivalStartTime = CurTime()
+    self.ArrivalEjectTime = nil
+
+    local startPos = method.StartPos( self, targetPos )
+    self.ArrivalStartPos = startPos
+    self.LastArrivalPos  = startPos
+    self:SetPos( startPos )
+
+    if IsValid( ownerPly ) then
+        self:SetAtmOwner( ownerPly )
+
+    end
+
+    if method.hidden then
+        self:SetNoDraw( true )
+        self:SetNotSolid( true )
+
+    end
+
+    self:SpawnShells( method )
+
+    if method.OnStart then
+        method.OnStart( self )
+
+    end
+
+    return true
+
+end
+
+function ENT:UpdateArrival()
+    if self:GetState() ~= "arriving" then return end
+
+    local method = self.ArrivalMethods[self:GetArrivalMethod()]
+    if not method then return end
+
+    -- unset until we touch down, so it doubles as the flag for "still travelling"
+    if not self.ArrivalEjectTime then
+        local newPos, arrived = method.Move( self )
+
+        self:CrushBetween( self.LastArrivalPos, newPos )
+        self:SetPos( newPos )
+        self.LastArrivalPos = newPos
+
+        if not arrived then return end
+
+        self.ArrivalEjectTime = CurTime() + method.ejectDelay
+
+        if method.OnTouchdown then
+            method.OnTouchdown( self )
+
+        end
+    end
+
+    if CurTime() < self.ArrivalEjectTime then return end
+
+    -- corrects drift the travel maths accumulated, but a method that let go into
+    -- physics has landed somewhere real and must not be dragged back to the pad
+    if not method.physicsLanding then
+        self:SetPos( self.ArrivalTargetPos )
+
+    end
+
+    self:FinishArrival( method )
+
+end
+
+function ENT:FinishArrival( method )
+    self:SetNoDraw( false )
+    self:SetNotSolid( false )
+
+    self:AttachDecorations()
+    self:EjectShells()
+
+    terminator_Extras.GleeFancySplode( self:WorldSpaceCenter(), 0, 200, game.GetWorld(), game.GetWorld(), false )
+
+    self:EmitSound( "doors/vent_open1.wav", 80, 120, 1, CHAN_STATIC )
+
+    terminator_Extras.DoPFXAtPos( "glee_atm_burrow_breach", self:GetPos() + breachOffset )
+    self:EmitSound( "ambient/levels/outland/ol09_biggundestroy.wav", 88, math.random( 130, 140 ) )
+
+    self:SetState( "usable" )
 
     timer.Simple( 0.1, function()
         if not IsValid( self ) then return end
@@ -264,74 +385,288 @@ function ENT:EjectShells()
 
     end )
 
-    hook.Run( "glee_atm_finishedBurrowing", self )
-
-end
-
-local collideLength = 50
-local collideSize = 17
-local collideMaxs = Vector( collideSize, collideSize, collideLength )
-local collideMins = -collideMaxs
-
-function ENT:UpdateBurrow()
-    if self:GetState() ~= "burrowing" then return end
-
-    local cur = CurTime()
-
-    local elapsed  = cur - self.BurrowStartTime
-    local progress = math.min( elapsed / self.BurrowDuration, 1.0 )
-
-    local lerpedPos = LerpVector( progress, self.BurrowStartPos, self.BurrowTargetPos )
-    self:SetPos( lerpedPos )
-
-    local dir = terminator_Extras.dirToPos( lerpedPos, self.BurrowTargetPos )
-    local stuffAboveUs = ents.FindAlongRay( lerpedPos, lerpedPos + dir * 100, collideMins, collideMaxs )
-    if #stuffAboveUs > 0 then
-        for _, ent in ipairs( stuffAboveUs ) do
-            if not IsValid( ent ) then continue end
-            if ent == self then continue end
-
-            local entsParent = ent:GetParent()
-            if IsValid( entsParent ) and entsParent == self then continue end
-
-            local entsObj = ent:GetPhysicsObject()
-            if not IsValid( entsObj ) then continue end
-
-            entsObj:ApplyForceCenter( dir * 10000 )
-
-            local damage = DamageInfo()
-            damage:SetDamage( 150 )
-            damage:SetDamageType( DMG_CRUSH )
-            damage:SetAttacker( self )
-            damage:SetInflictor( self )
-            damage:SetDamagePosition( ent:WorldSpaceCenter() )
-            damage:SetDamageForce( dir * 10000 )
-            ent:TakeDamageInfo( damage )
-
-        end
-    end
-
-    if cur > self.NextBurrowSound then
-        self.NextBurrowSound = cur + math.Rand( 0.4, 0.8 )
-        sound.Play( "npc/antlion/digdown1.wav", self.BurrowTargetPos + Vector( 0, 0, 25 ), 75, math.random( 70, 90 ), progress )
+    if method.OnArrive then
+        method.OnArrive( self )
 
     end
 
-    if progress < 1 then return end
-
-    if cur < self.EjectTime then return end
-
-    self:SetPos( self.BurrowTargetPos )
-    self:EjectShells()
+    hook.Run( "glee_atm_arrived", self, method.name )
+    hook.Run( "glee_atm_finishedBurrowing", self ) -- deprecated, superseded by glee_atm_arrived
 
 end
 
 function ENT:Think()
-    self:UpdateBurrow()
+    -- scheduled before the work, because arriving ends in hooks that may remove us
     self:NextThink( CurTime() )
+
+    self:UpdateArrival()
+
     return true
 
 end
+
+
+--[[---------------------------------------------------------
+    Arrival methods, the half that moves the ATM
+
+    shared.lua declares and prices these. Move is called every tick and answers where
+    the ATM should be now, and whether it has landed; how it gets there is entirely
+    the method's business.
+-----------------------------------------------------------]]
+
+local shells = {
+    {
+        model = "models/hunter/tubes/tube1x1x2c.mdl",
+        offset = Vector( 0.2, -0.3, -0.3 ),
+        angle = Angle( 0, -90, 0 ),
+        mat = "phoenix_storms/cube",
+        name = "atmShell1",
+        ejectSounds = {
+            { path = "physics/metal/metal_large_debris1.wav", level = 75, pitch = { 120, 130 } },
+        },
+
+    },
+    {
+        model = "models/hunter/tubes/tube1x1x2c.mdl",
+        offset = Vector( 0.2, -0.3, -0.3 ),
+        angle = Angle( 0,  90, 0 ),
+        mat = "phoenix_storms/cube",
+        name = "atmShell2",
+        ejectSounds = {
+            { path = "physics/metal/metal_large_debris2.wav", level = 75, pitch = { 120, 140 } },
+        },
+    },
+}
+local arrivalMethods = ENT.ArrivalMethods
+local burrow   = arrivalMethods.burrow
+local rocket   = arrivalMethods.rocket
+--local teleport = arrivalMethods.teleport
+
+burrow.shells = terminator_Extras.tableCopySimple( shells )
+burrow.shells[#burrow.shells + 1] = {
+    model = "models/hunter/misc/cone1x1.mdl",
+    offset = Vector( 0.1, -0.3, 94.6 ),
+    angle = Angle( 0, -90, 0 ),
+    mat = "models/glee/atm/atm_drillbit",
+    name = "atmBit",
+}
+
+rocket.shells = terminator_Extras.tableCopySimple( shells )
+rocket.shells[#rocket.shells + 1] = {
+    model = "models/hunter/misc/cone1x05.mdl",
+    offset = Vector( 0.1, -0.3, 94.6 ),
+    angle = Angle( 0, -90, 0 ),
+    mat = "phoenix_storms/cube",
+    name = "atmBit",
+}
+rocket.shells[#rocket.shells + 1] = {
+    model = "models/xqm/afterburner1medium.mdl",
+    offset = Vector( 1.7, 0.9, -13 ),
+    angle = Angle( 0, -180, -180 ),
+    name = "atmRocket",
+}
+--teleport.shells = shells
+
+local burrowSoundOffset = Vector( 0, 0, 25 )
+local burrowPebbleOffset = Vector( 0, 0, 1 )
+
+function burrow.StartPos( _self, targetPos )
+    return targetPos - Vector( 0, 0, burrow.depth )
+
+end
+
+function burrow.OnStart( self )
+    self.NextBurrowSound = CurTime() + 0.5
+
+    terminator_Extras.DoPFXAtPos( "glee_atm_burrow_pebbles", self.ArrivalTargetPos + burrowPebbleOffset )
+
+end
+
+function burrow.Move( self )
+    local cur = CurTime()
+    local progress = math.min( ( cur - self.ArrivalStartTime ) / burrow.duration, 1.0 )
+
+    if cur > self.NextBurrowSound then
+        self.NextBurrowSound = cur + math.Rand( 0.4, 0.8 )
+        sound.Play( "npc/antlion/digdown1.wav", self.ArrivalTargetPos + burrowSoundOffset, 75, math.random( 70, 90 ), progress )
+
+    end
+
+    if progress > 0.85 and not self.PlayedPreEmergeSound then
+        self.PlayedPreEmergeSound = true
+        sound.Play( "ambient/levels/dog_v_strider/dvs_dogslamstrider_00_30_07.wav", self.ArrivalTargetPos + burrowSoundOffset, 88, math.random( 90, 95 ) )
+
+    end
+
+    return LerpVector( progress, self.ArrivalStartPos, self.ArrivalTargetPos ), progress >= 1
+
+end
+
+local scorchDepth = Vector( 0, 0, -100 )
+
+function burrow.OnArrive( self )
+    local atmPos = self:GetPos()
+
+    util.Decal( "Scorch", atmPos, atmPos + scorchDepth, self )
+
+end
+
+local rocketSkyOffset = Vector( 0, 0, 60 )
+local rocketSkyMargin = 64 -- don't enter flush against the sky brush
+
+function rocket.StartPos( _self, targetPos )
+    local _underSky, skyPos = GAMEMODE:IsUnderSky( targetPos + rocketSkyOffset )
+
+    local entryZ = math.min( skyPos.z - rocketSkyMargin, targetPos.z + rocket.entryHeight )
+
+    return Vector( targetPos.x, targetPos.y, math.max( entryZ, targetPos.z + 1 ) )
+
+end
+
+-- The rocket is a map wide event, so its sounds reach past the PVS that would
+-- otherwise decide who is close enough to hear them.
+local function emitToEveryone( ent, path, level, pitch )
+    local everyone = RecipientFilter()
+    everyone:AddAllPlayers()
+
+    ent:EmitSound( path, level, pitch, 1, CHAN_STATIC, SND_NOFLAGS, 0, everyone )
+
+end
+
+function rocket.OnStart( self )
+    self.rocketVel = -1000
+    self.rocketBurning = false
+    self.rocketLastMove = CurTime()
+
+    emitToEveryone( self, "npc/env_headcrabcanister/incoming.wav", 125, 50 )
+
+end
+
+function rocket.OnIgnite( self )
+    self:SetRocketBurning( true )
+
+    emitToEveryone( self, "ambient/explosions/explode_9.wav", 125, 80 )
+
+end
+
+-- Everything the exhaust can roughly reach, cooked and shoved.
+function rocket.EngineDmgThink( self )
+    local myPos = self:GetPos()
+    local down = -self:GetUp()
+
+    for _, ent in ipairs( ents.FindInCone( myPos, down, rocket.blastRange, rocket.blastCone ) ) do
+        if not IsValid( ent ) then continue end
+        if ent == self then continue end
+
+        local entsParent = ent:GetParent()
+        if IsValid( entsParent ) then
+            if entsParent == self then continue end
+            if ent:IsWeapon() then continue end
+            if entsParent:IsPlayer() then continue end
+
+        end
+
+        local entsPos = ent:WorldSpaceCenter()
+        if not terminator_Extras.PosCanSee( myPos, entsPos, MASK_SOLID_BRUSHONLY ) then continue end
+
+        local fireDmg = DamageInfo()
+        fireDmg:SetDamage( rocket.blastDamage )
+        fireDmg:SetDamageType( DMG_BURN )
+        fireDmg:SetAttacker( self )
+        fireDmg:SetInflictor( self )
+        fireDmg:SetDamagePosition( entsPos )
+        fireDmg:SetDamageForce( terminator_Extras.dirToPos( myPos, entsPos ) * rocket.blastForce )
+        ent:TakeDamageInfo( fireDmg )
+
+        ent:Ignite( math.Rand( rocket.blastIgnite[1], rocket.blastIgnite[2] ) )
+
+    end
+end
+
+function rocket.Move( self )
+    local cur = CurTime()
+    local dt = cur - self.rocketLastMove
+    self.rocketLastMove = cur
+
+    local pos = self:GetPos()
+    if dt <= 0 then return pos, false end
+
+    -- the burn is solved against the release point, not the pad; physics covers the rest
+    local releaseZ = self.ArrivalTargetPos.z + rocket.releaseHeight
+    local height = pos.z - releaseZ
+    local vel = self.rocketVel
+
+    -- the engines have to light early enough to null out the fall before the pad, so
+    -- solve for the distance that takes and burn the moment we are inside it
+    local netDecel = rocket.thrust - rocket.gravity
+    local burnHeight = ( ( vel * vel ) / ( 2 * netDecel ) ) * rocket.igniteMargin
+
+    if not self.rocketBurning and ( height <= burnHeight or height <= rocket.minIgniteHeight ) then
+        self.rocketBurning = true
+        rocket.OnIgnite( self )
+
+    end
+
+    if self.rocketBurning then
+        -- clamped so a burn with margin to spare settles onto the pad instead of hovering
+        vel = math.min( vel + netDecel * dt, -rocket.touchdownSpeed )
+
+        local nextBigThink = self.nextBigRocketThink or 0
+        if nextBigThink < cur then
+            self.nextBigRocketThink = cur + 0.1
+            local scorchOffset = Vector( pos.x + math.Rand( -100, 100 ), pos.y + math.Rand( -100, 100 ), pos.z + -100 )
+            util.Decal( "Scorch", pos, scorchOffset, self )
+
+            rocket.EngineDmgThink( self )
+
+        end
+    else
+        vel = vel - rocket.gravity * dt
+
+    end
+
+    self.rocketVel = vel
+
+    local newZ = pos.z + vel * dt
+    if newZ <= releaseZ then return Vector( pos.x, pos.y, releaseZ ), true end
+
+    return Vector( pos.x, pos.y, newZ ), false
+
+end
+
+function rocket.OnTouchdown( self )
+    self.rocketBurning = false
+    self:SetRocketBurning( false )
+
+    -- funny atm physics: the engine is thrown downward into the spot the ATM is about
+    -- to land on, and the ATM then lands on it. the casing stays on until FinishArrival
+    self:EjectShells( "Rocket" )
+
+    -- let go short of the ground, so it lands on whatever is really under it
+    local phys = self:GetPhysicsObject()
+    if not IsValid( phys ) then return end
+
+    phys:EnableMotion( true )
+    phys:Wake()
+    phys:SetVelocity( Vector( 0, 0, self.rocketVel ) )
+
+end
+
+function rocket.OnArrive( self )
+    self:EmitSound( "ambient/machines/thumper_hit.wav", 90, 90 )
+
+end
+
+--function teleport.StartPos( _self, targetPos )
+--    return Vector( targetPos )
+--
+--end
+--
+--function teleport.Move( self )
+--    return self.ArrivalTargetPos, CurTime() >= self.ArrivalStartTime + teleport.duration
+--
+--end
+
 
 function ENT:DepositToATM( ply )
     if not IsValid( ply ) then return false, "Invalid player" end
@@ -412,12 +747,13 @@ function ENT:OnTakeDamage( dmg )
     local canPfx = pfxToUse and ( cur > self.nextPfx or self.lastPfxName ~= pfxToUse )
 
     if canPfx then
+        -- claimed now, not inside the timer, or every pellet of one blast gets its own
+        self.nextPfx = cur + 0.5
+        self.lastPfxName = pfxToUse
+
         -- damage hooks dont play effects
         timer.Simple( 0, function()
             if not IsValid( self ) then return end
-
-            self.nextPfx = cur + 0.5
-            self.lastPfxName = pfxToUse
 
             local randOffsetted = self:WorldSpaceCenter() + VectorRand() * self:GetModelRadius() * 2
             local pfxPos = self:NearestPoint( randOffsetted )
@@ -476,7 +812,12 @@ function ENT:Die()
 
     self:SetBodygroup( 0, 1 ) -- disable model door
     local door = terminator_Extras.AttachParentedDetail( self, "models/glee/atm/atm01_door.mdl", Vector( 0, 0, 0 ), Angle( 0, 0, 0 ) )
-    self:EjectEntity( door, self.ShellImpulseForce * 2, self:WorldSpaceCenter() )
+    if IsValid( door ) then
+        self:EjectEntity( door, self.ShellImpulseForce * 2, self:WorldSpaceCenter() )
+
+    end
+
+    self:SetOwnersCut( 0 ) -- it is all in the pool now, and about to be on the floor
 
     local reps = 0
     local scorePos = self:LocalToWorld( scoreDumpOffset )
@@ -494,7 +835,5 @@ function ENT:Die()
             pickup:UpdateScoreLive()
 
         end
-        self:SetOwnersCut( 0 )
-
     end
 end

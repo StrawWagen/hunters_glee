@@ -26,7 +26,7 @@ function ENT:SpawnFunction( ply, tr, ClassName )
     ent:Spawn()
     ent:Activate()
 
-    if not GAMEMODE.ISHUNTERSGLEE then
+    if not GAMEMODE.IsReallyHuntersGlee then
         ent:Place()
     end
 

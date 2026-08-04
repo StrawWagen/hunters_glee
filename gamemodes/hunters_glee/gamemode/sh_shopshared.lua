@@ -8,6 +8,7 @@ elseif CLIENT then
     local purchaseSound = Sound( "hunters_glee/209578_zott820_cash-register-purchase.wav" )
     local takeSound = Sound( "buttons/lever7.wav" )
     local getSound = Sound( "buttons/button6.wav" )
+    local debtSound = Sound( "buttons/combine_button2.wav" )
 
     local nextResetShopCooldownsRecieve = 0
 
@@ -52,13 +53,18 @@ elseif CLIENT then
 
     net.Receive( "glee_confirmpurchase", function()
         local cost = net.ReadFloat()
+        local us = LocalPlayer()
+
         if cost > 0 then
             local pitch = 100 + math.abs( cost - 100 )
-            LocalPlayer():EmitSound( purchaseSound, 60, pitch, 0.50 )
+            us:EmitSound( purchaseSound, 60, pitch, 0.50 )
+
         elseif cost == 0 then
-            LocalPlayer():EmitSound( takeSound, 60, 120, 0.50 )
+            us:EmitSound( takeSound, 60, 120, 0.50 )
+
         elseif cost < 0 then
-            LocalPlayer():EmitSound( getSound, 60, 120, 0.50 )
+            us:EmitSound( getSound, 60, 120, 0.50 )
+
         end
 
         local isId = net.ReadBool()
@@ -67,8 +73,14 @@ elseif CLIENT then
         local itemId = net.ReadString()
         if itemId == "" then return end
 
-        hook.Run( "glee_cl_confirmedpurchase", LocalPlayer(), itemId )
-        LocalPlayer().glee_DefinitelyPurchasedSomething = true
+        local itemData = GAMEMODE:GetShopItemData( itemId )
+        if itemData and itemData.canGoInDebt and cost < 0 and us:GetScore() < 0 then
+            us:EmitSound( debtSound, 60, 120, 0.50 )
+
+        end
+
+        hook.Run( "glee_cl_confirmedpurchase", us, itemId )
+        us.glee_DefinitelyPurchasedSomething = true
 
     end )
 
@@ -92,7 +104,6 @@ elseif CLIENT then
         return tbl
 
     end
-
 
     -- ew ew gross formatting
     concommand.Add( "cl_termhunt_purchase", function( _, _, args, _ )
@@ -215,7 +226,7 @@ function GM:shopItemCost( toPurchase, purchaser )
         local noErrors, returned = xpcall( costRaw, errorCatchingMitt, purchaser )
         if noErrors == false then
             GAMEMODE:invalidateShopItem( toPurchase )
-            print( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s cost function errored!!!!!!!!!!!" )
+            permaPrint( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s cost function errored!!!!!!!!!!!" )
             return 0
 
         else
@@ -236,10 +247,10 @@ function GM:shopItemCost( toPurchase, purchaser )
     cost = cost * GAMEMODE:shopMarkup( purchaser, toPurchase )
 
     local costMulTbl = { 1 }
-    local noErrors, returnedTbl = xpcall( hook.Run, errorCatchingMitt, "glee_shop_itemcostmul", ply, itemData, costMulTbl )
+    local noErrors, returnedTbl = xpcall( hook.Run, errorCatchingMitt, "glee_shop_itemcostmul", purchaser, itemData, costMulTbl )
     if noErrors == false then
         -- Non-halting error
-        print( "GLEE: !!!!!!!!!! glee_shop_itemdescription hook errored for " .. toPurchase .. "!!!!!!!!!!!" )
+        permaPrint( "GLEE: !!!!!!!!!! glee_shop_itemdescription hook errored for " .. toPurchase .. "!!!!!!!!!!!" )
 
     elseif istable( returnedTbl ) then
         cost = cost * returnedTbl[1]
@@ -265,7 +276,7 @@ function GM:shopItemSkullCost( toPurchase, purchaser )
         local noErrors, returned = xpcall( skullCostRaw, errorCatchingMitt, purchaser )
         if noErrors == false then
             GAMEMODE:invalidateShopItem( toPurchase )
-            print( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s SKULL cost function errored!!!!!!!!!!!" )
+            permaPrint( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s SKULL cost function errored!!!!!!!!!!!" )
             return 0
 
         else
@@ -295,12 +306,12 @@ function GM:translateShopItemCooldown( ply, toPurchase, cooldownRaw )
         local noErrors, returned = xpcall( cooldownRaw, errorCatchingMitt, ply )
         if noErrors == false then
             GAMEMODE:invalidateShopItem( toPurchase )
-            print( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s cooldown function errored!!!!!!!!!!!" )
+            permaPrint( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s cooldown function errored!!!!!!!!!!!" )
             return
 
         elseif not isnumber( returned ) and returned ~= nil then -- can be nil for no cooldown
             GAMEMODE:invalidateShopItem( toPurchase )
-            print( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s cooldown function returned a non-number!!!!!!!!!!!" )
+            permaPrint( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s cooldown function returned a non-number!!!!!!!!!!!" )
             return
 
         else
@@ -322,12 +333,12 @@ function GM:translateShopItemDescription( ply, toPurchase, descriptionRaw )
         local noErrors, returned = xpcall( descriptionRaw, errorCatchingMitt, ply )
         if noErrors == false then
             GAMEMODE:invalidateShopItem( toPurchase )
-            print( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s description function errored!!!!!!!!!!!" )
+            permaPrint( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s description function errored!!!!!!!!!!!" )
             return
 
         elseif not isstring( returned ) then -- description cannot be nil.
             GAMEMODE:invalidateShopItem( toPurchase )
-            print( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s description function returned a non-string!!!!!!!!!!!" )
+            permaPrint( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s description function returned a non-string!!!!!!!!!!!" )
             return
 
         else
@@ -342,7 +353,7 @@ function GM:translateShopItemDescription( ply, toPurchase, descriptionRaw )
     local noErrors, returned = xpcall( hook.Run, errorCatchingMitt, "glee_shop_itemdescription", ply, itemData, description )
     if noErrors == false then
         -- Non-halting error
-        print( "GLEE: !!!!!!!!!! glee_shop_itemdescription hook errored for " .. toPurchase .. "!!!!!!!!!!!" )
+        permaPrint( "GLEE: !!!!!!!!!! glee_shop_itemdescription hook errored for " .. toPurchase .. "!!!!!!!!!!!" )
 
     elseif isstring( returned ) then
         description = returned

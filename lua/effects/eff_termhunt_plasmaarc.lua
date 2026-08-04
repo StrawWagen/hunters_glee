@@ -4,7 +4,9 @@ function EFFECT:Init( data )
     self.Scayul = data:GetScale()
     self.Delay = math.Clamp( 0.06 * self.Scayul, 0.025, 0.25 )
     self.EndTime = CurTime() + self.Delay
+
     self:SetRenderBoundsWS( self.StartPos, self.EndPos )
+
     -- dont interfere with spectate flashlights pls
     local dlightend = DynamicLight( #player.GetAll() + 1 )
     dlightend.Pos = self.EndPos
@@ -21,8 +23,10 @@ end
 function EFFECT:Think()
     if self.EndTime < CurTime() then
         return false
+
     else
         return true
+
     end
 end
 
@@ -38,4 +42,5 @@ function EFFECT:Render()
 
     render.SetMaterial( Beamtwo )
     render.DrawBeam( self.StartPos, self.EndPos, Lerp( ( self.EndTime - CurTime() ) / self.Delay, 0, 8 * self.Scayul ), 0, 0, Color( 100, 150, 255, 255 ) )
+
 end

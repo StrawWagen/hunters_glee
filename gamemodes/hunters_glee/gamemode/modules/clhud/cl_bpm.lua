@@ -28,8 +28,6 @@ local function createBpmBox()
     box:SetIconSize( materialSize )
     box:SetPaddingRatio( 0.6 )
     box:SetMaterial( heartTexture )
-    box:SetNormalBoxColor( terminator_Extras.glee_HL2Hud.colorBackground:Copy() )
-    box:SetUrgentBoxColor( terminator_Extras.glee_HL2Hud.colorBackgroundUrgent:Copy() )
     box:SetFlashDuration( 0.08 )
 
     local bgSize       = box:GetWide()

@@ -355,84 +355,88 @@ function SWEP:PrimaryAttack()
     self:SetNextSecondaryFire( CurTime() + 1 )
     self.nextInspect = CurTime() + 1
 
-    if not owner:IsPlayer() or owner:GetAmmoCount( self.Primary.Ammo ) > 0 then
+    local canFire = not owner:IsPlayer() or owner:GetAmmoCount( self.Primary.Ammo ) > 0 
+    if not canFire then return end
 
-        self:EmitSound( self.Primary.Sound )
-        self:SendWeaponAnim( ACT_VM_PRIMARYATTACK )
-        owner:SetAnimation( PLAYER_ATTACK1 )
-        if owner.RemoveAmmo then
-            owner:RemoveAmmo( 1, self.Primary.Ammo )
+    self:EmitSound( self.Primary.Sound )
+    self:SendWeaponAnim( ACT_VM_PRIMARYATTACK )
+    owner:SetAnimation( PLAYER_ATTACK1 )
+    if owner.RemoveAmmo then
+        owner:RemoveAmmo( 1, self.Primary.Ammo )
+
+    end
+
+    if SERVER then
+        owner:SetNW2Bool( "glee_taucannon_primaryfired", true )
+
+    end
+
+    local bullet = {}
+
+    bullet.Num = 1
+    bullet.Dir = owner:GetAimVector()
+    bullet.Src = owner:GetShootPos()
+    bullet.Force = 100
+    bullet.Spread = Vector( 0, 0, 0 )
+    bullet.HullSize = 1
+    bullet.Damage = 20
+    bullet.Tracer		= 1
+    bullet.TracerName		= "HL1GaussBeam_GMOD"
+    bullet.Attacker = owner
+
+    bullet.Callback = function( _, trace, dmginfo )
+        local hitEnt = trace.Entity
+        if not hitEnt.isGleeRescueHeli then
+            dmginfo:SetDamageType( bit.bor( DMG_AIRBOAT, DMG_BLAST ) )
 
         end
-
-        if SERVER then
-            owner:SetNW2Bool( "glee_taucannon_primaryfired", true )
-
-        end
-
-        local bullet = {}
-
-        bullet.Callback = function( _, trace, dmginfo )
-            local hitEnt = trace.Entity
-            if not hitEnt.isGleeRescueHeli then
-                dmginfo:SetDamageType( bit.bor( DMG_AIRBOAT, DMG_BLAST ) )
-
-            end
-            if trace.Normal:Dot( trace.HitNormal ) < 0.5 then
-                timer.Simple( 0, function()
-                    if not IsValid( self ) then return end
-                    local newOwner = self:GetOwner()
-                    if not IsValid( self ) or not IsValid( owner ) or newOwner ~= owner then return end
-                    local effectdata = EffectData()
-                    effectdata:SetNormal( trace.HitNormal )
-                    effectdata:SetOrigin( trace.HitPos )
-                    util.Effect( "StunstickImpact", effectdata )
-
-                    bullet = {}
-
-                    bullet.Callback = function( _, trace2, dmgInfo2 )
-                        local hitEnt2 = trace2.Entity
-                        if hitEnt2.isGleeRescueHeli then return end
-                        dmgInfo2:SetDamageType( bit.bor( DMG_AIRBOAT, DMG_BLAST ) )
-
-                    end
-
-                    bullet.Num = 1
-                    bullet.Dir = owner:GetAimVector() -2 * ( owner:GetAimVector():Dot( trace.HitNormal ) ) * trace.HitNormal
-                    bullet.Src = trace.HitPos
-                    bullet.Force = 100
-                    bullet.Spread = Vector( 0.01, 0.01, 0 )
-                    bullet.HullSize = 1
-                    bullet.Damage = gauss_Dmg
-                    bullet.Tracer		= 0
-                    bullet.Attacker = owner
-                    bullet.HullSize = gauss_Hull
-                    self:FireBullets( bullet )
-
-                end )
-
-            else
+        if trace.Normal:Dot( trace.HitNormal ) < 0.5 then
+            timer.Simple( 0, function()
+                if not IsValid( self ) then return end
+                local newOwner = self:GetOwner()
+                if not IsValid( self ) or not IsValid( owner ) or newOwner ~= owner then return end
                 local effectdata = EffectData()
                 effectdata:SetNormal( trace.HitNormal )
                 effectdata:SetOrigin( trace.HitPos )
                 util.Effect( "StunstickImpact", effectdata )
 
-            end
+                local bulletCallback = {}
+
+                bulletCallback.Callback = function( _, trace2, dmgInfo2 )
+                    local hitEnt2 = trace2.Entity
+                    if hitEnt2.isGleeRescueHeli then return end
+                    dmgInfo2:SetDamageType( bit.bor( DMG_AIRBOAT, DMG_BLAST ) )
+
+                end
+
+                bulletCallback.Num = 1
+                -- reflect the aim direction off the surface we hit
+                local aimDir = owner:GetAimVector()
+                local hitNormal = trace.HitNormal
+                bulletCallback.Dir = aimDir - 2 * aimDir:Dot( hitNormal ) * hitNormal
+                bulletCallback.Src = trace.HitPos
+                bulletCallback.Force = 100
+                bulletCallback.Spread = Vector( 0.01, 0.01, 0 )
+                bulletCallback.HullSize = 1
+                bulletCallback.Damage = gauss_Dmg
+                bulletCallback.Tracer		= 0
+                bulletCallback.Attacker = owner
+                bulletCallback.HullSize = gauss_Hull
+                self:FireBullets( bulletCallback )
+
+            end )
+
+        else
+            local effectdata = EffectData()
+            effectdata:SetNormal( trace.HitNormal )
+            effectdata:SetOrigin( trace.HitPos )
+            util.Effect( "StunstickImpact", effectdata )
+
         end
-
-        bullet.Num = 1
-        bullet.Dir = owner:GetAimVector()
-        bullet.Src = owner:GetShootPos()
-        bullet.Force = 100
-        bullet.Spread = Vector( 0, 0, 0 )
-        bullet.HullSize = 1
-        bullet.Damage = 20
-        bullet.Tracer		= 1
-        bullet.TracerName		= "HL1GaussBeam_GMOD"
-        bullet.Attacker = owner
-        self:FireBullets( bullet )
-
     end
+
+    self:FireBullets( bullet )
+
 end
 
 -- always drop tau cannon and trigger DumpCharge on death

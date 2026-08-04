@@ -114,6 +114,7 @@ local function spawnAndKillRebel( pos, model )
     rebel:SetModel( model )
     rebel:Spawn()
     rebel:Activate()
+    rebel:SetColor( Color( 0, 0, 0, 0 ) )
 
     timer.Simple( 0.1, function()
         if not IsValid( rebel ) then return end

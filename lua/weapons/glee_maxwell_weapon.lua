@@ -82,12 +82,9 @@ function SWEP:Think()
 	end
 end
 
-function SWEP:Holster()
-	return true
-
-end
-
 function SWEP:OnRemove()
+	self:Holster()
+
 	if not self.TransformTimerName then return end
 	timer.Remove( self.TransformTimerName )
 
@@ -107,9 +104,6 @@ function SWEP:Equip()
 	self.TransformTimerName = nil
 	self.HasTransformed = false
 
-end
-
-function SWEP:DrawWorldModel()
 end
 
 function SWEP:Deploy()
@@ -218,11 +212,6 @@ function SWEP:Holster()
 
 	self:ResetBonePositions( vm )
 	return true
-
-end
-
-function SWEP:OnRemove()
-	self:Holster()
 
 end
 
@@ -403,7 +392,7 @@ if CLIENT then
 		local owner = self:GetOwner()
 		local bone_ent = IsValid( owner ) and owner or self
 
-		for _, name in pairs( self.wRenderOrder ) do
+		for _, name in ipairs( self.wRenderOrder ) do
 			local v = self.WElements[name]
 			if not v then self.wRenderOrder = nil break end
 			if v.hide then continue end
@@ -527,7 +516,7 @@ if CLIENT then
 		for i, v in pairs( tab ) do
 			local isValidModel = v.type == "Model" and v.model and v.model ~= ""
 				and ( not IsValid( v.modelEnt ) or v.createdModel ~= v.model )
-				and string.find( v.model, ".mdl" ) and file.Exists( v.model, "GAME" )
+				and string.find( v.model, ".mdl", 1, true ) and file.Exists( v.model, "GAME" )
 
 			if isValidModel then
 				v.modelEnt = ClientsideModel( v.model, RENDER_GROUP_VIEW_MODEL_OPAQUE )
