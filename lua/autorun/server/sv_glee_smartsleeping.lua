@@ -100,9 +100,14 @@ hook.Add( "Think", "glee_dynamicfreezing_laggingthink", function() -- deal damag
     if nextBreak > curTime then return end
     nextBreak = curTime + 0.1
 
-    local lagScale = physenv.GetLastSimulationTime() * 1000
+    local _, tickrate, threshold = GAMEMODE:IsLagging()
+    local lagging = tickrate < ( threshold * 0.25 ) -- lower threshold
+    if not lagging then
+        local lagScale = physenv.GetLastSimulationTime() * 1000
 
-    local lagging = lagScale > math.random( 50, 100 )
+        lagging = lagScale > math.random( 50, 100 )
+
+    end
     if not lagging then return end
 
     local randomFrozenEnt = toFreeze[math.random( 1, #toFreeze )]

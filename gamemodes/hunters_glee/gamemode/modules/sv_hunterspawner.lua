@@ -340,6 +340,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_anti_abysmallag", function( _, _,
     local allHunters = {}
     terminator_Extras.tableAdd( allHunters, GAMEMODE.glee_Hunters )
     terminator_Extras.tableAdd( allHunters, ents.FindByClass( "terminator_nextbot*" ) )
+    terminator_Extras.tableAdd( allHunters, ents.FindByClass( "npc_*" ) )
     local oldest
     local oldestTime = math.huge
     for _, hunter in pairs( allHunters ) do
