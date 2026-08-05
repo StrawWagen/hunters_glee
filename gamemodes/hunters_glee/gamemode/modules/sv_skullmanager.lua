@@ -419,3 +419,12 @@ hook.Add( "huntersglee_givenskulls", "glee_giveskullthrower", function( ply )
     ply:Give( "glee_throwable_skull", false )
 
 end )
+
+hook.Add( "PlayerSpawn", "glee_giveskullthrower", function( ply )
+    if ply:GetSkulls() <= 0 then return end
+
+    if ply:HasWeapon( "glee_throwable_skull" ) then return end
+
+    ply:Give( "glee_throwable_skull", false )
+
+end )

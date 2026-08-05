@@ -166,8 +166,6 @@ function ENT:Place()
 
     end
 
-    self:DetachFromOwner()
-
     if target:IsPlayer() then
         GAMEMODE:AddMischievousness( self.player, -5, "blessed a player, reduction" )
 
@@ -176,8 +174,7 @@ function ENT:Place()
 
     end
 
-    self.player = nil
-    self:SetOwner( NULL )
+    self:DetachFromOwner()
 
     SafeRemoveEntity( self )
 
