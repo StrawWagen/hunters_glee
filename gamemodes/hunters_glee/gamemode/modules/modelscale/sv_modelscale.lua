@@ -153,11 +153,13 @@ end
 
 hook.Add( "PlayerSpawn", "GLEE_PDM:PlayerSpawn", function( ply )
     ply.PDM_Spawned = true
-    timer.Simple( 0, function()
-        ply:SetHealth( math.min( ply:Health(), ply:GetMaxHealth() ) )
+    local plysHealth = ply:Health()
+    local newHealth = math.min( plysHealth, ply:GetMaxHealth() )
+    if plysHealth > newHealth then
+        ply:SetHealth( newHealth )
         ply.glee_LastHealthSetReason = "PDM_PlayerSpawn"
 
-    end )
+    end
 end )
 
 -- tick if either scaling or maxhealth scaling is enabled.

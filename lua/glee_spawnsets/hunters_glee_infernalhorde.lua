@@ -29,7 +29,7 @@ local set = {
             end,
         },
         {
-            hardRandomChance = nil,
+            hardRandomChance = 15,
             name = "infernalskele_big_EARLY", -- unique name
             prettyName = "An Infernal Sentinel",
             class = "terminator_nextbot_infernalskeleton_big", -- class spawned
@@ -44,7 +44,7 @@ local set = {
             prettyName = "An Infernal Sentinel",
             class = "terminator_nextbot_infernalskeleton_big", -- class spawned
             spawnType = "hunter",
-            difficultyCost = { 500, 1000 },
+            difficultyCost = { 1000, 2000 },
             countClass = "terminator_nextbot_infernalskeleton_big",
             maxCount = { 10 },
         },
