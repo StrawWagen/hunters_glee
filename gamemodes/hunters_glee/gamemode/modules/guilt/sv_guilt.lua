@@ -375,9 +375,14 @@ function GM:IncrementPersistentGuilt( ply, add )
         oldPersistentGuilt = tonumber( oldPersistentGuilt )
 
     end
-    if oldPersistentGuilt < currentTime then return end
 
     local newPersistentGuilt = math.max( oldPersistentGuilt, currentTime ) + daysToAdd
+
+    -- guilt is the timestamp they are guilty until, so anything before now is just
+    -- zero; writing it would store a number that reads as nothing, and announce a
+    -- change the player cannot see
+    if newPersistentGuilt < currentTime then return end
+
     ply:SetPData( "glee_persistentguilt", newPersistentGuilt )
 
     local inDaysOld = getGuiltInDays( oldPersistentGuilt )

@@ -220,7 +220,7 @@ if SERVER then
                 if not target:HasStatusEffect( "infernalintervention_rawendofthedeal" ) then return end
 
                 if dmgInfo:IsDamageType( DMG_BURN ) then -- OH GOD IT BURNS
-                    dmgInfo:ScaleDamage( 6 )
+                    dmgInfo:ScaleDamage( 8 )
 
                 else
                     dmgInfo:ScaleDamage( 2 )
