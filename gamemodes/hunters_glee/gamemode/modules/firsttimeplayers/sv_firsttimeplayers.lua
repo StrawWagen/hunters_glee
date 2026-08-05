@@ -197,3 +197,16 @@ concommand.Add( "glee_test_tutorial", function( ply )
     ply:ConCommand( "cl_huntersglee_firsttimetutorial 0" )
 
 end, nil, nil, FCVAR_CHEAT )
+
+concommand.Add( "glee_test_tutorial_everyone", function( caller )
+    if not caller:IsSuperAdmin() then return end
+
+    for _, ply in player.Iterator() do
+        asked[ply] = nil
+        alreadyDone[ply:SteamID()] = nil
+        spawned[ply] = true
+
+        ply:ConCommand( "cl_huntersglee_firsttimetutorial 0" )
+
+    end
+end, nil, nil )
