@@ -371,7 +371,7 @@ function GM:IncrementPersistentGuilt( ply, add )
     local daysToAdd = dayInSeconds * ( add or 1 )
     local currentTime = os.time()
     local oldPersistentGuilt = ply:GetPData( "glee_persistentguilt", currentTime )
-    if oldPersistentGuilt < currentTime then return end
+    if oldPersistentGuilt and oldPersistentGuilt < currentTime then return end
 
     local newPersistentGuilt = math.max( oldPersistentGuilt, currentTime ) + daysToAdd
     ply:SetPData( "glee_persistentguilt", newPersistentGuilt )
