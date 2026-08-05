@@ -228,37 +228,37 @@ if SERVER then
                 end
             end )
 
-            function self:ApplyEffects()
+            function self:ApplyEffects( ply )
                 -- shrivel all bones
-                local bc = owner:GetBoneCount() or 0
+                local bc = ply:GetBoneCount() or 0
                 for i = 0, bc - 1 do
-                    owner:ManipulateBoneScale( i, shriveledScale * math.Rand( 0.5, 1.75 ) )
+                    ply:ManipulateBoneScale( i, shriveledScale * math.Rand( 0.5, 1.75 ) )
 
                 end
 
                 -- apply speed mod
-                owner:DoSpeedModifier( "infernalintervention", -25 )
+                ply:DoSpeedModifier( "infernalintervention", -25 )
 
                 -- deal made, 1 health
-                owner:SetHealth( 1 )
-                owner.glee_LastHealthSetReason = "glee_infernalintervention_spawn"
+                ply:SetHealth( 1 )
+                ply.glee_LastHealthSetReason = "glee_infernalintervention_spawn"
 
                 -- bleeding effect on apply, just visual
-                local timerName = "glee_devilbleed_" .. owner:GetCreationID()
+                local timerName = "glee_devilbleed_" .. ply:GetCreationID()
                 local strength = 100
                 timer.Create( timerName, 0.05, 200, function()
-                    if not IsValid( owner ) then return end
-                    if not owner:Alive() then timer.Remove( timerName ) return end
+                    if not IsValid( ply ) then return end
+                    if not ply:Alive() then timer.Remove( timerName ) return end
                     if math.random( 0, 100 ) > strength then return end
                     strength = strength * 0.9
 
-                    GAMEMODE:Bleed( owner, strength )
+                    GAMEMODE:Bleed( ply, strength )
 
                 end )
 
                 -- applying sounds
-                owner:EmitSound( "ambient/levels/labs/electric_explosion5.wav", 75, math.random( 70, 80 ) )
-                owner:EmitSound( "npc/antlion/digdown1.wav", 75, math.random( 150, 160 ) )
+                ply:EmitSound( "ambient/levels/labs/electric_explosion5.wav", 75, math.random( 70, 80 ) )
+                ply:EmitSound( "npc/antlion/digdown1.wav", 75, math.random( 150, 160 ) )
 
             end
 
@@ -266,7 +266,7 @@ if SERVER then
             self:HookOnce( "glee_true_PlayerSpawn", function( ply )
                 if not ply:HasStatusEffect( "infernalintervention_rawendofthedeal" ) then return end
 
-                self:ApplyEffects()
+                self:ApplyEffects( ply )
 
                 -- wake up screaming with terror!
                 GAMEMODE:GivePanic( ply, 100 )
@@ -294,7 +294,7 @@ if SERVER then
             end )
 
             if owner:Health() > 0 then
-                self:ApplyEffects()
+                self:ApplyEffects( ply )
 
             end
 

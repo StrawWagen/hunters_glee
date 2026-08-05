@@ -169,6 +169,13 @@ function ENT:Place()
     if target:IsPlayer() then
         GAMEMODE:AddMischievousness( self.player, -5, "blessed a player, reduction" )
 
+        -- one forgiveness per person blessed, so nobody farms it off the same target
+        GAMEMODE.roundExtraData.hasBlessedTbl = GAMEMODE.roundExtraData.hasBlessedTbl or {}
+        if GAMEMODE:GetStoredPersistentGuilt( self.player ) > 0 and not GAMEMODE.roundExtraData.hasBlessedTbl[target] then
+            GAMEMODE.roundExtraData.hasBlessedTbl[target] = true
+            GAMEMODE:IncrementPersistentGuilt( self.player, -0.05 )
+
+        end
     else
         GAMEMODE:AddMischievousness( self.player, 1, "blessed a hunter..." )
 
