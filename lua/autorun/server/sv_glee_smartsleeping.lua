@@ -100,8 +100,12 @@ hook.Add( "Think", "glee_dynamicfreezing_laggingthink", function() -- deal damag
     if nextBreak > curTime then return end
     nextBreak = curTime + 0.1
 
-    local _, tickrate, threshold = GAMEMODE:IsLagging()
-    local lagging = tickrate < ( threshold * 0.25 ) -- lower threshold
+    local lagging
+    if GAMEMODE.IsReallyHuntersGlee then
+        local _, tickrate, threshold = GAMEMODE:IsLagging()
+        lagging = tickrate < ( threshold * 0.25 ) -- lower threshold
+
+    end
     if not lagging then
         local lagScale = physenv.GetLastSimulationTime() * 1000
 
