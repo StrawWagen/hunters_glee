@@ -35,7 +35,7 @@ end
 local set = {
     name = "hunters_glee_oneguy", -- unique name
     prettyName = "One Gleeful Hunter",
-    description = "One Terminator, he'll always be back.",
+    description = "One Terminator. Kill it to win.",
     difficultyPerMin = "default", -- difficulty per minute
     waveInterval = "default", -- time between spawn waves
     diffBumpWhenWaveKilled = "default", -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
