@@ -38,7 +38,7 @@ end
 GM.PermaGuiltInfo = {
     [PermaGuiltLevels.NOT_GUILTY]  = {
         desc = "Your conscience is clear.",
-        color = hud.colorHappyYellow,
+        color = hud.colorInnocent,
     },
     [PermaGuiltLevels.SLIGHTLY_GUILTY]  = {
         desc = "Your conscience is still.. a bit clear...",
