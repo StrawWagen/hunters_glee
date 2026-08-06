@@ -66,6 +66,8 @@ local PLY_COLORS = {
     },
 }
 
+local developer = GetConVar( "developer" )
+
 local PLY_LINE_HEIGHT = glee_sizeScaled( nil, 32 ) -- Adjust the height of player rows and avatars.
 local PLY_LINE_SPACING = glee_sizeScaled( nil, 4 )
 local PLY_INFO_SPACING = glee_sizeScaled( 100 )
@@ -92,8 +94,8 @@ local PLY_INFOS = { -- From right to left on the scoreboard.
             return tostring( days ), tierData.color
 
         end,
-        SHOW = function()
-            return game.IsDedicated()
+        SHOW = function() -- dedi server only, also show if developer 1
+            return game.IsDedicated() or developer:GetBool()
 
         end,
     },
