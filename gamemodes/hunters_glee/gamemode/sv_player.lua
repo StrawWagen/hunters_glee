@@ -1211,12 +1211,20 @@ function GM:PlayerSpawn( ply, transiton )
     local newPos = nil
     local center, area = nil, nil
 
+    local trueRespawn = not ply.glee_usedTrueRespawn
+    local unstuckOrigin = ply.glee_unstuckOrigin
+
+    if trueRespawn then
+        hook.Run( "glee_true_PlayerSpawn", ply )
+
+    end
+
     -- something's telling us to respawn here!
-    if ply.glee_unstuckOrigin then
-        newPos = ply.glee_unstuckOrigin
+    if unstuckOrigin then
+        newPos = unstuckOrigin
 
     -- only set their pos if this :Spawn was caused by a death
-    elseif not ply.glee_usedTrueRespawn then
+    elseif trueRespawn then
         hook.Run( "glee_true_PlayerSpawn", ply )
         -- no special spot to respawn, we'll respawn somewhere near another player, if possible
         if IsValid( anotherAlivePlayer ) and not hook.Run( "huntersglee_blockspawn_nearplayers", ply, anotherAlivePlayer ) and GAMEMODE.hasNavmesh then
