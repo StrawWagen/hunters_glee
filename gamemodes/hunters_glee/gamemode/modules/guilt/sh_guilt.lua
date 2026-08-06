@@ -22,12 +22,16 @@ local function colorMixCl( col1, col2, ratio )
     if not col1 or not col2 then return Color( 255, 255, 255, 255 ) end
     ratio = math.Clamp( ratio, 0, 1 )
 
-    return Color(
-        math.Round( Lerp( ratio, col1.r, col2.r ) ),
-        math.Round( Lerp( ratio, col1.g, col2.g ) ),
-        math.Round( Lerp( ratio, col1.b, col2.b ) ),
-        math.Round( Lerp( ratio, col1.a, col2.a ) )
-    )
+    local h1, s1, v1 = ColorToHSV( col1 )
+    local h2, s2, v2 = ColorToHSV( col2 )
+    local h = Lerp( ratio, h1, h2 )
+    local s = Lerp( ratio, s1, s2 )
+    local v = Lerp( ratio, v1, v2 )
+
+    local col = HSVToColor( h, s, v )
+    col.a = Lerp( ratio, col1.a, col2.a )
+
+    return col
 
 end
 
