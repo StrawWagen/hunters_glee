@@ -38,12 +38,12 @@ GM.PermaGuiltInfo = {
     },
     [PermaGuiltLevels.SLIGHTLY_GUILTY]  = {
         desc = "Your conscience is still.. a bit clear...",
-        color = colorMixCl( hud.colorHappyYellow, hud.colorRedUrgent, 0.9 ),
+        color = colorMixCl( hud.colorHappyYellow, hud.colorRedUrgent, 0.25 ),
     },
     [PermaGuiltLevels.SOMEWHAT_GUILTY]  = {
         desc = "You're a bit evil. But you are still forgiven.",
         message = "Your guilt grows.\nYou're a bit evil.",
-        color = colorMixCl( hud.colorHappyYellow, hud.colorRedUrgent, 0.8 ),
+        color = colorMixCl( hud.colorHappyYellow, hud.colorRedUrgent, 0.5 ),
         divineCostMul = 1.15,
     },
     [PermaGuiltLevels.ALMOST_GUILTY]  = {
@@ -54,14 +54,14 @@ GM.PermaGuiltInfo = {
     },
     [PermaGuiltLevels.GUILTY]  = {
         desc = "You're evil. Your access to divine avenues is limited.",
-        color = colorMixCl( hud.colorHappyYellow, hud.colorRedUrgent, 0.5 ),
+        color = colorMixCl( hud.colorHappyYellow, hud.colorRedUrgent, 0.8 ),
         message = "You're evil.\nThe divine actors are displeased.",
         divineCostMul = 1.5,
         canPurchaseForgivenessRitual = true,
     },
     [PermaGuiltLevels.VERY_GUILTY] = {
         desc = "You're very evil. Divine paths are almost out of your reach.",
-        color = colorMixCl( hud.colorHappyYellow, hud.colorRedUrgent, 0.25 ),
+        color = colorMixCl( hud.colorHappyYellow, hud.colorRedUrgent, 0.9 ),
         message = "You're very evil.\nThe divine paths are closing...",
         divineCostMul = 2.5,
         canPurchaseForgivenessRitual = true,
