@@ -177,6 +177,7 @@ end, "glee_scaletick_detectchange_maxhealth" )
 
 hook.Add( "PlayerTick", "GLEE_PDM:PlayerTick", function( ply )
     if not scaleTick then return end
+    if not ply.glee_FullLoaded then return end
 
     local chars = characters_chars[ply.PDM_charactername]
     if
