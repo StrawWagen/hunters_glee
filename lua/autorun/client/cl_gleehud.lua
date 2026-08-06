@@ -47,6 +47,7 @@ terminator_Extras.glee_HL2Hud = {
     laneSpacing     = glee_sizeScaled( nil, 6 ),  -- gap between stacked hud boxes
     fontName        = "Trebuchet MS",
 
+    colorInnocent               = Color( 200, 255, 140, 220 ),
     colorHappyYellow            = Color( 255, 230, 0, 220 ),
     colorUnHappyYellow          = Color( 225, 200, 0, 220 ),
     colorRedUrgent              = Color( 255, 50, 50, 200 ),

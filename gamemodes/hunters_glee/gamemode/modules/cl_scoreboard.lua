@@ -83,6 +83,21 @@ local PLY_INFOS = { -- From right to left on the scoreboard.
         end,
     },
     {
+        NAME = "Guilt",
+        TOOLTIP = "Guilt.\nThe weight of bad deeds.\nEach day, it feels lighter.",
+        GETTER = function( ply )
+            local _, tierData = GAMEMODE:GetPlysGuiltLevel( ply )
+            local days = math.Round( GAMEMODE:GetPersistentGuilt( ply ) )
+
+            return tostring( days ), tierData.color
+
+        end,
+        SHOW = function()
+            return game.IsDedicated()
+
+        end,
+    },
+    {
         NAME = "Score",
         TOOLTIP = "Score.\nEither get close to hunters, or game the Shop.",
         GETTER = function( ply )
@@ -183,6 +198,18 @@ end
 local function copyTextAndNotify( text )
     SetClipboardText( text )
     permaPrint( "Copied; " .. text )
+
+end
+
+
+-- Trim non-showing player infos.
+for i = #PLY_INFOS, 1, -1 do
+    local info = PLY_INFOS[i]
+
+    if info.SHOW == false or ( isfunction( info.SHOW ) and not info.SHOW() ) then
+        table.remove( PLY_INFOS, i )
+
+    end
 
 end
 
