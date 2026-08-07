@@ -294,7 +294,7 @@ if SERVER then
             end )
 
             if owner:Health() > 0 then
-                self:ApplyEffects( ply )
+                self:ApplyEffects( owner )
 
             end
 
