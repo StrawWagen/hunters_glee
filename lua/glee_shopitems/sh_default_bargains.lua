@@ -379,6 +379,8 @@ if SERVER then
 
             end )
 
+            if not owner:GetNW2Bool( "IsBeingWitnessed", true ) then return end
+
             GAMEMODE:DropAllWeapons( owner )
 
             owner:ScreenFade( SCREENFADE.OUT, Color( 0, 0, 0, 255 ), 1, 0 )
