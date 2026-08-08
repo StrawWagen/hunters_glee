@@ -373,6 +373,17 @@ if SERVER then
                 if not ply:HasStatusEffect( "fish_lunged_sinker" ) then return end
                 if ply:WaterLevel() >= 3 then return true end
             end )
+
+            self:HookOnce( "glee_sv_panicscream_underwater", function( ply )
+                if not ply:HasStatusEffect( "fish_lunged_sinker" ) then return end
+                return ply:WaterLevel() < 3
+            end )
+
+            self:Timer( "fish_lunged_panic", 2, 0, function()
+                if owner:WaterLevel() < 3 then
+                    GAMEMODE:GivePanic( owner, 15 )
+                end
+            end )
         end,
         function( self, owner ) -- teardown func
             owner.glee_drowning = nil
