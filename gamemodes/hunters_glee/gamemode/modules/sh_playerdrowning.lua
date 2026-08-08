@@ -107,7 +107,7 @@ hook.Add( "SetupMove", "glee_unabletoswim", function( ply, mvd )
                 local maxTheyCanGoUp = -swimmingStrengthNormalized * 400
 
                 maxTheyCanGoUp = maxTheyCanGoUp + 400
-                if maxTheyCanGoUp > 0 and SERVER and not ply:HasStatusEffect( "fish_lunged_sinker" ) then
+                if maxTheyCanGoUp > 0 and SERVER and not hook.Run( "glee_sv_suppressswimpanic", ply ) then
                     -- warn ply
                     GAMEMODE:GivePanic( ply, 5 )
 
