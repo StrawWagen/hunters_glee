@@ -96,6 +96,8 @@ elseif SERVER then
         end
 
         local underwater = ply:WaterLevel() >= 3
+        local underwaterHook = hook.Run( "glee_sv_panicscream_underwater", ply )
+        if underwaterHook ~= nil then underwater = underwaterHook end
 
         -- stagger
         if ( ply.nextPanicBigThink or 0 ) < CurTime() then
