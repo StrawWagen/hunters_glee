@@ -1,4 +1,3 @@
-
 local shopHelpers = GAMEMODE.shopHelpers
 local cvarBase = "huntersglee_bargain_"
 local cvarFlags = FCVAR_ARCHIVE + FCVAR_REPLICATED
@@ -359,6 +358,37 @@ if SERVER then
                 return 150
 
             end )
+        end
+    )
+
+
+    GAMEMODE:RegisterStatusEffect( "fish_lunged_sinker",
+        function( self, owner ) -- setup func
+            self:HookOnce( "glee_sv_drownbreathing_waterlevel", function( ply )
+                if not ply:HasStatusEffect( "fish_lunged_sinker" ) then return end
+                return ply:WaterLevel() >= 3 and 0 or 3
+            end )
+
+            self:HookOnce( "glee_sv_suppressswimpanic", function( ply )
+                if not ply:HasStatusEffect( "fish_lunged_sinker" ) then return end
+                if ply:WaterLevel() >= 3 then return true end
+            end )
+
+            self:HookOnce( "glee_sv_panicscream_waterlevel", function( ply )
+                if not ply:HasStatusEffect( "fish_lunged_sinker" ) then return end
+                return ply:WaterLevel() >= 3 and 0 or 3
+            end )
+
+            self:Timer( "fish_lunged_panic", 2, 0, function()
+                if owner:WaterLevel() < 3 then
+                    GAMEMODE:GivePanic( owner, 15 )
+                end
+            end )
+        end,
+        function( self, owner ) -- teardown func
+            owner.glee_drowning = nil
+            owner.glee_drowning_damagecount = nil
+
         end
     )
 end
@@ -816,6 +846,25 @@ local items = {
         shCanShowInShop = shopHelpers.hasMultiplePeople,
         svOnPurchaseFunc = function( ply )
             ply:GiveStatusEffect( "astrallyprojected" )
+
+        end,
+    },
+    -- you know what that means
+    ["fishlungedsinker"] = {
+        name = "Fish Lunged Sinker.",
+        desc = "Your lungs have adapted to the wrong medium.\nAir chokes you. Water does not." .. bargainDescrip,
+        shCost = -500,
+        markup = 0.25,
+        cooldown = math.huge,
+        tags = { "INNATE", "Debuff", "Bargain" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_INACTIVE,
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = -90,
+        shPurchaseCheck = { shopHelpers.aliveCheck, },
+        svOnPurchaseFunc = function( ply )
+            ply:GiveStatusEffect( "fish_lunged_sinker" )
 
         end,
     },

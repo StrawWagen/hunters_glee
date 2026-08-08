@@ -1,4 +1,3 @@
-
 local cvBlockPlySwimming = CreateConVar( "huntersglee_players_cannot_swim", 1, bit.bor( FCVAR_NOTIFY, FCVAR_ARCHIVE, FCVAR_REPLICATED ), "Block players from swimming?.", 0, 1 )
 local cvDrowningGracePeriod = CreateConVar( "huntersglee_cannotswim_graceperiod", 4.5, bit.bor( FCVAR_NOTIFY, FCVAR_ARCHIVE, FCVAR_REPLICATED ), "How long to let players swim for?.", 0, 64 )
 
@@ -10,6 +9,10 @@ if SERVER then
             if wata >= 2 and ply:IsOnFire() then
                 ply:Extinguish()
             end
+
+            local wataHook = hook.Run( "glee_sv_drownbreathing_waterlevel", ply )
+            wata = wataHook or wata
+
             -- head submerged
             if wata >= 3 then
                 -- manage
@@ -104,7 +107,7 @@ hook.Add( "SetupMove", "glee_unabletoswim", function( ply, mvd )
                 local maxTheyCanGoUp = -swimmingStrengthNormalized * 400
 
                 maxTheyCanGoUp = maxTheyCanGoUp + 400
-                if maxTheyCanGoUp > 0 and SERVER then
+                if maxTheyCanGoUp > 0 and SERVER and not hook.Run( "glee_sv_suppressswimpanic", ply ) then
                     -- warn ply
                     GAMEMODE:GivePanic( ply, 5 )
 
