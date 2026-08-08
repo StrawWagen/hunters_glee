@@ -364,38 +364,14 @@ if SERVER then
 
     GAMEMODE:RegisterStatusEffect( "fish_lunged_sinker",
         function( self, owner ) -- setup func
-            self:Hook( "glee_sv_playerbreathing", function( ply, wata )
+            self:Hook( "glee_sv_drownbreathing_waterlevel", function( ply )
                 if ply ~= owner then return end
+                return ply:WaterLevel() >= 3 and 0 or 3
+            end )
 
-                if wata >= 3 then
-                    owner.glee_drowning = nil
-                    owner.glee_drowning_damagecount = nil
-                    return true
-                end
-
-                if owner.glee_drowning then
-                    if owner.glee_drowning < CurTime() then
-                        local dmginfo = DamageInfo()
-                        local count = owner.glee_drowning_damagecount or 0
-                        owner.glee_drowning_damagecount = count + 1
-
-                        local suffocateDamage = ( owner:GetMaxHealth() / 25 ) + count * 2
-                        dmginfo:SetDamage( suffocateDamage )
-                        dmginfo:SetDamageType( DMG_DROWN )
-                        dmginfo:SetAttacker( game.GetWorld() )
-                        dmginfo:SetInflictor( game.GetWorld() )
-
-                        owner:TakeDamageInfo( dmginfo )
-                        owner.glee_drowning = CurTime() + 1.25
-                        GAMEMODE:GivePanic( owner, 25 )
-                    end
-                else
-                    owner.glee_drowning = CurTime() + 8
-                    owner.glee_drowning_damagecount = 0
-                    GAMEMODE:GivePanic( owner, 45 )
-                end
-
-                return true
+            self:Hook( "glee_sv_suppressswimpanic", function( ply )
+                if ply ~= owner then return end
+                if ply:WaterLevel() >= 3 then return true end
             end )
         end,
         function( self, owner ) -- teardown func
