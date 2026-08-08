@@ -10,7 +10,8 @@ if SERVER then
                 ply:Extinguish()
             end
 
-            if hook.Run( "glee_sv_playerbreathing", ply, wata ) then continue end
+            local wataHook = hook.Run( "glee_sv_drownbreathing_waterlevel", ply )
+            wata = wataHook or wata
 
             -- head submerged
             if wata >= 3 then
