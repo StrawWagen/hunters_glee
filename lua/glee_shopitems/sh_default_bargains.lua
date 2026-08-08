@@ -364,12 +364,12 @@ if SERVER then
 
     GAMEMODE:RegisterStatusEffect( "fish_lunged_sinker",
         function( self, owner ) -- setup func
-            self:Hook( "glee_sv_drownbreathing_waterlevel", function( ply )
+            self:HookOnce( "glee_sv_drownbreathing_waterlevel", function( ply )
                 if ply ~= owner then return end
                 return ply:WaterLevel() >= 3 and 0 or 3
             end )
 
-            self:Hook( "glee_sv_suppressswimpanic", function( ply )
+            self:HookOnce( "glee_sv_suppressswimpanic", function( ply )
                 if ply ~= owner then return end
                 if ply:WaterLevel() >= 3 then return true end
             end )
