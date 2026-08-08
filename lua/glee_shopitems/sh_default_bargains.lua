@@ -1,4 +1,3 @@
-
 local shopHelpers = GAMEMODE.shopHelpers
 local cvarBase = "huntersglee_bargain_"
 local cvarFlags = FCVAR_ARCHIVE + FCVAR_REPLICATED
@@ -359,6 +358,50 @@ if SERVER then
                 return 150
 
             end )
+        end
+    )
+
+
+    GAMEMODE:RegisterStatusEffect( "fish_lunged_sinker",
+        function( self, owner ) -- setup func
+            self:Hook( "glee_sv_playerbreathing", function( ply, wata )
+                if ply ~= owner then return end
+
+                if wata >= 3 then
+                    owner.glee_drowning = nil
+                    owner.glee_drowning_damagecount = nil
+                    return true
+                end
+
+                if owner.glee_drowning then
+                    if owner.glee_drowning < CurTime() then
+                        local dmginfo = DamageInfo()
+                        local count = owner.glee_drowning_damagecount or 0
+                        owner.glee_drowning_damagecount = count + 1
+
+                        local suffocateDamage = ( owner:GetMaxHealth() / 25 ) + count * 2
+                        dmginfo:SetDamage( suffocateDamage )
+                        dmginfo:SetDamageType( DMG_DROWN )
+                        dmginfo:SetAttacker( game.GetWorld() )
+                        dmginfo:SetInflictor( game.GetWorld() )
+
+                        owner:TakeDamageInfo( dmginfo )
+                        owner.glee_drowning = CurTime() + 1.25
+                        GAMEMODE:GivePanic( owner, 25 )
+                    end
+                else
+                    owner.glee_drowning = CurTime() + 8
+                    owner.glee_drowning_damagecount = 0
+                    GAMEMODE:GivePanic( owner, 45 )
+                end
+
+                return true
+            end )
+        end,
+        function( self, owner ) -- teardown func
+            owner.glee_drowning = nil
+            owner.glee_drowning_damagecount = nil
+
         end
     )
 end
@@ -816,6 +859,25 @@ local items = {
         shCanShowInShop = shopHelpers.hasMultiplePeople,
         svOnPurchaseFunc = function( ply )
             ply:GiveStatusEffect( "astrallyprojected" )
+
+        end,
+    },
+    -- you know what that means
+    ["fishlungedsinker"] = {
+        name = "Fish Lunged Sinker.",
+        desc = "Your lungs have adapted to the wrong medium.\nAir chokes you. Water does not." .. bargainDescrip,
+        shCost = -500,
+        markup = 0.25,
+        cooldown = math.huge,
+        tags = { "INNATE", "Debuff", "Bargain" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_INACTIVE,
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = -90,
+        shPurchaseCheck = { shopHelpers.aliveCheck, },
+        svOnPurchaseFunc = function( ply )
+            ply:GiveStatusEffect( "fish_lunged_sinker" )
 
         end,
     },
