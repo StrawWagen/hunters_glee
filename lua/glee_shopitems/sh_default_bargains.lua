@@ -374,7 +374,7 @@ if SERVER then
                 if ply:WaterLevel() >= 3 then return true end
             end )
 
-            self:HookOnce( "glee_sv_panicscream_underwater", function( ply )
+            self:HookOnce( "glee_sv_panicscream_waterlevel", function( ply )
                 if not ply:HasStatusEffect( "fish_lunged_sinker" ) then return end
                 return ply:WaterLevel() < 3
             end )
