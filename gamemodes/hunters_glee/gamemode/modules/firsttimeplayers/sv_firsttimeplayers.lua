@@ -211,7 +211,7 @@ hook.Add( "glee_full_load", "glee_firsttimeplayercheck", function( ply )
     end )
 end )
 
-hook.Add( "glee_reset_tutorial", "firsttimeplayers", function()
+hook.Add( "glee_test_tutorial", "firsttimeplayers", function()
     -- reset tutorial for all plys in session
     for _, ply in player.Iterator() do
         if not ply.glee_FullLoaded then continue end

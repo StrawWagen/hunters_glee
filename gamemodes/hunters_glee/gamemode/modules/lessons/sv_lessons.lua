@@ -59,17 +59,17 @@ end
 
 -- clear tutorial for all online players
 -- and everyone who spawns in
-concommand.Add( "glee_reset_tutorial", function( caller )
+concommand.Add( "glee_test_tutorial", function( caller )
     if IsValid( caller ) and not caller:IsSuperAdmin() then return end
 
-    hook.Run( "glee_reset_tutorial" )
+    hook.Run( "glee_test_tutorial" )
 
     net.Start( "glee_lessons" )
         net.WriteUInt( 2, 4 )
 
     net.Send( player.GetAll() )
 
-    hook.Add( "glee_full_load", "glee_reset_tutorial", function( ply )
+    hook.Add( "glee_full_load", "glee_test_tutorial", function( ply )
         timer.Simple( 1, function()
             if not IsValid( ply ) then return end
             net.Start( "glee_lessons" )
