@@ -163,6 +163,7 @@ end )
 local function genericHints()
     local me = LocalPlayer()
 
+    -- ghost ents can have HintPreStack
     local wep = me:GetActiveWeapon()
     if not IsValid( wep ) and IsValid( me.ghostEnt ) then
         wep = me.ghostEnt

@@ -862,7 +862,7 @@ local items = {
         shCost = -500,
         markup = 0.25,
         cooldown = math.huge,
-        tags = { "INNATE", "Debuff", "Bargain" },
+        tags = { "MUTATIONS", "Debuff", "Bargain" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
