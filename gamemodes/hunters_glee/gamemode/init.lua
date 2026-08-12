@@ -388,6 +388,11 @@ function GM:Think()
         self:TutorializeNewPlayers( players )
         local tutorialHolding = self:TutorialIsHoldingTheRound( players )
 
+        if tutorialHolding then
+            self.roundEarliestEnd = cur + 2.5
+
+        end
+
         local specificallyWaiting = ( self.roundEarliestEnd or 0 ) > cur
 
         nobodyAlive = aliveCount == 0

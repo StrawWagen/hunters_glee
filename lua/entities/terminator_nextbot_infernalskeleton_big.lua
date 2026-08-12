@@ -49,8 +49,8 @@ ENT.MySpecialActions = {
             local allPlyFilter = terminator_Extras.recipFilterAllTargetablePlayers()
             bot:EmitSound( "ambient/levels/streetwar/gunship_distant2.wav", 120, 120, 1, CHAN_STATIC, SND_NOFLAGS, 0, allPlyFilter )
             bot:EmitSound( "npc/stalker/go_alert2a.wav", 120, 15, 0.5, CHAN_STATIC, SND_NOFLAGS, 0, allPlyFilter )
+            bot:EmitSound( "hunters_glee/169628__dinsfire__male-voice-screaming-loudly.wav", 90, 40, 1, CHAN_STATIC, SND_NOFLAGS, 0, allPlyFilter )
             bot:EmitSound( "npc/combine_gunship/see_enemy.wav", 90, 30, 1, CHAN_STATIC )
-            bot:EmitSound( "npc/stalker/stalker_die2.wav", 90, 50, 1, CHAN_STATIC )
 
             -- Do the gesture, with a slower rate, and dont block movement while it happens
             bot:DoGesture( ACT_GMOD_GESTURE_TAUNT_ZOMBIE, 0.75, false )
@@ -78,7 +78,7 @@ ENT.MyClassTask = {
     DealtGoobmaDamage = function( self, data, damage, fallHeight, _dealtTo )
         if fallHeight <= 250 then return end
         local myPos = self:GetPos()
-        local scale = fallHeight / 250
+        local scale = fallHeight / 200
         scale = math.Clamp( scale, 0, 4 )
 
         local shock = EffectData()
@@ -86,7 +86,7 @@ ENT.MyClassTask = {
         shock:SetScale( scale )
         util.Effect( "eff_huntersglee_infernal_landing", shock )
 
-        if fallHeight < 1000 then return end
+        if fallHeight < 750 then return end
 
         local dmgRad = fallHeight * 0.25
         dmgRad = math.Clamp( dmgRad, 500, 5000 )
@@ -145,8 +145,8 @@ function ENT:SkeletonDeathFX()
     local allPlyFilter = terminator_Extras.recipFilterAllTargetablePlayers()
     self:EmitSound( "ambient/levels/streetwar/gunship_distant2.wav", 120, 140, 1, CHAN_STATIC, SND_NOFLAGS, 0, allPlyFilter )
     self:EmitSound( "npc/stalker/go_alert2a.wav", 120, 30, 0.5, CHAN_STATIC, SND_NOFLAGS, 0, allPlyFilter )
+    self:EmitSound( "hunters_glee/169628__dinsfire__male-voice-screaming-loudly.wav", 90, 50, 1, CHAN_STATIC, SND_NOFLAGS, 0, allPlyFilter )
     self:EmitSound( "npc/combine_gunship/see_enemy.wav", 90, 40, 1, CHAN_STATIC )
-    self:EmitSound( "npc/stalker/stalker_die2.wav", 90, 60, 1, CHAN_STATIC )
 
     util.ScreenShake( self:WorldSpaceCenter(), 10, 20, 5, 3000, true )
     util.ScreenShake( self:WorldSpaceCenter(), 100, 20, 5, 1000, true )

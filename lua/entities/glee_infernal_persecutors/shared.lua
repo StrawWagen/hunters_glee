@@ -2,6 +2,7 @@ AddCSLuaFile()
 
 ENT.Type = "anim"
 ENT.Base = "screamer_crate"
+DEFINE_BASECLASS( ENT.Base )
 
 ENT.Category    = "Other"
 ENT.PrintName   = "Infernal Persecutors"
@@ -35,6 +36,8 @@ ENT.CostMixed = 400 -- both guilty and innocent nearby
 ENT.CostAllGuilty = -250 -- only guilty nearby, profitable
 ENT.CloseCostMult = 2
 ENT.CostMulWhenEscaped = 1
+
+ENT.noPurchaseReason_Touching = "Summon them somewhere... Empty."
 
 ENT.OnlyNetworkToOwner = false
 
@@ -80,6 +83,34 @@ if not SERVER then return end
 function ENT:PostInitializeFunc()
     if not GAMEMODE.IsReallyHuntersGlee then SafeRemoveEntity( self ) return end
     self:SetMaterial( "lights/white002" )
+
+end
+
+local IntersectingHull = Vector( 0, 0, 0 )
+
+function ENT:IntersectingEnt()
+    local checkPos = self:OffsettedPlacingPos()
+    local size = self:GetModelRadius() * 2
+    IntersectingHull:SetUnpacked( size, size, size * 0.25 )
+
+    local result = util.TraceHull( {
+        start = checkPos,
+        endpos = checkPos,
+        mins = -IntersectingHull,
+        maxs = IntersectingHull,
+        ignoreworld = true,
+    } )
+
+    if not result.Hit then return end
+
+    return result.Entity
+
+end
+
+function ENT:CalculateCanPlace()
+    if self:IntersectingEnt() then return false, self.noPurchaseReason_Touching end
+
+    return BaseClass.CalculateCanPlace( self )
 
 end
 

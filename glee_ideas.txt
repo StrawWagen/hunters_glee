@@ -404,3 +404,19 @@ limit shop selection in the .easy miseries -half done, what to do about categori
 proper blurred shadow for tutorial text?
 
 have to click "ok" on super long and yappy terms of service when creating a bank account
+
+reset whatever when people spawning
+too easy with large groups, spawn enemies closer?
+spawn rising smoke from large groups of spawned skeletons
+
+press use hint
+strong hint that being a ghost has no passive income
+medkit shares models
+
+alot smoother
+skeletons way better rampup
+dead air was bad
+
+switch weapons hint
+dead items look like they cost money to click on
+the big moneymaker items need to be smooth, more, part of the dead experience

@@ -754,6 +754,7 @@ if SERVER and terminator_Extras then
         heli.originalRescuePos = targetPos
         heli.currentHeliGoal = "rescue"
         heli.nextAngerEverything = CurTime() + 10
+        heli.rescueHeliTeleportDist = 0
 
         heli.glee_Seats = {}
 
@@ -1471,11 +1472,50 @@ if SERVER and terminator_Extras then
                 local goodHit = collisionCheckTrace.HitSky and skysTheLimit
 
                 local colliding = collisionCheckTrace.Hit and not goodHit
+                local unstuckEscapePos
                 local trySoftUnstuckOffset
                 local seeSoft
                 if bestPos then
-                    trySoftUnstuckOffset = terminator_Extras.dirToPos( myPos, bestPos ) * 25
-                    seeSoft = terminator_Extras.PosCanSee( myPos, myPos + trySoftUnstuckOffset )
+                    local tpDist = self.rescueHeliTeleportDist
+                    tpDist = math.max( 25, tpDist * 1.15 )
+                    self.rescueHeliTeleportDist = tpDist
+                    if not GAMEMODE.IsReallyHuntersGlee or tpDist < 200 then
+                        trySoftUnstuckOffset = terminator_Extras.dirToPos( myPos, bestPos ) * tpDist
+                        unstuckEscapePos = myPos + trySoftUnstuckOffset
+
+                    else
+                        local areas = GAMEMODE:GetAreasInOccupiedGroupWithEFlag( GAMEMODE.NavEFlags.UNDER_SKY )
+
+                        local minSize = 250
+                        local centerOffset = Vector( 0, 0, 250 )
+
+                        local anArea
+                        local perfectArea
+                        local perfectAreaDist = math.huge
+
+                        for _, area in ipairs( areas ) do
+                            if math.min( area:GetSizeX(), area:GetSizeY() ) < minSize then continue end
+
+                            anArea = area
+                            if not GAMEMODE.navmeshActivityHeatmap[area] then continue end
+                            local areaCenter = area:GetCenter()
+                            if not terminator_Extras.PosCanSee( myPos, areaCenter + centerOffset ) then continue end
+
+                            local distSqr = myPos:DistToSqr( areaCenter )
+                            if distSqr > perfectAreaDist then continue end
+                            perfectAreaDist = distSqr
+                            perfectArea = area
+
+                        end
+
+                        local foundArea = IsValid( perfectArea ) and perfectArea or anArea
+                        if IsValid( foundArea ) then
+                            unstuckEscapePos = foundArea:GetCenter() + centerOffset
+
+                        end
+                    end
+
+                    seeSoft = terminator_Extras.PosCanSee( myPos, unstuckEscapePos )
 
                 end
 
@@ -1484,8 +1524,10 @@ if SERVER and terminator_Extras then
                 -- not a wall here, just bumping something
                 -- try just nudging us out a bit
                 if colliding and curSpeed < 250 and seeSoft then
-                    self:SetPos( myPos + trySoftUnstuckOffset )
+                    self:SetPos( unstuckEscapePos )
+                    self.glee_OldRescueHeliPos = unstuckEscapePos
                     if debugging:GetBool() then
+                        permaPrint( "heli unstuck 1" )
                         debugoverlay.SweptBox(
                             collideTrStruc.start,
                             collideTrStruc.endpos,
@@ -1508,6 +1550,7 @@ if SERVER and terminator_Extras then
                     damageInfo:SetDamagePosition( collisionCheckTrace.HitPos )
                     self:TakeDamageInfo( damageInfo )
                     if debugging:GetBool() then
+                        permaPrint( "heli unstuck 2" )
                         debugoverlay.SweptBox(
                             collideTrStruc.start,
                             collideTrStruc.endpos,
@@ -1525,6 +1568,7 @@ if SERVER and terminator_Extras then
                 elseif not colliding and curSpeed <= 1 then
 
                     if debugging:GetBool() then
+                        permaPrint( "heli unstuck 3 ", self.rescueHeliTeleportDist )
                         debugoverlay.SweptBox(
                             collideTrStruc.start,
                             collideTrStruc.endpos,
@@ -1563,7 +1607,8 @@ if SERVER and terminator_Extras then
                     end
 
                     if seeSoft then
-                        self:SetPos( myPos + trySoftUnstuckOffset )
+                        self:SetPos( unstuckEscapePos )
+                        self.glee_OldRescueHeliPos = unstuckEscapePos
 
                     end
                 end
@@ -1581,6 +1626,10 @@ if SERVER and terminator_Extras then
                 self.heli_lastBestPos = bestPos
                 self.heli_lastBestPosPenalty = smallestPenalty
 
+                if curSpeed > 50 then
+                    self.rescueHeliTeleportDist = 0
+
+                end
             end
 
             -- bestPos is sometimes nil

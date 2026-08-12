@@ -37,12 +37,6 @@ function spawnSetVote:BeginVote( duration, maxOptions )
 
     local toAdd = {}
 
-    if not wantsOtherEasyOnes then
-        toAdd[1] = toBrowse["hunters_glee"] -- always include default
-        toBrowse["hunters_glee"] = nil
-
-    end
-
     toBrowse[currentSpawnsetName] = nil -- remove current mode from options
 
     while table.Count( toBrowse ) > 0 do
