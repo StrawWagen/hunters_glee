@@ -236,10 +236,10 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
             local freebie
             debugPrint( "picking with " .. budget .. " remaining" )
 
-            for _, currSpawn in SortedPairsByMemberValue( spawns, "difficultyCost", true ) do -- go from most to least cost
+            for _, spawnEntry in SortedPairsByMemberValue( spawns, "difficultyCost", true ) do -- go from highest to lowest cost
                 if ( aliveCount + #pickedSpawns ) >= countWanted then break end
 
-                local hardRandomChance = currSpawn.hardRandomChance
+                local hardRandomChance = spawnEntry.hardRandomChance
                 if hardRandomChance and math.Rand( 0, 100 ) > hardRandomChance then
                     continue
 
@@ -247,13 +247,13 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
 
                 -- for when you dont want this to spawn early
                 -- default is 100 difficulty at 10 minutes
-                local difficultyNeeded = currSpawn.difficultyNeeded
+                local difficultyNeeded = spawnEntry.difficultyNeeded
                 if difficultyNeeded and difficulty < difficultyNeeded then
                     continue
 
                 end
                 -- for when you want it to stop spawning after some time
-                local difficultyStopAfter = currSpawn.difficultyStopAfter
+                local difficultyStopAfter = spawnEntry.difficultyStopAfter
                 if difficultyStopAfter and difficulty > difficultyStopAfter then
                     continue
 
@@ -262,13 +262,13 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
                 -- for very special cases, like bosses in tutorial modes
                 -- difficulty at default will be 100 after 10 minutes, and is accelerated by a LOT of systems
                 -- best to use difficultyNeeded, hence why this is not documented :)
-                local minutesNeeded = currSpawn.minutesNeeded
+                local minutesNeeded = spawnEntry.minutesNeeded
                 if minutesNeeded and minutes < minutesNeeded then
                     continue
 
                 end
 
-                local countClass = currSpawn.countClass or currSpawn.class
+                local countClass = spawnEntry.countClass or spawnEntry.class
                 local count = classCounts[countClass]
                 if not count then
                     count = #ents.FindByClass( countClass ) -- cache it
@@ -278,29 +278,29 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
                 end
 
                 -- is this within the budget?
-                local good = currSpawn.difficultyCost <= budget
+                local good = spawnEntry.difficultyCost <= budget
 
                 -- does it have a minCount we should respect?
-                if currSpawn.minCount > -1 and not good then -- minCount bypasses budget
-                    good = count < currSpawn.minCount
+                if spawnEntry.minCount > -1 and not good then -- minCount bypasses budget
+                    good = count < spawnEntry.minCount
                     freebie = true
 
                 end
                 -- does it have a personal maxCount?
-                if currSpawn.maxCount > -1 then
-                    good = good and count < currSpawn.maxCount
+                if spawnEntry.maxCount > -1 then
+                    good = good and count < spawnEntry.maxCount
 
                 end
                 if good then
                     addedOne = true
                     if not freebie then
-                        budget = budget - currSpawn.difficultyCost
+                        budget = budget - spawnEntry.difficultyCost
 
                     end
-                    currSpawn.minutesWhenAdded = minutes
-                    table.insert( pickedSpawns, currSpawn )
+                    spawnEntry.minutesWhenAdded = minutes
+                    table.insert( pickedSpawns, spawnEntry )
                     classCounts[countClass] = count + 1
-                    debugPrint( "added", currSpawn.prettyName )
+                    debugPrint( "added", spawnEntry.prettyName )
                     break
 
                 end
@@ -375,8 +375,8 @@ end )
 GAMEMODE.currentSpawning = nil
 
 function GM:SpawnWaveSpawnIn()
-    local currSpawn = self.currentSpawning
-    if not currSpawn then
+    local currSpawnEntry = self.currentSpawning
+    if not currSpawnEntry then
         local wave = self.currentSpawnWave
         if not wave or #wave <= 0 then
             hook.Remove( "glee_sv_validgmthink_active", "glee_spawnawave" ) -- wave is all done
@@ -385,8 +385,8 @@ function GM:SpawnWaveSpawnIn()
 
         else
             -- take a spawn from the wave
-            currSpawn = table.remove( wave, 1 )
-            self.currentSpawning = currSpawn
+            currSpawnEntry = table.remove( wave, 1 )
+            self.currentSpawning = currSpawnEntry
 
         end
     end
@@ -394,7 +394,7 @@ function GM:SpawnWaveSpawnIn()
     local cur = CurTime()
     if nextHunterSpawn > cur then return end
 
-    if currSpawn.spawnType == "hunter" then
+    if currSpawnEntry.spawnType == "hunter" then
         local lagging, currTickrate, threshold = self:IsLagging()
 
         if lagging then
@@ -408,17 +408,17 @@ function GM:SpawnWaveSpawnIn()
 
         end
 
-        local hunter = self:SpawnHunter( currSpawn.class, currSpawn )
+        local hunter = self:AttemptToSpawnHunter( currSpawnEntry )
 
         if IsValid( hunter ) then
-            debugPrint( "spawned", hunter, currSpawn.name, currSpawn.prettyName )
-            if currSpawn.postSpawnedFuncs then
-                for _, func in ipairs( currSpawn.postSpawnedFuncs ) do
-                    ProtectedCall( function( _currSpawn, _hunter ) func( _currSpawn, _hunter ) end, currSpawn, hunter )
+            debugPrint( "spawned", hunter, currSpawnEntry.name, currSpawnEntry.prettyName )
+            if currSpawnEntry.postSpawnedFuncs then
+                for _, func in ipairs( currSpawnEntry.postSpawnedFuncs ) do
+                    ProtectedCall( function( _currSpawnEntry, _hunter ) func( _currSpawnEntry, _hunter ) end, currSpawnEntry, hunter )
 
                 end
             end
-            hunter.glee_PrettyName = currSpawn.prettyName
+            hunter.glee_PrettyName = currSpawnEntry.prettyName
             self.currentSpawning = nil -- spawn next one pls
             self.waveWasAlive = aliveHuntersCount()
 
@@ -438,7 +438,7 @@ function GM:SpawnWaveSpawnIn()
 
         else
             local _, spawnSet = self:GetSpawnSet()
-            debugPrint( "didnt spawn", currSpawn.name, currSpawn.prettyName, spawnSet.dynamicTooCloseDist, spawnSet.dynamicTooFarDist )
+            debugPrint( "didnt spawn", currSpawnEntry.name, currSpawnEntry.prettyName, spawnSet.dynamicTooCloseDist, spawnSet.dynamicTooFarDist )
 
         end
     end
@@ -647,16 +647,20 @@ end
 
 local randYawAng = Angle( 0, 0, 0 )
 
-function GM:SpawnHunter( class, currSpawn )
-    local spawnPos, spawnArea, valid = self:MarchValidHunterPos( class, currSpawn )
+
+
+function GM:AttemptToSpawnHunter( spawnEntry )
+    local spawnPos, spawnArea, valid = self:MarchValidHunterPos( spawnEntry )
     if not valid then return end
+
+    local class = spawnEntry.class
 
     local hunter = ents.Create( class )
     if not IsValid( hunter ) then return end
 
-    if currSpawn and currSpawn.preSpawnedFuncs then
-        for _, func in ipairs( currSpawn.preSpawnedFuncs ) do
-            ProtectedCall( function( _currSpawn, _hunter ) func( _currSpawn, _hunter ) end, currSpawn, hunter )
+    if spawnEntry.preSpawnedFuncs then
+        for _, func in ipairs( spawnEntry.preSpawnedFuncs ) do
+            ProtectedCall( function( _spawnEntry, _hunter ) func( _spawnEntry, _hunter ) end, spawnEntry, hunter )
 
         end
     end
@@ -666,10 +670,7 @@ function GM:SpawnHunter( class, currSpawn )
     hunter:SetAngles( randYawAng )
     hunter:Spawn()
     hunter.glee_SpawnArea = spawnArea -- so we can prefer to spawn enemies from this area, if this bot ends up killing someone!
-    if currSpawn then
-        hunter.glee_IsBoss = currSpawn.isBoss
-
-    end
+    hunter.glee_IsBoss = spawnEntry.isBoss
 
     self:RegisterAsSpawnedHunter( hunter )
 
@@ -773,7 +774,7 @@ local shallowWaterOffset = Vector( 0, 0, 150 )
 -- spawn a hunter as far away as possible from every player by inching a distance check around
 -- made to be really random/overcomplicated so you never really know where they'll spawn from
 -- RAAAGH WHY DID I MAKE THIS SO OVERCOMPLCATED
-function GM:MarchValidHunterPos( _class, currSpawn )
+function GM:MarchValidHunterPos( spawnEntry )
     local _, spawnSet = self:GetSpawnSet()
     local dynamicTooCloseFailCounts = spawnSet.dynamicTooCloseFailCounts or -2
     local dynamicTooCloseDist = spawnSet.dynamicTooCloseDist
@@ -806,8 +807,8 @@ function GM:MarchValidHunterPos( _class, currSpawn )
             local pos1 = pos + maxs
             local pos2 = pos - maxs
             areas = navmesh.FindInBox( pos1, pos2 )
-            if currSpawn.preferredEFlags then
-                areas = self:FilterForAreasWithEFlags( currSpawn.preferredEFlags, areas )
+            if spawnEntry.preferredEFlags then
+                areas = self:FilterForAreasWithEFlags( spawnEntry.preferredEFlags, areas )
 
             end
             if #areas > 5000 then
@@ -825,8 +826,8 @@ function GM:MarchValidHunterPos( _class, currSpawn )
         local _
         _, areas = self:GetAreaInOccupiedBigGroupOrRandomBigGroup()
 
-        if currSpawn.preferredEFlags and fails < 30 then
-            areas = self:FilterForAreasWithEFlags( currSpawn.preferredEFlags, areas )
+        if spawnEntry.preferredEFlags and fails < 30 then
+            areas = self:FilterForAreasWithEFlags( spawnEntry.preferredEFlags, areas )
 
         end
     end
@@ -887,7 +888,7 @@ function GM:MarchValidHunterPos( _class, currSpawn )
 
         end
 
-        if currSpawn.spawnSameZ then -- spawn at roughly the same z as any player pls
+        if spawnEntry.spawnSameZ then -- spawn at roughly the same z as any player pls
             local good
             local gap = 150 + ( fails * 2 )
             local spawnPosZ = spawnPos.z
@@ -907,7 +908,7 @@ function GM:MarchValidHunterPos( _class, currSpawn )
                 continue
 
             end
-        elseif currSpawn.spawnAbove then -- spawn above the highest player pls
+        elseif spawnEntry.spawnAbove then -- spawn above the highest player pls
             local highestShoot = -math.huge
             for _, shootPos in ipairs( playerShootPositions ) do
                 local shootZ = shootPos.z
@@ -923,7 +924,7 @@ function GM:MarchValidHunterPos( _class, currSpawn )
                 continue
 
             end
-        elseif currSpawn.spawnBelow then -- beeelow lowest
+        elseif spawnEntry.spawnBelow then -- beeelow lowest
             local lowestShoot = math.huge
             for _, shootPos in ipairs( playerShootPositions ) do
                 local shootZ = shootPos.z
@@ -1032,7 +1033,7 @@ function GM:MarchValidHunterPos( _class, currSpawn )
                 for _, adjArea in ipairs( potentials ) do
                     if adjArea:GetSizeX() <= 25 or adjArea:GetSizeY() <= 25 then continue end -- too small
                     if nearestPlyPos and adjArea:IsVisible( nearestPlyPos ) then continue end -- dont regress
-                    if currSpawn.preferredEFlags and not self:HasExtraFlags( adjArea, currSpawn.preferredEFlags ) then continue end -- respect it!
+                    if spawnEntry.preferredEFlags and not self:HasExtraFlags( adjArea, spawnEntry.preferredEFlags ) then continue end -- respect it!
                     spawnSet.lastGoodSpawnArea = adjArea
                     spawnSet.lastGoodSpawnAreaWeight = math.random( 5, 15 )
                     break

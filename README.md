@@ -455,12 +455,12 @@ Number values can be:
 | `prettyName` | ✅ | Display name |
 | `class` | ✅ | Entity class to spawn |
 | `spawnType` | ✅ | Spawning algorithm type, only supports `"hunter"` presently |
-| `difficultyCost` | ✅ | Budget cost to spawn |
-| `countClass` | ✅ | Class pattern for counting ( `*` = wildcard ) |
-| `difficultyNeeded` | ❌ | Difficulty threshold needed to start spawning | 
-| `minCount` | ❌ | Minimum maintained count |
+| `difficultyCost` | ✅ | Budget cost to spawn, spawns are checked from highest to lowest cost |
+| `difficultyNeeded` | ❌ | Difficulty threshold needed to start spawning, good if you want difficult enemies to all start spawning suddenly |
+| `countClass` | ❌ | Class pattern for .min/max count counting ( `*` = wildcard ) |
+| `minCount` | ❌ | Minimum maintained count, hard minimum, bypasses budget |
 | `maxCount` | ❌ | Maximum allowed count |
-| `hardRandomChance` | ❌ | percent chance to even consider |
+| `hardRandomChance` | ❌ | percent chance to even consider, works since spawns are checked from highest to lowest cost |
 | `preSpawnedFuncs` | ❌ | Functions called before hunter:Spawn() : `function(spawnData, npc)` |
 | `postSpawnedFuncs` | ❌ | Functions called after hunter:Spawn() : `function(spawnData, npc)` |
 | `isBoss` | ❌ | `true` marks as boss; `false` opts out of auto-detection. When the boss is killed, all alive players escape. Auto-detected when `spawnSet.maxSpawnCount <= 1` (highest `difficultyCost` entry becomes boss). |

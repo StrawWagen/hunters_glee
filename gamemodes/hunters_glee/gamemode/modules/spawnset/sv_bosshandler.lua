@@ -38,7 +38,7 @@ hook.Add( "OnNPCKilled", "glee_bossKilled", function( npc, attacker )
     if not IsValid( npc ) then return end
     if not IsValid( attacker ) then return end
 
-    if not attacker:IsPlayer() then return end
+    if not ( attacker:IsPlayer() or attacker.isGleeRescueHeli ) then return end
 
     if not npc.glee_IsBoss then return end
 

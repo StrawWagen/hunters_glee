@@ -16,10 +16,14 @@ local function isCheats()
 end
 
 if SERVER then
+    local linked_hunter = {
+        class = "terminator_nextbot_snail_disguised",
+        spawnBelow = true,
+    }
     GAMEMODE:RegisterStatusEffect( "linked_hunter",
         function( self, owner ) -- setup func
             self.spawnHunterTimerName = self:Timer( "spawnHunter", 0.2, 0, function()
-                local hunter = GAMEMODE:SpawnHunter( "terminator_nextbot_snail_disguised" )
+                local hunter = GAMEMODE:AttemptToSpawnHunter( linked_hunter )
                 if not IsValid( hunter ) then return end
 
                 if hunter.MimicPlayer then
