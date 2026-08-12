@@ -46,7 +46,7 @@
             "text"        "Spawn Set"
             "help"        "What spawnset to use, eg. hunters_glee, jermas_glee"
             "type"        "Text"
-            "default"     "hunters_glee"
+            "default"     "infernal_glee_easy"
         }
         6
         {

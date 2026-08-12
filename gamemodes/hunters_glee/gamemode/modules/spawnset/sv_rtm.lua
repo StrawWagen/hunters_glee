@@ -134,6 +134,9 @@ function RTM.AddVote( ply )
         ply:PrintMessage( HUD_PRINTTALK, "NOTE: you are already owed the Misery; " .. GAMEMODE:GetPrettyNameOfSpawnSet( modeToSetOnRoundEnd ) .. "..." )
 
     end )
+
+    ply:SetNW2Bool( "glee_hasrtm_voted", true )
+
 end
 
 hook.Add( "PlayerDisconnected", "Remove RTM", function()
@@ -241,7 +244,25 @@ hook.Add( "huntersglee_round_into_inactive", "glee_rockthemisery_hint", function
         local spawnsetName = GAMEMODE:GetSpawnSet()
         local spawnsetMul = GAMEMODE:GetSpawnsetsEscapeMultiplier( spawnsetName )
 
-        if spawnsetMul > 1 then return end
+        local thresh
+        if spawnsetName == GAMEMODE.TheTutorialMisery then
+            local highestEscapeCount = 0
+            for _, ply in player.Iterator() do
+                highestEscapeCount = math.max( highestEscapeCount, ply:GetEscapeCount() )
+
+            end
+            if highestEscapeCount < 1 then return end
+
+            SetGlobalBool( "glee_pleaseshow_rtmtutorialhint", true )
+
+            local mulByEscapes = 1.25 / highestEscapeCount
+            thresh = 2 - mulByEscapes
+
+        else
+            thresh = 1
+
+        end
+        if spawnsetMul > thresh then return end
 
         PrintMessage( HUD_PRINTTALK, "GLEE: This Misery is giving you diminishing returns...\nType !rtm to start a Misery vote" )
 

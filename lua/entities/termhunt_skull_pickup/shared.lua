@@ -174,6 +174,8 @@ function ENT:DoScore( reciever )
     if not reciever:IsPlayer() then return end
     if reciever:Health() <= 0 then return end
 
+    if hook.Run( "glee_skull_blockpickup", reciever, self ) == true then return end
+
     local parent = self:GetParent()
     if IsValid( parent ) and parent:IsRagdoll() then return end
 

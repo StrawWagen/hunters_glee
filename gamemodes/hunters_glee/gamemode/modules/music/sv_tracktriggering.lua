@@ -53,7 +53,7 @@ hook.Add( "huntersglee_wave_wiped", "glee_spawnset_wavewipedsound", function()
     if waveSize <= 2 then return end
     if waveData.realKillCount < waveSize / 2 then return end -- dont play if the wave despawned itself
 
-    local aliveCount = GAMEMODE:countWinnablePlayers()
+    local aliveCount = GAMEMODE:countHuntablePlayers()
     if aliveCount <= 0 then return end
 
     local everyoneCount = player.GetCount()

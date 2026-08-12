@@ -66,7 +66,7 @@ function SWEP:Think()
 		if owner:Health() < owner:GetMaxHealth() then
 			local newHealth = math.min( owner:Health() + 10, owner:GetMaxHealth() )
 			owner:SetHealth( newHealth )
-			owner.glee_LastHealthSetReason = "glee_maxwell_regen"
+			owner.glee_LastSetHealthReason = "glee_maxwell_regen"
 
 		end
 

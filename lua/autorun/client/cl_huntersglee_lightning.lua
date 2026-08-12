@@ -25,6 +25,8 @@ local function getTimeDelayToFeel( ref )
 
 end
 
+local downOffset = Vector( 0, 0, -30 )
+
 net.Receive( "glee_lightning_sound", function()
     local strikingPos = net.ReadVector()
     local powa        = net.ReadFloat()
@@ -35,7 +37,7 @@ net.Receive( "glee_lightning_sound", function()
     local delay = getTimeDelayToFeel( strikingPos )
     if powa < 4 then
         timer.Simple( delay, function()
-            local contents = util.PointContents( strikingPos )
+            local contents = util.PointContents( strikingPos + downOffset )
 
             local explSound = "BaseExplosionEffect.Sound"
             if bit.band( contents, CONTENTS_WATER ) ~= 0 then
@@ -86,7 +88,6 @@ net.Receive( "glee_lightning_sound", function()
 
         end
         timer.Simple( delay, function()
-            print( delay )
             -- echo, echo echo
             sound.Play( "ambient/levels/labs/teleport_postblast_thunder1.wav", strikingPos, 155, math.random( 50, 90 ), volumeMul )
 

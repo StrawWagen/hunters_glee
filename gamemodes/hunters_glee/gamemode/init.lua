@@ -18,6 +18,8 @@ AddCSLuaFile( "modules/escaping/cl_escapecounts.lua" )
 AddCSLuaFile( "modules/statuseffects/cl_statuseffects.lua" )
 AddCSLuaFile( "modules/statuseffects/sh_statuseffectbase.lua" )
 
+AddCSLuaFile( "modules/lessons/cl_lessons.lua" )
+
 AddCSLuaFile( "modules/clhud/cl_topleftinfo.lua" )
 AddCSLuaFile( "modules/clhud/cl_bpm.lua" )
 AddCSLuaFile( "modules/clhud/cl_battery.lua" )
@@ -32,11 +34,11 @@ AddCSLuaFile( "modules/contextmenu_widgets/cl_tauntmenu.lua" )
 AddCSLuaFile( "modules/contextmenu_widgets/cl_settingsmenu.lua" )
 AddCSLuaFile( "modules/contextmenu_widgets/cl_guiltchecker.lua" )
 
-AddCSLuaFile( "cl_shopstandards.lua" )
-AddCSLuaFile( "cl_shoppinggui.lua" )
+AddCSLuaFile( "modules/shop/cl_shopstandards.lua" )
+AddCSLuaFile( "modules/shop/cl_shoppinggui.lua" )
+AddCSLuaFile( "modules/shop/sh_shopshared.lua" )
 
 AddCSLuaFile( "sh_player.lua" )
-AddCSLuaFile( "sh_shopshared.lua" )
 
 -- SHARED INCLUDES
 AddCSLuaFile( "modules/sh_panic.lua" )
@@ -51,12 +53,14 @@ AddCSLuaFile( "modules/sh_detecthunterkills.lua" )
 AddCSLuaFile( "modules/shopitems/cl_shopgobbler.lua" )
 AddCSLuaFile( "modules/shopitems/sh_shophelpers.lua" )
 AddCSLuaFile( "modules/shopitems/sh_shoptags.lua" )
-AddCSLuaFile( "modules/shopitems/sh_shopcategories.lua" )
+AddCSLuaFile( "modules/shop/sh_shopcategories.lua" )
 AddCSLuaFile( "modules/shopitems/sh_itemverification.lua" )
 
 AddCSLuaFile( "modules/guilt/sh_guilt.lua" )
 AddCSLuaFile( "modules/battery/sh_battery.lua" )
 AddCSLuaFile( "modules/spawnset/cl_spawnsetvote.lua" )
+AddCSLuaFile( "modules/spawnset/cl_spawnsetgobbler.lua" )
+AddCSLuaFile( "modules/spawnset/sh_spawnsetlifecyclebase.lua" )
 AddCSLuaFile( "modules/spawnset/sh_spawnpoolutil.lua" )
 AddCSLuaFile( "modules/spawnset/sh_spawnsetcontent.lua" )
 AddCSLuaFile( "modules/unsandboxing/sh_unsandboxing.lua" )
@@ -68,6 +72,10 @@ include( "lib/sv_termfuncs.lua" )
 include( "shared.lua" )
 include( "sv_player.lua" )
 include( "sv_playercommunication.lua" )
+
+include( "modules/shop/sv_shophandler.lua" )
+
+include( "modules/lessons/sv_lessons.lua" )
 
 include( "modules/sv_modelspeaking.lua" )
 include( "modules/sv_fullload.lua" )
@@ -88,6 +96,7 @@ include( "modules/sv_hunterspawner.lua" )
 include( "modules/sv_scoredropping.lua" )
 include( "modules/sv_rejoinpersist.lua" )
 include( "modules/sv_firstfallgrace.lua" )
+include( "modules/spawnset/sv_spawnsetgobbler.lua" )
 include( "modules/spawnset/sv_spawnset.lua" )
 include( "modules/sv_blamedfalldamage.lua" )
 include( "modules/sv_seeding_rewarder.lua" )
@@ -163,6 +172,8 @@ GM.SpawnTypes = {
 GM.roundStartAfterNavCheck      = 75
 GM.roundStartNormal             = 30
 GM.roundStartNormalAllEscaped   = 60
+GM.roundStartEasy               = 60
+GM.roundStartEasyAllEscaped     = 90
 
 local CurTime = CurTime
 
@@ -352,7 +363,7 @@ function GM:Think()
             displayTime = self:getRemaining( self.termHunt_roundStartTime, cur )
 
         else
-            displayName = "Getting ready "
+            displayName = "Preparing "
             displayTime = self:getRemaining( self.termHunt_roundStartTime, cur )
 
         end
@@ -372,19 +383,24 @@ function GM:Think()
         displayTime = 0
 
     elseif currState == self.ROUND_ACTIVE then -- THE HUNT
-        local aliveCount = self:countWinnablePlayers()
-        local waitingForAFirstTimePlayer = self:WaitingForAFirstTimePlayer( players )
+        local aliveCount = self:countHuntablePlayers()
+
+        self:TutorializeNewPlayers( players )
+        local tutorialHolding = self:TutorialIsHoldingTheRound( players )
+
         local specificallyWaiting = ( self.roundEarliestEnd or 0 ) > cur
 
         nobodyAlive = aliveCount == 0
 
-        local win = nobodyAlive and not specificallyWaiting
+        -- sheltered players aren't huntable, so a lobby full of them reads as nobody alive.
+        -- the tutorial has to block the win outright or the round ends under them
+        local win = nobodyAlive and not specificallyWaiting and not tutorialHolding
         win = win or GAMEMODE.roundExtraData.forcedRoundEnd
 
         if win then
             self:roundEnd()
 
-        elseif not waitingForAFirstTimePlayer then -- dont spawn hunters if everyones still in the tutorial!
+        elseif not tutorialHolding then -- dont spawn hunters if everyones still in the tutorial!
             self.blockPvp       = false
             self.doProxChat     = true
             self.autoRespawn    = false
@@ -1010,13 +1026,24 @@ function GM:beginSetup()
     SetGlobalBool( "glee_DisplayWinners", false )
     SetGlobalBool( "glee_EveryoneEscapedLastRound", false )
 
+    local isEasy = self:IsSpawnsetEasy()
     local time
     if self.roundExtraData.everyoneEscaped then
-        time = self.roundStartNormalAllEscaped
+        if isEasy then
+            time = self.roundStartEasyAllEscaped
 
+        else
+            time = self.roundStartNormalAllEscaped
+
+        end
     else
-        time = self.roundStartNormal
+        if isEasy then
+            time = self.roundStartEasy
 
+        else
+            time = self.roundStartNormal
+
+        end
     end
     local var = GetConVar( "sv_cheats" )
     if var:GetBool() == true then

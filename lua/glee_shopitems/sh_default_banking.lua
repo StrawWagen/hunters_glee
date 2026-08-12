@@ -54,17 +54,18 @@ if SERVER then
         if cost > maxSpend then return end
 
         return {
-            pos    = pos,
-            method = method,
-            cost   = cost,
-            heat   = GAMEMODE.navmeshActivityHeatmap[area] or 0,
-            dist   = pos:Distance( tooClosePos ),
+            pos        = pos,
+            method     = method,
+            cost       = cost,
+            heat       = GAMEMODE.navmeshActivityHeatmap[area] or 0,
+            dist       = pos:Distance( tooClosePos ),
+            underwater = area:IsUnderwater(),
         }
 
     end
 
-    -- Every spot within reach, priced. The cheapest arrival wins outright; heat and
-    -- proximity only decide between spots that cost the same.
+    -- Every spot within reach, priced. The cheapest arrival wins outright, then dry land
+    -- over water; heat and proximity only decide between spots that tie on both.
     local function marchForSurfaceSpot( startArea, tooClosePos, maxSpend )
         -- skip the player's own area; march outward through adjacent areas
         local checked = { [startArea] = true }
@@ -102,13 +103,30 @@ if SERVER then
         if #candidates == 0 then return nil end
 
         local cheapest = {}
-        local maxHeat = 0
-        local maxDist = 1
+        local cheapestDry = {}
 
         for _, candidate in ipairs( candidates ) do
             if candidate.cost ~= cheapestCost then continue end
 
             cheapest[#cheapest + 1] = candidate
+            if not candidate.underwater then
+                cheapestDry[#cheapestDry + 1] = candidate
+
+            end
+        end
+
+        -- an ATM standing in water is a last resort, only rank the wet ones when that's all there is
+        local ranking = cheapest
+        if #cheapestDry > 0 then
+            ranking = cheapestDry
+
+        end
+
+        -- scale against what's actually being ranked, or a dropped wet spot could set the ceiling
+        local maxHeat = 0
+        local maxDist = 1
+
+        for _, candidate in ipairs( ranking ) do
             if candidate.heat > maxHeat then maxHeat = candidate.heat end
             if candidate.dist > maxDist then maxDist = candidate.dist end
 
@@ -117,7 +135,7 @@ if SERVER then
         -- best blend of foot traffic ( want lots ) and distance ( want little ), both scaled to 0-1
         local bestSpot
         local bestScore = -math.huge
-        for _, candidate in ipairs( cheapest ) do
+        for _, candidate in ipairs( ranking ) do
             local heatScore = maxHeat > 0 and ( candidate.heat / maxHeat ) or 0
             local nearScore = 1 - ( candidate.dist / maxDist )
             local score = heatScoreWeight * heatScore + ( 1 - heatScoreWeight ) * nearScore

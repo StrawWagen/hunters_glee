@@ -52,19 +52,27 @@ util.AddNetworkString( "glee_lightning_sound" )
 
 local recipFilterEveryone = RecipientFilter()
 
-local function dirToPos( startPos, endPos )
-    if not startPos then return vec_zero end
-    if not endPos then return vec_zero end
-
-    return ( endPos - startPos ):GetNormalized()
-
-end
-
-
 local vecNeg5Hundred = Vector( 0, 0, -500 )
 local vectorUp25 = Vector( 0, 0, 25 )
+local bigNegativeZ = Vector( 0, 0, -6000 )
 
-function termHunt_PowafulLightning( inflic, attacker, strikingPos, powa )
+function terminator_Extras.glee_PowafulLightning( inflic, attacker, strikingPos, powa )
+
+    local strikePosSkyTr = terminator_Extras.getSkyTr( strikingPos )
+    local waterSurfaceStrike
+    if strikePosSkyTr.Fraction > 0.25 then
+        local downTraceDat = {
+            mask = bit.bor( MASK_SOLID_BRUSHONLY, MASK_WATER ),
+            start = strikePosSkyTr.HitPos,
+            endpos = strikePosSkyTr.HitPos + bigNegativeZ
+        }
+        local backDown = util.TraceLine( downTraceDat )
+        strikingPos = backDown.HitPos
+        waterSurfaceStrike = backDown.MatType == MAT_SLOSH
+
+    end
+
+
     if not IsValid( attacker ) then
         attacker = inflic
 
@@ -89,15 +97,27 @@ function termHunt_PowafulLightning( inflic, attacker, strikingPos, powa )
     util.ScreenShake( strikingPos, 25 + powa, 20, closeShakeLength, 1200 + distAdd, true )
     util.ScreenShake( strikingPos, 1, 20, 1.5, 3000 + distAdd, true )
 
+    local radius = powa * 55
     timer.Simple( 0, function()
-        terminator_Extras.GleeFancySplode( strikingPos + vectorUp25, powa * 55, 100 + powa * 55, attacker, inflic, true )
+        terminator_Extras.GleeFancySplode( strikingPos + vectorUp25, radius, 100 + powa * 55, attacker, inflic, true )
 
     end )
+
+    local noDust = waterSurfaceStrike and 1 or 0
 
     local flash = EffectData()
         flash:SetScale( powa / 2 )
         flash:SetOrigin( strikingPos + vector_up )
+        flash:SetFlags( noDust )
     util.Effect( "eff_huntersglee_strikeeffect", flash )
+
+    if waterSurfaceStrike then
+        local sploosh = EffectData()
+            sploosh:SetOrigin( strikingPos )
+            sploosh:SetScale( powa * math.Rand( 4.5, 5.5 ) )
+        util.Effect( "waterripple", sploosh )
+
+    end
 
     -- the arc wanders up out of the strike, one beam per step, and gives up once it has
     -- spent 10 steps running outside the map
@@ -139,11 +159,17 @@ function termHunt_PowafulLightning( inflic, attacker, strikingPos, powa )
         end
     end
 
-    for _, thing in ipairs( ents.FindInSphere( strikingPos, 400 ) ) do
+    local defShockRadius = 400
+    local shockRadius = waterSurfaceStrike and radius * 4 or defShockRadius
+
+    for _, thing in ipairs( ents.FindInSphere( strikingPos, shockRadius ) ) do
         if not IsValid( thing ) then continue end
         if IsValid( thing:GetParent() ) then continue end
 
-        local dir = dirToPos( strikingPos, thing:GetPos() )
+        local subtProduct = strikingPos - thing:GetPos()
+        local dist = subtProduct:Length()
+
+        if waterSurfaceStrike and dist > defShockRadius and thing:WaterLevel() <= 0 then continue end
 
         local dmgType = DMG_SHOCK
         local damageScale = 1
@@ -161,6 +187,8 @@ function termHunt_PowafulLightning( inflic, attacker, strikingPos, powa )
         local damageAmount = powa * damageScale * 100 ^ 1.1
 
         if damageAmount < 1 then continue end
+
+        local dir = subtProduct / dist
 
         thing:SetNWBool( "glee_recentlyStruckByLightning", true )
         timer.Simple( 0.1, function()

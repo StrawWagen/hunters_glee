@@ -566,10 +566,10 @@ end )
 
 
 function GM:PlyCanRespawn( ply )
-    if GAMEMODE.autoRespawn then return true end
-    if ply:HasEscaped() then return false end
     local blockRespawn = hook.Run( "glee_block_respawn", ply )
     if blockRespawn then return false end
+    if GAMEMODE.autoRespawn then return true end
+    if ply:HasEscaped() then return false end
     return true
 
 end
@@ -1141,9 +1141,9 @@ function GM:PlayerDeathThink( ply )
     local weirdBuggedStateRespawn = hasHp
 
     if weirdBuggedStateRespawn and ply:HasEscaped() then
-        ErrorNoHaltWithStack( "PLAYER GETTING HEALTH SET WHILE DEAD", ply, ply.glee_LastHealthSetReason )
+        ErrorNoHaltWithStack( "PLAYER GETTING HEALTH SET WHILE DEAD", ply, ply.glee_LastSetHealthReason )
         ply:SetHealth( 0 )
-        ply.glee_LastHealthSetReason = "PlayerDeathThink escaped weirdBuggedStateRespawn"
+        ply.glee_LastSetHealthReason = "PlayerDeathThink escaped weirdBuggedStateRespawn"
 
     end
 
@@ -1187,16 +1187,16 @@ function GM:PlayerDeathThink( ply )
 end
 
 
--- massive custom player respawn location logic
-
--- ONLY SET THEM TO A LOCATION IF THEY ACTUALLY DIED!
--- do not set ply's location if they, eg, stop being ragdolled by glide!
+-- glee_true_PlayerSpawn check
 hook.Add( "PostPlayerDeath", "glee_onlyfixspawn_ifdied", function( ply )
     ply.glee_usedTrueRespawn = nil
 
 end )
 
+-- massive custom player respawn location logic
 
+-- ONLY SET THEM TO A LOCATION IF THEY ACTUALLY DIED!
+-- do not set ply's location if they, eg, stop being ragdolled by glide!
 local spaceCheckUpOffset = Vector( 0, 0, 64 )
 local spaceCheckHull = Vector( 17, 17, 2 )
 local occupiedSpawnAreas = {}

@@ -150,6 +150,32 @@ change MODE to...
     Misfortune
 harmless misery with terminators that never get angry?
 
+skull no interact only happens with owner -done
+
+-- rewrite HINTS -done
+-- make them refresh if rejoining after >10 days of not playing -done
+
+.easy flag -done
+.easy miseries have limited escape payout -done
+make infernal heckler variant the tutorial misery - done
+
+terminators are not the best default misery -done
+diminishing returns on .easy miseries does open chat hint, then !rtm hint -done
+first tutorial misery is you vs easy infernal skeletons -- done
+has .easy flag -- done
+.boss skeleton spawns in after a couple waves -- done
+medium strength variant -- done
+
+fading in effect for tutorial text -done
+multiple bits of text all coming together? -done
+
+-- remove pistol from loadout -done
+
+-- make the hints guide people into making profit at least once while dead -done
+
+-- CREATE bank account inside atms -done
+
+
 -- make radio a purchasable item
 -- make voicechat a settings menu thing
 
@@ -196,13 +222,11 @@ harmless misery with terminators that never get angry?
 -- hint to flash tab?
 
 -- voting for miseries is not that new user friendly
--- zambies glee is better starting misery
 -- sixth sense conflicts with new proximity hud
 
 -- skull place while dead item
 -- show skulls when aiming at players
 -- skulls from enemies makes sense, but not from other ways
--- push skulls into people's face, becomes compelling once 
 
 -- split sixth sense?
 -- enemy finding powerup
@@ -217,17 +241,12 @@ harmless misery with terminators that never get angry?
 -- gaussian blobs
 -- pie slices
 
-
--- remove pistol from loadout
-
 -- groups
 -- make it easier to see friends
 -- taunt with eachother
 -- pins skull counts to eachother?
 -- add pinging
 -- team gui for friends?
-
--- make the hints guide people into making profit at least once while dead
 
 -- funny interaction when grigorified players try to escape?
 
@@ -239,15 +258,10 @@ harmless misery with terminators that never get angry?
 
 -- fresh skulls create blood decals?
 
--- rewrite HINTS
--- make them refresh if rejoining after >10 days of not playing
-
 -- do pass on intro, make sure player is invisible
 -- fast weapon switch should be on by default
 
 -- better feedback from shooting players
-
--- CREATE bank account inside atms
 
 -- no ammo hints on all custom weapons
 
@@ -283,7 +297,7 @@ purchase innate that lets you carry more weapons
 afk fakeout doppleganger
 attach balloons to stuff as ghost
 
-terminator misery
+terminator misery with
 beartraps more prominent in shop
 SLAMS prominent in shop
 
@@ -312,6 +326,9 @@ van is ready to pick people up
 sticks around for 30s
 then starts teleport away countdown
 fucks off
+
+van build is done, with help from anot
+
 
 if you teleport the gnome out you get +1000 score
 
@@ -375,6 +392,15 @@ what kills players, npcs, players?
 
 
 swoleify arms if you shove someone?
-babysitter that is the patron saint of all new players
+babysitter character that is the patron saint of all new players
 
 
+more everyone escaped music, use hl2 tracks
+zoom camera away during fade to white
+picking up weapons?
+
+limit shop selection in the .easy miseries -half done, what to do about categories?
+
+proper blurred shadow for tutorial text?
+
+have to click "ok" on super long and yappy terms of service when creating a bank account

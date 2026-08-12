@@ -10,7 +10,7 @@ local set = {
     prettyName = "PNG Nextbot Brainrot",
     description = "Sanic, and/or Obunga.\nObjectively shallower gameplay.\nYou happy now?",
     difficultyPerMin = { 100 / 10, 1000 / 10 }, -- difficulty per minute
-    waveInterval = { 30, 90 }, -- time between spawn waves
+    waveInterval = { 60, 120 }, -- time between spawn waves
     diffBumpWhenWaveKilled = 50, -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
     startingBudget = "default", -- so budget isnt 0
     spawnCountPerDifficulty = { 0.05 },
@@ -22,7 +22,7 @@ local set = {
     resourcesAdded = {},
     spawns = {},
     chanceToBeVotable = 1,
-    chanceToBeVotableIfHard = 15,
+    chanceToBeVotableWhenHard = 15,
 }
 
 if hasSanic then
@@ -81,6 +81,16 @@ if hasObunga then
 end
 
 if #set.spawns <= 0 then return end ---???? might happen
+
+function set:Activate()
+    -- these nextbots don't handle death right
+    -- they keep movin!
+    self:Hook( "OnNPCKilled", function( npc )
+        if npc.glee_SpawnsetThatMadeMe ~= self.name then return end
+        SafeRemoveEntity( npc )
+
+    end )
+end
 
 -- put the spawnset IN the global table to be gobbled
 table.insert( GLEE_SPAWNSETS, set )

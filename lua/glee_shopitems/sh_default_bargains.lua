@@ -12,6 +12,12 @@ local function getOfferCount()
 
     end
 
+    local hookResult = hook.Run( "glee_bargains_overridecount", offerCount )
+    if isnumber( hookResult ) then
+        offerCount = hookResult
+
+    end
+
     return offerCount
 
 end
@@ -480,6 +486,11 @@ else
     local backupPlyColor = Vector( 1, 1, 1 )
     GAMEMODE:RegisterStatusEffect( "astrallyprojected",
         function( self, _owner ) -- setup func
+            self:HookOnce( "glee_block_respawn", function( ply ) -- block respawn
+                if not ply:HasStatusEffect( "astrallyprojected" ) then return end
+                return true
+
+            end )
             self:HookOnce( "EntityNetworkedVarChanged", function( ent, valname, _, new )
                 if valname ~= "glee_astralprojection_ragdoll_owner" then return end
                 ent.GetPlayerColor = function()
@@ -502,11 +513,6 @@ else
 
                 if not IsValid( new ) then return end -- owner
                 ent.glee_PlayerNameColorOverride = GAMEMODE:GetTeamColor( new )
-
-            end )
-            self:HookOnce( "glee_block_respawn", function( ply ) -- block respawn
-                if not ply:HasStatusEffect( "astrallyprojected" ) then return end
-                return true
 
             end )
         end
@@ -695,7 +701,7 @@ local items = {
         desc = "Donate blood for score." .. bargainDescrip,
         shCost = bloodDonorCost,
         cooldown = math.huge,
-        tags = { "INNATE", "Debuff", "Bargain" },
+        tags = { "MUTATIONS", "Debuff", "Bargain" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE, -- only purchasble when actively hunting, otherwise people would heal with cheap preround healthkits
         },
@@ -709,7 +715,7 @@ local items = {
             purchaser:GivePlayerScore( scoreGiven )
 
             purchaser:SetHealth( remainingHealth )
-            purchaser.glee_LastHealthSetReason = "glee_blood_donor"
+            purchaser.glee_LastSetHealthReason = "glee_blood_donor"
 
             for _ = 0, 2 do
                 shopHelpers.playRandomSound( purchaser, shopHelpers.thwaps, 75, math.random( 100, 120 ) )
@@ -723,7 +729,7 @@ local items = {
         shCost = -100,
         markup = 0.25,
         cooldown = math.huge,
-        tags = { "INNATE", "Debuff", "Bargain" },
+        tags = { "MUTATIONS", "Debuff", "Bargain" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -742,7 +748,7 @@ local items = {
         shCost = -300,
         markup = 0.2,
         cooldown = math.huge,
-        tags = { "INNATE", "Debuff", "Bargain" },
+        tags = { "MUTATIONS", "Debuff", "Bargain" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -761,7 +767,7 @@ local items = {
         shCost = -175,
         markup = 0.25,
         cooldown = math.huge,
-        tags = { "INNATE", "Debuff", "Bargain" },
+        tags = { "MUTATIONS", "Debuff", "Bargain" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -780,7 +786,7 @@ local items = {
         shCost = -200,
         markup = 0.25,
         cooldown = math.huge,
-        tags = { "INNATE", "Debuff", "Bargain" },
+        tags = { "MUTATIONS", "Debuff", "Bargain" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -799,7 +805,7 @@ local items = {
         shCost = -162,
         markup = 0.25,
         cooldown = math.huge,
-        tags = { "INNATE", "Debuff", "Bargain" },
+        tags = { "MUTATIONS", "Debuff", "Bargain" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -817,7 +823,7 @@ local items = {
         shCost = -140,
         markup = 0.25,
         cooldown = math.huge,
-        tags = { "INNATE", "Debuff", "Bargain" },
+        tags = { "MUTATIONS", "Debuff", "Bargain" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -836,7 +842,7 @@ local items = {
         shCost = -350,
         markup = 0.25,
         cooldown = math.huge,
-        tags = { "INNATE", "Debuff", "Bargain" },
+        tags = { "MUTATIONS", "Debuff", "Bargain" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -869,5 +875,10 @@ local items = {
         end,
     },
 }
+
+for _, data in pairs( items ) do
+    data.tags[#data.tags + 1] = "Essential"
+
+end
 
 GAMEMODE:GobbleShopItems( items )

@@ -58,6 +58,7 @@ function GM:ScoreCrate( pos, scoreBallsToGive )
 
     local crate = ents.Create( "item_item_crate" )
     crate:SetPos( pos )
+    crate:SetModel( "models/Items/item_item_crate.mdl" )
     local random = math.random( -4, 4 ) * 45
     crate:SetAngles( Angle( 0, random, 0 ) )
     crate:SetKeyValue( "ItemClass", "termhunt_score_pickup" )

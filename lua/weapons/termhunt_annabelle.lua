@@ -44,6 +44,14 @@ SWEP.Range = 10000 -- for term ai
 if CLIENT then
     terminator_Extras.glee_CL_SetupSwep( SWEP, "termhunt_annabelle", "materials/vgui/hud/killicon/termhunt_annabelle.png" )
 
+    function SWEP:HintPostStack()
+        local owner = self:GetOwner()
+        if not IsValid( owner ) then return end
+
+        if self:Clip1() <= 0 and owner:GetAmmoCount( self.Primary.Ammo ) <= 0 then return true, "NO SLUGS LEFT\nBuy another Annabelle in the shop..." end
+
+    end
+
     language.Add( "GLEE_ANNABELLE_SLUGS_ammo", "Slugs" )
 
 end

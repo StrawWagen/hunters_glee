@@ -42,12 +42,13 @@ local set = {
     startingBudget = "default", -- so budget isnt 0
     spawnCountPerDifficulty = { 0.2, 0.35 },
     startingSpawnCount = { 1, 4 },
-    maxSpawnCount = { 15 }, -- hard cap on count
+    maxSpawnCount = { 10 }, -- hard cap on count
     maxSpawnDist = "default",
     roundEndSound = "default",
     roundStartSound = "default",
     roundEarlyStartSound = "default",
-    chanceToBeVotable = 5,
+    chanceToBeVotable = 0.5,
+    chanceToBeVotableWhenHard = 5,
     spawns = {
         {
             hardRandomChance = nil,

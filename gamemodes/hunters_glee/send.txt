@@ -1,5 +1,7 @@
-gamemodes\hunters_glee\gamemode\cl_shopstandards.lua
-gamemodes\hunters_glee\gamemode\cl_shoppinggui.lua
+gamemodes\hunters_glee\gamemode\modules\shop\cl_shopstandards.lua
+gamemodes\hunters_glee\gamemode\modules\shop\cl_shoppinggui.lua
+gamemodes\hunters_glee\gamemode\modules\shop\sh_shopshared.lua
+gamemodes\hunters_glee\gamemode\modules\shop\sh_shopcategories.lua
 
 gamemodes\hunters_glee\gamemode\modules\cl_winscreen.lua
 gamemodes\hunters_glee\gamemode\modules\cl_scoreboard.lua
@@ -51,10 +53,11 @@ gamemodes\hunters_glee\gamemode\modules\thirdpersonflashlight\cl_flashlight.lua
 
 gamemodes\hunters_glee\gamemode\modules\firsttimeplayers\cl_firsttimeplayers.lua
 
+gamemodes\hunters_glee\gamemode\modules\lessons\cl_lessons.lua
+
 gamemodes\hunters_glee\gamemode\modules\unsandboxing\sh_unsandboxing.lua
 
 gamemodes\hunters_glee\gamemode\modules\shopitems\cl_shopgobbler.lua
-gamemodes\hunters_glee\gamemode\modules\shopitems\sh_shopcategories.lua
 gamemodes\hunters_glee\gamemode\modules\shopitems\sh_shoptags.lua
 gamemodes\hunters_glee\gamemode\modules\shopitems\sh_shophelpers.lua
 gamemodes\hunters_glee\gamemode\modules\shopitems\sh_itemverification.lua

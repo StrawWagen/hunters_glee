@@ -55,12 +55,15 @@ function SWEP:CreateEntity()
     ent:SetModel( self.WorldModel )
     ent:Spawn()
 
-    ent.nextPickup = CurTime() + 1
+    local owner = self:GetOwner()
+
+    ent.glee_skullThrower = owner
+    ent.nextThrowerPickup = CurTime() + 1
+    ent.nextPickup = CurTime() + 0.01
     ent:SetModelScale( self.ModelScale )
     ent:Activate()
-    ent:SetPhysicsAttacker( self:GetOwner(), 10 )
+    ent:SetPhysicsAttacker( owner, 10 )
 
-    local owner = self:GetOwner()
     if owner:IsPlayer() then
         if owner.GivePlayerSkulls then
             owner:GivePlayerSkulls( -1 )
@@ -74,6 +77,17 @@ function SWEP:CreateEntity()
     return ent
 
 end
+
+hook.Add( "glee_skull_blockpickup", "glee_dontpickup_thrownskull", function( picker, skull )
+    local thrower = skull.glee_skullThrower
+    if not IsValid( thrower ) then return end
+    if picker ~= thrower then return end
+
+    if skull.nextThrowerPickup < CurTime() then return end
+
+    return true -- block pickup
+
+end )
 
 if GAMEMODE.IsReallyHuntersGlee then
     SWEP.InfiniteAmmo = false

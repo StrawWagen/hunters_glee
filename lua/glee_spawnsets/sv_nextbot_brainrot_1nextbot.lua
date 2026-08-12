@@ -14,7 +14,10 @@ local set = {
     maxSpawnCount = 1, -- hard cap on count
     chanceToBeVotable = 0.25,
     chanceToBeVotableIfHard = 1,
+    easy = true,
 }
+
+local varRandomizers = {}
 
 if hasSanic then
     local function randomizeVar()
@@ -26,11 +29,12 @@ if hasSanic then
         RunConsoleCommand( "npc_sanic_acquire_distance", dist )
 
     end
+    varRandomizers[#varRandomizers + 1] = randomizeVar
 
     local npc = {
-        hardRandomChance = { 15, 75 }, -- chance this is even checked
+        hardRandomChance = { 15, 75 }, -- chance this is even checked, only exists cause both can be installed sometimes
         name = "brainrot_sanic",
-        prettyName = "A Sanic",
+        prettyName = "The Sanic",
         class = "npc_sanic",
         spawnType = "hunter",
         difficultyCost = { 10 },
@@ -55,10 +59,12 @@ if hasObunga then
         RunConsoleCommand( "npc_obunga_acquire_distance", dist )
 
     end
+    varRandomizers[#varRandomizers + 1] = randomizeVar
+
     local npc = {
-        hardRandomChance = { 15, 75 }, -- chance this is even checked
+        hardRandomChance = { 15, 75 },
         name = "brainrot_obunga",
-        prettyName = "An Obunga",
+        prettyName = "The Obunga",
         class = "npc_obunga",
         spawnType = "hunter",
         difficultyCost = { 15 },
@@ -74,6 +80,22 @@ if hasObunga then
 end
 
 if #set.spawns <= 0 then return end ---???? might happen
+
+function set:Activate()
+    -- these nextbots don't handle death right
+    -- they keep movin!
+    self:Hook( "OnNPCKilled", function( npc )
+        if npc.glee_SpawnsetThatMadeMe ~= self.name then return end
+        SafeRemoveEntity( npc )
+
+    end )
+    self:Timer( "MessWithFindDistances", 60, 0, function()
+        for _, func in ipairs( varRandomizers ) do
+            func()
+
+        end
+    end )
+end
 
 -- put the spawnset IN the global table to be gobbled
 table.insert( GLEE_SPAWNSETS, set )

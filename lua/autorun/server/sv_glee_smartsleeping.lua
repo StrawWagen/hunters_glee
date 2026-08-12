@@ -100,14 +100,19 @@ hook.Add( "Think", "glee_dynamicfreezing_laggingthink", function() -- deal damag
     if nextBreak > curTime then return end
     nextBreak = curTime + 0.1
 
+    local damage
+
     local lagging
     if GAMEMODE.IsReallyHuntersGlee then
         local _, tickrate, threshold = GAMEMODE:IsLagging()
         lagging = tickrate < ( threshold * 0.25 ) -- lower threshold
+        damage = ( threshold - tickrate ) * 10
 
     end
+
     if not lagging then
-        local lagScale = physenv.GetLastSimulationTime() * 1000
+        lagScale = physenv.GetLastSimulationTime() * 1000
+        damage = lagScale * 2
 
         lagging = lagScale > math.random( 50, 100 )
 
@@ -122,7 +127,7 @@ hook.Add( "Think", "glee_dynamicfreezing_laggingthink", function() -- deal damag
     local dmg = DamageInfo()
     dmg:SetAttacker( game.GetWorld() )
     dmg:SetInflictor( game.GetWorld() )
-    dmg:SetDamage( lagScale * 2 )
+    dmg:SetDamage( damage )
     dmg:SetDamageType( DMG_CRUSH )
     randomFrozenEnt:TakeDamageInfo( dmg )
 

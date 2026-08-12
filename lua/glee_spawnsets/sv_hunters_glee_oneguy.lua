@@ -47,8 +47,9 @@ local set = {
     roundEndSound = "default",
     roundStartSound = "default",
     roundEarlyStartSound = "default",
-    chanceToBeVotable = 1, -- and fade into the background if this host isn't challenged by this
+    chanceToBeVotable = 1, -- and fade into the background if this host isn't challenged by it
     chanceToBeVotableWhenHard = 15, -- stick around
+    easy = true,
     spawns = {
         {
             hardRandomChance = nil,

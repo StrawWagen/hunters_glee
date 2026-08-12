@@ -45,6 +45,13 @@ SWEP.LastAttack = 0
 if CLIENT then
     terminator_Extras.glee_CL_SetupSwep( SWEP, "termhunt_ar3", "materials/vgui/hud/killicon/termhunt_ar3.png" )
 
+    function SWEP:HintPostStack()
+        local owner = self:GetOwner()
+        if not IsValid( owner ) then return end
+
+        if self:Clip1() <= 0 and owner:GetAmmoCount( self.Primary.Ammo ) <= 0 then return true, "IT'S EMPTY\nBuy another emplacement gun in the shop..." end
+
+    end
 end
 
 function SWEP:SetupDataTables()

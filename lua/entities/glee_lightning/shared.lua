@@ -33,7 +33,7 @@ function ENT:Initialize()
 
     timer.Simple( 0, function()
         if not IsValid( self ) then return end
-        termHunt_PowafulLightning( self, self:GetOwner(), self:GetPos() + ( vector_up * 10 ), self.powa )
+        terminator_Extras.glee_PowafulLightning( self, self:GetOwner(), self:GetPos() + ( vector_up * 10 ), self.powa )
 
         SafeRemoveEntityDelayed( self, 15 )
 

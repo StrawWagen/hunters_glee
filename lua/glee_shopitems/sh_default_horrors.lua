@@ -10,7 +10,7 @@ local items = {
         costDecorative = { "-50", "-100", "-???" },
         markup = 1,
         cooldown = 0.5,
-        tags = { "HORRORS", "CloseShopOnPurchase", "DelayedCost" },
+        tags = { "HORRORS", "Essential", "CloseShopOnPurchase", "DelayedCost" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },
@@ -27,7 +27,7 @@ local items = {
         shCost = 0,
         markup = 1,
         cooldown = 60,
-        tags = { "HORRORS", "CloseShopOnPurchase" },
+        tags = { "HORRORS", "Essential", "CloseShopOnPurchase" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },
@@ -44,7 +44,7 @@ local items = {
         shCost = 0,
         markup = 1,
         cooldown = 15,
-        tags = { "HORRORS", "CloseShopOnPurchase" },
+        tags = { "HORRORS", "Essential", "CloseShopOnPurchase" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },
@@ -95,7 +95,7 @@ local items = {
         shCost = 0,
         markup = 1,
         cooldown = 120,
-        tags = { "HORRORS", "CloseShopOnPurchase" },
+        tags = { "HORRORS", "Essential", "CloseShopOnPurchase" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },
@@ -131,7 +131,7 @@ local items = {
         canGoInDebt = true,
         markup = 1,
         cooldown = 80,
-        tags = { "HORRORS", "Infernal", "CloseShopOnPurchase" },
+        tags = { "HORRORS", "Essential", "Infernal", "CloseShopOnPurchase" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },

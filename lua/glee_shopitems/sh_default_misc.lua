@@ -6,7 +6,7 @@ local items = {
         name = "Score",
         desc = "Free score, Cheat!",
         shCost = -1000,
-        tags = { "INNATE", "DEADGIFTS", "Cheat" },
+        tags = { "MUTATIONS", "DEADGIFTS", "Essential", "Cheat" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,

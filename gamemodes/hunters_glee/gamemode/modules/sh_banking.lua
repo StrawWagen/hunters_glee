@@ -1,5 +1,5 @@
-local defaultBankDataDir = "hunters_glee"
-local defaultBankDataName = defaultBankDataDir .. "/bankdata.json"
+local defaultDir = GM.DataFileDirectory
+local defaultBankDataName = defaultDir .. "/bankdata.json"
 GM.bankInfoTable = GM.bankInfoTable or {}
 GM.bankInfoTable.accounts = GM.bankInfoTable.accounts or {}
 
@@ -143,8 +143,8 @@ if SERVER then
 
     bankFunctions.saveBank = function()
         GAMEMODE.bankInfoTable.savedTime = os.time()
-        if not file.Exists( defaultBankDataDir, "DATA" ) then
-            file.CreateDir( defaultBankDataDir )
+        if not file.Exists( defaultDir, "DATA" ) then
+            file.CreateDir( defaultDir )
 
         end
         file.Write( defaultBankDataName, util.TableToJSON( GAMEMODE.bankInfoTable, true ) )

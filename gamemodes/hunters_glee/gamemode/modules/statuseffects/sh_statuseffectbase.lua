@@ -1,5 +1,4 @@
 local statusEffect = {
-    _setupTasks = {},
     _teardownTasks = {},
     _printName = "NULL",
     _owner = NULL,
@@ -52,15 +51,8 @@ end
     @return: None
 --]]---------------------------------------------------------
 function statusEffect:Apply( ply )
-    local allGood = true
     if self._setup then
-        allGood = ProtectedCall( self._setup, self, ply )
-
-    end
-    if not allGood then return end
-
-    for _, func in ipairs( self._setupTasks ) do
-        ProtectedCall( func, ply )
+        ProtectedCall( self._setup, self, ply )
 
     end
 end
@@ -72,12 +64,10 @@ end
     @return: None
 --]]---------------------------------------------------------
 function statusEffect:InternalTeardown( ply )
-    local allGood = true
     if self._teardown then
-        allGood = ProtectedCall( self._teardown, self, ply )
+        ProtectedCall( self._teardown, self, ply )
 
     end
-    if not allGood then return end
     for _, func in ipairs( self._teardownTasks ) do
         ProtectedCall( func, ply )
 
@@ -132,16 +122,22 @@ function statusEffect:HookOnce( hookName, func )
 
     local fullHookIdentifier = "glee_statuseffect_" .. myName .. "_" .. hookName
 
-    activeEffectsCount[fullHookIdentifier] = activeEffectsCount[fullHookIdentifier] or 0
-    if activeEffectsCount[fullHookIdentifier] >= 1 then return end -- already hooked
+    local count = activeEffectsCount[fullHookIdentifier] or 0
     table.insert( self._teardownTasks, function()
-        activeEffectsCount[fullHookIdentifier] = activeEffectsCount[fullHookIdentifier] - 1
-        hook.Remove( hookName, fullHookIdentifier )
+        local countRemove = activeEffectsCount[fullHookIdentifier]
+        countRemove = countRemove - 1
+        activeEffectsCount[fullHookIdentifier] = countRemove
 
+        if countRemove <= 0 then
+            hook.Remove( hookName, fullHookIdentifier )
+
+        end
     end )
+    if count <= 0 then
+        hook.Add( hookName, fullHookIdentifier, func )
 
-    activeEffectsCount[fullHookIdentifier] = activeEffectsCount[fullHookIdentifier] + 1
-    hook.Add( hookName, fullHookIdentifier, func )
+    end
+    activeEffectsCount[fullHookIdentifier] = count + 1
 
     return fullHookIdentifier
 

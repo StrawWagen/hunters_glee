@@ -87,6 +87,7 @@ end
 
 local rewardPerStaleWeek = 0.25
 local maxStaleReward = 1.5
+local easyCostSoftMax = 0.9
 
 local function escapeRatioToMultiplier( escaped, remained, lastUpdateTime )
     local base = 1
@@ -97,13 +98,13 @@ local function escapeRatioToMultiplier( escaped, remained, lastUpdateTime )
         addedByRatio = addedByRatio + math.Clamp( remained * 0.001, 0, 1.5 ) -- and continue up to 5x for really miserable maps
 
     else
-        local escapedWeighted = escaped * 1.35
+        local escapedWeighted = escaped * 1.4
         local ratio = remained / escapedWeighted
         ratio = ratio - 1
         -- if 10 escaped and 0 remained,  ratio is -1
-        -- if 20 escaped and 60 remained, ratio is 1.22
-        -- if 40 escaped and 60 remained, ratio is 0.11
-        -- if 80 escaped and 60 remained, ratio is -0.44
+        -- if 20 escaped and 60 remained, ratio is 1.14
+        -- if 40 escaped and 60 remained, ratio is 0.07
+        -- if 80 escaped and 60 remained, ratio is -0.46
 
         if ratio <= 0 then
             addedByRatio = math.Clamp( ratio, -1, 0 ) -- easy map, down to 0x
@@ -144,10 +145,19 @@ function GM:GetMapsEscapeMultiplier( mapName )
 end
 
 function GM:GetSpawnsetsEscapeMultiplier( spawnSetName )
-    if not spawnSetName then return 1, 0, 0 end
+    if not spawnSetName or spawnSetName == "" then return 1, 0, 0 end
 
     local escapedCount, remainedCount, lastUpdateTime = getRawCounts( "glee_escape_by_spawnset", "spawnset", spawnSetName )
-    return escapeRatioToMultiplier( escapedCount, remainedCount, lastUpdateTime ), escapedCount, remainedCount
+    local multiplier = escapeRatioToMultiplier( escapedCount, remainedCount, lastUpdateTime )
+
+    local spawnset = self:GetRegisteredSpawnSet( spawnSetName )
+    if spawnset and spawnset.easy and multiplier > easyCostSoftMax then -- hardcoded easy round, soft clamp out the multiplier
+        local aboveMax = multiplier - easyCostSoftMax
+        multiplier = easyCostSoftMax + aboveMax * 0.1
+
+    end
+
+    return multiplier, escapedCount, remainedCount
 
 end
 

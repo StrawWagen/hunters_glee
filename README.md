@@ -97,6 +97,9 @@ GAMEMODE:GobbleShopItems( items )
 | `purchaseTimes` | ✅ | When purchasable: `ROUND_INACTIVE`, `ROUND_ACTIVE` |
 | `svOnPurchaseFunc` | ✅ | Server function called on purchase: `function(purchaser, itemId)` |
 | `shSkullCost` | ❌ | Skull cost. Accepts number or function. Zero is ignored. Negative gives skulls on purchase |
+| `canGoInDebt` | ❌ | Buyable with no score. Lets you force people into innate debuffs, etc |
+| `fakeCost` | ❌ | Show a cost but don't take it. For items that charge the player themselves |
+| `simpleCostDisplay` | ❌ | **Client.** Skip the coloring and formatting of the cost in the shop |
 | `shPurchaseCheck` | ❌ | Validation function(s): `function(purchaser) -> bool, reason`, must return true for purchase to be allowed |
 | `markup` | ❌ | Price multiplier during active hunt |
 | `markupPerPurchase` | ❌ | Additional markup per purchase |
@@ -134,9 +137,17 @@ Some other tags automatically apply special properties to items:
 `GAMEMODE.shopHelpers` provides common utilities:
 
 ```lua
-shopHelpers.aliveCheck( purchaser )      -- Returns true if alive
+shopHelpers.aliveCheck( purchaser )    -- Returns true if alive
 shopHelpers.deadCheck( purchaser )     -- Returns true if dead
+shopHelpers.escapedCheck( purchaser )  -- Returns true if they've escaped
 shopHelpers.isCheats()                 -- Returns true if sv_cheats is on
+shopHelpers.hasMultiplePeople()        -- Returns true if 2+ players, hide co-op items so solo players aren't confused
+
+shopHelpers.getItemsByTag( "Weapon" )  -- Every item with that tag, unsorted
+
+-- picks one at random, channel defaults to CHAN_STATIC
+shopHelpers.playRandomSound( ent, sounds, level, pitch, channel )
+
 shopHelpers.purchaseWeapon( purchaser, {
     class = "weapon_smg1",
     ammoType = "SMG1",
@@ -144,6 +155,11 @@ shopHelpers.purchaseWeapon( purchaser, {
     resupplyClips = 4,      -- Clips given on repurchase
     confirmSoundWeight = 1, -- Gun cock sound intensity
 } )
+
+-- for screamer_crate derived "ghost/haunting" items
+-- creates and spawns the ent owned by the purchaser, and hands it the item's
+-- identifier and canGoInDebt, so the ent can charge for itself later
+local placed = shopHelpers.setupPlacable( "glee_beartrap", purchaser, "my_beartrap_item" )
 ```
 
 ### Shopping Hooks
@@ -151,7 +167,7 @@ shopHelpers.purchaseWeapon( purchaser, {
 Additional ways to control access to shop items.
 
 - `allow`, `failReason` = `glee_shop_canshow`( `ply`, `itemData` )
-  - Return `false`, `failReason` to block the item from showing.
+  - Return `false`, `failReason` to block the item from showing. ( also blocks purchasing )
   - Behaves similarly to `shCanShowInShop`, but called on a global scale and with reference to the item.
 - `allow`, `failReason` = `glee_shop_canpurchase`( `ply`, `itemData` )
   - Return `false`, `failReason` to block the item from being purchased.
@@ -333,13 +349,26 @@ Spawnsets(Miseries) are the #1 way to change up the hunt.
 They're defined in `lua/glee_spawnsets/` and auto-loaded.
 Third party addons can define their own spawnsets, they just have to be in the right spot.
 
+Files are auto-loaded based on their prefix, same as shop items:
+- `sh_` - Shared (runs on both client and server)
+- `sv_` - Server only
+- `cl_` - Client only
+- No prefix - ( deprecated, server only )
+
+Two letters and an underscore is read as a prefix, so `my_misery.lua` errors instead of loading.
+Name it `sv_my_misery.lua`.
+
+A spawnset only exists on the client to run `Activate` and `OnRemove` (see below), it never spawns anything.
+So a `cl_` file needs nothing but a `name` matching the spawnset it's adding to.
+A spawnset that only exists clientside errors, because it can never be picked.
+
 #### Spawnset Example A: Your first spawnset
 
 ```lua
--- lua/glee_spawnsets/my_spawnset.lua
+-- lua/glee_spawnsets/sv_mycustom_misery.lua
 
 local mySpawnSet = {
-    name = "my_spawnset",                           -- Unique identifier
+    name = "mycustom_misery",                       -- Unique identifier
     prettyName = "My Custom Misery",                -- Display name
     description = "It's my misery, it's custom!",   -- Description, best used as a "hint" that teases the spawnset's content
     
@@ -368,7 +397,7 @@ local mySpawnSet = {
             class = "terminator_nextbot",              -- Spawns the "overcharged" terminator
             spawnType = "hunter",
             difficultyCost = { 25, 50 },
-            difficultyNeeded = { 50, 100 }             -- only consider spawning this after 5 - 10 minutes
+            difficultyNeeded = { 50, 100 },             -- only consider spawning this after 5 - 10 minutes
             countClass = "terminator_nextbot_snail*",
             maxCount = { 1 },                          -- Never exceed this many
         },
@@ -413,7 +442,10 @@ Number values can be:
 | `roundEarlyStartSound` | ❌ | Alt start sound, played 10s before start, only plays if roundStartSound is "" |
 | `genericSpawnerRate` | ❌ | Crate/item spawn rate multiplier |
 | `chanceToBeVotable` | ❌ | Percent chance to appear in !rtm vote, 0-100, accepts float |
-| `chanceToBeVotableWhenHard` | ❌ | Percent chance to appear in !rtm when this misery's escape multiplier >1.5x, for making spawnsets fade into the background when they no longer challenge the host |
+| `chanceToBeVotableWhenHard` | ❌ | Percent chance to appear in !rtm when this misery's escape multiplier >1x, for making spawnsets fade into the background when they no longer challenge the host |
+| `easy` | ❌ | Marks this as a beginner misery. Tagged `(EASY)` in the !rtm vote, and while an easy one is active the vote prefers offering other easy ones. Also soft-caps its escape reward multiplier |
+| `Activate` | ❌ | Called when this becomes the active misery ( see Spawnset Lifecycle ) |
+| `OnRemove` | ❌ | Called when the misery changes away from this ( see Spawnset Lifecycle ) |
 
 #### .spawns Entries
 
@@ -436,7 +468,7 @@ Number values can be:
 #### Spawnset Example B: Functions on spawn!
 
 ```lua
--- lua/glee_spawnsets/the_true_machine.lua
+-- lua/glee_spawnsets/sv_the_true_machine.lua
 
 local function applySynthflesh( spawnData, npc )
     npc:SetMaterial( "phoenix_storms/wire/pcb_red" )
@@ -475,6 +507,37 @@ local trueHorror = {
 table.insert( GLEE_SPAWNSETS, trueHorror )
 ```
 
+#### Spawnset Lifecycle
+
+- `Activate` - the misery changed TO this spawnset
+- `OnRemove` - the misery changed AWAY from this spawnset
+
+Both optional. Neither fires between rounds of the same misery.
+
+```lua
+function trueHorror:Activate()
+    self:Hook( "OnNPCKilled", function( npc )
+        if npc.glee_SpawnsetThatMadeMe ~= self.name then return end
+        huntersGlee_Announce( player.GetAll(), 100, 5, "One less machine." )
+
+    end )
+end
+```
+
+| Method | Description |
+|--------|-------------|
+| `self:Hook( hookName, func )` | A `hook.Add` scoped to this spawnset. The identifier is made for you, don't pass one |
+| `self:Timer( timerName, delay, reps, func )` | A `timer.Create` scoped to this spawnset. `reps` of 0 is infinite |
+| `self:TimerRemove( timerName )` | Kill one of this spawnset's timers early |
+
+These are removed for you when the misery changes.
+Only write an `OnRemove` for things you didn't make through `self`.
+
+`self`'s values are the ones you WROTE, not this round's roll.
+A `waveInterval` of `{ 60, 90 }` is still `{ 60, 90 }` here, use `GAMEMODE:GetSpawnSet()` for the rolled number.
+
+A `cl_` file with the same `name` gets its own `Activate`, for HUD and sounds.
+
 ---
 
 ## Round States
@@ -488,6 +551,7 @@ Referenced throughout the codebase:
 | `GAMEMODE.ROUND_ACTIVE` | 1 | Hunt in progress |
 | `GAMEMODE.ROUND_INACTIVE` | 2 | Preparation phase |
 | `GAMEMODE.ROUND_LIMBO` | 3 | Displaying winners |
+| `GAMEMODE.ROUND_TESTSTATE` | 4 | Debug state, nothing spawns |
 
 ---
 

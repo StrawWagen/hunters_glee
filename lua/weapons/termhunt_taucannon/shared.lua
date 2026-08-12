@@ -57,6 +57,8 @@ if CLIENT then
     function SWEP:HintPostStack()
         local owner = self:GetOwner()
 
+        if self:Clip1() <= 0 and owner:GetAmmoCount( self.Primary.Ammo ) <= 0 then return true, "You need to purchase a refill in the shop...\nIt's EMPTY!" end
+
         if not owner:GetNW2Bool( "glee_taucannon_primaryfired", false ) then return true, "PRIMARY ATTACK to... attack..." end
         if not owner:GetNW2Bool( "glee_taucannon_secondaryfired", false ) then return true, "Hold SECONDARY ATTACK to charge the tau cannon.\nDon't let it overcharge!" end
 
@@ -150,7 +152,7 @@ function SWEP:DumpCharge()
 
             if not instaKillBlacklist[class] then
                 trace.Entity:SetHealth( 0 )
-                trace.Entity.glee_LastHealthSetReason = "glee_taucannon_overcharge_instantkill"
+                trace.Entity.glee_LastSetHealthReason = "glee_taucannon_overcharge_instantkill"
 
             end
         end

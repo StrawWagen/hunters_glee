@@ -3,7 +3,7 @@ local GAMEMODE = GAMEMODE or GM
 local asked = {}
 local spawned = {}
 local alreadyDone = {}
-local blockSpawning
+local testingDone
 
 util.AddNetworkString( "glee_dothefirsttimemessage" )
 util.AddNetworkString( "glee_askforgleetings" )
@@ -30,6 +30,11 @@ GAMEMODE:RegisterStatusEffect( "spawn_protection",
         owner:SetCollisionGroup( COLLISION_GROUP_IN_VEHICLE )
         owner:Fire( "alpha", 0, 0 )
         owner:SetNWBool( "glee_firstowner_sheltering", true )
+
+        self:HookOnce( "glee_ply_blockhuntability", function( ply )
+            if ply:HasStatusEffect( "spawn_protection" ) then return true end
+
+        end )
 
     end,
     function( _self, owner )
@@ -65,6 +70,11 @@ local function shelterPly( ply )
                math.abs( math.AngleDifference( currAng.r, startingAng.r ) ) < 5 then return end
 
             ply:RemoveStatusEffect( "spawn_protection" )
+
+            if testingDone then
+                testingDone[ply] = true
+
+            end
 
             timer.Remove( timerName )
             gleetings( ply )
@@ -110,12 +120,16 @@ local function needsToAsk( ply )
 
     if ply:IsBot() then return end
 
+    if testingDone and not testingDone[ply] then return true end
+
     return tutorialKnowledgeLevel( ply ) < requiredKnowledgeLevel()
 
 end
 
 local function isEducated( ply )
-    if ply:IsBot() then return end
+    if ply:IsBot() then return true end
+
+    if testingDone then return testingDone[ply] end
 
     return tutorialKnowledgeLevel( ply ) >= requiredKnowledgeLevel()
 
@@ -126,24 +140,30 @@ function GAMEMODE:IsFirstTimePlayer( ply )
 
 end
 
-function GAMEMODE:WaitingForAFirstTimePlayer( players )
+-- Half or more of the session is still being tutorialised, so the round can't be won and
+-- hunters shouldn't spawn. Recounted every think on purpose, there's no latch to get stuck.
+-- Only counts players we've actually sent the tutorial to, isEducated alone is false for
+-- anyone still connecting and they'd freeze the round just by loading in.
+function GAMEMODE:TutorialIsHoldingTheRound( players )
     if #players <= 0 then return end
 
-    local halfTheServer = #players / 2
+    local inTutorial = 0
 
-    -- Already waiting, so the only question is whether it's over yet.
-    if blockSpawning then
-        local sawIt = 0
+    for _, ply in ipairs( players ) do
+        if not ply.glee_IsFirstTimePlayer then continue end
+        if isEducated( ply ) then continue end
 
-        for _, ply in ipairs( players ) do
-            if isEducated( ply ) then sawIt = sawIt + 1 end
-
-        end
-
-        blockSpawning = sawIt < halfTheServer
-        return blockSpawning
+        inTutorial = inTutorial + 1
 
     end
+
+    return inTutorial >= #players / 2
+
+end
+
+-- separate from the question above, this one acts
+function GAMEMODE:TutorializeNewPlayers( players )
+    if #players <= 0 then return end
 
     local nonKnowers = {}
 
@@ -151,14 +171,11 @@ function GAMEMODE:WaitingForAFirstTimePlayer( players )
         if needsToAsk( ply ) then nonKnowers[#nonKnowers + 1] = ply end
 
     end
+    if #nonKnowers <= 0 then return end
 
-    -- >50% of the session are new players
-    -- if this happens, stop spawning until at least half the session finishes the tutorial
-    -- and set the mode to the easiest terminator mode
-    local needsToBlock = #nonKnowers >= halfTheServer
-    if needsToBlock then
-        RunConsoleCommand( "huntersglee_spawnset", "hunters_glee_oneguy" )
-        blockSpawning = true
+    -- enough of the session is new that the whole server should be on the gentle misery
+    if #nonKnowers >= #players / 2 then
+        RunConsoleCommand( "huntersglee_spawnset", self.TheTutorialMisery )
 
     end
 
@@ -188,18 +205,8 @@ hook.Add( "glee_full_load", "glee_firsttimeplayercheck", function( ply )
     end )
 end )
 
-concommand.Add( "glee_test_tutorial", function( ply )
-    if not IsValid( ply ) then return end
-    asked[ply] = nil
-    alreadyDone[ply:SteamID()] = nil
-    spawned[ply] = true
-
-    ply:ConCommand( "cl_huntersglee_firsttimetutorial 0" )
-
-end, nil, nil, FCVAR_CHEAT )
-
-concommand.Add( "glee_test_tutorial_everyone", function( caller )
-    if not caller:IsSuperAdmin() then return end
+hook.Add( "glee_reset_tutorial", "firsttimeplayers", function()
+    testingDone = {} -- capture players spawning in aswell
 
     for _, ply in player.Iterator() do
         asked[ply] = nil
@@ -209,4 +216,4 @@ concommand.Add( "glee_test_tutorial_everyone", function( caller )
         ply:ConCommand( "cl_huntersglee_firsttimetutorial 0" )
 
     end
-end, nil, nil )
+end )

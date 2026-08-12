@@ -37,6 +37,10 @@ if CLIENT then
     terminator_Extras.glee_CL_SetupSwep( SWEP, "termhunt_reviver", "materials/vgui/hud/termhunt_reviver.png" )
     function SWEP:HintPostStack()
         local owner = self:GetOwner()
+
+        -- .Primary.Ammo is "none", the clip IS the resurrections left
+        if self:Clip1() <= 0 then return true, "NO MORE REVIVES\nTime to buy a recharge in the shop..." end
+
         if not owner:GetNW2Bool( "gleereviver_resurrected", false ) then
             return true, "Primary attack to resurrect a dead player!"
         end

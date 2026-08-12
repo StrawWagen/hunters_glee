@@ -70,7 +70,7 @@ local items = {
         shCost = 0,
         markup = 1,
         cooldown = 60,
-        tags = { "DEADSACRIFICES", "CloseShopOnPurchase", "DelayedReward" },
+        tags = { "DEADSACRIFICES", "Essential", "CloseShopOnPurchase", "DelayedReward" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },
@@ -88,7 +88,7 @@ local items = {
         shCost = 0,
         markup = 1,
         cooldown = 10,
-        tags = { "DEADSACRIFICES", "CloseShopOnPurchase" },
+        tags = { "DEADSACRIFICES", "Essential", "CloseShopOnPurchase" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },
@@ -106,7 +106,7 @@ local items = {
         shCost = 0,
         markup = 1,
         cooldown = 55,
-        tags = { "DEADSACRIFICES", "CloseShopOnPurchase" },
+        tags = { "DEADSACRIFICES", "Essential", "CloseShopOnPurchase" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },
@@ -142,7 +142,7 @@ local items = {
         shCost = 0,
         markup = 1,
         cooldown = 15,
-        tags = { "DEADSACRIFICES", "CloseShopOnPurchase", "DelayedReward" },
+        tags = { "DEADSACRIFICES", "Essential", "CloseShopOnPurchase", "DelayedReward" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },
@@ -160,7 +160,7 @@ local items = {
         shCost = 0,
         markup = 1,
         cooldown = 2,
-        tags = { "DEADSACRIFICES", "CloseShopOnPurchase" },
+        tags = { "DEADSACRIFICES", "Essential", "CloseShopOnPurchase" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },
@@ -178,7 +178,7 @@ local items = {
         shCost = 0,
         markup = 1,
         cooldown = 45,
-        tags = { "DEADSACRIFICES", "CloseShopOnPurchase" },
+        tags = { "DEADSACRIFICES", "Essential", "CloseShopOnPurchase" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },
@@ -247,7 +247,7 @@ local items = {
         shCost = 0,
         markup = 1,
         cooldown = 5,
-        tags = { "DEADGIFTS", "CloseShopOnPurchase" },
+        tags = { "DEADGIFTS", "Essential", "CloseShopOnPurchase" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },
@@ -265,7 +265,7 @@ local items = {
         shCost = 0,
         markup = 1,
         cooldown = 5,
-        tags = { "DEADGIFTS", "CloseShopOnPurchase" },
+        tags = { "DEADGIFTS", "Essential", "CloseShopOnPurchase" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },
@@ -301,7 +301,7 @@ local items = {
         costDecorative = "-150",
         markup = 1,
         cooldown = 0.5,
-        tags = { "DEADGIFTS", "CloseShopOnPurchase" },
+        tags = { "DEADGIFTS", "Essential", "CloseShopOnPurchase" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },
@@ -359,7 +359,7 @@ local items = {
         shCost = 0,
         markup = 1,
         cooldown = 5,
-        tags = { "DEADGIFTS", "CloseShopOnPurchase" },
+        tags = { "DEADGIFTS", "Essential", "CloseShopOnPurchase" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },

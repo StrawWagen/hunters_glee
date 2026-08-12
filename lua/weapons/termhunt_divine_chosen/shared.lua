@@ -97,7 +97,7 @@ function SWEP:Initialize()
     self:DrawShadow( false )
 
     -- this guy won't hold up the round
-    hook.Add( "huntersglee_blockwinning", self, function( _, ply )
+    hook.Add( "glee_ply_blockhuntability", self, function( _, ply )
         local owner = entMeta.GetOwner( self )
         if not IsValid( owner ) then return end
         if ply ~= owner then return end
@@ -260,7 +260,7 @@ function SWEP:ShutDown()
         owner:SetMaxHealth( owner.glee_BaseHealth or 100 )
         owner.glee_LastSetMaxHealthReason = "glee_chosen_maxhpreset"
         owner:SetHealth( owner:GetMaxHealth() )
-        owner.glee_LastHealthSetReason = "glee_chosen_maxhpreset"
+        owner.glee_LastSetHealthReason = "glee_chosen_maxhpreset"
 
     end
 
@@ -303,7 +303,7 @@ function SWEP:ChosenThink()
         self.nextHealthRegen = CurTime() + 0.05
         if ownersHealth < maxHp then
             owner:SetHealth( math.Clamp( ownersHealth + 4, 0, maxHp ) )
-            owner.glee_LastHealthSetReason = "glee_chosen_regen"
+            owner.glee_LastSetHealthReason = "glee_chosen_regen"
 
         end
         if ownersArmor < maxArmor then
