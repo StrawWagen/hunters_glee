@@ -5,7 +5,7 @@ local minTimeBetweenResurrections = 20
 
 local function divineInterventionPos( purchaser, spawnUnsafe, radAdd )
     radAdd = radAdd or 0
-    local plys = GAMEMODE:returnWinnableInTable( player.GetAll() )
+    local plys = GAMEMODE:returnHuntablePlysIn( player.GetAll() )
 
     if #plys <= 0 then
         local randomNavArea = GAMEMODE:GetAreaInOccupiedBigGroupOrRandomBigGroup()
@@ -96,7 +96,7 @@ if SERVER then
                 healAmount = healAmount * 0.75
                 local newHealth = math.min( owner:Health() + healAmount, owner:GetMaxHealth() )
                 owner:SetHealth( newHealth )
-                owner.glee_LastHealthSetReason = "glee_divineintervention_blessing"
+                owner.glee_LastSetHealthReason = "glee_divineintervention_blessing"
 
                 local newArmor = math.min( owner:Armor() + healAmount * 0.5, owner:GetMaxArmor() )
                 owner:SetArmor( newArmor )
@@ -222,72 +222,75 @@ if SERVER then
                 if dmgInfo:IsDamageType( DMG_BURN ) then -- OH GOD IT BURNS
                     dmgInfo:ScaleDamage( 8 )
 
+                elseif dmgInfo:IsDamageType( DMG_BLAST ) then
+                    dmgInfo:ScaleDamage( 4 )
+
                 else
                     dmgInfo:ScaleDamage( 2 )
 
                 end
             end )
 
-            function self:ApplyEffects( ply )
+            function self:ApplyEffects()
                 -- shrivel all bones
-                local bc = ply:GetBoneCount() or 0
+                local bc = owner:GetBoneCount() or 0
                 for i = 0, bc - 1 do
-                    ply:ManipulateBoneScale( i, shriveledScale * math.Rand( 0.5, 1.75 ) )
+                    owner:ManipulateBoneScale( i, shriveledScale * math.Rand( 0.5, 1.75 ) )
 
                 end
 
                 -- apply speed mod
-                ply:DoSpeedModifier( "infernalintervention", -25 )
+                owner:DoSpeedModifier( "infernalintervention", -25 )
 
                 -- deal made, 1 health
-                ply:SetHealth( 1 )
-                ply.glee_LastHealthSetReason = "glee_infernalintervention_spawn"
+                owner:SetHealth( 1 )
+                owner.glee_LastSetHealthReason = "glee_infernalintervention_spawn"
 
                 -- bleeding effect on apply, just visual
-                local timerName = "glee_devilbleed_" .. ply:GetCreationID()
+                local timerName = "glee_devilbleed_" .. owner:GetCreationID()
                 local strength = 100
                 timer.Create( timerName, 0.05, 200, function()
-                    if not IsValid( ply ) then return end
-                    if not ply:Alive() then timer.Remove( timerName ) return end
+                    if not IsValid( owner ) then return end
+                    if not owner:Alive() then timer.Remove( timerName ) return end
                     if math.random( 0, 100 ) > strength then return end
                     strength = strength * 0.9
 
-                    GAMEMODE:Bleed( ply, strength )
+                    GAMEMODE:Bleed( owner, strength )
 
                 end )
 
                 -- applying sounds
-                ply:EmitSound( "ambient/levels/labs/electric_explosion5.wav", 75, math.random( 70, 80 ) )
-                ply:EmitSound( "npc/antlion/digdown1.wav", 75, math.random( 150, 160 ) )
+                owner:EmitSound( "ambient/levels/labs/electric_explosion5.wav", 75, math.random( 70, 80 ) )
+                owner:EmitSound( "npc/antlion/digdown1.wav", 75, math.random( 150, 160 ) )
 
             end
 
             -- apply effects on spawn
-            self:HookOnce( "glee_true_PlayerSpawn", function( ply )
-                if not ply:HasStatusEffect( "infernalintervention_rawendofthedeal" ) then return end
+            self:Hook( "glee_true_PlayerSpawn", function( spawned )
+                if spawned ~= owner then return end
 
-                self:ApplyEffects( ply )
+                self:ApplyEffects()
 
                 -- wake up screaming with terror!
-                GAMEMODE:GivePanic( ply, 100 )
+                GAMEMODE:GivePanic( owner, 100 )
 
                 -- fix health just in case
                 timer.Simple( 0, function() -- juggernaut, etc
-                    if not IsValid( ply ) then return end
-                    if not ply:Alive() then return end -- this would be unlucky!
-                    ply:SetHealth( 1 )
-                    ply.glee_LastHealthSetReason = "glee_infernalintervention_spawn_delayed"
+                    if not IsValid( owner ) then return end
+                    if not owner:Alive() then return end -- this would be unlucky!
+                    owner:SetHealth( 1 )
+                    owner.glee_LastSetHealthReason = "glee_infernalintervention_spawn_delayed"
 
-                    GAMEMODE:GivePanic( ply, 50 )
-                    GAMEMODE:EmulateHistoricHighBPM( ply ) -- spawn with a pounding heart
+                    GAMEMODE:GivePanic( owner, 50 )
+                    GAMEMODE:EmulateHistoricHighBPM( owner ) -- spawn with a pounding heart
 
-                    ply:TauntDance( ACT_HL2MP_ZOMBIE_SLUMP_IDLE ) -- start lying down
+                    owner:TauntDance( ACT_HL2MP_ZOMBIE_SLUMP_IDLE ) -- start lying down
 
                     timer.Simple( 0.5, function() -- delay because of high ping players
-                        if not IsValid( ply ) then return end
-                        if not ply:Alive() then return end
-                        ply:BlockAnimEventsFor( -1 ) -- reset TauntDance cooldown, animate NOW!
-                        ply:TauntDance( ACT_HL2MP_ZOMBIE_SLUMP_RISE ) -- RISE!
+                        if not IsValid( owner ) then return end
+                        if not owner:Alive() then return end
+                        owner:BlockAnimEventsFor( -1 ) -- reset TauntDance cooldown, animate NOW!
+                        owner:TauntDance( ACT_HL2MP_ZOMBIE_SLUMP_RISE ) -- RISE!
 
                     end )
                 end )
@@ -555,7 +558,7 @@ if CLIENT then
 end
 if SERVER then
     local function isStillGoing()
-        if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE or GAMEMODE:countWinnablePlayers() <= 0 then return false end
+        if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE or GAMEMODE:countHuntablePlayers() <= 0 then return false end
         return true
 
     end
@@ -616,7 +619,7 @@ if SERVER then
                         if not IsValid( potentialChosen ) then return end
                         if potentialChosen:Health() <= 1 then return end
                         potentialChosen:SetHealth( 1 )
-                        potentialChosen.glee_LastHealthSetReason = "glee_divineintervention_patiencefail"
+                        potentialChosen.glee_LastSetHealthReason = "glee_divineintervention_patiencefail"
                         potentialChosen:GiveStatusEffect( "infernalintervention_rawendofthedeal" )
 
                     end )
@@ -847,7 +850,7 @@ local items = {
 
             end
         end,
-        tags = { "DEADGIFTS", "Divine", "SelfResurrecting", "Resurrecting", "CloseShopOnPurchase" },
+        tags = { "DEADGIFTS", "Divine", "Essential", "SelfResurrecting", "Resurrecting", "CloseShopOnPurchase" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },
@@ -882,7 +885,7 @@ local items = {
         markup = 1,
         markupPerPurchase = 1,
         cooldown = 5,
-        tags = { "DEADGIFTS", "Infernal", "SelfResurrecting", "Resurrecting", "CloseShopOnPurchase" },
+        tags = { "DEADGIFTS", "Infernal", "Essential", "SelfResurrecting", "Resurrecting", "CloseShopOnPurchase" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },
@@ -939,7 +942,7 @@ local items = {
         shCost = 30,
         markup = 1.5,
         cooldown = 0.5,
-        tags = { "ITEMS", "Resurrecting", "Weapon", "Utility" },
+        tags = { "ITEMS", "Essential", "Resurrecting", "Weapon", "Utility" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,

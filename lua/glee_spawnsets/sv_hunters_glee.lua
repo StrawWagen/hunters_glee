@@ -85,14 +85,14 @@ end
 local defaultSpawnSet = {
     name = "hunters_glee", -- unique name
     prettyName = "Hunter's Glee",
-    description = "The default Hunter's Glee experience.",
+    description = "Smart, cruel enemies.\nBring them glee.",
     difficultyPerMin = 0.05, -- very little difficulty per minute, let wave clears primarily bump difficulty 
     waveInterval = "default", -- time between spawn waves
     diffBumpWhenWaveKilled = "default", -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
     startingBudget = "default", -- so budget isnt 0
     spawnCountPerDifficulty = "default", -- max of ten at 10 minutes
     startingSpawnCount = "default",
-    maxSpawnCount = 4, -- hard cap on count, trying lowering this to 4
+    maxSpawnCount = 6, -- hard cap on count
     maxSpawnDist = "default",
     roundEndSound = "default",
     roundStartSound = "default",

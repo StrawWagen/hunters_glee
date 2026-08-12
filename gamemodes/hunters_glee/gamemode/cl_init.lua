@@ -1,6 +1,7 @@
 include( "shared.lua" )
-include( "cl_shopstandards.lua" ) -- has to load almost first
-include( "cl_shoppinggui.lua" )
+include( "modules/lessons/cl_lessons.lua" )
+include( "modules/shop/cl_shopstandards.lua" ) -- has to load almost first
+include( "modules/shop/cl_shoppinggui.lua" )
 include( "modules/statuseffects/cl_statuseffects.lua" )
 include( "modules/cl_winscreen.lua" )
 include( "modules/cl_scoreboard.lua" )
@@ -9,6 +10,7 @@ include( "modules/cl_fallingwind.lua" )
 include( "modules/cl_killfeedoverride.lua" )
 include( "modules/cl_spectateflashlight.lua" )
 include( "modules/spawnset/cl_spawnsetvote.lua" )
+include( "modules/spawnset/cl_spawnsetgobbler.lua" )
 include( "modules/shopitems/cl_shopgobbler.lua" )
 include( "modules/music/cl_music.lua" )
 include( "modules/signalstrength/cl_signalstrength.lua" )

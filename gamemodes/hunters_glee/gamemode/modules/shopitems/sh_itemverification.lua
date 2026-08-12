@@ -63,6 +63,8 @@ end
 
 -- add VIA this function!
 function GM:AddShopItem( shopItemIdentifier, shopItemData )
+    shopItemData.identifier = shopItemIdentifier -- Replicate identifier for easier access
+
     -- check all the non-optional stuff
     if not istable( shopItemData ) then addShopFail( shopItemIdentifier, "data table is not a table" ) return end
     if not shopItemData.name then addShopFail( shopItemIdentifier, "invalid .name" ) return end
@@ -80,7 +82,6 @@ function GM:AddShopItem( shopItemIdentifier, shopItemData )
     if not foundAHome then addShopFail( shopItemIdentifier, "wasnt put in a category!!, check sh_shopcategories.lua for full category list" ) return end
 
     GAMEMODE.shopItems[shopItemIdentifier] = shopItemData
-    shopItemData.identifier = shopItemIdentifier -- Replicate identifier for easier access
 
     hook.Run( "glee_shopitemadded", shopItemIdentifier, shopItemData )
 
@@ -112,8 +113,8 @@ function GM:PutItemInProperCategories( shopItemData ) -- put item in categories 
             foundAHome = true
 
         else
-            GAMEMODE:invalidateShopItem( shopItemData.identifier )
             permaPrint( "HUNTER'S GLEE: " .. shopItemData.name .. " has category tag " .. tag .. " which doesn't match any categories!" )
+            GAMEMODE:invalidateShopItem( shopItemData.identifier )
 
         end
     end
@@ -168,14 +169,14 @@ local REASON_SKULLPOOR_1SKULL = "You need a skull to buy this."
 local REASON_SKULLDEBT = "You can't buy this, You're in Skull debt."
 
 local function runChecks( ply, itemData, hookName, checkFuncs, funcName )
-    local itemID = itemData.identifier
+    local identifier = itemData.identifier
 
     -- Run hook
     -- hook.Add( "blah", "blahblah", function( purchaser, itemData ) end )
     local success, returned, reason = xpcall( hook.Run, errorCatchingMitt, hookName, ply, itemData )
     if not success then
-        GAMEMODE:invalidateShopItem( itemID )
-        permaPrint( "GLEE: !!!!!!!!!! " .. hookName .. " errored for " .. itemID .. "!!!!!!!!!!!" )
+        GAMEMODE:invalidateShopItem( identifier )
+        permaPrint( "GLEE: !!!!!!!!!! " .. hookName .. " errored for " .. identifier .. "!!!!!!!!!!!" )
         return false, REASON_ERROR
 
     end
@@ -190,8 +191,8 @@ local function runChecks( ply, itemData, hookName, checkFuncs, funcName )
         for _, checkFunc in ipairs( checkFuncs ) do
             success, returned, reason = xpcall( checkFunc, errorCatchingMitt, ply )
             if not success then
-                GAMEMODE:invalidateShopItem( itemID )
-                permaPrint( "GLEE: !!!!!!!!!! " .. itemID .. "'s " .. funcName .. " function errored!!!!!!!!!!!" )
+                GAMEMODE:invalidateShopItem( identifier )
+                permaPrint( "GLEE: !!!!!!!!!! " .. identifier .. "'s " .. funcName .. " function errored!!!!!!!!!!!" )
                 return false, REASON_ERROR
 
             else
@@ -209,9 +210,9 @@ end
 
 -- shared!
 
-function GM:canShowInShop( ply, itemID )
-    if not itemID or itemID == "" then return false, REASON_INVALID end
-    local itemData = GAMEMODE:GetShopItemData( itemID )
+function GM:canShowInShop( ply, identifier )
+    if not identifier or identifier == "" then return false, REASON_INVALID end
+    local itemData = GAMEMODE:GetShopItemData( identifier )
     if not itemData then return false, REASON_INVALID end
 
     -- Check categories first
@@ -231,25 +232,28 @@ function GM:canShowInShop( ply, itemID )
 
     if not wasValidCategory then return false, lastNotPurchasableReason end
 
+    -- hook.Run( "glee_shop_canshow", ply, itemData
     return runChecks( ply, itemData, "glee_shop_canshow", itemData.shCanShowInShop, "shCanShowInShop" )
+
 end
 
-function GM:canPurchase( ply, itemID )
-    if not itemID or itemID == "" then return end
-    local itemData = GAMEMODE:GetShopItemData( itemID )
+function GM:canPurchase( ply, identifier )
+    if not identifier or identifier == "" then return end
+    local itemData = GAMEMODE:GetShopItemData( identifier )
     if not itemData then return false, REASON_INVALID end
 
-    local nextPurchase = ply.shopItemCooldowns[itemID] or -20000
+    local nextPurchase = ply.shopItemCooldowns[identifier] or -20000
     if nextPurchase == math.huge then return false, "You've already bought this." end
 
-    local allowed, failReason = self:canShowInShop( ply, itemID )
+    local allowed, failReason = self:canShowInShop( ply, identifier )
     if not allowed then return false, failReason end
 
+    -- hook.Run( "glee_shop_canpurchase", ply, itemData
     allowed, failReason = runChecks( ply, itemData, "glee_shop_canpurchase", itemData.shPurchaseCheck, "shPurchaseCheck" )
     if not allowed then return false, failReason end
 
     local score = ply:GetScore()
-    local cost = GAMEMODE:shopItemCost( itemID, ply )
+    local cost = GAMEMODE:shopItemCost( identifier, ply )
     local canGoInDebt = itemData.canGoInDebt
 
     -- account for negative cost
@@ -265,7 +269,7 @@ function GM:canPurchase( ply, itemID )
 
     end
 
-    local skullCost = GAMEMODE:shopItemSkullCost( itemID, ply )
+    local skullCost = GAMEMODE:shopItemSkullCost( identifier, ply )
     if skullCost then
         local skulls = ply:GetSkulls()
         local skullCostsTooMuch = skulls < skullCost and not canGoInDebt

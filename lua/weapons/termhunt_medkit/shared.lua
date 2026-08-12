@@ -35,6 +35,18 @@ if CLIENT then
     terminator_Extras.glee_CL_SetupSwep( SWEP, "termhunt_medkit", "materials/vgui/hud/termhunt_medkit.png" )
     function SWEP:HintPostStack()
         local owner = self:GetOwner()
+
+        -- .Primary.Ammo is "none", the clip IS the juice left
+        if self:Clip1() <= 0 then
+            local msg = "NO JUICE LEFT\nBuy another medkit in the shop..."
+            if owner:Health() >= owner:GetMaxHealth() then
+                msg = msg .. "\nOr pick up some Health off the ground..."
+
+            end
+            return true, msg
+
+        end
+
         if not owner:GetNW2Bool( "gleemedkit_healedself", false ) and owner:Health() < owner:GetMaxHealth() then return true, "Secondary attack to heal yourself!" end
         if not owner:GetNW2Bool( "gleemedkit_healedother", false ) and #player.GetAll() > 1 then
             local players = player.GetAll()
@@ -100,7 +112,7 @@ function SWEP:PrimaryAttack()
         self:TakePrimaryAmmo( need )
 
         ent:SetHealth( math.min( ent:GetMaxHealth(), ent:Health() + need ) )
-        ent.glee_LastHealthSetReason = "glee_medkit_heal"
+        ent.glee_LastSetHealthReason = "glee_medkit_heal"
         ent:EmitSound( HealSound )
 
         self:SendWeaponAnim( ACT_VM_PRIMARYATTACK )
@@ -143,7 +155,7 @@ function SWEP:SecondaryAttack()
         self:TakePrimaryAmmo( need )
 
         ent:SetHealth( math.min( ent:GetMaxHealth(), ent:Health() + need ) )
-        ent.glee_LastHealthSetReason = "glee_medkit_healself"
+        ent.glee_LastSetHealthReason = "glee_medkit_healself"
         ent:EmitSound( HealSound )
 
         self:SendWeaponAnim( ACT_VM_PRIMARYATTACK )

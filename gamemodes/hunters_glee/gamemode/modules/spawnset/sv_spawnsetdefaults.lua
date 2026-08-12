@@ -7,7 +7,7 @@ local minute = 60
 -- provide a string that's "default*2", and the num will be the default variable multiplied by 2
 -- MUCH better to use "default*" system, because the defaults WILL change eventually
 
-return {
+local defaults = {
     difficultyPerMin = { 100 / 10, 150 / 10 }, -- 100-150% diff at 10 mins
     waveInterval = { minute, minute * 1.6 },
     diffBumpWhenWaveKilled = { 10, 20 },
@@ -31,3 +31,11 @@ return {
     secondGrigoriArrivalSound = "tracks/secondGrigoriArrival", -- played when grigori arrives
     noMoreGrigoriSound = "tracks/stopper/grigori", -- played when there are no more grigori
 }
+
+local ignored = {
+    easy = true,
+    Activate = true,
+    OnRemove = true,
+}
+
+return defaults, ignored

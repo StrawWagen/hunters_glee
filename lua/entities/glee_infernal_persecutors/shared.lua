@@ -22,7 +22,7 @@ ENT.DoLeaderNpc = true
 ENT.MinNpcs = 4
 ENT.MaxNpcs = 5
 
-ENT.PersistGuiltAdded = 0.5
+ENT.PersistGuiltAdded = 1
 
 -- configurable distances
 ENT.GuiltyCheckRadius = 2500 -- alive players within this decide the cost tier

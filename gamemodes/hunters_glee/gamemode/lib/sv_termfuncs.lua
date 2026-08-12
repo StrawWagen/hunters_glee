@@ -415,16 +415,16 @@ function GM:GetNearbyWalkableArea( playerReference, start, count, occupiedSpawnA
 
 end
 
-function canWinTheRound( ply )
+function plyIsHuntable( ply )
     if entMeta.Health( ply ) <= 0 then return false end
     if not ply.glee_FullLoaded then return false end
-    if hook.Run( "huntersglee_blockwinning", ply ) then return false end
+    if hook.Run( "glee_ply_blockhuntability", ply ) then return false end
 
     return true
 
 end
 
-GM.canWinTheRound = canWinTheRound
+GM.plyIsHuntable = plyIsHuntable
 
 function GM:getRemaining( num, curtime )
     return math.abs( num - curtime )
@@ -479,15 +479,15 @@ function GM:returnDeadListenersInTable( stuff ) -- people who can hear/see dead 
 
 end
 
-function GM:returnWinnableInTable( stuff )
-    local winnableStuff = {}
+function GM:returnHuntablePlysIn( stuff )
+    local huntableStuff = {}
     for _, curr in pairs( stuff ) do
-        if canWinTheRound( curr ) then
-            table.insert( winnableStuff, curr )
+        if plyIsHuntable( curr ) then
+            table.insert( huntableStuff, curr )
 
         end
     end
-    return winnableStuff
+    return huntableStuff
 end
 
 function GM:anotherAlivePlayer( block )
@@ -565,10 +565,10 @@ function GM:nearestNonInfernalAlivePlayer( pos )
 end
 
 
-function GM:countWinnablePlayers()
+function GM:countHuntablePlayers()
     local aliveCount = 0
     for _, curr in pairs( player.GetAll() ) do
-        if canWinTheRound( curr ) then
+        if plyIsHuntable( curr ) then
             aliveCount = aliveCount + 1
 
         end

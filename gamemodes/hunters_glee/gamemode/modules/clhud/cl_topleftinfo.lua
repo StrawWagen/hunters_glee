@@ -70,21 +70,9 @@ end
 
 -- Hint system
 
--- oops i dropped my spaghetti
-local definitelyBoughtAnUndeadItem = CreateClientConVar( "cl_huntersgleehint_hasboughtundead", 0, true, false, "Player has seen the purchase undead stuff hint?", 0, 1 )
-local hasBoughtDivineIntervention  = CreateClientConVar( "cl_huntersgleehint_hasboughtintervention", 0, true, false, "Player has seen 'its time for divine intervention'?", 0, 1 )
-local hasSpectatedSomeone          = CreateClientConVar( "cl_huntersgleehint_hasspectatedsomeone", 0, true, false, "Player has seen 'its time for divine intervention'?", 0, 1 )
-local hasSwitchedSpectateModes     = CreateClientConVar( "cl_huntersgleehint_hasswitchedspectatemodes", 0, true, false, "Player has seen from the eyes of something?", 0, 1 )
-local hasStoppedSpectating         = CreateClientConVar( "cl_huntersgleehint_hasstoppedspectating", 0, true, false, "Player has stopped following something?", 0, 1 )
-
-
+-- deliberately not a lesson, this one nags again every session
 hook.Add( "InitPostEntity", "glee_clreadhints", function()
-    LocalPlayer().glee_DefinitelyBoughtAnUndeadItem  = definitelyBoughtAnUndeadItem:GetBool()
-    LocalPlayer().glee_HasBoughtDivineIntervention   = hasBoughtDivineIntervention:GetBool()
-    LocalPlayer().glee_HasSpectatedSomeone           = hasSpectatedSomeone:GetBool()
-    LocalPlayer().glee_HasSwitchedSpectateModes      = hasSwitchedSpectateModes:GetBool()
-    LocalPlayer().glee_HasStoppedSpectatingSomething = hasStoppedSpectating:GetBool()
-    LocalPlayer().glee_HasDoneSpectateFlashlight     = nil
+    LocalPlayer().glee_HasDoneSpectateFlashlight = nil
 
 end )
 
@@ -97,6 +85,8 @@ hook.Add( "glee_cl_confirmedpurchase", "storeIfPlayerBoughtUndeadItem", function
     local itemData = GAMEMODE:GetShopItemData( id )
     if not itemData then return end
 
+    GAMEMODE:LearnLesson( "BoughtAnItem" )
+
     local isDeadItem = false
     for _, category in ipairs( deadCategories ) do
         if not itemData.tags[category] then continue end
@@ -106,12 +96,10 @@ hook.Add( "glee_cl_confirmedpurchase", "storeIfPlayerBoughtUndeadItem", function
     if not isDeadItem then return end
     if ply:Health() > 0 then return end
 
-    ply.glee_DefinitelyBoughtAnUndeadItem = true
-    RunConsoleCommand( "cl_huntersgleehint_hasboughtundead", "1" )
+    GAMEMODE:LearnLesson( "BoughtAGhostItem" )
 
     if id == "resurrection" then
-        RunConsoleCommand( "cl_huntersgleehint_hasboughtintervention", "1" )
-        ply.glee_HasBoughtDivineIntervention = true
+        GAMEMODE:LearnLesson( "BoughtDivineIntervention" )
 
     end
 end )
@@ -120,8 +108,7 @@ end )
 net.Receive( "glee_followedsomething", function()
     if not IsValid( LocalPlayer() ) then return end -- ???????
     LocalPlayer():EmitSound( "ui/buttonrollover.wav", 100, 120, 0.8 )
-    LocalPlayer().glee_HasSpectatedSomeone = true
-    RunConsoleCommand( "cl_huntersgleehint_hasspectatedsomeone", "1" )
+    GAMEMODE:LearnLesson( "SpectatedSomeone" )
 
     LocalPlayer().glee_SpectateOrbitDistance = nil
 
@@ -138,16 +125,14 @@ end )
 net.Receive( "glee_switchedspectatemodes", function()
     if not IsValid( LocalPlayer() ) then return end
     LocalPlayer():EmitSound( "ui/buttonrollover.wav", 100, 180, 0.5 )
-    LocalPlayer().glee_HasSwitchedSpectateModes = true
-    RunConsoleCommand( "cl_huntersgleehint_hasswitchedspectatemodes", "1" )
+    GAMEMODE:LearnLesson( "SwitchedSpectateModes" )
 
 end )
 
 net.Receive( "glee_stoppedspectating", function()
     if not IsValid( LocalPlayer() ) then return end
     LocalPlayer():EmitSound( "ui/buttonrollover.wav", 100, 90, 0.8 )
-    LocalPlayer().glee_HasStoppedSpectatingSomething = true
-    RunConsoleCommand( "cl_huntersgleehint_hasstoppedspectating", "1" )
+    GAMEMODE:LearnLesson( "StoppedSpectating" )
 
     LocalPlayer().glee_SpectateOrbitDistance = nil
 
@@ -196,23 +181,30 @@ local function genericHints()
 
     end
 
-    local inBetween = GAMEMODE:RoundState() == GAMEMODE.ROUND_INACTIVE
     local dead      = me:Health() <= 0
 
-    if inBetween then
+    local GAMMODE = GAMEMODE
+
+    if not dead then
+        local inBetween = GAMEMODE:RoundState() == GAMEMODE.ROUND_INACTIVE
+        local hasBoughtSomething = GAMMODE:HasLearnedLesson( "BoughtAnItem" )
+        local myScore = me:GetScore()
+
+        local timeToBuy = not hasBoughtSomething and myScore >= 25 and inBetween
+        local meagreWealth = not hasBoughtSomething and myScore >= 75
+
         -- hey you should open the shop!!!!
-        if not me.openedHuntersGleeShop and me:GetScore() >= 50 then
-            local clientsMenuKey = input.LookupBinding( "+menu" )
-            if not clientsMenuKey then me.openedHuntersGleeShop = true return end
+        if timeToBuy or meagreWealth then
+            local valid, phrase = GAMEMODE:TranslatedBind( "+menu" )
+            if not valid then GAMMODE:LearnLesson( "BoughtAnItem" ) return end
 
-            clientsMenuKey = input.GetKeyCode( clientsMenuKey )
-            if not clientsMenuKey then me.openedHuntersGleeShop = true return end
+            if not me.glee_OpenedHuntersGleeShop and me:GetNWInt( "termHuntPlyBPM" ) <= 80 then
+                return true, "You have score to spend, things to buy!\nPress \" " .. string.upper( phrase ) .. " \" to open the shop."
 
-            local keyName = input.GetKeyName( clientsMenuKey )
-            local phrase  = language.GetPhrase( keyName )
+            elseif not hasBoughtSomething and me:GetNWInt( "termHuntPlyBPM" ) <= 75 then
+                return true, "You can't stop thinking about the shop...\nYou should buy something to make this hunt bearable...\nPress \" " .. string.upper( phrase ) .. " \" to open the shop."
 
-            return true, "You have score to spend, things to buy!\nPress \" " .. string.upper( phrase ) .. " \" to open the shop."
-
+            end
         end
 
     -- hey you should mess with the alive people and revive yourself!!!
@@ -226,30 +218,30 @@ local function genericHints()
         if result then
             return result, hooksHint
 
-        elseif not me.openedHuntersGleeShop then
+        elseif not me.glee_OpenedHuntersGleeShop then
             local valid, phrase = GAMEMODE:TranslatedBind( "+menu" )
-            if not valid then me.openedHuntersGleeShop = true return end
+            if not valid then me.glee_OpenedHuntersGleeShop = true return end
 
             return true, "Death is not the end.\nPress \" " .. string.upper( phrase ) .. " \" to open the shop."
 
-        elseif not me.glee_DefinitelyBoughtAnUndeadItem then
-            return true, "Purchase 'sacrifices' to make score while dead!"
+        elseif not GAMMODE:HasLearnedLesson( "BoughtAGhostItem" ) then
+            return true, "Purchase 'Sacrifices' to make score while dead!"
 
-        elseif not me.glee_HasSpectatedSomeone then
+        elseif not GAMMODE:HasLearnedLesson( "SpectatedSomeone" ) then
             local valid, phrase = GAMEMODE:TranslatedBind( "+attack" )
-            if not valid then me.glee_HasSpectatedSomeone = true return end
+            if not valid then GAMMODE:LearnLesson( "SpectatedSomeone" ) return end
 
             return true, "Press " .. phrase .. " to follow stuff!"
 
-        elseif not me.glee_HasSwitchedSpectateModes and IsValid( me:GetObserverTarget() ) then
+        elseif not GAMMODE:HasLearnedLesson( "SwitchedSpectateModes" ) and IsValid( me:GetObserverTarget() ) then
             local valid, phrase = GAMEMODE:TranslatedBind( "+jump" )
-            if not valid then me.glee_HasSwitchedSpectateModes = true return end
+            if not valid then GAMMODE:LearnLesson( "SwitchedSpectateModes" ) return end
 
             return true, "Press " .. phrase .. " to switch spectate modes!"
 
-        elseif not me.glee_HasStoppedSpectatingSomething and IsValid( me:GetObserverTarget() ) then
+        elseif not GAMMODE:HasLearnedLesson( "StoppedSpectating" ) and IsValid( me:GetObserverTarget() ) then
             local valid, phrase = GAMEMODE:TranslatedBind( "+attack2" )
-            if not valid then me.glee_HasStoppedSpectatingSomething = true return end
+            if not valid then GAMMODE:LearnLesson( "StoppedSpectating" ) return end
 
             return true, "Press " .. phrase .. " to stop following stuff!"
 
@@ -259,12 +251,12 @@ local function genericHints()
 
             return true, "Press " .. phrase .. " to toggle the spectate flashlight!"
 
-        elseif not hasEscaped and not me.glee_HasBoughtDivineIntervention then
+        elseif not hasEscaped and not GAMMODE:HasLearnedLesson( "BoughtDivineIntervention" ) then
             if myScore >= GAMEMODE:shopItemCost( "resurrection", me ) then
                 return true, "Buy Divine Intervention in the shop to resurrect yourself..."
 
             else
-                return true, "Place sacrifices, all of them can earn you Score,\nif you're clever with them..."
+                return true, "Keep placing 'Sacrifices'\nAll of them can earn you Score,\nif you're clever with them..."
 
             end
 

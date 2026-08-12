@@ -167,7 +167,7 @@ local items = {
         markup = 1.5,
         markupPerPurchase = 0.15,
         cooldown = 0.5,
-        tags = { "ITEMS", "Weapon" },
+        tags = { "ITEMS", "Essential", "Weapon" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -218,7 +218,7 @@ local items = {
         markup = 2,
         markupPerPurchase = 0.15,
         cooldown = 0.5,
-        tags = { "ITEMS", "Weapon", "Utility" },
+        tags = { "ITEMS", "Essential", "Weapon", "Utility" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -302,7 +302,7 @@ local items = {
         markup = 1.5,
         markupPerPurchase = 0.25,
         cooldown = 1,
-        tags = { "ITEMS", "Weapon" },
+        tags = { "ITEMS", "Essential", "Weapon" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -329,7 +329,7 @@ local items = {
         markup = 3,
         markupPerPurchase = 0.25,
         cooldown = 0.5,
-        tags = { "ITEMS", "Weapon", "Utility" },
+        tags = { "ITEMS", "Essential", "Weapon", "Utility" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -458,7 +458,7 @@ local items = {
         end,
         markupPerPurchase = 0.5,
         cooldown = 30,
-        tags = { "ITEMS", "Utility", "NewGamePlus" },
+        tags = { "ITEMS", "Essential", "Utility", "NewGamePlus" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -538,7 +538,7 @@ local items = {
         shCost = 0,
         shSkullCost = 5,
         cooldown = 0.5,
-        tags = { "ITEMS", "Weapon", "SkullCost" },
+        tags = { "ITEMS", "Essential", "Weapon", "SkullCost" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -593,7 +593,7 @@ local items = {
 
         end,
         cooldown = 0.5,
-        tags = { "ITEMS", "Utility", "SkullCost" },
+        tags = { "ITEMS", "Essential", "Utility", "SkullCost" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,

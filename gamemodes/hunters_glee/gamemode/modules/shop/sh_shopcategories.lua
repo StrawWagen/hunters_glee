@@ -11,8 +11,8 @@ function GM:SetupShopCategories()
             order = 1,
             shCanShowInShop = shopHelpers.aliveCheck
         },
-        INNATE = { -- passive, innate abilities
-            name = "Innate",
+        MUTATIONS = { -- passive, innate abilities
+            name = "Mutations",
             order = 2,
             shCanShowInShop = shopHelpers.aliveCheck
         },

@@ -1,6 +1,5 @@
 local GAMEMODE = GAMEMODE or GM
 
-local scrollHintExpired = CreateClientConVar( "cl_huntersgleehint_hasscrolledcategories", 0, true, false )
 local scrolledCount = 0
 local scrollCountToStopPermanently = 5
 
@@ -655,7 +654,7 @@ function termHuntOpenTheShop()
                 draw_RoundedBox( 0, 0, self.betweenCategorySpacing, self.titleBarWide, self.titleBarTall, shopItemColor )
                 -- lil white line
                 draw_RoundedBox( 0, 0, self.betweenCategorySpacing, whiteIdentifierLineWidth, self.titleBarTall, whiteFaded )
-                -- name of category, eg "Innate"
+                -- name of category, eg "mutations"
                 draw.DrawText( catData.name, "termhuntShopCategoryFont", self.TextX, self.TextY, white )
             end
 
@@ -687,10 +686,10 @@ function termHuntOpenTheShop()
 
                 end
 
-                if not scrollHintExpired:GetBool() and delta < 0 then
+                if not GAMEMODE:HasLearnedLesson( "ScrolledCategories" ) and delta < 0 then
                     scrolledCount = scrolledCount + 1
                     if scrolledCount >= scrollCountToStopPermanently then
-                        RunConsoleCommand( "cl_huntersgleehint_hasscrolledcategories", "1" )
+                        GAMEMODE:LearnLesson( "ScrolledCategories" )
 
                     end
                 end
@@ -1095,7 +1094,7 @@ function termHuntOpenTheShop()
                     end
 
                     -- draw category scroll hint if we're split by the edge of the shop
-                    if myCategoryPanel.canScrollRight and not scrollHintExpired:GetBool() then
+                    if myCategoryPanel.canScrollRight and not GAMEMODE:HasLearnedLesson( "ScrolledCategories" ) then
                         local w = self:GetWide()
                         local endX = self:LocalToScreen( w )
                         local endXView = myCategoryPanel:LocalToScreen( myCategoryPanel:GetWide() )
@@ -1253,7 +1252,7 @@ function termHuntOpenTheShop()
     end
 end
 
-LocalPlayer().openedHuntersGleeShop = nil
+LocalPlayer().glee_OpenedHuntersGleeShop = nil
 local nextShopOpen = 0
 
 local enableShopVar = GetConVar( "huntersglee_enableshop" )
@@ -1270,7 +1269,7 @@ function GM:ShowShop()
 
     end
     if self:CanShowDefaultHud() then
-        LocalPlayer().openedHuntersGleeShop = true
+        LocalPlayer().glee_OpenedHuntersGleeShop = true
 
         termHuntOpenTheShop()
 

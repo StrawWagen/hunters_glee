@@ -33,7 +33,7 @@ if SERVER then
 
                 local newHealth = math.Clamp( owner:Health() + amount, 0, owner:GetMaxHealth() )
                 owner:SetHealth( newHealth )
-                owner.glee_LastHealthSetReason = "glee_superior_metabolism"
+                owner.glee_LastSetHealthReason = "glee_superior_metabolism"
 
             end )
         end
@@ -157,7 +157,7 @@ if SERVER then
                 if #notWitnessing > 0 then
                     local blab = " SOUL WITNESSES THE GRIM FATE OF "
                     if witnessingCount > 1 then
-                        blab = " SOULS BARE WITNESS TO THE GRIM FATE OF "
+                        blab = " SOULS BEAR WITNESS TO THE GRIM FATE OF "
 
                     end
                     huntersGlee_Announce( notWitnessing, 20, 5, witnessingCount .. blab .. string.upper( owner:Nick() ) )
@@ -427,7 +427,7 @@ if SERVER then
                 owner:SetMaxHealth( newMaxHealth )
                 owner.glee_LastSetMaxHealthReason = "glee_juggernaut"
                 owner:SetHealth( newHealth )
-                owner.glee_LastHealthSetReason = "glee_juggernaut"
+                owner.glee_LastSetHealthReason = "glee_juggernaut"
 
                 owner:DoSpeedClamp( "juggernautclamp", 0 ) -- blocks speed modifiers from increasing speed beyond normal sprint speed
 
@@ -1196,7 +1196,7 @@ local items = {
         shCost = 30,
         markup = 2,
         cooldown = math.huge,
-        tags = { "INNATE" },
+        tags = { "MUTATIONS", "Essential", },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -1215,7 +1215,7 @@ local items = {
         shCost = 150,
         markup = 2,
         cooldown = math.huge,
-        tags = { "INNATE" },
+        tags = { "MUTATIONS" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -1234,7 +1234,7 @@ local items = {
         shCost = 200,
         markup = 2,
         cooldown = math.huge,
-        tags = { "INNATE" },
+        tags = { "MUTATIONS", "Essential", },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -1252,7 +1252,7 @@ local items = {
         shCost = 225,
         markup = 2,
         cooldown = math.huge,
-        tags = { "INNATE" },
+        tags = { "MUTATIONS", "Essential", },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -1270,7 +1270,7 @@ local items = {
         shCost = 125,
         markup = 2,
         cooldown = math.huge,
-        tags = { "INNATE" },
+        tags = { "MUTATIONS" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -1289,7 +1289,7 @@ local items = {
         shCost = 350,
         markup = 2,
         cooldown = math.huge,
-        tags = { "INNATE" },
+        tags = { "MUTATIONS", "Essential" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -1308,7 +1308,7 @@ local items = {
         shCost = 350,
         markup = 1.5,
         cooldown = math.huge,
-        tags = { "INNATE" },
+        tags = { "MUTATIONS" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -1327,7 +1327,7 @@ local items = {
         shCost = 1000,
         markup = 2,
         cooldown = math.huge,
-        tags = { "INNATE", "NewGamePlus" },
+        tags = { "MUTATIONS", "NewGamePlus" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -1347,7 +1347,7 @@ local items = {
         shCost = 350,
         markup = 2,
         cooldown = math.huge,
-        tags = { "INNATE" },
+        tags = { "MUTATIONS" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -1365,7 +1365,7 @@ local items = {
         shCost = 50,
         markup = 2,
         cooldown = math.huge,
-        tags = { "INNATE" },
+        tags = { "MUTATIONS" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -1384,7 +1384,7 @@ local items = {
         markup = 1.5,
         markupPerPurchase = 1,
         cooldown = 90,
-        tags = { "INNATE" },
+        tags = { "MUTATIONS" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -1402,7 +1402,7 @@ local items = {
         shCost = 0,
         shSkullCost = 1,
         cooldown = math.huge,
-        tags = { "INNATE" },
+        tags = { "MUTATIONS" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },
@@ -1420,7 +1420,7 @@ local items = {
         shCost = 50,
         markup = 2,
         cooldown = math.huge,
-        tags = { "INNATE" },
+        tags = { "MUTATIONS", },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -1438,7 +1438,7 @@ local items = {
         shCost = 50,
         markup = 2,
         cooldown = math.huge,
-        tags = { "INNATE" },
+        tags = { "MUTATIONS" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -1456,7 +1456,7 @@ local items = {
         shCost = 50,
         markup = 3,
         cooldown = math.huge,
-        tags = { "INNATE" },
+        tags = { "MUTATIONS" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,

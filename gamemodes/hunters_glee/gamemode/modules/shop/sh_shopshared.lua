@@ -1,9 +1,5 @@
 
-if SERVER then
-    include( "sv_shophandler.lua" )
-
-
-elseif CLIENT then
+if CLIENT then
 
     local purchaseSound = Sound( "hunters_glee/209578_zott820_cash-register-purchase.wav" )
     local takeSound = Sound( "buttons/lever7.wav" )

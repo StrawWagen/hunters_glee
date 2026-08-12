@@ -52,9 +52,9 @@ terminator_Extras.glee_HL2Hud = {
     colorUnHappyYellow          = Color( 225, 200, 0, 220 ),
     colorRedUrgent              = Color( 255, 50, 50, 200 ),
     colorBackground             = Color( 0, 0, 0, 76 ), -- for hud elements that should fade into the background
-    colorBackgroundDark         = Color( 0, 0, 0, 150 ), -- for gui elements that need visibility
     colorBackgroundUrgent       = Color( 100, 100, 50, 76 ),
-    colorBackgroundDarkUrgent   = Color( 100, 100, 50, 150 ),
+    colorBackgroundDark         = Color( 0, 0, 0, 175 ), -- for gui elements that need visibility
+    colorBackgroundDarkUrgent   = Color( 100, 100, 50, 175 ),
 }
 
 surface.CreateFont( "glee_mediumLargeHL2Font", {
@@ -113,4 +113,41 @@ function terminator_Extras.glee_PlayerNameColor( ply, visible )
     color.a = a
 
     return color
+end
+
+terminator_Extras.godHud = {
+    textColor = Color( 200, 0, 0 ),
+    shadowColor = Color( 0, 0, 0, 255 ),
+    shadowOffsetX = 2.5,
+    shadowOffsetY = 2,
+    -- played as text comes into view
+    textArrivalSounds = {
+        "physics/nearmiss/whoosh_huge2.wav",
+        "physics/nearmiss/whoosh_large1.wav",
+    },
+    -- played when it stops moving
+    textLandingSounds = {
+        "physics/cardboard/cardboard_box_impact_bullet1.wav",
+        "physics/cardboard/cardboard_box_impact_bullet3.wav",
+        "physics/cardboard/cardboard_box_impact_bullet5.wav",
+    },
+    -- god's hand isn't steady, godly text never sits perfectly still
+    jitterPixels = 1,
+    jitterInterval = { 1 / 25, 1 / 18 },
+}
+
+-- Keeps jitterX and jitterY on whatever table you hand it, ready for a draw position to add.
+-- Owns its own clock, a per frame reroll is a buzz nobody can see and it would shake harder
+-- the better your hardware is. Safe to call every frame, it only rerolls when it's due.
+function terminator_Extras.godHud.DoJitter( state )
+    if state.nextJitter and state.nextJitter > CurTime() then return end
+
+    local godHud = terminator_Extras.godHud
+    local interval = godHud.jitterInterval
+    state.nextJitter = CurTime() + math.Rand( interval[1], interval[2] )
+
+    local pixels = godHud.jitterPixels
+    state.jitterX = math.random( -pixels, pixels )
+    state.jitterY = math.random( -pixels, pixels )
+
 end

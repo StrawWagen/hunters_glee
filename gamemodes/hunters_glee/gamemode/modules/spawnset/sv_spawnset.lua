@@ -12,17 +12,44 @@ end
 GAMEMODE.RegisteredSpawnSets = GAMEMODE.RegisteredSpawnSets or {}
 
 -- sibling data file in this same spawnset/ folder
-local setDefaults = include( "sv_spawnsetdefaults.lua" )
+local setDefaults, setIgnored = include( "sv_spawnsetdefaults.lua" )
 
 local spawnDefaults = {
     minCount = -1, -- if these aren't defined, sets to -1 which makes them ignored
-    maxCount = -1, -- just this is ignored, it still respects maxSpawnCount tho
+    maxCount = -1, -- just this is ignored, it still respects spawnset.maxSpawnCount tho
 }
 
-local spawnIgnored = { -- dont parse these, they run on the ents during spawning
-    preSpawnedFunc = true,
-    postSpawnedFunc = true,
-    isBoss = true, -- boolean, handled by sv_bosshandler
+local function isTableOfFunctions( dat )
+    if not istable( dat ) then return false, "is not a table" end
+    for _, entry in ipairs( dat ) do
+        if not isfunction( entry ) then return false, "is not a table of functions" end
+
+    end
+    return true
+
+end
+
+local function boolCheck( dat )
+    if not isbool( dat ) then return false, "expected to be a bool" end
+    return true
+
+end
+
+local function enumCheck( dat )
+    if not isnumber( dat ) then return false, "expected to be an enum" end
+
+    return true
+
+end
+
+local spawnSpecialCases = { -- special cases for spawn entries
+    preSpawnedFuncs = isTableOfFunctions,
+    postSpawnedFuncs = isTableOfFunctions,
+    isBoss = boolCheck, -- boolean, this is automatically set for some spawnsets by sv_bosshandler
+    spawnSameZ = boolCheck,
+    spawnBelow = boolCheck,
+    spawnAbove = boolCheck,
+    preferredEFlags = enumCheck, -- will attempt to spawn this .spawn entry in areas with these Extra Navmesh flags, see sv_navmeshcategorizer
 }
 
 local function asParsed( toParse, name, defaultsTbl )
@@ -116,6 +143,14 @@ function GM:IsValidSpawnSet( spawnSet )
         if not isstring( spawn.prettyName ) then yapErr( spawnSet, ".spawns " .. name .. " invalid .prettyname" ) return end
         if not isstring( spawn.class ) then yapErr( spawnSet, ".spawns " .. name .. " invalid .class" ) return end
 
+        for specialVar, validator in pairs( spawnSpecialCases ) do
+            local whatSpawnHas = spawn[specialVar]
+            if not whatSpawnHas then continue end
+            local valid, notValidReason = validator( whatSpawnHas )
+            if not valid then yapErr( spawnSet, ".spawns " .. name .. " " .. specialVar .. " " .. notValidReason ) return end
+
+        end
+
         local minCount = asParsed( spawn.minCount, "minCount", spawnDefaults )
         if not minCount then yapErr( spawnSet, ".spawns " .. name .. " invalid .minCount" ) return end
         local maxCount = asParsed( spawn.maxCount, "maxCount", spawnDefaults )
@@ -172,6 +207,9 @@ local function parse( tbl, name, defaultsTbl, spawnSet )
     end
 end
 
+-- spawnsets are parsed when they're set via rtm, on setup
+-- but they're ALSO parsed EVERY ROUND
+
 -- turn the spawnset config into usable data
 -- eg;
 --  .maxSpawnDist = 5000, always 5000
@@ -184,12 +222,14 @@ function GM:ParsedSpawnSet( asRegistered )
 
     local setParsed = {}
     for name, _ in pairs( spawnSet ) do -- parse all existing spawnset variables
+        if setIgnored[name] then setParsed[name] = true continue end
         parse( spawnSet, name, setDefaults, spawnSet )
         setParsed[name] = true
 
     end
     for name, _ in pairs( setDefaults ) do -- setup the nil defaults that weren't set
         if setParsed[name] then continue end
+        if setIgnored[name] then continue end
         parse( spawnSet, name, setDefaults, spawnSet )
 
     end
@@ -197,14 +237,14 @@ function GM:ParsedSpawnSet( asRegistered )
     for _, currSpawn in ipairs( spawnSet.spawns ) do
         local spawnParsed = {}
         for name, _ in pairs( currSpawn ) do -- parse all existing spawnset variables
-            if spawnIgnored[name] then spawnParsed[name] = true continue end
+            if spawnSpecialCases[name] then spawnParsed[name] = true continue end
             parse( currSpawn, name, spawnDefaults, spawnSet )
             spawnParsed[name] = true
 
         end
         for name, _ in pairs( spawnDefaults ) do -- get the nil defaults
             if spawnParsed[name] then continue end
-            if spawnIgnored[name] then continue end
+            if spawnSpecialCases[name] then continue end
             parse( currSpawn, name, spawnDefaults, spawnSet )
 
         end
@@ -230,6 +270,12 @@ function GM:SetSpawnSet( setName )
 
     self:HandleBossDetection( spawnSet )
 
+    if oldSetName ~= setName and self.CurrSpawnSetLifecycle then
+        self.CurrSpawnSetLifecycle:InternalTeardown()
+        self.CurrSpawnSetLifecycle = nil
+
+    end
+
     self.CurrSpawnSetName = setName
     self.CurrSpawnSet = spawnSet
 
@@ -238,6 +284,11 @@ function GM:SetSpawnSet( setName )
     SetGlobalString( "GLEE_SpawnSetDescription", spawnSet.description or "" )
 
     if oldSetName ~= setName then
+        self.CurrSpawnSetLifecycle = include( "hunters_glee/gamemode/modules/spawnset/sh_spawnsetlifecyclebase.lua" )
+        self.CurrSpawnSetLifecycle:Apply( asRegistered )
+
+        self:TellClientsSpawnsetActivated( setName )
+
         hook.Run( "glee_post_new_spawnset", setName, spawnSet, oldSetName )
         permaPrint( "GLEE: Misery set to, " .. setName )
 
@@ -267,8 +318,38 @@ function GM:GetSpawnSets()
 
 end
 
-function GM:GetSpawnSet()
+function GM:GetSpawnSet( setName )
+    if setName then error( "GAMEMODE:GetSpawnSet is for getting the current spawnset's name, and data\nUse GAMEMODE:GetRegisteredSpawnSet" ) end
     return self.CurrSpawnSetName, self.CurrSpawnSet
+
+end
+
+function GM:GetRegisteredSpawnSet( setName )
+    local asRegistered = self.RegisteredSpawnSets[setName]
+    return asRegistered
+
+end
+
+function GM:GetPrettyNameOfSpawnSet( setName )
+    local asRegistered = self.RegisteredSpawnSets[setName]
+    if not asRegistered then return "" end
+    return asRegistered.prettyName
+
+end
+
+function GM:IsSpawnsetEasy( setName )
+    setName = setName or self.CurrSpawnSetName
+    local registered = self.RegisteredSpawnSets[setName]
+    if not registered then return end
+
+    return registered.easy
+
+end
+
+-- lifecycle object, changes when spawnset changes
+-- for having spawnsets apply hooks
+function GM:GetSpawnsetLifecycle()
+    return self.CurrSpawnSetLifecycle
 
 end
 
@@ -280,14 +361,7 @@ function GM:ScaledGenericSpawnerRate( var )
 
 end
 
-function GM:GetPrettyNameOfSpawnSet( setName )
-    local asRegistered = GAMEMODE.RegisteredSpawnSets[setName]
-    if not asRegistered then return "" end
-    return asRegistered.prettyName
-
-end
-
-local defaultSpawnSetName = "hunters_glee"
+local defaultSpawnSetName = GAMEMODE.TheTutorialMisery
 local function postSetSpawnset( new ) -- validate the spawnset cvar
     if not GAMEMODE:IsValidSpawnSet( new ) then
         if GAMEMODE:IsValidSpawnSet( defaultSpawnSetName ) then
@@ -322,22 +396,8 @@ end, "glee_notifyinvalidspawnsets" )
 
 
 function GM:SpawnSetInitialThink()
-    GLEE_SPAWNSETS = {}
-
-    local spawnsetFiles = file.Find( "glee_spawnsets/*.lua", "LUA" )
-    for _, name in ipairs( spawnsetFiles ) do
-        ProtectedCall( function( nameProtected ) include( "glee_spawnsets/" .. nameProtected ) end, name )
-
-    end
-    local count = 0
-    for _, spawnSet in pairs( GLEE_SPAWNSETS ) do
-        if self:RegisterSpawnSet( spawnSet ) then
-            count = count + 1
-
-        end
-    end
+    local count = self:GobbleSpawnsets()
     permaPrint( "GLEE: Gobbled " .. count .. " spawnsets..." )
-    GLEE_SPAWNSETS = nil
 
     self.GobbledSpawnsets = true
     hook.Run( "glee_post_spawnsetgobble" )

@@ -1,7 +1,12 @@
+local FLAG_NODUST = 1 -- skip the cement flecks and embers, for when something else at this spot already throws them
+
 function EFFECT:Init( data )
     local vOffset = data:GetOrigin()
     self.Position = vOffset
     self.Scayul = data:GetScale()
+
+    self.NoDust = bit.band( data:GetFlags(), FLAG_NODUST ) ~= 0
+
     self.Emitter = ParticleEmitter( data:GetOrigin() )
     local rollparticle = self.Emitter:Add( "sprites/animglow02", vOffset + vector_up * self.Scayul )
 
@@ -42,17 +47,38 @@ function EFFECT:Init( data )
 
     end
 
-    self:Dust()
+    self:Particles()
 
     self.Emitter:Finish()
 end
 
 local vecUp = Vector( 0, 0, 1 )
 
-function EFFECT:Dust()
+function EFFECT:Particles()
     local emitter = self.Emitter
     local pos = self.Position
     local scale = self.Scayul * 0.5
+
+    for _ = 1, 2 * scale do
+        local Debris = emitter:Add( "effects/fire_cloud" .. math.random( 1, 2 ), pos )
+        if Debris then
+            Debris:SetVelocity( vecUp * math.random( 0, 500 ) * scale + VectorRand():GetNormalized() * math.random( 0, 2000 ) * scale )
+            Debris:SetDieTime( math.Rand( 0.15, 0.5 ) * scale )
+            Debris:SetStartAlpha( 255 )
+            Debris:SetEndAlpha( 0 )
+            Debris:SetStartSize( math.Rand( 15, 25 ) * scale )
+            Debris:SetRoll( math.Rand( 0, 360 ) )
+            Debris:SetRollDelta( math.Rand( -5, 5 ) )
+            Debris:SetAirResistance( 20 )
+            Debris:SetColor( 255, 255, 255 )
+            Debris:SetGravity( Vector( 0, 0, 600 ) )
+            Debris:SetCollide( true )
+            Debris:SetLighting( false )
+
+        end
+    end
+
+    if self.NoDust then return end
 
     for _ = 1, 12 * scale do
         local Debris = emitter:Add( "effects/fleck_cement" .. math.random( 1, 2 ), pos )
@@ -84,24 +110,6 @@ function EFFECT:Dust()
             Debris:SetAirResistance( 10 )
             Debris:SetColor( 255, 255, 255 )
             Debris:SetGravity( Vector( 0, 0, -600 ) )
-            Debris:SetCollide( true )
-            Debris:SetLighting( false )
-
-        end
-    end
-    for _ = 1, 2 * scale do
-        local Debris = emitter:Add( "effects/fire_cloud" .. math.random( 1, 2 ), pos )
-        if Debris then
-            Debris:SetVelocity( vecUp * math.random( 0, 500 ) * scale + VectorRand():GetNormalized() * math.random( 0, 2000 ) * scale )
-            Debris:SetDieTime( math.Rand( 0.15, 0.5 ) * scale )
-            Debris:SetStartAlpha( 255 )
-            Debris:SetEndAlpha( 0 )
-            Debris:SetStartSize( math.Rand( 15, 25 ) * scale )
-            Debris:SetRoll( math.Rand( 0, 360 ) )
-            Debris:SetRollDelta( math.Rand( -5, 5 ) )
-            Debris:SetAirResistance( 20 )
-            Debris:SetColor( 255, 255, 255 )
-            Debris:SetGravity( Vector( 0, 0, 600 ) )
             Debris:SetCollide( true )
             Debris:SetLighting( false )
 

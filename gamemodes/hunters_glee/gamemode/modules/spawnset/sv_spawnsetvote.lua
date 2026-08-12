@@ -31,10 +31,18 @@ function spawnSetVote:BeginVote( duration, maxOptions )
     local spawnSets = GAMEMODE:GetSpawnSets()
     local toBrowse = table.Copy( spawnSets )
 
-    local toAdd = { [1] = toBrowse["hunters_glee"] } -- always include default
-    toBrowse["hunters_glee"] = nil
+    local currentSpawnsetName, currentSpawnSet = GAMEMODE:GetSpawnSet()
+    local wantsOtherEasyOnes = currentSpawnSet.easy
+    local easyAdded = 0
 
-    local currentSpawnsetName = GAMEMODE:GetSpawnSet()
+    local toAdd = {}
+
+    if not wantsOtherEasyOnes then
+        toAdd[1] = toBrowse["hunters_glee"] -- always include default
+        toBrowse["hunters_glee"] = nil
+
+    end
+
     toBrowse[currentSpawnsetName] = nil -- remove current mode from options
 
     while table.Count( toBrowse ) > 0 do
@@ -43,27 +51,64 @@ function spawnSetVote:BeginVote( duration, maxOptions )
         local option, key = table.Random( toBrowse )
         toBrowse[key] = nil
 
-        local chance = option.chanceToBeVotable
-        if option.chanceToBeVotableWhenHard then -- make spawnsets fade into the background if they aren't challenging people
-            local escapeMul = GAMEMODE:GetSpawnsetsEscapeMultiplier( key )
-            if escapeMul > 1.5 then
-                chance = option.chanceToBeVotableWhenHard
+        local optionsMul = GAMEMODE:GetSpawnsetsEscapeMultiplier( key )
 
-            end
+        local chance = option.chanceToBeVotable
+        if option.chanceToBeVotableWhenHard and optionsMul >= 1 then -- make spawnsets fade into the background if they aren't challenging people
+            chance = option.chanceToBeVotableWhenHard
+
         end
 
-        local notVotableRand = isnumber( chance ) and chance < math.random( 0, 100 )
-        local wouldBeOverfilled = ( table.Count( toBrowse ) + #toAdd ) > maxOptions -- always meet maxOptions
+        local plsSkip
 
-        if wouldBeOverfilled and notVotableRand then continue end
+        -- if in easy realm, prefer easy ones
+        -- but always allow 1 hard misery
+        if wantsOtherEasyOnes then
+            -- this counts mul < 1 as easy, but no other code does it
+            -- intentional transition space, might change later
+            local optionIsEasy = option.easy or optionsMul < 1
+            local enoughEasy = easyAdded + 2 > maxOptions
+            if enoughEasy then
+                if optionIsEasy then
+                    plsSkip = true
+
+                else
+                    plsSkip = false
+
+                end
+            else
+                if optionIsEasy then
+                    plsSkip = false
+
+                else
+                    plsSkip = true
+
+                end
+            end
+        else
+            plsSkip = isnumber( chance ) and chance < math.Rand( 0, 100 )
+
+        end
+
+        local stillEnoughToOverfill = ( table.Count( toBrowse ) + #toAdd ) > maxOptions -- always meet maxOptions
+
+        if stillEnoughToOverfill and plsSkip then continue end
         table.insert( toAdd, option )
 
     end
 
     for _, set in SortedPairsByMemberValue( toAdd, "prettyName" ) do -- sorted so its alphabetical
+        local prettyName = set.prettyName
+        if wantsOtherEasyOnes and not set.easy then
+            prettyName = prettyName .. " (HARD)"
+
+        elseif not wantsOtherEasyOnes and set.easy then
+            prettyName = prettyName .. " (EASY)"
+
+        end
         local data = {
             name = set.name,
-            prettyName = set.prettyName,
+            prettyName = prettyName,
             description = set.description,
         }
         table.insert( optionsSeq, data )

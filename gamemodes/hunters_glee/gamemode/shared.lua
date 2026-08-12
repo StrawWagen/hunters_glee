@@ -17,8 +17,12 @@ GM.IsReallyHuntersGlee = true
 
 GM.Name = "Hunter's Glee"
 GM.Author = "StrawWagen"
-GM.Email = "N/A"
+GM.Email = "strawwagen1@gmail.com"
 GM.Website = "N/A"
+
+GM.TheTutorialMisery = "infernal_glee_easy"
+
+GM.DataFileDirectory = "hunters_glee"
 
 CreateConVar( "glee_discord_url", "", FCVAR_ARCHIVE + FCVAR_REPLICATED, "Adds a discord join link for your server in the glee scoreboard." )
 
@@ -41,10 +45,10 @@ include( "modules/spawnset/sh_spawnpoolutil.lua" )
 include( "modules/spawnset/sh_spawnsetcontent.lua" )
 include( "modules/unsandboxing/sh_unsandboxing.lua" )
 
-include( "sh_shopshared.lua" )
+include( "modules/shop/sh_shopshared.lua" )
 
 include( "modules/shopitems/sh_shoptags.lua" )
-include( "modules/shopitems/sh_shopcategories.lua" )
+include( "modules/shop/sh_shopcategories.lua" )
 include( "modules/shopitems/sh_itemverification.lua" )
 
 -- does not include sh_statuseffectbase, that one is used to return a status effect table

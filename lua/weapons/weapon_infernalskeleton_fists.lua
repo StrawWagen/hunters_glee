@@ -45,6 +45,7 @@ function SWEP:PrimaryAttack()
         if not IsValid( self ) then return end
         if not IsValid( owner ) then return end
         if not owner:IsSolid() then return end
+        if owner:Health() <= 0 then return end
         if owner.RunTask and owner:RunTask( "BlockClawSwipe" ) then return end
         self:DealDamage()
 

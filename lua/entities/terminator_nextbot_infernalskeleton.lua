@@ -22,17 +22,21 @@ local math = math
 if CLIENT then
 
     local offsetVec = Vector( 0, 0, 5 )
-    ENT.FireEffects = {
-        "fire_small_01",
-        "fire_small_02",
-        "fire_small_03",
-    }
+    function ENT:GetFireEffects()
+        return {
+            "fire_small_01",
+            "fire_small_02",
+            "fire_small_03",
+        }
+
+    end
     ENT.FireParticleChance = 25
 
     function ENT:AdditionalClientInitialize()
-        if math.random( 0, 100 ) > self.FireParticleChance then return end
+        if math.random( 1, 100 ) > self.FireParticleChance then return end
 
-        local fire = self.FireEffects[math.random( 1, #self.FireEffects )]
+        local fireEffects = self:GetFireEffects()
+        local fire = fireEffects[math.random( 1, #fireEffects )]
         CreateParticleSystem( self, fire, PATTACH_ABSORIGIN_FOLLOW, 0, offsetVec )
 
     end
@@ -100,7 +104,7 @@ ENT.CanSpeak = true -- enable speaking thinker
 ENT.HasBrains = false -- default to no brains
 
 ENT.Models = { "models/player/skeleton.mdl" }
-ENT.TERM_MODELSCALE = function() return math.Rand( 0.9, 1.25 ) end
+ENT.TERM_MODELSCALE = function() return math.Rand( 0.95, 1.15 ) end
 ENT.MyPhysicsMass = 50
 
 ENT.FootstepClomping = false
@@ -120,12 +124,12 @@ ENT.Term_FootstepSoundWalking = {
 ENT.Term_FootstepSound = { -- running sounds
     {
         path = "physics/wood/wood_plank_impact_soft2.wav",
-        lvl = 80,
+        lvl = 82,
         pitch = { 150, 170 },
     },
     {
         path = "physics/wood/wood_plank_impact_soft3.wav",
-        lvl = 80,
+        lvl = 82,
         pitch = { 150, 170 },
     },
 }
@@ -181,12 +185,15 @@ ENT.infernSkele_IdleSounds = {
     "ambient/levels/citadel/strange_talk7.wav",
     "ambient/levels/citadel/strange_talk8.wav",
     "ambient/levels/citadel/strange_talk9.wav",
-    "ambient/levels/citadel/strange_talk10.wav",
-    "ambient/levels/citadel/strange_talk11.wav",
     "npc/stalker/breathing3.wav",
     "ambient/levels/citadel/datatransrandom02.wav",
     "ambient/levels/citadel/datatransrandom03.wav",
 }
+
+function ENT:SkeletonDeathFX()
+    self:Term_SpeakSoundNow( "npc/stalker/stalker_scream1.wav", math.random( 20, 50 ) )
+
+end
 
 local skins = {
     0,
@@ -200,6 +207,10 @@ local wakeUpGestures = {
 }
 
 ENT.SpawnHeadlessChance = 75
+
+ENT.SkeleDeathAnim = ACT_GMOD_DEATH
+ENT.SkeleDeathAnimRate = 2
+
 
 ENT.MyClassTask = {
     OnCreated = function( self, data )
@@ -245,11 +256,11 @@ ENT.MyClassTask = {
     GetDeathAnim = function( self, data ) -- fixes some jank with skull dropping / bone manipulation
         if not self.glee_AlwaysDropSkull then return end
 
-        self:Term_SpeakSoundNow( "npc/stalker/stalker_scream1.wav", math.random( 20, 50 ) )
+        self:SkeletonDeathFX()
 
         return {
-            act = ACT_GMOD_DEATH,
-            rate = 2,
+            act = self.SkeleDeathAnim,
+            rate = self.SkeleDeathAnimRate,
         }
     end,
     NewWaterLevelWhileFalling = function( self, data, waterLevel )
@@ -440,7 +451,7 @@ function ENT:DoCustomTasks( defaultTasks )
                         data.CurrentTaskGoalPos.y + math.random( -lookJitterScale, lookJitterScale ),
                         data.CurrentTaskGoalPos.z + math.random( -lookJitterScale, lookJitterScale )
                     )
-                    self:justLookAt( data.LookAtVec )
+                    --self:justLookAt( data.LookAtVec )
                     myTbl.lastShootingType = "infernalskeleton_wander"
 
                 end

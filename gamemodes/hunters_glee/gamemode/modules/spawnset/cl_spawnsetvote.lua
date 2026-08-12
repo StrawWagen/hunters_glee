@@ -374,3 +374,33 @@ function spawnSetVote:CreateVotePanel()
 
     end
 end
+
+local chatWasOpened
+
+hook.Add( "StartChat", "glee_rtmdetect_chatopening", function()
+    chatWasOpened = true
+
+end )
+
+hook.Add( "huntersglee_cl_displayhint_poststack", "glee_rtmhint", function( me )
+    if not GetGlobalBool( "glee_pleaseshow_rtmtutorialhint", false ) then return end
+
+    if not chatWasOpened then
+        local valid, openChatPhrase = GAMEMODE:TranslatedBind( "say" )
+        if not valid then
+            valid, openChatPhrase = GAMEMODE:TranslatedBind( "messagemode" )
+
+        end
+        if not valid then
+            valid, openChatPhrase = GAMEMODE:TranslatedBind( "messagemode2" )
+
+        end
+        if not valid then chatWasOpened = true return end
+
+        return true, "It's time for a new Misery, maybe a real challenge...\nPress " .. openChatPhrase .. " to open the chat."
+
+    elseif not me:GetNW2Bool( "glee_hasrtm_voted", false ) then
+        return true, "It's time for a real challenge.\nBegin a Misery vote.\nType !rtm in chat."
+
+    end
+end )

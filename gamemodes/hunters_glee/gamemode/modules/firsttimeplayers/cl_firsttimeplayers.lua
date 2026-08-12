@@ -1,21 +1,24 @@
 
+-- the clientside half of the first time player system. sv_firsttimeplayers.lua decides who
+-- is new and nets glee_dothefirsttimemessage, everything here is what they then see
+
 local GAMEMODE = GAMEMODE or GM
 
 local function defineFont()
     surface.CreateFont( "huntersglee_welcometext", {
-        font = GAMEMODE and GAMEMODE.GLEE_FONT or "Arial",
+        font = "Protest Revolution",
         extended = false,
-        size = glee_sizeScaled( nil, 60 ),
-        weight = 500,
+        size = glee_sizeScaled( nil, 150 ),
+        weight = 600,
         blursize = 0,
         scanlines = 0,
-        antialias = true,
+        antialias = false,
         underline = false,
         italic = false,
         strikeout = false,
         symbol = false,
         rotary = false,
-        shadow = true,
+        shadow = false,
         additive = false,
         outline = false,
     } )
@@ -26,19 +29,92 @@ hook.Add( "glee_rebuildfonts", "glee_rebuild_welcometext_font", function()
 
 end )
 
+local godHud = terminator_Extras.godHud
+local textArrivalSounds = godHud.textArrivalSounds
+local textLandingSounds = godHud.textLandingSounds
+
+-- surface.playsound doesnt have pitch....
+local function playGodSound( sounds, pitch, channel )
+    LocalPlayer():EmitSound( sounds[math.random( 1, #sounds )], 75, pitch, 0.5, channel )
+
+end
+
+local tutorialFont = "huntersglee_welcometext"
+
+-- the message is drawn this many times over, scattered and faint, all sliding onto the same
+-- spot. where they overlap the transparency stacks, so it thickens into one solid message
+local ghostCount = 5
+local ghostSpreadMin = glee_sizeScaled( nil, 15 )
+local ghostSpreadMax = glee_sizeScaled( nil, 70 )
+local ghostOrbitMin = 40 -- degrees each ghost sweeps around the centre on its way in
+local ghostOrbitMax = 120
+local ghostMergeTime = 0.45
+local ghostStartSpread = 0.35 -- how long until the last ghost shows up
+local ghostPeakAlpha = 90
+local materialiseTime = ghostStartSpread + ghostMergeTime
+
+local clickImpatience = 0.30 -- seconds of animation a click skips
+
+-- these fade against each other, so they can't share the godHud colors
+local ghostTextColor = Color( godHud.textColor.r, godHud.textColor.g, godHud.textColor.b )
+local ghostShadowColor = Color( godHud.shadowColor.r, godHud.shadowColor.g, godHud.shadowColor.b )
+local solidTextColor = Color( godHud.textColor.r, godHud.textColor.g, godHud.textColor.b )
+local solidShadowColor = Color( godHud.shadowColor.r, godHud.shadowColor.g, godHud.shadowColor.b )
+
+local ghostData = {
+    font = tutorialFont,
+    textColor = ghostTextColor,
+    shadowColor = ghostShadowColor,
+    shadowOffsetX = godHud.shadowOffsetX,
+    shadowOffsetY = godHud.shadowOffsetY,
+}
+
+local solidData = {
+    font = tutorialFont,
+    textColor = solidTextColor,
+    shadowColor = solidShadowColor,
+    shadowOffsetX = godHud.shadowOffsetX,
+    shadowOffsetY = godHud.shadowOffsetY,
+}
+
+-- where each copy starts out. Think advances progress and eased, Paint reads them
+local function buildGhosts()
+    local ghosts = {}
+
+    for ind = 1, ghostCount do
+        local orbit = math.rad( math.Rand( ghostOrbitMin, ghostOrbitMax ) )
+        if math.random( 2 ) == 1 then -- half of them sweep the other way round
+            orbit = -orbit
+
+        end
+
+        ghosts[ind] = {
+            angle = math.rad( math.Rand( 0, 360 ) ),
+            spread = math.Rand( ghostSpreadMin, ghostSpreadMax ),
+            orbit = orbit,
+            startAt = math.Rand( 0, ghostStartSpread ),
+            progress = 0,
+            eased = 0,
+        }
+    end
+
+    return ghosts
+
+end
+
 local imNewMyself = nil
 local hasSeenMessage = CreateClientConVar( "cl_huntersglee_firsttimetutorial", 0, true, true, "Has the player seen the one-time tutorial series of messages?" )
 
 local spawnsetCvar = GetConVar( "huntersglee_spawnset" )
 
-local stagesOneGuy = {
+local stagesTutorialMisery = {
     [1] = "Welcome.\nTo the hunt!",
-    [2] = "You're here to DIE",
-    [3] = "You will bring it ceaceless glee...",
+    [2] = "You're here to...\nDIE?",
+    [3] = "You're here to bring, to FEEL,\noverwhelming glee?",
     [4] = "It's kill or be killed in the HUNT",
-    [5] = "Only one of you will get out of here alive...",
-    [6] = "Give IT a gleeful hunt,\nand be careful!",
-    [7] = "IT's already on your tail...",
+    [5] = "Don't worry though,\ndeath is not the end...",
+    [6] = "Give THEM a gleeful hunt,\nand be careful!",
+    [7] = "They're already on your tail...",
 }
 
 local stagesSingleplayer = {
@@ -64,10 +140,15 @@ local stagesMultiplayer = {
     [9] = "The hunt MUST GO ON.",
 }
 
+-- Builds the whole tutorial, or decides this player doesn't need one.
+-- Returns true for both, because the only caller is a retry timer and both mean stop retrying.
+-- Returns nil when LocalPlayer wasn't ready, which is the only case worth trying again.
 local function doMessageIfWeCan()
     if not IsValid( LocalPlayer() ) then return end -- erm
     -- double check!
 
+    -- 1 is the singleplayer tutorial, 2 is the multiplayer one, and doing the multiplayer one
+    -- counts as having done both. sv_firsttimeplayers' requiredKnowledgeLevel picks the same two
     local target = 1
     if game.IsDedicated() then
         target = 2
@@ -89,8 +170,10 @@ local function doMessageIfWeCan()
 
     popup:SetDraggable( false )
 
-    LocalPlayer().MAINSCROLLPANEL = popup
     popup.Paint = function() end
+
+    -- the panel as the identifier means gmod drops this hook itself once the panel is gone
+    hook.Add( "HUDShouldDraw", popup, function() return false end )
 
     popup.oldRemove = popup.Remove
     popup.Remove = function( self )
@@ -114,15 +197,18 @@ local function doMessageIfWeCan()
     button:Dock( FILL )
     button:SetText( "" )
 
-    button.paintText = ""
     button.stage = 1
-    button.charCount = -5
     button.nextPress = 0
     button.nextFlash = 0
+    button.lastThink = CurTime()
+    button.elapsed = 0
+    button.clickPlsGoFaster = 0
+    button.jitterX = 0 -- DoJitter fills these in, Paint just needs them to exist on frame one
+    button.jitterY = 0
 
     local stages
-    if spawnsetCvar:GetString() == "hunters_glee_oneguy" then
-        stages = stagesOneGuy
+    if spawnsetCvar:GetString() == GAMEMODE.TheTutorialMisery then
+        stages = stagesTutorialMisery
 
     elseif player.GetCount() >= 2 then
         stages = stagesMultiplayer
@@ -132,22 +218,45 @@ local function doMessageIfWeCan()
 
     end
 
+    local function showStage()
+        local fullMsg = stages[button.stage]
+        if not fullMsg then return end
+
+        button.msg = fullMsg
+        button.ghosts = buildGhosts()
+        button.elapsed = 0
+        button.clickPlsGoFaster = 0
+        button.solidAlpha = 0
+        button.wasDone = nil
+        button.nextAutomatic = nil
+
+    end
+
     local function nextStage()
         button.stage = button.stage + 1
         local fullMsg = stages[button.stage]
 
         if not fullMsg then
+            local us = LocalPlayer()
+
+            if spawnsetCvar:GetString() == GAMEMODE.TheTutorialMisery then
+                us:EmitSound( "ambient/levels/streetwar/gunship_distant2.wav", 120, 140, 0.5, CHAN_STATIC, SND_NOFLAGS, 0 )
+
+            end
+            playGodSound( textArrivalSounds, math.random( 90, 110 ), CHAN_STATIC )
+            playGodSound( textArrivalSounds, math.random( 70, 80 ), CHAN_STATIC )
+            playGodSound( textArrivalSounds, math.random( 50, 60 ), CHAN_STATIC )
+
             popup:Remove()
-            LocalPlayer():EmitSound( "doors/heavy_metal_stop1.wav", 100, 100 )
+            return
 
         end
 
-        button.charCount = -5
-        button.wasDone = nil
-        button.nextAutomatic = nil
-        button.halfDone = nil
+        showStage()
 
     end
+
+    showStage()
 
     button.Think = function()
         if not system.HasFocus() then
@@ -164,50 +273,85 @@ local function doMessageIfWeCan()
 
         end
 
-        local fullMsg = stages[button.stage]
-        if not fullMsg then return end
-        local done
+        godHud.DoJitter( button )
 
-        local toShow = string.sub( fullMsg, 0, math.floor( button.charCount ) )
+        local ghosts = button.ghosts
+        if not ghosts then return end
 
-        local rampUp = math.Clamp( button.charCount / 600, 0, 0.10 )
-        local added = 0.15 + rampUp
-        button.charCount = button.charCount + added
+        -- a minimised window stops thinking, don't let it come back already materialised
+        local delta = math.Clamp( CurTime() - button.lastThink, 0, 0.1 )
+        button.lastThink = CurTime()
 
-        if button.charCount <= 1 then
-            toShow = ""
-            for _ = 1, math.abs( button.charCount ) do
-                toShow = toShow .. "."
+        button.elapsed = button.elapsed + delta + button.clickPlsGoFaster
+        button.clickPlsGoFaster = 0
 
-            end
-        else
-            if #toShow ~= button.oldCountSound then
-                button.oldCountSound = #toShow
+        for _, ghost in ipairs( ghosts ) do
+            local progress = math.Clamp( ( button.elapsed - ghost.startAt ) / ghostMergeTime, 0, 1 )
+            ghost.progress = progress
+            ghost.eased = 1 - ( ( 1 - progress ) ^ 3 )
 
-                local pit = math.random( 90, 110 ) - ( button.oldCountSound * 0.1 )
+            if progress <= 0 then continue end
 
-                -- surface.playsound doesnt have pitch....
-                LocalPlayer():EmitSound( "physics/concrete/rock_impact_soft" .. math.random( 1, 3 ) .. ".wav", 75, pit, 0.35, CHAN_BODY )
-
-            end
-            done = button.charCount > #fullMsg
-            if done and not button.wasDone then
-                button.nextAutomatic = CurTime() + 5
-                button.wasDone = true
+            if not ghost.fizzled then
+                ghost.fizzled = true
+                playGodSound( textArrivalSounds, math.random( 90, 110 ), CHAN_STATIC )
 
             end
         end
 
-        button.paintText = toShow
+        -- squared, so the solid copy stays out of the way while the ghosts are still spread out
+        local materialised = math.Clamp( button.elapsed / materialiseTime, 0, 1 )
+        button.solidAlpha = 255 * ( materialised ^ 2 )
 
+        if materialised >= 1 and not button.wasDone then
+            button.nextAutomatic = CurTime() + 5
+            button.wasDone = true
+            playGodSound( textLandingSounds, math.random( 50, 60 ), CHAN_BODY )
+
+        end
     end
+
     button.Paint = function()
-        surface.drawShadowedTextBetter( button.paintText, "huntersglee_welcometext", color_white, width / 2, ( height / 2 ) + -256 )
+        local ghosts = button.ghosts
+        if not ghosts then return end
+
+        local centreX = ( width / 2 ) + button.jitterX
+        local topY = ( height / 2 ) + -256 + button.jitterY
+
+        ghostData.text = button.msg
+
+        for _, ghost in ipairs( ghosts ) do
+            if ghost.progress <= 0 then continue end
+
+            local eased = ghost.eased
+
+            -- brightest halfway in, so each copy swells out of nothing and is gone once it lands
+            local fade = math.sin( eased * math.pi )
+            ghostTextColor.a = ghostPeakAlpha * fade
+            ghostShadowColor.a = ghostPeakAlpha * fade
+
+            -- swings round the centre as it closes in, so it spirals rather than sliding straight
+            local angle = ghost.angle + ( ghost.orbit * eased )
+            local dist = ghost.spread * ( 1 - eased )
+
+            ghostData.posX = centreX + ( math.cos( angle ) * dist )
+            ghostData.posY = topY + ( math.sin( angle ) * dist )
+            surface.drawShadowedTextBetterData( ghostData )
+
+        end
+
+        solidTextColor.a = button.solidAlpha
+        solidShadowColor.a = button.solidAlpha
+
+        solidData.text = button.msg
+        solidData.posX = centreX
+        solidData.posY = topY
+        surface.drawShadowedTextBetterData( solidData )
 
     end
 
     button.DoClick = function()
-        if not button.wasDone then return end
+        if not button.wasDone then button.clickPlsGoFaster = button.clickPlsGoFaster + clickImpatience return end
         if button.nextPress > CurTime() then return end
         nextStage()
 
@@ -248,6 +392,7 @@ GAMEMODE:RegisterStatusEffect( "spawn_protection",
         end )
     end
 )
+
 
 local gleetingsAsk = CreateClientConVar( "cl_huntersglee_gleetingsask", 1, true, true, "Get a chat print when someone who's never played glee joins?" )
 

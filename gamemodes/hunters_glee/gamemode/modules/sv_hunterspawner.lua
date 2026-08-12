@@ -229,6 +229,8 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
         local pickedSpawns = {}
         local spawns = spawnSet.spawns
 
+        debugPrint( "STARTING WAVE GENERATION! with " .. budget .. " difficulty." )
+
         while budget > 0 do
             local addedOne
             local freebie
@@ -244,7 +246,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
                 end
 
                 -- for when you dont want this to spawn early
-                -- default is 100% difficulty at 10 minutes
+                -- default is 100 difficulty at 10 minutes
                 local difficultyNeeded = currSpawn.difficultyNeeded
                 if difficultyNeeded and difficulty < difficultyNeeded then
                     continue
@@ -253,6 +255,15 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
                 -- for when you want it to stop spawning after some time
                 local difficultyStopAfter = currSpawn.difficultyStopAfter
                 if difficultyStopAfter and difficulty > difficultyStopAfter then
+                    continue
+
+                end
+
+                -- for very special cases, like bosses in tutorial modes
+                -- difficulty at default will be 100 after 10 minutes, and is accelerated by a LOT of systems
+                -- best to use difficultyNeeded, hence why this is not documented :)
+                local minutesNeeded = currSpawn.minutesNeeded
+                if minutesNeeded and minutes < minutesNeeded then
                     continue
 
                 end
@@ -637,7 +648,7 @@ end
 local randYawAng = Angle( 0, 0, 0 )
 
 function GM:SpawnHunter( class, currSpawn )
-    local spawnPos, spawnArea, valid = self:getValidHunterPos()
+    local spawnPos, spawnArea, valid = self:MarchValidHunterPos( class, currSpawn )
     if not valid then return end
 
     local hunter = ents.Create( class )
@@ -762,7 +773,7 @@ local shallowWaterOffset = Vector( 0, 0, 150 )
 -- spawn a hunter as far away as possible from every player by inching a distance check around
 -- made to be really random/overcomplicated so you never really know where they'll spawn from
 -- RAAAGH WHY DID I MAKE THIS SO OVERCOMPLCATED
-function GM:getValidHunterPos()
+function GM:MarchValidHunterPos( _class, currSpawn )
     local _, spawnSet = self:GetSpawnSet()
     local dynamicTooCloseFailCounts = spawnSet.dynamicTooCloseFailCounts or -2
     local dynamicTooCloseDist = spawnSet.dynamicTooCloseDist
@@ -795,6 +806,10 @@ function GM:getValidHunterPos()
             local pos1 = pos + maxs
             local pos2 = pos - maxs
             areas = navmesh.FindInBox( pos1, pos2 )
+            if currSpawn.preferredEFlags then
+                areas = self:FilterForAreasWithEFlags( currSpawn.preferredEFlags, areas )
+
+            end
             if #areas > 5000 then
                 local bite = -( #areas / 100 )
                 GAMEMODE:AdjustDynamicTooCloseCutoff( bite, spawnSet ) -- prob laggy, shrink it!
@@ -804,12 +819,16 @@ function GM:getValidHunterPos()
         end
     end
 
-    -- if theres no areas near the player, spawn them in the best big group
+    -- if we're early in the search, or if theres no areas near the player, spawn them in the best big group
     if not areas or #areas <= 0 then
         debugPrint( "using big group" )
         local _
         _, areas = self:GetAreaInOccupiedBigGroupOrRandomBigGroup()
 
+        if currSpawn.preferredEFlags and fails < 30 then
+            areas = self:FilterForAreasWithEFlags( currSpawn.preferredEFlags, areas )
+
+        end
     end
 
     -- dont use those expensive funcs up there every time
@@ -866,6 +885,60 @@ function GM:getValidHunterPos()
             end
             continue
 
+        end
+
+        if currSpawn.spawnSameZ then -- spawn at roughly the same z as any player pls
+            local good
+            local gap = 150 + ( fails * 2 )
+            local spawnPosZ = spawnPos.z
+            for _, shootPos in ipairs( playerShootPositions ) do
+                local shootZ = shootPos.z
+                local thresholdTop = spawnPosZ + gap
+                local thresholdBot = spawnPosZ - gap
+                if ( shootZ > thresholdBot ) and ( shootZ < thresholdTop ) then
+                    good = true
+                    break
+
+                end
+            end
+
+            if not good then
+                fails = fails + 0.5
+                continue
+
+            end
+        elseif currSpawn.spawnAbove then -- spawn above the highest player pls
+            local highestShoot = -math.huge
+            for _, shootPos in ipairs( playerShootPositions ) do
+                local shootZ = shootPos.z
+                if shootZ > highestShoot then
+                    highestShoot = shootZ
+
+                end
+            end
+
+            local gap = 200 + -( fails * 2 )
+            if spawnPos.z < ( highestShoot + gap ) then
+                fails = fails + 0.25
+                continue
+
+            end
+        elseif currSpawn.spawnBelow then -- beeelow lowest
+            local lowestShoot = math.huge
+            for _, shootPos in ipairs( playerShootPositions ) do
+                local shootZ = shootPos.z
+                if shootZ < lowestShoot then
+                    lowestShoot = shootZ
+
+                end
+            end
+
+            local gap = -200 + ( fails * 2 )
+            if spawnPos.z > ( lowestShoot + gap ) then
+                fails = fails + 0.25
+                continue
+
+            end
         end
 
         local checkPos = spawnPos + up50
@@ -959,6 +1032,7 @@ function GM:getValidHunterPos()
                 for _, adjArea in ipairs( potentials ) do
                     if adjArea:GetSizeX() <= 25 or adjArea:GetSizeY() <= 25 then continue end -- too small
                     if nearestPlyPos and adjArea:IsVisible( nearestPlyPos ) then continue end -- dont regress
+                    if currSpawn.preferredEFlags and not self:HasExtraFlags( adjArea, currSpawn.preferredEFlags ) then continue end -- respect it!
                     spawnSet.lastGoodSpawnArea = adjArea
                     spawnSet.lastGoodSpawnAreaWeight = math.random( 5, 15 )
                     break

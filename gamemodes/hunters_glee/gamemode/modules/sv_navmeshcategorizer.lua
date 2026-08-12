@@ -8,6 +8,7 @@ local ceilingLowThreshold  = 120
 local ceilingHighThreshold = 300
 
 local runwayLength = 5000
+local smallLakeSurfaceArea = 4312187 -- 1/4th of the gm_construct pond
 
 local flagsEnums = {}
 GM.NavEFlags = flagsEnums -- Nav Extra Flags
@@ -16,10 +17,11 @@ flagsEnums.FLAT = 1 -- flat ground
 flagsEnums.UNDER_SKY = 2 -- area is under sky
 flagsEnums.LOW_CEILING = 4 -- area has low ceiling
 flagsEnums.HIGH_CEILING = 8 -- area has high ceiling
-flagsEnums.LOCALE_BEACH = 16 -- right next to water
+flagsEnums.LOCALE_BEACH = 16 -- right next to bigish body of water, and under sky
 flagsEnums.LOCALE_RUNWAY = 32 -- big areas with long sightlines in at least one direction, something can take off if spawned
 flagsEnums.LOCALE_PEAK = 64 -- in highest 10% of the map, and higher center than all neighbors
 flagsEnums.LOCALE_DREG = 128 -- lowest 10% of the map, can be underwater
+flagsEnums.LOCALE_DAMP = 256 -- right next to water
 
 concommand.Add( "glee_test_highlightallareaswithflag", function( ply, cmd, args )
     if not ply:IsAdmin() then return end
@@ -69,10 +71,12 @@ local function areaIsFlat( area )
 
 end
 
+local bit_band = bit.band
+
 function GAMEMODE:HasExtraFlags( area, flag )
     local areasFlags = self.areaExtraFlags[area]
     if not areasFlags then return false end
-    return bit.band( areasFlags, flag ) ~= 0
+    return bit_band( areasFlags, flag ) ~= 0
 
 end
 
@@ -84,7 +88,7 @@ function GAMEMODE:GetAreasWithEFlags( flagMask )
     local narrowestList
     local singleFlag = 1
     while singleFlag <= flagMask do
-        if bit.band( flagMask, singleFlag ) ~= 0 then
+        if bit_band( flagMask, singleFlag ) ~= 0 then
             local list = self.areasByExtraFlags[singleFlag]
             if not list or #list == 0 then return {} end
             if not narrowestList or #list < #narrowestList then
@@ -99,8 +103,28 @@ function GAMEMODE:GetAreasWithEFlags( flagMask )
     local result = {}
     for _, area in ipairs( narrowestList ) do
         local areaFlags = self.areaExtraFlags[area]
-        if areaFlags and bit.band( areaFlags, flagMask ) == flagMask then
-            table.insert( result, area )
+        if areaFlags and bit_band( areaFlags, flagMask ) == flagMask then
+            result[#result + 1] = area
+
+        end
+    end
+    return result
+
+end
+
+-- filter this indexed table of areas, returning all areas that pass this mask
+function GAMEMODE:FilterForAreasWithEFlags( flagMask, areas )
+    -- an empty mask means nothing was asked for, same as GetAreasWithEFlags.
+    -- without this it would band against 0 and pass everything through
+    if flagMask == 0 then return {} end
+
+    local extraFlags = self.areaExtraFlags
+
+    local result = {}
+    for _, area in ipairs( areas ) do
+        local areaFlags = extraFlags[area]
+        if areaFlags and bit_band( areaFlags, flagMask ) == flagMask then
+            result[#result + 1] = area
 
         end
     end
@@ -111,7 +135,7 @@ end
 function GAMEMODE:RegisterFlagStatus( area, flag )
     local areasFlags = self.areaExtraFlags[area] or 0
 
-    if bit.band( areasFlags, flag ) ~= 0 then return end -- already has flag
+    if bit_band( areasFlags, flag ) ~= 0 then return end -- already has flag
 
     self.areaExtraFlags[area] = bit.bor( areasFlags, flag )
 
@@ -132,6 +156,7 @@ local function reset()
     SetGlobalBool( "glee_isSkyOnMap", false )
     GAMEMODE.areaExtraFlags = {}
     GAMEMODE.areasByExtraFlags = {}
+    GAMEMODE.waterBodySize = {} -- groups of underwater areas
     GAMEMODE.highestSkyZ = -math.huge -- highest z on map, probably skybox height
     GAMEMODE.highestAreaZ = -math.huge -- highest navarea center's z
     GAMEMODE.lowestAreaZ = math.huge -- lowest navarea center's z
@@ -229,11 +254,31 @@ hook.Add( "glee_navmesh_visit", "glee_precache_extraflags", function( area )
     local adjacents = area:GetAdjacentAreas()
 
     if #adjacents <= 0 then return end
-    if underSky and area:IsUnderwater() then
-        for _, neighbor in ipairs( adjacents ) do
-            if neighbor:IsUnderwater() then continue end
-            if area:ComputeAdjacentConnectionHeightChange( neighbor ) > 36 then continue end
-            GAMEMODE:RegisterFlagStatus( neighbor, flagsEnums.LOCALE_BEACH )
+
+    if area:IsUnderwater() and not GAMEMODE.waterBodySize[area] then
+        local totalSurfaceArea = 0
+        local group = {}
+        local checked = { [area] = true }
+        local open = { area }
+        while #open > 0 do
+            local cur = table.remove( open )
+            group[#group + 1] = cur
+            totalSurfaceArea = totalSurfaceArea + areasSurfaceArea( cur )
+
+            local cursAdjacent = cur:GetAdjacentAreas()
+
+            for _, adj in ipairs( cursAdjacent ) do
+                if not adj:IsUnderwater() then continue end
+                if checked[adj] then continue end
+                open[#open + 1] = adj
+                checked[adj] = true
+
+            end
+        end
+
+        local waterBodySizes = GAMEMODE.waterBodySize
+        for _, groupArea in ipairs( group ) do
+            waterBodySizes[groupArea] = totalSurfaceArea
 
         end
     end
@@ -306,11 +351,13 @@ hook.Add( "glee_navmesh_postvisit", "glee_precache_extraflags", function( area )
 
     end
 
+    local adjacents = area:GetAdjacentAreas()
+
     -- LOCALE_PEAK: highest parts of the map that are also higher than all their neighbors
     if currAreaZ >= GAMEMODE.PeakCutoff then
         local isHigherThanAllNeighbors = true
 
-        for _, neighbor in ipairs( area:GetAdjacentAreas() ) do
+        for _, neighbor in ipairs( adjacents ) do
             if neighbor:GetCenter().z > currAreaZ then
                 isHigherThanAllNeighbors = false
                 break
@@ -320,6 +367,17 @@ hook.Add( "glee_navmesh_postvisit", "glee_precache_extraflags", function( area )
 
         if isHigherThanAllNeighbors then
             GAMEMODE:RegisterFlagStatus( area, flagsEnums.LOCALE_PEAK )
+
+        end
+    end
+
+    if #adjacents > 0 and area:IsUnderwater() then
+        local beach = GAMEMODE.waterBodySize[area] > smallLakeSurfaceArea and GAMEMODE:HasExtraFlags( area, flagsEnums.UNDER_SKY )
+        local enum = beach and flagsEnums.LOCALE_BEACH or flagsEnums.LOCALE_DAMP
+        for _, neighbor in ipairs( adjacents ) do
+            if neighbor:IsUnderwater() then continue end
+            if area:ComputeAdjacentConnectionHeightChange( neighbor ) > 36 then continue end
+            GAMEMODE:RegisterFlagStatus( neighbor, enum )
 
         end
     end

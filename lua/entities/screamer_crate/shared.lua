@@ -169,6 +169,17 @@ if CLIENT then
 
     end )
 
+    -- reached through the ghost ent, cl_topleftinfo falls back to it when we hold no weapon.
+    -- DoHudStuff already shows the projected profit, this is the half it doesn't say
+    function ENT:HintPreStack()
+        -- this file is the base for every placeable, only the real screaming crate has a beacon
+        if self:GetClass() ~= "screamer_crate" then return end
+        if GAMEMODE:HasLearnedLesson( "BeaconSurvived" ) then return end
+
+        return true, "Place the supplies NEAR a survivor, but not too near.\nIf they break it before the first beep,\nthey'll STEAL the deposit..."
+
+    end
+
     function ENT:DoHudStuff()
         local screenMiddleW = ScrW() / 2
         local screenMiddleH = ScrH() / 2
@@ -317,6 +328,7 @@ local function payOutDeposit( crate )
 
     placer:GivePlayerScore( bonus )
     huntersGlee_Announce( { placer }, 5, 10, "The beacon survives, you profit " .. bonus - placingCost .. " score." )
+    GAMEMODE:LearnLesson( placer, "BeaconSurvived" ) -- they've done it once, stop explaining the deposit
     crate.refundAndBonus = nil
 
 end
@@ -814,6 +826,7 @@ function GM:ScreamingCrate( pos )
     local crate = ents.Create( "item_item_crate" )
     if not IsValid( crate ) then return end
 
+    crate:SetModel( "models/Items/item_item_crate.mdl" )
     crate:SetPos( pos )
     local random = math.random( -4, 4 ) * 45
     crate:SetAngles( Angle( 0, random, 0 ) )

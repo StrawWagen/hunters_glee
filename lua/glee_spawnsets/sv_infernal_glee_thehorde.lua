@@ -1,6 +1,6 @@
 
 local set = {
-    name = "hunters_glee_infernalhorde", -- unique name
+    name = "infernal_glee_thehorde", -- unique name
     prettyName = "The Infernal Horde",
     description = "It burns, it burns! IT BURNS!",
     difficultyPerMin = "default*3", -- difficulty per minute

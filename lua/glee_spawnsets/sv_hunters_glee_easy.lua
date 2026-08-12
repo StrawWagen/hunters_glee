@@ -6,7 +6,7 @@ local set = {
     waveInterval = "default", -- time between spawn waves
     diffBumpWhenWaveKilled = { 5, 10 }, -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
     startingBudget = "default", -- so budget isnt 0
-    spawnCountPerDifficulty = "default*0.5", -- max of ten at 10 minutes
+    spawnCountPerDifficulty = "default*0.5",
     startingSpawnCount = 1,
     maxSpawnCount = 2, -- hard cap on count
     maxSpawnDist = "default",
@@ -15,6 +15,7 @@ local set = {
     roundEarlyStartSound = "default",
     chanceToBeVotable = 5, -- and fade into the background if this host isn't challenged by this
     chanceToBeVotableWhenHard = 20, -- stick around when this is still a challenge
+    easy = true,
     spawns = {
         {
             hardRandomChance = nil,

@@ -157,7 +157,7 @@ hook.Add( "PlayerSpawn", "GLEE_PDM:PlayerSpawn", function( ply )
     local newHealth = math.min( plysHealth, ply:GetMaxHealth() )
     if plysHealth > newHealth then
         ply:SetHealth( newHealth )
-        ply.glee_LastHealthSetReason = "PDM_PlayerSpawn"
+        ply.glee_LastSetHealthReason = "PDM_PlayerSpawn"
 
     end
 end )
