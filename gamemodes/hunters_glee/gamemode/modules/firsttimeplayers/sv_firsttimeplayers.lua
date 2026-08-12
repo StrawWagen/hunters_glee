@@ -3,7 +3,6 @@ local GAMEMODE = GAMEMODE or GM
 local asked = {}
 local spawned = {}
 local alreadyDone = {}
-local testingDone
 
 util.AddNetworkString( "glee_dothefirsttimemessage" )
 util.AddNetworkString( "glee_askforgleetings" )
@@ -71,11 +70,6 @@ local function shelterPly( ply )
 
             ply:RemoveStatusEffect( "spawn_protection" )
 
-            if testingDone then
-                testingDone[ply] = true
-
-            end
-
             timer.Remove( timerName )
             gleetings( ply )
 
@@ -120,16 +114,12 @@ local function needsToAsk( ply )
 
     if ply:IsBot() then return end
 
-    if testingDone and not testingDone[ply] then return true end
-
     return tutorialKnowledgeLevel( ply ) < requiredKnowledgeLevel()
 
 end
 
 local function isEducated( ply )
     if ply:IsBot() then return true end
-
-    if testingDone then return testingDone[ply] end
 
     return tutorialKnowledgeLevel( ply ) >= requiredKnowledgeLevel()
 
@@ -191,6 +181,17 @@ hook.Add( "PlayerInitialSpawn", "glee_firsttimeply_shelterwhenloading", function
 
 end )
 
+local forceResetOnSpawn
+
+local function forceResetTutorial( ply )
+    asked[ply] = nil
+    alreadyDone[ply:SteamID()] = nil
+
+    ply:ConCommand( "cl_huntersglee_firsttimetutorial 0" )
+    spawned[ply] = true
+
+end
+
 -- they're done loading
 hook.Add( "glee_full_load", "glee_firsttimeplayercheck", function( ply )
     -- wait a couple seconds
@@ -199,6 +200,11 @@ hook.Add( "glee_full_load", "glee_firsttimeplayercheck", function( ply )
         -- then remove their spawn protection
         ply:RemoveStatusEffect( "spawn_protection" )
 
+        if forceResetOnSpawn then
+            forceResetTutorial( ply )
+
+        end
+
         -- and mark them as ready for the tutorial
         spawned[ply] = true
 
@@ -206,14 +212,13 @@ hook.Add( "glee_full_load", "glee_firsttimeplayercheck", function( ply )
 end )
 
 hook.Add( "glee_reset_tutorial", "firsttimeplayers", function()
-    testingDone = {} -- capture players spawning in aswell
-
+    -- reset tutorial for all plys in session
     for _, ply in player.Iterator() do
-        asked[ply] = nil
-        alreadyDone[ply:SteamID()] = nil
-        spawned[ply] = true
-
-        ply:ConCommand( "cl_huntersglee_firsttimetutorial 0" )
+        if not ply.glee_FullLoaded then continue end
+        forceResetTutorial( ply )
 
     end
+    -- and all plys who join into the session
+    forceResetOnSpawn = true
+
 end )

@@ -57,8 +57,8 @@ function GM:LearnLesson( ply, lessonName )
 
 end
 
--- clears both sides itself rather than waiting to be told, so it still works for a player
--- whose client never reports back
+-- clear tutorial for all online players
+-- and everyone who spawns in
 concommand.Add( "glee_reset_tutorial", function( caller )
     if IsValid( caller ) and not caller:IsSuperAdmin() then return end
 
@@ -68,6 +68,17 @@ concommand.Add( "glee_reset_tutorial", function( caller )
         net.WriteUInt( 2, 4 )
 
     net.Send( player.GetAll() )
+
+    hook.Add( "glee_full_load", "glee_reset_tutorial", function( ply )
+        timer.Simple( 1, function()
+            if not IsValid( ply ) then return end
+            net.Start( "glee_lessons" )
+                net.WriteUInt( 2, 4 )
+
+            net.Send( ply )
+
+        end )
+    end )
 
     for _, ply in player.Iterator() do
         ply.glee_LearnedLessons = nil
