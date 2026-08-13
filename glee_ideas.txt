@@ -420,3 +420,4 @@ dead air was bad
 switch weapons hint
 dead items look like they cost money to click on
 the big moneymaker items need to be smooth, more, part of the dead experience
+bad ux when match switches itself to tutorial mode

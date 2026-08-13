@@ -7,7 +7,7 @@ if SERVER then -- NavEFlags no exist on client
         prettyName = "Mildly Gleeful Inferno",
         description = "It burns, it burns! IT BURNS!",
         difficultyPerMin = "default*0.5", -- difficulty per minute
-        waveInterval = "default", -- time between spawn waves
+        waveInterval = "default*0.15", -- time between spawn waves
         diffBumpWhenWaveKilled = "default*4", -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
         startingBudget = "default", -- so budget isnt 0
         spawnCountPerDifficulty = "default*0.5",
