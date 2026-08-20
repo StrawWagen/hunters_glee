@@ -106,4 +106,8 @@ function terminator_Extras.ParentedDetailFallOff( parent, detail )
     detail.glee_isGleeDetail = nil
     detail.glee_gleeDetailParent = nil
 
+    local detailsObj = detail:GetPhysicsObject()
+    if not IsValid( detailsObj ) then return end
+    detailsObj:Wake()
+
 end

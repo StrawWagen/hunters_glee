@@ -36,7 +36,6 @@ if SERVER then -- NavEFlags no exist on client
                 class = "terminator_nextbot_infernalskeleton", -- class spawned
                 spawnType = "hunter",
                 spawnAbove = true,
-                preferredEFlags = GAMEMODE.NavEFlags.UNDER_SKY,
                 difficultyCost = 150,
                 countClass = "terminator_nextbot_infernalskeleton",
                 maxCount = { 1 },
@@ -72,7 +71,6 @@ if SERVER then -- NavEFlags no exist on client
                 class = "terminator_nextbot_infernalskeleton_large", -- class spawned
                 spawnType = "hunter",
                 spawnAbove = true,
-                preferredEFlags = GAMEMODE.NavEFlags.UNDER_SKY,
                 difficultyCost = { 1500, 2500 }, -- super rare early one, just added in here for fun
                 countClass = "terminator_nextbot_infernalskeleton_large",
                 maxCount = { 1 },

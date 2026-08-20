@@ -202,11 +202,12 @@ if SERVER and terminator_Extras then
 
                     if self.flare_lastSkyboxHitPos then
                         self:CallHeli( self.flare_lastSkyboxHitPos, startPos )
+                        return
 
                     end
 
-                    if IsValid( self.MyOwner ) and self.MyOwner:IsPlayer() and not self.MyOwner.glee_SignalFlareHint then
-                        self.MyOwner.glee_SignalFlareHint = true
+                    if IsValid( self.MyOwner ) and self.MyOwner:IsPlayer() and not self.glee_SignalFlareHint then
+                        self.glee_SignalFlareHint = true
                         huntersGlee_Announce( { self.MyOwner }, 500, 5, "God, that's bright\nI bet you could see it from miles away..." )
 
                     end
@@ -251,7 +252,7 @@ if SERVER and terminator_Extras then
             local traceData = {
                 start = myPos,
                 endpos = myPos + dir * callingHeliMaxs,
-                mask = MASK_NPCSOLID_BRUSHONLY,
+                mask = MASK_PLAYERSOLID_BRUSHONLY,
 
             }
             local traceResult = util.TraceLine( traceData )
@@ -301,29 +302,53 @@ if SERVER and terminator_Extras then
         local currMaxs = math.random( wayfindingHeliMaxs, callingHeliMaxs )
 
         local offsetSize = self.SteppedStartingOffset + math.random( 25, callingHeliMaxs )
-        local startPosOffsetted = startPos + randDir * offsetSize
+        local randOffset = randDir * offsetSize
+        local startPosOffsetted = startPos + randOffset
+        local spawnPosMins = Vector( currMins, currMins, wayfindingHeliMins / 2 )
+        local spawnPosMaxs = Vector( currMaxs, currMaxs, wayfindingHeliMaxs / 2 )
 
-        local traceData = {
+        local traceDataSPos = {
             start = startPosOffsetted,
             endpos = startPos + offset,
-            mask = MASK_NPCSOLID_BRUSHONLY,
-            mins = Vector( currMins, currMins, wayfindingHeliMins / 2 ),
-            maxs = Vector( currMaxs, currMaxs, wayfindingHeliMaxs / 2 ),
+            mask = MASK_PLAYERSOLID_BRUSHONLY,
+            mins = spawnPosMins,
+            maxs = spawnPosMaxs,
 
         }
-        local callTraceResult = util.TraceHull( traceData )
+        -- first trace, find pos players can reach
+        local heliSpawnPosResult = util.TraceHull( traceDataSPos )
+
+        local traceDataSky = {
+            start = heliSpawnPosResult.HitPos,
+            endpos = startPos + offset,
+            mask = MASK_SHOT,
+            mins = spawnPosMins * 0.75,
+            maxs = spawnPosMaxs * 0.75,
+
+        }
+        -- then complete the trace, find the sky
+        local findSkyResult = util.TraceHull( traceDataSky )
 
         if debugging:GetBool() then
             local boxColor = Color( 255, 0, 0, 255 )
-            if callTraceResult.HitSky then
+            if findSkyResult.HitSky then
                 boxColor = Color( 0, 255, 0, 255 )
 
             end
             debugoverlay.SweptBox(
-                traceData.start,
-                callTraceResult.HitPos,
-                traceData.mins,
-                traceData.maxs,
+                heliSpawnPosResult.StartPos,
+                heliSpawnPosResult.HitPos,
+                traceDataSPos.mins,
+                traceDataSPos.maxs,
+                Angle( 0, 0, 0 ),
+                10,
+                boxColor
+            )
+            debugoverlay.SweptBox(
+                findSkyResult.StartPos,
+                findSkyResult.HitPos,
+                traceDataSky.mins,
+                traceDataSky.maxs,
                 Angle( 0, 0, 0 ),
                 10,
                 boxColor
@@ -331,8 +356,8 @@ if SERVER and terminator_Extras then
 
         end
 
-        local hitPos = callTraceResult.HitPos
-        if callTraceResult.HitSky and util.IsInWorld( hitPos ) then
+        local hitPos = heliSpawnPosResult.HitPos
+        if findSkyResult.HitSky and util.IsInWorld( hitPos ) then
             local oldHitPos = self.flare_lastSkyboxHitPos
             -- no hit sky fallback yet?
             if not oldHitPos then
@@ -345,11 +370,11 @@ if SERVER and terminator_Extras then
             end
         end
 
-        local tooClose = callTraceResult.HitPos:Distance( startPos ) < self.SteppedTooCloseDist
+        local tooClose = heliSpawnPosResult.HitPos:Distance( startPos ) < self.SteppedTooCloseDist
         -- if the flare crashed into the skybox, this is a tight space, just call it!
         tooClose = tooClose and not self.HitSkyboxAtLeastOnce
 
-        local badPlsStep = callTraceResult.StartSolid or tooClose
+        local badPlsStep = heliSpawnPosResult.StartSolid or tooClose
 
         if badPlsStep then -- too close!
             self.SteppedTooCloseDist = math.max( self.SteppedTooCloseDist - 250, self.MinTooCloseDist )
@@ -358,18 +383,18 @@ if SERVER and terminator_Extras then
 
         end
 
-        if callTraceResult.StartSolid then
+        if heliSpawnPosResult.StartSolid then
             self.SteppedStartingOffset = self.SteppedStartingOffset + math.random( 0, 100 )
             return
 
         end
-        if not callTraceResult.HitSky then
+        if not findSkyResult.HitSky then
             self.SteppedDirMaxZ = math.Clamp( self.SteppedDirMaxZ + 0.05, 0, self.MaxDirMaxZ )
             return
 
         end
 
-        self:CallHeli( callTraceResult.HitPos, startPos )
+        self:CallHeli( heliSpawnPosResult.HitPos, startPos )
 
     end
 
@@ -1240,12 +1265,14 @@ if SERVER and terminator_Extras then
         -- fly towards any skybox surfaces next to us
         -- if no skybox surfaces, fly towards where we spawned
         elseif currGoal == "escape" then
+            local escapePos
             local nearestSkyboxPos = self.nearestSkyboxPos
-            local attempts = 5
+            local nearestSkyboxDir = self.nearestSkyboxDir
+            local attempts = 12
             local trStruc = {
                 start = myPos,
                 endpos = nil,
-                mask = MASK_SOLID_BRUSHONLY,
+                mask = MASK_NPCSOLID_BRUSHONLY,
                 mins = Vector( callingHeliMins, callingHeliMins, callingHeliMins / 4 ),
                 maxs = Vector( callingHeliMaxs, callingHeliMaxs, callingHeliMaxs / 4 ),
 
@@ -1281,31 +1308,35 @@ if SERVER and terminator_Extras then
                     end
                     nearestSkyboxPos = trResult.HitPos
                     self.nearestSkyboxPos = nearestSkyboxPos
+                    nearestSkyboxDir = -trResult.Normal
+                    self.nearestSkyboxDir = nearestSkyboxDir
 
                 end
             end
             if nearestSkyboxPos then
                 self.currentHeliTask = "rescue_flyToBestSkybox"
 
-                local dirToSkybox = ( nearestSkyboxPos - myPos ):GetNormalized()
-
-                idealMovePos = nearestSkyboxPos + dirToSkybox * 2000
+                idealMovePos = nearestSkyboxPos + nearestSkyboxDir * 2000
+                escapePos = nearestSkyboxPos
                 skysTheLimit = true
 
-                local distAdd = ourVel:Length() / 1.5 -- at 1000 speed, add 750
-                local startAddingDistSpeed = 400
-                distAdd = math.max( 0, distAdd - startAddingDistSpeed )
-
-                if myPos:Distance( nearestSkyboxPos ) < 200 + distAdd then
-                    hook.Run( "glee_rescueheliescape", self )
-                    SafeRemoveEntityDelayed( self, 0.1 )
-
-                end
             else
                 self.currentHeliTask = "rescue_flyToWhereWeArrived"
 
                 idealMovePos = self.rescueHeliArrivedFromPos
+                escapePos = idealMovePos
 
+            end
+
+            if escapePos then
+                local distAdd = ourVel:Length() / 1.5 -- at 1000 speed, add 750
+                local startAddingDistSpeed = 400
+                distAdd = math.max( 0, distAdd - startAddingDistSpeed )
+                if myPos:Distance( escapePos ) < 200 + distAdd then
+                    hook.Run( "glee_rescueheliescape", self )
+                    SafeRemoveEntityDelayed( self, 0.1 )
+
+                end
             end
         end
 
@@ -1339,7 +1370,7 @@ if SERVER and terminator_Extras then
             local traceDataMove = {
                 start = myPos,
                 endpos = nil,
-                mask = MASK_SOLID_BRUSHONLY,
+                mask = MASK_NPCSOLID_BRUSHONLY,
                 mins = Vector( mins, mins, mins ),
                 maxs = Vector( maxs, maxs, maxs ),
 

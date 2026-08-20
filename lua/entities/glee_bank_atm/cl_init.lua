@@ -341,7 +341,7 @@ local function openAtmGui( atm )
         end
 
         if not IsValid( ply ) then return end
-        if ply:GetPos():DistToSqr( atm:GetPos() ) > 512 ^ 2 then
+        if ply:Alive() and ply:GetPos():DistToSqr( atm:GetPos() ) > 512 ^ 2 then
             self:Close()
 
         end

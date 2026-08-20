@@ -676,6 +676,11 @@ local function shutDownDeathCam( ply )
 
 end
 
+local spectatingModes = {
+    [OBS_MODE_CHASE] = true,
+    [OBS_MODE_IN_EYE] = true,
+}
+
 function GM:SpectateThing( ply, thing, msg )
     ply:SpectateEntity( thing )
     local newMode = OBS_MODE_CHASE
@@ -688,14 +693,22 @@ function GM:SpectateThing( ply, thing, msg )
     ply:SetNotSolid( true ) -- players can somehow end up solid while spectating
 
     if IsValid( thing ) then
-        ply:SetParent( thing ) -- fixes alot of flashing light visual bugs
-        ply:SetPos( thing:WorldSpaceCenter() )
-
         local callName = "glee_unfollow_" .. ply:GetCreationID()
         thing:CallOnRemove( callName, function()
             if not IsValid( ply ) then return end
+            if not spectatingModes[ply:GetObserverMode()] then return end
             if ply:GetObserverTarget() ~= thing then return end
             GAMEMODE:StopSpectatingThing( ply )
+
+        end )
+
+        local timerName = "glee_spectate_followentspos_" .. ply:GetCreationID() .. "_" .. thing:GetCreationID()
+        timer.Create( timerName, 0.01, 0, function()
+            if not IsValid( ply ) then timer.Remove( timerName ) return end
+            if not IsValid( thing ) then timer.Remove( timerName ) return end
+            if ply:GetObserverTarget() ~= thing then timer.Remove( timerName ) return end
+            if not spectatingModes[ply:GetObserverMode()] then timer.Remove( timerName ) return end
+            ply:SetPos( thing:WorldSpaceCenter() )
 
         end )
     end
@@ -760,6 +773,7 @@ end
 function GM:StopSpectatingThing( ply )
     local target = ply:GetObserverTarget()
     ply:SetObserverMode( OBS_MODE_ROAMING )
+    ply:SpectateEntity( NULL )
 
     if ply:IsDrivingEntity() then -- controlling a bot
         drive.PlayerStopDriving( ply )
@@ -791,7 +805,7 @@ end
 hook.Add( "StartEntityDriving", "glee_unparentbeforedriving", function( _ent, ply )
     if ply.termHuntTeam == GAMEMODE.TEAM_PLAYING then return end
     if not IsValid( ply:GetParent() ) then return end
-    ply:SetParent( NULL )
+    ply:SpectateEntity( NULL )
     ply:SetObserverMode( OBS_MODE_ROAMING )
     ply:SetNotSolid( true )
 

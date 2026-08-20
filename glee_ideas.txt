@@ -421,3 +421,36 @@ switch weapons hint
 dead items look like they cost money to click on
 the big moneymaker items need to be smooth, more, part of the dead experience
 bad ux when match switches itself to tutorial mode
+posess is spelled wrong in multiple places?
+
+skull size doesnt persist across rounds
+ensure divine clap gives guilt
+using homicidal glee on truly innocent players does guilt too
+postal dude pm has lower max hp?
+
+-- credit these ideas to the embalmster
+revive all dead players item
+divine one, spectate it, press space to revive
+infernal one, sucks all nearby ghosts into it, forces everyone to revive
+
+infernal vortex
+
+big purchase, make all ghosts audible, and visible at all times
+item that lets you briefly noclips you, leaving behind your weapons, most muscle mass, and fat
+
+the golden crowbar
+attach ticks to players
+aimbot ( robot that airdrops in, shoots EVERYTHING alive around it )
+
+bottle rocket in supply crates?
+
+-- end embalmster
+
+flashlight stays on when astral projecting
+
+callman filter ( simplification of it )
+gaussian blob?
+
+bomb gland big bombs gravgunnable
+
+astral projection type thing when u disconnect

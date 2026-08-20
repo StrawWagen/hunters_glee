@@ -425,12 +425,12 @@ if SERVER then
 
         end
     end )
-    -- TODO: smarter than just 8m bump
-    -- increase patience by 8 minutes when escape heli is called
+    -- TODO: smarter than just 5m bump
+    -- increase patience by 5 minutes when escape heli is called
     hook.Add( "glee_onescapehelicalled", "glee_increasepatience", function()
         if GAMEMODE.roundExtraData.grigoriWasPurchased then return end
         local startTimeOffset = GAMEMODE.roundExtraData.divineChosen_StartTimeOffset or 0
-        startTimeOffset = startTimeOffset + 8 * minute
+        startTimeOffset = startTimeOffset + 5 * minute
         GAMEMODE.roundExtraData.divineChosen_StartTimeOffset = startTimeOffset
 
         SetGlobal2Int( "glee_chosen_timeoffset", startTimeOffset )
@@ -780,6 +780,7 @@ if SERVER then
 
             self:HookOnce( "PlayerDeathThink", function( dead )
                 if not dead:HasStatusEffect( "divine_chosen" ) then return end
+                if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
 
                 if not dead.glee_DivineChosenForcedResurrect then return end
                 if dead.glee_DivineChosenForcedResurrect > CurTime() then return end

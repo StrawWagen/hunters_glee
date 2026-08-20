@@ -41,17 +41,28 @@ end
 
 local ATM_USE_RANGE_SQR = 512^2
 
-net.Receive( "glee_atm_deposit", function( _, ply )
+-- a dead player's position is wherever they're spectating from, so range only binds the living.
+-- claims the cooldown too, so a refused transaction still costs the player their next one
+local function atmForTransaction( ply )
     local atm = net.ReadEntity()
 
     if not IsValid( atm ) or atm:GetClass() ~= "glee_bank_atm" then return end
     if not IsValid( ply ) then return end
-    if ply:GetPos():DistToSqr( atm:GetPos() ) > ATM_USE_RANGE_SQR then return end
+    if ply:Alive() and ply:GetPos():DistToSqr( atm:GetPos() ) > ATM_USE_RANGE_SQR then return end
 
     local cur      = CurTime()
     local cooldown = ply:Alive() and atm.TransactionCooldown or atm.TransactionCooldownDead
+
     if ply.glee_atmNextTransaction and ply.glee_atmNextTransaction > cur then return end
     ply.glee_atmNextTransaction = cur + cooldown
+
+    return atm
+
+end
+
+net.Receive( "glee_atm_deposit", function( _, ply )
+    local atm = atmForTransaction( ply )
+    if not atm then return end
 
     local _success, message = atm:DepositToATM( ply )
 
@@ -63,16 +74,8 @@ net.Receive( "glee_atm_deposit", function( _, ply )
 end )
 
 net.Receive( "glee_atm_withdraw", function( _, ply )
-    local atm = net.ReadEntity()
-
-    if not IsValid( atm ) or atm:GetClass() ~= "glee_bank_atm" then return end
-    if not IsValid( ply ) then return end
-    if ply:GetPos():DistToSqr( atm:GetPos() ) > ATM_USE_RANGE_SQR then return end
-
-    local cur      = CurTime()
-    local cooldown = ply:Alive() and atm.TransactionCooldown or atm.TransactionCooldownDead
-    if ply.glee_atmNextTransaction and ply.glee_atmNextTransaction > cur then return end
-    ply.glee_atmNextTransaction = cur + cooldown
+    local atm = atmForTransaction( ply )
+    if not atm then return end
 
     local _success, message = atm:WithdrawFromBank( ply )
 
@@ -84,11 +87,8 @@ net.Receive( "glee_atm_withdraw", function( _, ply )
 end )
 
 net.Receive( "glee_atm_claimownercut", function( _, ply )
-    local atm = net.ReadEntity()
-
-    if not IsValid( atm ) or atm:GetClass() ~= "glee_bank_atm" then return end
-    if not IsValid( ply ) then return end
-    if ply:GetPos():DistToSqr( atm:GetPos() ) > ATM_USE_RANGE_SQR then return end
+    local atm = atmForTransaction( ply )
+    if not atm then return end
 
     local _success, message = atm:ClaimOwnersCut( ply )
 

@@ -24,7 +24,8 @@ end
 
 -- cl_plynames module draws a name panel for anything with a Nick
 function ENT:Nick()
-    return "The ATM"
+    if self:Health() > 0 then return "The ATM" end
+    if self:Health() > 0 then return "A Dead ATM" end
 
 end
 
@@ -225,7 +226,7 @@ end
 function terminator_Extras.glee_ATMExists()
     for _, ent in ipairs( ents.FindByClass( "glee_bank_atm" ) ) do
         if CLIENT and ent:IsDormant() then continue end
-        if IsValid( ent ) then return true end
+        if IsValid( ent ) and ent:GetState() ~= "broken" then return true end
 
     end
     return false

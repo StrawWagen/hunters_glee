@@ -43,8 +43,8 @@
         5
         {
             "name"        "huntersglee_spawnset"
-            "text"        "Spawn Set"
-            "help"        "What spawnset to use, eg. hunters_glee, jermas_glee"
+            "text"        "Misery"
+            "help"        "What flavor of Misery to experience, eg. hunters_glee, jermas_glee"
             "type"        "Text"
             "default"     "infernal_glee_easy"
         }
