@@ -1308,12 +1308,16 @@ if SERVER and terminator_Extras then
                     end
                     nearestSkyboxPos = trResult.HitPos
                     self.nearestSkyboxPos = nearestSkyboxPos
-                    nearestSkyboxDir = -trResult.Normal
+                    nearestSkyboxDir = trResult.Normal
                     self.nearestSkyboxDir = nearestSkyboxDir
 
                 end
             end
             if nearestSkyboxPos then
+                if debugging:GetBool() then
+                    debugoverlay.Line( myPos, nearestSkyboxPos, 1, Color( 255, 100, 0 ) )
+
+                end
                 self.currentHeliTask = "rescue_flyToBestSkybox"
 
                 idealMovePos = nearestSkyboxPos + nearestSkyboxDir * 2000
@@ -1321,6 +1325,10 @@ if SERVER and terminator_Extras then
                 skysTheLimit = true
 
             else
+                if debugging:GetBool() then
+                    debugoverlay.Line( myPos, nearestSkyboxPos, 1, Color( 100, 255, 0 ) )
+
+                end
                 self.currentHeliTask = "rescue_flyToWhereWeArrived"
 
                 idealMovePos = self.rescueHeliArrivedFromPos
