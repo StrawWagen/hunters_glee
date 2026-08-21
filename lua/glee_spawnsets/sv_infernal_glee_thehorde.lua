@@ -30,12 +30,27 @@ local set = {
             end,
         },
         {
+            hardRandomChance = 25,
+            name = "infernalskele_undersky", -- unique name
+            prettyName = "An Infernal Heckler",
+            class = "terminator_nextbot_infernalskeleton", -- class spawned
+            spawnType = "hunter",
+            spawnSameZ = true,
+            preferredEFlags = GAMEMODE.NavEFlags.UNDER_SKY,
+            difficultyCost = 3,
+            preSpawnedFuncs = function( _, spawned )
+                spawned.SpawnHeadlessChance = 85
+
+            end,
+        },
+        {
             hardRandomChance = 15,
             name = "infernalskele_big_EARLY", -- unique name
             prettyName = "An Infernal Sentinel",
             class = "terminator_nextbot_infernalskeleton_big", -- class spawned
             spawnType = "hunter",
             spawnSameZ = true,
+            preferredEFlags = GAMEMODE.NavEFlags.UNDER_SKY,
             difficultyCost = { 100, 200 },
             countClass = "terminator_nextbot_infernalskeleton_big",
             maxCount = { 1 },
