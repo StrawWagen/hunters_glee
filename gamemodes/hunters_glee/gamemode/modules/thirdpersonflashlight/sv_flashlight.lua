@@ -116,7 +116,7 @@ end
 
 hook.Add( "PlayerDisconnected", "TPF_HookPlayerDisconnects", TPF_RemoveProjectedTexture )
 
-hook.Add( "PlayerDeath", "glee_flashight_turnoff", TPF_RemoveProjectedTexture )
+hook.Add( "PostPlayerDeath", "glee_flashight_turnoff", TPF_RemoveProjectedTexture )
 
 hook.Add( "PlayerEnteredVehicle", "glee_flashight_turnoff", TPF_RemoveProjectedTexture )
 

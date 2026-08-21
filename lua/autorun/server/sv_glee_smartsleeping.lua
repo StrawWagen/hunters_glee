@@ -61,6 +61,8 @@ local function handleSleep( ent, cur, lagging ) -- think func
 
         end
 
+        ent.glee_smartSleep_nextCheck = cur + ent.glee_smartSleep_interval * 2
+
         -- capture supporters before motion is disabled
         local supportingEnts
         local snapshot = obj:GetFrictionSnapshot()
@@ -89,7 +91,6 @@ local function handleSleep( ent, cur, lagging ) -- think func
 
         -- freeze it
         obj:EnableMotion( false )
-        ent.glee_smartSleep_nextCheck = cur + ent.glee_smartSleep_interval * 2
         --debugoverlay.Cross( ent:GetPos(), 10, 5, color_white, true )
 
         -- then save supportingEnts if there are any
@@ -126,7 +127,7 @@ local function handleSupporterTbl( supportingTbl, disturbedId, cur )
 
     local wake
     local supportEnt = supportingTbl.ent
-    if not IsValid( supportingTbl.ent ) then
+    if not IsValid( supportEnt ) then
         wake = "inval"
 
     elseif supportEnt:GetPos() ~= supportingTbl.pos then
@@ -142,10 +143,10 @@ local function handleSupporterTbl( supportingTbl, disturbedId, cur )
     --debugoverlay.Text( supportingTbl.pos, wake, 5, false )
 
     for supportedEnt, _ in pairs( supportingTbl.restingUpon ) do
-        if not IsValid( supportedEnt ) then return end
+        if not IsValid( supportedEnt ) then continue end
         --debugoverlay.Line( supportingTbl.pos, supportedEnt:GetPos(), 5, Color( 255, 0, 0 ), true )
         hook.Run( "glee_smartsleep_unsupported", supportedEnt )
-        supportedEnt.glee_smartSleep_nextCheck = CurTime() + math.Rand( 0.1, 1 )
+        supportedEnt.glee_smartSleep_nextCheck = cur + math.Rand( 0.1, 1 )
 
     end
 
@@ -227,6 +228,7 @@ hook.Add( "Think", "glee_dynamicfreezing_laggingthink", function() -- deal damag
 
     local bitLaggy
     local lagging
+    local lagType
     if GAMEMODE.IsReallyHuntersGlee then
         local tickrate, threshold
         bitLaggy, tickrate, threshold = GAMEMODE:IsLagging()
@@ -238,22 +240,25 @@ hook.Add( "Think", "glee_dynamicfreezing_laggingthink", function() -- deal damag
     end
 
     if not lagging then
-        lagScale = physenv.GetLastSimulationTime() * 1000
+        local lagScale = physenv.GetLastSimulationTime() * 1000
         damage = lagScale * 20
 
         lagging = lagScale > math.random( 50, 100 )
         lagType = "lastSim"
 
     end
-    if not lagging or bitLaggy then return end
+
+    if not ( lagging or bitLaggy ) then return end
 
     local toFreeze = terminator_Extras.glee_smartSleep_toFreeze
     local randomEnt = toFreeze[math.random( 1, #toFreeze )]
     if not IsValid( randomEnt ) then return end
     if IsValid( randomEnt:GetParent() ) then return end
 
-    if bitLaggy then -- think about whether or not we should freeze this, NOW!
-        randomEnt.glee_smartSleep_nextCheck = CurTime()
+    -- lil bit laggy?
+    -- think about whether or not we should freeze this, NOW!
+    if not lagging then
+        randomEnt.glee_smartSleep_nextCheck = cur
         return
 
     end

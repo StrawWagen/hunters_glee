@@ -25,7 +25,7 @@ local set = {
             spawnSameZ = true,
             difficultyCost = 2,
             preSpawnedFuncs = function( _, spawned )
-                spawned.SpawnHeadlessChance = 85
+                spawned.SpawnHeadlessChance = 80
 
             end,
         },
@@ -38,10 +38,6 @@ local set = {
             spawnSameZ = true,
             preferredEFlags = GAMEMODE.NavEFlags.UNDER_SKY,
             difficultyCost = 3,
-            preSpawnedFuncs = function( _, spawned )
-                spawned.SpawnHeadlessChance = 85
-
-            end,
         },
         {
             hardRandomChance = 15,
