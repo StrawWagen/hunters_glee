@@ -22,8 +22,9 @@ local set = {
             prettyName = "An Infernal Heckler",
             class = "terminator_nextbot_infernalskeleton", -- class spawned
             spawnType = "hunter",
+            spawnSameZ = true,
             difficultyCost = 2,
-            preSpawnedFunc = function( _, spawned )
+            preSpawnedFuncs = function( _, spawned )
                 spawned.SpawnHeadlessChance = 85
 
             end,
@@ -34,6 +35,7 @@ local set = {
             prettyName = "An Infernal Sentinel",
             class = "terminator_nextbot_infernalskeleton_big", -- class spawned
             spawnType = "hunter",
+            spawnSameZ = true,
             difficultyCost = { 100, 200 },
             countClass = "terminator_nextbot_infernalskeleton_big",
             maxCount = { 1 },
@@ -44,6 +46,7 @@ local set = {
             prettyName = "An Infernal Sentinel",
             class = "terminator_nextbot_infernalskeleton_big", -- class spawned
             spawnType = "hunter",
+            spawnSameZ = true,
             difficultyCost = { 1000, 2000 },
             countClass = "terminator_nextbot_infernalskeleton_big",
             maxCount = { 10 },
