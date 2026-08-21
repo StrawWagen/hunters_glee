@@ -1340,6 +1340,7 @@ if SERVER and terminator_Extras then
                 local distAdd = ourVel:Length() / 1.5 -- at 1000 speed, add 750
                 local startAddingDistSpeed = 400
                 distAdd = math.max( 0, distAdd - startAddingDistSpeed )
+                distAdd = distAdd + ( self.rescueHeliTeleportDist * 4 ) -- if stuck and not moving, add more dist
                 if myPos:Distance( escapePos ) < 200 + distAdd then
                     hook.Run( "glee_rescueheliescape", self )
                     SafeRemoveEntityDelayed( self, 0.1 )
@@ -1604,7 +1605,7 @@ if SERVER and terminator_Extras then
 
                 -- 3,
                 -- stuck on something but not colliding, probably a npc or small prop
-                elseif not colliding and curSpeed <= 1 then
+                elseif not colliding and curSpeed <= 5 then
 
                     if debugging:GetBool() then
                         permaPrint( "heli unstuck 3 ", self.rescueHeliTeleportDist )
