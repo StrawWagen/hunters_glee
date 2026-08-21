@@ -113,7 +113,7 @@ ENT.MyPhysicsMass = 2000
 ENT.SpawnHealth = 2500
 
 ENT.FistDamageMul = 10
-ENT.FistRangeMul = 2
+ENT.FistRangeMul = 1.75
 ENT.CloseEnemyDistance = 200
 ENT.JumpHeight = 1000
 
@@ -150,5 +150,20 @@ function ENT:SkeletonDeathFX()
 
     util.ScreenShake( self:WorldSpaceCenter(), 10, 20, 5, 3000, true )
     util.ScreenShake( self:WorldSpaceCenter(), 100, 20, 5, 1000, true )
+
+end
+
+function ENT:SkeletonJumpFX( height )
+    self:Term_SpeakSoundNow( "npc/stalker/stalker_alert3b.wav", math.random( 0, 30 ) )
+    local scale = height / 300
+    scale = math.Clamp( scale, 0, 4 )
+
+    local myPos = self:GetPos()
+
+    local shock = EffectData()
+    shock:SetOrigin( myPos )
+    shock:SetScale( scale )
+    util.Effect( "eff_huntersglee_infernal_landing", shock )
+    sound.Play( "physics/concrete/concrete_break3.wav", myPos, 85, math.random( 20, 40 ) )
 
 end

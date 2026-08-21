@@ -436,7 +436,7 @@ infernal one, sucks all nearby ghosts into it, forces everyone to revive
 infernal vortex
 
 big purchase, make all ghosts audible, and visible at all times
-item that lets you briefly noclips you, leaving behind your weapons, most muscle mass, and fat
+item that lets you briefly noclips, leaving behind your weapons, most muscle mass, and fat
 
 the golden crowbar
 attach ticks to players

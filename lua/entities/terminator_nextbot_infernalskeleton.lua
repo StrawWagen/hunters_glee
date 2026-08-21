@@ -190,8 +190,13 @@ ENT.infernSkele_IdleSounds = {
     "ambient/levels/citadel/datatransrandom03.wav",
 }
 
+function ENT:SkeletonJumpFX()
+    self:Term_SpeakSoundNow( "npc/stalker/stalker_alert3b.wav", math.random( 20, 50 ) )
+
+end
+
 function ENT:SkeletonDeathFX()
-    self:Term_SpeakSoundNow( "npc/stalker/stalker_scream1.wav", math.random( 20, 50 ) )
+    self:Term_SpeakSoundNow( "npc/stalker/stalker_scream1.wav", math.random( 30, 60 ) )
 
 end
 
@@ -282,7 +287,11 @@ ENT.MyClassTask = {
 
         end
 
-    end
+    end,
+    OnJump = function( self, data, height )
+        self:SkeletonJumpFX( height )
+
+    end,
 }
 
 local coroutine_yield = coroutine.yield
@@ -354,6 +363,7 @@ function ENT:DoCustomTasks( defaultTasks )
                 data.LastWanderPos = nil
                 data.NextWanderChooseTime = 0
                 data.LookAtVec = Vector( 0, 0, 0 )
+                data.NextLookAt = 0
 
             end,
             BehaveUpdateMotion = function( self, data )
@@ -374,61 +384,95 @@ function ENT:DoCustomTasks( defaultTasks )
                 needsNewPathGoal = needsNewPathGoal or ( myTbl.GetCurrentSpeed( self ) < 10 and CurTime() > data.NextWanderChooseTime )
 
                 if needsNewPathGoal then
-                    coroutine_yield()
-                    local myNav = myTbl.GetCurrentNavArea( self, myTbl )
-                    if not IsValid( myNav ) then
-                        self:TaskComplete( "movement_wander" )
-                        self:StartTask( "movement_handler", "i ended up somewhere wrong!" )
-
-                    end
-                    local areasToCheck = myNav:GetAdjacentAreas()
-                    areasToCheck[#areasToCheck + 1] = myNav
-                    local areasAlreadyAdded = {}
-                    for _, area in ipairs( areasToCheck ) do
-                        areasAlreadyAdded[area] = true
-
-                    end
-                    coroutine_yield()
-                    local finalAreasToCheck = {}
-                    for _, area in ipairs( areasToCheck ) do
-                        local areasNeighbors = area:GetAdjacentAreas()
-                        for _, neighbor in ipairs( areasNeighbors ) do
-                            if areasAlreadyAdded[neighbor] then continue end
-                            areasAlreadyAdded[neighbor] = true
-                            finalAreasToCheck[#finalAreasToCheck + 1] = neighbor
-
-                        end
-                    end
-                    coroutine_yield()
-
-                    local lastArea = data.LastWanderArea
-                    local currsDistToLast
-                    if IsValid( lastArea ) then
-                        currsDistToLast = myNav:GetCenter():Distance( lastArea:GetCenter() )
-
-                    end
+                    local myPos = self:GetPos()
                     local chosenPos
                     local chosenArea
-                    for _ = 1, 20 do
-                        local area = table.remove( finalAreasToCheck, math.random( 1, #finalAreasToCheck ) )
-                        if not IsValid( area ) then continue end
-                        if currsDistToLast then
-                            local distToLast = area:GetCenter():Distance( lastArea:GetCenter() )
-                            if distToLast < currsDistToLast * math.Rand( 0.9, 1 ) then continue end
 
-                        end
-                        local visible = area:IsPartiallyVisible( self:WorldSpaceCenter(), self )
-                        if not visible then continue end
-                        chosenPos = area:GetCenter()
-                        chosenArea = area
-                        --debugoverlay.Line( self:WorldSpaceCenter(), chosenPos, 5, Color( 0, 255, 0 ), true )
+                    local allies = myTbl.GetNearbyAllies( self )
+                    for _, ally in ipairs( allies ) do
+                        coroutine_yield()
+                        if not IsValid( ally ) then continue end
+                        if not ally.IsSeeEnemy then continue end
+
+                        local alliesPos = ally:GetPos()
+                        if not self:ClearOrBreakable( myPos, alliesPos ) then continue end
+
+                        chosenPos = ally:GetPos()
+                        chosenArea = ally:GetCurrentNavArea()
+                        data.NextWanderChooseTime = CurTime() + math.Rand( 25, 50 )
                         break
 
                     end
 
+                    if not chosenPos then
+
+                        coroutine_yield()
+                        local myNav = myTbl.GetCurrentNavArea( self, myTbl )
+                        if not IsValid( myNav ) then
+                            self:TaskComplete( "movement_wander" )
+                            self:StartTask( "movement_handler", "i ended up somewhere wrong!" )
+
+                        end
+                        local areasToCheck = myNav:GetAdjacentAreas()
+                        areasToCheck[#areasToCheck + 1] = myNav
+                        local areasAlreadyAdded = {}
+                        for _, area in ipairs( areasToCheck ) do
+                            areasAlreadyAdded[area] = true
+
+                        end
+                        coroutine_yield()
+                        local finalAreasToCheck = {}
+                        for _, area in ipairs( areasToCheck ) do
+                            local areasNeighbors = area:GetAdjacentAreas()
+                            for _, neighbor in ipairs( areasNeighbors ) do
+                                if areasAlreadyAdded[neighbor] then continue end
+                                areasAlreadyAdded[neighbor] = true
+                                finalAreasToCheck[#finalAreasToCheck + 1] = neighbor
+
+                            end
+                        end
+                        coroutine_yield()
+
+                        local lastArea = data.LastWanderArea
+                        local currsDistToLast
+                        if IsValid( lastArea ) then
+                            currsDistToLast = myNav:GetCenter():Distance( lastArea:GetCenter() )
+
+                        end
+                        local canStandRn = myTbl.CanStandUp( self, myTbl )
+                        for _ = 1, 20 do
+                            coroutine_yield()
+
+                            local area = table.remove( finalAreasToCheck, math.random( 1, #finalAreasToCheck ) )
+                            if not IsValid( area ) then continue end
+                            if currsDistToLast then
+                                local distToLast = area:GetCenter():Distance( lastArea:GetCenter() )
+                                if distToLast < currsDistToLast * math.Rand( 0.9, 1 ) then continue end
+
+                            end
+
+                            local areasCenter = area:GetCenter()
+                            if canStandRn then
+                                if not myTbl.CanStandAtPos( self, myTbl, myPos, areasCenter ) then
+                                    continue
+
+                                end
+                            elseif not area:IsPartiallyVisible( self:WorldSpaceCenter(), self ) then
+                                continue
+
+                            end
+
+                            chosenPos = areasCenter
+                            chosenArea = area
+                            data.NextWanderChooseTime = CurTime() + math.Rand( 2, 5 )
+                            debugoverlay.Line( self:WorldSpaceCenter(), chosenPos, 5, Color( 0, 255, 0 ), true )
+                            break
+
+                        end
+                    end
+
                     if chosenPos then
                         data.CurrentTaskGoalPos = chosenPos
-                        data.NextWanderChooseTime = CurTime() + math.Rand( 2, 5 )
                         data.LastWanderArea = chosenArea
 
                     end
@@ -436,6 +480,9 @@ function ENT:DoCustomTasks( defaultTasks )
 
                 if data.CurrentTaskGoalPos then
                     myTbl.GotoPosSimple( self, myTbl, data.CurrentTaskGoalPos, 35, true )
+
+                    if data.NextLookAt > CurTime() then return end
+                    data.NextLookAt = CurTime() + math.Rand( 0.05, 0.2 )
 
                     local lookJitterScale = 25
                     if self:IsReallyAngry() then
@@ -451,7 +498,7 @@ function ENT:DoCustomTasks( defaultTasks )
                         data.CurrentTaskGoalPos.y + math.random( -lookJitterScale, lookJitterScale ),
                         data.CurrentTaskGoalPos.z + math.random( -lookJitterScale, lookJitterScale )
                     )
-                    --self:justLookAt( data.LookAtVec )
+                    self:justLookAt( data.LookAtVec )
                     myTbl.lastShootingType = "infernalskeleton_wander"
 
                 end

@@ -157,6 +157,12 @@ function ENT:SkeletonDeathFX()
 
 end
 
+function ENT:SkeletonJumpFX()
+    self:Term_SpeakSoundNow( "npc/stalker/stalker_alert3b.wav", math.random( 0, 30 ) )
+    sound.Play( "physics/concrete/concrete_break3.wav", self:GetPos(), 75, math.random( 40, 60 ) )
+
+end
+
 ENT.MyClassTask = {
     OnStart = function( self, data )
         data.nextCall = CurTime() + 3
