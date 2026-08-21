@@ -1534,6 +1534,7 @@ if SERVER and terminator_Extras then
                         local perfectAreaDist = math.huge
 
                         for _, area in ipairs( areas ) do
+                            if not IsValid( area ) then continue end
                             if math.min( area:GetSizeX(), area:GetSizeY() ) < minSize then continue end
 
                             anArea = area

@@ -260,7 +260,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
                 end
 
                 -- for very special cases, like bosses in tutorial modes
-                -- difficulty at default will be 100 after 10 minutes, and is accelerated by a LOT of systems
+                -- difficulty at default will be 100 after 10 minutes, and is (usuallly correctly) accelerated by a LOT of systems
                 -- best to use difficultyNeeded, hence why this is not documented :)
                 local minutesNeeded = spawnEntry.minutesNeeded
                 if minutesNeeded and minutes < minutesNeeded then
@@ -272,7 +272,6 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
                 local count = classCounts[countClass]
                 if not count then
                     count = #ents.FindByClass( countClass ) -- cache it
-                    debugPrint( count, countClass )
                     classCounts[countClass] = count
 
                 end
@@ -300,7 +299,8 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
                     spawnEntry.minutesWhenAdded = minutes
                     table.insert( pickedSpawns, spawnEntry )
                     classCounts[countClass] = count + 1
-                    debugPrint( "added", spawnEntry.prettyName )
+                    local wasFreebie = freebie and "was a freebie" or ""
+                    debugPrint( "added", spawnEntry.prettyName, " with difficultyCost, ", spawnEntry.difficultyCost, ", ", wasFreebie )
                     break
 
                 end

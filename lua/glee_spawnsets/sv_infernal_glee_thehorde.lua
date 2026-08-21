@@ -40,7 +40,7 @@ local set = {
             spawnType = "hunter",
             spawnSameZ = true,
             difficultyCost = 4,
-            difficultyStopAfter = { 500, 1000 },
+            difficultyStopAfter = { 2000, 4000 },
             preSpawnedFuncs = {
                 function( _, spawned )
                     spawned.SpawnHeadlessChance = 80
@@ -49,7 +49,7 @@ local set = {
             },
         },
         {
-            hardRandomChance = 25,
+            hardRandomChance = 35,
             name = "infernalskele_undersky", -- unique name
             prettyName = "An Infernal Heckler",
             class = "terminator_nextbot_infernalskeleton", -- class spawned
@@ -92,7 +92,7 @@ local set = {
             maxCount = { 10 },
         },
         {
-            hardRandomChance = nil,
+            hardRandomChance = 50,
             name = "infernalskele_big_LATE", -- unique name
             prettyName = "An Infernal Sentinel",
             class = "terminator_nextbot_infernalskeleton_big", -- class spawned
