@@ -287,6 +287,8 @@ hook.Add( "Think", "glee_dynamicfreezing_laggingthink", function() -- deal damag
 end )
 
 function terminator_Extras.SmartSleepEntity( ent, interval )
+    if ent.glee_smartSleeping then ent.glee_smartSleep_interval = interval return end
+
     interval = interval or 10
     table.insert( terminator_Extras.glee_smartSleep_toFreeze, ent )
     ent.glee_smartSleeping = true
@@ -409,6 +411,7 @@ local function setupOnCreateHook()
     hook.Add( "OnEntityCreated", "glee_smartsleeping_detect", function( ent )
         if not IsValid( ent ) then return end
         if ent.glee_smartSleeping then return end
+
         local class = ent:GetClass()
         if ent:IsWeapon() or fastSleepClasses[class] then
             wepGibCount = wepGibCount + 1
@@ -425,32 +428,46 @@ local function setupOnCreateHook()
             return
 
         end
-        if class == "prop_physics" then
-            propsInMap = propsInMap + 1
-            if propsInMap < 50 then return end
-
+        if string.StartsWith( class, "prop_physics" ) or string.StartsWith( class, "item_" ) then
             timer.Simple( 0, function()
                 if not IsValid( ent ) then return end
+                if IsValid( ent:GetParent() ) then return end
+                if ent.glee_smartSleeping then return end
+
+                -- count this up after the above checks
+                -- that way we always ignore ents that are already marked as sleeping ( spawned by the gamemode )
+                propsInMap = propsInMap + 1
+                if propsInMap < 50 then return end
 
                 local phys = ent:GetPhysicsObject()
                 if not IsValid( phys ) then return end
-                if phys:GetMass() >= 20 then return end
 
-                if IsValid( ent:GetParent() ) then return end
+                -- map with fewish props
+                if propsInMap < 200 then
+                    if phys:GetMass() >= 20 then return end
 
-                local radius = ent:GetModelRadius()
-                if not radius or radius >= 25 then return end
+                    local radius = ent:GetModelRadius()
+                    if not radius or radius >= 25 then return end
 
-                local nearSubstantialCount = 0
-                local near = ents.FindInSphere( ent:GetPos(), radius * 3 )
-                for _, curr in ipairs( near ) do
-                    local obj = curr:GetPhysicsObject()
-                    if IsValid( obj ) and obj:IsMotionEnabled() then
-                        nearSubstantialCount = nearSubstantialCount + 1
+                    local nearSubstantialCount = 0
+                    local near = ents.FindInSphere( ent:GetPos(), radius * 3 )
+                    for _, curr in ipairs( near ) do
+                        local obj = curr:GetPhysicsObject()
+                        if IsValid( obj ) and obj:IsMotionEnabled() then
+                            nearSubstantialCount = nearSubstantialCount + 1
 
+                        end
                     end
+                    if nearSubstantialCount <= 4 then return end
+
+                -- map with loooads of props, could be spamming them too
+                else
+                    if phys:GetMass() >= 200 then return end
+
+                    local radius = ent:GetModelRadius()
+                    if not radius or radius >= 250 then return end
+
                 end
-                if nearSubstantialCount <= 5 then return end
 
                 terminator_Extras.SmartSleepEntity( ent, 20 )
 
