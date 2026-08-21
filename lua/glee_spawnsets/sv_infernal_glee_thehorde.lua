@@ -24,10 +24,12 @@ local set = {
             spawnType = "hunter",
             spawnSameZ = true,
             difficultyCost = 2,
-            preSpawnedFuncs = function( _, spawned )
-                spawned.SpawnHeadlessChance = 80
+            preSpawnedFuncs = {
+                function( _, spawned )
+                    spawned.SpawnHeadlessChance = 80
 
-            end,
+                end,
+            },
         },
         {
             hardRandomChance = 25,
