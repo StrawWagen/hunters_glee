@@ -454,3 +454,7 @@ gaussian blob?
 bomb gland big bombs gravgunnable
 
 astral projection type thing when u disconnect
+
+ghost HORN
+
+powerup that makes you never stop sprint accelerating 
