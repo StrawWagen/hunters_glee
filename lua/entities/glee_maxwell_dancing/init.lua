@@ -61,6 +61,7 @@ hook.Add( "InitPostEntity", "maxwell_glee", function()
 	end
 
 	GAMEMODE:RandomlySpawnEntTbl( "glee_maxwell_dancing", {
+		countClasses = { "glee_maxwell_dancing", "glee_maxwell_weapon" },
 		maxCount = maxCount,
 		chance = math.Rand( 1, 10 ),
 		minAreaSize = 25,

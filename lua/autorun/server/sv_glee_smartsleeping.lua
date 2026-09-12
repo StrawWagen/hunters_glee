@@ -224,8 +224,6 @@ hook.Add( "Think", "glee_dynamicfreezing_laggingthink", function() -- deal damag
     if nextBreak > cur then return end
     nextBreak = cur + 0.1
 
-    local damage
-
     local bitLaggy
     local lagging
     local lagType
@@ -235,13 +233,11 @@ hook.Add( "Think", "glee_dynamicfreezing_laggingthink", function() -- deal damag
         local threshLower = math.Clamp( threshold * 0.15, 2.5, 128 )
         lagging = tickrate < threshLower -- lower threshold
         lagType = "tickrate"
-        damage = ( threshold - tickrate ) * 10
 
     end
 
     if not lagging then
         local lagScale = physenv.GetLastSimulationTime() * 1000
-        damage = lagScale * 20
 
         lagging = lagScale > math.random( 50, 100 )
         lagType = "lastSim"
@@ -263,26 +259,13 @@ hook.Add( "Think", "glee_dynamicfreezing_laggingthink", function() -- deal damag
 
     end
 
-    randomEnt.glee_smartSleeping_dontWake = true
-
-    -- damage the ent
-    local dmg = DamageInfo()
-    dmg:SetAttacker( game.GetWorld() )
-    dmg:SetInflictor( game.GetWorld() )
-    dmg:SetDamage( damage )
-    dmg:SetDamageType( DMG_CRUSH )
-    randomEnt:TakeDamageInfo( dmg )
-
-    if not IsValid( randomEnt ) then return end
-
-    randomEnt.glee_smartSleeping_dontWake = nil
-    permaPrint( "GLEE: Really lagging, " .. lagType .. " damaging " .. tostring( randomEnt ) .. " for " .. damage .. " damage" )
-
     -- freeze the ent
     local entsObj = randomEnt:GetPhysicsObject()
     if not IsValid( entsObj ) then return end
     if not entsObj:IsMotionEnabled() then return end -- already frozen!
     entsObj:EnableMotion( false )
+
+    permaPrint( "GLEE: Really lagging, " .. lagType .. " freezing " .. tostring( randomEnt ) )
 
 end )
 

@@ -222,13 +222,27 @@ if SERVER and terminator_Extras then
         if timer.Exists( rescueTimerName ) then return end -- already called, just waiting
 
         if not self.HitSkyboxAtLeastOnce then
-            local initPos = self.InitializedPos
-            if not initPos then return end
+            local lastFloor = self.LastFloorPos
+            if not lastFloor then
+                lastFloor = terminator_Extras.getFloorTr( myPos ).HitPos
+                self.LastFloorPos = lastFloor
+                timer.Simple( 2, function()
+                    if not IsValid( self ) then return end
+                    self.LastFloorPos = nil
 
-            local heightFromStart = myPos.z - initPos.z
+                end )
+            end
 
-            if heightFromStart < zHeightToStartCalling then return end
+            local heightFromStart = myPos.z - lastFloor.z
 
+            if heightFromStart < zHeightToStartCalling then
+                if debugging:GetBool() then
+                    permaPrint( "closetoground" )
+
+                end
+                return
+
+            end
         end
 
         local nearestWallResult
@@ -294,6 +308,10 @@ if SERVER and terminator_Extras then
         local doHitPushCheck = not self.triggerPushHits or self.triggerPushHits < 25
         if doHitPushCheck and rayHitsTriggerPush( startPos, offset ) then
             self.triggerPushHits = ( self.triggerPushHits or 0 ) + 1
+            if debugging:GetBool() then
+                permaPrint( "hittriggerpush" )
+
+            end
             return
 
         end
@@ -528,8 +546,10 @@ if SERVER and terminator_Extras then
 
     end
 
-    -- someone the heli refuses to pick up: the divine chosen, or anyone it's come to hate
+    -- someone the heli refuses to pick up: the divine chosen, anyone it's come to hate,
+    -- or anyone still loading/in the tutorial, who can't come to it
     local function heliWontRescue( heli, ply )
+        if heliPlayerHasEffect( ply, "spawn_protection" ) then return true end
         if heliPlayerHasEffect( ply, "divine_chosen" ) then return true end
         if heliHatesPlayer( heli, ply ) then return true end
 
@@ -1326,12 +1346,12 @@ if SERVER and terminator_Extras then
 
             else
                 if debugging:GetBool() then
-                    debugoverlay.Line( myPos, nearestSkyboxPos, 1, Color( 100, 255, 0 ) )
+                    debugoverlay.Line( myPos, self.rescueHeliArrivedFromPos, 1, Color( 100, 255, 0 ) )
 
                 end
                 self.currentHeliTask = "rescue_flyToWhereWeArrived"
 
-                idealMovePos = self.rescueHeliArrivedFromPos
+                idealMovePos = Vector( self.rescueHeliArrivedFromPos.x, self.rescueHeliArrivedFromPos.y, self.rescueHeliArrivedFromPos.z )
                 escapePos = idealMovePos
 
             end

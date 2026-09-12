@@ -30,6 +30,14 @@ hook.Add( "PlayerDeath", "glee_worlddeaths_invalidateheatmap", function( victim,
 end )
 
 
+function GM:GetAreasHeatmapWeight( area )
+    if not IsValid( area ) then return end
+
+    return self.navmeshActivityHeatmap[area]
+
+end
+
+
 -- manage the BPM of ppl HERE
 
 function GM:calculateBPM( cur, players )

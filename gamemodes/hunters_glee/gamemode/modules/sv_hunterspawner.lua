@@ -606,7 +606,11 @@ hook.Add( "PlayerDeath", "glee_fodderenemy_catchkrangled", function( _, inflic, 
         debugoverlay.Line( killer:GetPos(), killer.glee_SpawnArea:GetCenter(), 10, Color( 0, 255, 0 ), true )
 
     end
-    GAMEMODE:MarkSpawnAreaAsGreat( killer.glee_SpawnArea )
+    local spawnArea = killer.glee_SpawnArea
+    if GAMEMODE:GetAreasHeatmapWeight( spawnArea ) then
+        GAMEMODE:MarkSpawnAreaAsGreat( spawnArea )
+
+    end
 
     killer.glee_FodderKills = ( killer.glee_FodderKills or 0 ) + 1
     killer.glee_StaleNoEnemyCount = math.min( -30, oldCount + -30 )
@@ -625,11 +629,18 @@ hook.Add( "OnNPCKilled", "glee_goodkilledhunters", function( npc, attacker )
             debugoverlay.Line( npc:GetPos(), npc.glee_SpawnArea:GetCenter(), 10, Color( 0, 255, 0 ), true )
 
         end
-        GAMEMODE:MarkSpawnAreaAsGreat( npc.glee_SpawnArea )
+        local spawnArea = npc.glee_SpawnArea
+        if GAMEMODE:GetAreasHeatmapWeight( spawnArea ) then
+            GAMEMODE:MarkSpawnAreaAsGreat( spawnArea )
+
+        end
 
     elseif attacker:IsNPC() or attacker:IsNextBot() then
-        GAMEMODE:UnmarkSpawnAreaAsGreat( npc.glee_SpawnArea )
+        local spawnArea = npc.glee_SpawnArea
+        if GAMEMODE:GetAreasHeatmapWeight( spawnArea ) then
+            GAMEMODE:MarkSpawnAreaAsGreat( spawnArea )
 
+        end
     end
 end )
 
@@ -741,7 +752,7 @@ end
 function GM:MarkSpawnAreaAsGreat( area )
     local _, spawnSet = self:GetSpawnSet()
     if not spawnSet then return end
-    if not area or not IsValid( area ) then return end
+    if not IsValid( area ) then return end
 
     if not spawnSet.greatSpawnAreasMask[area] then
         spawnSet.greatSpawnAreasMask[area] = true

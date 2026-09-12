@@ -108,6 +108,7 @@ include( "modules/spawnset/sv_spawnsetvote.lua" )
 include( "modules/spawnset/sv_bosshandler.lua" )
 include( "modules/sv_falldamage_andgoomba.lua" )
 include( "modules/firsttimeplayers/sv_firsttimeplayers.lua" )
+include( "modules/firsttimeplayers/sv_otherfirsttimeplayerstuff.lua" )
 
 include( "modules/guilt/sv_guilt.lua" )
 

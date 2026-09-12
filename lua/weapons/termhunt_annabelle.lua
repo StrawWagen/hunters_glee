@@ -237,7 +237,7 @@ function SWEP:ShootBullet( owner )
                     effect:SetNormal( normal )
                     util.Effect( "Sparks", effect )
 
-                else
+                elseif bloodColor then
                     local effect = EffectData()
                     effect:SetColor( bloodColor )
                     effect:SetFlags( 3 )

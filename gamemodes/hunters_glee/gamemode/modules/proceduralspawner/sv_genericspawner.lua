@@ -251,7 +251,17 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawner_managegenericspawns", fun
         if isEnabled == false then continue end
 
         local maxCount = curr.maxCount
-        local count = created[className] and #created[className] + currentlySpawning[className] or 0
+        local count
+        if #curr.countClasses > 1 then
+            count = 0
+            for _, countClass in ipairs( countClasses ) do
+                count = count + #ents.FindByClass( countClass )
+
+            end
+        else
+            count = created[className] and #created[className] + currentlySpawning[className] or 0
+
+        end
         --print( count, maxCount, "AAAAAAAAAAAA" )
         if count >= maxCount then continue end
         if curr.minSpawnInterval and curr.nextSpawnTime and curr.nextSpawnTime > CurTime() then continue end
@@ -381,6 +391,12 @@ function GM:RandomlySpawnEntTbl( className, data )
     -- default these ones
     data.minAreaSize = data.minAreaSize or 25
     data.radius = data.radius or 5000
+
+    local countClasses = data.countClasses
+    if not countClasses then
+        data.countClasses = { className }
+
+    end
 
     spawnTables[className] = data
 

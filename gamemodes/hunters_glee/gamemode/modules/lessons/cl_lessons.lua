@@ -7,7 +7,7 @@
 
 local day = 86400
 local week = day * 7
-local tooOldTime = week * 2
+local tooOldTime = week * 4
 
 local defaultDir = GM.DataFileDirectory
 local defaultLessonDataName = defaultDir .. "/lessondata.json"

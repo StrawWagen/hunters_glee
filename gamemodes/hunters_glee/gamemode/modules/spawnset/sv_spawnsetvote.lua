@@ -33,6 +33,7 @@ function spawnSetVote:BeginVote( duration, maxOptions )
 
     local currentSpawnsetName, currentSpawnSet = GAMEMODE:GetSpawnSet()
     local wantsOtherEasyOnes = currentSpawnSet.easy
+    local doneEasyEscape
     local easyAdded = 0
 
     local toAdd = {}
@@ -62,14 +63,19 @@ function spawnSetVote:BeginVote( duration, maxOptions )
             -- intentional transition space, might change later
             local optionIsEasy = option.easy or optionsMul < 1
             local enoughEasy = easyAdded + 2 > maxOptions
-            if enoughEasy then
+            local freebie = ( not chance or chance == 100 ) and not doneEasyEscape
+            -- add 1 hard mode with 100% pick chance ( one of the default hard modes )
+            -- or just add any hard mode if we're about to run out of room
+            if enoughEasy or freebie then
                 if optionIsEasy then
                     plsSkip = true
 
                 else
                     plsSkip = false
+                    doneEasyEscape = true
 
                 end
+            -- and fill the rest with easy modes
             else
                 if optionIsEasy then
                     plsSkip = false
