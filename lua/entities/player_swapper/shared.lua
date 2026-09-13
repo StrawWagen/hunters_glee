@@ -218,6 +218,8 @@ function ENT:SwapPlayerAndTerminator( player, terminator )
     end
 
     if terminator.SetPosNoTeleport then
+        local nearestArea = navmesh.GetNearestNavArea( playerPos, true, 12000, false, true )
+        terminator.glee_SpawnArea = IsValid( nearestArea ) and nearestArea or nil -- never NULL
         terminator_Extras.TeleportTermTo( terminator, playerPos ) -- sets their pos correctly, AND kills their coroutine
 
         -- since bots are coroutined they could be in the middle of something that's gonna set them to an outdated pos, so we have to make sure they get there

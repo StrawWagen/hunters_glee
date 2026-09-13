@@ -48,6 +48,9 @@ hook.Add( "glee_spawnset_parsed", "glee_spawner_runtimefields", function( spawnS
     spawnSet.greatSpawnAreasMask = {}
     spawnSet.greatSpawnAreasIndexed = {}
 
+    spawnSet.staleSpawnAreasMask = {}
+    spawnSet.staleSpawnAreasIndexed = {}
+
 end )
 
 function GM:NewSpawnWaveNow()
@@ -570,7 +573,15 @@ local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they 
                 debugPrint( "stale bite", spawnDistBite )
 
             end
-            GAMEMODE:UnmarkSpawnAreaAsGreat( hunter.glee_SpawnArea )
+            local spawnArea = hunter.glee_SpawnArea
+            GAMEMODE:UnmarkSpawnAreaAsGreat( spawnArea )
+            GAMEMODE:MarkSpawnAreaAsStale( spawnArea )
+            if IsValid( spawnArea ) then
+                for _, neighbor in ipairs( spawnArea:GetAdjacentAreas() ) do
+                    GAMEMODE:MarkSpawnAreaAsStale( neighbor )
+
+                end
+            end
             SafeRemoveEntity( hunter )
             debugPrint( "REMOVE STALE", hunter )
             spawnSet.areaPoolCacheWeight = spawnSet.areaPoolCacheWeight - 1 -- move the pool if too many bots are stale, it's probably behind the ply by now
@@ -584,7 +595,7 @@ local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they 
 end
 
 -- track kills from hunters, so we dont despawn the ones getting the job done.
-hook.Add( "PlayerDeath", "glee_fodderenemy_catchkrangled", function( _, inflic, attacker )
+hook.Add( "PlayerDeath", "glee_fodderenemy_catchkrangled", function( died, inflic, attacker )
     local oldCount
     local killer
 
@@ -607,7 +618,9 @@ hook.Add( "PlayerDeath", "glee_fodderenemy_catchkrangled", function( _, inflic, 
 
     end
     local spawnArea = killer.glee_SpawnArea
-    if GAMEMODE:GetAreasHeatmapWeight( spawnArea ) then
+    local meleeKill = killer:GetPos():Distance( died:GetPos() ) < 250 -- nearby kills always count as great, because they somehow got to the enemy
+    if meleeKill or GAMEMODE:GetAreasHeatmapWeight( spawnArea ) then -- mark as great if nearby died, or people have been here
+        GAMEMODE:UnmarkSpawnAreaAsStale( spawnArea )
         GAMEMODE:MarkSpawnAreaAsGreat( spawnArea )
 
     end
@@ -631,6 +644,7 @@ hook.Add( "OnNPCKilled", "glee_goodkilledhunters", function( npc, attacker )
         end
         local spawnArea = npc.glee_SpawnArea
         if GAMEMODE:GetAreasHeatmapWeight( spawnArea ) then
+            GAMEMODE:UnmarkSpawnAreaAsStale( spawnArea )
             GAMEMODE:MarkSpawnAreaAsGreat( spawnArea )
 
         end
@@ -638,6 +652,7 @@ hook.Add( "OnNPCKilled", "glee_goodkilledhunters", function( npc, attacker )
     elseif attacker:IsNPC() or attacker:IsNextBot() then
         local spawnArea = npc.glee_SpawnArea
         if GAMEMODE:GetAreasHeatmapWeight( spawnArea ) then
+            GAMEMODE:UnmarkSpawnAreaAsStale( spawnArea )
             GAMEMODE:MarkSpawnAreaAsGreat( spawnArea )
 
         end
@@ -754,11 +769,11 @@ function GM:MarkSpawnAreaAsGreat( area )
     if not spawnSet then return end
     if not IsValid( area ) then return end
 
-    if not spawnSet.greatSpawnAreasMask[area] then
-        spawnSet.greatSpawnAreasMask[area] = true
-        spawnSet.greatSpawnAreasIndexed[#spawnSet.greatSpawnAreasIndexed + 1] = area
+    if spawnSet.greatSpawnAreasMask[area] then return end
 
-    end
+    spawnSet.greatSpawnAreasMask[area] = true
+    spawnSet.greatSpawnAreasIndexed[#spawnSet.greatSpawnAreasIndexed + 1] = area
+
 end
 
 function GM:UnmarkSpawnAreaAsGreat( area )
@@ -772,6 +787,34 @@ function GM:UnmarkSpawnAreaAsGreat( area )
     for ind, checkArea in ipairs( spawnSet.greatSpawnAreasIndexed ) do
         if checkArea ~= area then continue end
         table.remove( spawnSet.greatSpawnAreasIndexed, ind )
+        break
+
+    end
+end
+
+function GM:MarkSpawnAreaAsStale( area )
+    local _, spawnSet = self:GetSpawnSet()
+    if not spawnSet then return end
+    if not IsValid( area ) then return end
+
+    if spawnSet.staleSpawnAreasMask[area] then return end
+
+    spawnSet.staleSpawnAreasMask[area] = true
+    spawnSet.staleSpawnAreasIndexed[#spawnSet.staleSpawnAreasIndexed + 1] = area
+
+end
+
+function GM:UnmarkSpawnAreaAsStale( area )
+    local _, spawnSet = self:GetSpawnSet()
+    if not spawnSet then return end
+    if not area or not IsValid( area ) then return end
+
+    if not spawnSet.staleSpawnAreasMask[area] then return end
+    spawnSet.staleSpawnAreasMask[area] = nil
+
+    for ind, checkArea in ipairs( spawnSet.staleSpawnAreasIndexed ) do
+        if checkArea ~= area then continue end
+        table.remove( spawnSet.staleSpawnAreasIndexed, ind )
         break
 
     end
@@ -865,7 +908,12 @@ function GM:MarchValidHunterPos( spawnEntry )
         -- if we have a good spawn area, use it NOW!
         elseif cost < tries * 0.5 and IsValid( spawnSet.lastGoodSpawnArea ) and spawnSet.lastGoodSpawnAreaWeight > 0 then
             currentArea = spawnSet.lastGoodSpawnArea
-            spawnSet.lastGoodSpawnAreaWeight = spawnSet.lastGoodSpawnAreaWeight - 1
+            local usedBite = 1
+            if spawnSet.staleSpawnAreasMask[currentArea] then
+                usedBite = 10
+
+            end
+            spawnSet.lastGoodSpawnAreaWeight = spawnSet.lastGoodSpawnAreaWeight - usedBite
             if spawnSet.lastGoodSpawnAreaWeight <= 0 then
                 spawnSet.lastGoodSpawnArea = nil
                 spawnSet.lastGoodSpawnAreaWeight = 0
@@ -893,10 +941,9 @@ function GM:MarchValidHunterPos( spawnEntry )
                 GAMEMODE:AdjustDynamicTooCloseCutoff( -75, spawnSet ) -- make it get closer
                 GAMEMODE:AdjustDynamicTooFarCutoff( -25, spawnSet ) -- closer here too
                 debugPrint( "underwater bite" )
+                continue
 
             end
-            continue
-
         end
 
         if spawnEntry.spawnSameZ then -- spawn at roughly the same z as any player pls
@@ -1023,31 +1070,34 @@ function GM:MarchValidHunterPos( spawnEntry )
             end
 
             local currentIsGreat = spawnSet.greatSpawnAreasMask[currentArea]
+            local currentIsStale = spawnSet.staleSpawnAreasMask[currentArea]
+            local isGoodArea = IsValid( spawnSet.lastGoodSpawnArea )
 
-            -- found a good spawn area, use it for the next spawn!
-            -- also leads to hordes spawning in one spot, very fun
-            if not IsValid( spawnSet.lastGoodSpawnArea ) then
-                -- found a GREAT spawn area! use it for a while!
-                if currentIsGreat then
-                    spawnSet.lastGoodSpawnArea = currentArea
-                    spawnSet.lastGoodSpawnAreaWeight = math.random( 25, 50 )
-
-                else
-                    spawnSet.lastGoodSpawnArea = currentArea
-                    spawnSet.lastGoodSpawnAreaWeight = math.random( 1, 5 )
-
-                end
             -- chance to march goodspawnarea in a random direction, so the spawns stack up less
-            elseif math.random( 0, 100 ) <= 10 then
+            if isGoodArea and math.random( 0, 100 ) <= 10 then
                 local potentials = currentArea:GetAdjacentAreas()
                 table.Shuffle( potentials )
                 for _, adjArea in ipairs( potentials ) do
+                    if spawnSet.staleSpawnAreasMask[adjArea] then continue end -- this area produced stale hunters!
                     if adjArea:GetSizeX() <= 25 or adjArea:GetSizeY() <= 25 then continue end -- too small
                     if nearestPlyPos and adjArea:IsVisible( nearestPlyPos ) then continue end -- dont regress
                     if spawnEntry.preferredEFlags and not self:HasExtraFlags( adjArea, spawnEntry.preferredEFlags ) then continue end -- respect it!
                     spawnSet.lastGoodSpawnArea = adjArea
                     spawnSet.lastGoodSpawnAreaWeight = math.random( 5, 15 )
                     break
+
+                end
+            -- found a good spawn area, use it for the next spawn!
+            -- also leads to hordes spawning in one spot, very fun
+            elseif not isGoodArea then
+                -- found a GREAT spawn area! use it for a while!
+                if currentIsGreat then
+                    spawnSet.lastGoodSpawnArea = currentArea
+                    spawnSet.lastGoodSpawnAreaWeight = math.random( 25, 50 )
+
+                elseif not currentIsStale then
+                    spawnSet.lastGoodSpawnArea = currentArea
+                    spawnSet.lastGoodSpawnAreaWeight = math.random( 1, 5 )
 
                 end
             end

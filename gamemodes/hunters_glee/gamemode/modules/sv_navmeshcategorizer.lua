@@ -372,13 +372,16 @@ hook.Add( "glee_navmesh_postvisit", "glee_precache_extraflags", function( area )
     end
 
     if #adjacents > 0 and area:IsUnderwater() then
-        local beach = GAMEMODE.waterBodySize[area] > smallLakeSurfaceArea and GAMEMODE:HasExtraFlags( area, flagsEnums.UNDER_SKY )
-        local enum = beach and flagsEnums.LOCALE_BEACH or flagsEnums.LOCALE_DAMP
-        for _, neighbor in ipairs( adjacents ) do
-            if neighbor:IsUnderwater() then continue end
-            if area:ComputeAdjacentConnectionHeightChange( neighbor ) > 36 then continue end
-            GAMEMODE:RegisterFlagStatus( neighbor, enum )
+        local waterBodySize = GAMEMODE.waterBodySize[area]
+        if waterBodySize then
+            local beach = waterBodySize > smallLakeSurfaceArea and GAMEMODE:HasExtraFlags( area, flagsEnums.UNDER_SKY )
+            local enum = beach and flagsEnums.LOCALE_BEACH or flagsEnums.LOCALE_DAMP
+            for _, neighbor in ipairs( adjacents ) do
+                if neighbor:IsUnderwater() then continue end
+                if area:ComputeAdjacentConnectionHeightChange( neighbor ) > 36 then continue end
+                GAMEMODE:RegisterFlagStatus( neighbor, enum )
 
+            end
         end
     end
 end )
