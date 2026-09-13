@@ -155,6 +155,29 @@ function spawnSetVote:RecieveVote( ply, name )
 
 end
 
+local function applyVotedSpawnSet( set )
+    GAMEMODE.rtmWaitingForRoundEnd = nil
+    game.ConsoleCommand( "huntersglee_spawnset " .. set .. "\n" )
+    huntersGlee_Announce( player.GetAll(), 150, 3, "NEW MISERY..." )
+    timer.Simple( 2, function()
+        huntersGlee_AnnounceDramatic( player.GetAll(), 1001, 5, GAMEMODE:GetPrettyNameOfSpawnSet( set ) .. "\nis your new Misery..." )
+
+    end )
+end
+
+-- a winner voted in mid round waits in rtmWaitingForRoundEnd until one of these
+local function applyPendingSpawnSet()
+    local pending = GAMEMODE.rtmWaitingForRoundEnd
+    if not pending then return end
+
+    applyVotedSpawnSet( pending )
+
+end
+
+hook.Add( "huntersglee_round_into_inactive", "glee_setvotedspawnset", applyPendingSpawnSet )
+hook.Add( "ShutDown", "glee_setvotedspawnset", applyPendingSpawnSet )
+hook.Add( "MapVote_VoteStarted", "glee_setvotedspawnset", applyPendingSpawnSet )
+
 function spawnSetVote:OnVoteEnd()
     local currVote = spawnSetVote.currVote
     if not validVote( currVote ) then return end
@@ -180,19 +203,6 @@ function spawnSetVote:OnVoteEnd()
 
     end
 
-    local function setSpawnSet( set )
-        hook.Remove( "huntersglee_round_into_inactive", "glee_setvotedspawnset" )
-        hook.Remove( "MapVote_VoteStarted", "glee_setvotedspawnset" )
-        hook.Remove( "ShutDown", "glee_setvotedspawnset" )
-        game.ConsoleCommand( "huntersglee_spawnset " .. set .. "\n" )
-        GAMEMODE.rtmWaitingForRoundEnd = nil
-        huntersGlee_Announce( player.GetAll(), 150, 3, "NEW MISERY..." )
-        timer.Simple( 2, function()
-            huntersGlee_AnnounceDramatic( player.GetAll(), 1001, 5, GAMEMODE:GetPrettyNameOfSpawnSet( set ) .. "\nis your new Misery..." )
-
-        end )
-    end
-
     -- print in console!
     permaPrint( "GLEE: Misery vote is over, winner is, " .. spawnSetVote.winner )
     -- and in people's chat!
@@ -201,26 +211,23 @@ function spawnSetVote:OnVoteEnd()
     if GAMEMODE:RoundState() == GAMEMODE.ROUND_ACTIVE and GAMEMODE:getRemaining( GAMEMODE.termHunt_roundBegunTime, CurTime() ) > 60 then -- if round has properly started
         huntersGlee_AnnounceDramatic( player.GetAll(), 1001, 10, "The next Misery; " .. GAMEMODE:GetPrettyNameOfSpawnSet( spawnSetVote.winner ) .. "\nwill arrive upon round end..." )
         GAMEMODE.rtmWaitingForRoundEnd = spawnSetVote.winner
-        hook.Add( "huntersglee_round_into_inactive", "glee_setvotedspawnset", function()
-            setSpawnSet( spawnSetVote.winner )
 
-        end )
-        hook.Add( "ShutDown", "glee_setvotedspawnset", function()
-            setSpawnSet( spawnSetVote.winner )
-
-        end )
-        hook.Add( "MapVote_VoteStarted", "glee_setvotedspawnset", function()
-            setSpawnSet( spawnSetVote.winner )
-
-        end )
     else
-        setSpawnSet( spawnSetVote.winner )
+        applyVotedSpawnSet( spawnSetVote.winner )
 
     end
 
     spawnSetVote.currVote = nil
 
 end
+
+-- the voters are gone, drop their vote, and any winner still waiting for round end
+-- clearing currVote is enough to cancel a vote in progress, OnVoteEnd bails on it
+hook.Add( "huntersglee_emptyserver", "glee_reset_pendingmisery", function()
+    spawnSetVote.currVote = nil
+    GAMEMODE.rtmWaitingForRoundEnd = nil
+
+end )
 
 -- from cfc mapvote cause the code's clean and it handles every case
 -- GIVE LOVE TO HMM

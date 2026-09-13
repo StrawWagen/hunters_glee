@@ -422,35 +422,31 @@ hook.Add( "huntersglee_round_firstsetup", "glee_spawnset_think", function() GAME
 hook.Add( "huntersglee_round_leave_limbo", "glee_spawnset_reparse", function() GAMEMODE:SetSpawnSet( spawnSetVar:GetString() ) end )
 
 
+local veteranSpawnSetName = "hunters_glee"
+
 -- let people joining the server have the default glee experience
-hook.Add( "huntersglee_emptyserver", "glee_reset_spawnset", function( wasEmpty )
-    if wasEmpty then return end -- only run this if there were people online, and are no longer people online
-    GAMEMODE.DeadServerPleaseFixMode = true
-    permaPrint( "GLEE: empty server, spawnset will be reset when someone joins" )
+hook.Add( "huntersglee_emptyserver", "glee_reset_spawnset", function()
+    GAMEMODE.DeadServerPendingUpgrade = true
+
+    permaPrint( "GLEE: empty server, setting to tutorial mode, will reset to " .. veteranSpawnSetName .. " if a veteran joins" )
+    RunConsoleCommand( "huntersglee_spawnset", defaultSpawnSetName )
 
 end )
 
-local veteranSpawnSetName = "hunters_glee"
-
 hook.Add( "glee_full_load", "glee_resetspawnset_onjoin", function( ply )
-    if not GAMEMODE.DeadServerPleaseFixMode then return end
+    if not GAMEMODE.DeadServerPendingUpgrade then return end
 
     -- give their lessons time to sync
+    -- keep this shorter than spawn protection's removal, or the round can start before the mode switches
     timer.Simple( 1, function()
         if not IsValid( ply ) then return end
-        if not GAMEMODE.DeadServerPleaseFixMode then return end
-        GAMEMODE.DeadServerPleaseFixMode = nil
+        if not GAMEMODE.DeadServerPendingUpgrade then return end
+        GAMEMODE.DeadServerPendingUpgrade = nil
 
-        -- set to tutorial if they're a new player
-        local setName = defaultSpawnSetName
-        if GAMEMODE:HasLearnedLesson( ply, "WonAHardMisery" ) then
-            -- set to hunters_glee if they've escaped on a hard misery mode
-            setName = veteranSpawnSetName
+        if not GAMEMODE:HasLearnedLesson( ply, "WonAHardMisery" ) then return end
+        RunConsoleCommand( "huntersglee_spawnset", veteranSpawnSetName )
 
-        end
-
-        RunConsoleCommand( "huntersglee_spawnset", setName )
-        permaPrint( "GLEE: Resetting spawnset, empty server is being revived" )
+        permaPrint( "GLEE: Updating spawnset, veteran is joining dead server" )
 
     end )
 end )

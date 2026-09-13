@@ -188,6 +188,7 @@ function GM:TermHuntSetup()
     self.ValidNavarea                   = self.ValidNavarea or NULL
 
     self.termHunt_roundStartTime        = math.huge
+    self.termHunt_roundStartOffset      = math.huge
     self.termHunt_roundBegunTime        = math.huge
     self.termHunt_navmeshCheckTime      = math.huge
     self.termHunt_NextThink             = CurTime()
@@ -270,7 +271,7 @@ function GM:Think()
     local currState = self:RoundState()
 
     local players = player.GetAll()
-    if self:handleEmptyServer( currState, players ) == true then return end
+    if self:handleEmptyServer( players ) == true then return end
 
     if self:handleGenerating( currState ) == true then return end
 
@@ -334,6 +335,20 @@ function GM:Think()
 
         local doPatchingText = nil
 
+        -- make the countdown wait if everyone has spawn protection
+        -- a proper wait, resets the entire countdown
+        -- doesn't replay the ten seconds hook if it already ran, that's fine
+        local readyToStart = false
+        for _, ply in ipairs( players ) do
+            if ply:HasStatusEffect( "spawn_protection" ) then continue end
+            readyToStart = true
+
+        end
+        if not readyToStart then
+            self.termHunt_roundStartTime = cur + self.termHunt_roundStartOffset
+
+        end
+
         if self.termHunt_roundStartTime < cur then
             if self.HuntersGleeDoneTheGreedyPatch then
                 self:roundStart() --
@@ -358,6 +373,12 @@ function GM:Think()
             hook.Run( "glee_sv_validgmthink_inactive", players, currState, cur )
             hook.Run( "glee_sv_validgmthink_not_over", players, currState, cur )
 
+            local untilStart = self.termHunt_roundStartTime - cur
+            if untilStart <= 10 and not self.roundExtraData.calledTenSecondsHook then
+                self.roundExtraData.calledTenSecondsHook = true
+                hook.Run( "huntersglee_round_tenseconds_before_active" )
+
+            end
         end
         if doPatchingText then
             displayName = "Please wait, navmesh is being patched... "
@@ -751,33 +772,34 @@ function GM:removeBlockers() -- mess up locked doors on door heavy maps
 end
 
 
-do
-    local wasEmpty = true
-
-    -- nukes all the hunters if there's nobody to hunt
-    function GM:handleEmptyServer( currState, players )
-        local empt = #players == 0
-        if empt and ( currState == self.ROUND_ACTIVE or currState == self.ROUND_LIMBO ) then
-            -- bots are expensive, save cpu power pls
-            permaPrint( "Empty server!\nRemoving bots..." )
-            self:roundEnd()
-            self:beginSetup()
-            return true
-
-        elseif empt and game.IsDedicated() and not self.waitingOnNavoptimizerGen and navmesh.GetNavAreaCount() <= 0 and NAVOPTIMIZER_tbl and GetConVar( "sv_cheats" ):GetBool() then
-            permaPrint( "GLEE: Automatically generating navmesh & optimizing with Navmesh Optimizer" )
-            self:GenerateANavmeshPls()
-
-        elseif empt then -- empty
-            hook.Run( "huntersglee_emptyserver", wasEmpty )
-            wasEmpty = true
-            return true
-
-        end
-        wasEmpty = false
-
+-- when the last player leaves, runs huntersglee_emptyserver once, then cleans up the map, which puts the gamemode back into setup and removes all the hunters
+-- returns true while empty, so the gamemode doesn't think
+function GM:handleEmptyServer( players )
+    if #players > 0 then
+        self.serverHadPlayers = true
         return nil
+
     end
+
+    if self.waitingOnNavoptimizerGen then return nil end
+
+    if game.IsDedicated() and navmesh.GetNavAreaCount() <= 0 and NAVOPTIMIZER_tbl and GetConVar( "sv_cheats" ):GetBool() then
+        permaPrint( "GLEE: Automatically generating navmesh & optimizing with Navmesh Optimizer" )
+        self:GenerateANavmeshPls()
+        return nil
+
+    end
+
+    if self.serverHadPlayers then
+        self.serverHadPlayers = nil
+        permaPrint( "GLEE: Server just became empty, hard cleaning up map" )
+        hook.Run( "huntersglee_emptyserver" )
+        RunConsoleCommand( "gmod_admin_cleanup" )
+
+    end
+
+    return true
+
 end
 
 -- nukes all the hunters if navmesh is generating
@@ -1059,13 +1081,7 @@ function GM:beginSetup()
     time = math.max( time, 10 )
 
     self.termHunt_roundStartTime = CurTime() + time
-
-    local tenSecondsBeforeStart = time - 10
-    timer.Create( "glee_ten_seconds_before_start_timer", tenSecondsBeforeStart, 1, function()
-        if GAMEMODE.RoundState() ~= GAMEMODE.ROUND_INACTIVE then return end
-        hook.Run( "huntersglee_round_tenseconds_before_active" )
-
-    end )
+    self.termHunt_roundStartOffset = time
 
     self:SetRoundState( self.ROUND_INACTIVE )
     timer.Simple( 2, function()
@@ -1103,16 +1119,13 @@ function GM:setupFinish()
         time = math.max( time, 10 )
 
         self.termHunt_roundStartTime = CurTime() + time
+        self.termHunt_roundStartOffset = time
 
-        local tenSecondsBeforeStart = time - 10
-        timer.Create( "glee_ten_seconds_before_start_timer", tenSecondsBeforeStart, 1, function()
-            if GAMEMODE.RoundState() ~= GAMEMODE.ROUND_INACTIVE then return end
-            hook.Run( "huntersglee_round_tenseconds_before_active" )
-
-        end )
     end
     if game.SinglePlayer() then
-        self.termHunt_roundStartTime = CurTime() + self.roundStartAfterNavCheck
+        local time = self.roundStartAfterNavCheck
+        self.termHunt_roundStartTime = CurTime() + time
+        self.termHunt_roundStartOffset = time
         self.isBadSingleplayer = true
 
     end

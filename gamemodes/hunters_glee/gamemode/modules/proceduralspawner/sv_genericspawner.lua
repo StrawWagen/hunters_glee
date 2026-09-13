@@ -254,7 +254,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawner_managegenericspawns", fun
         local count
         if #curr.countClasses > 1 then
             count = 0
-            for _, countClass in ipairs( countClasses ) do
+            for _, countClass in ipairs( curr.countClasses ) do
                 count = count + #ents.FindByClass( countClass )
 
             end
