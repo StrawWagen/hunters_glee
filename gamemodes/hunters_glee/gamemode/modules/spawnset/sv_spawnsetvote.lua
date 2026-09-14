@@ -119,7 +119,7 @@ function spawnSetVote:BeginVote( duration, maxOptions )
     GAMEMODE:SyncEscapeMultipliersForSpawnsets( table.GetKeys( options ) )
 
     net.Start( "glee_begin_spawnsetvote" )
-        net.WriteInt( currVote.voteEnd, 20 )
+        net.WriteInt( currVote.voteEnd, 20 ) -- overflows with 6d uptime, servers are never up that long
         net.WriteInt( #optionsSeq, 16 )
         for _, data in pairs( optionsSeq ) do
             net.WriteString( data.name )

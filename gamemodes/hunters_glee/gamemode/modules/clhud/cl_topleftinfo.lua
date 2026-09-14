@@ -13,10 +13,6 @@ local laneSpacing      = terminator_Extras.glee_HL2Hud.laneSpacing
 
 local hour = 60 * 60
 
-local hl2Hud = terminator_Extras.glee_HL2Hud
-
-local defaultHudColor  = hl2Hud.colorHappyYellow
-local infoChangedColor = Color( 255, 50, 50 )
 
 
 -- ---------------------------------------------------------------------------
@@ -58,7 +54,7 @@ local function thinkRoundInfo( ply, cur )
 
     end
 
-    local textColor   = infoColorExpiry > cur and infoChangedColor or defaultHudColor
+    local textColor   = infoColorExpiry > cur and "alert" or "happy"
     local stayPresent = GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE
 
     return combinedString, stayPresent, doFlash, 0, textColor
@@ -358,7 +354,7 @@ local function thinkHint( _ply, cur )
     end
     if nextHintCheck < cur then
         needsHints, hint = genericHints()
-        nextHintCheck    = cur + math.Rand( 0.1, 0.09 )
+        nextHintCheck    = cur + math.Rand( 0.09, 0.1 )
 
     end
 
@@ -389,7 +385,7 @@ end
 local hudEntries = {
     {
         key             = "roundInfo",
-        font            = "glee_mediumLargeHL2Font",
+        font            = "mediumLarge",
         flashDuration   = 0.4,
         fadeSpeed       = 0.15,
         fadeStartDelay  = 6,
@@ -488,9 +484,17 @@ hook.Add( "glee_cl_topleftinfo", "glee_topleftinfo_draw", function( ply, cur )
     local isTabHeld = input.IsKeyDown( KEY_TAB )
     local alwaysShow = isTabHeld or alwaysShowInfo:GetBool()
 
+    local style = "hl2"
+    if ply:Health() <= 0 then
+        style = "scripture"
+
+    end
+
     for _, entry in ipairs( hudEntries ) do
         local box = terminator_Extras["gleeHud_TL_" .. entry.key]
         if not IsValid( box ) then continue end
+
+        box._myStyle = style
 
         local xOffset      = 0
         local forceThisKey = alwaysShow

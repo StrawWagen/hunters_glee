@@ -33,11 +33,12 @@ PANEL.Init = function( self )
 
     self._backdrop     = hud.colorBackgroundDark
     self._cornerRadius = hud.boxCornerRadius
+    self._myStyle      = "hl2"
 
 end
 
 PANEL.Paint = function( self, w, h )
-    draw.RoundedBox( self._cornerRadius, 0, 0, w, h, self._backdrop )
+    terminator_Extras.glee_HL2Hud.DrawBackground( self._myStyle, 0, 0, w, h, self._backdrop, self._cornerRadius )
 
 end
 

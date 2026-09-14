@@ -228,15 +228,24 @@ end
 
 local rounds = 0
 local printed
+local hardRtmHint
 hook.Add( "huntersglee_round_into_inactive", "glee_rockthemisery_hint", function()
     rounds = rounds + 1
+
     if rounds < math.random( 1, 3 ) then return end --dont print too much.
+    if not printed then
+        printed = true -- one time per map
 
-    if printed then return end
-    printed = true -- one time per map
+        PrintMessage( HUD_PRINTTALK, "GLEE: Type !rtm to start a Misery vote" )
 
-    PrintMessage( HUD_PRINTTALK, "GLEE: Type !rtm to start a Misery vote" )
+    end
 
+    if rounds < math.random( 2, 5 ) then return end -- wait a bit longer for this stronger hint
+    if not hardRtmHint and GAMEMODE:IsSpawnsetEasy() then
+        hardRtmHint = true
+        SetGlobalBool( "glee_pleaseshow_rtmtutorialhint", true )
+
+    end
 end )
 
 hook.Add( "huntersglee_round_into_inactive", "glee_rockthemisery_hint", function()

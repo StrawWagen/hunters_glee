@@ -22,7 +22,6 @@
         box:SetAutoManage( true )          -- drives itself via AdditionalThink
 ]]
 
-local superScoreColor = Color( 255, 255, 0 )
 local shakeMaxSize    = glee_sizeScaled( nil, 2 )
 
 local PANEL = {}
@@ -118,7 +117,6 @@ end
 -- neverShow:  force panel to fade (e.g. ConVar disabled)
 -- Returns xOffset for horizontal position correction (shake animation).
 PANEL.ManageHudState = function( self, ply, cur, alwaysShow, neverShow )
-    local hud   = terminator_Extras.glee_HL2Hud
     local count = self._countFunc and self._countFunc( ply )
 
     local text
@@ -133,7 +131,7 @@ PANEL.ManageHudState = function( self, ply, cur, alwaysShow, neverShow )
         end
     end
 
-    local textColor   = hud.colorUnHappyYellow
+    local textColor   = "text"
     local doFlash     = false
     local threshold   = self._smallCountThreshold
     local isWithinVisibleWindow = self._visibleUntil > cur
@@ -152,7 +150,7 @@ PANEL.ManageHudState = function( self, ply, cur, alwaysShow, neverShow )
     if count ~= nil and self._oldCount ~= count then
         doFlash = true
 
-        local overrideColor     = hud.colorHappyYellow
+        local overrideColor     = "happy"
         local overrideColorTime = 0.1
         local textShakeTime     = 0
 
@@ -161,7 +159,7 @@ PANEL.ManageHudState = function( self, ply, cur, alwaysShow, neverShow )
         local absDifference       = math.abs( changeFromLastCount )
 
         if changeFromBaseline >= 500 then
-            overrideColor = superScoreColor
+            overrideColor = "jackpot"
 
         end
 

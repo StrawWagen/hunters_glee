@@ -134,8 +134,10 @@ local function openAtmGui( atm )
             local midY     = h * 0.5
             local dIcon    = self._drawIcon           -- set by basePaint this frame
 
-            draw.SimpleText( self._labelText,  self._font, innerPad,     midY, dIcon, TEXT_ALIGN_LEFT,  TEXT_ALIGN_CENTER )
-            draw.SimpleText( self._amountText, self._font, w - innerPad, midY, dIcon, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER )
+            local font     = self:GetResolvedFont()
+
+            draw.SimpleText( self._labelText,  font, innerPad,     midY, dIcon, TEXT_ALIGN_LEFT,  TEXT_ALIGN_CENTER )
+            draw.SimpleText( self._amountText, font, w - innerPad, midY, dIcon, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER )
 
         end
 

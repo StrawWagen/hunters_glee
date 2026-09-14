@@ -2,6 +2,7 @@
 if not Glide then return end
 
 local vec_down = Vector( 0, 0, -1 )
+local vec_up = Vector( 0, 0, 1 )
 
 local GAMEMODE = GAMEMODE or GM
 
@@ -330,7 +331,7 @@ hook.Add( "glee_navpatcher_finish", "glee_spawnaglideifwewant", function()
 
             end
 
-            return spawnGlideVehicleAt( vehicleJob.glideClassToSpawn, bestPosition )
+            return spawnGlideVehicleAt( vehicleJob.glideClassToSpawn, bestPosition + vec_up * 5 )
 
         end
 

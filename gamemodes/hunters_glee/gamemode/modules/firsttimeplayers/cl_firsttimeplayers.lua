@@ -4,65 +4,22 @@
 
 local GAMEMODE = GAMEMODE or GM
 
-local function defineFont()
-    surface.CreateFont( "huntersglee_welcometext", {
-        font = "Protest Revolution",
-        extended = false,
-        size = glee_sizeScaled( nil, 150 ),
-        weight = 600,
-        blursize = 0,
-        scanlines = 0,
-        antialias = false,
-        underline = false,
-        italic = false,
-        strikeout = false,
-        symbol = false,
-        rotary = false,
-        shadow = false,
-        additive = false,
-        outline = false,
-    } )
-end
-defineFont()
-hook.Add( "glee_rebuildfonts", "glee_rebuild_welcometext_font", function()
-    defineFont()
-
-end )
-
 local godHud = terminator_Extras.godHud
+local decrees = godHud.decrees
+local ghostSettings = decrees.ghosts.huge
 local textArrivalSounds = godHud.textArrivalSounds
 local textLandingSounds = godHud.textLandingSounds
-
--- surface.playsound doesnt have pitch....
-local function playGodSound( sounds, pitch, channel )
-    LocalPlayer():EmitSound( sounds[math.random( 1, #sounds )], 75, pitch, 0.5, channel )
-
-end
-
-local tutorialFont = "huntersglee_welcometext"
-
--- the message is drawn this many times over, scattered and faint, all sliding onto the same
--- spot. where they overlap the transparency stacks, so it thickens into one solid message
-local ghostCount = 5
-local ghostSpreadMin = glee_sizeScaled( nil, 15 )
-local ghostSpreadMax = glee_sizeScaled( nil, 70 )
-local ghostOrbitMin = 40 -- degrees each ghost sweeps around the centre on its way in
-local ghostOrbitMax = 120
-local ghostMergeTime = 0.45
-local ghostStartSpread = 0.35 -- how long until the last ghost shows up
-local ghostPeakAlpha = 90
-local materialiseTime = ghostStartSpread + ghostMergeTime
+local playGodSound = godHud.PlaySound
 
 local clickImpatience = 0.30 -- seconds of animation a click skips
 
--- these fade against each other, so they can't share the godHud colors
-local ghostTextColor = Color( godHud.textColor.r, godHud.textColor.g, godHud.textColor.b )
-local ghostShadowColor = Color( godHud.shadowColor.r, godHud.shadowColor.g, godHud.shadowColor.b )
-local solidTextColor = Color( godHud.textColor.r, godHud.textColor.g, godHud.textColor.b )
-local solidShadowColor = Color( godHud.shadowColor.r, godHud.shadowColor.g, godHud.shadowColor.b )
+-- copies, their alpha gets written
+local ghostTextColor = ColorAlpha( decrees.textColor, 255 )
+local ghostShadowColor = ColorAlpha( decrees.shadowColor, 255 )
+local solidTextColor = ColorAlpha( decrees.textColor, 255 )
+local solidShadowColor = ColorAlpha( decrees.shadowColor, 255 )
 
 local ghostData = {
-    font = tutorialFont,
     textColor = ghostTextColor,
     shadowColor = ghostShadowColor,
     shadowOffsetX = godHud.shadowOffsetX,
@@ -70,37 +27,11 @@ local ghostData = {
 }
 
 local solidData = {
-    font = tutorialFont,
     textColor = solidTextColor,
     shadowColor = solidShadowColor,
     shadowOffsetX = godHud.shadowOffsetX,
     shadowOffsetY = godHud.shadowOffsetY,
 }
-
--- where each copy starts out. Think advances progress and eased, Paint reads them
-local function buildGhosts()
-    local ghosts = {}
-
-    for ind = 1, ghostCount do
-        local orbit = math.rad( math.Rand( ghostOrbitMin, ghostOrbitMax ) )
-        if math.random( 2 ) == 1 then -- half of them sweep the other way round
-            orbit = -orbit
-
-        end
-
-        ghosts[ind] = {
-            angle = math.rad( math.Rand( 0, 360 ) ),
-            spread = math.Rand( ghostSpreadMin, ghostSpreadMax ),
-            orbit = orbit,
-            startAt = math.Rand( 0, ghostStartSpread ),
-            progress = 0,
-            eased = 0,
-        }
-    end
-
-    return ghosts
-
-end
 
 local imNewMyself = nil
 local hasSeenMessage = CreateClientConVar( "cl_huntersglee_firsttimetutorial", 0, true, true, "Has the player seen the one-time tutorial series of messages?" )
@@ -223,7 +154,7 @@ local function doMessageIfWeCan()
         if not fullMsg then return end
 
         button.msg = fullMsg
-        button.ghosts = buildGhosts()
+        button.ghosts = godHud.BuildGhosts( ghostSettings )
         button.elapsed = 0
         button.clickPlsGoFaster = 0
         button.solidAlpha = 0
@@ -285,22 +216,14 @@ local function doMessageIfWeCan()
         button.elapsed = button.elapsed + delta + button.clickPlsGoFaster
         button.clickPlsGoFaster = 0
 
-        for _, ghost in ipairs( ghosts ) do
-            local progress = math.Clamp( ( button.elapsed - ghost.startAt ) / ghostMergeTime, 0, 1 )
-            ghost.progress = progress
-            ghost.eased = 1 - ( ( 1 - progress ) ^ 3 )
+        local appeared = godHud.AdvanceGhosts( ghosts, button.elapsed, ghostSettings )
+        for _ = 1, appeared do
+            playGodSound( textArrivalSounds, math.random( 90, 110 ), CHAN_STATIC )
 
-            if progress <= 0 then continue end
-
-            if not ghost.fizzled then
-                ghost.fizzled = true
-                playGodSound( textArrivalSounds, math.random( 90, 110 ), CHAN_STATIC )
-
-            end
         end
 
-        -- squared, so the solid copy stays out of the way while the ghosts are still spread out
-        local materialised = math.Clamp( button.elapsed / materialiseTime, 0, 1 )
+        -- squared, so it stays hidden while the ghosts are spread out
+        local materialised = godHud.GhostsMaterialised( button.elapsed, ghostSettings )
         button.solidAlpha = 255 * ( materialised ^ 2 )
 
         if materialised >= 1 and not button.wasDone then
@@ -319,31 +242,14 @@ local function doMessageIfWeCan()
         local topY = ( height / 2 ) + -256 + button.jitterY
 
         ghostData.text = button.msg
-
-        for _, ghost in ipairs( ghosts ) do
-            if ghost.progress <= 0 then continue end
-
-            local eased = ghost.eased
-
-            -- brightest halfway in, so each copy swells out of nothing and is gone once it lands
-            local fade = math.sin( eased * math.pi )
-            ghostTextColor.a = ghostPeakAlpha * fade
-            ghostShadowColor.a = ghostPeakAlpha * fade
-
-            -- swings round the centre as it closes in, so it spirals rather than sliding straight
-            local angle = ghost.angle + ( ghost.orbit * eased )
-            local dist = ghost.spread * ( 1 - eased )
-
-            ghostData.posX = centreX + ( math.cos( angle ) * dist )
-            ghostData.posY = topY + ( math.sin( angle ) * dist )
-            surface.drawShadowedTextBetterData( ghostData )
-
-        end
+        ghostData.font = decrees.fonts.huge
+        godHud.DrawGhosts( ghosts, ghostSettings, ghostData, centreX, topY )
 
         solidTextColor.a = button.solidAlpha
         solidShadowColor.a = button.solidAlpha
 
         solidData.text = button.msg
+        solidData.font = decrees.fonts.huge
         solidData.posX = centreX
         solidData.posY = topY
         surface.drawShadowedTextBetterData( solidData )

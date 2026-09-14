@@ -476,9 +476,6 @@ local PLAYER_LINE = {
             end
         end
 
-        -- Set order based on skulls, then points.
-        self:SetZPos( -1000 * ply:GetSkulls() - ply:GetScore() / 100 )
-
         -- Hover slide.
         local hoverProgress = self._hoverProgress or 0
         local slideOut = self:IsHovered() or isViewingActionsForPly( ply )
@@ -774,7 +771,7 @@ local SCORE_BOARD = {
             self.Scores.ScrollSecret = panel
             panel:Dock( TOP )
             panel:SetHeight( height )
-            panel:SetZPos( -1000000 )
+            panel:SetZPos( -32768 )
             panel.Paint = function() end
 
             local btn = panel:Add( "DImageButton" )
@@ -889,6 +886,21 @@ local SCORE_BOARD = {
             entry:Dock( TOP )
 
             panelCreated = true
+
+        end
+
+        -- Order by skulls, then score.
+        -- ZPos is a 16 bit int, so rank them rather than using the skull count directly, big counts overflowed to the bottom
+        local sorted = player.GetAll()
+        table.sort( sorted, function( a, b )
+            local aSkulls, bSkulls = a:GetSkulls(), b:GetSkulls()
+            if aSkulls ~= bSkulls then return aSkulls > bSkulls end
+            return a:GetScore() > b:GetScore()
+
+        end )
+        for rank, ply in ipairs( sorted ) do
+            if not IsValid( ply.ScoreEntry ) then continue end
+            ply.ScoreEntry:SetZPos( rank )
 
         end
 

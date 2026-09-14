@@ -1,6 +1,16 @@
 local spawnSetVote = {}
-local draw_RoundedBox = draw.RoundedBox
+local surface_SetAlphaMultiplier = surface.SetAlphaMultiplier
 local input = input
+
+local godHud = terminator_Extras.godHud
+local decrees = godHud.decrees
+
+-- 1080p pixels
+local panelWidth = 300
+local panelTopGap = 250
+
+local titleText = "CHOOSE your Misery..."
+local urgentSeconds = 5 -- countdown flashes and clicks from here down
 
 net.Receive( "glee_begin_spawnsetvote", function()
     local voteEnd = net.ReadInt( 20 )
@@ -39,6 +49,27 @@ local voters = {
     "slot9",
 }
 
+-- Also sets panel.wrappedText and panel.textWidth
+local function layoutGodText( panel, text, font, padX, padY )
+    local wrapWidth = panel:GetWide() - ( padX * 2 )
+    panel.wrappedText = terminator_Extras.glee_HL2Hud.WrapText( text, font, wrapWidth )
+
+    local textWidth, textHeight = godHud.MeasureText( panel.wrappedText, font )
+    panel.textWidth = textWidth
+    panel:SetTall( math.ceil( textHeight + ( padY * 2 ) + godHud.shadowOffsetY ) )
+
+end
+
+local function newTextData( font, doCenter )
+    return {
+        font = font,
+        doCenter = doCenter,
+        shadowColor = decrees.shadowColor,
+        shadowOffsetX = godHud.shadowOffsetX,
+        shadowOffsetY = godHud.shadowOffsetY,
+    }
+end
+
 function spawnSetVote:CreateVotePanel()
     -- hold to vote bind
     local holdToVote = "+showscores"
@@ -47,11 +78,6 @@ function spawnSetVote:CreateVotePanel()
     local pressableThink = GAMEMODE.shopStandards.pressableThink
     -- all done sound!
     local voteDoneSound = "buttons/lever4.wav"
-
-    -- colors
-    local cantAffordOverlay =   GAMEMODE.shopStandards.cantAffordOverlay
-    local notHoveredOverlay =   GAMEMODE.shopStandards.notHoveredOverlay
-    local pressedItemOverlay =  GAMEMODE.shopStandards.pressedItemOverlay
 
     local hasAllTheVoteKeys = true
     local keyToVote = input.LookupBinding( holdToVote )
@@ -82,14 +108,14 @@ function spawnSetVote:CreateVotePanel()
 
     end
 
-    local _, height = glee_sizeScaled( 1920, 1080 )
-    local scale = height / 1080
-
-    local whiteIdentifierLineWidth = height / GAMEMODE.shopStandards.whiteIdentifierLineWidthDiv
-    local buttonMargin = height / 100
-
     local options = spawnSetVote.options
     local voteEnd = spawnSetVote.voteEnd
+    local openedAt = CurTime()
+
+    local arrival = decrees.arrival
+    local boxPaddingX = decrees.boxPaddingX
+    local boxPaddingY = decrees.boxPaddingY
+    local boxGap = decrees.boxGap
 
     if IsValid( GAMEMODE.spawnSetVote_VoteHolder ) then
         GAMEMODE.spawnSetVote_VoteHolder:Close()
@@ -101,14 +127,16 @@ function spawnSetVote:CreateVotePanel()
 
     local hudPadding = terminator_Extras.defaultHudPaddingFromEdge
 
-    voteHolder:SetSize( 300 * scale, 0 )
-    voteHolder:DockMargin( hudPadding, 250 * scale, hudPadding, hudPadding )
+    voteHolder:SetSize( glee_sizeScaled( nil, panelWidth ), 0 )
+    voteHolder:DockMargin( hudPadding, glee_sizeScaled( nil, panelTopGap ), hudPadding, hudPadding )
     voteHolder:DockPadding( 0, 0, 0, 0 )
     voteHolder:Dock( RIGHT )
     voteHolder:SetTitle( "" )
     voteHolder:SetVisible( true )
     voteHolder:SetDraggable( false )
     voteHolder:ShowCloseButton( false )
+
+    godHud.PlaySound( godHud.textArrivalSounds, math.random( 110, 130 ), CHAN_STATIC, 0.3 )
 
     voteHolder.voteOptions = {}
     function voteHolder:Think()
@@ -139,58 +167,110 @@ function spawnSetVote:CreateVotePanel()
             self.pressedToVote = nil
         end
     end
-    function voteHolder:Paint( w, h )
-        flash = self.Flash
-        if self.Flash then
-            self.Flash = nil
-            draw_RoundedBox( 0, 0, 0, w, h, GAMEMODE.shopStandards.pressedItemOverlay )
+    function voteHolder:Paint()
+    end
+
+
+    -- countdown on the left, what this is on the right
+    local header = vgui.Create( "DPanel", voteHolder, "glee_voteinfo_header" )
+    header:Dock( TOP )
+    function header:Paint()
+        return true
+
+    end
+
+    local countdown = vgui.Create( "DPanel", header, "glee_voteinfo_countdown" )
+    countdown:Dock( LEFT )
+
+    local title = vgui.Create( "DPanel", header, "glee_voteinfo_label" )
+    title:Dock( FILL )
+
+    -- the title wraps to whatever width the countdown leaves it, so both are measured here
+    function header:PerformLayout( w )
+        -- two digits wide, so the title doesn't shift as it counts down
+        local countdownWidth, countdownHeight = godHud.MeasureText( "00", decrees.fonts.large )
+        countdownWidth = countdownWidth + boxPaddingX * 2
+        countdown:SetWide( countdownWidth )
+
+        title.wrappedText = terminator_Extras.glee_HL2Hud.WrapText( titleText, decrees.fonts.medium, w - countdownWidth )
+        local _, titleHeight = godHud.MeasureText( title.wrappedText, decrees.fonts.medium )
+        title.textHeight = titleHeight
+
+        self:SetTall( math.ceil( math.max( countdownHeight, titleHeight ) + godHud.shadowOffsetY ) )
+
+    end
+
+    local titleGhostSettings = decrees.ghosts.medium
+    local titleGhostData = newTextData( decrees.fonts.medium, false )
+    -- copies, DrawGhosts writes their alpha
+    titleGhostData.textColor = ColorAlpha( decrees.textColor, 255 )
+    titleGhostData.shadowColor = ColorAlpha( decrees.shadowColor, 255 )
+
+    local titleData = newTextData( decrees.fonts.medium, false )
+    titleData.textColor = decrees.textColor
+
+    title.wrappedText = titleText
+    title.textHeight = 0
+    title.ghosts = godHud.BuildGhosts( titleGhostSettings )
+    title.materialised = 0
+
+    function title:Think()
+        if not self.ghosts then return end
+
+        local elapsed = CurTime() - openedAt
+        godHud.AdvanceGhosts( self.ghosts, elapsed, titleGhostSettings )
+        self.materialised = godHud.GhostsMaterialised( elapsed, titleGhostSettings )
+
+        if self.materialised >= 1 then
+            self.ghosts = nil
 
         end
     end
 
+    function title:Paint( _, h )
+        local leftX = 0
+        local topY = ( h - self.textHeight ) / 2
 
-    -- tell people what this is
-    local infoLabel = vgui.Create( "DLabel", voteHolder, "glee_voteinfo_label" )
+        titleGhostData.font = decrees.fonts.medium
+        titleGhostData.text = self.wrappedText
+        titleData.font = decrees.fonts.medium
+        titleData.text = self.wrappedText
 
-    infoLabel:SetSize( 10 * scale, 0 ) -- scaling these just in case
-    infoLabel:SetAutoStretchVertical( true )
-    infoLabel:Dock( TOP )
-    infoLabel:SetTextInset( whiteIdentifierLineWidth, whiteIdentifierLineWidth )
+        if self.ghosts then
+            godHud.DrawGhosts( self.ghosts, titleGhostSettings, titleGhostData, leftX, topY )
 
-    infoLabel:SetTextColor( GAMEMODE.shopStandards.white )
-    infoLabel:SetFont( "termhuntShopItemFontShadowed" )
+        end
 
-    infoLabel:SetContentAlignment( 8 )
-    infoLabel:SetWrap( true )
-    infoLabel:SetText( "CHOOSE your Misery..." )
+        titleData.posX = leftX
+        titleData.posY = topY
+
+        -- squared, so it stays hidden while the ghosts are spread out
+        surface_SetAlphaMultiplier( self.materialised ^ 2 )
+        surface.drawShadowedTextBetterData( titleData )
+        surface_SetAlphaMultiplier( 1 )
+
+        return true
+
+    end
 
 
-    -- countdown
-    local countdownLabel = vgui.Create( "DLabel", voteHolder, "glee_voteinfo_countdown" )
+    local countdownData = newTextData( decrees.fonts.large, true )
+    countdownData.text = "00"
 
-    countdownLabel:SetSize( 10 * scale, 0 )
-    countdownLabel:SetAutoStretchVertical( true )
-    countdownLabel:Dock( TOP )
-    countdownLabel:SetTextInset( whiteIdentifierLineWidth, whiteIdentifierLineWidth )
+    countdown.jitterX = 0
+    countdown.jitterY = 0
 
-    countdownLabel:SetTextColor( GAMEMODE.shopStandards.white )
-    countdownLabel:SetFont( "termhuntShopScoreFontShadowed" )
-
-    countdownLabel:SetContentAlignment( 7 )
-    countdownLabel:SetWrap( true )
-    countdownLabel:SetText( "00" )
-
-    local oldCountThink = countdownLabel.Think
-    function countdownLabel:Think()
+    function countdown:Think()
         local untilDoneRaw = spawnSetVote.voteEnd - CurTime()
         local untilDone = math.ceil( untilDoneRaw )
         untilDone = math.max( untilDone, 0 ) -- no -0 time...
 
-        countdownLabel:SetText( untilDone )
+        countdownData.text = tostring( untilDone )
 
-        -- flash red and play sound when vote's about to end
-        if untilDone <= 5 and untilDoneRaw % 1 < 0.1 then
-            countdownLabel:SetTextColor( GAMEMODE.shopStandards.red )
+        local urgent = untilDone <= urgentSeconds
+        self.flashing = urgent and untilDoneRaw % 1 < 0.1
+
+        if self.flashing then
             if not self.countdownClick then
                 local pit = 100 - ( untilDone * 10 )
                 LocalPlayer():EmitSound( GAMEMODE.shopStandards.switchSound, 60, pit, 0.5 ) -- surface.playsound has no pitch arg
@@ -198,42 +278,61 @@ function spawnSetVote:CreateVotePanel()
 
             end
         else
-            countdownLabel:SetTextColor( GAMEMODE.shopStandards.white )
             self.countdownClick = nil
 
         end
-        oldCountThink( countdownLabel )
+
+        if untilDone < urgentSeconds then
+            godHud.DoJitter( self )
+
+        end
+    end
+
+    function countdown:Paint( w )
+        if self.flashing then
+            countdownData.textColor = decrees.textUrgentColor
+
+        else
+            countdownData.textColor = decrees.textColor
+
+        end
+
+        countdownData.font = decrees.fonts.large
+        countdownData.posX = ( w / 2 ) + self.jitterX
+        countdownData.posY = self.jitterY
+        surface.drawShadowedTextBetterData( countdownData )
+
+        return true
 
     end
 
 
     -- all the options!
     for ind, data in ipairs( options ) do
-        if ind > 9 then return end -- keyboards only have so many number keys
+        if ind > 9 then break end -- keyboards only have so many number keys
 
         local currButton = vgui.Create( "DButton", voteHolder, data.name )
         currButton.name = data.name
         currButton.prettyName = data.prettyName
         currButton.description = data.description
         currButton.ind = ind
+        currButton.label = ind .. ": " .. data.prettyName
+        currButton.wrappedText = currButton.label
+        currButton.jitterX = 0
+        currButton.jitterY = 0
 
         voteHolder.voteOptions[ind] = currButton
 
-        currButton:SetTextColor( GAMEMODE.shopStandards.white )
-
-        currButton:SetTextInset( whiteIdentifierLineWidth * 2, 0 )
-        currButton:SetWrap( true )
-        currButton:SetAutoStretchVertical( true )
+        currButton:SetText( "" )
         currButton:Dock( TOP )
-        currButton:DockMargin( 0, buttonMargin, 0, 0 )
-        currButton:DockPadding( 0, buttonMargin, 0, buttonMargin )
+        currButton:DockMargin( 0, boxGap, 0, 0 )
 
-        currButton:SetFont( "termhuntShopItemFont" )
-        currButton:SetText( ind .. ": " .. currButton.prettyName )
+        local optionData = newTextData( decrees.fonts.small, false )
 
         local tooltipText = currButton.description
         local multiplier, escaped, remained = GAMEMODE:GetSpawnsetsEscapeMultiplier( currButton.name )
         multiplier = math.Round( multiplier, 2 )
+        currButton.multiplier = multiplier
 
         local escapeYap
         if escaped == 0 then
@@ -269,20 +368,36 @@ function spawnSetVote:CreateVotePanel()
         currButton:SetTooltip( tooltipText )
         currButton:SetTooltipDelay( 0.1 )
 
+        function currButton:PerformLayout()
+            layoutGodText( self, self.label, decrees.fonts.small, boxPaddingX, boxPaddingY )
+
+        end
+
         local oldBtnThink = currButton.Think
         function currButton:Think()
             oldBtnThink( self )
             pressableThink( self )
 
+            if spawnSetVote.lastVoted == self.name then
+                godHud.DoJitter( self )
+
+            else
+                self.jitterX = 0
+                self.jitterY = 0
+                self.nextJitter = nil
+
+            end
         end
 
         function currButton:Vote()
             if voteEnd < CurTime() then return end
             LocalPlayer():ConCommand( "glee_spawnset_castvote " .. self.name )
-            LocalPlayer():EmitSound( GAMEMODE.shopStandards.switchSound, 60, 50, 0.24 ) -- surface.playsound has no pitch arg
             spawnSetVote.lastVoted = self.name
-            self.wasVoted = true
+            local mul = math.max( self.multiplier, 0.01 )
+            for _ = 1, 2 do
+                godHud.PlaySound( godHud.textLandingSounds, math.random( 40, 60 ) / mul, CHAN_STATIC, 0.4 )
 
+            end
         end
 
         function currButton:OnMousePressed( keyCode )
@@ -300,47 +415,70 @@ function spawnSetVote:CreateVotePanel()
         end
 
         function currButton:Paint( w, h )
-            draw_RoundedBox( 0, 0, 0, w, h, GAMEMODE.shopStandards.backgroundColor )
-            draw_RoundedBox( 0, 0, 0, whiteIdentifierLineWidth, h, GAMEMODE.shopStandards.whiteFaded )
-
-            self.myOverlayColor = nil
-
-            if self.wasVoted and spawnSetVote.lastVoted == self.name then
-                self.myOverlayColor = cantAffordOverlay
-                draw_RoundedBox( 0, 0, 0, self:GetWide(), self:GetTall(), self.myOverlayColor )
-
-            elseif not self:IsHovered() then
+            local hovered = self:IsHovered()
+            if not hovered then
                 self.pressed = nil
-                self.myOverlayColor = notHoveredOverlay
-                draw_RoundedBox( 0, 0, 0, self:GetWide(), self:GetTall(), self.myOverlayColor )
-
-            elseif self.pressed then
-                self.myOverlayColor = pressedItemOverlay
-                draw_RoundedBox( 0, 0, 0, self:GetWide(), self:GetTall(), self.myOverlayColor )
 
             end
+
+            local state = "idle"
+            local textColor = decrees.textColor
+
+            if spawnSetVote.lastVoted == self.name then
+                state = "chosen"
+                textColor = decrees.textChosenColor
+
+            elseif self.pressed then
+                state = "pressed"
+                textColor = decrees.textHoveredColor
+
+            elseif hovered then
+                state = "hovered"
+                textColor = decrees.textHoveredColor
+
+            end
+
+            local arrived = godHud.ArrivalProgress( openedAt, self.ind, arrival )
+            local slide = ( 1 - arrived ) * arrival.slideDistance
+
+            surface_SetAlphaMultiplier( arrived )
+
+            godHud.DrawBlot( decrees.blot, slide, 0, math.min( w, self.textWidth + ( boxPaddingX * 2 ) ), h, state )
+
+            optionData.text = self.wrappedText
+            optionData.textColor = textColor
+            optionData.font = decrees.fonts.small
+            optionData.posX = slide + boxPaddingX + self.jitterX
+            optionData.posY = boxPaddingY + self.jitterY
+            surface.drawShadowedTextBetterData( optionData )
+
+            surface_SetAlphaMultiplier( 1 )
+
+            return true
 
         end
     end
 
     -- make sure people know how to vote!
-    local hintYapper = vgui.Create( "DLabel", voteHolder, "glee_voteinfo_hintyapper" )
-
-    hintYapper:SetSize( 10, 0 )
-    hintYapper:SetAutoStretchVertical( true )
-    hintYapper:DockMargin( 0, buttonMargin, 0, 0 )
+    local hintYapper = vgui.Create( "DPanel", voteHolder, "glee_voteinfo_hintyapper" )
+    hintYapper:DockMargin( 0, boxGap, 0, 0 )
     hintYapper:Dock( TOP )
-    hintYapper:SetTextInset( whiteIdentifierLineWidth, whiteIdentifierLineWidth )
 
-    hintYapper:SetTextColor( GAMEMODE.shopStandards.white )
-    hintYapper:SetFont( "termhuntShopItemFontShadowed" )
+    local hintData = newTextData( decrees.fonts.small, false )
+    hintData.textColor = decrees.textColor
+    hintYapper.hint = ""
+    hintYapper.wrappedText = ""
+    hintYapper.jitterX = 0
+    hintYapper.jitterY = 0
 
-    hintYapper:SetContentAlignment( 7 )
-    hintYapper:SetWrap( true )
-    hintYapper:SetText( "" )
-    hintYapper:SetTextInset( whiteIdentifierLineWidth, 0 )
+    -- arrives after the last option
+    local hintOrder = math.min( #options, 9 ) + 1
 
-    local oldHintThink = hintYapper.Think
+    function hintYapper:PerformLayout()
+        layoutGodText( self, self.hint, decrees.fonts.small, boxPaddingX, boxPaddingY )
+
+    end
+
     function hintYapper:Think()
         if spawnSetVote.lastVoted then
             self:Remove()
@@ -348,7 +486,9 @@ function spawnSetVote:CreateVotePanel()
 
         end
 
-        local hint = ""
+        godHud.DoJitter( self )
+
+        local hint
         local hintStart = "(Open chat"
         local hintEnd = " to vote.)"
         local valid, phrase = GAMEMODE:TranslatedBind( holdToVote )
@@ -360,17 +500,30 @@ function spawnSetVote:CreateVotePanel()
 
         end
 
-        self:SetText( hint )
+        if hint ~= self.hint then
+            self.hint = hint
+            self:InvalidateLayout()
 
-        oldHintThink( hintYapper )
-
+        end
     end
 
     function hintYapper:Paint( w, h )
+        local arrived = godHud.ArrivalProgress( openedAt, hintOrder, arrival )
+        local slide = ( 1 - arrived ) * arrival.slideDistance
 
-        if self:GetText() == "" then return end
+        surface_SetAlphaMultiplier( arrived )
 
-        draw_RoundedBox( 0, 0, 0, w, h, GAMEMODE.shopStandards.backgroundColor )
+        godHud.DrawBlot( decrees.blot, slide, 0, math.min( w, self.textWidth + ( boxPaddingX * 2 ) ), h, "idle" )
+
+        hintData.text = self.wrappedText
+        hintData.font = decrees.fonts.small
+        hintData.posX = slide + boxPaddingX + self.jitterX
+        hintData.posY = boxPaddingY + self.jitterY
+        surface.drawShadowedTextBetterData( hintData )
+
+        surface_SetAlphaMultiplier( 1 )
+
+        return true
 
     end
 end

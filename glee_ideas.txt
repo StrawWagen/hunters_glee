@@ -148,7 +148,6 @@ change MODE to...
     Misery -- DONE
     Scenario
     Misfortune
-harmless misery with terminators that never get angry?
 
 skull no interact only happens with owner -done
 
@@ -175,6 +174,9 @@ multiple bits of text all coming together? -done
 
 -- CREATE bank account inside atms -done
 
+rename innate to mutations? -DONE
+innate makes it sound like you have it from the beginning
+
 
 -- make radio a purchasable item
 -- make voicechat a settings menu thing
@@ -184,7 +186,7 @@ multiple bits of text all coming together? -done
 -- effigy
 -- pushes dead people away, makes them look away
 -- steals their money when they get close, or aim near it
--- make homicidal glee cost more
+-- makes homicidal glee cost more
 
 -- loan
 -- go into bank debt?
@@ -193,13 +195,13 @@ multiple bits of text all coming together? -done
 -- investing
 -- invest into player's bank accounts
 
--- server-based leaderboard
+-- server-based leaderboard ( wont do )
 -- quickest to 10 skulls
 -- most skulls
 -- flat, most hunter kills
 -- most skulls, additive ( all players skulls in one session, added up )
 
--- bhop perk?
+-- bhop perk? ( ALWAYS bhop )
 
 -- visual cohesiveness
 -- better defined goal
@@ -231,7 +233,7 @@ multiple bits of text all coming together? -done
 -- split sixth sense?
 -- enemy finding powerup
 --    show sound direction?
---    
+--
 -- loot finding replacement
 --    hoarder sense for nearby props
 --    ghosts know where loot is at all times?
@@ -258,9 +260,6 @@ multiple bits of text all coming together? -done
 
 -- fresh skulls create blood decals?
 
--- do pass on intro, make sure player is invisible
--- fast weapon switch should be on by default
-
 -- better feedback from shooting players
 
 -- no ammo hints on all custom weapons
@@ -270,19 +269,14 @@ multiple bits of text all coming together? -done
 -- drop money all the time, 50% of score? -no
 
 -- selecting weapons is hard
--- REMOVE redundant weapons?
 -- move flaregun to utility slot
 
 shop rewrite
 categories vertically
 recently purchased items on main page
 tabs to navigate pages
-rename innate to mutations?
-innate makes it sound like you have it from the beginning
 different orders per spawnset?
 HIDE items with ???? until you have the money to buy them
-
-lifelong shrimp but you gain score faster?
 
 channel 666 by default
 ghost arms really long and extended?
@@ -428,6 +422,7 @@ ensure divine clap gives guilt
 using homicidal glee on truly innocent players does guilt too
 postal dude pm has lower max hp?
 
+
 -- credit these ideas to the embalmster
 revive all dead players item
 divine one, spectate it, press space to revive
@@ -444,7 +439,14 @@ aimbot ( robot that airdrops in, shoots EVERYTHING alive around it )
 
 bottle rocket in supply crates?
 
+an extraction shooter where dead players become disembodied agents of chaos
+
+ghosts can modify rules of the game by consensus or large expense
+
+noita modifiers as inspiration
+
 -- end embalmster
+
 
 flashlight stays on when astral projecting
 
@@ -462,3 +464,7 @@ powerup that makes you never stop sprint accelerating
 infernal sentinel jumps eat health
 hibernating server becomes hunters_glee if hard misery lesson is learned
 dont nail to children
+
+announcing text theming
+all ghostly text gets new style
+godly text becomes godly

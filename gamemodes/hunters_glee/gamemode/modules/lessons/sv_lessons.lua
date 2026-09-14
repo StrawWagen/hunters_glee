@@ -47,7 +47,6 @@ function GM:LearnLesson( ply, lessonName )
     net.Start( "glee_lessons" )
         net.WriteUInt( 1, 4 )
         net.WriteString( lessonName )
-
     net.Send( ply )
 
     learned[lessonName] = true
@@ -66,7 +65,6 @@ concommand.Add( "glee_test_tutorial", function( caller )
 
     net.Start( "glee_lessons" )
         net.WriteUInt( 2, 4 )
-
     net.Send( player.GetAll() )
 
     hook.Add( "glee_full_load", "glee_test_tutorial", function( ply )

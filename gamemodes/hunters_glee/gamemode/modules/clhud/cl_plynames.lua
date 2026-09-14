@@ -80,8 +80,9 @@ local function getSpectatePromptPanel()
     if IsValid( terminator_Extras.glee_SpectatePromptPanel ) then return terminator_Extras.glee_SpectatePromptPanel end
 
     local hud        = terminator_Extras.glee_HL2Hud
+    local style      = "scripture" -- only ever shown while dead
     local textPad    = glee_sizeScaled( nil, 5 )
-    local font       = "TargetID"
+    local font       = hud.ResolveFont( style, "targetID" )
     surface.SetFont( font )
 
     local textW, textH = surface.GetTextSize( spectatePromptText )
@@ -96,8 +97,8 @@ local function getSpectatePromptPanel()
 
     panel.Paint = function( _self, w, h )
         if showEntPromptWait > CurTime() then return end -- visual bug fix
-        draw.RoundedBox( hud.boxCornerRadius, 0, 0, w, h, hud.colorBackground )
-        draw.SimpleText( spectatePromptText, font, w * 0.5, h * 0.5, hud.colorRedUrgent, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
+        hud.DrawBackground( style, 0, 0, w, h, hud.colorBackground )
+        draw.SimpleText( spectatePromptText, font, w * 0.5, h * 0.5, hud.ResolveColor( style, "alert" ), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
 
     end
 
@@ -173,6 +174,7 @@ local function whileDeadPaintOtherPlys( localPlayer, cur )
         end
 
         panel:SetMode( panel.MODE_FULL )
+        panel._myStyle = "scripture"
 
         -- infoLine: dead -> score, alive -> health%
         local health = ent:Health()
@@ -281,6 +283,7 @@ local function whileAlivePaintOtherEnts( localPlayer, cur )
 
         end
         panel:SetMode( myMode )
+        panel._myStyle = "hl2"
 
         local infoLine
         if isLookedAt then
