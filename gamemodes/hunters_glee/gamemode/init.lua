@@ -12,6 +12,8 @@ AddCSLuaFile( "modules/modelscale/cl_modelscale.lua" )
 AddCSLuaFile( "modules/deadplayerfx/cl_souls.lua" )
 AddCSLuaFile( "modules/deadplayerfx/cl_deaddesaturation.lua" )
 
+AddCSLuaFile( "modules/bonemaniphandler/cl_bonemanip.lua" )
+
 AddCSLuaFile( "modules/escaping/cl_escaping.lua" )
 AddCSLuaFile( "modules/escaping/cl_escapecounts.lua" )
 
@@ -85,6 +87,7 @@ include( "modules/statuseffects/sv_statuseffects.lua" )
 include( "modules/sv_unstucker.lua" )
 include( "modules/sv_wallkick.lua" )
 include( "modules/sv_speedhandler.lua" )
+include( "modules/bonemaniphandler/sv_bonemanip.lua" )
 include( "modules/sv_navmeshgroups.lua" )
 include( "modules/sv_navpatcher.lua" )
 include( "modules/sv_navmeshcategorizer.lua" )

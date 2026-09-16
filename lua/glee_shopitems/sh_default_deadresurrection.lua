@@ -173,27 +173,8 @@ end
 
 -- begin infernal intervention stuff
 local shriveledScale = Vector( 0.5, 0.5, 0.5 )
-local normalScale = Vector( 1, 1, 1 )
 local crumpleForce = Vector( 0, 0, -150000 )
 
-if CLIENT then
-    GAMEMODE:RegisterStatusEffect( "infernalintervention_rawendofthedeal",
-        function( self, _owner ) -- setup func
-            -- crunch their clientside ragdolls
-            self:HookOnce( "CreateClientsideRagdoll", function( died, ragdoll )
-                if not IsValid( died ) then return end
-                if not died:IsPlayer() then return end
-                if not died:HasStatusEffect( "infernalintervention_rawendofthedeal" ) then return end
-
-                local bc = ragdoll:GetBoneCount() or 0
-                for i = 0, bc - 1 do
-                    ragdoll:ManipulateBoneScale( i, shriveledScale * math.Rand( 0.25, 2 ) )
-
-                end
-            end )
-        end
-    )
-end
 if SERVER then
     GAMEMODE:RegisterStatusEffect( "infernalintervention_rawendofthedeal",
         function( self, owner ) -- setup func
@@ -235,7 +216,7 @@ if SERVER then
                 -- shrivel all bones
                 local bc = owner:GetBoneCount() or 0
                 for i = 0, bc - 1 do
-                    owner:ManipulateBoneScale( i, shriveledScale * math.Rand( 0.5, 1.75 ) )
+                    owner:ApplyBoneScaleManip( "infernalintervention", i, shriveledScale * math.Rand( 0.5, 1.75 ) )
 
                 end
 
@@ -340,11 +321,8 @@ if SERVER then
             -- decided to leave it as part of the deal
             GAMEMODE:FixAnglesOf( owner )
 
-            local bc = owner:GetBoneCount() or 0
-            for i = 0, bc - 1 do
-                owner:ManipulateBoneScale( i, normalScale )
+            owner:RemoveBoneManips( "infernalintervention" )
 
-            end
         end
     )
 end

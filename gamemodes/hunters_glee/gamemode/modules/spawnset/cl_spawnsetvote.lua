@@ -3,7 +3,7 @@ local surface_SetAlphaMultiplier = surface.SetAlphaMultiplier
 local input = input
 
 local godHud = terminator_Extras.godHud
-local decrees = godHud.decrees
+local hudHelpers = terminator_Extras.glee_HudHelpers
 
 -- 1080p pixels
 local panelWidth = 300
@@ -49,12 +49,21 @@ local voters = {
     "slot9",
 }
 
+local function isBound( cmd )
+    local binding = input.LookupBinding( cmd )
+    if not binding then return false end
+
+    local keyCode = input.GetKeyCode( binding )
+    return keyCode and keyCode > 0
+
+end
+
 -- Also sets panel.wrappedText and panel.textWidth
 local function layoutGodText( panel, text, font, padX, padY )
     local wrapWidth = panel:GetWide() - ( padX * 2 )
-    panel.wrappedText = terminator_Extras.glee_HL2Hud.WrapText( text, font, wrapWidth )
+    panel.wrappedText = hudHelpers.WrapText( text, font, wrapWidth )
 
-    local textWidth, textHeight = godHud.MeasureText( panel.wrappedText, font )
+    local textWidth, textHeight = hudHelpers.MeasureText( panel.wrappedText, font )
     panel.textWidth = textWidth
     panel:SetTall( math.ceil( textHeight + ( padY * 2 ) + godHud.shadowOffsetY ) )
 
@@ -64,10 +73,32 @@ local function newTextData( font, doCenter )
     return {
         font = font,
         doCenter = doCenter,
-        shadowColor = decrees.shadowColor,
+        shadowColor = godHud.shadowColor,
         shadowOffsetX = godHud.shadowOffsetX,
         shadowOffsetY = godHud.shadowOffsetY,
     }
+end
+
+-- One line of the vote, a torn strip with panel.wrappedText on it, sliding in as the vote opens.
+-- The panel needs layoutGodText run on it, and jitterX / jitterY set.
+local function paintGodLine( panel, openedAt, order, state, textData, textColor, w, h )
+    local arrival = godHud.arrival
+    local arrived = hudHelpers.ArrivalProgress( openedAt, order, arrival )
+    local slide = ( 1 - arrived ) * arrival.slideDistance
+
+    surface_SetAlphaMultiplier( arrived )
+
+    local stripWidth = math.min( w, panel.textWidth + ( godHud.textPaddingX * 2 ) )
+    hudHelpers.DrawTornStrip( godHud.tornStrip, slide, 0, stripWidth, h, state, panel )
+
+    textData.text = panel.wrappedText
+    textData.textColor = textColor
+    textData.posX = slide + godHud.textPaddingX + panel.jitterX
+    textData.posY = godHud.textPaddingY + panel.jitterY
+    surface.drawShadowedTextBetterData( textData )
+
+    surface_SetAlphaMultiplier( 1 )
+
 end
 
 function spawnSetVote:CreateVotePanel()
@@ -79,43 +110,30 @@ function spawnSetVote:CreateVotePanel()
     -- all done sound!
     local voteDoneSound = "buttons/lever4.wav"
 
-    local hasAllTheVoteKeys = true
     local keyToVote = input.LookupBinding( holdToVote )
     if keyToVote then
         keyToVote = input.GetKeyCode( keyToVote )
-        if keyToVote and keyToVote > 0 then
-            for _, cmd in ipairs( voters ) do
-                local clientsSlotKey = input.LookupBinding( cmd )
-                if clientsSlotKey then
-                    clientsSlotKey = input.GetKeyCode( clientsSlotKey )
-                    if not clientsSlotKey or clientsSlotKey <= 0 then
-                        hasAllTheVoteKeys = false
-                        break
 
-                    end
-                else
-                    hasAllTheVoteKeys = false
-                    break
+    end
 
-                end
+    local hasAllTheVoteKeys = isBound( holdToVote )
+    if hasAllTheVoteKeys then
+        for _, cmd in ipairs( voters ) do
+            if not isBound( cmd ) then
+                hasAllTheVoteKeys = false
+                break
+
             end
-        else
-            hasAllTheVoteKeys = false
-
         end
-    else
-        hasAllTheVoteKeys = false
-
     end
 
     local options = spawnSetVote.options
     local voteEnd = spawnSetVote.voteEnd
     local openedAt = CurTime()
 
-    local arrival = decrees.arrival
-    local boxPaddingX = decrees.boxPaddingX
-    local boxPaddingY = decrees.boxPaddingY
-    local boxGap = decrees.boxGap
+    local textPaddingX = godHud.textPaddingX
+    local textPaddingY = godHud.textPaddingY
+    local lineGap = godHud.lineGap
 
     if IsValid( GAMEMODE.spawnSetVote_VoteHolder ) then
         GAMEMODE.spawnSetVote_VoteHolder:Close()
@@ -136,7 +154,7 @@ function spawnSetVote:CreateVotePanel()
     voteHolder:SetDraggable( false )
     voteHolder:ShowCloseButton( false )
 
-    godHud.PlaySound( godHud.textArrivalSounds, math.random( 110, 130 ), CHAN_STATIC, 0.3 )
+    hudHelpers.PlaySound( godHud.textArrivalSounds, math.random( 110, 130 ), CHAN_STATIC, 0.3 )
 
     voteHolder.voteOptions = {}
     function voteHolder:Think()
@@ -188,38 +206,38 @@ function spawnSetVote:CreateVotePanel()
     -- the title wraps to whatever width the countdown leaves it, so both are measured here
     function header:PerformLayout( w )
         -- two digits wide, so the title doesn't shift as it counts down
-        local countdownWidth, countdownHeight = godHud.MeasureText( "00", decrees.fonts.large )
-        countdownWidth = countdownWidth + boxPaddingX * 2
+        local countdownWidth, countdownHeight = hudHelpers.MeasureText( "00", godHud.fonts.large )
+        countdownWidth = countdownWidth + textPaddingX * 2
         countdown:SetWide( countdownWidth )
 
-        title.wrappedText = terminator_Extras.glee_HL2Hud.WrapText( titleText, decrees.fonts.medium, w - countdownWidth )
-        local _, titleHeight = godHud.MeasureText( title.wrappedText, decrees.fonts.medium )
+        title.wrappedText = hudHelpers.WrapText( titleText, godHud.fonts.medium, w - countdownWidth )
+        local _, titleHeight = hudHelpers.MeasureText( title.wrappedText, godHud.fonts.medium )
         title.textHeight = titleHeight
 
         self:SetTall( math.ceil( math.max( countdownHeight, titleHeight ) + godHud.shadowOffsetY ) )
 
     end
 
-    local titleGhostSettings = decrees.ghosts.medium
-    local titleGhostData = newTextData( decrees.fonts.medium, false )
+    local titleGhostSettings = godHud.ghosts.medium
+    local titleGhostData = newTextData( godHud.fonts.medium, false )
     -- copies, DrawGhosts writes their alpha
-    titleGhostData.textColor = ColorAlpha( decrees.textColor, 255 )
-    titleGhostData.shadowColor = ColorAlpha( decrees.shadowColor, 255 )
+    titleGhostData.textColor = ColorAlpha( godHud.textColor, 255 )
+    titleGhostData.shadowColor = ColorAlpha( godHud.shadowColor, 255 )
 
-    local titleData = newTextData( decrees.fonts.medium, false )
-    titleData.textColor = decrees.textColor
+    local titleData = newTextData( godHud.fonts.medium, false )
+    titleData.textColor = godHud.textColor
 
     title.wrappedText = titleText
     title.textHeight = 0
-    title.ghosts = godHud.BuildGhosts( titleGhostSettings )
+    title.ghosts = hudHelpers.BuildGhosts( titleGhostSettings )
     title.materialised = 0
 
     function title:Think()
         if not self.ghosts then return end
 
         local elapsed = CurTime() - openedAt
-        godHud.AdvanceGhosts( self.ghosts, elapsed, titleGhostSettings )
-        self.materialised = godHud.GhostsMaterialised( elapsed, titleGhostSettings )
+        hudHelpers.AdvanceGhosts( self.ghosts, elapsed, titleGhostSettings )
+        self.materialised = hudHelpers.GhostsMaterialised( elapsed, titleGhostSettings )
 
         if self.materialised >= 1 then
             self.ghosts = nil
@@ -231,13 +249,13 @@ function spawnSetVote:CreateVotePanel()
         local leftX = 0
         local topY = ( h - self.textHeight ) / 2
 
-        titleGhostData.font = decrees.fonts.medium
+        titleGhostData.font = godHud.fonts.medium
         titleGhostData.text = self.wrappedText
-        titleData.font = decrees.fonts.medium
+        titleData.font = godHud.fonts.medium
         titleData.text = self.wrappedText
 
         if self.ghosts then
-            godHud.DrawGhosts( self.ghosts, titleGhostSettings, titleGhostData, leftX, topY )
+            hudHelpers.DrawGhosts( self.ghosts, titleGhostSettings, titleGhostData, leftX, topY )
 
         end
 
@@ -254,14 +272,14 @@ function spawnSetVote:CreateVotePanel()
     end
 
 
-    local countdownData = newTextData( decrees.fonts.large, true )
+    local countdownData = newTextData( godHud.fonts.large, true )
     countdownData.text = "00"
 
     countdown.jitterX = 0
     countdown.jitterY = 0
 
     function countdown:Think()
-        local untilDoneRaw = spawnSetVote.voteEnd - CurTime()
+        local untilDoneRaw = voteEnd - CurTime()
         local untilDone = math.ceil( untilDoneRaw )
         untilDone = math.max( untilDone, 0 ) -- no -0 time...
 
@@ -283,21 +301,21 @@ function spawnSetVote:CreateVotePanel()
         end
 
         if untilDone < urgentSeconds then
-            godHud.DoJitter( self )
+            hudHelpers.DoJitter( self, godHud.jitter )
 
         end
     end
 
     function countdown:Paint( w )
         if self.flashing then
-            countdownData.textColor = decrees.textUrgentColor
+            countdownData.textColor = godHud.textUrgentColor
 
         else
-            countdownData.textColor = decrees.textColor
+            countdownData.textColor = godHud.textColor
 
         end
 
-        countdownData.font = decrees.fonts.large
+        countdownData.font = godHud.fonts.large
         countdownData.posX = ( w / 2 ) + self.jitterX
         countdownData.posY = self.jitterY
         surface.drawShadowedTextBetterData( countdownData )
@@ -313,8 +331,6 @@ function spawnSetVote:CreateVotePanel()
 
         local currButton = vgui.Create( "DButton", voteHolder, data.name )
         currButton.name = data.name
-        currButton.prettyName = data.prettyName
-        currButton.description = data.description
         currButton.ind = ind
         currButton.label = ind .. ": " .. data.prettyName
         currButton.wrappedText = currButton.label
@@ -325,11 +341,11 @@ function spawnSetVote:CreateVotePanel()
 
         currButton:SetText( "" )
         currButton:Dock( TOP )
-        currButton:DockMargin( 0, boxGap, 0, 0 )
+        currButton:DockMargin( 0, lineGap, 0, 0 )
 
-        local optionData = newTextData( decrees.fonts.small, false )
+        local optionData = newTextData( godHud.fonts.small, false )
 
-        local tooltipText = currButton.description
+        local tooltipText = data.description
         local multiplier, escaped, remained = GAMEMODE:GetSpawnsetsEscapeMultiplier( currButton.name )
         multiplier = math.Round( multiplier, 2 )
         currButton.multiplier = multiplier
@@ -369,7 +385,7 @@ function spawnSetVote:CreateVotePanel()
         currButton:SetTooltipDelay( 0.1 )
 
         function currButton:PerformLayout()
-            layoutGodText( self, self.label, decrees.fonts.small, boxPaddingX, boxPaddingY )
+            layoutGodText( self, self.label, godHud.fonts.small, textPaddingX, textPaddingY )
 
         end
 
@@ -379,7 +395,7 @@ function spawnSetVote:CreateVotePanel()
             pressableThink( self )
 
             if spawnSetVote.lastVoted == self.name then
-                godHud.DoJitter( self )
+                hudHelpers.DoJitter( self, godHud.jitter )
 
             else
                 self.jitterX = 0
@@ -395,7 +411,7 @@ function spawnSetVote:CreateVotePanel()
             spawnSetVote.lastVoted = self.name
             local mul = math.max( self.multiplier, 0.01 )
             for _ = 1, 2 do
-                godHud.PlaySound( godHud.textLandingSounds, math.random( 40, 60 ) / mul, CHAN_STATIC, 0.4 )
+                hudHelpers.PlaySound( godHud.textLandingSounds, math.random( 40, 60 ) / mul, CHAN_STATIC, 0.4 )
 
             end
         end
@@ -422,37 +438,23 @@ function spawnSetVote:CreateVotePanel()
             end
 
             local state = "idle"
-            local textColor = decrees.textColor
+            local textColor = godHud.textColor
 
             if spawnSetVote.lastVoted == self.name then
                 state = "chosen"
-                textColor = decrees.textChosenColor
+                textColor = godHud.textChosenColor
 
             elseif self.pressed then
                 state = "pressed"
-                textColor = decrees.textHoveredColor
+                textColor = godHud.textHoveredColor
 
             elseif hovered then
                 state = "hovered"
-                textColor = decrees.textHoveredColor
+                textColor = godHud.textHoveredColor
 
             end
 
-            local arrived = godHud.ArrivalProgress( openedAt, self.ind, arrival )
-            local slide = ( 1 - arrived ) * arrival.slideDistance
-
-            surface_SetAlphaMultiplier( arrived )
-
-            godHud.DrawBlot( decrees.blot, slide, 0, math.min( w, self.textWidth + ( boxPaddingX * 2 ) ), h, state )
-
-            optionData.text = self.wrappedText
-            optionData.textColor = textColor
-            optionData.font = decrees.fonts.small
-            optionData.posX = slide + boxPaddingX + self.jitterX
-            optionData.posY = boxPaddingY + self.jitterY
-            surface.drawShadowedTextBetterData( optionData )
-
-            surface_SetAlphaMultiplier( 1 )
+            paintGodLine( self, openedAt, self.ind, state, optionData, textColor, w, h )
 
             return true
 
@@ -461,11 +463,10 @@ function spawnSetVote:CreateVotePanel()
 
     -- make sure people know how to vote!
     local hintYapper = vgui.Create( "DPanel", voteHolder, "glee_voteinfo_hintyapper" )
-    hintYapper:DockMargin( 0, boxGap, 0, 0 )
+    hintYapper:DockMargin( 0, lineGap, 0, 0 )
     hintYapper:Dock( TOP )
 
-    local hintData = newTextData( decrees.fonts.small, false )
-    hintData.textColor = decrees.textColor
+    local hintData = newTextData( godHud.fonts.small, false )
     hintYapper.hint = ""
     hintYapper.wrappedText = ""
     hintYapper.jitterX = 0
@@ -475,7 +476,7 @@ function spawnSetVote:CreateVotePanel()
     local hintOrder = math.min( #options, 9 ) + 1
 
     function hintYapper:PerformLayout()
-        layoutGodText( self, self.hint, decrees.fonts.small, boxPaddingX, boxPaddingY )
+        layoutGodText( self, self.hint, godHud.fonts.small, textPaddingX, textPaddingY )
 
     end
 
@@ -486,7 +487,7 @@ function spawnSetVote:CreateVotePanel()
 
         end
 
-        godHud.DoJitter( self )
+        hudHelpers.DoJitter( self, godHud.jitter )
 
         local hint
         local hintStart = "(Open chat"
@@ -508,20 +509,7 @@ function spawnSetVote:CreateVotePanel()
     end
 
     function hintYapper:Paint( w, h )
-        local arrived = godHud.ArrivalProgress( openedAt, hintOrder, arrival )
-        local slide = ( 1 - arrived ) * arrival.slideDistance
-
-        surface_SetAlphaMultiplier( arrived )
-
-        godHud.DrawBlot( decrees.blot, slide, 0, math.min( w, self.textWidth + ( boxPaddingX * 2 ) ), h, "idle" )
-
-        hintData.text = self.wrappedText
-        hintData.font = decrees.fonts.small
-        hintData.posX = slide + boxPaddingX + self.jitterX
-        hintData.posY = boxPaddingY + self.jitterY
-        surface.drawShadowedTextBetterData( hintData )
-
-        surface_SetAlphaMultiplier( 1 )
+        paintGodLine( self, openedAt, hintOrder, "idle", hintData, godHud.textColor, w, h )
 
         return true
 

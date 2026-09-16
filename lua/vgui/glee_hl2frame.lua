@@ -38,7 +38,7 @@ PANEL.Init = function( self )
 end
 
 PANEL.Paint = function( self, w, h )
-    terminator_Extras.glee_HL2Hud.DrawBackground( self._myStyle, 0, 0, w, h, self._backdrop, self._cornerRadius )
+    terminator_Extras.glee_HudHelpers.DrawBackground( self._myStyle, 0, 0, w, h, self._backdrop, self._cornerRadius )
 
 end
 

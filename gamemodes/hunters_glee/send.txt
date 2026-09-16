@@ -44,6 +44,8 @@ gamemodes\hunters_glee\gamemode\modules\guilt\sh_guilt.lua
 gamemodes\hunters_glee\gamemode\modules\deadplayerfx\cl_souls.lua
 gamemodes\hunters_glee\gamemode\modules\deadplayerfx\cl_deaddesaturation.lua
 
+gamemodes\hunters_glee\gamemode\modules\bonemaniphandler\cl_bonemanip.lua
+
 gamemodes\hunters_glee\gamemode\modules\escaping\cl_escaping.lua
 gamemodes\hunters_glee\gamemode\modules\escaping\cl_escapecounts.lua
 

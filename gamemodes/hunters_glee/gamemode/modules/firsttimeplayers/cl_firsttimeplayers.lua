@@ -5,32 +5,33 @@
 local GAMEMODE = GAMEMODE or GM
 
 local godHud = terminator_Extras.godHud
-local decrees = godHud.decrees
-local ghostSettings = decrees.ghosts.huge
+local godlyDecreeHud = terminator_Extras.godlyDecreeHud
+local hudHelpers = terminator_Extras.glee_HudHelpers
+local ghostSettings = godlyDecreeHud.ghosts.huge
 local textArrivalSounds = godHud.textArrivalSounds
 local textLandingSounds = godHud.textLandingSounds
-local playGodSound = godHud.PlaySound
+local playGodSound = hudHelpers.PlaySound
 
 local clickImpatience = 0.30 -- seconds of animation a click skips
 
 -- copies, their alpha gets written
-local ghostTextColor = ColorAlpha( decrees.textColor, 255 )
-local ghostShadowColor = ColorAlpha( decrees.shadowColor, 255 )
-local solidTextColor = ColorAlpha( decrees.textColor, 255 )
-local solidShadowColor = ColorAlpha( decrees.shadowColor, 255 )
+local ghostTextColor = ColorAlpha( godlyDecreeHud.textColor, 255 )
+local ghostShadowColor = ColorAlpha( godlyDecreeHud.shadowColor, 255 )
+local solidTextColor = ColorAlpha( godlyDecreeHud.textColor, 255 )
+local solidShadowColor = ColorAlpha( godlyDecreeHud.shadowColor, 255 )
 
 local ghostData = {
     textColor = ghostTextColor,
     shadowColor = ghostShadowColor,
-    shadowOffsetX = godHud.shadowOffsetX,
-    shadowOffsetY = godHud.shadowOffsetY,
+    shadowOffsetX = godlyDecreeHud.shadowOffsetX,
+    shadowOffsetY = godlyDecreeHud.shadowOffsetY,
 }
 
 local solidData = {
     textColor = solidTextColor,
     shadowColor = solidShadowColor,
-    shadowOffsetX = godHud.shadowOffsetX,
-    shadowOffsetY = godHud.shadowOffsetY,
+    shadowOffsetX = godlyDecreeHud.shadowOffsetX,
+    shadowOffsetY = godlyDecreeHud.shadowOffsetY,
 }
 
 local imNewMyself = nil
@@ -154,7 +155,7 @@ local function doMessageIfWeCan()
         if not fullMsg then return end
 
         button.msg = fullMsg
-        button.ghosts = godHud.BuildGhosts( ghostSettings )
+        button.ghosts = hudHelpers.BuildGhosts( ghostSettings )
         button.elapsed = 0
         button.clickPlsGoFaster = 0
         button.solidAlpha = 0
@@ -204,7 +205,7 @@ local function doMessageIfWeCan()
 
         end
 
-        godHud.DoJitter( button )
+        hudHelpers.DoJitter( button, godHud.jitter )
 
         local ghosts = button.ghosts
         if not ghosts then return end
@@ -216,14 +217,14 @@ local function doMessageIfWeCan()
         button.elapsed = button.elapsed + delta + button.clickPlsGoFaster
         button.clickPlsGoFaster = 0
 
-        local appeared = godHud.AdvanceGhosts( ghosts, button.elapsed, ghostSettings )
+        local appeared = hudHelpers.AdvanceGhosts( ghosts, button.elapsed, ghostSettings )
         for _ = 1, appeared do
             playGodSound( textArrivalSounds, math.random( 90, 110 ), CHAN_STATIC )
 
         end
 
         -- squared, so it stays hidden while the ghosts are spread out
-        local materialised = godHud.GhostsMaterialised( button.elapsed, ghostSettings )
+        local materialised = hudHelpers.GhostsMaterialised( button.elapsed, ghostSettings )
         button.solidAlpha = 255 * ( materialised ^ 2 )
 
         if materialised >= 1 and not button.wasDone then
@@ -242,14 +243,14 @@ local function doMessageIfWeCan()
         local topY = ( height / 2 ) + -256 + button.jitterY
 
         ghostData.text = button.msg
-        ghostData.font = decrees.fonts.huge
-        godHud.DrawGhosts( ghosts, ghostSettings, ghostData, centreX, topY )
+        ghostData.font = godlyDecreeHud.fonts.huge
+        hudHelpers.DrawGhosts( ghosts, ghostSettings, ghostData, centreX, topY )
 
         solidTextColor.a = button.solidAlpha
         solidShadowColor.a = button.solidAlpha
 
         solidData.text = button.msg
-        solidData.font = decrees.fonts.huge
+        solidData.font = godlyDecreeHud.fonts.huge
         solidData.posX = centreX
         solidData.posY = topY
         surface.drawShadowedTextBetterData( solidData )

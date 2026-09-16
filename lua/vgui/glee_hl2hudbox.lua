@@ -1,7 +1,7 @@
 --[[
     glee_hl2hudbox - A small HUD icon box with a built-in display state machine.
 
-    Draws a background with a centered material or text, in the glee_HL2Hud.styles look named by
+    Draws a background with a centered material or text, in the glee_HudHelpers.styles look named by
     ._myStyle. Colors and the font take a role ( "happy", "medium" ) to follow the style.
     All alpha management is internal. Callers only set colors and instruct state.
 
@@ -175,7 +175,7 @@ local PANEL = {
 
         local text = self._rawText
         if text and self._maxTextWidth then
-            text = terminator_Extras.glee_HL2Hud.WrapText( text, font, self._maxTextWidth )
+            text = terminator_Extras.glee_HudHelpers.WrapText( text, font, self._maxTextWidth )
 
         end
         self._text = text
@@ -183,7 +183,7 @@ local PANEL = {
     end,
 
     GetResolvedFont = function( self )
-        return terminator_Extras.glee_HL2Hud.ResolveFont( self._myStyle, self._font )
+        return terminator_Extras.glee_HudHelpers.ResolveFont( self._myStyle, self._font )
 
     end,
 
@@ -415,7 +415,7 @@ local PANEL = {
             iconSrc = self._flashIconColor
 
         end
-        iconSrc = terminator_Extras.glee_HL2Hud.ResolveColor( self._myStyle, iconSrc )
+        iconSrc = terminator_Extras.glee_HudHelpers.ResolveColor( self._myStyle, iconSrc )
 
         -- cl_settingsmenu and the bank atm wrap Paint and draw their text in this
         local dIcon   = self._drawIcon
@@ -430,7 +430,7 @@ local PANEL = {
 
     -- color is unfaded. highlighted is true while flashing, or on an urgent blink
     PaintBackground = function( self, w, h, color, fade, highlighted )
-        terminator_Extras.glee_HL2Hud.DrawBackground( self._myStyle, 0, 0, w, h, color, self._cornerRadius, fade, highlighted )
+        terminator_Extras.glee_HudHelpers.DrawBackground( self._myStyle, 0, 0, w, h, color, self._cornerRadius, fade, highlighted )
 
     end,
 

@@ -245,7 +245,7 @@ ENT.MyClassTask = {
         data.HasSetup = true
 
     end,
-    OnKilled = function( self, data )
+    OnKilled = function( self, data ) -- happens at start of death anim
         if not self.glee_AlwaysDropSkull then
             self:Term_SpeakSoundNow( "npc/stalker/stalker_pain" .. math.random( 1, 3 ) .. ".wav", math.random( 20, 50 ) )
 

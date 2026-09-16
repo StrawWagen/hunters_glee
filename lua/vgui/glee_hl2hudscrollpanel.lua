@@ -29,7 +29,7 @@ PANEL.Init = function( self )
     -- DVScrollBar is built on a raw Panel and never disables the engine's own background
     -- drawing, so its Paint returns true to suppress it. A replacement has to as well.
     bar.Paint = function( _bar, w, h )
-        hud.DrawBackground( self._myStyle, 0, 0, w, h, hud.colorBackground )
+        terminator_Extras.glee_HudHelpers.DrawBackground( self._myStyle, 0, 0, w, h, hud.colorBackground )
         return true
 
     end

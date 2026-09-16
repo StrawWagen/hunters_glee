@@ -528,7 +528,7 @@ function ENT:Decapitate()
     if ragdollsSkull then
         skullsPos = parent:GetBonePosition( ragdollsSkull )
 
-        parent:ManipulateBoneScale( ragdollsSkull, vec_zero )
+        parent:ApplyBoneScaleManip( "skulldecapitated", ragdollsSkull, vec_zero )
         self:FollowBone( nil, ragdollsSkull )
 
     end

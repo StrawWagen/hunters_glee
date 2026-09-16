@@ -28,7 +28,7 @@
         data.isLookedAt   bool         Controls infoLine/extraLine visibility and "????" name
                                        substitution when text alpha has faded to zero.
 
-    Drawn in the glee_HL2Hud.styles look named by ._myStyle. A looked at panel draws highlighted.
+    Drawn in the glee_HudHelpers.styles look named by ._myStyle. A looked at panel draws highlighted.
 
     Background lerps from hl2hud.colorBackground toward ply:GetPlayerColor() as distance
     increases through the name-fade zone; background alpha also rises with the lerp.
@@ -116,7 +116,7 @@ function PANEL:ComputeShowName()
 end
 
 function PANEL:GetResolvedFont()
-    return terminator_Extras.glee_HL2Hud.ResolveFont( self._myStyle, self._font )
+    return terminator_Extras.glee_HudHelpers.ResolveFont( self._myStyle, self._font )
 
 end
 
@@ -366,7 +366,7 @@ function PANEL:Paint( w, h )
     local radiusRange        = circleCornerRadius - boxCornerRadius
     local cornerRadius       = math.floor( boxCornerRadius + radiusRange * self._sizeT )
 
-    terminator_Extras.glee_HL2Hud.DrawBackground( self._myStyle, 0, 0, w, h, drawBg, cornerRadius, panelAlpha / 255, self._isLookedAt )
+    terminator_Extras.glee_HudHelpers.DrawBackground( self._myStyle, 0, 0, w, h, drawBg, cornerRadius, panelAlpha / 255, self._isLookedAt )
 
     -- Don't draw text when the panel is nearly a dot
     if self._sizeT > 0.8 then return end

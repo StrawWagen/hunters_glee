@@ -1,49 +1,30 @@
+
+local GAMEMODE = GAMEMODE or GM
+
 -- cl_winscreen.lua
--- dramatic sliding round end screen
--- each info block slides in from the side, holds, then the next one appears
+-- the round end verdict, a godlyDecreeHud decree with godHud's sounds and jitter
+-- each line spirals in out of faint ghosts, holds, then the next section arrives
 
--- per-entry slide timing
-local SLIDE_IN_TIME     = 0.1      -- how fast each line slides in
-local EASE_IN_POWER     = 3.0       -- snappiness of slide in, 1 = linear, 3 = snappy
+local godHud = terminator_Extras.godHud
+local godlyDecreeHud = terminator_Extras.godlyDecreeHud
+local hudHelpers = terminator_Extras.glee_HudHelpers
 
--- stagger: delay between each entry starting its slide-in
+-- stagger: delay between each entry starting to arrive
 local ENTRY_STAGGER     = 0.08
 
 -- how long each section waits before the NEXT section starts entering
 -- the section holds on screen until the screen clears
 local SECTION_DELAY     = 3.5
 
-
--- the impact sound when a line lands
-local HIT_SOUNDS        = { "physics/metal/metal_barrel_impact_hard5.wav", "physics/metal/metal_barrel_impact_hard6.wav" }
+-- the verdict, when the last line in a section lands, is one of godHud.textLandingSounds
 local HIT_SNDLVL        = 100
 
--- the impact sounds when the last line in a section xlands
-local HIT_LAST_SOUNDS   = { "doors/heavy_metal_stop1.wav" }
-
--- slide direction per entry index: alternating feels cinematic
--- true = from left, false = from right
-local function slideDirection( entryIndex )
-    return entryIndex % 2 == 1 -- odd entries from left, even from right
-
-end
-
-
-local screenW = ScrW()
-local screenMiddleW = screenW / 2
+local screenMiddleW = ScrW() / 2
 local screenMiddleH = ScrH() / 2
 
-local color_red = Color( 255, 0, 0 )
-
--- easing
-local function easeOut( t, power )
-    t = math.Clamp( t, 0, 1 )
-    return 1 - ( 1 - t ) ^ power
-
-end
-
--- a "section" is a group of text lines that slide in together with stagger
--- sections = { { startTime, entries = { { text, font, color, yOffset }, ... } }, ... }
+-- a "section" is a group of text lines that arrive together with stagger
+-- sections = { { startTime, hitPitch, entries = { { text, color, font, jitter }, ... } }, ... }
+-- color names a godlyDecreeHud color, font defaults to godlyDecreeHud.fonts.triumphant, jitter shakes the line once it lands
 local sections = {}
 local winScreenActive = false
 
@@ -56,10 +37,10 @@ local function buildSections( startTime )
 
     sections[1] = {
         startTime = startTime + SECTION_DELAY,
-        hitPitch = 90,
+        hitPitch = 30,
         entries = {
-            { text = "Hunt's Tally",                font = "termhuntTriumphantFont", color = color_white },
-            { text = tostring( totalScore ),         font = "termhuntTriumphantFont", color = color_red },
+            { text = "Hunt's Tally",         color = "textEndscreenColor" },
+            { text = tostring( totalScore ), color = "textEndscreenColor" },
         },
     }
 
@@ -69,23 +50,23 @@ local function buildSections( startTime )
     local winnerSkulls = GetGlobalInt( "glee_WinnerSkulls", 0 )
 
     local preyEntries = {
-        { text = "Finest Prey", font = "termhuntTriumphantFont", color = color_white },
+        { text = "Finest Prey", color = "textEndscreenColor" },
     }
 
     if IsValid( winner ) then
-        preyEntries[#preyEntries + 1] = { text = winner:Nick(), font = "termhuntTriumphantFont", color = color_white }
+        preyEntries[#preyEntries + 1] = { text = winner:Nick(), color = "textEndscreenColor", font = godlyDecreeHud.fonts.playerName }
         local sIfMultiple = winnerSkulls == 1 and "" or "s"
-        preyEntries[#preyEntries + 1] = { text = winnerSkulls .. " Skull" .. sIfMultiple, font = "termhuntTriumphantFont", color = color_red }
+        preyEntries[#preyEntries + 1] = { text = winnerSkulls .. " Skull" .. sIfMultiple, color = "textEndscreenColor" }
 
     else
-        preyEntries[#preyEntries + 1] = { text = "Nobody", font = "termhuntTriumphantFont", color = color_white }
-        preyEntries[#preyEntries + 1] = { text = "No skulls were collected", font = "termhuntTriumphantFont", color = color_red }
+        preyEntries[#preyEntries + 1] = { text = "Nobody", color = "textEndscreenColor" }
+        preyEntries[#preyEntries + 1] = { text = "No skulls were collected", color = "textDoomColor", jitter = true }
 
     end
 
     sections[2] = {
         startTime = startTime + SECTION_DELAY * 2,
-        hitPitch = 80,
+        hitPitch = 25,
         entries = preyEntries,
     }
 
@@ -97,73 +78,111 @@ local function buildSections( startTime )
     local escapedEntries = {}
 
     if escapedCount <= 0 then
-        escapedEntries[1] = { text = "Nobody Escaped", font = "termhuntTriumphantFont", color = color_red }
+        escapedEntries[1] = { text = "Nobody Escaped", color = "textDoomColor", jitter = true }
 
     else
         local sIfMultipleEscaped = escapedCount == 1 and "" or "s"
-        escapedEntries[1] = { text = escapedCount .. " Soul" .. sIfMultipleEscaped .. " Escaped", font = "termhuntTriumphantFont", color = color_white }
+        escapedEntries[1] = { text = escapedCount .. " Soul" .. sIfMultipleEscaped .. " Escaped", color = "textEndscreenColor" }
         if remainedCount <= 0 then
-            escapedEntries[2] = { text = "A great boon awaits...", font = "termhuntTriumphantFont", color = color_white }
+            escapedEntries[2] = { text = "A great boon awaits...", color = "textBoonColor", jitter = true }
 
         else
             local sIfMultipleRemained = remainedCount == 1 and "" or "s"
             local noSifMultiple = remainedCount <= 1 and "s" or ""
-            escapedEntries[2] = { text = remainedCount .. " Soul" .. sIfMultipleRemained .. " Remain" .. noSifMultiple, font = "termhuntTriumphantFont", color = color_red }
+            escapedEntries[2] = { text = remainedCount .. " Soul" .. sIfMultipleRemained .. " Remain" .. noSifMultiple, color = "textEndscreenColor" }
 
         end
     end
 
     sections[3] = {
         startTime = startTime + SECTION_DELAY * 3,
-        hitPitch = 70,
+        hitPitch = 20,
         entries = escapedEntries,
     }
 end
 
-local entryColor = Color( 255, 255, 255, 255 )
+-- copies, DrawGhosts writes their alpha
+local ghostTextColor = Color( 255, 255, 255 )
+local ghostShadowColor = ColorAlpha( godlyDecreeHud.shadowColor, 255 )
+
+local ghostData = {
+    textColor = ghostTextColor,
+    shadowColor = ghostShadowColor,
+    shadowOffsetX = godlyDecreeHud.shadowOffsetX,
+    shadowOffsetY = godlyDecreeHud.shadowOffsetY,
+}
+
+local solidData = {
+    shadowColor = godlyDecreeHud.shadowColor,
+    shadowOffsetX = godlyDecreeHud.shadowOffsetX,
+    shadowOffsetY = godlyDecreeHud.shadowOffsetY,
+}
 
 local lastHitPlay = 0
 
-local function paintEntry( entry, entryIndex, isLast, sectionStartTime, sectionPitch, ply, now )
+local function paintEntry( entry, entryIndex, isLast, sectionStartTime, hitPitch, ply, now )
     local entryStart = sectionStartTime + ( entryIndex - 1 ) * ENTRY_STAGGER
     if now < entryStart then return end -- not yet
 
-    local age = now - entryStart
+    local ghostSettings = godlyDecreeHud.ghosts.triumphant
+    local elapsed = now - entryStart
 
-    -- always sliding in or holding, never sliding out while win screen is up
-    local fraction
-    if age < SLIDE_IN_TIME then
-        local t = age / SLIDE_IN_TIME
-        fraction = easeOut( t, EASE_IN_POWER )
-
-    else
-        fraction = 1
+    entry.ghosts = entry.ghosts or hudHelpers.BuildGhosts( ghostSettings )
+    local appeared = hudHelpers.AdvanceGhosts( entry.ghosts, elapsed, ghostSettings )
+    if appeared > 0 and not entry.whooshed then
+        entry.whooshed = true
+        hudHelpers.PlaySound( godHud.textArrivalSounds, hitPitch + math.random( 40, 60 ), CHAN_STATIC, 0.4 )
 
     end
 
-    -- play sound once on landing
-    if fraction >= 1 and not entry.hitPlayed then
-        entry.hitPlayed = true
-        local sounds = isLast and HIT_LAST_SOUNDS or HIT_SOUNDS
-        local volume = 0.75
-        if lastHitPlay == now then
-            volume = 0.1
+    local materialised = hudHelpers.GhostsMaterialised( elapsed, ghostSettings )
+    if materialised >= 1 and not entry.landed then
+        entry.landed = true
+
+        if isLast then
+            local volume = 0.75
+            if lastHitPlay == now then
+                volume = 0.1
+
+            end
+            lastHitPlay = now
+            local landingSounds = godHud.textLandingSounds
+            ply:EmitSound( landingSounds[math.random( #landingSounds )], HIT_SNDLVL, hitPitch, volume )
+            ply:EmitSound( "doors/heavy_metal_stop1.wav", HIT_SNDLVL, hitPitch + math.random( 20, 25 ), volume )
 
         end
-        lastHitPlay = now
-        ply:EmitSound( sounds[math.random( #sounds )], HIT_SNDLVL, sectionPitch, volume )
     end
 
-    local fromLeft = slideDirection( entryIndex )
-    local offScreenX = fromLeft and ( -screenW * 0.4 ) or ( screenW * 1.4 )
-    local drawX = Lerp( fraction, offScreenX, screenMiddleW )
+    local jitterX = 0
+    local jitterY = 0
+    if entry.landed and entry.jitter then
+        hudHelpers.DoJitter( entry, godHud.jitter )
+        jitterX = entry.jitterX
+        jitterY = entry.jitterY
 
-    entryColor.r = entry.color.r
-    entryColor.g = entry.color.g
-    entryColor.b = entry.color.b
-    entryColor.a = 255
+    end
 
-    surface.drawShadowedTextBetter( entry.text, entry.font, entryColor, drawX, entry.drawY )
+    local font = entry.font or godlyDecreeHud.fonts.triumphant
+    local textColor = godlyDecreeHud[entry.color]
+
+    if materialised < 1 then
+        ghostTextColor.r, ghostTextColor.g, ghostTextColor.b = textColor.r, textColor.g, textColor.b
+        ghostData.text = entry.text
+        ghostData.font = font
+        hudHelpers.DrawGhosts( entry.ghosts, ghostSettings, ghostData, screenMiddleW, entry.drawY )
+
+    end
+
+    solidData.text = entry.text
+    solidData.font = font
+    solidData.textColor = textColor
+    solidData.posX = screenMiddleW + jitterX
+    solidData.posY = entry.drawY + jitterY
+
+    -- squared, so it stays hidden while the ghosts are spread out
+    surface.SetAlphaMultiplier( materialised ^ 2 )
+    surface.drawShadowedTextBetterData( solidData )
+    surface.SetAlphaMultiplier( 1 )
 
 end
 
@@ -188,8 +207,7 @@ hook.Add( "glee_paintWinScreen", "cl_winscreen_paint", function( ply, cur )
     if not GAMEMODE:CanShowDefaultHud() then return end
 
     -- compute Y positions: stack sections vertically from a starting Y
-    local currentY = screenMiddleH + glee_sizeScaled( nil, -130 )
-    local lineSpacing = glee_sizeScaled( nil, 50 )
+    local currentY = screenMiddleH + glee_sizeScaled( nil, -200 )
     local sectionGap = glee_sizeScaled( nil, 14 )
 
     for _, section in ipairs( sections ) do
@@ -199,7 +217,9 @@ hook.Add( "glee_paintWinScreen", "cl_winscreen_paint", function( ply, cur )
             local isLast = entryIdx == #section.entries
             entry.drawY = currentY
             paintEntry( entry, entryIdx, isLast, section.startTime, section.hitPitch, ply, cur )
-            currentY = currentY + lineSpacing
+
+            local font = entry.font or godlyDecreeHud.fonts.triumphant
+            currentY = currentY + draw.GetFontHeight( font ) * 0.9
 
         end
         currentY = currentY + sectionGap

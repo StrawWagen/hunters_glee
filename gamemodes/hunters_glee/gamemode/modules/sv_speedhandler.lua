@@ -19,7 +19,7 @@ function plyMeta:DoSpeedModifier( speedKey, speedModifier )
 
     end
 
-    self:RefeshPlayerSpeed( self )
+    self:RefreshPlayerSpeed()
 
 end
 
@@ -41,17 +41,17 @@ function plyMeta:DoSpeedClamp( speedKey, speedClamp )
 
     end
 
-    self:RefeshPlayerSpeed( self )
+    self:RefreshPlayerSpeed()
 
 end
 
 --[[---------------------------------------------------------
-    ply:RefeshPlayerSpeed
+    ply:RefreshPlayerSpeed
     Refreshes the player's speed based on current modifiers and clamps.
     @return: None
 --]]---------------------------------------------------------
 
-function plyMeta:RefeshPlayerSpeed()
+function plyMeta:RefreshPlayerSpeed()
     self.glee_speedmodifiers = self.glee_speedmodifiers or {}
     self.glee_maxspeedmodifiers = self.glee_maxspeedmodifiers or {}
     self.glee_defaultspeed = self.glee_defaultspeed or self:GetRunSpeed() -- sets the default here!
@@ -91,3 +91,12 @@ function plyMeta:RefeshPlayerSpeed()
     self:SetRunSpeed( newSpeed )
 
 end
+
+-- hooks run before GM:PlayerSpawn, which resets run speed to the player class's
+hook.Add( "PlayerSpawn", "glee_refreshspeedonspawn", function( spawned )
+    timer.Simple( 0, function()
+        if not IsValid( spawned ) then return end
+        spawned:RefreshPlayerSpeed()
+
+    end )
+end )

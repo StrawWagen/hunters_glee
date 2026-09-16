@@ -25,6 +25,8 @@ include( "modules/escaping/cl_escapecounts.lua" )
 include( "modules/deadplayerfx/cl_souls.lua" )
 include( "modules/deadplayerfx/cl_deaddesaturation.lua" )
 
+include( "modules/bonemaniphandler/cl_bonemanip.lua" )
+
 include( "modules/contextmenu_widgets/cl_banktop.lua" )
 include( "modules/contextmenu_widgets/cl_tauntmenu.lua" )
 include( "modules/contextmenu_widgets/cl_settingsmenu.lua" )

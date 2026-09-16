@@ -486,7 +486,7 @@ hook.Add( "glee_cl_topleftinfo", "glee_topleftinfo_draw", function( ply, cur )
 
     local style = "hl2"
     if ply:Health() <= 0 then
-        style = "scripture"
+        style = "soulthought"
 
     end
 

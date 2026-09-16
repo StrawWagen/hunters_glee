@@ -174,8 +174,9 @@ multiple bits of text all coming together? -done
 
 -- CREATE bank account inside atms -done
 
-rename innate to mutations? -DONE
-innate makes it sound like you have it from the beginning
+rename innate to mutations? innate makes it sound like you have it from the beginning -DONE
+
+infernal bone manip doesnt persist to dead ragdolls -- done
 
 
 -- make radio a purchasable item
@@ -437,13 +438,12 @@ the golden crowbar
 attach ticks to players
 aimbot ( robot that airdrops in, shoots EVERYTHING alive around it )
 
+ghosts can modify rules of the game by consensus or large expense
+noita modifiers as inspiration
+
 bottle rocket in supply crates?
 
 an extraction shooter where dead players become disembodied agents of chaos
-
-ghosts can modify rules of the game by consensus or large expense
-
-noita modifiers as inspiration
 
 -- end embalmster
 
@@ -468,3 +468,11 @@ dont nail to children
 announcing text theming
 all ghostly text gets new style
 godly text becomes godly
+PDM maxhealth override doesnt work
+
+ways to display info
+what is more important;
+    who is saying the message?
+    what the message is for?
+
+top left, for things that you are being informed of

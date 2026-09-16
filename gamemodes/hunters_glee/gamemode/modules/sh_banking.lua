@@ -4,7 +4,7 @@ GM.bankInfoTable = GM.bankInfoTable or {}
 GM.bankInfoTable.accounts = GM.bankInfoTable.accounts or {}
 
 local bankFunctions = {}
-local GAMEMODE = GM
+local GAMEMODE = GAMEMODE or GM
 
 -- % of player's bank account charged per period
 local glee_BankChargePerPeriod = CreateConVar( "huntersglee_bank_chargeperperiod", "-1", { FCVAR_ARCHIVE, FCVAR_REPLICATED }, "What percent of player's bank account is charged, per period. -1 is default, 10%", -1, 100 )
