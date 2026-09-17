@@ -19,10 +19,6 @@ local HEADER_FONT = "glee_mediumLargeHL2Font"
 local FRAME_H_1080P     = 775
 local METER_MIN_W_1080P = 200
 
--- a 0.01 step setting has 80 steps, and 80 chunks is a smear, so the bar is coarser
--- than the value it shows: clicking chunk 7 of 20 still lands on an exact step
-local METER_CHUNKS_MAX = 20
-
 -- the widest string a value column can print, reserved so no bar runs under a number
 local WIDEST_VALUE = "(0.00)"
 
@@ -334,13 +330,20 @@ local function makeSliderRow( def, layout )
     local row, cvarRef = makeRow( def, layout )
 
     local span  = def.max - def.min
-    local steps = span / stepSize( def )
 
     local transparent = Color( 0, 0, 0, 0 )
 
-    -- The row is the box, so the meter contributes chunks only.
+    -- The row is the box, so the meter contributes the bar only.
     local meter = vgui.Create( "glee_hl2meter", row )
-    meter:SetChunks( math.min( steps, METER_CHUNKS_MAX ) )
+
+    -- one chunk per step, until the steps are too fine to chunk and it becomes a plain bar
+    if def.decimals >= 2 then
+        meter:SetSmooth( true )
+
+    else
+        meter:SetChunks( math.Round( span / stepSize( def ) ) )
+
+    end
     meter:SetNormalBoxColor( transparent )
     meter:SetUrgentBoxColor( transparent )
     meter:SetFlashBoxColor( transparent )

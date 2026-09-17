@@ -550,6 +550,38 @@ if SERVER then
     )
 
 
+    GAMEMODE:RegisterStatusEffect( "the_hops",
+        function( self, owner ) -- setup func
+            local nextJump = 0
+            local jumpAdded = false
+
+            self:Hook( "StartCommand", function( ply, cmd )
+                if ply ~= owner then return end
+
+                if not ply:IsOnGround() then
+                    nextJump = CurTime() + 0.01
+                    jumpAdded = false
+                    return
+
+                end
+
+                if nextJump > CurTime() then return end
+
+                -- toggle the key instead of holding it, holding sticks after a crouch jump
+                if jumpAdded then
+                    jumpAdded = false
+                    cmd:RemoveKey( IN_JUMP )
+
+                else
+                    jumpAdded = true
+                    cmd:AddKey( IN_JUMP )
+
+                end
+            end )
+        end
+    )
+
+
     local bigHeadManipKey = "big_head"
     local bigHeadScale = Vector( 4, 4, 4 )
     local bigHeadSpeedModifier = -25
@@ -902,7 +934,7 @@ local items = {
         desc = "Donate blood for score." .. bargainDescrip,
         shCost = bloodDonorCost,
         cooldown = math.huge,
-        tags = { "MUTATIONS", "Debuff", "Bargain" },
+        tags = { "MUTATIONS", "Debuff", "Bargain", "Essential" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE, -- only purchasble when actively hunting, otherwise people would heal with cheap preround healthkits
         },
@@ -930,7 +962,7 @@ local items = {
         shCost = -100,
         markup = 0.25,
         cooldown = math.huge,
-        tags = { "MUTATIONS", "Debuff", "Bargain" },
+        tags = { "MUTATIONS", "Debuff", "Bargain", "Essential" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -968,7 +1000,7 @@ local items = {
         shCost = -175,
         markup = 0.25,
         cooldown = math.huge,
-        tags = { "MUTATIONS", "Debuff", "Bargain" },
+        tags = { "MUTATIONS", "Debuff", "Bargain", "Essential" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -987,7 +1019,7 @@ local items = {
         shCost = -200,
         markup = 0.25,
         cooldown = math.huge,
-        tags = { "MUTATIONS", "Debuff", "Bargain" },
+        tags = { "MUTATIONS", "Debuff", "Bargain", "Essential" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -1006,7 +1038,7 @@ local items = {
         shCost = -162,
         markup = 0.25,
         cooldown = math.huge,
-        tags = { "MUTATIONS", "Debuff", "Bargain" },
+        tags = { "MUTATIONS", "Debuff", "Bargain", "Essential" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -1024,7 +1056,7 @@ local items = {
         shCost = -140,
         markup = 0.25,
         cooldown = math.huge,
-        tags = { "MUTATIONS", "Debuff", "Bargain" },
+        tags = { "MUTATIONS", "Debuff", "Bargain", "Essential" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -1081,7 +1113,7 @@ local items = {
         shCost = -200,
         markup = 0.25,
         cooldown = math.huge,
-        tags = { "MUTATIONS", "Debuff", "Bargain" },
+        tags = { "MUTATIONS", "Debuff", "Bargain", "Essential" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -1093,13 +1125,31 @@ local items = {
 
         end,
     },
+    ["thehops"] = {
+        name = "The Hops.",
+        desc = "Your legs will never rest again.\nYou hop the moment you touch the ground, forever." .. bargainDescrip,
+        shCost = -150,
+        markup = 0.25,
+        cooldown = math.huge,
+        tags = { "MUTATIONS", "Debuff", "Bargain", "Essential" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_INACTIVE,
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = -90,
+        shPurchaseCheck = { shopHelpers.aliveCheck, },
+        svOnPurchaseFunc = function( ply )
+            ply:GiveStatusEffect( "the_hops" )
+
+        end,
+    },
     ["bighead"] = {
         name = "Big Head.",
         desc = "Your intellect has lead to your head becoming the size of a small refrigerator!" .. bargainDescrip,
         shCost = -150,
         markup = 0.25,
         cooldown = math.huge,
-        tags = { "MUTATIONS", "Debuff", "Bargain" },
+        tags = { "MUTATIONS", "Debuff", "Bargain", "Essential" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -1112,10 +1162,5 @@ local items = {
         end,
     },
 }
-
-for _, data in pairs( items ) do
-    data.tags[#data.tags + 1] = "Essential"
-
-end
 
 GAMEMODE:GobbleShopItems( items )

@@ -235,7 +235,7 @@ terminator_Extras.godHud = {
         "physics/cardboard/cardboard_box_impact_bullet3.wav",
         "physics/cardboard/cardboard_box_impact_bullet5.wav",
     },
-    -- god's hand isn't steady, godly text never sits perfectly still. See glee_HudHelpers.DoJitter
+    -- god's hand isn't steady, See glee_HudHelpers.DoJitter
     jitter = {
         pixels = 1,
         interval = { 1 / 25, 1 / 18 },
@@ -244,7 +244,7 @@ terminator_Extras.godHud = {
     textColor = Color( 235, 110, 20 ),
     textHoveredColor = Color( 255, 150, 50 ),
     textChosenColor = Color( 255, 200, 90 ),
-    textUrgentColor = Color( 255, 240, 210 ),
+    textUrgentColor = Color( 200, 25, 5 ),
     shadowColor = Color( 0, 0, 0, 255 ),
 
     textPaddingX = glee_sizeScaled( nil, 8 ),

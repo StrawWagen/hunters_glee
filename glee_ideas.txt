@@ -179,8 +179,9 @@ rename innate to mutations? innate makes it sound like you have it from the begi
 infernal bone manip doesnt persist to dead ragdolls -- done
 
 
--- make radio a purchasable item
--- make voicechat a settings menu thing
+-- make radio a purchasable item, moving all global/prox chat stuff to settings menu
+-- gateway to expensive items, airdropped in
+
 
 -- Replace stupid temp bools with ints, polish conduit/inversion cooldowns
 
@@ -476,3 +477,85 @@ what is more important;
     what the message is for?
 
 top left, for things that you are being informed of
+
+key + kite weapon
+
+JUST GET A DIFFERENT MODEL FOR REVIVE KIT
+
+unsatisfying to kill skeletons
+killing something knowing it's not gonna drop anything is sad
+skeletons findable by sound cue is meh
+skeletons much better, like a training ground, lets people explore the map, the menu,
+
+trading skulls was great
+
+dead air because of lack of breadcrumbs
+more flinching on the skeletons
+revive kits need polish
+ghosts place their skulls in themap
+
+skeletons still jump way too much on displacements
+difficulty feels unearned
+
+piece of information feels like its missing when dead, gil
+easy skeletons even easier
+
+being on fire feels too disorienting as tutorial enemy
+music still too loud?
+even longer countdown for easy modes
+Change emplacement gun name to "Heavy Pulse Rifle"
+
+cannot see skulls in shop!!!!
+FULL TUTORIAL FOR PLACING ALL ESSENTIAL ITEMS
+ttt_groverhaus_remastered_a4 broke flaregun
+attempting to use flaregun on wall/non skybox gives hint and stops firing for a min?
+
+LONGER COUNTDOWN!!!!!
+what are the controls?
+there is a shop
+there is changing weapons
+
+tutorial does not teach innate things like score, skulls
+does not teach how to break stuff with crowbar
+
+
+the knowledge skeleton that teaches you ideas
+faster weapon dropping when looking at other players and standing still
+
+
+some players like to have everything on their screen all the time
+they do not like having things change they cannot see
+
+
+another new player experience revamp
+spawn into server as ghost
+everything deafened, big hint to open shop
+1 free divine intervention purchase
+
+first time death message, that death was holding you back
+
+then it encourages you to purchase loadout
+YOU FOUND A SKULL; pauses game
+
+buy flare hint
+
+
+divine intervention description change ( encase yourself within a weak shell of meat and bones )
+
+
+enemies that attack dead players/ghosts, that takes money
+ghost ropes
+reeling in when revived
+reeling back to last death position when not moving
+
+astral projection lore
+person whos astral projecting has a silver cord out of the back of their head
+the cord is fairly durable, but if cut it kills you
+
+f1 help menu
+
+system where you register a command, default bind
+when bind is unoveridden, falls back to default, eg +menu
+automatically goes in help menu
+goes in a glee rebinding menu? 
+

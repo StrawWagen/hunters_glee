@@ -2,7 +2,10 @@
     glee_hl2meter — extends glee_hl2hudbox
 
     A chunked suit-power style bar, drawn inside the standard hud box.
-    Inherits the box, colors, and state machine; only the chunks are new.
+    Inherits the box, colors, and state machine; only the bar is new.
+
+    Chunks only tell the truth when there is one per step of whatever they show.
+    SetSmooth( true ) draws one unbroken bar instead, for finer values.
 
     Setup:
         local meter = vgui.Create( "glee_hl2meter", parent )
@@ -21,6 +24,7 @@ PANEL.Init = function( self )
     local hud = terminator_Extras.glee_HL2Hud
 
     self._chunks     = 20
+    self._smooth     = false
     self._fill       = 0
     self._chunkGap   = glee_sizeScaled( nil, 3 )
     self._fillColor  = hud.colorHappyYellow
@@ -50,6 +54,12 @@ PANEL.SetChunks = function( self, count )
 
 end
 
+-- One unbroken bar, for values too fine for a chunk each
+PANEL.SetSmooth = function( self, smooth )
+    self._smooth = smooth
+
+end
+
 PANEL.SetFillColor = function( self, col )
     self._fillColor = col
 
@@ -74,6 +84,19 @@ PANEL.Paint = function( self, w, h )
     local pad    = terminator_Extras.glee_HL2Hud.blockPadding
     local barW   = w - pad * 2
     local barH   = h - pad * 2
+
+    if self._smooth then
+        local empty = self._emptyColor
+        surface.SetDrawColor( empty.r, empty.g, empty.b, empty.a * stateAlpha / 255 )
+        surface.DrawRect( pad, pad, barW, barH )
+
+        local fill = self._fillColor
+        surface.SetDrawColor( fill.r, fill.g, fill.b, fill.a * stateAlpha / 255 )
+        surface.DrawRect( pad, pad, math.Round( barW * self._fill ), barH )
+
+        return
+
+    end
 
     local chunks = self._chunks
     local lit    = math.Round( self._fill * chunks )
