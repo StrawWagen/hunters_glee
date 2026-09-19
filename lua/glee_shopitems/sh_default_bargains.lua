@@ -1109,7 +1109,7 @@ local items = {
     },
     ["thegrowth"] = {
         name = "The Growth",
-        desc = "Acquire an unstable genome.\nYou will grow a... companion, till death..." .. bargainDescrip,
+        desc = "Acquire an unstable genome.\nYou will grow a... companion, every life..." .. bargainDescrip,
         shCost = -200,
         markup = 0.25,
         cooldown = math.huge,

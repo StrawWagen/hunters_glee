@@ -1257,17 +1257,38 @@ local nextShopOpen = 0
 
 local enableShopVar = GetConVar( "huntersglee_enableshop" )
 
+local nextBlockedHint = 0
+
 function GM:ShowShop()
     if nextShopOpen > CurTime() then return end
+
+    local block
+    local hint
+
     if not enableShopVar:GetBool() then
-        if not doneDisabledHint then
-            doneDisabledHint = true
-            LocalPlayer():PrintMessage( HUD_PRINTTALK, "Shop was disabled via \"huntersglee_enableshop 0\"" )
+        block = true
+        hint = "Shop was disabled via \"huntersglee_enableshop 0\""
+
+    end
+
+    local blocked, blockedReason = hook.Run( "glee_blockshopopen" )
+    if blocked then
+        block = true
+        hint = blockedReason
+
+    end
+
+    if block then
+        -- they'll mash the shop key, only tell them why every so often
+        if hint and nextBlockedHint < CurTime() then
+            nextBlockedHint = CurTime() + 5
+            LocalPlayer():PrintMessage( HUD_PRINTTALK, hint )
 
         end
         return
 
     end
+
     if self:CanShowDefaultHud() then
         LocalPlayer().glee_OpenedHuntersGleeShop = true
 

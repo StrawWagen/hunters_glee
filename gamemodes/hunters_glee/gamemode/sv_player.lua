@@ -720,6 +720,10 @@ function GM:SpectateThing( ply, thing, msg )
 
         end )
     end
+
+    local spectatingName = thing.Nick and isstring( thing:Nick() ) and thing:Nick() or GAMEMODE:GetNameOfBot( thing )
+    ply:SetNW2String( "glee_currentlySpectatingName", spectatingName )
+
     msg = msg or "glee_followedsomething"
     net.Start( msg )
     net.Send( ply )

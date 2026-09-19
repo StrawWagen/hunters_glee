@@ -201,9 +201,10 @@ local function genericHints()
 
         local timeToBuy = not hasBoughtSomething and myScore >= 25 and inBetween
         local meagreWealth = not hasBoughtSomething and myScore >= 75
+        local blockShop = hook.Run( "glee_blockshopopen" )
 
         -- hey you should open the shop!!!!
-        if timeToBuy or meagreWealth then
+        if not blockShop and ( timeToBuy or meagreWealth ) then
             if not me.glee_OpenedHuntersGleeShop and me:GetNWInt( "termHuntPlyBPM" ) <= 80 then
                 return true, "You have score to spend, things to buy!\nPress \" " .. string.upper( phrase ) .. " \" to open the shop."
 
@@ -213,7 +214,7 @@ local function genericHints()
             end
         end
 
-        if not GAMMODE:HasLearnedLesson( "BoughtSignalFlare" ) and GAMMODE:canShowInShop( me, "signalflare" ) then
+        if not blockShop and not GAMMODE:HasLearnedLesson( "BoughtSignalFlare" ) and GAMMODE:canShowInShop( me, "signalflare" ) then
             local skulls = me:GetSkulls()
             if skulls >= GAMMODE:shopItemSkullCost( "signalflare" ) then
                 return true, "Purchase a Signal Flare from the SHOP\nIt's time to get out of here."
@@ -239,6 +240,7 @@ local function genericHints()
         elseif not me.glee_OpenedHuntersGleeShop then
             local valid, phrase = GAMEMODE:TranslatedBind( "+menu" )
             if not valid then me.glee_OpenedHuntersGleeShop = true return end
+            if hook.Run( "glee_blockshopopen" ) then me.glee_OpenedHuntersGleeShop = true return end
 
             if me.glee_SpawnedInDeadTutorialPlease then
                 return true, "Press \" " .. string.upper( phrase ) .. " \" to open the shop.\nDIVINE INTERVENTION AWAITS."
@@ -247,7 +249,7 @@ local function genericHints()
                 return true, "Death is not the end.\nPress \" " .. string.upper( phrase ) .. " \" to open the shop."
 
             end
-        elseif not GAMMODE:HasLearnedLesson( "BoughtAGhostItem" ) then
+        elseif not GAMMODE:HasLearnedLesson( "BoughtAGhostItem" ) and not hook.Run( "glee_blockshopopen" ) then
             if me.glee_SpawnedInDeadTutorialPlease then
                 local valid, phrase = GAMEMODE:TranslatedBind( "+menu" )
                 if not valid then
@@ -288,8 +290,8 @@ local function genericHints()
 
             return true, "Press " .. phrase .. " to toggle the spectate flashlight!"
 
-        elseif not hasEscaped and not GAMMODE:HasLearnedLesson( "BoughtDivineIntervention" ) then
-            if myScore >= GAMEMODE:shopItemCost( "resurrection", me ) then
+        elseif not hasEscaped and not GAMMODE:HasLearnedLesson( "BoughtDivineIntervention" ) and GAMMODE:canShowInShop( me, "resurrection" ) and not hook.Run( "glee_blockshopopen" ) then
+            if myScore >= GAMMODE:shopItemCost( "resurrection", me ) then
                 return true, "You now have enough to buy DIVINE INTERVENTION in the shop.\nYour temporary form awaits..."
 
             else

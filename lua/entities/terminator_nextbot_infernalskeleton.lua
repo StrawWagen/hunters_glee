@@ -388,9 +388,13 @@ function ENT:DoCustomTasks( defaultTasks )
                 -- find a random nearby pos on navmesh to wander to
                 -- avoid returning to LastWanderArea > 75% of the time
 
+                coroutine_yield()
+
                 local needsNewPathGoal = not data.CurrentTaskGoalPos
                 needsNewPathGoal = needsNewPathGoal or entMeta.GetPos( self ):Distance2D( data.CurrentTaskGoalPos ) < 35
                 needsNewPathGoal = needsNewPathGoal or ( myTbl.GetCurrentSpeed( self ) < 10 and CurTime() > data.NextWanderChooseTime )
+
+                coroutine_yield()
 
                 if needsNewPathGoal then
                     local myPos = self:GetPos()
@@ -398,6 +402,9 @@ function ENT:DoCustomTasks( defaultTasks )
                     local chosenArea
 
                     local allies = myTbl.GetNearbyAllies( self )
+
+                    coroutine_yield()
+
                     for _, ally in ipairs( allies ) do
                         coroutine_yield()
                         if not IsValid( ally ) then continue end

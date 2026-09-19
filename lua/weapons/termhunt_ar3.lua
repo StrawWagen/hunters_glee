@@ -1,7 +1,7 @@
 -- viewmodel and worldmodel from THIS ADDON! https://steamcommunity.com/sharedfiles/filedetails/?id=3401113154
 -- give it some LOVE
 
-SWEP.PrintName = "Emplacement Gun"
+SWEP.PrintName = "Heavy Pulse Rifle"
 SWEP.Author = "Boomeritaintaters + gaming98"
 SWEP.Instructions = [[
 The longer you shoot, the faster the bullets fly. Just don't let it overheat!
@@ -49,7 +49,7 @@ if CLIENT then
         local owner = self:GetOwner()
         if not IsValid( owner ) then return end
 
-        if self:Clip1() <= 0 and owner:GetAmmoCount( self.Primary.Ammo ) <= 0 then return true, "IT'S EMPTY\nBuy another emplacement gun in the shop..." end
+        if self:Clip1() <= 0 and owner:GetAmmoCount( self.Primary.Ammo ) <= 0 then return true, "IT'S EMPTY\nBuy another heavy pulse rifle in the shop..." end
 
     end
 end
