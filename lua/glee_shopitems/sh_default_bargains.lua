@@ -427,10 +427,10 @@ if SERVER then
         min = 8,
         max = 12,
     }
-    local tumorGrowthPerStep = 0.06
-    local tumorHurtsAboveScale = 1.5
+    local tumorGrowthPerStep = 0.02
+    local tumorHurtsAboveScale = 1.3
     local tumorStepsBeforeHurting = math.Round( ( tumorHurtsAboveScale - 1 ) / tumorGrowthPerStep )
-    local tumorFirstDamage = 2
+    local tumorFirstDamage = 1
     local tumorDamageRamp = 2.5
     local tumorMaxBloodEffects = 8
 
