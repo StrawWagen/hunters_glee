@@ -583,7 +583,7 @@ if SERVER then
 
 
     local bigHeadManipKey = "big_head"
-    local bigHeadScale = Vector( 4, 4, 4 )
+    local bigHeadScale = Vector( 2.5, 2.5, 2.5 )
     local bigHeadSpeedModifier = -25
 
     GAMEMODE:RegisterStatusEffect( "big_head",
