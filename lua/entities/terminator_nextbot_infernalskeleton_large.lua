@@ -199,9 +199,4 @@ ENT.MyClassTask = {
         return self.SkeleRunAct
 
     end,
-    ShouldRun = function( self, data )
-        if self.SkeleAlwaysRun then return end
-        if self:Health() > self:GetMaxHealth() * 0.9 then return false end
-
-    end,
 }

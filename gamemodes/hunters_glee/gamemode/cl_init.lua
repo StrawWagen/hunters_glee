@@ -58,10 +58,12 @@ function GetAutoHidingHUDPanel()
 
 end
 
+include( "modules/clhud/cl_hudregions.lua" ) -- the rest claim through it, so first
 include( "modules/clhud/cl_topleftinfo.lua" )
 include( "modules/clhud/cl_bpm.lua" )
 include( "modules/clhud/cl_battery.lua" )
 include( "modules/clhud/cl_plynames.lua" )
+include( "modules/clhud/cl_whowespectating.lua" )
 
 
 -- from https://github.com/Facepunch/garrysmod/blob/e189f14c088298ca800136fcfcfaf5d8535b6648/garrysmod/lua/includes/modules/killicon.lua#L202
@@ -216,6 +218,7 @@ function doGleeHud()
 
         if spectating == true then
             hook.Run( "glee_cl_paintplayers", ply, cur )
+            hook.Run( "glee_cl_deadplyhud", ply, cur )
 
         else
             hook.Run( "glee_cl_paintplayers_whilealive", ply, cur )

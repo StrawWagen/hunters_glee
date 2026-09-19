@@ -208,7 +208,12 @@ function spawnSetVote:OnVoteEnd()
     -- and in people's chat!
     GAMEMODE:SpeakAsHuntersGlee( "the Misery vote winner; " .. GAMEMODE:GetPrettyNameOfSpawnSet( spawnSetVote.winner ) )
 
-    if GAMEMODE:RoundState() == GAMEMODE.ROUND_ACTIVE and GAMEMODE:getRemaining( GAMEMODE.termHunt_roundBegunTime, CurTime() ) > 60 then -- if round has properly started
+    if
+        GAMEMODE:RoundState() == GAMEMODE.ROUND_ACTIVE
+        and GAMEMODE:getRemaining( GAMEMODE.termHunt_roundBegunTime, CurTime() ) > 60
+        and GAMEMODE:GetSpawnSet() ~= GAMEMODE.TheTutorialMisery
+
+    then -- if round has properly started
         huntersGlee_AnnounceDramatic( player.GetAll(), 1001, 10, "The next Misery; " .. GAMEMODE:GetPrettyNameOfSpawnSet( spawnSetVote.winner ) .. "\nwill arrive upon round end..." )
         GAMEMODE.rtmWaitingForRoundEnd = spawnSetVote.winner
 

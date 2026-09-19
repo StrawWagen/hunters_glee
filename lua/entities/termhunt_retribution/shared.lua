@@ -23,19 +23,17 @@ end
 if CLIENT then
     function ENT:DoHudStuff()
         if not IsValid( self:GetCurrTarget() ) then return end
-        local screenMiddleW = ScrW() / 2
-        local screenMiddleH = ScrH() / 2
+
         local scoreGained = math.Round( self:GetGivenScore() )
         local scoreString = "They've killed you before.\nTheir Homicidal Glee costs nothing to surface!"
         if scoreGained < -75 then
-            scoreString = "Cost: " .. tostring( scoreGained )
+            scoreString = "Cost: " .. scoreGained
         elseif scoreGained < 0 then
-            scoreString = "They've... Wronged you before.\nTheir Homicidal glee Costs... " .. tostring( scoreGained ) .. " To surface."
+            scoreString = "They've... Wronged you before.\nTheir Homicidal glee Costs... " .. scoreGained .. " To surface."
 
         end
 
-        surface.SetFont( "scoreGainedOnPlaceFont" )
-        surface.drawShadowedTextBetter( scoreString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
+        self:DrawPlacingLine( scoreString )
 
     end
 end

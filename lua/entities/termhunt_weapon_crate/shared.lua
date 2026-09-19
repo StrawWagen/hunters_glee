@@ -18,13 +18,16 @@ ENT.PosOffset = Vector( 0, 0, 10 )
 
 if CLIENT then
     function ENT:DoHudStuff()
-        local screenMiddleW = ScrW() / 2
-        local screenMiddleH = ScrH() / 2
-
         local scoreGained = math.Round( self:GetGivenScore() )
 
-        local scoreGainedString = "(In)Convenience Score: " .. tostring( scoreGained )
-        surface.drawShadowedTextBetter( scoreGainedString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
+        self:DrawPlacingLine( "Well-Hidden Profit: " .. scoreGained )
+
+    end
+
+    function ENT:HintPreStack()
+        if GAMEMODE:HasLearnedLesson( "WeaponsCrateProfitablePlace" ) then return end
+
+        return true, "Place the weapons FAR from survivors,\nand away from OTHER SUPPLIES.\nThe more HIDDEN? The more profit!\nSmart enemies can EQUIP WEAPONS, so beware..."
 
     end
 end
@@ -141,6 +144,10 @@ function ENT:Place()
         self.player:GivePlayerScore( betrayalScore )
         GAMEMODE:sendPurchaseConfirm( self.player, betrayalScore )
 
+        if betrayalScore > 0 then
+            GAMEMODE:LearnLesson( self.player, "WeaponsCrateProfitablePlace" )
+
+        end
     end
 
     SafeRemoveEntity( self )

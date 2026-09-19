@@ -415,7 +415,7 @@ function GM:GetNearbyWalkableArea( playerReference, start, count, occupiedSpawnA
 
 end
 
-function plyIsHuntable( ply )
+function plyIsHuntable( _, ply )
     if entMeta.Health( ply ) <= 0 then return false end
     if not ply.glee_FullLoaded then return false end
     if hook.Run( "glee_ply_blockhuntability", ply ) then return false end
@@ -482,7 +482,7 @@ end
 function GM:returnHuntablePlysIn( stuff )
     local huntableStuff = {}
     for _, curr in pairs( stuff ) do
-        if plyIsHuntable( curr ) then
+        if plyIsHuntable( nil, curr ) then
             table.insert( huntableStuff, curr )
 
         end
@@ -568,7 +568,7 @@ end
 function GM:countHuntablePlayers()
     local aliveCount = 0
     for _, curr in pairs( player.GetAll() ) do
-        if plyIsHuntable( curr ) then
+        if plyIsHuntable( nil, curr ) then
             aliveCount = aliveCount + 1
 
         end

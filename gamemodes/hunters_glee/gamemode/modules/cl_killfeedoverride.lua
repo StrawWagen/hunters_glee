@@ -215,8 +215,9 @@ local function DrawDeath( x, y, death, time )
 	end
 
 	-- Draw VICTIM
+	local right
 	if ( death.right ) then
-		local right = death.right
+		right = death.right
 		local rightColor = death.color2
 
 		local doOverride, rightOverride, rightColorOverride = hook.Run( "glee_killfeed_overridevictim", death )
@@ -230,7 +231,24 @@ local function DrawDeath( x, y, death, time )
 
 	end
 
-	return math.ceil( y + h * 0.75 )
+	-- how far this row reaches, for the claim in DrawDeathNotice. draw.SimpleText picks
+	-- its own font, so the measuring font has to be set again after it
+	surface.SetFont( "ChatFont" )
+
+	local rowLeft = x - ( w / 2 )
+	local rowRight = x + ( w / 2 )
+
+	if ( death.left ) then
+		rowLeft = rowLeft - 16 - surface.GetTextSize( death.left )
+
+	end
+
+	if ( right ) then
+		rowRight = rowRight + 16 + surface.GetTextSize( right )
+
+	end
+
+	return math.ceil( y + h * 0.75 ), rowLeft, rowRight
 
 	-- Font killicons are too high when height corrected, and changing that is not backwards compatible
 	--return math.ceil( y + math.max( h, 28 ) )
@@ -246,6 +264,10 @@ function GM:DrawDeathNotice( x, y )
 
 	x = x * ScrW()
 	y = y * ScrH()
+
+	local feedTop = y
+	local feedBottom = y
+	local feedLeft, feedRight
 
 	-- Draw
 	for i, Death in ipairs( Deaths ) do
@@ -263,9 +285,24 @@ function GM:DrawDeathNotice( x, y )
 
 			if not ( x and y ) then Deaths[i] = nil return end -- invalid/tiny killicon
 
-			y = DrawDeath( math.floor( x ), math.floor( y ), Death, time )
+			local rowLeft, rowRight
+			y, rowLeft, rowRight = DrawDeath( math.floor( x ), math.floor( y ), Death, time )
+
+			-- a row with no icon size draws nothing and returns nothing
+			if y then
+				feedBottom = y
+				feedLeft = math.min( feedLeft or rowLeft, rowLeft )
+				feedRight = math.max( feedRight or rowRight, rowRight )
+
+			end
 
 		end
+
+	end
+
+	-- a stack growing down the right, the way the top left lane grows down the left
+	if feedLeft then
+		self:ImUsingHudSpace( "killfeed", feedLeft, feedTop, feedRight - feedLeft, feedBottom - feedTop )
 
 	end
 

@@ -13,8 +13,10 @@
 
 local GAMEMODE = GAMEMODE or GM
 
-local ROW_FONT    = "glee_mediumHL2Font"
-local HEADER_FONT = "glee_mediumLargeHL2Font"
+-- font roles, not font names
+local hl2Style    = terminator_Extras.glee_Style( "hl2" )
+local ROW_FONT    = "medium"
+local HEADER_FONT = "mediumLarge"
 
 local FRAME_H_1080P     = 775
 local METER_MIN_W_1080P = 200
@@ -217,7 +219,7 @@ end
 local function measureLayout()
     local hud = terminator_Extras.glee_HL2Hud
 
-    surface.SetFont( ROW_FONT )
+    surface.SetFont( hl2Style:Font( ROW_FONT ) )
     local _, fontH = surface.GetTextSize( "A" )
 
     -- only a slider's label shares its row with a bar, so only sliders set the column
@@ -264,7 +266,7 @@ local function makeRow( def, layout )
     local cvarRef = GetConVar( def.cvar )
 
     local row = vgui.Create( "glee_hl2hudbox" )
-    row:SetFlashIconColor( hud.colorHappyYellow:Copy() ) -- the box defaults this to red
+    row:SetFlashIconColor( hud.colors.happy:Copy() ) -- the box defaults this to red
     row:SetFlashDuration( 0.12 )
     row:SetDoFadeDelays( false )
     row:SetText( "" ) -- the base paints text centered, and this row paints its own
@@ -287,8 +289,9 @@ local function makeRow( def, layout )
         local midY     = h * 0.5
         local col      = self._drawIcon -- basePaint resolved this for this frame
 
-        draw.SimpleText( self._labelText, ROW_FONT, innerPad,     midY, col, TEXT_ALIGN_LEFT,  TEXT_ALIGN_CENTER )
-        draw.SimpleText( self._valueText, ROW_FONT, w - innerPad, midY, col, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER )
+        local font = hl2Style:Font( ROW_FONT )
+        draw.SimpleText( self._labelText, font, innerPad,     midY, col, TEXT_ALIGN_LEFT,  TEXT_ALIGN_CENTER )
+        draw.SimpleText( self._valueText, font, w - innerPad, midY, col, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER )
 
     end
 
@@ -305,7 +308,7 @@ local function makeRow( def, layout )
 
         end
 
-        self:SetNormalBoxColor( hovered and hud.colorBackgroundUrgent or hud.colorBackground )
+        self:SetNormalBoxColor( hovered and hud.colors.bgUrgent or hud.colors.bg )
         self:SetState( self.STATE_NORMAL )
         self:UpdateFromCvar()
 
@@ -347,8 +350,8 @@ local function makeSliderRow( def, layout )
     meter:SetNormalBoxColor( transparent )
     meter:SetUrgentBoxColor( transparent )
     meter:SetFlashBoxColor( transparent )
-    meter:SetEmptyColor( hud.colorBackgroundDark )
-    meter:SetFillColor( hud.colorHappyYellow )
+    meter:SetEmptyColor( hud.colors.bgDark )
+    meter:SetFillColor( hud.colors.happy )
     meter:SetState( meter.STATE_NORMAL )
     meter:Dock( FILL )
     meter:DockMargin( layout.labelW + layout.pad * 3, layout.pad, layout.valueW + layout.pad * 3, layout.pad )
@@ -469,7 +472,7 @@ local function makeCheckRow( def, layout )
         end
 
         self._valueText = text
-        self:SetIconColor( on and hud.colorHappyYellow or hud.colorUnHappyYellow )
+        self:SetIconColor( on and hud.colors.happy or hud.colors.text )
 
     end
 

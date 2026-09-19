@@ -31,9 +31,6 @@ if CLIENT then
     end
 
     function ENT:DoHudStuff()
-        local screenMiddleW = ScrW() / 2
-        local screenMiddleH = ScrH() / 2
-
         local scoreGained = math.Round( self:GetGivenScore() )
         local stringPt1 = ""
         if scoreGained < 0 then
@@ -41,9 +38,7 @@ if CLIENT then
 
         end
 
-        local scoreString = stringPt1 .. math.abs( scoreGained )
-
-        surface.drawShadowedTextBetter( scoreString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
+        self:DrawPlacingLine( stringPt1 .. math.abs( scoreGained ) )
 
     end
 

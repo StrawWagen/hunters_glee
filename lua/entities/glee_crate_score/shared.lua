@@ -19,12 +19,7 @@ ENT.PosOffset = Vector( 0, 0, 10 )
 
 if CLIENT then
     function ENT:DoHudStuff()
-        local screenMiddleW = ScrW() / 2
-        local screenMiddleH = ScrH() / 2
-
         local scoreGained = math.Round( self:GetGivenScore() )
-
-        local scoreGainedString = "(In)Convenience Score: " .. tostring( scoreGained )
 
         local scoreBallsToDrop = math.ceil( scoreGained / 15 )
         local toDropStr
@@ -38,9 +33,7 @@ if CLIENT then
             toDropStr = "\n(" .. scoreBallsToDrop ..  " Orbs inside)"
 
         end
-        scoreGainedString = scoreGainedString .. toDropStr
-
-        surface.drawShadowedTextBetter( scoreGainedString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
+        self:DrawPlacingLine( "Well-Hidden Profit: " .. scoreGained .. toDropStr )
 
     end
 end

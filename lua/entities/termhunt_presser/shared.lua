@@ -24,9 +24,6 @@ if CLIENT then
     local traitorNotReadyButtonColor = Color( 255, 100, 100, 220 )
 
     function ENT:DoHudStuff()
-        local screenMiddleW = ScrW() / 2
-        local screenMiddleH = ScrH() / 2
-
         local scoreGained = math.Round( self:GetGivenScore() )
         local scoreGainedAlt = math.Round( self:GetGivenScoreAlt() )
 
@@ -43,14 +40,14 @@ if CLIENT then
 
         end
 
-        scoreString = stringPt1 .. tostring( scoreGained )
+        local scoreString = stringPt1 .. scoreGained
 
         if stringPt2 and scoreGainedAlt ~= 0 then
-            scoreString = scoreString .. stringPt2 .. tostring( scoreGainedAlt )
+            scoreString = scoreString .. stringPt2 .. scoreGainedAlt
 
         end
 
-        surface.drawShadowedTextBetter( scoreString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
+        self:DrawPlacingLine( scoreString )
 
         local allTraitorButtons = ents.FindByClass( "ttt_traitor_button" )
         for _, button in ipairs( allTraitorButtons ) do

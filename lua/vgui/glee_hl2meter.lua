@@ -27,8 +27,8 @@ PANEL.Init = function( self )
     self._smooth     = false
     self._fill       = 0
     self._chunkGap   = glee_sizeScaled( nil, 3 )
-    self._fillColor  = hud.colorHappyYellow
-    self._emptyColor = hud.colorBackground
+    self._fillColor  = hud.colors.happy
+    self._emptyColor = hud.colors.bg
 
     self:SetBarSize( glee_sizeScaled( nil, 260 ), glee_sizeScaled( nil, 12 ) )
 

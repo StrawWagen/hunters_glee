@@ -80,10 +80,9 @@ local function getSpectatePromptPanel()
     if IsValid( terminator_Extras.glee_SpectatePromptPanel ) then return terminator_Extras.glee_SpectatePromptPanel end
 
     local hud        = terminator_Extras.glee_HL2Hud
-    local hudHelpers = terminator_Extras.glee_HudHelpers
-    local style      = "soulthought" -- only ever shown while dead
+    local style      = terminator_Extras.glee_Style( "soulthought" ) -- only ever shown while dead
     local textPad    = glee_sizeScaled( nil, 5 )
-    local font       = hudHelpers.ResolveFont( style, "targetID" )
+    local font       = style:Font( "targetID" )
     surface.SetFont( font )
 
     local textW, textH = surface.GetTextSize( spectatePromptText )
@@ -98,8 +97,8 @@ local function getSpectatePromptPanel()
 
     panel.Paint = function( _self, w, h )
         if showEntPromptWait > CurTime() then return end -- visual bug fix
-        hudHelpers.DrawBackground( style, 0, 0, w, h, hud.colorBackground )
-        draw.SimpleText( spectatePromptText, font, w * 0.5, h * 0.5, hudHelpers.ResolveColor( style, "alert" ), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
+        style:Background( 0, 0, w, h, hud.colors.bg )
+        draw.SimpleText( spectatePromptText, font, w * 0.5, h * 0.5, style:Color( "alert" ), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
 
     end
 

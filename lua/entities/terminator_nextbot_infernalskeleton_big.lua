@@ -138,7 +138,7 @@ ENT.infernSkele_IdleSounds = {
 ENT.SkeleDeathAnim = ACT_GMOD_GESTURE_TAUNT_ZOMBIE
 ENT.SkeleDeathAnimRate = 0.35
 ENT.SkeleCallInterval = 35
-ENT.SkeleAlwaysRun = true
+ENT.SkeleRareRunning = false
 
 
 function ENT:SkeletonDeathFX()

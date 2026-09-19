@@ -151,7 +151,11 @@ ENT.IdleActivityTranslations = {
     [ACT_LAND]                          = ACT_LAND,
 }
 
+ENT.IgniteOnHit = true
+
 function ENT:PostHitObject( object )
+    if not self.IgniteOnHit then return end
+
     if GAMEMODE.GivePanic and object:IsPlayer() then
         GAMEMODE:GivePanic( object, 50 )
 
@@ -290,6 +294,11 @@ ENT.MyClassTask = {
     end,
     OnJump = function( self, data, height )
         self:SkeletonJumpFX( height )
+
+    end,
+    ShouldRun = function( self, data )
+        if not self.SkeleRareRunning then return end
+        if self:Health() > self:GetMaxHealth() * 0.9 then return false end
 
     end,
 }

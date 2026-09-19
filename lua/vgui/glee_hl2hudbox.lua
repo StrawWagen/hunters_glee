@@ -1,8 +1,9 @@
 --[[
     glee_hl2hudbox - A small HUD icon box with a built-in display state machine.
 
-    Draws a background with a centered material or text, in the glee_HudHelpers.styles look named by
-    ._myStyle. Colors and the font take a role ( "happy", "medium" ) to follow the style.
+    Draws a background with a centered material or text, in the style named by ._myStyle.
+    Colors and the font are named by role ( "happy", "medium" ), never by font name, so a
+    change of style changes both. See glee_hud/cl_stylehandle.lua.
     All alpha management is internal. Callers only set colors and instruct state.
 
     States (HUDBOX_STATE_* globals):
@@ -102,9 +103,9 @@ local PANEL = {
 
         -- Colors
         local hud            = terminator_Extras.glee_HL2Hud
-        self._normalBoxColor = hud.colorBackground:Copy()
-        self._flashBoxColor  = hud.colorBackgroundUrgent:Copy()
-        self._urgentBoxColor = hud.colorBackgroundUrgent:Copy()
+        self._normalBoxColor = hud.colors.bg:Copy()
+        self._flashBoxColor  = hud.colors.bgUrgent:Copy()
+        self._urgentBoxColor = hud.colors.bgUrgent:Copy()
         self._iconColor      = "happy"
         self._flashIconColor = "flash"
 
@@ -182,8 +183,14 @@ local PANEL = {
 
     end,
 
+    -- see glee_hud/cl_stylehandle.lua
+    Style = function( self )
+        return terminator_Extras.glee_Style( self._myStyle )
+
+    end,
+
     GetResolvedFont = function( self )
-        return terminator_Extras.glee_HudHelpers.ResolveFont( self._myStyle, self._font )
+        return self:Style():Font( self._font )
 
     end,
 
@@ -204,9 +211,9 @@ local PANEL = {
 
     end,
 
-    -- A role or a font name
-    SetIconFont = function( self, font )
-        self._font = font
+    -- A font role, like "medium". See the style's fontSizes for what it has
+    SetIconFont = function( self, fontRole )
+        self._font = fontRole
         self:WrapText()
 
     end,
@@ -415,7 +422,7 @@ local PANEL = {
             iconSrc = self._flashIconColor
 
         end
-        iconSrc = terminator_Extras.glee_HudHelpers.ResolveColor( self._myStyle, iconSrc )
+        iconSrc = self:Style():Color( iconSrc )
 
         -- cl_settingsmenu and the bank atm wrap Paint and draw their text in this
         local dIcon   = self._drawIcon
@@ -430,7 +437,7 @@ local PANEL = {
 
     -- color is unfaded. highlighted is true while flashing, or on an urgent blink
     PaintBackground = function( self, w, h, color, fade, highlighted )
-        terminator_Extras.glee_HudHelpers.DrawBackground( self._myStyle, 0, 0, w, h, color, self._cornerRadius, fade, highlighted )
+        self:Style():Background( 0, 0, w, h, color, self._cornerRadius, fade, highlighted )
 
     end,
 

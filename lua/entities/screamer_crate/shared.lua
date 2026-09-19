@@ -46,10 +46,10 @@ function ENT:SetupDataTablesExtra()
 end
 
 function ENT:SetupDataTables()
-    self:NetworkVar( "Bool", 0, "CanPlace" )
-    self:NetworkVar( "Bool", 1, "InvalidPlacing" )
-    self:NetworkVar( "Int", 0, "GivenScore" )
-    self:NetworkVar( "Int", 1, "GivenScoreAlt" ) -- for some ents
+    self:NetworkVar( "Bool", "CanPlace" )
+    self:NetworkVar( "Bool", "InvalidPlacing" )
+    self:NetworkVar( "Int", "GivenScore" )
+    self:NetworkVar( "Int", "GivenScoreAlt" ) -- for some ents
 
     self:SetupDataTablesExtra()
 
@@ -78,11 +78,11 @@ end
 
 function ENT:Initialize()
     self:SetModel( self.Model )
-    self:SetCanPlace( false ) -- wait for it to check this
 
     if SERVER then
+        self:SetCanPlace( false ) -- wait for it to check this
         self:SetRenderMode( RENDERMODE_TRANSCOLOR )
-        self:SetNoDraw( false )
+        self:SetNoDraw( true )
         self:DrawShadow( true )
 
     end
@@ -99,26 +99,6 @@ ENT.PosOffset = Vector( 0, 0, 10 )
 if CLIENT then
 
     local hidePlacingBeamHints = CreateClientConVar( "cl_huntersglee_hideplacingbeamhints", "0", true, false )
-
-    -- score gained on place
-    local fontData = {
-        font = GAMEMODE.GLEE_FONT or "Arial",
-        extended = false,
-        size = glee_sizeScaled( nil, 40 ),
-        weight = 500,
-        blursize = 0,
-        scanlines = 0,
-        antialias = true,
-        underline = false,
-        italic = false,
-        strikeout = false,
-        symbol = false,
-        rotary = false,
-        shadow = false,
-        additive = false,
-        outline = false,
-    }
-    surface.CreateFont( "scoreGainedOnPlaceFont", fontData )
 
     local LocalPlayer = LocalPlayer
 
@@ -169,41 +149,59 @@ if CLIENT then
 
     end )
 
-    -- reached through the ghost ent, cl_topleftinfo falls back to it when we hold no weapon.
-    -- DoHudStuff already shows the projected profit, this is the half it doesn't say
     function ENT:HintPreStack()
         -- this file is the base for every placeable, only the real screaming crate has a beacon
         if self:GetClass() ~= "screamer_crate" then return end
         if GAMEMODE:HasLearnedLesson( "BeaconSurvived" ) then return end
 
-        return true, "Place the supplies NEAR a survivor, but not too near.\nIf they break it before the first beep,\nthey'll STEAL the deposit..."
+        return true, "Place the supplies NEAR a survivor, but not too near.\nIf they break it before the first beep,\nthey'll STEAL the deposit...\nSmart enemies can HEAR the beacon."
+
+    end
+
+    local ghost = terminator_Extras.glee_Style( "soulthought" )
+
+    local screenMiddleW = ScrW() / 2
+    local screenMiddleH = ScrH() / 2
+
+    -- overridable per variant, like PosOffset and HullCheckSize already are
+    ENT.PlacingFont    = "placing" -- font role the readout draws in
+    ENT.PlacingDrop    = 20 -- 1080p pixels below screen centre, for the first line
+    ENT.PlacingLineGap = 40 -- and between lines after it
+
+    -- everything in this tree is placed by the dead, escaped players included, so the
+    -- readout is never in another style
+    function ENT:PlacingStyle()
+        return ghost
+
+    end
+
+    --[[---------------------------------------------------------
+        ENT:DrawPlacingLine
+        Draws one line of the floating readout while placing.
+        @param text: The line to show.
+        @param colorRole: A colour role of the soulthought style. Defaults to happy.
+        @param line: Which line down, 0 being the first. Defaults to 0.
+        @return: None
+    --]]---------------------------------------------------------
+    function ENT:DrawPlacingLine( text, colorRole, line )
+        local y = screenMiddleH + glee_sizeScaled( nil, self.PlacingDrop + ( line or 0 ) * self.PlacingLineGap )
+
+        self:PlacingStyle():Draw( text, self.PlacingFont, screenMiddleW, y, colorRole or "happy" )
 
     end
 
     function ENT:DoHudStuff()
-        local screenMiddleW = ScrW() / 2
-        local screenMiddleH = ScrH() / 2
-
         local scoreGained = math.Round( self:GetGivenScore() )
 
-        local stringPt1 = ""
-        local scoreString = ""
-        local placinCostStr = ""
-
-        if scoreGained > 0 then
-            stringPt1 = "Projected profit: "
-            placinCostStr = "Deposit: " .. tostring( deposit )
-
-            scoreString = stringPt1 .. tostring( scoreGained + deposit )
-
-        else
-            stringPt1 = "Hunter luring cost: "
-            scoreString = stringPt1 .. tostring( scoreGained )
+        -- nothing to profit from, so no deposit line to show either
+        if scoreGained <= 0 then
+            self:DrawPlacingLine( "Hunter luring cost: " .. scoreGained )
+            return
 
         end
 
-        surface.drawShadowedTextBetter( scoreString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
-        surface.drawShadowedTextBetter( placinCostStr, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 60 )
+        self:DrawPlacingLine( "Projected profit: " .. ( scoreGained + deposit ) )
+        self:DrawPlacingLine( "Deposit: " .. deposit, nil, 1 )
 
     end
 
@@ -697,6 +695,8 @@ function ENT:Think()
 
         end
 
+        self:SetNoDraw( false )
+
     elseif IsValid( self.player ) and IsValid( self:GetOwner() ) then
         toReturn = self:ModifiableThink()
 
@@ -907,3 +907,11 @@ function ENT:Place()
     SafeRemoveEntity( self )
 
 end
+
+if not GAMEMODE.IsReallyHuntersGlee then return end
+
+hook.Add( "PropBreak", "glee_breakcrate_lesson", function( breaker, broken )
+    if broken:GetClass() ~= "item_item_crate" then return end
+    GAMEMODE:LearnLesson( breaker, "BrokeSupplies" )
+
+end )

@@ -79,7 +79,10 @@ if SERVER then
 end
 if CLIENT then
 
-    include( "autorun/client/cl_gleehud.lua" )
+    if not glee_sizeScaled then
+        include( "autorun/client/cl_gleehud.lua" )
+
+    end
 
     local function defineFont()
         surface.CreateFont( "huntersglee_barinfo", {

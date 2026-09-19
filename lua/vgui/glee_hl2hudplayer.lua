@@ -28,9 +28,9 @@
         data.isLookedAt   bool         Controls infoLine/extraLine visibility and "????" name
                                        substitution when text alpha has faded to zero.
 
-    Drawn in the glee_HudHelpers.styles look named by ._myStyle. A looked at panel draws highlighted.
+    Drawn in the style named by ._myStyle. A looked at panel draws highlighted.
 
-    Background lerps from hl2hud.colorBackground toward ply:GetPlayerColor() as distance
+    Background lerps from hl2hud.colors.bg toward ply:GetPlayerColor() as distance
     increases through the name-fade zone; background alpha also rises with the lerp.
     Dead player panels stay near the neutral background color. When isLookedAt, bg snaps
     back to neutral. Text always uses team/state color.
@@ -65,10 +65,10 @@ function PANEL:Init()
     self._isLookedAt = false
 
     -- Background color base (read-only; lerp target is set per-frame)
-    self._bgBaseR = hud.colorBackground.r
-    self._bgBaseG = hud.colorBackground.g
-    self._bgBaseB = hud.colorBackground.b
-    self._bgBaseA = hud.colorBackground.a
+    self._bgBaseR = hud.colors.bg.r
+    self._bgBaseG = hud.colors.bg.g
+    self._bgBaseB = hud.colors.bg.b
+    self._bgBaseA = hud.colors.bg.a
 
     -- Background lerp target (set from ply:GetPlayerColor() each frame)
     self._bgTargetR = 255
@@ -115,8 +115,14 @@ function PANEL:ComputeShowName()
 
 end
 
+-- see glee_hud/cl_stylehandle.lua
+function PANEL:Style()
+    return terminator_Extras.glee_Style( self._myStyle )
+
+end
+
 function PANEL:GetResolvedFont()
-    return terminator_Extras.glee_HudHelpers.ResolveFont( self._myStyle, self._font )
+    return self:Style():Font( self._font )
 
 end
 
@@ -211,9 +217,14 @@ function PANEL:UpdateForPlayer( ply, cur, data )
         end
     end
 
-    -- Text color = team/state color (glee_PlayerNameColor mutates its shared Color
-    -- objects, so this is valid only until the next call to that function)
-    self._teamColor = terminator_Extras.glee_PlayerNameColor( ply, true )
+    -- every panel is updated before any of them paints, and glee_PlayerNameColor's
+    -- return is overwritten by the next call, so copy it rather than hold it
+    local nameColor = terminator_Extras.glee_PlayerNameColor( ply, true )
+    local teamColor = self._teamColor
+    teamColor.r = nameColor.r
+    teamColor.g = nameColor.g
+    teamColor.b = nameColor.b
+    teamColor.a = nameColor.a
 
     -- Background lerp target = player body color (Vector 0-1 -> 0-255)
     local plyColorVec   = ply:GetPlayerColor()
@@ -352,7 +363,7 @@ function PANEL:Paint( w, h )
     local panelAlpha = self._panelAlpha
     if panelAlpha <= 0 then return end
 
-    -- Background: lerp from colorBackground toward ply:GetPlayerColor()
+    -- Background: lerp from the style's bg toward ply:GetPlayerColor()
     local bgLerpT = self._bgColorLerpTransition
     local drawBg  = self._drawBg
     drawBg.r = math.floor( self._bgBaseR + ( self._bgTargetR - self._bgBaseR ) * bgLerpT )
@@ -366,7 +377,7 @@ function PANEL:Paint( w, h )
     local radiusRange        = circleCornerRadius - boxCornerRadius
     local cornerRadius       = math.floor( boxCornerRadius + radiusRange * self._sizeT )
 
-    terminator_Extras.glee_HudHelpers.DrawBackground( self._myStyle, 0, 0, w, h, drawBg, cornerRadius, panelAlpha / 255, self._isLookedAt )
+    self:Style():Background( 0, 0, w, h, drawBg, cornerRadius, panelAlpha / 255, self._isLookedAt )
 
     -- Don't draw text when the panel is nearly a dot
     if self._sizeT > 0.8 then return end

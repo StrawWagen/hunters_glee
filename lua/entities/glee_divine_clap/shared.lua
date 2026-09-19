@@ -35,18 +35,13 @@ local sparkRadius = 120 -- max spread of the telegraph sparks from the strike po
 
 if CLIENT then
     function ENT:DoHudStuff()
-        local screenMiddleW = ScrW() / 2
-        local screenMiddleH = ScrH() / 2
         local scoreGained = math.Round( self:GetGivenScore() )
         local stringPt1 = ""
         if scoreGained < 0 then
             stringPt1 = "Cost: "
         end
 
-        local scoreString = stringPt1 .. tostring( scoreGained )
-
-        surface.SetFont( "scoreGainedOnPlaceFont" )
-        surface.drawShadowedTextBetter( scoreString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
+        self:DrawPlacingLine( stringPt1 .. scoreGained )
 
     end
 end

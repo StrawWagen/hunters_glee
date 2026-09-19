@@ -26,13 +26,9 @@ ENT.weapCrateNearbyBlameReason = "Other Skulls"
 
 if CLIENT then
     function ENT:DoHudStuff()
-        local screenMiddleW = ScrW() / 2
-        local screenMiddleH = ScrH() / 2
-
         local scoreGained = math.Round( self:GetGivenScore() )
 
-        local scoreGainedString = "(In)Convenience Score: " .. tostring( scoreGained )
-        surface.drawShadowedTextBetter( scoreGainedString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
+        self:DrawPlacingLine( "Well-Hidden Profit: " .. scoreGained )
 
     end
 end

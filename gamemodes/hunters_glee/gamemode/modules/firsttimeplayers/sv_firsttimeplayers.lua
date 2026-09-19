@@ -77,7 +77,7 @@ local function shelterPly( ply )
     end )
 end
 
-local function tutorialize( ply )
+local function tutorialize( ply, tutorialType )
     permaPrint( "GLEE: Tutorializing ", ply )
     if ply:Glee_FlashlightIsOn() then
         ply:Glee_Flashlight( false )
@@ -86,10 +86,18 @@ local function tutorialize( ply )
     asked[ply] = true
     if not alreadyDone[ply:SteamID()] then -- NEVER give god/notarg more than once per session
         alreadyDone[ply:SteamID()] = true
-        shelterPly( ply )
+        if tutorialType == "ghostly" then
+            if ply:Health() > 0 then
+                ply:KillSilent()
 
+            end
+        else
+            shelterPly( ply )
+
+        end
     end
     net.Start( "glee_dothefirsttimemessage" )
+        net.WriteString( tutorialType )
     net.Send( ply )
 
     ply.glee_IsFirstTimePlayer = true
@@ -163,14 +171,21 @@ function GAMEMODE:TutorializeNewPlayers( players )
     end
     if #nonKnowers <= 0 then return end
 
+    local tutorialType = "default"
+
     -- enough of the session is new that the whole server should be on the gentle misery
-    if #nonKnowers >= #players / 2 then
+    local threshold = #players / 2
+    if #nonKnowers > threshold then
         RunConsoleCommand( "huntersglee_spawnset", self.TheTutorialMisery )
+
+    elseif GAMEMODE:getRemaining( GAMEMODE.termHunt_roundBegunTime, CurTime() ) > 5 then
+        -- spawn in dead if round didn't JUST start right now
+        tutorialType = "ghostly"
 
     end
 
     for _, ply in ipairs( nonKnowers ) do
-        tutorialize( ply )
+        tutorialize( ply, tutorialType )
 
     end
 end
@@ -183,6 +198,7 @@ end )
 
 local forceResetOnSpawn
 
+-- make this player mimic exact conditions of someone who just spawned into the server
 local function forceResetTutorial( ply )
     asked[ply] = nil
     alreadyDone[ply:SteamID()] = nil

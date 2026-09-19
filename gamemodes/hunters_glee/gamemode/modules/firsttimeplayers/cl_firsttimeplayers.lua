@@ -4,35 +4,9 @@
 
 local GAMEMODE = GAMEMODE or GM
 
-local godHud = terminator_Extras.godHud
-local godlyDecreeHud = terminator_Extras.godlyDecreeHud
-local hudHelpers = terminator_Extras.glee_HudHelpers
-local ghostSettings = godlyDecreeHud.ghosts.huge
-local textArrivalSounds = godHud.textArrivalSounds
-local textLandingSounds = godHud.textLandingSounds
-local playGodSound = hudHelpers.PlaySound
+local decree = terminator_Extras.glee_Style( "godlyDecree" )
 
 local clickImpatience = 0.30 -- seconds of animation a click skips
-
--- copies, their alpha gets written
-local ghostTextColor = ColorAlpha( godlyDecreeHud.textColor, 255 )
-local ghostShadowColor = ColorAlpha( godlyDecreeHud.shadowColor, 255 )
-local solidTextColor = ColorAlpha( godlyDecreeHud.textColor, 255 )
-local solidShadowColor = ColorAlpha( godlyDecreeHud.shadowColor, 255 )
-
-local ghostData = {
-    textColor = ghostTextColor,
-    shadowColor = ghostShadowColor,
-    shadowOffsetX = godlyDecreeHud.shadowOffsetX,
-    shadowOffsetY = godlyDecreeHud.shadowOffsetY,
-}
-
-local solidData = {
-    textColor = solidTextColor,
-    shadowColor = solidShadowColor,
-    shadowOffsetX = godlyDecreeHud.shadowOffsetX,
-    shadowOffsetY = godlyDecreeHud.shadowOffsetY,
-}
 
 local imNewMyself = nil
 local hasSeenMessage = CreateClientConVar( "cl_huntersglee_firsttimetutorial", 0, true, true, "Has the player seen the one-time tutorial series of messages?" )
@@ -47,6 +21,18 @@ local stagesTutorialMisery = {
     [5] = "Don't worry though,\ndeath is not the end...",
     [6] = "Give THEM a gleeful hunt,\nand be careful!",
     [7] = "They're already on your tail...",
+}
+
+local stagesTutorialMiseryMulti = {
+    [1] = "Welcome.\nTo the hunt!",
+    [2] = "You're here to...\nDIE?",
+    [3] = "You are here to HAUNT.",
+    [4] = "You're here to bring, to FEEL,\noverwhelming glee?",
+    [5] = "It's kill or be killed in the HUNT",
+    [6] = "Don't worry though,\ndeath is not the end...",
+    [7] = "Your SOUL will live on.",
+    [8] = "Give THEM a gleeful hunt,\nand be careful!",
+    [9] = "They're already on your tail...",
 }
 
 local stagesSingleplayer = {
@@ -72,15 +58,30 @@ local stagesMultiplayer = {
     [9] = "The hunt MUST GO ON.",
 }
 
+local stagesGhostly = {
+    [1] = "Welcome.\nTo the hunt!",
+    [2] = "You are...",
+    [3] = "Temporarily...",
+    [4] = "Separate from your body.",
+    [5] = "...",
+    [6] = "You are DEAD.",
+    [7] = "But don't worry.",
+    [8] = "Your SOUL persists...",
+    [9] = "Death is only temporary.",
+    [10] = "DIVINE INTERVENTION AWAITS YOU",
+    [11] = "Just, be ready to pay the price...",
+    [12] = "Happy haunting!",
+}
+
 -- Builds the whole tutorial, or decides this player doesn't need one.
 -- Returns true for both, because the only caller is a retry timer and both mean stop retrying.
 -- Returns nil when LocalPlayer wasn't ready, which is the only case worth trying again.
-local function doMessageIfWeCan()
+local function doMessageIfWeCan( tutorialType )
     if not IsValid( LocalPlayer() ) then return end -- erm
     -- double check!
 
     -- 1 is the singleplayer tutorial, 2 is the multiplayer one, and doing the multiplayer one
-    -- counts as having done both. sv_firsttimeplayers' requiredKnowledgeLevel picks the same two
+    -- counts as having done both
     local target = 1
     if game.IsDedicated() then
         target = 2
@@ -97,6 +98,34 @@ local function doMessageIfWeCan()
         LocalPlayer():SetDSP( 15, true )
 
     end
+
+    local stages
+
+    if tutorialType == "default" then
+        local plyCount = player.GetCount()
+        if spawnsetCvar:GetString() == GAMEMODE.TheTutorialMisery then
+            if plyCount >= 2 then
+                stages = stagesTutorialMiseryMulti
+
+            else
+                stages = stagesTutorialMisery
+
+            end
+
+        elseif plyCount >= 2 then
+            stages = stagesMultiplayer
+
+        else
+            stages = stagesSingleplayer
+
+        end
+    elseif tutorialType == "ghostly" then
+        stages = stagesGhostly
+        LocalPlayer().glee_SpawnedInDeadTutorialPlease = true
+
+    end
+
+    if not stages then return end -- saftey check for indev work
 
     local popup, width, height = GAMEMODE:CreateScreenFillingPopup()
 
@@ -135,31 +164,17 @@ local function doMessageIfWeCan()
     button.lastThink = CurTime()
     button.elapsed = 0
     button.clickPlsGoFaster = 0
-    button.jitterX = 0 -- DoJitter fills these in, Paint just needs them to exist on frame one
+    button.jitterX = 0 -- Jitter fills these in, Paint just needs them to exist on frame one
     button.jitterY = 0
-
-    local stages
-    if spawnsetCvar:GetString() == GAMEMODE.TheTutorialMisery then
-        stages = stagesTutorialMisery
-
-    elseif player.GetCount() >= 2 then
-        stages = stagesMultiplayer
-
-    else
-        stages = stagesSingleplayer
-
-    end
+    button.line = decree:NewArrival( "huge" )
 
     local function showStage()
         local fullMsg = stages[button.stage]
         if not fullMsg then return end
 
-        button.msg = fullMsg
-        button.ghosts = hudHelpers.BuildGhosts( ghostSettings )
+        button.line:SetText( fullMsg )
         button.elapsed = 0
         button.clickPlsGoFaster = 0
-        button.solidAlpha = 0
-        button.wasDone = nil
         button.nextAutomatic = nil
 
     end
@@ -175,9 +190,9 @@ local function doMessageIfWeCan()
                 us:EmitSound( "ambient/levels/streetwar/gunship_distant2.wav", 120, 140, 0.5, CHAN_STATIC, SND_NOFLAGS, 0 )
 
             end
-            playGodSound( textArrivalSounds, math.random( 90, 110 ), CHAN_STATIC )
-            playGodSound( textArrivalSounds, math.random( 70, 80 ), CHAN_STATIC )
-            playGodSound( textArrivalSounds, math.random( 50, 60 ), CHAN_STATIC )
+            decree:PlaySound( "arrival", math.random( 90, 110 ), CHAN_STATIC )
+            decree:PlaySound( "arrival", math.random( 70, 80 ), CHAN_STATIC )
+            decree:PlaySound( "arrival", math.random( 50, 60 ), CHAN_STATIC )
 
             popup:Remove()
             return
@@ -205,10 +220,7 @@ local function doMessageIfWeCan()
 
         end
 
-        hudHelpers.DoJitter( button, godHud.jitter )
-
-        local ghosts = button.ghosts
-        if not ghosts then return end
+        decree:Jitter( button )
 
         -- a minimised window stops thinking, don't let it come back already materialised
         local delta = math.Clamp( CurTime() - button.lastThink, 0, 0.1 )
@@ -217,48 +229,29 @@ local function doMessageIfWeCan()
         button.elapsed = button.elapsed + delta + button.clickPlsGoFaster
         button.clickPlsGoFaster = 0
 
-        local appeared = hudHelpers.AdvanceGhosts( ghosts, button.elapsed, ghostSettings )
+        local appeared, justLanded = button.line:Update( button.elapsed )
         for _ = 1, appeared do
-            playGodSound( textArrivalSounds, math.random( 90, 110 ), CHAN_STATIC )
+            decree:PlaySound( "arrival", math.random( 90, 110 ), CHAN_STATIC )
 
         end
 
-        -- squared, so it stays hidden while the ghosts are spread out
-        local materialised = hudHelpers.GhostsMaterialised( button.elapsed, ghostSettings )
-        button.solidAlpha = 255 * ( materialised ^ 2 )
-
-        if materialised >= 1 and not button.wasDone then
+        if justLanded then
             button.nextAutomatic = CurTime() + 5
-            button.wasDone = true
-            playGodSound( textLandingSounds, math.random( 50, 60 ), CHAN_BODY )
+            decree:PlaySound( "landing", math.random( 50, 60 ), CHAN_BODY )
 
         end
     end
 
     button.Paint = function()
-        local ghosts = button.ghosts
-        if not ghosts then return end
-
         local centreX = ( width / 2 ) + button.jitterX
         local topY = ( height / 2 ) + -256 + button.jitterY
 
-        ghostData.text = button.msg
-        ghostData.font = godlyDecreeHud.fonts.huge
-        hudHelpers.DrawGhosts( ghosts, ghostSettings, ghostData, centreX, topY )
-
-        solidTextColor.a = button.solidAlpha
-        solidShadowColor.a = button.solidAlpha
-
-        solidData.text = button.msg
-        solidData.font = godlyDecreeHud.fonts.huge
-        solidData.posX = centreX
-        solidData.posY = topY
-        surface.drawShadowedTextBetterData( solidData )
+        button.line:Draw( centreX, topY )
 
     end
 
     button.DoClick = function()
-        if not button.wasDone then button.clickPlsGoFaster = button.clickPlsGoFaster + clickImpatience return end
+        if not button.line.landed then button.clickPlsGoFaster = button.clickPlsGoFaster + clickImpatience return end
         if button.nextPress > CurTime() then return end
         nextStage()
 
@@ -270,9 +263,10 @@ end
 local timerName = "glee_dofirsttimemessage_ensured"
 
 net.Receive( "glee_dothefirsttimemessage", function()
+    local tutorialType = net.ReadString()
     timer.Create( timerName, 1, 0, function()
         -- repeat this until LocalPlayer() is valid and the tutorial is started
-        if doMessageIfWeCan() == true then timer.Remove( timerName ) end
+        if doMessageIfWeCan( tutorialType ) == true then timer.Remove( timerName ) end
 
     end )
 end )

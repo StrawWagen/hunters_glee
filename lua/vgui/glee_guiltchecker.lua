@@ -47,7 +47,7 @@ local THROB_FASTEST = 0.15 -- ...and once they hit the worst tier
 -- the HL2 palette doesn't exist yet.
 local function meterUnlitColor()
     -- darker than the box it sits in, so unlit chunks read as recessed
-    return terminator_Extras.glee_HL2Hud.colorBackgroundDark
+    return terminator_Extras.glee_HL2Hud.colors.bgDark
 
 end
 
@@ -94,7 +94,7 @@ PANEL.Init = function( self )
     self._column:Dock( FILL )
 
     self._days = vgui.Create( "glee_hl2hudbox", self._column )
-    self._days:SetIconFont( "glee_mediumLargeHL2Font" )
+    self._days:SetIconFont( "mediumLarge" )
     self._days:Dock( TOP )
 
     self._meter = vgui.Create( "glee_hl2meter", self._column )
@@ -104,7 +104,7 @@ PANEL.Init = function( self )
     self._meter:DockMargin( 0, gap, 0, 0 )
 
     self._desc = vgui.Create( "glee_hl2hudbox", self )
-    self._desc:SetIconFont( "glee_smallHL2Font" )
+    self._desc:SetIconFont( "small" )
     self._desc:Dock( FILL )
     self._desc:DockMargin( 0, gap, 0, 0 )
 

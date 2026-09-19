@@ -178,9 +178,30 @@ rename innate to mutations? innate makes it sound like you have it from the begi
 
 infernal bone manip doesnt persist to dead ragdolls -- done
 
+buy flare hint --done
+
+flashlight stays on when astral projecting -- done
+
+bomb gland big bombs gravgunnable -done
+
+-- bhop perk? ( ALWAYS bhop ) -- done
+
+-- make first time hint defer to escape menu -done, thanks rubat
+
+-- no ammo hints on all custom weapons -done
+Rename AR2 to Pulse-Rifle -- done
+
+weapons spawn later, longer buildup for terminator miseries - done
+
+term crowbars always swing if throw mul is low, unless really angry -done
+
 
 -- make radio a purchasable item, moving all global/prox chat stuff to settings menu
 -- gateway to expensive items, airdropped in
+
+-- remove radio from shop
+-- purchase radio for 1 skull from shop
+-- left clicking will open radial menu/other shop?
 
 
 -- Replace stupid temp bools with ints, polish conduit/inversion cooldowns
@@ -203,8 +224,6 @@ infernal bone manip doesnt persist to dead ragdolls -- done
 -- flat, most hunter kills
 -- most skulls, additive ( all players skulls in one session, added up )
 
--- bhop perk? ( ALWAYS bhop )
-
 -- visual cohesiveness
 -- better defined goal
 
@@ -221,8 +240,6 @@ infernal bone manip doesnt persist to dead ragdolls -- done
 
 -- samus ball powerup
 
--- make first time hint defer to escape menu
-
 -- hint to flash tab?
 
 -- voting for miseries is not that new user friendly
@@ -230,7 +247,8 @@ infernal bone manip doesnt persist to dead ragdolls -- done
 
 -- skull place while dead item
 -- show skulls when aiming at players
--- skulls from enemies makes sense, but not from other ways
+
+-- skulls from enemies makes sense, but not from other ways ( meh feedback )
 
 -- split sixth sense?
 -- enemy finding powerup
@@ -264,8 +282,6 @@ infernal bone manip doesnt persist to dead ragdolls -- done
 
 -- better feedback from shooting players
 
--- no ammo hints on all custom weapons
-
 -- NEED STRONGER HINT TO SCROLL in shop
 
 -- drop money all the time, 50% of score? -no
@@ -298,10 +314,7 @@ beartraps more prominent in shop
 SLAMS prominent in shop
 
 spawnsets get hints?
-Rename AR2 to Pulse-Rifle
 USE hint on weapons on the ground?
-
-weapons spawn later, longer buildup for terminator miseries
 
 put big messages ON TOP OF OTHER ELEMENTS
 
@@ -351,7 +364,6 @@ also very profitable?
 
 
 doritos playermodel nextbots
-term crowbars always swing if throw mul is low, unless really angry
 
 
 music did not convey the urgency of round grace period
@@ -449,12 +461,8 @@ an extraction shooter where dead players become disembodied agents of chaos
 -- end embalmster
 
 
-flashlight stays on when astral projecting
-
 callman filter ( simplification of it )
 gaussian blob?
-
-bomb gland big bombs gravgunnable
 
 astral projection type thing when u disconnect
 
@@ -537,8 +545,6 @@ first time death message, that death was holding you back
 then it encourages you to purchase loadout
 YOU FOUND A SKULL; pauses game
 
-buy flare hint
-
 
 divine intervention description change ( encase yourself within a weak shell of meat and bones )
 
@@ -559,3 +565,8 @@ when bind is unoveridden, falls back to default, eg +menu
 automatically goes in help menu
 goes in a glee rebinding menu? 
 
+-- add hook that can block the starting of a next wave of enemies
+-- use it in tutorial mode, wait for all players to stop moving, to spawn next wave 
+
+-- Hardcore Glee misery, no shop, even when dead
+-- True Glee misery, no self-reviving dead items

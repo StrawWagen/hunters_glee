@@ -189,6 +189,9 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
 
     -- wait!
     if GAMEMODE.nextSpawnWave > cur or GAMEMODE.currentSpawnWave then return end
+    if hook.Run( "huntersglee_spawnwavegeneration_block" ) == true then return end
+
+    -- after this is wave building
 
     -- speed up the spawner for debugging heavy cost npcs, without waiting years
     local speedOverride = speedVar:GetFloat()
@@ -324,6 +327,12 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
             end
             table.Add( GAMEMODE.currentSpawnWave, pickedSpawns )
             GAMEMODE.nextSpawnWave = cur + spawnSet.waveInterval / speedOverride
+            GAMEMODE.lastSpawnWave = cur
+
+            ProtectedCall( function( _pickedSpawns )
+                hook.Run( "huntersglee_postwavegenerated", _pickedSpawns )
+
+            end, pickedSpawns )
 
         else
             -- dont spam checks

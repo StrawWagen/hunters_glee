@@ -32,10 +32,12 @@ gamemodes\hunters_glee\gamemode\modules\signalstrength\cl_signalstrength.lua
 gamemodes\hunters_glee\gamemode\player_class\player_termrunner.lua
 gamemodes\hunters_glee\gamemode\player_class\player_termrunnertaunt.lua
 
+gamemodes\hunters_glee\gamemode\modules\clhud\cl_hudregions.lua
 gamemodes\hunters_glee\gamemode\modules\clhud\cl_topleftinfo.lua
 gamemodes\hunters_glee\gamemode\modules\clhud\cl_bpm.lua
 gamemodes\hunters_glee\gamemode\modules\clhud\cl_battery.lua
 gamemodes\hunters_glee\gamemode\modules\clhud\cl_plynames.lua
+gamemodes\hunters_glee\gamemode\modules\clhud\cl_whowespectating.lua
 
 gamemodes\hunters_glee\gamemode\modules\battery\sh_battery.lua
 

@@ -2,7 +2,8 @@ local spawnSetVote = {}
 local surface_SetAlphaMultiplier = surface.SetAlphaMultiplier
 local input = input
 
-local godHud = terminator_Extras.godHud
+local god = terminator_Extras.glee_Style( "god" )
+local godLook = god:Settings() -- the strip, the arrival and the paddings, which have no methods
 local hudHelpers = terminator_Extras.glee_HudHelpers
 
 -- 1080p pixels
@@ -59,43 +60,34 @@ local function isBound( cmd )
 end
 
 -- Also sets panel.wrappedText and panel.textWidth
-local function layoutGodText( panel, text, font, padX, padY )
+local function layoutGodText( panel, text, fontRole, padX, padY )
     local wrapWidth = panel:GetWide() - ( padX * 2 )
-    panel.wrappedText = hudHelpers.WrapText( text, font, wrapWidth )
+    panel.wrappedText = god:Wrap( text, fontRole, wrapWidth )
 
-    local textWidth, textHeight = hudHelpers.MeasureText( panel.wrappedText, font )
+    local textWidth, textHeight = god:Measure( panel.wrappedText, fontRole )
     panel.textWidth = textWidth
-    panel:SetTall( math.ceil( textHeight + ( padY * 2 ) + godHud.shadowOffsetY ) )
+    panel:SetTall( math.ceil( textHeight + ( padY * 2 ) + godLook.shadowOffsetY ) )
 
-end
-
-local function newTextData( font, doCenter )
-    return {
-        font = font,
-        doCenter = doCenter,
-        shadowColor = godHud.shadowColor,
-        shadowOffsetX = godHud.shadowOffsetX,
-        shadowOffsetY = godHud.shadowOffsetY,
-    }
 end
 
 -- One line of the vote, a torn strip with panel.wrappedText on it, sliding in as the vote opens.
 -- The panel needs layoutGodText run on it, and jitterX / jitterY set.
-local function paintGodLine( panel, openedAt, order, state, textData, textColor, w, h )
-    local arrival = godHud.arrival
+-- state keys the style's tornStrip colors
+local function paintGodLine( panel, openedAt, order, state, fontRole, colorRole, w, h )
+    local arrival = godLook.arrival
     local arrived = hudHelpers.ArrivalProgress( openedAt, order, arrival )
     local slide = ( 1 - arrived ) * arrival.slideDistance
 
     surface_SetAlphaMultiplier( arrived )
 
-    local stripWidth = math.min( w, panel.textWidth + ( godHud.textPaddingX * 2 ) )
-    hudHelpers.DrawTornStrip( godHud.tornStrip, slide, 0, stripWidth, h, state, panel )
+    local stripWidth = math.min( w, panel.textWidth + ( godLook.textPaddingX * 2 ) )
+    hudHelpers.DrawTornStrip( godLook.tornStrip, slide, 0, stripWidth, h, state, panel )
 
-    textData.text = panel.wrappedText
-    textData.textColor = textColor
-    textData.posX = slide + godHud.textPaddingX + panel.jitterX
-    textData.posY = godHud.textPaddingY + panel.jitterY
-    surface.drawShadowedTextBetterData( textData )
+    god:Draw(
+        panel.wrappedText, fontRole,
+        slide + godLook.textPaddingX + panel.jitterX, godLook.textPaddingY + panel.jitterY,
+        colorRole, false
+    )
 
     surface_SetAlphaMultiplier( 1 )
 
@@ -131,9 +123,9 @@ function spawnSetVote:CreateVotePanel()
     local voteEnd = spawnSetVote.voteEnd
     local openedAt = CurTime()
 
-    local textPaddingX = godHud.textPaddingX
-    local textPaddingY = godHud.textPaddingY
-    local lineGap = godHud.lineGap
+    local textPaddingX = godLook.textPaddingX
+    local textPaddingY = godLook.textPaddingY
+    local lineGap = godLook.lineGap
 
     if IsValid( GAMEMODE.spawnSetVote_VoteHolder ) then
         GAMEMODE.spawnSetVote_VoteHolder:Close()
@@ -154,7 +146,7 @@ function spawnSetVote:CreateVotePanel()
     voteHolder:SetDraggable( false )
     voteHolder:ShowCloseButton( false )
 
-    hudHelpers.PlaySound( godHud.textArrivalSounds, math.random( 110, 130 ), CHAN_STATIC, 0.3 )
+    god:PlaySound( "arrival", math.random( 110, 130 ), CHAN_STATIC, 0.3 )
 
     voteHolder.voteOptions = {}
     function voteHolder:Think()
@@ -204,77 +196,42 @@ function spawnSetVote:CreateVotePanel()
     title:Dock( FILL )
 
     -- the title wraps to whatever width the countdown leaves it, so both are measured here
+    local titleLine = god:NewArrival( "medium", nil, false )
+
     function header:PerformLayout( w )
         -- two digits wide, so the title doesn't shift as it counts down
-        local countdownWidth, countdownHeight = hudHelpers.MeasureText( "00", godHud.fonts.large )
+        local countdownWidth, countdownHeight = god:Measure( "00", "large" )
         countdownWidth = countdownWidth + textPaddingX * 2
         countdown:SetWide( countdownWidth )
 
-        title.wrappedText = hudHelpers.WrapText( titleText, godHud.fonts.medium, w - countdownWidth )
-        local _, titleHeight = hudHelpers.MeasureText( title.wrappedText, godHud.fonts.medium )
+        title.wrappedText = god:Wrap( titleText, "medium", w - countdownWidth )
+        local _, titleHeight = god:Measure( title.wrappedText, "medium" )
         title.textHeight = titleHeight
 
-        self:SetTall( math.ceil( math.max( countdownHeight, titleHeight ) + godHud.shadowOffsetY ) )
+        -- safe every layout pass, see arrivingText:SetText
+        titleLine:SetText( title.wrappedText )
+
+        self:SetTall( math.ceil( math.max( countdownHeight, titleHeight ) + godLook.shadowOffsetY ) )
 
     end
-
-    local titleGhostSettings = godHud.ghosts.medium
-    local titleGhostData = newTextData( godHud.fonts.medium, false )
-    -- copies, DrawGhosts writes their alpha
-    titleGhostData.textColor = ColorAlpha( godHud.textColor, 255 )
-    titleGhostData.shadowColor = ColorAlpha( godHud.shadowColor, 255 )
-
-    local titleData = newTextData( godHud.fonts.medium, false )
-    titleData.textColor = godHud.textColor
 
     title.wrappedText = titleText
     title.textHeight = 0
-    title.ghosts = hudHelpers.BuildGhosts( titleGhostSettings )
-    title.materialised = 0
 
     function title:Think()
-        if not self.ghosts then return end
+        titleLine:Update( CurTime() - openedAt )
 
-        local elapsed = CurTime() - openedAt
-        hudHelpers.AdvanceGhosts( self.ghosts, elapsed, titleGhostSettings )
-        self.materialised = hudHelpers.GhostsMaterialised( elapsed, titleGhostSettings )
-
-        if self.materialised >= 1 then
-            self.ghosts = nil
-
-        end
     end
 
     function title:Paint( _, h )
-        local leftX = 0
-        local topY = ( h - self.textHeight ) / 2
-
-        titleGhostData.font = godHud.fonts.medium
-        titleGhostData.text = self.wrappedText
-        titleData.font = godHud.fonts.medium
-        titleData.text = self.wrappedText
-
-        if self.ghosts then
-            hudHelpers.DrawGhosts( self.ghosts, titleGhostSettings, titleGhostData, leftX, topY )
-
-        end
-
-        titleData.posX = leftX
-        titleData.posY = topY
-
-        -- squared, so it stays hidden while the ghosts are spread out
-        surface_SetAlphaMultiplier( self.materialised ^ 2 )
-        surface.drawShadowedTextBetterData( titleData )
-        surface_SetAlphaMultiplier( 1 )
+        titleLine:Draw( 0, ( h - self.textHeight ) / 2 )
 
         return true
 
     end
 
 
-    local countdownData = newTextData( godHud.fonts.large, true )
-    countdownData.text = "00"
-
+    countdown.countText = "00"
     countdown.jitterX = 0
     countdown.jitterY = 0
 
@@ -283,7 +240,7 @@ function spawnSetVote:CreateVotePanel()
         local untilDone = math.ceil( untilDoneRaw )
         untilDone = math.max( untilDone, 0 ) -- no -0 time...
 
-        countdownData.text = tostring( untilDone )
+        self.countText = tostring( untilDone )
 
         local urgent = untilDone <= urgentSeconds
         self.flashing = urgent and untilDoneRaw % 1 < 0.1
@@ -301,24 +258,19 @@ function spawnSetVote:CreateVotePanel()
         end
 
         if untilDone < urgentSeconds then
-            hudHelpers.DoJitter( self, godHud.jitter )
+            god:Jitter( self )
 
         end
     end
 
     function countdown:Paint( w )
+        local colorRole = "text"
         if self.flashing then
-            countdownData.textColor = godHud.textUrgentColor
-
-        else
-            countdownData.textColor = godHud.textColor
+            colorRole = "urgent"
 
         end
 
-        countdownData.font = godHud.fonts.large
-        countdownData.posX = ( w / 2 ) + self.jitterX
-        countdownData.posY = self.jitterY
-        surface.drawShadowedTextBetterData( countdownData )
+        god:Draw( self.countText, "large", ( w / 2 ) + self.jitterX, self.jitterY, colorRole )
 
         return true
 
@@ -342,8 +294,6 @@ function spawnSetVote:CreateVotePanel()
         currButton:SetText( "" )
         currButton:Dock( TOP )
         currButton:DockMargin( 0, lineGap, 0, 0 )
-
-        local optionData = newTextData( godHud.fonts.small, false )
 
         local tooltipText = data.description
         local multiplier, escaped, remained = GAMEMODE:GetSpawnsetsEscapeMultiplier( currButton.name )
@@ -385,7 +335,7 @@ function spawnSetVote:CreateVotePanel()
         currButton:SetTooltipDelay( 0.1 )
 
         function currButton:PerformLayout()
-            layoutGodText( self, self.label, godHud.fonts.small, textPaddingX, textPaddingY )
+            layoutGodText( self, self.label, "small", textPaddingX, textPaddingY )
 
         end
 
@@ -395,7 +345,7 @@ function spawnSetVote:CreateVotePanel()
             pressableThink( self )
 
             if spawnSetVote.lastVoted == self.name then
-                hudHelpers.DoJitter( self, godHud.jitter )
+                god:Jitter( self )
 
             else
                 self.jitterX = 0
@@ -411,7 +361,7 @@ function spawnSetVote:CreateVotePanel()
             spawnSetVote.lastVoted = self.name
             local mul = math.max( self.multiplier, 0.01 )
             for _ = 1, 2 do
-                hudHelpers.PlaySound( godHud.textLandingSounds, math.random( 40, 60 ) / mul, CHAN_STATIC, 0.4 )
+                god:PlaySound( "landing", math.random( 40, 60 ) / mul, CHAN_STATIC, 0.4 )
 
             end
         end
@@ -438,23 +388,23 @@ function spawnSetVote:CreateVotePanel()
             end
 
             local state = "idle"
-            local textColor = godHud.textColor
+            local colorRole = "text"
 
             if spawnSetVote.lastVoted == self.name then
                 state = "chosen"
-                textColor = godHud.textChosenColor
+                colorRole = "chosen"
 
             elseif self.pressed then
                 state = "pressed"
-                textColor = godHud.textHoveredColor
+                colorRole = "hovered"
 
             elseif hovered then
                 state = "hovered"
-                textColor = godHud.textHoveredColor
+                colorRole = "hovered"
 
             end
 
-            paintGodLine( self, openedAt, self.ind, state, optionData, textColor, w, h )
+            paintGodLine( self, openedAt, self.ind, state, "small", colorRole, w, h )
 
             return true
 
@@ -466,7 +416,6 @@ function spawnSetVote:CreateVotePanel()
     hintYapper:DockMargin( 0, lineGap, 0, 0 )
     hintYapper:Dock( TOP )
 
-    local hintData = newTextData( godHud.fonts.small, false )
     hintYapper.hint = ""
     hintYapper.wrappedText = ""
     hintYapper.jitterX = 0
@@ -476,7 +425,7 @@ function spawnSetVote:CreateVotePanel()
     local hintOrder = math.min( #options, 9 ) + 1
 
     function hintYapper:PerformLayout()
-        layoutGodText( self, self.hint, godHud.fonts.small, textPaddingX, textPaddingY )
+        layoutGodText( self, self.hint, "small", textPaddingX, textPaddingY )
 
     end
 
@@ -487,7 +436,7 @@ function spawnSetVote:CreateVotePanel()
 
         end
 
-        hudHelpers.DoJitter( self, godHud.jitter )
+        god:Jitter( self )
 
         local hint
         local hintStart = "(Open chat"
@@ -509,7 +458,7 @@ function spawnSetVote:CreateVotePanel()
     end
 
     function hintYapper:Paint( w, h )
-        paintGodLine( self, openedAt, hintOrder, "idle", hintData, godHud.textColor, w, h )
+        paintGodLine( self, openedAt, hintOrder, "idle", "small", "text", w, h )
 
         return true
 
@@ -524,7 +473,7 @@ hook.Add( "StartChat", "glee_rtmdetect_chatopening", function()
 end )
 
 hook.Add( "huntersglee_cl_displayhint_poststack", "glee_rtmhint", function( me )
-    if not GetGlobalBool( "glee_pleaseshow_rtmtutorialhint", false ) then return end
+    if not GetGlobal2Bool( "glee_pleaseshow_rtmtutorialhint", false ) then return end
 
     if not chatWasOpened then
         local valid, openChatPhrase = GAMEMODE:TranslatedBind( "say" )
@@ -538,10 +487,10 @@ hook.Add( "huntersglee_cl_displayhint_poststack", "glee_rtmhint", function( me )
         end
         if not valid then chatWasOpened = true return end
 
-        return true, "It's time for a new Misery, maybe a real challenge...\nPress " .. openChatPhrase .. " to open the chat."
+        return true, "You're ready for a new Misery, maybe even a real challenge...\nPress " .. openChatPhrase .. " to open the chat."
 
     elseif not me:GetNW2Bool( "glee_hasrtm_voted", false ) then
-        return true, "It's time for a real challenge.\nBegin a Misery vote.\nType !rtm in chat."
+        return true, "You're ready for a real challenge.\nBegin a Misery vote.\nType !rtm in chat."
 
     end
 end )

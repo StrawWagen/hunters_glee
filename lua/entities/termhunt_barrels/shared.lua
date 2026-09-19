@@ -19,21 +19,24 @@ ENT.placeCount = 6
 
 if CLIENT then
     function ENT:DoHudStuff()
-        local screenMiddleW = ScrW() / 2
-        local screenMiddleH = ScrH() / 2
-
         local scoreGained = math.Round( self:GetGivenScore() )
         local scoreGainedAlt = math.Round( self:GetGivenScoreAlt() )
 
-        local scoreString = "Barreling Score: " .. tostring( scoreGained )
-        local stringPt2 = "\nToo far/close to players cost: "
+        local scoreString = "Barreling Profit: " .. scoreGained
 
         if scoreGainedAlt ~= 0 then
-            scoreString = scoreString .. stringPt2 .. tostring( scoreGainedAlt )
+            scoreString = scoreString .. "\nToo far/close to players cost: " .. scoreGainedAlt
 
         end
 
-        surface.drawShadowedTextBetter( scoreString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
+        self:DrawPlacingLine( scoreString )
+
+    end
+
+    function ENT:HintPreStack()
+        if GAMEMODE:HasLearnedLesson( "BarrelsProfitablePlace" ) then return end
+
+        return true, "Barrels.\nPlace them close to stuff you want to EXPLODE.\nPlace within a medium proximity of survivors to profit."
 
     end
 end
@@ -210,6 +213,11 @@ function ENT:Place()
 
         GAMEMODE.roundExtraData.BarrelPlacedCount = ( GAMEMODE.roundExtraData.BarrelPlacedCount or 0 ) + 1
 
+
+        if betrayalScore > 0 then
+            GAMEMODE:LearnLesson( self.player, "BarrelsProfitablePlace" )
+
+        end
     end
 
     GAMEMODE:AddMischievousness( self.player, 1, "placed a barrel" )

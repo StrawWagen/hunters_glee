@@ -8,7 +8,7 @@
     the row would have its rounded bottom clipped off square by the row's bounds.
 
         local heading = vgui.Create( "glee_hl2hudheading", parent )
-        heading:SetFont( "glee_mediumLargeHL2Font" )
+        heading:SetFont( "mediumLarge" )
         heading:SetText( "GLEE" )
         heading:Dock( TOP )
 ]]
@@ -23,10 +23,11 @@ PANEL.Init = function( self )
 
 end
 
--- SetFont and SetText work in either order, and as often as you like: the box re-wraps
--- its text when the font changes, and both of them resize the row afterwards.
-PANEL.SetFont = function( self, font )
-    self._box:SetIconFont( font )
+-- Takes a font role, like "mediumLarge". SetFont and SetText work in either order, and
+-- as often as you like: the box re-wraps its text when the font changes, and both of
+-- them resize the row afterwards.
+PANEL.SetFont = function( self, fontRole )
+    self._box:SetIconFont( fontRole )
     self:SizeToBox()
 
 end

@@ -12,11 +12,12 @@ local PermaGuiltLevels = {
 }
 GM.PermaGuiltLevels = PermaGuiltLevels
 
-local hud = terminator_Extras.glee_HL2Hud or {}
+-- the hl2 style is clientside only, so serverside every tier below is colourless.
+-- Nothing serverside reads a tier colour
+local hudColors = ( terminator_Extras.glee_HL2Hud or {} ).colors or {}
 
 -- mixes color 1 with color 2, returns new color object
 -- ratio 0 is entirely col1, ratio 1 is entirely col2
--- hack since glee_HL2Hud doesnt exist on client
 local function colorMixCl( col1, col2, ratio )
     if SERVER then return end
     if not col1 or not col2 then return Color( 255, 255, 255, 255 ) end
@@ -38,34 +39,34 @@ end
 GM.PermaGuiltInfo = {
     [PermaGuiltLevels.NOT_GUILTY]  = {
         desc = "Your conscience is clear.",
-        color = hud.colorInnocent,
+        color = hudColors.innocent,
     },
     [PermaGuiltLevels.SLIGHTLY_GUILTY]  = {
         desc = "Your conscience is still.. a bit clear...",
-        color = colorMixCl( hud.colorHappyYellow, hud.colorRedUrgent, 0.25 ),
+        color = colorMixCl( hudColors.happy, hudColors.flash, 0.25 ),
     },
     [PermaGuiltLevels.SOMEWHAT_GUILTY]  = {
         desc = "You're a bit evil. But you are still forgiven.",
         message = "Your guilt grows.\nYou're a bit evil.",
-        color = colorMixCl( hud.colorHappyYellow, hud.colorRedUrgent, 0.5 ),
+        color = colorMixCl( hudColors.happy, hudColors.flash, 0.5 ),
         divineCostMul = 1.15,
     },
     [PermaGuiltLevels.ALMOST_GUILTY]  = {
         desc = "Things can't continue like this. You're almost evil.",
-        color = colorMixCl( hud.colorHappyYellow, hud.colorRedUrgent, 0.7 ),
+        color = colorMixCl( hudColors.happy, hudColors.flash, 0.7 ),
         message = "Your guilt grows.\nYou're almost evil.",
         divineCostMul = 1.25,
     },
     [PermaGuiltLevels.GUILTY]  = {
         desc = "You're evil. Your access to divine avenues is limited.",
-        color = colorMixCl( hud.colorHappyYellow, hud.colorRedUrgent, 0.8 ),
+        color = colorMixCl( hudColors.happy, hudColors.flash, 0.8 ),
         message = "You're evil.\nThe divine actors are displeased.",
         divineCostMul = 1.5,
         canPurchaseForgivenessRitual = true,
     },
     [PermaGuiltLevels.VERY_GUILTY] = {
         desc = "You're very evil. Divine paths are almost out of your reach.",
-        color = colorMixCl( hud.colorHappyYellow, hud.colorRedUrgent, 0.9 ),
+        color = colorMixCl( hudColors.happy, hudColors.flash, 0.9 ),
         message = "You're very evil.\nThe divine paths are closing...",
         divineCostMul = 2.5,
         canPurchaseForgivenessRitual = true,
@@ -73,7 +74,7 @@ GM.PermaGuiltInfo = {
     [PermaGuiltLevels.EXTREMELY_GUILTY] = {
         desc = "You're extremely evil. The divine ways are closed to you. You are always one with the infernal powers.",
         message = "You're extremely evil.\nYou are now one with the infernal powers.",
-        color = hud.colorRedUrgent,
+        color = hudColors.flash,
         divineItemsNotPurchaseable = true,
         alwaysTakingTheDeal = true,
         canPurchaseForgivenessRitual = true,

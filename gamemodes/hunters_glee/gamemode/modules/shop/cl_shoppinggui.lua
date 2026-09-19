@@ -1271,6 +1271,8 @@ function GM:ShowShop()
     if self:CanShowDefaultHud() then
         LocalPlayer().glee_OpenedHuntersGleeShop = true
 
+        GAMEMODE:LearnLesson( "OpenedShop" )
+
         termHuntOpenTheShop()
 
     end
