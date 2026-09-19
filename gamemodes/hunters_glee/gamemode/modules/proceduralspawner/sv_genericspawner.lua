@@ -66,12 +66,16 @@ local function onJobSuccced( spawned, className )
     end
 end
 local function onJobBail( className )
-    currentlySpawning[className] = currentlySpawning[className] + -1
+    local old = currentlySpawning[className]
+    if not old then return end -- !!!!!!!!!!!!!!!!!!
+    currentlySpawning[className] = old + -1
 
 end
 local function onJobInvalid( className )
-    currentlySpawning[className] = currentlySpawning[className] + -1
+    local old = currentlySpawning[className]
     GAMEMODE.genericSpawnTables[className] = nil
+    if not old then return end -- !!!!!!!!!!!!!!!!!!
+    currentlySpawning[className] = old + -1
 
 end
 

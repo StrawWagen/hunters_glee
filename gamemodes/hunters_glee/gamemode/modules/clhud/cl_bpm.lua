@@ -13,8 +13,8 @@ local materialSize = math.Clamp( glee_sizeScaled( nil, 55 ), 0, terminator_Extra
 
 local heartTexture = Material( "vgui/hud/heartbeat.png", "smooth" )
 
-local colorHealthy = terminator_Extras.glee_HL2Hud.colorHappyYellow:Copy()
-local colorDying   = terminator_Extras.glee_HL2Hud.colorRedUrgent:Copy()
+local colorHealthy = terminator_Extras.glee_HL2Hud.colors.happy:Copy()
+local colorDying   = terminator_Extras.glee_HL2Hud.colors.flash:Copy()
 
 local notBeatingTime = 0
 local imageAlpha     = 0

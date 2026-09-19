@@ -31,13 +31,14 @@ PANEL.Init = function( self )
     self:MakePopup()
     self:DockPadding( hud.blockPadding, hud.blockPadding, hud.blockPadding, hud.blockPadding )
 
-    self._backdrop     = hud.colorBackgroundDark
+    self._backdrop     = hud.colors.bgDark
     self._cornerRadius = hud.boxCornerRadius
+    self._myStyle      = "hl2"
 
 end
 
 PANEL.Paint = function( self, w, h )
-    draw.RoundedBox( self._cornerRadius, 0, 0, w, h, self._backdrop )
+    terminator_Extras.glee_Style( self._myStyle ):Background( 0, 0, w, h, self._backdrop, self._cornerRadius )
 
 end
 

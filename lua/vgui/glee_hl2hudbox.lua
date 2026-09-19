@@ -1,7 +1,9 @@
 --[[
     glee_hl2hudbox - A small HUD icon box with a built-in display state machine.
 
-    Draws a rounded background with a centered material or text.
+    Draws a background with a centered material or text, in the style named by ._myStyle.
+    Colors and the font are named by role ( "happy", "medium" ), never by font name, so a
+    change of style changes both. See glee_hud/cl_stylehandle.lua.
     All alpha management is internal. Callers only set colors and instruct state.
 
     States (HUDBOX_STATE_* globals):
@@ -15,9 +17,8 @@
                      urgentBoxColor at full brightness
 
     Every colour, the font, and the text padding default to the hl2 hud palette, so a
-    caller only names what it wants different. Worth knowing that the flash icon colour
-    defaults to colorRedUrgent, which is what the top left hud wants but not what the
-    menus do, so those set it to yellow themselves.
+    caller only names what it wants different. The flash icon colour defaults to red, which
+    the menus override to yellow.
 
     Icon color (SetIconColor) is set by the caller and may be updated every frame.
     The state alpha scales both the box and icon multiplicatively, so:
@@ -61,38 +62,6 @@ local function syncSize( self )
 end
 
 
--- Greedy word wrap. Returns the text with newlines inserted, so AutoSize and
--- Paint keep treating it as a plain multi-line string.
-local function wrapToWidth( text, font, maxWidth )
-    surface.SetFont( font )
-
-    local lines = {}
-
-    for _, paragraph in ipairs( string.Explode( "\n", text ) ) do
-        local line = ""
-
-        for _, word in ipairs( string.Explode( " ", paragraph ) ) do
-            local try = ( line == "" ) and word or ( line .. " " .. word )
-
-            if line ~= "" and surface.GetTextSize( try ) > maxWidth then
-                lines[#lines + 1] = line
-                line = word
-
-            else
-                line = try
-
-            end
-        end
-
-        lines[#lines + 1] = line
-
-    end
-
-    return table.concat( lines, "\n" )
-
-end
-
-
 local PANEL = {
     STATE_HIDDEN = 0,
     STATE_FADING = 1,
@@ -107,9 +76,10 @@ local PANEL = {
         self._text         = nil
         self._rawText      = nil
         self._maxTextWidth = nil
-        self._font         = "glee_mediumHL2Font"
+        self._font         = "medium"
         self._textPadding  = glee_sizeScaled( nil, 8 )
         self._cornerRadius = terminator_Extras.glee_HL2Hud.boxCornerRadius
+        self._myStyle      = "hl2"
 
         -- State machine
         self._state        = HIDDEN
@@ -133,14 +103,13 @@ local PANEL = {
 
         -- Colors
         local hud            = terminator_Extras.glee_HL2Hud
-        self._normalBoxColor = hud.colorBackground:Copy()
-        self._flashBoxColor  = hud.colorBackgroundUrgent:Copy()
-        self._urgentBoxColor = hud.colorBackgroundUrgent:Copy()
-        self._iconColor      = hud.colorHappyYellow:Copy()
-        self._flashIconColor = hud.colorRedUrgent:Copy()
+        self._normalBoxColor = hud.colors.bg:Copy()
+        self._flashBoxColor  = hud.colors.bgUrgent:Copy()
+        self._urgentBoxColor = hud.colors.bgUrgent:Copy()
+        self._iconColor      = "happy"
+        self._flashIconColor = "flash"
 
-        -- Cached draw colors (less memory churn)
-        self._drawBox  = Color( 0, 0, 0, 0 )
+        -- Cached draw color (less memory churn)
         self._drawIcon = Color( 0, 0, 0, 0 )
 
         syncSize( self )
@@ -186,8 +155,9 @@ local PANEL = {
 
     -- Sets a material to draw centered. Clears any active text.
     SetMaterial = function( self, mat )
-        self._mat  = mat
-        self._text = nil
+        self._mat     = mat
+        self._text    = nil
+        self._rawText = nil -- or SyncWrap brings the text back
 
     end,
 
@@ -195,8 +165,40 @@ local PANEL = {
     -- Wrapped to SetMaxTextWidth if one is set.
     SetText = function( self, text )
         self._rawText = text
-        self._text    = self._maxTextWidth and wrapToWidth( text, self._font, self._maxTextWidth ) or text
         self._mat     = nil
+        self:WrapText()
+
+    end,
+
+    WrapText = function( self )
+        local font = self:GetResolvedFont()
+        self._wrappedInFont = font
+
+        local text = self._rawText
+        if text and self._maxTextWidth then
+            text = terminator_Extras.glee_HudHelpers.WrapText( text, font, self._maxTextWidth )
+
+        end
+        self._text = text
+
+    end,
+
+    -- see glee_hud/cl_stylehandle.lua
+    Style = function( self )
+        return terminator_Extras.glee_Style( self._myStyle )
+
+    end,
+
+    GetResolvedFont = function( self )
+        return self:Style():Font( self._font )
+
+    end,
+
+    -- A style change swaps the font without a SetText
+    SyncWrap = function( self )
+        if self._wrappedInFont == self:GetResolvedFont() then return end
+
+        self:WrapText()
 
     end,
 
@@ -209,11 +211,10 @@ local PANEL = {
 
     end,
 
-    SetIconFont = function( self, font )
-        self._font = font
-        if not self._rawText then return end
-
-        self:SetText( self._rawText ) -- widths changed, so any wrap is stale
+    -- A font role, like "medium". See the style's fontSizes for what it has
+    SetIconFont = function( self, fontRole )
+        self._font = fontRole
+        self:WrapText()
 
     end,
 
@@ -225,10 +226,12 @@ local PANEL = {
     -- Resizes the panel to fit the current text string plus _textPadding on all sides.
     -- Call after SetText when the text content changes.
     AutoSize = function( self )
+        self:SyncWrap()
         if not self._text or #self._text == 0 then return end
 
-        surface.SetFont( self._font )
-        local fontHeight = draw.GetFontHeight( self._font )
+        local font = self:GetResolvedFont()
+        surface.SetFont( font )
+        local fontHeight = draw.GetFontHeight( font )
         local maxWidth   = 0
         local lineCount  = 0
 
@@ -256,6 +259,7 @@ local PANEL = {
 
     end,
 
+    -- A role or a Color
     SetFlashIconColor = function( self, col )
         self._flashIconColor = col
 
@@ -267,7 +271,7 @@ local PANEL = {
 
     end,
 
-    -- Icon/text tint including alpha. Alpha is scaled by the current state alpha.
+    -- A role or a Color. Its alpha is scaled by the state alpha.
     SetIconColor = function( self, col )
         self._iconColor = col
 
@@ -398,6 +402,7 @@ local PANEL = {
 
         -- Determine box color source for this frame
         local boxSrc
+        local highlighted = true
         if state == FLASH then
             boxSrc = self._flashBoxColor
 
@@ -406,44 +411,57 @@ local PANEL = {
 
         else
             boxSrc = self._normalBoxColor
+            highlighted = false
 
         end
 
-        local dBox = self._drawBox
-        dBox.r = boxSrc.r
-        dBox.g = boxSrc.g
-        dBox.b = boxSrc.b
-        dBox.a = math.floor( boxSrc.a * stateAlpha / 255 )
-
-        draw.RoundedBox( self._cornerRadius, 0, 0, w, h, dBox )
+        self:PaintBackground( w, h, boxSrc, stateAlpha / 255, highlighted )
 
         local iconSrc = self._iconColor
         if state == FLASH then
             iconSrc = self._flashIconColor
 
         end
+        iconSrc = self:Style():Color( iconSrc )
 
+        -- cl_settingsmenu and the bank atm wrap Paint and draw their text in this
         local dIcon   = self._drawIcon
         dIcon.r = iconSrc.r
         dIcon.g = iconSrc.g
         dIcon.b = iconSrc.b
         dIcon.a = math.floor( iconSrc.a * stateAlpha / 255 )
 
+        self:PaintContent( w, h, dIcon )
+
+    end,
+
+    -- color is unfaded. highlighted is true while flashing, or on an urgent blink
+    PaintBackground = function( self, w, h, color, fade, highlighted )
+        self:Style():Background( 0, 0, w, h, color, self._cornerRadius, fade, highlighted )
+
+    end,
+
+    -- iconColor is already faded
+    PaintContent = function( self, w, h, iconColor )
         local padding = self._overSize * 0.5
 
         if self._mat then
-            surface.SetDrawColor( dIcon )
+            surface.SetDrawColor( iconColor )
             surface.SetMaterial( self._mat )
             surface.DrawTexturedRect( padding, padding, self._iconSize, self._iconSize )
 
-        elseif self._text and #self._text > 0 then
+        else
+            self:SyncWrap()
+            if not self._text or #self._text <= 0 then return end
+
             -- Center the text block vertically; each line steps down by fontHeight
-            local fontHeight      = draw.GetFontHeight( self._font )
+            local font            = self:GetResolvedFont()
+            local fontHeight      = draw.GetFontHeight( font )
             local lines           = string.Explode( "\n", self._text )
             local totalTextHeight = fontHeight * #lines
             local startY          = h * 0.5 - totalTextHeight * 0.5
             for i, line in ipairs( lines ) do
-                draw.SimpleText( line, self._font, w * 0.5, startY + ( i - 1 ) * fontHeight, dIcon, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
+                draw.SimpleText( line, font, w * 0.5, startY + ( i - 1 ) * fontHeight, iconColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
 
             end
         end

@@ -1,49 +1,32 @@
+
+local GAMEMODE = GAMEMODE or GM
+
 -- cl_winscreen.lua
--- dramatic sliding round end screen
--- each info block slides in from the side, holds, then the next one appears
+-- the round end verdict, drawn in the godlyDecree style
+-- each line spirals in out of faint ghosts, holds, then the next section arrives
 
--- per-entry slide timing
-local SLIDE_IN_TIME     = 0.1      -- how fast each line slides in
-local EASE_IN_POWER     = 3.0       -- snappiness of slide in, 1 = linear, 3 = snappy
+local decree = terminator_Extras.glee_Style( "godlyDecree" )
 
--- stagger: delay between each entry starting its slide-in
+-- every line arrives as the verdict does, whatever font it is set in
+local VERDICT_FONT = "triumphant"
+
+-- stagger: delay between each entry starting to arrive
 local ENTRY_STAGGER     = 0.08
 
 -- how long each section waits before the NEXT section starts entering
 -- the section holds on screen until the screen clears
 local SECTION_DELAY     = 3.5
 
-
--- the impact sound when a line lands
-local HIT_SOUNDS        = { "physics/metal/metal_barrel_impact_hard5.wav", "physics/metal/metal_barrel_impact_hard6.wav" }
+-- the verdict, when the last line in a section lands, is one of the style's landing sounds
 local HIT_SNDLVL        = 100
 
--- the impact sounds when the last line in a section xlands
-local HIT_LAST_SOUNDS   = { "doors/heavy_metal_stop1.wav" }
-
--- slide direction per entry index: alternating feels cinematic
--- true = from left, false = from right
-local function slideDirection( entryIndex )
-    return entryIndex % 2 == 1 -- odd entries from left, even from right
-
-end
-
-
-local screenW = ScrW()
-local screenMiddleW = screenW / 2
+local screenMiddleW = ScrW() / 2
 local screenMiddleH = ScrH() / 2
 
-local color_red = Color( 255, 0, 0 )
-
--- easing
-local function easeOut( t, power )
-    t = math.Clamp( t, 0, 1 )
-    return 1 - ( 1 - t ) ^ power
-
-end
-
--- a "section" is a group of text lines that slide in together with stagger
--- sections = { { startTime, entries = { { text, font, color, yOffset }, ... } }, ... }
+-- a "section" is a group of text lines that arrive together with stagger
+-- sections = { { startTime, hitPitch, entries = { { text, color, font, jitter }, ... } }, ... }
+-- color and font are roles of the godlyDecree style, font defaulting to VERDICT_FONT.
+-- jitter shakes the line once it lands
 local sections = {}
 local winScreenActive = false
 
@@ -56,10 +39,10 @@ local function buildSections( startTime )
 
     sections[1] = {
         startTime = startTime + SECTION_DELAY,
-        hitPitch = 90,
+        hitPitch = 30,
         entries = {
-            { text = "Hunt's Tally",                font = "termhuntTriumphantFont", color = color_white },
-            { text = tostring( totalScore ),         font = "termhuntTriumphantFont", color = color_red },
+            { text = "Hunt's Tally",         color = "endscreen" },
+            { text = tostring( totalScore ), color = "endscreen" },
         },
     }
 
@@ -69,23 +52,23 @@ local function buildSections( startTime )
     local winnerSkulls = GetGlobalInt( "glee_WinnerSkulls", 0 )
 
     local preyEntries = {
-        { text = "Finest Prey", font = "termhuntTriumphantFont", color = color_white },
+        { text = "Finest Prey", color = "endscreen" },
     }
 
     if IsValid( winner ) then
-        preyEntries[#preyEntries + 1] = { text = winner:Nick(), font = "termhuntTriumphantFont", color = color_white }
+        preyEntries[#preyEntries + 1] = { text = winner:Nick(), color = "endscreen", font = "playerName" }
         local sIfMultiple = winnerSkulls == 1 and "" or "s"
-        preyEntries[#preyEntries + 1] = { text = winnerSkulls .. " Skull" .. sIfMultiple, font = "termhuntTriumphantFont", color = color_red }
+        preyEntries[#preyEntries + 1] = { text = winnerSkulls .. " Skull" .. sIfMultiple, color = "endscreen" }
 
     else
-        preyEntries[#preyEntries + 1] = { text = "Nobody", font = "termhuntTriumphantFont", color = color_white }
-        preyEntries[#preyEntries + 1] = { text = "No skulls were collected", font = "termhuntTriumphantFont", color = color_red }
+        preyEntries[#preyEntries + 1] = { text = "Nobody", color = "endscreen" }
+        preyEntries[#preyEntries + 1] = { text = "No skulls were collected", color = "doom", jitter = true }
 
     end
 
     sections[2] = {
         startTime = startTime + SECTION_DELAY * 2,
-        hitPitch = 80,
+        hitPitch = 25,
         entries = preyEntries,
     }
 
@@ -97,73 +80,73 @@ local function buildSections( startTime )
     local escapedEntries = {}
 
     if escapedCount <= 0 then
-        escapedEntries[1] = { text = "Nobody Escaped", font = "termhuntTriumphantFont", color = color_red }
+        escapedEntries[1] = { text = "Nobody Escaped", color = "doom", jitter = true }
 
     else
         local sIfMultipleEscaped = escapedCount == 1 and "" or "s"
-        escapedEntries[1] = { text = escapedCount .. " Soul" .. sIfMultipleEscaped .. " Escaped", font = "termhuntTriumphantFont", color = color_white }
+        escapedEntries[1] = { text = escapedCount .. " Soul" .. sIfMultipleEscaped .. " Escaped", color = "endscreen" }
         if remainedCount <= 0 then
-            escapedEntries[2] = { text = "A great boon awaits...", font = "termhuntTriumphantFont", color = color_white }
+            escapedEntries[2] = { text = "A great boon awaits...", color = "boon", jitter = true }
 
         else
             local sIfMultipleRemained = remainedCount == 1 and "" or "s"
             local noSifMultiple = remainedCount <= 1 and "s" or ""
-            escapedEntries[2] = { text = remainedCount .. " Soul" .. sIfMultipleRemained .. " Remain" .. noSifMultiple, font = "termhuntTriumphantFont", color = color_red }
+            escapedEntries[2] = { text = remainedCount .. " Soul" .. sIfMultipleRemained .. " Remain" .. noSifMultiple, color = "endscreen" }
 
         end
     end
 
     sections[3] = {
         startTime = startTime + SECTION_DELAY * 3,
-        hitPitch = 70,
+        hitPitch = 20,
         entries = escapedEntries,
     }
 end
 
-local entryColor = Color( 255, 255, 255, 255 )
-
 local lastHitPlay = 0
 
-local function paintEntry( entry, entryIndex, isLast, sectionStartTime, sectionPitch, ply, now )
+local function paintEntry( entry, entryIndex, isLast, sectionStartTime, hitPitch, ply, now )
     local entryStart = sectionStartTime + ( entryIndex - 1 ) * ENTRY_STAGGER
     if now < entryStart then return end -- not yet
 
-    local age = now - entryStart
-
-    -- always sliding in or holding, never sliding out while win screen is up
-    local fraction
-    if age < SLIDE_IN_TIME then
-        local t = age / SLIDE_IN_TIME
-        fraction = easeOut( t, EASE_IN_POWER )
-
-    else
-        fraction = 1
+    local line = entry.line
+    if not line then
+        line = decree:NewArrival( entry.font or VERDICT_FONT, VERDICT_FONT )
+        line:SetText( entry.text )
+        entry.line = line
 
     end
 
-    -- play sound once on landing
-    if fraction >= 1 and not entry.hitPlayed then
-        entry.hitPlayed = true
-        local sounds = isLast and HIT_LAST_SOUNDS or HIT_SOUNDS
+    local appeared, justLanded = line:Update( now - entryStart )
+
+    if appeared > 0 and not entry.whooshed then
+        entry.whooshed = true
+        decree:PlaySound( "arrival", hitPitch + math.random( 40, 60 ), CHAN_STATIC, 0.4 )
+
+    end
+
+    if justLanded and isLast then
         local volume = 0.75
         if lastHitPlay == now then
             volume = 0.1
 
         end
         lastHitPlay = now
-        ply:EmitSound( sounds[math.random( #sounds )], HIT_SNDLVL, sectionPitch, volume )
+        decree:PlaySound( "landing", hitPitch, nil, volume, HIT_SNDLVL )
+        ply:EmitSound( "doors/heavy_metal_stop1.wav", HIT_SNDLVL, hitPitch + math.random( 20, 25 ), volume )
+
     end
 
-    local fromLeft = slideDirection( entryIndex )
-    local offScreenX = fromLeft and ( -screenW * 0.4 ) or ( screenW * 1.4 )
-    local drawX = Lerp( fraction, offScreenX, screenMiddleW )
+    local jitterX = 0
+    local jitterY = 0
+    if line.landed and entry.jitter then
+        decree:Jitter( entry )
+        jitterX = entry.jitterX
+        jitterY = entry.jitterY
 
-    entryColor.r = entry.color.r
-    entryColor.g = entry.color.g
-    entryColor.b = entry.color.b
-    entryColor.a = 255
+    end
 
-    surface.drawShadowedTextBetter( entry.text, entry.font, entryColor, drawX, entry.drawY )
+    line:Draw( screenMiddleW + jitterX, entry.drawY + jitterY, entry.color )
 
 end
 
@@ -188,8 +171,7 @@ hook.Add( "glee_paintWinScreen", "cl_winscreen_paint", function( ply, cur )
     if not GAMEMODE:CanShowDefaultHud() then return end
 
     -- compute Y positions: stack sections vertically from a starting Y
-    local currentY = screenMiddleH + glee_sizeScaled( nil, -130 )
-    local lineSpacing = glee_sizeScaled( nil, 50 )
+    local currentY = screenMiddleH + glee_sizeScaled( nil, -300 ) -- up offset
     local sectionGap = glee_sizeScaled( nil, 14 )
 
     for _, section in ipairs( sections ) do
@@ -199,13 +181,12 @@ hook.Add( "glee_paintWinScreen", "cl_winscreen_paint", function( ply, cur )
             local isLast = entryIdx == #section.entries
             entry.drawY = currentY
             paintEntry( entry, entryIdx, isLast, section.startTime, section.hitPitch, ply, cur )
-            currentY = currentY + lineSpacing
+
+            local font = decree:Font( entry.font or VERDICT_FONT )
+            currentY = currentY + draw.GetFontHeight( font ) * 0.9
 
         end
         currentY = currentY + sectionGap
 
     end
-
-    return true
-
 end )

@@ -173,27 +173,8 @@ end
 
 -- begin infernal intervention stuff
 local shriveledScale = Vector( 0.5, 0.5, 0.5 )
-local normalScale = Vector( 1, 1, 1 )
 local crumpleForce = Vector( 0, 0, -150000 )
 
-if CLIENT then
-    GAMEMODE:RegisterStatusEffect( "infernalintervention_rawendofthedeal",
-        function( self, _owner ) -- setup func
-            -- crunch their clientside ragdolls
-            self:HookOnce( "CreateClientsideRagdoll", function( died, ragdoll )
-                if not IsValid( died ) then return end
-                if not died:IsPlayer() then return end
-                if not died:HasStatusEffect( "infernalintervention_rawendofthedeal" ) then return end
-
-                local bc = ragdoll:GetBoneCount() or 0
-                for i = 0, bc - 1 do
-                    ragdoll:ManipulateBoneScale( i, shriveledScale * math.Rand( 0.25, 2 ) )
-
-                end
-            end )
-        end
-    )
-end
 if SERVER then
     GAMEMODE:RegisterStatusEffect( "infernalintervention_rawendofthedeal",
         function( self, owner ) -- setup func
@@ -235,7 +216,7 @@ if SERVER then
                 -- shrivel all bones
                 local bc = owner:GetBoneCount() or 0
                 for i = 0, bc - 1 do
-                    owner:ManipulateBoneScale( i, shriveledScale * math.Rand( 0.5, 1.75 ) )
+                    owner:ApplyBoneScaleManip( "infernalintervention", i, shriveledScale * math.Rand( 0.5, 1.75 ) )
 
                 end
 
@@ -340,11 +321,8 @@ if SERVER then
             -- decided to leave it as part of the deal
             GAMEMODE:FixAnglesOf( owner )
 
-            local bc = owner:GetBoneCount() or 0
-            for i = 0, bc - 1 do
-                owner:ManipulateBoneScale( i, normalScale )
+            owner:RemoveBoneManips( "infernalintervention" )
 
-            end
         end
     )
 end
@@ -477,29 +455,10 @@ local function chosenCanPurchase( purchaser )
 end
 
 if CLIENT then
-    -- triumphant font
-    local fontData = {
-        font = GAMEMODE.GLEE_FONT or "Arial",
-        extended = false,
-        size = glee_sizeScaled( nil, 40 ),
-        weight = 500,
-        blursize = 0,
-        scanlines = 0,
-        antialias = true,
-        underline = false,
-        italic = false,
-        strikeout = false,
-        symbol = false,
-        rotary = false,
-        shadow = true,
-        additive = false,
-        outline = false,
-    }
-    surface.CreateFont( "huntersglee_divineorders", fontData )
-
+    local decree = terminator_Extras.glee_Style( "godlyDecree" )
+    local spacingHeight = glee_sizeScaled( nil, decree:Settings().fontSizes.orders.size )
+    local ordersTop = glee_sizeScaled( nil, 128 )
     local screenMiddleW = ScrW() / 2
-    local demandFlashing = Color( 255, 0, 0 )
-    local spacingHeight = 30
 
     GAMEMODE:RegisterStatusEffect( "divine_chosen",
         function( self, owner ) -- setup func
@@ -525,28 +484,28 @@ if CLIENT then
                 local timeTillNoPatience = noPatienceTime - CurTime()
                 if timeTillNoPatience > 0 then
                     local Text = "KILL THEM OR LOSE IT ALL"
-                    surface.drawShadowedTextBetter( Text, "huntersglee_divineorders", color_white, screenMiddleW, 128 )
+                    decree:Draw( Text, "orders", screenMiddleW, ordersTop, "text" )
 
                     local timeTillNoPatienceFormatted = string.FormattedTime( timeTillNoPatience, "%02i:%02i" )
-                    local demandColor = color_white
+                    local demandRole = "text"
 
                     Text = "OUR PATIENCE: " .. tostring( timeTillNoPatienceFormatted )
 
                     if timeTillNoPatience < 30 then
                         if CurTime() % 2 > 1 then
-                            demandColor = demandFlashing
+                            demandRole = "urgent"
 
                         end
                         Text = "KILL THEM: " .. tostring( timeTillNoPatienceFormatted )
 
                     end
-                    surface.drawShadowedTextBetter( Text, "huntersglee_divineorders", demandColor, screenMiddleW, 128 + spacingHeight * 2 )
+                    decree:Draw( Text, "orders", screenMiddleW, ordersTop + spacingHeight, demandRole )
 
                 else
                     local Text = "YOU HAVE FAILED US."
                     for var = 0, 200 do
-                        local drawOffset = var * 0.1
-                        surface.drawShadowedTextBetter( Text, "huntersglee_divineorders", demandFlashing, screenMiddleW, 128 + spacingHeight * drawOffset )
+                        local drawOffset = var * 0.05
+                        decree:Draw( Text, "orders", screenMiddleW, ordersTop + spacingHeight * drawOffset, "doom" )
                         local time = var * 0.08
                         if timeTillNoPatience > -time then return end
 
@@ -601,7 +560,7 @@ if SERVER then
                 -- still going
 
                 SetGlobal2Int( "divineChosenPatienceEnds", GAMEMODE.roundExtraData.divinePatienceEnds )
-                if GAMEMODE.roundExtraData.divinePatienceEnds > CurTime() + -5 then return end
+                if GAMEMODE.roundExtraData.divinePatienceEnds > CurTime() + -5 then return end -- 5s grace
 
                 GAMEMODE.roundExtraData.divineChosenSpent = GAMEMODE.roundExtraData.divineChosenSpent or {}
 
@@ -629,6 +588,7 @@ if SERVER then
                 end
 
                 hook.Run( "huntersglee_grigori_failure", failedChosen )
+                timer.Remove( "huntersglee_divinepatiencetimer" )
 
             end )
         end

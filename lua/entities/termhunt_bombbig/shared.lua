@@ -33,7 +33,7 @@ function ENT:Initialize()
     local phys = self:GetPhysicsObject()
     if IsValid( phys ) then
         phys:Wake()
-        phys:SetMass( phys:GetMass() * 50 )
+        phys:SetMass( 250 ) -- gravgunnable
         phys:SetMaterial( "Watermelon" )
 
     end

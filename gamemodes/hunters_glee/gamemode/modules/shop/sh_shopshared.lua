@@ -243,13 +243,13 @@ function GM:shopItemCost( toPurchase, purchaser )
     cost = cost * GAMEMODE:shopMarkup( purchaser, toPurchase )
 
     local costMulTbl = { 1 }
-    local noErrors, returnedTbl = xpcall( hook.Run, errorCatchingMitt, "glee_shop_itemcostmul", purchaser, itemData, costMulTbl )
+    local noErrors = xpcall( hook.Run, errorCatchingMitt, "glee_shop_itemcostmul", purchaser, itemData, costMulTbl )
     if noErrors == false then
         -- Non-halting error
         permaPrint( "GLEE: !!!!!!!!!! glee_shop_itemdescription hook errored for " .. toPurchase .. "!!!!!!!!!!!" )
 
-    elseif istable( returnedTbl ) then
-        cost = cost * returnedTbl[1]
+    elseif costMulTbl[1] ~= 1 then
+        cost = cost * costMulTbl[1]
 
     end
 

@@ -45,8 +45,10 @@ end
 
 if not CLIENT then return end
 
-include( "autorun/client/cl_gleehud.lua" )
+if not glee_sizeScaled then
+    include( "autorun/client/cl_gleehud.lua" )
 
+end
 
 -- TIMING (seconds)
 local SLIDE_IN_TIME     = 0.4       -- how long the text takes to slide in
@@ -229,6 +231,13 @@ hook.Add( "HUDPaint", "huntersglee_paintdramaticannouncetext", function()
 
     -- MAIN TEXT
     surface.drawShadowedTextBetter( currAnnouncement, "huntersglee_dramatic_announcingtext", announcementColor, drawX, drawY )
+
+    -- this file runs under whatever gamemode is loaded, and hud space is glee's own
+    if not GAMEMODE.IsReallyHuntersGlee then return end
+
+    -- claimed where it is this frame, so it stops blocking as it slides off
+    local textWidth, textHeight = terminator_Extras.glee_HudHelpers.MeasureText( currAnnouncement, "huntersglee_dramatic_announcingtext" )
+    GAMEMODE:ImUsingHudSpace( "dramaticAnnouncement", drawX - textWidth * 0.5, drawY, textWidth, textHeight )
 
 end )
 

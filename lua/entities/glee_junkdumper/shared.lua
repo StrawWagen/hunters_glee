@@ -27,14 +27,16 @@ ENT.CannotPlaceColor = Color( 255, 0, 0, 100 )
 
 if CLIENT then
     function ENT:DoHudStuff()
-        local screenMiddleW = ScrW() / 2
-        local screenMiddleH = ScrH() / 2
-
         local scoreGained = math.Round( self:GetGivenScore() )
 
-        local scoreString = "Junk Dumping Score: " .. tostring( scoreGained )
+        self:DrawPlacingLine( "Junk Dumping Profit: " .. scoreGained )
 
-        surface.drawShadowedTextBetter( scoreString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
+    end
+
+    function ENT:HintPreStack()
+        if GAMEMODE:HasLearnedLesson( "JunkProfitablePlace" ) then return end
+
+        return true, "Dump some junk.\nProfitable if placed in...\nCLEAN, EMPTY areas,\nthat aren't too open."
 
     end
 end
@@ -238,6 +240,10 @@ function ENT:Place()
         self.player:GivePlayerScore( betrayalScore )
         GAMEMODE:sendPurchaseConfirm( self.player, betrayalScore )
 
+        if betrayalScore > 0 then
+            GAMEMODE:LearnLesson( self.player, "JunkProfitablePlace" )
+
+        end
     end
 
     for i = 1, self.JunkPerDrop do

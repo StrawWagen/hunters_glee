@@ -44,6 +44,7 @@ local set = {
             preSpawnedFuncs = {
                 function( _, spawned )
                     spawned.SpawnHeadlessChance = 80
+                    spawned.SkeleRareRunning = false
 
                 end,
             },
@@ -56,6 +57,12 @@ local set = {
             spawnType = "hunter",
             preferredEFlags = GAMEMODE.NavEFlags.UNDER_SKY,
             difficultyCost = 6,
+            preSpawnedFuncs = {
+                function( _, spawned )
+                    spawned.SkeleRareRunning = false
+
+                end,
+            },
         },
         {
             hardRandomChance = 15,
@@ -68,6 +75,12 @@ local set = {
             difficultyCost = { 50, 100 },
             countClass = "terminator_nextbot_infernalskeleton_large",
             maxCount = { 1 },
+            preSpawnedFuncs = {
+                function( _, spawned )
+                    spawned.SkeleRareRunning = false
+
+                end,
+            },
         },
         {
             hardRandomChance = 15,
@@ -90,6 +103,12 @@ local set = {
             difficultyCost = { 500, 1000 },
             countClass = "terminator_nextbot_infernalskeleton_large",
             maxCount = { 10 },
+            preSpawnedFuncs = {
+                function( _, spawned )
+                    spawned.SkeleRareRunning = false
+
+                end,
+            },
         },
         {
             hardRandomChance = 50,

@@ -397,6 +397,237 @@ if SERVER then
 
         end
     )
+
+
+    -- fingers and the like are left out, too small to notice, and the pelvis is the root of everything
+    local tumorBones = {
+        "ValveBiped.Bip01_Neck1",
+        "ValveBiped.Bip01_Spine",
+        "ValveBiped.Bip01_Spine1",
+        "ValveBiped.Bip01_Spine2",
+        "ValveBiped.Bip01_Spine4",
+        "ValveBiped.Bip01_L_Clavicle",
+        "ValveBiped.Bip01_R_Clavicle",
+        "ValveBiped.Bip01_L_UpperArm",
+        "ValveBiped.Bip01_R_UpperArm",
+        "ValveBiped.Bip01_L_Forearm",
+        "ValveBiped.Bip01_R_Forearm",
+        "ValveBiped.Bip01_L_Hand",
+        "ValveBiped.Bip01_R_Hand",
+        "ValveBiped.Bip01_L_Thigh",
+        "ValveBiped.Bip01_R_Thigh",
+        "ValveBiped.Bip01_L_Calf",
+        "ValveBiped.Bip01_R_Calf",
+        "ValveBiped.Bip01_L_Foot",
+        "ValveBiped.Bip01_R_Foot",
+    }
+
+    local tumorManipKey = "the_growth"
+    local tumorGrowInterval = {
+        min = 8,
+        max = 12,
+    }
+    local tumorGrowthPerStep = 0.06
+    local tumorHurtsAboveScale = 1.5
+    local tumorStepsBeforeHurting = math.Round( ( tumorHurtsAboveScale - 1 ) / tumorGrowthPerStep )
+    local tumorFirstDamage = 2
+    local tumorDamageRamp = 2.5
+    local tumorMaxBloodEffects = 8
+
+    GAMEMODE:RegisterStatusEffect( "the_growth",
+        function( self, owner ) -- setup func
+            function self:PickTumorBone()
+                local available = {}
+                for _, boneName in ipairs( tumorBones ) do
+                    if owner:LookupBone( boneName ) then
+                        available[#available + 1] = boneName
+
+                    end
+                end
+
+                -- not a ValveBiped model, any bone will do
+                if #available <= 0 then
+                    for bone = 0, ( owner:GetBoneCount() or 0 ) - 1 do
+                        available[#available + 1] = owner:GetBoneName( bone )
+
+                    end
+                end
+
+                if #available <= 0 then
+                    self.tumorBoneName = nil
+                    return
+
+                end
+
+                self.tumorBoneName = available[math.random( 1, #available )]
+
+            end
+
+            function self:NewTumor()
+                owner:RemoveBoneManips( tumorManipKey )
+                self:PickTumorBone()
+                self.tumorSteps = 0
+                self.tumorDamageTicks = 0
+
+            end
+
+            function self:GrowTumor()
+                self.tumorSteps = self.tumorSteps + 1
+
+                -- looked up every time, the bone ids change when the model does
+                local bone = self.tumorBoneName and owner:LookupBone( self.tumorBoneName )
+                if not bone then
+                    self:PickTumorBone()
+                    bone = self.tumorBoneName and owner:LookupBone( self.tumorBoneName )
+                    if not bone then return end
+
+                end
+
+                local scale = 1 + self.tumorSteps * tumorGrowthPerStep
+                owner:RemoveBoneManips( tumorManipKey )
+                owner:ApplyBoneScaleManip( tumorManipKey, bone, Vector( scale, scale, scale ) )
+
+                if self.tumorSteps <= tumorStepsBeforeHurting then return end
+
+                local damage = tumorFirstDamage + self.tumorDamageTicks * tumorDamageRamp
+
+                if self.lastDeathsHintedAt ~= owner:Deaths() then
+                    self.lastDeathsHintedAt = owner:Deaths()
+                    huntersGlee_Announce( { owner }, 50, 5, "Your growth...\nIt's consuming you..." )
+
+                end
+
+                if damage > 10 and self.lastDeathsBigHintedAt ~= owner:Deaths() then
+                    self.lastDeathsBigHintedAt = owner:Deaths()
+                    huntersGlee_Announce( { owner }, 50, 5, "oh GOD, your growth...\nit hurts" )
+
+                end
+
+                local bonePos = owner:GetBonePosition( bone ) or owner:WorldSpaceCenter()
+                local bloodColor = owner:GetBloodColor()
+                local bloodCount = math.min( math.ceil( damage ), tumorMaxBloodEffects )
+                for _ = 1, bloodCount do
+                    local edata = EffectData()
+                    edata:SetOrigin( bonePos )
+                    edata:SetColor( bloodColor )
+                    edata:SetNormal( VectorRand() )
+                    edata:SetEntity( owner )
+                    util.Effect( "BloodImpact", edata )
+
+                end
+
+                local dmgInfo = DamageInfo()
+                dmgInfo:SetDamage( damage )
+                dmgInfo:SetAttacker( game.GetWorld() )
+                dmgInfo:SetInflictor( game.GetWorld() )
+                dmgInfo:SetDamageType( DMG_DIRECT )
+                owner:TakeDamageInfo( dmgInfo )
+
+                GAMEMODE:GivePanic( owner, damage * 2.5 )
+
+                self.tumorDamageTicks = self.tumorDamageTicks + 1
+
+            end
+
+            self:NewTumor()
+
+            self:Hook( "glee_true_PlayerSpawn", function( spawned )
+                if spawned ~= owner then return end
+                self:NewTumor()
+
+            end )
+
+            self:Timer( "grow_tumor", math.Rand( tumorGrowInterval.min, tumorGrowInterval.max ), 0, function()
+                if owner:Health() <= 0 then return end
+                self:GrowTumor()
+
+            end )
+        end,
+        function( _self, owner ) -- teardown func
+            owner:RemoveBoneManips( tumorManipKey )
+
+        end
+    )
+
+
+    GAMEMODE:RegisterStatusEffect( "the_hops",
+        function( self, owner ) -- setup func
+            local nextJump = 0
+            local jumpAdded = false
+
+            self:Hook( "StartCommand", function( ply, cmd )
+                if ply ~= owner then return end
+
+                if not ply:IsOnGround() then
+                    nextJump = CurTime() + 0.01
+                    jumpAdded = false
+                    return
+
+                end
+
+                if nextJump > CurTime() then return end
+
+                -- toggle the key instead of holding it, holding sticks after a crouch jump
+                if jumpAdded then
+                    jumpAdded = false
+                    cmd:RemoveKey( IN_JUMP )
+
+                else
+                    jumpAdded = true
+                    cmd:AddKey( IN_JUMP )
+
+                end
+            end )
+        end
+    )
+
+
+    local bigHeadManipKey = "big_head"
+    local bigHeadScale = Vector( 4, 4, 4 )
+    local bigHeadSpeedModifier = -25
+
+    GAMEMODE:RegisterStatusEffect( "big_head",
+        function( self, owner ) -- setup func
+            function self:ApplyBigHead()
+                owner:RemoveBoneManips( bigHeadManipKey )
+                if self.jiggledBone then
+                    owner:ManipulateBoneJiggle( self.jiggledBone, 0 )
+
+                end
+
+                local headBone = owner:LookupBone( "ValveBiped.Bip01_Head1" )
+                self.jiggledBone = headBone
+                if not headBone then return end
+
+                owner:ApplyBoneScaleManip( bigHeadManipKey, headBone, bigHeadScale )
+                owner:ManipulateBoneJiggle( headBone, 1 )
+
+            end
+
+            self:ApplyBigHead()
+            owner:DoSpeedModifier( bigHeadManipKey, bigHeadSpeedModifier )
+
+            self:Hook( "PlayerSpawn", function( spawned )
+                if spawned ~= owner then return end
+
+                -- hooks run before GM:PlayerSpawn sets the model, and the head's bone id can change with it
+                timer.Simple( 0, function()
+                    if not IsValid( owner ) then return end
+                    if not owner:HasStatusEffect( "big_head" ) then return end
+                    self:ApplyBigHead()
+
+                end )
+            end )
+        end,
+        function( self, owner ) -- teardown func
+            owner:DoSpeedModifier( bigHeadManipKey, nil )
+            owner:RemoveBoneManips( bigHeadManipKey )
+            if self.jiggledBone then
+                owner:ManipulateBoneJiggle( self.jiggledBone, 0 )
+
+            end
+        end
+    )
 end
 
 hook.Add( "glee_shop_canpurchase", "glee_shoptags_astralprojection", function( purchaser, itemData )
@@ -434,6 +665,8 @@ if SERVER then
                     ragdoll:SetPos( owner:GetPos() )
                     ragdoll:SetAngles( owner:GetAngles() )
                     ragdoll:Spawn()
+
+                    owner:CopyBoneManipsTo( ragdoll )
 
                     -- Ragdolls only have physics objects for SOME bones (not all of them).
                     -- TranslatePhysBoneToBone maps physics-bone-index → model bone index,
@@ -701,7 +934,7 @@ local items = {
         desc = "Donate blood for score." .. bargainDescrip,
         shCost = bloodDonorCost,
         cooldown = math.huge,
-        tags = { "MUTATIONS", "Debuff", "Bargain" },
+        tags = { "MUTATIONS", "Debuff", "Bargain", "Essential" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE, -- only purchasble when actively hunting, otherwise people would heal with cheap preround healthkits
         },
@@ -729,7 +962,7 @@ local items = {
         shCost = -100,
         markup = 0.25,
         cooldown = math.huge,
-        tags = { "MUTATIONS", "Debuff", "Bargain" },
+        tags = { "MUTATIONS", "Debuff", "Bargain", "Essential" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -767,7 +1000,7 @@ local items = {
         shCost = -175,
         markup = 0.25,
         cooldown = math.huge,
-        tags = { "MUTATIONS", "Debuff", "Bargain" },
+        tags = { "MUTATIONS", "Debuff", "Bargain", "Essential" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -786,7 +1019,7 @@ local items = {
         shCost = -200,
         markup = 0.25,
         cooldown = math.huge,
-        tags = { "MUTATIONS", "Debuff", "Bargain" },
+        tags = { "MUTATIONS", "Debuff", "Bargain", "Essential" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -805,7 +1038,7 @@ local items = {
         shCost = -162,
         markup = 0.25,
         cooldown = math.huge,
-        tags = { "MUTATIONS", "Debuff", "Bargain" },
+        tags = { "MUTATIONS", "Debuff", "Bargain", "Essential" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -823,7 +1056,7 @@ local items = {
         shCost = -140,
         markup = 0.25,
         cooldown = math.huge,
-        tags = { "MUTATIONS", "Debuff", "Bargain" },
+        tags = { "MUTATIONS", "Debuff", "Bargain", "Essential" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -874,11 +1107,60 @@ local items = {
 
         end,
     },
+    ["thegrowth"] = {
+        name = "The Growth",
+        desc = "Acquire an unstable genome.\nYou will grow a... companion, till death..." .. bargainDescrip,
+        shCost = -200,
+        markup = 0.25,
+        cooldown = math.huge,
+        tags = { "MUTATIONS", "Debuff", "Bargain", "Essential" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_INACTIVE,
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = -90,
+        shPurchaseCheck = { shopHelpers.aliveCheck, },
+        svOnPurchaseFunc = function( ply )
+            ply:GiveStatusEffect( "the_growth" )
+
+        end,
+    },
+    ["thehops"] = {
+        name = "The Hops.",
+        desc = "Your legs will never rest again.\nYou hop the moment you touch the ground, forever." .. bargainDescrip,
+        shCost = -150,
+        markup = 0.25,
+        cooldown = math.huge,
+        tags = { "MUTATIONS", "Debuff", "Bargain", "Essential" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_INACTIVE,
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = -90,
+        shPurchaseCheck = { shopHelpers.aliveCheck, },
+        svOnPurchaseFunc = function( ply )
+            ply:GiveStatusEffect( "the_hops" )
+
+        end,
+    },
+    ["bighead"] = {
+        name = "Big Head.",
+        desc = "Your intellect has lead to your head becoming the size of a small refrigerator!" .. bargainDescrip,
+        shCost = -150,
+        markup = 0.25,
+        cooldown = math.huge,
+        tags = { "MUTATIONS", "Debuff", "Bargain", "Essential" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_INACTIVE,
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = -90,
+        shPurchaseCheck = { shopHelpers.aliveCheck, },
+        svOnPurchaseFunc = function( ply )
+            ply:GiveStatusEffect( "big_head" )
+
+        end,
+    },
 }
-
-for _, data in pairs( items ) do
-    data.tags[#data.tags + 1] = "Essential"
-
-end
 
 GAMEMODE:GobbleShopItems( items )

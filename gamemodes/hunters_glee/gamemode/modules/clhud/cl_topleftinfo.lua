@@ -4,20 +4,13 @@ local GAMEMODE = GAMEMODE or GM
 local CurTime  = CurTime
 
 local neverShowInfo = CreateClientConVar( "cl_huntersglee_nevershowtoplefthud", 0, true, false, "Never show round info, score, and skull count?", 0, 1 )
-local alwaysShowInfo = CreateClientConVar( "cl_huntersglee_alwaysshowtoplefthud", 0, true, false, "Always show round info, score, and skull count?", 0, 1 )
+local alwaysShowInfo = CreateClientConVar( "cl_huntersglee_alwaysshowtoplefthud", 1, true, false, "Always show round info, score, and skull count?", 0, 1 )
 
 local paddingFromEdge   = terminator_Extras.defaultHudPaddingFromEdge
 local paddingFromBottom = terminator_Extras.defaultHudPaddingFromBottom
 local laneSpacing      = terminator_Extras.glee_HL2Hud.laneSpacing
--- fonts are now defined in cl_gleehud.lua
 
 local hour = 60 * 60
-
-local hl2Hud = terminator_Extras.glee_HL2Hud
-
-local defaultHudColor  = hl2Hud.colorHappyYellow
-local infoChangedColor = Color( 255, 50, 50 )
-
 
 -- ---------------------------------------------------------------------------
 -- Round info
@@ -58,7 +51,7 @@ local function thinkRoundInfo( ply, cur )
 
     end
 
-    local textColor   = infoColorExpiry > cur and infoChangedColor or defaultHudColor
+    local textColor   = infoColorExpiry > cur and "alert" or "happy"
     local stayPresent = GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE
 
     return combinedString, stayPresent, doFlash, 0, textColor
@@ -94,13 +87,18 @@ hook.Add( "glee_cl_confirmedpurchase", "storeIfPlayerBoughtUndeadItem", function
 
     end
     if not isDeadItem then return end
-    if ply:Health() > 0 then return end
+    if ply:Health() <= 0 then
+        GAMEMODE:LearnLesson( "BoughtAGhostItem" )
 
-    GAMEMODE:LearnLesson( "BoughtAGhostItem" )
+        if id == "resurrection" then
+            GAMEMODE:LearnLesson( "BoughtDivineIntervention" )
 
-    if id == "resurrection" then
-        GAMEMODE:LearnLesson( "BoughtDivineIntervention" )
+        end
+    else
+        if id == "signalflare" then
+            GAMEMODE:LearnLesson( "BoughtSignalFlare" )
 
+        end
     end
 end )
 
@@ -187,8 +185,18 @@ local function genericHints()
     local GAMMODE = GAMEMODE
 
     if not dead then
+        local result, hooksHint = hook.Run( "huntersglee_cl_displayhint_prealivehints", me )
+        if result then
+            return result, hooksHint
+
+        end
+
         local inBetween = GAMEMODE:RoundState() == GAMEMODE.ROUND_INACTIVE
         local hasBoughtSomething = GAMMODE:HasLearnedLesson( "BoughtAnItem" )
+
+        local valid, phrase = GAMEMODE:TranslatedBind( "+menu" )
+        if not valid then GAMMODE:LearnLesson( "BoughtAnItem" ) return end
+
         local myScore = me:GetScore()
 
         local timeToBuy = not hasBoughtSomething and myScore >= 25 and inBetween
@@ -196,9 +204,6 @@ local function genericHints()
 
         -- hey you should open the shop!!!!
         if timeToBuy or meagreWealth then
-            local valid, phrase = GAMEMODE:TranslatedBind( "+menu" )
-            if not valid then GAMMODE:LearnLesson( "BoughtAnItem" ) return end
-
             if not me.glee_OpenedHuntersGleeShop and me:GetNWInt( "termHuntPlyBPM" ) <= 80 then
                 return true, "You have score to spend, things to buy!\nPress \" " .. string.upper( phrase ) .. " \" to open the shop."
 
@@ -208,14 +213,26 @@ local function genericHints()
             end
         end
 
+        if not GAMMODE:HasLearnedLesson( "BoughtSignalFlare" ) and GAMMODE:canShowInShop( me, "signalflare" ) then
+            local skulls = me:GetSkulls()
+            if skulls >= GAMMODE:shopItemSkullCost( "signalflare" ) then
+                return true, "Purchase a Signal Flare from the SHOP\nIt's time to get out of here."
+
+            end
+        end
+
+        result, hooksHint = hook.Run( "huntersglee_cl_displayhint_postalivehints", me )
+        if result then
+            return result, hooksHint
+
+        end
+
     -- hey you should mess with the alive people and revive yourself!!!
     elseif dead then
         local myScore = me:GetScore()
-
-        local result, hooksHint = hook.Run( "huntersglee_cl_displayhint_predeadhints", me )
-
         local hasEscaped = me:HasEscaped()
 
+        local result, hooksHint = hook.Run( "huntersglee_cl_displayhint_predeadhints", me )
         if result then
             return result, hooksHint
 
@@ -223,11 +240,33 @@ local function genericHints()
             local valid, phrase = GAMEMODE:TranslatedBind( "+menu" )
             if not valid then me.glee_OpenedHuntersGleeShop = true return end
 
-            return true, "Death is not the end.\nPress \" " .. string.upper( phrase ) .. " \" to open the shop."
+            if me.glee_SpawnedInDeadTutorialPlease then
+                return true, "Press \" " .. string.upper( phrase ) .. " \" to open the shop.\nDIVINE INTERVENTION AWAITS."
 
+            else
+                return true, "Death is not the end.\nPress \" " .. string.upper( phrase ) .. " \" to open the shop."
+
+            end
         elseif not GAMMODE:HasLearnedLesson( "BoughtAGhostItem" ) then
-            return true, "Purchase 'Sacrifices' to make score while dead!"
+            if me.glee_SpawnedInDeadTutorialPlease then
+                local valid, phrase = GAMEMODE:TranslatedBind( "+menu" )
+                if not valid then
+                    valid, phrase = GAMEMODE:TranslatedBind( "gm_showhelp" )
+                    if not valid2 then GAMMODE:LearnLesson( "BoughtAGhostItem" ) return end -- ur fucked
 
+                end
+                local hint = table.concat( {
+                    "It's time to HAUNT for PROFIT.\n",
+                    "Press \" " .. string.upper( phrase ) .. " \" to return to the GHOST SHOP.\n",
+                    "Sacrifices can make you money, if placed correctly...\n",
+                    "Gifts always cost you.",
+                } )
+                return true, hint
+
+            else
+                return true, "Purchase 'Sacrifices' to make score while dead!"
+
+            end
         elseif not GAMMODE:HasLearnedLesson( "SpectatedSomeone" ) then
             local valid, phrase = GAMEMODE:TranslatedBind( "+attack" )
             if not valid then GAMMODE:LearnLesson( "SpectatedSomeone" ) return end
@@ -241,10 +280,7 @@ local function genericHints()
             return true, "Press " .. phrase .. " to switch spectate modes!"
 
         elseif not GAMMODE:HasLearnedLesson( "StoppedSpectating" ) and IsValid( me:GetObserverTarget() ) then
-            local valid, phrase = GAMEMODE:TranslatedBind( "+attack2" )
-            if not valid then GAMMODE:LearnLesson( "StoppedSpectating" ) return end
-
-            return true, "Press " .. phrase .. " to stop following stuff!"
+            return true, "Press any movement key to stop following stuff!"
 
         elseif not me.glee_HasDoneSpectateFlashlight and ( me.flashlightAdditive or 0 ) >= 100 and render.GetLightColor( me:GetPos() ):LengthSqr() < 0.008 then
             local valid, phrase = GAMEMODE:TranslatedBind( "+impulse 100" )
@@ -254,7 +290,7 @@ local function genericHints()
 
         elseif not hasEscaped and not GAMMODE:HasLearnedLesson( "BoughtDivineIntervention" ) then
             if myScore >= GAMEMODE:shopItemCost( "resurrection", me ) then
-                return true, "Buy Divine Intervention in the shop to resurrect yourself..."
+                return true, "You now have enough to buy DIVINE INTERVENTION in the shop.\nYour temporary form awaits..."
 
             else
                 return true, "Keep placing 'Sacrifices'\nAll of them can earn you Score,\nif you're clever with them..."
@@ -358,7 +394,7 @@ local function thinkHint( _ply, cur )
     end
     if nextHintCheck < cur then
         needsHints, hint = genericHints()
-        nextHintCheck    = cur + math.Rand( 0.1, 0.09 )
+        nextHintCheck    = cur + math.Rand( 0.09, 0.1 )
 
     end
 
@@ -389,7 +425,7 @@ end
 local hudEntries = {
     {
         key             = "roundInfo",
-        font            = "glee_mediumLargeHL2Font",
+        font            = "mediumLarge",
         flashDuration   = 0.4,
         fadeSpeed       = 0.15,
         fadeStartDelay  = 6,
@@ -469,28 +505,47 @@ if GAMEMODE then createTopLeftBoxes() end
 
 local pleasePaintFor = {}
 
+local function hideBoxes()
+    for _, entry in ipairs( hudEntries ) do
+        local box = terminator_Extras["gleeHud_TL_" .. entry.key]
+        if IsValid( box ) then box:SetState( box.STATE_HIDDEN ) end
+
+    end
+end
+
+-- the boxes paint whether or not this hook runs, and it stops running on the win screen
+hook.Add( "glee_paintWinScreen", "glee_topleftinfo_hide", hideBoxes )
+
 hook.Add( "glee_cl_topleftinfo", "glee_topleftinfo_draw", function( ply, cur )
     if not GAMEMODE:CanShowDefaultHud() then
-        for _, entry in ipairs( hudEntries ) do
-            local box = terminator_Extras["gleeHud_TL_" .. entry.key]
-            if IsValid( box ) then box:SetState( box.STATE_HIDDEN ) end
-
-        end
+        hideBoxes()
         return
 
     end
 
     local almostFadeStart = 25
     local x = paddingFromEdge + paddingFromEdge / 2
-    local laneY = paddingFromBottom * 2
+    local laneY = paddingFromBottom * 2 -- 2x paddingFromBottom away from the top of the screen
+
+    -- the lane grows downward as boxes are laid out, so its extent is only known at the end
+    local laneTop = laneY
+    local laneWidest = 0
 
     local neverShow = neverShowInfo:GetBool()
     local isTabHeld = input.IsKeyDown( KEY_TAB )
     local alwaysShow = isTabHeld or alwaysShowInfo:GetBool()
 
+    local style = "hl2"
+    if ply:Health() <= 0 then
+        style = "soulthought"
+
+    end
+
     for _, entry in ipairs( hudEntries ) do
         local box = terminator_Extras["gleeHud_TL_" .. entry.key]
         if not IsValid( box ) then continue end
+
+        box._myStyle = style
 
         local xOffset      = 0
         local forceThisKey = alwaysShow
@@ -550,10 +605,17 @@ hook.Add( "glee_cl_topleftinfo", "glee_topleftinfo_draw", function( ply, cur )
             end
 
             laneY = laneY + myY
+            laneWidest = math.max( laneWidest, xOffset + box:GetWide() )
 
         end
     end
 
+    -- roundInfo carries the Misery's name, so this reaches the middle of the screen on a
+    -- long one. See GM:ImUsingHudSpace
+    if laneWidest > 0 then
+        GAMEMODE:ImUsingHudSpace( "topLeft", x, laneTop, laneWidest, laneY - laneTop )
+
+    end
 end )
 
 
@@ -563,3 +625,5 @@ hook.Add( "glee_cl_pleasepainttopleft_for", "glee_topleftinfo_forcepaint", funct
     pleasePaintFor[key] = CurTime() + add
 
 end )
+
+print( )

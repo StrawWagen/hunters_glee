@@ -19,6 +19,8 @@ PANEL.Init = function( self )
     local hud = terminator_Extras.glee_HL2Hud
     local bar = self:GetVBar()
 
+    self._myStyle = "hl2" -- for the bar's track
+
     -- hiding the buttons zeroes the track they reserved as well, so the grip becomes the
     -- whole bar and neither button needs a paint of its own
     bar:SetHideButtons( true )
@@ -27,14 +29,14 @@ PANEL.Init = function( self )
     -- DVScrollBar is built on a raw Panel and never disables the engine's own background
     -- drawing, so its Paint returns true to suppress it. A replacement has to as well.
     bar.Paint = function( _bar, w, h )
-        draw.RoundedBox( hud.boxCornerRadius, 0, 0, w, h, hud.colorBackground )
+        terminator_Extras.glee_Style( self._myStyle ):Background( 0, 0, w, h, hud.colors.bg )
         return true
 
     end
 
     -- the grip is a DPanel underneath, which turns engine drawing off in its own Init
     bar.btnGrip.Paint = function( _grip, w, h )
-        draw.RoundedBox( hud.boxCornerRadius, 0, 0, w, h, hud.colorHappyYellow )
+        draw.RoundedBox( hud.boxCornerRadius, 0, 0, w, h, hud.colors.happy )
 
     end
 end

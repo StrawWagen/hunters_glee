@@ -9,8 +9,8 @@ local materialSize = math.Clamp( glee_sizeScaled( nil, 48 ), 0, terminator_Extra
 local noBatteryTexture = Material( "vgui/hud/nobattery.png", "smooth" )
 local drainingTexture  = Material( "vgui/hud/losingcharge.png", "smooth" )
 
-local colorDraining = terminator_Extras.glee_HL2Hud.colorHappyYellow:Copy()
-local colorDead     = terminator_Extras.glee_HL2Hud.colorRedUrgent:Copy()
+local colorDraining = terminator_Extras.glee_HL2Hud.colors.happy:Copy()
+local colorDead     = terminator_Extras.glee_HL2Hud.colors.flash:Copy()
 
 local paddingJustHealth = glee_sizeScaled( nil, 260 )
 local paddingHpAndArmor = glee_sizeScaled( nil, 550 )

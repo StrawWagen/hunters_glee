@@ -127,7 +127,7 @@ function GM:escapifyVehicle( vehicle )
             local sOrNoS = riderCount == 1 and "" or "s"
             huntersGlee_AnnounceDramatic( { driver }, 1000, textDisplayDuration, "You helped " .. riderCount .. " soul" .. sOrNoS .. " escape...\n+" .. increase .. " Score." )
 
-            GAMEMODE:IncrementPersistentGuilt( owner, -( riderCount * 0.25 ) )
+            GAMEMODE:IncrementPersistentGuilt( driver, -( riderCount * 0.25 ) )
 
             huntersGlee_AnnounceDramatic( everyoneElse, 50, textDisplayDuration, driver:Nick() .. " helped " .. riderCount .. " soul" .. sOrNoS .. " escape..." )
 

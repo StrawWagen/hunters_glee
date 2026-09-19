@@ -166,10 +166,10 @@ if CLIENT then
 
     end
 
-    function ENT:DoHudStuff()
-        local screenMiddleW = ScrW() / 2
-        local screenMiddleH = ScrH() / 2
+    -- this one aims rather than places, so its readout sits well clear of the crosshair
+    ENT.PlacingDrop = 80
 
+    function ENT:DoHudStuff()
         local scoreGained = math.Round( self:GetGivenScore() )
         local cooldown = math.Round( self:GetGivenScoreAlt() )
         local costColor = self.glee_PointAndClick_CostColor
@@ -188,8 +188,7 @@ if CLIENT then
         end
 
         -- Draw cost/cooldown
-        local scoreGainedString = "Total Cost: " .. tostring( scoreGained )
-        surface.drawShadowedTextBetter( scoreGainedString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + glee_sizeScaled( nil, 80 ), true )
+        self:DrawPlacingLine( "Total Cost: " .. scoreGained )
 
         local cooldownMins = math.floor( cooldown / 60 )
         local cooldownSecs = math.floor( cooldown - cooldownMins * 60 )
@@ -200,7 +199,7 @@ if CLIENT then
         end
 
         cooldownString = cooldownString .. cooldownSecs .. "s"
-        surface.drawShadowedTextBetter( cooldownString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + glee_sizeScaled( nil, 80 + 40 ), true )
+        self:DrawPlacingLine( cooldownString, nil, 1 )
 
     end
 

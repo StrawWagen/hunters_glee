@@ -66,7 +66,8 @@ local function openAtmGui( atm )
     --[[---------------------------------------------------------
         Measure font for layout math
     -----------------------------------------------------------]]
-    surface.SetFont( "glee_mediumHL2Font" )
+    -- the same role the rows below draw in, so rowH is measured in the font they use
+    surface.SetFont( terminator_Extras.glee_Style( "hl2" ):Font( "medium" ) )
     local _, fontH = surface.GetTextSize( "A" )
     local rowH = fontH + pad * 2   -- matches glee_hl2hudbox AutoSize height formula
 
@@ -81,7 +82,7 @@ local function openAtmGui( atm )
     local function baseHudBox()
         local box = vgui.Create( "glee_hl2hudbox" )
         box:SetFlashDuration( 0.12 )
-        box:SetFlashIconColor( hud.colorHappyYellow:Copy() ) -- the box defaults this to red
+        box:SetFlashIconColor( hud.colors.happy:Copy() ) -- the box defaults this to red
         box:SetDoFadeDelays( false )
         return box
 
@@ -134,8 +135,10 @@ local function openAtmGui( atm )
             local midY     = h * 0.5
             local dIcon    = self._drawIcon           -- set by basePaint this frame
 
-            draw.SimpleText( self._labelText,  self._font, innerPad,     midY, dIcon, TEXT_ALIGN_LEFT,  TEXT_ALIGN_CENTER )
-            draw.SimpleText( self._amountText, self._font, w - innerPad, midY, dIcon, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER )
+            local font     = self:GetResolvedFont()
+
+            draw.SimpleText( self._labelText,  font, innerPad,     midY, dIcon, TEXT_ALIGN_LEFT,  TEXT_ALIGN_CENTER )
+            draw.SimpleText( self._amountText, font, w - innerPad, midY, dIcon, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER )
 
         end
 
@@ -147,7 +150,7 @@ local function openAtmGui( atm )
                 self._hoveredOld = hovered
 
             end
-            self:SetNormalBoxColor( hovered and hud.colorBackgroundUrgent or hud.colorBackground )
+            self:SetNormalBoxColor( hovered and hud.colors.bgUrgent or hud.colors.bg )
             self:SetState( self.STATE_NORMAL )
 
         end
@@ -281,8 +284,8 @@ local function openAtmGui( atm )
         end
 
         local isOnCooldown = CurTime() < nextTransactionTime
-        self:SetIconColor( isOnCooldown and hud.colorUnHappyYellow or hud.colorHappyYellow )
-        if isOnCooldown then self:SetNormalBoxColor( hud.colorBackground ) end
+        self:SetIconColor( isOnCooldown and hud.colors.text or hud.colors.happy )
+        if isOnCooldown then self:SetNormalBoxColor( hud.colors.bg ) end
 
     end
 
@@ -308,8 +311,8 @@ local function openAtmGui( atm )
         end
 
         local isOnCooldown = CurTime() < nextTransactionTime
-        self:SetIconColor( isOnCooldown and hud.colorUnHappyYellow or hud.colorHappyYellow )
-        if isOnCooldown then self:SetNormalBoxColor( hud.colorBackground ) end
+        self:SetIconColor( isOnCooldown and hud.colors.text or hud.colors.happy )
+        if isOnCooldown then self:SetNormalBoxColor( hud.colors.bg ) end
 
     end
 

@@ -13,15 +13,13 @@
 
 local GAMEMODE = GAMEMODE or GM
 
-local ROW_FONT    = "glee_mediumHL2Font"
-local HEADER_FONT = "glee_mediumLargeHL2Font"
+-- font roles, not font names
+local hl2Style    = terminator_Extras.glee_Style( "hl2" )
+local ROW_FONT    = "medium"
+local HEADER_FONT = "mediumLarge"
 
 local FRAME_H_1080P     = 775
 local METER_MIN_W_1080P = 200
-
--- a 0.01 step setting has 80 steps, and 80 chunks is a smear, so the bar is coarser
--- than the value it shows: clicking chunk 7 of 20 still lands on an exact step
-local METER_CHUNKS_MAX = 20
 
 -- the widest string a value column can print, reserved so no bar runs under a number
 local WIDEST_VALUE = "(0.00)"
@@ -221,7 +219,7 @@ end
 local function measureLayout()
     local hud = terminator_Extras.glee_HL2Hud
 
-    surface.SetFont( ROW_FONT )
+    surface.SetFont( hl2Style:Font( ROW_FONT ) )
     local _, fontH = surface.GetTextSize( "A" )
 
     -- only a slider's label shares its row with a bar, so only sliders set the column
@@ -268,7 +266,7 @@ local function makeRow( def, layout )
     local cvarRef = GetConVar( def.cvar )
 
     local row = vgui.Create( "glee_hl2hudbox" )
-    row:SetFlashIconColor( hud.colorHappyYellow:Copy() ) -- the box defaults this to red
+    row:SetFlashIconColor( hud.colors.happy:Copy() ) -- the box defaults this to red
     row:SetFlashDuration( 0.12 )
     row:SetDoFadeDelays( false )
     row:SetText( "" ) -- the base paints text centered, and this row paints its own
@@ -291,8 +289,9 @@ local function makeRow( def, layout )
         local midY     = h * 0.5
         local col      = self._drawIcon -- basePaint resolved this for this frame
 
-        draw.SimpleText( self._labelText, ROW_FONT, innerPad,     midY, col, TEXT_ALIGN_LEFT,  TEXT_ALIGN_CENTER )
-        draw.SimpleText( self._valueText, ROW_FONT, w - innerPad, midY, col, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER )
+        local font = hl2Style:Font( ROW_FONT )
+        draw.SimpleText( self._labelText, font, innerPad,     midY, col, TEXT_ALIGN_LEFT,  TEXT_ALIGN_CENTER )
+        draw.SimpleText( self._valueText, font, w - innerPad, midY, col, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER )
 
     end
 
@@ -309,7 +308,7 @@ local function makeRow( def, layout )
 
         end
 
-        self:SetNormalBoxColor( hovered and hud.colorBackgroundUrgent or hud.colorBackground )
+        self:SetNormalBoxColor( hovered and hud.colors.bgUrgent or hud.colors.bg )
         self:SetState( self.STATE_NORMAL )
         self:UpdateFromCvar()
 
@@ -334,18 +333,25 @@ local function makeSliderRow( def, layout )
     local row, cvarRef = makeRow( def, layout )
 
     local span  = def.max - def.min
-    local steps = span / stepSize( def )
 
     local transparent = Color( 0, 0, 0, 0 )
 
-    -- The row is the box, so the meter contributes chunks only.
+    -- The row is the box, so the meter contributes the bar only.
     local meter = vgui.Create( "glee_hl2meter", row )
-    meter:SetChunks( math.min( steps, METER_CHUNKS_MAX ) )
+
+    -- one chunk per step, until the steps are too fine to chunk and it becomes a plain bar
+    if def.decimals >= 2 then
+        meter:SetSmooth( true )
+
+    else
+        meter:SetChunks( math.Round( span / stepSize( def ) ) )
+
+    end
     meter:SetNormalBoxColor( transparent )
     meter:SetUrgentBoxColor( transparent )
     meter:SetFlashBoxColor( transparent )
-    meter:SetEmptyColor( hud.colorBackgroundDark )
-    meter:SetFillColor( hud.colorHappyYellow )
+    meter:SetEmptyColor( hud.colors.bgDark )
+    meter:SetFillColor( hud.colors.happy )
     meter:SetState( meter.STATE_NORMAL )
     meter:Dock( FILL )
     meter:DockMargin( layout.labelW + layout.pad * 3, layout.pad, layout.valueW + layout.pad * 3, layout.pad )
@@ -466,7 +472,7 @@ local function makeCheckRow( def, layout )
         end
 
         self._valueText = text
-        self:SetIconColor( on and hud.colorHappyYellow or hud.colorUnHappyYellow )
+        self:SetIconColor( on and hud.colors.happy or hud.colors.text )
 
     end
 

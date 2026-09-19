@@ -32,10 +32,12 @@ gamemodes\hunters_glee\gamemode\modules\signalstrength\cl_signalstrength.lua
 gamemodes\hunters_glee\gamemode\player_class\player_termrunner.lua
 gamemodes\hunters_glee\gamemode\player_class\player_termrunnertaunt.lua
 
+gamemodes\hunters_glee\gamemode\modules\clhud\cl_hudregions.lua
 gamemodes\hunters_glee\gamemode\modules\clhud\cl_topleftinfo.lua
 gamemodes\hunters_glee\gamemode\modules\clhud\cl_bpm.lua
 gamemodes\hunters_glee\gamemode\modules\clhud\cl_battery.lua
 gamemodes\hunters_glee\gamemode\modules\clhud\cl_plynames.lua
+gamemodes\hunters_glee\gamemode\modules\clhud\cl_whowespectating.lua
 
 gamemodes\hunters_glee\gamemode\modules\battery\sh_battery.lua
 
@@ -43,6 +45,8 @@ gamemodes\hunters_glee\gamemode\modules\guilt\sh_guilt.lua
 
 gamemodes\hunters_glee\gamemode\modules\deadplayerfx\cl_souls.lua
 gamemodes\hunters_glee\gamemode\modules\deadplayerfx\cl_deaddesaturation.lua
+
+gamemodes\hunters_glee\gamemode\modules\bonemaniphandler\cl_bonemanip.lua
 
 gamemodes\hunters_glee\gamemode\modules\escaping\cl_escaping.lua
 gamemodes\hunters_glee\gamemode\modules\escaping\cl_escapecounts.lua

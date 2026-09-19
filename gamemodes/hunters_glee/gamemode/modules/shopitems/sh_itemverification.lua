@@ -209,7 +209,7 @@ end
 
 
 -- shared!
-
+-- should this item be SHOWN for potential purchase?
 function GM:canShowInShop( ply, identifier )
     if not identifier or identifier == "" then return false, REASON_INVALID end
     local itemData = GAMEMODE:GetShopItemData( identifier )
@@ -237,6 +237,7 @@ function GM:canShowInShop( ply, identifier )
 
 end
 
+-- can we BUY this item NOW?
 function GM:canPurchase( ply, identifier )
     if not identifier or identifier == "" then return end
     local itemData = GAMEMODE:GetShopItemData( identifier )

@@ -205,6 +205,11 @@ function ENT:DoScore( reciever )
     reciever:GivePlayerSkulls( self:GetScore() )
     hook.Run( "glee_plypickedupskull", reciever, self )
 
+    if GAMEMODE.IsReallyHuntersGlee then
+        GAMEMODE:LearnLesson( reciever, "PickedUpSkull" )
+
+    end
+
     timer.Simple( 0, function()
         if not IsValid( self ) then return end
         SafeRemoveEntity( self )
@@ -528,7 +533,7 @@ function ENT:Decapitate()
     if ragdollsSkull then
         skullsPos = parent:GetBonePosition( ragdollsSkull )
 
-        parent:ManipulateBoneScale( ragdollsSkull, vec_zero )
+        parent:ApplyBoneScaleManip( "skulldecapitated", ragdollsSkull, vec_zero )
         self:FollowBone( nil, ragdollsSkull )
 
     end

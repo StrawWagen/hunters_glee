@@ -1,3 +1,5 @@
+-- Resolution scaling. Everything in glee_hud declares sizes in 1080p pixels and runs
+-- them through glee_sizeScaled, so one number looks the same on every monitor
 
 local math_Round = math.Round
 
@@ -14,7 +16,8 @@ local uiScaleHoris = ScrW() / 1920
     - glee_sizeScaled( nil, 26 )       -> 26  * uiScaleVert  (same visual height as 26px at 1080p)
     - glee_sizeScaled( 64, 32 )        -> returns both scaled width and height
 
-    Use nil for the axis you don’t need.
+    Use nil for the axis you don't need.
+    Results are whole pixels; for a size whose fraction matters, see glee_sizeScaledExact.
 --]]-------------------------------------
 function glee_sizeScaled( sizeX, sizeY )
     if sizeX and sizeY then
@@ -29,6 +32,21 @@ function glee_sizeScaled( sizeX, sizeY )
     end
 end
 
+-- glee_sizeScaled without the rounding, for a 1080p size that is deliberately fractional.
+-- A 2.5px shadow offset rounded to 3 is a different look at 1080p, where nothing scales
+function glee_sizeScaledExact( sizeX, sizeY )
+    if sizeX and sizeY then
+        return sizeX * uiScaleHoris, sizeY * uiScaleVert
+
+    elseif sizeX then
+        return sizeX * uiScaleHoris
+
+    elseif sizeY then
+        return sizeY * uiScaleVert
+
+    end
+end
+
 terminator_Extras = terminator_Extras or {}
 
 -- USED FOR ADDING TO DEFAULT HUD, eg, beating heart element. NOT GUIS
@@ -36,118 +54,15 @@ terminator_Extras.defaultHudPaddingFromEdge = glee_sizeScaled( nil, 24.5 ) -- ho
 terminator_Extras.defaultHudPaddingFromBottom = glee_sizeScaled( nil, 26 ) -- how far to start the faded background
 terminator_Extras.defaultHudTextPaddingFromEdge = glee_sizeScaled( nil, 54 ) -- dead on match for the "health" text
 
+include( "glee_hud/cl_draw.lua" )
+include( "glee_hud/cl_style.lua" )
+include( "glee_hud/cl_stylehandle.lua" )
 
-terminator_Extras.glee_DeadPlyColor = Color( 87, 117, 117 )
-terminator_Extras.glee_EscapedPlyColor = Color( 0, 190, 255 )
+include( "glee_hud/styles/cl_hl2.lua" )
+include( "glee_hud/styles/cl_soulthought.lua" ) -- shares hl2's font sizes, so after it
+include( "glee_hud/styles/cl_god.lua" )
+include( "glee_hud/styles/cl_godlydecree.lua" ) -- inherits god, so after it
 
-terminator_Extras.glee_HL2Hud = {
-    iconMaxSize     = 128,
-    boxCornerRadius = 10,
-    blockPadding    = glee_sizeScaled( nil, 8 ),  -- y-padding between box edge and text
-    laneSpacing     = glee_sizeScaled( nil, 6 ),  -- gap between stacked hud boxes
-    fontName        = "Trebuchet MS",
+include( "glee_hud/cl_fonts.lua" )
 
-    colorInnocent               = Color( 200, 255, 140, 220 ),
-    colorHappyYellow            = Color( 255, 230, 0, 220 ),
-    colorUnHappyYellow          = Color( 225, 200, 0, 220 ),
-    colorRedUrgent              = Color( 255, 50, 50, 200 ),
-    colorBackground             = Color( 0, 0, 0, 76 ), -- for hud elements that should fade into the background
-    colorBackgroundUrgent       = Color( 100, 100, 50, 76 ),
-    colorBackgroundDark         = Color( 0, 0, 0, 175 ), -- for gui elements that need visibility
-    colorBackgroundDarkUrgent   = Color( 100, 100, 50, 175 ),
-}
-
-surface.CreateFont( "glee_mediumLargeHL2Font", {
-    font      = terminator_Extras.glee_HL2Hud.fontName,
-    size      = glee_sizeScaled( nil, 34 ),
-    weight    = 2000,
-    blursize  = 0,
-    scanlines = 1,
-    antialias = true,
-} )
-
-surface.CreateFont( "glee_mediumHL2Font", {
-    font      = terminator_Extras.glee_HL2Hud.fontName,
-    size      = glee_sizeScaled( nil, 28 ),
-    weight    = 1000,
-    blursize  = 0,
-    scanlines = 0,
-    antialias = true,
-} )
-
-surface.CreateFont( "glee_smallHL2Font", {
-    font      = terminator_Extras.glee_HL2Hud.fontName,
-    size      = glee_sizeScaled( nil, 22 ),
-    weight    = 1000,
-    antialias = true,
-} )
-
-function terminator_Extras.glee_PlayerNameColor( ply, visible )
-    local color = nil
-    local a = nil
-    if ply:Health() <= 0 then
-        if ply.HasEscaped and ply:HasEscaped() then
-            color = terminator_Extras.glee_EscapedPlyColor
-            a = 255
-
-        elseif visible then
-            color = terminator_Extras.glee_DeadPlyColor
-            a = 255
-
-        end
-    elseif ply:Health() > 0 then
-        if visible then
-            color = GAMEMODE:GetTeamColor( ply )
-            a = 160
-
-        end
-    end
-
-    if ply.glee_PlayerNameColorOverride then
-        color = ply.glee_PlayerNameColorOverride
-        a = 255
-
-    end
-
-    if not color then return terminator_Extras.glee_DeadPlyColor end
-    color.a = a
-
-    return color
-end
-
-terminator_Extras.godHud = {
-    textColor = Color( 200, 0, 0 ),
-    shadowColor = Color( 0, 0, 0, 255 ),
-    shadowOffsetX = 2.5,
-    shadowOffsetY = 2,
-    -- played as text comes into view
-    textArrivalSounds = {
-        "physics/nearmiss/whoosh_huge2.wav",
-        "physics/nearmiss/whoosh_large1.wav",
-    },
-    -- played when it stops moving
-    textLandingSounds = {
-        "physics/cardboard/cardboard_box_impact_bullet1.wav",
-        "physics/cardboard/cardboard_box_impact_bullet3.wav",
-        "physics/cardboard/cardboard_box_impact_bullet5.wav",
-    },
-    -- god's hand isn't steady, godly text never sits perfectly still
-    jitterPixels = 1,
-    jitterInterval = { 1 / 25, 1 / 18 },
-}
-
--- Keeps jitterX and jitterY on whatever table you hand it, ready for a draw position to add.
--- Owns its own clock, a per frame reroll is a buzz nobody can see and it would shake harder
--- the better your hardware is. Safe to call every frame, it only rerolls when it's due.
-function terminator_Extras.godHud.DoJitter( state )
-    if state.nextJitter and state.nextJitter > CurTime() then return end
-
-    local godHud = terminator_Extras.godHud
-    local interval = godHud.jitterInterval
-    state.nextJitter = CurTime() + math.Rand( interval[1], interval[2] )
-
-    local pixels = godHud.jitterPixels
-    state.jitterX = math.random( -pixels, pixels )
-    state.jitterY = math.random( -pixels, pixels )
-
-end
+include( "glee_hud/cl_playernamecolors.lua" )

@@ -88,8 +88,9 @@ function playerMeta:RappelTo( ent, hitPos )
     end )
 
     ent:CallOnRemove( "glee_rappel_entitycleanup_" .. self:SteamID64() .. "_" .. ent:GetCreationID(), function()
-        self:StopRapelling()
         timer.Remove( timerName )
+        if not IsValid( self ) then return end
+        self:StopRapelling()
 
     end )
 

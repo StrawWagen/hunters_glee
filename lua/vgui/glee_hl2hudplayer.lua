@@ -28,7 +28,9 @@
         data.isLookedAt   bool         Controls infoLine/extraLine visibility and "????" name
                                        substitution when text alpha has faded to zero.
 
-    Background lerps from hl2hud.colorBackground toward ply:GetPlayerColor() as distance
+    Drawn in the style named by ._myStyle. A looked at panel draws highlighted.
+
+    Background lerps from hl2hud.colors.bg toward ply:GetPlayerColor() as distance
     increases through the name-fade zone; background alpha also rises with the lerp.
     Dead player panels stay near the neutral background color. When isLookedAt, bg snaps
     back to neutral. Text always uses team/state color.
@@ -63,10 +65,10 @@ function PANEL:Init()
     self._isLookedAt = false
 
     -- Background color base (read-only; lerp target is set per-frame)
-    self._bgBaseR = hud.colorBackground.r
-    self._bgBaseG = hud.colorBackground.g
-    self._bgBaseB = hud.colorBackground.b
-    self._bgBaseA = hud.colorBackground.a
+    self._bgBaseR = hud.colors.bg.r
+    self._bgBaseG = hud.colors.bg.g
+    self._bgBaseB = hud.colors.bg.b
+    self._bgBaseA = hud.colors.bg.a
 
     -- Background lerp target (set from ply:GetPlayerColor() each frame)
     self._bgTargetR = 255
@@ -75,6 +77,9 @@ function PANEL:Init()
 
     self._teamColor    = Color( 255, 255, 255, 255 )
     self._cornerRadius = hud.boxCornerRadius
+    self._myStyle      = "hl2"
+    self._nameFont     = "TargetID" -- never styled, player names need characters Protest Revolution lacks
+    self._font         = "targetID" -- the lines under the name, a role or a font name
     self._textPad      = glee_sizeScaled( nil, 5 )
     self._dotSize      = glee_sizeScaled( nil, 10 )
 
@@ -110,30 +115,44 @@ function PANEL:ComputeShowName()
 
 end
 
+-- see glee_hud/cl_stylehandle.lua
+function PANEL:Style()
+    return terminator_Extras.glee_Style( self._myStyle )
+
+end
+
+function PANEL:GetResolvedFont()
+    return self:Style():Font( self._font )
+
+end
+
 
 -- Measures the natural (full) panel size from current content.
 -- Must be called inside a valid render context (HUDPaint is fine).
 local function computeFullSize( self )
-    surface.SetFont( "TargetID" )
+    surface.SetFont( self._nameFont )
     local displayName    = self:ComputeShowName()
     local nameW          = surface.GetTextSize( displayName )
-    local nameH          = draw.GetFontHeight( "TargetID" )
+    local nameH          = draw.GetFontHeight( self._nameFont )
     local widestLineW    = nameW
     local extraH         = 0
 
+    local font           = self:GetResolvedFont()
+    local lineH          = draw.GetFontHeight( font )
+
     if self._infoLine and #self._infoLine > 0 then
-        surface.SetFont( "TargetID" )
+        surface.SetFont( font )
         local infoLineW = surface.GetTextSize( self._infoLine )
         if infoLineW > widestLineW then widestLineW = infoLineW end
-        extraH = extraH + draw.GetFontHeight( "TargetID" )
+        extraH = extraH + lineH
 
     end
 
     if self._extraLine and #self._extraLine > 0 then
-        surface.SetFont( "TargetID" )
+        surface.SetFont( font )
         local extraLineW = surface.GetTextSize( self._extraLine )
         if extraLineW > widestLineW then widestLineW = extraLineW end
-        extraH = extraH + draw.GetFontHeight( "TargetID" )
+        extraH = extraH + lineH
 
     end
 
@@ -198,9 +217,14 @@ function PANEL:UpdateForPlayer( ply, cur, data )
         end
     end
 
-    -- Text color = team/state color (glee_PlayerNameColor mutates its shared Color
-    -- objects, so this is valid only until the next call to that function)
-    self._teamColor = terminator_Extras.glee_PlayerNameColor( ply, true )
+    -- every panel is updated before any of them paints, and glee_PlayerNameColor's
+    -- return is overwritten by the next call, so copy it rather than hold it
+    local nameColor = terminator_Extras.glee_PlayerNameColor( ply, true )
+    local teamColor = self._teamColor
+    teamColor.r = nameColor.r
+    teamColor.g = nameColor.g
+    teamColor.b = nameColor.b
+    teamColor.a = nameColor.a
 
     -- Background lerp target = player body color (Vector 0-1 -> 0-255)
     local plyColorVec   = ply:GetPlayerColor()
@@ -339,14 +363,13 @@ function PANEL:Paint( w, h )
     local panelAlpha = self._panelAlpha
     if panelAlpha <= 0 then return end
 
-    -- Background: lerp from colorBackground toward ply:GetPlayerColor()
+    -- Background: lerp from the style's bg toward ply:GetPlayerColor()
     local bgLerpT = self._bgColorLerpTransition
     local drawBg  = self._drawBg
     drawBg.r = math.floor( self._bgBaseR + ( self._bgTargetR - self._bgBaseR ) * bgLerpT )
     drawBg.g = math.floor( self._bgBaseG + ( self._bgTargetG - self._bgBaseG ) * bgLerpT )
     drawBg.b = math.floor( self._bgBaseB + ( self._bgTargetB - self._bgBaseB ) * bgLerpT )
-    local bgAlpha = math.floor( self._bgBaseA + ( 255 - self._bgBaseA ) * bgLerpT )
-    drawBg.a = math.floor( bgAlpha * panelAlpha / 255 )
+    drawBg.a = math.floor( self._bgBaseA + ( 255 - self._bgBaseA ) * bgLerpT )
 
     -- Corner radius lerps from box -> perfect circle as panel shrinks to dot
     local boxCornerRadius    = self._cornerRadius
@@ -354,7 +377,7 @@ function PANEL:Paint( w, h )
     local radiusRange        = circleCornerRadius - boxCornerRadius
     local cornerRadius       = math.floor( boxCornerRadius + radiusRange * self._sizeT )
 
-    draw.RoundedBox( cornerRadius, 0, 0, w, h, drawBg )
+    self:Style():Background( 0, 0, w, h, drawBg, cornerRadius, panelAlpha / 255, self._isLookedAt )
 
     -- Don't draw text when the panel is nearly a dot
     if self._sizeT > 0.8 then return end
@@ -363,6 +386,7 @@ function PANEL:Paint( w, h )
     local drawText  = self._drawText
     local textAlpha = self._textAlpha
     local pad       = self._textPad
+    local font      = self:GetResolvedFont()
 
     -- Name line: real name when readable, "????" when isLookedAt but too far
     local showName     = textAlpha > 0
@@ -386,11 +410,12 @@ function PANEL:Paint( w, h )
         drawText.g = teamColor.g
         drawText.b = teamColor.b
         drawText.a = nameAlpha
-        draw.SimpleText( label, "TargetID", w * 0.5, pad, drawText, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
+        draw.SimpleText( label, self._nameFont, w * 0.5, pad, drawText, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
 
     end
 
-    local nameH      = draw.GetFontHeight( "TargetID" )
+    local nameH      = draw.GetFontHeight( self._nameFont )
+    local lineH      = draw.GetFontHeight( font )
     local subLineY   = pad + nameH
     local subAlpha   = math.floor( teamColor.a * panelAlpha / 255 )
     drawText.r = teamColor.r
@@ -401,14 +426,14 @@ function PANEL:Paint( w, h )
     -- infoLine: always in MODE_FULL; only when isLookedAt in MODE_WORLD
     local showInfo = self._mode == MODE_FULL or self._isLookedAt
     if showInfo and self._infoLine and #self._infoLine > 0 then
-        draw.SimpleText( self._infoLine, "TargetID", w * 0.5, subLineY, drawText, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
-        subLineY = subLineY + draw.GetFontHeight( "TargetID" )
+        draw.SimpleText( self._infoLine, font, w * 0.5, subLineY, drawText, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
+        subLineY = subLineY + lineH
 
     end
 
     -- extraLine: only when isLookedAt
     if self._isLookedAt and self._extraLine and #self._extraLine > 0 then
-        draw.SimpleText( self._extraLine, "TargetID", w * 0.5, subLineY, drawText, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
+        draw.SimpleText( self._extraLine, font, w * 0.5, subLineY, drawText, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
 
     end
 

@@ -33,9 +33,6 @@ ENT.TNTEffectScale = 2
 
 if CLIENT then
     function ENT:DoHudStuff()
-        local screenMiddleW = ScrW() / 2
-        local screenMiddleH = ScrH() / 2
-
         local scoreGained = math.Round( self:GetGivenScore() )
 
         local prefix = "TNT Cost: "
@@ -44,8 +41,7 @@ if CLIENT then
 
         end
 
-        local scoreGainedString = prefix .. tostring( scoreGained )
-        surface.drawShadowedTextBetter( scoreGainedString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
+        self:DrawPlacingLine( prefix .. scoreGained )
 
     end
 end

@@ -49,7 +49,10 @@ end
 
 if not CLIENT then return end
 
-include( "autorun/client/cl_gleehud.lua" )
+if not glee_sizeScaled then
+    include( "autorun/client/cl_gleehud.lua" )
+
+end
 
 local function defineFont()
     surface.CreateFont( "huntersglee_announcingtext", {
@@ -128,6 +131,14 @@ hook.Add( "HUDPaint", "huntersglee_paintannouncetext", function()
 
     end
 
-    surface.drawShadowedTextBetter( currAnnouncement, "huntersglee_announcingtext", announcementColor, screenMiddleW, screenMiddleH + -256 )
+    local drawY = screenMiddleH + -256
+
+    surface.drawShadowedTextBetter( currAnnouncement, "huntersglee_announcingtext", announcementColor, screenMiddleW, drawY )
+
+    -- this file runs under whatever gamemode is loaded, and hud space is glee's own
+    if not GAMEMODE.IsReallyHuntersGlee then return end
+
+    local textWidth, textHeight = terminator_Extras.glee_HudHelpers.MeasureText( currAnnouncement, "huntersglee_announcingtext" )
+    GAMEMODE:ImUsingHudSpace( "announcement", screenMiddleW - textWidth * 0.5, drawY, textWidth, textHeight )
 
 end )

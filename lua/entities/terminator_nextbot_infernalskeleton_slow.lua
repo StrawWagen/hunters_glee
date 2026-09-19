@@ -18,7 +18,8 @@ if CLIENT then
 end
 
 ENT.SpawnHealth = 25
-ENT.SpawnHeadlessChance = 95
+ENT.SpawnHeadlessChance = 85
+ENT.IgniteOnHit = false
 
 ENT.FistDamageMul = 0.1
 
@@ -70,7 +71,7 @@ ENT.SkeleRunSpeed = 500
 function ENT:SetupSkeletonMoveSpeeds()
     self.WalkSpeed = 25
     self.MoveSpeed = 50
-    self.RunSpeed = 100
+    self.RunSpeed = 75
     self.DuelEnemyDist = math.random( 500, 1500 )
     self.term_SoundPitchShift = math.random( 20, 30 )
 
@@ -79,6 +80,7 @@ end
 ENT.AlwaysPlayLooping = true
 ENT.IdleLoopingSounds = { "ambient/levels/citadel/datatransmalevx01.wav", "ambient/levels/citadel/datatransmalevx02.wav" }
 ENT.AngryLoopingSounds = { "ambient/levels/citadel/datatransrandom02.wav" }
+ENT.FistDamageType = DMG_BURN
 
 ENT.infernSkele_IdleSounds = {
     "ambient/levels/citadel/strange_talk1.wav",
@@ -91,4 +93,15 @@ ENT.infernSkele_IdleSounds = {
     "ambient/levels/citadel/strange_talk9.wav",
     "ambient/levels/citadel/strange_talk10.wav",
     "ambient/levels/citadel/strange_talk11.wav",
+}
+
+ENT.MyClassTask = {
+    OnDamaged = function( self, _data, dmg )
+        self:DoGesture( ACT_FLINCH, 0.75, true )
+        local force = dmg:GetDamageForce()
+        local dir = force:GetNormalized()
+        local speed = dir * 100
+        self.loco:SetVelocity( self.loco:GetVelocity() + speed )
+
+    end,
 }

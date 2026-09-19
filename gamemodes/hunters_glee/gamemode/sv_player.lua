@@ -1042,13 +1042,9 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
     end
 
     if IsValid( spectated ) then
-        if spectated.Nick and isstring( spectated:Nick() ) then
-            huntersGlee_Announce( { ply }, 1, 1.5, "Spectating " .. spectated:Nick() .. "." )
+        local spectatingName = spectated.Nick and isstring( spectated:Nick() ) and spectated:Nick() or GAMEMODE:GetNameOfBot( spectated )
+        ply:SetNW2String( "glee_currentlySpectatingName", spectatingName )
 
-        else
-            huntersGlee_Announce( { ply }, 1, 1.5, "Spectating " .. GAMEMODE:GetNameOfBot( spectated ) )
-
-        end
     end
 end
 
@@ -1446,9 +1442,11 @@ hook.Add( "WeaponEquip", "glee_fixignitedweapons", function( wep, ply )
 
 end )
 
-hook.Add( "Term_OnStartedDriving", "glee_startdrivingsounds", function( driver, _driven )
+hook.Add( "Term_OnStartedDriving", "glee_startdrivingsounds", function( driver, driven )
     net.Start( "glee_starteddriving" )
     net.Send( driver )
+    local spectatingName = driven.Nick and isstring( driven:Nick() ) and driven:Nick() or GAMEMODE:GetNameOfBot( driven )
+    driver:SetNW2String( "glee_currentlySpectatingName", spectatingName )
 
 end )
 

@@ -18,12 +18,9 @@ ENT.PosOffset = Vector( 0, 0, 10 )
 
 if CLIENT then
     function ENT:DoHudStuff()
-        local screenMiddleW = ScrW() / 2
-        local screenMiddleH = ScrH() / 2
-
         local scoreGained = math.Round( self:GetGivenScore() )
 
-        local str = "Cost: " .. tostring( scoreGained )
+        local str = "Cost: " .. scoreGained
         local intersectCost = self:GetNW2Int( "glee_additionalcontext1", 0 )
         local proxCost = self:GetNW2Int( "glee_additionalcontext2", 0 )
         if intersectCost ~= 0 or proxCost ~= 0 then
@@ -35,7 +32,14 @@ if CLIENT then
         if proxCost ~= 0 then
             str = str .. "\nToo close to someone."
         end
-        surface.drawShadowedTextBetter( str, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
+        self:DrawPlacingLine( str )
+
+    end
+
+    function ENT:HintPreStack()
+        if GAMEMODE:HasLearnedLesson( "BeartrapGoodPlace" ) then return end
+
+        return true, "Beartrap\nIf this TRAPS SOMETHING after you place it...\nYou profit."
 
     end
 end
@@ -117,7 +121,10 @@ function ENT:Place()
     if self.player and self.player.GivePlayerScore and betrayalScore then
         self.player:GivePlayerScore( betrayalScore )
         GAMEMODE:sendPurchaseConfirm( self.player, betrayalScore )
+        if betrayalScore >= -15 then
+            GAMEMODE:LearnLesson( self.player, "BeartrapGoodPlace" )
 
+        end
     end
 
     GAMEMODE:AddMischievousness( self.player, 2, "placed a beartrap while dead" )
@@ -133,6 +140,7 @@ hook.Add( "glee_beartrap_snapped", "trackundeadbeartraps", function( trap, snapp
 
     local msg = ""
 
+    -- unfrozen, crap placement
     if trap:GetPhysicsObject():IsMotionEnabled() then
         -- check if the thing trapped is a player
         if snapped:IsPlayer() then
@@ -147,9 +155,11 @@ hook.Add( "glee_beartrap_snapped", "trackundeadbeartraps", function( trap, snapp
             msg = "You've damaged " .. GAMEMODE:GetNameOfBot( snapped ) .. ", 40 score."
 
         end
+    -- frozen, great placement
     else
         -- check if the thing trapped is a player
         if snapped:IsPlayer() then
+            GAMEMODE:LearnLesson( placer, "BeartrapGoodPlace" )
             if snapped == placer then
                 placer:GivePlayerScore( -50 )
                 msg = "You placed this beartrap. -50 score."
@@ -168,6 +178,7 @@ hook.Add( "glee_beartrap_snapped", "trackundeadbeartraps", function( trap, snapp
             end
         -- check if the thing trapped is a nextbot
         elseif snapped:IsNextBot() then
+            GAMEMODE:LearnLesson( placer, "BeartrapGoodPlace" )
             -- give the player a bit less score
             placer:GivePlayerScore( 80 )
             msg = "You've trapped " .. GAMEMODE:GetNameOfBot( snapped ) .. ", you gain 80 score!"

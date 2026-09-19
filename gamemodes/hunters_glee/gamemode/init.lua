@@ -12,6 +12,8 @@ AddCSLuaFile( "modules/modelscale/cl_modelscale.lua" )
 AddCSLuaFile( "modules/deadplayerfx/cl_souls.lua" )
 AddCSLuaFile( "modules/deadplayerfx/cl_deaddesaturation.lua" )
 
+AddCSLuaFile( "modules/bonemaniphandler/cl_bonemanip.lua" )
+
 AddCSLuaFile( "modules/escaping/cl_escaping.lua" )
 AddCSLuaFile( "modules/escaping/cl_escapecounts.lua" )
 
@@ -67,7 +69,7 @@ AddCSLuaFile( "modules/unsandboxing/sh_unsandboxing.lua" )
 AddCSLuaFile( "modules/signalstrength/cl_signalstrength.lua" )
 
 -- SV
-include( "lib/sv_termfuncs.lua" )
+include( "lib/sv_gleehelpers.lua" )
 
 include( "shared.lua" )
 include( "sv_player.lua" )
@@ -85,6 +87,7 @@ include( "modules/statuseffects/sv_statuseffects.lua" )
 include( "modules/sv_unstucker.lua" )
 include( "modules/sv_wallkick.lua" )
 include( "modules/sv_speedhandler.lua" )
+include( "modules/bonemaniphandler/sv_bonemanip.lua" )
 include( "modules/sv_navmeshgroups.lua" )
 include( "modules/sv_navpatcher.lua" )
 include( "modules/sv_navmeshcategorizer.lua" )
@@ -173,8 +176,8 @@ GM.SpawnTypes = {
 GM.roundStartAfterNavCheck      = 75
 GM.roundStartNormal             = 30
 GM.roundStartNormalAllEscaped   = 60
-GM.roundStartEasy               = 60
-GM.roundStartEasyAllEscaped     = 90
+GM.roundStartEasy               = 100
+GM.roundStartEasyAllEscaped     = 130
 
 local CurTime = CurTime
 
@@ -205,11 +208,15 @@ function GM:TermHuntSetup()
     self.roundExtraData                 = {} -- helper tbl that is reset on round end
     self.navmeshActivityHeatmap         = {} -- what navareas are players sticking to this session?
 
+    self.lastSpawnWave                  = 0
     self.roundDiffBump                  = 0
     self.roundEarliestEnd               = 0
     self.nextStateTransmit              = 0
     self.finishedRoundCount             = 0
     self.currWaveDifficulty             = 0
+
+    self.CurrSpawnSetName = ""
+    self.CurrSpawnSet = nil
 
     -- this is increased when the round is won, all hunters are killed, or are being forced to spawn in front of players
     -- basically it makes the spawner get more aggressive the longer you stay on cheesable maps
@@ -921,6 +928,7 @@ function GM:roundStart()
     self.roundScore = nil
     self.roundScore = {}
     self.roundDiffBump = 0
+    self.lastSpawnWave = CurTime() -- might cause bugs
 
     SetGlobalEntity( "glee_Winner", NULL )
     SetGlobalInt( "glee_WinnerSkulls", 0 )
@@ -1020,6 +1028,7 @@ end
 -- from the part where finest prey & total score is displayed, into setup where people can buy stuff with discounts
 -- also happens once on first startup/after gmod_admin_cleanup refresh
 function GM:beginSetup()
+    hook.Run( "huntersglee_round_postroundend" )
     hook.Run( "huntersglee_round_pre_into_inactive" )
 
     for _, ply in player.Iterator() do

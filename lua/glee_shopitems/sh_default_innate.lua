@@ -624,23 +624,7 @@ if SERVER then
             owner.canWallkick = true
             owner.parkourForce = 1.25
 
-            function self:ApplyFrogLegs()
-                owner:DoSpeedModifier( "froglegs", -100 )
-
-            end
-
-            self:ApplyFrogLegs()
-
-            self:Hook( "PlayerSpawn", function( spawned )
-                if spawned ~= owner then return end
-
-                timer.Simple( 0.1, function()
-                    if not IsValid( owner ) then return end
-
-                    self:ApplyFrogLegs()
-
-                end )
-            end )
+            owner:DoSpeedModifier( "froglegs", -100 )
 
             self:Hook( "glee_getfalldamage", function( ply, speed )
                 if ply ~= owner then return end

@@ -29,21 +29,15 @@ end
 
 if CLIENT then
     function ENT:DoHudStuff()
-        local screenMiddleW = ScrW() / 2
-        local screenMiddleH = ScrH() / 2
-
         local method = self:GetArrivalMethod()
-        local line
 
         if method == "" then
-            line = self.noPurchaseReason_NoArrival
-
-        else
-            line = string.upper( method ) .. " - " .. math.abs( self:GetGivenScore() )
+            self:DrawPlacingLine( self.noPurchaseReason_NoArrival, "alert" )
+            return
 
         end
 
-        surface.drawShadowedTextBetter( line, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
+        self:DrawPlacingLine( string.upper( method ) .. " - " .. math.abs( self:GetGivenScore() ) )
 
     end
 end

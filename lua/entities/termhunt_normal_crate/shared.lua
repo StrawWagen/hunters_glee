@@ -19,13 +19,16 @@ ENT.placeCount = 3
 
 if CLIENT then
     function ENT:DoHudStuff()
-        local screenMiddleW = ScrW() / 2
-        local screenMiddleH = ScrH() / 2
-
         local scoreGained = math.Round( self:GetGivenScore() )
 
-        local scoreGainedString = "(In)Convenince Score: " .. tostring( scoreGained )
-        surface.drawShadowedTextBetter( scoreGainedString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
+        self:DrawPlacingLine( "Well-Hidden Profit: " .. scoreGained )
+
+    end
+
+    function ENT:HintPreStack()
+        if GAMEMODE:HasLearnedLesson( "NormalCrateProfitablePlace" ) then return end
+
+        return true, "Place the supplies FAR from survivors,\nand away from OTHER SUPPLY CACHES.\nThe more HIDDEN? The more profit!"
 
     end
 end
@@ -46,14 +49,14 @@ function ENT:UpdateGivenScore()
     local plys = player.GetAll()
     local myPos = self:GetPos()
     local distToClosestPly = maxScoreDist^2
-    local nearestPly
+    --local nearestPly
 
     for _, currentPly in ipairs( plys ) do
         if currentPly:Health() <= 0 then continue end
         local distToCurrentPlySqr = myPos:DistToSqr( currentPly:GetPos() )
         if distToCurrentPlySqr < distToClosestPly then
             distToClosestPly = distToCurrentPlySqr
-            nearestPly = currentPly
+            --nearestPly = currentPly
 
         end
     end
@@ -147,6 +150,10 @@ function ENT:Place()
         self.player:GivePlayerScore( betrayalScore )
         GAMEMODE:sendPurchaseConfirm( self.player, betrayalScore )
 
+        if betrayalScore > 0 then
+            GAMEMODE:LearnLesson( self.player, "NormalCrateProfitablePlace" )
+
+        end
     end
 
     self.placeCount = self.placeCount + -1

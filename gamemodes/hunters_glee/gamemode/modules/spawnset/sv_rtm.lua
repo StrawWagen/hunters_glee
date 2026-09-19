@@ -228,18 +228,36 @@ end
 
 local rounds = 0
 local printed
-hook.Add( "huntersglee_round_into_inactive", "glee_rockthemisery_hint", function()
-    rounds = rounds + 1
-    if rounds < math.random( 1, 3 ) then return end --dont print too much.
+local hardRtmHint
 
-    if printed then return end
-    printed = true -- one time per map
-
-    PrintMessage( HUD_PRINTTALK, "GLEE: Type !rtm to start a Misery vote" )
+hook.Add( "glee_post_realcleanupmap", "glee_reset_rockthemisery_hint", function()
+    rounds = 0
+    printed = nil
+    hardRtmHint = nil
+    SetGlobal2Bool( "glee_pleaseshow_rtmtutorialhint", false )
 
 end )
 
-hook.Add( "huntersglee_round_into_inactive", "glee_rockthemisery_hint", function()
+hook.Add( "huntersglee_round_postroundend", "glee_rockthemisery_hint", function()
+    rounds = rounds + 1
+
+    if rounds < math.random( 1, 3 ) then return end --dont print too much.
+    if not printed then
+        printed = true -- one time per map
+
+        PrintMessage( HUD_PRINTTALK, "GLEE: Type !rtm to start a Misery vote" )
+
+    end
+
+    if rounds < math.random( 2, 5 ) then return end -- wait a bit longer for this stronger hint
+    if not hardRtmHint and GAMEMODE:IsSpawnsetEasy() then
+        hardRtmHint = true
+        SetGlobal2Bool( "glee_pleaseshow_rtmtutorialhint", true )
+
+    end
+end )
+
+hook.Add( "huntersglee_round_postroundend", "glee_rockthemisery_hint", function()
     timer.Simple( 10, function()
         local spawnsetName = GAMEMODE:GetSpawnSet()
         local spawnsetMul = GAMEMODE:GetSpawnsetsEscapeMultiplier( spawnsetName )
@@ -253,7 +271,7 @@ hook.Add( "huntersglee_round_into_inactive", "glee_rockthemisery_hint", function
             end
             if highestEscapeCount < 1 then return end
 
-            SetGlobalBool( "glee_pleaseshow_rtmtutorialhint", true )
+            SetGlobal2Bool( "glee_pleaseshow_rtmtutorialhint", true )
 
             local mulByEscapes = 1.25 / highestEscapeCount
             thresh = 2 - mulByEscapes

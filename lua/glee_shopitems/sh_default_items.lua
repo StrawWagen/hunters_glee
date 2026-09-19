@@ -533,7 +533,7 @@ local items = {
     },
     -- awesome boomertaintaters gun
     ["ar3"] = {
-        name = "Emplacement Gun",
+        name = "Heavy Pulse Rifle",
         desc = "Rapid fire, powerful, chews through flesh, but not metal...\nOverheats quickly...",
         shCost = 0,
         shSkullCost = 5,

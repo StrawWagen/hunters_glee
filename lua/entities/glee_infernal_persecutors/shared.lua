@@ -43,21 +43,18 @@ ENT.OnlyNetworkToOwner = false
 
 if CLIENT then
     function ENT:DoHudStuff()
-        local screenMiddleW = ScrW() / 2
-        local screenMiddleH = ScrH() / 2
-
         local cost = math.Round( self:GetGivenScore() )
 
         local scoreString
         if cost <= 0 then
-            scoreString = "Cost: " .. tostring( cost )
+            scoreString = "Cost: " .. cost
 
         else
-            scoreString = "Profit: " .. tostring( cost ) .. " (Nobody here is innocent...)"
+            scoreString = "Profit: " .. cost .. " (Nobody here is innocent...)"
 
         end
 
-        surface.drawShadowedTextBetter( scoreString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
+        self:DrawPlacingLine( scoreString )
 
     end
 

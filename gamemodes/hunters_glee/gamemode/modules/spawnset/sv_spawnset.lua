@@ -197,7 +197,7 @@ local function parse( tbl, name, defaultsTbl, spawnSet )
         end
 
         returned = asParsed( returned, name, defaultsTbl ) -- parse the result too...
-        if not returned then yapErr( spawnSet, " invalid return from ." .. name ) return end
+        if not returned then yapErr( spawnSet, " invalid return from ." .. name .. "\n(or an unexpected function on the spawnset tbl)" ) return end
 
         tbl[name] = returned
 

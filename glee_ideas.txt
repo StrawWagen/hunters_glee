@@ -148,7 +148,6 @@ change MODE to...
     Misery -- DONE
     Scenario
     Misfortune
-harmless misery with terminators that never get angry?
 
 skull no interact only happens with owner -done
 
@@ -175,16 +174,42 @@ multiple bits of text all coming together? -done
 
 -- CREATE bank account inside atms -done
 
+rename innate to mutations? innate makes it sound like you have it from the beginning -DONE
 
--- make radio a purchasable item
--- make voicechat a settings menu thing
+infernal bone manip doesnt persist to dead ragdolls -- done
+
+buy flare hint --done
+
+flashlight stays on when astral projecting -- done
+
+bomb gland big bombs gravgunnable -done
+
+-- bhop perk? ( ALWAYS bhop ) -- done
+
+-- make first time hint defer to escape menu -done, thanks rubat
+
+-- no ammo hints on all custom weapons -done
+Rename AR2 to Pulse-Rifle -- done
+
+weapons spawn later, longer buildup for terminator miseries - done
+
+term crowbars always swing if throw mul is low, unless really angry -done
+
+
+-- make radio a purchasable item, moving all global/prox chat stuff to settings menu
+-- gateway to expensive items, airdropped in
+
+-- remove radio from shop
+-- purchase radio for 1 skull from shop
+-- left clicking will open radial menu/other shop?
+
 
 -- Replace stupid temp bools with ints, polish conduit/inversion cooldowns
 
 -- effigy
 -- pushes dead people away, makes them look away
 -- steals their money when they get close, or aim near it
--- make homicidal glee cost more
+-- makes homicidal glee cost more
 
 -- loan
 -- go into bank debt?
@@ -193,13 +218,11 @@ multiple bits of text all coming together? -done
 -- investing
 -- invest into player's bank accounts
 
--- server-based leaderboard
+-- server-based leaderboard ( wont do )
 -- quickest to 10 skulls
 -- most skulls
 -- flat, most hunter kills
 -- most skulls, additive ( all players skulls in one session, added up )
-
--- bhop perk?
 
 -- visual cohesiveness
 -- better defined goal
@@ -217,8 +240,6 @@ multiple bits of text all coming together? -done
 
 -- samus ball powerup
 
--- make first time hint defer to escape menu
-
 -- hint to flash tab?
 
 -- voting for miseries is not that new user friendly
@@ -226,12 +247,13 @@ multiple bits of text all coming together? -done
 
 -- skull place while dead item
 -- show skulls when aiming at players
--- skulls from enemies makes sense, but not from other ways
+
+-- skulls from enemies makes sense, but not from other ways ( meh feedback )
 
 -- split sixth sense?
 -- enemy finding powerup
 --    show sound direction?
---    
+--
 -- loot finding replacement
 --    hoarder sense for nearby props
 --    ghosts know where loot is at all times?
@@ -258,31 +280,21 @@ multiple bits of text all coming together? -done
 
 -- fresh skulls create blood decals?
 
--- do pass on intro, make sure player is invisible
--- fast weapon switch should be on by default
-
 -- better feedback from shooting players
-
--- no ammo hints on all custom weapons
 
 -- NEED STRONGER HINT TO SCROLL in shop
 
 -- drop money all the time, 50% of score? -no
 
 -- selecting weapons is hard
--- REMOVE redundant weapons?
 -- move flaregun to utility slot
 
 shop rewrite
 categories vertically
 recently purchased items on main page
 tabs to navigate pages
-rename innate to mutations?
-innate makes it sound like you have it from the beginning
 different orders per spawnset?
 HIDE items with ???? until you have the money to buy them
-
-lifelong shrimp but you gain score faster?
 
 channel 666 by default
 ghost arms really long and extended?
@@ -302,10 +314,7 @@ beartraps more prominent in shop
 SLAMS prominent in shop
 
 spawnsets get hints?
-Rename AR2 to Pulse-Rifle
 USE hint on weapons on the ground?
-
-weapons spawn later, longer buildup for terminator miseries
 
 put big messages ON TOP OF OTHER ELEMENTS
 
@@ -355,7 +364,6 @@ also very profitable?
 
 
 doritos playermodel nextbots
-term crowbars always swing if throw mul is low, unless really angry
 
 
 music did not convey the urgency of round grace period
@@ -428,6 +436,7 @@ ensure divine clap gives guilt
 using homicidal glee on truly innocent players does guilt too
 postal dude pm has lower max hp?
 
+
 -- credit these ideas to the embalmster
 revive all dead players item
 divine one, spectate it, press space to revive
@@ -442,16 +451,18 @@ the golden crowbar
 attach ticks to players
 aimbot ( robot that airdrops in, shoots EVERYTHING alive around it )
 
+ghosts can modify rules of the game by consensus or large expense
+noita modifiers as inspiration
+
 bottle rocket in supply crates?
+
+an extraction shooter where dead players become disembodied agents of chaos
 
 -- end embalmster
 
-flashlight stays on when astral projecting
 
 callman filter ( simplification of it )
 gaussian blob?
-
-bomb gland big bombs gravgunnable
 
 astral projection type thing when u disconnect
 
@@ -462,3 +473,100 @@ powerup that makes you never stop sprint accelerating
 infernal sentinel jumps eat health
 hibernating server becomes hunters_glee if hard misery lesson is learned
 dont nail to children
+
+announcing text theming
+all ghostly text gets new style
+godly text becomes godly
+PDM maxhealth override doesnt work
+
+ways to display info
+what is more important;
+    who is saying the message?
+    what the message is for?
+
+top left, for things that you are being informed of
+
+key + kite weapon
+
+JUST GET A DIFFERENT MODEL FOR REVIVE KIT
+
+unsatisfying to kill skeletons
+killing something knowing it's not gonna drop anything is sad
+skeletons findable by sound cue is meh
+skeletons much better, like a training ground, lets people explore the map, the menu,
+
+trading skulls was great
+
+dead air because of lack of breadcrumbs
+more flinching on the skeletons
+revive kits need polish
+ghosts place their skulls in themap
+
+skeletons still jump way too much on displacements
+difficulty feels unearned
+
+piece of information feels like its missing when dead, gil
+easy skeletons even easier
+
+being on fire feels too disorienting as tutorial enemy
+music still too loud?
+even longer countdown for easy modes
+Change emplacement gun name to "Heavy Pulse Rifle"
+
+cannot see skulls in shop!!!!
+FULL TUTORIAL FOR PLACING ALL ESSENTIAL ITEMS
+ttt_groverhaus_remastered_a4 broke flaregun
+attempting to use flaregun on wall/non skybox gives hint and stops firing for a min?
+
+LONGER COUNTDOWN!!!!!
+what are the controls?
+there is a shop
+there is changing weapons
+
+tutorial does not teach innate things like score, skulls
+does not teach how to break stuff with crowbar
+
+
+the knowledge skeleton that teaches you ideas
+faster weapon dropping when looking at other players and standing still
+
+
+some players like to have everything on their screen all the time
+they do not like having things change they cannot see
+
+
+another new player experience revamp
+spawn into server as ghost
+everything deafened, big hint to open shop
+1 free divine intervention purchase
+
+first time death message, that death was holding you back
+
+then it encourages you to purchase loadout
+YOU FOUND A SKULL; pauses game
+
+
+divine intervention description change ( encase yourself within a weak shell of meat and bones )
+
+
+enemies that attack dead players/ghosts, that takes money
+ghost ropes
+reeling in when revived
+reeling back to last death position when not moving
+
+astral projection lore
+person whos astral projecting has a silver cord out of the back of their head
+the cord is fairly durable, but if cut it kills you
+
+f1 help menu
+
+system where you register a command, default bind
+when bind is unoveridden, falls back to default, eg +menu
+automatically goes in help menu
+goes in a glee rebinding menu? 
+
+-- add hook that can block the starting of a next wave of enemies
+-- use it in tutorial mode, wait for all players to stop moving, to spawn next wave 
+
+-- Hardcore Glee misery, no shop, even when dead
+-- True Glee misery, no self-reviving dead items

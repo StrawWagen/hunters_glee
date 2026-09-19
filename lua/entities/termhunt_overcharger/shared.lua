@@ -17,15 +17,9 @@ ENT.PosOffset = Vector( 0, 0, 10 )
 
 if CLIENT then
     function ENT:DoHudStuff()
-        local screenMiddleW = ScrW() / 2
-        local screenMiddleH = ScrH() / 2
-
         local scoreGained = math.Round( self:GetGivenScore() )
-        local stringPt1 = "Overcharging Cost: "
 
-        local scoreString = stringPt1 .. tostring( scoreGained )
-
-        surface.drawShadowedTextBetter( scoreString, "scoreGainedOnPlaceFont", color_white, screenMiddleW, screenMiddleH + 20 )
+        self:DrawPlacingLine( "Overcharging Cost: " .. scoreGained )
 
     end
 end

@@ -101,6 +101,7 @@ if SERVER then
     function meta:SetScore( score )
         if hook.Run( "huntersglee_setscore", self, score ) == false then return end
         self:SetNWInt( "huntersglee_score", math.Round( score ) )
+
     end
 
     function meta:ResetScore()
