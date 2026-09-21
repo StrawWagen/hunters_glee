@@ -1,8 +1,5 @@
 
-local function errorCatchingMitt( errMessage )
-    ErrorNoHaltWithStack( errMessage )
-
-end
+local shopHelpers = GM.shopHelpers
 
 -- yes, you can just add shop items!
 function GM:getDebugShopItemStructureTable()
@@ -26,24 +23,27 @@ function GM:getDebugShopItemStructureTable()
     }
     local theDescriptorTable = {
         -- all fields should be identical on server/client
+        -- desc, shCost, shSkullCost and cooldown go through shopHelpers.resolveItemField. Each
+        -- takes a value or a function( purchaser ), and one that errors or returns the wrong
+        -- type invalidates the whole item
         ["shopItemUniqueIdentifier"] = {
             name =              "Printed name that players see",
-            desc =              "Description. Accepts a function or string.",
-            shCost =            "Cost, negative to give player score when purchasing, Accepts a function.",
-            shSkullCost =       "Optional. Skull cost. Accepts number or function. Zero is ignored. Negative gives skulls on purchase.",
+            desc =              "Description. String or function. glee_shop_itemdescription can rewrite it.",
+            shCost =            "Cost, negative to give player score when purchasing. Number or function. glee_shop_itemcostmul adjusts it.",
+            shSkullCost =       "Optional. Skull cost. Number or function. Zero is ignored. Negative gives skulls on purchase. glee_shop_itemskullcostmul adjusts it.",
             canGoInDebt =       "Optional. Can this item be bought when the player has no score? Can force players to buy innate debuffs, etc.",
             fakeCost =          "Optional. Whether to skip applying the cost within the purchasing system. Good if you want a shop item to more dynamically apply costs, but still show a cost.",
             simpleCostDisplay = "Optional. Client. Skip the coloring + formatting of an item's cost in the shop.",
             markup =            "Optional. Price multipler to be applied when bought during the hunt, motivates people buy when the round's setting up.",
             markupPerPurchase = "Optional. Additional markup per player per purchase of item. Makes items less and less worth it.",
-            cooldown =          "Optional. Cooldown between purchases, math.huge for one purchase per round. Can be a number, or a function.",
+            cooldown =          "Optional. Cooldown between purchases, math.huge for one purchase per round. Number or function. glee_shop_itemcooldownmul adjusts it.",
             tags =              "Tags that define attributes of this item, categories included. Accepts an indexed table of strings, converted to a mask after adding.",
             purchaseTimes =     "Item will only be purchasble in the round states specified by this table. Eg GAMEMODE.ROUND_ACTIVE ( hunting ).",
             weight =            "Optional. Where to order this relative to everything else in our category, accepts negative values.",
             shPurchaseCheck =   "Optional. Function or table of functions checked to see if this is purchasable, ran clientside on every item, every frame when shop is open. ran once serverside when purchased",
             svOnPurchaseFunc =  "Server. What function to run when the item is bought.",
             shCanShowInShop =   "Optional. Function or table of functions checked to decide if this can be seen in the shop. Also prevents purchases.",
-            costDecorative =    "Optional. Overrides cost display. Accepts string, number, tables of strings, functions. Overrides shSkullCost and shCost.",
+            costDecorative =    "Optional. Client. Overrides the shCost and shSkullCost display. A string, a number, a table of strings, or a function( purchaser, identifier ) returning string, color. NOT error caught, unlike the fields above, and it is read every frame the shop is open.",
             unpurchaseableReason = "Optional. Custom denial string to use if the item has the 'unpurchaseable' tag.",
 
             --[[Auto-generated fields: (for internal use/reference)
@@ -159,7 +159,6 @@ end
 
 
 
-local REASON_ERROR = "ERROR"
 local REASON_INVALID = "That isn't a real thing for sale."
 local REASON_INVALIDCATEGORY = "That item is in an invalid category."
 local REASON_POOR = "You are too poor to afford this."
@@ -167,46 +166,6 @@ local REASON_DEBT = "You can't buy this.\nYou're in Debt."
 local REASON_SKULLPOOR = "You need more skulls to buy this."
 local REASON_SKULLPOOR_1SKULL = "You need a skull to buy this."
 local REASON_SKULLDEBT = "You can't buy this, You're in Skull debt."
-
-local function runChecks( ply, itemData, hookName, checkFuncs, funcName )
-    local identifier = itemData.identifier
-
-    -- Run hook
-    -- hook.Add( "blah", "blahblah", function( purchaser, itemData ) end )
-    local success, returned, reason = xpcall( hook.Run, errorCatchingMitt, hookName, ply, itemData )
-    if not success then
-        GAMEMODE:invalidateShopItem( identifier )
-        permaPrint( "GLEE: !!!!!!!!!! " .. hookName .. " errored for " .. identifier .. "!!!!!!!!!!!" )
-        return false, REASON_ERROR
-
-    end
-    if returned == false then return false, reason end -- Blocked
-
-    -- Run checker funcs
-    if isfunction( checkFuncs ) then
-        checkFuncs = { checkFuncs }
-
-    end
-    if istable( checkFuncs ) then
-        for _, checkFunc in ipairs( checkFuncs ) do
-            success, returned, reason = xpcall( checkFunc, errorCatchingMitt, ply )
-            if not success then
-                GAMEMODE:invalidateShopItem( identifier )
-                permaPrint( "GLEE: !!!!!!!!!! " .. identifier .. "'s " .. funcName .. " function errored!!!!!!!!!!!" )
-                return false, REASON_ERROR
-
-            else
-                if returned == true then continue end
-                return false, reason
-
-            end
-        end
-    end
-
-    return true
-
-end
-
 
 -- shared!
 -- should this item be SHOWN for potential purchase?
@@ -232,8 +191,8 @@ function GM:canShowInShop( ply, identifier )
 
     if not wasValidCategory then return false, lastNotPurchasableReason end
 
-    -- hook.Run( "glee_shop_canshow", ply, itemData
-    return runChecks( ply, itemData, "glee_shop_canshow", itemData.shCanShowInShop, "shCanShowInShop" )
+    -- hook.Run( "glee_shop_canshow", ply, itemData ) -- return false, reason to block
+    return shopHelpers.runChecks( ply, itemData, "glee_shop_canshow", itemData.shCanShowInShop, "shCanShowInShop" )
 
 end
 
@@ -249,8 +208,8 @@ function GM:canPurchase( ply, identifier )
     local allowed, failReason = self:canShowInShop( ply, identifier )
     if not allowed then return false, failReason end
 
-    -- hook.Run( "glee_shop_canpurchase", ply, itemData
-    allowed, failReason = runChecks( ply, itemData, "glee_shop_canpurchase", itemData.shPurchaseCheck, "shPurchaseCheck" )
+    -- hook.Run( "glee_shop_canpurchase", ply, itemData ) -- return false, reason to block
+    allowed, failReason = shopHelpers.runChecks( ply, itemData, "glee_shop_canpurchase", itemData.shPurchaseCheck, "shPurchaseCheck" )
     if not allowed then return false, failReason end
 
     local score = ply:GetScore()

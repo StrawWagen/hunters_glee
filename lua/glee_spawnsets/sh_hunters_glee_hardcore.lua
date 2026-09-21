@@ -8,7 +8,7 @@ if SERVER then
 
     local setSv = {
         prettyName = "Hardcore Glee",
-        description = "Smart, cruel enemies.\nThe shop is CLOSED.",
+        description = "Smart, cruel enemies.\nThe shop is CLOSED to the living.",
         difficultyPerMin = 0.05, -- very little difficulty per minute, let wave clears primarily bump difficulty
         waveInterval = "default", -- time between spawn waves
         diffBumpWhenWaveKilled = "default", -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
@@ -63,18 +63,9 @@ if SERVER then
 
 end
 
-local noShopReason = "There is no shop in Hardcore Glee."
-
 function set:Activate()
-    self:Hook( "glee_blockshopopen", function()
-        return true, noShopReason
+    GAMEMODE.setHelpers.makeHardcore( self )
 
-    end )
-    -- the shop panel is only one way in, termhunt_purchase is the other, and this closes both
-    self:Hook( "glee_shop_canshow", function()
-        return false, noShopReason
-
-    end )
 end
 
 -- put the spawnset IN the global table to be gobbled

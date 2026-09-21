@@ -70,7 +70,6 @@ local stagesGhostly = {
     [9] = "Death is only temporary.",
     [10] = "DIVINE INTERVENTION AWAITS YOU",
     [11] = "Just, be ready to pay the price...",
-    [12] = "Happy haunting!",
 }
 
 -- Builds the whole tutorial, or decides this player doesn't need one.

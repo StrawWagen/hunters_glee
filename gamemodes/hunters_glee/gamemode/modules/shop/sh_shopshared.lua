@@ -204,159 +204,95 @@ function GM:shopMarkup( purchaser, toPurchase )
     return 1
 end
 
-local function errorCatchingMitt( errMessage )
-    ErrorNoHaltWithStack( errMessage )
+local shopHelpers = GM.shopHelpers
 
-end
+-- see shopHelpers.resolveItemField for what a spec is
+local costSpec = {
+    default = 0,
+    check = isnumber,
+    typeName = "number",
+    markup = true,
+    round = true,
+    hook = "glee_shop_itemcostmul",
+}
 
 function GM:shopItemCost( toPurchase, purchaser )
     if not toPurchase then return end
 
-    local itemData = GAMEMODE:GetShopItemData( toPurchase )
-    if not itemData then return 0 end
-
-    local costRaw = itemData.shCost
-    local cost = nil
-
-    if isfunction( costRaw ) then
-        local noErrors, returned = xpcall( costRaw, errorCatchingMitt, purchaser )
-        if noErrors == false then
-            GAMEMODE:invalidateShopItem( toPurchase )
-            permaPrint( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s cost function errored!!!!!!!!!!!" )
-            return 0
-
-        else
-            cost = returned
-
-        end
-    else
-        cost = costRaw
-
-    end
-
-    -- always process this into a number
-    if not isnumber( cost ) then
-        cost = 0
-
-    end
-
-    cost = cost * GAMEMODE:shopMarkup( purchaser, toPurchase )
-
-    local costMulTbl = { 1 }
-    local noErrors = xpcall( hook.Run, errorCatchingMitt, "glee_shop_itemcostmul", purchaser, itemData, costMulTbl )
-    if noErrors == false then
-        -- Non-halting error
-        permaPrint( "GLEE: !!!!!!!!!! glee_shop_itemdescription hook errored for " .. toPurchase .. "!!!!!!!!!!!" )
-
-    elseif costMulTbl[1] ~= 1 then
-        cost = cost * costMulTbl[1]
-
-    end
-
-    return math.Round( cost )
+    -- hook.Run( "glee_shop_itemcostmul", ply, itemData, adjust ) -- adjust.value is the marked-up shCost, adjust.mul scales it
+    return shopHelpers.resolveItemField( toPurchase, "shCost", purchaser, costSpec )
 
 end
+
+-- nil, not 0. Nothing means no skull price, and the shop shows the score one instead
+local skullCostSpec = {
+    default = nil,
+    check = isnumber,
+    typeName = "number",
+    markup = true,
+    round = true,
+    hook = "glee_shop_itemskullcostmul",
+}
 
 function GM:shopItemSkullCost( toPurchase, purchaser )
     if not toPurchase then return end
+    if purchaser == nil then
+        ErrorNoHaltWithStack( "GLEE: shopItemSkullCost has no purchaser for " .. tostring( toPurchase ) .. ", its markup can't be read\n" )
+        return
 
-    local dat = GAMEMODE:GetShopItemData( toPurchase )
-    if not dat then return end
+    end
 
-    local skullCostRaw = dat.shSkullCost
-    if not skullCostRaw then return end
+    -- hook.Run( "glee_shop_itemskullcostmul", ply, itemData, adjust ) -- adjust.value is the marked-up shSkullCost, adjust.mul scales it
+    return shopHelpers.resolveItemField( toPurchase, "shSkullCost", purchaser, skullCostSpec )
 
-    local skullCost = nil
+end
 
-    if isfunction( skullCostRaw ) then
-        local noErrors, returned = xpcall( skullCostRaw, errorCatchingMitt, purchaser )
-        if noErrors == false then
-            GAMEMODE:invalidateShopItem( toPurchase )
-            permaPrint( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s SKULL cost function errored!!!!!!!!!!!" )
-            return 0
+local cooldownSpec = {
+    default = nil, -- nil is a real answer here, it means no cooldown
+    check = isnumber,
+    typeName = "number",
+    hook = "glee_shop_itemcooldownmul",
+}
 
-        else
-            skullCost = returned
+function GM:shopItemCooldown( ply, toPurchase )
+    if not toPurchase then return end
 
-        end
+    -- hook.Run( "glee_shop_itemcooldownmul", ply, itemData, adjust ) -- adjust.value is the cooldown, adjust.mul scales it
+    return shopHelpers.resolveItemField( toPurchase, "cooldown", ply, cooldownSpec )
+
+end
+
+-- doShopCooldown takes whatever number it's handed. This runs glee_shop_itemcooldownmul over it
+-- first, so a misery's multiplier reaches placables that re-arm themselves with their own number.
+-- Leave cooldown out to use the item's own field.
+function GM:applyShopItemCooldown( ply, toPurchase, cooldown )
+    if cooldown then
+        local itemData = GAMEMODE:GetShopItemData( toPurchase )
+        if not itemData then return end
+
+        cooldown = shopHelpers.runAdjustHook( toPurchase, cooldownSpec, ply, itemData, cooldown )
+
     else
-        skullCost = skullCostRaw
+        cooldown = self:shopItemCooldown( ply, toPurchase )
 
     end
 
-    -- if skullcost is not a number, should fallback to nil and let score display 
-    if not isnumber( skullCost ) then return end
-
-    skullCost = skullCost * GAMEMODE:shopMarkup( purchaser, toPurchase )
-    return math.Round( skullCost )
+    self:doShopCooldown( ply, toPurchase, cooldown )
 
 end
 
-function GM:translateShopItemCooldown( ply, toPurchase, cooldownRaw )
-    if not cooldownRaw then return end
-    local cooldown = 0
-    if isnumber( cooldownRaw ) then
-        cooldown = cooldownRaw
+local descriptionSpec = {
+    default = "",
+    check = isstring,
+    typeName = "string",
+    hook = "glee_shop_itemdescription",
+}
 
-    elseif isfunction( cooldownRaw ) then
-        local noErrors, returned = xpcall( cooldownRaw, errorCatchingMitt, ply )
-        if noErrors == false then
-            GAMEMODE:invalidateShopItem( toPurchase )
-            permaPrint( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s cooldown function errored!!!!!!!!!!!" )
-            return
+function GM:shopItemDescription( ply, toPurchase )
+    if not toPurchase then return end
 
-        elseif not isnumber( returned ) and returned ~= nil then -- can be nil for no cooldown
-            GAMEMODE:invalidateShopItem( toPurchase )
-            permaPrint( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s cooldown function returned a non-number!!!!!!!!!!!" )
-            return
-
-        else
-            cooldown = returned
-
-        end
-    end
-    return cooldown
-
-end
-
-function GM:translateShopItemDescription( ply, toPurchase, descriptionRaw )
-    if not descriptionRaw then return end
-    local description = ""
-    if isstring( descriptionRaw ) then
-        description = descriptionRaw
-
-    elseif isfunction( descriptionRaw ) then
-        local noErrors, returned = xpcall( descriptionRaw, errorCatchingMitt, ply )
-        if noErrors == false then
-            GAMEMODE:invalidateShopItem( toPurchase )
-            permaPrint( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s description function errored!!!!!!!!!!!" )
-            return
-
-        elseif not isstring( returned ) then -- description cannot be nil.
-            GAMEMODE:invalidateShopItem( toPurchase )
-            permaPrint( "GLEE: !!!!!!!!!! " .. toPurchase .. "'s description function returned a non-string!!!!!!!!!!!" )
-            return
-
-        else
-            description = returned
-
-        end
-    end
-
-    local itemData = GAMEMODE:GetShopItemData( toPurchase )
-    if not itemData then return description end -- No item???
-
-    local noErrors, returned = xpcall( hook.Run, errorCatchingMitt, "glee_shop_itemdescription", ply, itemData, description )
-    if noErrors == false then
-        -- Non-halting error
-        permaPrint( "GLEE: !!!!!!!!!! glee_shop_itemdescription hook errored for " .. toPurchase .. "!!!!!!!!!!!" )
-
-    elseif isstring( returned ) then
-        description = returned
-
-    end
-
-    return description
+    -- hook.Run( "glee_shop_itemdescription", ply, itemData, adjust ) -- adjust.value is the desc, write it to replace it
+    return shopHelpers.resolveItemField( toPurchase, "desc", ply, descriptionSpec )
 
 end
 

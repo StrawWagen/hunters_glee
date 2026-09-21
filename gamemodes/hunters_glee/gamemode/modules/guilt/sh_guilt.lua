@@ -124,14 +124,14 @@ function GM:GetPlysGuiltLevel( ply )
     end
 end
 
-hook.Add( "glee_shop_itemcostmul", "glee_guiltycost", function( purchaser, itemData, costMulTbl )
+hook.Add( "glee_shop_itemcostmul", "glee_guiltycost", function( purchaser, itemData, adjust )
     if not active then return end
     if not itemData.tags.Divine then return end
 
     local _, guiltData = GAMEMODE:GetPlysGuiltLevel( purchaser )
     if not guiltData.divineCostMul then return end
 
-    costMulTbl[1] = costMulTbl[1] * guiltData.divineCostMul
+    adjust.mul = adjust.mul * guiltData.divineCostMul
 
 end )
 

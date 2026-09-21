@@ -36,6 +36,8 @@ local COLOR_PING_BAD = Color( 150, 50, 0 )
 local HOVER_SLIDE_AMOUNT = glee_sizeScaled( 30 )
 local HOVER_SLIDE_DURATION = 0.1
 
+local SORT_INTERVAL = 5 -- rows jumping under the cursor mid-click is worse than a stale order
+
 local BORDER_RADIUS_ACTION_MENU = glee_sizeScaled( nil, 0 ) -- 2
 
 local HEADER_HEIGHT = 100
@@ -872,6 +874,23 @@ local SCORE_BOARD = {
 
     end,
 
+    -- Order by skulls, then score.
+    -- ZPos is a 16 bit int, so rank them rather than using the skull count directly, big counts overflowed to the bottom
+    SortEntries = function( _self )
+        local sorted = player.GetAll()
+        table.sort( sorted, function( a, b )
+            local aSkulls, bSkulls = a:GetSkulls(), b:GetSkulls()
+            if aSkulls ~= bSkulls then return aSkulls > bSkulls end
+            return a:GetScore() > b:GetScore()
+
+        end )
+        for rank, ply in ipairs( sorted ) do
+            if not IsValid( ply.ScoreEntry ) then continue end
+            ply.ScoreEntry:SetZPos( rank )
+
+        end
+    end,
+
     Think = function( self )
         local panelCreated = false
 
@@ -889,18 +908,10 @@ local SCORE_BOARD = {
 
         end
 
-        -- Order by skulls, then score.
-        -- ZPos is a 16 bit int, so rank them rather than using the skull count directly, big counts overflowed to the bottom
-        local sorted = player.GetAll()
-        table.sort( sorted, function( a, b )
-            local aSkulls, bSkulls = a:GetSkulls(), b:GetSkulls()
-            if aSkulls ~= bSkulls then return aSkulls > bSkulls end
-            return a:GetScore() > b:GetScore()
-
-        end )
-        for rank, ply in ipairs( sorted ) do
-            if not IsValid( ply.ScoreEntry ) then continue end
-            ply.ScoreEntry:SetZPos( rank )
+        -- a fresh entry has no rank yet, so it can't wait for the interval
+        if panelCreated or ( self._nextSort or 0 ) < CurTime() then
+            self._nextSort = CurTime() + SORT_INTERVAL
+            self:SortEntries()
 
         end
 

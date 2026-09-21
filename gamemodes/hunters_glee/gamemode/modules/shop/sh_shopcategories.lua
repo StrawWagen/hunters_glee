@@ -51,11 +51,6 @@ function GM:GetShopCategoryData( categoryIdentifier )
 
 end
 
-local function errorCatchingMitt( errMessage )
-    ErrorNoHaltWithStack( errMessage )
-
-end
-
 function GM:CategoryCanShow( identifier, purchaser )
     local catData = GAMEMODE:GetShopCategoryData( identifier )
     if not catData then return false end
@@ -67,10 +62,10 @@ function GM:CategoryCanShow( identifier, purchaser )
     end
     if istable( categoryCanShow ) then
         for _, theCurrentShowFunc in ipairs( categoryCanShow ) do
-            local noErrors, returned = xpcall( theCurrentShowFunc, errorCatchingMitt, purchaser )
+            local noErrors, returned = xpcall( theCurrentShowFunc, shopHelpers.errorMitt, purchaser )
             if noErrors == false then
                 permaPrint( "GLEE: !!!!!!!!!! " .. catData.name .. "'s shCanShowInShop function errored!!!!!!!!!!!" )
-                return nil, REASON_ERROR
+                return nil, shopHelpers.REASON_ERROR
 
             else
                 if returned ~= true then return false, "that item isn't purchasable right now." end

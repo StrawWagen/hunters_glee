@@ -604,7 +604,7 @@ function ENT:ApplyDynamicCooldown()
     local owner = self.player
     if not IsValid( owner ) then return end
 
-    GAMEMODE:doShopCooldown( owner, self.itemIdentifier, self:GetDynamicCooldown() )
+    GAMEMODE:applyShopItemCooldown( owner, self.itemIdentifier, self:GetDynamicCooldown() )
 
 end
 

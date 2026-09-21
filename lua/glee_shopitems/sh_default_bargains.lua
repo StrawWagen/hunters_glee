@@ -428,10 +428,10 @@ if SERVER then
         max = 12,
     }
     local tumorGrowthPerStep = 0.02
-    local tumorHurtsAboveScale = 1.3
+    local tumorHurtsAboveScale = 1.4
     local tumorStepsBeforeHurting = math.Round( ( tumorHurtsAboveScale - 1 ) / tumorGrowthPerStep )
-    local tumorFirstDamage = 1
-    local tumorDamageRamp = 2.5
+    local tumorFirstDamage = 2.5
+    local tumorDamageRamp = 0.75
     local tumorMaxBloodEffects = 8
 
     GAMEMODE:RegisterStatusEffect( "the_growth",
@@ -550,38 +550,6 @@ if SERVER then
     )
 
 
-    GAMEMODE:RegisterStatusEffect( "the_hops",
-        function( self, owner ) -- setup func
-            local nextJump = 0
-            local jumpAdded = false
-
-            self:Hook( "StartCommand", function( ply, cmd )
-                if ply ~= owner then return end
-
-                if not ply:IsOnGround() then
-                    nextJump = CurTime() + 0.01
-                    jumpAdded = false
-                    return
-
-                end
-
-                if nextJump > CurTime() then return end
-
-                -- toggle the key instead of holding it, holding sticks after a crouch jump
-                if jumpAdded then
-                    jumpAdded = false
-                    cmd:RemoveKey( IN_JUMP )
-
-                else
-                    jumpAdded = true
-                    cmd:AddKey( IN_JUMP )
-
-                end
-            end )
-        end
-    )
-
-
     local bigHeadManipKey = "big_head"
     local bigHeadScale = Vector( 2.5, 2.5, 2.5 )
     local bigHeadSpeedModifier = -25
@@ -629,6 +597,27 @@ if SERVER then
         end
     )
 end
+
+
+-- shared to keep prediciton happy
+local function theHopsCommand( ply, mvData )
+    if not ply:HasStatusEffect( "the_hops" ) then return end
+
+    if not ply:IsOnGround() then return end
+
+    -- the engine only jumps on a fresh press, so IN_JUMP comes back out of the old buttons
+    mvData:SetButtons( bit.bor( mvData:GetButtons(), IN_JUMP ) )
+    mvData:SetOldButtons( bit.band( mvData:GetOldButtons(), bit.bnot( IN_JUMP ) ) )
+
+end
+
+GAMEMODE:RegisterStatusEffect( "the_hops",
+    function( self, _owner ) -- setup func
+        self:HookOnce( "Move", theHopsCommand )
+
+    end
+)
+
 
 hook.Add( "glee_shop_canpurchase", "glee_shoptags_astralprojection", function( purchaser, itemData )
     if not purchaser:HasStatusEffect( "astrallyprojected" ) then return end
@@ -1128,7 +1117,7 @@ local items = {
     ["thehops"] = {
         name = "The Hops.",
         desc = "Your legs will never rest again.\nYou hop the moment you touch the ground, forever." .. bargainDescrip,
-        shCost = -150,
+        shCost = -75,
         markup = 0.25,
         cooldown = math.huge,
         tags = { "MUTATIONS", "Debuff", "Bargain", "Essential" },

@@ -3,6 +3,197 @@ local GM = GM or GAMEMODE
 local shopHelpers = GM.shopHelpers or {}
 GM.shopHelpers = shopHelpers
 
+
+-- An item's own fields can be functions, and a shop item is third party code as often as not.
+-- Everything that calls one goes through these, so a thrown error is a dead item, not a dead shop.
+
+-- xpcall handler. A shop item errors every frame the shop is open, so this must not halt
+function shopHelpers.errorMitt( errMessage )
+    ErrorNoHaltWithStack( errMessage )
+
+end
+
+-- complaint reads like "cost function errored", and the item stops being offered until the next gobble
+function shopHelpers.itemFuncFailed( identifier, complaint )
+    GAMEMODE:invalidateShopItem( identifier )
+    permaPrint( "GLEE: !!!!!!!!!! " .. identifier .. "'s " .. complaint .. "!!!!!!!!!!!" )
+
+end
+
+shopHelpers.REASON_ERROR = "ERROR"
+local REASON_ERROR = shopHelpers.REASON_ERROR
+
+
+-- Picked by the spec's check func. A listener that damages its adjust table returns nothing here,
+-- and the caller shouts about the wrong type like it would for any other bad value.
+local adjustTypes = {
+    [isnumber] = {
+        new = function( value ) return { mul = 1, value = value } end,
+        finish = function( adjust )
+            if not isnumber( adjust.value ) or not isnumber( adjust.mul ) then return end
+            return adjust.value * adjust.mul
+
+        end,
+    },
+    [isstring] = {
+        new = function( value ) return { value = value } end,
+        finish = function( adjust ) return adjust.value end,
+    },
+}
+
+--[[------------------------------------
+    Lets other addons adjust an item's cost, cooldown or description. The hooks are named
+    in sh_shopshared.lua, above the resolveItemField call that runs each one.
+
+    Adjust table is a table so every hook can simply tweak the value without returning anything
+    Means multiple hooks can modify in sequence
+
+    Number fields get .mul and .value, string fields only get .value
+
+    Eg;
+    hook.Add( "glee_shop_itemcostmul", "half_price_guns", function( ply, itemData, adjust )
+        if itemData.tags.Weapon then adjust.mul = adjust.mul * 0.5 end
+
+    end )
+--]]-------------------------------------
+function shopHelpers.runAdjustHook( identifier, spec, ply, itemData, value )
+    local adjustType = adjustTypes[spec.check]
+    if not adjustType then
+        permaPrint( "GLEE: !!!!!!!!!! " .. spec.hook .. " has no adjust type for " .. identifier .. "!!!!!!!!!!!" )
+        return value
+
+    end
+
+    local adjust = adjustType.new( value )
+
+    local noErrors = xpcall( hook.Run, shopHelpers.errorMitt, spec.hook, ply, itemData, adjust )
+    if not noErrors then
+        permaPrint( "GLEE: !!!!!!!!!! " .. spec.hook .. " errored for " .. identifier .. "!!!!!!!!!!!" )
+        return value
+
+    end
+
+    local adjusted = adjustType.finish( adjust )
+    if not spec.check( adjusted ) then
+        permaPrint( "GLEE: !!!!!!!!!! " .. spec.hook .. " left a non-" .. spec.typeName .. " for " .. identifier .. "!!!!!!!!!!!" )
+        return value
+
+    end
+
+    return adjusted
+
+end
+
+--[[---------------------------------------------------------
+    shopHelpers.resolveItemField
+    @desc Reads an item field that may be a value or a function( ply ), then applies the spec's
+        markup, hook and rounding, in that order. An item that errors or returns the wrong type is
+        invalidated on the way out.
+    @param identifier: string. The shop item to read.
+    @param fieldName: string. The key to read off it. A name no item carries is indistinguishable
+        from an unset one, so a typo here quietly resolves to spec.default.
+    @param ply: Player. The purchaser. Passed to the field's function, and to the markup.
+    @param spec: table.
+        check     function. What the value has to be, eg isnumber ( REQUIRED )
+        typeName  string. Names that type in the complaint ( REQUIRED )
+        default   any. What to return when the field is unset, errors, or is the wrong type
+        markup    boolean. Multiply by GM:shopMarkup
+        round     boolean. Whole numbers only
+        hook      string. Run as ( ply, itemData, adjust ), see runAdjustHook
+    @return: The value, or spec.default.
+--]]---------------------------------------------------------
+function shopHelpers.resolveItemField( identifier, fieldName, ply, spec )
+    local itemData = GAMEMODE:GetShopItemData( identifier )
+    if not itemData then return spec.default end
+
+    local raw = itemData[fieldName]
+    if raw == nil then return spec.default end
+
+    local value = raw
+
+    if isfunction( raw ) then
+        local noErrors, returned = xpcall( raw, shopHelpers.errorMitt, ply )
+        if not noErrors then
+            shopHelpers.itemFuncFailed( identifier, fieldName .. " function errored" )
+            return spec.default
+
+        end
+        value = returned
+
+    end
+
+    if not spec.check( value ) then
+        shopHelpers.itemFuncFailed( identifier, fieldName .. " is not a " .. spec.typeName )
+        return spec.default
+
+    end
+
+    if spec.markup then
+        value = value * GAMEMODE:shopMarkup( ply, identifier )
+
+    end
+
+    if spec.hook then
+        value = shopHelpers.runAdjustHook( identifier, spec, ply, itemData, value )
+
+    end
+
+    if spec.round then
+        value = math.Round( value )
+
+    end
+
+    return value
+
+end
+
+--[[---------------------------------------------------------
+    shopHelpers.runChecks
+    @desc Runs hookName, then checkFuncs, and stops at the first one that says no.
+    @param ply: Player. The purchaser, passed to the hook and to every check.
+    @param itemData: table. The item being checked. Passed to the hook, NOT to the checks.
+    @param hookName: string. Run as ( ply, itemData ). Only an explicit false blocks.
+    @param checkFuncs: function or table of functions, each ( ply ) returning allowed, reason.
+        A check must return true to pass, so a check that returns nothing blocks with no reason.
+    @param funcName: string. Which field checkFuncs came from, for the error shout.
+    @return: boolean allowed, and the string reason it was refused.
+--]]---------------------------------------------------------
+function shopHelpers.runChecks( ply, itemData, hookName, checkFuncs, funcName )
+    local identifier = itemData.identifier
+
+    local success, returned, reason = xpcall( hook.Run, shopHelpers.errorMitt, hookName, ply, itemData )
+    if not success then
+        GAMEMODE:invalidateShopItem( identifier )
+        permaPrint( "GLEE: !!!!!!!!!! " .. hookName .. " errored for " .. identifier .. "!!!!!!!!!!!" )
+        return false, REASON_ERROR
+
+    end
+    if returned == false then return false, reason end -- Blocked
+
+    if isfunction( checkFuncs ) then
+        checkFuncs = { checkFuncs }
+
+    end
+    if istable( checkFuncs ) then
+        for _, checkFunc in ipairs( checkFuncs ) do
+            success, returned, reason = xpcall( checkFunc, shopHelpers.errorMitt, ply )
+            if not success then
+                shopHelpers.itemFuncFailed( identifier, funcName .. " function errored" )
+                return false, REASON_ERROR
+
+            else
+                if returned == true then continue end
+                return false, reason
+
+            end
+        end
+    end
+
+    return true
+
+end
+
+
 -- alive! in the hunt
 function shopHelpers.aliveCheck( purchaser )
     if purchaser:Health() <= 0 then return false, "You must be alive to purchase this." end

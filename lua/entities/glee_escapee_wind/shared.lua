@@ -242,7 +242,7 @@ function ENT:Place()
     GAMEMODE:AddMischievousness( owner, 1, "used a gust of wind" )
 
     if self.itemIdentifier then
-        GAMEMODE:doShopCooldown( owner, self.itemIdentifier, self.Cooldown )
+        GAMEMODE:applyShopItemCooldown( owner, self.itemIdentifier, self.Cooldown )
 
     end
 

@@ -198,9 +198,9 @@ function set:Activate()
         GAMEMODE:LearnLesson( ply, "OpenedADoor" )
 
     end )
-    self:Hook( "glee_shop_itemcostmul", function( _ply, itemData, costMulTbl )
+    self:Hook( "glee_shop_itemcostmul", function( _ply, itemData, adjust )
         if itemData.identifier ~= "guns" then return end
-        costMulTbl[1] = costMulTbl[1] * 0.5 -- cheaper guns
+        adjust.mul = adjust.mul * 0.5 -- cheaper guns
 
     end )
     self:Hook( "huntersglee_postwavegenerated", function()

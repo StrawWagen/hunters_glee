@@ -1189,7 +1189,7 @@ function termHuntOpenTheShop()
 
                     -- handle tooltips
                     local description = ""
-                    local descriptionReturned = GAMEMODE:translateShopItemDescription( ply, identifierPaint, self.itemData.desc )
+                    local descriptionReturned = GAMEMODE:shopItemDescription( ply, identifierPaint )
                     if descriptionReturned and descriptionReturned ~= "" then
                         description = descriptionReturned
 

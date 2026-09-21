@@ -42,6 +42,11 @@ local function enumCheck( dat )
 
 end
 
+-- sv_hunterspawner only acts on these, so an unknown spawnType would register fine and never spawn
+local validSpawnTypes = {
+    hunter = true,
+}
+
 local spawnSpecialCases = { -- special cases for spawn entries
     preSpawnedFuncs = isTableOfFunctions,
     postSpawnedFuncs = isTableOfFunctions,
@@ -142,6 +147,7 @@ function GM:IsValidSpawnSet( spawnSet )
         end
         if not isstring( spawn.prettyName ) then yapErr( spawnSet, ".spawns " .. name .. " invalid .prettyname" ) return end
         if not isstring( spawn.class ) then yapErr( spawnSet, ".spawns " .. name .. " invalid .class" ) return end
+        if not validSpawnTypes[spawn.spawnType] then yapErr( spawnSet, ".spawns " .. name .. " invalid .spawnType" ) return end
 
         for specialVar, validator in pairs( spawnSpecialCases ) do
             local whatSpawnHas = spawn[specialVar]

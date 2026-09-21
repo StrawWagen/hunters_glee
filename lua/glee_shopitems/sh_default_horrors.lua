@@ -27,7 +27,7 @@ local items = {
         shCost = 0,
         markup = 1,
         cooldown = 60,
-        tags = { "HORRORS", "Essential", "CloseShopOnPurchase" },
+        tags = { "HORRORS", "Essential", "CloseShopOnPurchase", "Hardcore" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },
@@ -78,7 +78,7 @@ local items = {
         shCost = 0,
         markup = 1,
         cooldown = 90,
-        tags = { "HORRORS", "CloseShopOnPurchase" },
+        tags = { "HORRORS", "CloseShopOnPurchase", "Hardcore" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },
@@ -95,7 +95,7 @@ local items = {
         shCost = 0,
         markup = 1,
         cooldown = 120,
-        tags = { "HORRORS", "Essential", "CloseShopOnPurchase" },
+        tags = { "HORRORS", "Essential", "CloseShopOnPurchase", "Hardcore" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },
@@ -149,7 +149,7 @@ local items = {
         shCost = 0,
         markup = 1,
         cooldown = 0,
-        tags = { "HORRORS", "Divine", "CloseShopOnPurchase" },
+        tags = { "HORRORS", "Divine", "CloseShopOnPurchase", "Hardcore" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },

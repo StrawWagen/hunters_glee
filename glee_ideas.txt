@@ -568,5 +568,15 @@ goes in a glee rebinding menu?
 -- add hook that can block the starting of a next wave of enemies
 -- use it in tutorial mode, wait for all players to stop moving, to spawn next wave 
 
--- Hardcore Glee misery, no shop, even when dead
+-- Hardcore Glee misery, no alive shop, super limited dead shop ( longer cooldowns? )
 -- True Glee misery, no self-reviving dead items
+
+-- message when trying to control a bot already being controlled
+-- if new player kills other new player, no 10d of guilt
+-- clown feet
+-- broken arms
+-- fists, cannot use guns tho
+
+-- child of light multiplayer
+-- field test mechanic removal with new miseries
+-- decrease lvl of loudest panic scream

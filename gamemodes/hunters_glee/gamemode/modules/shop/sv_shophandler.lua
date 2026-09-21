@@ -50,15 +50,7 @@ function GM:purchaseItem( ply, toPurchase )
 
         end
 
-        local theCooldown
-        if dat.cooldown then
-            theCooldown = self:translateShopItemCooldown( ply, toPurchase, dat.cooldown )
-
-        end
-        if theCooldown and theCooldown > 0 then
-            self:doShopCooldown( ply, toPurchase, theCooldown )
-
-        end
+        self:applyShopItemCooldown( ply, toPurchase )
 
         -- cool purchase sound, kaching!
         self:sendPurchaseConfirm( ply, cost, toPurchase )

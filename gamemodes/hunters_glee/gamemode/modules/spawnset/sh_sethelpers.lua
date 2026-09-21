@@ -7,6 +7,34 @@ local setHelpers = GM.setHelpers or {}
 GM.setHelpers = setHelpers
 
 
+-- No shop for the living, only "Hardcore" tagged items for the dead, and they wait twice as long.
+-- Call from an sh_ spawnset's Activate. Server only and the client draws a shop that won't sell
+function setHelpers.makeHardcore( lifecycle )
+    -- escaped players sit at health 0, so the Horrors stay open to them
+    lifecycle:Hook( "glee_blockshopopen", function()
+        if LocalPlayer():Health() <= 0 then return end
+
+        return true, "The shop is closed to the living."
+
+    end )
+    -- the shop panel is one way in, termhunt_purchase is the other, and this closes both
+    lifecycle:Hook( "glee_shop_canshow", function( _ply, itemData )
+        if itemData.tags.Hardcore then return end
+
+        return false, "Too soft for this Misery."
+
+    end )
+    lifecycle:Hook( "glee_shop_itemcooldownmul", function( _ply, _itemData, adjust )
+        adjust.value = math.max( adjust.value, 20 )
+        adjust.mul = adjust.mul * 2
+
+    end )
+end
+
+
+if CLIENT then return end -- the rest spawns hunters
+
+
 -- rolled at load, so the escalation curve is this session's own, not this round's
 local overchargedChanceAtMinutes = {
     [0] = 0,
@@ -18,17 +46,8 @@ local overchargedChanceAtMinutes = {
 
 }
 
---[[---------------------------------------------------------
-    setHelpers.postSpawnedOvercharge
-    @desc A .postSpawnedFuncs entry. Rolls whether a hunter spawns overcharged, based on how
-    late into the hunt it was added and how heated the session has gotten. Separately, a heated
-    session angers every hunter and hands it the best weapon, roll or not. Announces the first
-    overcharge of the round.
-    @param spawnDat: The spawn entry that produced this hunter. Reads .minutesWhenAdded, which
-    the spawner sets as it picks the entry into a wave.
-    @param spawned: The hunter that just spawned.
-    @return: None
---]]---------------------------------------------------------
+-- A .postSpawnedFuncs entry. Reads spawnDat.minutesWhenAdded, which the spawner sets as it
+-- picks the entry into a wave. A heated session angers every hunter, overcharge roll or not
 function setHelpers.postSpawnedOvercharge( spawnDat, spawned )
 
     local overchargedChance = 0

@@ -115,6 +115,19 @@ net.Receive( "NPCKilledNPC", function()
 
 end )
 
+-- Only players carry a Team, and only a name survives to DrawDeath, which measures what
+-- it is handed. An npc, a nextbot, or an entity this client never received all leave here
+-- as a string or as nil
+local function asDeathNoticeName( ent, teamID )
+
+	if ( !isentity( ent ) ) then return ent, teamID end
+	if ( !IsValid( ent ) ) then return nil, teamID end
+	if ( ent.Team ) then return ent:Nick(), ent:Team() end
+
+	return "#" .. ent:GetClass(), teamID
+
+end
+
 -- The new way
 DEATH_NOTICE_FRIENDLY_VICTIM = 1
 DEATH_NOTICE_FRIENDLY_ATTACKER = 2
@@ -146,8 +159,8 @@ net.Receive( "DeathNoticeEvent", function()
 	local team_v = -1
 	if ( bit.band( flags, DEATH_NOTICE_FRIENDLY_VICTIM ) != 0 ) then team_v = -2 end
 	if ( bit.band( flags, DEATH_NOTICE_FRIENDLY_ATTACKER ) != 0 ) then team_a = -2 end
-	if ( isentity( attacker ) && attacker.Team ) then team_a = attacker:Team() attacker = attacker:Nick() end
-	if ( isentity( victim ) && victim.Team ) then team_v = victim:Team() victim = victim:Nick()  end
+	attacker, team_a = asDeathNoticeName( attacker, team_a )
+	victim, team_v = asDeathNoticeName( victim, team_v )
 
 	hook.Run( "AddDeathNotice", attacker, team_a, inflictor, victim, team_v, flags )
 

@@ -54,7 +54,7 @@ function lifecycle:InternalTeardown()
 
     end
     for _, func in ipairs( self._teardownTasks ) do
-        ProtectedCall( func, ply )
+        ProtectedCall( func )
 
     end
 end

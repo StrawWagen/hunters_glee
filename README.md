@@ -23,11 +23,17 @@ hunters_glee/
 ├── lua/
 │   ├── glee_shopitems/                # Shop item definitions (auto-loaded)
 │   ├── glee_spawnsets/                # Enemy spawnset(misery) definitions (auto-loaded)
+│   ├── glee_music/                    # Music track definitions (auto-loaded)
+│   ├── glee_hud/                      # HUD drawing, fonts, and the swappable HUD styles
+│   ├── autorun/                       # Loaded by gmod itself, so it runs outside the gamemode too
 │   ├── entities/                      # Custom entities
 │   ├── weapons/                       # Custom weapons
+│   ├── vgui/                          # Custom panels
 │   └── effects/                       # Visual effects
 ├── materials/                         # Textures and UI assets
 ├── models/                            # 3D models
+├── particles/                         # Particle systems
+├── resource/                          # Fonts, sent to clients automatically
 └── sound/                             # Audio files
 ```
 
@@ -93,7 +99,7 @@ GAMEMODE:GobbleShopItems( items )
 | `name` | ✅ | Display name in the shop |
 | `desc` | ✅ | Description (string or function) |
 | `shCost` | ✅ | Cost in score (negative = gives score) |
-| `tags` | ✅ | Category tags as indexed table, Capitalized tags define the item's categories (e.g., `{"ITEMS", "Weapon"}`) |
+| `tags` | ✅ | Indexed table of tag strings. The ALL CAPS ones are the categories (e.g., `{"ITEMS", "Weapon"}`) |
 | `purchaseTimes` | ✅ | When purchasable: `ROUND_INACTIVE`, `ROUND_ACTIVE` |
 | `svOnPurchaseFunc` | ✅ | Server function called on purchase: `function(purchaser, itemId)` |
 | `shSkullCost` | ❌ | Skull cost. Accepts number or function. Zero is ignored. Negative gives skulls on purchase |
@@ -112,18 +118,21 @@ GAMEMODE:GobbleShopItems( items )
 
 #### Category Tags
 
-Items appear in categories based on their first matching tag:
+An item goes in every category it carries the tag for, so one item can sit in several:
 
 | Tag | Category | Visibility |
 |-----|----------|------------|
 | `ITEMS` | Items | Alive players |
-| `INNATE` | Innate | Alive players |
-| `BARGAINS` | Bargains | Alive players |
+| `MUTATIONS` | Mutations | Alive players |
+| `HORRORS` | Horrors | Escaped players |
 | `DEADSACRIFICES` | Sacrifices | Dead players |
 | `DEADGIFTS` | Gifts | Dead players |
 | `BANK` | Bank | All players |
 
 Additional descriptive tags (e.g., `"Weapon"`, `"Utility"`) don't affect categorization.
+
+An ALL CAPS tag that isn't in this table invalidates the item.
+Don't set `.category` or `.categories` yourself either, the item is rejected outright.
 
 Some other tags automatically apply special properties to items:
 
@@ -150,10 +159,13 @@ shopHelpers.playRandomSound( ent, sounds, level, pitch, channel )
 
 shopHelpers.purchaseWeapon( purchaser, {
     class = "weapon_smg1",
-    ammoType = "SMG1",
-    purchaseClips = 2,      -- Clips given on first purchase
-    resupplyClips = 4,      -- Clips given on repurchase
-    confirmSoundWeight = 1, -- Gun cock sound intensity
+    ammoType = "SMG1",                  -- Optional, defaults to the weapon's own primary ammo type
+    purchaseClips = 2,                  -- Clips given on first purchase
+    resupplyClips = 4,                  -- Clips given on repurchase
+    secondaryAmmoType = "smg1_grenade", -- Optional, defaults to the weapon's own secondary ammo type
+    purchaseSecondaryClips = 1,         -- Secondary clips given on first purchase
+    resupplySecondaryClips = 1,         -- Secondary clips given on repurchase
+    confirmSoundWeight = 1,             -- Gun cock sound intensity
 } )
 
 -- for screamer_crate derived "ghost/haunting" items
@@ -173,15 +185,43 @@ Additional ways to control access to shop items.
   - Return `false`, `failReason` to block the item from being purchased.
   - Use this hook if you want to programatically make, all items with X tag not purchasable, etc. 
   - DONT use this to define when a single item will be purchasable. Use `shopItem.shPurchaseCheck` to manage that.
-- `newDescription` = `glee_shop_itemdescription`( `ply`, `itemData`, `description` )
-  - Return `newDescription`, to override the item description.
-  - Remember, only one hook listener can return non-nil at a time!
+
+#### The adjust hooks
+
+These four don't use return values. Every listener gets the same `adjust` table and writes to it,
+so several addons can tweak one field without fighting over a single return.
+
+Number fields give you two keys. `adjust.value` is the field as it stands, and `adjust.mul` starts
+at 1. The result is `adjust.value * adjust.mul`, so multiply `mul` to stack with other addons, and
+write `value` when you need an absolute, like a floor. String fields only give you `adjust.value`.
+
+- `glee_shop_itemcostmul`( `ply`, `itemData`, `adjust` )
+  - `adjust.value` is the item's `shCost`, after markup is applied.
+- `glee_shop_itemskullcostmul`( `ply`, `itemData`, `adjust` )
+  - `adjust.value` is the item's `shSkullCost`, after markup is applied.
+- `glee_shop_itemcooldownmul`( `ply`, `itemData`, `adjust` )
+  - `adjust.value` is the item's `cooldown`.
+- `glee_shop_itemdescription`( `ply`, `itemData`, `adjust` )
+  - `adjust.value` is the item's `desc`. No `mul`, it's a string.
+
+One listener erroring, or leaving the wrong type behind, throws away every listener's work for
+that call and the field is used unadjusted.
 
 Example:
 
 ```lua
 hook.Add( "glee_shop_canshow", "i_really_hate_debuffs", function( ply, itemData )
     if itemData.tags.Debuff then return false, "Debuffs are LAME" end
+
+end )
+
+hook.Add( "glee_shop_itemcostmul", "half_price_guns", function( ply, itemData, adjust )
+    if itemData.tags.Weapon then adjust.mul = adjust.mul * 0.5 end
+
+end )
+
+hook.Add( "glee_shop_itemcooldownmul", "never_instant", function( ply, itemData, adjust )
+    adjust.value = math.max( adjust.value, 999 ) -- minimize the cooldown of everything to 999s
 
 end )
 
@@ -218,7 +258,7 @@ if SERVER then
             end )
 
             -- example of statusEffect:HookOnce, creates only 1 hook, cleans it up when nobody has the status effect anymore
-            self:HookOnce( "PlayerFootstep", function( ply )
+            self:HookOnce( "PlayerFootstep", function( ply ) -- this function is best used on laggy hooks called often
                 if not ply:HasStatusEffect( "caffeinated" ) then return end -- only one hook exists, owner is useless
 
                 ply:EmitSound( "buttons/blip1.wav", 50, 140 )
@@ -251,8 +291,10 @@ Effects can only be given on the **server**, but you can check for them anywhere
 -- server
 if SERVER then
     local effect = ply:GiveStatusEffect( "caffeinated" ) -- returns the effect object
-    effect.cupsDrank = 1 -- it's just a table, can pass stuff to the effect
+    if effect then -- nil if they already had it, or if the name was never registered
+        effect.cupsDrank = 1 -- it's just a table, can pass stuff to the effect
 
+    end
 end
 
 -- shared
@@ -360,7 +402,8 @@ Name it `sv_my_misery.lua`.
 
 A spawnset only exists on the client to run `Activate` and `OnRemove` (see below), it never spawns anything.
 So a `cl_` file needs nothing but a `name` matching the spawnset it's adding to.
-A spawnset that only exists clientside errors, because it can never be picked.
+A spawnset that only exists clientside is dropped, because it can never be picked.
+It complains in console, and errors outright with `developer 1`.
 
 #### Spawnset Example A: Your first spawnset
 
@@ -391,7 +434,7 @@ local mySpawnSet = {
             minCount = { 1 },                          -- Always maintain this many
         },
         {
-            hardRandomChance = { 5, 20 },              -- Only pick this x% of waves
+            hardRandomChance = { 5, 20 },              -- x% chance to be considered, rolled multiple times per wave, more if there's more budget
             name = "hunter",
             prettyName = "A Scary Hunter",
             class = "terminator_nextbot",              -- Spawns the "overcharged" terminator
@@ -419,6 +462,8 @@ Number values can be:
 - `"default"` - Explicity use base spawnset value
 - `"default*N"` - Multiply base value by N
 - `{ min, max }` - Random value in range is chosen at the start of each round.
+- `{ n }` - A one member table, same as writing the number directly
+- `function( spawnSet )` - Called each round, return any of the above and it gets parsed too
 - `Direct number` - 8, 10, 11.25, etc ( not recommended, random value in range is much more fun )
 
 #### Spawnset Fields
@@ -442,7 +487,7 @@ Number values can be:
 | `roundEarlyStartSound` | ❌ | Alt start sound, played 10s before start, only plays if roundStartSound is "" |
 | `genericSpawnerRate` | ❌ | Crate/item spawn rate multiplier |
 | `chanceToBeVotable` | ❌ | Percent chance to appear in !rtm vote, 0-100, accepts float |
-| `chanceToBeVotableWhenHard` | ❌ | Percent chance to appear in !rtm when this misery's escape multiplier >1x, for making spawnsets fade into the background when they no longer challenge the host |
+| `chanceToBeVotableWhenHard` | ❌ | Percent chance to appear in !rtm when this misery's escape multiplier is 1x or more, for making spawnsets fade into the background when they no longer challenge the host |
 | `easy` | ❌ | Marks this as a beginner misery. Tagged `(EASY)` in the !rtm vote, and while an easy one is active the vote prefers offering other easy ones. Also soft-caps its escape reward multiplier |
 | `Activate` | ❌ | Called when this becomes the active misery ( see Spawnset Lifecycle ) |
 | `OnRemove` | ❌ | Called when the misery changes away from this ( see Spawnset Lifecycle ) |
@@ -457,13 +502,21 @@ Number values can be:
 | `spawnType` | ✅ | Spawning algorithm type, only supports `"hunter"` presently |
 | `difficultyCost` | ✅ | Budget cost to spawn, spawns are checked from highest to lowest cost |
 | `difficultyNeeded` | ❌ | Difficulty threshold needed to start spawning, good if you want difficult enemies to all start spawning suddenly |
-| `countClass` | ❌ | Class pattern for .min/max count counting ( `*` = wildcard ) |
+| `difficultyStopAfter` | ❌ | Difficulty threshold to stop spawning past, the mirror of `difficultyNeeded`, for enemies that should drop out of the pool later on |
+| `countClass` | ❌ | Class pattern for .min/max count counting ( `*` = wildcard ). Falls back to `class` if nil |
 | `minCount` | ❌ | Minimum maintained count, hard minimum, bypasses budget |
 | `maxCount` | ❌ | Maximum allowed count |
-| `hardRandomChance` | ❌ | percent chance to even consider, works since spawns are checked from highest to lowest cost |
+| `hardRandomChance` | ❌ | Percent chance to even be considered, works since spawns are checked from highest to lowest cost. Rolled multiple times per wave, more if there's more budget |
+| `spawnSameZ` | ❌ | Prefer spawning at roughly the same height as a player |
+| `spawnAbove` | ❌ | Prefer spawning above the highest player |
+| `spawnBelow` | ❌ | Prefer spawning below the lowest player |
+| `preferredEFlags` | ❌ | Prefer nav areas carrying these Extra Navmesh flags ( see sv_navmeshcategorizer ) |
 | `preSpawnedFuncs` | ❌ | Functions called before hunter:Spawn() : `function(spawnData, npc)` |
 | `postSpawnedFuncs` | ❌ | Functions called after hunter:Spawn() : `function(spawnData, npc)` |
 | `isBoss` | ❌ | `true` marks as boss; `false` opts out of auto-detection. When the boss is killed, all alive players escape. Auto-detected when `spawnSet.maxSpawnCount <= 1` (highest `difficultyCost` entry becomes boss). |
+
+Only one of `spawnSameZ`, `spawnAbove`, `spawnBelow` applies, they're checked in that order.
+Those three and `preferredEFlags` all loosen the longer the spawner fails to find a spot, so they bend rather than block.
 
 #### Spawnset Example B: Functions on spawn!
 

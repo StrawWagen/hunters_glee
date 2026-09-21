@@ -43,6 +43,7 @@ include( "modules/sh_detecthunterkills.lua" )
 include( "modules/shopitems/sh_shophelpers.lua" )
 include( "modules/spawnset/sh_spawnpoolutil.lua" )
 include( "modules/spawnset/sh_spawnsetcontent.lua" )
+include( "modules/spawnset/sh_sethelpers.lua" )
 include( "modules/unsandboxing/sh_unsandboxing.lua" )
 
 include( "modules/shop/sh_shopshared.lua" )
