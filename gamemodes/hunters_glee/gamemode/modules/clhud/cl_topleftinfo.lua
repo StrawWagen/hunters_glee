@@ -619,5 +619,3 @@ hook.Add( "glee_cl_pleasepainttopleft_for", "glee_topleftinfo_forcepaint", funct
     pleasePaintFor[key] = CurTime() + add
 
 end )
-
-print( )

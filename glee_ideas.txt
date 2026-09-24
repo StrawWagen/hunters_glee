@@ -584,3 +584,78 @@ goes in a glee rebinding menu?
 -- field test mechanic removal with new miseries
 -- decrease lvl of loudest panic scream
 -- gm_aftermath_thelast optimized navmesh?
+
+-- gamemode easy setup collection restyle
+-- some kind of pre-tutorial 
+-- bug, ended early first round
+-- source engine experienced players already know how to break crates
+-- they do not know when to press USE
+-- planning, trying to find somewhere where i can see the enemies coming
+
+-- carefully exploring
+-- flashlight hint
+-- flashlight being shitty is weird, should come from guns
+-- bad feedback when shooting infernal horde
+-- killing them but they dont drop skulls?
+
+-- really good experience finding a gun in a crate, weakens the shop tho
+-- weapons tutorial
+
+-- tried breaking crates/boxes to find items
+
+-- first player experience is rather slow
+-- SPEEDUP IF KILLING SKELETONS WITH VERY LITTLE DAMAGE
+
+-- did not notice one has a skull
+-- he has anticipation, something harder is coming
+
+-- decrease range mul of infernal skeletons
+-- shop hint DOES NOT WORK
+-- difficulty spike with tutorial boss
+
+-- billion radio bug
+-- remove nailer from tutorial, replace with what
+-- control enemies, somehow tell people they can do that when escaped!!!!
+
+-- seeks them out after dying one round
+-- skull dropping skeleton death feels weak
+-- what do skulls do? ( they let you buy that heavy assault rifle )
+
+-- big infernal skeleton finds the most open space nearby, wanders there?
+-- mutations funny descriptions hold you back
+
+-- signal flaregun hint is too weak for new players
+-- juggernaut footsteps are not intuitive
+-- add boss hp bar for .boss enemies, to telegraph their power level better
+
+-- PRESS E to attach to the rope hint
+-- hunt's tally is way lower??? i did way better than before!!
+
+-- WAY TOO MUCH SCORE for escaping tutorial mode with 10+ skulls
+-- lead to ignoring the ATM
+-- hint to tell players the shop has expanded after first RTM
+-- RTM vote should be longer when it's an easy vote, have longer round grace
+-- BAD UX, rtm'd to boring mode, not having fun against enemies, want to rtm out
+-- typed number in chat to cast rtm vote
+
+
+-- joke modes ( paparazzi ) should not come after tutorial mode
+-- press E to collect skull cache hint
+
+-- SKULL THRONE ITEM
+
+-- flaregun doesnt hit stuff right next to the player
+-- gm_born VERY GOOD TUTORIAL MAP
+
+-- be more confident with infernalskele spawnpoints, make it easier to find where they spawn from
+-- GMAN mode
+
+-- prestige guns, that cost a lot
+-- make big head bargain drop bigger skulls
+-- head growing weapon that increases the size of enemy's head
+-- the harder a mode is, the more it costs to vote for it
+
+-- assumed the markups were shared
+-- TOO MUCH MONEY, INFLATION!
+
+-- headhunter MUTATION, 100% chance for killed npc to drop skull, newgame+

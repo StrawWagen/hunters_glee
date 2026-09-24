@@ -423,7 +423,7 @@ hook.Add( "huntersglee_round_firstsetup", "glee_wipe_stale_guilt", function()
     -- QueryTyped, not Query, so this is a number and not a string
     local wipedCount = changed[1].wipedCount
     if wipedCount <= 0 then
-        if not game.IsDedicated() then return end
+        if not game.IsDedicated() then return end -- only notify no change if we are a dedicated server
 
         permaPrint( "GLEE: no expired persistent guilt records." )
         return

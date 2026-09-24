@@ -296,7 +296,7 @@ function GM:GiveEscapeRewardTo( ply )
 
         if mapHasNeverEscaped or spawnsetHasNeverEscaped then
             local neverBoth = mapHasNeverEscaped and spawnsetHasNeverEscaped
-            local subject   = neverBoth and "This map and spawnset have" or mapHasNeverEscaped and "This map has" or "This spawnset has"
+            local subject   = neverBoth and "This Map and Misery have" or mapHasNeverEscaped and "This map has" or "This Misery has"
             huntersGlee_AnnounceDramatic( { ply }, 1001, 4, subject .. " never been escaped before!" )
             return
 
