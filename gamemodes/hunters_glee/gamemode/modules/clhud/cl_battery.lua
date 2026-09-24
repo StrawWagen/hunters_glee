@@ -4,13 +4,15 @@ local paddingFromEdge = terminator_Extras.defaultHudPaddingFromEdge
 local paddingFromBottom  = terminator_Extras.defaultHudPaddingFromBottom
 local screenHeight    = ScrH()
 
-local materialSize = math.Clamp( glee_sizeScaled( nil, 48 ), 0, terminator_Extras.glee_HL2Hud.iconMaxSize )
+local hl2 = terminator_Extras.glee_Style( "hl2" )
+
+local materialSize = math.Clamp( glee_sizeScaled( nil, 48 ), 0, hl2:Settings().iconMaxSize )
 
 local noBatteryTexture = Material( "vgui/hud/nobattery.png", "smooth" )
 local drainingTexture  = Material( "vgui/hud/losingcharge.png", "smooth" )
 
-local colorDraining = terminator_Extras.glee_HL2Hud.colors.happy:Copy()
-local colorDead     = terminator_Extras.glee_HL2Hud.colors.flash:Copy()
+local colorDraining = hl2:Color( "happy" ):Copy()
+local colorDead     = hl2:Color( "flash" ):Copy()
 
 local paddingJustHealth = glee_sizeScaled( nil, 260 )
 local paddingHpAndArmor = glee_sizeScaled( nil, 550 )

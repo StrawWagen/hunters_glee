@@ -23,16 +23,17 @@ local PANEL = {}
 -- vgui runs every Init in the chain, base first. Calling DFrame's again from here builds
 -- a second set of title bar furniture, and only the set the accessors point at is hidden.
 PANEL.Init = function( self )
-    local hud = terminator_Extras.glee_HL2Hud
+    local hl2 = terminator_Extras.glee_Style( "hl2" )
+    local pad = hl2:Metric( "blockPadding" )
 
     self:SetTitle( "" )
     self:ShowCloseButton( false )
     self:SetDraggable( false )
     self:MakePopup()
-    self:DockPadding( hud.blockPadding, hud.blockPadding, hud.blockPadding, hud.blockPadding )
+    self:DockPadding( pad, pad, pad, pad )
 
-    self._backdrop     = hud.colors.bgDark
-    self._cornerRadius = hud.boxCornerRadius
+    self._backdrop     = hl2:Color( "bgDark" )
+    self._cornerRadius = hl2:Metric( "boxCornerRadius" )
     self._myStyle      = "hl2"
 
 end

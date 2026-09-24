@@ -456,7 +456,7 @@ end
 
 if CLIENT then
     local decree = terminator_Extras.glee_Style( "godlyDecree" )
-    local spacingHeight = glee_sizeScaled( nil, decree:Settings().fontSizes.orders.size )
+    local spacingHeight = decree:Settings().fontSizes.orders
     local ordersTop = glee_sizeScaled( nil, 128 )
     local screenMiddleW = ScrW() / 2
 

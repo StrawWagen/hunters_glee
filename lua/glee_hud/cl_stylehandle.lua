@@ -12,8 +12,7 @@
 --]]-------------------------------------
 
 local hudHelpers = terminator_Extras.glee_HudHelpers
-local styles = terminator_Extras.glee_HudStyles
-local styleBase = terminator_Extras.glee_StyleBase
+local builtStyles = terminator_Extras.glee_BuiltStyles
 
 local styleHandle = {}
 styleHandle.__index = styleHandle
@@ -22,16 +21,20 @@ local handles = {}
 
 --[[---------------------------------------------------------
     terminator_Extras.glee_Style
-    Gets the handle for a style.
+    Gets the handle for a style at a scale.
     @param styleName: The name a style was registered under, like "hl2".
-    @return: The handle. Shared, so keep one in a local forever.
+    @param scaleName: The name a scale was registered under. Defaults to "fixed".
+    @return: The handle. Shared, and it outlives rebuilds, so keep one in a local forever.
 --]]---------------------------------------------------------
-function terminator_Extras.glee_Style( styleName )
-    local handle = handles[styleName]
+function terminator_Extras.glee_Style( styleName, scaleName )
+    scaleName = scaleName or "fixed"
+
+    handles[scaleName] = handles[scaleName] or {}
+    local handle = handles[scaleName][styleName]
     if handle then return handle end
 
-    handle = setmetatable( { styleName = styleName, drawData = {} }, styleHandle )
-    handles[styleName] = handle
+    handle = setmetatable( { styleName = styleName, scaleName = scaleName, drawData = {} }, styleHandle )
+    handles[scaleName][styleName] = handle
 
     return handle
 
@@ -49,23 +52,32 @@ end
 
 --[[---------------------------------------------------------
     handle:Settings
-    Gets the style's own table, for look data that has no method here.
-    @return: The style table. Read tornStrip, blot, ghosts and the paddings off it.
+    Gets the built style, for look data that has no method here.
+    @return: The built style, see cl_stylebuild.lua. Read tornStrip, blot, ghosts and
+        fontSizes off it. Every rebuild replaces it, so get it where you use it rather
+        than keeping it.
 --]]---------------------------------------------------------
 function styleHandle:Settings()
-    local style = styles[self.styleName]
-    if style then return style end
+    local byScale = builtStyles[self.styleName]
+    if not byScale then
+        warnOnce( "no style named \"" .. self.styleName .. "\", drawing as hl2" )
+        byScale = builtStyles.hl2
 
-    warnOnce( "no style named \"" .. self.styleName .. "\", drawing as hl2" )
+    end
 
-    return styles.hl2
+    local built = byScale[self.scaleName]
+    if built then return built end
+
+    warnOnce( "no scale named \"" .. self.scaleName .. "\", drawing at fixed" )
+
+    return byScale.fixed
 
 end
 
 --[[---------------------------------------------------------
     handle:Font
     Turns a font role into a font name, for surface.SetFont and draw.SimpleText.
-    @param fontRole: A key of the style's fontSizes or borrowedFonts, like "medium".
+    @param fontRole: A key of the style's fonts, like "medium".
     @return: The font's name. An unknown role warns once and gives the medium role.
 --]]---------------------------------------------------------
 function styleHandle:Font( fontRole )
@@ -75,7 +87,7 @@ function styleHandle:Font( fontRole )
 
     warnOnce( "style \"" .. style.styleName .. "\" has no font role \"" .. tostring( fontRole ) .. "\"" )
 
-    return style.fonts.medium or styles.hl2.fonts.medium
+    return style.fonts.medium or builtStyles.hl2.fixed.fonts.medium
 
 end
 
@@ -83,18 +95,30 @@ end
     handle:Color
     Turns a colour role into the Color this style draws it in.
     @param colorRole: A key of the style's colors, like "text". A Color passes through.
-    @return: The Color. An unknown role warns once and gives the text role.
+    @return: The Color. Shared by everything drawing that role, so copy it before
+        writing to it. An unknown role warns once and gives the text role.
 --]]---------------------------------------------------------
 function styleHandle:Color( colorRole )
     if not isstring( colorRole ) then return colorRole end
 
-    local style = self:Settings()
-    local color = style.colors[colorRole] or styleBase.colors[colorRole]
+    local colors = self:Settings().colors
+    local color = colors[colorRole]
     if color then return color end
 
     warnOnce( "unknown colour role \"" .. colorRole .. "\"" )
 
-    return style.colors.text or styleBase.colors.text
+    return colors.text
+
+end
+
+-- A length off the style's metrics, like "blockPadding", in this scale's pixels
+function styleHandle:Metric( metricName )
+    local metric = self:Settings().metrics[metricName]
+    if metric then return metric end
+
+    warnOnce( "unknown metric \"" .. tostring( metricName ) .. "\"" )
+
+    return 0
 
 end
 
@@ -122,15 +146,15 @@ end
     @return: None
 --]]---------------------------------------------------------
 function styleHandle:Draw( text, fontRole, x, y, colorRole, doCenter )
-    local style = self:Settings()
+    local metrics = self:Settings().metrics
     local data = self.drawData
 
     data.text = text
     data.font = self:Font( fontRole )
     data.textColor = self:Color( colorRole or "text" )
     data.shadowColor = self:Color( "shadow" )
-    data.shadowOffsetX = style.shadowOffsetX
-    data.shadowOffsetY = style.shadowOffsetY
+    data.shadowOffsetX = metrics.shadowOffsetX
+    data.shadowOffsetY = metrics.shadowOffsetY
     data.posX = x
     data.posY = y
     data.doCenter = doCenter
@@ -144,7 +168,7 @@ end
     Draws a panel's backdrop the way this style does. A blot, a box, whatever it is.
     @param x, y, w, h: The panel's bounds.
     @param color: A Color, not a role. Unfaded, fade is applied to it here.
-    @param cornerRadius: Defaults to the style's boxCornerRadius.
+    @param cornerRadius: Defaults to the style's boxCornerRadius metric.
     @param fade: 0 to 1. Defaults to 1.
     @param highlighted: True while flashing or picked. Defaults to false.
     @return: None
@@ -152,7 +176,7 @@ end
 function styleHandle:Background( x, y, w, h, color, cornerRadius, fade, highlighted )
     local style = self:Settings()
 
-    style.background( x, y, w, h, color, cornerRadius or style.boxCornerRadius, fade or 1, highlighted or false )
+    style.background( style, x, y, w, h, color, cornerRadius or style.metrics.boxCornerRadius, fade or 1, highlighted or false )
 
 end
 
@@ -163,9 +187,17 @@ function styleHandle:Jitter( state )
 
 end
 
--- One sound at random from the style's sounds[setName]. volume defaults to 0.5, level 75
+-- One sound at random from the style's sounds[setName]. volume defaults to 0.5, level 75.
+-- A set the style doesn't have warns once and plays nothing
 function styleHandle:PlaySound( setName, pitch, channel, volume, level )
-    hudHelpers.PlaySound( self:Settings().sounds[setName], pitch, channel, volume, level )
+    local sounds = self:Settings().sounds[setName]
+    if not sounds then
+        warnOnce( "style \"" .. self.styleName .. "\" has no sound set \"" .. tostring( setName ) .. "\"" )
+        return
+
+    end
+
+    hudHelpers.PlaySound( sounds, pitch, channel, volume, level )
 
 end
 
@@ -204,6 +236,7 @@ function styleHandle:NewArrival( fontRole, ghostRole, doCenter )
     local ghostSettings = style.ghosts and style.ghosts[ghostRole or fontRole]
 
     local shadowColor = self:Color( "shadow" )
+    local metrics = style.metrics
 
     -- DrawGhosts writes these alphas, so they can't be the style's own colours
     local ghostTextColor = Color( 255, 255, 255, 255 )
@@ -221,14 +254,14 @@ function styleHandle:NewArrival( fontRole, ghostRole, doCenter )
         ghostData = {
             textColor = ghostTextColor,
             shadowColor = ghostShadowColor,
-            shadowOffsetX = style.shadowOffsetX,
-            shadowOffsetY = style.shadowOffsetY,
+            shadowOffsetX = metrics.shadowOffsetX,
+            shadowOffsetY = metrics.shadowOffsetY,
             doCenter = doCenter,
         },
         solidData = {
             shadowColor = shadowColor,
-            shadowOffsetX = style.shadowOffsetX,
-            shadowOffsetY = style.shadowOffsetY,
+            shadowOffsetX = metrics.shadowOffsetX,
+            shadowOffsetY = metrics.shadowOffsetY,
             doCenter = doCenter,
         },
     }, arrivingText )

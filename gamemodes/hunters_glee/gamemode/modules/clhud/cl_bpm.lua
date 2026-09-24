@@ -9,12 +9,14 @@ local paddingFromEdge    = terminator_Extras.defaultHudPaddingFromEdge
 local screenHeight       = ScrH()
 local paddingAboveHealth = glee_sizeScaled( 96, nil )
 
-local materialSize = math.Clamp( glee_sizeScaled( nil, 55 ), 0, terminator_Extras.glee_HL2Hud.iconMaxSize )
+local hl2 = terminator_Extras.glee_Style( "hl2" )
+
+local materialSize = math.Clamp( glee_sizeScaled( nil, 55 ), 0, hl2:Settings().iconMaxSize )
 
 local heartTexture = Material( "vgui/hud/heartbeat.png", "smooth" )
 
-local colorHealthy = terminator_Extras.glee_HL2Hud.colors.happy:Copy()
-local colorDying   = terminator_Extras.glee_HL2Hud.colors.flash:Copy()
+local colorHealthy = hl2:Color( "happy" ):Copy()
+local colorDying   = hl2:Color( "flash" ):Copy()
 
 local notBeatingTime = 0
 local imageAlpha     = 0

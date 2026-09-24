@@ -52,9 +52,9 @@ local function openAtmGui( atm )
     local ply = LocalPlayer()
     if not IsValid( ply ) then return end
 
-    local hud         = terminator_Extras.glee_HL2Hud
-    local pad         = hud.blockPadding
-    local gap         = hud.laneSpacing
+    local hl2         = terminator_Extras.glee_Style( "hl2" )
+    local pad         = hl2:Metric( "blockPadding" )
+    local gap         = hl2:Metric( "laneSpacing" )
     local switchSound = GAMEMODE.shopStandards.switchSound
 
     local transactionMax     = atm.TransactionAmount
@@ -67,7 +67,7 @@ local function openAtmGui( atm )
         Measure font for layout math
     -----------------------------------------------------------]]
     -- the same role the rows below draw in, so rowH is measured in the font they use
-    surface.SetFont( terminator_Extras.glee_Style( "hl2" ):Font( "medium" ) )
+    surface.SetFont( hl2:Font( "medium" ) )
     local _, fontH = surface.GetTextSize( "A" )
     local rowH = fontH + pad * 2   -- matches glee_hl2hudbox AutoSize height formula
 
@@ -82,7 +82,7 @@ local function openAtmGui( atm )
     local function baseHudBox()
         local box = vgui.Create( "glee_hl2hudbox" )
         box:SetFlashDuration( 0.12 )
-        box:SetFlashIconColor( hud.colors.happy:Copy() ) -- the box defaults this to red
+        box:SetFlashIconColor( hl2:Color( "happy" ):Copy() ) -- the box defaults this to red
         box:SetDoFadeDelays( false )
         return box
 
@@ -150,7 +150,7 @@ local function openAtmGui( atm )
                 self._hoveredOld = hovered
 
             end
-            self:SetNormalBoxColor( hovered and hud.colors.bgUrgent or hud.colors.bg )
+            self:SetNormalBoxColor( hl2:Color( hovered and "bgUrgent" or "bg" ) )
             self:SetState( self.STATE_NORMAL )
 
         end
@@ -284,8 +284,8 @@ local function openAtmGui( atm )
         end
 
         local isOnCooldown = CurTime() < nextTransactionTime
-        self:SetIconColor( isOnCooldown and hud.colors.text or hud.colors.happy )
-        if isOnCooldown then self:SetNormalBoxColor( hud.colors.bg ) end
+        self:SetIconColor( isOnCooldown and "text" or "happy" )
+        if isOnCooldown then self:SetNormalBoxColor( hl2:Color( "bg" ) ) end
 
     end
 
@@ -311,8 +311,8 @@ local function openAtmGui( atm )
         end
 
         local isOnCooldown = CurTime() < nextTransactionTime
-        self:SetIconColor( isOnCooldown and hud.colors.text or hud.colors.happy )
-        if isOnCooldown then self:SetNormalBoxColor( hud.colors.bg ) end
+        self:SetIconColor( isOnCooldown and "text" or "happy" )
+        if isOnCooldown then self:SetNormalBoxColor( hl2:Color( "bg" ) ) end
 
     end
 

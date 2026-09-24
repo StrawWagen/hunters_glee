@@ -56,13 +56,13 @@ terminator_Extras.defaultHudTextPaddingFromEdge = glee_sizeScaled( nil, 54 ) -- 
 
 include( "glee_hud/cl_draw.lua" )
 include( "glee_hud/cl_style.lua" )
-include( "glee_hud/cl_stylehandle.lua" )
 
 include( "glee_hud/styles/cl_hl2.lua" )
-include( "glee_hud/styles/cl_soulthought.lua" ) -- shares hl2's font sizes, so after it
+include( "glee_hud/styles/cl_soulthought.lua" )
 include( "glee_hud/styles/cl_god.lua" )
-include( "glee_hud/styles/cl_godlydecree.lua" ) -- inherits god, so after it
+include( "glee_hud/styles/cl_godlydecree.lua" )
 
-include( "glee_hud/cl_fonts.lua" )
+include( "glee_hud/cl_stylebuild.lua" ) -- builds what's registered above, so after it
+include( "glee_hud/cl_stylehandle.lua" )
 
 include( "glee_hud/cl_playernamecolors.lua" )

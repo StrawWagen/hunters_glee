@@ -13,8 +13,9 @@ local PermaGuiltLevels = {
 GM.PermaGuiltLevels = PermaGuiltLevels
 
 -- the hl2 style is clientside only, so serverside every tier below is colourless.
--- Nothing serverside reads a tier colour
-local hudColors = ( terminator_Extras.glee_HL2Hud or {} ).colors or {}
+-- Nothing serverside reads a tier colour.
+-- Read once, so the tiers keep these colours whatever style draws them
+local hudColors = CLIENT and terminator_Extras.glee_Style( "hl2" ):Settings().colors or {}
 
 -- mixes color 1 with color 2, returns new color object
 -- ratio 0 is entirely col1, ratio 1 is entirely col2

@@ -217,8 +217,6 @@ end
 -- Runs at open time, never at file load: the HL2 fonts and palette do not exist yet
 -- when this file is read.
 local function measureLayout()
-    local hud = terminator_Extras.glee_HL2Hud
-
     surface.SetFont( hl2Style:Font( ROW_FONT ) )
     local _, fontH = surface.GetTextSize( "A" )
 
@@ -241,8 +239,8 @@ local function measureLayout()
     end
 
     local valueW = surface.GetTextSize( WIDEST_VALUE )
-    local pad    = hud.blockPadding
-    local gap    = hud.laneSpacing
+    local pad    = hl2Style:Metric( "blockPadding" )
+    local gap    = hl2Style:Metric( "laneSpacing" )
 
     local sliderRowW = labelW + glee_sizeScaled( METER_MIN_W_1080P ) + valueW + pad * 6
     local checkRowW  = checkLabelW + gap + valueW + pad * 4
@@ -262,11 +260,10 @@ end
 -- Shared by both row types. Returns the row and its convar; the caller has to override
 -- UpdateFromCvar, which AdditionalThink calls every frame.
 local function makeRow( def, layout )
-    local hud = terminator_Extras.glee_HL2Hud
     local cvarRef = GetConVar( def.cvar )
 
     local row = vgui.Create( "glee_hl2hudbox" )
-    row:SetFlashIconColor( hud.colors.happy:Copy() ) -- the box defaults this to red
+    row:SetFlashIconColor( hl2Style:Color( "happy" ):Copy() ) -- the box defaults this to red
     row:SetFlashDuration( 0.12 )
     row:SetDoFadeDelays( false )
     row:SetText( "" ) -- the base paints text centered, and this row paints its own
@@ -308,7 +305,7 @@ local function makeRow( def, layout )
 
         end
 
-        self:SetNormalBoxColor( hovered and hud.colors.bgUrgent or hud.colors.bg )
+        self:SetNormalBoxColor( hl2Style:Color( hovered and "bgUrgent" or "bg" ) )
         self:SetState( self.STATE_NORMAL )
         self:UpdateFromCvar()
 
@@ -329,7 +326,6 @@ end
 
 
 local function makeSliderRow( def, layout )
-    local hud = terminator_Extras.glee_HL2Hud
     local row, cvarRef = makeRow( def, layout )
 
     local span  = def.max - def.min
@@ -350,8 +346,8 @@ local function makeSliderRow( def, layout )
     meter:SetNormalBoxColor( transparent )
     meter:SetUrgentBoxColor( transparent )
     meter:SetFlashBoxColor( transparent )
-    meter:SetEmptyColor( hud.colors.bgDark )
-    meter:SetFillColor( hud.colors.happy )
+    meter:SetEmptyColor( hl2Style:Color( "bgDark" ) )
+    meter:SetFillColor( hl2Style:Color( "happy" ) )
     meter:SetState( meter.STATE_NORMAL )
     meter:Dock( FILL )
     meter:DockMargin( layout.labelW + layout.pad * 3, layout.pad, layout.valueW + layout.pad * 3, layout.pad )
@@ -382,7 +378,7 @@ local function makeSliderRow( def, layout )
 
     -- The bar has no grip to grab, so the value is wherever along it they clicked.
     function row:ValueFromCursor()
-        local pad  = terminator_Extras.glee_HL2Hud.blockPadding
+        local pad  = hl2Style:Metric( "blockPadding" )
         local barW = meter:GetWide() - pad * 2 -- the meter insets its own bar by this
         if barW <= 0 then return def.min end
 
@@ -459,7 +455,6 @@ end
 
 
 local function makeCheckRow( def, layout )
-    local hud = terminator_Extras.glee_HL2Hud
     local row, cvarRef = makeRow( def, layout )
 
     function row:UpdateFromCvar()
@@ -472,7 +467,7 @@ local function makeCheckRow( def, layout )
         end
 
         self._valueText = text
-        self:SetIconColor( on and hud.colors.happy or hud.colors.text )
+        self:SetIconColor( on and "happy" or "text" )
 
     end
 

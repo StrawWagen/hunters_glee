@@ -17,8 +17,8 @@ local LABEL_FONT = "mediumLarge" -- a font role, the style picks it
 local NAME_FONT = "playerName" -- a plain face, level with the label, used if thing we spectating has :Nick
 
 local topPadding = terminator_Extras.defaultHudPaddingFromBottom * 2 -- level with the top left lane
-local textPadding = terminator_Extras.glee_HL2Hud.blockPadding
-local gapBelowHud = terminator_Extras.glee_HL2Hud.laneSpacing
+local textPadding = terminator_Extras.glee_Style( "hl2" ):Metric( "blockPadding" )
+local gapBelowHud = terminator_Extras.glee_Style( "hl2" ):Metric( "laneSpacing" )
 
 local box
 

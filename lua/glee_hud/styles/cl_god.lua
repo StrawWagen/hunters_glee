@@ -6,11 +6,11 @@
     background takes none. A panel set to this would paint styleBase's rounded box.
 --]]-------------------------------------
 
-terminator_Extras.godHud = terminator_Extras.glee_RegisterStyle( "god", {
+terminator_Extras.glee_RegisterStyle( "god", {
     fontName = "Sparkplucked",
     fontWeight = 200, -- brush strokes chew up any heavier
 
-    fontSizes = {
+    fonts = {
         large  = { size = 70 },
         medium = { size = 35 },
         small  = { size = 30 },
@@ -22,6 +22,12 @@ terminator_Extras.godHud = terminator_Extras.glee_RegisterStyle( "god", {
         chosen  = Color( 255, 200, 90 ),
         urgent  = Color( 200, 25, 5 ),
         shadow  = Color( 0, 0, 0, 255 ),
+    },
+
+    metrics = {
+        textPaddingX = 8,
+        textPaddingY = 1,
+        lineGap = 4, -- between stacked lines, like the Misery vote's options
     },
 
     -- see styleHandle:PlaySound
@@ -43,44 +49,44 @@ terminator_Extras.godHud = terminator_Extras.glee_RegisterStyle( "god", {
         interval = { 1 / 25, 1 / 18 },
     },
 
-    textPaddingX = glee_sizeScaled( nil, 8 ),
-    textPaddingY = glee_sizeScaled( nil, 1 ),
-    lineGap = glee_sizeScaled( nil, 4 ), -- between stacked lines, like the Misery vote's options
+    scaled = function( px )
+        return {
+            -- see glee_HudHelpers.DrawTornStrip
+            tornStrip = {
+                colors = {
+                    idle = Color( 10, 5, 0, 170 ),
+                    hovered = Color( 30, 15, 4, 200 ),
+                    pressed = Color( 48, 24, 6, 220 ),
+                    chosen = Color( 70, 34, 6, 220 ),
+                },
+                tearSegment = px( 6 ), -- width of each jag along the top and bottom
+                tearDepth = px( 3 ),
+                ripRowStep = px( 3 ), -- height of each jag down the ripped ends
+                ripReachMax = px( 14 ), -- how far past the strip an end can be torn
+                ripNoise = px( 2 ),
+            },
 
-    -- see glee_HudHelpers.DrawTornStrip
-    tornStrip = {
-        colors = {
-            idle = Color( 10, 5, 0, 170 ),
-            hovered = Color( 30, 15, 4, 200 ),
-            pressed = Color( 48, 24, 6, 220 ),
-            chosen = Color( 70, 34, 6, 220 ),
-        },
-        tearSegment = glee_sizeScaled( nil, 6 ), -- width of each jag along the top and bottom
-        tearDepth = glee_sizeScaled( nil, 3 ),
-        ripRowStep = glee_sizeScaled( nil, 3 ), -- height of each jag down the ripped ends
-        ripReachMax = glee_sizeScaled( nil, 14 ), -- how far past the strip an end can be torn
-        ripNoise = glee_sizeScaled( nil, 2 ),
-    },
+            -- the text arrival animation, faint copies converging onto the text. Keyed by
+            -- the font role they land on, see styleHandle:NewArrival
+            ghosts = {
+                medium = {
+                    count = 2,
+                    spreadMin = px( 6 ),
+                    spreadMax = px( 18 ),
+                    orbitMin = 0,
+                    orbitMax = 0,
+                    startSpread = 0.1,
+                    mergeTime = 0.3,
+                    peakAlpha = 70,
+                },
+            },
 
-    -- the text arrival animation, faint copies converging onto the text. Keyed by the
-    -- font role they land on, see styleHandle:NewArrival
-    ghosts = {
-        medium = {
-            count = 2,
-            spreadMin = glee_sizeScaled( nil, 6 ),
-            spreadMax = glee_sizeScaled( nil, 18 ),
-            orbitMin = 0,
-            orbitMax = 0,
-            startSpread = 0.1,
-            mergeTime = 0.3,
-            peakAlpha = 70,
-        },
-    },
-
-    -- see glee_HudHelpers.ArrivalProgress
-    arrival = {
-        slideDistance = glee_sizeScaled( nil, 40 ),
-        time = 0.25,
-        stagger = 0.04,
-    },
+            -- see glee_HudHelpers.ArrivalProgress
+            arrival = {
+                slideDistance = px( 40 ),
+                time = 0.25,
+                stagger = 0.04,
+            },
+        }
+    end,
 } )

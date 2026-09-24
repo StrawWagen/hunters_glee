@@ -21,14 +21,14 @@ local BaseClass = baseclass.Get( "glee_hl2hudbox" )
 local PANEL = {}
 
 PANEL.Init = function( self )
-    local hud = terminator_Extras.glee_HL2Hud
+    local hl2 = terminator_Extras.glee_Style( "hl2" )
 
     self._chunks     = 20
     self._smooth     = false
     self._fill       = 0
     self._chunkGap   = glee_sizeScaled( nil, 3 )
-    self._fillColor  = hud.colors.happy
-    self._emptyColor = hud.colors.bg
+    self._fillColor  = hl2:Color( "happy" )
+    self._emptyColor = hl2:Color( "bg" )
 
     self:SetBarSize( glee_sizeScaled( nil, 260 ), glee_sizeScaled( nil, 12 ) )
 
@@ -36,7 +36,7 @@ end
 
 -- Sizes the bar; the box grows around it by the standard block padding.
 PANEL.SetBarSize = function( self, barW, barH )
-    local pad = terminator_Extras.glee_HL2Hud.blockPadding
+    local pad = terminator_Extras.glee_Style( "hl2" ):Metric( "blockPadding" )
     self:SetSize( barW + pad * 2, barH + pad * 2 )
 
 end
@@ -44,7 +44,7 @@ end
 -- Height only, leaving the width to whatever docks us. Paint derives the bar
 -- from the panel's own width, so it doesn't need telling.
 PANEL.SetBarHeight = function( self, barH )
-    local pad = terminator_Extras.glee_HL2Hud.blockPadding
+    local pad = terminator_Extras.glee_Style( "hl2" ):Metric( "blockPadding" )
     self:SetTall( barH + pad * 2 )
 
 end
@@ -81,7 +81,7 @@ PANEL.Paint = function( self, w, h )
     local stateAlpha = self:GetStateAlpha()
     if stateAlpha <= 0 then return end
 
-    local pad    = terminator_Extras.glee_HL2Hud.blockPadding
+    local pad    = terminator_Extras.glee_Style( "hl2" ):Metric( "blockPadding" )
     local barW   = w - pad * 2
     local barH   = h - pad * 2
 

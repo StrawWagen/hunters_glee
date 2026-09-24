@@ -19,6 +19,9 @@ local function doShopScale()
 end
 doShopScale()
 
+-- glee_hud's styles rebuild on glee_rebuildfonts, which setupShopFonts runs after every rescale
+terminator_Extras.glee_RegisterScale( "gui", function() return GAMEMODE.shopStandards.shpScale end )
+
 
 local switchSound = Sound( "buttons/lightswitch2.wav" )
 GAMEMODE.shopStandards.switchSound = switchSound

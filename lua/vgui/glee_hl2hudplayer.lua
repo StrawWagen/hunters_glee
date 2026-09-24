@@ -47,7 +47,8 @@ local PANEL = {
 }
 
 function PANEL:Init()
-    local hud = terminator_Extras.glee_HL2Hud
+    local hl2 = terminator_Extras.glee_Style( "hl2" )
+    local bgColor = hl2:Color( "bg" )
 
     self._mode = MODE_FULL
 
@@ -65,10 +66,10 @@ function PANEL:Init()
     self._isLookedAt = false
 
     -- Background color base (read-only; lerp target is set per-frame)
-    self._bgBaseR = hud.colors.bg.r
-    self._bgBaseG = hud.colors.bg.g
-    self._bgBaseB = hud.colors.bg.b
-    self._bgBaseA = hud.colors.bg.a
+    self._bgBaseR = bgColor.r
+    self._bgBaseG = bgColor.g
+    self._bgBaseB = bgColor.b
+    self._bgBaseA = bgColor.a
 
     -- Background lerp target (set from ply:GetPlayerColor() each frame)
     self._bgTargetR = 255
@@ -76,7 +77,7 @@ function PANEL:Init()
     self._bgTargetB = 255
 
     self._teamColor    = Color( 255, 255, 255, 255 )
-    self._cornerRadius = hud.boxCornerRadius
+    self._cornerRadius = hl2:Metric( "boxCornerRadius" )
     self._myStyle      = "hl2"
     self._nameFont     = "TargetID" -- never styled, player names need characters Protest Revolution lacks
     self._font         = "targetID" -- the lines under the name, a role or a font name

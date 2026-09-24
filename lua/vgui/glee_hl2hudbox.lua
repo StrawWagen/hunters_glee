@@ -70,7 +70,7 @@ local PANEL = {
     STATE_URGENT = 4,
     Init = function( self )
         local scaledIconSize = glee_sizeScaled( nil, 48 )
-        self._iconSize       = math.min( scaledIconSize, terminator_Extras.glee_HL2Hud.iconMaxSize )
+        self._iconSize       = math.min( scaledIconSize, terminator_Extras.glee_Style( "hl2" ):Settings().iconMaxSize )
         self._paddingRatio = 0.4
         self._mat          = nil
         self._text         = nil
@@ -78,7 +78,7 @@ local PANEL = {
         self._maxTextWidth = nil
         self._font         = "medium"
         self._textPadding  = glee_sizeScaled( nil, 8 )
-        self._cornerRadius = terminator_Extras.glee_HL2Hud.boxCornerRadius
+        self._cornerRadius = terminator_Extras.glee_Style( "hl2" ):Metric( "boxCornerRadius" )
         self._myStyle      = "hl2"
 
         -- State machine
@@ -102,10 +102,10 @@ local PANEL = {
         self._fadeStartTime = 0
 
         -- Colors
-        local hud            = terminator_Extras.glee_HL2Hud
-        self._normalBoxColor = hud.colors.bg:Copy()
-        self._flashBoxColor  = hud.colors.bgUrgent:Copy()
-        self._urgentBoxColor = hud.colors.bgUrgent:Copy()
+        local hl2            = terminator_Extras.glee_Style( "hl2" )
+        self._normalBoxColor = hl2:Color( "bg" ):Copy()
+        self._flashBoxColor  = hl2:Color( "bgUrgent" ):Copy()
+        self._urgentBoxColor = hl2:Color( "bgUrgent" ):Copy()
         self._iconColor      = "happy"
         self._flashIconColor = "flash"
 
@@ -211,7 +211,7 @@ local PANEL = {
 
     end,
 
-    -- A font role, like "medium". See the style's fontSizes for what it has
+    -- A font role, like "medium". See the style's fonts for what it has
     SetIconFont = function( self, fontRole )
         self._font = fontRole
         self:WrapText()

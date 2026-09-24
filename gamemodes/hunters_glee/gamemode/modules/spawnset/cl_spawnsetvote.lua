@@ -3,7 +3,6 @@ local surface_SetAlphaMultiplier = surface.SetAlphaMultiplier
 local input = input
 
 local god = terminator_Extras.glee_Style( "god" )
-local godLook = god:Settings() -- the strip, the arrival and the paddings, which have no methods
 local hudHelpers = terminator_Extras.glee_HudHelpers
 
 -- 1080p pixels
@@ -66,7 +65,7 @@ local function layoutGodText( panel, text, fontRole, padX, padY )
 
     local textWidth, textHeight = god:Measure( panel.wrappedText, fontRole )
     panel.textWidth = textWidth
-    panel:SetTall( math.ceil( textHeight + ( padY * 2 ) + godLook.shadowOffsetY ) )
+    panel:SetTall( math.ceil( textHeight + ( padY * 2 ) + god:Metric( "shadowOffsetY" ) ) )
 
 end
 
@@ -74,18 +73,21 @@ end
 -- The panel needs layoutGodText run on it, and jitterX / jitterY set.
 -- state keys the style's tornStrip colors
 local function paintGodLine( panel, openedAt, order, state, fontRole, colorRole, w, h )
+    local godLook = god:Settings() -- the strip and the arrival, which have no methods
+    local metrics = godLook.metrics
+
     local arrival = godLook.arrival
     local arrived = hudHelpers.ArrivalProgress( openedAt, order, arrival )
     local slide = ( 1 - arrived ) * arrival.slideDistance
 
     surface_SetAlphaMultiplier( arrived )
 
-    local stripWidth = math.min( w, panel.textWidth + ( godLook.textPaddingX * 2 ) )
+    local stripWidth = math.min( w, panel.textWidth + ( metrics.textPaddingX * 2 ) )
     hudHelpers.DrawTornStrip( godLook.tornStrip, slide, 0, stripWidth, h, state, panel )
 
     god:Draw(
         panel.wrappedText, fontRole,
-        slide + godLook.textPaddingX + panel.jitterX, godLook.textPaddingY + panel.jitterY,
+        slide + metrics.textPaddingX + panel.jitterX, metrics.textPaddingY + panel.jitterY,
         colorRole, false
     )
 
@@ -123,9 +125,9 @@ function spawnSetVote:CreateVotePanel()
     local voteEnd = spawnSetVote.voteEnd
     local openedAt = CurTime()
 
-    local textPaddingX = godLook.textPaddingX
-    local textPaddingY = godLook.textPaddingY
-    local lineGap = godLook.lineGap
+    local textPaddingX = god:Metric( "textPaddingX" )
+    local textPaddingY = god:Metric( "textPaddingY" )
+    local lineGap = god:Metric( "lineGap" )
 
     if IsValid( GAMEMODE.spawnSetVote_VoteHolder ) then
         GAMEMODE.spawnSetVote_VoteHolder:Close()
@@ -211,7 +213,7 @@ function spawnSetVote:CreateVotePanel()
         -- safe every layout pass, see arrivingText:SetText
         titleLine:SetText( title.wrappedText )
 
-        self:SetTall( math.ceil( math.max( countdownHeight, titleHeight ) + godLook.shadowOffsetY ) )
+        self:SetTall( math.ceil( math.max( countdownHeight, titleHeight ) + god:Metric( "shadowOffsetY" ) ) )
 
     end
 

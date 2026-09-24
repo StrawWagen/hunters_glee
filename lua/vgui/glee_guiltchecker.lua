@@ -47,7 +47,7 @@ local THROB_FASTEST = 0.15 -- ...and once they hit the worst tier
 -- the HL2 palette doesn't exist yet.
 local function meterUnlitColor()
     -- darker than the box it sits in, so unlit chunks read as recessed
-    return terminator_Extras.glee_HL2Hud.colors.bgDark
+    return terminator_Extras.glee_Style( "hl2" ):Color( "bgDark" )
 
 end
 
@@ -70,9 +70,9 @@ end
 local PANEL = {}
 
 PANEL.Init = function( self )
-    local hud = terminator_Extras.glee_HL2Hud
-    local gap = hud.laneSpacing
-    local pad = hud.blockPadding
+    local hl2 = terminator_Extras.glee_Style( "hl2" )
+    local gap = hl2:Metric( "laneSpacing" )
+    local pad = hl2:Metric( "blockPadding" )
 
     self:DockPadding( pad, pad, pad, pad )
 
@@ -201,9 +201,9 @@ end
 -- player's ui scale, so no caller may assume a height. Assuming one is what
 -- makes the panel come out short and clip the description.
 PANEL.LayoutForWidth = function( self, w )
-    local hud = terminator_Extras.glee_HL2Hud
-    local gap = hud.laneSpacing
-    local pad = hud.blockPadding
+    local hl2 = terminator_Extras.glee_Style( "hl2" )
+    local gap = hl2:Metric( "laneSpacing" )
+    local pad = hl2:Metric( "blockPadding" )
 
     -- days and meter both know their own height, so the column's is just the sum
     self._days:AutoSize()

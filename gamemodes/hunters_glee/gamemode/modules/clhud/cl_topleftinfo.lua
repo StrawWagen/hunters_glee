@@ -8,7 +8,7 @@ local alwaysShowInfo = CreateClientConVar( "cl_huntersglee_alwaysshowtoplefthud"
 
 local paddingFromEdge   = terminator_Extras.defaultHudPaddingFromEdge
 local paddingFromBottom = terminator_Extras.defaultHudPaddingFromBottom
-local laneSpacing      = terminator_Extras.glee_HL2Hud.laneSpacing
+local laneSpacing      = terminator_Extras.glee_Style( "hl2" ):Metric( "laneSpacing" )
 
 local hour = 60 * 60
 

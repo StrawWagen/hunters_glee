@@ -16,7 +16,7 @@ local PANEL = {}
 -- Calling DScrollPanel's again from here builds a second pair, and rows added afterwards
 -- land in whichever canvas the accessors stopped pointing at.
 PANEL.Init = function( self )
-    local hud = terminator_Extras.glee_HL2Hud
+    local hl2 = terminator_Extras.glee_Style( "hl2" )
     local bar = self:GetVBar()
 
     self._myStyle = "hl2" -- for the bar's track
@@ -24,19 +24,19 @@ PANEL.Init = function( self )
     -- hiding the buttons zeroes the track they reserved as well, so the grip becomes the
     -- whole bar and neither button needs a paint of its own
     bar:SetHideButtons( true )
-    bar:SetWide( hud.blockPadding * 2 )
+    bar:SetWide( hl2:Metric( "blockPadding" ) * 2 )
 
     -- DVScrollBar is built on a raw Panel and never disables the engine's own background
     -- drawing, so its Paint returns true to suppress it. A replacement has to as well.
     bar.Paint = function( _bar, w, h )
-        terminator_Extras.glee_Style( self._myStyle ):Background( 0, 0, w, h, hud.colors.bg )
+        terminator_Extras.glee_Style( self._myStyle ):Background( 0, 0, w, h, hl2:Color( "bg" ) )
         return true
 
     end
 
     -- the grip is a DPanel underneath, which turns engine drawing off in its own Init
     bar.btnGrip.Paint = function( _grip, w, h )
-        draw.RoundedBox( hud.boxCornerRadius, 0, 0, w, h, hud.colors.happy )
+        draw.RoundedBox( hl2:Metric( "boxCornerRadius" ), 0, 0, w, h, hl2:Color( "happy" ) )
 
     end
 end
