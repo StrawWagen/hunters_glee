@@ -16,11 +16,11 @@
         meter:SetState( meter.STATE_NORMAL ) -- like any hudbox
 ]]
 
+local BaseClass = baseclass.Get( "glee_hl2hudbox" )
+
 local PANEL = {}
 
 PANEL.Init = function( self )
-    self.BaseClass.Init( self )
-
     local hud = terminator_Extras.glee_HL2Hud
 
     self._chunks     = 20
@@ -76,7 +76,7 @@ PANEL.SetFill = function( self, fraction )
 end
 
 PANEL.Paint = function( self, w, h )
-    self.BaseClass.Paint( self, w, h ) -- the box; we set no mat/text so that is all it draws
+    BaseClass.Paint( self, w, h ) -- the box; we set no mat/text so that is all it draws
 
     local stateAlpha = self:GetStateAlpha()
     if stateAlpha <= 0 then return end

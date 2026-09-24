@@ -70,8 +70,6 @@ end
 local PANEL = {}
 
 PANEL.Init = function( self )
-    self.BaseClass.Init( self )
-
     local hud = terminator_Extras.glee_HL2Hud
     local gap = hud.laneSpacing
     local pad = hud.blockPadding

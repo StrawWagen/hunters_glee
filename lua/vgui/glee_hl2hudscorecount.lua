@@ -27,9 +27,7 @@ local shakeMaxSize    = glee_sizeScaled( nil, 2 )
 local PANEL = {}
 
 PANEL.Init = function( self )
-    self.BaseClass.Init( self )
-
-    self._label              = ""
+    self._label             = ""
     self._countFunc          = nil
     self._nilLabel           = ""
     self._suffix0            = nil

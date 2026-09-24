@@ -1,7 +1,6 @@
 
 if SERVER then
 
-    AddCSLuaFile( "glee_hud/cl_scaling.lua" )
     AddCSLuaFile( "glee_hud/cl_draw.lua" )
     AddCSLuaFile( "glee_hud/cl_style.lua" )
     AddCSLuaFile( "glee_hud/cl_stylehandle.lua" )
