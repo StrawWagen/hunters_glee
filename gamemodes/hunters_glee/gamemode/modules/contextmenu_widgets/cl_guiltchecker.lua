@@ -17,12 +17,12 @@ local function openGuiltChecker()
     local scale  = GAMEMODE.shopStandards.shpScale or 1
     local frameW = glee_sizeScaled( FRAME_W_1080P * scale )
 
-    local frame = vgui.Create( "glee_hl2frame" )
+    local frame = vgui.Create( "glee_frame" )
     terminator_Extras.glee_SetPanelStyle( frame, "hl2" )
     terminator_Extras.glee_SetPanelScale( frame, "fixed" )
 
     -- the checker brings its own padding, and its height is measured including it
-    frame:DockPadding( 0, 0, 0, 0 )
+    frame:SetPadContents( false )
 
     local checker = vgui.Create( "glee_guiltchecker", frame )
     checker:Dock( FILL )

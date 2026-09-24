@@ -139,6 +139,12 @@ function styleHandle:Color( colorRole )
 
 end
 
+-- 1080p pixels in this scale's pixels, rounded. For sizes too local to be a metric
+function styleHandle:Scaled( pixels1080 )
+    return math.Round( glee_sizeScaledExact( nil, pixels1080 ) * self:Settings().scale )
+
+end
+
 -- A length off the style's metrics, like "blockPadding", in this scale's pixels
 function styleHandle:Metric( metricName )
     local metric = self:Settings().metrics[metricName]
@@ -193,18 +199,30 @@ end
 
 --[[---------------------------------------------------------
     handle:Background
-    Draws a panel's backdrop the way this style does. A blot, a box, whatever it is.
+    Draws a panel's backdrop the way this style does. A blot, a box, a torn strip.
+    A box style draws the colour and ignores the state, a shape style mostly the opposite,
+    so a caller showing a hover passes both.
     @param x, y, w, h: The panel's bounds.
-    @param color: A Color, not a role. Unfaded, fade is applied to it here.
+    @param colorRole: A colour role, or a Color. Unfaded, fade is applied to it here.
+        Defaults to bg.
     @param cornerRadius: Defaults to the style's boxCornerRadius metric.
     @param fade: 0 to 1. Defaults to 1.
-    @param highlighted: True while flashing or picked. Defaults to false.
+    @param state: "idle", "hovered", "pressed", "chosen" or "disabled". Defaults to idle.
+    @param cache: A table that lives as long as the backdrop, the panel itself usually.
+        A shape that has to hold still between frames, like a torn strip, is kept on it.
     @return: None
 --]]---------------------------------------------------------
-function styleHandle:Background( x, y, w, h, color, cornerRadius, fade, highlighted )
+function styleHandle:Background( x, y, w, h, colorRole, cornerRadius, fade, state, cache )
     local style = self:Settings()
 
-    style.background( style, x, y, w, h, color, cornerRadius or style.metrics.boxCornerRadius, fade or 1, highlighted or false )
+    style.background(
+        style, x, y, w, h,
+        self:Color( colorRole or "bg" ),
+        cornerRadius or style.metrics.boxCornerRadius,
+        fade or 1,
+        state or "idle",
+        cache
+    )
 
 end
 

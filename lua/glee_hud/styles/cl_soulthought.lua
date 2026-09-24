@@ -42,9 +42,8 @@ terminator_Extras.glee_RegisterStyle( "soulthought", {
                 -- per layer, so the centre stacks darker
                 colors = {
                     idle = Color( 6, 8, 2, 27 ),
-                    -- this style only draws idle and chosen, bring these back for something pickable
-                    -- hovered = Color( 20, 24, 8, 34 ),
-                    -- pressed = Color( 34, 40, 14, 38 ),
+                    hovered = Color( 20, 24, 8, 34 ),
+                    pressed = Color( 34, 40, 14, 38 ),
                     chosen = Color( 44, 60, 10, 38 ),
                 },
             },
@@ -52,17 +51,11 @@ terminator_Extras.glee_RegisterStyle( "soulthought", {
     end,
 
     -- a smudge rather than a box, so it ignores the colour and corner radius it is handed
-    background = function( style, x, y, w, h, _color, _cornerRadius, fade, highlighted )
+    background = function( style, x, y, w, h, _color, _cornerRadius, fade, state, _cache )
         local oldMultiplier = surface.GetAlphaMultiplier()
         surface.SetAlphaMultiplier( oldMultiplier * fade )
 
-        local blotState = "idle"
-        if highlighted then
-            blotState = "chosen"
-
-        end
-
-        terminator_Extras.glee_HudHelpers.DrawBlot( style.blot, x, y, w, h, blotState )
+        terminator_Extras.glee_HudHelpers.DrawBlot( style.blot, x, y, w, h, state )
 
         surface.SetAlphaMultiplier( oldMultiplier )
 

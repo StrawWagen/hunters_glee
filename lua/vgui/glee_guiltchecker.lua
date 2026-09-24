@@ -1,11 +1,11 @@
 --[[
-    glee_guiltchecker — extends glee_hl2layoutpanel
+    glee_guiltchecker — extends glee_panel
 
     The persistent guilt readout, laid out like the HL2 suit cluster: the skull
     sits to the LEFT of a column holding the day count and the evil meter. The
     tier's description sits under the whole cluster.
 
-    Every element inside is a glee_hl2hudbox ( glee_hl2meter is one too ). This panel
+    Every element inside is a glee_hudbox ( glee_meter is one too ). This panel
     paints nothing itself; whatever frame holds it draws the background behind it.
     The "you are evil" throb is those boxes' own URGENT state.
 
@@ -40,16 +40,11 @@ local THROB_SLOWEST = 0.5  -- seconds between blinks the moment they turn evil
 local THROB_FASTEST = 0.15 -- ...and once they hit the worst tier
 
 
--- The boxes take their own normal and urgent colours from the palette. The accent
+-- The boxes take their own normal and urgent colours from their style. The accent
 -- ( skull, day count, description, meter fill ) comes from the guilt tier itself, so
 -- recolour tiers in PermaGuiltInfo, sh_guilt.lua.
--- Only the meter needs a colour of its own, and it can't be read at file load because
--- the HL2 palette doesn't exist yet.
-local function meterUnlitColor()
-    -- darker than the box it sits in, so unlit chunks read as recessed
-    return terminator_Extras.glee_Style( "hl2" ):Color( "bgDark" )
-
-end
+-- Darker than the box it sits in, so unlit chunks read as recessed
+local METER_UNLIT_COLOR = "bgDark"
 
 
 -- 0 the moment they turn evil, 1 at the worst tier
@@ -70,41 +65,36 @@ end
 local PANEL = {}
 
 PANEL.Init = function( self )
-    local hl2 = terminator_Extras.glee_Style( "hl2" )
-    local gap = hl2:Metric( "laneSpacing" )
-    local pad = hl2:Metric( "blockPadding" )
-
-    self:DockPadding( pad, pad, pad, pad )
+    self:SetPaintBackground( false )
 
     self._lastLevel = nil
     self._lastDays  = nil
 
-    self._cluster = vgui.Create( "glee_hl2layoutpanel", self )
+    self._cluster = vgui.Create( "glee_panel", self )
+    self._cluster:SetPaintBackground( false )
     self._cluster:Dock( TOP )
 
-    self._skull = vgui.Create( "glee_hl2hudbox", self._cluster )
+    self._skull = vgui.Create( "glee_hudbox", self._cluster )
     self._skull:SetPaddingRatio( SKULL_PADDING_RATIO )
     self._skull:SetMaterial( skullMat )
     self._skull:Dock( LEFT )
-    self._skull:DockMargin( 0, 0, gap, 0 )
 
-    self._column = vgui.Create( "glee_hl2layoutpanel", self._cluster )
+    self._column = vgui.Create( "glee_panel", self._cluster )
+    self._column:SetPaintBackground( false )
     self._column:Dock( FILL )
 
-    self._days = vgui.Create( "glee_hl2hudbox", self._column )
-    self._days:SetIconFont( "mediumLarge" )
+    self._days = vgui.Create( "glee_hudbox", self._column )
+    self._days:SetFont( "mediumLarge" )
     self._days:Dock( TOP )
 
-    self._meter = vgui.Create( "glee_hl2meter", self._column )
+    self._meter = vgui.Create( "glee_meter", self._column )
     self._meter:SetChunks( METER_CHUNKS )
-    self._meter:SetEmptyColor( meterUnlitColor() )
+    self._meter:SetEmptyColor( METER_UNLIT_COLOR )
     self._meter:Dock( TOP )
-    self._meter:DockMargin( 0, gap, 0, 0 )
 
-    self._desc = vgui.Create( "glee_hl2hudbox", self )
-    self._desc:SetIconFont( "small" )
+    self._desc = vgui.Create( "glee_hudbox", self )
+    self._desc:SetFont( "small" )
     self._desc:Dock( FILL )
-    self._desc:DockMargin( 0, gap, 0, 0 )
 
     self._boxes     = { self._skull, self._days, self._meter, self._desc }
     self._throbbers = { self._skull, self._days, self._meter }
@@ -114,14 +104,28 @@ PANEL.Init = function( self )
 
     end
 
+    self:ApplySpacing()
     self:Refresh()
 
 end
 
+-- The gaps come from the style, so a style change redoes them
+PANEL.ApplySpacing = function( self )
+    local style = self:Style()
+    local gap = style:Metric( "laneSpacing" )
+    local pad = style:Metric( "blockPadding" )
+
+    self:DockPadding( pad, pad, pad, pad )
+    self._skull:DockMargin( 0, 0, gap, 0 )
+    self._meter:DockMargin( 0, gap, 0, 0 )
+    self._desc:DockMargin( 0, gap, 0, 0 )
+
+end
+
 PANEL.ApplyTier = function( self, tierData )
-    self._skull:SetIconColor( tierData.color )
-    self._days:SetIconColor( tierData.color )
-    self._desc:SetIconColor( tierData.color )
+    self._skull:SetContentColor( tierData.color )
+    self._days:SetContentColor( tierData.color )
+    self._desc:SetContentColor( tierData.color )
     self._meter:SetFillColor( tierData.color )
 
     self._desc:SetText( tierData.desc )
@@ -201,13 +205,13 @@ end
 -- player's ui scale, so no caller may assume a height. Assuming one is what
 -- makes the panel come out short and clip the description.
 PANEL.LayoutForWidth = function( self, w )
-    local hl2 = terminator_Extras.glee_Style( "hl2" )
-    local gap = hl2:Metric( "laneSpacing" )
-    local pad = hl2:Metric( "blockPadding" )
+    local style = self:Style()
+    local gap = style:Metric( "laneSpacing" )
+    local pad = style:Metric( "blockPadding" )
 
     -- days and meter both know their own height, so the column's is just the sum
     self._days:AutoSize()
-    self._meter:SetBarHeight( glee_sizeScaled( nil, METER_BAR_HEIGHT ) )
+    self._meter:SetBarHeight( style:Scaled( METER_BAR_HEIGHT ) )
 
     local columnH = self._days:GetTall() + gap + self._meter:GetTall()
     self._cluster:SetTall( columnH )
@@ -234,6 +238,7 @@ end
 
 -- new fonts are a new height, which the frame has to hear about just like a new tier
 PANEL.OnHudStyleChanged = function( self )
+    self:ApplySpacing()
     self:InvalidateLayout()
     if not self.OnLayoutChanged then return end
 
@@ -241,4 +246,4 @@ PANEL.OnHudStyleChanged = function( self )
 
 end
 
-vgui.Register( "glee_guiltchecker", PANEL, "glee_hl2layoutpanel" )
+vgui.Register( "glee_guiltchecker", PANEL, "glee_panel" )

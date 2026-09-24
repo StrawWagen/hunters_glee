@@ -69,7 +69,7 @@ local function openAtmGui( atm )
     -- the same role the rows below draw in, so rowH is measured in the font they use
     surface.SetFont( hl2:Font( "medium" ) )
     local _, fontH = surface.GetTextSize( "A" )
-    local rowH = fontH + pad * 2   -- matches glee_hl2hudbox AutoSize height formula
+    local rowH = fontH + pad * 2   -- matches glee_hudbox AutoSize height formula
 
     local function textW( str )
         return ( surface.GetTextSize( str ) )
@@ -77,24 +77,24 @@ local function openAtmGui( atm )
     end
 
     --[[---------------------------------------------------------
-        Shared glee_hl2hudbox setup
+        Shared glee_hudbox setup
     -----------------------------------------------------------]]
     local function baseHudBox()
-        local box = vgui.Create( "glee_hl2hudbox" )
+        local box = vgui.Create( "glee_hudbox" )
         box:SetFlashDuration( 0.12 )
-        box:SetFlashIconColor( hl2:Color( "happy" ):Copy() ) -- the box defaults this to red
+        box:SetFlashContentColor( hl2:Color( "happy" ):Copy() ) -- the box defaults this to red
         box:SetDoFadeDelays( false )
         return box
 
     end
 
-    local bankHeadingRow = vgui.Create( "glee_hl2hudheading" )
+    local bankHeadingRow = vgui.Create( "glee_heading" )
     bankHeadingRow:SetText( "Bank:" )
 
     --[[---------------------------------------------------------
         Bank balance count-up (number-only row, full-width)
     -----------------------------------------------------------]]
-    local bankBox = vgui.Create( "glee_hl2hudscorecount" )
+    local bankBox = vgui.Create( "glee_countbox" )
     bankBox:SetDoFadeDelays( false )
     bankBox:SetLabel( "" )        -- "Bank:" is the heading row above
     bankBox:SetNilLabel( "none" )
@@ -112,8 +112,8 @@ local function openAtmGui( atm )
     bankBox:SetTooltip( "Your account's funds" )
 
     --[[---------------------------------------------------------
-        Action row: glee_hl2hudbox with label-left / amount-right paint
-        Uses draw.SimpleText just like glee_hl2hudbox does — no DLabel, no DockMargin.
+        Action row: glee_hudbox with label-left / amount-right paint
+        Uses draw.SimpleText just like glee_hudbox does — no DLabel, no DockMargin.
         Amount is stored in row._amountText and updated by each row's AdditionalThink.
     -----------------------------------------------------------]]
     local function makeActionRow( labelText, onClick )
@@ -129,11 +129,11 @@ local function openAtmGui( atm )
         local basePaint = row.Paint
         function row:Paint( w, h )
             basePaint( self, w, h )   -- draws background + manages alpha/flash
-            if self._stateAlpha <= 0 then return end
+            if self:GetStateAlpha() <= 0 then return end
 
-            local innerPad = self._textPadding * 2   -- matches AutoSize: pad*4 total → pad*2 each side
+            local innerPad = self:GetTextPadding() * 2   -- matches AutoSize: pad*4 total → pad*2 each side
             local midY     = h * 0.5
-            local dIcon    = self._drawIcon           -- set by basePaint this frame
+            local dIcon    = self._drawContent           -- set by basePaint this frame
 
             local font     = self:GetResolvedFont()
 
@@ -225,11 +225,12 @@ local function openAtmGui( atm )
     local contentW = math.max( actionRowMinW, bankRowMinW )
     local frameW   = contentW + pad * 2
 
-    -- bankHeading + gap + bankBox + double gap + action rows
+    -- bankHeading + gap + bankBox + double gap + action rows. The bank box is one medium
+    -- line, so rowH; its own height is measured loose, outside the frame's style
     local numActionRows = isOwner and 3 or 2
     local totalH = pad * 2
         + rowH
-        + gap + bankBox:GetTall()
+        + gap + rowH
         + gap * 2
         + rowH * numActionRows
         + gap * ( numActionRows - 1 )
@@ -237,7 +238,7 @@ local function openAtmGui( atm )
     --[[---------------------------------------------------------
         Frame
     -----------------------------------------------------------]]
-    local frame = vgui.Create( "glee_hl2frame" )
+    local frame = vgui.Create( "glee_frame" )
     terminator_Extras.glee_SetPanelStyle( frame, "hl2" )
     terminator_Extras.glee_SetPanelScale( frame, "fixed" )
     frame:SetSize( frameW, totalH )
@@ -286,7 +287,7 @@ local function openAtmGui( atm )
         end
 
         local isOnCooldown = CurTime() < nextTransactionTime
-        self:SetIconColor( isOnCooldown and "text" or "happy" )
+        self:SetContentColor( isOnCooldown and "text" or "happy" )
         if isOnCooldown then self:SetNormalBoxColor( hl2:Color( "bg" ) ) end
 
     end
@@ -313,7 +314,7 @@ local function openAtmGui( atm )
         end
 
         local isOnCooldown = CurTime() < nextTransactionTime
-        self:SetIconColor( isOnCooldown and "text" or "happy" )
+        self:SetContentColor( isOnCooldown and "text" or "happy" )
         if isOnCooldown then self:SetNormalBoxColor( hl2:Color( "bg" ) ) end
 
     end

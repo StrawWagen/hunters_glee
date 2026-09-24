@@ -176,9 +176,10 @@ end
 -- Blot ----------------------------------------------------------------------
 
 -- A soft dark smudge behind text. Spills past x, y, w, h, and past the panel's bounds.
--- blot is settings like the soulthought style's blot, state a key of its colors
+-- blot is settings like the soulthought style's blot, state a key of its colors. A state
+-- it has no colour for draws as idle
 function hudHelpers.DrawBlot( blot, x, y, w, h, state )
-    local color = blot.colors[state]
+    local color = blot.colors[state] or blot.colors.idle
 
     local blotX = x - blot.spillX
     local blotY = y - blot.spillY
@@ -254,7 +255,8 @@ end
 
 -- A dark strip ripped out of a page, jagged along the top and bottom, its ends torn off at a slant.
 -- The ends spill past x and x + w, and past the panel's bounds.
--- settings is like the god style's tornStrip, state a key of its colors.
+-- settings is like the god style's tornStrip, state a key of its colors. A state it has
+-- no colour for draws as idle.
 -- cache is any table that lives as long as the strip, the torn shape is kept on it.
 function hudHelpers.DrawTornStrip( settings, x, y, w, h, state, cache )
     local segments = math.max( math.ceil( w / settings.tearSegment ), 1 )
@@ -263,7 +265,7 @@ function hudHelpers.DrawTornStrip( settings, x, y, w, h, state, cache )
 
     local wasClipping = DisableClipping( true )
     draw.NoTexture()
-    surface.SetDrawColor( settings.colors[state] )
+    surface.SetDrawColor( settings.colors[state] or settings.colors.idle )
 
     local segmentW = w / segments
     for ind = 1, segments do

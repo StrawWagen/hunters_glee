@@ -1,9 +1,8 @@
 --[[------------------------------------
     god: decrees, what the gods have decided or are deciding. Text torn out of a page.
 
-    Not a panel style. Its backdrop is the torn strip, which the caller draws itself
-    through handle:Settings(), because a strip needs a cache to hold its tears still and
-    background takes none. A panel set to this would paint styleBase's rounded box.
+    Its backdrop is the torn strip. The Misery vote draws its strips itself, through
+    handle:Settings(), because they slide in narrower than their panels.
 --]]-------------------------------------
 
 terminator_Extras.glee_RegisterStyle( "god", {
@@ -88,5 +87,17 @@ terminator_Extras.glee_RegisterStyle( "god", {
                 stagger = 0.04,
             },
         }
+    end,
+
+    -- torn paper rather than a box, so it ignores the colour and corner radius it is handed.
+    -- Without a cache the tears reroll every frame
+    background = function( style, x, y, w, h, _color, _cornerRadius, fade, state, cache )
+        local oldMultiplier = surface.GetAlphaMultiplier()
+        surface.SetAlphaMultiplier( oldMultiplier * fade )
+
+        terminator_Extras.glee_HudHelpers.DrawTornStrip( style.tornStrip, x, y, w, h, state, cache or {} )
+
+        surface.SetAlphaMultiplier( oldMultiplier )
+
     end,
 } )

@@ -24,7 +24,7 @@ local imageAlpha     = 0
 local function createBpmBox()
     if IsValid( terminator_Extras.gleeHud_BpmBox ) then terminator_Extras.gleeHud_BpmBox:Remove() end
 
-    local box = vgui.Create( "glee_hl2hudbox", GetAutoHidingHUDPanel() )
+    local box = vgui.Create( "glee_hudbox", GetAutoHidingHUDPanel() )
     terminator_Extras.gleeHud_BpmBox = box
 
     box:SetIconSize( materialSize )
@@ -62,14 +62,14 @@ hook.Add( "glee_cl_aliveplyhud", "glee_drawbpmcooler", function( ply, cur )
     if noHeartBeats then -- HEART ATTACK: icon fades in to full red
         imageAlpha   = math_Clamp( imageAlpha + 1, 0, 255 )
         colorDying.a = imageAlpha
-        bpmBox:SetIconColor( colorDying )
+        bpmBox:SetContentColor( colorDying )
         bpmBox:SetState( bpmBox.STATE_URGENT )
 
     else -- healthy: icon fades out between beats
         local decrease = imageAlpha < 100 and 0.5 or 4
         imageAlpha      = math_Clamp( imageAlpha - decrease, 0, 255 )
         colorHealthy.a  = imageAlpha
-        bpmBox:SetIconColor( colorHealthy )
+        bpmBox:SetContentColor( colorHealthy )
         bpmBox:SetState( bpmBox.STATE_NORMAL )
 
     end

@@ -1,5 +1,5 @@
 --[[
-    glee_hl2hudplayer
+    glee_nametag — extends glee_panel
 
     World-space player name-tag panel. Anchored to the player's WorldSpaceCenter
     on screen (or data.posOverride / glee_SoulDisplayPos if set).
@@ -31,7 +31,7 @@
     Drawn in its panel style, see glee_hud/cl_stylecontext.lua. A looked at panel draws
     highlighted.
 
-    Background lerps from hl2hud.colors.bg toward ply:GetPlayerColor() as distance
+    Background lerps from the style's bg toward ply:GetPlayerColor() as distance
     increases through the name-fade zone; background alpha also rises with the lerp.
     Dead player panels stay near the neutral background color. When isLookedAt, bg snaps
     back to neutral. Text always uses team/state color.
@@ -48,9 +48,6 @@ local PANEL = {
 }
 
 function PANEL:Init()
-    local hl2 = terminator_Extras.glee_Style( "hl2" )
-    local bgColor = hl2:Color( "bg" )
-
     self._mode = MODE_FULL
 
     -- Distance thresholds, MODE_WORLD only (world units)
@@ -66,21 +63,14 @@ function PANEL:Init()
     self._extraLine = nil
     self._isLookedAt = false
 
-    -- Background color base (read-only; lerp target is set per-frame)
-    self._bgBaseR = bgColor.r
-    self._bgBaseG = bgColor.g
-    self._bgBaseB = bgColor.b
-    self._bgBaseA = bgColor.a
-
     -- Background lerp target (set from ply:GetPlayerColor() each frame)
     self._bgTargetR = 255
     self._bgTargetG = 255
     self._bgTargetB = 255
 
     self._teamColor    = Color( 255, 255, 255, 255 )
-    self._cornerRadius = hl2:Metric( "boxCornerRadius" )
-    self._nameFont     = "TargetID" -- never styled, player names need characters Protest Revolution lacks
-    self._font         = "targetID" -- the lines under the name, a role or a font name
+    self._nameFont     = "nameTag" -- font roles, the name and then the lines under it
+    self._font         = "targetID"
     self._textPad      = glee_sizeScaled( nil, 5 )
     self._dotSize      = glee_sizeScaled( nil, 10 )
 
@@ -116,25 +106,14 @@ function PANEL:ComputeShowName()
 
 end
 
--- see glee_hud/cl_stylecontext.lua
-function PANEL:Style()
-    return terminator_Extras.glee_PanelStyle( self )
-
-end
-
-function PANEL:GetResolvedFont()
-    return self:Style():Font( self._font )
-
-end
-
-
 -- Measures the natural (full) panel size from current content.
 -- Must be called inside a valid render context (HUDPaint is fine).
 local function computeFullSize( self )
-    surface.SetFont( self._nameFont )
+    local nameFont       = self:Style():Font( self._nameFont )
+    surface.SetFont( nameFont )
     local displayName    = self:ComputeShowName()
     local nameW          = surface.GetTextSize( displayName )
-    local nameH          = draw.GetFontHeight( self._nameFont )
+    local nameH          = draw.GetFontHeight( nameFont )
     local widestLineW    = nameW
     local extraH         = 0
 
@@ -364,21 +343,30 @@ function PANEL:Paint( w, h )
     local panelAlpha = self._panelAlpha
     if panelAlpha <= 0 then return end
 
+    local style = self:Style()
+
     -- Background: lerp from the style's bg toward ply:GetPlayerColor()
+    local bgBase  = style:Color( "bg" )
     local bgLerpT = self._bgColorLerpTransition
     local drawBg  = self._drawBg
-    drawBg.r = math.floor( self._bgBaseR + ( self._bgTargetR - self._bgBaseR ) * bgLerpT )
-    drawBg.g = math.floor( self._bgBaseG + ( self._bgTargetG - self._bgBaseG ) * bgLerpT )
-    drawBg.b = math.floor( self._bgBaseB + ( self._bgTargetB - self._bgBaseB ) * bgLerpT )
-    drawBg.a = math.floor( self._bgBaseA + ( 255 - self._bgBaseA ) * bgLerpT )
+    drawBg.r = math.floor( bgBase.r + ( self._bgTargetR - bgBase.r ) * bgLerpT )
+    drawBg.g = math.floor( bgBase.g + ( self._bgTargetG - bgBase.g ) * bgLerpT )
+    drawBg.b = math.floor( bgBase.b + ( self._bgTargetB - bgBase.b ) * bgLerpT )
+    drawBg.a = math.floor( bgBase.a + ( 255 - bgBase.a ) * bgLerpT )
 
     -- Corner radius lerps from box -> perfect circle as panel shrinks to dot
-    local boxCornerRadius    = self._cornerRadius
+    local boxCornerRadius    = self._cornerRadius or style:Metric( "boxCornerRadius" )
     local circleCornerRadius = math.floor( math.min( w, h ) * 0.5 )
     local radiusRange        = circleCornerRadius - boxCornerRadius
     local cornerRadius       = math.floor( boxCornerRadius + radiusRange * self._sizeT )
 
-    self:Style():Background( 0, 0, w, h, drawBg, cornerRadius, panelAlpha / 255, self._isLookedAt )
+    local state = "idle"
+    if self._isLookedAt then
+        state = "chosen"
+
+    end
+
+    style:Background( 0, 0, w, h, drawBg, cornerRadius, panelAlpha / 255, state, self )
 
     -- Don't draw text when the panel is nearly a dot
     if self._sizeT > 0.8 then return end
@@ -388,6 +376,7 @@ function PANEL:Paint( w, h )
     local textAlpha = self._textAlpha
     local pad       = self._textPad
     local font      = self:GetResolvedFont()
+    local nameFont  = style:Font( self._nameFont )
 
     -- Name line: real name when readable, "????" when isLookedAt but too far
     local showName     = textAlpha > 0
@@ -411,11 +400,11 @@ function PANEL:Paint( w, h )
         drawText.g = teamColor.g
         drawText.b = teamColor.b
         drawText.a = nameAlpha
-        draw.SimpleText( label, self._nameFont, w * 0.5, pad, drawText, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
+        draw.SimpleText( label, nameFont, w * 0.5, pad, drawText, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
 
     end
 
-    local nameH      = draw.GetFontHeight( self._nameFont )
+    local nameH      = draw.GetFontHeight( nameFont )
     local lineH      = draw.GetFontHeight( font )
     local subLineY   = pad + nameH
     local subAlpha   = math.floor( teamColor.a * panelAlpha / 255 )
@@ -440,4 +429,4 @@ function PANEL:Paint( w, h )
 
 end
 
-vgui.Register( "glee_hl2hudplayer", PANEL, "DPanel" )
+vgui.Register( "glee_nametag", PANEL, "glee_panel" )

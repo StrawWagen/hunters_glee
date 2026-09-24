@@ -20,6 +20,10 @@ terminator_Extras.glee_RegisterStyle( "hl2", {
 
         -- the engine's own, sized by resolution band in ClientScheme.res
         targetID = "TargetID",
+
+        -- a name over a player's head. The engine's own for the same reason as playerName,
+        -- and at TargetID's size to sit with the targetID lines under it
+        nameTag = "TargetID",
     },
 
     colors = {

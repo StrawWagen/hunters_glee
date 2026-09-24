@@ -16,7 +16,7 @@ local drawPlayerNamesWhenDead = CreateClientConVar( "cl_huntersglee_draw_playern
 local function createNamePanel( ent )
     if IsValid( ent.gleeEntNamePanel ) then ent.gleeEntNamePanel:Remove() end
 
-    local panel = vgui.Create( "glee_hl2hudplayer", GetAutoHidingHUDPanel() )
+    local panel = vgui.Create( "glee_nametag", GetAutoHidingHUDPanel() )
     ent.gleeEntNamePanel = panel
 
     terminator_Extras.glee_EntNamePanels[ent] = panel
@@ -96,7 +96,7 @@ local function getSpectatePromptPanel()
 
     panel.Paint = function( _self, w, h )
         if showEntPromptWait > CurTime() then return end -- visual bug fix
-        style:Background( 0, 0, w, h, style:Color( "bg" ) )
+        style:Background( 0, 0, w, h, "bg" )
         draw.SimpleText( spectatePromptText, font, w * 0.5, h * 0.5, style:Color( "alert" ), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
 
     end

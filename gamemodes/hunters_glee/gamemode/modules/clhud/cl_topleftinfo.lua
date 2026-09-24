@@ -435,7 +435,7 @@ local hudEntries = {
     },
     {
         key            = "score",
-        panelClass     = "glee_hl2hudscorecount",
+        panelClass     = "glee_countbox",
         flashDuration  = 0.15,
         fadeSpeed      = 0.4,
         fadeStartDelay = 4,
@@ -451,7 +451,7 @@ local hudEntries = {
     },
     {
         key            = "skulls",
-        panelClass     = "glee_hl2hudscorecount",
+        panelClass     = "glee_countbox",
         flashDuration  = 0.15,
         fadeSpeed      = 0.3,
         fadeStartDelay = 6,
@@ -474,12 +474,12 @@ local function createTopLeftBoxes()
         local storageKey = "gleeHud_TL_" .. entry.key
         if IsValid( terminator_Extras[storageKey] ) then terminator_Extras[storageKey]:Remove() end
 
-        local box = vgui.Create( entry.panelClass or "glee_hl2hudbox", GetAutoHidingHUDPanel() )
+        local box = vgui.Create( entry.panelClass or "glee_hudbox", GetAutoHidingHUDPanel() )
         terminator_Extras[storageKey] = box
 
         box:SetFlashDuration( entry.flashDuration )
         if entry.font then
-            box:SetIconFont( entry.font )
+            box:SetFont( entry.font )
 
         end
         if entry.fadeSpeed then
@@ -558,7 +558,7 @@ hook.Add( "glee_cl_topleftinfo", "glee_topleftinfo_draw", function( ply, cur )
             local text, stayPresent, doFlash, textColor -- localize these so...
             text, stayPresent, doFlash, xOffset, textColor = entry.think( ply, cur ) -- xOffset can leak out of this scope
 
-            if textColor then box:SetIconColor( textColor ) end
+            if textColor then box:SetContentColor( textColor ) end
 
             box:SetText( text or "" )
             box:AutoSize()

@@ -2,7 +2,7 @@
     Who you are watching, or what you have taken over, in a box across the top of the
     screen while you are dead.
 
-    A glee_hl2hudbox like the top left lane's, so it reads as the same hud. It never
+    A glee_hudbox like the top left lane's, so it reads as the same hud. It never
     fades: it is either showing who you are watching or it is gone.
 
     Label and name are painted here rather than set as one string, because they can be
@@ -33,13 +33,13 @@ end
 local function createBox()
     if IsValid( box ) then box:Remove() end
 
-    box = vgui.Create( "glee_hl2hudbox", GetAutoHidingHUDPanel() )
+    box = vgui.Create( "glee_hudbox", GetAutoHidingHUDPanel() )
 
     box.label = ""
     box.watched = ""
     box.watchedHasNick = false
 
-    -- the box's icon colour, faded. Nothing sets it, so it's the "happy" role
+    -- the box's content colour, faded. Nothing sets it, so it's the "happy" role
     function box:PaintContent( w, _h, textColor )
         local style = self:Style()
         local labelFont = style:Font( LABEL_FONT )

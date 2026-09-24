@@ -1,5 +1,5 @@
 --[[
-    glee_hl2hudscorecount — extends glee_hl2hudbox
+    glee_countbox — extends glee_hudbox
 
     A live count display with flash-on-change, running-diff annotation, shake,
     and optional color override for large jumps.
@@ -234,7 +234,7 @@ PANEL.ManageHudState = function( self, ply, cur, alwaysShow, neverShow )
 
     end
 
-    self:SetIconColor( textColor )
+    self:SetContentColor( textColor )
     self:SetText( text )
     self:AutoSize()
 
@@ -264,4 +264,4 @@ PANEL.AdditionalThink = function( self )
 
 end
 
-vgui.Register( "glee_hl2hudscorecount", PANEL, "glee_hl2hudbox" )
+vgui.Register( "glee_countbox", PANEL, "glee_hudbox" )

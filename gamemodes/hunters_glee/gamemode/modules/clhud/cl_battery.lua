@@ -24,7 +24,7 @@ local GAMEMODE = GAMEMODE or GM
 local function createBatteryBox()
     if IsValid( terminator_Extras.gleeHud_BatteryBox ) then terminator_Extras.gleeHud_BatteryBox:Remove() end
 
-    local box = vgui.Create( "glee_hl2hudbox", GetAutoHidingHUDPanel() )
+    local box = vgui.Create( "glee_hudbox", GetAutoHidingHUDPanel() )
     terminator_Extras.gleeHud_BatteryBox = box
 
     box:SetIconSize( materialSize )
@@ -52,7 +52,7 @@ hook.Add( "glee_cl_aliveplyhud", "glee_drawbatterynotifs", function( ply, cur )
     local iconColor  = hasBattery and colorDraining or colorDead
 
     batteryBox:SetMaterial( texture )
-    batteryBox:SetIconColor( iconColor )
+    batteryBox:SetContentColor( iconColor )
 
     -- position shifts right when the armor bar is also visible
     local outOfWaySize = hasBattery and paddingHpAndArmor or paddingJustHealth

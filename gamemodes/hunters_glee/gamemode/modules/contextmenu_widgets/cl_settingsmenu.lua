@@ -1,7 +1,7 @@
 --[[
     The client settings menu. Client convars only.
 
-    Rows are glee_hl2hudbox, sliders are glee_hl2meter, laid out in hl2 style.
+    Rows are glee_hudbox, sliders are glee_meter, laid out in hl2 style.
     Add a setting by adding to settingsCategories; nothing else needs touching.
 
     Every other glee gui scales with cl_huntersglee_guiscale. This one must not: it is
@@ -262,8 +262,8 @@ end
 local function makeRow( def, layout )
     local cvarRef = GetConVar( def.cvar )
 
-    local row = vgui.Create( "glee_hl2hudbox" )
-    row:SetFlashIconColor( hl2Style:Color( "happy" ):Copy() ) -- the box defaults this to red
+    local row = vgui.Create( "glee_hudbox" )
+    row:SetFlashContentColor( hl2Style:Color( "happy" ):Copy() ) -- the box defaults this to red
     row:SetFlashDuration( 0.12 )
     row:SetDoFadeDelays( false )
     row:SetText( "" ) -- the base paints text centered, and this row paints its own
@@ -284,7 +284,7 @@ local function makeRow( def, layout )
 
         local innerPad = layout.pad * 2
         local midY     = h * 0.5
-        local col      = self._drawIcon -- basePaint resolved this for this frame
+        local col      = self._drawContent -- basePaint resolved this for this frame
 
         local font = hl2Style:Font( ROW_FONT )
         draw.SimpleText( self._labelText, font, innerPad,     midY, col, TEXT_ALIGN_LEFT,  TEXT_ALIGN_CENTER )
@@ -333,7 +333,7 @@ local function makeSliderRow( def, layout )
     local transparent = Color( 0, 0, 0, 0 )
 
     -- The row is the box, so the meter contributes the bar only.
-    local meter = vgui.Create( "glee_hl2meter", row )
+    local meter = vgui.Create( "glee_meter", row )
 
     -- one chunk per step, until the steps are too fine to chunk and it becomes a plain bar
     if def.decimals >= 2 then
@@ -467,7 +467,7 @@ local function makeCheckRow( def, layout )
         end
 
         self._valueText = text
-        self:SetIconColor( on and "happy" or "text" )
+        self:SetContentColor( on and "happy" or "text" )
 
     end
 
@@ -494,7 +494,7 @@ end
 
 
 local function makeHeaderRow( name )
-    local heading = vgui.Create( "glee_hl2hudheading" )
+    local heading = vgui.Create( "glee_heading" )
     heading:SetFont( HEADER_FONT )
     heading:SetText( name )
 
@@ -508,13 +508,13 @@ local function buildSettingsMenu()
 
     local frameH = math.min( glee_sizeScaled( nil, FRAME_H_1080P ), ScrH() * 0.9 )
 
-    local frame = vgui.Create( "glee_hl2frame" )
+    local frame = vgui.Create( "glee_frame" )
     terminator_Extras.glee_SetPanelStyle( frame, "hl2" )
     terminator_Extras.glee_SetPanelScale( frame, "fixed" )
     frame:SetSize( layout.contentW + layout.pad * 2, frameH )
     frame:Center()
 
-    local scroll = vgui.Create( "glee_hl2hudscrollpanel", frame )
+    local scroll = vgui.Create( "glee_scrollpanel", frame )
     scroll:Dock( FILL )
 
     local function addToList( panel, topGap )

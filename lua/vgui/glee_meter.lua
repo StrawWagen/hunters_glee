@@ -1,5 +1,5 @@
 --[[
-    glee_hl2meter — extends glee_hl2hudbox
+    glee_meter — extends glee_hudbox
 
     A chunked suit-power style bar, drawn inside the standard hud box.
     Inherits the box, colors, and state machine; only the bar is new.
@@ -8,35 +8,39 @@
     SetSmooth( true ) draws one unbroken bar instead, for finer values.
 
     Setup:
-        local meter = vgui.Create( "glee_hl2meter", parent )
+        local meter = vgui.Create( "glee_meter", parent )
         meter:SetBarSize( 260, 10 )
         meter:SetChunks( 20 )
-        meter:SetFillColor( color )
+        meter:SetFillColor( "happy" )
         meter:SetFill( 0.5 )                 -- 0-1
         meter:SetState( meter.STATE_NORMAL ) -- like any hudbox
 ]]
 
-local BaseClass = baseclass.Get( "glee_hl2hudbox" )
+-- looked up when called, see glee_panel.lua for why not baseclass.Get
+local function baseClass()
+    return vgui.GetControlTable( "glee_hudbox" )
+
+end
 
 local PANEL = {}
 
 PANEL.Init = function( self )
-    local hl2 = terminator_Extras.glee_Style( "hl2" )
+    local style = self:Style()
 
     self._chunks     = 20
     self._smooth     = false
     self._fill       = 0
-    self._chunkGap   = glee_sizeScaled( nil, 3 )
-    self._fillColor  = hl2:Color( "happy" )
-    self._emptyColor = hl2:Color( "bg" )
+    self._chunkGap   = style:Scaled( 3 )
+    self._fillColor  = "happy"
+    self._emptyColor = "bg"
 
-    self:SetBarSize( glee_sizeScaled( nil, 260 ), glee_sizeScaled( nil, 12 ) )
+    self:SetBarSize( style:Scaled( 260 ), style:Scaled( 12 ) )
 
 end
 
 -- Sizes the bar; the box grows around it by the standard block padding.
 PANEL.SetBarSize = function( self, barW, barH )
-    local pad = terminator_Extras.glee_Style( "hl2" ):Metric( "blockPadding" )
+    local pad = self:Style():Metric( "blockPadding" )
     self:SetSize( barW + pad * 2, barH + pad * 2 )
 
 end
@@ -44,7 +48,7 @@ end
 -- Height only, leaving the width to whatever docks us. Paint derives the bar
 -- from the panel's own width, so it doesn't need telling.
 PANEL.SetBarHeight = function( self, barH )
-    local pad = terminator_Extras.glee_Style( "hl2" ):Metric( "blockPadding" )
+    local pad = self:Style():Metric( "blockPadding" )
     self:SetTall( barH + pad * 2 )
 
 end
@@ -60,13 +64,15 @@ PANEL.SetSmooth = function( self, smooth )
 
 end
 
-PANEL.SetFillColor = function( self, col )
-    self._fillColor = col
+-- A role or a Color
+PANEL.SetFillColor = function( self, color )
+    self._fillColor = color
 
 end
 
-PANEL.SetEmptyColor = function( self, col )
-    self._emptyColor = col
+-- A role or a Color
+PANEL.SetEmptyColor = function( self, color )
+    self._emptyColor = color
 
 end
 
@@ -76,21 +82,22 @@ PANEL.SetFill = function( self, fraction )
 end
 
 PANEL.Paint = function( self, w, h )
-    BaseClass.Paint( self, w, h ) -- the box; we set no mat/text so that is all it draws
+    baseClass().Paint( self, w, h ) -- the box; we set no mat/text so that is all it draws
 
     local stateAlpha = self:GetStateAlpha()
     if stateAlpha <= 0 then return end
 
-    local pad    = terminator_Extras.glee_Style( "hl2" ):Metric( "blockPadding" )
+    local style  = self:Style()
+    local pad    = style:Metric( "blockPadding" )
     local barW   = w - pad * 2
     local barH   = h - pad * 2
+    local fill   = style:Color( self._fillColor )
+    local empty  = style:Color( self._emptyColor )
 
     if self._smooth then
-        local empty = self._emptyColor
         surface.SetDrawColor( empty.r, empty.g, empty.b, empty.a * stateAlpha / 255 )
         surface.DrawRect( pad, pad, barW, barH )
 
-        local fill = self._fillColor
         surface.SetDrawColor( fill.r, fill.g, fill.b, fill.a * stateAlpha / 255 )
         surface.DrawRect( pad, pad, math.Round( barW * self._fill ), barH )
 
@@ -104,11 +111,11 @@ PANEL.Paint = function( self, w, h )
     local drawnW = math.max( 1, chunkW - self._chunkGap )
 
     for i = 1, chunks do
-        local src = ( i <= lit ) and self._fillColor or self._emptyColor
+        local src = ( i <= lit ) and fill or empty
         surface.SetDrawColor( src.r, src.g, src.b, src.a * stateAlpha / 255 )
         surface.DrawRect( pad + math.floor( ( i - 1 ) * chunkW ), pad, drawnW, barH )
 
     end
 end
 
-vgui.Register( "glee_hl2meter", PANEL, "glee_hl2hudbox" )
+vgui.Register( "glee_meter", PANEL, "glee_hudbox" )

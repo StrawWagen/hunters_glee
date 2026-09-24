@@ -73,11 +73,15 @@ terminator_Extras.glee_StyleBase = {
         bgDarkUrgent = Color( 60, 60, 60, 175 ),
     },
 
-    sounds = {},
+    -- see styleHandle:PlaySound. Pitches are the caller's, these are just what plays
+    sounds = {
+        switch = { "buttons/lightswitch2.wav" }, -- hovering onto and off of something pickable
+        press  = { "common/wpn_select.wav" },
+    },
 
-    -- style is the built style, color is unfaded, fade is 0 to 1, highlighted means
-    -- flashing or picked
-    background = function( _style, x, y, w, h, color, cornerRadius, fade, _highlighted )
+    -- style is the built style, color is a resolved Color and unfaded, fade is 0 to 1.
+    -- state and cache are as handle:Background takes them
+    background = function( _style, x, y, w, h, color, cornerRadius, fade, _state, _cache )
         fadedBackground.r = color.r
         fadedBackground.g = color.g
         fadedBackground.b = color.b
