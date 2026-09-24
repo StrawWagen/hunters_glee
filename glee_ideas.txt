@@ -195,6 +195,26 @@ weapons spawn later, longer buildup for terminator miseries - done
 
 term crowbars always swing if throw mul is low, unless really angry -done
 
+-- drop money all the time, 50% of score? -no
+
+press use hint -done
+bad ux when match switches itself to tutorial mode -done
+skull size doesnt persist across rounds - done
+Change emplacement gun name to "Heavy Pulse Rifle" --done
+even longer countdown for easy modes --done
+easy skeletons even easier --done
+being on fire feels too disorienting as tutorial enemy --doneish
+
+another new player experience revamp -- done
+    spawn into server as ghost
+    everything deafened, big hint to open shop
+
+-- Hardcore Glee misery, no alive shop, super limited dead shop ( longer cooldowns? ) -- done
+-- True Glee misery, no self-reviving dead items -- done
+
+-- add hook that can block the starting of a next wave of enemies -- done
+-- use it in tutorial mode, wait for all players to stop moving, to spawn next wave -- done 
+
 
 -- make radio a purchasable item, moving all global/prox chat stuff to settings menu
 -- gateway to expensive items, airdropped in
@@ -217,6 +237,9 @@ term crowbars always swing if throw mul is low, unless really angry -done
 
 -- investing
 -- invest into player's bank accounts
+-- invest into npc stocks
+-- value goes up when they kill a player
+-- goes down when they get killed
 
 -- server-based leaderboard ( wont do )
 -- quickest to 10 skulls
@@ -224,14 +247,14 @@ term crowbars always swing if throw mul is low, unless really angry -done
 -- flat, most hunter kills
 -- most skulls, additive ( all players skulls in one session, added up )
 
--- visual cohesiveness
+-- visual cohesiveness -- WIP
 -- better defined goal
 
 -- FIND lore for glee
 -- why are we here, where are we going
 
 
--- pull players back into the map when they aren't moving outside the bounds of the map
+-- pull players back into the map when they aren't moving, and are outside the bounds of the map
 
 -- sight jacking item?
 
@@ -241,6 +264,7 @@ term crowbars always swing if throw mul is low, unless really angry -done
 -- samus ball powerup
 
 -- hint to flash tab?
+-- made roundstate/score default to always show instead
 
 -- voting for miseries is not that new user friendly
 -- sixth sense conflicts with new proximity hud
@@ -264,7 +288,7 @@ term crowbars always swing if throw mul is low, unless really angry -done
 -- pie slices
 
 -- groups
--- make it easier to see friends
+-- make it easier to see friends -DONE
 -- taunt with eachother
 -- pins skull counts to eachother?
 -- add pinging
@@ -283,8 +307,6 @@ term crowbars always swing if throw mul is low, unless really angry -done
 -- better feedback from shooting players
 
 -- NEED STRONGER HINT TO SCROLL in shop
-
--- drop money all the time, 50% of score? -no
 
 -- selecting weapons is hard
 -- move flaregun to utility slot
@@ -417,7 +439,6 @@ reset whatever when people spawning
 too easy with large groups, spawn enemies closer?
 spawn rising smoke from large groups of spawned skeletons
 
-press use hint
 strong hint that being a ghost has no passive income
 medkit shares models
 
@@ -428,10 +449,8 @@ dead air was bad
 switch weapons hint
 dead items look like they cost money to click on
 the big moneymaker items need to be smooth, more, part of the dead experience
-bad ux when match switches itself to tutorial mode
 posess is spelled wrong in multiple places?
 
-skull size doesnt persist across rounds
 ensure divine clap gives guilt
 using homicidal glee on truly innocent players does guilt too
 postal dude pm has lower max hp?
@@ -506,12 +525,7 @@ skeletons still jump way too much on displacements
 difficulty feels unearned
 
 piece of information feels like its missing when dead, gil
-easy skeletons even easier
-
-being on fire feels too disorienting as tutorial enemy
 music still too loud?
-even longer countdown for easy modes
-Change emplacement gun name to "Heavy Pulse Rifle"
 
 cannot see skulls in shop!!!!
 FULL TUTORIAL FOR PLACING ALL ESSENTIAL ITEMS
@@ -535,12 +549,7 @@ some players like to have everything on their screen all the time
 they do not like having things change they cannot see
 
 
-another new player experience revamp
-spawn into server as ghost
-everything deafened, big hint to open shop
-1 free divine intervention purchase
-
-first time death message, that death was holding you back
+first time death message, that body was holding you back
 
 then it encourages you to purchase loadout
 YOU FOUND A SKULL; pauses game
@@ -565,12 +574,6 @@ when bind is unoveridden, falls back to default, eg +menu
 automatically goes in help menu
 goes in a glee rebinding menu? 
 
--- add hook that can block the starting of a next wave of enemies
--- use it in tutorial mode, wait for all players to stop moving, to spawn next wave 
-
--- Hardcore Glee misery, no alive shop, super limited dead shop ( longer cooldowns? )
--- True Glee misery, no self-reviving dead items
-
 -- message when trying to control a bot already being controlled
 -- if new player kills other new player, no 10d of guilt
 -- clown feet
@@ -580,3 +583,4 @@ goes in a glee rebinding menu?
 -- child of light multiplayer
 -- field test mechanic removal with new miseries
 -- decrease lvl of loudest panic scream
+-- gm_aftermath_thelast optimized navmesh?

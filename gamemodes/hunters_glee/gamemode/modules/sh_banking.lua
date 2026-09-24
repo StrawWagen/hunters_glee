@@ -124,6 +124,7 @@ if SERVER then
 
                 permaPrint( "GLEE: " .. steamID .. "'s bank account was closed." )
                 bankFunctions.closeAccount( steamID )
+                hook.Run( "glee_bankAccountClose", steamID )
 
             end
         end

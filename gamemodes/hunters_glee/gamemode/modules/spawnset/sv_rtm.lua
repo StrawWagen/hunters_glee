@@ -282,7 +282,7 @@ hook.Add( "huntersglee_round_postroundend", "glee_rockthemisery_hint", function(
         end
         if spawnsetMul > thresh then return end
 
-        PrintMessage( HUD_PRINTTALK, "GLEE: This Misery is giving you diminishing returns...\nType !rtm to start a Misery vote" )
+        PrintMessage( HUD_PRINTTALK, "GLEE: This Misery has been escaped too much\nit's giving you diminishing returns...\nType !rtm to start a Misery vote" )
 
     end )
 end )

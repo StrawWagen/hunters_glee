@@ -125,6 +125,7 @@ hook.Add( "PreCleanupMap", "glee_savepersistentskulls", function()
         skullTbl.persist = true
         skullTbl.termSkull = skull:GetIsTerminatorSkull()
         skullTbl.skullSteamId = skull.skullSteamId
+        skullTbl.skulls = skull:GetSkulls()
 
         table.insert( GAMEMODE.persistentSkulls, skullTbl )
 
@@ -145,6 +146,7 @@ hook.Add( "huntersglee_round_into_active", "glee_loadpersistentskulls", function
 
             end
             skull.skullSteamId = skullTbl.skullSteamId
+            skull:SetSkulls( skullTbl.skulls )
             skull:SetPos( skullTbl.pos )
             skull:SetAngles( skullTbl.ang )
             if skullTbl.termSkull == true then

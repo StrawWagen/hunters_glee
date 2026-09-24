@@ -396,6 +396,44 @@ function GM:IncrementPersistentGuilt( ply, add )
 
 end
 
+local developerVar = GetConVar( "developer" )
+
+-- guilt is the timestamp they're guilty until, so every row already in the past is dead weight
+-- PData keys are "<steamid64>[<name>]", and LIKE treats _ as a single-char wildcard, hence the escape
+-- value is a TEXT column, so a bare compare is lexicographic, and only correct while every
+-- timestamp is the same digit count. the CAST makes it numeric
+local wipeStaleGuiltQuery = [[
+    DELETE FROM playerpdata
+    WHERE infoid LIKE '%[glee\_persistentguilt]' ESCAPE '\'
+    AND CAST( value AS INTEGER ) < ?
+]]
+
+hook.Add( "huntersglee_round_firstsetup", "glee_wipe_stale_guilt", function()
+    local wiped = sql.QueryTyped( wipeStaleGuiltQuery, os.time() )
+    if wiped == false then
+        ErrorNoHaltWithStack( "glee stale guilt wipe failed: " .. tostring( sql.LastError() ) )
+        return
+
+    end
+
+    -- changes() reports the last write on the connection, so nothing may query between here and the delete
+    local changed = sql.QueryTyped( "SELECT changes() AS wipedCount" )
+    if not changed then return end
+
+    -- QueryTyped, not Query, so this is a number and not a string
+    local wipedCount = changed[1].wipedCount
+    if wipedCount <= 0 then
+        if not game.IsDedicated() then return end
+
+        permaPrint( "GLEE: no expired persistent guilt records." )
+        return
+
+    end
+
+    permaPrint( "GLEE: wiped " .. wipedCount .. " expired persistent guilt records." )
+
+end )
+
 
 
 hook.Add( "PlayerInitialSpawn", "glee_checkpersistentguilt", function( ply )
@@ -406,7 +444,21 @@ hook.Add( "PlayerInitialSpawn", "glee_checkpersistentguilt", function( ply )
 
 end )
 
-local developerVar = GetConVar( "developer" )
+hook.Add( "glee_onkilledtrulyinnocentsoul", "glee_incrementpersistentguilt", function( attacker, died )
+    -- persistent guilt is a dedicated server only mechanic
+    -- developer 1 enables it for testing
+    if not game.IsDedicated() and not developerVar:GetBool() then return end
+
+    local daysToAdd = 1
+    if GAMEMODE:IsFirstTimePlayer( died ) and not GAMEMODE:IsFirstTimePlayer( attacker ) then
+        daysToAdd = 10
+
+    end
+
+    GAMEMODE:IncrementPersistentGuilt( attacker, daysToAdd )
+
+end )
+
 
 concommand.Add( "glee_test_guilt_reset", function( caller, _, args )
     if IsValid( caller ) and not caller:IsAdmin() then return end
@@ -452,20 +504,5 @@ concommand.Add( "glee_test_guilt_adddays", function( caller, _, args )
 
     GAMEMODE:IncrementPersistentGuilt( ply, days )
     permaPrint( "GLEE: Added " .. days .. " guilt days to " .. ply:Nick() .. " (" .. steamId .. "), now at " .. GAMEMODE:GetStoredPersistentGuilt( ply ) .. " days." )
-
-end )
-
-hook.Add( "glee_onkilledtrulyinnocentsoul", "glee_incrementpersistentguilt", function( attacker, _died )
-    -- persistent guilt is a dedicated server only mechanic
-    -- developer 1 enables it for testing
-    if not game.IsDedicated() and not developerVar:GetBool() then return end
-
-    local daysToAdd = 0.5
-    if GAMEMODE:IsFirstTimePlayer( attacker ) then
-        daysToAdd = 10
-
-    end
-
-    GAMEMODE:IncrementPersistentGuilt( attacker, daysToAdd )
 
 end )
