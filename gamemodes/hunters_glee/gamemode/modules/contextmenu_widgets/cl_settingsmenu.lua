@@ -509,6 +509,8 @@ local function buildSettingsMenu()
     local frameH = math.min( glee_sizeScaled( nil, FRAME_H_1080P ), ScrH() * 0.9 )
 
     local frame = vgui.Create( "glee_hl2frame" )
+    terminator_Extras.glee_SetPanelStyle( frame, "hl2" )
+    terminator_Extras.glee_SetPanelScale( frame, "fixed" )
     frame:SetSize( layout.contentW + layout.pad * 2, frameH )
     frame:Center()
 

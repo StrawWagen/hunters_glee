@@ -173,7 +173,6 @@ local function whileDeadPaintOtherPlys( localPlayer, cur )
         end
 
         panel:SetMode( panel.MODE_FULL )
-        panel._myStyle = "soulthought"
 
         -- infoLine: dead -> score, alive -> health%
         local health = ent:Health()
@@ -282,7 +281,6 @@ local function whileAlivePaintOtherEnts( localPlayer, cur )
 
         end
         panel:SetMode( myMode )
-        panel._myStyle = "hl2"
 
         local infoLine
         if isLookedAt then

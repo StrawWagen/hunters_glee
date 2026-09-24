@@ -13,6 +13,8 @@
         heading:Dock( TOP )
 ]]
 
+local BaseClass = baseclass.Get( "glee_hl2layoutpanel" )
+
 local PANEL = {}
 
 PANEL.Init = function( self )
@@ -41,6 +43,16 @@ end
 PANEL.SizeToBox = function( self )
     self._box:AutoSize()
     self:SetTall( self._box:GetTall() )
+
+end
+
+PANEL.OnHudStyleChanged = PANEL.SizeToBox
+
+-- Menus build a heading before docking it into their frame, so its first measure is in
+-- whatever style it had loose, not the frame's
+PANEL.SetParent = function( self, parent )
+    BaseClass.SetParent( self, parent )
+    terminator_Extras.glee_NotifyPanelStyle( self )
 
 end
 

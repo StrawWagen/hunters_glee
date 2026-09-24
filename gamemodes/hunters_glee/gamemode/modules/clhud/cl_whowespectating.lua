@@ -34,7 +34,6 @@ local function createBox()
     if IsValid( box ) then box:Remove() end
 
     box = vgui.Create( "glee_hl2hudbox", GetAutoHidingHUDPanel() )
-    box._myStyle = "soulthought" -- only ever drawn while dead
 
     box.label = ""
     box.watched = ""

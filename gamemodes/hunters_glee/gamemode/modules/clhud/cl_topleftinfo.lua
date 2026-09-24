@@ -537,17 +537,9 @@ hook.Add( "glee_cl_topleftinfo", "glee_topleftinfo_draw", function( ply, cur )
     local isTabHeld = input.IsKeyDown( KEY_TAB )
     local alwaysShow = isTabHeld or alwaysShowInfo:GetBool()
 
-    local style = "hl2"
-    if ply:Health() <= 0 then
-        style = "soulthought"
-
-    end
-
     for _, entry in ipairs( hudEntries ) do
         local box = terminator_Extras["gleeHud_TL_" .. entry.key]
         if not IsValid( box ) then continue end
-
-        box._myStyle = style
 
         local xOffset      = 0
         local forceThisKey = alwaysShow

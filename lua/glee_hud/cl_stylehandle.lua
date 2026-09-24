@@ -50,17 +50,45 @@ local function warnOnce( message )
 
 end
 
+terminator_Extras.glee_HudStyleAliases = terminator_Extras.glee_HudStyleAliases or {}
+local aliases = terminator_Extras.glee_HudStyleAliases
+
+--[[---------------------------------------------------------
+    terminator_Extras.glee_RegisterStyleAlias
+    Adds a style name that stands for whichever real style fits right now, like generic.
+    Handles by that name follow it as it changes; see cl_stylecontext.lua for how panels
+    hear that it did.
+    @param aliasName: The name handles and panels will ask for.
+    @param resolve: Returns a registered style's name. Called on every draw, so keep it cheap.
+    @return: None
+--]]---------------------------------------------------------
+function terminator_Extras.glee_RegisterStyleAlias( aliasName, resolve )
+    aliases[aliasName] = resolve
+
+end
+
+-- The registered style this handle draws as right now. Its own name, unless that's an alias
+function styleHandle:ResolvedName()
+    local resolve = aliases[self.styleName]
+    if resolve then return resolve() end
+
+    return self.styleName
+
+end
+
 --[[---------------------------------------------------------
     handle:Settings
     Gets the built style, for look data that has no method here.
     @return: The built style, see cl_stylebuild.lua. Read tornStrip, blot, ghosts and
-        fontSizes off it. Every rebuild replaces it, so get it where you use it rather
-        than keeping it.
+        fontSizes off it. Every rebuild replaces it, and an alias's changes with the
+        player, so get it where you use it rather than keeping it.
 --]]---------------------------------------------------------
 function styleHandle:Settings()
-    local byScale = builtStyles[self.styleName]
+    local styleName = self:ResolvedName()
+
+    local byScale = builtStyles[styleName]
     if not byScale then
-        warnOnce( "no style named \"" .. self.styleName .. "\", drawing as hl2" )
+        warnOnce( "no style named \"" .. styleName .. "\", drawing as hl2" )
         byScale = builtStyles.hl2
 
     end

@@ -1,7 +1,8 @@
 --[[
     glee_hl2hudbox - A small HUD icon box with a built-in display state machine.
 
-    Draws a background with a centered material or text, in the style named by ._myStyle.
+    Draws a background with a centered material or text, in its panel style, see
+    glee_hud/cl_stylecontext.lua.
     Colors and the font are named by role ( "happy", "medium" ), never by font name, so a
     change of style changes both. See glee_hud/cl_stylehandle.lua.
     All alpha management is internal. Callers only set colors and instruct state.
@@ -79,7 +80,6 @@ local PANEL = {
         self._font         = "medium"
         self._textPadding  = glee_sizeScaled( nil, 8 )
         self._cornerRadius = terminator_Extras.glee_Style( "hl2" ):Metric( "boxCornerRadius" )
-        self._myStyle      = "hl2"
 
         -- State machine
         self._state        = HIDDEN
@@ -183,9 +183,9 @@ local PANEL = {
 
     end,
 
-    -- see glee_hud/cl_stylehandle.lua
+    -- see glee_hud/cl_stylecontext.lua
     Style = function( self )
-        return terminator_Extras.glee_Style( self._myStyle )
+        return terminator_Extras.glee_PanelStyle( self )
 
     end,
 

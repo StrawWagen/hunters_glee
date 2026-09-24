@@ -28,7 +28,8 @@
         data.isLookedAt   bool         Controls infoLine/extraLine visibility and "????" name
                                        substitution when text alpha has faded to zero.
 
-    Drawn in the style named by ._myStyle. A looked at panel draws highlighted.
+    Drawn in its panel style, see glee_hud/cl_stylecontext.lua. A looked at panel draws
+    highlighted.
 
     Background lerps from hl2hud.colors.bg toward ply:GetPlayerColor() as distance
     increases through the name-fade zone; background alpha also rises with the lerp.
@@ -78,7 +79,6 @@ function PANEL:Init()
 
     self._teamColor    = Color( 255, 255, 255, 255 )
     self._cornerRadius = hl2:Metric( "boxCornerRadius" )
-    self._myStyle      = "hl2"
     self._nameFont     = "TargetID" -- never styled, player names need characters Protest Revolution lacks
     self._font         = "targetID" -- the lines under the name, a role or a font name
     self._textPad      = glee_sizeScaled( nil, 5 )
@@ -116,9 +116,9 @@ function PANEL:ComputeShowName()
 
 end
 
--- see glee_hud/cl_stylehandle.lua
+-- see glee_hud/cl_stylecontext.lua
 function PANEL:Style()
-    return terminator_Extras.glee_Style( self._myStyle )
+    return terminator_Extras.glee_PanelStyle( self )
 
 end
 

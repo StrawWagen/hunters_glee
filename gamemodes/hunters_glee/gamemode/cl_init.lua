@@ -42,6 +42,9 @@ terminator_Extras.glee_AutoHidingPanel = vgui.Create( "Panel", GetHUDPanel() )
 local autoHidingPanel = terminator_Extras.glee_AutoHidingPanel
 autoHidingPanel:Dock( FILL )
 
+-- the hud stays one size, the gui scale is for menus
+terminator_Extras.glee_SetPanelScale( autoHidingPanel, "fixed" )
+
 cvars.AddChangeCallback( "cl_drawhud", function( cvarName, oldValue, newValue )
     local shouldDraw = tobool( newValue )
     if shouldDraw then

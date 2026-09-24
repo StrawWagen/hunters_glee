@@ -34,12 +34,17 @@ PANEL.Init = function( self )
 
     self._backdrop     = hl2:Color( "bgDark" )
     self._cornerRadius = hl2:Metric( "boxCornerRadius" )
-    self._myStyle      = "hl2"
+
+end
+
+-- see glee_hud/cl_stylecontext.lua
+PANEL.Style = function( self )
+    return terminator_Extras.glee_PanelStyle( self )
 
 end
 
 PANEL.Paint = function( self, w, h )
-    terminator_Extras.glee_Style( self._myStyle ):Background( 0, 0, w, h, self._backdrop, self._cornerRadius )
+    self:Style():Background( 0, 0, w, h, self._backdrop, self._cornerRadius )
 
 end
 

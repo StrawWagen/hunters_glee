@@ -11,6 +11,7 @@ if SERVER then
 
     AddCSLuaFile( "glee_hud/cl_stylebuild.lua" )
     AddCSLuaFile( "glee_hud/cl_stylehandle.lua" )
+    AddCSLuaFile( "glee_hud/cl_stylecontext.lua" )
 
     AddCSLuaFile( "glee_hud/cl_playernamecolors.lua" )
 

@@ -232,4 +232,13 @@ PANEL.PerformLayout = function( self, w, _h )
 
 end
 
+-- new fonts are a new height, which the frame has to hear about just like a new tier
+PANEL.OnHudStyleChanged = function( self )
+    self:InvalidateLayout()
+    if not self.OnLayoutChanged then return end
+
+    self:OnLayoutChanged()
+
+end
+
 vgui.Register( "glee_guiltchecker", PANEL, "glee_hl2layoutpanel" )

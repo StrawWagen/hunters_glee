@@ -238,6 +238,8 @@ local function openAtmGui( atm )
         Frame
     -----------------------------------------------------------]]
     local frame = vgui.Create( "glee_hl2frame" )
+    terminator_Extras.glee_SetPanelStyle( frame, "hl2" )
+    terminator_Extras.glee_SetPanelScale( frame, "fixed" )
     frame:SetSize( frameW, totalH )
     frame:Center()
 

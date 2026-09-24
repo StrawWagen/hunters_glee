@@ -64,5 +64,6 @@ include( "glee_hud/styles/cl_godlydecree.lua" )
 
 include( "glee_hud/cl_stylebuild.lua" ) -- builds what's registered above, so after it
 include( "glee_hud/cl_stylehandle.lua" )
+include( "glee_hud/cl_stylecontext.lua" )
 
 include( "glee_hud/cl_playernamecolors.lua" )
