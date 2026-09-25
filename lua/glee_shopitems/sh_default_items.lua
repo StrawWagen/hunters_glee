@@ -192,7 +192,7 @@ local items = {
         markup = 1.5,
         markupPerPurchase = 0.25,
         cooldown = 0.5,
-        tags = { "ITEMS", "Weapon" },
+        tags = { "ITEMS", "Essential", "Weapon" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -329,7 +329,7 @@ local items = {
         markup = 3,
         markupPerPurchase = 0.25,
         cooldown = 0.5,
-        tags = { "ITEMS", "Essential", "Weapon", "Utility" },
+        tags = { "ITEMS", "Weapon", "Utility" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,

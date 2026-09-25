@@ -845,6 +845,14 @@ function GM:MarchValidHunterPos( spawnEntry )
 
     if not self.biggestNavmeshGroups then return nil, nil, nil end
 
+    local preferredEFlags = spawnEntry.preferredEFlags
+    local firmPreference = preferredEFlags and spawnEntry.firmPreferredEFlags
+    -- a soft preference the map can't satisfy would only burn fails until it bends
+    if preferredEFlags and not firmPreference and not self:MapHasEFlags( preferredEFlags ) then
+        preferredEFlags = nil
+
+    end
+
     local areas
     local useCache = spawnSet.areaPoolCache and spawnSet.areaPoolCacheWeight > 0
     -- use cached result of below
@@ -870,8 +878,8 @@ function GM:MarchValidHunterPos( spawnEntry )
             local pos1 = pos + maxs
             local pos2 = pos - maxs
             areas = navmesh.FindInBox( pos1, pos2 )
-            if spawnEntry.preferredEFlags then
-                areas = self:FilterForAreasWithEFlags( spawnEntry.preferredEFlags, areas )
+            if preferredEFlags and ( firmPreference or fails < 60 ) then
+                areas = self:FilterForAreasWithEFlags( preferredEFlags, areas )
 
             end
             if #areas > 5000 then
@@ -889,8 +897,8 @@ function GM:MarchValidHunterPos( spawnEntry )
         local _
         _, areas = self:GetAreaInOccupiedBigGroupOrRandomBigGroup()
 
-        if spawnEntry.preferredEFlags and fails < 30 then
-            areas = self:FilterForAreasWithEFlags( spawnEntry.preferredEFlags, areas )
+        if preferredEFlags and ( firmPreference or fails < 30 ) then
+            areas = self:FilterForAreasWithEFlags( preferredEFlags, areas )
 
         end
     end
@@ -928,11 +936,13 @@ function GM:MarchValidHunterPos( spawnEntry )
                 spawnSet.lastGoodSpawnAreaWeight = 0
 
             end
-        else
+        elseif #areas > 0 then -- filtering by preferredEFlags can empty it
             currentArea = areas[math.random( 1, #areas )] -- pick a random area
 
         end
         if not currentArea or not IsValid( currentArea ) then continue end -- outdated
+        -- great/good spawn areas and the area cache are shared by every entry in the spawnset
+        if firmPreference and not self:HasAllExtraFlags( currentArea, preferredEFlags ) then continue end
 
         local spawnPos = currentArea:GetRandomPoint()
         spawnPos = spawnPos + up20
@@ -1090,7 +1100,7 @@ function GM:MarchValidHunterPos( spawnEntry )
                     if spawnSet.staleSpawnAreasMask[adjArea] then continue end -- this area produced stale hunters!
                     if adjArea:GetSizeX() <= 25 or adjArea:GetSizeY() <= 25 then continue end -- too small
                     if nearestPlyPos and adjArea:IsVisible( nearestPlyPos ) then continue end -- dont regress
-                    if spawnEntry.preferredEFlags and not self:HasExtraFlags( adjArea, spawnEntry.preferredEFlags ) then continue end -- respect it!
+                    if preferredEFlags and not self:HasAllExtraFlags( adjArea, preferredEFlags ) then continue end -- respect it!
                     spawnSet.lastGoodSpawnArea = adjArea
                     spawnSet.lastGoodSpawnAreaWeight = math.random( 5, 15 )
                     break

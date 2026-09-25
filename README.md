@@ -102,17 +102,17 @@ GAMEMODE:GobbleShopItems( items )
 | `tags` | ✅ | Indexed table of tag strings. The ALL CAPS ones are the categories (e.g., `{"ITEMS", "Weapon"}`) |
 | `purchaseTimes` | ✅ | When purchasable: `ROUND_INACTIVE`, `ROUND_ACTIVE` |
 | `svOnPurchaseFunc` | ✅ | Server function called on purchase: `function(purchaser, itemId)` |
-| `shSkullCost` | ❌ | Skull cost. Accepts number or function. Zero is ignored. Negative gives skulls on purchase |
-| `canGoInDebt` | ❌ | Buyable with no score. Lets you force people into innate debuffs, etc |
-| `fakeCost` | ❌ | Show a cost but don't take it. For items that charge the player themselves |
-| `simpleCostDisplay` | ❌ | **Client.** Skip the coloring and formatting of the cost in the shop |
-| `shPurchaseCheck` | ❌ | Validation function(s): `function(purchaser) -> bool, reason`, must return true for purchase to be allowed |
-| `markup` | ❌ | Price multiplier during active hunt |
-| `markupPerPurchase` | ❌ | Additional markup per purchase |
 | `cooldown` | ❌ | Seconds between purchases (`math.huge` = once per round) |
 | `weight` | ❌ | Sort order within category (lower = higher) |
+| `shSkullCost` | ❌ | Skull cost. Accepts number or function. Zero is ignored. Negative gives skulls on purchase |
 | `shCanShowInShop` | ❌ | Visibility function: `function(purchaser) -> bool` |
+| `shPurchaseCheck` | ❌ | Validation function(s): `function(purchaser) -> bool, reason`, must return true for purchase to be allowed |
+| `canGoInDebt` | ❌ | Buyable with no score. Lets you force people into innate debuffs, etc |
+| `markup` | ❌ | Price multiplier during active hunt |
+| `markupPerPurchase` | ❌ | Additional markup per purchase |
+| `fakeCost` | ❌ | Show a cost but don't take it. For items that charge the player themselves |
 | `costDecorative` | ❌ | Fake, decorative cost. Accepts string, number, tables of strings, functions. Overrides `shSkullCost`, and `shCost` |
+| `simpleCostDisplay` | ❌ | **Client.** Skip the coloring and formatting of the cost in the shop |
 | `unpurchaseableReason` | ❌ | Custom denial string. Only used if the item has the `unpurchaseable` tag |
 | `identifier` | ❌ | Auto-generated. The item's unique key |
 
@@ -510,13 +510,14 @@ Number values can be:
 | `spawnSameZ` | ❌ | Prefer spawning at roughly the same height as a player |
 | `spawnAbove` | ❌ | Prefer spawning above the highest player |
 | `spawnBelow` | ❌ | Prefer spawning below the lowest player |
-| `preferredEFlags` | ❌ | Prefer nav areas carrying these Extra Navmesh flags ( see sv_navmeshcategorizer ) |
+| `preferredEFlags` | ❌ | Prefer nav areas carrying all of these Extra Navmesh flags ( see sv_navmeshcategorizer ) |
+| `firmPreferredEFlags` | ❌ | `true` stops `preferredEFlags` from bending, the entry never spawns outside those areas |
 | `preSpawnedFuncs` | ❌ | Functions called before hunter:Spawn() : `function(spawnData, npc)` |
 | `postSpawnedFuncs` | ❌ | Functions called after hunter:Spawn() : `function(spawnData, npc)` |
 | `isBoss` | ❌ | `true` marks as boss; `false` opts out of auto-detection. When the boss is killed, all alive players escape. Auto-detected when `spawnSet.maxSpawnCount <= 1` (highest `difficultyCost` entry becomes boss). |
 
 Only one of `spawnSameZ`, `spawnAbove`, `spawnBelow` applies, they're checked in that order.
-Those three and `preferredEFlags` all loosen the longer the spawner fails to find a spot, so they bend rather than block.
+Those three and `preferredEFlags` all loosen the longer the spawner fails to find a spot, so they bend rather than block. A non-firm `preferredEFlags` is ignored outright on maps without those flags.
 
 #### Spawnset Example B: Functions on spawn!
 

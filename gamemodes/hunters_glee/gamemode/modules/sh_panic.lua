@@ -198,7 +198,7 @@ elseif SERVER then
 
                     if canResetPanic then -- reset panic with a scream
                         panic = 50
-                        ply:EmitSound( screamSound, 130, math.Rand( 99, 106 ), 1, CHAN_VOICE )
+                        ply:EmitSound( screamSound, 95, math.Rand( 99, 106 ), 1, CHAN_VOICE )
                         ply.glee_ScreamingUntil = CurTime() + SoundDuration( screamSound )
 
                     else -- let panic get overflown, we just take little bites
@@ -231,7 +231,7 @@ elseif SERVER then
                 if validScreamPanicSounds then
                     local screamSound = table.remove( ply.screamPanicSounds, math.random( 1, #ply.screamPanicSounds ) )
                     if screamSound and not underwater then
-                        ply:EmitSound( screamSound, 88, 100, 1, CHAN_VOICE )
+                        ply:EmitSound( screamSound, 84, 100, 1, CHAN_VOICE )
                         ply.glee_ScreamingUntil = CurTime() + SoundDuration( screamSound )
 
                     end
@@ -353,7 +353,7 @@ elseif SERVER then
         GAMEMODE:SetPanic( victim, 0 )
         if victim.huntersglee_panicSound == nil or not victim.huntersglee_panicSound:IsPlaying() then return end
         victim.huntersglee_panicSound:Stop()
-        victim:EmitSound( "common/null.wav", 75, 100, 1, CHAN_VOICE )
+        victim:EmitSound( "common/null.wav", 75, 100, 1, CHAN_VOICE ) -- comedic panic scream ending
         victim.nextFleePanicSound = nil
 
     end )
@@ -367,9 +367,14 @@ elseif SERVER then
             panic = math.Clamp( panic, 45, 100 )
 
         end
-        if victim:IsOnFire() and damage:IsDamageType( DMG_BURN ) then
-            panic = math.max( panic * 2, 30 )
+        if damage:IsDamageType( DMG_BURN ) then
+            if victim:IsOnFire() then
+                panic = math.max( panic * 2, 30 )
 
+            else
+                panic = math.max( panic * 1.25, 10 )
+
+            end
         end
         GAMEMODE:GivePanic( victim, panic )
 

@@ -49,6 +49,18 @@ local voters = {
     "slot9",
 }
 
+local inChatVoters = {
+    ["1"] = 1,
+    ["2"] = 2,
+    ["3"] = 3,
+    ["4"] = 4,
+    ["5"] = 5,
+    ["6"] = 6,
+    ["7"] = 7,
+    ["8"] = 8,
+    ["9"] = 9,
+}
+
 local function isBound( cmd )
     local binding = input.LookupBinding( cmd )
     if not binding then return false end
@@ -71,7 +83,7 @@ end
 
 -- One line of the vote, a torn strip with panel.wrappedText on it, sliding in as the vote opens.
 -- The panel needs layoutGodText run on it, and jitterX / jitterY set.
--- state keys the style's tornStrip colors
+-- state picks the strip's colour, see handle:BackdropColor
 local function paintGodLine( panel, openedAt, order, state, fontRole, colorRole, w, h )
     local godLook = god:Settings() -- the strip and the arrival, which have no methods
     local metrics = godLook.metrics
@@ -83,7 +95,7 @@ local function paintGodLine( panel, openedAt, order, state, fontRole, colorRole,
     surface_SetAlphaMultiplier( arrived )
 
     local stripWidth = math.min( w, panel.textWidth + ( metrics.textPaddingX * 2 ) )
-    hudHelpers.DrawTornStrip( godLook.tornStrip, slide, 0, stripWidth, h, state, panel )
+    hudHelpers.DrawTornStrip( godLook.tornStrip, god:BackdropColor( "bg", state ), slide, 0, stripWidth, h, panel )
 
     god:Draw(
         panel.wrappedText, fontRole,
@@ -151,6 +163,17 @@ function spawnSetVote:CreateVotePanel()
     god:PlaySound( "arrival", math.random( 110, 130 ), CHAN_STATIC, 0.3 )
 
     voteHolder.voteOptions = {}
+
+    hook.Add( "OnPlayerChat", voteHolder, function( _voteHolder, ply, text )
+        if ply ~= LocalPlayer() then return end
+        local vote = inChatVoters[text[1]]
+        if not vote then return end
+
+        _voteHolder.voteOptions[vote]:Vote()
+        _voteHolder.pressedToVote = true
+
+    end )
+
     function voteHolder:Think()
         if voteEnd < CurTime() then
             self:Remove()
@@ -492,7 +515,7 @@ hook.Add( "huntersglee_cl_displayhint_poststack", "glee_rtmhint", function( me )
         return true, "You're ready for a new Misery, maybe even a real challenge...\nPress " .. openChatPhrase .. " to open the chat."
 
     elseif not me:GetNW2Bool( "glee_hasrtm_voted", false ) then
-        return true, "You're ready for a real challenge.\nBegin a Misery vote.\nType !rtm in chat."
+        return true, "You're ready for a real Misery.\nBegin a Misery vote.\nType !rtm in chat."
 
     end
 end )

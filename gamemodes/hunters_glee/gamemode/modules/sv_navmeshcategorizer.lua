@@ -73,13 +73,23 @@ end
 
 local bit_band = bit.band
 
-function GAMEMODE:HasExtraFlags( area, flag )
+-- matches ANY flag in the mask
+function GAMEMODE:HasAnyExtraFlag( area, flagMask )
     local areasFlags = self.areaExtraFlags[area]
     if not areasFlags then return false end
-    return bit_band( areasFlags, flag ) ~= 0
+    return bit_band( areasFlags, flagMask ) ~= 0
 
 end
 
+-- matches ALL flags in the mask
+function GAMEMODE:HasAllExtraFlags( area, flagMask )
+    local areasFlags = self.areaExtraFlags[area]
+    if not areasFlags then return false end
+    return bit_band( areasFlags, flagMask ) == flagMask
+
+end
+
+-- matches ALL flags in the mask
 function GAMEMODE:GetAreasWithEFlags( flagMask )
     if flagMask == 0 then return {} end
 
@@ -112,7 +122,7 @@ function GAMEMODE:GetAreasWithEFlags( flagMask )
 
 end
 
--- filter this indexed table of areas, returning all areas that pass this mask
+-- filter this indexed table of areas, returning all areas that have ALL flags in the mask
 function GAMEMODE:FilterForAreasWithEFlags( flagMask, areas )
     -- an empty mask means nothing was asked for, same as GetAreasWithEFlags.
     -- without this it would band against 0 and pass everything through
@@ -132,6 +142,7 @@ function GAMEMODE:FilterForAreasWithEFlags( flagMask, areas )
 
 end
 
+-- flag must be a single bit, areasByExtraFlags is indexed per bit
 function GAMEMODE:RegisterFlagStatus( area, flag )
     local areasFlags = self.areaExtraFlags[area] or 0
 
@@ -143,12 +154,19 @@ function GAMEMODE:RegisterFlagStatus( area, flag )
     if not allAreasWithFlag then -- first one!
         allAreasWithFlag = {}
         self.areasByExtraFlags[flag] = allAreasWithFlag
+        self.mapsExtraFlags = bit.bor( self.mapsExtraFlags, flag )
 
     end
     table.insert( allAreasWithFlag, area )
 
 end
 
+-- matches ALL flags in the mask, each somewhere on the map, not necessarily on the same area
+function GAMEMODE:MapHasEFlags( flagMask )
+    if flagMask == 0 then return false end
+    return bit_band( self.mapsExtraFlags, flagMask ) == flagMask
+
+end
 
 -- navmesh understanding stuff
 local function reset()
@@ -156,6 +174,7 @@ local function reset()
     SetGlobalBool( "glee_isSkyOnMap", false )
     GAMEMODE.areaExtraFlags = {}
     GAMEMODE.areasByExtraFlags = {}
+    GAMEMODE.mapsExtraFlags = 0
     GAMEMODE.waterBodySize = {} -- groups of underwater areas
     GAMEMODE.highestSkyZ = -math.huge -- highest z on map, probably skybox height
     GAMEMODE.highestAreaZ = -math.huge -- highest navarea center's z
@@ -374,7 +393,7 @@ hook.Add( "glee_navmesh_postvisit", "glee_precache_extraflags", function( area )
     if #adjacents > 0 and area:IsUnderwater() then
         local waterBodySize = GAMEMODE.waterBodySize[area]
         if waterBodySize then
-            local beach = waterBodySize > smallLakeSurfaceArea and GAMEMODE:HasExtraFlags( area, flagsEnums.UNDER_SKY )
+            local beach = waterBodySize > smallLakeSurfaceArea and GAMEMODE:HasAnyExtraFlag( area, flagsEnums.UNDER_SKY )
             local enum = beach and flagsEnums.LOCALE_BEACH or flagsEnums.LOCALE_DAMP
             for _, neighbor in ipairs( adjacents ) do
                 if neighbor:IsUnderwater() then continue end

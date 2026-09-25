@@ -152,16 +152,22 @@ ENT.IdleActivityTranslations = {
 }
 
 ENT.IgniteOnHit = true
+ENT.FistRangeMul = 0.9
 
-function ENT:PostHitObject( object )
+function ENT:PostHitObject( object, damage )
     if not self.IgniteOnHit then return end
+
+    local time = damage * 0.25
 
     if GAMEMODE.GivePanic and object:IsPlayer() then
         GAMEMODE:GivePanic( object, 50 )
+        if object:HasStatusEffect( "infernalintervention_rawendofthedeal" ) then
+            time = time * 4
 
+        end
     end
 
-    object:Ignite( math.random( 3, 6 ) )
+    object:Ignite( time )
 
 end
 

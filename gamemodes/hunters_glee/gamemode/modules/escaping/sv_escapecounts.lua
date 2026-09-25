@@ -87,15 +87,15 @@ end
 
 local rewardPerStaleWeek = 0.25
 local maxStaleReward = 1.5
-local easyCostSoftMax = 0.9
+local easyCostSoftMax = 0.75
 
 local function escapeRatioToMultiplier( escaped, remained, lastUpdateTime )
     local base = 1
     local addedByRatio = 0
     if escaped <= 0 then -- NEVER BEEN ESCAPED!
-        addedByRatio = 1.5 -- permanent 2.5x for first escapes
-        addedByRatio = addedByRatio + math.Clamp( remained * 0.049, 0, 1 ) -- map is unescapable, up to 3.5x at first
-        addedByRatio = addedByRatio + math.Clamp( remained * 0.001, 0, 1.5 ) -- and continue up to 5x for really miserable maps
+        addedByRatio = 0.5 -- permanent 1.5x for first escapes
+        addedByRatio = addedByRatio + math.Clamp( remained * 0.070, 0, 2 ) -- map is unescapable, up to 3.5x at first
+        addedByRatio = addedByRatio + math.Clamp( remained * 0.005, 0, 1.5 ) -- and continue up to 5x for really miserable maps
 
     else
         local escapedWeighted = escaped * 1.4
@@ -107,7 +107,7 @@ local function escapeRatioToMultiplier( escaped, remained, lastUpdateTime )
         -- if 80 escaped and 60 remained, ratio is -0.46
 
         if ratio <= 0 then
-            addedByRatio = math.Clamp( ratio, -1, 0 ) -- easy map, down to 0x
+            addedByRatio = math.Clamp( ratio, -1, 0 ) -- easy map, down to 0x ( floored later )
 
         else
             addedByRatio = math.min( ratio, 1 ) -- hard map, up to 2x
@@ -128,7 +128,7 @@ local function escapeRatioToMultiplier( escaped, remained, lastUpdateTime )
 
     end
 
-    multiplier = math.max( multiplier, 0.25 ) -- floor: even the easiest map still pays out something
+    multiplier = math.max( multiplier, 0.15 ) -- floor: even the easiest map still pays out something
     multiplier = math.Round( multiplier, 2 )
 
     return multiplier

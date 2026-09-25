@@ -132,7 +132,7 @@ local nearbyEntHints = {
             return true, "Attack the crate.\nIt could contain anything!"
 
         else
-            return true, "Your crowbar is fantastic at opening crates.\nEquip it"
+            return true, "Your crowbar is for opening crates.\nEquip it."
 
         end
     end,
@@ -144,6 +144,10 @@ local nearbyEntHints = {
         return true, "Press " .. phrase .. " to open doors!"
 
     end,
+    terminator_nextbot_infernalskeleton_slow = function( _me )
+        GAMEMODE:LearnLesson( "FoundInfernalSkeleton" )
+
+    end
 }
 
 
@@ -189,140 +193,146 @@ function set:Activate()
         return 2
 
     end )
-    self:Hook( "huntersglee_round_into_active", function()
-        updateWaveStartPositions( self )
-
-    end )
-    self:Hook( "PlayerUse", function( ply, used )
-        if used:GetClass() ~= "prop_door_rotating" then return end
-        GAMEMODE:LearnLesson( ply, "OpenedADoor" )
-
-    end )
     self:Hook( "glee_shop_itemcostmul", function( _ply, itemData, adjust )
         if itemData.identifier ~= "guns" then return end
         adjust.mul = adjust.mul * 0.5 -- cheaper guns
 
     end )
-    self:Hook( "huntersglee_postwavegenerated", function()
+    self:Hook( "huntersglee_round_into_active", function()
         updateWaveStartPositions( self )
 
     end )
-    self:Hook( "huntersglee_cl_displayhint_prealivehints", function( ply )
-        local hunting = GAMEMODE:RoundState() == GAMEMODE.ROUND_ACTIVE
-        if not hunting then return end
+    if SERVER then
+        updateWaveStartPositions( self )
 
-        local myPos = ply:GetShootPos()
-        local nearbyEnts = ents.FindInCone( myPos, ply:GetAimVector(), 400, 0.8 )
-        local nearestDist = math.huge
-        local nearestHint
-        for _, ent in ipairs( nearbyEnts ) do
-            local hintFunc = nearbyEntHints[ent:GetClass()]
-            if not hintFunc then continue end
+        self:Hook( "PlayerUse", function( ply, used )
+            if used:GetClass() ~= "prop_door_rotating" then return end
+            GAMEMODE:LearnLesson( ply, "OpenedADoor" )
 
-            local entsPos = ent:WorldSpaceCenter()
+        end )
+        self:Hook( "huntersglee_postwavegenerated", function()
+            updateWaveStartPositions( self )
 
-            local distSqr = entsPos:DistToSqr( myPos )
-            if distSqr > nearestDist then continue end
+        end )
+        self:Hook( "huntersglee_spawnwavegeneration_block", function()
+            local sinceLastWave = CurTime() - GAMEMODE.lastSpawnWave
+            local startOfWavePositions = self.startOfWavePositions
 
-            local valid, hint = hintFunc( ply, ent )
-            if not valid then continue end
+            local blockTimes = {}
+            local huntableCount = 0
 
-            if not terminator_Extras.PosCanSee( myPos, entsPos ) then continue end
+            for _, ply in ipairs( player.GetAll() ) do
+                if not GAMEMODE:plyIsHuntable( ply ) then continue end
+                if ply:IsBot() then continue end -- not useful, don't wait for bots
 
-            nearestHint = hint
-            nearestDist = distSqr
+                huntableCount = huntableCount + 1
 
-        end
+                local hp = ply:Health()
+                local maxHp = ply:GetMaxHealth()
+                if hp <= maxHp * 0.15 then
+                    blockTimes["lowHealth"] = blockTimes["lowHealth"] or 0 + blockTimeAddedLowHealth
 
-        if nearestHint then return true, nearestHint end
+                elseif hp <= maxHp * 0.5 then
+                    blockTimes["mediumHealth"] = blockTimes["mediumHealth"] or 0 + blockTimeAddedMediumHealth
 
-    end )
-    self:Hook( "huntersglee_cl_displayhint_postalivehints", function( ply )
-        local hunting = GAMEMODE:RoundState() == GAMEMODE.ROUND_ACTIVE
-        if not hunting then return end
+                elseif hp >= maxHp * 0.99 then
+                    blockTimes["fullHealth"] = blockTimes["fullHealth"] or 0 + blockTimeAddedFullHealth
 
-        if not GAMEMODE:HasLearnedLesson( "PickedUpSkull" ) and ply:GetSkulls() < 1 then
-            return true, "The infernal horde is amassing somewhere...\nTake their skulls."
+                end
 
-        end
+                if not GAMEMODE:HasLearnedLesson( ply, "OpenedShop" ) then
+                    blockTimes["neverBrowsed"] = blockTimes["neverBrowsed"] or 0 + blockTimeAddedNeverOpenedShop
 
-    end )
-    self:Hook( "huntersglee_spawnwavegeneration_block", function()
-        local sinceLastWave = CurTime() - GAMEMODE.lastSpawnWave
-        local startOfWavePositions = self.startOfWavePositions
+                end
 
-        local blockTimes = {}
-        local huntableCount = 0
+                if not GAMEMODE:HasLearnedLesson( ply, "BoughtAnItem" ) then
+                    blockTimes["neverShopped"] = blockTimes["neverShopped"] or 0 + blockTimeAddedNeverShopped
 
-        for _, ply in ipairs( player.GetAll() ) do
-            if not GAMEMODE:plyIsHuntable( ply ) then continue end
-            if ply:IsBot() then continue end -- not useful, don't wait for bots
+                end
 
-            huntableCount = huntableCount + 1
+                if ply:IsOnFire() then
+                    blockTimes["onFire"] = blockTimes["onFire"] or 0 + blockTimeAddedOnFire
 
-            local hp = ply:Health()
-            local maxHp = ply:GetMaxHealth()
-            if hp <= maxHp * 0.15 then
-                blockTimes["lowHealth"] = blockTimes["lowHealth"] or 0 + blockTimeAddedLowHealth
+                end
 
-            elseif hp <= maxHp * 0.5 then
-                blockTimes["mediumHealth"] = blockTimes["mediumHealth"] or 0 + blockTimeAddedMediumHealth
+                local plysSpeedSqr = ply:GetVelocity():LengthSqr()
+                if plysSpeedSqr <= 10^2 then
+                    blockTimes["notMoving"] = blockTimes["notMoving"] or 0 + blockTimeAddedNotMoving
 
-            elseif hp >= maxHp * 0.99 then
-                blockTimes["fullHealth"] = blockTimes["fullHealth"] or 0 + blockTimeAddedFullHealth
+                end
+
+                local ourPosAtWaveStart = startOfWavePositions[ply]
+                if ourPosAtWaveStart then
+                    local distMovedSinceLastWave = ply:GetPos():DistToSqr( ourPosAtWaveStart )
+
+                    if distMovedSinceLastWave < move then
+                        blockTimes["moveAtAll"] = blockTimes["moveAtAll"] or 0 + blockTimeAddedDidntMoveAtAll
+
+                    elseif distMovedSinceLastWave < moveFar then
+                        blockTimes["moveFar"] = blockTimes["moveFar"] or 0 + blockTimeAddedDidntMoveFar
+
+                    end
+                end
+            end
+
+            if huntableCount <= 0 then return true end -- nobodys ready for the hunt yet
+
+            local blockTime = 0
+            for _name, added in pairs( blockTimes ) do
+                print( name, added )
+                blockTime = blockTime + added
+
+            end
+            blockTime = blockTime / huntableCount
+
+            --print( blockTime, sinceLastWave, blockTime > sinceLastWave )
+
+            if blockTime > sinceLastWave then return true end -- BLOCK
+
+        end )
+    elseif CLIENT then
+        self:Hook( "huntersglee_cl_displayhint_prealivehints", function( ply )
+            local myPos = ply:GetShootPos()
+            local nearbyEnts = ents.FindInCone( myPos, ply:GetAimVector(), 250, math.cos( math.rad( 80 ) ) )
+            local nearestDist = math.huge
+            local nearestHint
+            for _, ent in ipairs( nearbyEnts ) do
+                local hintFunc = nearbyEntHints[ent:GetClass()]
+                if not hintFunc then continue end
+
+                local entsPos = ent:WorldSpaceCenter()
+
+                local distSqr = entsPos:DistToSqr( myPos )
+                if distSqr > nearestDist then continue end
+
+                local valid, hint = hintFunc( ply, ent )
+                if not valid then continue end
+
+                if not terminator_Extras.PosCanSee( myPos, entsPos, MASK_SOLID_BRUSHONLY ) then continue end
+
+                nearestHint = hint
+                nearestDist = distSqr
 
             end
 
-            if not GAMEMODE:HasLearnedLesson( ply, "OpenedShop" ) then
-                blockTimes["neverBrowsed"] = blockTimes["neverBrowsed"] or 0 + blockTimeAddedNeverOpenedShop
+            if nearestHint then return true, nearestHint end
 
-            end
+        end )
+        self:Hook( "huntersglee_cl_displayhint_postalivehints", function( ply )
+            local hunting = GAMEMODE:RoundState() == GAMEMODE.ROUND_ACTIVE
+            if not hunting then return end
 
-            if not GAMEMODE:HasLearnedLesson( ply, "BoughtAnItem" ) then
-                blockTimes["neverShopped"] = blockTimes["neverShopped"] or 0 + blockTimeAddedNeverShopped
+            if ply:GetSkulls() < 1 then
+                if not GAMEMODE:HasLearnedLesson( "FoundInfernalSkeleton" ) then
+                    return true, "The infernal horde is amassing somewhere...\nHunt them down."
 
-            end
-
-            if ply:IsOnFire() then
-                blockTimes["onFire"] = blockTimes["onFire"] or 0 + blockTimeAddedOnFire
-
-            end
-
-            local plysSpeedSqr = ply:GetVelocity():LengthSqr()
-            if plysSpeedSqr <= 10^2 then
-                blockTimes["notMoving"] = blockTimes["notMoving"] or 0 + blockTimeAddedNotMoving
-
-            end
-
-            local ourPosAtWaveStart = startOfWavePositions[ply]
-            if ourPosAtWaveStart then
-                local distMovedSinceLastWave = ply:GetPos():DistToSqr( ourPosAtWaveStart )
-
-                if distMovedSinceLastWave < move then
-                    blockTimes["moveAtAll"] = blockTimes["moveAtAll"] or 0 + blockTimeAddedDidntMoveAtAll
-
-                elseif distMovedSinceLastWave < moveFar then
-                    blockTimes["moveFar"] = blockTimes["moveFar"] or 0 + blockTimeAddedDidntMoveFar
+                elseif GAMEMODE:HasLearnedLesson( "PickedUpSkull" ) then
+                    return true, "Some of the infernal skeletons still have heads...\nCollect their skulls."
 
                 end
             end
-        end
-
-        if huntableCount <= 0 then return true end -- nobodys ready for the hunt yet
-
-        local blockTime = 0
-        for _name, added in pairs( blockTimes ) do
-            --print( name, added )
-            blockTime = blockTime + added
-
-        end
-        blockTime = blockTime / huntableCount
-
-        --print( blockTime, sinceLastWave, blockTime > sinceLastWave )
-
-        if blockTime > sinceLastWave then return true end -- BLOCK
-
-    end )
+        end )
+    end
 end
 
 -- put the spawnset IN the global table to be gobbled

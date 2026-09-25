@@ -413,6 +413,7 @@ function GM:GetAreaInOccupiedBigGroupOrRandomBigGroup( noUnderWater )
 
 end
 
+-- matches ALL flags in the mask
 function GM:GetAreasInOccupiedGroupWithEFlag( flagMask )
     local allWithFlags = self:GetAreasWithEFlags( flagMask )
     if #allWithFlags <= 0 then return {} end

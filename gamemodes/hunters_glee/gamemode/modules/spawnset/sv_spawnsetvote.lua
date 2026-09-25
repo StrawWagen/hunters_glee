@@ -1,5 +1,6 @@
-local defaultDuration = CreateConVar( "hunterslglee_modevote_duration", 20, FCVAR_ARCHIVE, "Default duration of the mode vote" )
-local defaultMaxOptions = CreateConVar( "hunterslglee_modevote_maxoptions", 6, FCVAR_ARCHIVE, "Amount of options that show up in the mode vote", 2, 9 )
+local defaultDuration = CreateConVar( "hunterslglee_modevote_duration", 20, FCVAR_ARCHIVE, "Default duration of the Misery vote" )
+local easyDurationMul = CreateConVar( "hunterslglee_modevote_easydurationmul", 2, FCVAR_ARCHIVE, "How much to mul the duration of Misery votes when leaving an easy mode?" )
+local defaultMaxOptions = CreateConVar( "hunterslglee_modevote_maxoptions", 6, FCVAR_ARCHIVE, "Amount of options that show up in the Misery vote", 2, 9 )
 
 local GM = GM or GAMEMODE
 
@@ -10,7 +11,14 @@ util.AddNetworkString( "glee_begin_spawnsetvote" )
 
 function spawnSetVote:BeginVote( duration, maxOptions )
 
+    local currentSpawnsetName, currentSpawnSet = GAMEMODE:GetSpawnSet()
+    local wantsOtherEasyOnes = currentSpawnSet.easy
+
     duration = duration or defaultDuration:GetInt()
+    if currentSpawnSet.easy then
+        duration = duration * easyDurationMul:GetFloat()
+
+    end
     duration = math.Round( duration )
 
     maxOptions = maxOptions or defaultMaxOptions:GetInt()
@@ -31,9 +39,8 @@ function spawnSetVote:BeginVote( duration, maxOptions )
     local spawnSets = GAMEMODE:GetSpawnSets()
     local toBrowse = table.Copy( spawnSets )
 
-    local currentSpawnsetName, currentSpawnSet = GAMEMODE:GetSpawnSet()
-    local wantsOtherEasyOnes = currentSpawnSet.easy
-    local doneEasyEscape
+    local easyEscapeRoutes = 0
+    local idealEasyEscapeRoutes = 2
     local easyAdded = 0
 
     local toAdd = {}
@@ -62,23 +69,25 @@ function spawnSetVote:BeginVote( duration, maxOptions )
             -- this counts mul < 1 as easy, but no other code does it
             -- intentional transition space, might change later
             local optionIsEasy = option.easy or optionsMul < 1
-            local enoughEasy = easyAdded + 2 > maxOptions
-            local freebie = ( not chance or chance == 100 ) and not doneEasyEscape
-            -- add 1 hard mode with 100% pick chance ( one of the default hard modes )
-            -- or just add any hard mode if we're about to run out of room
-            if enoughEasy or freebie then
+            local enoughEasy = easyAdded + ( idealEasyEscapeRoutes + 1 ) > maxOptions
+            local freebie = ( not chance or chance >= 50 ) and easyEscapeRoutes <= idealEasyEscapeRoutes
+
+            -- add hard modes as an "escape route" from easy hell
+            -- prefer ones with >=50% chance, or just add ones if we're about to run out of room
+            if freebie or enoughEasy then
                 if optionIsEasy then
-                    plsSkip = true
+                    plsSkip = true -- we're looking for our honorary hard mode
 
                 else
                     plsSkip = false
-                    doneEasyEscape = true
+                    easyEscapeRoutes = easyEscapeRoutes + 1
 
                 end
             -- and fill the rest with easy modes
             else
                 if optionIsEasy then
                     plsSkip = false
+                    easyAdded = easyAdded + 1
 
                 else
                     plsSkip = true
@@ -211,7 +220,7 @@ function spawnSetVote:OnVoteEnd()
     if
         GAMEMODE:RoundState() == GAMEMODE.ROUND_ACTIVE
         and GAMEMODE:getRemaining( GAMEMODE.termHunt_roundBegunTime, CurTime() ) > 60
-        and GAMEMODE:GetSpawnSet() ~= GAMEMODE.TheTutorialMisery
+        and not GAMEMODE:GetSpawnSet().easy
 
     then -- if round has properly started
         huntersGlee_AnnounceDramatic( player.GetAll(), 1001, 10, "The next Misery; " .. GAMEMODE:GetPrettyNameOfSpawnSet( spawnSetVote.winner ) .. "\nwill arrive upon round end..." )

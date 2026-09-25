@@ -22,6 +22,7 @@ ENT.SpawnHeadlessChance = 85
 ENT.IgniteOnHit = false
 
 ENT.FistDamageMul = 0.1
+ENT.FistRangeMul = 0.75
 
 ENT.JumpHeight = 50
 ENT.Term_Leaps = false

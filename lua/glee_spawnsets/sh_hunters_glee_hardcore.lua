@@ -14,7 +14,7 @@ if SERVER then
         diffBumpWhenWaveKilled = "default", -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
         startingBudget = "default", -- so budget isnt 0
         spawnCountPerDifficulty = "default", -- max of ten at 10 minutes
-        startingSpawnCount = "default",
+        startingSpawnCount = 4,
         maxSpawnCount = 6, -- hard cap on count
         maxSpawnDist = "default",
         roundEndSound = "default",

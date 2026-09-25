@@ -1,6 +1,6 @@
 
 local set = {
-    name = "infernal_glee_thehorde", -- unique name
+    name = "infernal_glee_titans", -- unique name
     prettyName = "The Infernal Titans",
     description = "They're huge, on fire, and bad to the bone...",
     difficultyPerMin = "default*3", -- difficulty per minute
@@ -13,8 +13,8 @@ local set = {
     maxSpawnDist = "default*0.5", -- spawn close, these cant pathfind
     roundEndSound = "default",
     roundStartSound = "default",
-    chanceToBeVotable = 2,
-    chanceToBeVotableWhenHard = 20, -- stick around when this is still a challenge
+    chanceToBeVotable = 1,
+    chanceToBeVotableWhenHard = 5, -- stick around when this is still a challenge
     spawns = {
         {
             hardRandomChance = 50,
