@@ -7,8 +7,9 @@
     from its parents, see glee_hud/cl_stylecontext.lua.
 
     It has no states. glee_hudbox adds the hud's fading and flashing, glee_row the hover
-    and press of something pickable. They change how this draws by overriding the four
-    getters Paint reads: GetFade, GetVisualState, GetBackdropColor and GetContentColor.
+    and press of something pickable. They change how this draws by overriding the three
+    getters Paint reads: GetFade, GetVisualState and GetContentColor. The state picks the
+    backdrop's colour from its family, see handle:BackdropColor.
 
     Mouse input starts off. SetPaintBackground( false ) drops the backdrop, for a panel
     that only exists to be docked into.
@@ -47,8 +48,8 @@ PANEL.Init = function( self )
     self._textPadding  = nil -- the style's blockPadding
     self._cornerRadius = nil -- the style's boxCornerRadius
 
-    self._backdropColor = "bg"
-    self._contentColor  = "happy"
+    self._backdrop     = "bg"
+    self._contentColor = "happy"
 
     -- Paint's resolved, faded content colour. Menus that wrap Paint draw their own text in it
     self._drawContent = Color( 0, 0, 0, 0 )
@@ -166,27 +167,61 @@ PANEL.GetTextPadding = function( self )
 
 end
 
--- Resizes the panel to fit the current text plus its text padding on all sides.
--- Call after SetText when the text content changes.
-PANEL.AutoSize = function( self )
-    self:SyncWrap()
-    if not self._text or #self._text == 0 then return end
+-- The panel is kept at least wide enough for this text, so text that changes length,
+-- like a count, doesn't change the width of whatever sizes itself around it
+PANEL.SetReservedText = function( self, text )
+    self._reservedText = text
 
-    local font = self:GetResolvedFont()
+end
+
+local function hasText( self )
+    return self._text and #self._text > 0
+
+end
+
+local function widestLine( font, text )
     surface.SetFont( font )
-    local fontHeight = draw.GetFontHeight( font )
-    local maxWidth   = 0
-    local lineCount  = 0
+    local widest = 0
 
-    for line in ( self._text .. "\n" ):gmatch( "([^\n]*)\n" ) do
-        lineCount    = lineCount + 1
-        local lineWidth = surface.GetTextSize( line )
-        if lineWidth > maxWidth then maxWidth = lineWidth end
+    for line in ( text .. "\n" ):gmatch( "([^\n]*)\n" ) do
+        widest = math.max( widest, ( surface.GetTextSize( line ) ) )
 
     end
 
-    local pad = self:GetTextPadding()
-    self:SetSize( maxWidth + pad * 4, fontHeight * lineCount + pad * 2 )
+    return widest
+
+end
+
+-- Text plus its padding, pad * 2 each side. Anything else, its current width
+PANEL.GetContentWidth = function( self )
+    self:SyncWrap()
+    if not hasText( self ) then return self:GetWide() end
+
+    local font = self:GetResolvedFont()
+    local textWidth = math.max( widestLine( font, self._text ), widestLine( font, self._reservedText or "" ) )
+
+    return textWidth + self:GetTextPadding() * 4
+
+end
+
+-- Text plus its padding, pad each side. Anything else, its current height
+PANEL.GetContentHeight = function( self )
+    self:SyncWrap()
+    if not hasText( self ) then return self:GetTall() end
+
+    local _, lineCount = string.gsub( self._text, "\n", "" )
+    local fontHeight = draw.GetFontHeight( self:GetResolvedFont() )
+
+    return fontHeight * ( lineCount + 1 ) + self:GetTextPadding() * 2
+
+end
+
+-- Resizes the panel to fit the current text plus its text padding on all sides.
+-- Call after SetText when the text content changes.
+PANEL.AutoSize = function( self )
+    if not hasText( self ) then return end
+
+    self:SetSize( self:GetContentWidth(), self:GetContentHeight() )
 
 end
 
@@ -199,9 +234,9 @@ PANEL.SetCornerRadius = function( self, radius )
 
 end
 
--- A role or a Color
-PANEL.SetBackdropColor = function( self, color )
-    self._backdropColor = color
+-- A backdrop family, "bg" or "bgDark", or a Color to draw whatever the state
+PANEL.SetBackdrop = function( self, family )
+    self._backdrop = family
 
 end
 
@@ -225,11 +260,6 @@ PANEL.GetVisualState = function( self )
 
 end
 
-PANEL.GetBackdropColor = function( self )
-    return self._backdropColor
-
-end
-
 PANEL.GetContentColor = function( self )
     return self._contentColor
 
@@ -245,7 +275,7 @@ PANEL.Paint = function( self, w, h )
     local style = self:Style()
 
     if self:GetPaintBackground() then
-        style:Background( 0, 0, w, h, self:GetBackdropColor(), self._cornerRadius, fade, self:GetVisualState(), self )
+        style:Background( 0, 0, w, h, self._backdrop, self._cornerRadius, fade, self:GetVisualState(), self )
 
     end
 

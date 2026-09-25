@@ -415,6 +415,7 @@ function GM:GetNearbyWalkableArea( playerReference, start, count, occupiedSpawnA
 
 end
 
+
 function plyIsHuntable( _, ply )
     if entMeta.Health( ply ) <= 0 then return false end
     if not ply.glee_FullLoaded then return false end
@@ -425,6 +426,29 @@ function plyIsHuntable( _, ply )
 end
 
 GM.plyIsHuntable = plyIsHuntable
+
+function GM:returnHuntablePlysIn( stuff )
+    local huntableStuff = {}
+    for _, curr in pairs( stuff ) do
+        if plyIsHuntable( nil, curr ) then
+            table.insert( huntableStuff, curr )
+
+        end
+    end
+    return huntableStuff
+end
+
+function GM:countHuntablePlayers()
+    local aliveCount = 0
+    for _, curr in pairs( player.GetAll() ) do
+        if plyIsHuntable( nil, curr ) then
+            aliveCount = aliveCount + 1
+
+        end
+    end
+    return aliveCount
+end
+
 
 function GM:getRemaining( num, curtime )
     return math.abs( num - curtime )
@@ -477,17 +501,6 @@ function GM:returnDeadListenersInTable( stuff ) -- people who can hear/see dead 
     end
     return deadStuff
 
-end
-
-function GM:returnHuntablePlysIn( stuff )
-    local huntableStuff = {}
-    for _, curr in pairs( stuff ) do
-        if plyIsHuntable( nil, curr ) then
-            table.insert( huntableStuff, curr )
-
-        end
-    end
-    return huntableStuff
 end
 
 function GM:anotherAlivePlayer( block )
@@ -562,18 +575,6 @@ function GM:nearestNonInfernalAlivePlayer( pos )
     end
 
     return nearestPly, nearestPlyDistSqr
-end
-
-
-function GM:countHuntablePlayers()
-    local aliveCount = 0
-    for _, curr in pairs( player.GetAll() ) do
-        if plyIsHuntable( nil, curr ) then
-            aliveCount = aliveCount + 1
-
-        end
-    end
-    return aliveCount
 end
 
 

@@ -5,21 +5,11 @@ local developerVar = GetConVar( "developer" )
 if not game.IsDedicated() and not developerVar:GetBool() then return end
 
 
--- only the width is ours to pick. the height is whatever the checker's contents
--- come to at that width, which moves with the fonts and the player's ui scale
-local FRAME_W_1080P = 460
-
-
 local function openGuiltChecker()
     local ply = LocalPlayer()
     if not IsValid( ply ) then return end
 
-    local scale  = GAMEMODE.shopStandards.shpScale or 1
-    local frameW = glee_sizeScaled( FRAME_W_1080P * scale )
-
     local frame = vgui.Create( "glee_frame" )
-    terminator_Extras.glee_SetPanelStyle( frame, "hl2" )
-    terminator_Extras.glee_SetPanelScale( frame, "fixed" )
 
     -- the checker brings its own padding, and its height is measured including it
     frame:SetPadContents( false )
@@ -27,15 +17,14 @@ local function openGuiltChecker()
     local checker = vgui.Create( "glee_guiltchecker", frame )
     checker:Dock( FILL )
 
-    local function fitToChecker()
-        frame:SetSize( frameW, checker:LayoutForWidth( frameW ) )
-        frame:Center()
+    -- the description grows a line and the frame has to grow with it
+    function checker:OnLayoutChanged()
+        frame:SizeToContents()
 
     end
 
-    -- the description grows a line and the frame has to grow with it
-    checker.OnLayoutChanged = fitToChecker
-    fitToChecker()
+    frame:SizeToContents()
+    frame:Center()
 
     terminator_Extras.easyClosePanel( frame )
 
@@ -67,7 +56,7 @@ concommand.Add( "glee_guiltchecker_open", function()
 end )
 
 -- the spawnmenu icon's own window, which init throws away for the real one
-local width, height = glee_sizeScaled( FRAME_W_1080P, FRAME_W_1080P * 0.5 )
+local width, height = glee_sizeScaled( 460, 230 )
 list.Set( "DesktopWindows", "HuntersGlee_GuiltChecker", {
     title = "Guilt",
     icon = "icon16/heart_delete.png",

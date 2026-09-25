@@ -1,24 +1,22 @@
 --[[
     The client settings menu. Client convars only.
 
-    Rows are glee_hudbox, sliders are glee_meter, laid out in hl2 style.
+    Every setting is a glee_row, sliders with a glee_meter in the middle, all docked into
+    a glee_frame that sizes itself around them.
     Add a setting by adding to settingsCategories; nothing else needs touching.
 
     Every other glee gui scales with cl_huntersglee_guiscale. This one must not: it is
     the only menu that can undo a bad guiscale, so it has to stay readable at values
-    that make the shop unusable. Never multiply anything here by shopStandards.shpScale.
+    that make the shop unusable. Its frame is pinned to the fixed scale for that.
 
     Opened by the glee_settings_open concommand.
 ]]
 
 local GAMEMODE = GAMEMODE or GM
 
--- font roles, not font names
-local hl2Style    = terminator_Extras.glee_Style( "hl2" )
-local ROW_FONT    = "medium"
-local HEADER_FONT = "mediumLarge"
+local HEADER_FONT = "mediumLarge" -- a font role
 
-local FRAME_H_1080P     = 775
+local FRAME_MAX_H_1080P = 775
 local METER_MIN_W_1080P = 200
 
 -- the widest string a value column can print, reserved so no bar runs under a number
@@ -128,6 +126,12 @@ local settingsCategories = {
                 prettyName = "Draw player names when dead?",
                 desc = "Draw player names on the HUD when you're dead?",
             },
+            {
+                cvar = "cl_huntersglee_highcontrast",
+                type = "check",
+                prettyName = "High contrast",
+                desc = "Darker, more solid backgrounds behind the HUD and menus.",
+            },
         },
     },
     {
@@ -158,11 +162,6 @@ local settingsCategories = {
     },
 }
 
-
-local function emitUISound( pitch )
-    LocalPlayer():EmitSound( GAMEMODE.shopStandards.switchSound, 60, pitch, 0.14 )
-
-end
 
 local function stepSize( def )
     return 1 / ( 10 ^ ( def.decimals or 0 ) )
@@ -214,99 +213,21 @@ local function readSetting( def, cvarRef )
 
 end
 
--- Runs at open time, never at file load: the HL2 fonts and palette do not exist yet
--- when this file is read.
-local function measureLayout()
-    surface.SetFont( hl2Style:Font( ROW_FONT ) )
-    local _, fontH = surface.GetTextSize( "A" )
 
-    -- only a slider's label shares its row with a bar, so only sliders set the column
-    local labelW      = 0
-    local checkLabelW = 0
-
-    for _, cat in ipairs( settingsCategories ) do
-        for _, def in ipairs( cat.items ) do
-            local nameW = surface.GetTextSize( def.prettyName )
-
-            if def.type == "slider" then
-                labelW = math.max( labelW, nameW )
-
-            else
-                checkLabelW = math.max( checkLabelW, nameW )
-
-            end
-        end
-    end
-
-    local valueW = surface.GetTextSize( WIDEST_VALUE )
-    local pad    = hl2Style:Metric( "blockPadding" )
-    local gap    = hl2Style:Metric( "laneSpacing" )
-
-    local sliderRowW = labelW + glee_sizeScaled( METER_MIN_W_1080P ) + valueW + pad * 6
-    local checkRowW  = checkLabelW + gap + valueW + pad * 4
-
-    return {
-        pad      = pad,
-        gap      = gap,
-        rowH     = fontH + pad * 2,
-        labelW   = labelW,
-        valueW   = valueW,
-        contentW = math.max( sliderRowW, checkRowW ),
-    }
-
-end
-
-
--- Shared by both row types. Returns the row and its convar; the caller has to override
--- UpdateFromCvar, which AdditionalThink calls every frame.
-local function makeRow( def, layout )
+-- Shared by both row types. The caller overrides UpdateFromCvar, which runs every frame
+local function makeRow( parent, def )
     local cvarRef = GetConVar( def.cvar )
 
-    local row = vgui.Create( "glee_hudbox" )
-    row:SetFlashContentColor( hl2Style:Color( "happy" ):Copy() ) -- the box defaults this to red
-    row:SetFlashDuration( 0.12 )
-    row:SetDoFadeDelays( false )
-    row:SetText( "" ) -- the base paints text centered, and this row paints its own
-    row:SetTall( layout.rowH )
-    row:SetMouseInputEnabled( true )
-    row:SetState( row.STATE_NORMAL )
+    local row = vgui.Create( "glee_row", parent )
+    row:SetLabel( def.prettyName or def.cvar )
+    row:SetReservedValue( WIDEST_VALUE )
     row:SetTooltip( ( def.desc or "" ) .. "\n\nRight click to reset to default." )
-
-    row._labelText  = def.prettyName or def.cvar
-    row._valueText  = ""
-    row._hoveredOld = false
-
-    local basePaint = row.Paint
-
-    function row:Paint( w, h )
-        basePaint( self, w, h ) -- background, alpha, flash
-        if self:GetStateAlpha() <= 0 then return end
-
-        local innerPad = layout.pad * 2
-        local midY     = h * 0.5
-        local col      = self._drawContent -- basePaint resolved this for this frame
-
-        local font = hl2Style:Font( ROW_FONT )
-        draw.SimpleText( self._labelText, font, innerPad,     midY, col, TEXT_ALIGN_LEFT,  TEXT_ALIGN_CENTER )
-        draw.SimpleText( self._valueText, font, w - innerPad, midY, col, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER )
-
-    end
 
     -- stub, the subtypes read the cvar their own way
     function row:UpdateFromCvar()
     end
 
     function row:AdditionalThink()
-        local hovered = self:IsHovered()
-
-        if hovered ~= self._hoveredOld then
-            self._hoveredOld = hovered
-            emitUISound( hovered and 90 or 80 )
-
-        end
-
-        self:SetNormalBoxColor( hl2Style:Color( hovered and "bgUrgent" or "bg" ) )
-        self:SetState( self.STATE_NORMAL )
         self:UpdateFromCvar()
 
     end
@@ -314,9 +235,12 @@ local function makeRow( def, layout )
     function row:ResetToDefault()
         -- written verbatim so the -1 sliders go back to meaning "let the feature decide"
         RunConsoleCommand( def.cvar, cvarRef:GetDefault() )
+        self:ShowPress( "switch", 100, 0.14 )
 
-        self:SetState( self.STATE_FLASH )
-        emitUISound( 100 )
+    end
+
+    function row:DoRightClick()
+        self:ResetToDefault()
 
     end
 
@@ -325,15 +249,19 @@ local function makeRow( def, layout )
 end
 
 
-local function makeSliderRow( def, layout )
-    local row, cvarRef = makeRow( def, layout )
+local function makeSliderRow( parent, def, sliderColumn )
+    local row, cvarRef = makeRow( parent, def )
+    row:SetLabelColumn( sliderColumn )
+    table.insert( sliderColumn, row )
 
-    local span  = def.max - def.min
-
-    local transparent = Color( 0, 0, 0, 0 )
+    local span = def.max - def.min
 
     -- The row is the box, so the meter contributes the bar only.
     local meter = vgui.Create( "glee_meter", row )
+    meter:SetPaintBackground( false )
+    meter:SetEmptyColor( "bgDark" )
+    meter:SetFillColor( "happy" )
+    meter:SetState( meter.STATE_NORMAL )
 
     -- one chunk per step, until the steps are too fine to chunk and it becomes a plain bar
     if def.decimals >= 2 then
@@ -343,19 +271,11 @@ local function makeSliderRow( def, layout )
         meter:SetChunks( math.Round( span / stepSize( def ) ) )
 
     end
-    meter:SetNormalBoxColor( transparent )
-    meter:SetUrgentBoxColor( transparent )
-    meter:SetFlashBoxColor( transparent )
-    meter:SetEmptyColor( hl2Style:Color( "bgDark" ) )
-    meter:SetFillColor( hl2Style:Color( "happy" ) )
-    meter:SetState( meter.STATE_NORMAL )
-    meter:Dock( FILL )
-    meter:DockMargin( layout.labelW + layout.pad * 3, layout.pad, layout.valueW + layout.pad * 3, layout.pad )
 
-    row._meter = meter
+    row:SetMiddle( meter, METER_MIN_W_1080P )
 
     function row:ShowValue( value )
-        self._valueText = formatValue( def, value )
+        self:SetValue( formatValue( def, value ) )
         meter:SetFill( ( value - def.min ) / span )
 
     end
@@ -371,14 +291,14 @@ local function makeSliderRow( def, layout )
         end
 
         local value, text = readSetting( def, cvarRef )
-        self._valueText = text
+        self:SetValue( text )
         meter:SetFill( ( value - def.min ) / span )
 
     end
 
     -- The bar has no grip to grab, so the value is wherever along it they clicked.
     function row:ValueFromCursor()
-        local pad  = hl2Style:Metric( "blockPadding" )
+        local pad  = meter:Style():Metric( "blockPadding" )
         local barW = meter:GetWide() - pad * 2 -- the meter insets its own bar by this
         if barW <= 0 then return def.min end
 
@@ -411,18 +331,23 @@ local function makeSliderRow( def, layout )
 
     end
 
+    function row:DoRightClick()
+        self._appliedValue = nil
+        self:ResetToDefault()
+
+    end
+
+    -- a press starts a drag rather than being a click, so this replaces the row's own
     function row:OnMousePressed( code )
         if code == MOUSE_RIGHT then
-            self._appliedValue = nil
-            self:ResetToDefault()
+            self:DoRightClick()
             return
 
         end
 
         if code ~= MOUSE_LEFT then return end
 
-        self:SetState( self.STATE_FLASH )
-        surface.PlaySound( "common/wpn_select.wav" )
+        self:ShowPress()
 
         self._dragging = true
         self:MouseCapture( true ) -- so a drag that leaves the row still ends here
@@ -454,8 +379,8 @@ local function makeSliderRow( def, layout )
 end
 
 
-local function makeCheckRow( def, layout )
-    local row, cvarRef = makeRow( def, layout )
+local function makeCheckRow( parent, def )
+    local row, cvarRef = makeRow( parent, def )
 
     function row:UpdateFromCvar()
         local on   = cvarRef:GetBool()
@@ -466,22 +391,12 @@ local function makeCheckRow( def, layout )
 
         end
 
-        self._valueText = text
+        self:SetValue( text )
         self:SetContentColor( on and "happy" or "text" )
 
     end
 
-    function row:OnMousePressed( code )
-        if code == MOUSE_RIGHT then
-            self:ResetToDefault()
-            return
-
-        end
-
-        if code ~= MOUSE_LEFT then return end
-
-        self:SetState( self.STATE_FLASH )
-        surface.PlaySound( "common/wpn_select.wav" )
+    function row:DoClick()
         RunConsoleCommand( def.cvar, cvarRef:GetBool() and "0" or "1" )
 
     end
@@ -493,39 +408,32 @@ local function makeCheckRow( def, layout )
 end
 
 
-local function makeHeaderRow( name )
-    local heading = vgui.Create( "glee_heading" )
-    heading:SetFont( HEADER_FONT )
-    heading:SetText( name )
-
-    return heading
-
-end
-
-
 local function buildSettingsMenu()
-    local layout = measureLayout()
-
-    local frameH = math.min( glee_sizeScaled( nil, FRAME_H_1080P ), ScrH() * 0.9 )
-
     local frame = vgui.Create( "glee_frame" )
-    terminator_Extras.glee_SetPanelStyle( frame, "hl2" )
     terminator_Extras.glee_SetPanelScale( frame, "fixed" )
-    frame:SetSize( layout.contentW + layout.pad * 2, frameH )
-    frame:Center()
+
+    local style = frame:Style()
+    local pad   = style:Metric( "blockPadding" )
+    local gap   = style:Metric( "laneSpacing" )
 
     local scroll = vgui.Create( "glee_scrollpanel", frame )
     scroll:Dock( FILL )
 
-    local function addToList( panel, topGap )
-        scroll:Add( panel )
+    -- the right margin keeps rows off the scroll bar
+    local function dockIntoList( panel, topGap )
         panel:Dock( TOP )
-        panel:DockMargin( 0, topGap or 0, layout.pad, layout.gap )
+        panel:DockMargin( 0, topGap or 0, pad, gap )
 
     end
 
+    -- only a slider shares its row with a bar, so only sliders line their labels up
+    local sliderColumn = {}
+
     for catIndex, cat in ipairs( settingsCategories ) do
-        addToList( makeHeaderRow( cat.name ), catIndex > 1 and layout.gap * 3 or nil )
+        local heading = vgui.Create( "glee_heading", scroll )
+        heading:SetFont( HEADER_FONT )
+        heading:SetText( cat.name )
+        dockIntoList( heading, catIndex > 1 and gap * 3 or nil )
 
         for _, def in ipairs( cat.items ) do
             if not GetConVar( def.cvar ) then
@@ -535,14 +443,17 @@ local function buildSettingsMenu()
                 continue
 
             elseif def.type == "slider" then
-                addToList( makeSliderRow( def, layout ) )
+                dockIntoList( makeSliderRow( scroll, def, sliderColumn ) )
 
             elseif def.type == "check" then
-                addToList( makeCheckRow( def, layout ) )
+                dockIntoList( makeCheckRow( scroll, def ) )
 
             end
         end
     end
+
+    frame:SizeToContents( math.min( style:Scaled( FRAME_MAX_H_1080P ), ScrH() * 0.9 ) )
+    frame:Center()
 
     terminator_Extras.easyClosePanel( frame )
     LocalPlayer():EmitSound( "physics/wood/wood_crate_impact_soft3.wav", 50, 200, 0.45 )
@@ -550,7 +461,6 @@ local function buildSettingsMenu()
     return frame
 
 end
-
 
 concommand.Add( "glee_settings_open", function()
     local newFrame = buildSettingsMenu()
@@ -578,7 +488,7 @@ function GAMEMODE:OpenSettingsMenu()
 
 end
 
-local width, height = glee_sizeScaled( 720, FRAME_H_1080P )
+local width, height = glee_sizeScaled( 720, FRAME_MAX_H_1080P )
 list.Set( "DesktopWindows", "HuntersGlee_Settings", {
     title = "Glee Settings",
     icon = "icon16/wrench.png",

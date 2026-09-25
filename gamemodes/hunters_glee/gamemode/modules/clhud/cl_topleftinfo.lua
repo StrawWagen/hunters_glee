@@ -429,7 +429,7 @@ local hudEntries = {
         key             = "roundInfo",
         font            = "mediumLarge",
         flashDuration   = 0.4,
-        fadeSpeed       = 0.15,
+        fadeSpeed       = 9, -- alpha lost per second, out of 255
         fadeStartDelay  = 6,
         think           = thinkRoundInfo,
     },
@@ -437,7 +437,7 @@ local hudEntries = {
         key            = "score",
         panelClass     = "glee_countbox",
         flashDuration  = 0.15,
-        fadeSpeed      = 0.4,
+        fadeSpeed      = 24,
         fadeStartDelay = 4,
         setup = function( box )
             box:SetLabel( "Score: " )
@@ -453,7 +453,7 @@ local hudEntries = {
         key            = "skulls",
         panelClass     = "glee_countbox",
         flashDuration  = 0.15,
-        fadeSpeed      = 0.3,
+        fadeSpeed      = 18,
         fadeStartDelay = 6,
         setup = function( box )
             box:SetLabel( "Skulls: " )

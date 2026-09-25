@@ -54,4 +54,18 @@ end
 
 PANEL.OnHudStyleChanged = PANEL.SizeBar
 
+-- What's scrolled over, with the bar beside it. Rows added to it land in the canvas
+PANEL.GetContentWidth = function( self )
+    local contentW = terminator_Extras.glee_DockedContentSize( self:GetCanvas() )
+    return contentW + self:GetVBar():GetWide()
+
+end
+
+-- The whole list, however much of it fits
+PANEL.GetContentHeight = function( self )
+    local _, contentH = terminator_Extras.glee_DockedContentSize( self:GetCanvas() )
+    return contentH
+
+end
+
 vgui.Register( "glee_scrollpanel", PANEL, "DScrollPanel" )

@@ -9,9 +9,9 @@
     paints nothing itself; whatever frame holds it draws the background behind it.
     The "you are evil" throb is those boxes' own URGENT state.
 
-    Nothing here sizes itself. The frame is a fixed size, this fills it, and the
-    description fills whatever the cluster leaves behind. Sizes only ever flow
-    inwards, which is the direction VGUI already works in.
+    It picks its own width, and its height follows from that width, so a glee_frame's
+    SizeToContents fits it. Inside, sizes only ever flow inwards, which is the direction
+    VGUI already works in: the description fills whatever the cluster leaves behind.
 
     Dock tree:
         self                  Dock FILL, DockPadding( pad )
@@ -25,10 +25,12 @@
     It reads LocalPlayer()'s guilt itself, so callers configure nothing:
         local checker = vgui.Create( "glee_guiltchecker", frame )
         checker:Dock( FILL )
+        frame:SizeToContents()
 ]]
 
 local skullMat = Material( "vgui/hud/deadshopicon.png", "smooth noclamp" )
 
+local WIDTH_1080P      = 460
 local METER_CHUNKS     = 20
 local METER_BAR_HEIGHT = 12
 
@@ -197,9 +199,10 @@ end
 
 -- Lays the children out for a panel this wide, and returns the height they came to.
 --
--- Callers who own the frame ask this BEFORE sizing it, so the frame is always as
--- tall as the layout actually is. Nothing here may read a position, size self, or
--- touch the frame: it runs from PerformLayout too, which is before the dock pass.
+-- The frame asks this, through GetContentHeight, BEFORE setting its own height, so the
+-- frame is always as tall as the layout actually is. Nothing here may read a position,
+-- size self, or touch the frame: it runs from PerformLayout too, which is before the
+-- dock pass.
 --
 -- Sizes come from the fonts and the hud padding, both of which move with the
 -- player's ui scale, so no caller may assume a height. Assuming one is what
@@ -236,13 +239,21 @@ PANEL.PerformLayout = function( self, w, _h )
 
 end
 
--- new fonts are a new height, which the frame has to hear about just like a new tier
+PANEL.GetContentWidth = function( self )
+    return self:Style():Scaled( WIDTH_1080P )
+
+end
+
+-- at whatever width it's been docked to
+PANEL.GetContentHeight = function( self )
+    return self:LayoutForWidth( self:GetWide() )
+
+end
+
+-- the frame re-fits itself after this, once every box inside has its new font
 PANEL.OnHudStyleChanged = function( self )
     self:ApplySpacing()
     self:InvalidateLayout()
-    if not self.OnLayoutChanged then return end
-
-    self:OnLayoutChanged()
 
 end
 

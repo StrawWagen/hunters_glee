@@ -15,8 +15,8 @@
     Its height comes from its font, and is redone on every style change. Its width is
     whatever docks it, GetContentWidth is how wide it would like to be.
 
-    To line rows up into columns, give them all the widest SetLabelWidth among them, and
-    SetReservedValue the widest value any of them will print.
+    To line rows up into columns, hand them all the same table of those rows through
+    SetLabelColumn, and SetReservedValue the widest value any of them will print.
 ]]
 
 -- looked up when called, see glee_panel.lua for why not baseclass.Get
@@ -30,12 +30,11 @@ local PANEL = {}
 PANEL.Init = function( self )
     self._label         = ""
     self._value         = ""
-    self._labelWidth    = nil -- the label's own width
+    self._labelColumn   = nil
     self._reservedValue = nil
     self._middle        = nil
     self._middleMinWidth = 0
 
-    self._hoveredBackdropColor = "bgUrgent"
     self._disabledContentColor = "text"
 
     self._pressDuration = 0.12
@@ -72,9 +71,10 @@ local function textWidth( font, text )
 
 end
 
--- The label column's width. nil goes back to the label's own
-PANEL.SetLabelWidth = function( self, width )
-    self._labelWidth = width
+-- rows is a table of rows, this one included, whose labels share the widest one's width.
+-- Measured every layout, so a style change can't leave it stale
+PANEL.SetLabelColumn = function( self, rows )
+    self._labelColumn = rows
     self:InvalidateLayout()
 
 end
@@ -93,7 +93,18 @@ PANEL.SetReservedValue = function( self, text )
 end
 
 local function labelWidth( self )
-    return self._labelWidth or self:GetNaturalLabelWidth()
+    local column = self._labelColumn
+    if not column then return self:GetNaturalLabelWidth() end
+
+    local widest = 0
+    for _, row in ipairs( column ) do
+        if IsValid( row ) then
+            widest = math.max( widest, row:GetNaturalLabelWidth() )
+
+        end
+    end
+
+    return widest
 
 end
 
@@ -103,11 +114,16 @@ local function valueWidth( self )
 
 end
 
--- Puts a child between the label and value columns, sized to fill the gap
-PANEL.SetMiddle = function( self, panel, minWidth )
+-- Puts a child between the label and value columns, sized to fill the gap.
+-- minWidth1080 is how narrow the gap may get, in 1080p pixels
+PANEL.SetMiddle = function( self, panel, minWidth1080 )
     panel:SetParent( self )
     self._middle = panel
-    self._middleMinWidth = minWidth or 0
+    self._middleMinWidth = minWidth1080 or 0
+    panel.TestHover = function( _self, _x, _y ) -- let clicks passthru the middle
+        return false
+
+    end
     self:InvalidateLayout()
 
 end
@@ -130,7 +146,7 @@ PANEL.GetContentWidth = function( self )
 
     local between = style:Metric( "laneSpacing" )
     if self._middle then
-        between = self._middleMinWidth + pad * 2
+        between = style:Scaled( self._middleMinWidth ) + pad * 2
 
     end
 
@@ -154,12 +170,6 @@ end
 
 -- Interaction ---------------------------------------------------------------
 
--- A role or a Color, for the backdrop while hovered or pressed
-PANEL.SetHoveredBackdropColor = function( self, color )
-    self._hoveredBackdropColor = color
-
-end
-
 -- A role or a Color, for the text while disabled
 PANEL.SetDisabledContentColor = function( self, color )
     self._disabledContentColor = color
@@ -173,10 +183,14 @@ end
 PANEL.DoRightClick = function( _self )
 end
 
--- The press flash and sound. For an override of OnMousePressed that still wants to feel pressed
-PANEL.ShowPress = function( self, soundSet, pitch )
+PANEL.AdditionalThink = function( _self )
+end
+
+-- The press flash and sound. For an override of OnMousePressed that still wants to feel
+-- pressed. soundSet defaults to press, pitch to 100, volume to 1
+PANEL.ShowPress = function( self, soundSet, pitch, volume )
     self._pressedUntil = CurTime() + self._pressDuration
-    self:Style():PlaySound( soundSet or "press", pitch or 100, nil, 1 )
+    self:Style():PlaySound( soundSet or "press", pitch or 100, nil, volume or 1 )
 
 end
 
@@ -193,11 +207,7 @@ PANEL.OnMousePressed = function( self, mouseCode )
     end
 end
 
-PANEL.Think = function( self )
-    local hovered = self:IsHovered()
-    if hovered == self._wasHovered then return end
-
-    self._wasHovered = hovered
+local function playHoverSound( self, hovered )
     if self:GetDisabled() then return end
 
     local pitch = 80
@@ -206,6 +216,18 @@ PANEL.Think = function( self )
 
     end
     self:Style():PlaySound( "switch", pitch, nil, 0.14, 60 )
+
+end
+
+PANEL.Think = function( self )
+    local hovered = self:IsHovered()
+    if hovered ~= self._wasHovered then
+        self._wasHovered = hovered
+        playHoverSound( self, hovered )
+
+    end
+
+    self:AdditionalThink()
 
 end
 
@@ -220,14 +242,6 @@ PANEL.GetVisualState = function( self )
     if self:IsHovered() then return "hovered" end
 
     return "idle"
-
-end
-
-PANEL.GetBackdropColor = function( self )
-    local state = self:GetVisualState()
-    if state == "hovered" or state == "pressed" then return self._hoveredBackdropColor end
-
-    return baseClass().GetBackdropColor( self )
 
 end
 

@@ -214,6 +214,9 @@ another new player experience revamp -- done
 
 -- add hook that can block the starting of a next wave of enemies -- done
 -- use it in tutorial mode, wait for all players to stop moving, to spawn next wave -- done 
+-- if new player kills other new player, no 10d of guilt -- done
+-- decrease lvl of loudest panic scream -- done
+-- remove nailer from tutorial, replace with what -- done, grenades
 
 
 -- make radio a purchasable item, moving all global/prox chat stuff to settings menu
@@ -575,14 +578,12 @@ automatically goes in help menu
 goes in a glee rebinding menu? 
 
 -- message when trying to control a bot already being controlled
--- if new player kills other new player, no 10d of guilt
 -- clown feet
 -- broken arms
 -- fists, cannot use guns tho
 
 -- child of light multiplayer
 -- field test mechanic removal with new miseries
--- decrease lvl of loudest panic scream
 -- gm_aftermath_thelast optimized navmesh?
 
 -- gamemode easy setup collection restyle
@@ -604,7 +605,7 @@ goes in a glee rebinding menu?
 -- tried breaking crates/boxes to find items
 
 -- first player experience is rather slow
--- SPEEDUP IF KILLING SKELETONS WITH VERY LITTLE DAMAGE
+-- SPEEDUP IF KILLING SKELETONS WITH VERY LITTLE DAMAGE TAKEN
 
 -- did not notice one has a skull
 -- he has anticipation, something harder is coming
@@ -614,7 +615,6 @@ goes in a glee rebinding menu?
 -- difficulty spike with tutorial boss
 
 -- billion radio bug
--- remove nailer from tutorial, replace with what
 -- control enemies, somehow tell people they can do that when escaped!!!!
 
 -- seeks them out after dying one round

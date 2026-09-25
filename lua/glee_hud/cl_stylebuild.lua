@@ -18,7 +18,7 @@
 --]]-------------------------------------
 
 local styles = terminator_Extras.glee_HudStyles
-local styleBase = terminator_Extras.glee_StyleBase
+local rootName = terminator_Extras.glee_RootStyleName
 
 -- styleName -> scaleName -> built style. Emptied and refilled by every build, never replaced
 terminator_Extras.glee_BuiltStyles = terminator_Extras.glee_BuiltStyles or {}
@@ -75,8 +75,9 @@ local function layerOver( built, fields )
     end
 end
 
--- styleBase first, styleName last
+-- The root first, styleName last. A style naming no parent has the root's
 local function inheritanceChain( styleName )
+    local root = styles[rootName]
     local chain = {}
     local seen = {}
     local name = styleName
@@ -96,11 +97,20 @@ local function inheritanceChain( styleName )
 
         seen[name] = true
         table.insert( chain, 1, style )
+
         name = style.inherits
+        if not name and style ~= root then
+            name = rootName
+
+        end
+    end
+
+    -- a broken chain still gets every field, from the root
+    if chain[1] ~= root then
+        table.insert( chain, 1, root )
 
     end
 
-    table.insert( chain, 1, styleBase )
     return chain
 
 end
@@ -188,18 +198,25 @@ local function buildStyle( styleName, scaleName, scale )
     end
 
     local highContrast = highContrastVar:GetBool()
+    local chain = inheritanceChain( styleName )
     local built = {}
 
-    for _, style in ipairs( inheritanceChain( styleName ) ) do
+    for _, style in ipairs( chain ) do
         layerOver( built, style )
 
         if style.scaled then
             layerOver( built, style.scaled( px ) )
 
         end
-        if highContrast and style.highContrast then
-            layerOver( built, style.highContrast )
+    end
 
+    -- after the whole chain, so no style's normal look can undo a parent's high contrast
+    if highContrast then
+        for _, style in ipairs( chain ) do
+            if style.highContrast then
+                layerOver( built, style.highContrast )
+
+            end
         end
     end
 

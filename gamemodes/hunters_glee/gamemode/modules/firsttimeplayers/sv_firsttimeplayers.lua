@@ -41,6 +41,7 @@ GAMEMODE:RegisterStatusEffect( "spawn_protection",
         owner:GodDisable()
         owner:SetCollisionGroup( owner.glee_sheltering_normalCollisionGroup or COLLISION_GROUP_PLAYER )
         owner:Fire( "alpha", 255, 0 )
+        owner.glee_importantSpawnProtection = nil
 
     end
 )
@@ -48,7 +49,11 @@ GAMEMODE:RegisterStatusEffect( "spawn_protection",
 local function shelterPly( ply )
     if ply:IsBot() then return end
 
-    ply:GiveStatusEffect( "spawn_protection" )
+    if ply:Health() > 0 then
+        ply:GiveStatusEffect( "spawn_protection" )
+        ply.glee_importantSpawnProtection = true
+
+    end
 
     local wait = 2
     wait = wait + ply:Ping() / 50
@@ -68,7 +73,10 @@ local function shelterPly( ply )
                math.abs( math.AngleDifference( currAng.y, startingAng.y ) ) < 5 and
                math.abs( math.AngleDifference( currAng.r, startingAng.r ) ) < 5 then return end
 
-            ply:RemoveStatusEffect( "spawn_protection" )
+            if ply:Health() > 0 then
+                ply:RemoveStatusEffect( "spawn_protection" )
+
+            end
 
             timer.Remove( timerName )
             gleetings( ply )
@@ -86,21 +94,18 @@ local function tutorialize( ply, tutorialType )
     asked[ply] = true
     if not alreadyDone[ply:SteamID()] then -- NEVER give god/notarg more than once per session
         alreadyDone[ply:SteamID()] = true
-        if tutorialType == "ghostly" then
-            if ply:Health() > 0 then
-                ply:KillSilent()
-
-            end
-        else
-            shelterPly( ply )
+        if tutorialType == "ghostly" and ply:Health() > 0 then
+            ply:KillSilent()
 
         end
+        shelterPly( ply )
+
     end
     net.Start( "glee_dothefirsttimemessage" )
         net.WriteString( tutorialType )
     net.Send( ply )
 
-    ply.glee_IsFirstTimePlayer = true
+    ply.glee_isFirstTimePlayer = true
 
 end
 
@@ -134,12 +139,12 @@ local function isEducated( ply )
 end
 
 function GAMEMODE:IsFirstTimePlayer( ply )
-    return ply.glee_IsFirstTimePlayer
+    return ply.glee_isFirstTimePlayer
 
 end
 
 -- Half or more of the session is still being tutorialised, so the round can't be won and
--- hunters shouldn't spawn. Recounted every think on purpose, there's no latch to get stuck.
+-- hunters shouldn't spawn.
 -- Only counts players we've actually sent the tutorial to, isEducated alone is false for
 -- anyone still connecting and they'd freeze the round just by loading in.
 function GAMEMODE:TutorialIsHoldingTheRound( players )
@@ -148,8 +153,8 @@ function GAMEMODE:TutorialIsHoldingTheRound( players )
     local inTutorial = 0
 
     for _, ply in ipairs( players ) do
-        if not ply.glee_IsFirstTimePlayer then continue end
-        if isEducated( ply ) then continue end
+        if not ply.glee_isFirstTimePlayer then continue end
+        if not ply.glee_importantSpawnProtection and isEducated( ply ) then continue end
 
         inTutorial = inTutorial + 1
 

@@ -429,8 +429,9 @@ function GM:Think()
 
         -- sheltered players aren't huntable, so a lobby full of them reads as nobody alive.
         -- the tutorial has to block the win outright or the round ends under them
-        local win = nobodyAlive and not specificallyWaiting and not tutorialHolding
+        local win = nobodyAlive and not tutorialHolding
         win = win or GAMEMODE.roundExtraData.forcedRoundEnd
+        win = win and not specificallyWaiting
 
         if win then
             self:roundEnd()

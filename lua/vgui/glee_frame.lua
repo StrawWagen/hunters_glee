@@ -13,8 +13,13 @@
     moment it runs, so a caller that assigns frame.Think afterwards silently replaces the
     wrapper and loses click-off-to-close. Call it after your own Think, never before.
 
+    Build its contents docked inside it, then let it size itself around them. It sizes
+    itself again after every style change, once its contents have caught up.
+
         local frame = vgui.Create( "glee_frame" )
-        frame:SetSize( w, h )
+        local row = vgui.Create( "glee_row", frame )
+        row:Dock( TOP )
+        frame:SizeToContents()
         frame:Center()
         terminator_Extras.easyClosePanel( frame )
 ]]
@@ -29,8 +34,8 @@ PANEL.Init = function( self )
     self:SetDraggable( false )
     self:MakePopup()
 
-    self._backdropColor = "bgDark"
-    self._padContents   = true
+    self._backdrop    = "bgDark"
+    self._padContents = true
 
     self:ApplyPadding()
 
@@ -62,8 +67,47 @@ end
 
 PANEL.OnHudStyleChanged = PANEL.ApplyPadding
 
+--[[---------------------------------------------------------
+    frame:SizeToContents
+    As wide as its widest docked child wants, then as tall as they stack at that width.
+    Keeps its centre where it was, so call Center after the first one.
+    @param maxHeight: Stops growing here, for contents in a scroll panel. Optional.
+    @return: None
+--]]---------------------------------------------------------
+PANEL.SizeToContents = function( self, maxHeight )
+    self._sizesToContents  = true
+    self._maxContentHeight = maxHeight
+
+    local centerX, centerY = self:GetX() + self:GetWide() * 0.5, self:GetY() + self:GetTall() * 0.5
+    local left, top, right, bottom = self:GetDockPadding()
+
+    local contentW = terminator_Extras.glee_DockedContentSize( self )
+    self:SetWide( contentW + left + right )
+
+    -- docks the children to that width now, since what they wrap to depends on it
+    self:InvalidateLayout( true )
+
+    local _, contentH = terminator_Extras.glee_DockedContentSize( self )
+    local height = contentH + top + bottom
+    if maxHeight then
+        height = math.min( height, maxHeight )
+
+    end
+
+    self:SetTall( height )
+    self:SetPos( centerX - self:GetWide() * 0.5, centerY - height * 0.5 )
+
+end
+
+PANEL.AfterHudStyleChanged = function( self )
+    if not self._sizesToContents then return end
+
+    self:SizeToContents( self._maxContentHeight )
+
+end
+
 PANEL.Paint = function( self, w, h )
-    self:Style():Background( 0, 0, w, h, self._backdropColor, nil, 1, "idle", self )
+    self:Style():Background( 0, 0, w, h, self._backdrop, nil, 1, "idle", self )
 
 end
 

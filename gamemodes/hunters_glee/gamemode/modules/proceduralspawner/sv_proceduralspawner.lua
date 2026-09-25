@@ -295,8 +295,8 @@ hook.Add( "glee_sv_validgmthink_not_over", "glee_proceduralspawner", function()
             if currJob.attributeWhitelist and not area:HasAttributes( currJob.attributeWhitelist ) then continue end
             if currJob.attributeBlacklist and area:HasAttributes( currJob.attributeBlacklist ) then continue end
 
-            if currJob.extraFlagsWhitelist and not GAMEMODE:HasExtraFlags( area, currJob.extraFlagsWhitelist ) then continue end
-            if currJob.extraFlagsBlacklist and GAMEMODE:HasExtraFlags( area, currJob.extraFlagsBlacklist ) then continue end
+            if currJob.extraFlagsWhitelist and not GAMEMODE:HasAnyExtraFlag( area, currJob.extraFlagsWhitelist ) then continue end
+            if currJob.extraFlagsBlacklist and GAMEMODE:HasAnyExtraFlag( area, currJob.extraFlagsBlacklist ) then continue end
 
             if filteringFunc( currJob, area ) then
                 local toCheck = posDerivingFunc( currJob, area )

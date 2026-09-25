@@ -197,14 +197,35 @@ function styleHandle:Draw( text, fontRole, x, y, colorRole, doCenter )
 
 end
 
+local stateSuffixes = {
+    idle     = "",
+    hovered  = "Hovered",
+    pressed  = "Pressed",
+    chosen   = "Chosen",
+    disabled = "Disabled",
+}
+
+--[[---------------------------------------------------------
+    handle:BackdropColor
+    The colour a backdrop family draws in for a state, the family's role with the state
+    on the end: bg idle is bg, bg hovered is bgHovered. See hl2's colors.
+    @param family: "bg" or "bgDark". A Color passes through, whatever the state.
+    @param state: "idle", "hovered", "pressed", "chosen" or "disabled". Defaults to idle.
+    @return: The Color.
+--]]---------------------------------------------------------
+function styleHandle:BackdropColor( family, state )
+    if not isstring( family ) then return family end
+
+    return self:Color( family .. stateSuffixes[state or "idle"] )
+
+end
+
 --[[---------------------------------------------------------
     handle:Background
-    Draws a panel's backdrop the way this style does. A blot, a box, a torn strip.
-    A box style draws the colour and ignores the state, a shape style mostly the opposite,
-    so a caller showing a hover passes both.
+    Draws a panel's backdrop the way this style does. A box, a blot, a torn strip, all in
+    the colour BackdropColor gives for the family and state.
     @param x, y, w, h: The panel's bounds.
-    @param colorRole: A colour role, or a Color. Unfaded, fade is applied to it here.
-        Defaults to bg.
+    @param family: "bg" or "bgDark", or a Color. Unfaded, fade is applied here. Defaults to bg.
     @param cornerRadius: Defaults to the style's boxCornerRadius metric.
     @param fade: 0 to 1. Defaults to 1.
     @param state: "idle", "hovered", "pressed", "chosen" or "disabled". Defaults to idle.
@@ -212,15 +233,14 @@ end
         A shape that has to hold still between frames, like a torn strip, is kept on it.
     @return: None
 --]]---------------------------------------------------------
-function styleHandle:Background( x, y, w, h, colorRole, cornerRadius, fade, state, cache )
+function styleHandle:Background( x, y, w, h, family, cornerRadius, fade, state, cache )
     local style = self:Settings()
 
     style.background(
         style, x, y, w, h,
-        self:Color( colorRole or "bg" ),
+        self:BackdropColor( family or "bg", state ),
         cornerRadius or style.metrics.boxCornerRadius,
         fade or 1,
-        state or "idle",
         cache
     )
 

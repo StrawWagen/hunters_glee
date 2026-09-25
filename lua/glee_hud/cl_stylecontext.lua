@@ -14,7 +14,8 @@
     Whenever what a panel draws in may have changed, every panel that defines
     OnHudStyleChanged has it called, parents before children. That's a rebuild, an
     alias like generic starting to resolve differently, a set on it or a parent, or a
-    panel calling glee_NotifyPanelStyle on itself.
+    panel calling glee_NotifyPanelStyle on itself. AfterHudStyleChanged runs once a
+    panel's children have all had theirs, for a parent sizing itself around them.
 --]]-------------------------------------
 
 local defaultStyle = "generic"
@@ -68,6 +69,11 @@ local function notifyTree( panel )
 
     for _, child in ipairs( panel:GetChildren() ) do
         notifyTree( child )
+
+    end
+
+    if panel.AfterHudStyleChanged then
+        panel:AfterHudStyleChanged()
 
     end
 end

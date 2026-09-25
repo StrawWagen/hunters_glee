@@ -46,4 +46,10 @@ end
 
 PANEL.OnHudStyleChanged = PANEL.SizeToBox
 
+-- the row stretches to whatever it's docked in, the box is what it needs
+PANEL.GetContentWidth = function( self )
+    return self._box:GetContentWidth()
+
+end
+
 vgui.Register( "glee_heading", PANEL, "glee_panel" )

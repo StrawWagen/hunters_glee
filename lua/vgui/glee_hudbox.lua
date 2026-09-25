@@ -8,14 +8,14 @@
         HIDDEN (0) - invisible; applied immediately
         FADING (1) - alpha decreasing toward zero, then transitions to HIDDEN
         NORMAL (2) - immediately visible at the color's own alpha; never fades in
-        FLASH  (3) - edge-triggered; box shows flashBoxColor at full brightness,
+        FLASH  (3) - edge-triggered; box draws chosen at full brightness,
                      auto-returns to NORMAL after flashDuration seconds; cannot be
                      interrupted by SetState until the flash completes
-        URGENT (4) - level-triggered; box alternates between normalBoxColor and
-                     urgentBoxColor at full brightness
+        URGENT (4) - level-triggered; box alternates between its idle and chosen
+                     look at full brightness
 
-    Every colour is a role, and defaults to one, so a caller only names what it wants
-    different. The flash content colour defaults to the flash role.
+    The box's colours come from its backdrop family and state, see handle:BackdropColor.
+    The flash content colour defaults to the flash role.
 
     The state alpha scales both the box and the content multiplicatively, so:
       - in NORMAL/FADING: effective alpha  = color.a * stateAlpha / 255
@@ -26,7 +26,6 @@
         local box = vgui.Create( "glee_hudbox", parent )
         box:SetIconSize( 48 )
         box:SetMaterial( mat )
-        box:SetNormalBoxColor( "bg" )
 
     Per-frame (in a hook):
         box:SetState( box.STATE_NORMAL )  -- instruct desired state each frame
@@ -70,12 +69,10 @@ PANEL.Init = function( self )
     self._urgentBlink     = false
 
     self._doFadeDelays   = true
-    self._fadeSpeed      = 2
+    self._fadeSpeed      = 120
     self._fadeStartDelay = 0
     self._fadeStartTime  = 0
 
-    self._flashBoxColor     = "bgUrgent"
-    self._urgentBoxColor    = "bgUrgent"
     self._flashContentColor = "flash"
 
 end
@@ -119,24 +116,6 @@ PANEL.GetStateAlpha = function( self )
 
 end
 
--- Box colour while in NORMAL or FADING state, and non-blink frames of URGENT. A role or a Color
-PANEL.SetNormalBoxColor = function( self, color )
-    self:SetBackdropColor( color )
-
-end
-
--- Box colour while in FLASH state. A role or a Color
-PANEL.SetFlashBoxColor = function( self, color )
-    self._flashBoxColor = color
-
-end
-
--- Box colour on blink frames while in URGENT state. A role or a Color
-PANEL.SetUrgentBoxColor = function( self, color )
-    self._urgentBoxColor = color
-
-end
-
 -- Content colour while in FLASH state. A role or a Color
 PANEL.SetFlashContentColor = function( self, color )
     self._flashContentColor = color
@@ -154,7 +133,7 @@ PANEL.SetDoFadeDelays = function( self, doDelays )
 
 end
 
--- Alpha units lost per frame while in FADING state.
+-- Alpha lost per second while in FADING state, out of 255.
 PANEL.SetFadeSpeed = function( self, speed )
     self._fadeSpeed = speed
 
@@ -211,7 +190,7 @@ PANEL.Think = function( self )
             self._stateAlpha = 255
 
         else
-            self._stateAlpha = math.max( 0, self._stateAlpha - self._fadeSpeed )
+            self._stateAlpha = math.max( 0, self._stateAlpha - self._fadeSpeed * FrameTime() )
 
             if self._stateAlpha <= 0 then
                 self._state        = HIDDEN
@@ -251,14 +230,6 @@ PANEL.GetVisualState = function( self )
     if self._state == FLASH or isBlinking( self ) then return "chosen" end
 
     return baseClass().GetVisualState( self )
-
-end
-
-PANEL.GetBackdropColor = function( self )
-    if self._state == FLASH then return self._flashBoxColor end
-    if isBlinking( self ) then return self._urgentBoxColor end
-
-    return baseClass().GetBackdropColor( self )
 
 end
 

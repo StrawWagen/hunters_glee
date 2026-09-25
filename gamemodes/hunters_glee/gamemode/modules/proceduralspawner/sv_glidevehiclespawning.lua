@@ -149,17 +149,17 @@ hook.Add( "glee_navpatcher_finish", "glee_spawnaglideifwewant", function()
         local livePly = GAMEMODE:anAlivePlayer()
         if not IsValid( livePly ) then return end
 
+        local boatsOnly = GAMEMODE.glideSpawner_SpawnGlideBoatsOnly
         local classWeWillSpawn
-        if GAMEMODE.glideSpawner_SpawnGlideBoatsOnly then
-            for _, class in RandomPairs( glideClasses ) do
-                local vType = glideVehicleTypes[class]
-                if vType ~= vTypes.BOAT then continue end
-                classWeWillSpawn = class
-                break
+        for _, class in RandomPairs( glideClasses ) do
+            local vType = glideVehicleTypes[class]
+            if boatsOnly and vType ~= vTypes.BOAT then continue end
 
-            end
-        else
-            classWeWillSpawn = table.Random( glideClasses )
+            local extraFlagsRequired = extraFlagsForVehicleTypes[vType]
+            if extraFlagsRequired and not GAMEMODE:MapHasEFlags( extraFlagsRequired ) then continue end
+
+            classWeWillSpawn = class
+            break
 
         end
         if not classWeWillSpawn then return end -- lol this is technically possible

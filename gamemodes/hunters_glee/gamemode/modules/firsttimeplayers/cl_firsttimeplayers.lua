@@ -14,25 +14,29 @@ local hasSeenMessage = CreateClientConVar( "cl_huntersglee_firsttimetutorial", 0
 local spawnsetCvar = GetConVar( "huntersglee_spawnset" )
 
 local stagesTutorialMisery = {
-    [1] = "Welcome.\nTo the hunt!",
-    [2] = "You're here to...\nDIE?",
-    [3] = "You're here to bring, to FEEL,\noverwhelming glee?",
-    [4] = "It's kill or be killed in the HUNT",
-    [5] = "Don't worry though,\ndeath is not the end...",
-    [6] = "Give THEM a gleeful hunt,\nand be careful!",
-    [7] = "They're already on your tail...",
+    "Welcome.\nTo the hunt!",
+    "This is your first hunt,\nis it not?",
+    "We have chosen, this MISERY for you.",
+    "You must hunt the Infernal Horde...",
+    "Extremely weak enemies, for YOU to HUNT.",
+    "Weaklings to prepare you.",
+    "For the true, gleeful hunts,\nthat await you.",
+    "Even to these weaklings...\nYou will... still...",
+    "DIE.",
+    "But don't worry.\nDeath is not the end.",
+    "Let the hunt begin.",
 }
 
 local stagesTutorialMiseryMulti = {
-    [1] = "Welcome.\nTo the hunt!",
-    [2] = "You're here to...\nDIE?",
-    [3] = "You are here to HAUNT.",
-    [4] = "You're here to bring, to FEEL,\noverwhelming glee?",
-    [5] = "It's kill or be killed in the HUNT",
-    [6] = "Don't worry though,\ndeath is not the end...",
-    [7] = "Your SOUL will live on.",
-    [8] = "Give THEM a gleeful hunt,\nand be careful!",
-    [9] = "They're already on your tail...",
+    "Welcome.\nTo the hunt!",
+    "This is your first hunt,\nis it not?",
+    "We have chosen, this MISERY for you.",
+    "You must hunt the Infernal Horde...",
+    "Extremely weak enemies, for YOU to HUNT.",
+    "You will still, DIE.",
+    "But don't worry, that's the best part.",
+    "Because then,\nthe HAUNTING will begin",
+    "Let the hunt begin.",
 }
 
 local stagesSingleplayer = {

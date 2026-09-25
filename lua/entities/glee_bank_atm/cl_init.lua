@@ -42,6 +42,9 @@ end
 
 --[[---------------------------------------------------------
     GUI builder
+
+    A glee_frame sizing itself around docked glee panels, in whatever style the local
+    player's state calls for, at the gui scale.
 -----------------------------------------------------------]]
 
 local function openAtmGui( atm )
@@ -52,52 +55,33 @@ local function openAtmGui( atm )
     local ply = LocalPlayer()
     if not IsValid( ply ) then return end
 
-    local hl2         = terminator_Extras.glee_Style( "hl2" )
-    local pad         = hl2:Metric( "blockPadding" )
-    local gap         = hl2:Metric( "laneSpacing" )
-    local switchSound = GAMEMODE.shopStandards.switchSound
-
     local transactionMax     = atm.TransactionAmount
     local deadTransactionMax = atm.DeadTransactionAmount
 
     local owner   = atm:GetAtmOwner()
     local isOwner = IsValid( owner ) and owner == ply
 
-    --[[---------------------------------------------------------
-        Measure font for layout math
-    -----------------------------------------------------------]]
-    -- the same role the rows below draw in, so rowH is measured in the font they use
-    surface.SetFont( hl2:Font( "medium" ) )
-    local _, fontH = surface.GetTextSize( "A" )
-    local rowH = fontH + pad * 2   -- matches glee_hudbox AutoSize height formula
+    local frame = vgui.Create( "glee_frame" )
+    local gap   = frame:Style():Metric( "laneSpacing" )
 
-    local function textW( str )
-        return ( surface.GetTextSize( str ) )
+    local function dockTop( panel, topGap )
+        panel:Dock( TOP )
+        if topGap then panel:DockMargin( 0, topGap, 0, 0 ) end
 
     end
 
-    --[[---------------------------------------------------------
-        Shared glee_hudbox setup
-    -----------------------------------------------------------]]
-    local function baseHudBox()
-        local box = vgui.Create( "glee_hudbox" )
-        box:SetFlashDuration( 0.12 )
-        box:SetFlashContentColor( hl2:Color( "happy" ):Copy() ) -- the box defaults this to red
-        box:SetDoFadeDelays( false )
-        return box
-
-    end
-
-    local bankHeadingRow = vgui.Create( "glee_heading" )
-    bankHeadingRow:SetText( "Bank:" )
+    local bankHeading = vgui.Create( "glee_heading", frame )
+    bankHeading:SetText( "Bank:" )
+    dockTop( bankHeading )
 
     --[[---------------------------------------------------------
         Bank balance count-up (number-only row, full-width)
     -----------------------------------------------------------]]
-    local bankBox = vgui.Create( "glee_countbox" )
+    local bankBox = vgui.Create( "glee_countbox", frame )
     bankBox:SetDoFadeDelays( false )
     bankBox:SetLabel( "" )        -- "Bank:" is the heading row above
     bankBox:SetNilLabel( "none" )
+    bankBox:SetReservedText( "99999999 -1000" )
     bankBox:SetCountFunc( function( p )
         if not IsValid( p ) then return nil end
         if not p:GetNW2Bool( "Glee_HasBankAccount", false ) then return nil end
@@ -109,69 +93,24 @@ local function openAtmGui( atm )
     bankBox:SetStartingCount( startingFunds )
     bankBox:SetAutoManage( true )
     bankBox:ManageHudState( ply, CurTime(), true, false )
-    bankBox:SetTooltip( "Your account's funds" )
+    dockTop( bankBox, gap )
 
     --[[---------------------------------------------------------
-        Action row: glee_hudbox with label-left / amount-right paint
-        Uses draw.SimpleText just like glee_hudbox does — no DLabel, no DockMargin.
-        Amount is stored in row._amountText and updated by each row's AdditionalThink.
-    -----------------------------------------------------------]]
-    local function makeActionRow( labelText, onClick )
-        local row = baseHudBox()
-        row:SetMouseInputEnabled( true )
-        row:SetText( "" )   -- suppress the centered-text branch in base Paint
-        row:SetTall( rowH )
-
-        row._labelText  = labelText
-        row._amountText = ""
-        row._hoveredOld = false
-
-        local basePaint = row.Paint
-        function row:Paint( w, h )
-            basePaint( self, w, h )   -- draws background + manages alpha/flash
-            if self:GetStateAlpha() <= 0 then return end
-
-            local innerPad = self:GetTextPadding() * 2   -- matches AutoSize: pad*4 total → pad*2 each side
-            local midY     = h * 0.5
-            local dIcon    = self._drawContent           -- set by basePaint this frame
-
-            local font     = self:GetResolvedFont()
-
-            draw.SimpleText( self._labelText,  font, innerPad,     midY, dIcon, TEXT_ALIGN_LEFT,  TEXT_ALIGN_CENTER )
-            draw.SimpleText( self._amountText, font, w - innerPad, midY, dIcon, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER )
-
-        end
-
-        function row:AdditionalThink()
-            local hovered = self:IsHovered()
-            if hovered ~= self._hoveredOld then
-                local pitch = hovered and 90 or 80
-                LocalPlayer():EmitSound( switchSound, 60, pitch, 0.12 )
-                self._hoveredOld = hovered
-
-            end
-            self:SetNormalBoxColor( hl2:Color( hovered and "bgUrgent" or "bg" ) )
-            self:SetState( self.STATE_NORMAL )
-
-        end
-
-        function row:OnMousePressed( mc )
-            if mc ~= MOUSE_LEFT then return end
-            self:SetState( self.STATE_FLASH )
-            surface.PlaySound( "common/wpn_select.wav" )
-            onClick()
-
-        end
-
-        return row
-
-    end
-
-    --[[---------------------------------------------------------
-        Build action rows
+        Action rows
     -----------------------------------------------------------]]
     local nextTransactionTime = 0
     local accountPurchaseWait = 1
+
+    local function onCooldown()
+        return CurTime() < nextTransactionTime
+
+    end
+
+    local function startCooldown()
+        local cooldown = ply:Alive() and atm.TransactionCooldown or atm.TransactionCooldownDead
+        nextTransactionTime = CurTime() + cooldown
+
+    end
 
     -- Returns whether they can transact, and starts buying them an account when they
     -- can't. Neither button does anything without one, so both double as the way in.
@@ -184,118 +123,56 @@ local function openAtmGui( atm )
 
     end
 
-    local depositRow = makeActionRow( "DEPOSIT", function()
-        if CurTime() < nextTransactionTime then return end
+    local function makeActionRow( label, topGap )
+        local row = vgui.Create( "glee_row", frame )
+        row:SetLabel( label )
+        row:SetReservedValue( "1000000" )
+        dockTop( row, topGap )
+
+        return row
+
+    end
+
+    local depositRow = makeActionRow( "DEPOSIT", gap * 2 )
+
+    function depositRow:DoClick()
         if not requireAccount() then return end
 
-        local cooldown      = ply:Alive() and atm.TransactionCooldown or atm.TransactionCooldownDead
-        nextTransactionTime = CurTime() + cooldown
+        startCooldown()
         sendDeposit( atm )
-    end )
-    local withdrawRow = makeActionRow( "WITHDRAW", function()
-        if CurTime() < nextTransactionTime then return end
-        if not requireAccount() then return end
-
-        local cooldown      = ply:Alive() and atm.TransactionCooldown or atm.TransactionCooldownDead
-        nextTransactionTime = CurTime() + cooldown
-        sendWithdraw( atm )
-    end )
-    local ownerRow
-    if isOwner then
-        ownerRow = makeActionRow( "Owner's Cut", function() sendClaimOwnerCut( atm ) end )
-        ownerRow:SetTooltip( "Claim your cut before someone destroys the ATM." )
 
     end
 
-    --[[---------------------------------------------------------
-        Frame sizing
-        Action rows: label at x=pad*2, amount at x=w-pad*2, so total inner content
-        needs: textW(widestLabel) + gap + textW("1000000") + pad*4 (pad*2 each side)
-    -----------------------------------------------------------]]
-    local widestLabel = math.max(
-        textW( "DEPOSIT" ),
-        textW( "WITHDRAW" ),
-        isOwner and textW( "Owner's Cut" ) or 0
-    )
-    local actionRowMinW = widestLabel + gap + textW( "1000000" ) + pad * 4
-
-    -- Bank number row: text is centered; pad*4 gives pad*2 breathing on each side
-    local bankRowMinW = textW( "99999999 -1000" ) + pad * 4
-
-    local contentW = math.max( actionRowMinW, bankRowMinW )
-    local frameW   = contentW + pad * 2
-
-    -- bankHeading + gap + bankBox + double gap + action rows. The bank box is one medium
-    -- line, so rowH; its own height is measured loose, outside the frame's style
-    local numActionRows = isOwner and 3 or 2
-    local totalH = pad * 2
-        + rowH
-        + gap + rowH
-        + gap * 2
-        + rowH * numActionRows
-        + gap * ( numActionRows - 1 )
-
-    --[[---------------------------------------------------------
-        Frame
-    -----------------------------------------------------------]]
-    local frame = vgui.Create( "glee_frame" )
-    terminator_Extras.glee_SetPanelStyle( frame, "hl2" )
-    terminator_Extras.glee_SetPanelScale( frame, "fixed" )
-    frame:SetSize( frameW, totalH )
-    frame:Center()
-
-    function frame:Think()
-        hook.Run( "glee_cl_pleasepainttopleft_for", "score", 0.5 )
-
-    end
-
-    function frame:OnRemove()
-        if currentGui ~= self then return end
-        currentGui = nil
-
-    end
-
-    --[[---------------------------------------------------------
-        Dock panels into the frame
-    -----------------------------------------------------------]]
-    local function dockTop( panel, topGap )
-        panel:SetParent( frame )
-        panel:Dock( TOP )
-        if topGap then panel:DockMargin( 0, topGap, 0, 0 ) end
-
-    end
-
-    dockTop( bankHeadingRow )
-    dockTop( bankBox, gap )
-
-    dockTop( depositRow, gap * 2 )
-    local baseDepositThink = depositRow.AdditionalThink
     function depositRow:AdditionalThink()
-        baseDepositThink( self )
         if not IsValid( ply ) then return end
 
         local canDeposit, reason = atm:CanDeposit( ply )
         if canDeposit then
             local cap = ply:Alive() and transactionMax or deadTransactionMax
-            self._amountText = "-" .. math.min( ply:GetScore(), cap )
+            self:SetValue( "-" .. math.min( ply:GetScore(), cap ) )
             self:SetTooltip( "Deposit score." )
 
         else
-            self._amountText = ""
+            self:SetValue( "" )
             self:SetTooltip( reason )
 
         end
 
-        local isOnCooldown = CurTime() < nextTransactionTime
-        self:SetContentColor( isOnCooldown and "text" or "happy" )
-        if isOnCooldown then self:SetNormalBoxColor( hl2:Color( "bg" ) ) end
+        self:SetDisabled( onCooldown() )
 
     end
 
-    dockTop( withdrawRow, gap )
-    local baseWithdrawThink = withdrawRow.AdditionalThink
+    local withdrawRow = makeActionRow( "WITHDRAW", gap )
+
+    function withdrawRow:DoClick()
+        if not requireAccount() then return end
+
+        startCooldown()
+        sendWithdraw( atm )
+
+    end
+
     function withdrawRow:AdditionalThink()
-        baseWithdrawThink( self )
         if not IsValid( ply ) then return end
 
         local canWithdraw, reason = atm:CanWithdraw( ply )
@@ -304,41 +181,43 @@ local function openAtmGui( atm )
             local bankFunds   = ply:GetNW2Int( "Glee_BankFunds", 0 )
             local minFunds    = gleefunc_BankMinFunds()
             local withdrawAmt = math.min( cap, math.max( 0, bankFunds - minFunds ) )
-            self._amountText  = "+" .. withdrawAmt
+            self:SetValue( "+" .. withdrawAmt )
             self:SetTooltip( "Withdraw score." )
 
         else
-            self._amountText = ""
+            self:SetValue( "" )
             self:SetTooltip( reason )
 
         end
 
-        local isOnCooldown = CurTime() < nextTransactionTime
-        self:SetContentColor( isOnCooldown and "text" or "happy" )
-        if isOnCooldown then self:SetNormalBoxColor( hl2:Color( "bg" ) ) end
+        self:SetDisabled( onCooldown() )
 
     end
 
     if isOwner then
-        dockTop( ownerRow, gap )
+        local ownerRow = makeActionRow( "Owner's Cut", gap )
+        ownerRow:SetTooltip( "Claim your cut before someone destroys the ATM." )
 
-        local baseOwnerThink = ownerRow.AdditionalThink
+        function ownerRow:DoClick()
+            sendClaimOwnerCut( atm )
+
+        end
+
         function ownerRow:AdditionalThink()
-            baseOwnerThink( self )
-            local cut        = IsValid( atm ) and atm:GetOwnersCut() or 0
-            self._amountText = tostring( cut )
+            local cut = IsValid( atm ) and atm:GetOwnersCut() or 0
+            self:SetValue( tostring( cut ) )
 
         end
     end
 
+    frame:SizeToContents()
+    frame:Center()
+
     --[[---------------------------------------------------------
         Close on E / use / menu / click-outside / ATM death / distance
     -----------------------------------------------------------]]
-    terminator_Extras.easyClosePanel( frame )
-    local easyThink = frame.Think
-
     function frame:Think()
-        easyThink( self )
+        hook.Run( "glee_cl_pleasepainttopleft_for", "score", 0.5 )
 
         if not IsValid( atm ) or atm:GetState() ~= "usable" then
             self:Close()
@@ -352,6 +231,14 @@ local function openAtmGui( atm )
 
         end
     end
+
+    function frame:OnRemove()
+        if currentGui ~= self then return end
+        currentGui = nil
+
+    end
+
+    terminator_Extras.easyClosePanel( frame )
 
     currentGui = frame
     LocalPlayer().glee_AtmGui = frame

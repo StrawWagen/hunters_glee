@@ -28,6 +28,19 @@ terminator_Extras.glee_RegisterStyle( "soulthought", {
         flash   = Color( 206, 108, 90 ),
         jackpot = Color( 211, 228, 121 ),
         shadow  = Color( 0, 0, 0, 230 ),
+
+        -- what the blot comes to at its centre, see glee_HudHelpers.DrawBlot
+        bg         = Color( 6, 8, 2, 151 ),
+        bgHovered  = Color( 20, 24, 8, 174 ),
+        bgPressed  = Color( 34, 40, 14, 185 ),
+        bgChosen   = Color( 44, 60, 10, 185 ),
+        bgDisabled = Color( 6, 8, 2, 151 ),
+
+        bgDark         = Color( 6, 8, 2, 215 ),
+        bgDarkHovered  = Color( 20, 24, 8, 225 ),
+        bgDarkPressed  = Color( 34, 40, 14, 235 ),
+        bgDarkChosen   = Color( 44, 60, 10, 235 ),
+        bgDarkDisabled = Color( 6, 8, 2, 215 ),
     },
 
     scaled = function( px )
@@ -39,23 +52,19 @@ terminator_Extras.glee_RegisterStyle( "soulthought", {
                 spillY = px( 6 ),
                 insetX = px( 2 ), -- per side, per layer
                 insetY = px( 1 ),
-                -- per layer, so the centre stacks darker
-                colors = {
-                    idle = Color( 6, 8, 2, 27 ),
-                    hovered = Color( 20, 24, 8, 34 ),
-                    pressed = Color( 34, 40, 14, 38 ),
-                    chosen = Color( 44, 60, 10, 38 ),
-                },
+                -- corners round with the layer's height up to here, so a row is a soft pill
+                -- and a whole frame is a rounded box rather than an oval
+                maxCornerRadius = px( 20 ),
             },
         }
     end,
 
-    -- a smudge rather than a box, so it ignores the colour and corner radius it is handed
-    background = function( style, x, y, w, h, _color, _cornerRadius, fade, state, _cache )
+    -- a smudge rather than a box, so it ignores the corner radius it is handed
+    background = function( style, x, y, w, h, color, _cornerRadius, fade, _cache )
         local oldMultiplier = surface.GetAlphaMultiplier()
         surface.SetAlphaMultiplier( oldMultiplier * fade )
 
-        terminator_Extras.glee_HudHelpers.DrawBlot( style.blot, x, y, w, h, state )
+        terminator_Extras.glee_HudHelpers.DrawBlot( style.blot, color, x, y, w, h )
 
         surface.SetAlphaMultiplier( oldMultiplier )
 

@@ -175,11 +175,18 @@ end
 
 -- Blot ----------------------------------------------------------------------
 
+local layerColor = Color( 0, 0, 0, 0 )
+
 -- A soft dark smudge behind text. Spills past x, y, w, h, and past the panel's bounds.
--- blot is settings like the soulthought style's blot, state a key of its colors. A state
--- it has no colour for draws as idle
-function hudHelpers.DrawBlot( blot, x, y, w, h, state )
-    local color = blot.colors[state] or blot.colors.idle
+-- blot is settings like the soulthought style's blot. Its layers stack to color at the
+-- centre, so color reads the same as it would drawn as a plain box
+function hudHelpers.DrawBlot( blot, color, x, y, w, h )
+    -- the alpha that, laid down blot.layers times, comes to color's
+    local coverage = color.a / 255
+    layerColor.r = color.r
+    layerColor.g = color.g
+    layerColor.b = color.b
+    layerColor.a = 255 * ( 1 - ( 1 - coverage ) ^ ( 1 / blot.layers ) )
 
     local blotX = x - blot.spillX
     local blotY = y - blot.spillY
@@ -196,8 +203,8 @@ function hudHelpers.DrawBlot( blot, x, y, w, h, state )
 
         if layerW <= 0 or layerH <= 0 then break end
 
-        local cornerRad = math.floor( layerH / 2.5 )
-        draw.RoundedBox( cornerRad, blotX + insetX, blotY + insetY, layerW, layerH, color )
+        local cornerRad = math.min( math.floor( layerH / 2.5 ), blot.maxCornerRadius )
+        draw.RoundedBox( cornerRad, blotX + insetX, blotY + insetY, layerW, layerH, layerColor )
 
     end
 
@@ -255,17 +262,16 @@ end
 
 -- A dark strip ripped out of a page, jagged along the top and bottom, its ends torn off at a slant.
 -- The ends spill past x and x + w, and past the panel's bounds.
--- settings is like the god style's tornStrip, state a key of its colors. A state it has
--- no colour for draws as idle.
+-- settings is like the god style's tornStrip.
 -- cache is any table that lives as long as the strip, the torn shape is kept on it.
-function hudHelpers.DrawTornStrip( settings, x, y, w, h, state, cache )
+function hudHelpers.DrawTornStrip( settings, color, x, y, w, h, cache )
     local segments = math.max( math.ceil( w / settings.tearSegment ), 1 )
     local rows = math.max( math.ceil( h / settings.ripRowStep ), 1 )
     local shape = getTornShape( settings, cache, segments, rows )
 
     local wasClipping = DisableClipping( true )
     draw.NoTexture()
-    surface.SetDrawColor( settings.colors[state] or settings.colors.idle )
+    surface.SetDrawColor( color )
 
     local segmentW = w / segments
     for ind = 1, segments do

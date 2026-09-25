@@ -21,6 +21,19 @@ terminator_Extras.glee_RegisterStyle( "god", {
         chosen  = Color( 255, 200, 90 ),
         urgent  = Color( 200, 25, 5 ),
         shadow  = Color( 0, 0, 0, 255 ),
+
+        -- the torn strip. One look, so both backdrop families share it
+        bg         = Color( 10, 5, 0, 170 ),
+        bgHovered  = Color( 30, 15, 4, 200 ),
+        bgPressed  = Color( 48, 24, 6, 220 ),
+        bgChosen   = Color( 70, 34, 6, 220 ),
+        bgDisabled = Color( 10, 5, 0, 170 ),
+
+        bgDark         = Color( 10, 5, 0, 170 ),
+        bgDarkHovered  = Color( 30, 15, 4, 200 ),
+        bgDarkPressed  = Color( 48, 24, 6, 220 ),
+        bgDarkChosen   = Color( 70, 34, 6, 220 ),
+        bgDarkDisabled = Color( 10, 5, 0, 170 ),
     },
 
     metrics = {
@@ -52,12 +65,6 @@ terminator_Extras.glee_RegisterStyle( "god", {
         return {
             -- see glee_HudHelpers.DrawTornStrip
             tornStrip = {
-                colors = {
-                    idle = Color( 10, 5, 0, 170 ),
-                    hovered = Color( 30, 15, 4, 200 ),
-                    pressed = Color( 48, 24, 6, 220 ),
-                    chosen = Color( 70, 34, 6, 220 ),
-                },
                 tearSegment = px( 6 ), -- width of each jag along the top and bottom
                 tearDepth = px( 3 ),
                 ripRowStep = px( 3 ), -- height of each jag down the ripped ends
@@ -89,13 +96,13 @@ terminator_Extras.glee_RegisterStyle( "god", {
         }
     end,
 
-    -- torn paper rather than a box, so it ignores the colour and corner radius it is handed.
+    -- torn paper rather than a box, so it ignores the corner radius it is handed.
     -- Without a cache the tears reroll every frame
-    background = function( style, x, y, w, h, _color, _cornerRadius, fade, state, cache )
+    background = function( style, x, y, w, h, color, _cornerRadius, fade, cache )
         local oldMultiplier = surface.GetAlphaMultiplier()
         surface.SetAlphaMultiplier( oldMultiplier * fade )
 
-        terminator_Extras.glee_HudHelpers.DrawTornStrip( style.tornStrip, x, y, w, h, state, cache or {} )
+        terminator_Extras.glee_HudHelpers.DrawTornStrip( style.tornStrip, color, x, y, w, h, cache or {} )
 
         surface.SetAlphaMultiplier( oldMultiplier )
 

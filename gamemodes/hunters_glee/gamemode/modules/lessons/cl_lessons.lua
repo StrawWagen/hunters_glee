@@ -185,7 +185,16 @@ net.Receive( "glee_lessons", function()
     end
 end )
 
+concommand.Add( "glee_test_printlearnedlessons", function( ply )
+    local lessons = ply.glee_LearnedLessons
+    if not lessons then
+        permaPrint( "GLEE: no learned lessons table" )
+        return
 
+    end
+    PrintTable( lessons )
+
+end )
 
 hook.Add( "InitPostEntity", "glee_lessons_init", function()
     terminator_Extras.glee_hasLoadedLessons = true
