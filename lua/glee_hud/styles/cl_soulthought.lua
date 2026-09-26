@@ -30,11 +30,11 @@ terminator_Extras.glee_RegisterStyle( "soulthought", {
         shadow  = Color( 0, 0, 0, 230 ),
 
         -- what the blot comes to at its centre, see glee_HudHelpers.DrawBlot
-        bg         = Color( 6, 8, 2, 151 ),
-        bgHovered  = Color( 20, 24, 8, 174 ),
-        bgPressed  = Color( 34, 40, 14, 185 ),
-        bgChosen   = Color( 44, 60, 10, 185 ),
-        bgDisabled = Color( 6, 8, 2, 151 ),
+        bg         = Color( 6, 8, 2, 110 ),
+        bgDisabled = Color( 6, 8, 2, 110 ),
+        bgHovered  = Color( 20, 24, 8, 150 ),
+        bgPressed  = Color( 34, 40, 14, 175 ),
+        bgChosen   = Color( 44, 60, 10, 175 ),
 
         bgDark         = Color( 6, 8, 2, 215 ),
         bgDarkHovered  = Color( 20, 24, 8, 225 ),

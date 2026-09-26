@@ -258,8 +258,8 @@ end )
 -- reward for escaping
 local flatEscapingReward = 500
 local rewardEveryoneEscaped = 1000 -- additional if everyone escaped
-local rewardPerSkull = 100
-local perSkullEveryoneEscaped = 200 -- additional per skull if everyone escaped
+local rewardPerSkull = 50
+local perSkullEveryoneEscaped = 100 -- additional per skull if everyone escaped
 
 function GM:GiveEscapeRewardTo( ply )
     local setName = GAMEMODE:GetSpawnSet()
@@ -281,14 +281,6 @@ function GM:GiveEscapeRewardTo( ply )
 
     end
     baseReward = baseReward * theMultiplier
-
-
-    local skullReward = rewardPerSkull
-    if everyoneEscaped then
-        skullReward = skullReward + perSkullEveryoneEscaped
-
-    end
-    skullReward = skullReward * theMultiplier
 
 
     timer.Simple( 2, function()
@@ -336,9 +328,27 @@ function GM:GiveEscapeRewardTo( ply )
 
     end )
 
+    if not ply:HasBankItem( "skull_gains" ) then return end
+
+    local hasLoophole = ply:HasBankItem( "skull_loophole" ) 
+
+    local skullReward = rewardPerSkull
+    if everyoneEscaped then
+        skullReward = skullReward + perSkullEveryoneEscaped
+
+    end
+    if hasLoophole then
+        skullReward = skullReward * 2
+
+    end
+
+    skullReward = skullReward * theMultiplier
+
+
     local timerName = "glee_escaping_skullrewardgobbler_" .. ply:EntIndex()
     local totalSkulls = ply:GetSkulls()
     local totalSkullsToReward = totalSkulls
+    local rewardedSkulls = 0
     local ranCount = 0
     local rewardHinted
     timer.Create( timerName, 8, 0, function()
@@ -347,7 +357,7 @@ function GM:GiveEscapeRewardTo( ply )
             return
 
         end
-        if totalSkullsToReward <= 0 then
+        if rewardedSkulls >= totalSkullsToReward then
             timer.Remove( timerName )
             return
 
@@ -376,8 +386,14 @@ function GM:GiveEscapeRewardTo( ply )
         local newDelay = 1 / ranCount
         timer.Adjust( timerName, newDelay, 0, nil )
 
-        ply:GivePlayerScore( skullReward )
-        totalSkullsToReward = totalSkullsToReward - 1
+        if hasLoophole then
+            ply:BankDepositNoFee( skullReward )
+
+        else
+            ply:GivePlayerScore( skullReward )
+
+        end
+        rewardedSkulls = rewardedSkulls + 1
 
     end )
 end

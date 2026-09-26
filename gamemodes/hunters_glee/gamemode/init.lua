@@ -17,6 +17,8 @@ AddCSLuaFile( "modules/bonemaniphandler/cl_bonemanip.lua" )
 AddCSLuaFile( "modules/escaping/cl_escaping.lua" )
 AddCSLuaFile( "modules/escaping/cl_escapecounts.lua" )
 
+AddCSLuaFile( "modules/banking/cl_banking.lua" )
+
 AddCSLuaFile( "modules/statuseffects/cl_statuseffects.lua" )
 AddCSLuaFile( "modules/statuseffects/sh_statuseffectbase.lua" )
 
@@ -44,7 +46,7 @@ AddCSLuaFile( "sh_player.lua" )
 
 -- SHARED INCLUDES
 AddCSLuaFile( "modules/sh_panic.lua" )
-AddCSLuaFile( "modules/sh_banking.lua" )
+AddCSLuaFile( "modules/banking/sh_banking.lua" )
 AddCSLuaFile( "modules/sh_tempbools.lua" )
 AddCSLuaFile( "modules/sh_deathsounds.lua" )
 AddCSLuaFile( "modules/sh_slowmopitch.lua" )
@@ -75,6 +77,9 @@ include( "lib/sv_gleehelpers.lua" )
 include( "shared.lua" )
 include( "sv_player.lua" )
 include( "sv_playercommunication.lua" )
+
+include( "modules/banking/sv_banking.lua" )
+include( "modules/banking/sv_bankbackups.lua" )
 
 include( "modules/shop/sv_shophandler.lua" )
 

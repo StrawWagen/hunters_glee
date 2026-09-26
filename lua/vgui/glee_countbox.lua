@@ -15,10 +15,7 @@
     Usage (standalone / ATM GUI):
         box:SetLabel( "Bank: " )
         box:SetNilLabel( "none" )          -- shown when countFunc returns nil
-        box:SetCountFunc( function( ply )
-            if not ply:GetNW2Bool( "Glee_HasBankAccount", false ) then return nil end
-            return ply:GetNW2Int( "Glee_BankFunds", 0 )
-        end )
+        box:SetCountFunc( function( ply ) return ply:BankFunds() end )
         box:SetAutoManage( true )          -- drives itself via AdditionalThink
 ]]
 

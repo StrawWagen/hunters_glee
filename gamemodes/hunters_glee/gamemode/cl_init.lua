@@ -22,6 +22,8 @@ include( "modules/modelscale/cl_modelscale.lua" )
 include( "modules/escaping/cl_escaping.lua" )
 include( "modules/escaping/cl_escapecounts.lua" )
 
+include( "modules/banking/cl_banking.lua" )
+
 include( "modules/deadplayerfx/cl_souls.lua" )
 include( "modules/deadplayerfx/cl_deaddesaturation.lua" )
 

@@ -75,8 +75,8 @@ local function formatFunds( n )
     return s
 end
 
--- Note: Bank thresholds and charge periods are provided via shared globals:
--- gleefunc_BankMinFunds(), gleefunc_BankChargePerPeriod(), gleefunc_BankChargePeriod().
+-- Note: Bank thresholds and charge periods are provided via the gamemode:
+-- GAMEMODE:GetBankMinFunds(), GAMEMODE:GetBankChargePerPeriod(), GAMEMODE:GetBankChargePeriod().
 
 function bankTop:Create( container )
     local scale = GAMEMODE.shopStandards.shpScale
@@ -477,13 +477,13 @@ function bankTop:Create( container )
 
             -- Second line: closure warning if under threshold, otherwise projected periodic loss
             local funds = tonumber( data.funds ) or 0
-            local minFunds = gleefunc_BankMinFunds()
+            local minFunds = GAMEMODE:GetBankMinFunds()
             if minFunds > 0 and funds < minFunds then
                 draw.SimpleText( "This account is about to close!", "termhuntShopItemSmallerFont", w - padding, padding + titleH + detailGap, GAMEMODE.shopStandards.white, TEXT_ALIGN_RIGHT, TEXT_ALIGN_TOP )
 
             else
-                local percent = tostring( gleefunc_BankChargePerPeriod() )
-                local period = gleefunc_BankChargePeriod() -- period in seconds
+                local percent = tostring( GAMEMODE:GetBankChargePerPeriod() )
+                local period = GAMEMODE:GetBankChargePeriod() -- period in seconds
                 local asDays = period / 86400
                 asDays = math.Round( asDays, 1 )
                 local sOrNoS = ( asDays > 1 ) and "s" or ""

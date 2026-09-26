@@ -128,7 +128,7 @@ end
 local nearbyEntHints = {
     item_item_crate = function( me )
         if GAMEMODE:HasLearnedLesson( me, "BrokeSupplies" ) then return end
-        if me:GetActiveWeapon() == "weapon_crowbar" then
+        if me:GetActiveWeapon():GetClass() == "weapon_crowbar" then
             return true, "Attack the crate.\nIt could contain anything!"
 
         else

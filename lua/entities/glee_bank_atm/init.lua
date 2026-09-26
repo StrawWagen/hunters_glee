@@ -676,8 +676,10 @@ function ENT:DepositToATM( ply )
     local cap       = ply:Alive() and self.TransactionAmount or self.DeadTransactionAmount
     local toDeposit = math.min( ply:GetScore(), cap )
 
+    local fee, depositReason = ply:BankDeposit( toDeposit )
+    if not fee then return false, depositReason end
+
     ply:GivePlayerScore( -toDeposit )
-    local fee = ply:BankDepositScoreFullHandle( toDeposit )
     self:SetOwnersCut( self:GetOwnersCut() + math.floor( fee / 2 ) )
 
     return true, "Deposited $" .. toDeposit
@@ -689,15 +691,17 @@ function ENT:WithdrawFromBank( ply )
     local canWithdraw, reason = self:CanWithdraw( ply )
     if not canWithdraw then return false, reason end
 
-    local bankFunds  = ply:GetNW2Int( "Glee_BankFunds", 0 )
-    local minFunds   = gleefunc_BankMinFunds()
+    local bankFunds  = ply:BankFunds()
+    local minFunds   = GAMEMODE:GetBankMinFunds()
     local cap        = ply:Alive() and self.TransactionAmount or self.DeadTransactionAmount
     local toWithdraw = math.min( cap, math.max( 0, bankFunds - minFunds ) )
 
-    local fee        = math.floor( toWithdraw * gleefunc_BankProcessingFee() / 100 )
+    local fee        = GAMEMODE:GetBankProcessingFeeFor( toWithdraw )
     local playerGets = toWithdraw
 
-    ply:BankDepositScore( -( toWithdraw + fee ) )
+    local withdrew, withdrawReason = ply:BankWithdraw( toWithdraw + fee )
+    if not withdrew then return false, withdrawReason end
+
     ply:GivePlayerScore( playerGets )
     self:SetOwnersCut( self:GetOwnersCut() + math.floor( fee / 2 ) )
 

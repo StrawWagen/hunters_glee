@@ -49,8 +49,8 @@ function ENT:CanWithdraw( ply )
     if self:GetState() ~= "usable" then return false, "ATM is not usable right now" end
     if not ply:BankHasAccount() then return false, "Click to open a bank account." end
 
-    local bankFunds  = ply:GetNW2Int( "Glee_BankFunds", 0 )
-    local minFunds   = gleefunc_BankMinFunds()
+    local bankFunds  = ply:BankFunds()
+    local minFunds   = GAMEMODE:GetBankMinFunds()
     local cap        = ply:Alive() and self.TransactionAmount or self.DeadTransactionAmount
     local toWithdraw = math.min( cap, math.max( 0, bankFunds - minFunds ) )
 

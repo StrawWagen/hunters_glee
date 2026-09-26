@@ -77,6 +77,13 @@ if SERVER then
 
                 end
 
+                timer.Simple( 0, function()
+                    if not IsValid( owner ) then return end -- crazy ragequit
+                    if owner:Health() <= 0 then return end -- valid death 
+                    owner:Kill()
+
+                end )
+
                 attacker:FireBullets( { -- shoot a hull bullet to break anything in the way
                     Attacker = attacker,
                     Damage = 5000000,

@@ -20,7 +20,6 @@ gamemodes\hunters_glee\gamemode\modules\contextmenu_widgets\cl_guiltchecker.lua
 gamemodes\hunters_glee\gamemode\sh_player.lua
 
 gamemodes\hunters_glee\gamemode\modules\sh_panic.lua
-gamemodes\hunters_glee\gamemode\modules\sh_banking.lua
 gamemodes\hunters_glee\gamemode\modules\sh_tempbools.lua
 gamemodes\hunters_glee\gamemode\modules\sh_slowmopitch.lua
 gamemodes\hunters_glee\gamemode\modules\sh_playerdrowning.lua
@@ -50,6 +49,9 @@ gamemodes\hunters_glee\gamemode\modules\bonemaniphandler\cl_bonemanip.lua
 
 gamemodes\hunters_glee\gamemode\modules\escaping\cl_escaping.lua
 gamemodes\hunters_glee\gamemode\modules\escaping\cl_escapecounts.lua
+
+gamemodes\hunters_glee\gamemode\modules\banking\sh_banking.lua
+gamemodes\hunters_glee\gamemode\modules\banking\cl_banking.lua
 
 gamemodes\hunters_glee\gamemode\modules\music\cl_music.lua
 

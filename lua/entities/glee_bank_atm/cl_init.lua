@@ -84,13 +84,10 @@ local function openAtmGui( atm )
     bankBox:SetReservedText( "99999999 -1000" )
     bankBox:SetCountFunc( function( p )
         if not IsValid( p ) then return nil end
-        if not p:GetNW2Bool( "Glee_HasBankAccount", false ) then return nil end
-        return p:GetNW2Int( "Glee_BankFunds", 0 )
+        return p:BankFunds()
 
     end )
-    local hasAccount    = ply:GetNW2Bool( "Glee_HasBankAccount", false )
-    local startingFunds = hasAccount and ply:GetNW2Int( "Glee_BankFunds", 0 ) or nil
-    bankBox:SetStartingCount( startingFunds )
+    bankBox:SetStartingCount( ply:BankFunds() )
     bankBox:SetAutoManage( true )
     bankBox:ManageHudState( ply, CurTime(), true, false )
     dockTop( bankBox, gap )
@@ -116,7 +113,7 @@ local function openAtmGui( atm )
     -- can't. Neither button does anything without one, so both double as the way in.
     -- The shop prints its own refusal in chat, hence the wait on a failed attempt.
     local function requireAccount()
-        if ply:GetNW2Bool( "Glee_HasBankAccount", false ) then return true end
+        if ply:BankHasAccount() then return true end
 
         nextTransactionTime = CurTime() + accountPurchaseWait
         RunConsoleCommand( "termhunt_purchase", "bankopenaccount" )
@@ -178,8 +175,8 @@ local function openAtmGui( atm )
         local canWithdraw, reason = atm:CanWithdraw( ply )
         if canWithdraw then
             local cap         = ply:Alive() and transactionMax or deadTransactionMax
-            local bankFunds   = ply:GetNW2Int( "Glee_BankFunds", 0 )
-            local minFunds    = gleefunc_BankMinFunds()
+            local bankFunds   = ply:BankFunds()
+            local minFunds    = GAMEMODE:GetBankMinFunds()
             local withdrawAmt = math.min( cap, math.max( 0, bankFunds - minFunds ) )
             self:SetValue( "+" .. withdrawAmt )
             self:SetTooltip( "Withdraw score." )

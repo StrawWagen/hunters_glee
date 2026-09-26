@@ -1,6 +1,11 @@
 
 local shopHelpers = GAMEMODE.shopHelpers
 
+local day = 86400
+
+GAMEMODE:RegisterBankItem( "skull_gains", {} )
+GAMEMODE:RegisterBankItem( "skull_loophole", { lifetime = day * 2 } )
+
 -- shared between deposit and withdraw
 local function hasBankAccount( purchaser )
     if not purchaser:BankHasAccount() then return false, "You haven't opened a bank account yet." end
@@ -248,12 +253,7 @@ local items = {
         desc = "Open a bank account.",
         simpleCostDisplay = true,
         shCost = function( purchaser )
-            if purchaser:BankHasAccount() then
-                local existingAccount = purchaser:BankAccount()
-                return existingAccount.funds
-
-            end
-            return 1000
+            return purchaser:BankFunds() or 1000
 
         end,
         cooldown = 0,
@@ -279,12 +279,12 @@ local items = {
     ["bankdeposit"] = {
         name = "Deposit",
         desc = function()
-            local chargePeriod = gleefunc_BankChargePeriod()
+            local chargePeriod = GAMEMODE:GetBankChargePeriod()
             local chargePeriodDays = chargePeriod / 86400
             chargePeriodDays = math.Round( chargePeriodDays, 2 )
 
-            local periodCharge = gleefunc_BankChargePerPeriod()
-            local processingFee = gleefunc_BankProcessingFee()
+            local periodCharge = GAMEMODE:GetBankChargePerPeriod()
+            local processingFee = GAMEMODE:GetBankProcessingFee()
 
             local days = "days."
             if chargePeriodDays == 1 then
@@ -316,11 +316,12 @@ local items = {
         },
         weight = 100,
         shPurchaseCheck = hasBankAccount,
+        shCanShowInShop = { hasBankAccount },
         svOnPurchaseFunc = function( purchaser )
             local toDeposit = math.Clamp( purchaser:GetScore(), 10, 100 )
-            purchaser:GivePlayerScore( -toDeposit )
+            if not purchaser:BankDeposit( toDeposit ) then return end
 
-            purchaser:BankDepositScoreFullHandle( toDeposit )
+            purchaser:GivePlayerScore( -toDeposit )
 
         end,
     },
@@ -337,13 +338,16 @@ local items = {
         },
         weight = 150,
         shPurchaseCheck = { hasBankAccount, function( purchaser )
-            if not purchaser:BankCanDeposit( -gleefunc_BankMinFunds() ) then return false, "Your account is below the withdrawl threshold!!\nIt will be closed when the next idle fee is applied!!!" end
+            if not purchaser:BankCanWithdraw( GAMEMODE:GetBankMinFunds() ) then return false, "Your account is below the withdrawl threshold!!\nIt will be closed when the next idle fee is applied!!!" end
             return true
 
         end },
+        shCanShowInShop = { hasBankAccount },
         svOnPurchaseFunc = function( purchaser )
-            purchaser:BankDepositScore( -gleefunc_BankMinFunds() )
-            purchaser:GivePlayerScore( gleefunc_BankMinFunds() )
+            local toWithdraw = GAMEMODE:GetBankMinFunds()
+            if not purchaser:BankWithdraw( toWithdraw ) then return end
+
+            purchaser:GivePlayerScore( toWithdraw )
 
         end,
     },
@@ -400,6 +404,65 @@ local items = {
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
             shopHelpers.setupPlacable( "glee_atm_placer", purchaser, itemIdentifier )
 
+        end,
+    },
+    ["bankskullgains"] = {
+        name = "Skull Gains",
+        desc = "A bank account add-on\nYour skulls are cashed-out when you escape.\nThe potential profit is unmatched...",
+        shCost = 2000,
+        cooldown = 0,
+        tags = { "BANK", "BankItem" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_INACTIVE,
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = 1000,
+        shPurchaseCheck = function( purchaser )
+            if purchaser:HasBankItem( "skull_gains" ) then return false, "You already own this." end
+            return true
+
+        end,
+        shCanShowInShop = { hasBankAccount },
+        svOnPurchaseFunc = function( purchaser )
+            timer.Simple( 0.05, function()
+                if not IsValid( purchaser ) then return end
+                purchaser:GiveBankItem( "skull_gains" ) -- this will sit on the account, last until it closes
+
+            end )
+        end,
+    },
+    ["bankskullloophole"] = {
+        name = "Off-World Skull Relay",
+        desc = "A temporary relay.\nYour cashed out skulls are deposited directly into your bank.\nTAX. FREE.\nThe relay's caretakers only let users stay hooked up for 2 real-time days.\nAnd they know how much money you have, surge pricing applies...",
+        shCost = function( purchaser )
+            -- floored first, the client only sees whole funds
+            local funds = math.floor( purchaser:BankFunds() or 0 )
+            return 10000 + math.Round( funds * 0.01 )
+
+        end,
+        cooldown = 0,
+        tags = { "BANK", "BankItem" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_INACTIVE,
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = 2000,
+        shPurchaseCheck = function( purchaser )
+            if purchaser:HasBankItem( "skull_loophole" ) then return false, "You're already hooked up to the relay." end
+            return true
+
+        end,
+        shCanShowInShop = { hasBankAccount, function( purchaser )
+            if not purchaser:HasBankItem( "skull_gains" ) then return false, "You don't have Skull Gains." end
+            return true
+
+        end },
+        svOnPurchaseFunc = function( purchaser )
+            timer.Simple( 0.05, function()
+                if not IsValid( purchaser ) then return end
+                purchaser:GiveBankItem( "skull_loophole" ) -- give them the bank item, skull_loophole will
+
+            end )
         end,
     },
 }

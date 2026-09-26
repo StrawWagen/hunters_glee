@@ -30,7 +30,7 @@ include( "player_class/player_termrunner.lua" )
 include( "sh_player.lua" )
 
 include( "modules/sh_panic.lua" )
-include( "modules/sh_banking.lua" )
+include( "modules/banking/sh_banking.lua" )
 include( "modules/sh_tempbools.lua" )
 include( "modules/sh_deathsounds.lua" )
 include( "modules/sh_slowmopitch.lua" )
