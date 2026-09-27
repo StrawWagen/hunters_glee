@@ -45,6 +45,7 @@ PANEL.Init = function( self )
     self._rawText      = nil
     self._maxTextWidth = nil
     self._font         = "medium"
+    self._textAlign    = TEXT_ALIGN_CENTER
     self._textPadding  = nil -- the style's blockPadding
     self._cornerRadius = nil -- the style's boxCornerRadius
 
@@ -148,6 +149,13 @@ end
 PANEL.SetFont = function( self, fontRole )
     self._font = fontRole
     self:WrapText()
+
+end
+
+-- TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER ( the default ) or TEXT_ALIGN_RIGHT. Left and right
+-- sit in from the edge by the same pad * 2 AutoSize leaves either side
+PANEL.SetTextAlign = function( self, align )
+    self._textAlign = align
 
 end
 
@@ -309,8 +317,19 @@ PANEL.PaintContent = function( self, w, h, contentColor )
         local lines           = string.Explode( "\n", self._text )
         local totalTextHeight = fontHeight * #lines
         local startY          = h * 0.5 - totalTextHeight * 0.5
+
+        local align = self._textAlign
+        local textX = w * 0.5
+        if align == TEXT_ALIGN_LEFT then
+            textX = self:GetTextPadding() * 2
+
+        elseif align == TEXT_ALIGN_RIGHT then
+            textX = w - self:GetTextPadding() * 2
+
+        end
+
         for i, line in ipairs( lines ) do
-            draw.SimpleText( line, font, w * 0.5, startY + ( i - 1 ) * fontHeight, contentColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
+            draw.SimpleText( line, font, textX, startY + ( i - 1 ) * fontHeight, contentColor, align, TEXT_ALIGN_TOP )
 
         end
     end

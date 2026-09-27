@@ -44,7 +44,7 @@ end
     GUI builder
 
     A glee_frame sizing itself around docked glee panels, in whatever style the local
-    player's state calls for, at the gui scale.
+    player's state calls for, pinned at the fixed scale for now.
 -----------------------------------------------------------]]
 
 local function openAtmGui( atm )
@@ -62,7 +62,9 @@ local function openAtmGui( atm )
     local isOwner = IsValid( owner ) and owner == ply
 
     local frame = vgui.Create( "glee_frame" )
-    local gap   = frame:Style():Metric( "laneSpacing" )
+    terminator_Extras.glee_SetPanelScale( frame, "fixed" )
+
+    local gap = frame:Style():Metric( "laneSpacing" )
 
     local function dockTop( panel, topGap )
         panel:Dock( TOP )
@@ -79,6 +81,7 @@ local function openAtmGui( atm )
     -----------------------------------------------------------]]
     local bankBox = vgui.Create( "glee_countbox", frame )
     bankBox:SetDoFadeDelays( false )
+    bankBox:SetTextAlign( TEXT_ALIGN_LEFT )
     bankBox:SetLabel( "" )        -- "Bank:" is the heading row above
     bankBox:SetNilLabel( "none" )
     bankBox:SetReservedText( "99999999 -1000" )

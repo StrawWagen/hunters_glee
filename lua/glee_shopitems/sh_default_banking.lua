@@ -420,7 +420,7 @@ local items = {
     },
     ["bankskullgains"] = {
         name = "Skull Gains",
-        desc = "A bank account add-on\nCash out your skulls for far, FAR more than a pittance.\nThe potential profits are unmatched...",
+        desc = "A bank account add-on\nSick of escaping and getting a pittance for your skulls?\nThis is for YOU!\nEarn far more than a pittance for escaping!\nThe potential profits are unmatched...",
         shCost = 2000,
         cooldown = 0,
         tags = { "BANK", "BankItem" },

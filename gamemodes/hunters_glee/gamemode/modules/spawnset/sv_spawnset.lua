@@ -440,6 +440,12 @@ hook.Add( "huntersglee_emptyserver", "glee_reset_spawnset", function()
 
 end )
 
+hook.Add( "glee_ply_escaped", "learn_hardspawnset_lesson", function( ply )
+    if GAMEMODE:IsSpawnsetEasy() then return end
+
+    GAMEMODE:LearnLesson( ply, "WonAHardMisery" )
+
+end )
 hook.Add( "glee_full_load", "glee_resetspawnset_onjoin", function( ply )
     if not GAMEMODE.DeadServerPendingUpgrade then return end
 

@@ -7,6 +7,8 @@ DEFINE_BASECLASS( ENT.Base )
 ENT.PrintName = "Infernal Rumbler"
 ENT.Spawnable = false
 
+ENT.IsFodder = false
+
 ENT.glee_SkullWorthMul = 1.5 -- makes dropped skull worth more
 
 terminator_Extras.RegisterNPC( "terminator_nextbot_infernalskeleton_large", ENT, {
@@ -72,6 +74,10 @@ ENT.FistDamageMul = 0.6
 ENT.FistRangeMul = 1.5
 ENT.CloseEnemyDistance = 300
 ENT.JumpHeight = 500
+ENT.DefaultStepHeight = 18
+ENT.StandingStepHeight = ENT.DefaultStepHeight * 1.5 -- used in crouch toggle in motionoverrides
+ENT.CrouchingStepHeight = ENT.DefaultStepHeight * 0.9
+ENT.StepHeight = ENT.StandingStepHeight
 
 -- always keep the head so it drops a ( big ) skull
 ENT.SpawnHeadlessChance = 0
@@ -169,8 +175,11 @@ ENT.MyClassTask = {
 
     end,
     BehaveUpdateMotion = function( self, data )
-
-        self.Term_LeapMinimizesHeight = not self:IsReallyAngry()
+        local clock = CurTime() % 30
+        local theTimeToMax = clock < 5
+        local theTimeToMin = clock > 18
+        local maximize = ( theTimeToMax or self:IsReallyAngry() ) and not theTimeToMin
+        self.Term_LeapMinimizesHeight = not maximize
 
         if not data.needsCall then return end
         if not self:CanTakeAction( "Call" ) then return end

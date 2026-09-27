@@ -78,6 +78,8 @@ GM.PermaGuiltInfo = {
         color = hudColors.flash,
         divineItemsNotPurchaseable = true,
         alwaysTakingTheDeal = true,
+        ignitesWhenGuiltyGleeful = true,
+        gleefulOnInnocentDamage = true,
         canPurchaseForgivenessRitual = true,
     },
 }
@@ -230,5 +232,43 @@ if SERVER then
             applyPermaInfernal( spawnedP )
 
         end, spawned )
+    end )
+
+    local guiltyGleeIgniteDuration = 8
+
+    -- only runs for Guilty Homicidal Glee, innocent dancers never reach this hook
+    hook.Add( "glee_homicidallygleeful", "glee_guiltyglee_ignite", function( dancer )
+        if not active then return end
+
+        local _, guiltData = GAMEMODE:GetPlysGuiltLevel( dancer )
+        if not guiltData.ignitesWhenGuiltyGleeful then return end
+
+        dancer:Ignite( guiltyGleeIgniteDuration )
+
+    end )
+
+    hook.Add( "PostEntityTakeDamage", "glee_guiltyglee_oninnocentdamage", function( damaged, dmg, took )
+        if not active then return end
+        if not took then return end
+        if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
+        if not damaged:IsPlayer() then return end
+
+        local attacker = dmg:GetAttacker()
+        if not IsValid( attacker ) or not attacker:IsPlayer() then return end
+        if attacker == damaged then return end
+        if not attacker:Alive() then return end
+        if attacker:IsPlayingTaunt2() then return end
+
+        local inflictor = dmg:GetInflictor()
+        if IsValid( inflictor ) and inflictor.glee_GuiltFreeInflictor then return end
+
+        local _, guiltData = GAMEMODE:GetPlysGuiltLevel( attacker )
+        if not guiltData.gleefulOnInnocentDamage then return end
+
+        if not GAMEMODE:IsInnocent( damaged ) then return end
+        if not GAMEMODE.SurfaceHomicidalGlee then return end
+
+        GAMEMODE:SurfaceHomicidalGlee( attacker )
+
     end )
 end

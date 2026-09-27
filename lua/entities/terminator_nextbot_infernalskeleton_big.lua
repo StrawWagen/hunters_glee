@@ -6,6 +6,7 @@ ENT.PrintName = "Infernal Sentinel"
 ENT.Spawnable = false
 
 ENT.IsEldritch = true
+ENT.IsFodder = false
 ENT.glee_SkullWorthMul = 2
 
 terminator_Extras.RegisterNPC( "terminator_nextbot_infernalskeleton_big", ENT, {
@@ -116,6 +117,10 @@ ENT.FistDamageMul = 10
 ENT.FistRangeMul = 1.75
 ENT.CloseEnemyDistance = 200
 ENT.JumpHeight = 1000
+ENT.DefaultStepHeight = 18
+ENT.StandingStepHeight = ENT.DefaultStepHeight * 2 -- used in crouch toggle in motionoverrides
+ENT.CrouchingStepHeight = ENT.DefaultStepHeight * 1
+ENT.StepHeight = ENT.StandingStepHeight
 
 ENT.AccelerationSpeed = 200
 ENT.SkeleRunSpeed = 1000

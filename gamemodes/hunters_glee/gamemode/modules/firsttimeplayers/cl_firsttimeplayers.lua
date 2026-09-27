@@ -24,7 +24,7 @@ local stagesTutorialMisery = {
     "Even to these weaklings...\nYou will... still...",
     "DIE.",
     "But don't worry.\nDeath is not the end.",
-    "Let the hunt begin.",
+    "Let the Hunt....\nBEGIN!",
 }
 
 local stagesTutorialMiseryMulti = {
@@ -36,7 +36,7 @@ local stagesTutorialMiseryMulti = {
     "You will still, DIE.",
     "But don't worry, that's the best part.",
     "Because then,\nthe HAUNTING will begin",
-    "Let the hunt begin.",
+    "Let the Hunt....\nBEGIN!",
 }
 
 local stagesSingleplayer = {

@@ -7,6 +7,8 @@ DEFINE_BASECLASS( ENT.Base )
 ENT.PrintName = "Infernal Ambler"
 ENT.Spawnable = false
 
+ENT.IsFodder = true
+
 terminator_Extras.RegisterNPC( "terminator_nextbot_infernalskeleton_slow", ENT, {
     Weapons = { "weapon_infernalskeleton_fists" },
 

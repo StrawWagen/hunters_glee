@@ -10,11 +10,14 @@ ENT.PlayerColorVec = Vector( 1, 0, 0 ) -- used for player color
 
 ENT.SubCategory = "Hunter's Glee"
 
+ENT.IsFodder = true
+
 terminator_Extras.RegisterNPC( "terminator_nextbot_infernalskeleton", ENT, {
     Weapons = { "weapon_infernalskeleton_fists" },
 
 } )
 
+local vecMeta = FindMetaTable( "Vector" )
 local entMeta = FindMetaTable( "Entity" )
 local CurTime = CurTime
 local math = math
@@ -67,7 +70,7 @@ ENT.MaxPathingIterations = 2500
 
 ENT.JumpHeight = 150
 ENT.Term_Leaps = true
-ENT.DefaultStepHeight = 25
+ENT.DefaultStepHeight = 18
 ENT.StandingStepHeight = ENT.DefaultStepHeight * 1 -- used in crouch toggle in motionoverrides
 ENT.CrouchingStepHeight = ENT.DefaultStepHeight * 0.9
 ENT.StepHeight = ENT.StandingStepHeight
@@ -352,14 +355,39 @@ function ENT:DoCustomTasks( defaultTasks )
         },
         ["movement_duelenemy"] = {
             BehaveUpdateMotion = function( self, data )
-                local myTbl = self:GetTable()
-                local enemy = self:GetEnemy()
+                local myTbl = entMeta.GetTable( self )
+                local enemy = myTbl.GetEnemy( self )
 
                 if IsValid( enemy ) and enemy:Alive() then
-                    myTbl.GotoPosSimple( self, myTbl, enemy:GetPos(), 35, true )
-                    if myTbl.DistToEnemy < myTbl.DuelEnemyDist then
-                        self:Anger( 5 )
+                    local gotoPos
+                    local fodder = myTbl.IsFodder
+                    if myTbl.NothingOrBreakableBetweenEnemy then
+                        gotoPos = entMeta.GetPos( enemy )
+                        data.LastPosSeenEnemy = gotoPos
+                        if not fodder then
+                            local enemVelFlattened = enemy:GetVelocity()
+                            enemVelFlattened.z = 0
+                            gotoPos = gotoPos + enemVelFlattened / ( myTbl.DistToEnemy * 0.008 )
 
+                        end
+                    elseif data.LastPosSeenEnemy then
+                        gotoPos = data.LastPosSeenEnemy
+                        if vecMeta.DistToSqr( entMeta.GetPos( self ), gotoPos ) < 150^2 then
+                            data.LastPosSeenEnemy = nil
+
+                        end
+                    else
+                        gotoPos = myTbl.LastEnemyShootPos -- off the ground but w/e
+
+                    end
+
+                    myTbl.GotoPosSimple( self, myTbl, gotoPos, 35, true )
+                    if not fodder and not myTbl.Term_LeapMinimizesHeight and self:IsOnGround() and myTbl.DistToEnemy < myTbl.DuelEnemyDist then
+                        self:Anger( 5 )
+                        if math.random( 0, 100 ) < 5 and self:GetVelocity():Length() <= myTbl.MoveSpeed then
+                            myTbl.JumpToPos( self, enemy:GetPos() ) -- jump directly to enemy's pos 
+
+                        end
                     end
                 elseif myTbl.TimeSinceEnemySpotted( self, myTbl ) > math.Rand( 3, 4 ) then
                     self:TaskComplete( "movement_duelenemy" )
