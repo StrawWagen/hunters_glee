@@ -169,7 +169,10 @@ function spawnSetVote:CreateVotePanel()
         local vote = inChatVoters[text[1]]
         if not vote then return end
 
-        _voteHolder.voteOptions[vote]:Vote()
+        local option = _voteHolder.voteOptions[vote]
+        if not option then return end
+
+        option:Vote()
         _voteHolder.pressedToVote = true
 
     end )
