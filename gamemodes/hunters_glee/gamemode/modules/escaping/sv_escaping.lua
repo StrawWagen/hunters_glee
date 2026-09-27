@@ -260,6 +260,9 @@ local flatEscapingReward = 500
 local rewardEveryoneEscaped = 1000 -- additional if everyone escaped
 local rewardPerSkull = 50
 local perSkullEveryoneEscaped = 100 -- additional per skull if everyone escaped
+local rewardPerSkullNoGains = 10 -- flat, without the skull_gains bank item
+
+local skullCashoutDelay = 8
 
 function GM:GiveEscapeRewardTo( ply )
     local setName = GAMEMODE:GetSpawnSet()
@@ -328,21 +331,24 @@ function GM:GiveEscapeRewardTo( ply )
 
     end )
 
-    if not ply:HasBankItem( "skull_gains" ) then return end
+    local hasGains = ply:HasBankItem( "skull_gains" )
+    local hasLoophole = hasGains and ply:HasBankItem( "skull_loophole" )
 
-    local hasLoophole = ply:HasBankItem( "skull_loophole" ) 
+    local skullReward = rewardPerSkullNoGains
+    if hasGains then
+        skullReward = rewardPerSkull
+        if everyoneEscaped then
+            skullReward = skullReward + perSkullEveryoneEscaped
 
-    local skullReward = rewardPerSkull
-    if everyoneEscaped then
-        skullReward = skullReward + perSkullEveryoneEscaped
+        end
+        if hasLoophole then
+            skullReward = skullReward * 2
+
+        end
+
+        skullReward = skullReward * theMultiplier
 
     end
-    if hasLoophole then
-        skullReward = skullReward * 2
-
-    end
-
-    skullReward = skullReward * theMultiplier
 
 
     local timerName = "glee_escaping_skullrewardgobbler_" .. ply:EntIndex()
@@ -351,7 +357,7 @@ function GM:GiveEscapeRewardTo( ply )
     local rewardedSkulls = 0
     local ranCount = 0
     local rewardHinted
-    timer.Create( timerName, 8, 0, function()
+    timer.Create( timerName, skullCashoutDelay, 0, function()
         if not IsValid( ply ) then
             timer.Remove( timerName )
             return
@@ -365,7 +371,17 @@ function GM:GiveEscapeRewardTo( ply )
         if not rewardHinted then
             rewardHinted = true
             local sOrNoS = totalSkulls == 1 and "" or "s"
-            local skullMsg = "Cashing out your " .. totalSkulls .. " skull" .. sOrNoS .. "..."
+            local skullMsg
+            if hasLoophole then
+                skullMsg = "Relaying your " .. totalSkulls .. " cashed out skull" .. sOrNoS .. " off-world...\nStraight into your bank..."
+
+            elseif hasGains then
+                skullMsg = "Cashing out your " .. totalSkulls .. " skull" .. sOrNoS .. ", with Skull Gains..."
+
+            else
+                skullMsg = "Cashing out your " .. totalSkulls .. " skull" .. sOrNoS .. ", for an ungainly pittance..."
+
+            end
             huntersGlee_AnnounceDramatic( { ply }, 1001, 4, skullMsg )
 
         end

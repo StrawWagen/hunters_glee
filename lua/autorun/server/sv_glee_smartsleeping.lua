@@ -43,6 +43,7 @@ local function handleSleep( ent, cur, lagging ) -- think func
 
     local obj = ent:GetPhysicsObject()
     if IsValid( obj ) and obj:IsMotionEnabled() then
+
         local tr = terminator_Extras.getFloorTr( ent:GetPos() )
         local needsRemove
         if tr.HitSky then -- fell into the void!
@@ -62,6 +63,9 @@ local function handleSleep( ent, cur, lagging ) -- think func
         end
 
         ent.glee_smartSleep_nextCheck = cur + ent.glee_smartSleep_interval * 2
+
+        -- only consider freezing this if the session is lagging
+        if ent.glee_smartSleeping_lazyWake and not lagging then return end
 
         -- capture supporters before motion is disabled
         local supportingEnts
@@ -87,6 +91,8 @@ local function handleSleep( ent, cur, lagging ) -- think func
 
         end
 
+        -- if an ent supporting us is unfrozen, don't freeze ourselves
+        -- unless the session is lagging
         if not lagging and supporterUnfrozen then return end
 
         -- freeze it
@@ -117,8 +123,23 @@ local function handleSleep( ent, cur, lagging ) -- think func
 
         end
     else
-        ent.glee_smartSleep_nextCheck = cur + ent.glee_smartSleep_interval * 2
+        if ent.glee_smartSleeping_lazyWake then
+            local wakeLagging = true -- default to dont unfreeze
+            if GAMEMODE.IsReallyHuntersGlee then
+                wakeLagging = GAMEMODE:IsLagging() -- but if we're glee, now we consider unfreezing
 
+            end
+            if not wakeLagging then
+                terminator_Extras.SmartSleepWakeEntity( ent )
+
+            end
+            -- randomize this path only, so we con't unfreeze everything at once
+            ent.glee_smartSleep_nextCheck = cur + ent.glee_smartSleep_interval * math.Rand( 1.9, 2.1 )
+
+        else
+            ent.glee_smartSleep_nextCheck = cur + ent.glee_smartSleep_interval * 2
+
+        end
     end
 end
 
@@ -270,13 +291,28 @@ hook.Add( "Think", "glee_dynamicfreezing_laggingthink", function() -- deal damag
 end )
 
 function terminator_Extras.SmartSleepEntity( ent, interval )
-    if ent.glee_smartSleeping then ent.glee_smartSleep_interval = interval return end
+    if ent.glee_smartSleeping then
+        if interval then
+            ent.glee_smartSleep_interval = interval
+
+        end
+        return
+
+    end
 
     interval = interval or 10
     table.insert( terminator_Extras.glee_smartSleep_toFreeze, ent )
     ent.glee_smartSleeping = true
     ent.glee_smartSleep_interval = interval
     ent.glee_smartSleep_nextCheck = CurTime() + ent.glee_smartSleep_interval
+
+end
+
+-- wake this ent up if session isnt lagging
+-- call this on an ent after you SmartSleepEntity it
+function terminator_Extras.SmartSleepInvert( ent )
+    if not ent.glee_smartSleeping then return end
+    ent.glee_smartSleeping_lazyWake = true
 
 end
 

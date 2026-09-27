@@ -6,6 +6,18 @@ local day = 86400
 GAMEMODE:RegisterBankItem( "skull_gains", {} )
 GAMEMODE:RegisterBankItem( "skull_loophole", { lifetime = day * 2 } )
 
+-- eg "1d 23h", "4h 12m", "9m"
+local function formatTimeLeft( seconds )
+    local days = math.floor( seconds / day )
+    local hours = math.floor( ( seconds % day ) / 3600 )
+    local minutes = math.max( math.floor( ( seconds % 3600 ) / 60 ), 1 )
+
+    if days > 0 then return days .. "d " .. hours .. "h" end
+    if hours > 0 then return hours .. "h " .. minutes .. "m" end
+    return minutes .. "m"
+
+end
+
 -- shared between deposit and withdraw
 local function hasBankAccount( purchaser )
     if not purchaser:BankHasAccount() then return false, "You haven't opened a bank account yet." end
@@ -408,7 +420,7 @@ local items = {
     },
     ["bankskullgains"] = {
         name = "Skull Gains",
-        desc = "A bank account add-on\nYour skulls are cashed-out when you escape.\nThe potential profit is unmatched...",
+        desc = "A bank account add-on\nCash out your skulls for far, FAR more than a pittance.\nThe potential profits are unmatched...",
         shCost = 2000,
         cooldown = 0,
         tags = { "BANK", "BankItem" },
@@ -433,7 +445,7 @@ local items = {
     },
     ["bankskullloophole"] = {
         name = "Off-World Skull Relay",
-        desc = "A temporary relay.\nYour cashed out skulls are deposited directly into your bank.\nTAX. FREE.\nThe relay's caretakers only let users stay hooked up for 2 real-time days.\nAnd they know how much money you have, surge pricing applies...",
+        desc = "A temporary relay.\nYour cashed out skulls are deposited directly into your bank.\nTAX. FREE.\nThe relay's caretakers only let users stay hooked up for 2 real-time days.\nAnd they can see your bank account, greedy buggers love their surge pricing...",
         shCost = function( purchaser )
             -- floored first, the client only sees whole funds
             local funds = math.floor( purchaser:BankFunds() or 0 )
@@ -448,7 +460,8 @@ local items = {
         },
         weight = 2000,
         shPurchaseCheck = function( purchaser )
-            if purchaser:HasBankItem( "skull_loophole" ) then return false, "You're already hooked up to the relay." end
+            local timeLeft = purchaser:BankItemTimeLeft( "skull_loophole" )
+            if timeLeft then return false, "You're already hooked up to the relay.\nIt'll cut you off in " .. formatTimeLeft( timeLeft ) .. "." end
             return true
 
         end,

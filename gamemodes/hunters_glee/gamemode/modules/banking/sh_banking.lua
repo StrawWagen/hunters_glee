@@ -114,3 +114,14 @@ function meta:HasBankItem( name )
     return not bankFunctions.itemExpired( item )
 
 end
+
+-- seconds until the item expires, math.huge if it never does, nil if the player doesn't have it
+function meta:BankItemTimeLeft( name )
+    if not self:HasBankItem( name ) then return end
+
+    local item = self:BankAccount().items[name]
+    if not item.expires then return math.huge end
+
+    return item.expires - os.time()
+
+end

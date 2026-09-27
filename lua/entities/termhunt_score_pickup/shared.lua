@@ -53,6 +53,8 @@ function ENT:Initialize()
         if IsValid( phys ) then
             phys:SetBuoyancyRatio( 8 )
             phys:SetMaterial( "glass" )
+            phys:EnableMotion( false )
+            terminator_Extras.SmartSleepEntity( self )
 
         end
 
@@ -106,7 +108,7 @@ function ENT:HandleScorePhysics()
 
         if IsValid( phys ) then
             phys:SetMass( self:GetScore() * 4 )
-            phys:Wake()
+            terminator_Extras.SmartSleepWakeEntity( self ) -- lazily wake this up
 
             self:UseTriggerBounds( true, 24 )
 
