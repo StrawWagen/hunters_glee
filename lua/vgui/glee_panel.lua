@@ -1,15 +1,13 @@
 --[[
     glee_panel — extends DPanel
 
-    The root of every glee panel. Draws its style's backdrop, then a centered material or
-    text over it. Colours and fonts are named by role ( "bg", "happy", "medium" ), so a
-    change of style or scale changes the look and nothing else. The style and scale come
-    from its parents, see glee_hud/cl_stylecontext.lua.
+    The base class of every glee panel. Draws its style's backdrop, then a material or
+    text over it, all by role, so a change of style or scale changes only the look. Its
+    style and scale come from its parents, see glee_hud/cl_stylecontext.lua.
 
-    It has no states. glee_hudbox adds the hud's fading and flashing, glee_row the hover
-    and press of something pickable. They change how this draws by overriding the three
-    getters Paint reads: GetFade, GetVisualState and GetContentColor. The state picks the
-    backdrop's colour from its family, see handle:BackdropColor.
+    It has no states. glee_hudbox adds the hud's fading and flashing, glee_row hover and
+    press. They change how this draws by overriding the three getters Paint reads:
+    GetFade, GetVisualState and GetContentColor.
 
     Mouse input starts off. SetPaintBackground( false ) drops the backdrop, for a panel
     that only exists to be docked into.
@@ -52,8 +50,7 @@ PANEL.Init = function( self )
     self._backdrop     = "bg"
     self._contentColor = "happy"
 
-    -- Paint's resolved, faded content colour. Menus that wrap Paint draw their own text in it
-    self._drawContent = Color( 0, 0, 0, 0 )
+    self._drawContent = Color( 0, 0, 0, 0 ) -- Paint's scratch, the content colour faded
 
     syncSize( self )
     self:SetMouseInputEnabled( false )
@@ -66,8 +63,7 @@ PANEL.Style = function( self )
 
 end
 
--- Menus build panels loose before docking them into their frame, so whatever a panel
--- measured loose was in the wrong style
+-- whatever a panel measured before this was in its old parent's style
 PANEL.SetParent = function( self, parent )
     panelMeta.SetParent( self, parent )
     terminator_Extras.glee_NotifyPanelStyle( self )
@@ -106,8 +102,8 @@ PANEL.SetMaterial = function( self, mat )
 
 end
 
--- Sets text to draw centered. Clears any active material.
--- Wrapped to SetMaxTextWidth if one is set.
+-- Clears any active material. Wrapped to SetMaxTextWidth if one is set, aligned by
+-- SetTextAlign
 PANEL.SetText = function( self, text )
     self._rawText = text
     self._mat     = nil
@@ -192,7 +188,7 @@ local function widestLine( font, text )
     local widest = 0
 
     for line in ( text .. "\n" ):gmatch( "([^\n]*)\n" ) do
-        widest = math.max( widest, ( surface.GetTextSize( line ) ) )
+        widest = math.max( widest, ( surface.GetTextSize( line ) ) ) -- the brackets drop the height
 
     end
 
@@ -311,7 +307,6 @@ PANEL.PaintContent = function( self, w, h, contentColor )
         self:SyncWrap()
         if not self._text or #self._text <= 0 then return end
 
-        -- Center the text block vertically; each line steps down by fontHeight
         local font            = self:GetResolvedFont()
         local fontHeight      = draw.GetFontHeight( font )
         local lines           = string.Explode( "\n", self._text )

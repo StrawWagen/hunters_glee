@@ -1,9 +1,8 @@
 --[[------------------------------------
     hl2: the default look, the suit hud's yellow on a faded black box.
 
-    The root style. Every other style inherits from it unless it names another, so this
-    is the one place every field, metric and colour role is listed. An unregistered
-    style draws as this one. cl_style.lua includes it, before any other style.
+    The base style: every chain ends here, so every field and every role a panel may
+    ask any style for is listed here. An unregistered style draws as this one.
 --]]-------------------------------------
 
 local mediumLargeSize = 34
@@ -23,17 +22,14 @@ terminator_Extras.glee_RegisterStyle( "hl2", {
         mediumLarge = { size = mediumLargeSize, weight = 2000, scanlines = 1 },
         placing     = { size = 40, weight = 1000 }, -- the readout while placing something
 
-        -- A name is whatever the player typed, so it names its typeface instead of taking
-        -- the style's: the decorative faces have no glyphs for most of what turns up.
-        -- Its own sizeMul keeps it level with a mediumLarge label in a style that nudges
-        -- its own face
+        -- A name is whatever the player typed, and the decorative faces lack the glyphs, so
+        -- it names its own face. sizeMul 1 keeps it this size in a style that shrinks its face
         playerName = { size = mediumLargeSize, sizeMul = 1, font = "Trebuchet MS", weight = 1000 },
 
         -- the engine's own, sized by resolution band in ClientScheme.res
         targetID = "TargetID",
 
-        -- a name over a player's head. The engine's own for the same reason as playerName,
-        -- and at TargetID's size to sit with the targetID lines under it
+        -- a name over a player's head, the engine's own for the same reason as playerName
         nameTag = "TargetID",
     },
 
@@ -42,13 +38,11 @@ terminator_Extras.glee_RegisterStyle( "hl2", {
         laneSpacing     = 6, -- gap between stacked hud boxes
         boxCornerRadius = 10,
 
-        -- drawShadowedTextBetterData's defaults are these unscaled, which is the whole
-        -- reason to set them. The build leaves these two unrounded, see cl_stylebuild.lua
+        -- drawShadowedTextBetterData's own defaults, but scaled. Left unrounded by the build
         shadowOffsetX = 2.5,
         shadowOffsetY = 2,
     },
 
-    -- The whole role vocabulary
     colors = {
         text    = Color( 225, 200, 0, 220 ), -- also what an unknown role falls back to
         happy   = Color( 255, 230, 0, 220 ), -- full health, full battery
@@ -58,23 +52,33 @@ terminator_Extras.glee_RegisterStyle( "hl2", {
         hovered = Color( 255, 255, 255 ),
         chosen  = Color( 255, 255, 255 ),
         urgent  = Color( 255, 80, 80 ),      -- a countdown running out
-        shadow  = Color( 0, 0, 0, 200 ),
+    },
 
-        -- Backdrops, in families. A panel names the family, its state picks the role,
-        -- see handle:BackdropColor. Chosen is a hud box's flash and urgent blink
+    -- A panel names the family, its state picks the entry, see handle:BackdropColor.
+    -- Chosen is a hud box's flash and urgent blink
+    backdrops = {
         bg         = Color( 0, 0, 0, 76 ), -- for hud elements that should fade into the background
         bgHovered  = Color( 100, 100, 50, 76 ),
         bgPressed  = Color( 100, 100, 50, 76 ),
         bgChosen   = Color( 100, 100, 50, 76 ),
         bgDisabled = Color( 0, 0, 0, 76 ),
 
-        bgDark         = Color( 0, 0, 0, 200 ), -- for gui elements that need visibility
+        bgDark         = Color( 0, 0, 0, 175 ), -- for gui elements that need visibility
         bgDarkHovered  = Color( 100, 100, 50, 200 ),
         bgDarkPressed  = Color( 100, 100, 50, 200 ),
         bgDarkChosen   = Color( 100, 100, 50, 200 ),
         bgDarkDisabled = Color( 0, 0, 0, 200 ),
+    },
 
-        innocent = Color( 200, 255, 140, 220 ), -- the clean end of the guilt scale, see sh_guilt.lua
+    shadowColor = Color( 0, 0, 0, 200 ),
+
+    -- layered over every style's own look, soulthought's and the decrees' included
+    highContrast = {
+        everyTextColor = Color( 255, 255, 255, 255 ),
+
+        fontName   = "Trebuchet MS",
+        fontWeight = 500,
+        sizeMul    = 1,
     },
 
     -- see styleHandle:PlaySound. Pitches are the caller's, these are just what plays

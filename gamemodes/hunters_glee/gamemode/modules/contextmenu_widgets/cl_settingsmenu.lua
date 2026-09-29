@@ -130,7 +130,7 @@ local settingsCategories = {
                 cvar = "cl_huntersglee_highcontrast",
                 type = "check",
                 prettyName = "High contrast",
-                desc = "Darker, more solid backgrounds behind the HUD and menus.",
+                desc = "All HUD and menu text in plain white.",
             },
         },
     },

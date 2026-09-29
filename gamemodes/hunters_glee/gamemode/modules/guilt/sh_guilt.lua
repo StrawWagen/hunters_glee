@@ -9,19 +9,19 @@ local PermaGuiltLevels = {
     GUILTY = 20,
     VERY_GUILTY = 35,
     EXTREMELY_GUILTY = 50,
+    SUPREMELY_GUILTY = 100,
 }
 GM.PermaGuiltLevels = PermaGuiltLevels
 
--- the hl2 style is clientside only, so serverside every tier below is colourless.
--- Nothing serverside reads a tier colour.
--- Read once, so the tiers keep these colours whatever style draws them
-local hudColors = CLIENT and terminator_Extras.glee_Style( "hl2" ):Settings().colors or {}
+-- The tiers' own colours, not any hud style's, so they read the same whatever style or
+-- contrast setting draws them
+local clearColor = Color( 200, 255, 140, 220 )
+local calmColor  = Color( 255, 230, 0, 220 )
+local evilColor  = Color( 255, 50, 50, 200 )
 
 -- mixes color 1 with color 2, returns new color object
 -- ratio 0 is entirely col1, ratio 1 is entirely col2
-local function colorMixCl( col1, col2, ratio )
-    if SERVER then return end
-    if not col1 or not col2 then return Color( 255, 255, 255, 255 ) end
+local function colorMix( col1, col2, ratio )
     ratio = math.Clamp( ratio, 0, 1 )
 
     local h1, s1, v1 = ColorToHSV( col1 )
@@ -40,47 +40,60 @@ end
 GM.PermaGuiltInfo = {
     [PermaGuiltLevels.NOT_GUILTY]  = {
         desc = "Your conscience is clear.",
-        color = hudColors.innocent,
+        color = clearColor,
     },
     [PermaGuiltLevels.SLIGHTLY_GUILTY]  = {
         desc = "Your conscience is still.. a bit clear...",
-        color = colorMixCl( hudColors.happy, hudColors.flash, 0.25 ),
+        color = colorMix( calmColor, evilColor, 0.25 ),
     },
     [PermaGuiltLevels.SOMEWHAT_GUILTY]  = {
         desc = "You're a bit evil. But you are still forgiven.",
         message = "Your guilt grows.\nYou're a bit evil.",
-        color = colorMixCl( hudColors.happy, hudColors.flash, 0.5 ),
+        color = colorMix( calmColor, evilColor, 0.5 ),
         divineCostMul = 1.15,
     },
     [PermaGuiltLevels.ALMOST_GUILTY]  = {
         desc = "Things can't continue like this. You're almost evil.",
-        color = colorMixCl( hudColors.happy, hudColors.flash, 0.7 ),
+        color = colorMix( calmColor, evilColor, 0.7 ),
         message = "Your guilt grows.\nYou're almost evil.",
         divineCostMul = 1.25,
     },
     [PermaGuiltLevels.GUILTY]  = {
         desc = "You're evil. Your access to divine avenues is limited.",
-        color = colorMixCl( hudColors.happy, hudColors.flash, 0.8 ),
+        color = colorMix( calmColor, evilColor, 0.8 ),
         message = "You're evil.\nThe divine actors are displeased.",
         divineCostMul = 1.5,
         canPurchaseForgivenessRitual = true,
     },
     [PermaGuiltLevels.VERY_GUILTY] = {
         desc = "You're very evil. Divine paths are almost out of your reach.",
-        color = colorMixCl( hudColors.happy, hudColors.flash, 0.9 ),
+        color = colorMix( calmColor, evilColor, 0.9 ),
         message = "You're very evil.\nThe divine paths are closing...",
         divineCostMul = 2.5,
         canPurchaseForgivenessRitual = true,
+        horriblyEvil = true,
     },
     [PermaGuiltLevels.EXTREMELY_GUILTY] = {
         desc = "You're extremely evil. The divine ways are closed to you. You are always one with the infernal powers.",
         message = "You're extremely evil.\nYou are now one with the infernal powers.",
-        color = hudColors.flash,
+        color = evilColor,
         divineItemsNotPurchaseable = true,
         alwaysTakingTheDeal = true,
-        ignitesWhenGuiltyGleeful = true,
-        gleefulOnInnocentDamage = true,
         canPurchaseForgivenessRitual = true,
+        horriblyEvil = true,
+        cooldownMul = 1.25,
+    },
+    [PermaGuiltLevels.SUPREMELY_GUILTY] = {
+        desc = "You're supremely evil. The divine ways are closed to you. You are always one with the infernal powers. You are punished wickedly for harming the innocent. All shop item cooldowns are longer.",
+        message = "You're supremely evil.\nYou are now punished wickedly for harming the innocent.",
+        color = evilColor,
+        divineItemsNotPurchaseable = true,
+        alwaysTakingTheDeal = true,
+        gleefulOnInnocentDamage = true,
+        ignitesWhenGuiltyGleeful = true,
+        canPurchaseForgivenessRitual = true,
+        horriblyEvil = true,
+        cooldownMul = 2,
     },
 }
 
@@ -135,6 +148,16 @@ hook.Add( "glee_shop_itemcostmul", "glee_guiltycost", function( purchaser, itemD
     if not guiltData.divineCostMul then return end
 
     adjust.mul = adjust.mul * guiltData.divineCostMul
+
+end )
+
+hook.Add( "glee_shop_itemcooldownmul", "glee_guiltycooldown", function( purchaser, _itemData, adjust )
+    if not active then return end
+
+    local _, guiltData = GAMEMODE:GetPlysGuiltLevel( purchaser )
+    if not guiltData.cooldownMul then return end
+
+    adjust.mul = adjust.mul * guiltData.cooldownMul
 
 end )
 
@@ -247,6 +270,7 @@ if SERVER then
 
     end )
 
+    -- ignite if attacking perfectly innocment players
     hook.Add( "PostEntityTakeDamage", "glee_guiltyglee_oninnocentdamage", function( damaged, dmg, took )
         if not active then return end
         if not took then return end
@@ -265,8 +289,7 @@ if SERVER then
         local _, guiltData = GAMEMODE:GetPlysGuiltLevel( attacker )
         if not guiltData.gleefulOnInnocentDamage then return end
 
-        if not GAMEMODE:IsInnocent( damaged ) then return end
-        if not GAMEMODE.SurfaceHomicidalGlee then return end
+        if GAMEMODE:GetStoredPersistentGuilt( damaged ) >= 1 then return end
 
         GAMEMODE:SurfaceHomicidalGlee( attacker )
 

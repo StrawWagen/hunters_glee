@@ -4,17 +4,14 @@
     A DFrame with derma's window furniture turned off and its style's backdrop in its
     place, so a menu built out of glee panels sits on a matching background.
 
-    DFrame's Init leaves DockPadding( 5, 29, 5, 5 ) behind to clear a title bar this
-    doesn't have, which pushes every docked child down by 29. This replaces it with the
-    style's blockPadding, and again on every style change, since the scale sets how big
-    that is. DFrame's PerformLayout never touches padding.
+    DFrame's Init leaves DockPadding( 5, 29, 5, 5 ) behind for a title bar this doesn't
+    have. This replaces it with blockPadding, again on every style change.
 
-    easyClosePanel is left to the caller on purpose. It wraps the panel's Think at the
-    moment it runs, so a caller that assigns frame.Think afterwards silently replaces the
-    wrapper and loses click-off-to-close. Call it after your own Think, never before.
+    easyClosePanel is left to the caller: it wraps whatever Think the frame has when it
+    runs, so call it after assigning your own, never before.
 
-    Build its contents docked inside it, then let it size itself around them. It sizes
-    itself again after every style change, once its contents have caught up.
+    Build its contents docked inside it, then let it size itself around them. After a
+    style change it sizes itself again, once its contents have caught up.
 
         local frame = vgui.Create( "glee_frame" )
         local row = vgui.Create( "glee_row", frame )

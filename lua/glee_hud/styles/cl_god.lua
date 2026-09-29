@@ -20,9 +20,12 @@ terminator_Extras.glee_RegisterStyle( "god", {
         hovered = Color( 255, 150, 50 ),
         chosen  = Color( 255, 200, 90 ),
         urgent  = Color( 200, 25, 5 ),
-        shadow  = Color( 0, 0, 0, 255 ),
+    },
 
-        -- the torn strip. One look, so both backdrop families share it
+    shadowColor = Color( 0, 0, 0, 255 ),
+
+    -- the torn strip. One look, so both families share it
+    backdrops = {
         bg         = Color( 10, 5, 0, 170 ),
         bgHovered  = Color( 30, 15, 4, 200 ),
         bgPressed  = Color( 48, 24, 6, 220 ),

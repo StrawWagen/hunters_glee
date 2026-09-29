@@ -12,10 +12,10 @@
         function row:DoClick() end
         function row:DoRightClick() end
 
-    Its height comes from its font, and is redone on every style change. Its width is
-    whatever docks it, GetContentWidth is how wide it would like to be.
+    It sets its own height from its font, again on every style change. Its width is
+    whatever docks it; GetContentWidth is what it would like.
 
-    To line rows up into columns, hand them all the same table of those rows through
+    To line rows up into columns, give them all the same table of those rows through
     SetLabelColumn, and SetReservedValue the widest value any of them will print.
 ]]
 
@@ -71,8 +71,8 @@ local function textWidth( font, text )
 
 end
 
--- rows is a table of rows, this one included, whose labels share the widest one's width.
--- Measured every layout, so a style change can't leave it stale
+-- rows, this one included, share the widest label's width. Measured every layout, so a
+-- style change can't leave it stale
 PANEL.SetLabelColumn = function( self, rows )
     self._labelColumn = rows
     self:InvalidateLayout()
@@ -176,13 +176,14 @@ PANEL.SetDisabledContentColor = function( self, color )
 
 end
 
--- stubs
+-- stubs. A disabled row doesn't call the clicks
 PANEL.DoClick = function( _self )
 end
 
 PANEL.DoRightClick = function( _self )
 end
 
+-- called at the end of every Think
 PANEL.AdditionalThink = function( _self )
 end
 

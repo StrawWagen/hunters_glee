@@ -5,35 +5,59 @@ util.AddNetworkString( "glee_escapemul_data" )
 util.AddNetworkString( "glee_escapemul_request" )
 
 local function initTables()
-    sql.Query( [[
-        CREATE TABLE IF NOT EXISTS glee_escape_by_map (
-            mapname        TEXT PRIMARY KEY,
-            escaped        INTEGER NOT NULL DEFAULT 0,
-            remained       INTEGER NOT NULL DEFAULT 0,
-            lastupdatetime INTEGER
-        )
-    ]] )
+    -- adds columns that postdate the CREATE TABLE. if this grows past a column or two, switch to one declared list:
+    -- TODO: ask HMM if this is good
+    -- this is OKAY but not standard
+    -- only forward-compatible for adding columns
+    local escapeColumns = {
+        { "escaped",        "INTEGER NOT NULL DEFAULT 0" },
+        { "remained",       "INTEGER NOT NULL DEFAULT 0" },
+        { "lastupdatetime", "INTEGER" },
+        { "lastescapetime", "INTEGER" },
+    }
 
-    sql.Query( [[
-        CREATE TABLE IF NOT EXISTS glee_escape_by_spawnset (
-            spawnset       TEXT PRIMARY KEY,
-            escaped        INTEGER NOT NULL DEFAULT 0,
-            remained       INTEGER NOT NULL DEFAULT 0,
-            lastupdatetime INTEGER
-        )
-    ]] )
+    local function ensureTable( tblName, keyCol, columns )
+        sql.Query( "CREATE TABLE IF NOT EXISTS " .. tblName .. " ( " .. keyCol .. " TEXT PRIMARY KEY )" )
+
+        local existing = {}
+        for _, col in ipairs( sql.Query( "PRAGMA table_info(" .. tblName .. ")" ) or {} ) do
+            existing[col.name] = true
+
+        end
+
+        for _, col in ipairs( columns ) do
+            if not existing[col[1]] then
+                sql.Query( "ALTER TABLE " .. tblName .. " ADD COLUMN " .. col[1] .. " " .. col[2] )
+
+            end
+        end
+    end
+
+    ensureTable( "glee_escape_by_map",      "mapname",  escapeColumns )
+    ensureTable( "glee_escape_by_spawnset", "spawnset", escapeColumns )
+
 end
 
 initTables()
 
+-- lastupdatetime is the last round played, lastescapetime the last round anyone escaped ( NULL if nobody ever has )
 local function addCounts( tblName, keyCol, keyVal, escaped, remained )
+    local now = os.time()
+    local escapeTime = 0
+    if escaped > 0 then
+        escapeTime = now
+
+    end
+
+    -- query credit, HMM
     local result = sql.QueryTyped(
-        "INSERT INTO " .. tblName .. " (" .. keyCol .. ", escaped, remained, lastupdatetime) VALUES (?, ?, ?, ?)" ..
+        "INSERT INTO " .. tblName .. " (" .. keyCol .. ", escaped, remained, lastupdatetime, lastescapetime) VALUES (?, ?, ?, ?, NULLIF(?, 0))" ..
         " ON CONFLICT(" .. keyCol .. ") DO UPDATE SET" ..
         " escaped = escaped + excluded.escaped," ..
         " remained = remained + excluded.remained," ..
-        " lastupdatetime = excluded.lastupdatetime",
-        keyVal, escaped, remained, os.time()
+        " lastupdatetime = excluded.lastupdatetime," ..
+        " lastescapetime = COALESCE(excluded.lastescapetime, lastescapetime)",
+        keyVal, escaped, remained, now, escapeTime
     )
 
     if result == false then
@@ -42,12 +66,15 @@ local function addCounts( tblName, keyCol, keyVal, escaped, remained )
     end
 end
 
-local rawCountsCache = {}
+-- ["name"] = { escaped, remained, staleSince }
+GM.mapEscapeCountsCache = {}
+GM.spawnsetEscapeCountsCache = {}
 
 function GM:UpdateEscapeCounts()
+    -- has the map or spawnset been escaped?
     local escaped = GetGlobalInt( "glee_EscapedCount" )
     local remained = GetGlobalInt( "glee_RemainedCount" )
-
+    -- if hasn't been escaped or died to, don't write anything
     if escaped + remained == 0 then return end
 
     local mapName = game.GetMap()
@@ -55,10 +82,10 @@ function GM:UpdateEscapeCounts()
 
     sql.Begin()
         addCounts( "glee_escape_by_map", "mapname", mapName, escaped, remained )
-        rawCountsCache[mapName] = nil
+        self.mapEscapeCountsCache[mapName] = nil
 
         addCounts( "glee_escape_by_spawnset", "spawnset", spawnSetName, escaped, remained )
-        rawCountsCache[spawnSetName] = nil
+        self.spawnsetEscapeCountsCache[spawnSetName] = nil
 
     sql.Commit()
 
@@ -69,35 +96,36 @@ end
 -- ============================================================
 -- Reading
 
-local function getRawCounts( tblName, keyCol, keyVal )
-    local cached = rawCountsCache[keyVal]
+-- Returns escaped, remained, and when it started going stale
+local function getRawCounts( cache, tblName, keyCol, keyVal )
+    local cached = cache[keyVal]
     if cached then return cached[1], cached[2], cached[3] end
 
-    local rows = sql.QueryTyped( "SELECT escaped, remained, lastupdatetime FROM " .. tblName .. " WHERE " .. keyCol .. " = ?", keyVal )
+    local rows = sql.QueryTyped( "SELECT escaped, remained, lastupdatetime, lastescapetime FROM " .. tblName .. " WHERE " .. keyCol .. " = ?", keyVal )
     if not rows or not rows[1] then return 0, 0, nil end
 
-    local escaped        = rows[1].escaped
-    local remained       = rows[1].remained
-    local lastUpdateTime = rows[1].lastupdatetime  -- nil for rows migrated before this column existed
+    local escaped    = rows[1].escaped
+    local remained   = rows[1].remained
+    local staleSince = rows[1].lastescapetime or rows[1].lastupdatetime
 
-    rawCountsCache[keyVal] = { escaped, remained, lastUpdateTime }
-    return escaped, remained, lastUpdateTime
+    cache[keyVal] = { escaped, remained, staleSince }
+    return escaped, remained, staleSince
 
 end
 
-local rewardPerStaleWeek = 0.25
-local maxStaleReward = 1.5
+local rewardPerStaleWeek = 0.1
+local maxStaleReward = 2.5
 local easyCostSoftMax = 0.75
 
-local function escapeRatioToMultiplier( escaped, remained, lastUpdateTime )
+local function escapeRatioToMultiplier( escaped, remained, staleSince )
     local base = 1
     local addedByRatio = 0
-    if escaped <= 0 then -- NEVER BEEN ESCAPED!
+    if escaped <= 0 then -- NEVER BEEN ESCAPED! climb the mul!
         addedByRatio = 0.5 -- permanent 1.5x for first escapes
         addedByRatio = addedByRatio + math.Clamp( remained * 0.070, 0, 2 ) -- map is unescapable, up to 3.5x at first
         addedByRatio = addedByRatio + math.Clamp( remained * 0.005, 0, 1.5 ) -- and continue up to 5x for really miserable maps
 
-    else
+    else -- the normal path
         local escapedWeighted = escaped * 1.4
         local ratio = remained / escapedWeighted
         ratio = ratio - 1
@@ -118,8 +146,9 @@ local function escapeRatioToMultiplier( escaped, remained, lastUpdateTime )
 
     local multiplier = base + addedByRatio
 
-    if lastUpdateTime then
-        local secondsElapsed = math.max( 0, os.time() - lastUpdateTime )
+    -- note, un-escaped maps won't often get here, since staleSince falls back to lastupdatetime if lastescapetime is nil 
+    if staleSince then
+        local secondsElapsed = math.max( 0, os.time() - staleSince )
         local weeksElapsed   = math.floor( secondsElapsed / ( 7 * 24 * 3600 ) )
         -- stale weeks can only nudge the multiplier UP TO maxStaleReward, not past it
         local headroom    = math.max( 0, maxStaleReward - multiplier )
@@ -139,16 +168,16 @@ end
 function GM:GetMapsEscapeMultiplier( mapName )
     if not mapName then return 1, 0, 0 end
 
-    local escapedCount, remainedCount, lastUpdateTime = getRawCounts( "glee_escape_by_map", "mapname", mapName )
-    return escapeRatioToMultiplier( escapedCount, remainedCount, lastUpdateTime ), escapedCount, remainedCount
+    local escapedCount, remainedCount, staleSince = getRawCounts( self.mapEscapeCountsCache, "glee_escape_by_map", "mapname", mapName )
+    return escapeRatioToMultiplier( escapedCount, remainedCount, staleSince ), escapedCount, remainedCount
 
 end
 
 function GM:GetSpawnsetsEscapeMultiplier( spawnSetName )
     if not spawnSetName or spawnSetName == "" then return 1, 0, 0 end
 
-    local escapedCount, remainedCount, lastUpdateTime = getRawCounts( "glee_escape_by_spawnset", "spawnset", spawnSetName )
-    local multiplier = escapeRatioToMultiplier( escapedCount, remainedCount, lastUpdateTime )
+    local escapedCount, remainedCount, staleSince = getRawCounts( self.spawnsetEscapeCountsCache, "glee_escape_by_spawnset", "spawnset", spawnSetName )
+    local multiplier = escapeRatioToMultiplier( escapedCount, remainedCount, staleSince )
 
     local spawnset = self:GetRegisteredSpawnSet( spawnSetName )
     if spawnset and spawnset.easy and multiplier > easyCostSoftMax then -- hardcoded easy round, soft clamp out the multiplier

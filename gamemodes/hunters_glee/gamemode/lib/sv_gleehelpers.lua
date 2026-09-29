@@ -654,6 +654,19 @@ function GM:Bleed( ply, extent )
     end
 end
 
+local meleeWeaponClasses = {
+    weapon_crowbar = true,
+    weapon_stunstick = true,
+}
+
+function GM:IsMeleeWeapon( wep )
+    if not IsValid( wep ) then return false end
+    if wep.IsMelee then return true end
+
+    return meleeWeaponClasses[wep:GetClass()] or false
+
+end
+
 do
     local string = string
 

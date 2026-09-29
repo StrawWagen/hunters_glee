@@ -16,7 +16,7 @@ end )
 
 local autoHomicidalEvilnessIncrements = 200
 local extraAfterFirstSurface = 100
-local evilnessPerPersistGuilt = 5
+local evilnessPerPersistGuilt = 15
 
 
 --[[---------------------------------------------------------
@@ -86,26 +86,37 @@ end
 local innocentTolerance = 25
 function GM:IsInnocent( ply )
     if self:RoundState() ~= self.ROUND_ACTIVE then return true, 0 end
-    if not self.roundExtraData.hasSlighted then return true, 0 end
 
     local plysId = ply:SteamID()
+    local totalEvilness = 0
 
     -- have they been placing lots of evil items while dead?
-    local totalEvilness = self.roundExtraData.generalMischievousness[plysId] or 0
-
-    -- is this person a persistently evil presence?
-    local persistentEvilness = self:GetStoredPersistentGuilt( ply ) * evilnessPerPersistGuilt
-    totalEvilness = totalEvilness + persistentEvilness
-
-    -- have they been killing people? damaging people?
-    local slightersSlights = self.roundExtraData.hasSlighted[plysId]
-    if not slightersSlights then return totalEvilness < innocentTolerance, totalEvilness end
-
-    for _, amount in pairs( slightersSlights ) do
-        totalEvilness = totalEvilness + amount
+    local miscTbl = self.roundExtraData.generalMischievousness
+    if miscTbl then
+        local mischeviousness = miscTbl[plysId] or 0
+        totalEvilness = totalEvilness + mischeviousness
 
     end
-    return totalEvilness < innocentTolerance, totalEvilness
+
+    -- is this person a persistently evil presence?
+    local persistGuilt = self:GetStoredPersistentGuilt( ply )
+    local persistentEvilness = persistGuilt * evilnessPerPersistGuilt
+    totalEvilness = totalEvilness + persistentEvilness
+
+    local slightTbl = self.roundExtraData.hasSlighted
+    if slightTbl then
+        -- have they been killing people? damaging people?
+        local slightersSlights = slightTbl[plysId]
+        if slightersSlights then
+            for _, amount in pairs( slightersSlights ) do
+                totalEvilness = totalEvilness + amount
+
+            end
+        end
+    end
+
+    local innocent = totalEvilness < innocentTolerance
+    return innocent, totalEvilness
 
 end
 
@@ -291,15 +302,17 @@ hook.Add( "EntityTakeDamage", "huntersglee_makepvpreallybad", function( dmgTarg,
         dmg:ScaleDamage( 0 )
 
     else
-        -- for items that should always do full damage
-        -- eg, items placed by dead players
-        if inflictor and inflictor.glee_GuiltFreeInflictor then
+        -- they were guilty enough to trigger homicidal glee, no protect for this guy
+        if dmgTarg.glee_guiltyHomicidalGlee then
             return
 
         end
 
-        -- they were guilty enough to trigger homicidal glee, no protect for this guy
-        if dmgTarg.glee_guiltyHomicidalGlee then
+        local sacredDamage = attackerIsHorriblyEvil and GAMEMODE:GetStoredPersistentGuilt( dmgTarg ) < 1
+
+        -- for items that should always do full damage
+        -- eg, items placed by dead players
+        if inflictor and inflictor.glee_GuiltFreeInflictor and not sacredDamage then
             return
 
         end
@@ -313,7 +326,13 @@ hook.Add( "EntityTakeDamage", "huntersglee_makepvpreallybad", function( dmgTarg,
             end
             dmgTarg.huntersglee_nextpermittedballdamage = CurTime() + 0.5
 
-            dmg:SetDamage( dmgTarg:GetMaxHealth() * 0.9 )
+            local fullHealthPercent = 0.9
+            if sacredDamage then
+                fullHealthPercent = 0.25
+
+            end
+
+            dmg:SetDamage( dmgTarg:GetMaxHealth() * fullHealthPercent )
             dmg:SetDamageForce( dmg:GetDamageForce() * 12 )
             dmgTarg:EmitSound( "NPC_CombineBall.KillImpact" )
 
@@ -324,12 +343,19 @@ hook.Add( "EntityTakeDamage", "huntersglee_makepvpreallybad", function( dmgTarg,
                 inflictor:Fire( "Explode" )
 
             end
-        elseif dmg:IsExplosionDamage() then
-            dmg:ScaleDamage( 0.75 )
-
         else
-            dmg:ScaleDamage( 0.5 )
+            if sacredDamage then -- huge resistance if horribly evil player is attacking innocent one
+                dmg:ScaleDamage( 0.25 )
 
+            else
+                if dmg:IsExplosionDamage() then
+                    dmg:ScaleDamage( 0.75 )
+
+                else
+                    dmg:ScaleDamage( 0.5 )
+
+                end
+            end
         end
 
         net.Start( "glee_dealtpvpdamage" )

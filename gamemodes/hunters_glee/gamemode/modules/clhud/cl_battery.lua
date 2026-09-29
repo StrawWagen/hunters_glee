@@ -11,9 +11,6 @@ local materialSize = math.Clamp( glee_sizeScaled( nil, 48 ), 0, hl2:Settings().i
 local noBatteryTexture = Material( "vgui/hud/nobattery.png", "smooth" )
 local drainingTexture  = Material( "vgui/hud/losingcharge.png", "smooth" )
 
-local colorDraining = hl2:Color( "happy" ):Copy()
-local colorDead     = hl2:Color( "flash" ):Copy()
-
 local paddingJustHealth = glee_sizeScaled( nil, 260 )
 local paddingHpAndArmor = glee_sizeScaled( nil, 550 )
 
@@ -49,7 +46,7 @@ hook.Add( "glee_cl_aliveplyhud", "glee_drawbatterynotifs", function( ply, cur )
     -- texture and icon color follow armor state
     local hasBattery = ply:Armor() > 0
     local texture    = hasBattery and drainingTexture or noBatteryTexture
-    local iconColor  = hasBattery and colorDraining or colorDead
+    local iconColor  = hasBattery and "happy" or "flash"
 
     batteryBox:SetMaterial( texture )
     batteryBox:SetContentColor( iconColor )

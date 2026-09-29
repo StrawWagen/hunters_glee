@@ -23,9 +23,7 @@ PANEL.Init = function( self )
 
 end
 
--- Takes a font role, like "mediumLarge". SetFont and SetText work in either order, and
--- as often as you like: the box re-wraps its text when the font changes, and both of
--- them resize the row afterwards.
+-- A font role, like "mediumLarge". SetFont and SetText both resize, in either order
 PANEL.SetFont = function( self, fontRole )
     self._box:SetFont( fontRole )
     self:SizeToBox()

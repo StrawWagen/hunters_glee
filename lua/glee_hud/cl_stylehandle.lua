@@ -1,18 +1,18 @@
 --[[------------------------------------
-    Style handles: the only way anything outside glee_hud uses a style.
+    Style handles: how everything outside glee_hud draws in a style.
 
         local decree = terminator_Extras.glee_Style( "godlyDecree" )
         decree:Draw( "Welcome.", "huge", x, y, "text" )
 
-    A handle is NOT the style table. It has no colors and no fonts on it, so handle.colors
-    is nil. handle:Color and handle:Font turn a role name into one.
-
-    Everything is named by role, so swapping a panel's style changes its look and nothing
-    else. Text arguments run in draw.SimpleText's order.
+    A handle is not the style. It holds a style's name and scale, and looks the built
+    style up on every call, so it outlives rebuilds and follows aliases like generic.
+    handle.colors is nil; ask for a role through handle:Color, handle:Font and the rest.
+    Text arguments run in draw.SimpleText's order.
 --]]-------------------------------------
 
 local hudHelpers = terminator_Extras.glee_HudHelpers
 local builtStyles = terminator_Extras.glee_BuiltStyles
+local baseName = terminator_Extras.glee_BaseStyleName
 
 local styleHandle = {}
 styleHandle.__index = styleHandle
@@ -24,7 +24,7 @@ local handles = {}
     Gets the handle for a style at a scale.
     @param styleName: The name a style was registered under, like "hl2".
     @param scaleName: The name a scale was registered under. Defaults to "fixed".
-    @return: The handle. Shared, and it outlives rebuilds, so keep one in a local forever.
+    @return: The handle. Shared, and safe to keep in a local forever.
 --]]---------------------------------------------------------
 function terminator_Extras.glee_Style( styleName, scaleName )
     scaleName = scaleName or "fixed"
@@ -79,17 +79,17 @@ end
 --[[---------------------------------------------------------
     handle:Settings
     Gets the built style, for look data that has no method here.
-    @return: The built style, see cl_stylebuild.lua. Read tornStrip, blot, ghosts and
-        fontSizes off it. Every rebuild replaces it, and an alias's changes with the
-        player, so get it where you use it rather than keeping it.
+    @return: The built style, see cl_stylebuild.lua, for tornStrip, blot, ghosts and
+        fontSizes. Replaced by every rebuild and by an alias changing, so fetch it where
+        you use it, never keep it.
 --]]---------------------------------------------------------
 function styleHandle:Settings()
     local styleName = self:ResolvedName()
 
     local byScale = builtStyles[styleName]
     if not byScale then
-        warnOnce( "no style named \"" .. styleName .. "\", drawing as hl2" )
-        byScale = builtStyles.hl2
+        warnOnce( "no style named \"" .. styleName .. "\", drawing as " .. baseName )
+        byScale = builtStyles[baseName]
 
     end
 
@@ -115,7 +115,7 @@ function styleHandle:Font( fontRole )
 
     warnOnce( "style \"" .. style.styleName .. "\" has no font role \"" .. tostring( fontRole ) .. "\"" )
 
-    return style.fonts.medium or builtStyles.hl2.fixed.fonts.medium
+    return style.fonts.medium or builtStyles[baseName].fixed.fonts.medium
 
 end
 
@@ -145,7 +145,8 @@ function styleHandle:Scaled( pixels1080 )
 
 end
 
--- A length off the style's metrics, like "blockPadding", in this scale's pixels
+-- A length off the style's metrics, like "blockPadding", in this scale's pixels.
+-- An unknown one warns once and is 0
 function styleHandle:Metric( metricName )
     local metric = self:Settings().metrics[metricName]
     if metric then return metric end
@@ -180,13 +181,14 @@ end
     @return: None
 --]]---------------------------------------------------------
 function styleHandle:Draw( text, fontRole, x, y, colorRole, doCenter )
-    local metrics = self:Settings().metrics
+    local style = self:Settings()
+    local metrics = style.metrics
     local data = self.drawData
 
     data.text = text
     data.font = self:Font( fontRole )
     data.textColor = self:Color( colorRole or "text" )
-    data.shadowColor = self:Color( "shadow" )
+    data.shadowColor = style.shadowColor
     data.shadowOffsetX = metrics.shadowOffsetX
     data.shadowOffsetY = metrics.shadowOffsetY
     data.posX = x
@@ -207,16 +209,26 @@ local stateSuffixes = {
 
 --[[---------------------------------------------------------
     handle:BackdropColor
-    The colour a backdrop family draws in for a state, the family's role with the state
-    on the end: bg idle is bg, bg hovered is bgHovered. See hl2's colors.
+    The colour a backdrop family draws in for a state, the style's backdrops entry named
+    for the family with the state on the end: bg idle is bg, bg hovered is bgHovered.
+    See hl2's backdrops.
     @param family: "bg" or "bgDark". A Color passes through, whatever the state.
-    @param state: "idle", "hovered", "pressed", "chosen" or "disabled". Defaults to idle.
-    @return: The Color.
+    @param state: "idle", "hovered", "pressed", "chosen" or "disabled". Defaults to idle,
+        anything else errors.
+    @return: The Color. An unknown family warns once and gives bg's.
 --]]---------------------------------------------------------
 function styleHandle:BackdropColor( family, state )
     if not isstring( family ) then return family end
 
-    return self:Color( family .. stateSuffixes[state or "idle"] )
+    local backdrops = self:Settings().backdrops
+    local suffix = stateSuffixes[state or "idle"]
+
+    local color = backdrops[family .. suffix]
+    if color then return color end
+
+    warnOnce( "unknown backdrop \"" .. family .. suffix .. "\"" )
+
+    return backdrops["bg" .. suffix]
 
 end
 
@@ -247,7 +259,7 @@ function styleHandle:Background( x, y, w, h, family, cornerRadius, fade, state, 
 end
 
 -- Writes jitterX and jitterY onto state, for a draw position to add. Safe every frame,
--- it rerolls on its own clock. Only for styles with a jitter
+-- it rerolls on its own clock. Errors on a style without a jitter
 function styleHandle:Jitter( state )
     hudHelpers.DoJitter( state, self:Settings().jitter )
 
@@ -296,47 +308,43 @@ arrivingText.__index = arrivingText
     @return: The arrival, to call SetText, Update and Draw on.
 --]]---------------------------------------------------------
 function styleHandle:NewArrival( fontRole, ghostRole, doCenter )
-    local style = self:Settings()
-
-    -- a style with no ghosts under that role lands its text at once instead
-    local ghostSettings = style.ghosts and style.ghosts[ghostRole or fontRole]
-
-    local shadowColor = self:Color( "shadow" )
-    local metrics = style.metrics
-
     -- DrawGhosts writes these alphas, so they can't be the style's own colours
     local ghostTextColor = Color( 255, 255, 255, 255 )
-    local ghostShadowColor = ColorAlpha( shadowColor, 255 )
+    local ghostShadowColor = Color( 0, 0, 0, 255 )
 
     return setmetatable( {
         style = self,
         fontRole = fontRole,
-        ghostSettings = ghostSettings,
+        ghostRole = ghostRole or fontRole,
 
         materialised = 0,
         landed = false,
 
         ghostTextColor = ghostTextColor,
+        ghostShadowColor = ghostShadowColor,
         ghostData = {
             textColor = ghostTextColor,
             shadowColor = ghostShadowColor,
-            shadowOffsetX = metrics.shadowOffsetX,
-            shadowOffsetY = metrics.shadowOffsetY,
             doCenter = doCenter,
         },
         solidData = {
-            shadowColor = shadowColor,
-            shadowOffsetX = metrics.shadowOffsetX,
-            shadowOffsetY = metrics.shadowOffsetY,
             doCenter = doCenter,
         },
     }, arrivingText )
 
 end
 
+-- nil for a style with no ghosts under this role, which lands its text at once
+function arrivingText:GhostSettings()
+    local ghosts = self.style:Settings().ghosts
+    return ghosts and ghosts[self.ghostRole]
+
+end
+
 -- Keeps the text, replays the animation
 function arrivingText:Restart()
-    self.ghosts = self.ghostSettings and hudHelpers.BuildGhosts( self.ghostSettings )
+    local ghostSettings = self:GhostSettings()
+    self.ghosts = ghostSettings and hudHelpers.BuildGhosts( ghostSettings )
     self.materialised = 0
     self.landed = false
 
@@ -360,8 +368,10 @@ end
 function arrivingText:Update( elapsed )
     if not self.text then return 0, false end
 
-    local ghostSettings = self.ghostSettings
-    if ghostSettings then
+    -- ghosts are only built by Restart, so a rebuild that gives the style ghosts mid-way
+    -- through lands this one plainly
+    local ghostSettings = self:GhostSettings()
+    if ghostSettings and self.ghosts then
         local appeared = hudHelpers.AdvanceGhosts( self.ghosts, elapsed, ghostSettings )
         self.materialised = hudHelpers.GhostsMaterialised( elapsed, ghostSettings )
 
@@ -391,21 +401,35 @@ end
 function arrivingText:Draw( x, y, colorRole )
     if not self.text then return end
 
+    local built = self.style:Settings()
+    local metrics = built.metrics
+    local shadowColor = built.shadowColor
     local textColor = self.style:Color( colorRole or "text" )
     local font = self.style:Font( self.fontRole )
 
     local ghostTextColor = self.ghostTextColor
     ghostTextColor.r, ghostTextColor.g, ghostTextColor.b = textColor.r, textColor.g, textColor.b
 
+    local ghostShadowColor = self.ghostShadowColor
+    ghostShadowColor.r, ghostShadowColor.g, ghostShadowColor.b = shadowColor.r, shadowColor.g, shadowColor.b
+
     local ghostData = self.ghostData
     ghostData.text = self.text
     ghostData.font = font
+    ghostData.shadowOffsetX = metrics.shadowOffsetX
+    ghostData.shadowOffsetY = metrics.shadowOffsetY
 
     local solidData = self.solidData
     solidData.text = self.text
     solidData.font = font
     solidData.textColor = textColor
+    solidData.shadowColor = shadowColor
+    solidData.shadowOffsetX = metrics.shadowOffsetX
+    solidData.shadowOffsetY = metrics.shadowOffsetY
 
-    hudHelpers.DrawArrivingText( self.ghosts, self.ghostSettings, ghostData, solidData, x, y, self.materialised )
+    local ghostSettings = self:GhostSettings()
+    local ghosts = ghostSettings and self.ghosts
+
+    hudHelpers.DrawArrivingText( ghosts, ghostSettings, ghostData, solidData, x, y, self.materialised )
 
 end

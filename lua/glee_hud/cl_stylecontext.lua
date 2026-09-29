@@ -1,27 +1,23 @@
 --[[------------------------------------
     Which style and scale a panel draws in.
 
-    A panel takes both from the nearest panel up its parent chain that sets one, so
-    setting them on a frame sets them for everything in it:
+    Each comes from the nearest panel up the parent chain that sets one, so setting them
+    on a frame sets them for everything in it. With nothing set, it's generic at gui:
 
         terminator_Extras.glee_SetPanelStyle( frame, "hl2" )
         terminator_Extras.glee_SetPanelScale( frame, "fixed" )
-
         local style = terminator_Extras.glee_PanelStyle( somePanelInTheFrame )
 
-    With nothing set anywhere up the chain, a panel is generic at the gui scale.
-
-    Whenever what a panel draws in may have changed, every panel that defines
-    OnHudStyleChanged has it called, parents before children. That's a rebuild, an
-    alias like generic starting to resolve differently, a set on it or a parent, or a
-    panel calling glee_NotifyPanelStyle on itself. AfterHudStyleChanged runs once a
-    panel's children have all had theirs, for a parent sizing itself around them.
+    When what a panel draws in may have changed, its OnHudStyleChanged is called, parents
+    before children, then AfterHudStyleChanged once its children have had theirs, for a
+    parent sizing itself around them. That's the whole vgui tree on a rebuild or an alias
+    resolving differently, and the panel's own subtree on a set or glee_NotifyPanelStyle.
 --]]-------------------------------------
 
 local defaultStyle = "generic"
 local defaultScale = "gui"
 
--- how the world reads to you, and so to everything you're looking at. Escaped counts as dead
+-- escaped players are at 0 health, so they get soulthought too
 terminator_Extras.glee_RegisterStyleAlias( "generic", function()
     local me = LocalPlayer()
     if IsValid( me ) and me:Health() <= 0 then return "soulthought" end
@@ -92,7 +88,7 @@ end
 -- For a change this file can't see, like a panel being moved to another parent
 terminator_Extras.glee_NotifyPanelStyle = notifyTree
 
--- Works on any panel, glee's or not. nil clears it, back to inheriting
+-- These two work on any panel, glee's or not. nil goes back to inheriting
 function terminator_Extras.glee_SetPanelStyle( panel, styleName )
     panel.glee_HudStyle = styleName
     notifyTree( panel )

@@ -731,6 +731,214 @@ if SERVER then
         end
     )
 
+    local glandRestingBPM = 60
+    local glandBaseRegen = 0.1 -- suit per second at resting BPM
+    local glandBPMPerRegen = { 65, 75 }  -- this many beats above resting adds 1 suit per second
+    local glandSparkleRatio = 0.75
+    local glandMeleeBuffRatio = 0.85
+    local glandDischargeRatio = 0.99
+    local glandOverloadBPMRatio = 0.7 -- of the heart attack threshold
+    local glandArcDamage = 5
+    local glandMeleeBonusDamage = 15
+    local glandRegenPerExistingArmor = 0.025
+
+    -- arcs from EmitWeakLightningArcFrom only hit things at scale ~1 and up
+    local function glandHarmlessArcScale()
+        return math.Rand( 0.2, 0.6 )
+
+    end
+    local function glandHarmfulArcScale()
+        return math.Rand( 1.1, 1.5 )
+
+    end
+    local function chargeRatio( ent )
+        return ent:GetBatteryCharge() / ent:GetMaxArmor()
+
+    end
+
+    GAMEMODE:RegisterStatusEffect( "galvanizing_gland",
+        function( self, owner ) -- setup func
+            local inflictor = ents.Create( "glee_galvanizing_gland" )
+            inflictor:SetPos( owner:WorldSpaceCenter() )
+            inflictor:SetParent( owner )
+            inflictor:Spawn()
+            self.inflictor = inflictor
+
+            local function shock( target, damage )
+                local dmgType = damage >= 100 and bit.bor( DMG_DISSOLVE, DMG_SHOCK ) or DMG_SHOCK
+
+                local dmg = DamageInfo()
+                dmg:SetDamage( damage )
+                dmg:SetDamageType( dmgType )
+                dmg:SetAttacker( owner )
+                dmg:SetInflictor( IsValid( self.inflictor ) and self.inflictor or owner )
+                dmg:SetDamagePosition( target:WorldSpaceCenter() )
+                target:TakeDamageInfo( dmg )
+
+                if target:IsPlayer() then
+                    GAMEMODE:GivePanic( target, damage * 1.25 )
+
+                end
+            end
+
+            local function glandHit( _, hitEnt )
+                hitEnt:Ignite( math.Rand( 1, 3 ), 0 )
+                shock( hitEnt, glandArcDamage )
+
+            end
+
+            function self:Jitter()
+                GAMEMODE:GivePanic( owner, math.random( 2, 12 ) )
+                if not owner:OnGround() then return end
+
+                local nudge = VectorRand() * 80
+                nudge.z = 0
+                owner:SetVelocity( nudge )
+
+            end
+
+            function self:Overload()
+                owner:EmitSound( "ambient/levels/labs/electric_explosion1.wav", 90, 110, 1, CHAN_STATIC )
+                for _ = 1, 6 do
+                    terminator_Extras.EmitWeakLightningArcFrom( owner, glandHarmfulArcScale(), glandHit )
+
+                end
+
+                local halfCharge = owner:GetMaxArmor() * 0.5
+                owner:GivePlayerBatteryCharge( -( owner:GetBatteryCharge() - halfCharge ) )
+                owner:DoSpeedClamp( "galvanizinggland", -math.huge )
+
+                if not self.overloadHinted then
+                    self.overloadHinted = true
+                    huntersGlee_Announce( { owner }, 15, 4, "You're siezing up..." )
+
+                end
+
+                self:Timer( "overloadRecover", 3, 1, function()
+                    owner:DoSpeedClamp( "galvanizinggland", nil )
+
+                end )
+            end
+
+            function self:ShortCircuit()
+                local damage = owner:Armor() * 2
+
+                -- armor soaks shock damage, it has to be gone before the shock lands
+                owner:SetArmor( 0 )
+
+                owner:EmitSound( "ambient/levels/labs/electric_explosion5.wav", 90, 100 )
+                for _ = 1, 4 do
+                    terminator_Extras.EmitWeakLightningArcFrom( owner, glandHarmlessArcScale() )
+
+                end
+
+                shock( owner, damage )
+
+            end
+
+            self:Timer( "regen", 0.1, 0, function()
+                if owner:Health() <= 0 then return end
+
+                local armor = owner:Armor()
+                if armor <= 0 then return end -- a dead gland can't restart itself
+                if armor >= owner:GetMaxArmor() then return end
+
+                local cur = CurTime()
+                if ( self.NextRegen or 0 ) > cur then return end
+
+                local BPM = owner:GetNWInt( "termHuntPlyBPM" )
+
+                local bpmPerRegen = math.random( glandBPMPerRegen[1], glandBPMPerRegen[2] )
+                local bpmRegen = math.max( BPM - glandRestingBPM, 0 ) / bpmPerRegen
+                local rampupRegen = armor * glandRegenPerExistingArmor
+                local regen = glandBaseRegen + bpmRegen + rampupRegen
+
+                self.NextRegen = cur + 1 / regen
+                owner:SetArmor( armor + 1 )
+
+                if chargeRatio( owner ) < glandSparkleRatio then return end
+
+                if math.random( 0, 100 ) > 25 then return end
+                terminator_Extras.EmitWeakLightningArcFrom( owner, glandHarmlessArcScale() )
+
+            end )
+
+            self:Timer( "discharge", 0.1, 0, function()
+                if owner:Health() <= 0 then return end
+
+                if owner:Armor() > 0 and owner:WaterLevel() >= 1 then
+                    self:ShortCircuit()
+                    return
+
+                end
+
+                if chargeRatio( owner ) < glandDischargeRatio then return end
+
+                if math.random( 0, 100 ) < 25 then
+                    terminator_Extras.EmitWeakLightningArcFrom( owner, glandHarmfulArcScale(), glandHit )
+                    owner:GivePlayerBatteryCharge( math.Rand( -0.1, -15 ) )
+
+                end
+
+                if math.random( 0, 100 ) < 10 then
+                    self:Jitter()
+
+                end
+
+                local overloadBPM = GAMEMODE:GetHeartAttackThreshold( owner ) * glandOverloadBPMRatio
+                if owner:GetNWInt( "termHuntPlyBPM" ) >= overloadBPM then
+                    self:Overload()
+
+                end
+            end )
+
+            self:HookOnce( "EntityTakeDamage", function( target, dmg )
+                local attacker = dmg:GetAttacker()
+                if not attacker then return end
+                if not attacker:IsPlayer() then return end
+                if not attacker:HasStatusEffect( "galvanizing_gland" ) then return end
+
+                if chargeRatio( attacker ) < glandMeleeBuffRatio then return end
+
+                local inflic = dmg:GetInflictor()
+                if not GAMEMODE:IsMeleeWeapon( inflic ) then return end
+
+                dmg:SetDamageType( bit.bor( dmg:GetDamageType(), DMG_SHOCK ) )
+                dmg:AddDamage( glandMeleeBonusDamage )
+                target:Ignite( math.Rand( 1, 3 ), 0 )
+
+                terminator_Extras.EmitWeakLightningArcFrom( attacker, glandHarmlessArcScale() )
+                attacker:GivePlayerBatteryCharge( -5 )
+
+            end )
+
+            self:HookOnce( "glee_shover_shove", function( shoved, shover )
+                if not shover:HasStatusEffect( "galvanizing_gland" ) then return end
+                if chargeRatio( shover ) < glandDischargeRatio then return end
+
+                terminator_Extras.EmitWeakLightningArcFrom( shover, glandHarmlessArcScale() )
+                shoved:Ignite( math.Rand( 1, 3 ), 0 )
+
+            end )
+
+            self:Hook( "OnPlayerPhysicsPickup", function( ply, ent )
+                if ply ~= owner then return end
+                if not ent.glee_IsGas then return end
+                if chargeRatio( ply ) < glandDischargeRatio then return end
+                if math.random( 0, 100 ) > 50 then return end
+
+                terminator_Extras.EmitWeakLightningArcFrom( owner, glandHarmlessArcScale() )
+                ent:Ignite( 5, 0 )
+
+            end )
+        end,
+        function( self, owner ) -- teardown func
+            owner:DoSpeedClamp( "galvanizinggland", nil )
+            SafeRemoveEntity( self.inflictor )
+
+        end
+    )
+
     GAMEMODE:RegisterStatusEffect( "temporal_dice_roll",
         function( self, owner ) -- setup func
             self:SetRemoveOnDeath( true )
@@ -1258,7 +1466,7 @@ local items = {
     ["mechalegs"] = {
         name = "Mecha Legs",
         desc = "Mechanical leg augmentations.\nSpeed at the cost of Suit Battery.\nDead weight when you run out of power.",
-        shCost = 125,
+        shCost = 250,
         markup = 2,
         cooldown = math.huge,
         tags = { "MUTATIONS" },
@@ -1266,7 +1474,7 @@ local items = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
         },
-        weight = 120,
+        weight = 125,
         shPurchaseCheck = { shopHelpers.aliveCheck },
         svOnPurchaseFunc = function( ply )
             ply:GiveStatusEffect( "mecha_legs" )
@@ -1285,10 +1493,28 @@ local items = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
         },
-        weight = 120,
+        weight = 125,
         shPurchaseCheck = shopHelpers.aliveCheck,
         svOnPurchaseFunc = function( ply )
             ply:GiveStatusEffect( "juggernaut" )
+
+        end,
+    },
+    ["galvanizinggland"] = {
+        name = "Galvanizing Gland.",
+        desc = "A self-reinforcing organ.\nYou accumulate Suit Energy, your physiology is reformed, your bioelectricity used to multiply against your suit.\nThe charge must equalize, however...",
+        shCost = 350,
+        markup = 2,
+        cooldown = math.huge,
+        tags = { "MUTATIONS" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_INACTIVE,
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = 125,
+        shPurchaseCheck = shopHelpers.aliveCheck,
+        svOnPurchaseFunc = function( ply )
+            ply:GiveStatusEffect( "galvanizing_gland" )
 
         end,
     },

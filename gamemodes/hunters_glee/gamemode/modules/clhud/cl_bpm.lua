@@ -15,8 +15,8 @@ local materialSize = math.Clamp( glee_sizeScaled( nil, 55 ), 0, hl2:Settings().i
 
 local heartTexture = Material( "vgui/hud/heartbeat.png", "smooth" )
 
-local colorHealthy = hl2:Color( "happy" ):Copy()
-local colorDying   = hl2:Color( "flash" ):Copy()
+-- the box's role colour with the beat's alpha, refilled every frame
+local heartColor = Color( 0, 0, 0, 0 )
 
 local notBeatingTime = 0
 local imageAlpha     = 0
@@ -59,20 +59,26 @@ hook.Add( "glee_cl_aliveplyhud", "glee_drawbpmcooler", function( ply, cur )
     local noHeartBeats = notBeatingTime < cur
 
     -- Icon alpha is beat-driven and managed here; state alpha scales it further.
+    local colorRole
     if noHeartBeats then -- HEART ATTACK: icon fades in to full red
-        imageAlpha   = math_Clamp( imageAlpha + 1, 0, 255 )
-        colorDying.a = imageAlpha
-        bpmBox:SetContentColor( colorDying )
+        imageAlpha = math_Clamp( imageAlpha + 1, 0, 255 )
+        colorRole  = "flash"
         bpmBox:SetState( bpmBox.STATE_URGENT )
 
     else -- healthy: icon fades out between beats
         local decrease = imageAlpha < 100 and 0.5 or 4
-        imageAlpha      = math_Clamp( imageAlpha - decrease, 0, 255 )
-        colorHealthy.a  = imageAlpha
-        bpmBox:SetContentColor( colorHealthy )
+        imageAlpha = math_Clamp( imageAlpha - decrease, 0, 255 )
+        colorRole  = "happy"
         bpmBox:SetState( bpmBox.STATE_NORMAL )
 
     end
+
+    local roleColor = bpmBox:Style():Color( colorRole )
+    heartColor.r = roleColor.r
+    heartColor.g = roleColor.g
+    heartColor.b = roleColor.b
+    heartColor.a = imageAlpha
+    bpmBox:SetContentColor( heartColor )
 end )
 
 

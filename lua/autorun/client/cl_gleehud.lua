@@ -55,7 +55,7 @@ terminator_Extras.defaultHudPaddingFromBottom = glee_sizeScaled( nil, 26 ) -- ho
 terminator_Extras.defaultHudTextPaddingFromEdge = glee_sizeScaled( nil, 54 ) -- dead on match for the "health" text
 
 include( "glee_hud/cl_draw.lua" )
-include( "glee_hud/cl_style.lua" ) -- brings the root style, hl2, with it
+include( "glee_hud/cl_style.lua" ) -- brings the base style, hl2, with it
 
 include( "glee_hud/styles/cl_soulthought.lua" )
 include( "glee_hud/styles/cl_god.lua" )

@@ -10,8 +10,7 @@
     The "you are evil" throb is those boxes' own URGENT state.
 
     It picks its own width, and its height follows from that width, so a glee_frame's
-    SizeToContents fits it. Inside, sizes only ever flow inwards, which is the direction
-    VGUI already works in: the description fills whatever the cluster leaves behind.
+    SizeToContents fits it. The description fills whatever the cluster leaves.
 
     Dock tree:
         self                  Dock FILL, DockPadding( pad )
@@ -42,10 +41,10 @@ local THROB_SLOWEST = 0.5  -- seconds between blinks the moment they turn evil
 local THROB_FASTEST = 0.15 -- ...and once they hit the worst tier
 
 
--- The boxes take their own normal and urgent colours from their style. The accent
--- ( skull, day count, description, meter fill ) comes from the guilt tier itself, so
--- recolour tiers in PermaGuiltInfo, sh_guilt.lua.
--- Darker than the box it sits in, so unlit chunks read as recessed
+-- The skull, day count, description and meter fill are the tier's colour, set in
+-- PermaGuiltInfo, sh_guilt.lua. Everything else is the style's
+
+-- darker than the box it sits in, so unlit chunks read as recessed
 local METER_UNLIT_COLOR = "bgDark"
 
 
@@ -198,15 +197,9 @@ PANEL.Think = function( self )
 end
 
 -- Lays the children out for a panel this wide, and returns the height they came to.
---
--- The frame asks this, through GetContentHeight, BEFORE setting its own height, so the
--- frame is always as tall as the layout actually is. Nothing here may read a position,
--- size self, or touch the frame: it runs from PerformLayout too, which is before the
--- dock pass.
---
--- Sizes come from the fonts and the hud padding, both of which move with the
--- player's ui scale, so no caller may assume a height. Assuming one is what
--- makes the panel come out short and clip the description.
+-- The frame asks it, through GetContentHeight, before setting its own height.
+-- Nothing here may read a position, size self, or touch the frame: it runs from
+-- PerformLayout too, which is before the dock pass
 PANEL.LayoutForWidth = function( self, w )
     local style = self:Style()
     local gap = style:Metric( "laneSpacing" )
@@ -223,10 +216,8 @@ PANEL.LayoutForWidth = function( self, w )
     -- needs a width up front, and that width is the column's height
     self._skull:SetIconSize( columnH / ( 1 + SKULL_PADDING_RATIO ) )
 
-    -- the description is Dock FILL, so the dock pass gives it its height. it is
-    -- measured here anyway, because the frame's height is the sum that includes it.
-    -- the wrap width is ours, less our DockPadding, less the padding its own box
-    -- puts around its text
+    -- measured though the dock pass sizes it, because the frame's height includes it.
+    -- Wraps to our width less our DockPadding, less the padding its box puts round text
     self._desc:SetMaxTextWidth( w - pad * 2 - pad * 4 )
     self._desc:AutoSize()
 

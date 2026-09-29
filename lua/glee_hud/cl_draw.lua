@@ -177,9 +177,9 @@ end
 
 local layerColor = Color( 0, 0, 0, 0 )
 
--- A soft dark smudge behind text. Spills past x, y, w, h, and past the panel's bounds.
--- blot is settings like the soulthought style's blot. Its layers stack to color at the
--- centre, so color reads the same as it would drawn as a plain box
+-- A soft smudge of stacked rounded boxes, spilling past x, y, w, h and past the panel's
+-- clipping. blot is settings like the soulthought style's blot. The layers stack to
+-- color at the centre, so a colour looks as solid here as it would on a plain box
 function hudHelpers.DrawBlot( blot, color, x, y, w, h )
     -- the alpha that, laid down blot.layers times, comes to color's
     local coverage = color.a / 255
@@ -327,10 +327,9 @@ function hudHelpers.ArrivalProgress( openedAt, order, arrivalSettings )
 
 end
 
--- Keeps jitterX and jitterY on whatever table you hand it, ready for a draw position to add.
--- Owns its own clock, a per frame reroll is a buzz nobody can see and it would shake harder
--- the better your hardware is. Safe to call every frame, it only rerolls when it's due.
--- jitterSettings is like the god style's jitter
+-- Keeps jitterX and jitterY on state, for a draw position to add. jitterSettings is like
+-- the god style's jitter. Rerolls on its own clock rather than every frame, which would
+-- be a buzz nobody sees, and shake harder the higher the framerate
 function hudHelpers.DoJitter( state, jitterSettings )
     if state.nextJitter and state.nextJitter > CurTime() then return end
 

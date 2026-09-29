@@ -1,38 +1,29 @@
 --[[
     glee_hudbox — extends glee_panel
 
-    A glee_panel with the hud's display state machine. All alpha management is internal,
-    callers only set colours and instruct state.
+    A glee_panel with the hud's display state machine. Callers set colours and state, the
+    box does all its own fading.
 
     States:
-        HIDDEN (0) - invisible; applied immediately
-        FADING (1) - alpha decreasing toward zero, then transitions to HIDDEN
-        NORMAL (2) - immediately visible at the color's own alpha; never fades in
-        FLASH  (3) - edge-triggered; box draws chosen at full brightness,
-                     auto-returns to NORMAL after flashDuration seconds; cannot be
-                     interrupted by SetState until the flash completes
-        URGENT (4) - level-triggered; box alternates between its idle and chosen
-                     look at full brightness
+        HIDDEN (0) - invisible, at once
+        FADING (1) - holds for SetFadeStartDelay, then fades out and becomes HIDDEN
+        NORMAL (2) - fully visible at once, never fades in
+        FLASH  (3) - draws chosen for flashDuration seconds, then goes back to the last
+                     other state asked for. SetState can't cut it short
+        URGENT (4) - blinks between idle and chosen
 
-    The box's colours come from its backdrop family and state, see handle:BackdropColor.
-    The flash content colour defaults to the flash role.
-
-    The state alpha scales both the box and the content multiplicatively, so:
-      - in NORMAL/FADING: effective alpha  = color.a * stateAlpha / 255
-      - in FLASH/URGENT:  effective alpha  = color.a  (stateAlpha == 255)
-    Semi-transparency in NORMAL state comes from the colors' own .a values.
+    Chosen is the backdrop state, see handle:BackdropColor. While flashing the content
+    is the flash role.
 
     Setup:
         local box = vgui.Create( "glee_hudbox", parent )
         box:SetIconSize( 48 )
         box:SetMaterial( mat )
 
-    Per-frame (in a hook):
-        box:SetState( box.STATE_NORMAL )  -- instruct desired state each frame
-        box:SetContentColor( "happy" )    -- update tint as needed
+        box:SetState( box.STATE_NORMAL )
+        box:SetContentColor( "happy" )
 
-    Event-driven (called once):
-        box:SetState( box.STATE_FLASH )   -- trigger a flash
+        box:SetState( box.STATE_FLASH )   -- a one-off flash, then back to NORMAL
 ]]
 
 local HIDDEN = 0
@@ -77,11 +68,7 @@ PANEL.Init = function( self )
 
 end
 
--- Sets the desired display state.
--- FLASH is edge-triggered: starts a timed flash that cannot be interrupted until
---   it expires, then the panel returns to NORMAL.
--- HIDDEN is applied immediately.
--- All other states are level-triggered: call every frame to hold the state.
+-- One of the STATE_ constants, see the top of this file
 PANEL.SetState = function( self, state )
     if state == FLASH then
         if self._state ~= FLASH then
@@ -128,6 +115,7 @@ PANEL.SetFlashDuration = function( self, dur )
 
 end
 
+-- False skips SetFadeStartDelay's hold, so FADING starts fading at once
 PANEL.SetDoFadeDelays = function( self, doDelays )
     self._doFadeDelays = doDelays
 
@@ -139,6 +127,8 @@ PANEL.SetFadeSpeed = function( self, speed )
 
 end
 
+-- Seconds FADING holds at full alpha before it starts to fade, counted from the last
+-- frame the box was asked to stay
 PANEL.SetFadeStartDelay = function( self, delay )
     self._fadeStartDelay = delay
 
@@ -154,22 +144,19 @@ PANEL.Think = function( self )
     local state = self._state
     local cur   = CurTime()
 
-    -- Flash: check expiry, return to pending state
     if state == FLASH and cur >= self._flashExpiry then
         self._state = self._pendingState
         state       = self._pendingState
 
     end
 
-    -- Honor pending state (cannot interrupt an active flash).
-    -- Also fires when flash just expired above; harmlessly re-applies pendingState.
+    -- a flash can't be cut short by the state asked for
     if state ~= FLASH then
         self._state = self._pendingState
         state       = self._state
 
     end
 
-    -- Urgent blink tick
     if state == URGENT and cur >= self._urgentNextBlink then
         self._urgentNextBlink = cur + self._urgentInterval
         self._urgentBlink     = not self._urgentBlink
@@ -178,14 +165,14 @@ PANEL.Think = function( self )
 
     local goinAway
 
-    -- Advance state alpha
     if state == HIDDEN then
         goinAway = true
         self._stateAlpha = 0
 
     elseif state == FADING then
         goinAway = true
-        -- Hold at full alpha until the configured fade-start delay elapses
+        -- _fadeStartDelay is never nil, it defaults to 0, so this check of it and the one
+        -- below always pass
         if self._doFadeDelays and self._fadeStartDelay and self._fadeStartTime > cur then
             self._stateAlpha = 255
 
@@ -212,7 +199,7 @@ PANEL.Think = function( self )
 
 end
 
--- stub
+-- stub, called at the end of every Think for a caller's own per frame logic
 PANEL.AdditionalThink = function( _self )
 end
 

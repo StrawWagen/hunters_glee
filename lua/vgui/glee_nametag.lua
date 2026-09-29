@@ -28,13 +28,10 @@
         data.isLookedAt   bool         Controls infoLine/extraLine visibility and "????" name
                                        substitution when text alpha has faded to zero.
 
-    Drawn in its panel style, see glee_hud/cl_stylecontext.lua. A looked at panel draws
-    highlighted.
-
     Background lerps from the style's bg toward ply:GetPlayerColor() as distance
     increases through the name-fade zone; background alpha also rises with the lerp.
-    Dead player panels stay near the neutral background color. When isLookedAt, bg snaps
-    back to neutral. Text always uses team/state color.
+    Dead player panels stay near the neutral background color. When isLookedAt, it draws
+    the style's chosen bg instead. Text always uses team/state color.
 ]]
 
 
@@ -99,7 +96,6 @@ function PANEL:SetNameFadeEndDist( d )      self._nameFadeEndDist   = d    end
 function PANEL:SetFadeStartDist( d )        self._fadeStartDist     = d    end
 function PANEL:SetFadeEndDist( d )          self._fadeEndDist       = d    end
 function PANEL:SetBecomeCircleDist( d )     self._becomeCircleDist  = d    end
-function PANEL:SetHeadOffset( px )          self._headOffset        = px   end
 
 function PANEL:ComputeShowName()
     return self._textAlpha > 0 and self._name or "????"
@@ -346,7 +342,7 @@ function PANEL:Paint( w, h )
     local style = self:Style()
 
     -- Background: lerp from the style's bg toward ply:GetPlayerColor()
-    local bgBase  = style:Color( "bg" )
+    local bgBase  = style:BackdropColor( "bg" )
     local bgLerpT = self._bgColorLerpTransition
     local drawBg  = self._drawBg
     drawBg.r = math.floor( bgBase.r + ( self._bgTargetR - bgBase.r ) * bgLerpT )
@@ -360,13 +356,17 @@ function PANEL:Paint( w, h )
     local radiusRange        = circleCornerRadius - boxCornerRadius
     local cornerRadius       = math.floor( boxCornerRadius + radiusRange * self._sizeT )
 
+    -- looked at, the blend is back at neutral anyway, so hand the style the bg family and
+    -- let its chosen look through. A Color would draw as itself, whatever the state
+    local backdrop = drawBg
     local state = "idle"
     if self._isLookedAt then
+        backdrop = "bg"
         state = "chosen"
 
     end
 
-    style:Background( 0, 0, w, h, drawBg, cornerRadius, panelAlpha / 255, state, self )
+    style:Background( 0, 0, w, h, backdrop, cornerRadius, panelAlpha / 255, state, self )
 
     -- Don't draw text when the panel is nearly a dot
     if self._sizeT > 0.8 then return end

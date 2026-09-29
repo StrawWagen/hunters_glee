@@ -21,7 +21,7 @@ concommand.Add( "huntersglee_resetescapecount_map", function( ply, cmd, args )
     end
 
     sql.Query( "DELETE FROM glee_escape_by_map WHERE mapname = " .. sql.SQLStr( mapName ) )
-    rawCountsCache[mapName] = nil
+    GAMEMODE.mapEscapeCountsCache[mapName] = nil
     GAMEMODE:SyncCurrEscapeMuls()
 
     permaPrint( "Reset escape counts for map:", mapName )
@@ -39,7 +39,7 @@ concommand.Add( "huntersglee_resetescapecount_spawnset", function( ply, cmd, arg
     end
 
     sql.Query( "DELETE FROM glee_escape_by_spawnset WHERE spawnset = " .. sql.SQLStr( spawnSetName ) )
-    rawCountsCache[spawnSetName] = nil
+    GAMEMODE.spawnsetEscapeCountsCache[spawnSetName] = nil
     GAMEMODE:SyncCurrEscapeMuls()
 
     permaPrint( "Reset escape counts for spawnset:", spawnSetName )
@@ -87,26 +87,41 @@ concommand.Add( "huntersglee_print_byremained", function( ply )
 end )
 
 local function printMultiplierTable( tblName, keyCol, getMul )
-    local rows = sql.Query( "SELECT " .. keyCol .. " FROM " .. tblName )
+    local rows = sql.Query( "SELECT " .. keyCol .. ", lastescapetime FROM " .. tblName )
     if not rows then
         permaPrint( "  (none)" )
         return
 
     end
 
+    local secondsPerWeek = 7 * 24 * 3600
+
     local entries = {}
     for _, row in ipairs( rows ) do
         local key = row[keyCol]
         local mul, escaped, remained = getMul( key )
-        entries[#entries + 1] = { key = key, mul = mul, escaped = escaped, remained = remained }
+
+        local weeksSince = "never"
+        if escaped > 0 then
+            weeksSince = "?" -- escaped before lastescapetime existed
+
+        end
+
+        local lastEscapeTime = tonumber( row.lastescapetime )
+        if lastEscapeTime then
+            weeksSince = math.floor( math.max( 0, os.time() - lastEscapeTime ) / secondsPerWeek )
+
+        end
+
+        entries[#entries + 1] = { key = key, mul = mul, escaped = escaped, remained = remained, weeksSince = weeksSince }
 
     end
 
     table.sort( entries, function( a, b ) return a.mul > b.mul end )
 
     for i, e in ipairs( entries ) do
-        permaPrint( string.format( "  #%-3d  %-42s  mul: %-5s  escaped: %-6s  remained: %s",
-            i, e.key, e.mul, e.escaped, e.remained ) )
+        permaPrint( string.format( "  #%-3d  %-42s  mul: %-5s  escaped: %-6s  remained: %-6s  weeks since escape: %s",
+            i, e.key, e.mul, e.escaped, e.remained, e.weeksSince ) )
 
     end
 end

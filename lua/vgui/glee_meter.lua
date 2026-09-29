@@ -1,17 +1,14 @@
 --[[
     glee_meter — extends glee_hudbox
 
-    A chunked suit-power style bar, drawn inside the standard hud box.
-    Inherits the box, colors, and state machine; only the bar is new.
+    A chunked suit-power style bar, drawn inside a hud box. Only the bar is new.
 
     Chunks only tell the truth when there is one per step of whatever they show.
     SetSmooth( true ) draws one unbroken bar instead, for finer values.
 
-    Setup:
         local meter = vgui.Create( "glee_meter", parent )
-        meter:SetBarSize( 260, 10 )
+        meter:SetBarSize( 260, 10 )          -- pixels
         meter:SetChunks( 20 )
-        meter:SetFillColor( "happy" )
         meter:SetFill( 0.5 )                 -- 0-1
         meter:SetState( meter.STATE_NORMAL ) -- like any hudbox
 ]]
@@ -22,6 +19,8 @@ local function baseClass()
 
 end
 
+local CHUNK_GAP_1080P = 3
+
 local PANEL = {}
 
 PANEL.Init = function( self )
@@ -30,7 +29,6 @@ PANEL.Init = function( self )
     self._chunks     = 20
     self._smooth     = false
     self._fill       = 0
-    self._chunkGap   = style:Scaled( 3 )
     self._fillColor  = "happy"
     self._emptyColor = "bg"
 
@@ -38,7 +36,7 @@ PANEL.Init = function( self )
 
 end
 
--- Sizes the bar; the box grows around it by the standard block padding.
+-- The bar's size in pixels, the box grows around it by blockPadding
 PANEL.SetBarSize = function( self, barW, barH )
     local pad = self:Style():Metric( "blockPadding" )
     self:SetSize( barW + pad * 2, barH + pad * 2 )
@@ -64,15 +62,15 @@ PANEL.SetSmooth = function( self, smooth )
 
 end
 
--- A role or a Color
+-- A colour role or a Color, for the lit part of the bar
 PANEL.SetFillColor = function( self, color )
     self._fillColor = color
 
 end
 
--- A role or a Color
-PANEL.SetEmptyColor = function( self, color )
-    self._emptyColor = color
+-- A backdrop family, like "bgDark", or a Color, for the unlit part of the bar
+PANEL.SetEmptyColor = function( self, family )
+    self._emptyColor = family
 
 end
 
@@ -92,7 +90,7 @@ PANEL.Paint = function( self, w, h )
     local barW   = w - pad * 2
     local barH   = h - pad * 2
     local fill   = style:Color( self._fillColor )
-    local empty  = style:Color( self._emptyColor )
+    local empty  = style:BackdropColor( self._emptyColor )
 
     if self._smooth then
         surface.SetDrawColor( empty.r, empty.g, empty.b, empty.a * stateAlpha / 255 )
@@ -108,7 +106,7 @@ PANEL.Paint = function( self, w, h )
     local chunks = self._chunks
     local lit    = math.Round( self._fill * chunks )
     local chunkW = barW / chunks
-    local drawnW = math.max( 1, chunkW - self._chunkGap )
+    local drawnW = math.max( 1, chunkW - style:Scaled( CHUNK_GAP_1080P ) )
 
     for i = 1, chunks do
         local src = ( i <= lit ) and fill or empty

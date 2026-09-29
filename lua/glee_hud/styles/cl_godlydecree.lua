@@ -16,7 +16,7 @@ terminator_Extras.glee_RegisterStyle( "godlyDecree", {
         triumphant = { size = 90 }, -- the round end verdict
         orders     = { size = 80 }, -- the divine chosen's marching orders
         -- player names need characters the decree font lacks, sized to sit with the verdict.
-        -- GLEE_FONT is read at build time because it isn't set yet when this file loads
+        -- A function because GLEE_FONT isn't set when this file loads, see cl_stylebuild.lua
         playerName = {
             size = 65,
             weight = 500,
@@ -29,7 +29,6 @@ terminator_Extras.glee_RegisterStyle( "godlyDecree", {
         endscreen = Color( 200, 25, 25 ),
         doom      = Color( 100, 0, 0 ), -- bad news, like nobody escaping
         boon      = Color( 255, 165, 0 ), -- good news, like everybody escaping
-        shadow    = Color( 0, 0, 0, 255 ),
         urgent    = Color( 255, 40, 20 ), -- grigori countdown's last thirty seconds
     },
 

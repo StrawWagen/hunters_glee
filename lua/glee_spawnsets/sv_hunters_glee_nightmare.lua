@@ -1,9 +1,9 @@
 -- overcharged hunters, dont have to copy this
 local overchargedChanceAtMinutes = {
     [0] = math.Rand( 1, 5 ),
-    [2] = math.Rand( 5, 25 ),
-    [8] = math.Rand( 25, 75 ),
-    [12] = 100,
+    [1] = math.Rand( 5, 25 ),
+    [4] = math.Rand( 25, 75 ),
+    [8] = 100,
 
 }
 local function postSpawnedOvercharge( spawnDat, spawned )

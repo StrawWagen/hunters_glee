@@ -1,24 +1,22 @@
 --[[------------------------------------
-    Builds every registered style, once per registered scale, into the tables handles
-    read. Styles are data, see cl_style.lua; this is the only place that reads them.
+    Builds every registered style at every registered scale, into the tables handles
+    read. The only reader of the style tables, see cl_style.lua.
 
-    Runs once every style is registered, then again on glee_rebuildfonts, when
-    cl_huntersglee_highcontrast changes, and when a style or scale registers late.
-    glee_hud_stylesrebuilt runs after each build.
+    Builds once every style is registered, then again once the gamemode has loaded, on
+    glee_rebuildfonts, on a change of cl_huntersglee_highcontrast, and on a late style or
+    scale. glee_hud_stylesrebuilt runs after each.
 
-    A font spec is a surface.CreateFont table with three differences:
-
-        size        1080p pixels, scaled to the screen and the scale, and multiplied by
-                    sizeMul. A function( scale ) gives final pixels instead, skipping all that.
-        sizeMul     overrides the style's sizeMul, for this font only
-        any value   a function is called at build time, for anything the style file
-                    can't know yet
-
+    A font spec is a surface.CreateFont table, except:
+        size        1080p pixels, scaled, times sizeMul. A function( scale ) returns
+                    final pixels instead
+        sizeMul     overrides the style's, for this font
+        any value   a function is called at build time, for what the style file can't
+                    know yet
     Unset, font and weight come from the style, and antialias is on.
 --]]-------------------------------------
 
 local styles = terminator_Extras.glee_HudStyles
-local rootName = terminator_Extras.glee_RootStyleName
+local baseName = terminator_Extras.glee_BaseStyleName
 
 -- styleName -> scaleName -> built style. Emptied and refilled by every build, never replaced
 terminator_Extras.glee_BuiltStyles = terminator_Extras.glee_BuiltStyles or {}
@@ -30,10 +28,11 @@ local scales = terminator_Extras.glee_HudScales
 local highContrastVar = CreateClientConVar( "cl_huntersglee_highcontrast", 0, true, false, "Draw glee's HUD and menus in high contrast?", 0, 1 )
 
 local roleTables = {
-    colors  = true,
-    fonts   = true,
-    metrics = true,
-    sounds  = true,
+    colors    = true,
+    backdrops = true,
+    fonts     = true,
+    metrics   = true,
+    sounds    = true,
 }
 
 -- instructions to the build, never fields of the built style
@@ -75,9 +74,9 @@ local function layerOver( built, fields )
     end
 end
 
--- The root first, styleName last. A style naming no parent has the root's
+-- The base first, styleName last. A style naming no parent has the base as its parent
 local function inheritanceChain( styleName )
-    local root = styles[rootName]
+    local base = styles[baseName]
     local chain = {}
     local seen = {}
     local name = styleName
@@ -99,20 +98,31 @@ local function inheritanceChain( styleName )
         table.insert( chain, 1, style )
 
         name = style.inherits
-        if not name and style ~= root then
-            name = rootName
+        if not name and style ~= base then
+            name = baseName
 
         end
     end
 
-    -- a broken chain still gets every field, from the root
-    if chain[1] ~= root then
-        table.insert( chain, 1, root )
+    -- a broken chain still gets every field, from the base
+    if chain[1] ~= base then
+        table.insert( chain, 1, base )
 
     end
 
     return chain
 
+end
+
+-- Covers roles only one style has, like godlyDecree's doom, not just hl2's
+local function paintEveryText( built )
+    local textColor = built.everyTextColor
+    if not textColor then return end
+
+    for role in pairs( built.colors ) do
+        built.colors[role] = textColor
+
+    end
 end
 
 local function scaleMetrics( metrics, scale )
@@ -218,12 +228,14 @@ local function buildStyle( styleName, scaleName, scale )
 
             end
         end
+
+        paintEveryText( built )
+
     end
 
     built.styleName = styleName
     built.scaleName = scaleName
     built.scale = scale
-    built.highContrast = highContrast
     built.metrics = scaleMetrics( built.metrics, scale )
     buildFonts( built )
 
@@ -258,7 +270,7 @@ end
     terminator_Extras.glee_RegisterScale
     Adds a scale every style gets built at, like the gui scale the menus follow.
     @param scaleName: What handles and panels will ask for it by.
-    @param getScale: Returns the multiplier, read on every build. 1 is 1080p size.
+    @param getScale: Returns the multiplier, read on every build. 1 is fixed.
     @return: None
 --]]---------------------------------------------------------
 function terminator_Extras.glee_RegisterScale( scaleName, getScale )
@@ -269,12 +281,15 @@ function terminator_Extras.glee_RegisterScale( scaleName, getScale )
 
 end
 
--- everything drawn with no scale named, and anything that must stay readable whatever
--- the gui scale is set to
+-- what glee_Style gives when no scale is named
 scales.fixed = function() return 1 end
 
 buildAllStyles()
 
 hook.Add( "glee_rebuildfonts", "glee_rebuild_hudstyles", buildAllStyles )
+
+-- glee_hud loads before the gamemode, so a font spec reading GAMEMODE only gets the real
+-- value from here on
+hook.Add( "OnGamemodeLoaded", "glee_rebuild_hudstyles", buildAllStyles )
 
 cvars.AddChangeCallback( "cl_huntersglee_highcontrast", buildAllStyles, "glee_rebuild_hudstyles" )

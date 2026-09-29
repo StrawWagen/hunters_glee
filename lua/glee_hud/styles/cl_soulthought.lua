@@ -1,8 +1,8 @@
 --[[------------------------------------
-    soulthought: a soul thinking, how the world reads to the dead.
+    soulthought: how the world reads to the dead.
 
-    Swaps in for hl2 on the same panels mid-round, so it inherits hl2's font roles
-    rather than listing its own, or a box would change shape the moment its player died.
+    Swaps in for hl2 on the same panels the moment you die, so it keeps hl2's font roles
+    and changes only the face, or every box would change shape.
 --]]-------------------------------------
 
 terminator_Extras.glee_RegisterStyle( "soulthought", {
@@ -27,9 +27,12 @@ terminator_Extras.glee_RegisterStyle( "soulthought", {
         alert   = Color( 206, 108, 90 ),
         flash   = Color( 206, 108, 90 ),
         jackpot = Color( 211, 228, 121 ),
-        shadow  = Color( 0, 0, 0, 230 ),
+    },
 
-        -- what the blot comes to at its centre, see glee_HudHelpers.DrawBlot
+    shadowColor = Color( 0, 0, 0, 230 ),
+
+    -- what the blot comes to at its centre, see glee_HudHelpers.DrawBlot
+    backdrops = {
         bg         = Color( 6, 8, 2, 110 ),
         bgDisabled = Color( 6, 8, 2, 110 ),
         bgHovered  = Color( 20, 24, 8, 150 ),
