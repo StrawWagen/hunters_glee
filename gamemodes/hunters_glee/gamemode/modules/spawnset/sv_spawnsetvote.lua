@@ -217,10 +217,12 @@ function spawnSetVote:OnVoteEnd()
     -- and in people's chat!
     GAMEMODE:SpeakAsHuntersGlee( "the Misery vote winner; " .. GAMEMODE:GetPrettyNameOfSpawnSet( spawnSetVote.winner ) )
 
+    local _, currentSpawnSet = GAMEMODE:GetSpawnSet()
+
     if
         GAMEMODE:RoundState() == GAMEMODE.ROUND_ACTIVE
         and GAMEMODE:getRemaining( GAMEMODE.termHunt_roundBegunTime, CurTime() ) > 60
-        and not GAMEMODE:GetSpawnSet().easy -- always allow switching if easy
+        and not currentSpawnSet.easy -- always allow switching if easy
 
     then -- if round has properly started
         huntersGlee_AnnounceDramatic( player.GetAll(), 1001, 10, "The next Misery; " .. GAMEMODE:GetPrettyNameOfSpawnSet( spawnSetVote.winner ) .. "\nwill arrive upon round end..." )

@@ -659,3 +659,5 @@ goes in a glee rebinding menu?
 -- TOO MUCH MONEY, INFLATION!
 
 -- headhunter MUTATION, 100% chance for killed npc to drop skull, newgame+
+
+-- too many effects playing when multiple grigori

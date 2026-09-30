@@ -1606,7 +1606,7 @@ local items = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
         },
-        weight = 130,
+        weight = 135,
         shPurchaseCheck = shopHelpers.aliveCheck,
         svOnPurchaseFunc = function( ply )
             ply:GiveStatusEffect( "temporal_dice_roll" )
@@ -1623,7 +1623,7 @@ local items = {
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },
-        weight = 125,
+        weight = 130,
         shPurchaseCheck = shopHelpers.aliveCheck,
         svOnPurchaseFunc = function( ply )
             ply:GiveStatusEffect( "channel_666" )
