@@ -898,6 +898,7 @@ if SERVER and terminator_Extras then
 
             elseif target == heli then
                 if not dmgInfo:IsExplosionDamage() then -- nuke force from non-explosive damage
+                    if dmgInfo:GetDamage() <= 10 then return end -- just give up if super weak non-explosive damage
                     dmgInfo:SetDamageForce( Vector( 0, 0, 0 ) )
 
                 end
