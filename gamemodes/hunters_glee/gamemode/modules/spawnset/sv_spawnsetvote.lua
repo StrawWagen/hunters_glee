@@ -7,6 +7,9 @@ local GM = GM or GAMEMODE
 local spawnSetVote = GM.glee_SpawnSetVote or {}
 GM.glee_SpawnSetVote = spawnSetVote
 
+local chancePerConsecutiveVote = 0.1
+GM.glee_ConsecutiveSpawnsetVotes = GM.glee_ConsecutiveSpawnsetVotes or 0
+
 util.AddNetworkString( "glee_begin_spawnsetvote" )
 
 function spawnSetVote:BeginVote( duration, maxOptions )
@@ -58,6 +61,13 @@ function spawnSetVote:BeginVote( duration, maxOptions )
         local chance = option.chanceToBeVotable
         if option.chanceToBeVotableWhenHard and optionsMul >= 1 then -- make spawnsets fade into the background if they aren't challenging people
             chance = option.chanceToBeVotableWhenHard
+
+        end
+
+        if isnumber( chance ) and chance < 15 then -- bump chances of rare modes up to 15%, so if rtm is being done a bunch of times, make rare ones more common
+            local added = GAMEMODE.glee_ConsecutiveSpawnsetVotes * chancePerConsecutiveVote
+            local newChance = chance + added
+            chance = math.min( newChance, 15 )
 
         end
 
@@ -139,6 +149,8 @@ function spawnSetVote:BeginVote( duration, maxOptions )
     net.Send( player.GetAll() )
 
     permaPrint( "GLEE: A mode vote has begun" )
+
+    GAMEMODE.glee_ConsecutiveSpawnsetVotes = GAMEMODE.glee_ConsecutiveSpawnsetVotes + 1
 
     timer.Create( "glee_spawnsetvote_end", duration, 1, function() -- one timername
         spawnSetVote:OnVoteEnd()

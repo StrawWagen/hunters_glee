@@ -1,15 +1,12 @@
-local defaultDir = GM.DataFileDirectory
-local defaultBankDataName = defaultDir .. "/bankdata.json"
 GM.bankInfoTable = GM.bankInfoTable or {}
 GM.bankInfoTable.accounts = GM.bankInfoTable.accounts or {}
 
 local bankFunctions = GM.bankFunctions
 local GAMEMODE = GAMEMODE or GM
 
-bankFunctions.bankDataFile = defaultBankDataName
-
+-- special magic variable, set to true if there's any changes that should be saved
 local somethingHasChanged = nil
-local cachedLoadedBank = nil
+
 local validationsSkipped = 0
 local nextBankPeriodChargeCheck = CurTime() + 1
 local timerName = "glee_bank_savetimer"
@@ -32,7 +29,9 @@ bankFunctions.accountsFunds = function( account )
     end
 end
 
--- toAdd may be negative. false, and nothing changes, when there's no account or it would leave the account at or below 0
+-- Adds toAdd to the player's bank funds, negative takes. 
+-- returns false when they have no account, or if the new funds would be 0 or less
+-- Doesn't save, call updateBankTimer after.
 bankFunctions.changeFunds = function( ply, toAdd )
     local account = bankFunctions.checkBankAccount( ply )
     if not account then return false end
@@ -55,16 +54,11 @@ bankFunctions.changeFunds = function( ply, toAdd )
 
 end
 
+-- Removes expired items, and charges idle fees. Only does this once every 240 seconds.
+-- Closes accounts that fall below the minimum funds.
+-- Then if anything changed, saves the bank and updates every player's bank NW2 vars.
 bankFunctions.validateBank = function()
     validationsSkipped = 0
-    local decodedTbl = bankFunctions.bankOnFile()
-
-    -- initial load with a saved bank
-    if not GAMEMODE.bankInfoTable.savedTime and decodedTbl then
-        GAMEMODE.bankInfoTable = decodedTbl
-
-    end
-    local osTime = os.time()
 
     -- process stale accounts
     if nextBankPeriodChargeCheck < CurTime() then
@@ -92,10 +86,7 @@ bankFunctions.validateBank = function()
         end
     end
 
-    local needsToSave = somethingHasChanged
-    needsToSave = needsToSave and ( not decodedTbl or osTime > decodedTbl.savedTime )
-
-    if needsToSave then
+    if somethingHasChanged then
         somethingHasChanged = nil
         bankFunctions.saveBank()
         for _, ply in ipairs( player.GetAll() ) do
@@ -105,30 +96,8 @@ bankFunctions.validateBank = function()
     end
 end
 
-bankFunctions.saveBank = function()
-    GAMEMODE.bankInfoTable.savedTime = os.time()
-    if not file.Exists( defaultDir, "DATA" ) then
-        file.CreateDir( defaultDir )
-
-    end
-    file.Write( defaultBankDataName, util.TableToJSON( GAMEMODE.bankInfoTable, true ) )
-    bankFunctions.resetBankOnFileCache()
-
-end
-
-bankFunctions.loadBank = function()
-    if not file.Exists( defaultBankDataName, "DATA" ) then return end
-
-    local existingBankFile = file.Read( defaultBankDataName, "DATA" )
-    if not existingBankFile then return end
-
-    local decodedTbl = util.JSONToTable( existingBankFile )
-    if not decodedTbl or not decodedTbl.savedTime then return end
-
-    return decodedTbl
-
-end
-
+-- Validates the bank 4 seconds after the last call.
+-- On the 10th call without a validate, validates right away instead.
 bankFunctions.updateBankTimer = function()
     timer.Remove( timerName )
     if validationsSkipped >= 10 then
@@ -139,19 +108,6 @@ bankFunctions.updateBankTimer = function()
         timer.Create( timerName, 4, 1, bankFunctions.validateBank )
 
     end
-end
-
-bankFunctions.bankOnFile = function()
-    if cachedLoadedBank then return cachedLoadedBank end
-
-    cachedLoadedBank = bankFunctions.loadBank()
-    return cachedLoadedBank
-
-end
-
-bankFunctions.resetBankOnFileCache = function()
-    cachedLoadedBank = nil
-
 end
 
 bankFunctions.updateOwnerName = function( account, ownerEnt )
@@ -212,6 +168,7 @@ bankFunctions.createAccount = function( ply )
 
 end
 
+-- Replaces any account the player already has, including its funds and items.
 bankFunctions.openAccount = function( ply )
     bankFunctions.createAccount( ply )
     timer.Simple( 0, function()
@@ -300,11 +257,6 @@ hook.Add( "ShutDown", "glee_validatebank_shutdown", function()
     somethingHasChanged = true
     bankFunctions.validateBank()
 
-    -- validateBank won't save twice in one os.time() second, but there's no later chance to
-    if somethingHasChanged then
-        bankFunctions.saveBank()
-
-    end
 end )
 
 hook.Add( "PlayerInitialSpawn", "glee_updateplybankstuff", function( spawned )
@@ -409,6 +361,8 @@ function meta:BankWithdraw( toWithdraw )
 
 end
 
+-- Replaces any account the player already has, including its funds and items.
+-- Check BankHasAccount first.
 function meta:BankOpenAccount()
     bankFunctions.openAccount( self )
     bankFunctions.updateBankTimer()

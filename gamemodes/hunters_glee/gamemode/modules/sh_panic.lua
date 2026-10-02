@@ -86,6 +86,7 @@ elseif SERVER then
 
         if plysHealth <= 0 then
             panic = 0
+            ply:DoSpeedModifier( "panic", nil )
 
         elseif plysHealth <= 10 then
             panicDrain = 0.1

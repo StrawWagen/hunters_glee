@@ -582,7 +582,7 @@ local items = {
         end,
     },
     ["signalflare"] = {
-        name = "Signal Flare Gun",
+        name = "Escape Flaregun",
         desc = "Very bright flaregun, It could probably be seen from miles away...",
         shCost = 0,
         shSkullCost = function()
@@ -598,7 +598,7 @@ local items = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
         },
-        weight = 10000,
+        weight = -10000,
         shPurchaseCheck = shopHelpers.aliveCheck,
         svOnPurchaseFunc = function( purchaser )
             shopHelpers.purchaseWeapon( purchaser, {

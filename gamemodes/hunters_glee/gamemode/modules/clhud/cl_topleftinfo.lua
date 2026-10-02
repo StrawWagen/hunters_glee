@@ -102,6 +102,17 @@ hook.Add( "glee_cl_confirmedpurchase", "storeIfPlayerBoughtUndeadItem", function
     end
 end )
 
+hook.Add( "glee_shop_finishopening", "glee_shop_detecttypeofopen", function( ply )
+    GAMEMODE:LearnLesson( "OpenedShop" )
+    if ply:Health() <= 0 then
+        GAMEMODE:LearnLesson( "OpenedDeadShop" )
+
+    else
+        GAMEMODE:LearnLesson( "OpenedAliveShop" )
+
+    end
+end )
+
 
 net.Receive( "glee_followedsomething", function()
     if not IsValid( LocalPlayer() ) then return end -- ???????
@@ -205,7 +216,7 @@ local function genericHints()
 
         -- hey you should open the shop!!!!
         if not blockShop and ( timeToBuy or meagreWealth ) then
-            if not me.glee_OpenedHuntersGleeShop and me:GetNWInt( "termHuntPlyBPM" ) <= 80 then
+            if not GAMMODE:HasLearnedLesson( "OpenedAliveShop" ) and me:GetNWInt( "termHuntPlyBPM" ) <= 80 then
                 return true, "You have score to spend, things to buy!\nPress \" " .. string.upper( phrase ) .. " \" to open the shop."
 
             elseif not hasBoughtSomething and me:GetNWInt( "termHuntPlyBPM" ) <= 75 then
@@ -217,7 +228,7 @@ local function genericHints()
         if not blockShop and not GAMMODE:HasLearnedLesson( "BoughtSignalFlare" ) and GAMMODE:canShowInShop( me, "signalflare" ) then
             local skulls = me:GetSkulls()
             if skulls >= GAMMODE:shopItemSkullCost( "signalflare", me ) then
-                return true, "Purchase a Signal Flare from the SHOP\nIt's time to get out of here."
+                return true, "Purchase an Escape Flaregun from the SHOP\nIt's time to get out of here."
 
             end
         end
@@ -237,10 +248,25 @@ local function genericHints()
         if result then
             return result, hooksHint
 
-        elseif not me.glee_OpenedHuntersGleeShop then
+        elseif not GAMMODE:HasLearnedLesson( "SpectatedSomeone" ) then
+            local valid, phrase = GAMEMODE:TranslatedBind( "+attack" )
+            if not valid then GAMMODE:LearnLesson( "SpectatedSomeone" ) return end
+
+            return true, "Press " .. phrase .. " to follow stuff!"
+
+        elseif not GAMMODE:HasLearnedLesson( "SwitchedSpectateModes" ) and IsValid( me:GetObserverTarget() ) then
+            local valid, phrase = GAMEMODE:TranslatedBind( "+jump" )
+            if not valid then GAMMODE:LearnLesson( "SwitchedSpectateModes" ) return end
+
+            return true, "Press " .. phrase .. " to switch spectate modes!"
+
+        elseif not GAMMODE:HasLearnedLesson( "StoppedSpectating" ) and IsValid( me:GetObserverTarget() ) then
+            return true, "Press any movement key to stop following stuff!"
+
+        elseif not GAMMODE:HasLearnedLesson( "OpenedDeadShop" ) then
             local valid, phrase = GAMEMODE:TranslatedBind( "+menu" )
-            if not valid then me.glee_OpenedHuntersGleeShop = true return end
-            if hook.Run( "glee_blockshopopen" ) then me.glee_OpenedHuntersGleeShop = true return end
+            if not valid then GAMMODE:LearnLesson( "OpenedDeadShop" ) return end -- :(
+            if hook.Run( "glee_blockshopopen" ) then GAMMODE:LearnLesson( "OpenedDeadShop" ) return end
 
             if me.glee_SpawnedInDeadTutorialPlease then
                 return true, "Press \" " .. string.upper( phrase ) .. " \" to open the shop.\nDIVINE INTERVENTION AWAITS."
@@ -269,21 +295,6 @@ local function genericHints()
                 return true, "Purchase 'Sacrifices' to make score while dead!"
 
             end
-        elseif not GAMMODE:HasLearnedLesson( "SpectatedSomeone" ) then
-            local valid, phrase = GAMEMODE:TranslatedBind( "+attack" )
-            if not valid then GAMMODE:LearnLesson( "SpectatedSomeone" ) return end
-
-            return true, "Press " .. phrase .. " to follow stuff!"
-
-        elseif not GAMMODE:HasLearnedLesson( "SwitchedSpectateModes" ) and IsValid( me:GetObserverTarget() ) then
-            local valid, phrase = GAMEMODE:TranslatedBind( "+jump" )
-            if not valid then GAMMODE:LearnLesson( "SwitchedSpectateModes" ) return end
-
-            return true, "Press " .. phrase .. " to switch spectate modes!"
-
-        elseif not GAMMODE:HasLearnedLesson( "StoppedSpectating" ) and IsValid( me:GetObserverTarget() ) then
-            return true, "Press any movement key to stop following stuff!"
-
         elseif not me.glee_HasDoneSpectateFlashlight and ( me.flashlightAdditive or 0 ) >= 100 and render.GetLightColor( me:GetPos() ):LengthSqr() < 0.008 then
             local valid, phrase = GAMEMODE:TranslatedBind( "+impulse 100" )
             if not valid then me.glee_HasDoneSpectateFlashlight = true return end
@@ -294,11 +305,13 @@ local function genericHints()
             if myScore >= GAMMODE:shopItemCost( "resurrection", me ) then
                 return true, "You now have enough to buy DIVINE INTERVENTION in the shop.\nYour temporary form awaits..."
 
-            else
+            elseif myScore > -1 then
                 return true, "Keep placing 'Sacrifices'\nAll of them can earn you Score,\nif you're clever with them..."
 
-            end
+            else
+                return true, "You are in DEBT.\nKeep placing sacrifices.\nThey can get you out of this hole.\nIf you're clever with them..."
 
+            end
         elseif hasEscaped and ( me.glee_NextControlSomethingHint or 0 ) < CurTime() and GAMEMODE:RoundState() == GAMEMODE.ROUND_ACTIVE and player.GetCount() > 1 then
             if not me.glee_WasATerminatorOnTheMap then
                 local wasBased

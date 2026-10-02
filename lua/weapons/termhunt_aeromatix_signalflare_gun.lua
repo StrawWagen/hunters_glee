@@ -1,10 +1,12 @@
 --AeroMatix || https://www.youtube.com/channel/UCzA_5QTwZxQarMzwZFBJIAw || http://steamcommunity.com/profiles/76561198176907257
 
 SWEP.Base               = "termhunt_aeromatix_flare_gun"
+DEFINE_BASECLASS( SWEP.Base )
+
 SWEP.Author             = "Straw W Wagen"
 
 SWEP.Spawnable          = true
-SWEP.PrintName          = "Escape Signal Flare"
+SWEP.PrintName          = "Escape Flaregun"
 SWEP.Category           = "Hunter's Glee"
 
 SWEP.HoldType           = "pistol"
@@ -31,6 +33,13 @@ if CLIENT then
     terminator_Extras.glee_CL_SetupSwep( SWEP, className, "materials/vgui/hud/killicon/" .. className .. ".png" )
     language.Add( "GLEE_SIGNALFLAREGUN_PLAYER_ammo", "Escape Signal Flare" )
 
+    function SWEP:HintPreStack()
+        if GAMEMODE:HasLearnedLesson( "SuccessfullyCalledHeli" ) then return end
+        if not GAMEMODE:HasLearnedLesson( "CrappyFlaregunShot" ) then return end
+
+        return true, "Find somewhere open, under sky...\nIt would be such a shame to waste this flare..."
+
+    end
 end
 
 SWEP.Primary.Sound = Sound( "weapons/flaregun/fire.wav" )
@@ -48,6 +57,26 @@ SWEP.Secondary.ClipSize            = 0
 SWEP.Secondary.DefaultClip        = 0
 SWEP.Secondary.Automatic = false
 SWEP.Secondary.Delay = 1
+
+function SWEP:CanPrimaryAttack()
+    local owner = self:GetOwner()
+    if SERVER and GAMEMODE.HasLearnedLesson and not GAMEMODE:HasLearnedLesson( owner, "SuccessfullyCalledHeli" ) then
+        local startPos = owner.GetShootPos and owner:GetShootPos() or owner:WorldSpaceCenter()
+        local aimVec = owner.GetAimVector and owner:GetAimVector() or owner:GetForward()
+        local see, trResult = terminator_Extras.PosCanSeeComplex( startPos, aimVec * 1000, self, MASK_SOLID )
+
+        local clearShot = see or trResult.HitSky
+        if not clearShot then
+            GAMEMODE:LearnLesson( owner, "CrappyFlaregunShot" )
+            huntersGlee_Announce( { owner }, 1000, 5, "I should probably shoot this somewhere better\nAt the sky, somewhere open..." )
+            return false
+
+        end
+    end
+
+    return BaseClass.CanPrimaryAttack( self )
+
+end
 
 function SWEP:ShootFlare()
     if not SERVER then return end

@@ -5,7 +5,7 @@ DEFINE_BASECLASS( "termhunt_flare" )
 local GAMEMODE = GAMEMODE or GM
 
 ENT.Category    = "Hunter's Glee"
-ENT.PrintName   = "Signal Flare"
+ENT.PrintName   = "Escape Flare"
 ENT.Author      = "StrawWagen"
 ENT.Purpose     = "Flares"
 ENT.Spawnable    = true

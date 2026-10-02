@@ -201,6 +201,12 @@ hook.Add( "glee_rescueheliescape", "glee_escapeviarescueheli", function( heli )
 
 end )
 
+hook.Add( "glee_onescapehelicalled", "glee_escapehelicalled_lesson", function( caller )
+    if not caller:IsPlayer() then return end
+    GAMEMODE:LearnLesson( caller, "SuccessfullyCalledHeli" )
+
+end )
+
 
 local white = Color( 255, 255, 255 )
 

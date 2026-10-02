@@ -144,3 +144,11 @@ end )
 net.Receive( "glee_loadingtheshop", function( _, ply )
     hook.Run( "glee_loadingtheshop", ply ) -- Starting to open the shop. For living players, it'll be a few seconds longer until it fully opens.
 end )
+
+hook.Add( "glee_loadingtheshop", "glee_stopplacin_onshopopen", function( ply )
+    local placing = ply.ghostEnt
+    if not IsValid( placing ) then return end
+
+    placing:HandleKeys( ply, IN_ATTACK2 ) -- don't call :Cancel, just simulate a HandleKeys with the canceling bind
+
+end )

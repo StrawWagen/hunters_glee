@@ -239,7 +239,7 @@ local function doMessageIfWeCan( tutorialType )
         end
 
         if justLanded then
-            button.nextAutomatic = CurTime() + 5
+            button.nextAutomatic = CurTime() + 3
             decree:PlaySound( "landing", math.random( 50, 60 ), CHAN_BODY )
 
         end

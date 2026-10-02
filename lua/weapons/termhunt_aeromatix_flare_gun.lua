@@ -53,6 +53,7 @@ end
 function SWEP:CanPrimaryAttack()
     local owner = self:GetOwner()
     if owner:IsPlayer() then return true end
+
     local startPos = owner.GetShootPos and owner:GetShootPos() or owner:WorldSpaceCenter()
     if not terminator_Extras.PosCanSeeComplex( startPos, self:GetProjectileOffset(), self, MASK_SOLID ) then return end
 

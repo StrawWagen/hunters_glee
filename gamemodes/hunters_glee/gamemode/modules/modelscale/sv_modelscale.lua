@@ -7,6 +7,16 @@ local doMaxHealthVar = CreateConVar( "huntersglee_playermodelscaling_maxhealth",
 
 util.AddNetworkString( "GLEE_PDM:UpdatePlyHull" )
 
+local function boundPlysHealthToModel( ply )
+    local plysHealth = ply:Health()
+    local newHealth = math.min( plysHealth, ply:GetMaxHealth() )
+    if plysHealth > newHealth then
+        ply:SetHealth( newHealth )
+        ply.glee_LastSetHealthReason = "PDM_PlayerSpawn"
+
+    end
+end
+
 -- gate a bunch of the extra setters for players bigger/smaller than usual
 -- default hullz is 72
 local dontActivateMax = 78
@@ -30,6 +40,8 @@ local function SetupCharacterChars( name )
 
     entity:SetModel( model )
 
+    local duckHeightRatio = character_chars["heightduck"] / character_chars["height"]
+
     local height = entity:OBBMaxs().z
 
     entity:ResetSequence( entity:LookupSequence( "idle_all_01" ) )
@@ -51,7 +63,7 @@ local function SetupCharacterChars( name )
 
     end
 
-    character_chars["hull"] = math.Round( math.Min( entity:OBBMaxs().x, entity:OBBMaxs().y ) ) * defaultWidthMul
+    character_chars["hull"] = math.Round( math.min( entity:OBBMaxs().x, entity:OBBMaxs().y ) ) * defaultWidthMul
 
     if character_chars["hullz"] > dontActivateMin and character_chars["hullz"] < dontActivateMax then -- close enough, dont do anything weird
         entity:Remove()
@@ -65,17 +77,18 @@ local function SetupCharacterChars( name )
     bone = entity:LookupBone( "ValveBiped.Bip01_Neck1" )
     if bone then
         local boneHeightDuck = math.Round( entity:GetBonePosition( bone ).z )
-        boneHeightDuck = boneHeightDuck > 4 and boneHeightDuck or character_chars["heightduck"]
+        boneHeightDuck = boneHeightDuck > 2 and boneHeightDuck or character_chars["height"] * duckHeightRatio
         character_chars["heightduck"] = boneHeightDuck
 
     end
 
-    local scaleMagicNum = 79 / defaultWidthMul
-    local mul = ( ( character_chars["hullz"] + character_chars["hull"] ) / scaleMagicNum )
+    -- 0.75 since hull is divided by 2
+    local scaleMagicNum = ( 79 * 0.75 ) / defaultWidthMul
+    local mul = ( ( character_chars["hullz"] + ( character_chars["hull"] / 2 ) ) / scaleMagicNum )
     character_chars["stepsize"] = math.Round( character_chars["stepsize"] * mul )
 
     if mul < 1 then -- small characters get like no health
-        mul = mul^4
+        mul = mul^3.5
 
     end
     character_chars["health"] = math.Round( character_chars["health"] * mul )
@@ -115,6 +128,7 @@ local function Update( ply )
         ply.glee_BaseHealth = newMaxHealth
         ply:SetMaxHealth( newMaxHealth )
         ply.glee_LastSetMaxHealthReason = "PDM_Update"
+        boundPlysHealthToModel( ply )
 
     else
         -- keep glee_BaseHealth meaningful for consumers ( divine chosen, innate hp )
@@ -153,13 +167,7 @@ end
 
 hook.Add( "PlayerSpawn", "GLEE_PDM:PlayerSpawn", function( ply )
     ply.PDM_Spawned = true
-    local plysHealth = ply:Health()
-    local newHealth = math.min( plysHealth, ply:GetMaxHealth() )
-    if plysHealth > newHealth then
-        ply:SetHealth( newHealth )
-        ply.glee_LastSetHealthReason = "PDM_PlayerSpawn"
 
-    end
 end )
 
 -- tick if either scaling or maxhealth scaling is enabled.

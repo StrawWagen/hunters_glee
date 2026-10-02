@@ -107,6 +107,7 @@ local function spawnAndKillRebel( pos, model )
     local rebel = ents.Create( "npc_citizen" )
     if not IsValid( rebel ) then return end
 
+    rebel:AddSpawnFlags( 512 ) -- FADE RAGDOLLLLLLL
     rebel:SetKeyValue( "citizentype", "4" ) -- unique
     rebel:SetKeyValue( "model", model )
 
@@ -114,7 +115,7 @@ local function spawnAndKillRebel( pos, model )
     rebel:SetModel( model )
     rebel:Spawn()
     rebel:Activate()
-    rebel:SetColor( Color( 0, 0, 0, 0 ) )
+    rebel:SetColor( Color( 0, 0, 0, 0 ) ) -- doesn't work, black corpse
 
     timer.Simple( 0.1, function()
         if not IsValid( rebel ) then return end

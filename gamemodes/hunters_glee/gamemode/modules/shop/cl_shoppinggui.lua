@@ -1244,6 +1244,9 @@ function termHuntOpenTheShop()
 
             end
         end
+
+        hook.Run( "glee_shop_finishopening", ply )
+
     end
 
     if ply:Health() <= 0 then
@@ -1252,7 +1255,6 @@ function termHuntOpenTheShop()
     end
 end
 
-LocalPlayer().glee_OpenedHuntersGleeShop = nil
 local nextShopOpen = 0
 
 local enableShopVar = GetConVar( "huntersglee_enableshop" )
@@ -1290,10 +1292,6 @@ function GM:ShowShop()
     end
 
     if self:CanShowDefaultHud() then
-        LocalPlayer().glee_OpenedHuntersGleeShop = true
-
-        GAMEMODE:LearnLesson( "OpenedShop" )
-
         termHuntOpenTheShop()
 
     end

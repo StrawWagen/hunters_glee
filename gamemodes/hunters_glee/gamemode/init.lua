@@ -78,6 +78,7 @@ include( "shared.lua" )
 include( "sv_player.lua" )
 include( "sv_playercommunication.lua" )
 
+include( "modules/banking/sv_bankfiles.lua" )
 include( "modules/banking/sv_banking.lua" )
 include( "modules/banking/sv_bankbackups.lua" )
 

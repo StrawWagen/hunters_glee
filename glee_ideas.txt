@@ -218,6 +218,10 @@ another new player experience revamp -- done
 -- decrease lvl of loudest panic scream -- done
 -- remove nailer from tutorial, replace with what -- done, grenades
 
+-- signalflare, put it SUPER OBVIOUS -- done
+-- rename to ESCAPE FLARE -- done
+-- intro is too long if you don't click -- done
+
 
 -- make radio a purchasable item, moving all global/prox chat stuff to settings menu
 -- gateway to expensive items, airdropped in
@@ -251,7 +255,6 @@ another new player experience revamp -- done
 -- most skulls, additive ( all players skulls in one session, added up )
 
 -- visual cohesiveness -- WIP
--- better defined goal
 
 -- FIND lore for glee
 -- why are we here, where are we going
@@ -315,11 +318,25 @@ another new player experience revamp -- done
 -- move flaregun to utility slot
 
 shop rewrite
+-- problems to solve
+    knowing what to press is unintuitive
+    cause and effect is too loose
+    too many options, display less all at once
+    "how much skull do i have" first reaction when looking at shop
+    two vertical scroll panels
+    one is shop selection,
+    some people parse text slower than others, need to do icons
+    poke around on itch, for simple vector icons
+    see thru icons for ghostly
+        boxy icons 
+
+
 categories vertically
 recently purchased items on main page
 tabs to navigate pages
 different orders per spawnset?
 HIDE items with ???? until you have the money to buy them
+    move all default big earners to weapon slots
 
 channel 666 by default
 ghost arms really long and extended?
@@ -480,6 +497,9 @@ bottle rocket in supply crates?
 
 an extraction shooter where dead players become disembodied agents of chaos
 
+replace barreling score, give more context
+lonely barrels
+
 -- end embalmster
 
 
@@ -612,7 +632,6 @@ goes in a glee rebinding menu?
 
 -- decrease range mul of infernal skeletons
 -- shop hint DOES NOT WORK
--- difficulty spike with tutorial boss
 
 -- billion radio bug
 -- control enemies, somehow tell people they can do that when escaped!!!!
@@ -626,7 +645,6 @@ goes in a glee rebinding menu?
 
 -- signal flaregun hint is too weak for new players
 -- juggernaut footsteps are not intuitive
--- add boss hp bar for .boss enemies, to telegraph their power level better
 
 -- PRESS E to attach to the rope hint
 -- hunt's tally is way lower??? i did way better than before!!
@@ -661,3 +679,49 @@ goes in a glee rebinding menu?
 -- headhunter MUTATION, 100% chance for killed npc to drop skull, newgame+
 
 -- too many effects playing when multiple grigori
+
+-- YOU ARE A GHOST, move the player cinematically while during the dead tutorial
+-- had to explain how to make money from beartrap
+-- stop placing ghost item when you open shop
+
+-- "YOU ARE IN DEBT" hint
+-- make beaconed supplies work with skeletons
+-- separate hints for alive shop and dead shop
+-- as a ghost, i want to know where i can place
+-- misery hint is overbearing! put it in post post stack
+
+-- pixel hunting with placing is BAD
+-- "got your skull!"
+
+-- difficulty spike with tutorial boss
+-- add boss hp bar for .boss enemies, to telegraph their power level better
+-- healthbar shows up on first sighting of player
+
+-- full armor, why can't i pick these up?
+-- WE LEFT TUTORIAL, SHOP HAS EXPANDED hint
+-- crouching as a gnome makes me shorter??
+
+-- hold left click to only place profitable stuff
+-- make barrel profit come from exploding something
+-- "purchase sacrifices" hint overlapping the control a hunter hints while escaped
+
+-- the experience puts you into a defensive mindset
+-- more opportunities to defeat enemies in more different ways
+-- more skeleton variety?
+-- orthoganal enemy design 
+-- dead design space of fighting skeletons
+-- any way to add downsides to like juggernaut
+-- better defined goal
+
+-- ty, first impression on being dead
+    felt like an overlord experience, where they were the king of zombies, and trying to kill all the players ( good )
+    explained by others that wasn't the intended experience
+-- adding and subtracting currencies felt VERY weak, confusing, ( it is confusing, and not standardized )
+
+-- add grace after placing stuff
+-- only figured out halfway thru that earned money for being mischevious
+-- aswell only figured out that placement location mattered halfway thru
+
+-- new source engine players get bored when playing with true new players
+-- 
+-- explain somewhere 
