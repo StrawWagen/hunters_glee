@@ -35,7 +35,7 @@ local set = {
         },
         {
             hardRandomChance = 25,
-            name = "infernalskele", -- unique name
+            name = "infernalrumbler", -- unique name
             prettyName = "The Infernal Rumbler",
             class = "terminator_nextbot_infernalskeleton_large", -- class spawned
             spawnType = "hunter",
