@@ -43,7 +43,11 @@ function spawnSetVote:BeginVote( duration, maxOptions )
     local toBrowse = table.Copy( spawnSets )
 
     local easyEscapeRoutes = 0
-    local idealEasyEscapeRoutes = 2
+    local idealEasyEscapeRoutes = 1
+    if GAMEMODE.glee_ConsecutiveSpawnsetVotes >= math.random( 2, 3 ) then
+        idealEasyEscapeRoutes = 2
+
+    end
     local easyAdded = 0
 
     local toAdd = {}

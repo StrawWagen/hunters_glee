@@ -116,6 +116,7 @@ include( "modules/modelscale/sv_modelscale.lua" )
 include( "modules/music/sv_tracktriggering.lua" )
 include( "modules/spawnset/sv_spawnsetvote.lua" )
 include( "modules/spawnset/sv_bosshandler.lua" )
+include( "modules/spawnset/sv_breathingroom.lua" )
 include( "modules/sv_falldamage_andgoomba.lua" )
 include( "modules/firsttimeplayers/sv_firsttimeplayers.lua" )
 

@@ -97,7 +97,7 @@ local buffs = {
     ["npc_tripmine"] = 1.75,
     ["npc_grenade_frag"] = 1.75,
     ["weapon_357"] = 2,
-    ["weapon_smg1"] = 1.5,
+    ["weapon_smg1"] = 2,
     ["rpg_missile"] = 1.5,
 }
 hook.Add( "EntityTakeDamage", "glee_default_items_buff", function( target, dmgInfo )
@@ -316,7 +316,7 @@ local items = {
                     confirmSoundWeight = 1,
                     ammoType = nil, -- auto
                     purchaseClips = 3,
-                    resupplyClips = 4,
+                    resupplyClips = 5,
 
                 } )
             end

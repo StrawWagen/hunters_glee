@@ -18,6 +18,7 @@ local defaults = {
     maxSpawnDist = { 4500, 6500 },
     minSpawnDist = 500, -- if you spawn closer than this, it feels unfair
     genericSpawnerRate = 1, -- speeds up or slows down the procedural item spawner
+    breathingRoom = 0, -- scales sv_breathingroom's extra delay between waves, 0 is off
     roundEndSound = "tracks/roundEnd", -- parsed by sv_music.lua
     roundWinSound = "tracks/roundWin",
     roundPerfectWinSound = "tracks/roundPerfectWin",

@@ -481,7 +481,7 @@ Number values can be:
 | `spawnCountPerDifficulty` | ❌ | Spawns per difficulty point |
 | `startingSpawnCount` | ❌ | Initial spawn count |
 | `maxSpawnCount` | ❌ | Hard cap on enemy count |
-| `maxSpawnDist` | ❌ | Hard cap on the dynamically marching spawn distance |
+| `maxSpawnDist` | ❌ | Soft cap on the dynamically marching spawn distance, only broken if there's nowhere hidden to spawn enemies |
 | `roundStartSound` | ❌ | Sound on round start |
 | `roundEndSound` | ❌ | Sound on round end |
 | `roundEarlyStartSound` | ❌ | Alt start sound, played 10s before start, only plays if roundStartSound is "" |

@@ -106,6 +106,11 @@ function GM:BumpRoundDifficulty( amount, reason )
 end
 
 
+
+local failuresToHalveDifficulty = 2
+local failuresForBreathingRoom = 4
+local breathingRoomPerExtraFailure = 0.25
+
 hook.Add( "huntersglee_everyone_escaped", "glee_bumpdiff_oneveryoneescaped", function()
     local _, spawnSet = GAMEMODE:GetSpawnSet()
     local diffBump
@@ -117,6 +122,8 @@ hook.Add( "huntersglee_everyone_escaped", "glee_bumpdiff_oneveryoneescaped", fun
 
     end
     GAMEMODE:BumpSessionDifficulty( diffBump, "everyone_escaped" ) -- make the session harder, permanently
+
+    GAMEMODE.ConsecutiveFailures = 0
 
 end )
 
@@ -130,15 +137,40 @@ hook.Add( "huntersglee_someone_escaped", "glee_bumpdiff_onsomeoneescaped", funct
         diffBump = spawnSet.diffBumpWhenWaveKilled * 0.5
 
     end
-    GAMEMODE:BumpSessionDifficulty( diffBump, "someone_escaped" ) -- make the session a bit harder
+    GAMEMODE:BumpSessionDifficulty( diffBump, "someone_escaped" ) -- make the session a bit harder, permanently
+
+    GAMEMODE.ConsecutiveFailures = 0
 
 end )
 
 hook.Add( "huntersglee_no_one_escaped", "glee_chompdiff_onnoescape", function()
-    local _, spawnSet = GAMEMODE:GetSpawnSet()
-    local diffBump = -spawnSet.diffBumpWhenWaveKilled * 3
-    GAMEMODE:BumpSessionDifficulty( diffBump, "no_one_escaped" ) -- too hard, go easy on em
+    local oldFailures = GAMEMODE.ConsecutiveFailures or 0
+    GAMEMODE.ConsecutiveFailures = oldFailures + 1
 
+    debugPrint( "Consecutive round failures: ", GAMEMODE.ConsecutiveFailures )
+
+    if GAMEMODE.ConsecutiveFailures < failuresToHalveDifficulty then return end -- after 2 failures, start reeling back in difficulty
+
+    local _, spawnSet = GAMEMODE:GetSpawnSet()
+    local cut = math.max( GAMEMODE.sessionDiffBump / 2, spawnSet.diffBumpWhenWaveKilled * 3 )
+    local diffBump = -cut
+    GAMEMODE:BumpSessionDifficulty( diffBump, "no_one_escaped" ) -- too hard, cut difficulty bump in half, or a reasonably large amount, whichever is bigger
+
+end )
+
+-- enable breathing room, delay enemy waves if player isn't keeping up
+-- get in after the breathing room is reset for the round
+hook.Add( "glee_post_set_spawnset", "breathing_room_reset", function()
+    if GAMEMODE.ConsecutiveFailures < failuresForBreathingRoom then return end
+
+    local failuresOverCutoff = GAMEMODE.ConsecutiveFailures - failuresForBreathingRoom
+    local extraRoom = failuresOverCutoff * breathingRoomPerExtraFailure
+
+    timer.Simple( 0, function()
+        local room = math.max( GAMEMODE:GetRoundBreathingRoom(), 1 ) + extraRoom
+        GAMEMODE:SetRoundBreathingRoom( room )
+
+    end )
 end )
 
 
@@ -842,6 +874,7 @@ function GM:MarchValidHunterPos( spawnEntry )
     local dynamicTooCloseFailCounts = spawnSet.dynamicTooCloseFailCounts or -2
     local dynamicTooCloseDist = spawnSet.dynamicTooCloseDist
     local dynamicTooFarDist = spawnSet.dynamicTooFarDist
+    local breakingMaxDist
 
     if not self.biggestNavmeshGroups then return nil, nil, nil end
 
@@ -869,7 +902,7 @@ function GM:MarchValidHunterPos( spawnEntry )
         local alivePlayer = self:anAlivePlayer()
         if IsValid( alivePlayer ) then
             local height = dynamicTooFarDist / 8
-            if fails > 250 then
+            if fails > 200 then
                 height = dynamicTooFarDist / 4
 
             end
@@ -921,10 +954,12 @@ function GM:MarchValidHunterPos( spawnEntry )
         -- failing alot, try checking great spawn areas!
         if fails > 10 and cost > tries * 0.75 and #spawnSet.greatSpawnAreasIndexed >= 1 then
             currentArea = spawnSet.greatSpawnAreasIndexed[math.random( 1, #spawnSet.greatSpawnAreasIndexed )]
+            breakingMaxDist = spawnSet.goodAreaBreakingMaxDist
 
         -- if we have a good spawn area, use it NOW!
         elseif cost < tries * 0.5 and IsValid( spawnSet.lastGoodSpawnArea ) and spawnSet.lastGoodSpawnAreaWeight > 0 then
             currentArea = spawnSet.lastGoodSpawnArea
+            breakingMaxDist = spawnSet.goodAreaBreakingMaxDist
             local usedBite = 1
             if spawnSet.staleSpawnAreasMask[currentArea] then
                 usedBite = 10
@@ -933,6 +968,7 @@ function GM:MarchValidHunterPos( spawnEntry )
             spawnSet.lastGoodSpawnAreaWeight = spawnSet.lastGoodSpawnAreaWeight - usedBite
             if spawnSet.lastGoodSpawnAreaWeight <= 0 then
                 spawnSet.lastGoodSpawnArea = nil
+                spawnSet.goodAreaBreakingMaxDist = breakingMaxDist
                 spawnSet.lastGoodSpawnAreaWeight = 0
 
             end
@@ -951,15 +987,20 @@ function GM:MarchValidHunterPos( spawnEntry )
             local contentsAbove = util_PointContents( spawnPos + shallowWaterOffset )
             local butItsShallow = bit_band( contentsAbove, CONTENTS_WATER ) == 0
             if butItsShallow then -- but the water's so shallow....
-                GAMEMODE:AdjustDynamicTooCloseCutoff( -25, spawnSet )
-                GAMEMODE:AdjustDynamicTooFarCutoff( -10, spawnSet )
-                debugPrint( "shallow underwater bite" )
+                if fails < 100 then
+                    GAMEMODE:AdjustDynamicTooCloseCutoff( -25, spawnSet )
+                    GAMEMODE:AdjustDynamicTooFarCutoff( -10, spawnSet )
+                    debugPrint( "shallow underwater bite" )
 
+                end
             else
-                -- make it a bit closer
-                GAMEMODE:AdjustDynamicTooCloseCutoff( -75, spawnSet ) -- make it get closer
-                GAMEMODE:AdjustDynamicTooFarCutoff( -25, spawnSet ) -- closer here too
-                debugPrint( "underwater bite" )
+                if fails < 100 then
+                    -- make it a bit closer
+                    GAMEMODE:AdjustDynamicTooCloseCutoff( -75, spawnSet ) -- make it get closer
+                    GAMEMODE:AdjustDynamicTooFarCutoff( -25, spawnSet ) -- closer here too
+                    debugPrint( "underwater bite" )
+
+                end
                 continue
 
             end
@@ -1019,6 +1060,18 @@ function GM:MarchValidHunterPos( spawnEntry )
             end
         end
 
+        local tooFarDistAdjusted = dynamicTooFarDist
+        if fails > 200 or breakingMaxDist then
+            if not breakingMaxDist then
+                debugPrint( "!!!!!!!!!!BREAKING spawnSet.maxSpawnDist!!!!!!!!!!!!!!!" )
+
+            end
+            breakingMaxDist = true
+            tooFarDistAdjusted = tooFarDistAdjusted * 2
+            tooFarDistAdjusted = tooFarDistAdjusted + fails * 4
+
+        end
+
         local checkPos = spawnPos + up50
         local nearestDist = math.huge
         local nearestPlyPos
@@ -1057,7 +1110,7 @@ function GM:MarchValidHunterPos( spawnEntry )
                 tooClose = true
                 break -- only break here so the justSpawnSomething doesnt spawn stuff next to people!!!!!
 
-            elseif distSqr > dynamicTooFarDist^2 then
+            elseif distSqr > tooFarDistAdjusted^2 then
                 tooFar = true
 
             end
@@ -1071,14 +1124,30 @@ function GM:MarchValidHunterPos( spawnEntry )
         cost = cost + 1
 
         local goodConventional = not visibleToAPly and not tooClose and not tooFar -- great spot to spawn!
-        local justSpawnSomething = fails > 200 and not tooClose -- fallback, map has no great spots to spawn
+        local overFailed = fails > 800 or ( GAMEMODE.roundExtraData.hunterSpawnerOverFailed and fails > 200 )
+        local justSpawnSomething = overFailed and not tooClose -- fallback, map has no great spots to spawn
 
         if goodConventional or justSpawnSomething then
             nearestDist = math.sqrt( nearestDist )
 
-            GAMEMODE:AdjustDynamicTooCloseCutoff( 25, spawnSet ) -- make it get further
-            GAMEMODE:AdjustDynamicTooFarCutoff( 50, spawnSet )
-            debugPrint( "good spawn bump" )
+            if justSpawnSomething then
+                GAMEMODE:AdjustDynamicTooCloseCutoff( -500, spawnSet )
+                GAMEMODE:AdjustDynamicTooFarCutoff( 1000, spawnSet )
+                debugPrint( "overfailed, justSpawnSomething", fails, visibleToAPly, tooFarDistAdjusted, spawnSet.maxSpawnDist )
+                GAMEMODE.roundExtraData.hunterSpawnerOverFailed = true
+
+            elseif breakingMaxDist then
+                GAMEMODE:AdjustDynamicTooCloseCutoff( 0, spawnSet )
+                GAMEMODE:AdjustDynamicTooFarCutoff( 200, spawnSet )
+                debugPrint( "good spawn with breakingMaxDist", breakingMaxDist, spawnSet.goodAreaBreakingMaxDist )
+
+            else
+                GAMEMODE.roundExtraData.hunterSpawnerOverFailed = nil
+                GAMEMODE:AdjustDynamicTooCloseCutoff( 25, spawnSet ) -- make it get further
+                GAMEMODE:AdjustDynamicTooFarCutoff( 50, spawnSet )
+                debugPrint( "good spawn bump" )
+
+            end
 
             -- good spawnpoint, spawn here
             fails = 0
@@ -1102,6 +1171,7 @@ function GM:MarchValidHunterPos( spawnEntry )
                     if nearestPlyPos and adjArea:IsVisible( nearestPlyPos ) then continue end -- dont regress
                     if preferredEFlags and not self:HasAllExtraFlags( adjArea, preferredEFlags ) then continue end -- respect it!
                     spawnSet.lastGoodSpawnArea = adjArea
+                    spawnSet.goodAreaBreakingMaxDist = breakingMaxDist
                     spawnSet.lastGoodSpawnAreaWeight = math.random( 5, 15 )
                     break
 
@@ -1112,14 +1182,18 @@ function GM:MarchValidHunterPos( spawnEntry )
                 -- found a GREAT spawn area! use it for a while!
                 if currentIsGreat then
                     spawnSet.lastGoodSpawnArea = currentArea
+                    spawnSet.goodAreaBreakingMaxDist = breakingMaxDist
                     spawnSet.lastGoodSpawnAreaWeight = math.random( 25, 50 )
 
                 elseif not currentIsStale then
                     spawnSet.lastGoodSpawnArea = currentArea
+                    spawnSet.goodAreaBreakingMaxDist = breakingMaxDist
                     spawnSet.lastGoodSpawnAreaWeight = math.random( 1, 5 )
 
                 end
             end
+
+            breakingMaxDist = nil -- reset this, will be set to true if next area is good area
 
             return spawnPos, currentArea, true
 
@@ -1139,7 +1213,7 @@ function GM:MarchValidHunterPos( spawnEntry )
     local bite = fails / tries
     GAMEMODE:AdjustDynamicTooCloseCutoff( -bite, spawnSet )
     GAMEMODE:AdjustDynamicTooFarCutoff( bite * 2, spawnSet )
-    debugPrint( "no spawn bite", bite )
+    debugPrint( "no spawn bite", bite, "with fails", fails )
 
     return nil, nil, nil
 

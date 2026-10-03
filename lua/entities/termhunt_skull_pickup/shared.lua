@@ -540,7 +540,7 @@ function ENT:Decapitate()
     self:SetParent( nil )
     self:UseTriggerBounds( true, self.TriggerBoundsNormal )
 
-    self.nextPickup = CurTime() + 1
+    self.nextPickup = CurTime() + 0.75
 
     self.obviousOrigin = true
     parent.glee_skullpickup = nil

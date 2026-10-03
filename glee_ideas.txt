@@ -676,8 +676,7 @@ goes in a glee rebinding menu?
 -- assumed the markups were shared
 -- TOO MUCH MONEY, INFLATION!
 
--- headhunter MUTATION, 100% chance for killed npc to drop skull, newgame+
-
+-- headhunter MUTATION, double skull chance when headshot kill on enemies
 -- too many effects playing when multiple grigori
 
 -- YOU ARE A GHOST, move the player cinematically while during the dead tutorial
@@ -723,5 +722,27 @@ goes in a glee rebinding menu?
 -- aswell only figured out that placement location mattered halfway thru
 
 -- new source engine players get bored when playing with true new players
--- 
--- explain somewhere 
+
+-- bargain that makes u t pose only
+-- bargain that makes u sleepy, melatonin
+-- bargain that makes u walk on water but panic a shitton
+-- baby bomb, crying baby that cries if u dont hold it, eventually explodes
+-- playermodel renting
+
+-- infernal skeletons jump up stairs
+-- "oh i have to use the medkit first"
+-- hint when not bought things during the start of a round
+-- medkit items on the ground are taken for granted knowledge 
+-- scrolling in the shop hint reactivates itself if player hasn't scrolled 5 minutes into the session
+-- hunters have been pushed to their limits happens too soon ( maybe round losing not biting difficulty enough )
+
+-- nightmare on glee street change the name
+-- bomb gland FUN
+-- mecha legs next to juggernaut ( bad )
+
+-- wants ways to get more skulls
+-- "why do i always pick the hardest misery, i just want to mow through enemies in peace!"
+-- zombie modes are big difficulty spike
+-- SMG is design gap, frustrating to have
+-- pulse rifle right click ?
+-- pickup delay feels like crap

@@ -154,7 +154,7 @@ ENT.JunkModels = {
     "models/props_junk/vent001.mdl",
 }
 
-if GAMEMODE.IsReallyHuntersGlee then
+if GAMEMODE.IsReallyHuntersGlee then -- only precache the common ones
     for _, mdl in ipairs( ENT.JunkModels ) do
         util.PrecacheModel( mdl )
 
@@ -182,6 +182,17 @@ ENT.RareJunkModels = {
     "models/props_lab/hevplate.mdl",
     "models/props_vehicles/carparts_door01a.mdl",
     "models/props_debris/rebar_medthin02c.mdl",
+    "models/props_borealis/bluebarrel001.mdl",
+}
+
+ENT.SuperRareJunkChance = 0.1
+
+ENT.SuperRareJunkModels = {
+    "models/props_c17/FurnitureWashingmachine001a.mdl",
+    "models/props_c17/furnitureStove001a.mdl",
+    "models/props_c17/FurnitureFridge001a.mdl",
+    "models/props_vehicles/car001a_hatchback.mdl",
+    "models/props_vehicles/car002a_physics.mdl",
 }
 
 function ENT:UpdateGivenScore()
@@ -251,10 +262,15 @@ function ENT:Place()
             if not IsValid( self ) then return end
 
             local model
-            if math.random( 1, 100 ) <= self.RareJunkChance then
+            if math.Rand( 0, 100 ) < self.SuperRareJunkChance then
+                model = self.SuperRareJunkModels[math.random( #self.SuperRareJunkModels )]
+
+            elseif math.random( 1, 100 ) <= self.RareJunkChance then
                 model = self.RareJunkModels[math.random( #self.RareJunkModels )]
+
             else
                 model = self.JunkModels[math.random( #self.JunkModels )]
+
             end
 
             local junk = ents.Create( "prop_physics" )
