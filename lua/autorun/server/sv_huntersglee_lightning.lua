@@ -114,7 +114,7 @@ function terminator_Extras.glee_PowafulLightning( inflic, attacker, strikingPos,
     if waterSurfaceStrike then
         local sploosh = EffectData()
             sploosh:SetOrigin( strikingPos )
-            sploosh:SetScale( powa * math.Rand( 4.5, 5.5 ) )
+            sploosh:SetScale( powa * math.Rand( 8, 10 ) )
         util.Effect( "waterripple", sploosh )
 
     end

@@ -34,11 +34,29 @@ local set = {
             },
         },
         {
+            hardRandomChance = 25,
+            name = "infernalskele", -- unique name
+            prettyName = "The Infernal Rumbler",
+            class = "terminator_nextbot_infernalskeleton_large", -- class spawned
+            spawnType = "hunter",
+            spawnSameZ = true,
+            difficultyCost = 4,
+            countClass = "terminator_nextbot_infernalskeleton_large",
+            maxCount = { 1 },
+            preSpawnedFuncs = {
+                function( _, spawned )
+                    spawned.SkeleRareRunning = false
+
+                end,
+            },
+        },
+        {
             name = "infernalskele_big_EARLY", -- unique name
             prettyName = "An Infernal Sentinel",
             class = "terminator_nextbot_infernalskeleton_big", -- class spawned
             spawnType = "hunter",
             spawnSameZ = true,
+            preferredEFlags = GAMEMODE.NavEFlags.UNDER_SKY,
             difficultyCost = { 15, 25 },
             countClass = "terminator_nextbot_infernalskeleton_big",
             maxCount = { 5 },
@@ -50,6 +68,7 @@ local set = {
             class = "terminator_nextbot_infernalskeleton_big", -- class spawned
             spawnType = "hunter",
             spawnSameZ = true,
+            preferredEFlags = GAMEMODE.NavEFlags.UNDER_SKY,
             difficultyCost = { 100, 200 },
             countClass = "terminator_nextbot_infernalskeleton_big",
             maxCount = { 20 },
@@ -61,6 +80,7 @@ local set = {
             class = "terminator_nextbot_infernalskeleton_big", -- class spawned
             spawnType = "hunter",
             spawnSameZ = true,
+            preferredEFlags = GAMEMODE.NavEFlags.UNDER_SKY,
             difficultyCost = { 500, 1000 },
         },
     }
