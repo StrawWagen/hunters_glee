@@ -230,7 +230,7 @@ hook.Add( "glee_onbossdefeated", "glee_escapeviabossdefeat", function( boss, att
         msg = "You've HUNTED " .. GAMEMODE:GetNameOfBot( boss ) .. "\nYou're finally, truly safe..."
 
     else
-        msg = GAMEMODE:GetNameOfBot( boss ) .. "\nWAS KILLED BY\n" .. attacker:Nick() .. "\nYou're finally, truly safe..."
+        msg = GAMEMODE:GetNameOfBot( boss ) .. "\nWAS KILLED BY\n" .. GAMEMODE:GetNameOfBot( attacker ) .. "\nYou're finally, truly safe..."
 
     end
     huntersGlee_AnnounceDramatic( player.GetAll(), 1000, 8, msg )
