@@ -1,38 +1,33 @@
-local function setWeaponOverride( hunter, wepClass )
-    hunter.DefaultWeapon = wepClass
-
-end
-
 local function givePistol( _, hunter )
-    setWeaponOverride( hunter, "weapon_pistol" )
+    hunter:Give( "weapon_pistol" )
 end
 
 local function giveSMG( _, hunter )
-    setWeaponOverride( hunter, "weapon_smg1" )
+    hunter:Give( "weapon_smg1" )
 end
 
 local function giveAR2( _, hunter )
-    setWeaponOverride( hunter, "weapon_ar2" )
+    hunter:Give( "weapon_ar2" )
 end
 
 local function giveRPG( _, hunter )
-    setWeaponOverride( hunter, "weapon_rpg" )
+    hunter:Give( "weapon_rpg" )
 end
 
 local function give357( _, hunter )
-    setWeaponOverride( hunter, "weapon_357" )
+    hunter:Give( "weapon_357" )
 end
 
 local function giveXBOW( _, hunter )
-    setWeaponOverride( hunter, "weapon_crossbow" )
+    hunter:Give( "weapon_crossbow" )
 end
 
 local function giveAR3( _, hunter )
-    setWeaponOverride( hunter, "termhunt_ar3" )
+    hunter:Give( "termhunt_ar3" )
 end
 
 local function giveTauCannon( _, hunter )
-    setWeaponOverride( hunter, "termhunt_taucannon" )
+    hunter:Give( "termhunt_taucannon" )
 end
 
 
@@ -60,7 +55,7 @@ local set = {
             spawnType = "hunter",
             difficultyCost = { 1, 3 },
             countClass = "terminator_nextbot_snail*", -- class COUNTED, uses findbyclass
-            preSpawnedFuncs =  { givePistol },
+            postSpawnedFuncs = { givePistol },
         },
         {
             hardRandomChance = nil,
@@ -70,7 +65,7 @@ local set = {
             spawnType = "hunter",
             difficultyCost = { 2, 4 },
             countClass = "terminator_nextbot_snail*", -- class COUNTED, uses findbyclass
-            preSpawnedFuncs =  { giveSMG },
+            postSpawnedFuncs = { giveSMG },
         },
         {
             hardRandomChance = nil,
@@ -80,7 +75,7 @@ local set = {
             spawnType = "hunter",
             difficultyCost = { 6, 12 },
             countClass = "terminator_nextbot_snail*", -- class COUNTED, uses findbyclass
-            preSpawnedFuncs =  { giveAR2 },
+            postSpawnedFuncs = { giveAR2 },
         },
         {
             hardRandomChance = nil,
@@ -90,7 +85,7 @@ local set = {
             spawnType = "hunter",
             difficultyCost = { 6, 12 },
             countClass = "terminator_nextbot_snail*", -- class COUNTED, uses findbyclass
-            preSpawnedFuncs =  { give357 },
+            postSpawnedFuncs = { give357 },
         },
         {
             hardRandomChance = { 0, 20 },
@@ -100,7 +95,7 @@ local set = {
             spawnType = "hunter",
             difficultyCost = { 50, 150 },
             countClass = "terminator_nextbot_snail*", -- class COUNTED, uses findbyclass
-            preSpawnedFuncs =  { giveXBOW },
+            postSpawnedFuncs = { giveXBOW },
         },
         {
             hardRandomChance = { 5, 75 },
@@ -110,7 +105,7 @@ local set = {
             spawnType = "hunter",
             difficultyCost = { 25, 75 },
             countClass = "terminator_nextbot_snail*", -- class COUNTED, uses findbyclass
-            preSpawnedFuncs =  { giveRPG },
+            postSpawnedFuncs = { giveRPG },
         },
         {
             hardRandomChance = { 5, 20 },
@@ -120,7 +115,7 @@ local set = {
             spawnType = "hunter",
             difficultyCost = { 50, 150 },
             countClass = "terminator_nextbot_snail*", -- class COUNTED, uses findbyclass
-            preSpawnedFuncs =  { giveAR3 },
+            postSpawnedFuncs = { giveAR3 },
         },
         {
             hardRandomChance = { 5, 20 },
@@ -130,7 +125,7 @@ local set = {
             spawnType = "hunter",
             difficultyCost = { 100, 200 },
             countClass = "terminator_nextbot_snail*", -- class COUNTED, uses findbyclass
-            preSpawnedFuncs =  { giveTauCannon },
+            postSpawnedFuncs = { giveTauCannon },
         },
     }
 }
