@@ -72,6 +72,7 @@ PANEL.OnHudStyleChanged = PANEL.ApplyPadding
     @return: None
 --]]---------------------------------------------------------
 PANEL.SizeToContents = function( self, maxHeight )
+    self:StopShaking() -- it keeps its centre, which mustn't be a shaken one
     self._sizesToContents  = true
     self._maxContentHeight = maxHeight
 
@@ -94,6 +95,58 @@ PANEL.SizeToContents = function( self, maxHeight )
     self:SetTall( height )
     self:SetPos( centerX - self:GetWide() * 0.5, centerY - height * 0.5 )
 
+end
+
+
+-- Shaking -------------------------------------------------------------------
+
+--[[---------------------------------------------------------
+    frame:Shake
+    Rattles the frame around where it is, dying away over duration. A shake started
+    mid-shake replaces it, still around the original spot. Runs from the frame's Think,
+    so a frame given its own Think doesn't shake.
+    @param strength: Furthest it's thrown at the start, in pixels.
+    @param duration: Seconds until it's still again.
+    @return: None
+--]]---------------------------------------------------------
+PANEL.Shake = function( self, strength, duration )
+    if not self._shakeOriginX then
+        self._shakeOriginX, self._shakeOriginY = self:GetPos()
+
+    end
+
+    self._shakeStrength = strength
+    self._shakeDuration = duration
+    self._shakeStartAt  = RealTime()
+
+end
+
+-- Puts it back where it was shaken from. Safe when it isn't shaking
+PANEL.StopShaking = function( self )
+    if not self._shakeOriginX then return end
+
+    self:SetPos( self._shakeOriginX, self._shakeOriginY )
+    self._shakeOriginX, self._shakeOriginY = nil, nil
+
+end
+
+PANEL.Think = function( self )
+    vgui.GetControlTable( "DFrame" ).Think( self )
+
+    if not self._shakeOriginX then return end
+
+    local progress = ( RealTime() - self._shakeStartAt ) / self._shakeDuration
+    if progress >= 1 then
+        self:StopShaking()
+        return
+
+    end
+
+    local reach = self._shakeStrength * ( 1 - progress ) ^ 2
+    self:SetPos(
+        self._shakeOriginX + math.Rand( -reach, reach ),
+        self._shakeOriginY + math.Rand( -reach, reach )
+    )
 end
 
 PANEL.AfterHudStyleChanged = function( self )

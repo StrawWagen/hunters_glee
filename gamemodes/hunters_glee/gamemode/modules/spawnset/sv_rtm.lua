@@ -102,10 +102,34 @@ function RTM.Start()
     if hook.Run( "SpawnSetVote_RTMStart" ) == false then return end
 
     PrintMessage( HUD_PRINTTALK, "The vote has been rocked, Misery vote imminent." )
-    GAMEMODE.glee_SpawnSetVote:BeginVote()
+
+    local hasMiseryVotedBefore
+    for _, ply in player.Iterator() do
+        if not GAMEMODE:HasLearnedLesson( ply, "ExperiencedMiseryVote" ) then continue end
+        hasMiseryVotedBefore = true
+
+    end
+    if hasMiseryVotedBefore then -- normal path
+        GAMEMODE.glee_SpawnSetVote:BeginVote()
+
+    else -- first RTM out of infernal glee easy
+        local toAdd = {}
+        for _, data in pairs( GAMEMODE:GetSpawnSets() ) do
+            if data.tutorialExit then
+                table.insert( toAdd, table.Copy( data ) )
+
+            end
+        end
+        GAMEMODE.glee_SpawnSetVote:BeginVote( nil, nil, toAdd )
+
+    end
+
     timer.Simple( 0.5, function()
         RTM.ResetVotes()
+        for _, ply in player.Iterator() do
+            GAMEMODE:LearnLesson( ply, "ExperiencedMiseryVote" )
 
+        end
     end )
 end
 
@@ -259,7 +283,7 @@ end )
 
 hook.Add( "huntersglee_round_postroundend", "glee_rockthemisery_hint", function()
     timer.Simple( 10, function()
-        local spawnsetName = GAMEMODE:GetSpawnSet()
+        local spawnsetName, spawnsetData = GAMEMODE:GetSpawnSet()
         local spawnsetMul = GAMEMODE:GetSpawnsetsEscapeMultiplier( spawnsetName )
 
         local thresh
@@ -275,6 +299,9 @@ hook.Add( "huntersglee_round_postroundend", "glee_rockthemisery_hint", function(
 
             local mulByEscapes = 1.25 / highestEscapeCount
             thresh = 2 - mulByEscapes
+
+        elseif spawnsetData.easy then
+            thresh = GAMEMODE.easyCostSoftMax
 
         else
             thresh = 1

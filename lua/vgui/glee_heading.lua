@@ -20,6 +20,7 @@ PANEL.Init = function( self )
 
     self._box = vgui.Create( "glee_panel", self )
     self._box:SetPos( 0, 0 )
+    self._box:SetTextAlign( TEXT_ALIGN_LEFT )
 
 end
 

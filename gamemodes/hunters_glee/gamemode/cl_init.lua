@@ -23,6 +23,7 @@ include( "modules/escaping/cl_escaping.lua" )
 include( "modules/escaping/cl_escapecounts.lua" )
 
 include( "modules/banking/cl_banking.lua" )
+include( "modules/banking/cl_bankconsent.lua" )
 
 include( "modules/deadplayerfx/cl_souls.lua" )
 include( "modules/deadplayerfx/cl_deaddesaturation.lua" )
@@ -69,6 +70,7 @@ include( "modules/clhud/cl_bpm.lua" )
 include( "modules/clhud/cl_battery.lua" )
 include( "modules/clhud/cl_plynames.lua" )
 include( "modules/clhud/cl_whowespectating.lua" )
+include( "modules/clhud/cl_bosshealthbar.lua" )
 
 
 -- from https://github.com/Facepunch/garrysmod/blob/e189f14c088298ca800136fcfcfaf5d8535b6648/garrysmod/lua/includes/modules/killicon.lua#L202
@@ -218,6 +220,8 @@ function doGleeHud()
             return
         end
         hook.Run( "glee_cl_topleftinfo", ply, cur )
+        -- after the top left lane claims its space, before the dead and alive huds that dodge these
+        hook.Run( "glee_cl_aliveordeadplyhud", ply, cur )
 
         local spectating = ply:Health() <= 0
 

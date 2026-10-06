@@ -115,11 +115,13 @@ local function openAtmGui( atm )
     -- Returns whether they can transact, and starts buying them an account when they
     -- can't. Neither button does anything without one, so both double as the way in.
     -- The shop prints its own refusal in chat, hence the wait on a failed attempt.
+    -- The consent form takes over the screen, and clicking it would close this anyway
     local function requireAccount()
         if ply:BankHasAccount() then return true end
 
         nextTransactionTime = CurTime() + accountPurchaseWait
-        RunConsoleCommand( "termhunt_purchase", "bankopenaccount" )
+        closeGui()
+        GAMEMODE:ClientPurchase( "bankopenaccount" )
 
     end
 

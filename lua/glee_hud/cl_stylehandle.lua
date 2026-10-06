@@ -79,7 +79,7 @@ end
 --[[---------------------------------------------------------
     handle:Settings
     Gets the built style, for look data that has no method here.
-    @return: The built style, see cl_stylebuild.lua, for tornStrip, blot, ghosts and
+    @return: The built style, see cl_stylebuild.lua, for tornStrip, smudge, ghosts and
         fontSizes. Replaced by every rebuild and by an alias changing, so fetch it where
         you use it, never keep it.
 --]]---------------------------------------------------------
@@ -232,10 +232,16 @@ function styleHandle:BackdropColor( family, state )
 
 end
 
+-- bgDark is for gui that has to be read, so whatever's behind it is blurred
+local blurMenus = CreateClientConVar( "cl_huntersglee_blurmenus", "1", true, false, "Blur whatever is behind glee menus?", 0, 1 )
+local blurredFamilies = {
+    bgDark = 2, -- RNDX's blur intensity
+}
+
 --[[---------------------------------------------------------
     handle:Background
-    Draws a panel's backdrop the way this style does. A box, a blot, a torn strip, all in
-    the colour BackdropColor gives for the family and state.
+    Draws a panel's backdrop the way this style does. A box, a smudge, a torn strip, all in
+    the colour BackdropColor gives for the family and state. bgDark blurs what's behind it.
     @param x, y, w, h: The panel's bounds.
     @param family: "bg" or "bgDark", or a Color. Unfaded, fade is applied here. Defaults to bg.
     @param cornerRadius: Defaults to the style's boxCornerRadius metric.
@@ -248,12 +254,15 @@ end
 function styleHandle:Background( x, y, w, h, family, cornerRadius, fade, state, cache )
     local style = self:Settings()
 
+    local blur = blurMenus:GetBool() and blurredFamilies[family] or nil
+
     style.background(
         style, x, y, w, h,
         self:BackdropColor( family or "bg", state ),
         cornerRadius or style.metrics.boxCornerRadius,
         fade or 1,
-        cache
+        cache,
+        blur
     )
 
 end

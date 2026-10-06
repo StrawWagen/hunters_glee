@@ -5,111 +5,149 @@ function ENT:Draw()
 
 end
 
-local SongNames = {
-    [0] = "Nothing",
-    [1] = "The Innsbruck Experiment",
-    [2] = "Brane Scan",
-    [3] = "Dark Energy",
-    [4] = "Requiem For Ravenholm",
-    [5] = "Pulse Phase",
-    [6] = "Ravenholm Reprise",
-    [7] = "Probably Not a Problem",
-    [8] = "Calabi-Yau Model",
-    [9] = "Slow Light",
-    [10] = "Apprehension and Evasion",
-    [11] = "Our Resurrected Teleport",
-    [12] = "Triage at Dawn",
-    [13] = "Lab Practicum",
-    [14] = "Nova Prospekt",
-    [15] = "Broken Symmetry",
-    [16] = "LG Orbifold",
-    [17] = "Kaon",
-    [18] = "You're Not Supposed to Be Here",
-    [19] = "Hard Fought",
-    [20] = "Particle Ghost",
-    [21] = "Neutrino Trap",
-    [22] = "Zero Point Energy Field",
-    [23] = "Echoes of a Resonance Cascade",
-    [24] = "Black Mesa Inbound",
-    [25] = "Xen Relay",
-    [26] = "Singularity",
-    [27] = "Dirac Shore",
-    [28] = "Escape Array",
-    [29] = "Negative Pressure",
-    [30] = "Tau-9",
-    [31] = "Something Secret Steers Us",
-    [32] = "Triple Entanglement",
-    [33] = "Lambda Core",
-    [34] = "Entanglement",
-    [35] = "Train Station 1",
-    [36] = "Train Station 2",
-    [37] = "---",
-    [38] = "CSS: The Sweet Sound of Bongo",
-    [39] = "CSS: Only the Classics",
-    [40] = "CSS: Country Rockin' Radio",
-    [41] = "CSS: Cubic Cuban",
-    [42] = "CSS: Desert Sands FM",
-    [43] = "CSS: Fine-Tuned Tunes",
-    [44] = "CSS: Flamenco Folk Music",
-    [45] = "CSS: Glamorous Guitar",
-    [46] = "CSS: Countryside Jams",
-    [47] = "CSS: Latin Listening",
-    [48] = "CSS: Tunes of the Middle East",
-    [49] = "CSS: Outstanding Opera",
-    [50] = "CSS: Songs of the Salsa",
-    [51] = "CSS: Syrian Serenade"
-}
 
-local nextRecieve = 0
-local shopItemColor = Color( 73, 73, 73, 255 )
-local Tuner
-local nextSend = 0
+--[[------------------------------------
+    The tuner: the station's name over a dial you drag to find one. No list, finding a
+    song is meant to take fiddling.
 
-net.Receive( "OpenSTRadioMenu", function()
-    if nextRecieve > CurTime() then return end
-    nextRecieve = CurTime() + 0.01
+    While a drag is unsent, or the server hasn't caught up, it shows where the dial is.
+    Otherwise it shows the radio's networked song, so damage or another player retuning it
+    moves the dial too.
+--]]-------------------------------------
 
-    local selfEnt = Entity( net.ReadUInt( 16 ) )
-    local activeSong = net.ReadUInt( 16 )
+local NAME_FONT = "medium"
 
-    if Tuner and IsValid( Tuner ) then
-        Tuner:Close()
+local FM_LOW, FM_HIGH = 88, 108 -- the dial's band, stations spread evenly across it
+
+local sendInterval = 0.25 -- just over the server's tune cooldown, so a send is never refused
+local settleTime = 1 -- give up waiting on the server after this, and show what it says
+
+local currentFrame
+
+local function stationName( radio, index )
+    if index == 0 then return "OFF" end
+
+    return radio.Stations[index].name
+
+end
+
+local function longestStationName( radio )
+    local longest = ""
+    for _, station in ipairs( radio.Stations ) do
+        if #station.name > #longest then longest = station.name end
 
     end
 
-    Tuner = vgui.Create( "DFrame" )
-    Tuner:SetSize( glee_sizeScaled( 500, 75 ) )
-    Tuner:SetTitle( "" )
-    Tuner:SetVisible( true )
-    Tuner:SetDraggable( false )
-    Tuner:ShowCloseButton( true )
-    Tuner:MakePopup()
-    Tuner:Center()
+    return longest
 
-    function Tuner:Paint( w, h )
-        draw.RoundedBox( 0, 0, 0, w, h, shopItemColor )
+end
+
+-- of the dial, unrounded, so it creeps between stations
+local function frequencyText( radio, position )
+    if position < 0.5 then return "OFF" end
+
+    local fraction = ( position - 1 ) / ( #radio.Stations - 1 )
+
+    return string.format( "%.1f", Lerp( math.max( fraction, 0 ), FM_LOW, FM_HIGH ) )
+
+end
+
+local function sendTune( radio, index )
+    net.Start( "glee_radio_tune" )
+        net.WriteEntity( radio )
+        net.WriteUInt( index, 8 )
+    net.SendToServer()
+
+end
+
+local function openTuner( radio )
+    if IsValid( currentFrame ) then currentFrame:Remove() end
+
+    local ply = LocalPlayer()
+
+    local frame = vgui.Create( "glee_frame" )
+    local gap = frame:Style():Metric( "laneSpacing" )
+
+    -- reserved, or the whole menu would resize under the cursor as the name changes
+    local nameBox = vgui.Create( "glee_panel", frame )
+    nameBox:SetFont( NAME_FONT )
+    nameBox:SetTextAlign( TEXT_ALIGN_LEFT )
+    nameBox:SetReservedText( longestStationName( radio ) )
+    nameBox:SetText( stationName( radio, radio:GetSong() ) )
+    nameBox:AutoSize()
+    nameBox:Dock( TOP )
+
+    local dial = vgui.Create( "glee_slider", frame )
+    dial:SetLabel( "FM" )
+    dial:SetReservedValue( string.format( "%.1f", FM_HIGH ) )
+    dial:SetRange( 0, #radio.Stations )
+    dial:SetPosition( radio:GetSong() )
+    dial:Dock( TOP )
+    dial:DockMargin( 0, gap, 0, 0 )
+
+    local pending -- the station the dial last stopped on, nil once the radio's playing it
+    local lastSent = radio:GetSong()
+    local nextSend = 0
+    local releasedAt = 0
+
+    function dial:OnDragged( position )
+        pending = math.Round( position )
+
     end
 
-    terminator_Extras.easyClosePanel( Tuner )
+    function dial:OnReleased( position )
+        pending = math.Round( position )
+        releasedAt = CurTime()
 
-    local SongSlider = vgui.Create( "DNumSlider", Tuner )
-    local margin = glee_sizeScaled( 15 )
-    SongSlider:DockMargin( margin, margin, margin, margin )
-    SongSlider:Dock( FILL )
-    SongSlider:SetMin( 0 )
-    SongSlider:SetMax( 51 )
-    SongSlider:SetDecimals( 0 )
-    SongSlider:SetValue( activeSong )
-    SongSlider:SetText( "▶ " .. SongNames[math.Round( activeSong )] )
-    SongSlider.OnValueChanged = function( _, val )
-        if nextSend > CurTime() then return end
-        nextSend = CurTime() + 0.01
-
-        SongSlider:SetText( "▶ " .. SongNames[math.Round( val )] )
-        net.Start( "PlaySTRadioSong" )
-            net.WriteEntity( selfEnt )
-            net.WriteUInt( math.Round( val ), 16 )
-
-        net.SendToServer()
     end
+
+    frame:SizeToContents()
+    frame:Center()
+
+    function frame:Think()
+        if not IsValid( radio ) or not IsValid( ply ) or not radio:CanBeTunedBy( ply ) then
+            self:Close()
+            return
+
+        end
+
+        local song = radio:GetSong()
+        local cur = CurTime()
+
+        if pending and pending ~= lastSent and nextSend <= cur then
+            sendTune( radio, pending )
+            lastSent = pending
+            nextSend = cur + sendInterval
+
+        end
+
+        local settled = pending == lastSent and ( pending == song or cur - releasedAt > settleTime )
+        if pending and not dial:IsDragging() and settled then
+            pending = nil
+
+        end
+
+        if not pending then
+            dial:SetPosition( song )
+
+        end
+
+        nameBox:SetText( stationName( radio, pending or song ) )
+        dial:SetValue( frequencyText( radio, dial:GetPosition() ) )
+
+    end
+
+    terminator_Extras.easyClosePanel( frame )
+    ply:EmitSound( "physics/wood/wood_crate_impact_soft3.wav", 50, 200, 0.45 )
+
+    currentFrame = frame
+
+end
+
+net.Receive( "glee_radio_open", function()
+    local radio = net.ReadEntity()
+    if not IsValid( radio ) then return end
+
+    openTuner( radio )
+
 end )

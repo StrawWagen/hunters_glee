@@ -22,6 +22,12 @@ terminator_Extras.glee_RegisterStyle( "godlyDecree", {
             weight = 500,
             font = function() return GAMEMODE and GAMEMODE.GLEE_FONT or "Arial" end,
         },
+        -- the bank's consent forms, small enough that a long name fits on the line
+        signature = {
+            size = 40,
+            weight = 500,
+            font = function() return GAMEMODE and GAMEMODE.GLEE_FONT or "Arial" end,
+        },
     },
 
     colors = {

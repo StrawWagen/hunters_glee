@@ -1,6 +1,7 @@
 
 if SERVER then
 
+    AddCSLuaFile( "glee_hud/rndx.lua" )
     AddCSLuaFile( "glee_hud/cl_draw.lua" )
     AddCSLuaFile( "glee_hud/cl_style.lua" )
 

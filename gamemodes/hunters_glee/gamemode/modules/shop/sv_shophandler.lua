@@ -107,7 +107,8 @@ function GM:RefundShopItemCooldown( ply, toPurchase )
 end
 
 
-concommand.Add( "termhunt_purchase", function( ply, _, args, _ )
+-- buys outright, skipping the item's clBeforePurchase. Players buy with termhunt_purchase
+concommand.Add( "termhunt_purchase_raw", function( ply, _, args, _ )
     GAMEMODE:purchaseItem( ply, args[1] )
 
 end )

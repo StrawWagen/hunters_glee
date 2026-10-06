@@ -79,126 +79,122 @@ if SERVER then
 end
 if CLIENT then
 
-    if not glee_sizeScaled then
-        include( "autorun/client/cl_gleehud.lua" )
+    --[[------------------------------------
+        The bar under the crosshair. Each message is the server's progress, plus how big
+        and how far apart its steps are. Between messages the bar runs at that rate on its
+        own, never past the step the server's on, so ping only ever makes it wait, never
+        jump or go back.
+    --]]-------------------------------------
 
-    end
+    local BAR_W_1080P = 400
+    local BAR_H_1080P = 12
+    local DROP_1080P = 110 -- below the crosshair
+    local INFO_FONT = "small"
 
-    local function defineFont()
-        surface.CreateFont( "huntersglee_barinfo", {
-            font = GAMEMODE and GAMEMODE.GLEE_FONT or "Arial",
-            extended = false,
-            size = glee_sizeScaled( nil, 30 ),
-            weight = 500,
-            blursize = 0,
-            scanlines = 0,
-            antialias = true,
-            underline = false,
-            italic = false,
-            strikeout = false,
-            symbol = false,
-            rotary = false,
-            shadow = true,
-            additive = false,
-            outline = false,
-        } )
-    end
-    defineFont()
-    hook.Add( "glee_rebuildfonts", "glee_rebuild_barinfo_font", function()
-        defineFont()
+    local lingerMin = 0.4 -- before the server's NW2Bool arrives, see stillActive
+    local fadeSpeed = 6 -- of alpha, 0 to 1, per second
 
-    end )
+    local hookName = "glee_genericprogressbar"
 
-    local barColor = Color( 255, 255, 255, 255 )
-    local barBackground = Color( 50, 50, 50, 100 )
+    -- the one on screen, nil when there isn't one
+    local bar
 
-    local function PaintProgressBar( percent, info )
-        local xOffs, yOffs = glee_sizeScaled( -200, 110 )
-        local barWidth, barHeight = glee_sizeScaled( 400, 20 )
-        barWidth = barWidth / 100
-
-        local posX = ScrW() / 2
-        local posY = ScrH() / 2
-
-        local x = posX + xOffs
-        local y = posY + yOffs
-
-        if info and info ~= "" then
-            surface.drawShadowedTextBetter( info, "huntersglee_barinfo", barColor, posX, y + 20, true )
+    -- The server's NW2Bool, under the bar's id, is true for as long as it holds the bar's
+    -- progress. It can land after the first message, so until it does, recent messages count
+    local function stillActive()
+        if LocalPlayer():GetNW2Bool( bar.id, false ) then
+            bar.seenActive = true
+            return true
 
         end
 
-        surface.SetDrawColor( barBackground )
-        surface.DrawRect( x, y, 100 * barWidth, barHeight )
+        if bar.seenActive then return false end
 
-        surface.SetDrawColor( barColor )
-        surface.DrawRect( x, y, percent * barWidth, barHeight )
+        return RealTime() - bar.lastHeard < math.max( bar.interval * 2, lingerMin )
 
     end
 
-    local isProgressBar
-    local progressBarId
-    local progressInfo
-    local progressLastRecieved = 0
-    local updateSpeed = 0
-    local updateChunkSize = 0
-    local progBarHookName = "termhunt_coolgenericprogressbar"
+    local function drawBar()
+        local active = stillActive()
 
-    local nextRecieve = 0
+        bar.alpha = math.Approach( bar.alpha, active and 1 or 0, fadeSpeed * RealFrameTime() )
+        if not active and bar.alpha <= 0 then
+            bar = nil
+            hook.Remove( "PostDrawHUD", hookName )
+            return
 
-    local function cancelProgressBar()
-        isProgressBar = nil
-        progressBarId = nil
-        progressInfo = nil
-        progressLastRecieved = 0
-        updateSpeed = 0
-        updateChunkSize = 0
-        hook.Remove( "PostDrawHUD", progBarHookName )
+        end
 
-    end
-    hook.Remove( "PostDrawHUD", progBarHookName )
+        -- the server's own rate, sped up by how many steps behind a late message left it
+        local behind = bar.ahead - bar.shown
+        if behind > 0 then
+            local catchUp = math.max( 1, behind / bar.step )
+            bar.shown = math.Approach( bar.shown, bar.ahead, bar.rate * catchUp * RealFrameTime() )
 
-    local function progBarDraw()
-        if not isProgressBar then cancelProgressBar() return end
-        local localPly = LocalPlayer()
+        end
 
-        if localPly:GetNW2Bool( progressBarId, false ) ~= true then cancelProgressBar() return end
+        local style = terminator_Extras.glee_Style( "generic" )
+        local RNDX = terminator_Extras.glee_RNDX
 
-        local tillNextPredicted = ( nextUpdatePredictedTime - CurTime() ) / updateSpeed
-        tillNextPredicted = math.Clamp( tillNextPredicted, 0, 1 )
+        local pad = style:Metric( "blockPadding" )
+        local barW, barH = style:Scaled( BAR_W_1080P ), style:Scaled( BAR_H_1080P )
 
-        local predictedDest = progressLastRecieved + updateChunkSize
+        local hasInfo = bar.info ~= ""
+        local infoH = 0
+        if hasInfo then
+            local _, textH = style:Measure( bar.info, INFO_FONT )
+            infoH = textH + pad
 
-        local percentPredicting = Lerp( 1 - tillNextPredicted, progressLastRecieved, predictedDest )
+        end
 
-        local clamped = math.Clamp( percentPredicting, 0, 100 )
-        PaintProgressBar( clamped, progressInfo )
+        local w, h = barW + pad * 2, infoH + barH + pad * 2
+        local x, y = ScrW() * 0.5 - w * 0.5, ScrH() * 0.5 + style:Scaled( DROP_1080P )
+
+        local oldMultiplier = surface.GetAlphaMultiplier()
+        surface.SetAlphaMultiplier( oldMultiplier * bar.alpha )
+
+        style:Background( x, y, w, h, "bg", nil, 1, "idle", bar )
+
+        if hasInfo then
+            style:Draw( bar.info, INFO_FONT, ScrW() * 0.5, y + pad )
+
+        end
+
+        local barX, barY = x + pad, y + pad + infoH
+        local radius = style:Metric( "boxCornerRadius" )
+        RNDX.Rect( barX, barY, barW, barH ):Rad( radius ):Color( style:BackdropColor( "bgDark" ) ):Draw()
+
+        local fraction = math.Clamp( bar.shown / 100, 0, 1 )
+        if fraction > 0 then
+            RNDX.Rect( barX, barY, barW * fraction, barH ):Rad( radius ):Color( style:Color( "happy" ) ):Draw()
+
+        end
+
+        surface.SetAlphaMultiplier( oldMultiplier )
 
     end
 
     net.Receive( "coolprogressbar_maintain", function()
-        if nextRecieve > CurTime() then return end
-        nextRecieve = CurTime() + 0.01
-        local idWeCanFindStuffAt = net.ReadString()
+        local id = net.ReadString()
+        local info = net.ReadString()
+        local progress = net.ReadFloat()
+        local interval = net.ReadFloat()
+        local step = net.ReadFloat()
 
-        if not idWeCanFindStuffAt then return end
+        -- a new bar, or this one started over, which the server does under the same id
+        if not bar or bar.id ~= id or progress < bar.confirmed then
+            bar = { id = id, shown = progress, alpha = bar and bar.alpha or 0 }
+            hook.Add( "PostDrawHUD", hookName, drawBar )
 
-        local boolAtId = LocalPlayer():GetNW2Bool( idWeCanFindStuffAt, nil )
-        if boolAtId ~= true then return end
+        end
 
-        isProgressBar = true
-        progressBarId = idWeCanFindStuffAt
-
-        progressInfo = net.ReadString()
-
-        progressLastRecieved = net.ReadFloat()
-
-        updateSpeed = net.ReadFloat()
-        nextUpdatePredictedTime = CurTime() + updateSpeed
-
-        updateChunkSize = net.ReadFloat()
-
-        hook.Add( "PostDrawHUD", progBarHookName, progBarDraw )
+        bar.info = info
+        bar.confirmed = progress
+        bar.ahead = progress + step -- the server counts this step the moment it sends it
+        bar.step = math.max( step, 0.001 )
+        bar.interval = interval
+        bar.rate = bar.step / math.max( interval, 0.001 )
+        bar.lastHeard = RealTime()
 
     end )
 end

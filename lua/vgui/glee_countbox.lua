@@ -27,7 +27,10 @@ PANEL.Init = function( self )
     self._label             = ""
     self._countFunc          = nil
     self._nilLabel           = ""
+    self._suffix             = ""
     self._suffix0            = nil
+    self._showDiff           = true
+    self._baseColor          = "text"
     self._largePositiveChangeSound   = nil
     self._largeNegativeChangeSound   = nil
     self._smallCountThreshold = nil
@@ -41,6 +44,12 @@ PANEL.Init = function( self )
     self._shakeTime     = 0
     self._oldCount      = 0
     self._oldCompare    = 0
+
+end
+
+-- The colour role between changes. Defaults to "text"
+PANEL.SetBaseColor = function( self, colorRole )
+    self._baseColor = colorRole
 
 end
 
@@ -59,6 +68,18 @@ end
 -- Appended to the label when countFunc returns nil.
 PANEL.SetNilLabel = function( self, label )
     self._nilLabel = label
+
+end
+
+-- Appended to every count, before the running diff. e.g. "%"
+PANEL.SetSuffix = function( self, suffix )
+    self._suffix = suffix
+
+end
+
+-- False drops the running diff, the " +25" after a changed count. The colour still changes
+PANEL.SetShowDiff = function( self, show )
+    self._showDiff = show
 
 end
 
@@ -119,14 +140,14 @@ PANEL.ManageHudState = function( self, ply, cur, alwaysShow, neverShow )
         text = self._label .. self._nilLabel
 
     else
-        text = self._label .. count
+        text = self._label .. count .. self._suffix
         if count == 0 and self._suffix0 then
             text = text .. self._suffix0
 
         end
     end
 
-    local textColor   = "text"
+    local textColor   = self._baseColor
     local doFlash     = false
     local threshold   = self._smallCountThreshold
     local isWithinVisibleWindow = self._visibleUntil > cur
@@ -136,7 +157,7 @@ PANEL.ManageHudState = function( self, ply, cur, alwaysShow, neverShow )
     if self._colorExpiry > cur then
         textColor = self._colorOverride
 
-        if self._addAtEnd and count ~= nil then
+        if self._showDiff and self._addAtEnd and count ~= nil then
             text = text .. self._addAtEnd
 
         end

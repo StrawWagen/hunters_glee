@@ -34,8 +34,8 @@ end
 
 local set = {
     name = "hunters_glee_nightmare", -- unique name
-    prettyName = "Nightmare on glee street",
-    description = "Nightmare on glee street.\nMore hunters, sooner, and they're probably overcharged",
+    prettyName = "Gleeful Nightmare",
+    description = "Truly a nightmare.\nMore hunters, sooner, and they're probably overcharged",
     difficultyPerMin = "default*2.5", -- difficulty per minute
     waveInterval = "default", -- time between spawn waves
     diffBumpWhenWaveKilled = { 25, 50 }, -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount

@@ -13,8 +13,8 @@ local set = {
     maxSpawnDist = "default*0.5", -- spawn close, these cant pathfind
     roundEndSound = "default",
     roundStartSound = "default",
-    chanceToBeVotable = 2,
-    chanceToBeVotableWhenHard = 20, -- stick around when this is still a challenge
+    chanceToBeVotable = 15,
+    chanceToBeVotableWhenHard = 50, -- stick around when this is still a challenge
     spawns = {
         {
             name = "infernal_ambler", -- unique name

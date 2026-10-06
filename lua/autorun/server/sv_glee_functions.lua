@@ -6,7 +6,7 @@ local down = Vector( 0, 0, -1 )
 function terminator_Extras.GleeFancySplode( pos, damage, radius, attacker, inflictor, nofx )
 
     util.BlastDamage( inflictor, attacker, pos, radius, damage )
-    util.Decal( "FadingScorch", pos + up, pos + down * radius / 4, ent )
+    util.Decal( "FadingScorch", pos + up, pos + down * radius / 4, attacker )
 
     if nofx then return end
 

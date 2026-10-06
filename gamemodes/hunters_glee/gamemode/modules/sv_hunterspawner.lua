@@ -462,7 +462,7 @@ function GM:SpawnWaveSpawnIn()
 
                 end
             end
-            hunter.glee_PrettyName = currSpawnEntry.prettyName
+            hunter:SetNWString( "glee_PrettyName", currSpawnEntry.prettyName or "" )
             self.currentSpawning = nil -- spawn next one pls
             self.waveWasAlive = aliveHuntersCount()
 
@@ -737,9 +737,12 @@ function GM:AttemptToSpawnHunter( spawnEntry )
     hunter:SetAngles( randYawAng )
     hunter:Spawn()
     hunter.glee_SpawnArea = spawnArea -- so we can prefer to spawn enemies from this area, if this bot ends up killing someone!
-    hunter.glee_IsBoss = spawnEntry.isBoss
 
     self:RegisterAsSpawnedHunter( hunter )
+    if spawnEntry.isBoss then
+        self:RegisterBoss( hunter )
+
+    end
 
     permaPrint( hunter ) -- i like this print, you cannot make me remove it
     if debuggingVar:GetBool() then
@@ -1199,7 +1202,7 @@ function GM:MarchValidHunterPos( spawnEntry )
 
         end
 
-        fails = fails + 1
+        fails = fails + 0.75
 
         if tooClose then
             spawnSet.dynamicTooCloseFailCounts = dynamicTooCloseFailCounts + 1
@@ -1208,6 +1211,8 @@ function GM:MarchValidHunterPos( spawnEntry )
 
         end
     end
+
+    fails = fails + 0.25
 
     -- didnt find a spot in the x tries, fatten the spawn donut a bit
     local bite = fails / tries

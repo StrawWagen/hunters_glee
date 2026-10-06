@@ -667,38 +667,3 @@ function GM:IsMeleeWeapon( wep )
 
 end
 
-do
-    local string = string
-
-    function GM:GetNameOfBot( bot )
-        local name = ""
-        if bot.Nick and isfunction( bot.Nick ) then
-            return bot:Nick() or "Something"
-
-        elseif bot.glee_PrettyName then
-            name = bot.glee_PrettyName
-
-        else
-            name = bot.PrintName
-            if not name then
-                if bot:IsNPC() then
-                    name = "A NPC"
-                elseif bot:IsNextBot() then
-                    name = "A Nextbot"
-                else
-                    name = "Something"
-                end
-            end
-
-            local nameLower = string.lower( name )
-            nameLower = string.Trim( nameLower )
-            if not ( string.StartsWith( nameLower, "a " ) or string.StartsWith( nameLower, "the " ) ) then
-                name = "A " .. name
-
-            end
-        end
-        return name
-
-    end
-end
-

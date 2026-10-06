@@ -72,19 +72,9 @@ local function sizeBox()
 
 end
 
--- Only written on a deliberate spectate switch, so it can name a target we left
-local function watchedName()
-    local sent = LocalPlayer():GetNW2String( "glee_currentlySpectatingName", "" )
-    if sent ~= "" then return sent end
-
-    return "Something"
-
-end
-
--- the test sv_player.lua uses to pick between a Nick and GetNameOfBot, so the font we
--- choose matches the name it sent
+-- GetNameOfBot's test for a Nick, so the font we choose matches the name it gives
 local function hasNick( ent )
-    return ent.Nick and isstring( ent:Nick() )
+    return isfunction( ent.Nick )
 
 end
 
@@ -93,13 +83,13 @@ end
 local function watchingParts( ply )
     local driven = ply:GetDrivingEntity()
     if IsValid( driven ) then
-        return "Posessing", watchedName(), hasNick( driven )
+        return "Posessing", GAMEMODE:GetNameOfBot( driven ), hasNick( driven )
 
     end
 
     local observed = ply:GetObserverTarget()
     if IsValid( observed ) then
-        return "Spectating", watchedName(), hasNick( observed )
+        return "Spectating", GAMEMODE:GetNameOfBot( observed ), hasNick( observed )
 
     end
 end

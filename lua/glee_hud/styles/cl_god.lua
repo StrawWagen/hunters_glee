@@ -100,8 +100,14 @@ terminator_Extras.glee_RegisterStyle( "god", {
     end,
 
     -- torn paper rather than a box, so it ignores the corner radius it is handed.
-    -- Without a cache the tears reroll every frame
-    background = function( style, x, y, w, h, color, _cornerRadius, fade, cache )
+    -- Without a cache the tears reroll every frame. RNDX has no torn shape, so the blur is
+    -- the strip's box
+    background = function( style, x, y, w, h, color, _cornerRadius, fade, cache, blur )
+        if blur then
+            terminator_Extras.glee_RNDX.Rect( x, y, w, h ):Blur( blur * fade ):Draw()
+
+        end
+
         local oldMultiplier = surface.GetAlphaMultiplier()
         surface.SetAlphaMultiplier( oldMultiplier * fade )
 

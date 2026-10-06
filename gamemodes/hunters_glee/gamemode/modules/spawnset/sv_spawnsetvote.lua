@@ -12,21 +12,18 @@ GM.glee_ConsecutiveSpawnsetVotes = GM.glee_ConsecutiveSpawnsetVotes or 0
 
 util.AddNetworkString( "glee_begin_spawnsetvote" )
 
-function spawnSetVote:BeginVote( duration, maxOptions )
+function spawnSetVote:BeginVote( duration, maxOptions, toAdd )
 
     local currentSpawnsetName, currentSpawnSet = GAMEMODE:GetSpawnSet()
-    local wantsOtherEasyOnes = currentSpawnSet.easy
+    local leavingEasy = currentSpawnSet and currentSpawnSet.easy
+    local wantsOtherEasyOnes = leavingEasy
 
     duration = duration or defaultDuration:GetInt()
-    if currentSpawnSet.easy then
+    if leavingEasy then
         duration = duration * easyDurationMul:GetFloat()
 
     end
     duration = math.Round( duration )
-
-    maxOptions = maxOptions or defaultMaxOptions:GetInt()
-    maxOptions = math.Round( maxOptions )
-    maxOptions = math.Clamp( maxOptions, 2, 9 )
 
     local currVote = {}
     spawnSetVote.currVote = currVote
@@ -34,90 +31,104 @@ function spawnSetVote:BeginVote( duration, maxOptions )
     currVote.voteEnd = CurTime() + duration
     currVote.votes = {}
 
+    maxOptions = maxOptions or defaultMaxOptions:GetInt()
+    maxOptions = math.Round( maxOptions )
+    maxOptions = math.Clamp( maxOptions, 2, 9 )
+
     local options = {}
     currVote.options = options
     local optionsSeq = {}
     currVote.optionsSeq = optionsSeq
 
-    local spawnSets = GAMEMODE:GetSpawnSets()
-    local toBrowse = table.Copy( spawnSets )
+    if not toAdd then
+        toAdd = {}
 
-    local easyEscapeRoutes = 0
-    local idealEasyEscapeRoutes = 1
-    if GAMEMODE.glee_ConsecutiveSpawnsetVotes >= math.random( 2, 3 ) then
-        idealEasyEscapeRoutes = 2
+        local spawnSets = GAMEMODE:GetSpawnSets()
+        local toBrowse = table.Copy( spawnSets )
 
-    end
-    local easyAdded = 0
-
-    local toAdd = {}
-
-    toBrowse[currentSpawnsetName] = nil -- remove current mode from options
-
-    while table.Count( toBrowse ) > 0 do
-        if ( #toAdd + 1 ) > maxOptions then break end
-
-        local option, key = table.Random( toBrowse )
-        toBrowse[key] = nil
-
-        local optionsMul = GAMEMODE:GetSpawnsetsEscapeMultiplier( key )
-
-        local chance = option.chanceToBeVotable
-        if option.chanceToBeVotableWhenHard and optionsMul >= 1 then -- make spawnsets fade into the background if they aren't challenging people
-            chance = option.chanceToBeVotableWhenHard
+        local easyEscapeRoutes = 0
+        local idealEasyEscapeRoutes = 1
+        if GAMEMODE.glee_ConsecutiveSpawnsetVotes >= math.random( 2, 3 ) then
+            idealEasyEscapeRoutes = 2
 
         end
+        local easyAdded = 0
 
-        if isnumber( chance ) and chance < 15 then -- bump chances of rare modes up to 15%, so if rtm is being done a bunch of times, make rare ones more common
-            local added = GAMEMODE.glee_ConsecutiveSpawnsetVotes * chancePerConsecutiveVote
-            local newChance = chance + added
-            chance = math.min( newChance, 15 )
+        toBrowse[currentSpawnsetName] = nil -- remove current mode from options
 
-        end
+        while table.Count( toBrowse ) > 0 do
+            if ( #toAdd + 1 ) > maxOptions then break end
 
-        local plsSkip
+            local option, key = table.Random( toBrowse )
+            toBrowse[key] = nil
 
-        -- if in easy realm, prefer easy ones
-        -- but always allow 1 hard misery
-        if wantsOtherEasyOnes then
-            -- this counts mul < 1 as easy, but no other code does it
-            -- intentional transition space, might change later
-            local optionIsEasy = option.easy or optionsMul < 1
-            local enoughEasy = easyAdded + ( idealEasyEscapeRoutes + 1 ) > maxOptions
-            local freebie = ( not chance or chance >= 50 ) and easyEscapeRoutes <= idealEasyEscapeRoutes
+            if table.Count( toBrowse ) <= maxOptions then
+                table.insert( toAdd, option )
+                continue
 
-            -- add hard modes as an "escape route" from easy hell
-            -- prefer ones with >=50% chance, or just add ones if we're about to run out of room
-            if freebie or enoughEasy then
-                if optionIsEasy then
-                    plsSkip = true -- we're looking for our honorary hard mode
-
-                else
-                    plsSkip = false
-                    easyEscapeRoutes = easyEscapeRoutes + 1
-
-                end
-            -- and fill the rest with easy modes
-            else
-                if optionIsEasy then
-                    plsSkip = false
-                    easyAdded = easyAdded + 1
-
-                else
-                    plsSkip = true
-
-                end
             end
-        else
-            plsSkip = isnumber( chance ) and chance < math.Rand( 0, 100 )
+
+            local optionsMul = GAMEMODE:GetSpawnsetsEscapeMultiplier( key )
+            local easy = option.easy
+            local hardThresh = easy and GAMEMODE.easyCostSoftMax or 1
+
+            local chance = option.chanceToBeVotable
+            if option.chanceToBeVotableWhenHard and chance > hardThresh then -- make spawnsets fade into the background if they aren't challenging people
+                chance = option.chanceToBeVotableWhenHard
+
+            end
+
+            if isnumber( chance ) and chance < 15 then -- bump chances of rare modes up to 15%, so if rtm is being done a bunch of times, make rare ones more common
+                local added = GAMEMODE.glee_ConsecutiveSpawnsetVotes * chancePerConsecutiveVote
+                local newChance = chance + added
+                chance = math.min( newChance, 15 )
+
+            end
+
+            local plsSkip
+
+            -- if in easy realm, prefer easy ones
+            -- but always allow 1 hard misery
+            if wantsOtherEasyOnes then
+                -- this counts mul < 1 as easy, but no other code does it
+                -- intentional transition space, might change later
+                local optionIsEasy = easy or optionsMul < 1
+                local enoughEasy = easyAdded + ( idealEasyEscapeRoutes + 1 ) > maxOptions
+                local freebie = ( not chance or chance >= 50 ) and easyEscapeRoutes <= idealEasyEscapeRoutes
+
+                -- add hard modes as an "escape route" from easy hell
+                -- prefer ones with >=50% chance, or just add ones if we're about to run out of room
+                if freebie or enoughEasy then
+                    if optionIsEasy then
+                        plsSkip = true -- we're looking for our honorary hard mode
+
+                    else
+                        plsSkip = false
+                        easyEscapeRoutes = easyEscapeRoutes + 1
+
+                    end
+                -- and fill the rest with easy modes
+                else
+                    if optionIsEasy then
+                        plsSkip = false
+                        easyAdded = easyAdded + 1
+
+                    else
+                        plsSkip = true
+
+                    end
+                end
+            else
+                plsSkip = isnumber( chance ) and chance < math.Rand( 0, 100 )
+
+            end
+
+            local stillEnoughToOverfill = ( table.Count( toBrowse ) + #toAdd ) > maxOptions -- always meet maxOptions
+
+            if stillEnoughToOverfill and plsSkip then continue end
+            table.insert( toAdd, option )
 
         end
-
-        local stillEnoughToOverfill = ( table.Count( toBrowse ) + #toAdd ) > maxOptions -- always meet maxOptions
-
-        if stillEnoughToOverfill and plsSkip then continue end
-        table.insert( toAdd, option )
-
     end
 
     for _, set in SortedPairsByMemberValue( toAdd, "prettyName" ) do -- sorted so its alphabetical

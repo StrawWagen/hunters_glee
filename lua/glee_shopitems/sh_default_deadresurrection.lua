@@ -746,7 +746,7 @@ if SERVER then
                 if dead.glee_DivineChosenForcedResurrect > CurTime() then return end
 
                 dead.glee_DivineChosenForcedResurrect = CurTime() + 10 -- dont spam sound
-                dead:ConCommand( "termhunt_purchase resurrection" )
+                dead:ConCommand( "termhunt_purchase_raw resurrection" )
 
             end )
         end,

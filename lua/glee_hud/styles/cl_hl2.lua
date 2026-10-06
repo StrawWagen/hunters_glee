@@ -7,8 +7,6 @@
 
 local mediumLargeSize = 34
 
-local fadedBackground = Color( 0, 0, 0, 0 )
-
 terminator_Extras.glee_RegisterStyle( "hl2", {
     fontName   = "Trebuchet MS",
     fontWeight = 500,
@@ -88,14 +86,17 @@ terminator_Extras.glee_RegisterStyle( "hl2", {
     },
 
     -- style is the built style, color the Color for the panel's family and state, unfaded.
-    -- fade is 0 to 1, cache as handle:Background takes it
-    background = function( _style, x, y, w, h, color, cornerRadius, fade, _cache )
-        fadedBackground.r = color.r
-        fadedBackground.g = color.g
-        fadedBackground.b = color.b
-        fadedBackground.a = math.floor( color.a * fade )
+    -- fade is 0 to 1, cache as handle:Background takes it. blur is nil, or how hard to blur
+    -- what's behind the backdrop, as RNDX's blur intensity
+    background = function( _style, x, y, w, h, color, cornerRadius, fade, _cache, blur )
+        local RNDX = terminator_Extras.glee_RNDX
 
-        draw.RoundedBox( cornerRadius, x, y, w, h, fadedBackground )
+        if blur then
+            RNDX.Rect( x, y, w, h ):Rad( cornerRadius ):Blur( blur * fade ):Draw()
+
+        end
+
+        RNDX.Rect( x, y, w, h ):Rad( cornerRadius ):Color( color.r, color.g, color.b, color.a * fade ):Draw()
 
     end,
 } )

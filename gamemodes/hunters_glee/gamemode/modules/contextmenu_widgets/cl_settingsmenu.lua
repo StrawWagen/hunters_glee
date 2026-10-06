@@ -127,6 +127,12 @@ local settingsCategories = {
                 desc = "Draw player names on the HUD when you're dead?",
             },
             {
+                cvar = "cl_huntersglee_blurmenus",
+                type = "check",
+                prettyName = "Blur behind menus",
+                desc = "Blur whatever is behind menus like this one, so they're easier to read.",
+            },
+            {
                 cvar = "cl_huntersglee_highcontrast",
                 type = "check",
                 prettyName = "High contrast",

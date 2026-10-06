@@ -113,6 +113,7 @@ GAMEMODE:GobbleShopItems( items )
 | `fakeCost` | ❌ | Show a cost but don't take it. For items that charge the player themselves |
 | `costDecorative` | ❌ | Fake, decorative cost. Accepts string, number, tables of strings, functions. Overrides `shSkullCost`, and `shCost` |
 | `simpleCostDisplay` | ❌ | **Client.** Skip the coloring and formatting of the cost in the shop |
+| `clBeforePurchase` | ❌ | **Client.** Runs instead of buying, from the shop or `termhunt_purchase`: `function(buy, check)`. Call `buy()` to go through with it. `check()` returns `GM:canPurchase`'s answer for right now, for anything that keeps the player waiting before buying. `termhunt_purchase_raw` skips it |
 | `unpurchaseableReason` | ❌ | Custom denial string. Only used if the item has the `unpurchaseable` tag |
 | `identifier` | ❌ | Auto-generated. The item's unique key |
 
@@ -612,6 +613,8 @@ Referenced throughout the codebase:
 ## License
 
 See [LICENSE](LICENSE) for details.
+
+Rounded shapes, soft shadows and blur are drawn with [RNDX](https://github.com/Srlion/RNDX) by Srlion, MIT licensed, at `lua/glee_hud/rndx.lua`.
 
 ---
 

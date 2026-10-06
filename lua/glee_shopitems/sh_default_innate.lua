@@ -1131,6 +1131,7 @@ if CLIENT then
 
                     self.armor = ents.FindByClass( "item_battery" )
                     self.slams = ents.FindByClass( "npc_tripmine" )
+                    table.Add( self.slams, ents.FindByClass( "glee_sticky_slam" ) )
                     self.skulls = ents.FindByClass( "termhunt_skull_pickup" )
 
                     self.medkits = ents.FindByClass( "item_healthkit" )
@@ -1474,7 +1475,7 @@ local items = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
         },
-        weight = 125,
+        weight = 85,
         shPurchaseCheck = { shopHelpers.aliveCheck },
         svOnPurchaseFunc = function( ply )
             ply:GiveStatusEffect( "mecha_legs" )

@@ -67,6 +67,10 @@ function GM:GetBankMinFunds()
     end
 end
 
+-- Off-World Skull Relay's connection fee: base + this % of the account's balance
+GM.SkullRelayBaseFee = 10000
+GM.SkullRelayBalanceFee = 1
+
 -- Bank items sit on an account, one of each, until they expire or the account closes.
 -- data.lifetime: seconds the item lasts once given, nil lasts until the account closes.
 function GM:RegisterBankItem( name, data )

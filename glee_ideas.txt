@@ -746,3 +746,6 @@ goes in a glee rebinding menu?
 -- SMG is design gap, frustrating to have
 -- pulse rifle right click ?
 -- pickup delay feels like crap
+
+-- make singleplayer warning yell louder
+-- respect prop_dynamic skull scale

@@ -94,7 +94,10 @@ end )
 
 -- buff some weapons against npcs
 local buffs = {
-    ["npc_tripmine"] = 1.75,
+    ["npc_tripmine"] = 1.75, -- on wall
+    ["npc_satchel"] = 1.75, -- thrown
+    ["glee_sticky_slam"] = 1.75, -- lua ent, stuck to thing
+
     ["npc_grenade_frag"] = 1.75,
     ["weapon_357"] = 2,
     ["weapon_smg1"] = 2,

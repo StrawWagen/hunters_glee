@@ -18,6 +18,7 @@ AddCSLuaFile( "modules/escaping/cl_escaping.lua" )
 AddCSLuaFile( "modules/escaping/cl_escapecounts.lua" )
 
 AddCSLuaFile( "modules/banking/cl_banking.lua" )
+AddCSLuaFile( "modules/banking/cl_bankconsent.lua" )
 
 AddCSLuaFile( "modules/statuseffects/cl_statuseffects.lua" )
 AddCSLuaFile( "modules/statuseffects/sh_statuseffectbase.lua" )
@@ -28,10 +29,12 @@ AddCSLuaFile( "modules/clhud/cl_topleftinfo.lua" )
 AddCSLuaFile( "modules/clhud/cl_bpm.lua" )
 AddCSLuaFile( "modules/clhud/cl_battery.lua" )
 AddCSLuaFile( "modules/clhud/cl_plynames.lua" )
+AddCSLuaFile( "modules/clhud/cl_bosshealthbar.lua" )
 AddCSLuaFile( "modules/cl_spectateflashlight.lua" )
 AddCSLuaFile( "modules/music/cl_music.lua" )
 AddCSLuaFile( "modules/thirdpersonflashlight/cl_flashlight.lua" )
 AddCSLuaFile( "modules/firsttimeplayers/cl_firsttimeplayers.lua" )
+AddCSLuaFile( "modules/firsttimeplayers/sh_firsttimeplayers.lua" )
 
 AddCSLuaFile( "modules/contextmenu_widgets/cl_banktop.lua" )
 AddCSLuaFile( "modules/contextmenu_widgets/cl_tauntmenu.lua" )
@@ -42,11 +45,13 @@ AddCSLuaFile( "modules/shop/cl_shopstandards.lua" )
 AddCSLuaFile( "modules/shop/cl_shoppinggui.lua" )
 AddCSLuaFile( "modules/shop/sh_shopshared.lua" )
 
+AddCSLuaFile( "lib/sh_gleehelpers.lua" )
 AddCSLuaFile( "sh_player.lua" )
 
 -- SHARED INCLUDES
 AddCSLuaFile( "modules/sh_panic.lua" )
 AddCSLuaFile( "modules/banking/sh_banking.lua" )
+AddCSLuaFile( "modules/escaping/sh_escaperewards.lua" )
 AddCSLuaFile( "modules/sh_tempbools.lua" )
 AddCSLuaFile( "modules/sh_deathsounds.lua" )
 AddCSLuaFile( "modules/sh_slowmopitch.lua" )
@@ -68,8 +73,10 @@ AddCSLuaFile( "modules/spawnset/sh_spawnsetlifecyclebase.lua" )
 AddCSLuaFile( "modules/spawnset/sh_spawnpoolutil.lua" )
 AddCSLuaFile( "modules/spawnset/sh_spawnsetcontent.lua" )
 AddCSLuaFile( "modules/spawnset/sh_sethelpers.lua" )
+AddCSLuaFile( "modules/spawnset/sh_bosshandler.lua" )
 AddCSLuaFile( "modules/unsandboxing/sh_unsandboxing.lua" )
 AddCSLuaFile( "modules/signalstrength/cl_signalstrength.lua" )
+AddCSLuaFile( "modules/stickyslams/sh_stickyslams.lua" )
 
 -- SV
 include( "lib/sv_gleehelpers.lua" )
@@ -139,6 +146,7 @@ include( "modules/proceduralspawner/sv_raregenericspawns.lua" )
 include( "modules/proceduralspawner/sv_rescueflarespawner.lua" )
 
 include( "modules/weapondropper/sv_weapondropper.lua" )
+include( "modules/stickyslams/sv_stickyslams.lua" )
 include( "modules/signalstrength/sv_signalstrength.lua" )
 
 util.AddNetworkString( "glee_resetplayershopcooldowns" )

@@ -91,7 +91,7 @@ if CLIENT then
         for _, item in pairs( items ) do
             if item:lower():find( stringargs ) then
                 --- Add the player's name into the auto-complete.
-                theComplete = "cl_termhunt_purchase \"" .. item .. "\""
+                theComplete = "termhunt_purchase \"" .. item .. "\""
                 table.insert( tbl, theComplete )
 
             end
@@ -101,9 +101,32 @@ if CLIENT then
 
     end
 
+    -- Buy with RunConsoleCommand( "termhunt_purchase", id ). Call this only when you need to use clBeforePurchase
+    function GM:ClientPurchase( identifier )
+        local function buy()
+            RunConsoleCommand( "termhunt_purchase_raw", identifier )
+
+        end
+
+        local function check()
+            return self:canPurchase( LocalPlayer(), identifier )
+
+        end
+
+        local itemData = self:GetShopItemData( identifier )
+        if itemData and itemData.clBeforePurchase then
+            itemData.clBeforePurchase( buy, check )
+            return
+
+        end
+
+        buy()
+
+    end
+
     -- ew ew gross formatting
-    concommand.Add( "cl_termhunt_purchase", function( _, _, args, _ )
-        RunConsoleCommand( "termhunt_purchase", args[1] )
+    concommand.Add( "termhunt_purchase", function( _, _, args, _ )
+        GAMEMODE:ClientPurchase( args[1] )
 
     end, autoComplete, "purchase an item" )
     -- ew ew

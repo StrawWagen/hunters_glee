@@ -280,6 +280,10 @@ local items = {
             return true
 
         end,
+        clBeforePurchase = function( buy, check )
+            GAMEMODE:OpenBankConsentForm( "account", buy, check )
+
+        end,
         svOnPurchaseFunc = function( purchaser )
             timer.Simple( 0.05, function()
                 if not IsValid( purchaser ) then return end
@@ -435,6 +439,10 @@ local items = {
 
         end,
         shCanShowInShop = { hasBankAccount },
+        clBeforePurchase = function( buy, check )
+            GAMEMODE:OpenBankConsentForm( "skull_gains", buy, check )
+
+        end,
         svOnPurchaseFunc = function( purchaser )
             timer.Simple( 0.05, function()
                 if not IsValid( purchaser ) then return end
@@ -449,7 +457,7 @@ local items = {
         shCost = function( purchaser )
             -- floored first, the client only sees whole funds
             local funds = math.floor( purchaser:BankFunds() or 0 )
-            return 10000 + math.Round( funds * 0.01 )
+            return GAMEMODE.SkullRelayBaseFee + math.Round( funds * ( GAMEMODE.SkullRelayBalanceFee / 100 ) )
 
         end,
         cooldown = 0,
@@ -470,6 +478,10 @@ local items = {
             return true
 
         end },
+        clBeforePurchase = function( buy, check )
+            GAMEMODE:OpenBankConsentForm( "skull_loophole", buy, check )
+
+        end,
         svOnPurchaseFunc = function( purchaser )
             timer.Simple( 0.05, function()
                 if not IsValid( purchaser ) then return end

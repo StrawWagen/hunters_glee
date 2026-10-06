@@ -721,9 +721,6 @@ function GM:SpectateThing( ply, thing, msg )
         end )
     end
 
-    local spectatingName = thing.Nick and isstring( thing:Nick() ) and thing:Nick() or GAMEMODE:GetNameOfBot( thing )
-    ply:SetNW2String( "glee_currentlySpectatingName", spectatingName )
-
     msg = msg or "glee_followedsomething"
     net.Start( msg )
     net.Send( ply )
@@ -845,7 +842,6 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
     local driving = ply:GetDrivingEntity()
     if IsValid( driving ) then return end
 
-    local spectated = nil
     local currentlySpectating = ply:GetObserverTarget()
 
     -- orbiting our body
@@ -859,8 +855,7 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
 
         shutDownDeathCam( ply )
         if ply.glee_KillerToSpectate then
-            spectated = ply.glee_KillerToSpectate
-            GAMEMODE:SpectateThing( ply, spectated )
+            GAMEMODE:SpectateThing( ply, ply.glee_KillerToSpectate )
 
             ply.glee_KillerToSpectate = nil
 
@@ -916,7 +911,6 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
             end
             if thingToFollow then
                 GAMEMODE:SpectateThing( ply, thingToFollow, "glee_followednexthing" )
-                spectated = thingToFollow
                 currentlySpectating = thingToFollow
 
             end
@@ -983,8 +977,7 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
             end
 
             if thingToFollow then
-                spectated = thingToFollow
-                GAMEMODE:SpectateThing( ply, spectated )
+                GAMEMODE:SpectateThing( ply, thingToFollow )
 
             end
         end
@@ -1043,12 +1036,6 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
             GAMEMODE:SpectateThing( ply, toWatch )
 
         end )
-    end
-
-    if IsValid( spectated ) then
-        local spectatingName = spectated.Nick and isstring( spectated:Nick() ) and spectated:Nick() or GAMEMODE:GetNameOfBot( spectated )
-        ply:SetNW2String( "glee_currentlySpectatingName", spectatingName )
-
     end
 end
 
@@ -1446,11 +1433,9 @@ hook.Add( "WeaponEquip", "glee_fixignitedweapons", function( wep, ply )
 
 end )
 
-hook.Add( "Term_OnStartedDriving", "glee_startdrivingsounds", function( driver, driven )
+hook.Add( "Term_OnStartedDriving", "glee_startdrivingsounds", function( driver, _driven )
     net.Start( "glee_starteddriving" )
     net.Send( driver )
-    local spectatingName = driven.Nick and isstring( driven:Nick() ) and driven:Nick() or GAMEMODE:GetNameOfBot( driven )
-    driver:SetNW2String( "glee_currentlySpectatingName", spectatingName )
 
 end )
 

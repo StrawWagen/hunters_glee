@@ -35,7 +35,7 @@ end
 local set = {
     name = "hunters_glee_oneguy", -- unique name
     prettyName = "One Gleeful Hunter",
-    description = "One Terminator. Kill it to win.",
+    description = "One Terminator. A cruel, smart enemy untouchable by bullets. Kill it to win.",
     difficultyPerMin = "default", -- difficulty per minute
     waveInterval = "default", -- time between spawn waves
     diffBumpWhenWaveKilled = "default", -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
@@ -50,6 +50,7 @@ local set = {
     chanceToBeVotable = 1, -- and fade into the background if this host isn't challenged by it
     chanceToBeVotableWhenHard = 15, -- stick around
     easy = true,
+    tutorialExit = true,
     spawns = {
         {
             hardRandomChance = nil,

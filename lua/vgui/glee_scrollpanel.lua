@@ -33,7 +33,7 @@ PANEL.Init = function( self )
     -- the grip is a DPanel underneath, which turns engine drawing off in its own Init
     bar.btnGrip.Paint = function( _grip, w, h )
         local style = self:Style()
-        draw.RoundedBox( style:Metric( "boxCornerRadius" ), 0, 0, w, h, style:Color( "happy" ) )
+        terminator_Extras.glee_RNDX.Rect( 0, 0, w, h ):Rad( style:Metric( "boxCornerRadius" ) ):Color( style:Color( "happy" ) ):Draw()
 
     end
 

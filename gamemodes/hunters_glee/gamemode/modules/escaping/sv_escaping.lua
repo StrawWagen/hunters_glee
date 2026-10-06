@@ -1,7 +1,3 @@
-
-local defaultScorePerEscapedRider = 500
-local scorePerRiderCvar = CreateConVar( "glee_score_perescaped_rider", -1, FCVAR_ARCHIVE, "How much score to give per escaped rider. Set to -1 to use the default of " .. defaultScorePerEscapedRider )
-
 local GAMEMODE = GAMEMODE or GM
 
 GM.IdealEscapingTime = 5 * 60 -- escaping should always take at least this long
@@ -116,12 +112,7 @@ function GM:escapifyVehicle( vehicle )
         if IsValid( driver ) then
             huntersGlee_AnnounceDramatic( actualRidersNoDriver, 1000, textDisplayDuration, "You've escaped!\nYou can finally leave this all behind, thanks to...\n" .. driver:Nick() )
 
-            local scorePerRider = scorePerRiderCvar:GetInt()
-            if scorePerRider < 0 then
-                scorePerRider = defaultScorePerEscapedRider
-
-            end
-            local increase = riderCount * scorePerRider
+            local increase = riderCount * self:GetEscapeRewardPerRider()
             driver:GivePlayerScore( increase )
 
             local sOrNoS = riderCount == 1 and "" or "s"
@@ -261,13 +252,6 @@ end )
 -- flat 50% discount on all shop items if EVERYONE escaped
 -- hook.Add( "huntersglee_round_pre_into_inactive", )
 
--- reward for escaping
-local flatEscapingReward = 500
-local rewardEveryoneEscaped = 1000 -- additional if everyone escaped
-local rewardPerSkull = 50
-local perSkullEveryoneEscaped = 100 -- additional per skull if everyone escaped
-local rewardPerSkullNoGains = 10 -- flat, without the skull_gains bank item
-
 local skullCashoutDelay = 8
 
 function GM:GiveEscapeRewardTo( ply )
@@ -284,9 +268,9 @@ function GM:GiveEscapeRewardTo( ply )
 
     local everyoneEscaped = GAMEMODE.roundExtraData.everyoneEscaped
 
-    local baseReward = flatEscapingReward
+    local baseReward = self:GetEscapeReward()
     if everyoneEscaped then
-        baseReward = baseReward + rewardEveryoneEscaped
+        baseReward = baseReward + self:GetEscapeRewardEveryoneEscaped()
 
     end
     baseReward = baseReward * theMultiplier
@@ -340,15 +324,15 @@ function GM:GiveEscapeRewardTo( ply )
     local hasGains = ply:HasBankItem( "skull_gains" )
     local hasLoophole = hasGains and ply:HasBankItem( "skull_loophole" )
 
-    local skullReward = rewardPerSkullNoGains
+    local skullReward = self:GetSkullReward()
     if hasGains then
-        skullReward = rewardPerSkull
+        skullReward = self:GetSkullRewardGains()
         if everyoneEscaped then
-            skullReward = skullReward + perSkullEveryoneEscaped
+            skullReward = skullReward + self:GetSkullRewardGainsEveryoneEscaped()
 
         end
         if hasLoophole then
-            skullReward = skullReward * 2
+            skullReward = skullReward * self:GetSkullRelayMultiplier()
 
         end
 

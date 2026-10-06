@@ -54,6 +54,15 @@ terminator_Extras.defaultHudPaddingFromEdge = glee_sizeScaled( nil, 24.5 ) -- ho
 terminator_Extras.defaultHudPaddingFromBottom = glee_sizeScaled( nil, 26 ) -- how far to start the faded background
 terminator_Extras.defaultHudTextPaddingFromEdge = glee_sizeScaled( nil, 54 ) -- dead on match for the "health" text
 
+-- RNDX by Srlion, MIT, https://github.com/Srlion/RNDX
+-- Kept here, not global, so other addons' copies can't clash. Included once, each include
+-- mounts its shaders and makes a new render target
+if not terminator_Extras.glee_RNDX then
+    terminator_Extras.glee_RNDX = include( "glee_hud/rndx.lua" )
+    terminator_Extras.glee_RNDX.SetLegacyGamma( true ) -- or its colours come out lighter than draw.RoundedBox's
+
+end
+
 include( "glee_hud/cl_draw.lua" )
 include( "glee_hud/cl_style.lua" ) -- brings the base style, hl2, with it
 

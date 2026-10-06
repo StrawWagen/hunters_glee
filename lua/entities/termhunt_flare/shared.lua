@@ -212,6 +212,11 @@ function ENT:Think()
     end
     self:AdditionalThink()
 
+    if not self.FastThinks then return end
+
+    self:NextThink( CurTime() )
+    return true
+
 end
 
 if not CLIENT then return end

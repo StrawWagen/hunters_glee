@@ -1223,7 +1223,7 @@ function termHuntOpenTheShop()
                     if keyCode ~= MOUSE_LEFT then return end
                     self.pressed = nil
                     if self.purchasable then -- purchasability is also checked on server! no cheesing!
-                        RunConsoleCommand( "cl_termhunt_purchase", self.itemIdentifier )
+                        RunConsoleCommand( "termhunt_purchase", self.itemIdentifier )
                         self.purchased = true
 
                     else

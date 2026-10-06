@@ -99,6 +99,7 @@ local function tutorialize( ply, tutorialType )
 
         end
         shelterPly( ply )
+        ply:SetNW2Bool( "glee_firsttime_divinediscount", true )
 
     end
     net.Start( "glee_dothefirsttimemessage" )

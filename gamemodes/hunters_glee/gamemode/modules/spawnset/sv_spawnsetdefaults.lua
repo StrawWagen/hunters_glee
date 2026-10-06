@@ -35,6 +35,7 @@ local defaults = {
 
 local ignored = {
     easy = true,
+    tutorialExit = true,
     Activate = true,
     OnRemove = true,
 }

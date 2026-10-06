@@ -115,7 +115,7 @@ end
 
 local rewardPerStaleWeek = 0.1
 local maxStaleReward = 2.5
-local easyCostSoftMax = 0.75
+GM.easyCostSoftMax = 0.75
 
 local function escapeRatioToMultiplier( escaped, remained, staleSince )
     local base = 1
@@ -180,9 +180,9 @@ function GM:GetSpawnsetsEscapeMultiplier( spawnSetName )
     local multiplier = escapeRatioToMultiplier( escapedCount, remainedCount, staleSince )
 
     local spawnset = self:GetRegisteredSpawnSet( spawnSetName )
-    if spawnset and spawnset.easy and multiplier > easyCostSoftMax then -- hardcoded easy round, soft clamp out the multiplier
-        local aboveMax = multiplier - easyCostSoftMax
-        multiplier = easyCostSoftMax + aboveMax * 0.1
+    if spawnset and spawnset.easy and multiplier > self.easyCostSoftMax then -- hardcoded easy round, soft clamp out the multiplier
+        local aboveMax = multiplier - self.easyCostSoftMax
+        multiplier = self.easyCostSoftMax + aboveMax * 0.1
 
     end
 

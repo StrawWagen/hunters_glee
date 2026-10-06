@@ -210,7 +210,7 @@ function set:Activate()
                 if not GAMEMODE:HasLearnedLesson( "FoundInfernalSkeleton" ) then
                     return true, "The infernal horde is amassing somewhere...\nHunt them down."
 
-                elseif GAMEMODE:HasLearnedLesson( "PickedUpSkull" ) then
+                elseif GAMEMODE:HasLearnedLesson( "PickedUpSkull" ) and not GetGlobal2Bool( "glee_pleaseshow_rtmtutorialhint", false ) then
                     return true, "Some of the infernal skeletons still have heads...\nCollect their skulls."
 
                 end

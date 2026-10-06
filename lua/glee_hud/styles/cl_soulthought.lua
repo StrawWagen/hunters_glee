@@ -5,6 +5,19 @@
     and changes only the face, or every box would change shape.
 --]]-------------------------------------
 
+-- RNDX draws shadows with vgui's clipping off, so a smudge in a scrolling list would show
+-- over the list's edge even when scrolled out of view. Clipping to the list stops that
+local function scrollViewportAbove( pnl )
+    if not ispanel( pnl ) then return end
+
+    local parent = pnl:GetParent()
+    while IsValid( parent ) do
+        if isfunction( parent.GetCanvas ) then return parent end
+        parent = parent:GetParent()
+
+    end
+end
+
 terminator_Extras.glee_RegisterStyle( "soulthought", {
     inherits = "hl2",
 
@@ -31,45 +44,52 @@ terminator_Extras.glee_RegisterStyle( "soulthought", {
 
     shadowColor = Color( 0, 0, 0, 230 ),
 
-    -- what the blot comes to at its centre, see glee_HudHelpers.DrawBlot
+    -- what the smudge comes to at its centre, it fades out from there
     backdrops = {
-        bg         = Color( 6, 8, 2, 110 ),
-        bgDisabled = Color( 6, 8, 2, 110 ),
-        bgHovered  = Color( 20, 24, 8, 150 ),
-        bgPressed  = Color( 34, 40, 14, 175 ),
-        bgChosen   = Color( 44, 60, 10, 175 ),
+        bg         = Color( 4, 6, 1, 160 ),
+        bgDisabled = Color( 4, 6, 1, 160 ),
+        bgHovered  = Color( 20, 24, 8, 190 ),
+        bgPressed  = Color( 34, 40, 14, 210 ),
+        bgChosen   = Color( 44, 60, 10, 210 ),
 
-        bgDark         = Color( 6, 8, 2, 215 ),
-        bgDarkHovered  = Color( 20, 24, 8, 225 ),
-        bgDarkPressed  = Color( 34, 40, 14, 235 ),
-        bgDarkChosen   = Color( 44, 60, 10, 235 ),
-        bgDarkDisabled = Color( 6, 8, 2, 215 ),
+        bgDark         = Color( 4, 6, 1, 235 ),
+        bgDarkHovered  = Color( 20, 24, 8, 240 ),
+        bgDarkPressed  = Color( 34, 40, 14, 245 ),
+        bgDarkChosen   = Color( 44, 60, 10, 245 ),
+        bgDarkDisabled = Color( 4, 6, 1, 235 ),
     },
 
     scaled = function( px )
         return {
-            -- see glee_HudHelpers.DrawBlot
-            blot = {
-                layers = 8,
-                spillX = px( 10 ),
-                spillY = px( 6 ),
-                insetX = px( 2 ), -- per side, per layer
-                insetY = px( 1 ),
-                -- corners round with the layer's height up to here, so a row is a soft pill
-                -- and a whole frame is a rounded box rather than an oval
-                maxCornerRadius = px( 20 ),
+            smudge = {
+                softness = px( 24 ), -- how wide the fade from solid to nothing is
+                spill = px( 10 ), -- how far past the panel the fade is half way
+                -- capped by half the height, so a row is a soft pill and a whole frame is a
+                -- rounded box rather than an oval
+                cornerRadius = px( 20 ),
             },
         }
     end,
 
-    -- a smudge rather than a box, so it ignores the corner radius it is handed
-    background = function( style, x, y, w, h, color, _cornerRadius, fade, _cache )
-        local oldMultiplier = surface.GetAlphaMultiplier()
-        surface.SetAlphaMultiplier( oldMultiplier * fade )
+    -- A soft shadow, solid in the middle, fading out past the panel's edge, unless that's
+    -- past a scrolling list's. Ignores the corner radius it is handed
+    background = function( style, x, y, w, h, color, _cornerRadius, fade, cache, blur )
+        local smudge = style.smudge
 
-        terminator_Extras.glee_HudHelpers.DrawBlot( style.blot, color, x, y, w, h )
+        -- RNDX cuts its shadows hollow where the shape casting them is, so the shape sits off
+        -- to the left and the shadow is offset back. Clear of the shadow's far edge, its
+        -- spill plus a 3 sigma pad, 1.5 softness, the hole can't reach it
+        local holeOffset = w + smudge.spill + smudge.softness * 2
 
-        surface.SetAlphaMultiplier( oldMultiplier )
+        local rect = terminator_Extras.glee_RNDX.Rect( x - holeOffset, y, w, h )
+            :Rad( smudge.cornerRadius )
+            :Color( color.r, color.g, color.b, color.a * fade )
+            :Shadow( smudge.softness, smudge.spill, holeOffset, 0 )
+            :Clip( scrollViewportAbove( cache ) )
+
+        if blur then rect:Blur( blur * fade ) end
+
+        rect:Draw()
 
     end,
 } )

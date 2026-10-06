@@ -185,6 +185,8 @@ if SERVER and terminator_Extras then
 
     end
 
+    ENT.FastThinks = true
+
     function ENT:AdditionalThink()
         if self.wastedFlare then return end
         if self.calledForHeli then return end
@@ -803,7 +805,7 @@ if SERVER and terminator_Extras then
 
         heli.glee_Seats = {}
 
-        heli.glee_PrettyName = "The Rescue Heli"
+        heli:SetNWString( "glee_PrettyName", "The Rescue Heli" )
 
         heli:SetNW2Bool( "glee_IsSpectatable", true )
 
@@ -918,6 +920,31 @@ if SERVER and terminator_Extras then
 
             end
         end )
+
+        local toHate = {
+            "npc_combine_camera",
+            "npc_turret_ceiling",
+            "npc_cscanner",
+            "npc_combinedropship",
+            "npc_combinegunship",
+            "npc_combine_s",
+            "npc_turret_floor",
+            "npc_citizen_rebel_enemy",
+            "npc_hunter",
+            "npc_manhack",
+            "npc_metropolice",
+            "npc_rollermine",
+            "npc_clawscanner",
+            "npc_stalker",
+            "npc_strider",
+        }
+        for _, class in ipairs( toHate ) do
+            heli:AddRelationship( class .. " D_HT 99" )
+            for _, ent in ipairs( ents.FindByClass( class ) ) do
+                ent:AddEntityRelationship( heli, D_HT, 99 )
+
+            end
+        end
 
         terminator_Extras.glee_CurrentRescueHeli = heli
 
@@ -1362,7 +1389,7 @@ if SERVER and terminator_Extras then
                 local startAddingDistSpeed = 400
                 distAdd = math.max( 0, distAdd - startAddingDistSpeed )
                 distAdd = distAdd + ( self.rescueHeliTeleportDist * 4 ) -- if stuck and not moving, add more dist
-                if myPos:Distance( escapePos ) < 200 + distAdd then
+                if myPos:Distance( escapePos ) < 300 + distAdd then
                     hook.Run( "glee_rescueheliescape", self )
                     SafeRemoveEntityDelayed( self, 0.1 )
 

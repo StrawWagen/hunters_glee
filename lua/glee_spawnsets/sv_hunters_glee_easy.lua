@@ -1,7 +1,7 @@
 local set = {
     name = "hunters_glee_easy", -- unique name
     prettyName = "Gleefully Relaxed Hunters",
-    description = "Hunter's Glee with no overcharged hunters, barely any terminators.\nBasically story mode.",
+    description = "Smart, bulletproof, cruel enemies, in very limited numbers. Beware.",
     difficultyPerMin = "default", -- difficulty per minute
     waveInterval = "default", -- time between spawn waves
     diffBumpWhenWaveKilled = { 5, 10 }, -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
@@ -9,14 +9,27 @@ local set = {
     spawnCountPerDifficulty = "default*0.5",
     startingSpawnCount = 1,
     maxSpawnCount = 2, -- hard cap on count
-    maxSpawnDist = "default",
+    maxSpawnDist = { 2500, 3500 }, -- CLOSE!
     roundEndSound = "default",
     roundStartSound = "default",
     roundEarlyStartSound = "default",
     chanceToBeVotable = 5, -- and fade into the background if this host isn't challenged by this
     chanceToBeVotableWhenHard = 20, -- stick around when this is still a challenge
     easy = true,
+    tutorialExit = true,
     spawns = {
+        {
+            hardRandomChance = nil,
+            name = "terminator", -- unique name
+            prettyName = "A Terminator",
+            class = "terminator_nextbot_snail_skinlessrusty", -- class spawned
+            spawnType = "hunter",
+            difficultyCost = { 5, 10 },
+            difficultyStopAfter = { 50, 75 },
+            countClass = "terminator_nextbot_snail_skinlessrusty", -- class COUNTED, uses findbyclass
+            minCount = { 1 }, -- will ALWAYS maintain this count
+            maxCount = { 1 }, -- will ALWAYS maintain this count
+        },
         {
             hardRandomChance = nil,
             name = "terminator", -- unique name
@@ -25,7 +38,6 @@ local set = {
             spawnType = "hunter",
             difficultyCost = { 15, 25 },
             countClass = "terminator_nextbot_snail*", -- class COUNTED, uses findbyclass
-            minCount = { 1 }, -- will ALWAYS maintain this count
         },
         {
             hardRandomChance = { 0, 2 }, -- chance this is even checked

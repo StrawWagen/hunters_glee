@@ -1,7 +1,8 @@
 --[[------------------------------------
     The drawing primitives every style is built out of. None of them know what a style
     is; they take settings tables and draw. Add a new decoration here, then point a
-    style's background at it.
+    style's background at it. Rounded shapes, soft edges and blur come from RNDX instead,
+    terminator_Extras.glee_RNDX.
 --]]-------------------------------------
 
 terminator_Extras.glee_HudHelpers = terminator_Extras.glee_HudHelpers or {}
@@ -169,46 +170,6 @@ function hudHelpers.DrawArrivingText( ghosts, ghostSettings, ghostData, solidDat
     surface.SetAlphaMultiplier( oldMultiplier * ( materialised ^ 2 ) )
     surface.drawShadowedTextBetterData( solidData )
     surface.SetAlphaMultiplier( oldMultiplier )
-
-end
-
-
--- Blot ----------------------------------------------------------------------
-
-local layerColor = Color( 0, 0, 0, 0 )
-
--- A soft smudge of stacked rounded boxes, spilling past x, y, w, h and past the panel's
--- clipping. blot is settings like the soulthought style's blot. The layers stack to
--- color at the centre, so a colour looks as solid here as it would on a plain box
-function hudHelpers.DrawBlot( blot, color, x, y, w, h )
-    -- the alpha that, laid down blot.layers times, comes to color's
-    local coverage = color.a / 255
-    layerColor.r = color.r
-    layerColor.g = color.g
-    layerColor.b = color.b
-    layerColor.a = 255 * ( 1 - ( 1 - coverage ) ^ ( 1 / blot.layers ) )
-
-    local blotX = x - blot.spillX
-    local blotY = y - blot.spillY
-    local blotW = w + ( blot.spillX * 2 )
-    local blotH = h + ( blot.spillY * 2 )
-
-    local wasClipping = DisableClipping( true )
-
-    for layer = 0, blot.layers - 1 do
-        local insetX = layer * blot.insetX
-        local insetY = layer * blot.insetY
-        local layerW = blotW - ( insetX * 2 )
-        local layerH = blotH - ( insetY * 2 )
-
-        if layerW <= 0 or layerH <= 0 then break end
-
-        local cornerRad = math.min( math.floor( layerH / 2.5 ), blot.maxCornerRadius )
-        draw.RoundedBox( cornerRad, blotX + insetX, blotY + insetY, layerW, layerH, layerColor )
-
-    end
-
-    DisableClipping( wasClipping )
 
 end
 

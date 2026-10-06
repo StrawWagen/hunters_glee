@@ -26,11 +26,14 @@ GM.DataFileDirectory = "hunters_glee"
 
 CreateConVar( "glee_discord_url", "", FCVAR_ARCHIVE + FCVAR_REPLICATED, "Adds a discord join link for your server in the glee scoreboard." )
 
+include( "lib/sh_gleehelpers.lua" )
+
 include( "player_class/player_termrunner.lua" )
 include( "sh_player.lua" )
 
 include( "modules/sh_panic.lua" )
 include( "modules/banking/sh_banking.lua" )
+include( "modules/escaping/sh_escaperewards.lua" )
 include( "modules/sh_tempbools.lua" )
 include( "modules/sh_deathsounds.lua" )
 include( "modules/sh_slowmopitch.lua" )
@@ -44,9 +47,12 @@ include( "modules/shopitems/sh_shophelpers.lua" )
 include( "modules/spawnset/sh_spawnpoolutil.lua" )
 include( "modules/spawnset/sh_spawnsetcontent.lua" )
 include( "modules/spawnset/sh_sethelpers.lua" )
+include( "modules/spawnset/sh_bosshandler.lua" )
 include( "modules/unsandboxing/sh_unsandboxing.lua" )
+include( "modules/stickyslams/sh_stickyslams.lua" )
 
 include( "modules/shop/sh_shopshared.lua" )
+include( "modules/firsttimeplayers/sh_firsttimeplayers.lua" )
 
 include( "modules/shopitems/sh_shoptags.lua" )
 include( "modules/shop/sh_shopcategories.lua" )

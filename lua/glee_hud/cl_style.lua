@@ -24,14 +24,14 @@
     shadowColor     behind text drawn through handle:Draw
     metrics         name -> 1080p pixels, scaled by the build
     sounds          setName -> sound paths, see handle:PlaySound
-    background      draws a backdrop, signature on hl2
+    background      draws a backdrop, and blurs behind it when asked, signature on hl2
     scaled          function( px ) returning more fields, for look data in pixels. px turns
                     1080p pixels into pixels at the scale being built
     highContrast    fields layered, parents' first, over the whole built style while
                     cl_huntersglee_highcontrast is on. Its everyTextColor replaces every
                     colors entry
 
-    Read off handle:Settings(), having no method: blot, tornStrip, ghosts, jitter, arrival.
+    Read off handle:Settings(), having no method: smudge, tornStrip, ghosts, jitter, arrival.
 --]]-------------------------------------
 
 terminator_Extras.glee_HudStyles = terminator_Extras.glee_HudStyles or {}
