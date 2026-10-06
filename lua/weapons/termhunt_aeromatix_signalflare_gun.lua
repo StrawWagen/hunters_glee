@@ -60,7 +60,7 @@ SWEP.Secondary.Delay = 1
 
 function SWEP:CanPrimaryAttack()
     local owner = self:GetOwner()
-    if SERVER and GAMEMODE.HasLearnedLesson and not GAMEMODE:HasLearnedLesson( owner, "SuccessfullyCalledHeli" ) then
+    if SERVER and owner:IsPlayer() and GAMEMODE.HasLearnedLesson and not GAMEMODE:HasLearnedLesson( owner, "SuccessfullyCalledHeli" ) then
         local startPos = owner.GetShootPos and owner:GetShootPos() or owner:WorldSpaceCenter()
         local aimVec = owner.GetAimVector and owner:GetAimVector() or owner:GetForward()
         local see, trResult = terminator_Extras.PosCanSeeComplex( startPos, aimVec * 1000, self, MASK_SOLID )
