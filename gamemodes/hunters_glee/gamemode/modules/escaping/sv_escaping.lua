@@ -214,7 +214,7 @@ GAMEMODE:RegisterStatusEffect( "boss_defeat_resistance",
     end
 )
 
-hook.Add( "glee_onbossdefeated", "glee_escapeviabossdefeat", function( boss, attacker )
+hook.Add( "glee_onboss_defeated", "glee_escapeviabossdefeat", function( boss, attacker )
     local playerCount = player.GetCount()
     local msg
     if playerCount <= 1 then
@@ -244,6 +244,13 @@ hook.Add( "glee_onbossdefeated", "glee_escapeviabossdefeat", function( boss, att
             end )
         end )
     end
+end )
+
+hook.Add( "glee_onboss_crappydefeated", "glee_escapeviabossdefeat", function( boss )
+    local msg = GAMEMODE:GetNameOfBot( boss ) .. "\nHas died an ungleeful death..."
+
+    huntersGlee_AnnounceDramatic( player.GetAll(), 1000, 8, msg )
+
 end )
 
 

@@ -86,8 +86,12 @@ if CLIENT then
         jump or go back.
     --]]-------------------------------------
 
-    local BAR_W_1080P = 400
-    local BAR_H_1080P = 12
+    -- chunked like the suit power meter, see glee_meter. One chunk per server step, until
+    -- the steps are too fine to chunk and it becomes a plain bar
+    local BAR_W_1080P = 300
+    local BAR_H_1080P = 8
+    local MAX_CHUNKS = 25
+    local CHUNK_GAP_1080P = 3
     local DROP_1080P = 110 -- below the crosshair
     local INFO_FONT = "small"
 
@@ -134,40 +138,64 @@ if CLIENT then
         end
 
         local style = terminator_Extras.glee_Style( "generic" )
-        local RNDX = terminator_Extras.glee_RNDX
 
         local pad = style:Metric( "blockPadding" )
-        local barW, barH = style:Scaled( BAR_W_1080P ), style:Scaled( BAR_H_1080P )
+        local barH = style:Scaled( BAR_H_1080P )
+        local chunks = math.max( math.Round( 100 / bar.step ), 1 )
+        local smooth = chunks > MAX_CHUNKS
 
-        local hasInfo = bar.info ~= ""
-        local infoH = 0
-        if hasInfo then
-            local _, textH = style:Measure( bar.info, INFO_FONT )
-            infoH = textH + pad
+        -- whole pixels for every chunk and gap, or rounding makes the gaps differ by a pixel.
+        -- The bar shrinks a little to whatever whole chunks fit
+        local gap = smooth and 0 or style:Scaled( CHUNK_GAP_1080P )
+        local chunkW = math.max( 1, math.floor( ( style:Scaled( BAR_W_1080P ) + gap ) / chunks ) - gap )
+        local barW = smooth and style:Scaled( BAR_W_1080P ) or chunks * ( chunkW + gap ) - gap
 
-        end
-
-        local w, h = barW + pad * 2, infoH + barH + pad * 2
-        local x, y = ScrW() * 0.5 - w * 0.5, ScrH() * 0.5 + style:Scaled( DROP_1080P )
+        local centreX = ScrW() * 0.5
+        local top = math.Round( ScrH() * 0.5 + style:Scaled( DROP_1080P ) )
 
         local oldMultiplier = surface.GetAlphaMultiplier()
         surface.SetAlphaMultiplier( oldMultiplier * bar.alpha )
 
-        style:Background( x, y, w, h, "bg", nil, 1, "idle", bar )
+        -- the info gets a box of its own above the bar's
+        if bar.info ~= "" then
+            local textPad = math.Round( pad * 0.5 )
+            local textW, textH = style:Measure( bar.info, INFO_FONT )
+            local infoW, infoH = textW + textPad * 4, textH + textPad * 2
+            local infoX = math.Round( centreX - infoW * 0.5 )
 
-        if hasInfo then
-            style:Draw( bar.info, INFO_FONT, ScrW() * 0.5, y + pad )
+            style:Background( infoX, top, infoW, infoH, "bg", nil, 1, "idle", bar.infoCache )
+            -- not style:Draw, which always shadows
+            draw.DrawText( bar.info, style:Font( INFO_FONT ), centreX, top + textPad, style:Color( "text" ), TEXT_ALIGN_CENTER )
+
+            top = top + infoH + style:Metric( "laneSpacing" )
 
         end
 
-        local barX, barY = x + pad, y + pad + infoH
-        local radius = style:Metric( "boxCornerRadius" )
-        RNDX.Rect( barX, barY, barW, barH ):Rad( radius ):Color( style:BackdropColor( "bgDark" ) ):Draw()
+        local boxW, boxH = barW + pad * 2, barH + pad * 2
+        local boxX = math.Round( centreX - boxW * 0.5 )
+        local barX, barY = boxX + pad, top + pad
 
+        style:Background( boxX, top, boxW, boxH, "bg", nil, 1, "idle", bar )
+
+        local fill = style:Color( "happy" )
+        local empty = style:BackdropColor( "bgDark" )
         local fraction = math.Clamp( bar.shown / 100, 0, 1 )
-        if fraction > 0 then
-            RNDX.Rect( barX, barY, barW * fraction, barH ):Rad( radius ):Color( style:Color( "happy" ) ):Draw()
 
+        if smooth then
+            surface.SetDrawColor( empty )
+            surface.DrawRect( barX, barY, barW, barH )
+            surface.SetDrawColor( fill )
+            surface.DrawRect( barX, barY, math.Round( barW * fraction ), barH )
+
+        else
+            -- floored, so the last chunk only lights once it's really done
+            local lit = math.floor( fraction * chunks + 0.001 )
+
+            for index = 1, chunks do
+                surface.SetDrawColor( index <= lit and fill or empty )
+                surface.DrawRect( barX + ( index - 1 ) * ( chunkW + gap ), barY, chunkW, barH )
+
+            end
         end
 
         surface.SetAlphaMultiplier( oldMultiplier )
@@ -183,7 +211,7 @@ if CLIENT then
 
         -- a new bar, or this one started over, which the server does under the same id
         if not bar or bar.id ~= id or progress < bar.confirmed then
-            bar = { id = id, shown = progress, alpha = bar and bar.alpha or 0 }
+            bar = { id = id, shown = progress, alpha = bar and bar.alpha or 0, infoCache = {} }
             hook.Add( "PostDrawHUD", hookName, drawBar )
 
         end

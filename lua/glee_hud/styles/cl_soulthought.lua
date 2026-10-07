@@ -5,17 +5,35 @@
     and changes only the face, or every box would change shape.
 --]]-------------------------------------
 
--- RNDX draws shadows with vgui's clipping off, so a smudge in a scrolling list would show
--- over the list's edge even when scrolled out of view. Clipping to the list stops that
 local function scrollViewportAbove( pnl )
-    if not ispanel( pnl ) then return end
-
     local parent = pnl:GetParent()
     while IsValid( parent ) do
         if isfunction( parent.GetCanvas ) then return parent end
         parent = parent:GetParent()
 
     end
+end
+
+-- RNDX draws shadows with vgui's clipping off, so a smudge in a scrolling list would show
+-- over the list's edge even when scrolled out of view. 0 to 1, how much of the panel the
+-- list shows, to fade its smudge by. Scissoring to the list instead cuts every smudge
+-- inside it square at the list's edges
+local function shownByScroll( pnl )
+    if not ispanel( pnl ) then return 1 end
+
+    local viewport = scrollViewportAbove( pnl )
+    if not viewport then return 1 end
+
+    local px, py = pnl:LocalToScreen( 0, 0 )
+    local pw, ph = pnl:GetSize()
+    local vx, vy = viewport:LocalToScreen( 0, 0 )
+    local vw, vh = viewport:GetSize()
+
+    local overlapW = math.max( 0, math.min( px + pw, vx + vw ) - math.max( px, vx ) )
+    local overlapH = math.max( 0, math.min( py + ph, vy + vh ) - math.max( py, vy ) )
+
+    return ( overlapW * overlapH ) / math.max( pw * ph, 1 )
+
 end
 
 terminator_Extras.glee_RegisterStyle( "soulthought", {
@@ -44,6 +62,12 @@ terminator_Extras.glee_RegisterStyle( "soulthought", {
 
     shadowColor = Color( 0, 0, 0, 230 ),
 
+    metrics = {
+        -- for cl_plynames
+        -- shrinks the panel itself, so that the fading away 'shadow' becomes the background of the nameplate
+        nameTagBackdropInset = 15,
+    },
+
     -- what the smudge comes to at its centre, it fades out from there
     backdrops = {
         bg         = Color( 4, 6, 1, 160 ),
@@ -59,6 +83,13 @@ terminator_Extras.glee_RegisterStyle( "soulthought", {
         bgDarkDisabled = Color( 4, 6, 1, 235 ),
     },
 
+    -- see styleHandle:PlaySound. Pitches are the caller's, these are just what plays
+    sounds = {
+        switch = { "physics/cardboard/cardboard_box_impact_hard7.wav" }, -- hovering onto and off of something pickable
+        press  = { "physics/cardboard/cardboard_box_impact_bullet5.wav" },
+        alert  = { "ambient/machines/thumper_top.wav" }, -- pay attention!
+    },
+
     scaled = function( px )
         return {
             smudge = {
@@ -71,10 +102,13 @@ terminator_Extras.glee_RegisterStyle( "soulthought", {
         }
     end,
 
-    -- A soft shadow, solid in the middle, fading out past the panel's edge, unless that's
-    -- past a scrolling list's. Ignores the corner radius it is handed
+    -- A soft shadow, solid in the middle, fading out past the panel's edge. Fainter the
+    -- further it's scrolled out of a list. Ignores the corner radius it is handed
     background = function( style, x, y, w, h, color, _cornerRadius, fade, cache, blur )
         local smudge = style.smudge
+
+        fade = fade * shownByScroll( cache )
+        if fade <= 0 then return end
 
         -- RNDX cuts its shadows hollow where the shape casting them is, so the shape sits off
         -- to the left and the shadow is offset back. Clear of the shadow's far edge, its
@@ -85,7 +119,6 @@ terminator_Extras.glee_RegisterStyle( "soulthought", {
             :Rad( smudge.cornerRadius )
             :Color( color.r, color.g, color.b, color.a * fade )
             :Shadow( smudge.softness, smudge.spill, holeOffset, 0 )
-            :Clip( scrollViewportAbove( cache ) )
 
         if blur then rect:Blur( blur * fade ) end
 

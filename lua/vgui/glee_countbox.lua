@@ -27,9 +27,8 @@ PANEL.Init = function( self )
     self._label             = ""
     self._countFunc          = nil
     self._nilLabel           = ""
-    self._suffix             = ""
     self._suffix0            = nil
-    self._showDiff           = true
+    self._showCount          = true
     self._baseColor          = "text"
     self._largePositiveChangeSound   = nil
     self._largeNegativeChangeSound   = nil
@@ -71,15 +70,9 @@ PANEL.SetNilLabel = function( self, label )
 
 end
 
--- Appended to every count, before the running diff. e.g. "%"
-PANEL.SetSuffix = function( self, suffix )
-    self._suffix = suffix
-
-end
-
--- False drops the running diff, the " +25" after a changed count. The colour still changes
-PANEL.SetShowDiff = function( self, show )
-    self._showDiff = show
+-- False shows only the label, no count or running diff. Changes still flash and shake
+PANEL.SetShowCount = function( self, show )
+    self._showCount = show
 
 end
 
@@ -136,11 +129,14 @@ PANEL.ManageHudState = function( self, ply, cur, alwaysShow, neverShow )
     local count = self._countFunc and self._countFunc( ply )
 
     local text
-    if count == nil then
+    if not self._showCount then
+        text = self._label
+
+    elseif count == nil then
         text = self._label .. self._nilLabel
 
     else
-        text = self._label .. count .. self._suffix
+        text = self._label .. count
         if count == 0 and self._suffix0 then
             text = text .. self._suffix0
 
@@ -157,7 +153,7 @@ PANEL.ManageHudState = function( self, ply, cur, alwaysShow, neverShow )
     if self._colorExpiry > cur then
         textColor = self._colorOverride
 
-        if self._showDiff and self._addAtEnd and count ~= nil then
+        if self._showCount and self._addAtEnd and count ~= nil then
             text = text .. self._addAtEnd
 
         end

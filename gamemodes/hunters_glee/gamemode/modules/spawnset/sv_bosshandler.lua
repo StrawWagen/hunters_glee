@@ -67,11 +67,16 @@ hook.Add( "OnNPCKilled", "glee_bossKilled", function( npc, attacker )
     if not IsValid( npc ) then return end
     if not IsValid( attacker ) then return end
 
-    if not ( attacker:IsPlayer() or attacker.isGleeRescueHeli ) then return end
+    local goodDeath = attacker:IsPlayer() or attacker:IsNPC() or attacker.isGleeRescueHeli
+
+    if not goodDeath then
+        hook.Run( "glee_onboss_crappydefeated", npc, attacker )
+
+    end
 
     if not GAMEMODE:IsActiveBoss( npc ) then return end
 
     GAMEMODE.roundExtraData.bossKilled = true
-    hook.Run( "glee_onbossdefeated", npc, attacker )
+    hook.Run( "glee_onboss_defeated", npc, attacker )
 
 end )

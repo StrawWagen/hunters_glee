@@ -109,6 +109,12 @@ local settingsCategories = {
                 desc = "Hide the beam hints when placing items?",
             },
             {
+                cvar = "cl_huntersglee_draw_bosshealthbar",
+                type = "check",
+                prettyName = "Draw boss health bar",
+                desc = "Draw the health bar of the nearest boss, once you've spotted one?",
+            },
+            {
                 cvar = "cl_huntersglee_draw_nearby_players",
                 type = "check",
                 prettyName = "Reveal nearby player locations?",

@@ -15,6 +15,7 @@ terminator_Extras.glee_RegisterStyle( "hl2", {
     iconMaxSize = 128, -- real pixels, never scaled
 
     fonts = {
+        tiny        = { size = 16, weight = 1000 }, -- two lines of it fit beside a mediumLarge line
         small       = { size = 22, weight = 1000 },
         medium      = { size = 28, weight = 1000 },
         mediumLarge = { size = mediumLargeSize, weight = 2000, scanlines = 1 },
@@ -35,6 +36,7 @@ terminator_Extras.glee_RegisterStyle( "hl2", {
         blockPadding    = 8, -- y-padding between box edge and text
         laneSpacing     = 6, -- gap between stacked hud boxes
         boxCornerRadius = 10,
+        nameTagBackdropInset = 0, -- see soulthought's
 
         -- drawShadowedTextBetterData's own defaults, but scaled. Left unrounded by the build
         shadowOffsetX = 2.5,
@@ -50,6 +52,7 @@ terminator_Extras.glee_RegisterStyle( "hl2", {
         hovered = Color( 255, 255, 255 ),
         chosen  = Color( 255, 255, 255 ),
         urgent  = Color( 255, 80, 80 ),      -- a countdown running out
+        damaged = Color( 150, 15, 15 ),      -- what was just lost, darker than alert so it shows beside it
     },
 
     -- A panel names the family, its state picks the entry, see handle:BackdropColor.
@@ -83,6 +86,7 @@ terminator_Extras.glee_RegisterStyle( "hl2", {
     sounds = {
         switch = { "buttons/lightswitch2.wav" }, -- hovering onto and off of something pickable
         press  = { "common/wpn_select.wav" },
+        alert  = { "common/warning.wav" }, -- pay attention!
     },
 
     -- style is the built style, color the Color for the panel's family and state, unfaded.

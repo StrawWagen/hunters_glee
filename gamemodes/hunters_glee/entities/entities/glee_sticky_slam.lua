@@ -21,6 +21,8 @@ function ENT:SetupDataTables()
 end
 
 if CLIENT then
+    killicon.AddAlias( "glee_sticky_slam", "npc_satchel" )
+
     -- where the server put us on ply, done by hand because the local player's bones aren't set up in first person,
     -- and player angles have pitch on the client, but not on the server
     local function poseOnPlayer( slam, ply )

@@ -11,10 +11,21 @@
 
 local GAMEMODE = GAMEMODE or GM
 
+local showBossBar = CreateClientConVar( "cl_huntersglee_draw_bosshealthbar", "1", true, false, "Draw the boss health bar?", 0, 1 )
+
 local NAME_FONT = "mediumLarge" -- the round info's, which names the Misery
+local TAG_FONT = "tiny"
+local THREAT_TAG_LINES = { "PRIMARY", "THREAT" }
 
 local METER_MIN_WIDTH = 460 -- 1080p pixels, the guilt checker's
 local METER_BAR_HEIGHT = 12
+local METER_CHUNKS = 20 -- the guilt checker's
+local lostChunkFlash = 0.4
+
+local hurtFraction = 0.5 -- below this the fill turns alert
+local criticalFraction = 0.2 -- below this it blinks
+local criticalBlinkInterval = 0.4
+local killFlash = 1.2
 
 local topPadding = terminator_Extras.defaultHudPaddingFromBottom * 2 -- level with the top left lane
 
@@ -22,7 +33,6 @@ local lookInterval = 0.25
 local nearDistance = 2000 -- to spot a boss alive, and to see its bar dead
 
 local revealFlash = 0.4 -- the round info's
-local revealSound = "common/warning.wav"
 local changeFlash = 0.15 -- the score's
 
 local fadeSpeed = 24 -- the score's
@@ -41,6 +51,7 @@ local spotted = false
 local nextLook = 0
 
 local trackedBoss -- a killed boss stays tracked, so its bar empties before fading
+local trackedWasAlive = false
 local bossName = ""
 local introAt -- nil until it first shows this round
 local noPowerSince -- nil while powered
@@ -187,27 +198,63 @@ end
 
 -- Boxes ---------------------------------------------------------------------
 
+local function threatTagWidth( style )
+    surface.SetFont( style:Font( TAG_FONT ) )
+
+    local widest = 0
+    for _, line in ipairs( THREAT_TAG_LINES ) do
+        local lineW = surface.GetTextSize( line )
+        widest = math.max( widest, lineW )
+
+    end
+
+    return widest
+
+end
+
 local function createBoxes()
     if IsValid( nameBox ) then nameBox:Remove() end
     if IsValid( meter ) then meter:Remove() end
 
     nameBox = vgui.Create( "glee_countbox", GetAutoHidingHUDPanel() )
     nameBox:SetFont( NAME_FONT )
+    nameBox:SetTextAlign( TEXT_ALIGN_RIGHT ) -- the threat tag takes the left
+    nameBox.showThreatTag = false
+
+    function nameBox:PaintContent( w, h, contentColor )
+        if self.showThreatTag then
+            local font = self:Style():Font( TAG_FONT )
+            local lineH = draw.GetFontHeight( font )
+            local tagX = self:GetTextPadding() * 2
+            local tagY = h * 0.5 - lineH * #THREAT_TAG_LINES * 0.5
+
+            for index, line in ipairs( THREAT_TAG_LINES ) do
+                draw.SimpleText( line, font, tagX, tagY + ( index - 1 ) * lineH, contentColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP )
+
+            end
+        end
+
+        vgui.GetControlTable( "glee_panel" ).PaintContent( self, w, h, contentColor )
+
+    end
+
     nameBox:SetBaseColor( "happy" ) -- the round info's
     nameBox:SetCountFunc( healthPercent )
-    nameBox:SetSuffix( "%" )
-    nameBox:SetShowDiff( false )
+    nameBox:SetShowCount( false ) -- the meter shows health, the count only drives the hit flash
     nameBox:SetChangeVisibleDuration( 4 ) -- the skulls', so every hit flashes
 
     meter = vgui.Create( "glee_meter", GetAutoHidingHUDPanel() )
-    meter:SetSmooth( true ) -- health is in hundredths, too fine for a chunk each
+    meter:SetChunks( METER_CHUNKS )
+    meter:SetRounding( meter.ROUND_UP ) -- a living boss never shows an empty bar
     meter:SetEmptyColor( "bgDark" )
+    meter:SetLostFlash( "damaged", lostChunkFlash )
 
-    -- the meter copies the name box's state, so it has to fade and flash at its pace
+    -- the meter copies the name box's state, so it has to fade, flash and blink at its pace
     for _, box in ipairs( { nameBox, meter } ) do
         box:SetFlashDuration( changeFlash )
         box:SetFadeSpeed( fadeSpeed )
         box:SetFadeStartDelay( fadeStartDelay )
+        box:SetUrgentInterval( criticalBlinkInterval )
 
     end
 end
@@ -227,6 +274,7 @@ end
 local function playIntro( cur )
     introAt = cur
     nameBox:SetStartingCount( healthPercent() )
+    nameBox:SetFlashContentColor( "flash" )
 
     for _, box in ipairs( { nameBox, meter } ) do
         box:SetFlashDuration( revealFlash )
@@ -235,7 +283,7 @@ local function playIntro( cur )
 
     end
 
-    surface.PlaySound( revealSound )
+    nameBox:Style():PlaySound( "alert", 100, CHAN_STATIC, 1 )
 
 end
 
@@ -297,7 +345,7 @@ hook.Add( "glee_cl_aliveordeadplyhud", "glee_bosshealthbar_draw", function( ply,
 
     end
 
-    if not GAMEMODE:CanShowDefaultHud() then
+    if not showBossBar:GetBool() or not GAMEMODE:CanShowDefaultHud() then
         hideBoxes()
         return
 
@@ -314,11 +362,17 @@ hook.Add( "glee_cl_aliveordeadplyhud", "glee_bosshealthbar_draw", function( ply,
         if not wanted or not powered then return end
 
         trackedBoss = nearest
+        trackedWasAlive = true
         playIntro( cur )
 
     elseif nearest and nearest ~= trackedBoss then
+        -- another boss's health isn't damage
         trackedBoss = nearest
-        nameBox:SetStartingCount( healthPercent() ) -- another boss's health isn't damage
+        trackedWasAlive = true
+        nameBox:SetStartingCount( healthPercent() )
+        nameBox:SetFlashContentColor( "flash" )
+        meter:SetFill( healthFraction( nearest ) )
+        meter:ClearLost()
 
     end
 
@@ -341,15 +395,38 @@ hook.Add( "glee_cl_aliveordeadplyhud", "glee_bosshealthbar_draw", function( ply,
 
         end
 
-        nameBox:SetLabel( bossName .. " : " )
+        -- a removed boss can't say how it went, so it counts as killed too
+        local fraction = healthFraction( trackedBoss )
+        local bossAlive = isAlive( trackedBoss )
+        if trackedWasAlive and not bossAlive then
+            nameBox:SetFlashContentColor( "jackpot" )
+            nameBox:SetFlashDuration( killFlash )
+            nameBox:SetState( nameBox.STATE_FLASH )
+            nameBox:SetFlashDuration( changeFlash )
+
+        end
+        trackedWasAlive = bossAlive
+
+        nameBox:SetLabel( ": " .. bossName )
         -- unwanted, nothing holds it up, so it fades, after the kill's flash if there was one
         xOffset = nameBox:ManageHudState( ply, cur, wanted, false )
 
-        meter:SetFill( healthFraction( trackedBoss ) )
+        -- ManageHudState sized the box to the title, so the tag's room goes on after
+        nameBox.showThreatTag = true
+        nameBox:SetWide( nameBox:GetWide() + threatTagWidth( nameBox:Style() ) + nameBox:Style():Metric( "laneSpacing" ) )
+
+        if wanted and bossAlive and fraction < criticalFraction then
+            nameBox:SetState( nameBox.STATE_URGENT )
+
+        end
+
+        meter:SetFillColor( fraction < hurtFraction and "alert" or "happy" )
+        meter:SetFill( fraction )
         meter:SetState( nameBox:GetState() )
 
     else
         noPowerSince = noPowerSince or cur
+        nameBox.showThreatTag = false
         showNoPower( cur )
 
         meter:SetState( meter.STATE_HIDDEN ) -- health is a suit reading

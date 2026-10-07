@@ -366,7 +366,11 @@ function PANEL:Paint( w, h )
 
     end
 
-    style:Background( 0, 0, w, h, backdrop, cornerRadius, panelAlpha / 255, state, self )
+    -- never so far in that the box vanishes, a dot keeps a dot's worth
+    local inset = math.min( style:Metric( "nameTagBackdropInset" ), math.min( w, h ) * 0.5 - 1 )
+    inset = math.max( inset, 0 )
+
+    style:Background( inset, inset, w - inset * 2, h - inset * 2, backdrop, cornerRadius, panelAlpha / 255, state, self )
 
     -- Don't draw text when the panel is nearly a dot
     if self._sizeT > 0.8 then return end
