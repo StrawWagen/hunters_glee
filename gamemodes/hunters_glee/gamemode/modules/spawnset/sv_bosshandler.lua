@@ -73,6 +73,7 @@ hook.Add( "OnNPCKilled", "glee_bossKilled", function( npc, attacker )
 
     if not goodDeath then
         hook.Run( "glee_onboss_crappydefeated", npc, attacker )
+        return
 
     end
 
