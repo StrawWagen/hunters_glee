@@ -250,7 +250,6 @@ end
 function ENT:CalculateCanPlace()
     if not IsValid( self:GetCurrTarget() ) then return false, "You need to be looking at a player." end
     if not IsValid( self:GetFurthestTerminator() ) then return false, "No hunters are currently spawned." end
-    if GAMEMODE:isTemporaryTrueBool( "termhunt_player_swapper" ) then return false, "It's too soon for another inversion to begin." end
     if not self:HasEnoughToPurchase() then return false, self:TooPoorString() end
     return true
 
@@ -312,8 +311,6 @@ function ENT:UpdateGivenScore()
     self:SetGivenScore( givenScore )
 
 end
-
-local interval = 120
 
 function ENT:Place()
     local plyToSwap = self:GetCurrTarget()
@@ -409,12 +406,4 @@ function ENT:Place()
 
     self:DetachFromOwner()
 
-    GAMEMODE:setTemporaryTrueBool( "termhunt_player_swapper", interval + steps )
-
 end
-
-hook.Add( "huntersglee_round_into_active", "player_swapper_initialwait", function()
-    GAMEMODE:setTemporaryTrueBool( "termhunt_player_swapper", interval )
-    GAMEMODE:setTemporaryTrueBool( "termhunt_player_swapper_initial", interval )
-
-end )

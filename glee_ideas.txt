@@ -222,6 +222,8 @@ another new player experience revamp -- done
 -- rename to ESCAPE FLARE -- done
 -- intro is too long if you don't click -- done
 
+-- Replace stupid temp bools with ints, polish conduit/inversion cooldowns -- done
+
 
 -- make radio a purchasable item, moving all global/prox chat stuff to settings menu
 -- gateway to expensive items, airdropped in
@@ -230,8 +232,6 @@ another new player experience revamp -- done
 -- purchase radio for 1 skull from shop
 -- left clicking will open radial menu/other shop?
 
-
--- Replace stupid temp bools with ints, polish conduit/inversion cooldowns
 
 -- effigy
 -- pushes dead people away, makes them look away

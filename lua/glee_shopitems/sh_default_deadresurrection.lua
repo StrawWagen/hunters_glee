@@ -57,6 +57,13 @@ if SERVER then
     end )
 end
 
+local REASON_DEATHCOOLDOWN = "Death cooldown."
+
+local function deathCooldownEnd( purchaser, cooldown )
+    return purchaser:GetNW2Int( "glee_divineintervetion_lastdietime", 0 ) + cooldown
+
+end
+
 local healAmountAfterRez = 50
 local dmgResistAfterRez = 8
 
@@ -416,28 +423,19 @@ if SERVER then
     end )
 end
 
-local function chosenCanPurchase( purchaser )
+local function chosenPatienceEnd()
+    if isCheats() then return end
+
     local addedBySpending = GetGlobal2Int( "glee_chosen_timeoffset", 0 ) / minute
     local minutes = minChosenMinutes + addedBySpending
     -- always purchasable after 30 minutes
     minutes = math.Clamp( minutes, minChosenMinutes, 30 )
 
-    local offset = minute * minutes
-    local allowTime = GetGlobalInt( "huntersglee_round_begin_active" ) + offset
-    local remaining = allowTime - CurTime()
-    local formatted = string.FormattedTime( remaining, "%02i:%02i" )
+    return GetGlobalInt( "huntersglee_round_begin_active" ) + minute * minutes, "Their patience has not yet ended."
 
-    local pt1 = "Their patience has ended."
-    local block
-    if allowTime > CurTime() then
-        pt1 = "Presently, their patience lasts " .. formatted .. "."
-        block = true
+end
 
-    end
-
-    -- sv_cheats allows buying NOW!
-    if block then return isCheats(), pt1 end
-
+local function chosenCanPurchase( purchaser )
     if SERVER then
         -- ONLY ONE CHANCE PER ROUND!
         GAMEMODE.roundExtraData.divineChosenSpent = GAMEMODE.roundExtraData.divineChosenSpent or {}
@@ -816,24 +814,14 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = -201,
-        shPurchaseCheck = {
-            shopHelpers.deadCheck,
-            -- death cooldown
-            function( purchaser )
-                -- skip if grigori
-                local isChosen = purchaser:HasStatusEffect( "divine_chosen" )
-                if isChosen then return true end
+        shPurchaseCheck = shopHelpers.deadCheck,
+        shCooldownCheck = function( purchaser )
+            -- skip if grigori
+            if purchaser:HasStatusEffect( "divine_chosen" ) then return end
 
-                local lastDeathTime = purchaser:GetNW2Int( "glee_divineintervetion_lastdietime", 0 )
-                local reviveTime = lastDeathTime + minTimeBetweenResurrections
-                local timeTillRevive = math.abs( reviveTime - CurTime() )
-                timeTillRevive = math.Round( timeTillRevive, 1 )
+            return deathCooldownEnd( purchaser, minTimeBetweenResurrections ), REASON_DEATHCOOLDOWN
 
-                if reviveTime > CurTime() then return false, "Death cooldown.\nPurchasable in " .. tostring( timeTillRevive ) .. " seconds." end
-                return true
-
-            end,
-        },
+        end,
         svOnPurchaseFunc = divineIntervention,
         shCanShowInShop = shopHelpers.deadNotEscapedCheck,
     },
@@ -858,18 +846,11 @@ local items = {
                 return true, nil
 
             end,
-            -- death cooldown
-            function( purchaser )
-                local lastDeathTime = purchaser:GetNW2Int( "glee_divineintervetion_lastdietime", 0 )
-                local reviveTime = lastDeathTime + minTimeBetweenResurrections / 2
-                local timeTillRevive = math.abs( reviveTime - CurTime() )
-                timeTillRevive = math.Round( timeTillRevive, 1 )
-
-                if reviveTime > CurTime() then return false, "Death cooldown.\nPurchasable in " .. tostring( timeTillRevive ) .. " seconds." end
-                return true
-
-            end,
         },
+        shCooldownCheck = function( purchaser )
+            return deathCooldownEnd( purchaser, minTimeBetweenResurrections / 2 ), REASON_DEATHCOOLDOWN
+
+        end,
         svOnPurchaseFunc = infernalIntervention,
         shCanShowInShop = shopHelpers.deadNotEscapedCheck,
     },
@@ -890,6 +871,7 @@ local items = {
             shopHelpers.deadCheck,
             chosenCanPurchase,
         },
+        shCooldownCheck = chosenPatienceEnd,
         svOnPurchaseFunc = function( purchaser )
             purchaser:GiveStatusEffect( "divine_chosen" )
 

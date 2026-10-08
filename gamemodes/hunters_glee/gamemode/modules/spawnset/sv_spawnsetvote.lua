@@ -48,7 +48,7 @@ function spawnSetVote:BeginVote( duration, maxOptions, toAdd )
 
         local easyEscapeRoutes = 0
         local idealEasyEscapeRoutes = 1
-        if GAMEMODE.glee_ConsecutiveSpawnsetVotes >= math.random( 2, 3 ) then
+        if GAMEMODE.glee_ConsecutiveSpawnsetVotes >= math.random( 3, 5 ) then
             idealEasyEscapeRoutes = 2
 
         end

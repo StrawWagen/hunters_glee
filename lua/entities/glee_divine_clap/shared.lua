@@ -16,14 +16,9 @@ ENT.HullCheckSize = Vector( 20, 20, 10 )
 ENT.PosOffset = Vector( 0, 0, 10 )
 
 -- balance knobs, overridable by derived entities ( eg termhunt_thunderous_applause )
-local interval = 60 * 4 -- initial lock, and the global cooldown between uses
-
 ENT.baseCost = -500
 ENT.heliCostMult = 3 -- cost multiplier when placed near the escape heli
 ENT.heliNearbyDist = 2000
-ENT.interval = interval
-ENT.cooldownBool = "termhunt_divine_clap" -- temporary bool gating reuse
-ENT.cooldownMessage = "It's too soon to clap again. Wait."
 ENT.mischiefOnPlace = 2
 ENT.mischiefReason = "called down a smite"
 
@@ -105,20 +100,12 @@ function ENT:UpdateGivenScore()
 
 end
 
-local sv_cheats = GetConVar( "sv_cheats" )
-
-local function isCheats()
-    return sv_cheats:GetBool()
-
-end
-
 function ENT:CalculateCanPlace()
     local checkPos = self:OffsettedPlacingPos() + Vector( 0, 0, 15 )
 
     if IsHullTraceFull( checkPos, self.HullCheckSize, self ) then return false, self.noPurchaseReason_NoRoom end
     if getNearestNavFloor( checkPos ) == NULL then return false, self.noPurchaseReason_OffNavmesh end
     if not GAMEMODE:IsUnderSky( checkPos ) then return false, "Needs to be placed under the sky." end
-    if not isCheats() and GAMEMODE:isTemporaryTrueBool( self.cooldownBool ) then return false, self.cooldownMessage end
     if not self:HasEnoughToPurchase() then return false, self:TooPoorString() end
     return true
 
@@ -174,9 +161,7 @@ function ENT:Place()
 
     GAMEMODE:AddMischievousness( self.player, self.mischiefOnPlace, self.mischiefReason )
 
-    -- start the cooldown, then detach so the strike is committed no matter what the placer does
-    GAMEMODE:setTemporaryTrueBool( self.cooldownBool, self.interval )
-
+    -- detach so the strike is committed no matter what the placer does
     self:DetachFromOwner()
 
     self:BeginStrike( strikePos )
@@ -246,9 +231,3 @@ function ENT:BeginStrike( strikePos )
     end )
 
 end
-
-hook.Add( "huntersglee_round_into_active", "divine_clap_initialwait", function()
-    GAMEMODE:setTemporaryTrueBool( "termhunt_divine_clap_initial", interval )
-    GAMEMODE:setTemporaryTrueBool( "termhunt_divine_clap", interval )
-
-end )

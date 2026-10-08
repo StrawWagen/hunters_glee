@@ -107,6 +107,8 @@ GAMEMODE:GobbleShopItems( items )
 | `shSkullCost` | ❌ | Skull cost. Accepts number or function. Zero is ignored. Negative gives skulls on purchase |
 | `shCanShowInShop` | ❌ | Visibility function: `function(purchaser) -> bool` |
 | `shPurchaseCheck` | ❌ | Validation function(s): `function(purchaser) -> bool, reason`, must return true for purchase to be allowed |
+| `globalCooldowns` | ❌ | Cooldowns everyone shares, keyed by trigger (`onGhostPlace`, `onRoundStart`): `{ onGhostPlace = { time = 120, reason = "Wait.", ignoredWithCheats = true } }`. Scaled by the `glee_shop_itemglobalcooldownmul` hook, so reasons shouldn't state durations |
+| `shCooldownCheck` | ❌ | Cooldowns that don't start at purchase: `function(purchaser) -> endTime, reason`. The latest end, of these and `cooldown`, wins. Shown with the time left |
 | `canGoInDebt` | ❌ | Buyable with no score. Lets you force people into innate debuffs, etc |
 | `markup` | ❌ | Price multiplier during active hunt |
 | `markupPerPurchase` | ❌ | Additional markup per purchase |

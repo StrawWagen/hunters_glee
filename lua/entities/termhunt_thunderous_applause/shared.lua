@@ -10,14 +10,9 @@ ENT.Spawnable   = true
 ENT.AdminOnly   = game.IsDedicated()
 
 -- many claps that land over a wide area
-local interval = 60 * 2
-
 ENT.baseCost = -600
 ENT.heliCostMult = 4
 ENT.heliNearbyDist = 3000
-ENT.interval = interval
-ENT.cooldownBool = "termhunt_thunderous_applause"
-ENT.cooldownMessage = "Applause was just recently given. Wait until it's time again."
 ENT.mischiefOnPlace = 10
 ENT.mischiefReason = "applauded thunderously"
 ENT.radius = 1050
@@ -241,9 +236,3 @@ function ENT:BeginStrike( strikePos )
     end )
 
 end
-
-hook.Add( "huntersglee_round_into_active", "thunderous_applause_initialwait", function()
-    GAMEMODE:setTemporaryTrueBool( "termhunt_thunderous_applause_initial", interval )
-    GAMEMODE:setTemporaryTrueBool( "termhunt_thunderous_applause", interval )
-
-end )

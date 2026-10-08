@@ -285,6 +285,46 @@ function GM:shopItemCooldown( ply, toPurchase )
 
 end
 
+-- The CurTime the item comes off cooldown, and the reason for it, if a global cooldown or shCooldownCheck set the latest end.
+-- An erroring check returns math.huge, REASON_ERROR
+function GM:shopItemCooldownEnd( ply, toPurchase )
+    local itemData = GAMEMODE:GetShopItemData( toPurchase )
+    local cooldownEnd = ply.shopItemCooldowns[toPurchase] or 0
+    if not itemData then return cooldownEnd end
+
+    local reason
+    local globalEnd, globalReason = self:shopItemGlobalCooldownEnd( toPurchase )
+    if globalEnd > cooldownEnd then
+        cooldownEnd = globalEnd
+        reason = globalReason
+
+    end
+
+    local checks = itemData.shCooldownCheck
+    if isfunction( checks ) then
+        checks = { checks }
+
+    end
+    if not istable( checks ) then return cooldownEnd, reason end
+
+    for _, check in ipairs( checks ) do
+        local noErrors, checkEnd, checkReason = xpcall( check, shopHelpers.errorMitt, ply )
+        if not noErrors then
+            shopHelpers.itemFuncFailed( toPurchase, "shCooldownCheck function errored" )
+            return math.huge, shopHelpers.REASON_ERROR
+
+        end
+        if isnumber( checkEnd ) and checkEnd > cooldownEnd then
+            cooldownEnd = checkEnd
+            reason = checkReason
+
+        end
+    end
+
+    return cooldownEnd, reason
+
+end
+
 -- doShopCooldown takes whatever number it's handed. This runs glee_shop_itemcooldownmul over it
 -- first, so a misery's multiplier reaches placables that re-arm themselves with their own number.
 -- Leave cooldown out to use the item's own field.
@@ -293,7 +333,7 @@ function GM:applyShopItemCooldown( ply, toPurchase, cooldown )
         local itemData = GAMEMODE:GetShopItemData( toPurchase )
         if not itemData then return end
 
-        cooldown = shopHelpers.runAdjustHook( toPurchase, cooldownSpec, ply, itemData, cooldown )
+        cooldown = shopHelpers.runAdjustHook( toPurchase, cooldownSpec, cooldown, ply, itemData )
 
     else
         cooldown = self:shopItemCooldown( ply, toPurchase )

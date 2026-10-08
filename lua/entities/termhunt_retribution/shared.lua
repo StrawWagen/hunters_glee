@@ -66,7 +66,7 @@ function ENT:CalculateCanPlace()
     if currTarget:HasStatusEffect( "divine_chosen" ) then return false, "They're already as gleefully homicidal as one can be..." end
     if getDanceSeq( currTarget ) < 0 then return false, "They're too boring to dance." end -- lol if this happens
     if currTarget:IsPlayingTaunt2() then return false, "They're already dancing!" end
-    if self.player.glee_nextHomicidalGleePlace and self.player.glee_nextHomicidalGleePlace > CurTime() then return false, "Wait. It's too soon for you to surface one's Homicidal Glee." end
+    if self.player:GetNW2Int( "glee_nextHomicidalGleePlace", 0 ) > CurTime() then return false, "Wait. It's too soon for you to surface one's Homicidal Glee." end
     if not self:HasEnoughToPurchase() then return false, self:TooPoorString() end
     return true
 
@@ -194,7 +194,7 @@ function ENT:Place()
 
     end
 
-    self.player.glee_nextHomicidalGleePlace = CurTime() + 15
+    self.player:SetNW2Int( "glee_nextHomicidalGleePlace", math.ceil( CurTime() + 15 ) )
 
 end
 

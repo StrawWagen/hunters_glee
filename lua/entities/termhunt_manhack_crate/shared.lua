@@ -78,6 +78,7 @@ function GM:ManhackCrate( pos )
     crate:Spawn()
 
     crate.glee_IsManhackCrate = true
+    crate.glee_HasOwnLoot = true
 
     -- make the bots try to break this!
     crate.terminatorHunterInnateReaction = function()

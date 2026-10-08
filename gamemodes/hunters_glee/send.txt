@@ -1,6 +1,7 @@
 gamemodes\hunters_glee\gamemode\modules\shop\cl_shopstandards.lua
 gamemodes\hunters_glee\gamemode\modules\shop\cl_shoppinggui.lua
 gamemodes\hunters_glee\gamemode\modules\shop\sh_shopshared.lua
+gamemodes\hunters_glee\gamemode\modules\shop\sh_globalcooldowns.lua
 gamemodes\hunters_glee\gamemode\modules\shop\sh_shopcategories.lua
 
 gamemodes\hunters_glee\gamemode\modules\cl_winscreen.lua
@@ -21,7 +22,6 @@ gamemodes\hunters_glee\gamemode\lib\sh_gleehelpers.lua
 gamemodes\hunters_glee\gamemode\sh_player.lua
 
 gamemodes\hunters_glee\gamemode\modules\sh_panic.lua
-gamemodes\hunters_glee\gamemode\modules\sh_tempbools.lua
 gamemodes\hunters_glee\gamemode\modules\sh_slowmopitch.lua
 gamemodes\hunters_glee\gamemode\modules\sh_playerdrowning.lua
 gamemodes\hunters_glee\gamemode\modules\sh_danceslowdown.lua

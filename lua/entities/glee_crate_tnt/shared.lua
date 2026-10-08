@@ -67,6 +67,7 @@ function GM:BombCrate( pos, crateStatsRef )
     crateStatsRef = crateStatsRef or baseclass.Get( "glee_crate_tnt" )
 
     crate.glee_IsTNTCrate = true
+    crate.glee_HasOwnLoot = true
 
     crate.glee_TNT_CrateCount = math.random( crateStatsRef.CrateCountMin, crateStatsRef.CrateCountMax )
     crate.glee_TNT_CrateLaunchMin = crateStatsRef.CrateLaunchMin

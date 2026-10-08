@@ -54,8 +54,15 @@ function ENT:rareCreationOptions()
 end
 
 ENT.AmmoInsideWeaponsScale = 2
+ENT.SpreadRadius = 10
 
 local upOffset = Vector( 0, 0, 5 )
+
+local function randomInSphere( radius )
+    -- cube root keeps the points even throughout, instead of bunched at the center
+    return VectorRand():GetNormalized() * radius * math.Rand( 0, 1 ) ^ ( 1 / 3 )
+
+end
 
 function ENT:Initialize()
     if SERVER then
@@ -75,12 +82,12 @@ function ENT:Initialize()
         local class = selected.class
 
         local randPitch = math.random( -1, 1 ) * 45
-        local myPos = self:GetPos()
+        local spreadCenter = self:GetPos() + upOffset
 
-        for index = 1, count do
+        for _ = 1, count do
             local randYaw = math.random( -4, 4 ) * 45
             local angle = Angle( randPitch, randYaw, 0 )
-            local pos = myPos + upOffset * index
+            local pos = spreadCenter + randomInSphere( self.SpreadRadius )
 
             local item = ents.Create( class )
             item:SetAngles( angle )

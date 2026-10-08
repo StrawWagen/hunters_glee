@@ -8,13 +8,6 @@ local function ghostCanPurchase( purchaser )
 
 end
 
-local sv_cheats = GetConVar( "sv_cheats" )
-
-local function isCheats()
-    return sv_cheats:GetBool()
-
-end
-
 if SERVER then
     local linked_hunter = {
         class = "terminator_nextbot_snail_disguised",
@@ -275,6 +268,10 @@ local items = {
         },
         weight = 0,
         shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
+        shCooldownCheck = function( purchaser )
+            return purchaser:GetNW2Int( "glee_nextHomicidalGleePlace", 0 ), "It's too soon for you to surface one's Homicidal Glee."
+
+        end,
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
             shopHelpers.setupPlacable( "termhunt_retribution", purchaser, itemIdentifier )
 
@@ -293,6 +290,9 @@ local items = {
         },
         weight = 19,
         shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
+        globalCooldowns = {
+            onGhostPlace = { time = 180, reason = "It's too soon for another hunter to be overcharged." },
+        },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
             shopHelpers.setupPlacable( "termhunt_overcharger", purchaser, itemIdentifier )
 
@@ -327,12 +327,11 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = 20,
-        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase, function()
-            if GAMEMODE:isTemporaryTrueBool( "termhunt_player_swapper_initial" ) then return nil, "Not unlocked yet." end
-            if GAMEMODE:isTemporaryTrueBool( "termhunt_player_swapper" ) then return nil, "It is too soon for another inversion to begin." end
-            return true, nil
-
-        end },
+        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
+        globalCooldowns = {
+            onGhostPlace = { time = 120, reason = "It is too soon for another inversion to begin." },
+            onRoundStart = { time = 120, reason = "Not unlocked yet." },
+        },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
             shopHelpers.setupPlacable( "player_swapper", purchaser, itemIdentifier )
 
@@ -409,13 +408,11 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = 31,
-        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase, function()
-            if isCheats() then return true, nil end
-            if GAMEMODE:isTemporaryTrueBool( "termhunt_divine_clap_initial" ) then return nil, "It's too soon to clap." end
-            if GAMEMODE:isTemporaryTrueBool( "termhunt_divine_clap" ) then return nil, "It must recharge. Wait.." end
-            return true, nil
-
-        end },
+        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
+        globalCooldowns = {
+            onGhostPlace = { time = 240, reason = "It must recharge. Wait..", ignoredWithCheats = true },
+            onRoundStart = { time = 240, reason = "It's too soon to clap.", ignoredWithCheats = true },
+        },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
             shopHelpers.setupPlacable( "glee_divine_clap", purchaser, itemIdentifier )
 

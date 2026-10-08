@@ -43,7 +43,8 @@ local adjustTypes = {
 
 --[[------------------------------------
     Lets other addons adjust an item's cost, cooldown or description. The hooks are named
-    in sh_shopshared.lua, above the resolveItemField call that runs each one.
+    in sh_shopshared.lua and sh_globalcooldowns.lua, above the call that runs each one.
+    The hook runs as ( arg1, arg2, adjust ).
 
     Adjust table is a table so every hook can simply tweak the value without returning anything
     Means multiple hooks can modify in sequence
@@ -56,7 +57,7 @@ local adjustTypes = {
 
     end )
 --]]-------------------------------------
-function shopHelpers.runAdjustHook( identifier, spec, ply, itemData, value )
+function shopHelpers.runAdjustHook( identifier, spec, value, arg1, arg2 )
     local adjustType = adjustTypes[spec.check]
     if not adjustType then
         permaPrint( "GLEE: !!!!!!!!!! " .. spec.hook .. " has no adjust type for " .. identifier .. "!!!!!!!!!!!" )
@@ -66,7 +67,7 @@ function shopHelpers.runAdjustHook( identifier, spec, ply, itemData, value )
 
     local adjust = adjustType.new( value )
 
-    local noErrors = xpcall( hook.Run, shopHelpers.errorMitt, spec.hook, ply, itemData, adjust )
+    local noErrors = xpcall( hook.Run, shopHelpers.errorMitt, spec.hook, arg1, arg2, adjust )
     if not noErrors then
         permaPrint( "GLEE: !!!!!!!!!! " .. spec.hook .. " errored for " .. identifier .. "!!!!!!!!!!!" )
         return value
@@ -134,7 +135,7 @@ function shopHelpers.resolveItemField( identifier, fieldName, ply, spec )
     end
 
     if spec.hook then
-        value = shopHelpers.runAdjustHook( identifier, spec, ply, itemData, value )
+        value = shopHelpers.runAdjustHook( identifier, spec, value, ply, itemData )
 
     end
 

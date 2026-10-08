@@ -154,12 +154,11 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = 1001,
-        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase, function()
-            if GAMEMODE:isTemporaryTrueBool( "termhunt_thunderous_applause_initial" ) then return nil, "It's too soon for the applause to begin." end
-            if GAMEMODE:isTemporaryTrueBool( "termhunt_thunderous_applause" ) then return nil, "Applause must be spaced out. Wait.." end
-            return true, nil
-
-        end },
+        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
+        globalCooldowns = {
+            onGhostPlace = { time = 120, reason = "Applause must be spaced out. Wait.." },
+            onRoundStart = { time = 120, reason = "It's too soon for the applause to begin." },
+        },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
             shopHelpers.setupPlacable( "termhunt_thunderous_applause", purchaser, itemIdentifier )
 

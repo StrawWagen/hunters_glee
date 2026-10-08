@@ -517,6 +517,15 @@ function ENT:DetachFromOwner()
 end
 
 
+function ENT:GlobalCooldownCanPlace()
+    if not self.itemIdentifier then return true end -- don't error in sandbox pls
+
+    local cooldownEnd, reason = GAMEMODE:shopItemGlobalCooldownEnd( self.itemIdentifier )
+    if cooldownEnd > CurTime() then return false, reason or "Cooldown." end
+    return true
+
+end
+
 function ENT:DoScoreThink()
     self:NextThink( CurTime() + engine.TickInterval() )
 
@@ -536,7 +545,11 @@ function ENT:DoScoreThink()
     self:UpdateGivenScore()
     self:BlamingThink()
 
-    local canPlace, noBuyReason = self:CalculateCanPlace()
+    local canPlace, noBuyReason = self:GlobalCooldownCanPlace()
+    if canPlace then
+        canPlace, noBuyReason = self:CalculateCanPlace()
+
+    end
     self.cannotPurchaseReason = noBuyReason
 
     self:SetCanPlace( canPlace )
@@ -740,6 +753,10 @@ function ENT:HandleKeys( ply, key )
     if key == IN_ATTACK then
         if self:GetCanPlace() then
             self:Place()
+            if self.itemIdentifier then
+                GAMEMODE:triggerGlobalCooldowns( self.itemIdentifier, "onGhostPlace" )
+
+            end
             ply:SetNW2Bool( "glee_placedundead", true )
             self.placedItems = self.placedItems + 1
             ply.glee_ghostEntActionTime = CurTime()

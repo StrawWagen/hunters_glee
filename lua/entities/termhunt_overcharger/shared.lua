@@ -51,7 +51,6 @@ function ENT:CalculateCanPlace()
     if not IsValid( currTarg ) then return false, "You can't overcharge nothing." end
     if currTarg.terminator_OverCharged then return false, "It's already overcharged." end
     if not glee_CanOvercharge( currTarg ) then return false, "That's too weak to overcharge..." end
-    if GAMEMODE:isTemporaryTrueBool( "glee_playerplaced_termovercharger" ) then return false, "It's too soon for another hunter to be overcharged." end
     if currTarg:IsSilentStepping() then return false, "There's Nothing there." end
     if not self:HasEnoughToPurchase() then return false, self:TooPoorString() end
     return true
@@ -82,8 +81,6 @@ function ENT:Place()
     end
 
     targ.CoroutineThresh = math.max( terminator_Extras.baseCoroutineThresh * 2, targ.CoroutineThresh ) -- this guy gets to be really smart!
-
-    GAMEMODE:setTemporaryTrueBool( "glee_playerplaced_termovercharger", 180 )
 
     huntersGlee_Announce( player.GetAll(), 25, 8, self.player:Nick() .. " has overcharged " .. GAMEMODE:GetNameOfBot( targ ) ..  "..." )
 
