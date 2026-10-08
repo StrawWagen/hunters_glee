@@ -752,3 +752,40 @@ goes in a glee rebinding menu?
 
 -- slam uses grenade killicon
 -- dead nameplates are too big
+-- better sounds when terms lose their skin
+
+-- current design doesn't work for players who WANT to read
+-- text as last resort
+-- it's confusing in the moment when you need it to be intuitive
+-- Description exists to differentiate things with similar items
+-- Pull information out of the description
+-- 3d model icons?
+-- unfocus eyes to test information hierarchy
+-- position is a level of communication
+-- some names have periods at the end, some do not
+
+-- make an ordered list of most important items, to least important items
+-- smaller groups?
+-- Current categories do not feel separate enough
+-- Expanding tiles?
+-- Definitely find some way to stop using words as #1 differentiator
+-- finding items you need
+-- searchbar
+-- favourites ( start with some basic ones, like loadout )
+-- CONDENSE favourites
+
+-- favourites PER misery? ( probably not )
+-- last used
+-- select tags to find items 
+-- missing, decision tree is too locked down
+-- "oh god no gun" big experience
+-- decision tree while dead
+    -- HOW DO I MAKE MONEY?
+    -- how do i respawn?
+    -- last priority for some players, hijinx
+
+-- Two halves design
+    -- top is sortable tags
+
+-- dead players ignited by atm rocket
+

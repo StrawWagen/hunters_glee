@@ -11,7 +11,15 @@ local clickImpatience = 0.30 -- seconds of animation a click skips
 local imNewMyself = nil
 local hasSeenMessage = CreateClientConVar( "cl_huntersglee_firsttimetutorial", 0, true, true, "Has the player seen the one-time tutorial series of messages?" )
 
-local spawnsetCvar = GetConVar( "huntersglee_spawnset" )
+-- rare error where this convar is nil?!?!?!?
+-- can probably happen with all convars but this one is especially important, so a proper fallback is a good idea here
+local function currentSpawnset()
+    local spawnsetCvar = GetConVar( "huntersglee_spawnset" )
+    if not spawnsetCvar then return GAMEMODE.TheTutorialMisery end
+
+    return spawnsetCvar:GetString()
+
+end
 
 local stagesTutorialMisery = {
     "Welcome.\nTo the hunt!",
@@ -106,7 +114,7 @@ local function doMessageIfWeCan( tutorialType )
 
     if tutorialType == "default" then
         local plyCount = player.GetCount()
-        if spawnsetCvar:GetString() == GAMEMODE.TheTutorialMisery then
+        if currentSpawnset() == GAMEMODE.TheTutorialMisery then
             if plyCount >= 2 then
                 stages = stagesTutorialMiseryMulti
 
@@ -189,7 +197,7 @@ local function doMessageIfWeCan( tutorialType )
         if not fullMsg then
             local us = LocalPlayer()
 
-            if spawnsetCvar:GetString() == GAMEMODE.TheTutorialMisery then
+            if currentSpawnset() == GAMEMODE.TheTutorialMisery then
                 us:EmitSound( "ambient/levels/streetwar/gunship_distant2.wav", 120, 140, 0.5, CHAN_STATIC, SND_NOFLAGS, 0 )
 
             end
