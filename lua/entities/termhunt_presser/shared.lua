@@ -84,7 +84,7 @@ function ENT:GetNearestTarget()
             veryGood = true
 
         else
-            bad = thing:IsPlayer() or thing:IsNextBot() or thing == self or string.find( class, "trigger" ) or thing:IsWeapon() or thing.isDoorDamageListener or not thing:IsSolid() or not thing.GetModel or not thing:GetModel()
+            bad = thing:IsPlayer() or thing:IsNextBot() or thing == self or string.find( class, "trigger" ) or thing:IsWeapon() or not thing:IsSolid() or not thing.GetModel or not thing:GetModel()
 
         end
         if good and not bad then

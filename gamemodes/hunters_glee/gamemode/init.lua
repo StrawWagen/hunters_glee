@@ -17,6 +17,8 @@ AddCSLuaFile( "modules/bonemaniphandler/cl_bonemanip.lua" )
 AddCSLuaFile( "modules/escaping/cl_escaping.lua" )
 AddCSLuaFile( "modules/escaping/cl_escapecounts.lua" )
 
+AddCSLuaFile( "modules/documents/cl_documents.lua" )
+
 AddCSLuaFile( "modules/banking/cl_banking.lua" )
 AddCSLuaFile( "modules/banking/cl_bankconsent.lua" )
 
@@ -1115,7 +1117,7 @@ function GM:beginSetup()
 
     end )
 
-    self:ResetExtraData()
+    self:ResetExtraData() -- reset GAMEMODE.roundExtraData
 
     hook.Run( "huntersglee_round_into_inactive" )
 

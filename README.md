@@ -116,6 +116,7 @@ GAMEMODE:GobbleShopItems( items )
 | `costDecorative` | ❌ | Fake, decorative cost. Accepts string, number, tables of strings, functions. Overrides `shSkullCost`, and `shCost` |
 | `simpleCostDisplay` | ❌ | **Client.** Skip the coloring and formatting of the cost in the shop |
 | `clBeforePurchase` | ❌ | **Client.** Runs instead of buying, from the shop or `termhunt_purchase`: `function(buy, check)`. Call `buy()` to go through with it. `check()` returns `GM:canPurchase`'s answer for right now, for anything that keeps the player waiting before buying. `termhunt_purchase_raw` skips it |
+| `clDocument` | ❌ | **Client.** Name of a document from `GM:RegisterDocument`. Buying opens it, and the item is bought on signing. Clicking it in the shop while it can't be bought opens it too, unsignable until it can. Takes over from `clBeforePurchase` |
 | `unpurchaseableReason` | ❌ | Custom denial string. Only used if the item has the `unpurchaseable` tag |
 | `identifier` | ❌ | Auto-generated. The item's unique key |
 
@@ -234,7 +235,7 @@ end )
 
 ### Status Effects
 
-A status effect is a named bundle of hooks and timers living on one player.
+A status effect is a named bundle of hooks and timers living on one entity, usually a player.
 It's the best way to modify player stats, behaviour.
 Used by innate items, spawn protection, etc.
 The point is teardown: you never have to remember the hook identifiers or timer names you made, removing the effect removes all of them.
@@ -298,6 +299,9 @@ if SERVER then
         effect.cupsDrank = 1 -- it's just a table, can pass stuff to the effect
 
     end
+
+    -- npcs and nextbots can have effects too
+    hunter:GiveStatusEffect( "caffeinated" )
 end
 
 -- shared
@@ -318,14 +322,13 @@ end
 | Method | Description |
 |--------|-------------|
 | `self:Hook( hookName, func )` | A `hook.Add` scoped to this effect. The identifier is made for you, don't pass one |
-| `self:HookOnce( hookName, func )` | Same, but hooks only once no matter how many players have the effect |
+| `self:HookOnce( hookName, func )` | Same, but hooks only once no matter how many entities have the effect |
 | `self:Timer( timerName, delay, reps, func )` | A `timer.Create` scoped to this effect. `reps` of 0 is infinite |
 | `self:TimerRemove( timerName )` | Kill one of this effect's timers early |
-| `self:SetRemoveOnDeath( bool )` | **Server only.** Strip the effect when the owner dies. Default is to persist |
-| `self:GetOwner()` | The player. Same as the `owner` argument |
+| `self:SetPlyRemoveOnDeath( bool )` | **Server only.** Strip the effect when the owning player dies. Default is to persist. Npcs and nextbots always lose every effect on death |
+| `self:GetOwner()` | The entity. Same as the `owner` argument |
 
-Effects are also torn down automatically on disconnect and on round change.
-
+Effects are also torn down automatically when the owner is removed, on disconnect, and on round change.
 #### Clientside
 
 Status effects are *always* networked to players.

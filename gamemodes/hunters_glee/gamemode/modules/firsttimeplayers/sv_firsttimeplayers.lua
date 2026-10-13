@@ -4,10 +4,34 @@ local asked = {}
 local spawned = {}
 local alreadyDone = {}
 
+-- by SteamID, so a crash and rejoin doesn't cost them it. Cleared on map change
+GAMEMODE.firstTimePlayerSteamIDs = GAMEMODE.firstTimePlayerSteamIDs or {}
+
 util.AddNetworkString( "glee_dothefirsttimemessage" )
 util.AddNetworkString( "glee_askforgleetings" )
 
+-- only souls that would count towards an Envoy's escape bonus
+local function alertEnvoys( ply )
+    if not GAMEMODE:IsFirstTimePlayer( ply ) then return end
+    if ply:HasBankItem( "gleeful_envoy" ) then return end
+
+    local envoys = {}
+    for _, other in player.Iterator() do
+        if other == ply then continue end
+        if not other:HasBankItem( "gleeful_envoy" ) then continue end
+
+        envoys[#envoys + 1] = other
+
+    end
+    if #envoys <= 0 then return end
+
+    huntersGlee_Announce( envoys, 50, 6, "A Prospective Account Holder has arrived...\nGet them up to speed!\nSee that " .. ply:Nick() .. " escapes..." )
+
+end
+
 local function gleetings( ply )
+    alertEnvoys( ply )
+
     if not game.IsDedicated() then return end
 
     local filterNotPly = RecipientFilter()
@@ -21,7 +45,7 @@ end
 
 GAMEMODE:RegisterStatusEffect( "spawn_protection",
     function( self, owner )
-        self:SetRemoveOnDeath( true ) -- in case it gets stuck, will make it remove on owner killbind
+        self:SetPlyRemoveOnDeath( true ) -- in case it gets stuck, will make it remove on owner killbind
 
         owner.glee_sheltering_normalCollisionGroup = owner.glee_sheltering_normalCollisionGroup or owner:GetCollisionGroup()
         owner:SetNoTarget( true )
@@ -106,7 +130,7 @@ local function tutorialize( ply, tutorialType )
         net.WriteString( tutorialType )
     net.Send( ply )
 
-    ply.glee_isFirstTimePlayer = true
+    GAMEMODE.firstTimePlayerSteamIDs[ply:SteamID()] = true
 
 end
 
@@ -139,8 +163,10 @@ local function isEducated( ply )
 
 end
 
+-- Is this player new to this experience, do they qualify for extra protections?
+-- needs extra checks because the convar can be faked
 function GAMEMODE:IsFirstTimePlayer( ply )
-    return ply.glee_isFirstTimePlayer
+    return self.firstTimePlayerSteamIDs[ply:SteamID()] and ply:BankFundsFast() < 5000 and self:GetPersistentGuilt( ply ) < 5 -- dont let guilty players exploit this by resetting the convar
 
 end
 
@@ -154,7 +180,7 @@ function GAMEMODE:TutorialIsHoldingTheRound( players )
     local inTutorial = 0
 
     for _, ply in ipairs( players ) do
-        if not ply.glee_isFirstTimePlayer then continue end
+        if not self:IsFirstTimePlayer( ply ) then continue end
         if not ply.glee_importantSpawnProtection and isEducated( ply ) then continue end
 
         inTutorial = inTutorial + 1

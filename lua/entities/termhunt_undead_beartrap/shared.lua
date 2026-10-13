@@ -139,19 +139,20 @@ hook.Add( "glee_beartrap_snapped", "trackundeadbeartraps", function( trap, snapp
     if not IsValid( snapped ) then return end
 
     local msg = ""
+    local score = 0
 
     -- unfrozen, crap placement
     if trap:GetPhysicsObject():IsMotionEnabled() then
         -- check if the thing trapped is a player
         if snapped:IsPlayer() then
             -- give the player some score
-            placer:GivePlayerScore( 75 )
+            score = 75
             msg = "You've damaged a player, 75 score."
 
         -- check if the thing trapped is a nextbot
         elseif snapped:IsNextBot() then
             -- give the player a bit less score
-            placer:GivePlayerScore( 40 )
+            score = 40
             msg = "You've damaged " .. GAMEMODE:GetNameOfBot( snapped ) .. ", 40 score."
 
         end
@@ -161,18 +162,18 @@ hook.Add( "glee_beartrap_snapped", "trackundeadbeartraps", function( trap, snapp
         if snapped:IsPlayer() then
             GAMEMODE:LearnLesson( placer, "BeartrapGoodPlace" )
             if snapped == placer then
-                placer:GivePlayerScore( -50 )
+                score = -50
                 msg = "You placed this beartrap. -50 score."
 
             -- check if the player has a specific value
             elseif IsValid( snapped.huntersGleeHunterThatIsTargetingPly ) then
                 -- give the player a bunch of score
-                placer:GivePlayerScore( 250 )
+                score = 250
                 msg = "You've trapped a fleeing player, you gain 250 score!"
 
             else
                 -- give the player some score
-                placer:GivePlayerScore( 150 )
+                score = 150
                 msg = "You've trapped a player, you gain 150 score!"
 
             end
@@ -180,10 +181,16 @@ hook.Add( "glee_beartrap_snapped", "trackundeadbeartraps", function( trap, snapp
         elseif snapped:IsNextBot() then
             GAMEMODE:LearnLesson( placer, "BeartrapGoodPlace" )
             -- give the player a bit less score
-            placer:GivePlayerScore( 80 )
+            score = 80
             msg = "You've trapped " .. GAMEMODE:GetNameOfBot( snapped ) .. ", you gain 80 score!"
 
         end
+    end
+
+    if score ~= 0 then
+        placer:GivePlayerScore( score )
+        GAMEMODE:SendPlacableScorePopup( placer, snapped, score )
+
     end
     huntersGlee_Announce( { placer }, 5, 8, msg )
 

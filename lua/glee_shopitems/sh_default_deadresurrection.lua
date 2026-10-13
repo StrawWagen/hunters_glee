@@ -70,7 +70,7 @@ local dmgResistAfterRez = 8
 if SERVER then
     GAMEMODE:RegisterStatusEffect( "divineintervention_blessing", -- healing and damage resist after rez
         function( self, owner ) -- setup func
-            self:SetRemoveOnDeath( true ) -- its not a persistent effect, remove it on death
+            self:SetPlyRemoveOnDeath( true ) -- its not a persistent effect, remove it on death
 
             self:Timer( "removeSelf", dmgResistAfterRez, 1, function()
                 owner:RemoveStatusEffect( "divineintervention_blessing" )
@@ -780,7 +780,7 @@ local items = {
     -- lets dead people take the initiative
     ["resurrection"] = {
         name = "Divine Intervention",
-        desc = "Resurrect yourself.\nYou will revive next to another living player and have " .. dmgResistAfterRez .. "s of damage resistance.",
+        desc = "Resurrect yourself.\nEncase your soul in a shell of flesh and bone.\nSpawn next to another Temporarily Bodied soul, with " .. dmgResistAfterRez .. "s of damage resistance.",
         shCost = function( purchaser )
             local cost = 350
             local chosenHasArrived = GetGlobalBool( "chosenhasarrived", false )
@@ -828,7 +828,7 @@ local items = {
     -- for people who just want to BE ALIVE!
     ["resurrectioncrappy"] = {
         name = "Infernal Intervention",
-        desc = "Make a deal with the devil.\nYou will come back as a shriveled, weak, husk.",
+        desc = "Make a deal with the Infernal powers.\nEncase your soul in a weak, shriveled husk.",
         shCost = 150,
         canGoInDebt = true,
         markup = 1,

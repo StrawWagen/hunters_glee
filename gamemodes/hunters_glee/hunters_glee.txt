@@ -3,6 +3,7 @@
     "base"        "base"
     "title"       "Hunter's Glee"
     "category"    "pve"
+    "maps"        "^glee_"
     "menusystem"  "1"
     "workshopid"  "2848253104"
 

@@ -1081,6 +1081,7 @@ if SERVER and terminator_Extras then
 
     function terminator_Extras.glee_RescueHeliThink( self )
         local rescueTarget = self.currentRescueTarget
+        local lastSwitchRescueTarget = self.lastSwitchRescueTarget or 0
         local myPos = self:GetPos()
 
         local oldPos = self.glee_OldRescueHeliPos or myPos
@@ -1095,7 +1096,8 @@ if SERVER and terminator_Extras then
 
         local validRescueTarget = IsValid( rescueTarget ) and rescueTarget:Alive()
         local visibleRescueTarget = validRescueTarget and self:Visible( rescueTarget )
-        local trySwitchRescueTarget = not validRescueTarget or not visibleRescueTarget
+        local oldValidSpeedyRescueTarget = validRescueTarget and ( CurTime() - lastSwitchRescueTarget ) > 20 and rescueTarget:GetVelocity():Length() >= 400
+        local trySwitchRescueTarget = not validRescueTarget or not visibleRescueTarget or oldValidSpeedyRescueTarget
         local obscuredRescueTarget = validRescueTarget and not visibleRescueTarget and myPos:Distance( rescueTarget:GetPos() ) > 3500
         local rescuedRescueTarget = validRescueTarget and IsValid( rescueTarget:GetVehicle() ) and rescueTarget:GetVehicle():GetParent() == self
         local badRescueTarget = not validRescueTarget or obscuredRescueTarget or rescuedRescueTarget
@@ -1106,6 +1108,7 @@ if SERVER and terminator_Extras then
         end
         if badRescueTarget then
             self.currentRescueTarget = nil
+            self.lastSwitchRescueTarget = 0
             rescueTarget = nil
 
         end
@@ -1126,6 +1129,7 @@ if SERVER and terminator_Extras then
             end
             if IsValid( rescueTarget ) then
                 self.currentRescueTarget = rescueTarget
+                self.lastSwitchRescueTarget = CurTime()
 
             end
         end

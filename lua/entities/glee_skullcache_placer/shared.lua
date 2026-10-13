@@ -19,7 +19,7 @@ ENT.PosOffset = Vector( 0, 0, 20 )
 ENT.MinSkullCount = 5
 ENT.MaxSkullCount = 10
 
-ENT.weapCrateScoreMultiplier = 2
+ENT.weapCrateScoreMultiplier = 3
 ENT.weapCrateNearbyClass = "termhunt_skull_pickup"
 ENT.weapCrateNearbyBlameReason = "Other Skulls"
 

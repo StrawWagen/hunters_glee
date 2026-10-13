@@ -5,6 +5,7 @@ local day = 86400
 
 GAMEMODE:RegisterBankItem( "skull_gains", {} )
 GAMEMODE:RegisterBankItem( "skull_loophole", { lifetime = day * 2 } )
+GAMEMODE:RegisterBankItem( "gleeful_envoy", { lifetime = day * 14 } )
 
 -- eg "1d 23h", "4h 12m", "9m"
 local function formatTimeLeft( seconds )
@@ -21,6 +22,14 @@ end
 -- shared between deposit and withdraw
 local function hasBankAccount( purchaser )
     if not purchaser:BankHasAccount() then return false, "You haven't opened a bank account yet." end
+    return true
+
+end
+
+local developerVar = GetConVar( "developer" )
+
+local function isDedicatedOrDev()
+    if not game.IsDedicated() and not developerVar:GetBool() then return false, "The Bank only offers this on dedicated servers." end
     return true
 
 end
@@ -280,10 +289,7 @@ local items = {
             return true
 
         end,
-        clBeforePurchase = function( buy, check )
-            GAMEMODE:OpenBankConsentForm( "account", buy, check )
-
-        end,
+        clDocument = "account",
         svOnPurchaseFunc = function( purchaser )
             timer.Simple( 0.05, function()
                 if not IsValid( purchaser ) then return end
@@ -439,10 +445,7 @@ local items = {
 
         end,
         shCanShowInShop = { hasBankAccount },
-        clBeforePurchase = function( buy, check )
-            GAMEMODE:OpenBankConsentForm( "skull_gains", buy, check )
-
-        end,
+        clDocument = "skull_gains",
         svOnPurchaseFunc = function( purchaser )
             timer.Simple( 0.05, function()
                 if not IsValid( purchaser ) then return end
@@ -478,14 +481,52 @@ local items = {
             return true
 
         end },
-        clBeforePurchase = function( buy, check )
-            GAMEMODE:OpenBankConsentForm( "skull_loophole", buy, check )
-
-        end,
+        clDocument = "skull_loophole",
         svOnPurchaseFunc = function( purchaser )
             timer.Simple( 0.05, function()
                 if not IsValid( purchaser ) then return end
                 purchaser:GiveBankItem( "skull_loophole" ) -- give them the bank item, skull_loophole will
+
+            end )
+        end,
+    },
+    ["bankgleefulenvoy"] = {
+        name = "Gleeful Envoy",
+        desc = function()
+            local termDays = math.Round( GAMEMODE.bankItems.gleeful_envoy.lifetime / day, 1 )
+            return table.concat( {
+                "A bank account add-on\n",
+                "Become an envoy for the bank, be rewarded whenever \"Prospective Account Holders\" escape",
+                "\n\"Prospective Account Holders\" are fragile, and the Bank is very interested in them surviving...\n",
+                "Every one that escapes boosts your Escape Multiplier.\n",
+                "Lasts " .. termDays .. " real-time days.",
+            } )
+
+        end,
+        shCost = 10000,
+        cooldown = 0,
+        tags = { "BANK", "BankItem" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_INACTIVE,
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = 3000,
+        shPurchaseCheck = { hasBankAccount, isDedicatedOrDev, function( purchaser )
+            local timeLeft = purchaser:BankItemTimeLeft( "gleeful_envoy" )
+            if timeLeft then return false, "You're already an Envoy.\nYour term ends in " .. formatTimeLeft( timeLeft ) .. "." end
+            return true
+
+        end },
+        shCanShowInShop = { hasBankAccount, isDedicatedOrDev, function( purchaser )
+            if not purchaser:HasBankItem( "skull_gains" ) then return false, "You don't have Skull Gains." end
+            return true
+
+        end },
+        clDocument = "gleeful_envoy",
+        svOnPurchaseFunc = function( purchaser )
+            timer.Simple( 0.05, function()
+                if not IsValid( purchaser ) then return end
+                purchaser:GiveBankItem( "gleeful_envoy" )
 
             end )
         end,

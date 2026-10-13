@@ -223,12 +223,41 @@ another new player experience revamp -- done
 -- intro is too long if you don't click -- done
 
 -- Replace stupid temp bools with ints, polish conduit/inversion cooldowns -- done
+-- voting for miseries is not that new user friendly -- done
+-- made roundstate/score default to always show instead --done
+-- spawnsets get hints? --done
+
+show "SPECTATING X" while spectating things so third party watchers can know what is happening -- done
+
+have to click "ok" on super long and yappy terms of service when creating a bank account -- done
+hibernating server becomes hunters_glee if hard misery lesson is learned -- done
+dont nail to children -- done
+postal dude pm has lower max hp? -- done
+
+announcing text theming -- done
+all ghostly text gets new style -- done
+godly text becomes godly -- done
+attempting to use flaregun on wall/non skybox gives hint and stops firing for a min? -- done
+
+divine intervention description change ( encase yourself within a weak shell of meat and bones ) -- done
+-- bug, ended early first round -- fixed
+-- joke modes ( paparazzi ) should not come after tutorial mode -- done
+
+-- difficulty spike with tutorial boss add boss hp bar for .boss enemies, to telegraph their power level better -- done
+-- healthbar shows up on first sighting of player -- done
+-- crouching as a gnome makes me shorter?? -- fixed
+-- add spectate snapping grace after placing stuff -- DONE ( was already grace, just sucked )
+
+-- hunters have been pushed to their limits happens too soon ( maybe round losing not biting difficulty enough ) -- done
+-- does holdingBack rubberband stop when you escape? -- yes
+-- nightmare on glee street change the name -- done
+-- mecha legs next to juggernaut ( bad ) -- fixed
+-- dead players ignited by atm rocket -- fixed
+
 
 
 -- make radio a purchasable item, moving all global/prox chat stuff to settings menu
 -- gateway to expensive items, airdropped in
-
--- remove radio from shop
 -- purchase radio for 1 skull from shop
 -- left clicking will open radial menu/other shop?
 
@@ -248,37 +277,25 @@ another new player experience revamp -- done
 -- value goes up when they kill a player
 -- goes down when they get killed
 
--- server-based leaderboard ( wont do )
--- quickest to 10 skulls
--- most skulls
--- flat, most hunter kills
--- most skulls, additive ( all players skulls in one session, added up )
-
 -- visual cohesiveness -- WIP
 
--- FIND lore for glee
--- why are we here, where are we going
 
-
--- pull players back into the map when they aren't moving, and are outside the bounds of the map
+-- some kind of cinematic spline camera system
+-- so like have the camera glide around the map when you go afk
+-- YOU ARE A GHOST, move the player cinematically while during the dead tutorial
+-- zoom camera away during fade to white
 
 -- sight jacking item?
 
 -- act command while driving npcs
 
 
--- samus ball powerup
-
 -- hint to flash tab?
--- made roundstate/score default to always show instead
 
--- voting for miseries is not that new user friendly
 -- sixth sense conflicts with new proximity hud
 
 -- skull place while dead item
 -- show skulls when aiming at players
-
--- skulls from enemies makes sense, but not from other ways ( meh feedback )
 
 -- split sixth sense?
 -- enemy finding powerup
@@ -293,17 +310,7 @@ another new player experience revamp -- done
 -- gaussian blobs
 -- pie slices
 
--- groups
--- make it easier to see friends -DONE
--- taunt with eachother
--- pins skull counts to eachother?
--- add pinging
--- team gui for friends?
-
 -- funny interaction when grigorified players try to escape?
-
--- change ATM color to blue?
--- make atm not error when used in sandbox?
 
 -- icon in C menu that aliases !rtm in chat
 -- sticky fingers, ratelimit changing weapons
@@ -312,31 +319,6 @@ another new player experience revamp -- done
 
 -- better feedback from shooting players
 
--- NEED STRONGER HINT TO SCROLL in shop
-
--- selecting weapons is hard
--- move flaregun to utility slot
-
-shop rewrite
--- problems to solve
-    knowing what to press is unintuitive
-    cause and effect is too loose
-    too many options, display less all at once
-    "how much skull do i have" first reaction when looking at shop
-    two vertical scroll panels
-    one is shop selection,
-    some people parse text slower than others, need to do icons
-    poke around on itch, for simple vector icons
-    see thru icons for ghostly
-        boxy icons 
-
-
-categories vertically
-recently purchased items on main page
-tabs to navigate pages
-different orders per spawnset?
-HIDE items with ???? until you have the money to buy them
-    move all default big earners to weapon slots
 
 channel 666 by default
 ghost arms really long and extended?
@@ -345,9 +327,6 @@ viewing ghosts while alive has them lower transparency
 no panic in helicopter
 unless it takes damage
 
-start by default not being able to hold more than 2 items per slot
-purchase innate that lets you carry more weapons
-
 afk fakeout doppleganger
 attach balloons to stuff as ghost
 
@@ -355,125 +334,41 @@ terminator misery with
 beartraps more prominent in shop
 SLAMS prominent in shop
 
-spawnsets get hints?
 USE hint on weapons on the ground?
+picking up weapons?
 
 put big messages ON TOP OF OTHER ELEMENTS
 
 roll of the dice as point return item?
+roll of the dice as a SWEP, use slam clicker?
 
 FAKE ATMS
 
 
-VAN teleport sequence
-find static beacon in map ( combine theme? )
-need to gas it up?
-starts countdown
-van will arrive after 60s
-violently arrives, dissolves anything near, in the room, massive explosion
-beep beep
-covered in friendly turrets?
-van is ready to pick people up
-sticks around for 30s
-then starts teleport away countdown
-fucks off
-
-van build is done, with help from anot
-
-
-if you teleport the gnome out you get +1000 score
-
-big room teleporter
-massive combine block of shit
-Need to find sacrificial models/props_combine/stalkerpod.mdl in the map
-
-
-rapture escape method
-on maps with skies
-submit yourself for judgement
-can only do it once a day? hour?
-
-
-self-ritual escape method
-infernal players can begin a ritual
-throw skulls at a skull posessing ragdoll in the map
-throw 5 skulls at it, it's head lights on fire and drops an infernal skull
-infernal skull yaps at you?
-throw infernal skull to open the infernal portal
-they, and other infernal players, cannot escape via it
-reduces 0.5 days of guilt per escaped player
-also very profitable?
+-- buddy escape system
+-- if you enter escape vehicle with buddy. maxwell, gnome swep.
+-- buddy sits in vehicle, everyone gets + whatever score
 
 
 doritos playermodel nextbots
 
 
-music did not convey the urgency of round grace period
-
-
-illustrate the way in that game design is interconnected
-adding one mechanic can overshadow and hide others 
-
-the road to implimentation comes with known hurdles and curves, and also unknown curves and trials
-adding things can take incentive and attention value from other mechanics
-a good game is in balance with itself
-a player is the main fulcrum, adding something is going to change everything else
-the player is the single nexus of a game
-
-Deceive Inc.
-
-lore drop types
-environmental storytelling
-voice logs
-emails
-
-
 ragdolling as player
-
 ghost ability, inhabit ragdolls
 
-show "SPECTATING X" while spectating things
-so third party watchers can know what is happening
-
-
-escape mul weights?
-track how long players live
-what kills players, npcs, players?
-
-
-swoleify arms if you shove someone?
-babysitter character that is the patron saint of all new players
 
 
 more everyone escaped music, use hl2 tracks
-zoom camera away during fade to white
-picking up weapons?
-
-limit shop selection in the .easy miseries -half done, what to do about categories?
-
-proper blurred shadow for tutorial text?
-
-have to click "ok" on super long and yappy terms of service when creating a bank account
-
-reset whatever when people spawning
-too easy with large groups, spawn enemies closer?
-spawn rising smoke from large groups of spawned skeletons
 
 strong hint that being a ghost has no passive income
 medkit shares models
-
-alot smoother
-skeletons way better rampup
-dead air was bad
+JUST GET A DIFFERENT MODEL FOR REVIVE KIT
 
 switch weapons hint
-dead items look like they cost money to click on
-the big moneymaker items need to be smooth, more, part of the dead experience
 posess is spelled wrong in multiple places?
 
 ensure divine clap gives guilt
 using homicidal glee on truly innocent players does guilt too
-postal dude pm has lower max hp?
 
 
 -- credit these ideas to the embalmster
@@ -513,12 +408,7 @@ ghost HORN
 powerup that makes you never stop sprint accelerating 
 
 infernal sentinel jumps eat health
-hibernating server becomes hunters_glee if hard misery lesson is learned
-dont nail to children
 
-announcing text theming
-all ghostly text gets new style
-godly text becomes godly
 PDM maxhealth override doesnt work
 
 ways to display info
@@ -530,14 +420,10 @@ top left, for things that you are being informed of
 
 key + kite weapon
 
-JUST GET A DIFFERENT MODEL FOR REVIVE KIT
-
 unsatisfying to kill skeletons
 killing something knowing it's not gonna drop anything is sad
-skeletons findable by sound cue is meh
+skeletons findable by sound cue is meh !!!!!!!!!!!!!!!!!!!!!!!
 skeletons much better, like a training ground, lets people explore the map, the menu,
-
-trading skulls was great
 
 dead air because of lack of breadcrumbs
 more flinching on the skeletons
@@ -550,18 +436,7 @@ difficulty feels unearned
 piece of information feels like its missing when dead, gil
 music still too loud?
 
-cannot see skulls in shop!!!!
-FULL TUTORIAL FOR PLACING ALL ESSENTIAL ITEMS
 ttt_groverhaus_remastered_a4 broke flaregun
-attempting to use flaregun on wall/non skybox gives hint and stops firing for a min?
-
-LONGER COUNTDOWN!!!!!
-what are the controls?
-there is a shop
-there is changing weapons
-
-tutorial does not teach innate things like score, skulls
-does not teach how to break stuff with crowbar
 
 
 the knowledge skeleton that teaches you ideas
@@ -575,20 +450,12 @@ they do not like having things change they cannot see
 first time death message, that body was holding you back
 
 then it encourages you to purchase loadout
-YOU FOUND A SKULL; pauses game
-
-
-divine intervention description change ( encase yourself within a weak shell of meat and bones )
 
 
 enemies that attack dead players/ghosts, that takes money
 ghost ropes
 reeling in when revived
 reeling back to last death position when not moving
-
-astral projection lore
-person whos astral projecting has a silver cord out of the back of their head
-the cord is fairly durable, but if cut it kills you
 
 f1 help menu
 
@@ -606,67 +473,15 @@ goes in a glee rebinding menu?
 -- field test mechanic removal with new miseries
 -- gm_aftermath_thelast optimized navmesh?
 
--- gamemode easy setup collection restyle
--- some kind of pre-tutorial 
--- bug, ended early first round
--- source engine experienced players already know how to break crates
--- they do not know when to press USE
--- planning, trying to find somewhere where i can see the enemies coming
 
--- carefully exploring
--- flashlight hint
--- flashlight being shitty is weird, should come from guns
--- bad feedback when shooting infernal horde
--- killing them but they dont drop skulls?
-
--- really good experience finding a gun in a crate, weakens the shop tho
--- weapons tutorial
-
--- tried breaking crates/boxes to find items
-
--- first player experience is rather slow
--- SPEEDUP IF KILLING SKELETONS WITH VERY LITTLE DAMAGE TAKEN
-
--- did not notice one has a skull
--- he has anticipation, something harder is coming
-
--- decrease range mul of infernal skeletons
--- shop hint DOES NOT WORK
-
--- billion radio bug
--- control enemies, somehow tell people they can do that when escaped!!!!
-
--- seeks them out after dying one round
--- skull dropping skeleton death feels weak
--- what do skulls do? ( they let you buy that heavy assault rifle )
-
--- big infernal skeleton finds the most open space nearby, wanders there?
--- mutations funny descriptions hold you back
-
--- signal flaregun hint is too weak for new players
--- juggernaut footsteps are not intuitive
-
--- PRESS E to attach to the rope hint
--- hunt's tally is way lower??? i did way better than before!!
-
--- WAY TOO MUCH SCORE for escaping tutorial mode with 10+ skulls
--- lead to ignoring the ATM
--- hint to tell players the shop has expanded after first RTM
--- RTM vote should be longer when it's an easy vote, have longer round grace
--- BAD UX, rtm'd to boring mode, not having fun against enemies, want to rtm out
--- typed number in chat to cast rtm vote
-
-
--- joke modes ( paparazzi ) should not come after tutorial mode
 -- press E to collect skull cache hint
 
 -- SKULL THRONE ITEM
 
 -- flaregun doesnt hit stuff right next to the player
--- gm_born VERY GOOD TUTORIAL MAP
 
 -- be more confident with infernalskele spawnpoints, make it easier to find where they spawn from
--- GMAN mode
+-- GMAN mode (gman has huge aura for people)
 
 -- prestige guns, that cost a lot
 -- make big head bargain drop bigger skulls
@@ -674,12 +489,10 @@ goes in a glee rebinding menu?
 -- the harder a mode is, the more it costs to vote for it
 
 -- assumed the markups were shared
--- TOO MUCH MONEY, INFLATION!
 
 -- headhunter MUTATION, double skull chance when headshot kill on enemies
--- too many effects playing when multiple grigori
+-- too many effects playing when multiple grigori, breaks limit and drops effect
 
--- YOU ARE A GHOST, move the player cinematically while during the dead tutorial
 -- had to explain how to make money from beartrap
 -- stop placing ghost item when you open shop
 
@@ -692,16 +505,12 @@ goes in a glee rebinding menu?
 -- pixel hunting with placing is BAD
 -- "got your skull!"
 
--- difficulty spike with tutorial boss
--- add boss hp bar for .boss enemies, to telegraph their power level better
--- healthbar shows up on first sighting of player
-
 -- full armor, why can't i pick these up?
+-- hint to tell players the shop has expanded after first RTM 
 -- WE LEFT TUTORIAL, SHOP HAS EXPANDED hint
--- crouching as a gnome makes me shorter??
 
 -- hold left click to only place profitable stuff
--- make barrel profit come from exploding something
+-- make barrel profit come from exploding something !!
 -- "purchase sacrifices" hint overlapping the control a hunter hints while escaped
 
 -- the experience puts you into a defensive mindset
@@ -714,10 +523,9 @@ goes in a glee rebinding menu?
 
 -- ty, first impression on being dead
     felt like an overlord experience, where they were the king of zombies, and trying to kill all the players ( good )
-    explained by others that wasn't the intended experience
+    explained by others that wasn't the intended experience ( my fault )
 -- adding and subtracting currencies felt VERY weak, confusing, ( it is confusing, and not standardized )
 
--- add grace after placing stuff
 -- only figured out halfway thru that earned money for being mischevious
 -- aswell only figured out that placement location mattered halfway thru
 
@@ -734,11 +542,7 @@ goes in a glee rebinding menu?
 -- hint when not bought things during the start of a round
 -- medkit items on the ground are taken for granted knowledge 
 -- scrolling in the shop hint reactivates itself if player hasn't scrolled 5 minutes into the session
--- hunters have been pushed to their limits happens too soon ( maybe round losing not biting difficulty enough )
 
--- nightmare on glee street change the name
--- bomb gland FUN
--- mecha legs next to juggernaut ( bad )
 
 -- wants ways to get more skulls
 -- "why do i always pick the hardest misery, i just want to mow through enemies in peace!"
@@ -754,38 +558,6 @@ goes in a glee rebinding menu?
 -- dead nameplates are too big
 -- better sounds when terms lose their skin
 
--- current design doesn't work for players who WANT to read
--- text as last resort
--- it's confusing in the moment when you need it to be intuitive
--- Description exists to differentiate things with similar items
--- Pull information out of the description
--- 3d model icons?
--- unfocus eyes to test information hierarchy
--- position is a level of communication
--- some names have periods at the end, some do not
+-- invert bones on players for teleport effect?
 
--- make an ordered list of most important items, to least important items
--- smaller groups?
--- Current categories do not feel separate enough
--- Expanding tiles?
--- Definitely find some way to stop using words as #1 differentiator
--- finding items you need
--- searchbar
--- favourites ( start with some basic ones, like loadout )
--- CONDENSE favourites
-
--- favourites PER misery? ( probably not )
--- last used
--- select tags to find items 
--- missing, decision tree is too locked down
--- "oh god no gun" big experience
--- decision tree while dead
-    -- HOW DO I MAKE MONEY?
-    -- how do i respawn?
-    -- last priority for some players, hijinx
-
--- Two halves design
-    -- top is sortable tags
-
--- dead players ignited by atm rocket
-
+-- 1min delay before forced map vote?

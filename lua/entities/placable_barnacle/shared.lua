@@ -28,6 +28,7 @@ function ENT:SpawnFunction( ply, tr, ClassName )
 
     if not GAMEMODE.IsReallyHuntersGlee then
         ent:Place()
+
     end
 
     return ent
@@ -252,6 +253,7 @@ function ENT:Place()
                 scoreToGive = 100
             end
             barnacle.barnacleOwner:GivePlayerScore( scoreToGive )
+            GAMEMODE:SendPlacableScorePopup( barnacle.barnacleOwner, barnacle, scoreToGive )
             huntersGlee_Announce( { barnacle.barnacleOwner }, 5, 6, "One of your barnacles has grabbed a player!" )
 
         end

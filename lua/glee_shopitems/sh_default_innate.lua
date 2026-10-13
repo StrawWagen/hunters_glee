@@ -46,6 +46,7 @@ if SERVER then
                 if not IsValid( owner ) then return end
                 if not IsValid( attacker ) then -- always. die.
                     attacker = game.GetWorld()
+                    owner.gleeWitness_WorldAttacker = true -- the ensured death is still the witnessed one
 
                 end
 
@@ -213,6 +214,8 @@ if SERVER then
                 -- slow down time! 
                 game.SetTimeScale( 0.1 )
 
+                owner.gleeWitness_Attacker = attacker
+
                 -- even weak bots get to throw strong crowbars for this
                 attacker.gleeWitness_OldThrowingForceMul = attacker.ThrowingForceMul
                 attacker.ThrowingForceMul = ( attacker.ThrowingForceMul or 1000 ) * 1000
@@ -222,19 +225,24 @@ if SERVER then
                     if not IsValid( attacker ) then return end
                     if not IsValid( owner ) then return end
 
+                    attacker.gleeWitness_OldWeaponProficiency = attacker:GetCurrentWeaponProficiency()
+                    attacker:SetCurrentWeaponProficiency( WEAPON_PROFICIENCY_PERFECT )
+
                     attacker.gleeWitness_OldCanWeaponPrimaryAttack = attacker.CanWeaponPrimaryAttack
                     attacker.CanWeaponPrimaryAttack = function() return true end -- FIRE
 
                     local primaryWeapon = attacker:GetActiveLuaWeapon()
                     if IsValid( primaryWeapon ) then
                         primaryWeapon.gleeWitness_OldCanPrimaryAttack = primaryWeapon.CanPrimaryAttack
-                        primaryWeapon.CanPrimaryAttack = function() return true end -- FIRE FIRE FIRE FIRE
+                        primaryWeapon.CanPrimaryAttack = function() return true end -- FIRE FIRE FIRE FIRE!!!!!!!!!!!!!!!
 
                     end
 
                     attacker:WeaponPrimaryAttack()
 
-                    -- thank u 
+                    -- thank u
+                    attacker:SetCurrentWeaponProficiency( attacker.gleeWitness_OldWeaponProficiency )
+
                     attacker.CanWeaponPrimaryAttack = attacker.gleeWitness_OldCanWeaponPrimaryAttack
                     if IsValid( primaryWeapon ) and primaryWeapon.gleeWitness_OldCanPrimaryAttack then
                         primaryWeapon.CanPrimaryAttack = primaryWeapon.gleeWitness_OldCanPrimaryAttack
@@ -302,6 +310,10 @@ if SERVER then
                     hook.Remove( "EntityTakeDamage", self.takeDamageHookName )
                     hook.Remove( "PlayerDeath", self.playerDeathHookName )
                     game.SetTimeScale( 1 )
+
+                    if not IsValid( owner ) then return end
+                    owner.gleeWitness_Attacker = nil
+                    owner.gleeWitness_WorldAttacker = nil
 
                 end )
 
@@ -941,7 +953,7 @@ if SERVER then
 
     GAMEMODE:RegisterStatusEffect( "temporal_dice_roll",
         function( self, owner ) -- setup func
-            self:SetRemoveOnDeath( true )
+            self:SetPlyRemoveOnDeath( true )
             self.countdown = 8
 
             owner:EmitSound( "ambient/levels/labs/teleport_mechanism_windup5.wav", 85, 110, 0.4, CHAN_STATIC )

@@ -27,20 +27,10 @@ ENT.OnlyNetworkToOwner = true
 local beaconVecOffset = Vector( 6.94, -8.67, 25.83 )
 local beaconAngOffset = Angle( 0, -90, 0 )
 
-local beepInterval = 20
-local beepsPerCrate = 10
-
 local deposit = -100
 local placingCost = math.abs( deposit )
 
 ENT.placedItems = 0
-
-sound.Add( {
-    name = "horrific_crate_scream",
-    channel = CHAN_WEAPON,
-    level = 150,
-    sound = "hl1/fvox/beep.wav"
-} )
 
 function ENT:SetupDataTablesExtra()
 end
@@ -154,7 +144,7 @@ if CLIENT then
         if self:GetClass() ~= "screamer_crate" then return end
         if GAMEMODE:HasLearnedLesson( "BeaconSurvived" ) then return end
 
-        return true, "Place the supplies NEAR a survivor, but not too near.\nIf they break it before the first beep,\nthey'll STEAL the deposit...\nSmart enemies can HEAR the beacon."
+        return true, "Place the supplies NEAR a survivor, but not too near.\nIf they break the crate, or its beacon, before the first beep,\nthey'll STEAL the deposit...\nSmart enemies can HEAR the beacon."
 
     end
 
@@ -189,6 +179,68 @@ if CLIENT then
         self:PlacingStyle():Draw( text, self.PlacingFont, screenMiddleW, y, colorRole or "happy" )
 
     end
+
+    local popupLife = 1.5
+    local popupGravity = Vector( 0, 0, -400 )
+    local popups = {}
+
+    local function drawScorePopups()
+        -- they're a ghost's view of what their placings did, a respawned placer is done watching
+        if LocalPlayer():Health() > 0 then
+            table.Empty( popups )
+            hook.Remove( "HUDPaint", "glee_placable_scorepopups" )
+            return
+
+        end
+
+        local now = CurTime()
+
+        for index = #popups, 1, -1 do
+            local popup = popups[index]
+            local age = now - popup.born
+            if age >= popupLife then
+                table.remove( popups, index )
+                continue
+
+            end
+
+            local pos = popup.pos + popup.vel * age + popupGravity * ( 0.5 * age * age )
+            local screenPos = pos:ToScreen()
+            if not screenPos.visible then continue end
+
+            -- fades the shadow along with the text, a faded colour role would leave the shadow solid
+            surface.SetAlphaMultiplier( 1 - age / popupLife )
+            ghost:Draw( popup.text, "placing", screenPos.x, screenPos.y, popup.colorRole )
+            surface.SetAlphaMultiplier( 1 )
+
+        end
+
+        if #popups <= 0 then
+            hook.Remove( "HUDPaint", "glee_placable_scorepopups" )
+
+        end
+    end
+
+    net.Receive( "glee_placable_scorepopup", function()
+        local atEnt = net.ReadEntity()
+        local amount = net.ReadInt( 32 )
+
+        if not IsValid( atEnt ) then return end
+        if LocalPlayer():Health() > 0 then return end
+
+        local text = amount > 0 and "+" .. amount or tostring( amount )
+
+        table.insert( popups, {
+            text = text,
+            colorRole = amount > 0 and "happy" or "alert",
+            pos = atEnt:WorldSpaceCenter(),
+            vel = Vector( math.Rand( -60, 60 ), math.Rand( -60, 60 ), math.Rand( 120, 200 ) ),
+            born = CurTime(),
+        } )
+
+        hook.Add( "HUDPaint", "glee_placable_scorepopups", drawScorePopups )
+
+    end )
 
     function ENT:DoHudStuff()
         local scoreGained = math.Round( self:GetGivenScore() )
@@ -314,85 +366,6 @@ local function getNearestNavFloor( pos )
 
 end
 
--- Pays the placer back once the crate has stood long enough to be worth the deposit.
--- Only ever pays once, refundAndBonus is the flag as well as the amount.
-local function payOutDeposit( crate )
-    local placer = crate.glee_player
-    if not IsValid( placer ) then return end
-    if not placer.GivePlayerScore then return end
-
-    local bonus = crate.refundAndBonus
-    if not bonus or bonus <= 0 then return end
-
-    placer:GivePlayerScore( bonus )
-    huntersGlee_Announce( { placer }, 5, 10, "The beacon survives, you profit " .. bonus - placingCost .. " score." )
-    GAMEMODE:LearnLesson( placer, "BeaconSurvived" ) -- they've done it once, stop explaining the deposit
-    crate.refundAndBonus = nil
-
-end
-
--- Beeps the crate loudly enough to pull hunters across the map, on a loop, until it
--- runs out of beeps or loses its beacon. The first beep comes early, and is when the
--- placer gets paid for it having survived.
-local function PlayRepeatingSound( crate, soundPath )
-    local function beep( pitchMul )
-        local everyone = RecipientFilter()
-        everyone:AddAllPlayers()
-        local scream = CreateSound( crate, soundPath, everyone )
-        scream:Stop()
-        scream:PlayEx( 0.7, math.random( 120, 130 ) * pitchMul )
-
-        local cratePos = crate:GetPos()
-
-        sound.EmitHint( SOUND_COMBAT, cratePos, 20000, 1, crate )
-        crate:EmitSound( soundPath, 120, math.random( 140, 150 ) * pitchMul, 1, CHAN_STATIC )
-        util.ScreenShake( cratePos, 1, 20, 1, 1000 )
-
-        local obj = crate:GetPhysicsObject()
-        if not IsValid( obj ) then return end
-
-        local force = obj:GetMass() * 100 * pitchMul
-        obj:ApplyForceCenter( VectorRand() * force )
-        obj:ApplyTorqueCenter( VectorRand() * force )
-
-    end
-
-    -- two beeps, the second higher, so people can turn their heads, find the supplies easier
-    local function beepTwice()
-        beep( 1 )
-
-        timer.Simple( 0.75, function()
-            if not IsValid( crate ) then return end
-
-            beep( 1.2 )
-
-        end )
-    end
-
-    -- first beep
-    timer.Simple( beepInterval * 0.35, function()
-        if not IsValid( crate ) then return end
-
-        beepTwice()
-        payOutDeposit( crate )
-
-    end )
-
-    local timerName = "glee_cratescream_" .. crate:GetCreationID()
-
-    timer.Create( timerName, beepInterval, beepsPerCrate, function()
-        -- beeping comes from the beacon
-        if not IsValid( crate ) or not IsValid( crate.CratesBeacon ) then
-            timer.Remove( timerName )
-            return
-
-        end
-
-        beepTwice()
-
-    end )
-end
-
 function ENT:HasEnoughToPurchase()
     local ply = self.player
     if not IsValid( ply ) then return end
@@ -494,6 +467,7 @@ end
 
 if SERVER then
     util.AddNetworkString( "glee_placable_detachclientside" )
+    util.AddNetworkString( "glee_placable_scorepopup" )
 
 end
 
@@ -839,7 +813,8 @@ end
 
 local GM = GAMEMODE
 
-function GM:ScreamingCrate( pos )
+-- placer and refundAndBonus are for a ghost's crate, see the beacon's StartTransmitting
+function GM:ScreamingCrate( pos, placer, refundAndBonus )
     local crate = ents.Create( "item_item_crate" )
     if not IsValid( crate ) then return end
 
@@ -850,12 +825,10 @@ function GM:ScreamingCrate( pos )
     crate:SetKeyValue( "ItemClass", "dynamic_super_resupply_fake" ) -- has a good chance to spawn a strong weapon
     crate:SetKeyValue( "ItemCount", 8 )
     crate:Spawn()
-    local beepingFor = ( beepsPerCrate + 1 ) * beepInterval
-    PlayRepeatingSound( crate, "horrific_crate_scream" )
     crate:EmitSound( "npc/turret_floor/deploy.wav", 90, 120 )
 
     crate.CratesBeacon = terminator_Extras.AttachParentedDetail( crate, ents.Create( "glee_crate_beacon" ), beaconVecOffset, beaconAngOffset )
-    crate.CratesBeacon:SetChargedUntil( CurTime() + beepingFor )
+    crate.CratesBeacon:StartTransmitting( placer, refundAndBonus, placingCost )
 
     crate.terminatorHunterInnateReaction = function()
         return MEMORY_BREAKABLE
@@ -865,58 +838,30 @@ function GM:ScreamingCrate( pos )
 
 end
 
-function ENT:Place()
+-- Floats amount up off atEnt, on ply's screen only, while they're dead. For score a placing
+-- keeps moving after the placer's let go of it. Positive is a gain
+function GM:SendPlacableScorePopup( ply, atEnt, amount )
+    net.Start( "glee_placable_scorepopup" )
+        net.WriteEntity( atEnt )
+        net.WriteInt( amount, 32 )
+    net.Send( ply )
 
-    local crate = GAMEMODE:ScreamingCrate( self:OffsettedPlacingPos() )
+end
+
+function ENT:Place()
+    -- above 0, the deposit's paid now, and the beacon pays it back with the rest at its first beep
+    local refundAndBonus = math.Round( self:GetGivenScore() )
+
+    local crate = GAMEMODE:ScreamingCrate( self:OffsettedPlacingPos(), self.player, refundAndBonus )
     crate:EmitSound( "items/ammocrate_open.wav", 75 )
-    crate.glee_player = self.player
 
     terminator_Extras.DoPFXFromEnt( "glee_ghostly_ectoplasm", crate )
 
-    crate.refundAndBonus = math.Round( self:GetGivenScore() )
-
-    local initialCost = -placingCost
-
-    if crate.refundAndBonus > 0 then
-        local hookName = "huntersglee_screamigcrate_recorddamage_" .. crate:GetCreationID()
-        hook.Add( "EntityTakeDamage", hookName, function( target, dmg )
-            if not IsValid( crate ) then hook.Remove( "EntityTakeDamage", hookName ) return end
-            if crate ~= target then return end
-
-            local attacker = dmg:GetAttacker()
-
-            if not attacker:IsPlayer() then return end
-            crate.lastAttacker = attacker
-
-        end )
-        crate:CallOnRemove( "glee_identifyifscore", function( removingCrate )
-            if removingCrate.refundAndBonus and IsValid( removingCrate.glee_player ) then
-                if IsValid( removingCrate.lastAttacker ) and removingCrate.lastAttacker:IsPlayer() then
-                    huntersGlee_Announce( { removingCrate.lastAttacker }, 5, 11, "You've recieved " .. placingCost .. " for beating the beacon." )
-                    huntersGlee_Announce( { removingCrate.glee_player }, 5, 10, removingCrate.lastAttacker:Nick() .. " beat the beacon, they took the deposit." )
-
-                    if removingCrate.lastAttacker.GivePlayerScore then
-                        removingCrate.lastAttacker:GivePlayerScore( placingCost )
-
-                    end
-                else
-                    huntersGlee_Announce( { removingCrate.glee_player }, 5, 10, "Your crate was broken early, you are left poorer than before." )
-
-                end
-            end
-        end, crate )
-    end
-
     if self.player and self.player.GivePlayerScore then
-        if crate.refundAndBonus > 0 then
-            self.player:GivePlayerScore( initialCost )
-            GAMEMODE:sendPurchaseConfirm( self.player, initialCost )
+        local charged = refundAndBonus > 0 and deposit or refundAndBonus
+        self.player:GivePlayerScore( charged )
+        GAMEMODE:sendPurchaseConfirm( self.player, charged )
 
-        else
-            self.player:GivePlayerScore( crate.refundAndBonus )
-            GAMEMODE:sendPurchaseConfirm( self.player, crate.refundAndBonus )
-
-        end
     end
 
     GAMEMODE:AddMischievousness( self.player, 0.5, "placed beaconed supplies" )
@@ -931,4 +876,8 @@ hook.Add( "PropBreak", "glee_breakcrate_lesson", function( breaker, broken )
     if broken:GetClass() ~= "item_item_crate" then return end
     GAMEMODE:LearnLesson( breaker, "BrokeSupplies" )
 
+    if IsValid( broken.CratesBeacon ) then
+        broken.CratesBeacon:CrateBroken( breaker )
+
+    end
 end )

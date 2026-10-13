@@ -153,11 +153,13 @@ hook.Add( "EntityTakeDamage", "glee_rewarding_manhacks_reward", function ( targe
 
         else
             owner:GivePlayerScore( 75 )
+            GAMEMODE:SendPlacableScorePopup( owner, target, 75 )
             huntersGlee_Announce( { owner }, 5, 8, "The manhacks have damaged a player! You gain 75 score!" )
 
         end
     elseif target:IsNextBot() or target:IsNPC() then
         owner:GivePlayerScore( 25 )
+        GAMEMODE:SendPlacableScorePopup( owner, target, 25 )
         huntersGlee_Announce( { owner }, 5, 8, "The manhacks have damaged " .. GAMEMODE:GetNameOfBot( target ) .. ". You only gain 25 score." )
 
     end

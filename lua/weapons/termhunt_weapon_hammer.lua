@@ -239,8 +239,8 @@ function SWEP:ValidEntityToNail( ent, physBone )
     if not IsValid( ent ) and not ent:IsWorld() then return end
     if ent:IsPlayer() then return end
     if ent:IsNextBot() then return end
-    if ent.isDoorDamageListener then return end
     if ent:GetClass() == "gmod_glee_nail" then return end
+    if IsValid( ent:GetParent() ) then return end
 
     if SERVER then
         local validBone = util.IsValidPhysicsObject( ent, physBone )
@@ -274,7 +274,12 @@ function SWEP:CanNailPos( owner, trace, hitting )
     local whatWeHit = trace.Entity
 
     -- Bail if invalid
-    if whatWeHit:IsWorld() or self:GetNailCount() <= 0 or trace.HitPos:DistToSqr( owner:GetShootPos() ) > self.Primary.Distance^2 or not self:ValidEntityToNail( whatWeHit, trace.PhysicsBone ) then
+    local badHit = whatWeHit:IsWorld()
+    badHit = badHit or self:GetNailCount() <= 0
+    badHit = badHit or trace.HitPos:DistToSqr( owner:GetShootPos() ) > self.Primary.Distance^2
+    badHit = badHit or not self:ValidEntityToNail( whatWeHit, trace.PhysicsBone )
+
+    if badHit then
         if hitting and not IsValid( whatWeHit ) and not ( whatWeHit and whatWeHit:IsWorld() ) then
             self:Miss()
         elseif hitting then

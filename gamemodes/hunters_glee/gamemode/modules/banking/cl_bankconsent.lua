@@ -1,40 +1,20 @@
 --[[
-    The bank's paperwork: the terms a bank purchase makes you agree to first.
-
-    A shop item opts in through clBeforePurchase, naming its document here:
-        clBeforePurchase = function( buy, check ) GAMEMODE:OpenBankConsentForm( "skull_gains", buy, check ) end,
-
-    Figures are read live as the form opens.
+    The bank's paperwork, registered as documents (see cl_documents.lua). Every one ends
+    with the bank's general provisions.
 ]]
 
 local GAMEMODE = GAMEMODE or GM
-
-local FRAME_MAX_H_1080P = 775 -- the settings menu's
 
 local function realTimeDays( seconds )
     return math.Round( seconds / 86400, 2 )
 
 end
 
--- the map's times the misery's, as the server multiplies them. The server pushes both on
--- joining, on a new misery, and after every round, so nil is rare: a misery name the push
--- didn't match
-local function currentEscapeMultiplier()
-    local mapName = game.GetMap()
-    local spawnsetName = GetGlobalString( "GLEE_SpawnSetName", "" )
+local function shownEscapeMultiplier()
+    local escapeMul = GAMEMODE:GetEscapeMultiplier()
+    if not escapeMul then return end
 
-    -- 0 is the client cache's "not here yet", real multipliers never go below 0.15
-    local mapMul = GAMEMODE:GetMapsEscapeMultiplier( mapName )
-    if mapMul <= 0 then return end
-
-    local spawnsetMul = 1 -- the server's answer for no misery
-    if spawnsetName ~= "" then
-        spawnsetMul = GAMEMODE:GetSpawnsetsEscapeMultiplier( spawnsetName )
-        if spawnsetMul <= 0 then return end
-
-    end
-
-    return math.Round( mapMul * spawnsetMul, 2 )
+    return math.Round( escapeMul, 2 )
 
 end
 
@@ -122,11 +102,11 @@ end
 documents.skull_gains = function( _ply )
     local standardRate = GAMEMODE:GetSkullReward()
     local enhancedRate = GAMEMODE:GetSkullRewardGains()
-    local everyoneBonus = GAMEMODE:GetSkullRewardGainsEveryoneEscaped()
+    local everyoneBonus = GAMEMODE:GetSkullRewardGainsBoon()
     local escapeReward = GAMEMODE:GetEscapeReward()
-    local escapeRewardEveryone = GAMEMODE:GetEscapeRewardEveryoneEscaped()
+    local escapeRewardEveryone = GAMEMODE:GetEscapeRewardBoon()
 
-    local escapeMul = currentEscapeMultiplier()
+    local escapeMul = shownEscapeMultiplier()
     local exampleMul = escapeMul or 1
     local exampleSkulls = 10
     local exampleGains = math.Round( exampleSkulls * ( enhancedRate + everyoneBonus ) * exampleMul, 2 )
@@ -187,9 +167,9 @@ documents.skull_loophole = function( ply )
 
     local relayMul = GAMEMODE:GetSkullRelayMultiplier()
     local enhancedRate = GAMEMODE:GetSkullRewardGains()
-    local everyoneBonus = GAMEMODE:GetSkullRewardGainsEveryoneEscaped()
+    local everyoneBonus = GAMEMODE:GetSkullRewardGainsBoon()
 
-    local escapeMul = currentEscapeMultiplier()
+    local escapeMul = shownEscapeMultiplier()
     local ratesClause
     if escapeMul then
         local relayedRate = math.Round( relayMul * enhancedRate * escapeMul, 2 )
@@ -237,6 +217,80 @@ documents.skull_loophole = function( ply )
 
 end
 
+documents.gleeful_envoy = function( _ply )
+    local termDays = realTimeDays( GAMEMODE.bankItems.gleeful_envoy.lifetime )
+    local baseMul = GAMEMODE:GetEnvoyBaseMultiplier()
+    local addedMul = GAMEMODE:GetEnvoyAddedMultiplier()
+    local lowestBoon = GAMEMODE:GetEnvoysBoon( 0, 1 )
+
+    local _, mapMul, spawnsetMul = GAMEMODE:GetEscapeMultiplier()
+    local figuresClause
+    if mapMul then
+        figuresClause = "At the time of reading, this Locale's multiplier stands at " .. math.Round( mapMul, 2 ) .. "x, and this Misery's at " .. math.Round( spawnsetMul, 2 ) .. "x. The Bank illustrates with those."
+
+    else
+        figuresClause = "At the time of reading, the Bank declines to disclose this Locale's or this Misery's multiplier, and illustrates with 1x for each. The true figures may be found on the scoreboard."
+        mapMul = 1
+        spawnsetMul = 1
+
+    end
+
+    local exampleMul = math.Round( mapMul * spawnsetMul, 2 )
+    local exampleHolders = 3
+    local exampleStart = math.max( exampleMul, baseMul )
+    local exampleBoon = math.Round( GAMEMODE:GetEnvoysBoon( exampleMul, exampleHolders ), 2 )
+
+    return "GLEEFUL ENVOY:\nADDENDUM TO THE ACCOUNT AGREEMENT", {
+        {
+            heading = "APPOINTMENT",
+            body = "By this Addendum, the Bank appoints the Account Holder as its Envoy (the \"Envoy\"). Every so often, a new soul wanders into the Hunt. Penniless, guiltless, and of no use to anyone, yet. The Bank would like them to survive long enough to become of use. Every one that escapes will be credited to the Envoy, who will be paid above the ordinary Escaped Soul, at a rate no lower than " .. lowestBoon .. "x, on their escape, and on their skulls should they hold Skull Gains. The Envoy need not hold their hand. The Envoy need not even meet them. The figures follow.",
+        },
+        {
+            heading = "DEFINITIONS",
+            body = table.concat( {
+                "(a) A \"Prospective Account Holder\" is a soul the Hunt has judged to be new to it, by means the Bank declines to disclose, and who is not yet of consequence to the Bank. No Envoy is a Prospective Account Holder, the Account Holder included.",
+                "(b) The \"Locale\" is the place the Hunt is held. The \"Escape Multiplier\" is the Locale's multiplier, multiplied by the Misery's multiplier, as shown on the scoreboard. Every Escaped Soul's escape reward is paid at it.",
+                "(c) The \"Envoy's Boon\" is the multiplier the Envoy is paid at instead. It is kin to the Boon, well known to all souls, but defined in the Skull Gains Addendum: both are earned by the escape of others. Where both are granted, a \"DOUBLE BOON\", the Envoy's Boon multiplies a normal Boon as well.",
+            }, "\n" ),
+        },
+        {
+            heading = "THE ENVOY'S BOON",
+            body = table.concat( {
+                "(a) Where no Prospective Account Holder escapes the Hunt, there is no Envoy's Boon, and the Envoy is paid at the Escape Multiplier like anyone else.",
+                "(b) Where Prospective Account Holders escape, the Bank takes the Escape Multiplier, raises it to " .. baseMul .. "x should it be any lower, and adds " .. addedMul .. "x for every Prospective Account Holder escaped.",
+            }, "\n" ),
+        },
+        {
+            heading = "ILLUSTRATION",
+            body = table.concat( {
+                "By way of illustration only: " .. figuresClause,
+                "The Escape Multiplier: Locale " .. math.Round( mapMul, 2 ) .. "x, multiplied by Misery " .. math.Round( spawnsetMul, 2 ) .. "x = " .. exampleMul .. "x.",
+                "Raised to no lower than " .. baseMul .. "x: " .. exampleStart .. "x.",
+                "Should " .. exampleHolders .. " Prospective Account Holders escape: " .. exampleStart .. "x + " .. exampleHolders .. " at " .. addedMul .. "x each = " .. exampleBoon .. "x.",
+                "The Envoy is paid at " .. exampleBoon .. "x, where every other Escaped Soul is paid at " .. exampleMul .. "x.",
+            }, "\n" ),
+        },
+        {
+            heading = "CONDITIONS",
+            body = table.concat( {
+                "(a) A Prospective Account Holder's escape is credited to the Envoy. The credit is paid out, as the Envoy's Boon, on the Envoy's own escape, and is forfeit otherwise.",
+                "(b) The two escapes are separate transactions. The Bank does not care whether they share a vehicle, a moment, or an acquaintance, only that both occur in the same Hunt.",
+                "(c) The Envoy's Boon replaces the Escape Multiplier on the Envoy's escape reward, and on any skulls, cashed out or relayed. Nothing else. Where this Addendum conflicts with the Skull Gains Addendum, or any other, this one prevails.",
+                "(d) A Prospective Account Holder is credited every time they escape, Hunt after Hunt, for as long as the Hunt keeps its Locale. Once the Hunt moves to a new Locale, they are Prospective no longer, and are credited no further.",
+                "(e) A Prospective Account Holder who comes into considerable wealth, or considerable guilt, is Prospective no longer, whatever they claim.",
+            }, "\n" ),
+        },
+        {
+            heading = "TERM",
+            body = table.concat( {
+                "(a) The appointment lasts " .. termDays .. " Real-Time Day(s) from purchase, whether or not any Prospective Account Holders present themselves.",
+                "(b) The Bank appoints Envoys to dedicated servers only. Private Hunts have nobody worth investing in.",
+            }, "\n" ),
+        },
+    }
+
+end
+
 -- under every document. Fresh each call, the opener numbers headings in place
 local function generalProvisions()
     return {
@@ -273,66 +327,11 @@ local function generalProvisions()
 end
 
 
--- The form --------------------------------------------------------------------
+for name, document in pairs( documents ) do
+    GAMEMODE:RegisterDocument( name, function( ply )
+        local title, sections = document( ply )
+        table.Add( sections, generalProvisions() )
+        return title, sections
 
-local currentFrame
-
--- buy is called on agreeing, nothing is on declining. check is clBeforePurchase's, the
--- form won't be signed while it says no
-function GAMEMODE:OpenBankConsentForm( documentName, buy, check )
-    local document = documents[documentName]
-    if not document then
-        ErrorNoHaltWithStack( "glee bank consent: no document named " .. tostring( documentName ) .. "\n" )
-        return
-
-    end
-
-    local ply = LocalPlayer()
-
-    local title, sections = document( ply )
-    table.Add( sections, generalProvisions() )
-
-    for index, section in ipairs( sections ) do
-        section.heading = "ARTICLE " .. index .. ". " .. section.heading
-
-    end
-
-    if IsValid( currentFrame ) then currentFrame:Remove() end
-
-    local frame = vgui.Create( "glee_frame" )
-    frame:SetPadContents( false ) -- the form brings its own
-
-    local form = vgui.Create( "glee_consentform", frame )
-    form:SetTitle( title )
-    form:SetSigner( ply:Nick() )
-    form:SetCheck( check )
-    form:SetSections( sections )
-    form:Dock( FILL )
-
-    -- bought on signing, so closing the frame mid-stamp can't undo it
-    function form:OnAgree()
-        buy()
-
-    end
-
-    function form:OnStamped()
-        frame:AlphaTo( 0, 0.35, 0, function()
-            if IsValid( frame ) then frame:Close() end
-
-        end )
-    end
-
-    function form:OnDecline()
-        frame:Close()
-
-    end
-
-    frame:SizeToContents( math.min( frame:Style():Scaled( FRAME_MAX_H_1080P ), ScrH() * 0.9 ) )
-    frame:Center()
-
-    terminator_Extras.easyClosePanel( frame )
-    ply:EmitSound( "physics/wood/wood_crate_impact_soft3.wav", 50, 200, 0.45 )
-
-    currentFrame = frame
-
+    end )
 end

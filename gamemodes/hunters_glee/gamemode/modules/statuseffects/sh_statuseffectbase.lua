@@ -17,8 +17,8 @@ function statusEffect:GetPrintName()
 end
 
 
-function statusEffect:SetOwner( ply )
-    self._owner = ply
+function statusEffect:SetOwner( ent )
+    self._owner = ent
 
 end
 function statusEffect:GetOwner()
@@ -28,8 +28,9 @@ end
 
 
 if SERVER then
-    function statusEffect:SetRemoveOnDeath( shouldRemove )
-        self._removeOnDeath = shouldRemove
+    -- players respawn, so their effects persist through death unless this is set. Npcs and nextbots always lose theirs
+    function statusEffect:SetPlyRemoveOnDeath( shouldRemove )
+        self._plyRemoveOnDeath = shouldRemove
 
     end
 end
@@ -46,13 +47,13 @@ end
 
 --[[---------------------------------------------------------
     statusEffect:Apply
-    @desc Applies a status effect object to some player.
-    @param ply: The player to apply the effect to.
+    @desc Applies a status effect object to some entity.
+    @param ent: The entity to apply the effect to.
     @return: None
 --]]---------------------------------------------------------
-function statusEffect:Apply( ply )
+function statusEffect:Apply( ent )
     if self._setup then
-        ProtectedCall( self._setup, self, ply )
+        ProtectedCall( self._setup, self, ent )
 
     end
 end
@@ -60,16 +61,16 @@ end
 --[[---------------------------------------------------------
     statusEffect:InternalTeardown
     @desc Prepares a status effect object for removal, shutting down all hooks and timers.
-    @param ply: The player to remove the effect from.
+    @param ent: The entity to remove the effect from.
     @return: None
 --]]---------------------------------------------------------
-function statusEffect:InternalTeardown( ply )
+function statusEffect:InternalTeardown( ent )
     if self._teardown then
-        ProtectedCall( self._teardown, self, ply )
+        ProtectedCall( self._teardown, self, ent )
 
     end
     for _, func in ipairs( self._teardownTasks ) do
-        ProtectedCall( func, ply )
+        ProtectedCall( func, ent )
 
     end
 end

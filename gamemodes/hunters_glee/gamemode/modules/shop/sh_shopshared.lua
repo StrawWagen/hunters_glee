@@ -101,19 +101,33 @@ if CLIENT then
 
     end
 
-    -- Buy with RunConsoleCommand( "termhunt_purchase", id ). Call this only when you need to use clBeforePurchase
-    function GM:ClientPurchase( identifier )
+    -- the buy and check handed to clBeforePurchase and clDocument's form
+    local function purchaseCallbacks( identifier )
         local function buy()
             RunConsoleCommand( "termhunt_purchase_raw", identifier )
 
         end
 
         local function check()
-            return self:canPurchase( LocalPlayer(), identifier )
+            return GAMEMODE:canPurchase( LocalPlayer(), identifier )
 
         end
 
+        return buy, check
+
+    end
+
+    -- Buy with RunConsoleCommand( "termhunt_purchase", id ). Call this only when you need to use clBeforePurchase
+    function GM:ClientPurchase( identifier )
+        local buy, check = purchaseCallbacks( identifier )
+
         local itemData = self:GetShopItemData( identifier )
+        if itemData and itemData.clDocument then
+            self:OpenDocument( itemData.clDocument, buy, check )
+            return
+
+        end
+
         if itemData and itemData.clBeforePurchase then
             itemData.clBeforePurchase( buy, check )
             return
@@ -121,6 +135,16 @@ if CLIENT then
         end
 
         buy()
+
+    end
+
+    -- the shop calls this when a click on the item couldn't buy it. Its document can still
+    -- be read, and signed should the purchase become possible while it's open
+    function GM:ClientPurchaseRefused( identifier )
+        local itemData = self:GetShopItemData( identifier )
+        if not itemData or not itemData.clDocument then return end
+
+        self:OpenDocument( itemData.clDocument, purchaseCallbacks( identifier ) )
 
     end
 

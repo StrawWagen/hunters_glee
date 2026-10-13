@@ -122,7 +122,7 @@ ENT.IdleActivity = IdleActivity
 ENT.IdleActivityTranslations = {
     [ACT_MP_STAND_IDLE]                 = IdleActivity,
     [ACT_MP_WALK]                       = ACT_HL2MP_WALK_ZOMBIE_06,
-    [ACT_MP_RUN]                        = ACT_HL2MP_RUN_PANICKED,
+    [ACT_MP_RUN]                        = ACT_HL2MP_RUN_PANICKED, -- handled by SkeleRunAct
     [ACT_MP_CROUCH_IDLE]                = ACT_HL2MP_IDLE_CROUCH,
     [ACT_MP_CROUCHWALK]                 = ACT_HL2MP_WALK_CROUCH,
     [ACT_MP_ATTACK_STAND_PRIMARYFIRE]   = IdleActivity + 5,
@@ -139,7 +139,7 @@ ENT.LooksForwardWhenRunning = true
 -- the parent randomises these every spawn, infernals want them fixed. subclasses
 -- change SkeleRunSpeed instead of reimplementing the whole override
 ENT.SkeleRunSpeed = 500
-ENT.SkeleRunAct = ACT_HL2MP_RUN_ZOMBIE_FAST
+ENT.SkeleAngryRunAct = ACT_HL2MP_RUN_ZOMBIE_FAST
 
 function ENT:SetupSkeletonMoveSpeeds()
     self.WalkSpeed = 100
@@ -205,7 +205,7 @@ ENT.MyClassTask = {
 
         end
 
-        return self.SkeleRunAct
+        return self.SkeleAngryRunAct
 
     end,
 }

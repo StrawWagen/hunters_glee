@@ -1228,6 +1228,7 @@ function termHuntOpenTheShop()
 
                     else
                         self.triedToPurchase = true
+                        GAMEMODE:ClientPurchaseRefused( self.itemIdentifier )
 
                     end
                 end

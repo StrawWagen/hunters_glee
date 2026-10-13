@@ -1,7 +1,7 @@
 
 local developerVar = GetConVar( "developer" )
 
-local plyMeta = FindMetaTable( "Player" )
+local entMeta = FindMetaTable( "Entity" )
 local nw2NamePrefix = "glee_hasstatuseffect_"
 
 function GM:RegisterStatusEffect( name, setup, teardown, data )
@@ -14,31 +14,31 @@ function GM:RegisterStatusEffect( name, setup, teardown, data )
     }
 end
 
-function plyMeta:HasStatusEffect( name )
+function entMeta:HasStatusEffect( name )
     return self:GetNW2Bool( nw2NamePrefix .. name, false )
 
 end
 
-function plyMeta:GetStatusEffect( name )
-    local plysEffects = self.glee_StatusEffects
-    if not plysEffects then return nil end
+function entMeta:GetStatusEffect( name )
+    local entsEffects = self.glee_StatusEffects
+    if not entsEffects then return nil end
 
-    return plysEffects[name]
+    return entsEffects[name]
 
 end
 
-function plyMeta:StatusEffectApplyCL( name ) -- no way to give status effects on client, GIVE THEM ON SERVER!
+function entMeta:StatusEffectApplyCL( name ) -- no way to give status effects on client, GIVE THEM ON SERVER!
     local registeredEffect = GAMEMODE.RegisteredStatusEffects and GAMEMODE.RegisteredStatusEffects[name] or nil
     if not registeredEffect then return end -- this effect only has server logic!
 
-    local plysEffects = self.glee_StatusEffects
-    if not plysEffects then
-        plysEffects = {}
-        self.glee_StatusEffects = plysEffects
+    local entsEffects = self.glee_StatusEffects
+    if not entsEffects then
+        entsEffects = {}
+        self.glee_StatusEffects = entsEffects
 
     end
 
-    if plysEffects[name] then return end
+    if entsEffects[name] then return end
 
     local effect = include( "hunters_glee/gamemode/modules/statuseffects/sh_statuseffectbase.lua" )
 
@@ -50,7 +50,7 @@ function plyMeta:StatusEffectApplyCL( name ) -- no way to give status effects on
 
     effect:Apply( self )
 
-    plysEffects[name] = effect
+    entsEffects[name] = effect
 
     self:CallOnRemove( "glee_statuseffectcleanup_" .. name, function()
         if developerVar:GetBool() then
@@ -63,16 +63,16 @@ function plyMeta:StatusEffectApplyCL( name ) -- no way to give status effects on
     end )
 end
 
-function plyMeta:StatusEffectRemoveCL( name )
-    local plysEffects = self.glee_StatusEffects
-    if not plysEffects then return end
+function entMeta:StatusEffectRemoveCL( name )
+    local entsEffects = self.glee_StatusEffects
+    if not entsEffects then return end
 
-    local effect = plysEffects[name]
+    local effect = entsEffects[name]
     if not effect then return end
 
     effect:InternalTeardown( self )
 
-    plysEffects[name] = nil
+    entsEffects[name] = nil
     self:RemoveCallOnRemove( "glee_statuseffectcleanup_" .. name )
 
 end

@@ -94,13 +94,17 @@ hook.Add( "glee_presser_redirecttarget", "glee_parentedDetailUseRedirect", funct
 
 end )
 
-function terminator_Extras.ParentedDetailFallOff( parent, detail )
+-- lifetime is how long the fallen detail lasts, 35 seconds if nil, false keeps it
+function terminator_Extras.ParentedDetailFallOff( parent, detail, lifetime )
     if not IsValid( parent ) or not IsValid( detail ) then return end
     local thePos = detail:GetPos()
     detail:SetParent()
     parent:RemoveCallOnRemove( "glee_detailFallOff_" .. detail:GetCreationID() )
     detail:SetPos( thePos )
-    SafeRemoveEntityDelayed( detail, 35 )
+    if lifetime ~= false then
+        SafeRemoveEntityDelayed( detail, lifetime or 35 )
+
+    end
     terminator_Extras.SmartSleepEntity( detail, 5 )
 
     detail.glee_isGleeDetail = nil

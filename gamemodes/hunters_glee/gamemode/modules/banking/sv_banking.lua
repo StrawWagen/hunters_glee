@@ -330,6 +330,12 @@ function meta:BankFunds()
 
 end
 
+-- bank funds without .checkBankAccount check, very lazy
+function meta:BankFundsFast()
+    return self:GetNW2Int( "Glee_BankFunds", 0 )
+
+end
+
 -- Doesn't touch the player's score, take it from them once this succeeds.
 -- Returns the processing fee cut from toDeposit, or false and a reason.
 function meta:BankDeposit( toDeposit )

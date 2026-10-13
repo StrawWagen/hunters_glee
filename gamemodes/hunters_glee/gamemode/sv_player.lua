@@ -344,7 +344,7 @@ function GM:calculateBPM( cur, players )
 
                     end
 
-                    if ply.glee_DamageResistant then -- more decrease if immortal is fighting it
+                    if ply:HasStatusEffect( "immortal" ) then -- more decrease if immortal is fighting it
                         divisor = divisor / 2
 
                     end
@@ -769,6 +769,17 @@ concommand.Add( "glee_test_escape", function( ply )
 
 end, nil, "Test the escape state", FCVAR_CHEAT )
 
+concommand.Add( "glee_test_escape_all", function( ply )
+    if not IsValid( ply ) then return end
+    if not ply:IsAdmin() then return end
+
+    for _, toEscape in player.Iterator() do
+        if toEscape:HasEscaped() then continue end
+        GAMEMODE:escapifyPlayer( toEscape )
+
+    end
+end, nil, "Escape every player, dead or alive", FCVAR_CHEAT )
+
 function GM:FixAnglesOf( ply )
     timer.Simple( 0, function()
         if not IsValid( ply ) then return end
@@ -835,8 +846,10 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
 
     -- wait a second after placing, before snapping to spec targs
     local actionTime = ply.glee_ghostEntActionTime or 0
-    local wasGhostEnting = actionTime + 0.25 > CurTime()
+    local wasGhostEnting = actionTime + 0.4 > CurTime()
     if wasGhostEnting then return end
+
+    local wasJustRecentlyGhostEnting = actionTime + 1 > CurTime()
 
     -- if driving a bot, don't snap
     local driving = ply:GetDrivingEntity()
@@ -953,7 +966,12 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
                     local entsPos = ent:WorldSpaceCenter()
                     local myDistToLine = util.DistanceToLine( startPos, endPos, entsPos )
                     local score = myDistToLine
-                    if myDistToLine > 250 then -- if not aiming directly at this, punish for distance
+
+                    -- if not aiming directly at this, punish for distance
+                    if myDistToLine > 250 then
+                        -- we just placed something, only allow snapping if looking straight at smth
+                        if wasJustRecentlyGhostEnting then continue end
+
                         local myDist = startPos:Distance( entsPos )
                         score = score + myDist / 250
 

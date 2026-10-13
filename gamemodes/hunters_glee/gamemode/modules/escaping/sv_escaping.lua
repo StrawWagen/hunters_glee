@@ -203,7 +203,7 @@ local white = Color( 255, 255, 255 )
 
 GAMEMODE:RegisterStatusEffect( "boss_defeat_resistance",
     function( self, _owner )
-        self:SetRemoveOnDeath( true )
+        self:SetPlyRemoveOnDeath( true )
         self:HookOnce( "EntityTakeDamage", function( target, dmg )
             if not target.HasStatusEffect then return end
             if not target:HasStatusEffect( "boss_defeat_resistance" ) then return end
@@ -253,6 +253,30 @@ hook.Add( "glee_onboss_crappydefeated", "glee_escapeviabossdefeat", function( bo
 
 end )
 
+-- count escaped new players
+hook.Add( "huntersglee_round_postroundend", "glee_escaping_envoy_newplycount", function()
+    local escapedCount = 0
+
+    for _, ply in player.Iterator() do
+        if ply:IsBot() then -- easy testing
+            escapedCount = escapedCount + 1
+
+        end
+        if not ply:HasEscaped() then continue end
+
+        -- IsFirstTimePlayer sanity checks will limit most convar resetting exploits
+        if not GAMEMODE:IsFirstTimePlayer( ply ) then continue end
+
+        if ply:HasBankItem( "gleeful_envoy" ) then continue end
+
+        escapedCount = escapedCount + 1
+
+    end
+
+    GAMEMODE.roundExtraData.escapedNewPlayersCount = escapedCount
+
+end )
+
 
 -- begin escaping rewards
 
@@ -264,10 +288,19 @@ local skullCashoutDelay = 8
 function GM:GiveEscapeRewardTo( ply )
     local setName = GAMEMODE:GetSpawnSet()
 
-    local mapsEscapeMultiplier, mapsEscCount, _mapsRemCount = GAMEMODE:GetMapsEscapeMultiplier( game.GetMap() )
-    local spawnsetsEscapeMultiplier, spawnsetsEscCount, _spawnsetsRemCount = GAMEMODE:GetSpawnsetsEscapeMultiplier( setName )
+    local _mapsMul, mapsEscCount = GAMEMODE:GetMapsEscapeMultiplier( game.GetMap() )
+    local _spawnsetsMul, spawnsetsEscCount = GAMEMODE:GetSpawnsetsEscapeMultiplier( setName )
 
-    local theMultiplier = mapsEscapeMultiplier * spawnsetsEscapeMultiplier
+    local mapModesMultiplier = self:GetEscapeMultiplier()
+    local theMultiplier = mapModesMultiplier
+
+    local isEnvoy = ply:HasBankItem( "gleeful_envoy" )
+    local envoyHelpedCount
+    if isEnvoy then
+        envoyHelpedCount = GAMEMODE.roundExtraData.escapedNewPlayersCount
+        theMultiplier = self:GetEnvoysBoon( theMultiplier, envoyHelpedCount )
+
+    end
 
     local mapHasNeverEscaped = mapsEscCount <= 1
     local spawnsetHasNeverEscaped = spawnsetsEscCount <= 1
@@ -277,7 +310,7 @@ function GM:GiveEscapeRewardTo( ply )
 
     local baseReward = self:GetEscapeReward()
     if everyoneEscaped then
-        baseReward = baseReward + self:GetEscapeRewardEveryoneEscaped()
+        baseReward = baseReward + self:GetEscapeRewardBoon()
 
     end
     baseReward = baseReward * theMultiplier
@@ -295,19 +328,19 @@ function GM:GiveEscapeRewardTo( ply )
         end
 
         local difficulty
-        if theMultiplier > 4 then
+        if mapModesMultiplier > 4 then
             difficulty = "impossible..."
 
-        elseif theMultiplier > 3 then
+        elseif mapModesMultiplier > 3 then
             difficulty = "a nightmare"
 
-        elseif theMultiplier > 2 then
+        elseif mapModesMultiplier > 2 then
             difficulty = "horrible"
 
-        elseif theMultiplier > 1 then
+        elseif mapModesMultiplier > 1 then
             difficulty = "hard"
 
-        elseif theMultiplier >= 0.5 then
+        elseif mapModesMultiplier >= 0.5 then
             difficulty = "easy"
 
         else
@@ -315,16 +348,29 @@ function GM:GiveEscapeRewardTo( ply )
 
         end
 
-        huntersGlee_AnnounceDramatic( { ply }, 999, 2, "Escaping here was " .. difficulty .. "..." )
+        local msg = "Escaping here was " .. difficulty .. "..."
+        huntersGlee_AnnounceDramatic( { ply }, 999, 2, msg )
 
     end )
 
     timer.Simple( 4, function()
         if not IsValid( ply ) then return end
-        local msg = "+" .. baseReward .. " Score..."
+        local msgParts = { "You escaped!\n+", baseReward, " Score..." }
+
+        if isEnvoy and envoyHelpedCount > 0 then
+            table.insert( msgParts, everyoneEscaped and "\nDOUBLE BOON!!!" or "\nEnvoy's Boon!" )
+
+            local holders = envoyHelpedCount == 1 and " Prospective Account Holder" or " Prospective Account Holders"
+            ply:PrintMessage( HUD_PRINTTALK, table.concat( {
+                "Envoy's Boon: ", envoyHelpedCount, holders, " tasted emerging Freedom, thanks to you. ",
+                "Escape Multiplier ", math.Round( mapModesMultiplier, 2 ), "x -> ", math.Round( theMultiplier, 2 ), "x",
+            } ) )
+
+        end
+
         ply:GivePlayerScore( baseReward )
 
-        huntersGlee_AnnounceDramatic( { ply }, 1000, 4, "You escaped!\n" .. msg )
+        huntersGlee_AnnounceDramatic( { ply }, 1000, 4, table.concat( msgParts ) )
 
     end )
 
@@ -335,7 +381,7 @@ function GM:GiveEscapeRewardTo( ply )
     if hasGains then
         skullReward = self:GetSkullRewardGains()
         if everyoneEscaped then
-            skullReward = skullReward + self:GetSkullRewardGainsEveryoneEscaped()
+            skullReward = skullReward + self:GetSkullRewardGainsBoon()
 
         end
         if hasLoophole then

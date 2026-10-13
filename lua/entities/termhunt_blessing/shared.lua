@@ -167,7 +167,8 @@ function ENT:Place()
         GAMEMODE.roundExtraData.hasBlessedTbl = GAMEMODE.roundExtraData.hasBlessedTbl or {}
         if GAMEMODE:GetStoredPersistentGuilt( self.player ) > 0 and not GAMEMODE.roundExtraData.hasBlessedTbl[target] then
             GAMEMODE.roundExtraData.hasBlessedTbl[target] = true
-            GAMEMODE:IncrementPersistentGuilt( self.player, -0.05 )
+            local reduction = GAMEMODE:IsFirstTimePlayer( target ) and -0.5 or -0.05
+            GAMEMODE:IncrementPersistentGuilt( self.player, reduction )
 
         end
     else

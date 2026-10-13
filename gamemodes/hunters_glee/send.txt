@@ -53,6 +53,8 @@ gamemodes\hunters_glee\gamemode\modules\escaping\cl_escaping.lua
 gamemodes\hunters_glee\gamemode\modules\escaping\cl_escapecounts.lua
 gamemodes\hunters_glee\gamemode\modules\escaping\sh_escaperewards.lua
 
+gamemodes\hunters_glee\gamemode\modules\documents\cl_documents.lua
+
 gamemodes\hunters_glee\gamemode\modules\banking\sh_banking.lua
 gamemodes\hunters_glee\gamemode\modules\banking\cl_banking.lua
 gamemodes\hunters_glee\gamemode\modules\banking\cl_bankconsent.lua

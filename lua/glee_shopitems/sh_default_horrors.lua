@@ -3,20 +3,19 @@ local shopHelpers = GAMEMODE.shopHelpers
 
 
 local items = {
-    ["point_and_click"] = {
-        name = "Point and Click",
-        desc = "Click on players, or hunters!\nCosts climb, the farther you drag...\n\nWARNING: do NOT use on stick figures.",
+    ["skull_cache"] = {
+        name = "Skull Cache",
+        desc = "Hide a cache of skulls.\nPlace far from players for more score.",
         shCost = 0,
-        costDecorative = { "-50", "-100", "-???" },
         markup = 1,
-        cooldown = 0.5,
-        tags = { "HORRORS", "Essential", "CloseShopOnPurchase", "DelayedCost" },
+        cooldown = 120,
+        tags = { "HORRORS", "Essential", "CloseShopOnPurchase", "Hardcore" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = -100,
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            shopHelpers.setupPlacable( "glee_point_and_click", purchaser, itemIdentifier )
+            shopHelpers.setupPlacable( "glee_skullcache_placer", purchaser, itemIdentifier )
 
         end,
         shCanShowInShop = shopHelpers.escapedCheck,
@@ -89,19 +88,20 @@ local items = {
         end,
         shCanShowInShop = shopHelpers.escapedCheck,
     },
-    ["skull_cache"] = {
-        name = "Skull Cache",
-        desc = "Hide a cache of skulls.\nPlace far from players for more score.",
+    ["point_and_click"] = {
+        name = "Point and Click",
+        desc = "Click on players, or hunters!\nCosts climb, the farther you drag...\n\nWARNING: do NOT use on stick figures.",
         shCost = 0,
+        costDecorative = { "-50", "-100", "-???" },
         markup = 1,
-        cooldown = 120,
-        tags = { "HORRORS", "Essential", "CloseShopOnPurchase", "Hardcore" },
+        cooldown = 0.5,
+        tags = { "HORRORS", "Essential", "CloseShopOnPurchase", "DelayedCost" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = 200,
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
-            shopHelpers.setupPlacable( "glee_skullcache_placer", purchaser, itemIdentifier )
+            shopHelpers.setupPlacable( "glee_point_and_click", purchaser, itemIdentifier )
 
         end,
         shCanShowInShop = shopHelpers.escapedCheck,

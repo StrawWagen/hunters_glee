@@ -16,10 +16,41 @@ local function defaultingConVar( name, default, help )
 end
 
 GM.GetEscapeReward = defaultingConVar( "huntersglee_escape_reward", 500, "Score given for escaping, multiplied by the map and misery's escape multiplier." )
-GM.GetEscapeRewardEveryoneEscaped = defaultingConVar( "huntersglee_escape_reward_everyone", 1000, "Extra score given for escaping when everyone escaped, multiplied by the escape multiplier." )
+GM.GetEscapeRewardBoon = defaultingConVar( "huntersglee_escape_reward_everyone", 1000, "Extra score given for escaping when everyone escaped, multiplied by the escape multiplier." )
 GM.GetEscapeRewardPerRider = defaultingConVar( "huntersglee_escape_reward_perrider", 500, "Score given to a driver, per passenger they helped escape." )
 
 GM.GetSkullReward = defaultingConVar( "huntersglee_escape_skullreward", 15, "Score per skull when escaping without Skull Gains. Not multiplied." )
 GM.GetSkullRewardGains = defaultingConVar( "huntersglee_escape_skullreward_gains", 50, "Score per skull when escaping with Skull Gains, multiplied by the escape multiplier." )
-GM.GetSkullRewardGainsEveryoneEscaped = defaultingConVar( "huntersglee_escape_skullreward_gains_everyone", 100, "Extra score per skull with Skull Gains when everyone escaped." )
+GM.GetSkullRewardGainsBoon = defaultingConVar( "huntersglee_escape_skullreward_gains_everyone", 100, "Extra score per skull with Skull Gains when everyone escaped." )
+
 GM.GetSkullRelayMultiplier = defaultingConVar( "huntersglee_escape_skullreward_relaymul", 2, "Multiplier on the Skull Gains rate while connected to the Off-World Skull Relay." )
+
+GM.GetEnvoyBaseMultiplier = defaultingConVar( "huntersglee_escape_envoy_basemul", 3, "Gleeful Envoys' escape multiplier is raised to at least this, before the per new player additions, when any new player escapes the same round." )
+GM.GetEnvoyAddedMultiplier = defaultingConVar( "huntersglee_escape_envoy_addedmul", 0.5, "Added to a Gleeful Envoy's escape multiplier for every new player that escapes the same round. Paid out on the Envoy's own escape, by any vehicle." )
+
+-- The Escape Multiplier for the current map and misery: their product, then the map's and the misery's.
+-- Unrounded. Nil on client if a sync failed
+function GM:GetEscapeMultiplier()
+    -- 0 is the client cache's "not here", real multipliers never go below 0.15
+    local mapMul = self:GetMapsEscapeMultiplier( game.GetMap() )
+    if mapMul <= 0 then return end
+
+    local spawnsetName = GetGlobalString( "GLEE_SpawnSetName", "" )
+    local spawnsetMul = 1 -- the server's answer for no misery, the client's cache has nothing for it
+    if spawnsetName ~= "" then
+        spawnsetMul = self:GetSpawnsetsEscapeMultiplier( spawnsetName )
+        if spawnsetMul <= 0 then return end
+
+    end
+
+    return mapMul * spawnsetMul, mapMul, spawnsetMul
+
+end
+
+-- the Envoy's Boon. escapeMul is from GetEscapeMultiplier
+function GM:GetEnvoysBoon( escapeMul, newPlayersEscaped )
+    if newPlayersEscaped <= 0 then return escapeMul end
+    return math.max( escapeMul, self:GetEnvoyBaseMultiplier() ) + newPlayersEscaped * self:GetEnvoyAddedMultiplier()
+
+end
+

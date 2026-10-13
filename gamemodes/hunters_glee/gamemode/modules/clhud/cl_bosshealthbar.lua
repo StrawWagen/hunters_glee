@@ -114,7 +114,7 @@ local function bossInSight( ply, cur )
         if not isAlive( boss ) then continue end
         if boss:IsDormant() then continue end
 
-        local bossesShoot = boss:GetShootPos()
+        local bossesShoot = boss.GetShootPos and boss:GetShootPos() or boss:WorldSpaceCenter()
         if eyePos:DistToSqr( bossesShoot ) > nearDistance ^ 2 then continue end
 
         if terminator_Extras.PosCanSee( eyePos, bossesShoot, MASK_SOLID_BRUSHONLY ) then return true end

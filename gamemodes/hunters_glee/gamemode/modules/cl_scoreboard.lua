@@ -660,11 +660,22 @@ local SCORE_BOARD = {
         self.SpawnSetMultiplierLabel:SetMouseInputEnabled( true )
         self.SpawnSetMultiplierLabel:SetTooltipDelay( 0 )
 
+        self.EscapeMultiplierLabel = self.Header:Add( "DLabel" )
+        self.EscapeMultiplierLabel:SetHeight( infoLabelH )
+        self.EscapeMultiplierLabel:SetPaintBackground( false )
+        self.EscapeMultiplierLabel:SetContentAlignment( 4 )
+        self.EscapeMultiplierLabel:SetFont( "ScoreboardMapName" )
+        self.EscapeMultiplierLabel:SetTextColor( COLOR_TEXT )
+        self.EscapeMultiplierLabel:SetText( "" )
+        self.EscapeMultiplierLabel:SetMouseInputEnabled( true )
+        self.EscapeMultiplierLabel:SetTooltipDelay( 0 )
+
         -- Screen order, left to right; mul is optional. These labels aren't docked,
         -- Think sizes and positions them every frame.
         self.InfoGroups = {
             { main = self.MapLabel,      mul = self.MapMultiplierLabel },
             { main = self.SpawnSetLabel, mul = self.SpawnSetMultiplierLabel },
+            { main = self.EscapeMultiplierLabel },
         }
 
 
@@ -1029,6 +1040,43 @@ local SCORE_BOARD = {
 
         local spawnsetMulText = math.Round( spawnsetMul, 2 ) .. "x"
         self.SpawnSetMultiplierLabel:SetText( spawnsetMulText )
+
+        local fullEscapeMul, escapeMapMul, escapeSpawnsetMul = GAMEMODE:GetEscapeMultiplier()
+        if fullEscapeMul then
+            local roundedMap = math.Round( escapeMapMul, 2 )
+            local roundedSpawnset = math.Round( escapeSpawnsetMul, 2 )
+            local escapeMul = math.Round( fullEscapeMul, 2 )
+
+            local me = LocalPlayer()
+            local escapeMulTipParts = {
+                "Escape Multiplier\n",
+                "Map " .. roundedMap .. "x, multiplied by Misery " .. roundedSpawnset .. "x = " .. escapeMul .. "x\n",
+                "Your escape reward is multiplied by this",
+            }
+            if me:HasBankItem( "skull_gains" ) then
+                table.insert( escapeMulTipParts, ", and so are your skulls, with Skull Gains" )
+
+            end
+            table.insert( escapeMulTipParts, "." )
+
+            if me:HasBankItem( "gleeful_envoy" ) then
+                local baseMul = GAMEMODE:GetEnvoyBaseMultiplier()
+                local addedMul = GAMEMODE:GetEnvoyAddedMultiplier()
+                table.Add( escapeMulTipParts, {
+                    "\n\nEnvoy's Boon\n",
+                    "If any Prospective Account Holders escape, yours is raised to at least " .. baseMul .. "x,\n",
+                    "then " .. addedMul .. "x is added for each of them.",
+                } )
+
+            end
+
+            self.EscapeMultiplierLabel:SetText( "= " .. escapeMul .. "x" )
+            self.EscapeMultiplierLabel:SetTooltip( table.concat( escapeMulTipParts ) )
+
+        else
+            self.EscapeMultiplierLabel:SetText( "" )
+
+        end
 
         local infoGapX  = self._infoGapX
         local groupGapX = self._groupGapX

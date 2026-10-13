@@ -37,6 +37,24 @@ ENT.Term_FootstepShake = {
     radius = 1750,
 }
 
+local IdleActivity = ACT_HL2MP_IDLE_ZOMBIE
+ENT.IdleActivity = IdleActivity
+ENT.IdleActivityTranslations = {
+    [ACT_MP_STAND_IDLE]                 = IdleActivity,
+    [ACT_MP_WALK]                       = ACT_HL2MP_WALK_ZOMBIE_01,
+    [ACT_MP_RUN]                        = ACT_HL2MP_RUN_PANICKED, -- handled by SkeleAngryRunAct
+    [ACT_MP_CROUCH_IDLE]                = ACT_HL2MP_IDLE_CROUCH,
+    [ACT_MP_CROUCHWALK]                 = ACT_HL2MP_WALK_CROUCH,
+    [ACT_MP_ATTACK_STAND_PRIMARYFIRE]   = IdleActivity + 5,
+    [ACT_MP_ATTACK_CROUCH_PRIMARYFIRE]  = IdleActivity + 5,
+    [ACT_MP_RELOAD_STAND]               = IdleActivity + 6,
+    [ACT_MP_RELOAD_CROUCH]              = IdleActivity + 7,
+    [ACT_MP_JUMP]                       = ACT_HL2MP_JUMP_FIST,
+    [ACT_MP_SWIM]                       = ACT_HL2MP_SWIM,
+    [ACT_LAND]                          = ACT_LAND,
+}
+ENT.term_AnimsWithIdealSpeed = true
+
 -- shares the Ambler's action name, so it replaces that action rather than adding to it
 ENT.MySpecialActions = {
     ["Call"] = {
@@ -76,7 +94,7 @@ if CLIENT then
 end
 
 ENT.MyClassTask = {
-    DealtGoobmaDamage = function( self, data, damage, fallHeight, _dealtTo )
+    DealtGoombaDamage = function( self, data, damage, fallHeight, _dealtTo )
         if fallHeight <= 250 then return end
         local myPos = self:GetPos()
         local scale = fallHeight / 200
@@ -115,6 +133,7 @@ ENT.SpawnHealth = 2500
 
 ENT.FistDamageMul = 10
 ENT.FistRangeMul = 1.75
+ENT.FistDamageType = bit.bor( DMG_BURN, DMG_CRUSH )
 ENT.CloseEnemyDistance = 200
 ENT.JumpHeight = 1000
 ENT.DefaultStepHeight = 18
@@ -124,7 +143,7 @@ ENT.StepHeight = ENT.StandingStepHeight
 
 ENT.AccelerationSpeed = 200
 ENT.SkeleRunSpeed = 1000
-ENT.SkeleRunAct = ACT_HL2MP_RUN_FAST
+ENT.SkeleAngryRunAct = ACT_HL2MP_RUN_FAST
 
 ENT.IdleLoopingSounds = { "ambient/levels/streetwar/city_riot1.wav", "ambient/levels/citadel/datatransmalevx01.wav" }
 ENT.AngryLoopingSounds = { "ambient/fire/fire_big_loop1.wav" }

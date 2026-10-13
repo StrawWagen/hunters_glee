@@ -106,6 +106,8 @@ ENT.IsStupid = true
 ENT.CanSpeak = true -- enable speaking thinker
 ENT.HasBrains = false -- default to no brains
 
+ENT.FriendlyFireMul = 0.01
+
 ENT.Models = { "models/player/skeleton.mdl" }
 ENT.TERM_MODELSCALE = function() return math.Rand( 0.95, 1.15 ) end
 ENT.MyPhysicsMass = 50

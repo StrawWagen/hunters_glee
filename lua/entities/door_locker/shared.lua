@@ -146,34 +146,41 @@ end
 -- if it's used by a nextbot then give currentlyProcessingPlayer a bit less score
 -- if it's used by a player with a specific value, give currentlyProcessingPlayer a bunch of score
 
-local function DoorOnUsedInitial( _, thingUsingTheDoor, currentlyProcessingPlayer )
+local function DoorOnUsedInitial( door, thingUsingTheDoor, currentlyProcessingPlayer )
     if not currentlyProcessingPlayer.GivePlayerScore then return end
 
     local msg = ""
+    local score = 0
 
     -- check if the thing using the door is a player
     if thingUsingTheDoor:IsPlayer() then
         if thingUsingTheDoor == currentlyProcessingPlayer then
-            currentlyProcessingPlayer:GivePlayerScore( -50 )
+            score = -50
             msg = "You locked this door, -50 score."
 
         -- check if the player has a specific value
         elseif IsValid( thingUsingTheDoor.huntersGleeHunterThatIsTargetingPly ) then
             -- give the player a bunch of score
-            currentlyProcessingPlayer:GivePlayerScore( 250 )
+            score = 250
             msg = "A fleeing player used one of your locked doors, you gain 250 score!"
 
         else
             -- give the player some score
-            currentlyProcessingPlayer:GivePlayerScore( 150 )
+            score = 150
             msg = "A player used one of your locked doors, you gain 150 score!"
 
         end
     -- check if the thing using the door is a nextbot
     elseif thingUsingTheDoor:IsNextBot() then
         -- give the player a bit less score
-        currentlyProcessingPlayer:GivePlayerScore( 80 )
+        score = 80
         msg = GAMEMODE:GetNameOfBot( thingUsingTheDoor ) .. " used one of your locked doors, you gain 80 score!"
+
+    end
+
+    if score ~= 0 then
+        currentlyProcessingPlayer:GivePlayerScore( score )
+        GAMEMODE:SendPlacableScorePopup( currentlyProcessingPlayer, door, score )
 
     end
     huntersGlee_Announce( { currentlyProcessingPlayer }, 5, 6, msg )

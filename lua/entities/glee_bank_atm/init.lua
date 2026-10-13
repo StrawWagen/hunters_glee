@@ -569,6 +569,8 @@ function rocket.EngineDmgThink( self )
         local entsPos = ent:WorldSpaceCenter()
         if not terminator_Extras.PosCanSee( myPos, entsPos, MASK_SOLID_BRUSHONLY ) then continue end
 
+        if ( ent:IsPlayer() or ent:IsNPC() ) and not ent:Alive() then continue end
+
         local fireDmg = DamageInfo()
         fireDmg:SetDamage( rocket.blastDamage )
         fireDmg:SetDamageType( DMG_BURN )

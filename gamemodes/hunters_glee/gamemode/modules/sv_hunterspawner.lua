@@ -106,7 +106,7 @@ function GM:BumpRoundDifficulty( amount, reason )
 end
 
 
-
+-- difficulty rubberbanding below
 local failuresToHalveDifficulty = 2
 local failuresForBreathingRoom = 4
 local breathingRoomPerExtraFailure = 0.25

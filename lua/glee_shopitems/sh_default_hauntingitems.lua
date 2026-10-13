@@ -339,7 +339,7 @@ local items = {
     },
     ["immortalizer"] = {
         name = "Gift of Immortality",
-        desc = "Gift 20 seconds, of true Immortality.\nCosts 200 to gift to hunters, 300 to gift to players.",
+        desc = "Fund 20 seconds of paid Immortality.\nCosts 200 to gift to hunters, 300 to gift to players.\nTheir immortality is funded by your Score",
         costDecorative = { "-200", "-300" },
         shCost = 0,
         markup = 1,
