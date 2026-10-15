@@ -1,7 +1,7 @@
 
 -- first time players get one cheap Divine Intervention, granted and spent in sv_firsttimeplayers.lua
 local discountedItem = "resurrection"
-local discountMul = 0.5
+local discountMul = 0.1
 
 function GM:HasFirstTimeDiscount( ply )
     return ply:GetNW2Bool( "glee_firsttime_divinediscount", false )
@@ -20,7 +20,7 @@ hook.Add( "glee_shop_itemdescription", "glee_firsttime_divinediscount", function
     if itemData.identifier ~= discountedItem then return end
     if not GAMEMODE:HasFirstTimeDiscount( ply ) then return end
 
-    adjust.value = "SALE, 50% OFF\n" .. adjust.value
+    adjust.value = "SALE, 90% OFF\n" .. adjust.value
 
 end )
 
