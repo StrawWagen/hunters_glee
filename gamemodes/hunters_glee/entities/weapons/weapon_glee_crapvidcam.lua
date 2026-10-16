@@ -1,16 +1,16 @@
 -- CREDIT https://steamcommunity.com/sharedfiles/filedetails/?id=3504739480
--- modified to stop recording faster when player dies
+-- modified to keep recording from the dropped cam for a few seconds after death
 
 AddCSLuaFile()
 
-sound.Add({
+sound.Add( {
     name = "CrapVidCam.ToggleCamera_Glee",
     channel = CHAN_WEAPON,
     volume = 0.5,
     level = 70,
     pitch = 112,
     sound = "buttons/lightswitch2.wav",
-})
+} )
 
 SWEP.PrintName = "Crappy Video Camera"
 SWEP.Instructions = [[
@@ -21,17 +21,19 @@ Credit teapot 3504739480]]
 
 if CLIENT then
     terminator_Extras.glee_CL_SetupSwep( SWEP, "weapon_glee_crapvidcam", "vgui/entities/glee_weapon_crapvidcam" )
+
 end
 
 SWEP.Author = "teapot"
+SWEP.Category = "Hunter's Glee"
 
 SWEP.Spawnable = true
 SWEP.AdminOnly = false
 
 SWEP.HoldType = "rpg"
 
-SWEP.WorldModel = Model("models/dav0r/camera.mdl")
-SWEP.ViewModel = Model("models/dav0r/camera.mdl")
+SWEP.WorldModel = Model( "models/dav0r/camera.mdl" )
+SWEP.ViewModel = Model( "models/dav0r/camera.mdl" )
 SWEP.ViewModelFOV = 55
 SWEP.UseHands = false
 
@@ -42,7 +44,7 @@ SWEP.Weight = 1
 SWEP.AutoSwitchFrom = false
 SWEP.AutoSwitchTo = false
 
-SWEP.Primary.Sound = Sound("CrapVidCam.ToggleCamera_Glee")
+SWEP.Primary.Sound = Sound( "CrapVidCam.ToggleCamera_Glee" )
 SWEP.Primary.Recoil = 8.5
 SWEP.Primary.Damage = 60
 SWEP.Primary.NumShots = 1
@@ -68,23 +70,22 @@ SWEP.Spread.AirMod = 1.2
 SWEP.Spread.RecoilMod = 0.05
 SWEP.Spread.VelocityMod = 0.5
 
-SWEP.IronsightsPos = Vector(16, 30, -6)
-SWEP.IronsightsAng = Angle(0, 0, 0)
+SWEP.IronsightsPos = Vector( 16, 30, -6 )
+SWEP.IronsightsAng = Angle( 0, 0, 0 )
 SWEP.IronsightsFOV = 0.8
 SWEP.IronsightsSensitivity = 0.8
 SWEP.IronsightsCrosshair = false
 SWEP.UseIronsightsRecoil = true
 
-SWEP.LoweredPos = Vector(16, 30, -6)
-SWEP.LoweredAng = Angle(0, 0, 0)
+SWEP.LoweredPos = Vector( 16, 30, -6 )
+SWEP.LoweredAng = Angle( 0, 0, 0 )
 SWEP.SelectFont = "HudDefault"
 SWEP.IronAnimSpeed = 0.05
 SWEP.NoEmptyAnims = true
 SWEP.ReloadSpeed = 1.6
 SWEP.IronAdjust = 0.5
 
-SWEP.DefaultPos = Vector(16, 30, -6)
---SWEP.DefaultPos = Vector(0, 20, 0)
+SWEP.DefaultPos = Vector( 16, 30, -6 )
 
 SWEP.DrawCrosshair = false
 
@@ -95,26 +96,92 @@ function SWEP:SetupDataTables()
 end
 
 function SWEP:Initialize()
-    self:SetHoldType("rpg")
+    self:SetHoldType( "rpg" )
     self:SetQuality( math.Rand( 0.75, 3 ) )
     self:SetFOVScale( math.Rand( 0.75, 1.5 ) )
 
 end
 
-if SERVER then
-    util.AddNetworkString("crapvidcam_glee")
+local toggleRecording -- clientside only
 
-    hook.Add("PlayerSpawn", "CrapVidCam_glee", function(ply)
-        net.Start("crapvidcam_glee")
-        net.Send(ply)
-    end)
+if SERVER then
+    util.AddNetworkString( "glee_crapvidcam_stoprecording" )
+
+    hook.Add( "PlayerSpawn", "glee_crapvidcam_stoprecording", function( ply )
+        net.Start( "glee_crapvidcam_stoprecording" )
+        net.Send( ply )
+
+    end )
+
+    -- cinematically aim towards player on drop
+    local aimBiasStrength = 800
+    local bodyRestingOffset = Vector( 0, 0, 8 ) -- ragdolls settle near the feet
+    local landedSpeed = 10
+    -- DropWeaponKeepAmmo throws the cam a tick after the drop, before then it may not be moving yet
+    local throwGrace = 0.2
+
+    local function biasAimTowards( cam, target )
+        local timerName = "glee_crapvidcam_aimbias_" .. cam:GetCreationID()
+        local checkLandedAfter = CurTime() + throwGrace
+
+        timer.Create( timerName, 0, 0, function()
+            if not IsValid( cam ) or IsValid( cam:GetOwner() ) then
+                timer.Remove( timerName )
+                return
+
+            end
+            local phys = cam:GetPhysicsObject()
+            if not IsValid( phys ) then
+                timer.Remove( timerName )
+                return
+
+            end
+            if CurTime() > checkLandedAfter and cam:GetVelocity():Length() < landedSpeed then
+                timer.Remove( timerName )
+                return
+
+            end
+
+            local forward = cam:GetForward()
+            local toTarget = ( target - cam:GetPos() ):GetNormalized()
+            local offAngleFrac = math.acos( math.Clamp( forward:Dot( toTarget ), -1, 1 ) ) / math.pi
+
+            local turnAxis = forward:Cross( toTarget )
+            if turnAxis:LengthSqr() < 0.0001 then
+                -- facing dead away, the cross product vanishes; any perpendicular turns it
+                turnAxis = cam:GetUp()
+
+            else
+                turnAxis:Normalize()
+
+            end
+
+            phys:AddAngleVelocity( phys:WorldToLocalVector( turnAxis ) * offAngleFrac * aimBiasStrength * FrameTime() )
+
+        end )
+    end
+
+    function SWEP:Equip( newOwner )
+        self.glee_lastHolder = newOwner
+
+    end
+
+    function SWEP:OnDrop()
+        local holder = self.glee_lastHolder
+        if not IsValid( holder ) or holder:Health() > 0 then return end
+
+        biasAimTowards( self, holder:GetPos() + bodyRestingOffset )
+
+    end
 
 else
-    local framesWhileDead = 0
-    local framesWhileDeadRange = { 1, 90 } -- how many frames to record while dead before stopping
-    local VIDCAM_WRITER, VIDCAM_ERROR
-    local clrErr, clrSave = Color(255, 0, 0), Color(0, 255, 255)
-    local VIDCAM_CONFIG = {
+    local deadRecordSecondsRange = { 2, 5 }
+    local stopDeadRecordingAt
+    local recordingCam
+    local writer
+    local errColor = Color( 255, 0, 0 )
+    local savedColor = Color( 0, 255, 255 )
+    local baseConfig = {
         container = "webm",
         video = "vp8",
         audio = "vorbis",
@@ -127,107 +194,179 @@ else
         fovScale = 0.5,
     }
 
-    local CurrConfig
+    local currConfig
 
-    function beginRecording()
-        hook.Add( "PreDrawViewModels", "CrapVidCam_glee", function()
-            if not VIDCAM_WRITER then return end
+    local function lostTheCam( me )
+        if not IsValid( recordingCam ) then return true end
+
+        local camOwner = recordingCam:GetOwner()
+        if IsValid( camOwner ) then return camOwner ~= me end
+
+        return recordingCam:IsDormant()
+
+    end
+
+    local function beginRecording()
+        hook.Add( "PreDrawViewModels", "glee_crapvidcam_recordframe", function()
+            if not writer then return end
+
             local me = LocalPlayer()
             if not IsValid( me ) or not me:Alive() then
-                framesWhileDead = framesWhileDead - 1
-                if framesWhileDead <= 0 then
-                    VIDCAM_TOGGLE()
+                stopDeadRecordingAt = stopDeadRecordingAt or CurTime() + math.Rand( deadRecordSecondsRange[1], deadRecordSecondsRange[2] )
+                if stopDeadRecordingAt < CurTime() or lostTheCam( me ) then
+                    toggleRecording()
                     return
+
                 end
             end
-            VIDCAM_WRITER:AddFrame(FrameTime(), true)
-            LocalPlayer():SetDSP(38, true)
+
+            writer:AddFrame( FrameTime(), true )
+            me:SetDSP( 38, true )
+
         end )
     end
 
-    function VIDCAM_TOGGLE( camera )
-        if VIDCAM_WRITER then
-            hook.Remove("PreDrawViewModels", "CrapVidCam_glee")
-            chat.AddText(clrSave, "Saved video to garrysmod/videos/" .. CurrConfig.name .. ".webm")
-            VIDCAM_WRITER:Finish()
-            VIDCAM_WRITER = nil -- memory leak! whoops
-            LocalPlayer():SetDSP(0, true)
-        elseif IsValid( camera ) then
-            CurrConfig = table.Copy( VIDCAM_CONFIG )
-            CurrConfig.quality = VIDCAM_CONFIG.quality * camera:GetQuality()
-            CurrConfig.fps = math.Clamp( VIDCAM_CONFIG.fps * camera:GetQuality(), 5, 60 )
-            CurrConfig.bitrate = VIDCAM_CONFIG.bitrate * camera:GetQuality()
-            CurrConfig.fovScale = VIDCAM_CONFIG.fovScale * camera:GetFOVScale()
+    toggleRecording = function( camera )
+        if writer then
+            hook.Remove( "PreDrawViewModels", "glee_crapvidcam_recordframe" )
+            chat.AddText( savedColor, "Saved video to garrysmod/videos/" .. currConfig.name .. ".webm" )
+            writer:Finish()
+            writer = nil
+            recordingCam = nil
+            stopDeadRecordingAt = nil
+            LocalPlayer():SetDSP( 0, true )
 
-            framesWhileDead = math.random( framesWhileDeadRange[1], framesWhileDeadRange[2] )
-            CurrConfig.name = "GLEE_vidcam-" .. util.DateStamp()
+        elseif IsValid( camera ) then
+            recordingCam = camera
+            currConfig = table.Copy( baseConfig )
+            currConfig.quality = baseConfig.quality * camera:GetQuality()
+            currConfig.fps = math.Clamp( baseConfig.fps * camera:GetQuality(), 5, 60 )
+            currConfig.bitrate = baseConfig.bitrate * camera:GetQuality()
+            currConfig.fovScale = baseConfig.fovScale * camera:GetFOVScale()
+
+            currConfig.name = "GLEE_vidcam-" .. util.DateStamp()
             local w, h = ScrW(), ScrH()
-            CurrConfig.width = math.min(w, 480)
-            CurrConfig.height = math.min(math.floor((CurrConfig.width * h) / w), w)
-            VIDCAM_WRITER, VIDCAM_ERROR = video.Record(CurrConfig)
-            if VIDCAM_WRITER then
-                VIDCAM_WRITER:SetRecordSound(true)
+            currConfig.width = math.min( w, 480 )
+            currConfig.height = math.min( math.floor( ( currConfig.width * h ) / w ), w )
+
+            local recordErr
+            writer, recordErr = video.Record( currConfig )
+            if writer then
+                writer:SetRecordSound( true )
                 beginRecording()
+
             else
-                chat.AddText(clrErr, "Couldn't record video: " .. VIDCAM_ERROR)
+                chat.AddText( errColor, "Couldn't record video: " .. recordErr )
+
             end
         end
     end
 
-    net.Receive("crapvidcam_glee", function(len)
-        if VIDCAM_WRITER then
-            VIDCAM_TOGGLE()
-        end
-    end)
+    net.Receive( "glee_crapvidcam_stoprecording", function()
+        if not writer then return end
+        toggleRecording()
 
-    local clrRec, clrRecB = Color(255, 100, 100), Color(20, 20, 20)
-    hook.Add("HUDPaint", "CrapVidCam_glee", function()
-        if VIDCAM_WRITER then
-            if math.sin(CurTime() * 8) > 0 then
-                draw.SimpleTextOutlined("RECORDING", "DermaLarge", ScrW() * 0.5, 0, clrRec, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP, 2, clrRecB)
-            end
-        end
-    end)
+    end )
 
-    hook.Add("CalcView", "CrapVidCam_glee", function(ply, pos, angles, fov)
-        if VIDCAM_WRITER then
+    local recTextColor = Color( 255, 100, 100 )
+    local recOutlineColor = Color( 20, 20, 20 )
+
+    hook.Add( "HUDPaint", "glee_crapvidcam_recordingtext", function()
+        if not writer then return end
+        if math.sin( CurTime() * 8 ) <= 0 then return end
+
+        draw.SimpleTextOutlined( "RECORDING", "DermaLarge", ScrW() * 0.5, 0, recTextColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP, 2, recOutlineColor )
+
+    end )
+
+    -- alive, first person through the cam. dead, from wherever the dropped cam landed
+    hook.Add( "glee_CalcView", "glee_crapvidcam_view", function( ply, pos, ang, fov )
+        if not writer then return end
+
+        fov = fov * currConfig.fovScale
+
+        if ply:Alive() then
             return {
                 origin = pos,
-                angles = angles,
-                fov = fov * CurrConfig.fovScale,
+                angles = ang,
+                fov = fov,
+                drawviewer = false,
+
             }
         end
-    end)
+
+        -- still ours until the drop networks
+        if not IsValid( recordingCam ) or IsValid( recordingCam:GetOwner() ) then return end
+
+        local lens = recordingCam:OBBCenter()
+        lens.x = recordingCam:OBBMaxs().x
+
+        return {
+            origin = recordingCam:LocalToWorld( lens ),
+            angles = recordingCam:GetAngles(),
+            fov = fov,
+
+        }
+    end )
 end
 
-function SWEP:CanSecondaryAttack() return false end
+function SWEP:CanSecondaryAttack()
+    return false
+
+end
 
 function SWEP:PrimaryAttack()
     if SERVER and game.SinglePlayer() then
-        self:CallOnClient("PrimaryAttack")
+        self:CallOnClient( "PrimaryAttack" )
         return
+
     end
 
-    local curtime = CurTime()
-    if curtime < self:GetNextPrimaryFire() then return end
-    self:SetNextPrimaryFire(curtime + 0.1)
-    self:EmitSound(self.Primary.Sound)
+    local cur = CurTime()
+    if cur < self:GetNextPrimaryFire() then return end
+    self:SetNextPrimaryFire( cur + 0.1 )
+    self:EmitSound( self.Primary.Sound )
 
-    if CLIENT and (IsFirstTimePredicted() or game.SinglePlayer()) then
-        VIDCAM_TOGGLE( self )
+    if CLIENT and ( IsFirstTimePredicted() or game.SinglePlayer() ) then
+        toggleRecording( self )
+
     end
 end
 
 function SWEP:Holster()
-    if CLIENT and (IsFirstTimePredicted() or game.SinglePlayer()) and LocalPlayer() == self:GetOwner() and VIDCAM_WRITER then
-        VIDCAM_TOGGLE()
+    if CLIENT and ( IsFirstTimePredicted() or game.SinglePlayer() ) and LocalPlayer() == self:GetOwner() then
+        toggleRecording()
+
     end
 
     if game.SinglePlayer() then
-        self:CallOnClient("Holster")
+        self:CallOnClient( "Holster" )
+
     end
 
     return true
+
+end
+
+local handBoneCandidates = {
+    "ValveBiped.Bip01_R_Hand",
+    "ValveBiped.Bip01_R_Forearm",
+    "RightHand",
+    "r_hand",
+}
+
+local function handBonePose( ply )
+    for _, boneName in ipairs( handBoneCandidates ) do
+        local bone = ply:LookupBone( boneName )
+        if not bone then continue end
+
+        local matrix = ply:GetBoneMatrix( bone )
+        if matrix then return matrix:GetTranslation(), matrix:GetAngles() end
+
+        local bonePos, boneAng = ply:GetBonePosition( bone )
+        if bonePos and boneAng then return bonePos, boneAng end
+
+    end
 end
 
 function SWEP:DrawWorldModel()
@@ -235,6 +374,7 @@ function SWEP:DrawWorldModel()
     if not IsValid( ply ) or ply:GetActiveWeapon() ~= self then
         self:DrawModel()
         return
+
     end
 
     local pos, ang
@@ -243,61 +383,39 @@ function SWEP:DrawWorldModel()
         ang = att.Ang
         pos = att.Pos + ang:Up() * 10 + ang:Right() + ang:Forward() * 2
 
-    else -- look out, ai slop below
-        -- bad pm, try using their right hand bone
-        local candidates = {
-            "ValveBiped.Bip01_R_Hand",
-            "ValveBiped.Bip01_R_Forearm",
-            "RightHand",
-            "r_hand",
-        }
-        for _, bname in ipairs( candidates ) do
-            local bone = ply:LookupBone( bname )
-            if bone then
-                local m = ply:GetBoneMatrix( bone )
-                if m then
-                    ang = m:GetAngles()
-                    pos = m:GetTranslation()
-                else
-                    local bp, ba = ply:GetBonePosition( bone )
-                    if bp and ba then
-                        ang = ba
-                        pos = bp
-                    end
-                end
-                if pos and ang then
-                    -- slight offset so it sits in the hand
-                    pos = pos + ang:Up() * 8 + ang:Right() * 2 + ang:Forward() * 2
-                    break
-                end
-            end
-        end
+    else
+        -- playermodel without the attachment
+        pos, ang = handBonePose( ply )
+        if pos then
+            pos = pos + ang:Up() * 8 + ang:Right() * 2 + ang:Forward() * 2
 
-        -- ultimate fallback
-        if not pos or not ang then
+        else
             ang = ply:EyeAngles()
             pos = ply:EyePos() + ang:Right() * 11 + ang:Forward() * 4
+
         end
     end
 
-    self:SetPos(pos)
-    self:SetAngles(ang)
+    self:SetPos( pos )
+    self:SetAngles( ang )
     self:SetupBones()
     self:DrawModel()
+
 end
 
-local camPos = Vector(16, 30, -6)
+local camPos = Vector( 16, 30, -6 )
 
-function SWEP:GetViewModelPosition(pos, ang)
-    pos:Add(camPos[1] * ang:Right())
-    pos:Add(camPos[2] * ang:Forward())
-    pos:Add(camPos[3] * ang:Up())
+function SWEP:GetViewModelPosition( pos, ang )
+    pos:Add( camPos[1] * ang:Right() )
+    pos:Add( camPos[2] * ang:Forward() )
+    pos:Add( camPos[3] * ang:Up() )
     return pos, ang
+
 end
 
 if not SERVER then return end
 
-hook.Add( "InitPostEntity", "CrapVidCam_glee", function()
+hook.Add( "InitPostEntity", "glee_crapvidcam_randomspawn", function()
     GAMEMODE:RandomlySpawnEntTbl( "weapon_glee_crapvidcam", {
         maxCount = 1,
         chance = math.Rand( 1, 15 ),

@@ -13,6 +13,7 @@ terminator_Extras.glee_RegisterStyle( "godlyDecree", {
 
     fonts = {
         huge       = { size = 150, antialias = false },
+        choice     = { size = 140, antialias = false }, -- the tutorial's two way choice, side by side, 0.75x huge
         triumphant = { size = 90 }, -- the round end verdict
         orders     = { size = 80 }, -- the divine chosen's marching orders
         -- player names need characters the decree font lacks, sized to sit with the verdict.

@@ -163,6 +163,13 @@ function DropRappelRopeFromVehicle( vehicle, posOffset )
     endProp:SetCollisionGroup( COLLISION_GROUP_DEBRIS )
     endProp:Spawn()
 
+    hook.Add( "EntityTakeDamage", endProp, function( endPropHook, _target, dmg )
+        if dmg:GetAttacker() ~= endPropHook then return end
+        dmg:ScaleDamage( 0 )
+        return true
+
+    end )
+
     local endPropsObj = endProp:GetPhysicsObject()
     if IsValid( endPropsObj ) then
         endPropsObj:SetMass( 100 )

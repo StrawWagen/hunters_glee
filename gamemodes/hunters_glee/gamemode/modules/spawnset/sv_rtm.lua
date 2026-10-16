@@ -250,66 +250,106 @@ function RTM.HandleUnRTMCommand( ply )
 
 end
 
+-- Chat hints pointing at !rtm. 10 seconds after each round ends, the highest priority one is printed, then dropped.
+-- The rest wait for a later round.
+-- [hint text] = { priority = number, plys = table of players to print to, everyone if nil }
+GAMEMODE.rtmRoundEndHints = GAMEMODE.rtmRoundEndHints or {}
+
+local firstHintText = "GLEE: Type !rtm to start a Misery vote"
+local diminishingHintText = "GLEE: This Misery has been escaped too much\nit's giving you diminishing returns...\nType !rtm to start a Misery vote"
+
 local rounds = 0
-local printed
+local firstHintAdded
 local hardRtmHint
 
 hook.Add( "glee_post_realcleanupmap", "glee_reset_rockthemisery_hint", function()
     rounds = 0
-    printed = nil
+    firstHintAdded = nil
     hardRtmHint = nil
+    table.Empty( GAMEMODE.rtmRoundEndHints )
     SetGlobal2Bool( "glee_pleaseshow_rtmtutorialhint", false )
 
 end )
 
-hook.Add( "huntersglee_round_postroundend", "glee_rockthemisery_hint", function()
-    rounds = rounds + 1
+-- the escape counts update after the round end hook, so this is checked once the hints are due
+local function updateDiminishingHint()
+    local hints = GAMEMODE.rtmRoundEndHints
+    hints[diminishingHintText] = nil
 
-    if rounds < math.random( 1, 3 ) then return end --dont print too much.
-    if not printed then
-        printed = true -- one time per map
+    local spawnsetName, spawnsetData = GAMEMODE:GetSpawnSet()
+    local spawnsetMul = GAMEMODE:GetSpawnsetsEscapeMultiplier( spawnsetName )
 
-        PrintMessage( HUD_PRINTTALK, "GLEE: Type !rtm to start a Misery vote" )
+    local thresh
+    if spawnsetName == GAMEMODE.TheTutorialMisery then
+        local highestEscapeCount = 0
+        for _, ply in player.Iterator() do
+            highestEscapeCount = math.max( highestEscapeCount, ply:GetEscapeCount() )
+
+        end
+        if highestEscapeCount < 1 then return end
+
+        SetGlobal2Bool( "glee_pleaseshow_rtmtutorialhint", true )
+
+        local mulByEscapes = 1.25 / highestEscapeCount
+        thresh = 2 - mulByEscapes
+
+    elseif spawnsetData.easy then
+        thresh = GAMEMODE.easyCostSoftMax
+
+    else
+        thresh = 1
+
+    end
+    if spawnsetMul > thresh then return end
+
+    hints[diminishingHintText] = { priority = 50 }
+
+end
+
+local function printBestHint()
+    local bestText, best
+    for text, hint in pairs( GAMEMODE.rtmRoundEndHints ) do
+        if not best or hint.priority > best.priority then
+            bestText = text
+            best = hint
+
+        end
+    end
+    if not best then return end
+
+    GAMEMODE.rtmRoundEndHints[bestText] = nil
+
+    if not best.plys then
+        PrintMessage( HUD_PRINTTALK, bestText )
+        return
 
     end
 
-    if rounds < math.random( 2, 5 ) then return end -- wait a bit longer for this stronger hint
-    if not hardRtmHint and GAMEMODE:IsSpawnsetEasy() then
+    for _, ply in ipairs( best.plys ) do
+        if not IsValid( ply ) then continue end
+        ply:PrintMessage( HUD_PRINTTALK, bestText )
+
+    end
+end
+
+hook.Add( "huntersglee_round_postroundend", "glee_rockthemisery_hint", function()
+    rounds = rounds + 1
+
+    if rounds >= math.random( 1, 3 ) and not firstHintAdded then --dont print too much.
+        firstHintAdded = true -- one time per map
+        GAMEMODE.rtmRoundEndHints[firstHintText] = { priority = 10 }
+
+    end
+
+    if rounds >= math.random( 2, 5 ) and not hardRtmHint and GAMEMODE:IsSpawnsetEasy() then -- wait a bit longer for this stronger hint
         hardRtmHint = true
         SetGlobal2Bool( "glee_pleaseshow_rtmtutorialhint", true )
 
     end
-end )
 
-hook.Add( "huntersglee_round_postroundend", "glee_rockthemisery_hint", function()
     timer.Simple( 10, function()
-        local spawnsetName, spawnsetData = GAMEMODE:GetSpawnSet()
-        local spawnsetMul = GAMEMODE:GetSpawnsetsEscapeMultiplier( spawnsetName )
-
-        local thresh
-        if spawnsetName == GAMEMODE.TheTutorialMisery then
-            local highestEscapeCount = 0
-            for _, ply in player.Iterator() do
-                highestEscapeCount = math.max( highestEscapeCount, ply:GetEscapeCount() )
-
-            end
-            if highestEscapeCount < 1 then return end
-
-            SetGlobal2Bool( "glee_pleaseshow_rtmtutorialhint", true )
-
-            local mulByEscapes = 1.25 / highestEscapeCount
-            thresh = 2 - mulByEscapes
-
-        elseif spawnsetData.easy then
-            thresh = GAMEMODE.easyCostSoftMax
-
-        else
-            thresh = 1
-
-        end
-        if spawnsetMul > thresh then return end
-
-        PrintMessage( HUD_PRINTTALK, "GLEE: This Misery has been escaped too much\nit's giving you diminishing returns...\nType !rtm to start a Misery vote" )
+        updateDiminishingHint()
+        printBestHint()
 
     end )
 end )

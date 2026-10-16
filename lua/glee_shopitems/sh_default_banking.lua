@@ -497,20 +497,20 @@ local items = {
             return table.concat( {
                 "A bank account add-on\n",
                 "Become an envoy for the bank, be rewarded whenever \"Prospective Account Holders\" escape",
-                "\n\"Prospective Account Holders\" are fragile, and the Bank is very interested in them surviving...\n",
+                "\n\"Prospective Account Holders\", souls without a bank account, are of great interest to the Bank...\n",
                 "Every one that escapes boosts your Escape Multiplier.\n",
                 "Lasts " .. termDays .. " real-time days.",
             } )
 
         end,
-        shCost = 10000,
+        shCost = 5000,
         cooldown = 0,
         tags = { "BANK", "BankItem" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
         },
-        weight = 3000,
+        weight = 1500, -- between Skull Gains and the Relay
         shPurchaseCheck = { hasBankAccount, isDedicatedOrDev, function( purchaser )
             local timeLeft = purchaser:BankItemTimeLeft( "gleeful_envoy" )
             if timeLeft then return false, "You're already an Envoy.\nYour term ends in " .. formatTimeLeft( timeLeft ) .. "." end

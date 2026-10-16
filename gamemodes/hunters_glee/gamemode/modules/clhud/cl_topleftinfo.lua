@@ -206,7 +206,7 @@ local function genericHints()
         local hasBoughtSomething = GAMMODE:HasLearnedLesson( "BoughtAnItem" )
 
         local valid, phrase = GAMEMODE:TranslatedBind( "+menu" )
-        if not valid then GAMMODE:LearnLesson( "BoughtAnItem" ) return end
+        if not valid and not hasBoughtSomething then return GAMMODE:UnboundHint( "+menu", "You're missing out on the shop...", true ) end
 
         local myScore = me:GetScore()
 
@@ -248,15 +248,15 @@ local function genericHints()
         if result then
             return result, hooksHint
 
-        elseif not GAMMODE:HasLearnedLesson( "SpectatedSomeone" ) then
+        elseif not GAMMODE:HasLearnedLesson( "SpectatedSomeone" ) and not GAMMODE:UnboundHintSkipped( "+attack" ) then
             local valid, phrase = GAMEMODE:TranslatedBind( "+attack" )
-            if not valid then GAMMODE:LearnLesson( "SpectatedSomeone" ) return end
+            if not valid then return GAMMODE:UnboundHint( "+attack", "You can't follow anything while spectating..." ) end
 
             return true, "Press " .. phrase .. " to follow stuff!"
 
-        elseif not GAMMODE:HasLearnedLesson( "SwitchedSpectateModes" ) and IsValid( me:GetObserverTarget() ) then
+        elseif not GAMMODE:HasLearnedLesson( "SwitchedSpectateModes" ) and not GAMMODE:UnboundHintSkipped( "+jump" ) and IsValid( me:GetObserverTarget() ) then
             local valid, phrase = GAMEMODE:TranslatedBind( "+jump" )
-            if not valid then GAMMODE:LearnLesson( "SwitchedSpectateModes" ) return end
+            if not valid then return GAMMODE:UnboundHint( "+jump", "You can't switch spectate modes..." ) end
 
             return true, "Press " .. phrase .. " to switch spectate modes!"
 
@@ -265,8 +265,8 @@ local function genericHints()
 
         elseif not GAMMODE:HasLearnedLesson( "OpenedDeadShop" ) then
             local valid, phrase = GAMEMODE:TranslatedBind( "+menu" )
-            if not valid then GAMMODE:LearnLesson( "OpenedDeadShop" ) return end -- :(
             if hook.Run( "glee_blockshopopen" ) then GAMMODE:LearnLesson( "OpenedDeadShop" ) return end
+            if not valid then return GAMMODE:UnboundHint( "+menu", "You're missing out on the ghost shop...\nDeath is not the end.", true ) end
 
             if me.glee_SpawnedInDeadTutorialPlease then
                 return true, "Press \" " .. string.upper( phrase ) .. " \" to open the shop.\nDIVINE INTERVENTION AWAITS."
@@ -280,7 +280,7 @@ local function genericHints()
                 local valid, phrase = GAMEMODE:TranslatedBind( "+menu" )
                 if not valid then
                     valid, phrase = GAMEMODE:TranslatedBind( "gm_showhelp" )
-                    if not valid2 then GAMMODE:LearnLesson( "BoughtAGhostItem" ) return end -- ur fucked
+                    if not valid then return GAMMODE:UnboundHint( "+menu", "You're missing out on the ghost shop...\nIt's time to HAUNT for PROFIT.", true ) end
 
                 end
                 local hint = table.concat( {
@@ -295,9 +295,9 @@ local function genericHints()
                 return true, "Purchase 'Sacrifices' to make score while dead!"
 
             end
-        elseif not me.glee_HasDoneSpectateFlashlight and ( me.flashlightAdditive or 0 ) >= 100 and render.GetLightColor( me:GetPos() ):LengthSqr() < 0.008 then
+        elseif not me.glee_HasDoneSpectateFlashlight and not GAMMODE:UnboundHintSkipped( "+impulse 100" ) and ( me.flashlightAdditive or 0 ) >= 100 and render.GetLightColor( me:GetPos() ):LengthSqr() < 0.008 then
             local valid, phrase = GAMEMODE:TranslatedBind( "+impulse 100" )
-            if not valid then me.glee_HasDoneSpectateFlashlight = true return end
+            if not valid then return GAMMODE:UnboundHint( "+impulse 100", "You're missing out on the spectate flashlight..." ) end
 
             return true, "Press " .. phrase .. " to toggle the spectate flashlight!"
 
@@ -341,7 +341,7 @@ local function genericHints()
             if not valid then
                 valid, phrase = GAMEMODE:TranslatedBind( "toggle_zoom" )
                 if not valid then
-                    return true, "If you had +zoom bound to anything, you could POSESS hunters right now..."
+                    return GAMMODE:UnboundHint( "+zoom", "You could be POSESSING hunters right now...", true )
 
                 end
             end

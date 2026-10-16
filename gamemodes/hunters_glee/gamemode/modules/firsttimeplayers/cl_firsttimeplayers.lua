@@ -4,10 +4,6 @@
 
 local GAMEMODE = GAMEMODE or GM
 
-local decree = terminator_Extras.glee_Style( "godlyDecree" )
-
-local clickImpatience = 0.30 -- seconds of animation a click skips
-
 local imNewMyself = nil
 local hasSeenMessage = CreateClientConVar( "cl_huntersglee_firsttimetutorial", 0, true, true, "Has the player seen the one-time tutorial series of messages?" )
 
@@ -21,21 +17,34 @@ local function currentSpawnset()
 
 end
 
-local stagesTutorialMisery = {
+local stagesTutorialMiseryChooser = {
     "Welcome.\nTo the hunt!",
     "This is your first hunt,\nis it not?",
-    "We have chosen, this MISERY for you.",
-    "You must hunt the Infernal Horde...",
-    "Extremely weak enemies, for YOU to HUNT.",
-    "Weaklings to prepare you.",
-    "For the true, gleeful hunts,\nthat await you.",
-    "Even to these weaklings...\nYou will... still...",
+    "We have.. a choice of,\nMISERY.\nFor you...",
+    "The Infernal Horde?",
+    "Extremely weak enemies,\nfor YOU to HUNT.",
+    "Or, if you are a brave SOUL?",
+    "CRUEL, intelligent,\nUNSTOPPABLE enemies.",
+    "You will have to outwit,\nhave to carefully survive?",
+    "It does not matter,\nto both options, you will...",
     "DIE.",
+    "Oh,\nyou will die.",
     "But don't worry.\nDeath is not the end.",
-    "Let the Hunt....\nBEGIN!",
+    "It's time now.",
+    "Time to choose...",
 }
 
-local stagesTutorialMiseryMulti = {
+-- CHOOSE your misery
+local tutorialMiseryChoices = {
+    { "The Infernal Horde\nWeaklings.\nTo prepare you..." },
+    { "Hunter's Glee\nA TRUE MISERY.\nTO OVERCOME.", function()
+        net.Start( "glee_tutorial_jumpin" )
+        net.SendToServer()
+
+    end },
+}
+
+local stagesTutorialMiseryAdditional = {
     "Welcome.\nTo the hunt!",
     "This is your first hunt,\nis it not?",
     "We have chosen, this MISERY for you.",
@@ -87,7 +96,8 @@ local stagesGhostly = {
 -- Builds the whole tutorial, or decides this player doesn't need one.
 -- Returns true for both, because the only caller is a retry timer and both mean stop retrying.
 -- Returns nil when LocalPlayer wasn't ready, which is the only case worth trying again.
-local function doMessageIfWeCan( tutorialType )
+-- offerChoice ends it in the choice to skip the tutorial misery, if that's still the misery.
+local function doMessageIfWeCan( tutorialType, offerChoice )
     if not IsValid( LocalPlayer() ) then return end -- erm
     -- double check!
 
@@ -103,170 +113,43 @@ local function doMessageIfWeCan( tutorialType )
 
     imNewMyself = true
 
-    termHuntCloseTheShop()
-    -- errored alot...
-    if LocalPlayer().SetDSP then
-        LocalPlayer():SetDSP( 15, true )
+    local onTutorialMisery = currentSpawnset() == GAMEMODE.TheTutorialMisery
+    local lines
+    local choices
 
-    end
-
-    local stages
-
-    if tutorialType == "default" then
-        local plyCount = player.GetCount()
-        if currentSpawnset() == GAMEMODE.TheTutorialMisery then
-            if plyCount >= 2 then
-                stages = stagesTutorialMiseryMulti
-
-            else
-                stages = stagesTutorialMisery
-
-            end
-
-        elseif plyCount >= 2 then
-            stages = stagesMultiplayer
-
-        else
-            stages = stagesSingleplayer
-
-        end
-    elseif tutorialType == "ghostly" then
-        stages = stagesGhostly
+    if tutorialType == "ghostly" then
+        lines = stagesGhostly
         LocalPlayer().glee_SpawnedInDeadTutorialPlease = true
 
+    elseif onTutorialMisery and offerChoice then
+        lines = stagesTutorialMiseryChooser
+        choices = tutorialMiseryChoices
+
+    elseif onTutorialMisery then
+        lines = stagesTutorialMiseryAdditional
+
+    elseif player.GetCount() >= 2 then
+        lines = stagesMultiplayer
+
+    else
+        lines = stagesSingleplayer
+
     end
 
-    if not stages then return end -- saftey check for indev work
-
-    local popup, width, height = GAMEMODE:CreateScreenFillingPopup()
-
-    popup:SetDraggable( false )
-
-    popup.Paint = function() end
-
-    -- the panel as the identifier means gmod drops this hook itself once the panel is gone
-    hook.Add( "HUDShouldDraw", popup, function() return false end )
-
-    popup.oldRemove = popup.Remove
-    popup.Remove = function( self )
-        if LocalPlayer().SetDSP then
-            LocalPlayer():SetDSP( 1, true )
-
-        end
-        self:oldRemove()
-
-        local status = "1"
-        if game.IsDedicated() then
-            status = "2"
+    local tutorial = table.Copy( lines )
+    tutorial.choices = choices
+    tutorial.muffle = true
+    tutorial.onClose = function()
+        if currentSpawnset() == GAMEMODE.TheTutorialMisery then
+            LocalPlayer():EmitSound( "ambient/levels/streetwar/gunship_distant2.wav", 120, 140, 0.5, CHAN_STATIC, SND_NOFLAGS, 0 )
 
         end
 
-        RunConsoleCommand( "cl_huntersglee_firsttimetutorial", status )
+        RunConsoleCommand( "cl_huntersglee_firsttimetutorial", tostring( target ) )
 
     end
 
-    local button = vgui.Create( "DButton", popup, "glee_nexttorialtextbutton" )
-    button:Dock( FILL )
-    button:SetText( "" )
-
-    button.stage = 1
-    button.nextPress = 0
-    button.nextFlash = 0
-    button.lastThink = CurTime()
-    button.elapsed = 0
-    button.clickPlsGoFaster = 0
-    button.jitterX = 0 -- Jitter fills these in, Paint just needs them to exist on frame one
-    button.jitterY = 0
-    button.line = decree:NewArrival( "huge" )
-
-    local function showStage()
-        local fullMsg = stages[button.stage]
-        if not fullMsg then return end
-
-        button.line:SetText( fullMsg )
-        button.elapsed = 0
-        button.clickPlsGoFaster = 0
-        button.nextAutomatic = nil
-
-    end
-
-    local function nextStage()
-        button.stage = button.stage + 1
-        local fullMsg = stages[button.stage]
-
-        if not fullMsg then
-            local us = LocalPlayer()
-
-            if currentSpawnset() == GAMEMODE.TheTutorialMisery then
-                us:EmitSound( "ambient/levels/streetwar/gunship_distant2.wav", 120, 140, 0.5, CHAN_STATIC, SND_NOFLAGS, 0 )
-
-            end
-            decree:PlaySound( "arrival", math.random( 90, 110 ), CHAN_STATIC )
-            decree:PlaySound( "arrival", math.random( 70, 80 ), CHAN_STATIC )
-            decree:PlaySound( "arrival", math.random( 50, 60 ), CHAN_STATIC )
-
-            popup:Remove()
-            return
-
-        end
-
-        showStage()
-
-    end
-
-    showStage()
-
-    button.Think = function()
-        if not system.HasFocus() then
-            button.nextAutomatic = CurTime() + 5
-            button.nextPress = CurTime() + 0.2
-            if button.nextFlash < CurTime() then
-                button.nextFlash = CurTime() + 1
-                system.FlashWindow()
-
-            end
-
-        elseif button.nextAutomatic and button.nextAutomatic < CurTime() then
-            nextStage()
-
-        end
-
-        decree:Jitter( button )
-
-        -- a minimised window stops thinking, don't let it come back already materialised
-        local delta = math.Clamp( CurTime() - button.lastThink, 0, 0.1 )
-        button.lastThink = CurTime()
-
-        button.elapsed = button.elapsed + delta + button.clickPlsGoFaster
-        button.clickPlsGoFaster = 0
-
-        local appeared, justLanded = button.line:Update( button.elapsed )
-        for _ = 1, appeared do
-            decree:PlaySound( "arrival", math.random( 90, 110 ), CHAN_STATIC )
-
-        end
-
-        if justLanded then
-            button.nextAutomatic = CurTime() + 3
-            decree:PlaySound( "landing", math.random( 50, 60 ), CHAN_BODY )
-
-        end
-    end
-
-    button.Paint = function()
-        local centreX = ( width / 2 ) + button.jitterX
-        local topY = ( height / 2 ) + -256 + button.jitterY
-
-        button.line:Draw( centreX, topY )
-
-    end
-
-    button.DoClick = function()
-        if not button.line.landed then button.clickPlsGoFaster = button.clickPlsGoFaster + clickImpatience return end
-        if button.nextPress > CurTime() then return end
-        nextStage()
-
-    end
+    GAMEMODE:ShowDecree( tutorial )
     return true
 
 end
@@ -275,11 +158,86 @@ local timerName = "glee_dofirsttimemessage_ensured"
 
 net.Receive( "glee_dothefirsttimemessage", function()
     local tutorialType = net.ReadString()
+    local offerChoice = net.ReadBool()
     timer.Create( timerName, 1, 0, function()
         -- repeat this until LocalPlayer() is valid and the tutorial is started
-        if doMessageIfWeCan( tutorialType ) == true then timer.Remove( timerName ) end
+        if doMessageIfWeCan( tutorialType, offerChoice ) == true then timer.Remove( timerName ) end
 
     end )
+end )
+
+-- decrees the server shows by name, with glee_tutorial_decree
+local namedDecrees = {}
+
+-- their first real hunt after skipping the tutorial misery went nowhere
+namedDecrees.regret = function()
+    GAMEMODE:ShowDecree( {
+        "Did you expect to survive?",
+        "We warned you,\nthis was a...",
+        "TRUE MISERY",
+        "I will give you one,\nfinal choice.",
+        "Choose WISELY...",
+        choices = {
+            { "The Infernal Horde\nWeaklings,\na graceful start.", function()
+                net.Start( "glee_tutorial_goback" )
+                net.SendToServer()
+
+            end },
+            { "Hunter's Glee\nCONTINUE,\nTRUE MISERY.", function()
+                net.Start( "glee_tutorial_continue" )
+                net.SendToServer()
+
+            end },
+        },
+    } )
+end
+
+-- their first death, with others still alive to haunt
+namedDecrees.ghostshop = function()
+    local bound, shopKey = GAMEMODE:TranslatedBind( "+menu" )
+    local openShopLine = "The GHOST SHOP awaits..."
+    if bound then
+        openShopLine = "PRESS \" " .. string.upper( shopKey ) .. " \"\nto OPEN the GHOST SHOP."
+
+    end
+
+    local divineInterventionAwaitsLine = "Happy HAUNTING..."
+    if GAMEMODE:canShowInShop( LocalPlayer(), "resurrection" ) then
+        divineInterventionAwaitsLine = "DIVINE INTERVENTION AWAITS."
+
+    end
+
+    GAMEMODE:ShowDecree( {
+        "What a shame...",
+        "You've DIED.",
+        "This,\nthis is an OPPORTUNITY!",
+        "That body was.\nHolding you back.",
+        "The HUNT...\nIt hasn't ended.",
+        "It's time to HAUNT,\nthe living...",
+        "Haunt, for a PROFIT?",
+        openShopLine,
+        divineInterventionAwaitsLine,
+    } )
+end
+
+-- their first escape from the tutorial misery.
+namedDecrees.escapedeasy = function()
+    GAMEMODE:ShowDecree( {
+        "You ESCAPED.",
+        "You've passed the first...\nTEST.",
+        "That Misery was made to prepare you..",
+        "For the TRUE, hard MISERIES.\nThat await you...",
+        "Type \" !rtm \"\nTo begin a Misery vote...",
+    } )
+end
+
+net.Receive( "glee_tutorial_decree", function()
+    local name = net.ReadString()
+    local show = namedDecrees[name]
+    if not show then ErrorNoHaltWithStack( "GLEE: no tutorial decree named " .. name ) return end
+
+    show()
+
 end )
 
 GAMEMODE:RegisterStatusEffect( "spawn_protection",

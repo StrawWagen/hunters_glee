@@ -412,8 +412,6 @@ if SERVER then
         "ValveBiped.Bip01_R_UpperArm",
         "ValveBiped.Bip01_L_Forearm",
         "ValveBiped.Bip01_R_Forearm",
-        "ValveBiped.Bip01_L_Hand",
-        "ValveBiped.Bip01_R_Hand",
         "ValveBiped.Bip01_L_Thigh",
         "ValveBiped.Bip01_R_Thigh",
         "ValveBiped.Bip01_L_Calf",

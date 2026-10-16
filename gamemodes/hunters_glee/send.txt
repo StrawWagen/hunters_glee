@@ -56,12 +56,15 @@ gamemodes\hunters_glee\gamemode\modules\escaping\sh_escaperewards.lua
 gamemodes\hunters_glee\gamemode\modules\documents\cl_documents.lua
 
 gamemodes\hunters_glee\gamemode\modules\banking\sh_banking.lua
+gamemodes\hunters_glee\gamemode\modules\banking\sh_envoy.lua
 gamemodes\hunters_glee\gamemode\modules\banking\cl_banking.lua
 gamemodes\hunters_glee\gamemode\modules\banking\cl_bankconsent.lua
 
 gamemodes\hunters_glee\gamemode\modules\music\cl_music.lua
 
 gamemodes\hunters_glee\gamemode\modules\thirdpersonflashlight\cl_flashlight.lua
+
+gamemodes\hunters_glee\gamemode\modules\decrees\cl_decrees.lua
 
 gamemodes\hunters_glee\gamemode\modules\firsttimeplayers\cl_firsttimeplayers.lua
 gamemodes\hunters_glee\gamemode\modules\firsttimeplayers\sh_firsttimeplayers.lua

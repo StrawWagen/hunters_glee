@@ -570,9 +570,12 @@ end
 
 if not CLIENT then return end
 
+local entMeta = FindMetaTable( "Entity" )
+local NULL = NULL
+
 function ENT:Draw()
-    local parent = self:GetParent()
-    if IsValid( parent ) and parent:IsRagdoll() then return end
-    self:DrawModel()
+    local parent = entMeta.GetParent( self )
+    if parent and parent ~= NULL and IsValid( parent ) and entMeta.IsRagdoll( parent ) then return end
+    entMeta.DrawModel( self )
 
 end

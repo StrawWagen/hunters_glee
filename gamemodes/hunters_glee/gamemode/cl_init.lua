@@ -15,6 +15,7 @@ include( "modules/shopitems/cl_shopgobbler.lua" )
 include( "modules/music/cl_music.lua" )
 include( "modules/signalstrength/cl_signalstrength.lua" )
 include( "modules/thirdpersonflashlight/cl_flashlight.lua" )
+include( "modules/decrees/cl_decrees.lua" )
 include( "modules/firsttimeplayers/cl_firsttimeplayers.lua" )
 
 include( "modules/modelscale/cl_modelscale.lua" )
@@ -50,7 +51,7 @@ autoHidingPanel:Dock( FILL )
 -- the hud stays one size, the gui scale is for menus
 terminator_Extras.glee_SetPanelScale( autoHidingPanel, "fixed" )
 
-cvars.AddChangeCallback( "cl_drawhud", function( cvarName, oldValue, newValue )
+cvars.AddChangeCallback( "cl_drawhud", function( _cvarName, _oldValue, newValue )
     local shouldDraw = tobool( newValue )
     if shouldDraw then
         autoHidingPanel:SetVisible( true )
@@ -173,6 +174,29 @@ function GAMEMODE:TranslatedBind( bind )
     local phrase = language.GetPhrase( keyName )
 
     return true, phrase
+
+end
+
+local unboundHintDuration = 60 -- from first asked, not first shown. Resets each map
+local unboundHintsUntil = {}
+
+-- Hint stack hint for an unbound command. Non essential ones return nothing after unboundHintDuration
+--     if not valid then return GAMMODE:UnboundHint( "+menu", "You're missing out on the shop...", true ) end
+function GAMEMODE:UnboundHint( command, missingOut, essential )
+    if not essential then
+        unboundHintsUntil[command] = unboundHintsUntil[command] or CurTime() + unboundHintDuration
+        if self:UnboundHintSkipped( command ) then return end
+
+    end
+
+    return true, "You don't have the \"" .. command .. "\" command bound.\n" .. missingOut
+
+end
+
+-- Put this in an elseif's condition, a dropped hint returning nothing would block every hint below it
+function GAMEMODE:UnboundHintSkipped( command )
+    local hintUntil = unboundHintsUntil[command]
+    return hintUntil ~= nil and CurTime() > hintUntil
 
 end
 
@@ -321,8 +345,11 @@ local function IsSpectatingTerminator()
 
 end
 
-hook.Add( "CalcView", "glee_override_spectating_angles", function( ply, _, ang, fov )
+hook.Add( "CalcView", "glee_calcview", function( ... )
+    local overrideView = hook.Run( "glee_CalcView", ... )
+    if overrideView then return overrideView end
 
+    local ply, _, ang, fov = ...
     local isTerm, spectateTarget = IsSpectatingTerminator()
     local mode = ply:GetObserverMode()
 

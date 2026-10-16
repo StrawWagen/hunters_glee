@@ -561,3 +561,9 @@ goes in a glee rebinding menu?
 -- invert bones on players for teleport effect?
 
 -- 1min delay before forced map vote?
+
+-- make POV come from crapvidcam dropped on death
+-- hackily make crapvidcam more likely to point at the player when dropped 
+
+-- say Prospective Account Holders under ply's name if you have envoy
+-- hold crouch to be able to place dead stuff unprofitably

@@ -106,7 +106,6 @@ function meta:BankAccount()
     return bankFunctions.checkBankAccount( self )
 
 end
-
 -- expiry is checked here, not left to the server's periodic prune, so items stop working on time
 function meta:HasBankItem( name )
     local account = bankFunctions.checkBankAccount( self )

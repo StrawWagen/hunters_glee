@@ -48,6 +48,15 @@ local tracks = {
         neverOverrides = { "grigoriArrival", "secondGrigoriArrival" },
         alwaysOverrides = { "roundEnd", "roundWin", "roundPerfectWin" },
     },
+    tutorialPickedHardOption = {
+        sounds = {
+            {
+                author = vacant,
+                snd = "hunters_glee/music/VACANT/8.23.GleeExp3.ogg",
+            },
+        },
+        priority        = 0,
+    },
 
     highIntensity = {
         sounds = {

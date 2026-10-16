@@ -34,6 +34,7 @@ include( "sh_player.lua" )
 include( "modules/sh_panic.lua" )
 include( "modules/banking/sh_banking.lua" )
 include( "modules/escaping/sh_escaperewards.lua" )
+include( "modules/banking/sh_envoy.lua" ) -- uses sh_escaperewards' CreateDefaultingConVar
 include( "modules/sh_deathsounds.lua" )
 include( "modules/sh_slowmopitch.lua" )
 include( "modules/sh_danceslowdown.lua" )

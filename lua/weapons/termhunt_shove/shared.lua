@@ -34,18 +34,18 @@ if CLIENT then
     function SWEP:HintPostStack()
         local owner = self:GetOwner()
 
-        if not GAMEMODE:HasLearnedLesson( "Shoved" ) then
+        if not owner.glee_DefinitelySprinted then
+            return true, "Keep running straight forward to build up momentum!"
+
+        elseif not GAMEMODE:HasLearnedLesson( "Shoved" ) then
             local nwBool = owner:GetNW2Bool( "gleeshove_primaryattacked", false )
             if not nwBool then
-                return true, "Primary attack to do a big shove!"
+                return true, "Primary attack something to shove it!"
 
             elseif nwBool then
                 GAMEMODE:LearnLesson( "Shoved" )
 
             end
-        elseif not owner.glee_DefinitelySprinted then
-            return true, "Keep running straight forward to build up momentum!"
-
         end
     end
 else

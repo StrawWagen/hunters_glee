@@ -102,6 +102,19 @@ function PANEL:ComputeShowName()
 
 end
 
+-- sizing and Paint both ask these, so a line that isn't drawn doesn't widen the panel
+local function showsInfoLine( self )
+    if not self._infoLine or #self._infoLine <= 0 then return false end
+    return self._mode == MODE_FULL or self._isLookedAt
+
+end
+
+local function showsExtraLine( self )
+    if not self._extraLine or #self._extraLine <= 0 then return false end
+    return self._isLookedAt
+
+end
+
 -- Measures the natural (full) panel size from current content.
 -- Must be called inside a valid render context (HUDPaint is fine).
 local function computeFullSize( self )
@@ -116,7 +129,7 @@ local function computeFullSize( self )
     local font           = self:GetResolvedFont()
     local lineH          = draw.GetFontHeight( font )
 
-    if self._infoLine and #self._infoLine > 0 then
+    if showsInfoLine( self ) then
         surface.SetFont( font )
         local infoLineW = surface.GetTextSize( self._infoLine )
         if infoLineW > widestLineW then widestLineW = infoLineW end
@@ -124,7 +137,7 @@ local function computeFullSize( self )
 
     end
 
-    if self._extraLine and #self._extraLine > 0 then
+    if showsExtraLine( self ) then
         surface.SetFont( font )
         local extraLineW = surface.GetTextSize( self._extraLine )
         if extraLineW > widestLineW then widestLineW = extraLineW end
@@ -417,16 +430,13 @@ function PANEL:Paint( w, h )
     drawText.b = teamColor.b
     drawText.a = subAlpha
 
-    -- infoLine: always in MODE_FULL; only when isLookedAt in MODE_WORLD
-    local showInfo = self._mode == MODE_FULL or self._isLookedAt
-    if showInfo and self._infoLine and #self._infoLine > 0 then
+    if showsInfoLine( self ) then
         draw.SimpleText( self._infoLine, font, w * 0.5, subLineY, drawText, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
         subLineY = subLineY + lineH
 
     end
 
-    -- extraLine: only when isLookedAt
-    if self._isLookedAt and self._extraLine and #self._extraLine > 0 then
+    if showsExtraLine( self ) then
         draw.SimpleText( self._extraLine, font, w * 0.5, subLineY, drawText, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
 
     end

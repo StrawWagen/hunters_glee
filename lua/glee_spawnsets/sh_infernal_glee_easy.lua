@@ -140,7 +140,7 @@ local nearbyEntHints = {
     prop_door_rotating = function( me )
         if GAMEMODE:HasLearnedLesson( me, "OpenedADoor" ) then return end
         local valid, phrase = GAMEMODE:TranslatedBind( "+use" )
-        if not valid then GAMMODE:LearnLesson( "OpenedADoor" ) return end
+        if not valid then return GAMEMODE:UnboundHint( "+use", "You can't open doors..." ) end
 
         return true, "Press " .. phrase .. " to open doors!"
 

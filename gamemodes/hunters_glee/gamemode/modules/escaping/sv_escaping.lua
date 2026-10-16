@@ -253,30 +253,6 @@ hook.Add( "glee_onboss_crappydefeated", "glee_escapeviabossdefeat", function( bo
 
 end )
 
--- count escaped new players
-hook.Add( "huntersglee_round_postroundend", "glee_escaping_envoy_newplycount", function()
-    local escapedCount = 0
-
-    for _, ply in player.Iterator() do
-        if ply:IsBot() then -- easy testing
-            escapedCount = escapedCount + 1
-
-        end
-        if not ply:HasEscaped() then continue end
-
-        -- IsFirstTimePlayer sanity checks will limit most convar resetting exploits
-        if not GAMEMODE:IsFirstTimePlayer( ply ) then continue end
-
-        if ply:HasBankItem( "gleeful_envoy" ) then continue end
-
-        escapedCount = escapedCount + 1
-
-    end
-
-    GAMEMODE.roundExtraData.escapedNewPlayersCount = escapedCount
-
-end )
-
 
 -- begin escaping rewards
 
@@ -292,15 +268,8 @@ function GM:GiveEscapeRewardTo( ply )
     local _spawnsetsMul, spawnsetsEscCount = GAMEMODE:GetSpawnsetsEscapeMultiplier( setName )
 
     local mapModesMultiplier = self:GetEscapeMultiplier()
-    local theMultiplier = mapModesMultiplier
 
-    local isEnvoy = ply:HasBankItem( "gleeful_envoy" )
-    local envoyHelpedCount
-    if isEnvoy then
-        envoyHelpedCount = GAMEMODE.roundExtraData.escapedNewPlayersCount
-        theMultiplier = self:GetEnvoysBoon( theMultiplier, envoyHelpedCount )
-
-    end
+    local theMultiplier, envoyHelpedCount = self:GetEnvoysEscapeMultiplier( ply, mapModesMultiplier )
 
     local mapHasNeverEscaped = mapsEscCount <= 1
     local spawnsetHasNeverEscaped = spawnsetsEscCount <= 1
@@ -357,7 +326,7 @@ function GM:GiveEscapeRewardTo( ply )
         if not IsValid( ply ) then return end
         local msgParts = { "You escaped!\n+", baseReward, " Score..." }
 
-        if isEnvoy and envoyHelpedCount > 0 then
+        if envoyHelpedCount > 0 then
             table.insert( msgParts, everyoneEscaped and "\nDOUBLE BOON!!!" or "\nEnvoy's Boon!" )
 
             local holders = envoyHelpedCount == 1 and " Prospective Account Holder" or " Prospective Account Holders"

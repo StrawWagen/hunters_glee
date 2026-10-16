@@ -4,34 +4,33 @@ local asked = {}
 local spawned = {}
 local alreadyDone = {}
 
+-- One new player per map is offered the choice to skip the tutorial misery. Each SteamID is
+-- cleared once it's been acted on, so every answer only counts once
+local tutorialChoiceOffered
+local chooserSteamID -- until they answer
+local jumpedInSteamID -- skipped it, until their first real hunt ends
+local regretPendingSteamID -- that hunt ended with nobody out, until the win screen's done
+local regretAskedSteamID -- asked if they'd rather go back, until they answer
+
 -- by SteamID, so a crash and rejoin doesn't cost them it. Cleared on map change
 GAMEMODE.firstTimePlayerSteamIDs = GAMEMODE.firstTimePlayerSteamIDs or {}
 
 util.AddNetworkString( "glee_dothefirsttimemessage" )
 util.AddNetworkString( "glee_askforgleetings" )
+util.AddNetworkString( "glee_tutorial_jumpin" )
+util.AddNetworkString( "glee_tutorial_decree" )
+util.AddNetworkString( "glee_tutorial_goback" )
+util.AddNetworkString( "glee_tutorial_continue" )
 
--- only souls that would count towards an Envoy's escape bonus
-local function alertEnvoys( ply )
-    if not GAMEMODE:IsFirstTimePlayer( ply ) then return end
-    if ply:HasBankItem( "gleeful_envoy" ) then return end
-
-    local envoys = {}
-    for _, other in player.Iterator() do
-        if other == ply then continue end
-        if not other:HasBankItem( "gleeful_envoy" ) then continue end
-
-        envoys[#envoys + 1] = other
-
-    end
-    if #envoys <= 0 then return end
-
-    huntersGlee_Announce( envoys, 50, 6, "A Prospective Account Holder has arrived...\nGet them up to speed!\nSee that " .. ply:Nick() .. " escapes..." )
+-- shows one of cl_firsttimeplayers.lua's namedDecrees
+local function sendTutorialDecree( ply, name )
+    net.Start( "glee_tutorial_decree" )
+        net.WriteString( name )
+    net.Send( ply )
 
 end
 
 local function gleetings( ply )
-    alertEnvoys( ply )
-
     if not game.IsDedicated() then return end
 
     local filterNotPly = RecipientFilter()
@@ -109,7 +108,7 @@ local function shelterPly( ply )
     end )
 end
 
-local function tutorialize( ply, tutorialType )
+local function tutorialize( ply, tutorialType, offerChoice )
     permaPrint( "GLEE: Tutorializing ", ply )
     if ply:Glee_FlashlightIsOn() then
         ply:Glee_Flashlight( false )
@@ -128,6 +127,7 @@ local function tutorialize( ply, tutorialType )
     end
     net.Start( "glee_dothefirsttimemessage" )
         net.WriteString( tutorialType )
+        net.WriteBool( offerChoice == true )
     net.Send( ply )
 
     GAMEMODE.firstTimePlayerSteamIDs[ply:SteamID()] = true
@@ -174,13 +174,14 @@ end
 -- hunters shouldn't spawn.
 -- Only counts players we've actually sent the tutorial to, isEducated alone is false for
 -- anyone still connecting and they'd freeze the round just by loading in.
+-- Not IsFirstTimePlayer, its wealth and guilt checks would let the round end mid tutorial
 function GAMEMODE:TutorialIsHoldingTheRound( players )
     if #players <= 0 then return end
 
     local inTutorial = 0
 
     for _, ply in ipairs( players ) do
-        if not self:IsFirstTimePlayer( ply ) then continue end
+        if not self.firstTimePlayerSteamIDs[ply:SteamID()] then continue end
         if not ply.glee_importantSpawnProtection and isEducated( ply ) then continue end
 
         inTutorial = inTutorial + 1
@@ -207,7 +208,8 @@ function GAMEMODE:TutorializeNewPlayers( players )
 
     -- enough of the session is new that the whole server should be on the gentle misery
     local threshold = #players / 2
-    if #nonKnowers > threshold then
+    local switchingToTutorialMisery = #nonKnowers > threshold
+    if switchingToTutorialMisery then
         RunConsoleCommand( "huntersglee_spawnset", self.TheTutorialMisery )
 
     elseif GAMEMODE:getRemaining( GAMEMODE.termHunt_roundBegunTime, CurTime() ) > 5 then
@@ -216,11 +218,127 @@ function GAMEMODE:TutorializeNewPlayers( players )
 
     end
 
+    -- the cvar change applies after this, so the current misery can still be the old one
+    local onTutorialMisery = switchingToTutorialMisery or self:GetSpawnSet() == self.TheTutorialMisery
+    local chooser
+    if onTutorialMisery and not tutorialChoiceOffered then
+        for _, ply in ipairs( nonKnowers ) do
+            if not chooser or ply:TimeConnected() > chooser:TimeConnected() then
+                chooser = ply
+
+            end
+        end
+        tutorialChoiceOffered = true
+        chooserSteamID = chooser:SteamID()
+
+    end
+
     for _, ply in ipairs( nonKnowers ) do
-        tutorialize( ply, tutorialType )
+        tutorialize( ply, tutorialType, ply == chooser )
 
     end
 end
+
+-- they want to jump STRAIGHT INTO THE REAL HUNT
+net.Receive( "glee_tutorial_jumpin", function( _, ply )
+    if ply:SteamID() ~= chooserSteamID then return end
+    chooserSteamID = nil
+    if GAMEMODE:GetSpawnSet() ~= GAMEMODE.TheTutorialMisery then return end
+
+    permaPrint( "GLEE: ", ply, "CHOSE A REAL MISERY" )
+
+    jumpedInSteamID = ply:SteamID()
+    RunConsoleCommand( "huntersglee_spawnset", "hunters_glee" )
+    GAMEMODE:LearnLesson( ply, "ExperiencedMiseryVote" ) -- skip the .tutorialExit options
+
+    hook.Add( "terminator_enemythink", "glee_playTutorialHardOptionTrack", function( bot, spotted )
+        if not spotted:IsPlayer() then return end
+
+        if not bot:GetNW2Bool( "glee_IsHunter" ) then return end -- interloper
+        if bot.DistToEnemy > 1250 then return end -- too far, ply doesn't see it
+
+        hook.Remove( "terminator_enemythink", "glee_playTutorialHardOptionTrack" )
+        GAMEMODE:SendMusic( "tracks/tutorialPickedHardOption" )
+
+    end )
+end )
+
+-- their first real hunt went nowhere, ask once if they'd rather go back
+hook.Add( "huntersglee_no_one_escaped", "glee_tutorialmisery_regret", function()
+    if not jumpedInSteamID then return end
+    if GAMEMODE:GetSpawnSet() ~= "hunters_glee" then jumpedInSteamID = nil return end
+
+    regretPendingSteamID = jumpedInSteamID
+    jumpedInSteamID = nil
+
+end )
+
+-- after the win screen, not over it
+hook.Add( "huntersglee_round_postroundend", "glee_tutorialmisery_regret", function()
+    if not regretPendingSteamID then return end
+    local chooser = player.GetBySteamID( regretPendingSteamID )
+    regretPendingSteamID = nil
+
+    if not IsValid( chooser ) then return end
+    if GAMEMODE:GetSpawnSet() ~= "hunters_glee" then return end
+
+    regretAskedSteamID = chooser:SteamID()
+    sendTutorialDecree( chooser, "regret" )
+
+end )
+
+net.Receive( "glee_tutorial_goback", function( _, ply )
+    if ply:SteamID() ~= regretAskedSteamID then return end
+    regretAskedSteamID = nil
+    if GAMEMODE:GetSpawnSet() ~= "hunters_glee" then return end
+
+    permaPrint( "GLEE: ", ply, "WENT BACK TO THE INFERNAL HORDE" )
+    RunConsoleCommand( "huntersglee_spawnset", GAMEMODE.TheTutorialMisery )
+
+end )
+
+net.Receive( "glee_tutorial_continue", function( _, ply )
+    if ply:SteamID() ~= regretAskedSteamID then return end
+    regretAskedSteamID = nil
+
+    GAMEMODE.rtmRoundEndHints["GLEE: You can still choose another Misery\nType !rtm to start a Misery vote"] = { priority = 100, plys = { ply } }
+
+end )
+
+local ghostShopHintDelay = 5
+
+-- a new player's first death with others still alive, tell them dying's where the haunting starts
+hook.Add( "PlayerDeath", "glee_tutorial_ghostshophint", function( ply )
+    if not GAMEMODE.firstTimePlayerSteamIDs[ply:SteamID()] then return end
+    if player.GetCount() < 2 then return end
+    if GAMEMODE:HasLearnedLesson( ply, "DiedTimeToContinueShoppingHint" ) then return end
+
+    timer.Create( "glee_tutorial_ghostshophint_" .. ply:GetCreationID(), ghostShopHintDelay, 1, function()
+        if not IsValid( ply ) then return end
+        if ply:Alive() then return end
+        if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
+        if not GAMEMODE:LearnLesson( ply, "DiedTimeToContinueShoppingHint" ) then return end
+
+        sendTutorialDecree( ply, "ghostshop" )
+
+    end )
+end )
+
+local escapedEasyHintDelay = 5 -- let the escape itself land first
+
+-- the first time someone escapes the tutorial misery, show them there's more
+hook.Add( "glee_ply_escaped", "glee_tutorial_escapedeasyhint", function( ply )
+    if GAMEMODE:GetSpawnSet() ~= GAMEMODE.TheTutorialMisery then return end
+    if GAMEMODE:HasLearnedLesson( ply, "EscapedTheEasyMisery" ) then return end
+
+    timer.Simple( escapedEasyHintDelay, function()
+        if not IsValid( ply ) then return end
+        if not GAMEMODE:LearnLesson( ply, "EscapedTheEasyMisery" ) then return end
+
+        sendTutorialDecree( ply, "escapedeasy" )
+
+    end )
+end )
 
 -- shelter until they are done loading
 hook.Add( "PlayerInitialSpawn", "glee_firsttimeply_shelterwhenloading", function( ply )
@@ -260,6 +378,12 @@ hook.Add( "glee_full_load", "glee_firsttimeplayercheck", function( ply )
 end )
 
 hook.Add( "glee_test_tutorial", "firsttimeplayers", function()
+    tutorialChoiceOffered = nil
+    chooserSteamID = nil
+    jumpedInSteamID = nil
+    regretPendingSteamID = nil
+    regretAskedSteamID = nil
+
     -- reset tutorial for all plys in session
     for _, ply in player.Iterator() do
         if not ply.glee_FullLoaded then continue end

@@ -243,12 +243,12 @@ documents.gleeful_envoy = function( _ply )
     return "GLEEFUL ENVOY:\nADDENDUM TO THE ACCOUNT AGREEMENT", {
         {
             heading = "APPOINTMENT",
-            body = "By this Addendum, the Bank appoints the Account Holder as its Envoy (the \"Envoy\"). Every so often, a new soul wanders into the Hunt. Penniless, guiltless, and of no use to anyone, yet. The Bank would like them to survive long enough to become of use. Every one that escapes will be credited to the Envoy, who will be paid above the ordinary Escaped Soul, at a rate no lower than " .. lowestBoon .. "x, on their escape, and on their skulls should they hold Skull Gains. The Envoy need not hold their hand. The Envoy need not even meet them. The figures follow.",
+            body = "By this Addendum, the Bank appoints the Account Holder as its Envoy (the \"Envoy\"). Many souls wander the Hunt without an account. Penniless, as far as the Bank can tell, and of no use to anyone, yet. The Bank would like them to survive long enough to become of use. Every one that escapes will be credited to the Envoy, who will be paid above the ordinary Escaped Soul, at a rate no lower than " .. lowestBoon .. "x, on their escape, and on their skulls should they hold Skull Gains. The Envoy need not hold their hand. The Envoy need not even meet them. The figures follow.",
         },
         {
             heading = "DEFINITIONS",
             body = table.concat( {
-                "(a) A \"Prospective Account Holder\" is a soul the Hunt has judged to be new to it, by means the Bank declines to disclose, and who is not yet of consequence to the Bank. No Envoy is a Prospective Account Holder, the Account Holder included.",
+                "(a) A \"Prospective Account Holder\" is any soul without an account with the Bank. No Envoy is a Prospective Account Holder, the Account Holder included, an Envoy being an Account Holder by definition.",
                 "(b) The \"Locale\" is the place the Hunt is held. The \"Escape Multiplier\" is the Locale's multiplier, multiplied by the Misery's multiplier, as shown on the scoreboard. Every Escaped Soul's escape reward is paid at it.",
                 "(c) The \"Envoy's Boon\" is the multiplier the Envoy is paid at instead. It is kin to the Boon, well known to all souls, but defined in the Skull Gains Addendum: both are earned by the escape of others. Where both are granted, a \"DOUBLE BOON\", the Envoy's Boon multiplies a normal Boon as well.",
             }, "\n" ),
@@ -276,8 +276,8 @@ documents.gleeful_envoy = function( _ply )
                 "(a) A Prospective Account Holder's escape is credited to the Envoy. The credit is paid out, as the Envoy's Boon, on the Envoy's own escape, and is forfeit otherwise.",
                 "(b) The two escapes are separate transactions. The Bank does not care whether they share a vehicle, a moment, or an acquaintance, only that both occur in the same Hunt.",
                 "(c) The Envoy's Boon replaces the Escape Multiplier on the Envoy's escape reward, and on any skulls, cashed out or relayed. Nothing else. Where this Addendum conflicts with the Skull Gains Addendum, or any other, this one prevails.",
-                "(d) A Prospective Account Holder is credited every time they escape, Hunt after Hunt, for as long as the Hunt keeps its Locale. Once the Hunt moves to a new Locale, they are Prospective no longer, and are credited no further.",
-                "(e) A Prospective Account Holder who comes into considerable wealth, or considerable guilt, is Prospective no longer, whatever they claim.",
+                "(d) A Prospective Account Holder is credited every time they escape, Hunt after Hunt, for as long as they remain without an account.",
+                "(e) A Prospective Account Holder who opens an account is Prospective no longer. The Bank considers this a success, and pays the Envoy a finder's fee of " .. GAMEMODE:GetEnvoyNewAccountReward() .. " Score, should the Envoy be present to collect it.",
             }, "\n" ),
         },
         {

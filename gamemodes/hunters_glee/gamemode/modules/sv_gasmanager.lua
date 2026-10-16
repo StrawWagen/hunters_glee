@@ -77,6 +77,11 @@ hook.Add( "OnEntityCreated", "glee_gas_registernewgas", function( ent )
 end )
 
 hook.Add( "glee_onspawned_glidevehicle", "glee_glidevehicle_gassing", function( veh )
+    GAMEMODE:MakeGlideVehicleUnfueled( veh )
+
+end )
+
+function GM:MakeGlideVehicleUnfueled( veh )
     veh.isEngineEnabled = false
     veh.glee_IsWaitingForGas = true
 
@@ -125,7 +130,7 @@ hook.Add( "glee_onspawned_glidevehicle", "glee_glidevehicle_gassing", function( 
         return self:glee_OldGlideOnDriverEnter( driver )
 
     end
-end )
+end
 
 
 -- register user(vehicle, teleporter generator) for the random gas spawner to spawn gas around

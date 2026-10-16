@@ -373,6 +373,8 @@ function meta:BankOpenAccount()
     bankFunctions.openAccount( self )
     bankFunctions.updateBankTimer()
 
+    hook.Run( "glee_bankAccountOpen", self )
+
 end
 
 -- false when the item isn't registered, or the player has no account to hold it

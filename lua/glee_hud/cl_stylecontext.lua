@@ -17,10 +17,12 @@
 local defaultStyle = "generic"
 local defaultScale = "gui"
 
+local entMeta = FindMetaTable( "Entity" )
+
 -- escaped players are at 0 health, so they get soulthought too
 terminator_Extras.glee_RegisterStyleAlias( "generic", function()
     local me = LocalPlayer()
-    if IsValid( me ) and me:Health() <= 0 then return "soulthought" end
+    if me and me ~= NULL and entMeta.Health( me ) <= 0 then return "soulthought" end
 
     return "hl2"
 

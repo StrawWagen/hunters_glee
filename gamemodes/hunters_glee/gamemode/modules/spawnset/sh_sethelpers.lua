@@ -14,7 +14,7 @@ function setHelpers.makeHardcore( lifecycle )
     lifecycle:Hook( "glee_blockshopopen", function()
         if LocalPlayer():Health() <= 0 then return end
 
-        return true, "The shop is closed to the living."
+        return true, "This Misery is Hardcore.\nThe shop is closed to the living..."
 
     end )
     -- the shop panel is one way in, termhunt_purchase is the other, and this closes both
@@ -32,7 +32,7 @@ function setHelpers.makeHardcore( lifecycle )
 end
 
 
-if CLIENT then return end -- the rest spawns hunters
+if CLIENT then return end
 
 
 -- rolled at load, so the escalation curve is this session's own, not this round's

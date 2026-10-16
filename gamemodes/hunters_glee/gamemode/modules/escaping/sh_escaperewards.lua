@@ -1,6 +1,6 @@
 
 -- -1 on these convars means the default in code, so changing a default reaches servers that already archived the convar
-local function defaultingConVar( name, default, help )
+function GM.CreateDefaultingConVar( name, default, help )
     local cvar = CreateConVar( name, "-1", { FCVAR_ARCHIVE, FCVAR_REPLICATED }, help .. " -1 is default, " .. default, -1, 999999 )
 
     return function()
@@ -15,6 +15,8 @@ local function defaultingConVar( name, default, help )
     end
 end
 
+local defaultingConVar = GM.CreateDefaultingConVar
+
 GM.GetEscapeReward = defaultingConVar( "huntersglee_escape_reward", 500, "Score given for escaping, multiplied by the map and misery's escape multiplier." )
 GM.GetEscapeRewardBoon = defaultingConVar( "huntersglee_escape_reward_everyone", 1000, "Extra score given for escaping when everyone escaped, multiplied by the escape multiplier." )
 GM.GetEscapeRewardPerRider = defaultingConVar( "huntersglee_escape_reward_perrider", 500, "Score given to a driver, per passenger they helped escape." )
@@ -24,9 +26,6 @@ GM.GetSkullRewardGains = defaultingConVar( "huntersglee_escape_skullreward_gains
 GM.GetSkullRewardGainsBoon = defaultingConVar( "huntersglee_escape_skullreward_gains_everyone", 100, "Extra score per skull with Skull Gains when everyone escaped." )
 
 GM.GetSkullRelayMultiplier = defaultingConVar( "huntersglee_escape_skullreward_relaymul", 2, "Multiplier on the Skull Gains rate while connected to the Off-World Skull Relay." )
-
-GM.GetEnvoyBaseMultiplier = defaultingConVar( "huntersglee_escape_envoy_basemul", 3, "Gleeful Envoys' escape multiplier is raised to at least this, before the per new player additions, when any new player escapes the same round." )
-GM.GetEnvoyAddedMultiplier = defaultingConVar( "huntersglee_escape_envoy_addedmul", 0.5, "Added to a Gleeful Envoy's escape multiplier for every new player that escapes the same round. Paid out on the Envoy's own escape, by any vehicle." )
 
 -- The Escape Multiplier for the current map and misery: their product, then the map's and the misery's.
 -- Unrounded. Nil on client if a sync failed
@@ -44,13 +43,6 @@ function GM:GetEscapeMultiplier()
     end
 
     return mapMul * spawnsetMul, mapMul, spawnsetMul
-
-end
-
--- the Envoy's Boon. escapeMul is from GetEscapeMultiplier
-function GM:GetEnvoysBoon( escapeMul, newPlayersEscaped )
-    if newPlayersEscaped <= 0 then return escapeMul end
-    return math.max( escapeMul, self:GetEnvoyBaseMultiplier() ) + newPlayersEscaped * self:GetEnvoyAddedMultiplier()
 
 end
 
