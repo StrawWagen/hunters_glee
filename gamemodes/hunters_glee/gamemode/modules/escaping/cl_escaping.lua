@@ -1,6 +1,5 @@
 
-local killIconColor = Color( 255, 80, 0, 255 )
-killicon.Add( "glee_escapeicon", "vgui/hud/glee_escapeicon", killIconColor )
+killicon.Add( "glee_escapeicon", "vgui/hud/glee_escapeicon", terminator_Extras.glee_EscapedPlyColor )
 
 if not Glide then return end
 

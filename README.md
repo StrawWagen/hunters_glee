@@ -491,7 +491,7 @@ Number values can be:
 | `roundStartSound` | ❌ | Sound on round start |
 | `roundEndSound` | ❌ | Sound on round end |
 | `roundEarlyStartSound` | ❌ | Alt start sound, played 10s before start, only plays if roundStartSound is "" |
-| `genericSpawnerRate` | ❌ | Crate/item spawn rate multiplier |
+| `genericSpawnerRate` | ❌ | Multiplier on procedural spawn delays ( crates, flareguns, beartraps, skulls, gas, vehicles, etc ). Bigger for slower spawns, smaller for faster |
 | `chanceToBeVotable` | ❌ | Percent chance to appear in !rtm vote, 0-100, accepts float |
 | `chanceToBeVotableWhenHard` | ❌ | Percent chance to appear in !rtm when this misery's escape multiplier is 1x or more, for making spawnsets fade into the background when they no longer challenge the host |
 | `easy` | ❌ | Marks this as a beginner misery. Tagged `(EASY)` in the !rtm vote, and while an easy one is active the vote prefers offering other easy ones. Also soft-caps its escape reward multiplier |

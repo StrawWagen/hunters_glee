@@ -10,6 +10,11 @@
     easyClosePanel is left to the caller: it wraps whatever Think the frame has when it
     runs, so call it after assigning your own, never before.
 
+    It fades in with its style's entrance. Close fades it out with the exit, then closes
+    it as a DFrame does, so it's still valid until then; Remove takes it at once. Both
+    run on Derma animations, which tick even when a caller replaces Think. Its alpha is
+    theirs, so don't AlphaTo a glee_frame.
+
     Build its contents docked inside it, then let it size itself around them. After a
     style change it sizes itself again, once its contents have caught up.
 
@@ -22,6 +27,30 @@
 ]]
 
 local PANEL = {}
+
+-- getFade( frame ) is read every tick, and once more as it ends, before onDone( frame )
+local function fadeOver( self, duration, getFade, onDone )
+    local anim = self:NewAnimation( duration, 0, -1, function( _, frame )
+        frame:SetAlpha( 255 * getFade( frame ) )
+        onDone( frame )
+
+    end )
+
+    anim.Think = function( _, frame )
+        frame:SetAlpha( 255 * getFade( frame ) )
+
+    end
+end
+
+local function entranceFade( frame )
+    return ( frame:Style():Entrance( frame._enteredAt ) )
+
+end
+
+local function exitFade( frame )
+    return frame._exitFromAlpha * frame:Style():Exit( frame._exitingAt )
+
+end
 
 -- vgui runs every Init in the chain, base first. Calling DFrame's again from here builds
 -- a second set of title bar furniture, and only the set the accessors point at is hidden.
@@ -36,6 +65,27 @@ PANEL.Init = function( self )
 
     self:ApplyPadding()
 
+    self._enteredAt = RealTime()
+    self._exitingAt = nil
+    self:SetAlpha( 0 )
+    fadeOver( self, self:Style():EntranceDuration(), entranceFade, function( frame ) frame:SetAlpha( 255 ) end )
+
+end
+
+-- easyClosePanel, and Thinks like the ATM's, call this every frame until it's gone
+PANEL.Close = function( self )
+    if self._exitingAt then return end
+
+    self._exitingAt = RealTime()
+    self._exitFromAlpha = self:GetAlpha() / 255 -- closed mid-entrance, it leaves from as far as it got
+    self:SetMouseInputEnabled( false )
+    self:SetKeyboardInputEnabled( false )
+
+    self:Stop() -- the entrance, if it's still coming in
+    fadeOver( self, self:Style():ExitDuration(), exitFade, function( frame )
+        vgui.GetControlTable( "DFrame" ).Close( frame )
+
+    end )
 end
 
 -- see glee_hud/cl_stylecontext.lua

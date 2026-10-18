@@ -279,15 +279,6 @@ end
 
 -- Motion --------------------------------------------------------------------
 
--- 0 to 1, eased. Each order starts arrivalSettings.stagger later
-function hudHelpers.ArrivalProgress( openedAt, order, arrivalSettings )
-    local startAt = openedAt + ( order * arrivalSettings.stagger )
-    local progress = math.Clamp( ( CurTime() - startAt ) / arrivalSettings.time, 0, 1 )
-
-    return 1 - ( ( 1 - progress ) ^ 3 )
-
-end
-
 -- Keeps jitterX and jitterY on state, for a draw position to add. jitterSettings is like
 -- the god style's jitter. Rerolls on its own clock rather than every frame, which would
 -- be a buzz nobody sees, and shake harder the higher the framerate

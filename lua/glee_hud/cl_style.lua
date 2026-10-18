@@ -31,7 +31,9 @@
                     cl_huntersglee_highcontrast is on. Its everyTextColor replaces every
                     colors entry
 
-    Read off handle:Settings(), having no method: smudge, tornStrip, ghosts, jitter, arrival.
+    entrance, exit  how things come into view and leave it, see handle:Entrance
+
+    Read off handle:Settings(), having no method: smudge, tornStrip, ghosts, jitter.
 --]]-------------------------------------
 
 terminator_Extras.glee_HudStyles = terminator_Extras.glee_HudStyles or {}

@@ -1,5 +1,6 @@
 -- CREDIT https://steamcommunity.com/sharedfiles/filedetails/?id=3504739480
--- modified to keep recording from the dropped cam for a few seconds after death
+-- modified so tapes outlive the recorder: once you die or get grabbed out of your own eyes,
+-- it keeps rolling from the dropped cam, then from whoever picks it up, until it loses sight of you
 
 AddCSLuaFile()
 
@@ -42,7 +43,7 @@ SWEP.SlotPos = 3
 SWEP.Weight = 1
 
 SWEP.AutoSwitchFrom = false
-SWEP.AutoSwitchTo = false
+SWEP.AutoSwitchTo = true
 
 SWEP.Primary.Sound = Sound( "CrapVidCam.ToggleCamera_Glee" )
 SWEP.Primary.Recoil = 8.5
@@ -102,10 +103,58 @@ function SWEP:Initialize()
 
 end
 
+function SWEP:CanBePickedUpByNPCs()
+    return true
+
+end
+
+local handBoneCandidates = {
+    "ValveBiped.Bip01_R_Hand",
+    "ValveBiped.Bip01_R_Forearm",
+    "RightHand",
+    "r_hand",
+}
+
+local function handBonePose( holder )
+    for _, boneName in ipairs( handBoneCandidates ) do
+        local bone = holder:LookupBone( boneName )
+        if not bone then continue end
+
+        local matrix = holder:GetBoneMatrix( bone )
+        if matrix then return matrix:GetTranslation(), matrix:GetAngles() end
+
+        local bonePos, boneAng = holder:GetBonePosition( bone )
+        if bonePos and boneAng then return bonePos, boneAng end
+
+    end
+end
+
+-- where the cam sits in a holder's hand, players or hunters
+local function heldPose( holder )
+    local att = holder:GetAttachment( holder:LookupAttachment( "anim_attachment_RH" ) )
+    if att then
+        local ang = att.Ang
+        return att.Pos + ang:Up() * 10 + ang:Right() + ang:Forward() * 2, ang
+
+    end
+
+    -- model without the attachment
+    local pos, ang = handBonePose( holder )
+    if pos then
+        return pos + ang:Up() * 8 + ang:Right() * 2 + ang:Forward() * 2, ang
+
+    end
+
+    ang = holder:EyeAngles()
+    return holder:EyePos() + ang:Right() * 11 + ang:Forward() * 4, ang
+
+end
+
 local toggleRecording -- clientside only
 
 if SERVER then
     util.AddNetworkString( "glee_crapvidcam_stoprecording" )
+    util.AddNetworkString( "glee_crapvidcam_endtapes" )
 
     hook.Add( "PlayerSpawn", "glee_crapvidcam_stoprecording", function( ply )
         net.Start( "glee_crapvidcam_stoprecording" )
@@ -120,7 +169,8 @@ if SERVER then
     -- DropWeaponKeepAmmo throws the cam a tick after the drop, before then it may not be moving yet
     local throwGrace = 0.2
 
-    local function biasAimTowards( cam, target )
+    -- aims at what the holder is spectating, eg their body being dragged off, else where they dropped it
+    local function biasAimTowards( cam, holder, dropSpot )
         local timerName = "glee_crapvidcam_aimbias_" .. cam:GetCreationID()
         local checkLandedAfter = CurTime() + throwGrace
 
@@ -139,6 +189,13 @@ if SERVER then
             if CurTime() > checkLandedAfter and cam:GetVelocity():Length() < landedSpeed then
                 timer.Remove( timerName )
                 return
+
+            end
+
+            local target = dropSpot
+            local watched = IsValid( holder ) and holder:GetObserverTarget()
+            if IsValid( watched ) and watched ~= cam then
+                target = watched:WorldSpaceCenter()
 
             end
 
@@ -161,22 +218,101 @@ if SERVER then
         end )
     end
 
+    -- KillSilent leaves health above 0, and Alive() can lag behind health during DoPlayerDeath, so check both
+    local function seesThroughOwnEyes( ply )
+        return ply:Alive() and ply:Health() > 0 and ply:GetObserverMode() == OBS_MODE_NONE
+
+    end
+
+    -- their cam, if it's out and droppable
+    local function holdingCamActive( ply )
+        local cam = ply:GetActiveWeapon()
+        if not IsValid( cam ) or cam:GetClass() ~= "weapon_glee_crapvidcam" then return end
+        if not ply:CanDropWeaponKeepAmmo( cam ) then return end
+
+        return cam
+
+    end
+
+    -- polls every tick while they hold it, nothing announces an observer mode change
+    local function dropWhenNotInOwnEyes( cam, holder )
+        local timerName = "glee_crapvidcam_eyesdrop_" .. cam:GetCreationID()
+
+        timer.Create( timerName, 0, 0, function()
+            if not IsValid( cam ) or not IsValid( holder ) or cam:GetOwner() ~= holder then
+                timer.Remove( timerName )
+                return
+
+            end
+            -- still held while dead means a KillSilent skipped DoPlayerDeath's drop
+            if seesThroughOwnEyes( holder ) then return end
+            if holdingCamActive( holder ) ~= cam then return end
+
+            timer.Remove( timerName )
+            holder:DropWeaponKeepAmmo( cam )
+
+        end )
+    end
+
+    -- grabbers like the evil crawler strip weapons the same tick they take your eyes, before any timer can see it.
+    -- so drop the cam first, then if a tick later you're still in your own eyes it was a normal strip, finish it
+    -- known dupe: the crawler snapshots your weapons before stripping, so escaping it hands you a fresh cam while the dropped one stays.
+    -- leaving it, the dropped cam filming you get dragged off is worth a spare camera
+    local plyMeta = FindMetaTable( "Player" )
+    plyMeta.glee_UnwrappedStripWeapons = plyMeta.glee_UnwrappedStripWeapons or plyMeta.StripWeapons
+    local unwrappedStripWeapons = plyMeta.glee_UnwrappedStripWeapons
+
+    function plyMeta:StripWeapons( ... )
+        local cam = holdingCamActive( self )
+        if cam and self:Health() > 0 then
+            self:DropWeaponKeepAmmo( cam )
+            timer.Simple( 0, function()
+                if not IsValid( cam ) or IsValid( cam:GetOwner() ) then return end
+                if IsValid( self ) and not seesThroughOwnEyes( self ) then return end
+
+                cam:Remove()
+
+            end )
+        end
+
+        return unwrappedStripWeapons( self, ... )
+
+    end
+
     function SWEP:Equip( newOwner )
         self.glee_lastHolder = newOwner
+        if not newOwner:IsPlayer() then return end
+
+        dropWhenNotInOwnEyes( self, newOwner )
 
     end
 
     function SWEP:OnDrop()
         local holder = self.glee_lastHolder
-        if not IsValid( holder ) or holder:Health() > 0 then return end
+        if not IsValid( holder ) or not holder:IsPlayer() then return end
 
-        biasAimTowards( self, holder:GetPos() + bodyRestingOffset )
+        local dropSpot = holder:GetPos() + bodyRestingOffset
+        -- a stripping grabber takes your eyes right after the drop
+        timer.Simple( 0, function()
+            if not IsValid( self ) or not IsValid( holder ) then return end
+            if seesThroughOwnEyes( holder ) then return end
 
+            biasAimTowards( self, holder, dropSpot )
+
+        end )
     end
 
 else
-    local deadRecordSecondsRange = { 2, 5 }
-    local stopDeadRecordingAt
+    -- how long a tape keeps going once it's out of our hands, restarted each time it changes hands
+    local tapeSecondsRanges = {
+        pendingDrop = { 5, 10 },
+        dropped = { 5, 10 },
+        borrowed = { 15, 15 },
+    }
+    -- this close it's almost always still in our PVS, so a cam landing behind a prop doesn't cut the tape
+    local losGraceDist = 400
+    local lastTapeState
+    local stopTapeAt
     local recordingCam
     local writer
     local errColor = Color( 255, 0, 0 )
@@ -196,28 +332,80 @@ else
 
     local currConfig
 
-    local function lostTheCam( me )
-        if not IsValid( recordingCam ) then return true end
+    local function seesThroughOwnEyes( ply )
+        return ply:Alive() and ply:GetObserverMode() == OBS_MODE_NONE
 
-        local camOwner = recordingCam:GetOwner()
-        if IsValid( camOwner ) then return camOwner ~= me end
+    end
 
-        return recordingCam:IsDormant()
+    -- in the holder's hand while held, otherwise wherever the cam itself lies
+    local function lensPose( cam )
+        local holder = cam:GetOwner()
+        local pos, ang
+        if IsValid( holder ) then
+            pos, ang = heldPose( holder )
+
+        else
+            pos, ang = cam:GetPos(), cam:GetAngles()
+
+        end
+
+        local lens = cam:OBBCenter()
+        lens.x = cam:OBBMaxs().x
+
+        return LocalToWorld( lens, angle_zero, pos, ang ), ang
+
+    end
+
+    -- "ours": in our hands and eyes. "pendingDrop": still ours, but we're out of our eyes and the drop hasn't networked yet
+    -- "dropped" / "borrowed": on the floor, or out in someone else's hands. nil when the tape should end
+    local function tapeState( me )
+        if not IsValid( recordingCam ) then return end
+
+        local holder = recordingCam:GetOwner()
+        if seesThroughOwnEyes( me ) then
+            -- dropped by hand, the server only drops it for us once we're out of our eyes
+            if holder ~= me then return end
+            return "ours"
+
+        end
+        if holder == me then return "pendingDrop" end
+
+        if recordingCam:IsDormant() then return end
+        if IsValid( holder ) and holder:GetActiveWeapon() ~= recordingCam then return end
+        -- seeing us keeps it in our PVS, out of it, it'd go dormant and freeze
+        local lensPos = lensPose( recordingCam )
+        local myEyes = me:EyePos()
+        local closeEnough = lensPos:DistToSqr( myEyes ) < losGraceDist^2
+        if not closeEnough and not terminator_Extras.PosCanSee( lensPos, myEyes ) then return end
+
+        if IsValid( holder ) then return "borrowed" end
+        return "dropped"
 
     end
 
     local function beginRecording()
+        -- captured before viewmodels and the HUD draw, so neither ends up on tape
         hook.Add( "PreDrawViewModels", "glee_crapvidcam_recordframe", function()
             if not writer then return end
 
             local me = LocalPlayer()
-            if not IsValid( me ) or not me:Alive() then
-                stopDeadRecordingAt = stopDeadRecordingAt or CurTime() + math.Rand( deadRecordSecondsRange[1], deadRecordSecondsRange[2] )
-                if stopDeadRecordingAt < CurTime() or lostTheCam( me ) then
-                    toggleRecording()
-                    return
+            local state = IsValid( me ) and tapeState( me )
+            if not state then
+                toggleRecording()
+                return
 
-                end
+            end
+
+            if state ~= lastTapeState then
+                lastTapeState = state
+                local range = tapeSecondsRanges[state]
+                stopTapeAt = range and CurTime() + math.Rand( range[1], range[2] )
+
+            end
+            if stopTapeAt and stopTapeAt < CurTime() then
+                toggleRecording()
+                return
+
             end
 
             writer:AddFrame( FrameTime(), true )
@@ -226,6 +414,7 @@ else
         end )
     end
 
+    -- stops the running tape if there is one, camera ignored. otherwise starts one on camera
     toggleRecording = function( camera )
         if writer then
             hook.Remove( "PreDrawViewModels", "glee_crapvidcam_recordframe" )
@@ -233,7 +422,8 @@ else
             writer:Finish()
             writer = nil
             recordingCam = nil
-            stopDeadRecordingAt = nil
+            lastTapeState = nil
+            stopTapeAt = nil
             LocalPlayer():SetDSP( 0, true )
 
         elseif IsValid( camera ) then
@@ -247,7 +437,7 @@ else
             currConfig.name = "GLEE_vidcam-" .. util.DateStamp()
             local w, h = ScrW(), ScrH()
             currConfig.width = math.min( w, 480 )
-            currConfig.height = math.min( math.floor( ( currConfig.width * h ) / w ), w )
+            currConfig.height = math.floor( ( currConfig.width * h ) / w )
 
             local recordErr
             writer, recordErr = video.Record( currConfig )
@@ -268,6 +458,16 @@ else
 
     end )
 
+    net.Receive( "glee_crapvidcam_endtapes", function()
+        local cam = net.ReadEntity()
+        if not writer or cam ~= recordingCam then return end
+        -- our own press, toggled locally already
+        if cam:GetOwner() == LocalPlayer() then return end
+
+        toggleRecording()
+
+    end )
+
     local recTextColor = Color( 255, 100, 100 )
     local recOutlineColor = Color( 20, 20, 20 )
 
@@ -279,13 +479,16 @@ else
 
     end )
 
-    -- alive, first person through the cam. dead, from wherever the dropped cam landed
+    -- ours, first person through the cam. dropped or borrowed, out of its lens
     hook.Add( "glee_CalcView", "glee_crapvidcam_view", function( ply, pos, ang, fov )
         if not writer then return end
 
+        local state = tapeState( ply )
+        if not state or state == "pendingDrop" then return end
+
         fov = fov * currConfig.fovScale
 
-        if ply:Alive() then
+        if state == "ours" then
             return {
                 origin = pos,
                 angles = ang,
@@ -295,15 +498,10 @@ else
             }
         end
 
-        -- still ours until the drop networks
-        if not IsValid( recordingCam ) or IsValid( recordingCam:GetOwner() ) then return end
-
-        local lens = recordingCam:OBBCenter()
-        lens.x = recordingCam:OBBMaxs().x
-
+        local lensPos, lensAng = lensPose( recordingCam )
         return {
-            origin = recordingCam:LocalToWorld( lens ),
-            angles = recordingCam:GetAngles(),
+            origin = lensPos,
+            angles = lensAng,
             fov = fov,
 
         }
@@ -327,6 +525,15 @@ function SWEP:PrimaryAttack()
     self:SetNextPrimaryFire( cur + 0.1 )
     self:EmitSound( self.Primary.Sound )
 
+    -- hunters "attack" with it nonstop, only players pressing record end tapes
+    local owner = self:GetOwner()
+    if SERVER and IsValid( owner ) and owner:IsPlayer() then
+        net.Start( "glee_crapvidcam_endtapes" )
+        net.WriteEntity( self )
+        net.Broadcast()
+
+    end
+
     if CLIENT and ( IsFirstTimePredicted() or game.SinglePlayer() ) then
         toggleRecording( self )
 
@@ -348,54 +555,15 @@ function SWEP:Holster()
 
 end
 
-local handBoneCandidates = {
-    "ValveBiped.Bip01_R_Hand",
-    "ValveBiped.Bip01_R_Forearm",
-    "RightHand",
-    "r_hand",
-}
-
-local function handBonePose( ply )
-    for _, boneName in ipairs( handBoneCandidates ) do
-        local bone = ply:LookupBone( boneName )
-        if not bone then continue end
-
-        local matrix = ply:GetBoneMatrix( bone )
-        if matrix then return matrix:GetTranslation(), matrix:GetAngles() end
-
-        local bonePos, boneAng = ply:GetBonePosition( bone )
-        if bonePos and boneAng then return bonePos, boneAng end
-
-    end
-end
-
 function SWEP:DrawWorldModel()
-    local ply = self:GetOwner()
-    if not IsValid( ply ) or ply:GetActiveWeapon() ~= self then
+    local holder = self:GetOwner()
+    if not IsValid( holder ) or holder:GetActiveWeapon() ~= self then
         self:DrawModel()
         return
 
     end
 
-    local pos, ang
-    local att = ply:GetAttachment( ply:LookupAttachment( "anim_attachment_RH" ) )
-    if att then
-        ang = att.Ang
-        pos = att.Pos + ang:Up() * 10 + ang:Right() + ang:Forward() * 2
-
-    else
-        -- playermodel without the attachment
-        pos, ang = handBonePose( ply )
-        if pos then
-            pos = pos + ang:Up() * 8 + ang:Right() * 2 + ang:Forward() * 2
-
-        else
-            ang = ply:EyeAngles()
-            pos = ply:EyePos() + ang:Right() * 11 + ang:Forward() * 4
-
-        end
-    end
-
+    local pos, ang = heldPose( holder )
     self:SetPos( pos )
     self:SetAngles( ang )
     self:SetupBones()

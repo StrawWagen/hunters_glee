@@ -7,7 +7,7 @@ local setHelpers = GM.setHelpers or {}
 GM.setHelpers = setHelpers
 
 
--- No shop for the living, only "Hardcore" tagged items for the dead, and they wait twice as long.
+-- No shop for the living, only "Hardcore" tagged items for the dead, and they wait twice as long, the Door Locker 4x.
 -- Call from an sh_ spawnset's Activate. Server only and the client draws a shop that won't sell
 function setHelpers.makeHardcore( lifecycle )
     -- escaped players sit at health 0, so the Horrors stay open to them
@@ -24,9 +24,15 @@ function setHelpers.makeHardcore( lifecycle )
         return false, "Too soft for this Misery."
 
     end )
-    lifecycle:Hook( "glee_shop_itemcooldownmul", function( _ply, _itemData, adjust )
+    lifecycle:Hook( "glee_shop_itemcooldownmul", function( _ply, itemData, adjust )
         adjust.value = math.max( adjust.value, 20 )
-        adjust.mul = adjust.mul * 2
+
+        local mul = 2
+        if itemData.identifier == "doorlocker" then
+            mul = 4
+
+        end
+        adjust.mul = adjust.mul * mul
 
     end )
 end

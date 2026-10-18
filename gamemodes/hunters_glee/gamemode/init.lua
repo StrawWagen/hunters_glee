@@ -37,6 +37,8 @@ AddCSLuaFile( "modules/music/cl_music.lua" )
 AddCSLuaFile( "modules/thirdpersonflashlight/cl_flashlight.lua" )
 AddCSLuaFile( "modules/decrees/cl_decrees.lua" )
 AddCSLuaFile( "modules/firsttimeplayers/cl_firsttimeplayers.lua" )
+AddCSLuaFile( "modules/firsttimeplayers/cl_spawnprotection.lua" )
+AddCSLuaFile( "modules/firsttimeplayers/cl_gleetings.lua" )
 AddCSLuaFile( "modules/firsttimeplayers/sh_firsttimeplayers.lua" )
 
 AddCSLuaFile( "modules/contextmenu_widgets/cl_banktop.lua" )
@@ -1081,6 +1083,15 @@ function GM:beginSetup()
     self.blockCleanupSetup = true -- no infinite loops please!
     game.CleanUpMap( false, { "env_fire", "entityflame", "_firesmoke" } )
     self.blockCleanupSetup = nil
+
+    -- glee's spectators are always dead, alive and observing means an addon left them stuck, eg the evil crawler's victims
+    -- killing them hands them to PlayerDeathThink, which respawns them fresh for setup
+    for _, ply in player.Iterator() do
+        if ply:Alive() and ply:GetObserverMode() ~= OBS_MODE_NONE then
+            ply:KillSilent()
+
+        end
+    end
 
     SetGlobalBool( "glee_DisplayWinners", false )
     SetGlobalBool( "glee_EveryoneEscapedLastRound", false )

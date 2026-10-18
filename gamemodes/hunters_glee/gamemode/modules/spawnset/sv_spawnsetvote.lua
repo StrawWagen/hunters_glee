@@ -7,10 +7,18 @@ local GM = GM or GAMEMODE
 local spawnSetVote = GM.glee_SpawnSetVote or {}
 GM.glee_SpawnSetVote = spawnSetVote
 
+-- below this, a spawnset is rare; rare ones get bumped up to it, common ones decay down to it if people are spamming votes
+local rareChance = 15
+
 local chancePerConsecutiveVote = 0.1
 GM.glee_ConsecutiveSpawnsetVotes = GM.glee_ConsecutiveSpawnsetVotes or 0
 
+local chanceLostPerUnvotedAppearance = { 1, 3 }
+-- [spawnset name] = times it was a vote option and got 0 votes, this session
+GM.glee_UnvotedSpawnsetCounts = GM.glee_UnvotedSpawnsetCounts or {}
+
 util.AddNetworkString( "glee_begin_spawnsetvote" )
+util.AddNetworkString( "glee_cancel_spawnsetvote" )
 
 function spawnSetVote:BeginVote( duration, maxOptions, toAdd )
 
@@ -78,10 +86,18 @@ function spawnSetVote:BeginVote( duration, maxOptions, toAdd )
 
             end
 
-            if isnumber( chance ) and chance < 15 then -- bump chances of rare modes up to 15%, so if rtm is being done a bunch of times, make rare ones more common
+            if isnumber( chance ) and chance < rareChance then -- if rtm is being done a bunch of times, make rare ones more common
                 local added = GAMEMODE.glee_ConsecutiveSpawnsetVotes * chancePerConsecutiveVote
                 local newChance = chance + added
-                chance = math.min( newChance, 15 )
+                chance = math.min( newChance, rareChance )
+
+            end
+
+            local unvotedCount = GAMEMODE.glee_UnvotedSpawnsetCounts[key]
+            local commonChance = chance or 100
+            if unvotedCount and commonChance > rareChance then -- common ones nobody votes for fade out
+                local lost = unvotedCount * math.random( chanceLostPerUnvotedAppearance[1], chanceLostPerUnvotedAppearance[2] )
+                chance = math.max( commonChance - lost, rareChance )
 
             end
 
@@ -229,6 +245,14 @@ function spawnSetVote:OnVoteEnd()
 
     end
 
+    local unvotedCounts = GAMEMODE.glee_UnvotedSpawnsetCounts
+    for name, count in pairs( voteCounts ) do
+        if count == 0 then
+            unvotedCounts[name] = ( unvotedCounts[name] or 0 ) + 1
+
+        end
+    end
+
     spawnSetVote.winner = spawnSetVote:GetWinningKey( voteCounts )
 
     if spawnSetVote.winner == GAMEMODE:GetSpawnSet() then
@@ -264,11 +288,27 @@ function spawnSetVote:OnVoteEnd()
 
 end
 
--- the voters are gone, drop their vote, and any winner still waiting for round end
--- clearing currVote is enough to cancel a vote in progress, OnVoteEnd bails on it
-hook.Add( "huntersglee_emptyserver", "glee_reset_pendingmisery", function()
+function spawnSetVote:CancelVote()
+    if not spawnSetVote.currVote then return end
     spawnSetVote.currVote = nil
+    timer.Remove( "glee_spawnsetvote_end" )
+
+    net.Start( "glee_cancel_spawnsetvote" )
+    net.Broadcast()
+
+    permaPrint( "GLEE: The mode vote was cancelled" )
+
+end
+
+-- the voters are gone, drop their vote, and any winner still waiting for round end
+hook.Add( "huntersglee_emptyserver", "glee_reset_pendingmisery", function()
+    spawnSetVote:CancelVote()
     GAMEMODE.rtmWaitingForRoundEnd = nil
+
+end )
+
+hook.Add( "glee_post_realcleanupmap", "glee_cancel_spawnsetvote", function()
+    spawnSetVote:CancelVote()
 
 end )
 

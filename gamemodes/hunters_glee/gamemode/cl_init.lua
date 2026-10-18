@@ -17,6 +17,8 @@ include( "modules/signalstrength/cl_signalstrength.lua" )
 include( "modules/thirdpersonflashlight/cl_flashlight.lua" )
 include( "modules/decrees/cl_decrees.lua" )
 include( "modules/firsttimeplayers/cl_firsttimeplayers.lua" )
+include( "modules/firsttimeplayers/cl_spawnprotection.lua" )
+include( "modules/firsttimeplayers/cl_gleetings.lua" )
 
 include( "modules/modelscale/cl_modelscale.lua" )
 

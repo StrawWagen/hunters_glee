@@ -253,6 +253,9 @@ divine intervention description change ( encase yourself within a weak shell of 
 -- nightmare on glee street change the name -- done
 -- mecha legs next to juggernaut ( bad ) -- fixed
 -- dead players ignited by atm rocket -- fixed
+-- battery system breaking overcharged suit chargers -- fixed
+-- make it 50% cheaper to immort/bless new players -- done
+-- escape killicon "escaped" blue -- done
 
 
 
@@ -567,3 +570,13 @@ goes in a glee rebinding menu?
 
 -- say Prospective Account Holders under ply's name if you have envoy
 -- hold crouch to be able to place dead stuff unprofitably
+
+-- rope swep, use this vm https://steamcommunity.com/sharedfiles/filedetails/?id=3727222594
+
+-- terms can shoot while underwater
+
+-- make hints system hl2hudified
+-- move a shitton of the huntersglee_announcingtext ones to a new huntersglee_hinttext
+-- improves subway ledgibility if "beartrapped a player" ends up on gui
+
+-- make radial menu use proper ghost style

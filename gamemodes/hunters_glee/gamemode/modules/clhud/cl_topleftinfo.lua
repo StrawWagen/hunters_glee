@@ -422,8 +422,10 @@ local function thinkHint( _ply, cur )
     if nextHintFlash < cur then
         doFlash       = true
         nextHintFlash = cur + 8
-        LocalPlayer():EmitSound( tackleTheDamnHintSound, 60, 120, 0.4 )
+        if system.HasFocus() then
+            LocalPlayer():EmitSound( tackleTheDamnHintSound, 60, 120, 0.4 )
 
+        end
     end
 
     return hint, true, doFlash, 0 -- dont override color

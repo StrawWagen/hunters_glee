@@ -34,10 +34,17 @@ end
 
 if not SERVER then return end
 
+local newPlayerCostMul = 0.5
+
 function ENT:UpdateGivenScore()
     if not IsValid( self:GetCurrTarget() ) then return end
     if self:GetCurrTarget():IsPlayer() then
-        self:SetGivenScore( -100 )
+        local cost = -100
+        if GAMEMODE:IsFirstTimePlayer( self:GetCurrTarget() ) then
+            cost = cost * newPlayerCostMul
+
+        end
+        self:SetGivenScore( cost )
 
     elseif self:GetCurrTarget():IsNextBot() then
         self:SetGivenScore( -50 )
@@ -123,7 +130,8 @@ function ENT:Place()
         target:SetHealth( newHealth )
         target.glee_LastSetHealthReason = "glee_blessing"
 
-        target:SetArmor( math.min( target:Armor() + 1, target:GetMaxArmor() ) ) -- :)
+        local armor = target:Armor()
+        target:SetArmor( math.min( armor + 1, math.max( target:GetMaxArmor(), armor ) ) ) -- :)
 
         GAMEMODE:GivePanic( target, -target.glee_BlessRegen ) -- calming!
 
