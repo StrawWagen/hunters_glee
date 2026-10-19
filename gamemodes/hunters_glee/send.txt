@@ -17,6 +17,7 @@ gamemodes\hunters_glee\gamemode\modules\contextmenu_widgets\cl_banktop.lua
 gamemodes\hunters_glee\gamemode\modules\contextmenu_widgets\cl_tauntmenu.lua
 gamemodes\hunters_glee\gamemode\modules\contextmenu_widgets\cl_settingsmenu.lua
 gamemodes\hunters_glee\gamemode\modules\contextmenu_widgets\cl_guiltchecker.lua
+gamemodes\hunters_glee\gamemode\modules\contextmenu_widgets\cl_desktopiconbackdrops.lua
 
 gamemodes\hunters_glee\gamemode\lib\sh_gleehelpers.lua
 gamemodes\hunters_glee\gamemode\sh_player.lua
@@ -67,6 +68,8 @@ gamemodes\hunters_glee\gamemode\modules\thirdpersonflashlight\cl_flashlight.lua
 gamemodes\hunters_glee\gamemode\modules\decrees\cl_decrees.lua
 
 gamemodes\hunters_glee\gamemode\modules\firsttimeplayers\cl_firsttimeplayers.lua
+gamemodes\hunters_glee\gamemode\modules\firsttimeplayers\cl_spawnprotection.lua
+gamemodes\hunters_glee\gamemode\modules\firsttimeplayers\cl_gleetings.lua
 gamemodes\hunters_glee\gamemode\modules\firsttimeplayers\sh_firsttimeplayers.lua
 
 gamemodes\hunters_glee\gamemode\modules\lessons\cl_lessons.lua

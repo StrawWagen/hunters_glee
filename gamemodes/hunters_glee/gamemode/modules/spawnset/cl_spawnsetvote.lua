@@ -36,6 +36,12 @@ net.Receive( "glee_begin_spawnsetvote", function()
 
 end )
 
+net.Receive( "glee_cancel_spawnsetvote", function()
+    if not IsValid( spawnSetVote.voteHolder ) then return end
+    spawnSetVote.voteHolder:Remove()
+
+end )
+
 -- hotkey voters
 local voters = {
     "slot1",
@@ -81,18 +87,16 @@ local function layoutGodText( panel, text, fontRole, padX, padY )
 
 end
 
--- One line of the vote, a torn strip with panel.wrappedText on it, sliding in as the vote opens.
--- The panel needs layoutGodText run on it, and jitterX / jitterY set.
+-- One line of the vote, a torn strip with panel.wrappedText on it, sliding in from the left as the
+-- vote opens. openedAt is a RealTime. The panel needs layoutGodText run on it, and jitterX / jitterY set.
 -- state picks the strip's colour, see handle:BackdropColor
 local function paintGodLine( panel, openedAt, order, state, fontRole, colorRole, w, h )
-    local godLook = god:Settings() -- the strip and the arrival, which have no methods
+    local godLook = god:Settings() -- the strip, which has no methods
     local metrics = godLook.metrics
 
-    local arrival = godLook.arrival
-    local arrived = hudHelpers.ArrivalProgress( openedAt, order, arrival )
-    local slide = ( 1 - arrived ) * arrival.slideDistance
+    local fade, _, slide = god:Entrance( openedAt, order )
 
-    surface_SetAlphaMultiplier( arrived )
+    surface_SetAlphaMultiplier( fade )
 
     local stripWidth = math.min( w, panel.textWidth + ( metrics.textPaddingX * 2 ) )
     hudHelpers.DrawTornStrip( godLook.tornStrip, god:BackdropColor( "bg", state ), slide, 0, stripWidth, h, panel )
@@ -135,7 +139,7 @@ function spawnSetVote:CreateVotePanel()
 
     local options = spawnSetVote.options
     local voteEnd = spawnSetVote.voteEnd
-    local openedAt = CurTime()
+    local openedAt = RealTime() -- for how it comes in, the vote itself runs on CurTime
 
     local textPaddingX = god:Metric( "textPaddingX" )
     local textPaddingY = god:Metric( "textPaddingY" )
@@ -247,7 +251,7 @@ function spawnSetVote:CreateVotePanel()
     title.textHeight = 0
 
     function title:Think()
-        titleLine:Update( CurTime() - openedAt )
+        titleLine:Update( RealTime() - openedAt )
 
     end
 

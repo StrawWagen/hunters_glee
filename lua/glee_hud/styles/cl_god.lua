@@ -90,11 +90,13 @@ terminator_Extras.glee_RegisterStyle( "god", {
                 },
             },
 
-            -- see glee_HudHelpers.ArrivalProgress
-            arrival = {
-                slideDistance = px( 40 ),
-                time = 0.25,
-                stagger = 0.04,
+            -- see handle:Entrance. Lines of a decree slide in one after another
+            entrance = {
+                time      = 0.25,
+                stagger   = 0.04,
+                fadeFrom  = 0,
+                scaleFrom = 1,
+                slide     = px( 40 ),
             },
         }
     end,

@@ -238,6 +238,13 @@ local blurredFamilies = {
     bgDark = 2, -- RNDX's blur intensity
 }
 
+-- RNDX blur intensity behind a backdrop of this family, nil for none. For gui that draws its own backdrop shape
+function styleHandle:BackdropBlur( family )
+    if not blurMenus:GetBool() then return end
+    return blurredFamilies[family]
+
+end
+
 --[[---------------------------------------------------------
     handle:Background
     Draws a panel's backdrop the way this style does. A box, a smudge, a torn strip, all in
@@ -254,7 +261,7 @@ local blurredFamilies = {
 function styleHandle:Background( x, y, w, h, family, cornerRadius, fade, state, cache )
     local style = self:Settings()
 
-    local blur = blurMenus:GetBool() and blurredFamilies[family] or nil
+    local blur = self:BackdropBlur( family )
 
     style.background(
         style, x, y, w, h,
@@ -263,6 +270,29 @@ function styleHandle:Background( x, y, w, h, family, cornerRadius, fade, state, 
         fade or 1,
         cache,
         blur
+    )
+
+end
+
+--[[---------------------------------------------------------
+    handle:ArcBackground
+    handle:Background for a piece of a ring, like a radial menu's wedge.
+    @param centerX, centerY: The ring's centre.
+    @param inner, outer: Its radii.
+    @param startDeg, endDeg: Where the piece starts and ends, clockwise from the right.
+    @param gap: Pixels between this piece and its neighbours, an even width all along. 0 for none.
+    @param family, fade, state, cache: As handle:Background takes them.
+    @return: None
+--]]---------------------------------------------------------
+function styleHandle:ArcBackground( centerX, centerY, inner, outer, startDeg, endDeg, gap, family, fade, state, cache )
+    local style = self:Settings()
+
+    style.arcBackground(
+        style, centerX, centerY, inner, outer, startDeg, endDeg, gap,
+        self:BackdropColor( family or "bg", state ),
+        fade or 1,
+        cache,
+        self:BackdropBlur( family )
     )
 
 end
@@ -285,6 +315,92 @@ function styleHandle:PlaySound( setName, pitch, channel, volume, level )
     end
 
     hudHelpers.PlaySound( sounds, pitch, channel, volume, level )
+
+end
+
+
+--[[------------------------------------
+    Motion: how something comes into view and leaves it, in this style.
+
+        local fade, scale, slide = style:Entrance( self.enteredAt, partIndex )
+        local fade, scale, slide, progress = style:Exit( self.exitingAt )
+
+    The style's entrance and exit say how long, how far apart its parts start, and how far
+    each moves: fade, scale and slide. What those mean is the panel's, which way a line
+    slides in, what a ring scales around. Times are RealTime, so menus move while paused.
+
+    To tune: the times are in each style's file, which rebuilds the styles when saved.
+    cl_huntersglee_motionspeed scales every one at once, 0.1 to watch them in slow motion.
+--]]-------------------------------------
+
+local motionSpeed = CreateClientConVar( "cl_huntersglee_motionspeed", "1", false, false, "Speed of every glee menu's entrance and exit, for tuning them. 0.1 is ten times slower", 0.01, 10 )
+
+local function easeOut( t )
+    local inverse = 1 - t
+    return 1 - inverse * inverse * inverse
+
+end
+
+local function easeIn( t )
+    return t * t * t
+
+end
+
+-- 0 to 1, linear. Part order starts motion.stagger after the part before it
+local function motionProgress( motion, startedAt, order )
+    local elapsed = ( RealTime() - startedAt ) * motionSpeed:GetFloat() - ( order or 0 ) * motion.stagger
+    if motion.time <= 0 then return elapsed >= 0 and 1 or 0 end
+
+    return math.Clamp( elapsed / motion.time, 0, 1 )
+
+end
+
+local function motionDuration( motion, partCount )
+    return ( motion.time + motion.stagger * math.max( ( partCount or 1 ) - 1, 0 ) ) / motionSpeed:GetFloat()
+
+end
+
+--[[---------------------------------------------------------
+    handle:Entrance
+    Where one part of something is in coming into view, eased out so it lands softly.
+    @param startedAt: The RealTime it started coming in.
+    @param order: Which part, 0 first, each the style's stagger behind the one before. Defaults to 0.
+    @return: fade 0 to 1, scale, the slide in pixels it still has to go, and progress, 0 to 1 linear.
+--]]---------------------------------------------------------
+function styleHandle:Entrance( startedAt, order )
+    local entrance = self:Settings().entrance
+    local progress = motionProgress( entrance, startedAt, order )
+    local eased = easeOut( progress )
+
+    return Lerp( eased, entrance.fadeFrom, 1 ), Lerp( eased, entrance.scaleFrom, 1 ), ( 1 - eased ) * entrance.slide, progress
+
+end
+
+--[[---------------------------------------------------------
+    handle:Exit
+    Where one part of something is in leaving, eased in so it pulls away.
+    @param startedAt: The RealTime it started leaving.
+    @param order: Which part, 0 first, each the style's stagger behind the one before. Defaults to 0.
+    @return: fade 1 to 0, scale, the slide in pixels it has gone, and progress, 0 to 1 linear.
+--]]---------------------------------------------------------
+function styleHandle:Exit( startedAt, order )
+    local exit = self:Settings().exit
+    local progress = motionProgress( exit, startedAt, order )
+    local eased = easeIn( progress )
+
+    return Lerp( eased, 1, exit.fadeTo ), Lerp( eased, 1, exit.scaleTo ), eased * exit.slide, progress
+
+end
+
+-- Seconds until the last of partCount parts is in, at the motion speed right now
+function styleHandle:EntranceDuration( partCount )
+    return motionDuration( self:Settings().entrance, partCount )
+
+end
+
+-- Seconds until the last of partCount parts has left, at the motion speed right now. For removing it then
+function styleHandle:ExitDuration( partCount )
+    return motionDuration( self:Settings().exit, partCount )
 
 end
 

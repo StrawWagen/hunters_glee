@@ -34,6 +34,8 @@ net.Receive( "glee_lightning_sound", function()
     local volumeMul = lightningVolume()
     if volumeMul <= 0 then return end
 
+    if not IsValid( LocalPlayer() ) then return end -- still loading...
+
     local delay = getTimeDelayToFeel( strikingPos )
     if powa < 4 then
         timer.Simple( delay, function()

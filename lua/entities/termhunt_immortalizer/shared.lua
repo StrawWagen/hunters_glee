@@ -69,10 +69,17 @@ end
 
 if not SERVER then return end
 
+local newPlayerCostMul = 0.5
+
 function ENT:UpdateGivenScore()
     if not IsValid( self:GetCurrTarget() ) then return end
     if self:GetCurrTarget():IsPlayer() then
-        self:SetGivenScore( -300 )
+        local cost = -300
+        if GAMEMODE:IsFirstTimePlayer( self:GetCurrTarget() ) then
+            cost = cost * newPlayerCostMul
+
+        end
+        self:SetGivenScore( cost )
 
     elseif self:GetCurrTarget():IsNextBot() then
         self:SetGivenScore( -200 )
@@ -135,6 +142,9 @@ local function chargePlacer( effect, owner, damageDealt )
     local cost = fullCostDamage * scorePerDamage + overkillDamage * overkillScorePerDamage
     if not owner:IsPlayer() then
         cost = cost * nonPlayerCostMul
+
+    elseif GAMEMODE:IsFirstTimePlayer( owner ) then
+        cost = cost * newPlayerCostMul
 
     end
     effect.owedScore = effect.owedScore + cost

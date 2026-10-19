@@ -89,6 +89,29 @@ terminator_Extras.glee_RegisterStyle( "hl2", {
         alert  = { "common/warning.wav" }, -- pay attention!
     },
 
+    -- Fields that hold pixel sizes. The build calls this once per gui scale, px turns 1080p
+    -- pixels into that scale's, and what it returns is layered over the fields above
+    scaled = function( px )
+        return {
+            -- see handle:Entrance and handle:Exit. Seconds are the speed knobs.
+            -- Taken whole, so a style changing one field lists them all
+            entrance = {
+                time      = 0.12,
+                stagger   = 0.015, -- for things that come in in parts, like a wheel's wedges
+                fadeFrom  = 0,
+                scaleFrom = 0.85,
+                slide     = px( 0 ),
+            },
+            exit = {
+                time    = 0.1,
+                stagger = 0,
+                fadeTo  = 0,
+                scaleTo = 0.85,
+                slide   = px( 0 ),
+            },
+        }
+    end,
+
     -- style is the built style, color the Color for the panel's family and state, unfaded.
     -- fade is 0 to 1, cache as handle:Background takes it. blur is nil, or how hard to blur
     -- what's behind the backdrop, as RNDX's blur intensity
@@ -101,6 +124,22 @@ terminator_Extras.glee_RegisterStyle( "hl2", {
         end
 
         RNDX.Rect( x, y, w, h ):Rad( cornerRadius ):Color( color.r, color.g, color.b, color.a * fade ):Draw()
+
+    end,
+
+    -- background's, for a piece of a ring, see handle:ArcBackground. The ring is centreX, centreY,
+    -- between inner and outer, the piece startDeg to endDeg with gap pixels to its neighbours
+    arcBackground = function( _style, centerX, centerY, inner, outer, startDeg, endDeg, gap, color, fade, _cache, blur )
+        local arcShape = terminator_Extras.glee_HudHelpers.ArcShape
+
+        if blur then
+            local shape = arcShape( centerX, centerY, inner, outer, startDeg, endDeg, gap )
+            if shape then shape:Blur( blur * fade ):Draw() end
+
+        end
+
+        local shape = arcShape( centerX, centerY, inner, outer, startDeg, endDeg, gap )
+        if shape then shape:Color( color.r, color.g, color.b, color.a * fade ):Draw() end
 
     end,
 } )

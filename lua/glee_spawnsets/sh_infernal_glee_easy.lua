@@ -19,7 +19,7 @@ if SERVER then -- NavEFlags no exist on client
         roundStartSound = "default",
         chanceToBeVotable = 0.1,
         chanceToBeVotableWhenHard = 15, -- stick around when this is still a challenge
-        genericSpawnerRate = 2, -- more crates, sooner!
+        genericSpawnerRate = 0.5, -- more crates, sooner!
         breathingRoom = 1,
         easy = true,
         spawns = {

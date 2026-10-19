@@ -45,6 +45,7 @@ shop rewrite
 -- needs pivot to icon-first design
 -- like TTT shop
 -- two sided design, one side all items, other side info about current item
+-- left side
 -- has categories, every item will need to have new categories thought about
     -- can search, 
     -- can check a box to sort by most recently purchased
@@ -63,6 +64,14 @@ shop rewrite
     -- #1 normal shop
     -- #2 banking
     -- #3 playermodel
+-- favourites as radial menu
+-- right side,
+    -- tags filter
+    -- search bar
+    -- clicked item description
+-- review items
+
+-- l4d2 hud looks alot like ghost hud
 
 -- problems to solve
     knowing what to press is unintuitive, s. icons

@@ -59,10 +59,8 @@ function GAMEMODE:OpenDocument( name, buy, check )
     end
 
     function form:OnStamped()
-        frame:AlphaTo( 0, 0.35, 0, function()
-            if IsValid( frame ) then frame:Close() end
+        frame:Close()
 
-        end )
     end
 
     function form:OnDecline()

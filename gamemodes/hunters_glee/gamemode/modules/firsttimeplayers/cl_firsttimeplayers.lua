@@ -1,173 +1,164 @@
 
--- the clientside half of the first time player system. sv_firsttimeplayers.lua decides who
--- is new and nets glee_dothefirsttimemessage, everything here is what they then see
+-- The first time player decrees. sv_firsttimeplayers.lua picks which, and sends its name with glee_tutorial_decree
 
 local GAMEMODE = GAMEMODE or GM
 
-local imNewMyself = nil
-local hasSeenMessage = CreateClientConVar( "cl_huntersglee_firsttimetutorial", 0, true, true, "Has the player seen the one-time tutorial series of messages?" )
+local hasSeenTutorialVar = CreateClientConVar( "cl_huntersglee_firsttimetutorial", 0, true, true, "Has the player seen the one-time tutorial series of messages?" )
 
--- rare error where this convar is nil?!?!?!?
--- can probably happen with all convars but this one is especially important, so a proper fallback is a good idea here
-local function currentSpawnset()
-    local spawnsetCvar = GetConVar( "huntersglee_spawnset" )
-    if not spawnsetCvar then return GAMEMODE.TheTutorialMisery end
-
-    return spawnsetCvar:GetString()
+-- 1 is the singleplayer tutorial, 2 is the multiplayer one, and the multiplayer one counts as both
+local function tutorialLevel()
+    if game.IsDedicated() then return 2 end
+    return 1
 
 end
 
-local stagesTutorialMiseryChooser = {
-    "Welcome.\nTo the hunt!",
-    "This is your first hunt,\nis it not?",
-    "We have.. a choice of,\nMISERY.\nFor you...",
-    "The Infernal Horde?",
-    "Extremely weak enemies,\nfor YOU to HUNT.",
-    "Or, if you are a brave SOUL?",
-    "CRUEL, intelligent,\nUNSTOPPABLE enemies.",
-    "You will have to outwit,\nhave to carefully survive?",
-    "It does not matter,\nto both options, you will...",
-    "DIE.",
-    "Oh,\nyou will die.",
-    "But don't worry.\nDeath is not the end.",
-    "It's time now.",
-    "Time to choose...",
-}
+local function tutorialLessonName( level )
+    return "SawTheTutorial" .. level
 
--- CHOOSE your misery
-local tutorialMiseryChoices = {
-    { "The Infernal Horde\nWeaklings.\nTo prepare you..." },
-    { "Hunter's Glee\nA TRUE MISERY.\nTO OVERCOME.", function()
-        net.Start( "glee_tutorial_jumpin" )
-        net.SendToServer()
+end
 
-    end },
-}
+-- The convar, then a lesson. Some players' convars don't save, and they'd get the tutorial every time
+function GAMEMODE:HasSeenTutorial()
+    local level = tutorialLevel()
+    if hasSeenTutorialVar:GetInt() >= level then return true end
 
-local stagesTutorialMiseryAdditional = {
-    "Welcome.\nTo the hunt!",
-    "This is your first hunt,\nis it not?",
-    "We have chosen, this MISERY for you.",
-    "You must hunt the Infernal Horde...",
-    "Extremely weak enemies, for YOU to HUNT.",
-    "You will still, DIE.",
-    "But don't worry, that's the best part.",
-    "Because then,\nthe HAUNTING will begin",
-    "Let the Hunt....\nBEGIN!",
-}
-
-local stagesSingleplayer = {
-    [1] = "Welcome.\nTo the hunt!",
-    [2] = "You're here to survive?",
-    [3] = "You will treasure SKULLS.\nTo ESCAPE?",
-    [4] = "You will...\nDIE?",
-    [5] = "Oh, you will die...",
-    [6] = "Just, don't forget WHERE you die...",
-    [7] = "Have a gleeful hunt,\nand be careful!",
-    [8] = "Because they're already on your tail...",
-}
-
-local stagesMultiplayer = {
-    [1] = "Welcome.\nTo the hunt!",
-    [2] = "You're here to survive?",
-    [3] = "You will treasure skulls, to escape?",
-    [4] = "You will...\nDIE?",
-    [5] = "But don't let death worry you.",
-    [6] = "You're here...\nTo HAUNT those left alive.",
-    [7] = "Here, to BUY yourself back alive?",
-    [8] = "After all...",
-    [9] = "The hunt MUST GO ON.",
-}
-
-local stagesGhostly = {
-    [1] = "Welcome.\nTo the hunt!",
-    [2] = "You are...",
-    [3] = "Temporarily...",
-    [4] = "Separate from your body.",
-    [5] = "...",
-    [6] = "You are DEAD.",
-    [7] = "But don't worry.",
-    [8] = "Your SOUL persists...",
-    [9] = "Death is only temporary.",
-    [10] = "DIVINE INTERVENTION AWAITS YOU",
-    [11] = "Just, be ready to pay the price...",
-}
-
--- Builds the whole tutorial, or decides this player doesn't need one.
--- Returns true for both, because the only caller is a retry timer and both mean stop retrying.
--- Returns nil when LocalPlayer wasn't ready, which is the only case worth trying again.
--- offerChoice ends it in the choice to skip the tutorial misery, if that's still the misery.
-local function doMessageIfWeCan( tutorialType, offerChoice )
-    if not IsValid( LocalPlayer() ) then return end -- erm
-    -- double check!
-
-    -- 1 is the singleplayer tutorial, 2 is the multiplayer one, and doing the multiplayer one
-    -- counts as having done both
-    local target = 1
-    if game.IsDedicated() then
-        target = 2
+    for seenLevel = level, 2 do
+        if self:HasLearnedLesson( tutorialLessonName( seenLevel ) ) then return true end
 
     end
 
-    if hasSeenMessage:GetInt() >= target then return true end
+    return false
 
-    imNewMyself = true
+end
 
-    local onTutorialMisery = currentSpawnset() == GAMEMODE.TheTutorialMisery
-    local lines
-    local choices
+local function markTutorialSeen()
+    local level = tutorialLevel()
+    RunConsoleCommand( "cl_huntersglee_firsttimetutorial", tostring( level ) )
+    GAMEMODE:LearnLesson( tutorialLessonName( level ) )
 
-    if tutorialType == "ghostly" then
-        lines = stagesGhostly
-        LocalPlayer().glee_SpawnedInDeadTutorialPlease = true
+end
 
-    elseif onTutorialMisery and offerChoice then
-        lines = stagesTutorialMiseryChooser
-        choices = tutorialMiseryChoices
+-- not canShowInShop, its dead check can still see them alive, the server only just killed some of them
+local function divineInterventionOnSale()
+    local reviveItem = GAMEMODE:GetShopItemData( "resurrection" )
+    return reviveItem and hook.Run( "glee_shop_canshow", LocalPlayer(), reviveItem ) ~= false
 
-    elseif onTutorialMisery then
-        lines = stagesTutorialMiseryAdditional
+end
 
-    elseif player.GetCount() >= 2 then
-        lines = stagesMultiplayer
+-- a tutorial's lines, shown unless they've already seen it
+local function showTutorial( decree )
+    if GAMEMODE:HasSeenTutorial() then return end
+
+    decree.muffle = true
+    decree.onClose = markTutorialSeen
+
+    GAMEMODE:ShowDecree( decree )
+
+end
+
+local function playInfernalHordeSound()
+    LocalPlayer():EmitSound( "ambient/levels/streetwar/gunship_distant2.wav", 120, 140, 0.5, CHAN_STATIC, SND_NOFLAGS, 0 )
+
+end
+
+local namedDecrees = {}
+
+-- the longest connected new player, on the tutorial misery. They choose whether to stay on it
+namedDecrees.tutorial_chooser = function()
+    showTutorial( {
+        "Welcome.\nTo the hunt!",
+        "This is your first hunt,\nis it not?",
+        "We have.. a choice of,\nMISERY.\nFor you...",
+        "The Infernal Horde?",
+        "Extremely weak enemies,\nfor YOU to HUNT.",
+        "Or, if you are a brave SOUL?",
+        "CRUEL, intelligent,\nUNSTOPPABLE enemies.",
+        "You will have to outwit,\nhave to carefully survive?",
+        "It does not matter,\nto both options, you will...",
+        "DIE.",
+        "Oh,\nyou will die.",
+        "But don't worry.\nDeath is not the end.",
+        "It's time now.",
+        "Time to choose...",
+        choices = {
+            { "The Infernal Horde\nWeaklings.\nTo prepare you...", playInfernalHordeSound },
+            { "Hunter's Glee\nA TRUE MISERY.\nTO OVERCOME.", function()
+                net.Start( "glee_tutorial_jumpin" )
+                net.SendToServer()
+
+            end },
+        },
+    } )
+end
+
+-- every other new player on the tutorial misery
+namedDecrees.tutorial_infernal = function()
+    showTutorial( {
+        "Welcome.\nTo the hunt!",
+        "This is your first hunt,\nis it not?",
+        "We have chosen, this MISERY for you.",
+        "You must hunt the Infernal Horde...",
+        "Extremely weak enemies, for YOU to HUNT.",
+        "You will still, DIE.",
+        "But don't worry, that's the best part.",
+        "Because then,\nthe HAUNTING will begin",
+        "Let the Hunt....\nBEGIN!",
+    } )
+end
+
+namedDecrees.tutorial_multiplayer = function()
+    showTutorial( {
+        "Welcome.\nTo the hunt!",
+        "You're here to survive?",
+        "You will treasure skulls, to escape?",
+        "You will...\nDIE?",
+        "But don't let death worry you.",
+        "You're here...\nTo HAUNT those left alive.",
+        "Here, to BUY yourself back alive?",
+        "After all...",
+        "The hunt MUST GO ON.",
+    } )
+end
+
+-- A decree that would've told them about Divine Intervention, but it wasn't on sale.
+-- sv_firsttimeplayers.lua sends divineintervention when they die somewhere it is
+local function tellOfDivineIntervention( decree, toldLines, notToldLines )
+    if divineInterventionOnSale() then
+        GAMEMODE:LearnLesson( "KnowsDivineIntervention" )
+        table.Add( decree, toldLines )
 
     else
-        lines = stagesSingleplayer
+        GAMEMODE:LearnLesson( "MissedDivineIntervention" )
+        table.Add( decree, notToldLines )
 
     end
-
-    local tutorial = table.Copy( lines )
-    tutorial.choices = choices
-    tutorial.muffle = true
-    tutorial.onClose = function()
-        if currentSpawnset() == GAMEMODE.TheTutorialMisery then
-            LocalPlayer():EmitSound( "ambient/levels/streetwar/gunship_distant2.wav", 120, 140, 0.5, CHAN_STATIC, SND_NOFLAGS, 0 )
-
-        end
-
-        RunConsoleCommand( "cl_huntersglee_firsttimetutorial", tostring( target ) )
-
-    end
-
-    GAMEMODE:ShowDecree( tutorial )
-    return true
-
 end
 
-local timerName = "glee_dofirsttimemessage_ensured"
+-- joined mid round, so they spawn dead
+namedDecrees.tutorial_ghostly = function()
+    if GAMEMODE:HasSeenTutorial() then return end
+    LocalPlayer().glee_SpawnedInDeadTutorialPlease = true
 
-net.Receive( "glee_dothefirsttimemessage", function()
-    local tutorialType = net.ReadString()
-    local offerChoice = net.ReadBool()
-    timer.Create( timerName, 1, 0, function()
-        -- repeat this until LocalPlayer() is valid and the tutorial is started
-        if doMessageIfWeCan( tutorialType, offerChoice ) == true then timer.Remove( timerName ) end
+    local decree = {
+        "Welcome.\nTo the hunt!",
+        "You are...",
+        "Temporarily...",
+        "Separate from your body.",
+        "...",
+        "You are DEAD.",
+        "But don't worry.",
+        "Your SOUL persists...",
+        "Death is only temporary.",
+    }
 
-    end )
-end )
+    tellOfDivineIntervention( decree,
+        { "DIVINE INTERVENTION AWAITS YOU", "Just, be ready to pay the price..." },
+        { "The GLEE of HAUNTING,\nawaits you...", "HAUNT THEM." }
+    )
 
--- decrees the server shows by name, with glee_tutorial_decree
-local namedDecrees = {}
+    showTutorial( decree )
+
+end
 
 -- their first real hunt after skipping the tutorial misery went nowhere
 namedDecrees.regret = function()
@@ -175,10 +166,11 @@ namedDecrees.regret = function()
         "Did you expect to survive?",
         "We warned you,\nthis was a...",
         "TRUE MISERY",
-        "I will give you one,\nfinal choice.",
+        "I will give another choice...",
         "Choose WISELY...",
         choices = {
             { "The Infernal Horde\nWeaklings,\na graceful start.", function()
+                playInfernalHordeSound()
                 net.Start( "glee_tutorial_goback" )
                 net.SendToServer()
 
@@ -201,26 +193,36 @@ namedDecrees.ghostshop = function()
 
     end
 
-    local divineInterventionAwaitsLine = "Happy HAUNTING..."
-    if GAMEMODE:canShowInShop( LocalPlayer(), "resurrection" ) then
-        divineInterventionAwaitsLine = "DIVINE INTERVENTION AWAITS."
-
-    end
-
-    GAMEMODE:ShowDecree( {
+    local decree = {
         "What a shame...",
         "You've DIED.",
         "This,\nthis is an OPPORTUNITY!",
-        "That body was.\nHolding you back.",
+        "That body was...\nHolding you back.",
         "The HUNT...\nIt hasn't ended.",
         "It's time to HAUNT,\nthe living...",
         "Haunt, for a PROFIT?",
         openShopLine,
-        divineInterventionAwaitsLine,
+    }
+    tellOfDivineIntervention( decree, { "DIVINE INTERVENTION AWAITS." }, { "Happy HAUNTING..." } )
+
+    GAMEMODE:ShowDecree( decree )
+
+end
+
+-- dead, somewhere Divine Intervention's on sale, after an earlier decree couldn't mention it. Placeholder text
+namedDecrees.divineintervention = function()
+    if not divineInterventionOnSale() then return end -- the next death might be somewhere it is
+    if not GAMEMODE:LearnLesson( "KnowsDivineIntervention" ) then return end
+
+    GAMEMODE:ShowDecree( {
+        "You are DEAD.",
+        "You should know...\n",
+        "This Misery isn't as cruel....",
+        "DIVINE INTERVENTION\nawaits you.",
     } )
 end
 
--- their first escape from the tutorial misery.
+-- their first escape from the tutorial misery
 namedDecrees.escapedeasy = function()
     GAMEMODE:ShowDecree( {
         "You ESCAPED.",
@@ -236,88 +238,13 @@ net.Receive( "glee_tutorial_decree", function()
     local show = namedDecrees[name]
     if not show then ErrorNoHaltWithStack( "GLEE: no tutorial decree named " .. name ) return end
 
-    show()
+    -- can arrive before LocalPlayer's valid
+    local timerName = "glee_tutorial_decree_" .. name
+    timer.Create( timerName, 0, 0, function()
+        if not IsValid( LocalPlayer() ) then return end
 
-end )
+        timer.Remove( timerName )
+        show()
 
-GAMEMODE:RegisterStatusEffect( "spawn_protection",
-    function( self, _owner )
-        local preDrawing = {}
-        self:HookOnce( "PrePlayerDraw", function( ply )
-            if not ply:HasStatusEffect( "spawn_protection" ) then return end
-            preDrawing[ply] = true
-
-            local pulse = math.abs( math.sin( CurTime() * 2 ) ) * 0.25 + 0.2
-            render.SetBlend( pulse )
-            render.SetColorModulation( 0.6, 0.8, 1 )
-
-        end )
-        self:HookOnce( "PostPlayerDraw", function( ply )
-            if not preDrawing[ply] then return end
-            preDrawing[ply] = nil
-
-            render.SetBlend( 1 )
-            render.SetColorModulation( 1, 1, 1 )
-
-        end )
-    end
-)
-
-
-local gleetingsAsk = CreateClientConVar( "cl_huntersglee_gleetingsask", 1, true, true, "Get a chat print when someone who's never played glee joins?" )
-
-if not game.IsDedicated() then return end
-
-local andThenYaps = {
-    "And then push them off a cliff...",
-    "Before you beartrap them...",
-    "And then show them the ropes!",
-    "And then help them learn the gamemode!",
-    "And then gaslight them into thinking RDM is banned!",
-    "And then temporally invert them!",
-    "Then tell them the terminators are friendly!",
-    "And then gaslight them into thinking someone's a traitor!",
-    "And then... Uhh, i forgot.",
-    "And then tell them the TRUTH about hunter's glee!",
-    "And don't forget to help them place stuff while dead!",
-    "Make sure they don't leave without a little bit of glee...",
-    "Treat them to a gleeful first impression!",
-    "First impressions matter, so push them off a cliff for good measure!",
-    "Warn them about the crates, god the crates!",
-    "Make sure they don't go into debt!",
-    "And then push them into a beartrap!",
-    "And then feed them to a barnacle!",
-    "And then gaslight them into going Legally Bind!",
-    "And warn them not to go Legally Blind!",
-    "And revive them like your life depends on it!",
-    "But silently curse their soul under your breath...",
-    "And gain their trust, only to feed them to a barnacle...",
-    "And gaslight them into thinking supercop's friendly!",
-    "And gaslight them into debt!",
-    "Before they get crushed in an elevator!",
-    "Before they get stuck between a supercop and a hard place!",
-    "Before you RTV to gm_skyblock!",
-    "And bless them like their life depends on it, cause it does!",
-    "And then temporally invert them into a pit of despair!",
-    "And then temporally invert them to saftey!",
-
-}
-
-local white = Color( 255, 255, 255 )
-
-net.Receive( "glee_askforgleetings", function()
-    if imNewMyself then return end -- we're new, we can't help anyone!
-    if not gleetingsAsk:GetBool() then return end -- shut UP
-
-    local firstTimePlayer = net.ReadEntity()
-    if not IsValid( firstTimePlayer ) then return end -- might happen
-
-    LocalPlayer():EmitSound( "garrysmod/save_load2.wav", 75, math.random( 110, 140 ), 0.65 )
-
-    local gleetings = "GLEE: Please wish Gleetings! To " .. firstTimePlayer:GetName() .. "!\n" .. andThenYaps[math.random( 1, #andThenYaps )]
-    chat.AddText( white, gleetings )
-    -- EG;
-    -- Please wish Gleetings! To StrawWagen!
-    -- And then push them off a cliff...
-
+    end )
 end )

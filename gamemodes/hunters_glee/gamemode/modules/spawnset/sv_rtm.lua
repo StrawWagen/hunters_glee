@@ -253,7 +253,7 @@ end
 -- Chat hints pointing at !rtm. 10 seconds after each round ends, the highest priority one is printed, then dropped.
 -- The rest wait for a later round.
 -- [hint text] = { priority = number, plys = table of players to print to, everyone if nil }
-GAMEMODE.rtmRoundEndHints = GAMEMODE.rtmRoundEndHints or {}
+GM.rtmRoundEndHints = GM.rtmRoundEndHints or {}
 
 local firstHintText = "GLEE: Type !rtm to start a Misery vote"
 local diminishingHintText = "GLEE: This Misery has been escaped too much\nit's giving you diminishing returns...\nType !rtm to start a Misery vote"
@@ -277,6 +277,8 @@ local function updateDiminishingHint()
     hints[diminishingHintText] = nil
 
     local spawnsetName, spawnsetData = GAMEMODE:GetSpawnSet()
+    if not spawnsetData then return end -- startup/admin cleanup, no round was played yet
+
     local spawnsetMul = GAMEMODE:GetSpawnsetsEscapeMultiplier( spawnsetName )
 
     local thresh

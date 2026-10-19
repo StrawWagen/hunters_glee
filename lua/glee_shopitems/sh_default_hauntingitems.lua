@@ -175,7 +175,7 @@ local items = {
         shCost = 0,
         markup = 1,
         cooldown = 45,
-        tags = { "DEADSACRIFICES", "Essential", "CloseShopOnPurchase" },
+        tags = { "DEADSACRIFICES", "Essential", "CloseShopOnPurchase", "Hardcore" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },

@@ -105,7 +105,8 @@ if SERVER then
                 owner:SetHealth( newHealth )
                 owner.glee_LastSetHealthReason = "glee_divineintervention_blessing"
 
-                local newArmor = math.min( owner:Armor() + healAmount * 0.5, owner:GetMaxArmor() )
+                local armor = owner:Armor()
+                local newArmor = math.min( armor + healAmount * 0.5, math.max( owner:GetMaxArmor(), armor ) )
                 owner:SetArmor( newArmor )
 
             end )
@@ -884,6 +885,7 @@ local items = {
         desc = "Revives dead players.\nYou gain 300 score per resurrection.",
         shCost = 30,
         markup = 1.5,
+        markupPerPurchase = 0.25,
         cooldown = 0.5,
         tags = { "ITEMS", "Essential", "Resurrecting", "Weapon", "Utility" },
         purchaseTimes = {

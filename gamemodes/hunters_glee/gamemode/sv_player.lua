@@ -3,6 +3,13 @@ local math = math
 
 local punishEscaping = CreateConVar( "huntersglee_punish_navmesh_escapers", 1, bit.bor( FCVAR_NOTIFY, FCVAR_ARCHIVE ), "Should the life of players who tread off the navmesh be sapped away?.", 0, 32 )
 
+local debuggingVar = CreateConVar( "huntersglee_debug_spawning", 0, "Debug the respawning of players" )
+local function debugPrint( ... )
+    if not debuggingVar:GetBool() then return end
+    permaPrint( ... )
+
+end
+
 local navCheckDist = 150
 local belowOffset = Vector( 0, 0, -navCheckDist )
 local tStartOffset = Vector( 0, 0, -2 )
@@ -900,6 +907,7 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
         for _, thing in ipairs( protoStuffToSpectate ) do
             if IsValid( thing ) and thing:Health() >= 0 and thing ~= ply then
                 table.insert( stuffToSpectate, thing )
+
             end
         end
 
@@ -1180,6 +1188,8 @@ function GM:PlayerDeathThink( ply )
     local nextForced = ply.glee_nextForcedRespawn or 0
     if nextForced > CurTime() then return end
 
+    debugPrint( "SPAWNING", ply, naturalRespawn, forcedRespawn, weirdBuggedStateRespawn, "naturalRespawn", GAMEMODE.autoRespawn, hookSaysYes, ply.glee_newRoundSpawn )
+
     local plys = player.GetAll()
     local aliveCount = GAMEMODE:countAlive( plys )
 
@@ -1228,7 +1238,14 @@ local spaceCheckUpOffset = Vector( 0, 0, 64 )
 local spaceCheckHull = Vector( 17, 17, 2 )
 local occupiedSpawnAreas = {}
 
+
 function GM:PlayerSpawn( ply, transiton )
+
+    if debuggingVar:GetBool() then
+        ErrorNoHaltWithStack( "GLEE: GM:PlayerSpawn", ply, transition )
+
+    end
+
     if IsValid( ply:GetParent() ) then
         ply:SetParent( NULL )
 
@@ -1333,6 +1350,8 @@ function GM:PlayerSpawn( ply, transiton )
     end
 
     -- Stop observer mode
+    -- unspectatifyPlayer skips TEAM_PLAYING, but addons spectate players without changing their team, eg the evil crawler holding your body
+    ply:UnSpectate()
     GAMEMODE:unspectatifyPlayer( ply )
 
     -- TODO: is this glee_needsRespawning nil check needed?

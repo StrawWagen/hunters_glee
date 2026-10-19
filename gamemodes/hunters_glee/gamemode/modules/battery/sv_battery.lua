@@ -64,7 +64,7 @@ function plyMeta:GivePlayerBatteryCharge( add )
     if add == 0 then return newCharge end
     local old = batteryChargesLocal[self] or 0
     local new = old + add
-    new = math.Clamp( new, 0, self:GetMaxArmor() )
+    new = math.Clamp( new, 0, math.max( self:GetMaxArmor(), old ) ) -- overcharged suit chargers on some maps exceed max
 
     updateBatteryInternal( self, new )
     armorFollowBatteryInternal( self, new )

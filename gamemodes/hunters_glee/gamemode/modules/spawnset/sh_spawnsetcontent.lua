@@ -3,6 +3,8 @@ if SERVER then
 
     local function content()
         local _, spawnSet = GAMEMODE:GetSpawnSet()
+        if not spawnSet then return end
+
         local contentTbl = spawnSet.resourcesAdded
         if not contentTbl then return end
         if #contentTbl <= 0 then return end

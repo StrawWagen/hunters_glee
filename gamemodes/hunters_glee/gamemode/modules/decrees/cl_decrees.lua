@@ -217,12 +217,20 @@ open = function( def )
         decree:PlaySound( "arrival", math.random( 70, 80 ), CHAN_STATIC )
         decree:PlaySound( "arrival", math.random( 50, 60 ), CHAN_STATIC )
 
+        popup:Remove()
+
+    end
+
+    -- the DFrame's X calls this
+    popup.Close = close
+
+    -- here, not in close, so a decree removed any other way still unmuffles and moves the queue on
+    function popup:OnRemove()
         if def.muffle and me.SetDSP then
             me:SetDSP( 1, true )
 
         end
 
-        popup:Remove()
         showing = nil
 
         if def.onClose then def.onClose() end

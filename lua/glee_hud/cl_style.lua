@@ -25,13 +25,16 @@
     metrics         name -> 1080p pixels, scaled by the build
     sounds          setName -> sound paths, see handle:PlaySound
     background      draws a backdrop, and blurs behind it when asked, signature on hl2
+    arcBackground   background's, for a piece of a ring, signature on hl2
     scaled          function( px ) returning more fields, for look data in pixels. px turns
                     1080p pixels into pixels at the scale being built
     highContrast    fields layered, parents' first, over the whole built style while
                     cl_huntersglee_highcontrast is on. Its everyTextColor replaces every
                     colors entry
 
-    Read off handle:Settings(), having no method: smudge, tornStrip, ghosts, jitter, arrival.
+    entrance, exit  how things come into view and leave it, see handle:Entrance
+
+    Read off handle:Settings(), having no method: smudge, tornStrip, ghosts, jitter.
 --]]-------------------------------------
 
 terminator_Extras.glee_HudStyles = terminator_Extras.glee_HudStyles or {}

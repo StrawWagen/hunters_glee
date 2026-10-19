@@ -17,6 +17,10 @@ local specialLessons = {
     _savedTime = true,
 }
 
+-- learns that land before LessonDataInit, eg the server teaching a still-loading client.
+-- saving then would overwrite the file with just these, so they wait for the load to merge into
+local pendingLessons = {}
+
 function GM:SaveLessonData()
     local lessons = LocalPlayer().glee_LearnedLessons
     lessons._savedTime = os.time()
@@ -109,6 +113,17 @@ function GM:LessonDataInit()
 
     LocalPlayer().glee_LearnedLessons = lessons
 
+    if next( pendingLessons ) then
+        for name in pairs( pendingLessons ) do
+            lessons[name] = true
+
+        end
+        table.Empty( pendingLessons )
+        self:RequestLessonDataSave( true )
+        self:LazySyncLessons()
+
+    end
+
     return lessons
 
 end
@@ -125,7 +140,7 @@ function GM:HasLearnedLesson( plyOrName, lessonName )
     end
     local ply = plyOrName or LocalPlayer()
     local learned = ply.glee_LearnedLessons
-    if not learned then return end
+    if not learned then return pendingLessons[lessonName] end
 
     -- can return for specialLessons, but im fine with that
     return learned[lessonName]
@@ -141,8 +156,9 @@ function GM:LearnLesson( plyOrName, lessonName )
     local ply = plyOrName or LocalPlayer()
     local learned = ply.glee_LearnedLessons
     if not learned then
-        learned = {}
-        ply.glee_LearnedLessons = learned
+        if pendingLessons[lessonName] then return false end
+        pendingLessons[lessonName] = true
+        return true
 
     end
     if learned[lessonName] then return false end
@@ -171,12 +187,12 @@ net.Receive( "glee_lessons", function()
     else
         -- the server taught this one, so it already knows, no sync back
         local learned = ply.glee_LearnedLessons
+        local toLearn = net.ReadString()
         if not learned then
-            learned = {}
-            ply.glee_LearnedLessons = learned
+            pendingLessons[toLearn] = true
+            return
 
         end
-        local toLearn = net.ReadString()
         if learned[toLearn] then return end
         learned[toLearn] = true
 

@@ -36,6 +36,9 @@ local function shownByScroll( pnl )
 
 end
 
+-- how many ever larger arcs build an arc's smudge. More is smoother, each is a draw the size of the ring
+local ARC_SMUDGE_LAYERS = 8
+
 terminator_Extras.glee_RegisterStyle( "soulthought", {
     inherits = "hl2",
 
@@ -124,5 +127,45 @@ terminator_Extras.glee_RegisterStyle( "soulthought", {
 
         rect:Draw()
 
+    end,
+
+    --[[
+        The smudge, for a piece of a ring. RNDX's shadow trick above is for boxes, so it's built
+        out of ARC_SMUDGE_LAYERS arcs instead, the piece grown on every side by even steps across
+        the smudge's softness, centred on its spill. Each step out is covered by one layer fewer,
+        and each layer's alpha is picked so the cover falls off evenly, step by step, from the
+        backdrop's own where all of them overlap to nothing past the last.
+    ]]
+    arcBackground = function( style, centerX, centerY, inner, outer, startDeg, endDeg, gap, color, fade, cache, blur )
+        local hudHelpers = terminator_Extras.glee_HudHelpers
+        local smudge = style.smudge
+
+        fade = fade * shownByScroll( cache )
+        if fade <= 0 then return end
+
+        if blur then
+            local shape = hudHelpers.ArcShape( centerX, centerY, inner, outer, startDeg, endDeg, gap )
+            if shape then shape:Blur( blur * fade ):Draw() end
+
+        end
+
+        local layers = ARC_SMUDGE_LAYERS
+        local fullCover = math.Clamp( color.a * fade / 255, 0, 0.999 )
+        local step = smudge.softness / ( layers - 1 )
+        local smallestGrow = smudge.spill - smudge.softness * 0.5
+
+        -- outermost first. Where the outer n layers overlap the cover is fullCover * n / layers,
+        -- so this layer's alpha is whatever takes the n - 1 outside it up to that
+        local coverOutside = 0
+        for fromOutside = 1, layers do
+            local cover = fullCover * fromOutside / layers
+            local alpha = 1 - ( 1 - cover ) / ( 1 - coverOutside )
+            coverOutside = cover
+
+            local grow = smallestGrow + step * ( layers - fromOutside )
+            local shape = hudHelpers.ArcShape( centerX, centerY, inner - grow, outer + grow, startDeg, endDeg, gap - grow * 2 )
+            if shape then shape:Color( color.r, color.g, color.b, alpha * 255 ):Draw() end
+
+        end
     end,
 } )

@@ -17,6 +17,8 @@ include( "modules/signalstrength/cl_signalstrength.lua" )
 include( "modules/thirdpersonflashlight/cl_flashlight.lua" )
 include( "modules/decrees/cl_decrees.lua" )
 include( "modules/firsttimeplayers/cl_firsttimeplayers.lua" )
+include( "modules/firsttimeplayers/cl_spawnprotection.lua" )
+include( "modules/firsttimeplayers/cl_gleetings.lua" )
 
 include( "modules/modelscale/cl_modelscale.lua" )
 
@@ -37,6 +39,7 @@ include( "modules/contextmenu_widgets/cl_banktop.lua" )
 include( "modules/contextmenu_widgets/cl_tauntmenu.lua" )
 include( "modules/contextmenu_widgets/cl_settingsmenu.lua" )
 include( "modules/contextmenu_widgets/cl_guiltchecker.lua" )
+include( "modules/contextmenu_widgets/cl_desktopiconbackdrops.lua" )
 
 local GAMEMODE = GAMEMODE or GM
 

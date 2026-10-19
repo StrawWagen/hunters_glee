@@ -277,16 +277,65 @@ function hudHelpers.DrawTornStrip( settings, color, x, y, w, h, cache )
 end
 
 
--- Motion --------------------------------------------------------------------
+-- Arcs ----------------------------------------------------------------------
 
--- 0 to 1, eased. Each order starts arrivalSettings.stagger later
-function hudHelpers.ArrivalProgress( openedAt, order, arrivalSettings )
-    local startAt = openedAt + ( order * arrivalSettings.stagger )
-    local progress = math.Clamp( ( CurTime() - startAt ) / arrivalSettings.time, 0, 1 )
+--[[
+    A piece of a ring, as an RNDX shape still to be coloured or blurred, then drawn. nil when
+    nothing of it is left. Angles are degrees, 0 is right and they grow clockwise, like RNDX's.
 
-    return 1 - ( ( 1 - progress ) ^ 3 )
+    An RNDX arc's ends are cut through its centre, which would taper the gap between pieces.
+    So the centre is pushed out along the bisector, far enough that both ends sit gap/2 inside
+    startDeg and endDeg and parallel to them, and the radii shrink by the same push so the arc
+    stays put. A negative gap pulls the centre in, the ends then reach past startDeg and endDeg.
+
+    The push leaves the arc off centre, by more the further round from the bisector, so past
+    PARALLEL_GAP_MAX_SPAN a long arc's far side would leave the ring. A long arc trims its ends
+    by angle instead, at its middle radius, so its gap tapers a little.
+
+    fromFrac and toFrac, 0 to 1, keep part of it clockwise, for a sweep. Default to all of it.
+]]
+local PARALLEL_GAP_MAX_SPAN = 90 -- degrees. At 90 the far ends sit 30% of the push off the ring
+
+local function concentricArc( centerX, centerY, inner, outer, startDeg, endDeg, gap, fromFrac, toFrac )
+    local RNDX = terminator_Extras.glee_RNDX
+    inner = math.max( inner, 0 )
+
+    local trim = math.deg( gap * 0.5 / math.max( ( inner + outer ) * 0.5, 1 ) )
+    startDeg, endDeg = startDeg + trim, endDeg - trim
+
+    local span = endDeg - startDeg
+    if span <= 0 or outer <= inner then return end
+
+    local circle = RNDX.Circle( centerX, centerY, outer ):Outline( outer - inner )
+    if span >= 360 then return circle end -- a whole ring has no ends to cut
+
+    return circle:Angles( startDeg + span * ( fromFrac or 0 ), startDeg + span * ( toFrac or 1 ) )
 
 end
+
+function hudHelpers.ArcShape( centerX, centerY, inner, outer, startDeg, endDeg, gap, fromFrac, toFrac )
+    local span = endDeg - startDeg
+    if span <= 0 then return end
+    if span > PARALLEL_GAP_MAX_SPAN then
+        return concentricArc( centerX, centerY, inner, outer, startDeg, endDeg, gap, fromFrac, toFrac )
+
+    end
+
+    local RNDX = terminator_Extras.glee_RNDX
+    local mid = math.rad( startDeg + span * 0.5 )
+    local push = gap * 0.5 / math.sin( math.rad( span * 0.5 ) )
+    local outerRadius = outer - push
+    local innerRadius = math.max( inner - push, 0 )
+    if outerRadius <= innerRadius then return end
+
+    return RNDX.Circle( centerX + math.cos( mid ) * push, centerY + math.sin( mid ) * push, outerRadius )
+        :Outline( outerRadius - innerRadius )
+        :Angles( startDeg + span * ( fromFrac or 0 ), startDeg + span * ( toFrac or 1 ) )
+
+end
+
+
+-- Motion --------------------------------------------------------------------
 
 -- Keeps jitterX and jitterY on state, for a draw position to add. jitterSettings is like
 -- the god style's jitter. Rerolls on its own clock rather than every frame, which would
