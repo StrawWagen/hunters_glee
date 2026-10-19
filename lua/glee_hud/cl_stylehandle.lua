@@ -274,6 +274,29 @@ function styleHandle:Background( x, y, w, h, family, cornerRadius, fade, state, 
 
 end
 
+--[[---------------------------------------------------------
+    handle:ArcBackground
+    handle:Background for a piece of a ring, like a radial menu's wedge.
+    @param centerX, centerY: The ring's centre.
+    @param inner, outer: Its radii.
+    @param startDeg, endDeg: Where the piece starts and ends, clockwise from the right.
+    @param gap: Pixels between this piece and its neighbours, an even width all along. 0 for none.
+    @param family, fade, state, cache: As handle:Background takes them.
+    @return: None
+--]]---------------------------------------------------------
+function styleHandle:ArcBackground( centerX, centerY, inner, outer, startDeg, endDeg, gap, family, fade, state, cache )
+    local style = self:Settings()
+
+    style.arcBackground(
+        style, centerX, centerY, inner, outer, startDeg, endDeg, gap,
+        self:BackdropColor( family or "bg", state ),
+        fade or 1,
+        cache,
+        self:BackdropBlur( family )
+    )
+
+end
+
 -- Writes jitterX and jitterY onto state, for a draw position to add. Safe every frame,
 -- it rerolls on its own clock. Errors on a style without a jitter
 function styleHandle:Jitter( state )

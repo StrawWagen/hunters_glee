@@ -126,4 +126,20 @@ terminator_Extras.glee_RegisterStyle( "hl2", {
         RNDX.Rect( x, y, w, h ):Rad( cornerRadius ):Color( color.r, color.g, color.b, color.a * fade ):Draw()
 
     end,
+
+    -- background's, for a piece of a ring, see handle:ArcBackground. The ring is centreX, centreY,
+    -- between inner and outer, the piece startDeg to endDeg with gap pixels to its neighbours
+    arcBackground = function( _style, centerX, centerY, inner, outer, startDeg, endDeg, gap, color, fade, _cache, blur )
+        local arcShape = terminator_Extras.glee_HudHelpers.ArcShape
+
+        if blur then
+            local shape = arcShape( centerX, centerY, inner, outer, startDeg, endDeg, gap )
+            if shape then shape:Blur( blur * fade ):Draw() end
+
+        end
+
+        local shape = arcShape( centerX, centerY, inner, outer, startDeg, endDeg, gap )
+        if shape then shape:Color( color.r, color.g, color.b, color.a * fade ):Draw() end
+
+    end,
 } )

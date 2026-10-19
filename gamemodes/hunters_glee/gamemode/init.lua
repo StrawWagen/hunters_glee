@@ -45,6 +45,7 @@ AddCSLuaFile( "modules/contextmenu_widgets/cl_banktop.lua" )
 AddCSLuaFile( "modules/contextmenu_widgets/cl_tauntmenu.lua" )
 AddCSLuaFile( "modules/contextmenu_widgets/cl_settingsmenu.lua" )
 AddCSLuaFile( "modules/contextmenu_widgets/cl_guiltchecker.lua" )
+AddCSLuaFile( "modules/contextmenu_widgets/cl_desktopiconbackdrops.lua" )
 
 AddCSLuaFile( "modules/shop/cl_shopstandards.lua" )
 AddCSLuaFile( "modules/shop/cl_shoppinggui.lua" )

@@ -103,7 +103,7 @@ end )
 local width, height = glee_sizeScaled( OUTER_RADIUS_1080P * 2, OUTER_RADIUS_1080P * 2 )
 list.Set( "DesktopWindows", "HuntersGlee_TauntMenu", {
     title = "Taunt",
-    icon = "hunters_glee/materials/vgui/hud/taunts/dance.png",
+    icon = "icon16/wand.png",
     width = width,
     height = height,
     onewindow = true,

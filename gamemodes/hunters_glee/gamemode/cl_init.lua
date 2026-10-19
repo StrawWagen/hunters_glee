@@ -39,6 +39,7 @@ include( "modules/contextmenu_widgets/cl_banktop.lua" )
 include( "modules/contextmenu_widgets/cl_tauntmenu.lua" )
 include( "modules/contextmenu_widgets/cl_settingsmenu.lua" )
 include( "modules/contextmenu_widgets/cl_guiltchecker.lua" )
+include( "modules/contextmenu_widgets/cl_desktopiconbackdrops.lua" )
 
 local GAMEMODE = GAMEMODE or GM
 

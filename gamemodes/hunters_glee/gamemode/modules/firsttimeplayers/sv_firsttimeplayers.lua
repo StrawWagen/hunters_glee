@@ -15,7 +15,6 @@ local regretAskedSteamID -- asked if they'd rather go back, until they answer
 -- by SteamID, so a crash and rejoin doesn't cost them it. Cleared on map change
 GAMEMODE.firstTimePlayerSteamIDs = GAMEMODE.firstTimePlayerSteamIDs or {}
 
-util.AddNetworkString( "glee_dothefirsttimemessage" )
 util.AddNetworkString( "glee_askforgleetings" )
 util.AddNetworkString( "glee_tutorial_jumpin" )
 util.AddNetworkString( "glee_tutorial_decree" )
@@ -108,7 +107,8 @@ local function shelterPly( ply )
     end )
 end
 
-local function tutorialize( ply, tutorialType, offerChoice )
+-- decreeName is one of cl_firsttimeplayers.lua's tutorial_ decrees
+local function tutorialize( ply, decreeName )
     permaPrint( "GLEE: Tutorializing ", ply )
     if ply:Glee_FlashlightIsOn() then
         ply:Glee_Flashlight( false )
@@ -117,7 +117,7 @@ local function tutorialize( ply, tutorialType, offerChoice )
     asked[ply] = true
     if not alreadyDone[ply:SteamID()] then -- NEVER give god/notarg more than once per session
         alreadyDone[ply:SteamID()] = true
-        if tutorialType == "ghostly" and ply:Health() > 0 then
+        if decreeName == "tutorial_ghostly" and ply:Health() > 0 then
             ply:KillSilent()
 
         end
@@ -125,24 +125,32 @@ local function tutorialize( ply, tutorialType, offerChoice )
         ply:SetNW2Bool( "glee_firsttime_divinediscount", true )
 
     end
-    net.Start( "glee_dothefirsttimemessage" )
-        net.WriteString( tutorialType )
-        net.WriteBool( offerChoice == true )
-    net.Send( ply )
+    sendTutorialDecree( ply, decreeName )
 
     GAMEMODE.firstTimePlayerSteamIDs[ply:SteamID()] = true
 
 end
 
-local function tutorialKnowledgeLevel( ply )
-    return ply:GetInfoNum( "cl_huntersglee_firsttimetutorial", 0 )
-
-end
-
--- two different tutorials for singleplayer/multiplayer
+-- two different tutorials for singleplayer/multiplayer, the multiplayer one counts as both
 local function requiredKnowledgeLevel()
     if game.IsDedicated() then return 2 end
     return 1
+
+end
+
+-- The convar, then the lesson cl_firsttimeplayers.lua learns alongside it. Some players' convars don't save
+local function isEducated( ply )
+    if ply:IsBot() then return true end
+
+    local level = requiredKnowledgeLevel()
+    if ply:GetInfoNum( "cl_huntersglee_firsttimetutorial", 0 ) >= level then return true end
+
+    for seenLevel = level, 2 do
+        if GAMEMODE:HasLearnedLesson( ply, "SawTheTutorial" .. seenLevel ) then return true end
+
+    end
+
+    return false
 
 end
 
@@ -152,14 +160,7 @@ local function needsToAsk( ply )
 
     if ply:IsBot() then return end
 
-    return tutorialKnowledgeLevel( ply ) < requiredKnowledgeLevel()
-
-end
-
-local function isEducated( ply )
-    if ply:IsBot() then return true end
-
-    return tutorialKnowledgeLevel( ply ) >= requiredKnowledgeLevel()
+    return not isEducated( ply )
 
 end
 
@@ -204,24 +205,20 @@ function GAMEMODE:TutorializeNewPlayers( players )
     end
     if #nonKnowers <= 0 then return end
 
-    local tutorialType = "default"
-
     -- enough of the session is new that the whole server should be on the gentle misery
     local threshold = #players / 2
     local switchingToTutorialMisery = #nonKnowers > threshold
     if switchingToTutorialMisery then
         RunConsoleCommand( "huntersglee_spawnset", self.TheTutorialMisery )
 
-    elseif GAMEMODE:getRemaining( GAMEMODE.termHunt_roundBegunTime, CurTime() ) > 5 then
-        -- spawn in dead if round didn't JUST start right now
-        tutorialType = "ghostly"
-
     end
+    -- spawn in dead if round didn't JUST start right now
+    local ghostly = not switchingToTutorialMisery and GAMEMODE:getRemaining( GAMEMODE.termHunt_roundBegunTime, CurTime() ) > 5
 
     -- the cvar change applies after this, so the current misery can still be the old one
     local onTutorialMisery = switchingToTutorialMisery or self:GetSpawnSet() == self.TheTutorialMisery
     local chooser
-    if onTutorialMisery and not tutorialChoiceOffered then
+    if onTutorialMisery and not ghostly and not tutorialChoiceOffered then
         for _, ply in ipairs( nonKnowers ) do
             if not chooser or ply:TimeConnected() > chooser:TimeConnected() then
                 chooser = ply
@@ -234,7 +231,22 @@ function GAMEMODE:TutorializeNewPlayers( players )
     end
 
     for _, ply in ipairs( nonKnowers ) do
-        tutorialize( ply, tutorialType, ply == chooser )
+        local decreeName
+        if ghostly then
+            decreeName = "tutorial_ghostly"
+
+        elseif ply == chooser then
+            decreeName = "tutorial_chooser"
+
+        elseif onTutorialMisery then
+            decreeName = "tutorial_infernal"
+
+        else
+            decreeName = "tutorial_multiplayer"
+
+        end
+
+        tutorialize( ply, decreeName )
 
     end
 end
@@ -324,19 +336,44 @@ hook.Add( "PlayerDeath", "glee_tutorial_ghostshophint", function( ply )
     end )
 end )
 
-local escapedEasyHintDelay = 5 -- let the escape itself land first
+local divineInterventionHintDelay = ghostShopHintDelay + 1 -- the ghost shop hint can mention it first
 
--- the first time someone escapes the tutorial misery, show them there's more
+-- an earlier decree couldn't mention Divine Intervention, it wasn't on sale. The client checks if it is now
+hook.Add( "PlayerDeath", "glee_tutorial_divineinterventionhint", function( ply )
+    if not GAMEMODE:HasLearnedLesson( ply, "MissedDivineIntervention" ) then return end
+    if GAMEMODE:HasLearnedLesson( ply, "KnowsDivineIntervention" ) then return end
+
+    timer.Create( "glee_tutorial_divineinterventionhint_" .. ply:GetCreationID(), divineInterventionHintDelay, 1, function()
+        if not IsValid( ply ) then return end
+        if ply:Alive() then return end
+        if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
+
+        sendTutorialDecree( ply, "divineintervention" )
+
+    end )
+end )
+
+local escapedEasyHintDelay = 15 -- after the round's over, so it isn't buried under the escape rewards
+
+-- the first time someone escapes the tutorial misery, show them there's more, once the round's over
 hook.Add( "glee_ply_escaped", "glee_tutorial_escapedeasyhint", function( ply )
     if GAMEMODE:GetSpawnSet() ~= GAMEMODE.TheTutorialMisery then return end
     if GAMEMODE:HasLearnedLesson( ply, "EscapedTheEasyMisery" ) then return end
 
-    timer.Simple( escapedEasyHintDelay, function()
-        if not IsValid( ply ) then return end
-        if not GAMEMODE:LearnLesson( ply, "EscapedTheEasyMisery" ) then return end
+    local timerName = "glee_tutorial_escapedeasyhint_" .. ply:GetCreationID()
+    timer.Create( timerName, 1, 0, function()
+        if not IsValid( ply ) then timer.Remove( timerName ) return end
+        if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_INACTIVE then return end
 
-        sendTutorialDecree( ply, "escapedeasy" )
+        timer.Remove( timerName )
 
+        timer.Simple( escapedEasyHintDelay, function()
+            if not IsValid( ply ) then return end
+            if not GAMEMODE:LearnLesson( ply, "EscapedTheEasyMisery" ) then return end
+
+            sendTutorialDecree( ply, "escapedeasy" )
+
+        end )
     end )
 end )
 

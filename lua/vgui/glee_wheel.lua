@@ -492,54 +492,12 @@ local function fadedColor( self, color, alphaMul )
 
 end
 
---[[
-    Everything's drawn with RNDX, like the styles' own backdrops. It blends in linear space and
-    surface doesn't, so the same backdrop colour drawn with surface comes out darker than a menu's.
-
-    An RNDX arc's ends are cut through its centre, which would taper the gap between wedges.
-    So each wedge's centre is pushed out along its bisector, far enough that both ends sit
-    gap/2 inside the slot's edges and parallel to them. Its radii shrink by the same push, so
-    the wedge stays where it was.
-
-    fromFrac and toFrac, 0 to 1, draw part of it clockwise, for the cooldown sweep.
-    Angles are degrees, 0 is right and they grow clockwise, the same as RNDX's.
-]]
--- The RNDX shape, still to be coloured or blurred, then drawn. nil when nothing of it is left
-local function wedgeShape( centerX, centerY, inner, outer, startDeg, endDeg, gap, fromFrac, toFrac )
-    local RNDX = terminator_Extras.glee_RNDX
-    local span = endDeg - startDeg
-
-    -- a lone wedge is the whole ring, it has no ends to cut
-    if span >= 360 then
-        return RNDX.Circle( centerX, centerY, outer ):Outline( outer - inner )
-
-    end
-
-    local mid = math.rad( startDeg + span * 0.5 )
-    local push = gap * 0.5 / math.sin( math.rad( span * 0.5 ) )
-    local outerRadius = outer - push
-    local innerRadius = math.max( inner - push, 0 )
-    if outerRadius <= innerRadius then return end
-
-    return RNDX.Circle( centerX + math.cos( mid ) * push, centerY + math.sin( mid ) * push, outerRadius )
-        :Outline( outerRadius - innerRadius )
-        :Angles( startDeg + span * fromFrac, startDeg + span * toFrac )
-
-end
-
+-- Backdrops, the ring and the wedges, are the style's, see handle:ArcBackground. This is for the
+-- plain fills over them, the page grip and the cooldown sweep. fromFrac and toFrac, 0 to 1, keep
+-- part of it clockwise. Drawn with RNDX like the backdrops, surface would blend it darker
 local function drawWedge( centerX, centerY, inner, outer, startDeg, endDeg, gap, color, fromFrac, toFrac )
-    local shape = wedgeShape( centerX, centerY, inner, outer, startDeg, endDeg, gap, fromFrac, toFrac )
+    local shape = terminator_Extras.glee_HudHelpers.ArcShape( centerX, centerY, inner, outer, startDeg, endDeg, gap, fromFrac, toFrac )
     if shape then shape:Color( color ):Draw() end
-
-end
-
--- What's behind a piece of dark frame, blurred the way a bgDark backdrop blurs behind itself.
--- Each piece blurs under itself, so a lifted one takes its blur along. blur is nil while it's off
-local function blurWedge( centerX, centerY, inner, outer, startDeg, endDeg, blur )
-    if not blur or blur <= 0 then return end
-
-    local shape = wedgeShape( centerX, centerY, inner, outer, startDeg, endDeg, 0, 0, 1 )
-    if shape then shape:Blur( blur ):Draw() end
 
 end
 
@@ -551,9 +509,6 @@ end
 -- the ring is the wheel's frame, each wedge sits in it padded like a settings row in its menu.
 -- Drawn without the lifted wedges' pieces, in unbroken runs between them, so no seams show at slot edges
 local function paintRing( self, style, centerX, centerY, inner, outer, fade )
-    local color = fadedColor( self, style:BackdropColor( "bgDark", "idle" ), fade )
-    local blur = style:BackdropBlur( "bgDark" )
-    blur = blur and blur * fade
     local count = slotsOnPage( self )
 
     local firstLifted
@@ -566,8 +521,7 @@ local function paintRing( self, style, centerX, centerY, inner, outer, fade )
     end
 
     if not firstLifted then
-        blurWedge( centerX, centerY, inner, outer, 0, 360, blur )
-        drawWedge( centerX, centerY, inner, outer, 0, 360, 0, color, 0, 1 )
+        style:ArcBackground( centerX, centerY, inner, outer, 0, 360, 0, "bgDark", fade, "idle", self )
         return
 
     end
@@ -580,8 +534,7 @@ local function paintRing( self, style, centerX, centerY, inner, outer, fade )
         if isLifted( self._slots[slot] ) then
             if runLength > 0 then
                 local runEndDeg = runStartDeg + runLength * degreesPerSlot
-                blurWedge( centerX, centerY, inner, outer, runStartDeg, runEndDeg, blur )
-                drawWedge( centerX, centerY, inner, outer, runStartDeg, runEndDeg, 0, color, 0, 1 )
+                style:ArcBackground( centerX, centerY, inner, outer, runStartDeg, runEndDeg, 0, "bgDark", fade, "idle", self )
                 runLength = 0
 
             end
@@ -598,12 +551,9 @@ local function paintWedge( self, style, slot, centerX, centerY, pad, gap, chosen
     local canPick = canPickSlot( self, slot )
     local wedgeX, wedgeY = centerX + data.offsetX, centerY + data.offsetY
 
+    -- pushed out, it takes its piece of the ring along, blur and all
     if isLifted( data ) then
-        local blur = style:BackdropBlur( "bgDark" )
-        blurWedge( wedgeX, wedgeY, data.inner, data.outer, data.startDeg, data.endDeg, blur and blur * data.fade )
-
-        local piece = fadedColor( self, style:BackdropColor( "bgDark", "idle" ), data.fade )
-        drawWedge( wedgeX, wedgeY, data.inner, data.outer, data.startDeg, data.endDeg, 0, piece, 0, 1 )
+        style:ArcBackground( wedgeX, wedgeY, data.inner, data.outer, data.startDeg, data.endDeg, 0, "bgDark", data.fade, "idle", self )
 
     end
 
@@ -615,10 +565,9 @@ local function paintWedge( self, style, slot, centerX, centerY, pad, gap, chosen
         mixColor( color, color, style:BackdropColor( "bg", "chosen" ), chosenFlash )
 
     end
-    color.a = color.a * data.fade
 
     local wedgeInner, wedgeOuter = data.inner + pad, data.outer - pad
-    drawWedge( wedgeX, wedgeY, wedgeInner, wedgeOuter, data.startDeg, data.endDeg, gap, color, 0, 1 )
+    style:ArcBackground( wedgeX, wedgeY, wedgeInner, wedgeOuter, data.startDeg, data.endDeg, gap, color, data.fade, nil, self )
 
     -- what's left of the cooldown, shrinking clockwise
     local remaining = cooldownRemaining( slotStatus( self, slot ) )
@@ -690,11 +639,8 @@ local function paintPages( self, style, centerX, centerY, ringInner, fade )
 
     local frameInner, inner, outer, frameOuter = pageRingRadii( style, ringInner )
 
-    local blur = style:BackdropBlur( "bgDark" )
-    blurWedge( centerX, centerY, frameInner, frameOuter, 0, 360, blur and blur * fade )
-    drawWedge( centerX, centerY, frameInner, frameOuter, 0, 360, 0, fadedColor( self, style:BackdropColor( "bgDark", "idle" ), fade ), 0, 1 )
-
-    drawWedge( centerX, centerY, inner, outer, 0, 360, 0, fadedColor( self, style:BackdropColor( "bg", "idle" ), fade ), 0, 1 )
+    style:ArcBackground( centerX, centerY, frameInner, frameOuter, 0, 360, 0, "bgDark", fade, "idle", self )
+    style:ArcBackground( centerX, centerY, inner, outer, 0, 360, 0, "bg", fade, "idle", self )
 
     local gripSpan = 360 / pages
     local gripStart = START_ANGLE - gripSpan * 0.5 + gripSpan * self._pageScroll
