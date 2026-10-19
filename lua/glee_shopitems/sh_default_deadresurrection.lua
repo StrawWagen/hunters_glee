@@ -799,7 +799,7 @@ local items = {
 
         end,
         markup = 1,
-        markupPerPurchase = 0.25,
+        markupPerPurchase = 0.5,
         cooldown = function( purchaser )
             local isChosen = purchaser:HasStatusEffect( "divine_chosen" )
             if isChosen then
@@ -830,10 +830,10 @@ local items = {
     ["resurrectioncrappy"] = {
         name = "Infernal Intervention",
         desc = "Make a deal with the Infernal powers.\nEncase your soul in a weak, shriveled husk.",
-        shCost = 150,
+        shCost = 100,
         canGoInDebt = true,
         markup = 1,
-        markupPerPurchase = 1,
+        markupPerPurchase = 1.5,
         cooldown = 5,
         tags = { "DEADGIFTS", "Infernal", "Essential", "SelfResurrecting", "Resurrecting", "CloseShopOnPurchase" },
         purchaseTimes = {
@@ -884,8 +884,8 @@ local items = {
         name = "Revive Kit",
         desc = "Revives dead players.\nYou gain 300 score per resurrection.",
         shCost = 30,
-        markup = 1.5,
-        markupPerPurchase = 0.25,
+        markup = 2,
+        markupPerPurchase = 0.5,
         cooldown = 0.5,
         tags = { "ITEMS", "Essential", "Resurrecting", "Weapon", "Utility" },
         purchaseTimes = {
