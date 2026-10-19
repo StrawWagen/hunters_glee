@@ -1014,9 +1014,31 @@ if SERVER then
         end
     )
 
+    local lumenIgniteRange = 150
+    local lumenIgniteChance = 0.05 -- per second, while something's in range
+
     GAMEMODE:RegisterStatusEffect( "ultra_lumen",
         function( self, owner ) -- setup func
             owner:Glee_Flashlight( false ) -- flashlight properties are getting updated, turn it off so ply can see new properties
+
+            self:Timer( "ignite", 1, 0, function()
+                if not owner:Glee_FlashlightIsOn() then return end
+                if ( owner.glee_FlashlightBrightness or 255 ) ~= 255 then return end -- the boost is off too, see glee_flashlightstats below
+
+                local shootPos = owner:GetShootPos()
+                local result = util.TraceLine( {
+                    start = shootPos,
+                    endpos = shootPos + owner:GetAimVector() * lumenIgniteRange,
+                    filter = owner,
+
+                } )
+                local hit = result.Entity
+                if not IsValid( hit ) then return end
+                if math.random() > lumenIgniteChance then return end
+
+                hit:Ignite( math.Rand( 3, 6 ) )
+
+            end )
 
             self:Hook( "glee_flashlight_poweruse", function( ply, use )
                 if ply ~= owner then return end

@@ -64,6 +64,7 @@ gamemodes\hunters_glee\gamemode\modules\banking\cl_bankconsent.lua
 gamemodes\hunters_glee\gamemode\modules\music\cl_music.lua
 
 gamemodes\hunters_glee\gamemode\modules\thirdpersonflashlight\cl_flashlight.lua
+gamemodes\hunters_glee\gamemode\modules\thirdpersonflashlight\sh_flashlight.lua
 
 gamemodes\hunters_glee\gamemode\modules\decrees\cl_decrees.lua
 

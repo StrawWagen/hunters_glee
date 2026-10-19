@@ -3,22 +3,18 @@
 -- ------------------------------------------------------------------- --
 -- -------------------- By Wheatley ---------------------------------- --
 -- ------------------------------------------------------------------- --
--- modified very very heavily by straw
+-- modified very very heavily by straw and the slop machine
 
 local IsValid = IsValid
-local thrPFlash = thrPFlash or {}
 
-local function checkLight( ply, theLight )
-	local newColor = ply.glee_FlashlightColorDefault or Color( 255, 255, 255 )
+local defaultColor = Color( 255, 255, 255 )
+local nearz = 10
+local minFarz = nearz + 5
+local fullBrightFarz = 255 * 2 + 125 -- a plain flashlight's range at full brightness, glows at strength 1
+
+-- what ply's flashlight puts out at their current brightness
+local function getLightStats( ply )
 	local alpha = ply.glee_FlashlightBrightness or 255
-	newColor.a = alpha
-
-	local formatted = Format( "%i %i %i %i", newColor.r, newColor.g, newColor.b, alpha )
-
-	local oldFormatted = theLight.flashlight_OldColor
-	if oldFormatted and oldFormatted == formatted then return end
-
-	ply.glee_FlashlightColorDefault = newColor
 
 	local farz = alpha * 2
 	-- min 125 farz
@@ -37,90 +33,166 @@ local function checkLight( ply, theLight )
 
 	end
 
-	theLight:SetKeyValue( "lightfov", fov )
-	theLight:SetKeyValue( "farz", farz )
+	return {
+		color = ply.glee_FlashlightColorDefault or defaultColor,
+		alpha = alpha,
+		farz = farz,
+		fov = fov,
+	}
+end
 
-	theLight:SetKeyValue( "lightcolor", formatted )
-	theLight.flashlight_OldColor = formatted
+-- strength scales stats' brightness and range, so a dropped flashlight can fade out
+-- returns how big the flashlight's glow should be
+function GM:ApplyFlashlightStats( theLight, stats, strength )
+	local color = stats.color
+	local alpha = stats.alpha * strength
+	local farz = math.max( stats.farz * strength, minFarz )
+	local fov = stats.fov
+
+	local formatted = Format( "%i %i %i %i", color.r, color.g, color.b, alpha )
+	local appliedKey = formatted .. " " .. farz .. " " .. fov
+	if theLight.glee_AppliedStatsKey ~= appliedKey then
+		theLight.glee_AppliedStatsKey = appliedKey
+		theLight:SetKeyValue( "lightfov", fov )
+		theLight:SetKeyValue( "farz", farz )
+		theLight:SetKeyValue( "lightcolor", formatted )
+
+	end
+
+	return farz / fullBrightFarz
+
+end
+
+local function checkLight( ply, theLight )
+	local stats = getLightStats( ply )
+	theLight.glee_LightStats = stats -- the dropped flashlight fades from these, its owner's hooks may not apply anymore
+
+	local glowStrength = GAMEMODE:ApplyFlashlightStats( theLight, stats, 1 )
+	ply:SetNW2Float( "glee_flashlightglow", glowStrength )
+
+end
+
+-- the only reference to a player's light, kept on the player so it survives autorefresh
+local function getPlayersLight( ply )
+	local theLight = ply.glee_Thirdperson_Flashlight
+	if not IsValid( theLight ) then return end
+
+	return theLight
 
 end
 
 local function TPF_SetupProjectedTexture( ply )
-	if SERVER then
-		local theLight = ents.Create( "env_projectedtexture" )
-		if not IsValid( theLight ) then return end
-		thrPFlash[ply] = theLight
+	local theLight = ents.Create( "env_projectedtexture" )
+	if not IsValid( theLight ) then return end
 
-		local attachmentId = ply:LookupAttachment( "eyes" )
-		local theFlashlightPos = ply:GetShootPos()
-		local theFlashlightAngles = ply:EyeAngles()
-		if attachmentId then
-			local attachDat = ply:GetAttachment( attachmentId )
-			if attachDat then
-				theFlashlightPos = attachDat.Pos
-				theFlashlightAngles = attachDat.Ang
-
-			end
-		end
-
-		theFlashlightPos = theFlashlightPos + theFlashlightAngles:Forward() * 15
-
-		theLight:SetPos( theFlashlightPos )
-		theLight:SetAngles( theFlashlightAngles )
-
-		theLight:SetKeyValue( "enableshadows", 1 )
-		theLight:SetKeyValue( "shadowquality", 0 )
-		theLight:SetKeyValue( "nearz", 10 )
-		checkLight( ply, theLight )
-		theLight:Spawn()
-		theLight:Input( "SpotlightTexture", NULL, NULL, "effects/flashlight001" )
-		if attachmentId then
-			theLight:SetParent( ply, attachmentId )
-
-		else
-			theLight:SetParent( ply )
+	local attachmentId = ply:LookupAttachment( "eyes" )
+	local theFlashlightPos = ply:GetShootPos()
+	local theFlashlightAngles = ply:EyeAngles()
+	if attachmentId > 0 then
+		local attachDat = ply:GetAttachment( attachmentId )
+		if attachDat then
+			theFlashlightPos = attachDat.Pos
+			theFlashlightAngles = attachDat.Ang
 
 		end
-		theLight:SetTransmitWithParent( true )
-
-		ply.glee_Thirdperson_Flashlight = theLight
-
-		timer.Simple( 0, function()
-			if not IsValid( ply ) then return end
-			if not ply:Alive() then return end
-
-			ply:EmitSound( "HL2Player.FlashLightOn" )
-
-		end )
 	end
+
+	theFlashlightPos = theFlashlightPos + theFlashlightAngles:Forward() * 15
+
+	theLight:SetPos( theFlashlightPos )
+	theLight:SetAngles( theFlashlightAngles )
+
+	theLight:SetKeyValue( "enableshadows", 1 )
+	theLight:SetKeyValue( "shadowquality", 0 )
+	theLight:SetKeyValue( "nearz", nearz )
+	checkLight( ply, theLight )
+	theLight:Spawn()
+	theLight:Input( "SpotlightTexture", NULL, NULL, "effects/flashlight001" )
+	-- owned, not parented. cl_flashlight places it every frame, a parent's angles shift mid frame and jitter it
+	theLight:SetOwner( ply )
+
+	ply.glee_Thirdperson_Flashlight = theLight
+
+	timer.Simple( 0, function()
+		if not IsValid( ply ) then return end
+		if not ply:Alive() then return end
+
+		ply:EmitSound( "HL2Player.FlashLightOn" )
+
+	end )
 end
 
 local function TPF_RemoveProjectedTexture( ply )
-	local theirFlash = thrPFlash[ply] or ply.glee_Thirdperson_Flashlight
-	if IsValid( theirFlash ) then
-		SafeRemoveEntity( theirFlash )
-		thrPFlash[ply] = nil
+	local theLight = getPlayersLight( ply )
+	if not theLight then return end
+
+	SafeRemoveEntity( theLight )
+	ply.glee_Thirdperson_Flashlight = nil
+
+	timer.Simple( 0, function()
 		if not IsValid( ply ) then return end
+		if not ply:Alive() then return end
 
-		ply.glee_Thirdperson_Flashlight = nil
+		ply:EmitSound( "HL2Player.FlashLightOff" )
 
-		timer.Simple( 0, function()
-			if not IsValid( ply ) then return end
-			if not ply:Alive() then return end
+	end )
+end
 
-			ply:EmitSound( "HL2Player.FlashLightOff" )
+local lampHands = { "anim_attachment_RH", "anim_attachment_LH" }
 
-		end )
+local function lampDropPos( ply )
+	for _, name in ipairs( lampHands ) do
+		local attachmentId = ply:LookupAttachment( name )
+		if attachmentId > 0 then
+			local attachDat = ply:GetAttachment( attachmentId )
+			if attachDat then return attachDat.Pos end
+
+		end
+	end
+
+	return ply:GetShootPos()
+
+end
+
+-- hands ply's light over to a glee_dropped_flashlight, which burns it out
+-- one per player, dropping another replaces the last
+local function TPF_DropFlashlight( ply )
+	local theLight = getPlayersLight( ply )
+	if not theLight then return end
+
+	ply.glee_Thirdperson_Flashlight = nil
+	SafeRemoveEntity( ply.glee_DroppedFlashlight )
+
+	local dropped = ents.Create( "glee_dropped_flashlight" )
+	if not IsValid( dropped ) then
+		SafeRemoveEntity( theLight )
+		return
+
+	end
+	ply.glee_DroppedFlashlight = dropped
+
+	dropped:SetPos( lampDropPos( ply ) )
+	dropped:SetAngles( ply:EyeAngles() )
+	dropped:Spawn()
+	dropped:Activate() -- scales its physics to the lamp's model scale
+	dropped:TakeLight( theLight )
+
+	local physObj = dropped:GetPhysicsObject()
+	if IsValid( physObj ) then
+		physObj:SetVelocity( ply:GetVelocity() )
+
 	end
 end
 
 hook.Add( "PlayerDisconnected", "TPF_HookPlayerDisconnects", TPF_RemoveProjectedTexture )
 
-hook.Add( "PostPlayerDeath", "glee_flashight_turnoff", TPF_RemoveProjectedTexture )
+hook.Add( "PostPlayerDeath", "glee_flashlight_drop", TPF_DropFlashlight )
 
-hook.Add( "PlayerEnteredVehicle", "glee_flashight_turnoff", TPF_RemoveProjectedTexture )
+hook.Add( "glee_PreStripWeapons", "glee_flashlight_drop", TPF_DropFlashlight )
 
-hook.Add( "PreCleanupMap", "glee_flashight_turnoff", function()
+hook.Add( "PlayerEnteredVehicle", "glee_flashlight_turnoff", TPF_RemoveProjectedTexture )
+
+hook.Add( "PreCleanupMap", "glee_flashlight_turnoff", function()
 	for _, currPly in ipairs( player.GetAll() ) do
 		TPF_RemoveProjectedTexture( currPly )
 
@@ -130,7 +202,7 @@ end )
 hook.Add( "PlayerSwitchFlashlight", "TPF_HookFlashlightEnabled", function( ply, _ )
 	if not ply:Alive() then return end
 
-	if not IsValid( thrPFlash[ply] ) then
+	if not getPlayersLight( ply ) then
 		local hookRes = hook.Run( "glee_PlayerSwitchFlashlight", ply, true )
 		if hookRes == false then return false end
 
@@ -147,23 +219,10 @@ hook.Add( "PlayerSwitchFlashlight", "TPF_HookFlashlightEnabled", function( ply, 
 	end
 end )
 
-local function checkFlashlight( ply )
-	local currFlash = thrPFlash[ply]
-	if not IsValid( currFlash ) then return end
-
-end
-
-hook.Add( "glee_sv_validgmthink", "glee_manageflashlights", function( players )
-	for _, currPly in ipairs( players ) do
-		checkFlashlight( currPly )
-
-	end
-end )
-
 local meta = FindMetaTable( "Player" )
 
 function meta:Glee_FlashlightIsOn()
-	return IsValid( thrPFlash[self] )
+	return getPlayersLight( self ) ~= nil
 
 end
 
@@ -182,7 +241,10 @@ end
 
 function meta:SetFlashlightBrightness( brightness )
 	self.glee_FlashlightBrightness = brightness
-	if not self:Glee_FlashlightIsOn() then return end
-	checkLight( self, thrPFlash[self] )
+
+	local theLight = getPlayersLight( self )
+	if not theLight then return end
+
+	checkLight( self, theLight )
 
 end

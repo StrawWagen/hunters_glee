@@ -35,6 +35,7 @@ AddCSLuaFile( "modules/clhud/cl_bosshealthbar.lua" )
 AddCSLuaFile( "modules/cl_spectateflashlight.lua" )
 AddCSLuaFile( "modules/music/cl_music.lua" )
 AddCSLuaFile( "modules/thirdpersonflashlight/cl_flashlight.lua" )
+AddCSLuaFile( "modules/thirdpersonflashlight/sh_flashlight.lua" )
 AddCSLuaFile( "modules/decrees/cl_decrees.lua" )
 AddCSLuaFile( "modules/firsttimeplayers/cl_firsttimeplayers.lua" )
 AddCSLuaFile( "modules/firsttimeplayers/cl_spawnprotection.lua" )
@@ -312,7 +313,6 @@ function GM:Think()
     -- see player_termrunner
     -- see sv_zproceduralspawner
     -- see battery/sv_battery
-    -- see sv_thirdpersonflashlight
     hook.Run( "glee_sv_validgmthink", players, currState, cur )
 
     local displayTime = nil

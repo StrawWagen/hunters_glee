@@ -258,26 +258,19 @@ if SERVER then
     -- so drop the cam first, then if a tick later you're still in your own eyes it was a normal strip, finish it
     -- known dupe: the crawler snapshots your weapons before stripping, so escaping it hands you a fresh cam while the dropped one stays.
     -- leaving it, the dropped cam filming you get dragged off is worth a spare camera
-    local plyMeta = FindMetaTable( "Player" )
-    plyMeta.glee_UnwrappedStripWeapons = plyMeta.glee_UnwrappedStripWeapons or plyMeta.StripWeapons
-    local unwrappedStripWeapons = plyMeta.glee_UnwrappedStripWeapons
+    hook.Add( "glee_PreStripWeapons", "glee_crapvidcam_dropbeforestrip", function( ply )
+        local cam = holdingCamActive( ply )
+        if not cam or ply:Health() <= 0 then return end
 
-    function plyMeta:StripWeapons( ... )
-        local cam = holdingCamActive( self )
-        if cam and self:Health() > 0 then
-            self:DropWeaponKeepAmmo( cam )
-            timer.Simple( 0, function()
-                if not IsValid( cam ) or IsValid( cam:GetOwner() ) then return end
-                if IsValid( self ) and not seesThroughOwnEyes( self ) then return end
+        ply:DropWeaponKeepAmmo( cam )
+        timer.Simple( 0, function()
+            if not IsValid( cam ) or IsValid( cam:GetOwner() ) then return end
+            if IsValid( ply ) and not seesThroughOwnEyes( ply ) then return end
 
-                cam:Remove()
+            cam:Remove()
 
-            end )
-        end
-
-        return unwrappedStripWeapons( self, ... )
-
-    end
+        end )
+    end )
 
     function SWEP:Equip( newOwner )
         self.glee_lastHolder = newOwner

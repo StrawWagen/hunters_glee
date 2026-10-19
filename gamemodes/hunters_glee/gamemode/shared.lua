@@ -42,6 +42,7 @@ include( "modules/sh_playerdrowning.lua" )
 
 include( "modules/guilt/sh_guilt.lua" )
 include( "modules/battery/sh_battery.lua" )
+include( "modules/thirdpersonflashlight/sh_flashlight.lua" )
 include( "modules/sh_detecthunterkills.lua" )
 include( "modules/shopitems/sh_shophelpers.lua" )
 include( "modules/spawnset/sh_spawnpoolutil.lua" )

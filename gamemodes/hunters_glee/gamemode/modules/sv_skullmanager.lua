@@ -71,7 +71,7 @@ local function spawnTermSkull( died, dmg, _ )
     if not died.glee_AlwaysDropSkull then
         local maxHealth = died:GetMaxHealth()
         if died.IsFodder and maxHealth <= terminator_Extras.healthDefault then -- fodder bots drop less
-            local rand = math.Rand( 0, 1 )
+            local rand = math.Rand( 0, 0.85 )
             local ratio = maxHealth / terminator_Extras.healthDefault
             if rand > ratio then return end
 

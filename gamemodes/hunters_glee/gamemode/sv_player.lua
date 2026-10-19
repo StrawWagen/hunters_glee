@@ -1466,9 +1466,22 @@ hook.Add( "WeaponEquip", "glee_fixignitedweapons", function( wep, ply )
     if not wep:IsOnFire() then return end
     wep:Extinguish()
     ply:Ignite( math.Rand( 3, 6 ), 0 )
-    GAMEMODE:GivePanic( 5 )
+    GAMEMODE:GivePanic( ply, 5 )
 
 end )
+
+-- glee_PreStripWeapons( ply ), for anything that should leave ply's hands instead of being stripped with them
+-- for fun CINEMATIC effects
+local plyMeta = FindMetaTable( "Player" )
+-- stashed on the metatable so an autorefresh doesn't capture our own override as the original
+plyMeta.glee_UnwrappedStripWeapons = plyMeta.glee_UnwrappedStripWeapons or plyMeta.StripWeapons
+local unwrappedStripWeapons = plyMeta.glee_UnwrappedStripWeapons
+
+function plyMeta:StripWeapons( ... )
+    ProtectedCall( hook.Run, "glee_PreStripWeapons", self ) -- an erroring listener can't stop the strip
+    return unwrappedStripWeapons( self, ... )
+
+end
 
 hook.Add( "Term_OnStartedDriving", "glee_startdrivingsounds", function( driver, _driven )
     net.Start( "glee_starteddriving" )
