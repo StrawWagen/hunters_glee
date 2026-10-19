@@ -1556,7 +1556,7 @@ local items = {
     -- Risk vs reward.
     ["chameleon"] = {
         name = "Chameleon Gene",
-        desc = "Become nearly invisible.\nYour chameleon skin can't take a beating, you take twice as much damage.\nYour weapons, and flashlight are still visible.",
+        desc = "Become nearly invisible.\nYour chameleon skin can't take a beating, you take twice as much damage.\nYour weapons, and flashlight are still visible.\nAnd enemies can still hear you...",
         shCost = 350,
         markup = 1.5,
         cooldown = math.huge,
