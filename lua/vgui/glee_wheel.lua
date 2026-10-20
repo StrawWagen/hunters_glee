@@ -597,7 +597,7 @@ local function paintWedges( self, style, centerX, centerY, now )
     end
 end
 
--- the colours a settings row's text takes: happy, or text when disabled. Hover only touches the backdrop
+-- the colours a settings row's text takes: happy, or disabled. Hover only touches the backdrop
 local function paintContents( self, style, centerX, centerY )
     local font = style:Font( LABEL_FONT )
     local pad, gap = style:Metric( "blockPadding" ), style:Metric( "laneSpacing" )
@@ -608,7 +608,7 @@ local function paintContents( self, style, centerX, centerY )
         local data = self._slots[slot]
         local item = self._items[first + slot - 1]
         if item and data.fade > 0 then
-            local role = style:Color( canPickSlot( self, slot ) and "happy" or "text" )
+            local role = style:Color( canPickSlot( self, slot ) and "happy" or "disabled" )
             local color = data.contentColor
             color.r, color.g, color.b, color.a = role.r, role.g, role.b, role.a * data.fade * data.dim
 

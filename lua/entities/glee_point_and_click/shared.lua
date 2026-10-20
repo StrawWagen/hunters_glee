@@ -480,6 +480,14 @@ function ENT:Place()
     local owner = self.player
     if not IsValid( owner ) then return end
 
+    -- GetCanPlace is cached on a timer, the target may have died/been grabbed since
+    local canPlace, reason = self:CalculateCanPlace()
+    if not canPlace then
+        if reason then huntersGlee_Announce( { owner }, 10, 5, reason ) end
+        return
+
+    end
+
     local target = self:GetCurrTarget()
     local score = self:GetGivenScore()
 

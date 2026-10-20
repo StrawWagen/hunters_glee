@@ -209,7 +209,7 @@ namedDecrees.ghostshop = function()
 
 end
 
--- dead, somewhere Divine Intervention's on sale, after an earlier decree couldn't mention it. Placeholder text
+-- dead, somewhere Divine Intervention's on sale, after an earlier decree couldn't mention it.
 namedDecrees.divineintervention = function()
     if not divineInterventionOnSale() then return end -- the next death might be somewhere it is
     if not GAMEMODE:LearnLesson( "KnowsDivineIntervention" ) then return end

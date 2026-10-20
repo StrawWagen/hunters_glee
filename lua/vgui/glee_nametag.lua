@@ -21,6 +21,8 @@
     Per-frame call:
         panel:UpdateForPlayer( ply, cur, data )
 
+    ply:Nick() returning nil removes the panel, "" hides it until it returns a name again.
+
         data.posOverride  Vector|nil   Overrides the world anchor position.
         data.infoLine     string|nil   Shown always in MODE_FULL; only when isLookedAt in MODE_WORLD.
         data.extraLine    string|nil   Shown only when isLookedAt is true in either mode.
@@ -160,9 +162,14 @@ function PANEL:UpdateForPlayer( ply, cur, data )
     local ignoreDist = data.ignoreDist
     local isLookedAt = data.isLookedAt
 
-    self._name      = ply:Nick()
+    self._name     = ply:Nick()
     if not self._name then
         self:Remove()
+        return
+
+    end
+    if self._name == "" then
+        self:SetVisible( false )
         return
 
     end

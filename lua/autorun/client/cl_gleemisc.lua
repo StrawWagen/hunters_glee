@@ -40,6 +40,9 @@ function terminator_Extras.easyClosePanel( pnl, callFirst )
         pnl.keyWasDown[clientsUseKey] = true
     end
 
+    -- a click that opened it, like a weapon's primary fire, isn't a click off it
+    pnl.glee_mouseHeldAtOpen = input_IsMouseDown( MOUSE_LEFT ) or input_IsMouseDown( MOUSE_RIGHT )
+
     pnl.gleeOld_Think = pnl.Think
 
     pnl.glee_easyCloseFirst = callFirst
@@ -95,6 +98,13 @@ function terminator_Extras.easyClosePanel( pnl, callFirst )
             self:gleeOld_Think()
             justTabbedIn = nil
             self.__startedClickingInside = nil
+            self.glee_mouseHeldAtOpen = nil
+            return
+
+        end
+
+        if self.glee_mouseHeldAtOpen then
+            self:gleeOld_Think()
             return
 
         end

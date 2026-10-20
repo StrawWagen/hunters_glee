@@ -91,6 +91,11 @@ function plyMeta:DropActiveWeaponKeepAmmo( force )
 
 end
 
+-- carried things, see glee_backpackable_base, are thrown, not just let go of
+local carriedThrowSpeed = 500
+local carriedThrowLift = 150
+local carriedThrowSpin = 360
+
 function plyMeta:DropWeaponKeepAmmo( wep, force )
 
     -- use DropActiveWeaponKeepAmmo if you want to drop active wep, it has guards
@@ -98,9 +103,15 @@ function plyMeta:DropWeaponKeepAmmo( wep, force )
     if not IsValid( wep ) then return end
 
     local newWep = wep
+    local wasInHands = self:GetActiveWeapon() == wep
     self:DropWeapon( wep )
 
-    self:SelectWeapon( "termhunt_shove" )
+    -- a tick late, a carried thing releases itself as it drops, and a switch in the same tick still sees it held
+    timer.Simple( 0, function()
+        if not IsValid( self ) then return end
+        self:SelectWeapon( "termhunt_shove" )
+
+    end )
 
     newWep.glee_ammoInside = {}
     local primaryAmmoType = wep:GetPrimaryAmmoType()
@@ -127,15 +138,35 @@ function plyMeta:DropWeaponKeepAmmo( wep, force )
     newWep:SetCollisionGroup( COLLISION_GROUP_WEAPON )
     local forceDir = self:GetAimVector()
 
+    -- carried things let go of their entity and remove themselves as they drop, it's what gets thrown.
+    -- Only from the hands, what's on the back just falls off
+    local flung = newWep
+    local thrown = false
+    local droppedEnt = newWep.GetDroppedEntity and newWep:GetDroppedEntity()
+    if IsValid( droppedEnt ) then
+        if not wasInHands then return newWep end
+
+        flung = droppedEnt
+        thrown = true
+
+    end
+
     timer.Simple( 0, function()
-        if not IsValid( newWep ) then return end
+        if not IsValid( flung ) then return end
         if not IsValid( self ) then return end
 
-        local newWepObj = newWep:GetPhysicsObject()
-        if not newWepObj or not newWepObj.IsValid or not newWepObj:IsValid() then return end
+        local flungObj = flung:GetPhysicsObject()
+        if not flungObj or not flungObj.IsValid or not flungObj:IsValid() then return end
+
+        if thrown then
+            flungObj:AddVelocity( forceDir * carriedThrowSpeed + Vector( 0, 0, carriedThrowLift ) )
+            flungObj:AddAngleVelocity( VectorRand() * carriedThrowSpin )
+            return
+
+        end
 
         force = force or math.random( 150, 300 )
-        newWepObj:ApplyForceCenter( forceDir * newWepObj:GetMass() * force )
+        flungObj:ApplyForceCenter( forceDir * flungObj:GetMass() * force )
 
     end )
 

@@ -20,6 +20,7 @@ terminator_Extras.glee_RegisterStyle( "god", {
         hovered = Color( 255, 150, 50 ),
         chosen  = Color( 255, 200, 90 ),
         urgent  = Color( 200, 25, 5 ),
+        disabled = Color( 105, 50, 10 ),
     },
 
     shadowColor = Color( 0, 0, 0, 255 ),
@@ -30,13 +31,13 @@ terminator_Extras.glee_RegisterStyle( "god", {
         bgHovered  = Color( 30, 15, 4, 200 ),
         bgPressed  = Color( 48, 24, 6, 220 ),
         bgChosen   = Color( 70, 34, 6, 220 ),
-        bgDisabled = Color( 10, 5, 0, 170 ),
+        bgDisabled = Color( 4, 2, 0, 220 ),
 
         bgDark         = Color( 10, 5, 0, 170 ),
         bgDarkHovered  = Color( 30, 15, 4, 200 ),
         bgDarkPressed  = Color( 48, 24, 6, 220 ),
         bgDarkChosen   = Color( 70, 34, 6, 220 ),
-        bgDarkDisabled = Color( 10, 5, 0, 170 ),
+        bgDarkDisabled = Color( 4, 2, 0, 220 ),
     },
 
     metrics = {

@@ -70,6 +70,13 @@ local function checkLight( ply, theLight )
 	local glowStrength = GAMEMODE:ApplyFlashlightStats( theLight, stats, 1 )
 	ply:SetNW2Float( "glee_flashlightglow", glowStrength )
 
+	-- cl_flashlight lights our own first person view with a clientside copy of this light, see there
+	local color = stats.color
+	ply:SetNW2Vector( "glee_flashlightcolor", Vector( color.r, color.g, color.b ) )
+	ply:SetNW2Float( "glee_flashlightbrightness", stats.alpha / 255 )
+	ply:SetNW2Float( "glee_flashlightfarz", math.max( stats.farz, minFarz ) )
+	ply:SetNW2Float( "glee_flashlightfov", stats.fov )
+
 end
 
 -- the only reference to a player's light, kept on the player so it survives autorefresh

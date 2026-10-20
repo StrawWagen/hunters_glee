@@ -74,6 +74,7 @@ include( "modules/clhud/cl_hudregions.lua" ) -- the rest claim through it, so fi
 include( "modules/clhud/cl_topleftinfo.lua" )
 include( "modules/clhud/cl_bpm.lua" )
 include( "modules/clhud/cl_battery.lua" )
+include( "modules/clhud/cl_backslot.lua" )
 include( "modules/clhud/cl_plynames.lua" )
 include( "modules/clhud/cl_whowespectating.lua" )
 include( "modules/clhud/cl_bosshealthbar.lua" )

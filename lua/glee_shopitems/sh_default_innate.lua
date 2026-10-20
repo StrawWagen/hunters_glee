@@ -440,7 +440,7 @@ if SERVER then
             function self:ApplyJuggernaut()
                 local currentHealthRatio = owner:Health() / owner:GetMaxHealth()
 
-                local newMaxHealth = ( owner.glee_BaseHealth or 100 ) * 5 -- 500 by default
+                local newMaxHealth = owner:GetNW2Int( "glee_BaseHealth", 100 ) * 5 -- 500 by default
                 local newHealth = newMaxHealth * currentHealthRatio
 
                 owner:SetMaxHealth( newMaxHealth )

@@ -325,6 +325,14 @@ else
 
     local currConfig
 
+    -- sized off the player's screen, and vp8 rejects some odd sizes. multiples of 8 dodge every common restriction
+    local function encoderSafeSize( size )
+        return math.floor( size / 8 ) * 8
+
+    end
+    -- a 32:9 screen still makes 480x128
+    local minRecordSize = 120
+
     local function seesThroughOwnEyes( ply )
         return ply:Alive() and ply:GetObserverMode() == OBS_MODE_NONE
 
@@ -369,7 +377,7 @@ else
         local lensPos = lensPose( recordingCam )
         local myEyes = me:EyePos()
         local closeEnough = lensPos:DistToSqr( myEyes ) < losGraceDist^2
-        if not closeEnough and not terminator_Extras.PosCanSee( lensPos, myEyes ) then return end
+        if not closeEnough and not terminator_Extras.PosCanSee( lensPos, myEyes, MASK_SOLID_BRUSHONLY ) then return end
 
         if IsValid( holder ) then return "borrowed" end
         return "dropped"
@@ -420,17 +428,25 @@ else
             LocalPlayer():SetDSP( 0, true )
 
         elseif IsValid( camera ) then
+            local w, h = ScrW(), ScrH()
+            local width = encoderSafeSize( math.min( w, baseConfig.width ) )
+            local height = encoderSafeSize( ( width * h ) / w )
+            if width < minRecordSize or height < minRecordSize then
+                chat.AddText( errColor, "Couldn't record video: your game window is too small or too stretched." )
+                return
+
+            end
+
             recordingCam = camera
             currConfig = table.Copy( baseConfig )
+            currConfig.width = width
+            currConfig.height = height
             currConfig.quality = baseConfig.quality * camera:GetQuality()
             currConfig.fps = math.Clamp( baseConfig.fps * camera:GetQuality(), 5, 60 )
             currConfig.bitrate = baseConfig.bitrate * camera:GetQuality()
             currConfig.fovScale = baseConfig.fovScale * camera:GetFOVScale()
 
             currConfig.name = "GLEE_vidcam-" .. util.DateStamp()
-            local w, h = ScrW(), ScrH()
-            currConfig.width = math.min( w, 480 )
-            currConfig.height = math.floor( ( currConfig.width * h ) / w )
 
             local recordErr
             writer, recordErr = video.Record( currConfig )
@@ -531,21 +547,6 @@ function SWEP:PrimaryAttack()
         toggleRecording( self )
 
     end
-end
-
-function SWEP:Holster()
-    if CLIENT and ( IsFirstTimePredicted() or game.SinglePlayer() ) and LocalPlayer() == self:GetOwner() then
-        toggleRecording()
-
-    end
-
-    if game.SinglePlayer() then
-        self:CallOnClient( "Holster" )
-
-    end
-
-    return true
-
 end
 
 function SWEP:DrawWorldModel()

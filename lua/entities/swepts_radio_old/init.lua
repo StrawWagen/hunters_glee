@@ -7,7 +7,6 @@ util.AddNetworkString( "glee_radio_open" )
 util.AddNetworkString( "glee_radio_tune" )
 
 local tuneCooldown = 0.2
-local holdGap = 0.2 -- CONTINUOUS_USE calls Use every tick, a gap longer than this is a release
 
 function ENT:Initialize()
     self:SetModel( "models/props_lab/citizenradio.mdl" )
@@ -22,16 +21,11 @@ function ENT:Initialize()
 
     end
 
-    self:SetUseType( CONTINUOUS_USE )
-
     self.takenDamageTimes = 0
     self.nextTakeDamageTime = 0
     self.audioDSP = 0
     self.audioPitch = 100
     self.nextSoundHint = 0
-
-    self.lastUseBy = {}
-    self.openedFor = {} -- players whose current hold of use already opened the menu
 
 end
 
@@ -69,29 +63,27 @@ end
 
 -- Tuning --------------------------------------------------------------------
 
--- The progress bar keeps returning 100 for as long as use is held, so a hold opens the
--- menu once, and has to be let go of before it can open it again
+-- Bots don't hold use for the wheel, so their use just picks it up. A player's use is the wheel's, see glee_carrying
 function ENT:Use( _, caller )
-    if not caller:IsPlayer() then return end
+    if not IsValid( caller ) or not caller:IsPlayer() or not caller:IsBot() then return end
 
-    local lastUse = self.lastUseBy[caller] or 0
-    self.lastUseBy[caller] = CurTime()
+    terminator_Extras.glee_Carrying.Carry( caller, self )
 
-    if CurTime() - lastUse > holdGap then
-        self.openedFor[caller] = nil
+end
 
-    end
+-- The wheel's pick, see glee_carrying. Only ever "tune", checked against CanUseAction already
+function ENT:OnUseAction( ply )
+    self:OpenTunerFor( ply )
 
-    if self.openedFor[caller] then return end
+    return true
 
-    local progress = generic_WaitForProgressBar( caller, "termhunt_radio_use", 0.05, 20 )
-    if progress < 100 then return end
+end
 
-    self.openedFor[caller] = true
-
+-- No range check, the net message's receiver does that on every tune
+function ENT:OpenTunerFor( ply )
     net.Start( "glee_radio_open" )
         net.WriteEntity( self )
-    net.Send( caller )
+    net.Send( ply )
 
 end
 

@@ -10,6 +10,8 @@ local flashlitPlayers = {}
 local notInWorldHull = Vector( 10, 10, 10 )
 local hiddenLightPos = Vector( 0, 0, -32000 ) -- below any map, pointed further down at nothing
 local hiddenLightAng = Angle( 90, 0, 0 )
+local ownLightUpdated = false
+local ownLightColor = Color( 255, 255, 255 )
 
 local belowMuzzle = 1.75
 local bodyLightForward = 8
@@ -110,6 +112,9 @@ local function getModelLightSource( ent )
 
 end
 
+-- weapons made to carry a flashlight put this attachment where it goes, trusted over everything else
+local flashlightMountName = "gmod_flashlight"
+
 -- "1" is the CS:S style muzzle, eg the annabelle's
 local muzzleNames = { "muzzle", "muzzle_flash", "1" }
 
@@ -200,6 +205,12 @@ local function getHandLedBlend( ply, handLed )
 
 end
 
+-- seeing through our own eyes, with a viewmodel
+local function isInOwnFirstPerson( ply )
+    return ply == LocalPlayer() and not ply:IsPlayingTaunt2() and not ply:ShouldDrawLocalPlayer() and ply:GetObserverMode() == OBS_MODE_NONE
+
+end
+
 -- returns where the beam starts and which way it points
 -- then where and how to draw the lamp, only when there's no weapon muzzle to shine from
 local function getFlashlightOrigin( ply, eyeAng )
@@ -213,16 +224,35 @@ local function getFlashlightOrigin( ply, eyeAng )
     if not emptyHanded then
         local muzzlePos, muzzleAng
         -- the world model's muzzle sits somewhere else entirely from the gun you see in first person
-        if ply == LocalPlayer() and not taunting and not ply:ShouldDrawLocalPlayer() and ply:GetObserverMode() == OBS_MODE_NONE then
+        if isInOwnFirstPerson( ply ) then
             local viewModel = ply:GetViewModel()
             if IsValid( viewModel ) then
-                muzzlePos, muzzleAng = getMuzzle( viewModel )
+                local mounted = getAttachment( viewModel, flashlightMountName )
+                if mounted then
+                    muzzlePos, muzzleAng = mounted.Pos, mounted.Ang
 
+                else
+                    muzzlePos, muzzleAng = getMuzzle( viewModel )
+                    if muzzlePos then
+                        muzzlePos = muzzlePos - muzzleAng:Up() * belowMuzzle
+
+                    end
+                end
+
+                if muzzlePos then
+                    -- the viewmodel only moves to this frame's view after PreRender, so carry it there ourselves
+                    local localPos, localAng = WorldToLocal( muzzlePos, muzzleAng, viewModel:GetPos(), viewModel:GetAngles() )
+                    return LocalToWorld( localPos, localAng, ply:EyePos(), ply:EyeAngles() )
+
+                end
             end
         end
 
         local wep = ply:GetActiveWeapon()
         if not muzzlePos then
+            local mounted = getAttachment( wep, flashlightMountName )
+            if mounted then return mounted.Pos, mounted.Ang end
+
             muzzlePos, muzzleAng = getModelLightSource( wep )
 
         end
@@ -300,6 +330,76 @@ local function getFlashlightOrigin( ply, eyeAng )
 
 end
 
+-- the owner of one of our tracked player lights, nil for anything else
+local function getLightsOwner( flashlight )
+    if not IsValid( flashlight ) then return end
+    if notPlayerFlashlights[flashlight] then return end
+    if IsValid( flashlight:GetParent() ) then return end
+
+    local ply = flashlight:GetOwner()
+    if not IsValid( ply ) or not ply:IsPlayer() then return end
+
+    return ply
+
+end
+
+-- lights aren't parented, so they don't go dormant with their owner, and would hang wherever we last put them
+-- and in our own first person, a clientside copy shines instead, see updateOwnFirstPersonLight
+local function shouldHideLight( ply )
+    return ply:IsDormant() or isInOwnFirstPerson( ply )
+
+end
+
+-- every frame, setting it once doesn't hold, the networked pos comes back
+-- in Think, the engine reads lights before PreRender
+hook.Add( "Think", "glee_HideFlashlights", function()
+    for _, flashlight in ipairs( flashlights ) do
+        local ply = getLightsOwner( flashlight )
+        if ply and shouldHideLight( ply ) then
+            flashlight:SetPos( hiddenLightPos )
+            flashlight:SetAngles( hiddenLightAng )
+
+        end
+    end
+end )
+
+-- the engine reads the server's light before PreRender, but our view only settles right before rendering
+-- so in first person, any server light trails or jitters behind the view, this copy is updated the same frame instead
+-- kept on the player, so an autorefresh doesn't orphan it, lit forever
+local function updateOwnFirstPersonLight( ply, origin, beamAng )
+    local ownLight = ply.glee_OwnFirstPersonLight
+    if not IsValid( ownLight ) then
+        ownLight = ProjectedTexture()
+        ownLight:SetTexture( "effects/flashlight001" )
+        ownLight:SetEnableShadows( true )
+        ownLight:SetNearZ( 10 ) -- sv_flashlight's nearz
+        ply.glee_OwnFirstPersonLight = ownLight
+
+    end
+
+    local color = ply:GetNW2Vector( "glee_flashlightcolor", vector_origin )
+    ownLightColor.r = color.x
+    ownLightColor.g = color.y
+    ownLightColor.b = color.z
+    ownLight:SetColor( ownLightColor )
+    ownLight:SetBrightness( ply:GetNW2Float( "glee_flashlightbrightness", 1 ) )
+    ownLight:SetFarZ( ply:GetNW2Float( "glee_flashlightfarz", 635 ) )
+    ownLight:SetFOV( ply:GetNW2Float( "glee_flashlightfov", 85 ) )
+    ownLight:SetPos( origin )
+    ownLight:SetAngles( beamAng )
+    ownLight:Update()
+
+end
+
+local function removeOwnFirstPersonLight( ply )
+    local ownLight = ply.glee_OwnFirstPersonLight
+    if not IsValid( ownLight ) then return end
+
+    ownLight:Remove()
+    ply.glee_OwnFirstPersonLight = nil
+
+end
+
 -- returns false when the flashlight should stop being tracked
 local function manageFlashlight( flashlight )
     if not IsValid( flashlight ) then return false end
@@ -315,19 +415,7 @@ local function manageFlashlight( flashlight )
     local ply = flashlight:GetOwner()
     if not IsValid( ply ) or not ply:IsPlayer() then return true end -- owner can arrive after the light does
 
-    -- lights aren't parented, so they don't go dormant with their owner, and would hang wherever we last put them
-    if ply:IsDormant() then
-        if not flashlight.glee_Hidden then
-            flashlight.glee_Hidden = true
-            flashlight:SetPos( hiddenLightPos )
-            flashlight:SetAngles( hiddenLightAng )
-
-        end
-        return true
-
-    end
-    flashlight.glee_Hidden = nil
-
+    if ply:IsDormant() then return true end -- hidden in glee_HideFlashlights
     if ply:GetObserverMode() ~= OBS_MODE_NONE then return true end
 
     flashlitPlayers[ply] = true
@@ -348,7 +436,16 @@ local function manageFlashlight( flashlight )
 
     end
 
-    -- the server never moves the light, so nothing networks over these
+    flashlight.glee_DebugPos = origin -- TEMP DEBUG
+    flashlight.glee_DebugAng = beamAng -- TEMP DEBUG
+
+    if isInOwnFirstPerson( ply ) then
+        updateOwnFirstPersonLight( ply, origin, beamAng )
+        ownLightUpdated = true
+        return true
+
+    end
+
     flashlight:SetPos( origin )
     flashlight:SetAngles( beamAng )
 
@@ -416,12 +513,19 @@ end )
 -- after interpolation, so lights land where players are drawn, Think runs before it and jitters
 hook.Add( "PreRender", "glee_ManageFlashlights", function()
     table.Empty( flashlitPlayers )
+    ownLightUpdated = false
 
     for index = #flashlights, 1, -1 do
         if not manageFlashlight( flashlights[index] ) then
             table.remove( flashlights, index )
 
         end
+    end
+
+    -- out of first person, or our flashlight's off or dropped
+    if not ownLightUpdated then
+        removeOwnFirstPersonLight( LocalPlayer() )
+
     end
 end )
 

@@ -37,6 +37,7 @@ terminator_Extras.glee_RegisterStyle( "godlyDecree", {
         doom      = Color( 100, 0, 0 ), -- bad news, like nobody escaping
         boon      = Color( 255, 165, 0 ), -- good news, like everybody escaping
         urgent    = Color( 255, 40, 20 ), -- grigori countdown's last thirty seconds
+        disabled  = Color( 70, 0, 0 ),
     },
 
     scaled = function( px )

@@ -257,7 +257,7 @@ function SWEP:ShutDown()
     end
 
     if self.modifiedMaxHp and validOwner and owner:GetMaxHealth() == self.maxHpModifedTo and owner:Health() > 0 then
-        owner:SetMaxHealth( owner.glee_BaseHealth or 100 )
+        owner:SetMaxHealth( owner:GetNW2Int( "glee_BaseHealth", 100 ) )
         owner.glee_LastSetMaxHealthReason = "glee_chosen_maxhpreset"
         owner:SetHealth( owner:GetMaxHealth() )
         owner.glee_LastSetHealthReason = "glee_chosen_maxhpreset"

@@ -19,12 +19,35 @@ Spawn. Buy. Escape? or Die.
 
 ```
 hunters_glee/
-├── gamemodes/hunters_glee/gamemode/   # Core gamemode logic
+├── gamemodes/hunters_glee/
+│   ├── gamemode/                      # Core gamemode logic
+│   │   ├── init.lua / cl_init.lua     # Entry points, include the sv_ / cl_ modules in order
+│   │   ├── shared.lua                 # Round states, includes the sh_ modules
+│   │   ├── lib/                       # Generic helpers used everywhere
+│   │   ├── player_class/              # The player class and its taunts
+│   │   └── modules/                   # One folder (or file) per concern
+│   │       ├── shop/                  # Shop GUI, purchasing, categories, cooldowns
+│   │       ├── shopitems/             # Loads and verifies lua/glee_shopitems, shopHelpers
+│   │       ├── spawnset/              # Spawnset loading, voting, bosses, !rtm
+│   │       ├── proceduralspawner/     # Crates, beartraps, flares, vehicles, etc
+│   │       ├── statuseffects/         # The status effect system
+│   │       ├── banking/               # Bank and envoy
+│   │       ├── escaping/              # Escaping and its rewards
+│   │       ├── music/                 # Loads lua/glee_music, triggers tracks
+│   │       ├── clhud/                 # HUD elements
+│   │       ├── contextmenu_widgets/   # Context menu desktop: settings, taunts, etc
+│   │       ├── firsttimeplayers/      # Tutorial and spawn protection
+│   │       ├── lessons/               # Hints taught during play
+│   │       ├── ...                    # Smaller systems, each in its own folder
+│   │       └── sv_*.lua, cl_*.lua     # Single file systems
+│   ├── entities/                      # Gamemode-only entities and weapons
+│   └── send.txt                       # Clientside files, mirrors AddCSLuaFile
 ├── lua/
 │   ├── glee_shopitems/                # Shop item definitions (auto-loaded)
 │   ├── glee_spawnsets/                # Enemy spawnset(misery) definitions (auto-loaded)
 │   ├── glee_music/                    # Music track definitions (auto-loaded)
 │   ├── glee_hud/                      # HUD drawing, fonts, and the swappable HUD styles
+│   ├── glee_carrying/                 # Carrying big entities as weapons
 │   ├── autorun/                       # Loaded by gmod itself, so it runs outside the gamemode too
 │   ├── entities/                      # Custom entities
 │   ├── weapons/                       # Custom weapons

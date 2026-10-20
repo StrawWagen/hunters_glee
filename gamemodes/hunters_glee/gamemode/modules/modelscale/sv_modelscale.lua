@@ -125,14 +125,14 @@ local function Update( ply )
 
     if doMaxHealthVar:GetBool() then
         local newMaxHealth = character_chars["health"]
-        ply.glee_BaseHealth = newMaxHealth
+        ply:SetNW2Int( "glee_BaseHealth", newMaxHealth )
         ply:SetMaxHealth( newMaxHealth )
         ply.glee_LastSetMaxHealthReason = "PDM_Update"
         boundPlysHealthToModel( ply )
 
     else
         -- keep glee_BaseHealth meaningful for consumers ( divine chosen, innate hp )
-        ply.glee_BaseHealth = ply:GetMaxHealth()
+        ply:SetNW2Int( "glee_BaseHealth", ply:GetMaxHealth() )
 
     end
 

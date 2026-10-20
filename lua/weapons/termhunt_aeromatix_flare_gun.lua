@@ -52,6 +52,7 @@ end
 
 function SWEP:CanPrimaryAttack()
     local owner = self:GetOwner()
+    if not IsValid( owner ) then return false end
     if owner:IsPlayer() then return true end
 
     local startPos = owner.GetShootPos and owner:GetShootPos() or owner:WorldSpaceCenter()

@@ -53,6 +53,7 @@ terminator_Extras.glee_RegisterStyle( "hl2", {
         chosen  = Color( 255, 255, 255 ),
         urgent  = Color( 255, 80, 80 ),      -- a countdown running out
         damaged = Color( 150, 15, 15 ),      -- what was just lost, darker than alert so it shows beside it
+        disabled = Color( 110, 95, 10, 200 ), -- what can't be picked right now, far darker than text
     },
 
     -- A panel names the family, its state picks the entry, see handle:BackdropColor.
@@ -62,13 +63,13 @@ terminator_Extras.glee_RegisterStyle( "hl2", {
         bgHovered  = Color( 100, 100, 50, 76 ),
         bgPressed  = Color( 100, 100, 50, 76 ),
         bgChosen   = Color( 100, 100, 50, 76 ),
-        bgDisabled = Color( 0, 0, 0, 76 ),
+        bgDisabled = Color( 0, 0, 0, 140 ),
 
         bgDark         = Color( 0, 0, 0, 175 ), -- for gui elements that need visibility
         bgDarkHovered  = Color( 100, 100, 50, 200 ),
         bgDarkPressed  = Color( 100, 100, 50, 200 ),
         bgDarkChosen   = Color( 100, 100, 50, 200 ),
-        bgDarkDisabled = Color( 0, 0, 0, 200 ),
+        bgDarkDisabled = Color( 0, 0, 0, 235 ),
     },
 
     shadowColor = Color( 0, 0, 0, 200 ),

@@ -219,6 +219,7 @@ hook.Add( "EntityTakeDamage", "nail_break_when_nailed_damaged", function( target
 
             else
                 target.huntersglee_breakablenails = nil
+                target:SetNW2Bool( "glee_Nailed", false )
                 break
 
             end

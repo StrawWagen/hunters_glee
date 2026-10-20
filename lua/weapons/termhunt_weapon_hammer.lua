@@ -469,6 +469,7 @@ local function nailUnregister( nail, ent )
 
     if table.Count( nails ) <= 0 then
         ent.huntersglee_breakablenails = nil
+        ent:SetNW2Bool( "glee_Nailed", false )
         local class = ent:GetClass()
         -- only unlock doors!
         if class == "prop_door_rotating" then
@@ -491,6 +492,7 @@ local function registerNail( nail, ent )
     nails[creationId] = nail
 
     ent.huntersglee_breakablenails = nails
+    ent:SetNW2Bool( "glee_Nailed", true ) -- the server's nails, for clients to see, eg terminator_Extras.glee_Carrying.CanCarry
 
     nail.unregister = nailUnregister
 

@@ -3,14 +3,23 @@ ENT.Base = "base_anim"
 
 -- CREDITS!
 -- Swept's Radios 2 https://steamcommunity.com/sharedfiles/filedetails/?id=1368958015 by SweptThrone
+-- Hunter's Glee soundtrack stations by VACANT, and COMPAKT's Operating Systems 05 Busy-Noisy
 
 ENT.PrintName = "Radio"
 ENT.Author = "SweptThrone + StrawWagen"
 ENT.Contact = "sweptthrone971@gmail.com"
 ENT.Purpose = "Play some good music."
-ENT.Instructions = "Press E to play music."
+ENT.Instructions = "Hold E to tune it, or pick it up."
 ENT.Category = "Hunter's Glee"
 ENT.Spawnable = true
+
+terminator_Extras.glee_Carrying.MakeCarryable( ENT, "glee_backpackable_radio" )
+
+ENT.GleeUseActions = {
+    terminator_Extras.glee_Carrying.PickUpAction,
+    { key = "tune", label = "Tune" },
+}
+ENT.GleeUseWheelOnly = true -- there's nothing for a plain +use to do on it
 
 -- How near a player has to stay to tune it. Its menu closes past this
 ENT.TuneRange = 400
@@ -69,6 +78,20 @@ ENT.Stations = {
     { name = "CSS: Outstanding Opera",          path = "ambient/opera.wav" },
     { name = "CSS: Songs of the Salsa",         path = "ambient/music/mirame_radio_thru_wall.wav" },
     { name = "CSS: Syrian Serenade",            path = "ambient/music/dustmusic3.wav" },
+    { name = "VACANT: 8.22.theGLEE_reduce.ogg",                      path = "hunters_glee/music/VACANT/8.22.theGLEE_reduce.ogg" },
+    { name = "VACANT: 8.23.GleeExp2.ogg",                            path = "hunters_glee/music/VACANT/8.23.GleeExp2.ogg" },
+    { name = "VACANT: 8.23.GleeExp3.ogg",                            path = "hunters_glee/music/VACANT/8.23.GleeExp3.ogg" },
+    { name = "VACANT: 8.24.to_noone.ogg",                            path = "hunters_glee/music/VACANT/8.24.to_noone.ogg" },
+    { name = "VACANT: 8.25.GleeFree-Early.ogg",                      path = "hunters_glee/music/VACANT/8.25.GleeFree-Early.ogg" },
+    { name = "VACANT: __more_glee.ogg",                              path = "hunters_glee/music/VACANT/__more_glee.ogg" },
+    { name = "VACANT: breakgash.ogg",                                path = "hunters_glee/music/VACANT/breakgash.ogg" },
+    { name = "VACANT: clocklore.mp3",                                path = "hunters_glee/music/VACANT/clocklore.mp3" },
+    { name = "VACANT: HARD_EAS_gori_scuffle.ogg",                    path = "hunters_glee/music/VACANT/HARD_EAS_gori_scuffle.ogg" },
+    { name = "VACANT: __gorymphony_AMP.ogg",                         path = "hunters_glee/music/VACANT/__gorymphony_AMP.ogg" },
+    { name = "VACANT: qutedeath-re.ogg",                             path = "hunters_glee/music/VACANT/qutedeath-re.ogg" },
+    { name = "VACANT: red_rolling_scoreball.ogg",                    path = "hunters_glee/music/VACANT/red_rolling_scoreball.ogg" },
+    { name = "VACANT: ROOT_ESTRANGE.ogg",                            path = "hunters_glee/music/VACANT/ROOT_ESTRANGE.ogg" },
+    { name = "VACANT: without-Under-naN-oK.ogg",                     path = "hunters_glee/music/VACANT/without-Under-naN-oK.ogg" },
 }
 
 function ENT:SetupDataTables()
@@ -81,5 +104,11 @@ function ENT:CanBeTunedBy( ply )
     if not ply:Alive() then return false end
 
     return ply:GetShootPos():DistToSqr( self:WorldSpaceCenter() ) < self.TuneRange ^ 2
+
+end
+
+-- Only ever "tune", glee_Carrying answers its PickUpAction itself
+function ENT:CanUseAction( ply )
+    return self:CanBeTunedBy( ply )
 
 end

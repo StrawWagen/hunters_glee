@@ -178,6 +178,11 @@ function SWEP:PrimaryAttack( firstMul )
     local Force = AimVector
 
     if IsValid( Hit ) then
+        local parent = Hit:GetParent()
+        if IsValid( parent ) and IsValid( parent:GetPhysicsObject() ) then
+            Hit = parent
+
+        end
         hook.Run( "glee_shover_preshove", Hit, owner )
         local Phys = Hit:GetPhysicsObject()
         if Phys and IsValid( Phys ) then
@@ -187,6 +192,7 @@ function SWEP:PrimaryAttack( firstMul )
                 Force = Force * 500
                 if not Hit:InVehicle() then
                     Hit:SetVelocity( ( Hit:GetVelocity() * 0.5 ) + Force * firstMul )
+
                 end
                 owner:SetVelocity( owner:GetVelocity() + -( Force * 0.25 ) * firstMul )
                 self:SetNextPrimaryFire( CurTime() + 1 )

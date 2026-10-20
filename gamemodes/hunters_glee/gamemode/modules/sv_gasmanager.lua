@@ -81,6 +81,36 @@ hook.Add( "glee_onspawned_glidevehicle", "glee_glidevehicle_gassing", function( 
 
 end )
 
+-- Fills it from gas, which is used up next tick. False if it wasn't waiting for gas
+function GM:FuelVehicle( veh, gas )
+    if not veh.glee_IsWaitingForGas then return false end
+
+    veh.glee_IsWaitingForGas = nil
+    veh.isEngineEnabled = true
+    veh.glee_GasFillSound = CreateSound( veh, "ambient/water/water_in_boat1.wav" )
+    veh.glee_GasFillSound:Play()
+
+    local stopDelay = 4
+    veh.glee_GasFillSound:FadeOut( stopDelay )
+
+    local timerName = "glee_gas_fill_cleanup_" .. veh:EntIndex()
+    timer.Create( timerName, stopDelay + 0.1, 1, function()
+        if not IsValid( veh ) then return end
+        veh.glee_GasFillSound:Stop()
+
+    end )
+
+    -- next tick, it can be a collision callback that gets here
+    timer.Simple( 0, function()
+        if not IsValid( gas ) then return end
+        SafeRemoveEntity( gas )
+
+    end )
+
+    return true
+
+end
+
 function GM:MakeGlideVehicleUnfueled( veh )
     veh.isEngineEnabled = false
     veh.glee_IsWaitingForGas = true
@@ -90,27 +120,9 @@ function GM:MakeGlideVehicleUnfueled( veh )
     veh.glee_OldGlidePhysicsCollide = veh.PhysicsCollide
     function veh:PhysicsCollide( data, phys )
         local otherEnt = data.HitEntity
-        if IsValid( otherEnt ) and otherEnt.glee_IsGas and self.glee_IsWaitingForGas then
-            self.glee_IsWaitingForGas = nil
-            self.isEngineEnabled = true
-            self.glee_GasFillSound = CreateSound( self, "ambient/water/water_in_boat1.wav" )
-            self.glee_GasFillSound:Play()
+        if IsValid( otherEnt ) and otherEnt.glee_IsGas then
+            GAMEMODE:FuelVehicle( self, otherEnt )
 
-            local stopDelay = 4
-            self.glee_GasFillSound:FadeOut( stopDelay )
-
-            local timerName = "glee_gas_fill_cleanup_" .. self:EntIndex()
-            timer.Create( timerName, stopDelay + 0.1, 1, function()
-                if not IsValid( self ) then return end
-                self.glee_GasFillSound:Stop()
-
-            end )
-
-            timer.Simple( 0, function()
-                if not IsValid( otherEnt ) then return end
-                SafeRemoveEntity( otherEnt )
-
-            end )
         end
 
         return self:glee_OldGlidePhysicsCollide( data, phys )
@@ -222,6 +234,8 @@ hook.Add( "glee_sv_validgmthink_active", "glee_addgasjobs", function()
         local timerName = "glee_proceduralgas_removestale_" .. gas:GetCreationID()
         timer.Create( timerName, 120, 0, function()
             if not IsValid( gas ) then timer.Remove( timerName ) return end
+            if terminator_Extras.glee_Carrying.IsCarried( gas ) then return end -- someone has it, it's not stale
+
             local gasPos = gas:GetPos()
             if bit.band( util.PointContents( gasPos ), CONTENTS_WATER ) ~= 0 then SafeRemoveEntity( gas ) timer.Remove( timerName ) return end
             local nearest, distSqr = GAMEMODE:nearestAlivePlayer( gasPos )

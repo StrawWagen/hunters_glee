@@ -16,7 +16,7 @@ local spawns = {
         minAreaSize = 150,
     },
     ["npc_turret_floor"] = {
-        prob = 0.005,
+        prob = 0.5,
         minAreaSize = 100,
     },
     ["glee_skullcache"] = {

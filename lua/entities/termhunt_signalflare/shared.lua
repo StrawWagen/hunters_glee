@@ -442,7 +442,10 @@ if SERVER and terminator_Extras then
             local repsLeft = timer.RepsLeft( rescueTimerName )
             if repsLeft == heliSpawnDelay - firstWait then
                 local name
-                if shooter.Nick and isstring( shooter:Nick() ) then
+                if not IsValid( shooter ) then
+                    name = "Something Dead"
+
+                elseif shooter.Nick and isstring( shooter:Nick() ) then
                     name = shooter:Nick()
 
                 else

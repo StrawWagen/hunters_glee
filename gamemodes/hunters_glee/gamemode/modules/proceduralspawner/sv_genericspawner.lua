@@ -236,6 +236,12 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawner_managegenericspawns", fun
         end
         created[className] = rebuiltTable
 
+        local data = GAMEMODE.genericSpawnTables[className]
+        if data and data.minIntervalAfterRemoval then
+            local delayedUntil = CurTime() + GAMEMODE:ScaledGenericSpawnerRate( data.minIntervalAfterRemoval )
+            data.nextSpawnTime = math.max( data.nextSpawnTime or 0, delayedUntil )
+
+        end
     end
 
     for className, curr in pairs( GAMEMODE.genericSpawnTables ) do
@@ -268,7 +274,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawner_managegenericspawns", fun
         end
         --print( count, maxCount, "AAAAAAAAAAAA" )
         if count >= maxCount then continue end
-        if curr.minSpawnInterval and curr.nextSpawnTime and curr.nextSpawnTime > CurTime() then continue end
+        if curr.nextSpawnTime and curr.nextSpawnTime > CurTime() then continue end
 
         --print( "ADDED", className )
         addJob( curr )
@@ -341,6 +347,9 @@ GAMEMODE:RandomlySpawnEntTbl( "sent_ball", {
 
     -- optional, min time between spawns
     -- minSpawnInterval = 30, -- nil by default
+
+    -- optional, min time between one of these being removed and the next spawn
+    -- minIntervalAfterRemoval = 60, -- nil by default
 
     -- optional, radius from players to spawn within
     -- radius = 5000, -- defaults to 5000

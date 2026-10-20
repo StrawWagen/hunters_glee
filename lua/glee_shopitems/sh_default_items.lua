@@ -188,31 +188,6 @@ local items = {
             } )
         end,
     },
-    ["frag"] = {
-        name = "10 Grenades",
-        desc = "10 Grenades.\nSimple explosives, useful for hordes!",
-        shCost = 50,
-        markup = 1.5,
-        markupPerPurchase = 0.25,
-        cooldown = 0.5,
-        tags = { "ITEMS", "Essential", "Weapon" },
-        purchaseTimes = {
-            GAMEMODE.ROUND_INACTIVE,
-            GAMEMODE.ROUND_ACTIVE,
-        },
-        weight = -90,
-        shPurchaseCheck = shopHelpers.aliveCheck,
-        svOnPurchaseFunc = function( purchaser )
-            shopHelpers.purchaseWeapon( purchaser, {
-                class = "weapon_frag",
-                confirmSoundWeight = 1,
-                ammoType = "Grenade",
-                purchaseClips = 9,
-                resupplyClips = 10,
-
-            } )
-        end,
-    },
     -- heal jooce
     ["healthkit"] = {
         name = "Medkit",
@@ -269,6 +244,32 @@ local items = {
             } )
         end,
     },
+    -- carried in, placed down, see glee_backpackable_turret
+    ["sentry_turret"] = {
+        name = "Sentry Turret",
+        desc = "A friendly combine turret.\nTakes Suit Battery to recharge\nChews through flesh, not great against metal...",
+        shCost = 100,
+        markup = 2,
+        markupPerPurchase = 1.5,
+        cooldown = 5,
+        tags = { "ITEMS", "Utility" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_INACTIVE,
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = -89,
+        shPurchaseCheck = { shopHelpers.aliveCheck, function( purchaser )
+            return terminator_Extras.glee_Carrying.HasRoomFor( purchaser, "glee_backpackable_turret" )
+
+        end },
+        svOnPurchaseFunc = function( purchaser )
+            -- the weapon makes the spawnmenu's resistance turret itself
+            if not terminator_Extras.glee_Carrying.GiveNewCarryable( purchaser, "glee_backpackable_turret" ) then return end
+
+            shopHelpers.loadoutConfirm( purchaser, 1 )
+
+        end,
+    },
     -- terminator doesnt like taking damage from this, will save your ass
     ["ar2"] = {
         name = "Pulse Rifle",
@@ -323,6 +324,31 @@ local items = {
 
                 } )
             end
+        end,
+    },
+    ["frag"] = {
+        name = "10 Grenades",
+        desc = "10 Grenades.\nSimple explosives, useful for hordes!",
+        shCost = 50,
+        markup = 1.5,
+        markupPerPurchase = 0.25,
+        cooldown = 0.5,
+        tags = { "ITEMS", "Essential", "Weapon" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_INACTIVE,
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = -94,
+        shPurchaseCheck = shopHelpers.aliveCheck,
+        svOnPurchaseFunc = function( purchaser )
+            shopHelpers.purchaseWeapon( purchaser, {
+                class = "weapon_frag",
+                confirmSoundWeight = 1,
+                ammoType = "Grenade",
+                purchaseClips = 9,
+                resupplyClips = 10,
+
+            } )
         end,
     },
     ["nailer"] = {

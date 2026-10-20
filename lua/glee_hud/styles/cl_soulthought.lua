@@ -61,6 +61,7 @@ terminator_Extras.glee_RegisterStyle( "soulthought", {
         alert   = Color( 206, 108, 90 ),
         flash   = Color( 206, 108, 90 ),
         jackpot = Color( 211, 228, 121 ),
+        disabled = Color( 90, 95, 70 ),
     },
 
     shadowColor = Color( 0, 0, 0, 230 ),
@@ -74,7 +75,7 @@ terminator_Extras.glee_RegisterStyle( "soulthought", {
     -- what the smudge comes to at its centre, it fades out from there
     backdrops = {
         bg         = Color( 4, 6, 1, 160 ),
-        bgDisabled = Color( 4, 6, 1, 160 ),
+        bgDisabled = Color( 1, 2, 0, 215 ),
         bgHovered  = Color( 20, 24, 8, 190 ),
         bgPressed  = Color( 34, 40, 14, 210 ),
         bgChosen   = Color( 44, 60, 10, 210 ),
@@ -83,7 +84,7 @@ terminator_Extras.glee_RegisterStyle( "soulthought", {
         bgDarkHovered  = Color( 20, 24, 8, 240 ),
         bgDarkPressed  = Color( 34, 40, 14, 245 ),
         bgDarkChosen   = Color( 44, 60, 10, 245 ),
-        bgDarkDisabled = Color( 4, 6, 1, 235 ),
+        bgDarkDisabled = Color( 1, 2, 0, 250 ),
     },
 
     -- see styleHandle:PlaySound. Pitches are the caller's, these are just what plays

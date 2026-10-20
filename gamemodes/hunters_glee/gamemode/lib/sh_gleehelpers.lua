@@ -6,6 +6,10 @@ do
     -- SetNWString( "glee_PrettyName", ... )
     function GM:GetNameOfBot( bot )
         local name = ""
+        if not IsValid( bot ) then
+            return "Something"
+
+        end
         if bot.Nick and isfunction( bot.Nick ) then
             return bot:Nick() or "Something"
 

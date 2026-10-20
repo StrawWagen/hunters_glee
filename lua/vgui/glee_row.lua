@@ -35,7 +35,7 @@ PANEL.Init = function( self )
     self._middle        = nil
     self._middleMinWidth = 0
 
-    self._disabledContentColor = "text"
+    self._disabledContentColor = "disabled"
 
     self._pressDuration = 0.12
     self._pressedUntil  = 0
