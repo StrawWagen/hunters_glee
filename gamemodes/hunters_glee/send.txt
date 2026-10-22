@@ -8,7 +8,7 @@ gamemodes\hunters_glee\gamemode\modules\cl_winscreen.lua
 gamemodes\hunters_glee\gamemode\modules\cl_scoreboard.lua
 gamemodes\hunters_glee\gamemode\modules\cl_obfuscation.lua
 gamemodes\hunters_glee\gamemode\modules\cl_fallingwind.lua
-gamemodes\hunters_glee\gamemode\modules\cl_killfeedoverride.lua
+gamemodes\hunters_glee\gamemode\modules\killfeed\cl_killfeedoverride.lua
 gamemodes\hunters_glee\gamemode\modules\cl_spectateflashlight.lua
 
 gamemodes\hunters_glee\gamemode\modules\modelscale\cl_modelscale.lua
@@ -38,6 +38,7 @@ gamemodes\hunters_glee\gamemode\modules\clhud\cl_topleftinfo.lua
 gamemodes\hunters_glee\gamemode\modules\clhud\cl_bpm.lua
 gamemodes\hunters_glee\gamemode\modules\clhud\cl_battery.lua
 gamemodes\hunters_glee\gamemode\modules\clhud\cl_backslot.lua
+gamemodes\hunters_glee\gamemode\modules\orbitcamera\cl_orbitcamera.lua
 gamemodes\hunters_glee\gamemode\modules\clhud\cl_plynames.lua
 gamemodes\hunters_glee\gamemode\modules\clhud\cl_whowespectating.lua
 gamemodes\hunters_glee\gamemode\modules\clhud\cl_bosshealthbar.lua

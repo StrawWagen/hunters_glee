@@ -221,3 +221,6 @@ the cord is fairly durable, but if cut it kills you
 
 -- gm_born VERY GOOD TUTORIAL MAP
 -- bomb gland FUN
+
+
+-- obol as replacement for score?

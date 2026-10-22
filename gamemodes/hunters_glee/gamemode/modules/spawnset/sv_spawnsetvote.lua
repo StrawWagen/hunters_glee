@@ -81,7 +81,7 @@ function spawnSetVote:BeginVote( duration, maxOptions, toAdd )
             local hardThresh = easy and GAMEMODE.easyCostSoftMax or 1
 
             local chance = option.chanceToBeVotable
-            if option.chanceToBeVotableWhenHard and chance > hardThresh then -- make spawnsets fade into the background if they aren't challenging people
+            if option.chanceToBeVotableWhenHard and optionsMul >= hardThresh then -- make spawnsets fade into the background if they aren't challenging people
                 chance = option.chanceToBeVotableWhenHard
 
             end

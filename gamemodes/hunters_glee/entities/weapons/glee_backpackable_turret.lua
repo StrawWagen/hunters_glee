@@ -264,6 +264,11 @@ local turretNames = {
     "FORTNITE",
     "HAMSTERS NEVER DIE OF OLD AGE",
 
+    "BART",
+    "HOMER",
+    "EVIL HOMER",
+    "BIG BAG FULL OF SNACKS",
+
 }
 
 local rareNameChance = 0.01
@@ -287,6 +292,7 @@ local rareTurretNames = {
     "MrTurretDude",
     "CANDY",
     "FUCKING BILLIONAIRE",
+    "CROID",
 
 }
 
@@ -399,6 +405,24 @@ end )
 
 local redisableInterval = 0.25
 
+-- the engine starts these on the turret itself and doesn't always stop them, a carried one would keep
+-- alarming or whirring on someone's back. Its sound scripts' names, the ones that can be left going
+local turretLoopingSounds = {
+    "NPC_FloorTurret.Alarm",
+    "NPC_FloorTurret.AlarmPing",
+    "NPC_FloorTurret.Move",
+    "NPC_FloorTurret.Ping",
+    "NPC_FloorTurret.Alert",
+    "NPC_FloorTurret.Activate",
+}
+
+local function stopTurretLoops( turret )
+    for _, soundName in ipairs( turretLoopingSounds ) do
+        turret:StopSound( soundName )
+
+    end
+end
+
 -- Off while it rides on someone, it'd be shooting from their back. It turns itself back on when it's
 -- stood upright, which carrying it can do, so it's kept off for as long as it's carried
 function SWEP:KeepTurretDisabled()
@@ -409,6 +433,7 @@ function SWEP:KeepTurretDisabled()
     if not IsValid( ent ) then return end
 
     ent:Fire( "Disable" )
+    stopTurretLoops( ent )
 
 end
 
@@ -425,11 +450,13 @@ end
 
 function SWEP:OnCarryStart( ent )
     ent:Fire( "Disable" )
+    stopTurretLoops( ent )
 
 end
 
 function SWEP:OnCarryEnd( ent )
     ent:Fire( "Enable" )
+    ent:SetCollisionGroup( COLLISION_GROUP_NPC )
 
 end
 
@@ -450,6 +477,9 @@ hook.Add( "EntityTakeDamage", "glee_turrettweaks", function( target, dmgInfo )
 
         target.glee_SelfDestructing = true
         target:Fire( "SelfDestruct" )
+
+        -- self destructing never calls OnNPCKilled, this is just the gamemode's killfeed half of it
+        GAMEMODE:OnNPCKilled( target, dmgInfo:GetAttacker(), dmgInfo:GetInflictor() )
         return
 
     end

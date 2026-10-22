@@ -63,19 +63,9 @@ if SERVER then
 
 end
 
-local noSelfRezItems = {
-    ["resurrection"] = true,
-    ["resurrectioncrappy"] = true,
-}
-
 function set:Activate()
-    -- canPurchase runs canShowInShop first, so hiding these also denies termhunt_purchase
-    self:Hook( "glee_shop_canshow", function( _ply, itemData )
-        if not noSelfRezItems[itemData.identifier] then return end
+    GAMEMODE.setHelpers.makeNoSelfReviving( self )
 
-        return false, "No soul resurrects itself in True Glee."
-
-    end )
 end
 
 -- put the spawnset IN the global table to be gobbled

@@ -78,7 +78,6 @@ function GM:calculateBPM( cur, players )
 
         if IsValid( nearestHunter ) then
             ply.huntersGleeNearestHunterToPly = nearestHunter
-            hook.Run( "glee_hunter_nearbyaply", nearestHunter, ply )
 
             -- is player inside mentos shaped volume?????
             -- means less score if ply is simply above enemy
@@ -143,6 +142,8 @@ function GM:calculateBPM( cur, players )
 
         local mentosBPM = 0
         if mentosDist < 2000 then
+            hook.Run( "glee_hunter_nearbyaply", nearestHunter, ply )
+
             -- magic numbers that make distance to hunter bpm feel good
             local rawScalar = math.abs( mentosDist - 2000 ) / 42
             local bpmRampup = math.Clamp( rawScalar, 15, 50 )
@@ -1031,7 +1032,7 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
         GAMEMODE:TakeOverControl( ply, currentlySpectating )
 
     -- the thing we were spectating just died!
-    elseif followingThing and currentlySpectating.Health and currentlySpectating:Health() <= 0 then
+    elseif followingThing and currentlySpectating.glee_Died then
         GAMEMODE:StopSpectatingThing( ply )
 
         local toWatch
@@ -1141,6 +1142,20 @@ hook.Add( "PlayerDeath", "glee_spectatedeadplayers", function( died, _, killer )
     if not IsValid( killer ) then return end
     if died == killer then return end
     died.glee_KillerToSpectate = killer
+
+end )
+
+-- only marks them, DoKeyPressSpectateSwitch moves their spectators off
+local function markDied( died )
+    died.glee_Died = true
+
+end
+
+hook.Add( "PostPlayerDeath", "glee_spectatedthingdied", markDied )
+hook.Add( "OnNPCKilled", "glee_spectatedthingdied", markDied )
+
+hook.Add( "glee_true_PlayerSpawn", "glee_spectatedthingdied", function( ply )
+    ply.glee_Died = nil
 
 end )
 
@@ -1269,7 +1284,6 @@ function GM:PlayerSpawn( ply, transiton )
 
     -- only set their pos if this :Spawn was caused by a death
     elseif trueRespawn then
-        hook.Run( "glee_true_PlayerSpawn", ply )
         -- no special spot to respawn, we'll respawn somewhere near another player, if possible
         if IsValid( anotherAlivePlayer ) and not hook.Run( "huntersglee_blockspawn_nearplayers", ply, anotherAlivePlayer ) and GAMEMODE.hasNavmesh then
             for count = 1, 12 do

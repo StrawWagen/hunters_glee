@@ -34,7 +34,14 @@ function GM:GetBotScaryness( ply, bot ) -- AAH
     end
 
     local velLeng = bot:GetVelocity():Length()
-    local hp = math.max( bot:Health(), bot:GetMaxHealth() ) -- some npcs have health set but not maxhealth set...
+    local hp
+    if bot:GetNW2Bool( "glee_ScaryAsATerminator" ) then -- spawn entry's .scaryAsATerminator
+        hp = healthDefault
+
+    else
+        hp = math.max( bot:Health(), bot:GetMaxHealth() ) -- some npcs have health set but not maxhealth set...
+
+    end
     local scaryNum = hp + ( velLeng / 2 ) -- fast things are scary!
 
     local scaryness = scaryNum / healthDefault
@@ -76,6 +83,13 @@ end
 
 function meta:SeesDeadPeople()
     return self:Health() <= 0 or self:GetNWInt( "glee_radiochannel", 0 ) == 666 or self:HasStatusEffect( "divine_chosen" )
+
+end
+
+-- false while dead, or alive but taken out of their own eyes, eg grabbed by the evil crawler
+-- KillSilent leaves health above 0, and Alive() can lag behind health during DoPlayerDeath, so check both
+function meta:SeesThroughOwnEyes()
+    return self:Alive() and self:Health() > 0 and self:GetObserverMode() == OBS_MODE_NONE
 
 end
 

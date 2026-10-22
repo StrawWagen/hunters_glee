@@ -205,9 +205,13 @@ local function getHandLedBlend( ply, handLed )
 
 end
 
+-- whether last frame was drawn from our eyes, not a camera prop, or anything else moving the view
+local viewWasAtOwnEyes = true
+local maxViewOffsetSqr = 8^2 -- view bob from other addons
+
 -- seeing through our own eyes, with a viewmodel
 local function isInOwnFirstPerson( ply )
-    return ply == LocalPlayer() and not ply:IsPlayingTaunt2() and not ply:ShouldDrawLocalPlayer() and ply:GetObserverMode() == OBS_MODE_NONE
+    return ply == LocalPlayer() and viewWasAtOwnEyes and not ply:IsPlayingTaunt2() and not ply:ShouldDrawLocalPlayer() and ply:GetObserverMode() == OBS_MODE_NONE
 
 end
 
@@ -344,9 +348,10 @@ local function getLightsOwner( flashlight )
 end
 
 -- lights aren't parented, so they don't go dormant with their owner, and would hang wherever we last put them
+-- same for owners taken out of their own eyes, eg grabbed, nothing places their light then
 -- and in our own first person, a clientside copy shines instead, see updateOwnFirstPersonLight
 local function shouldHideLight( ply )
-    return ply:IsDormant() or isInOwnFirstPerson( ply )
+    return ply:IsDormant() or not ply:SeesThroughOwnEyes() or isInOwnFirstPerson( ply )
 
 end
 
@@ -553,6 +558,7 @@ hook.Add( "PostDrawTranslucentRenderables", "glee_DrawFlashlightGlow", function(
     if drawingDepth or drawingSkybox then return end
 
     local me = LocalPlayer()
+    viewWasAtOwnEyes = EyePos():DistToSqr( me:EyePos() ) < maxViewOffsetSqr
 
     for ply in pairs( flashlitPlayers ) do
         if IsValid( ply ) and ( ply ~= me or ply:ShouldDrawLocalPlayer() ) then

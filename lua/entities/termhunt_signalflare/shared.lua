@@ -524,6 +524,18 @@ if SERVER and terminator_Extras then
 
     end
 
+    -- the spawnmenu's Resistance Turret, which the shop's is, out of a class we otherwise hate
+    local function isResistanceTurret( ent )
+        return ent:GetClass() == "npc_turret_floor" and ent:HasSpawnFlags( SF_FLOOR_TURRET_CITIZEN )
+
+    end
+
+    local function makeAlliesWith( heli, thing )
+        makeHeliFriendlyWith( heli, thing )
+        thing:AddEntityRelationship( heli, D_LI, 99 )
+
+    end
+
     local heliHateAttackThreshold = 2 -- hate anyone who attacks us more times than this
 
     -- HasStatusEffect only exists on the glee gamemode, guard it for sandbox etc.
@@ -878,6 +890,19 @@ if SERVER and terminator_Extras then
 
         end )
 
+        -- spawnflags are set between creation and Spawn, so it's judged a tick later
+        hook.Add( "OnEntityCreated", heli, function( self, ent )
+            if ent:GetClass() ~= "npc_turret_floor" then return end
+
+            timer.Simple( 0, function()
+                if not IsValid( self ) or not IsValid( ent ) then return end
+                if not isResistanceTurret( ent ) then return end
+
+                makeAlliesWith( self, ent )
+
+            end )
+        end )
+
         local timerName = "glee_rescuehelithink_" .. heli:GetCreationID()
         timer.Create( timerName, 1, 0, function()
             if not IsValid( heli ) then
@@ -944,8 +969,13 @@ if SERVER and terminator_Extras then
         for _, class in ipairs( toHate ) do
             heli:AddRelationship( class .. " D_HT 99" )
             for _, ent in ipairs( ents.FindByClass( class ) ) do
-                ent:AddEntityRelationship( heli, D_HT, 99 )
+                if isResistanceTurret( ent ) then
+                    makeAlliesWith( heli, ent )
 
+                else
+                    ent:AddEntityRelationship( heli, D_HT, 99 )
+
+                end
             end
         end
 

@@ -56,7 +56,25 @@ local spawnSpecialCases = { -- special cases for spawn entries
     spawnAbove = boolCheck,
     preferredEFlags = enumCheck, -- will attempt to spawn this .spawn entry in areas with these Extra Navmesh flags, see sv_navmeshcategorizer
     firmPreferredEFlags = boolCheck, -- never spawn outside areas with ALL preferredEFlags, even if that means never spawning on this map
+    scaryAsATerminator = boolCheck,
 }
+
+-- misspelled keys would otherwise be silently ignored, or silently replaced by their default
+-- typo = correct
+local setCommonTypos = {
+    chanceToBeVotableIfHard = "chanceToBeVotableWhenHard",
+}
+
+local spawnCommonTypos = {
+    difficultyRequired = "difficultyNeeded",
+}
+
+local function findTypo( tbl, commonTypos )
+    for typo, correct in pairs( commonTypos ) do
+        if tbl[typo] ~= nil then return typo, correct end
+
+    end
+end
 
 local function asParsed( toParse, name, defaultsTbl )
     local finalMul = 1
@@ -124,6 +142,10 @@ function GM:IsValidSpawnSet( spawnSet )
     end
     if not istable( spawnSet ) then ErrorNoHaltWithStack( "Spawnset is not a table" ) return end
     if not isstring( spawnSet.name ) then ErrorNoHaltWithStack( "Spawnset has invalid .name" ) return end
+
+    local setTypo, setCorrect = findTypo( spawnSet, setCommonTypos )
+    if setTypo then yapErr( spawnSet, "has ." .. setTypo .. ", did you mean ." .. setCorrect .. "?" ) return end
+
     if not isstring( spawnSet.prettyName ) then yapErr( spawnSet, "has invalid .prettyName" ) return end
     if not isstring( spawnSet.description ) then yapErr( spawnSet, "has invalid .description" ) return end
 
@@ -146,6 +168,10 @@ function GM:IsValidSpawnSet( spawnSet )
             return
 
         end
+
+        local spawnTypo, spawnCorrect = findTypo( spawn, spawnCommonTypos )
+        if spawnTypo then yapErr( spawnSet, ".spawns " .. name .. " has ." .. spawnTypo .. ", did you mean ." .. spawnCorrect .. "?" ) return end
+
         if not isstring( spawn.prettyName ) then yapErr( spawnSet, ".spawns " .. name .. " invalid .prettyname" ) return end
         if not isstring( spawn.class ) then yapErr( spawnSet, ".spawns " .. name .. " invalid .class" ) return end
         if not validSpawnTypes[spawn.spawnType] then yapErr( spawnSet, ".spawns " .. name .. " invalid .spawnType" ) return end

@@ -500,7 +500,11 @@ end )
 -- 0.5 ratio means, 100 hp hunter needs to be without an enemy for 50 seconds before it gets removed
 local staleRatio = 0.5
 
-local krangledStaleRatioMin = 100 -- dont remove krangled npcs below this hp too fast! 
+local krangledStaleRatioMin = 100 -- dont remove krangled npcs below this hp too fast!
+
+-- krangled npcs have no enemy to check, so closing in on the nearest player counts instead
+local krangledProgressInterval = 5
+local krangledProgressDist = 200 -- per interval, slow creepers still go stale
 
 -- make the spawner spawn npcs closer if bots aren't finding enemies
 local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they want, remove them and march the spawn distances smaller if they're being boring
@@ -530,17 +534,21 @@ local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they 
 
     hunter.glee_StaleNoEnemyCount = startingCount
     hunter.glee_NoEnemyToRemove = noEnemyToRemove
+    hunter.glee_StaleKrangled = krangled
 
     hook.Add( "glee_hunter_nearbyaply", hunter, function( me, nearestHunter ) -- so they dont delete when they're nearby a ply, eg, they bought chameleon 
         if me ~= nearestHunter then return end
-        local new = nearestHunter.glee_StaleNoEnemyCount + -1
-        new = math.Clamp( new, 0, math.huge )
+        local count = nearestHunter.glee_StaleNoEnemyCount
+        if count <= 0 then return end -- negative is spawn grace, leave it
 
-        nearestHunter.glee_StaleNoEnemyCount = new
+        nearestHunter.glee_StaleNoEnemyCount = math.max( count - 1, 0 )
 
     end )
 
     local timerAdjusted
+    local nextProgressSample = 0
+    local lastProgressDist
+    local closingIn
     local timerName = "glee_fodderhunter_removestale_" .. hunter:GetCreationID()
     timer.Create( timerName, math.Rand( 0.75, 1.25 ), 0, function()
         if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
@@ -569,10 +577,19 @@ local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they 
         end
         local oldCount = hunter.glee_StaleNoEnemyCount
 
+        if krangled and nextProgressSample < CurTime() then
+            nextProgressSample = CurTime() + krangledProgressInterval
+            local _, nearestDistSqr = GAMEMODE:nearestAlivePlayer( hunter:GetPos() )
+            local nearestDist = math.sqrt( nearestDistSqr )
+            closingIn = lastProgressDist and ( lastProgressDist - nearestDist ) > krangledProgressDist
+            lastProgressDist = nearestDist
+
+        end
+
         local seesEnemy = ( hunter.glee_SeeEnemy or 0 ) > CurTime()
         local goodEnemy = IsValid( enemy ) and enemy.isTerminatorHunterChummy ~= hunter.isTerminatorHunterChummy
 
-        if seesEnemy or goodEnemy then
+        if seesEnemy or goodEnemy or closingIn then
             hunter.glee_StaleNoEnemyCount = math.min( 0, oldCount + -1 ) -- good enemy, snap count down and march it into the negatives
             return
 
@@ -635,24 +652,43 @@ local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they 
     end )
 end
 
+local function staleTrackedHunterOf( ent )
+    if not IsValid( ent ) then return end
+    if ent.glee_StaleNoEnemyCount then return ent end
+
+    local owner = ent:GetOwner() -- projectiles, thrown props
+    if IsValid( owner ) and owner.glee_StaleNoEnemyCount then return owner end
+
+end
+
+-- for krangled npcs that kill with ply:Kill() or world damage, so nothing names them as the killer
+local krangledKillCreditDistSqr = 250^2
+
+local function nearestKrangledHunter( pos )
+    local nearest
+    local nearestDistSqr = krangledKillCreditDistSqr
+    for _, hunter in pairs( GAMEMODE.glee_Hunters ) do
+        if not IsValid( hunter ) then continue end
+        if not hunter.glee_StaleKrangled then continue end
+
+        local distSqr = hunter:GetPos():DistToSqr( pos )
+        if distSqr < nearestDistSqr then
+            nearest = hunter
+            nearestDistSqr = distSqr
+
+        end
+    end
+    return nearest
+
+end
+
 -- track kills from hunters, so we dont despawn the ones getting the job done.
 hook.Add( "PlayerDeath", "glee_fodderenemy_catchkrangled", function( died, inflic, attacker )
-    local oldCount
-    local killer
-
-    if IsValid( inflic ) then
-        oldCount = inflic.glee_StaleNoEnemyCount
-        killer = inflic
-
-    end
-    if not oldCount and IsValid( attacker ) then
-        oldCount = attacker.glee_StaleNoEnemyCount
-        killer = attacker
-
-    end
-
-    if not oldCount then return end
+    local killer = staleTrackedHunterOf( inflic ) or staleTrackedHunterOf( attacker ) or nearestKrangledHunter( died:GetPos() )
+    if not killer then return end
     if not killer:GetNW2Bool( "glee_IsHunter" ) then return end
+
+    local oldCount = killer.glee_StaleNoEnemyCount
 
     if debuggingVar:GetBool() and IsValid( killer.glee_SpawnArea ) then
         debugoverlay.Line( killer:GetPos(), killer.glee_SpawnArea:GetCenter(), 10, Color( 0, 255, 0 ), true )
@@ -737,6 +773,12 @@ function GM:AttemptToSpawnHunter( spawnEntry )
     hunter:SetAngles( randYawAng )
     hunter:Spawn()
     hunter.glee_SpawnArea = spawnArea -- so we can prefer to spawn enemies from this area, if this bot ends up killing someone!
+
+    -- networked, GetBotScaryness runs clientside too
+    if spawnEntry.scaryAsATerminator then
+        hunter:SetNW2Bool( "glee_ScaryAsATerminator", true )
+
+    end
 
     self:RegisterAsSpawnedHunter( hunter )
     if spawnEntry.isBoss then

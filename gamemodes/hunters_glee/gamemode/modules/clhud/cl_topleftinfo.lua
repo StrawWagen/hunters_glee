@@ -119,7 +119,7 @@ net.Receive( "glee_followedsomething", function()
     LocalPlayer():EmitSound( "ui/buttonrollover.wav", 100, 120, 0.8 )
     GAMEMODE:LearnLesson( "SpectatedSomeone" )
 
-    LocalPlayer().glee_SpectateOrbitDistance = nil
+    GAMEMODE:ResetOrbitDistance()
 
 end )
 
@@ -127,7 +127,7 @@ net.Receive( "glee_followednexthing", function()
     if not IsValid( LocalPlayer() ) then return end
     LocalPlayer():EmitSound( "ui/buttonrollover.wav", 100, 200, 0.5 )
 
-    LocalPlayer().glee_SpectateOrbitDistance = nil
+    GAMEMODE:ResetOrbitDistance()
 
 end )
 
@@ -143,7 +143,7 @@ net.Receive( "glee_stoppedspectating", function()
     LocalPlayer():EmitSound( "ui/buttonrollover.wav", 100, 90, 0.8 )
     GAMEMODE:LearnLesson( "StoppedSpectating" )
 
-    LocalPlayer().glee_SpectateOrbitDistance = nil
+    GAMEMODE:ResetOrbitDistance()
 
 end )
 
@@ -155,7 +155,7 @@ net.Receive( "glee_starteddriving", function()
     LocalPlayer():EmitSound( "ui/buttonclick.wav", 100, 80, 1 )
     LocalPlayer().glee_NextControlSomethingHint = CurTime() + 60
 
-    LocalPlayer().glee_SpectateOrbitDistance = nil
+    GAMEMODE:ResetOrbitDistance()
 
 end )
 

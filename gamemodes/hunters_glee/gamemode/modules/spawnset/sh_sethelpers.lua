@@ -37,6 +37,65 @@ function setHelpers.makeHardcore( lifecycle )
     end )
 end
 
+-- No "Resurrecting" tagged shop items, so the only revives are Revive Kits found in crates.
+-- Call from an sh_ spawnset's Activate
+function setHelpers.makeNoReviving( lifecycle )
+    lifecycle:Hook( "glee_shop_canshow", function( ply, itemData )
+        if not itemData.tags.Resurrecting then return end
+        -- grigori respawns by buying resurrection
+        if ply:HasStatusEffect( "divine_chosen" ) then return end
+
+        return false, "No soul returns from this Misery."
+
+    end )
+end
+
+-- No "SelfResurrecting" tagged shop items, the dead must wait on the living to revive them.
+-- Call from an sh_ spawnset's Activate
+function setHelpers.makeNoSelfReviving( lifecycle )
+    lifecycle:Hook( "glee_shop_canshow", function( ply, itemData )
+        if not itemData.tags.SelfResurrecting then return end
+        -- grigori respawns by buying resurrection
+        if ply:HasStatusEffect( "divine_chosen" ) then return end
+
+        return false, "No soul resurrects itself in this Misery."
+
+    end )
+end
+
+-- Every alive player gets one of class. Dropping it doesn't earn another, only losing it entirely does.
+-- Call from an sh_ spawnset's Activate
+function setHelpers.addDefaultWeapon( lifecycle, class )
+    if CLIENT then return end
+
+    -- lifecycle:Hook ids are per hook name, a second hook would replace the first, so every class shares one
+    local classes = lifecycle.glee_DefaultWeaponClasses
+    if classes then
+        table.insert( classes, class )
+        return
+
+    end
+    classes = { class }
+    lifecycle.glee_DefaultWeaponClasses = classes
+
+    lifecycle:Hook( "glee_sv_validgmthink_inactive", function()
+        for _, ply in ipairs( GAMEMODE:getAlivePlayers() ) do
+            ply.glee_DefaultWeapons = ply.glee_DefaultWeapons or {}
+            for _, currClass in ipairs( classes ) do
+                if IsValid( ply.glee_DefaultWeapons[currClass] ) then continue end
+                local weap = ply:GetWeapon( currClass )
+                if IsValid( weap ) then
+                    ply.glee_DefaultWeapons[currClass] = weap
+                    continue
+
+                end
+                ply.glee_DefaultWeapons[currClass] = ply:Give( currClass )
+
+            end
+        end
+    end )
+end
+
 
 if CLIENT then return end
 

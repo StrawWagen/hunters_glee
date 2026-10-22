@@ -244,6 +244,71 @@ function glee_Carrying.IsCarried( ent )
 
 end
 
+-- Whoever's carrying it, NULL if nobody is. From networked values, so it's the same both sides
+local function getCarrier( ent )
+    local wep = glee_Carrying.GetCarrierWeapon( ent )
+    if not IsValid( wep ) then return NULL end
+
+    return wep:GetOwner()
+
+end
+
+-- owned by ply, or by something they own, like a projectile some SWEPs give to themselves
+local function isOwnedBy( ent, ply )
+    local owner = ent:GetOwner()
+    if owner == ply then return true end
+
+    return IsValid( owner ) and owner:GetOwner() == ply
+
+end
+
+-- A carried thing's owned by its carrier, which keeps their traces off it, but not their projectiles,
+-- which they own too, and owned things do nothing for each other. A bolt is big enough to spawn inside
+-- what's on their back. Shared, so prediction agrees. Nil otherwise, so an item's own ShouldCollide
+-- still decides the rest
+local function ownProjectilesShouldCollide( ent1, ent2 )
+    local carrier = getCarrier( ent1 )
+    if IsValid( carrier ) and isOwnedBy( ent2, carrier ) then return false end
+
+    carrier = getCarrier( ent2 )
+    if IsValid( carrier ) and isOwnedBy( ent1, carrier ) then return false end
+
+end
+
+-- an autorefresh starts this over at false, so the hook's dropped to match
+local ownProjectilesHooked = false
+hook.Remove( "ShouldCollide", "glee_carrying_ownprojectiles" )
+
+-- Asked about every pair where either has a custom collision check, so it's only hooked while there's
+-- something carried for it to answer about
+function glee_Carrying.SetOwnProjectilesHooked( hooked )
+    if hooked == ownProjectilesHooked then return end
+    ownProjectilesHooked = hooked
+
+    if hooked then
+        hook.Add( "ShouldCollide", "glee_carrying_ownprojectiles", ownProjectilesShouldCollide )
+
+    else
+        hook.Remove( "ShouldCollide", "glee_carrying_ownprojectiles" )
+
+    end
+end
+
+if SERVER then
+    -- kept on the table, so an autorefresh doesn't forget what's carried
+    glee_Carrying.CarriedEnts = glee_Carrying.CarriedEnts or {}
+    local carriedEnts = glee_Carrying.CarriedEnts
+
+    function glee_Carrying.SetCarriedTracked( ent, carried )
+        carriedEnts[ent] = carried or nil
+        glee_Carrying.SetOwnProjectilesHooked( next( carriedEnts ) ~= nil )
+
+    end
+
+    glee_Carrying.SetOwnProjectilesHooked( next( carriedEnts ) ~= nil )
+
+end
+
 -- Every backpackable they hold, in their hands and on their back. A new table each call
 function glee_Carrying.GetCarriedWeapons( ply )
     local carried = {}

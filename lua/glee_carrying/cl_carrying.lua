@@ -46,17 +46,39 @@ hook.Add( "Think", "glee_carrying_hidefromcarrier", function()
     local ply = LocalPlayer()
     if not IsValid( ply ) then return end -- joining, there's no local player yet
 
+    local carrying = false
     for _, wep in ipairs( ply:GetWeapons() ) do
         if not wep.IsGleeBackpackable then continue end
 
         local ent = wep:GetCarriedEnt()
-        if IsValid( ent ) and not ent.glee_HidesFromCarrier then
+        if not IsValid( ent ) then continue end
+
+        carrying = true
+        if not ent.glee_HidesFromCarrier then
             ent.glee_HidesFromCarrier = true
             ent.glee_PreCarryRenderOverride = ent.RenderOverride
             ent.RenderOverride = carriedRenderOverride
 
         end
     end
+
+    -- only their own projectiles are predicted, so only what they carry needs the client's answer
+    glee_Carrying.SetOwnProjectilesHooked( carrying )
+
+end )
+
+
+-- sh_carrying's ShouldCollide reads the carrier, so a change of carrier changes its answer. The server
+-- calls this itself as it picks up and puts down, the client's told by the carrier arriving
+hook.Add( "EntityNetworkedVarChanged", "glee_carrying_collisionrules", function( ent, name )
+    if name ~= "glee_CarrierWeapon" then return end
+
+    -- a tick late, the var's not set till after this hook
+    timer.Simple( 0, function()
+        if not IsValid( ent ) then return end
+        ent:CollisionRulesChanged()
+
+    end )
 end )
 
 

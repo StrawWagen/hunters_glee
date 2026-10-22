@@ -93,31 +93,68 @@ if CLIENT then
 
 end
 
+ENT.HealthRegen = 50 -- health regen per interval
+ENT.HealthRegenInterval = 1 -- time between health regens
+
+ENT.TakesFallDamage = false
+ENT.Sentinel_ExplosionDamageMaxHpFrac = 0.25
+
+local shockwaveStartingHeight = 250
+local fallHeightPerLandingScale = 200
+local maxLandingScale = 4
+
+local explosionStartingHeight = 750
+local explosionSizePerFallHeight = 0.25
+local startingExplosionSize = 500
+local endingExplosionSize = 5000
+local explosionDamagePerLandingScale = 150
+local explosionEffectScaleMul = 0.75
+
+local regenMinRunSpeedFrac = 0.9
+
 ENT.MyClassTask = {
+    OnDamaged = function( self, data, dmg )
+        if data.inOwnBlast and dmg:GetAttacker() == self then return true end
+
+    end,
     DealtGoombaDamage = function( self, data, damage, fallHeight, _dealtTo )
-        if fallHeight <= 250 then return end
+        if fallHeight <= shockwaveStartingHeight then return end
         local myPos = self:GetPos()
-        local scale = fallHeight / 200
-        scale = math.Clamp( scale, 0, 4 )
+        local scale = fallHeight / fallHeightPerLandingScale
+        scale = math.Clamp( scale, 0, maxLandingScale )
 
         local shock = EffectData()
         shock:SetOrigin( myPos )
         shock:SetScale( scale )
         util.Effect( "eff_huntersglee_infernal_landing", shock )
 
-        if fallHeight < 750 then return end
+        if fallHeight < explosionStartingHeight then return end
 
-        local dmgRad = fallHeight * 0.25
-        dmgRad = math.Clamp( dmgRad, 500, 5000 )
+        local dmgRad = fallHeight * explosionSizePerFallHeight
+        dmgRad = math.Clamp( dmgRad, startingExplosionSize, endingExplosionSize )
 
-        local dmg = 150 * scale
+        local dmg = explosionDamagePerLandingScale * scale
+        data.inOwnBlast = true
         util.BlastDamage( self, self, self:GetPos(), dmgRad, dmg )
+        data.inOwnBlast = nil
+
+        local selfDmg = DamageInfo()
+        selfDmg:SetAttacker( game.GetWorld() )
+        selfDmg:SetInflictor( game.GetWorld() )
+        selfDmg:SetDamageType( DMG_FALL )
+        selfDmg:SetDamage( self:GetMaxHealth() * self.Sentinel_ExplosionDamageMaxHpFrac )
+        self:TakeDamageInfo( selfDmg )
 
         local splode = EffectData()
         splode:SetOrigin( myPos )
         splode:SetNormal( Vector( 0, 0, 1 ) )
-        splode:SetScale( scale * 0.75 )
+        splode:SetScale( scale * explosionEffectScaleMul )
         util.Effect( "glee_huge_m9k_splode", splode )
+
+    end,
+    BlockHealthRegen = function( self, _data, _regenAmnt )
+        if not self:IsOnGround() then return true end
+        if self:GetCurrentSpeed() < self.RunSpeed * regenMinRunSpeedFrac then return true end
 
     end,
 }

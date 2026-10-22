@@ -11,7 +11,6 @@ function GLEE_TauntCamera()
     local CAM = {}
 
     local WasOn                    = false
-    local traceHullSize = Vector( 8, 8, 8 )
 
     local CustomAngles            = angle_zero
 
@@ -34,7 +33,11 @@ function GLEE_TauntCamera()
         if not ply:Alive() or not IsValid( ply:GetViewEntity() ) or ply:GetViewEntity() ~= ply then on = false end
 
         if WasOn ~= on then
-            if on then InLerp = 0 end
+            if on then
+                InLerp = 0
+                GAMEMODE:ResetOrbitDistance() -- each taunt starts from the default, not the last one's zoom
+
+            end
             if not on then OutLerp = 0 end
 
             WasOn = on
@@ -51,21 +54,8 @@ function GLEE_TauntCamera()
 
         if PlayerLockAngles == nil then return end
 
-        --
-        -- Simple 3rd person camera
-        --
-        local TargetOrigin = view.origin - CustomAngles:Forward() * 100
-        local trDat = {
-            start = view.origin,
-            endpos = TargetOrigin,
-            mask = MASK_SHOT,
-            filter = player.GetAll(),
-            mins = -traceHullSize,
-            maxs = traceHullSize,
-        }
-        local trResult = util.TraceHull( trDat )
-
-        TargetOrigin = trResult.HitPos + trResult.HitNormal
+        -- the spectate camera's orbit, see cl_orbitcamera, around their eyes
+        local TargetOrigin = GAMEMODE:GetOrbitOrigin( ply, view.origin, CustomAngles )
 
         if InLerp < 1 then
             InLerp = InLerp + FrameTime() * 5.0

@@ -544,6 +544,7 @@ Number values can be:
 | `preSpawnedFuncs` | ❌ | Functions called before hunter:Spawn() : `function(spawnData, npc)` |
 | `postSpawnedFuncs` | ❌ | Functions called after hunter:Spawn() : `function(spawnData, npc)` |
 | `isBoss` | ❌ | `true` marks as boss; `false` opts out of auto-detection. When the boss is killed, all alive players escape. Auto-detected when `spawnSet.maxSpawnCount <= 1` (highest `difficultyCost` entry becomes boss). |
+| `scaryAsATerminator` | ❌ | `true` makes players panic like it's a full hp terminator, for low hp npcs that are scarier than they look |
 
 Only one of `spawnSameZ`, `spawnAbove`, `spawnBelow` applies, they're checked in that order.
 Those three and `preferredEFlags` all loosen the longer the spawner fails to find a spot, so they bend rather than block. A non-firm `preferredEFlags` is ignored outright on maps without those flags.

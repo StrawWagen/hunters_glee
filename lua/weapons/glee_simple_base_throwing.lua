@@ -88,21 +88,29 @@ function SWEP:Initialize()
     end
 
     if CLIENT and self.HeldModel then
-        self.MyHeldModel = ClientsideModel( self.HeldModel )
-
-        if self.ModelMaterial then
-            self.MyHeldModel:SetMaterial( self.ModelMaterial )
-
-        end
-
-        self.MyHeldModel:SetNoDraw( true )
-        self.MyHeldModel:SetParent( self )
+        self:CreateHeldModel()
 
         self:CallOnRemove( "glee_throwing_heldmodel", function( wep )
             SafeRemoveEntity( wep.MyHeldModel )
 
         end )
     end
+end
+
+-- remove callbacks also fire on a clientside full update, which kills the held model but keeps the weapon,
+-- so this gets called again whenever it's found invalid
+function SWEP:CreateHeldModel()
+    self.MyHeldModel = ClientsideModel( self.HeldModel )
+    if not IsValid( self.MyHeldModel ) then return end
+
+    if self.ModelMaterial then
+        self.MyHeldModel:SetMaterial( self.ModelMaterial )
+
+    end
+
+    self.MyHeldModel:SetNoDraw( true )
+    self.MyHeldModel:SetParent( self )
+
 end
 
 function SWEP:Deploy()
@@ -592,6 +600,13 @@ local invisMat = Material( "models/blackout/blackout" )
 
 function SWEP:PreDrawViewModel()
     if not self.HeldModel then return end
+
+    if not IsValid( self.MyHeldModel ) then
+        self.ViewModelSetup = false
+        self:CreateHeldModel()
+        if not IsValid( self.MyHeldModel ) then return end
+
+    end
 
     local mdlBroke = not self.ViewModelSetup or not IsValid( self.MyHeldModel:GetParent() )
 

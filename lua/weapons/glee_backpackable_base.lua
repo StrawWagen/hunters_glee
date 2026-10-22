@@ -502,52 +502,22 @@ if SERVER then
         }
     end
 
-    -- owned by the carrier, or by something they own, like a projectile some SWEPs give to themselves
-    local function isOwnedBy( ent, carrier )
-        local owner = ent:GetOwner()
-        if owner == carrier then return true end
+    -- Recounted, not toggled, they can carry two and let go of one. Read by the terminator's stealth
+    -- checks, see terminator_nextbot/enemyoverrides.lua
+    local function updateIsCarrying( carrier )
+        if not IsValid( carrier ) then return end
 
-        return IsValid( owner ) and owner:GetOwner() == carrier
-
-    end
-
-    local trackCarried
-    local untrackCarried
-
-    do
-        -- carried ent -> its carrier. Breaks with autorefresh, it comes back empty
-        local carriedBy = {}
-
-        -- SetOwner already keeps the carrier's own traces off it, but not their projectiles, which the
-        -- carrier owns and so do nothing for each other. A bolt is big enough to spawn inside what's on their back.
-        -- Nil otherwise, so an item's own ShouldCollide hook still decides the rest
-        local function ownProjectilesPassThrough( ent1, ent2 )
-            local carrier = carriedBy[ent1]
-            if carrier and isOwnedBy( ent2, carrier ) then return false end
-
-            carrier = carriedBy[ent2]
-            if carrier and isOwnedBy( ent1, carrier ) then return false end
-
-        end
-
-        -- ShouldCollide is about the most expensive hook there is, so it's only in while something's carried
-        function trackCarried( ent, carrier )
-            if not next( carriedBy ) then
-                hook.Add( "ShouldCollide", "glee_backpackable_ownprojectiles", function( ... ) return ownProjectilesPassThrough( ... ) end )
-
-            end
-            carriedBy[ent] = carrier
-
-        end
-
-        function untrackCarried( ent )
-            carriedBy[ent] = nil
-
-            if not next( carriedBy ) then
-                hook.Remove( "ShouldCollide", "glee_backpackable_ownprojectiles" )
+        local isCarrying = false
+        for _, wep in ipairs( glee_Carrying.GetCarriedWeapons( carrier ) ) do
+            if IsValid( wep:GetCarriedEnt() ) then
+                isCarrying = true
+                break
 
             end
         end
+
+        carrier.glee_IsCarrying = isCarrying
+
     end
 
     do
@@ -621,19 +591,23 @@ if SERVER then
         ent:SetNotSolid( false )
         ent:SetCollisionGroup( COLLISION_GROUP_WEAPON )
 
-        trackCarried( ent, self.glee_Carrier )
+        -- so glee_carrying's ShouldCollide is asked about it, see there
         ent:SetCustomCollisionCheck( true )
         ent:CollisionRulesChanged()
 
-        -- the weapon goes a tick later, by when its StopCarrying no longer sees ent, so it's untracked here
+        glee_Carrying.SetCarriedTracked( ent, true )
+
+        -- StopCarrying bails on a removed ent, so it's untracked here
         ent:CallOnRemove( "glee_carrying_removeweapon", function( removed, wep )
-            untrackCarried( removed )
+            glee_Carrying.SetCarriedTracked( removed, false )
             SafeRemoveEntity( wep )
 
         end, self )
 
         self:AttachCarried( self.WorldModelBackBone, self.WorldModelBackPos, self.WorldModelBackAng, self.WorldModelBackScale )
         self:SetOnBack( true )
+
+        updateIsCarrying( self.glee_Carrier )
 
         self:OnCarryStart( ent, self.glee_Carrier )
 
@@ -683,6 +657,7 @@ if SERVER then
         self.glee_ReleasedEnt = ent -- see GetDroppedEntity
         ent:SetNW2Entity( "glee_CarrierWeapon", NULL )
         ent:RemoveCallOnRemove( "glee_carrying_removeweapon" )
+        glee_Carrying.SetCarriedTracked( ent, false )
         self:SetOnBack( false )
 
         local placing = placePos ~= nil
@@ -698,7 +673,6 @@ if SERVER then
         ent:SetNotSolid( state.notSolid )
         ent:SetCollisionGroup( state.collisionGroup )
 
-        untrackCarried( ent )
         ent:SetCustomCollisionCheck( state.customCollisionCheck )
         ent:CollisionRulesChanged()
 
@@ -725,6 +699,8 @@ if SERVER then
 
         -- let go from the hands, OnBack was already false, so its change callback never ran
         self:UpdateCarrySlow()
+
+        updateIsCarrying( carrier )
 
         -- a smart sleeper frozen before it was picked up would stay frozen where it's let go
         if ent.glee_smartSleeping and terminator_Extras.SmartSleepWakeEntity then

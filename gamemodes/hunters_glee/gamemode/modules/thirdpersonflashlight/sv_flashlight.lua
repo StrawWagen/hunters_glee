@@ -210,6 +210,8 @@ hook.Add( "PlayerSwitchFlashlight", "TPF_HookFlashlightEnabled", function( ply, 
 	if not ply:Alive() then return end
 
 	if not getPlayersLight( ply ) then
+		if not ply:SeesThroughOwnEyes() then return false end
+
 		local hookRes = hook.Run( "glee_PlayerSwitchFlashlight", ply, true )
 		if hookRes == false then return false end
 

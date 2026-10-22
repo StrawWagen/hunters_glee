@@ -13,7 +13,7 @@ local set = {
     spawns = {},
     maxSpawnCount = 1, -- hard cap on count
     chanceToBeVotable = 0.25,
-    chanceToBeVotableIfHard = 1,
+    chanceToBeVotableWhenHard = 1,
     easy = true,
 }
 

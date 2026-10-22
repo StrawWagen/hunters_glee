@@ -7,7 +7,7 @@ include( "modules/cl_winscreen.lua" )
 include( "modules/cl_scoreboard.lua" )
 include( "modules/cl_obfuscation.lua" )
 include( "modules/cl_fallingwind.lua" )
-include( "modules/cl_killfeedoverride.lua" )
+include( "modules/killfeed/cl_killfeedoverride.lua" )
 include( "modules/cl_spectateflashlight.lua" )
 include( "modules/spawnset/cl_spawnsetvote.lua" )
 include( "modules/spawnset/cl_spawnsetgobbler.lua" )
@@ -75,6 +75,7 @@ include( "modules/clhud/cl_topleftinfo.lua" )
 include( "modules/clhud/cl_bpm.lua" )
 include( "modules/clhud/cl_battery.lua" )
 include( "modules/clhud/cl_backslot.lua" )
+include( "modules/orbitcamera/cl_orbitcamera.lua" )
 include( "modules/clhud/cl_plynames.lua" )
 include( "modules/clhud/cl_whowespectating.lua" )
 include( "modules/clhud/cl_bosshealthbar.lua" )
@@ -86,11 +87,6 @@ killicon.Add( "glee_skullpickup", "vgui/hud/glee_skullpickup", killIconColor )
 
 local heartbeatVol = CreateClientConVar( "cl_huntersglee_heartbeat_volume", 1, true, false, "Heartbeat sound volume.", 0, 1 )
 local baseDoHud = GetConVar( "cl_drawhud" )
-
-local closestSpectateDistance = 15
-local defaultSpectateDistance = 100
-local maxSpectateZoomOut = 1500
-local spectateZoomRate = 10
 
 fontData = {
     font = GAMEMODE.GLEE_FONT,
@@ -372,57 +368,10 @@ hook.Add( "CalcView", "glee_calcview", function( ... )
 
         end
 
-        local orbitDist = ply.glee_SpectateOrbitDistance
-        if not orbitDist then
-            local actualDistance = spectateTarget:BoundingRadius()
-            local differenceToDefault = math.abs( defaultSpectateDistance - closestSpectateDistance )
-            if differenceToDefault <= 50 then
-                orbitDist = defaultSpectateDistance
-
-            else
-                orbitDist = math.Clamp( actualDistance + defaultSpectateDistance / 2, closestSpectateDistance, maxSpectateZoomOut )
-
-            end
-            ply.glee_SpectateOrbitDistance = orbitDist
-
-        end
-
-        local dir = -ang:Forward()
-        local fallbackDrawPos = pivot + dir * closestSpectateDistance
-        local desiredDrawPos = pivot + dir * orbitDist
-        local filter = { spectateTarget }
-        if spectateTarget.InVehicle and spectateTarget:InVehicle() then
-            local vehicle = spectateTarget:GetVehicle()
-            filter[#filter + 1] = vehicle
-            if IsValid( vehicle:GetParent() ) then
-                filter[#filter + 1] = vehicle:GetParent()
-
-            end
-        end
-
-        local children = spectateTarget:GetChildren()
-        if children and #children > 0 then
-            for _, child in ipairs( children ) do
-                filter[#filter + 1] = child
-
-            end
-        end
-
         ang.r = 0 -- no roll please
 
-        local checkTr = {
-            start = fallbackDrawPos,
-            endpos = desiredDrawPos,
-            filter = filter
-
-        }
-
-        local spectateTr = util.TraceLine( checkTr )
-        -- just use the endpos if something fucked is going on ( evac heli )
-        local cameraOrigin = ( spectateTr.Entity == spectateTarget ) and desiredDrawPos or spectateTr.HitPos
-
         local view = {
-            origin = cameraOrigin,
+            origin = GAMEMODE:GetOrbitOrigin( spectateTarget, pivot, ang ),
             angles = ang,
             fov = fov,
             drawviewer = false,
@@ -529,11 +478,20 @@ local FKeyBinds = {
 
 }
 
-function GM:PlayerBindPress( _, bind, _, code )
+-- the scroll wheel zooms the camera while taunting, rather than switching weapons too
+local zoomBinds = {
+    ["invnext"] = true,
+    ["invprev"] = true,
+}
+
+function GM:PlayerBindPress( ply, bind, _, code )
     if FKeyBinds[bind] then
         hook.Call( FKeyBinds[bind], GAMEMODE, code )
 
     end
+
+    if zoomBinds[bind] and ply:IsPlayingTaunt2() then return true end
+
 end
 
 function GM:DropCurrentWeapon( keyCode )
@@ -547,37 +505,21 @@ function GM:DropCurrentWeapon( keyCode )
     end )
 end
 
+-- spectating someone, or taunting, the scroll wheel zooms the orbit camera, see cl_orbitcamera
+local function isOrbiting( ply )
+    return IsValid( ply:GetObserverTarget() ) or ply:IsPlayingTaunt2()
+
+end
+
 function GM:HandleZoomIn()
-    local ply = LocalPlayer()
-    local following = ply:GetObserverTarget()
-    if not IsValid( following ) then return end
-
-    local oldDist = ply.glee_SpectateOrbitDistance
-    if not oldDist then return end
-
-    local rate = spectateZoomRate
-    if ply:KeyDown( IN_SPEED ) then
-        rate = rate * 5
-
-    end
-    ply.glee_SpectateOrbitDistance = math.Clamp( oldDist - rate, closestSpectateDistance, maxSpectateZoomOut )
+    if not isOrbiting( LocalPlayer() ) then return end
+    self:ZoomOrbit( -1 )
 
 end
 
 function GM:HandleZoomOut()
-    local ply = LocalPlayer()
-    local following = ply:GetObserverTarget()
-    if not IsValid( following ) then return end
-
-    local oldDist = ply.glee_SpectateOrbitDistance
-    if not oldDist then return end
-
-    local rate = spectateZoomRate
-    if ply:KeyDown( IN_SPEED ) then
-        rate = rate * 5
-
-    end
-    ply.glee_SpectateOrbitDistance = math.Clamp( oldDist + rate, closestSpectateDistance, maxSpectateZoomOut )
+    if not isOrbiting( LocalPlayer() ) then return end
+    self:ZoomOrbit( 1 )
 
 end
 

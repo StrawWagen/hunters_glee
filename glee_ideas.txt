@@ -256,6 +256,11 @@ divine intervention description change ( encase yourself within a weak shell of 
 -- battery system breaking overcharged suit chargers -- fixed
 -- make it 50% cheaper to immort/bless new players -- done
 -- escape killicon "escaped" blue -- done
+-- slam uses grenade killicon -- done
+
+-- make POV come from crapvidcam dropped on death -- done
+-- hackily make crapvidcam more likely to point at the player when dropped -- done
+-- say Prospective Account Holders under ply's name if you have envoy -- done
 
 
 
@@ -557,7 +562,6 @@ goes in a glee rebinding menu?
 -- make singleplayer warning yell louder
 -- respect prop_dynamic skull scale
 
--- slam uses grenade killicon
 -- dead nameplates are too big
 -- better sounds when terms lose their skin
 
@@ -565,10 +569,6 @@ goes in a glee rebinding menu?
 
 -- 1min delay before forced map vote?
 
--- make POV come from crapvidcam dropped on death
--- hackily make crapvidcam more likely to point at the player when dropped 
-
--- say Prospective Account Holders under ply's name if you have envoy
 -- hold crouch to be able to place dead stuff unprofitably
 
 -- rope swep, use this vm https://steamcommunity.com/sharedfiles/filedetails/?id=3727222594
