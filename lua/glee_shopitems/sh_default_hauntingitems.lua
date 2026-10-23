@@ -373,6 +373,26 @@ local items = {
 
         end,
     },
+    ["deadbody"] = {
+        name = "Soulless Body",
+        desc = "A body, with a skull.\nThis body contains no soul. No matter how much it may try to convince you.",
+        shCost = 0,
+        shSkullCost = 1,
+        fakeCost = true, -- the placer takes the skull when it's placed
+        markup = 1,
+        cooldown = 60,
+        tags = { "DEADGIFTS", "CloseShopOnPurchase", "SkullCost", "Hardcore" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = 25,
+        shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
+        svOnPurchaseFunc = function( purchaser, itemIdentifier )
+            local placer = shopHelpers.setupPlacable( "glee_deadbody_placer", purchaser, itemIdentifier )
+            placer.skullCost = GAMEMODE:shopItemSkullCost( itemIdentifier, purchaser )
+
+        end,
+    },
     ["infernalheckler"] = {
         name = "Infernal Heckler",
         desc = "Summon an infernal agent\nCosts more to summon near innocent people, less when near evil souls.",

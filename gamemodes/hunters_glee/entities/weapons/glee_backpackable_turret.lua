@@ -222,6 +222,21 @@ local turretNames = {
     "THE FABULOUS DISASTER",
     "DIRTY HARRY",
     "EYES EMOJI",
+    "TEARY EYED ORPHAN",
+    "THE MICHELIN MAN",
+    "MORBIDLY A BEAST",
+    "TICKLE ME ELMO",
+    "FEED ME AMMO",
+    "EVISCERATOR",
+    "YOUR OBITUARY",
+    "BULLS EYE",
+    "TROGDOR THE BURNINATOR",
+    "DRAZZLE FRIP",
+    "FULL COURSE MEAL",
+    "R2D2",
+    "MUSTY UNCLE",
+    "NEW AND IMPROVED",
+    "CONTROL FREAK",
 
     "OCTAGON",
     "NULL",
@@ -263,11 +278,22 @@ local turretNames = {
     "GABE NEWELL",
     "FORTNITE",
     "HAMSTERS NEVER DIE OF OLD AGE",
+    "SALMONELLA",
+    "SUPER COVID",
+    "COVID-19",
+    "EBOLA",
+    "MALARIA INFECTED MOSQUITO",
+    "RABID CHIPMUNK",
+    "RICH SPOILED ORPHAN",
+    "POOR PENNILESS ORPHAN",
+    "WELL-LOVED CHILD",
+    "ABUSED CHILD",
 
     "BART",
     "HOMER",
     "EVIL HOMER",
     "BIG BAG FULL OF SNACKS",
+    "ANGRY MEXICAN MOM"
 
 }
 
@@ -293,6 +319,9 @@ local rareTurretNames = {
     "CANDY",
     "FUCKING BILLIONAIRE",
     "CROID",
+    "BABY HITLER KILLER",
+    "CLANKER",
+    "BRAP GODDESS",
 
 }
 

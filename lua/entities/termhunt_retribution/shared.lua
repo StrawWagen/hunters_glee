@@ -174,6 +174,14 @@ local cheers = {
 }
 
 function ENT:Place()
+    -- GetCanPlace is cached on a timer, the target may have died/started dancing since
+    local canPlace, reason = self:CalculateCanPlace()
+    if not canPlace then
+        if reason then huntersGlee_Announce( { self.player }, 10, 5, reason ) end
+        return
+
+    end
+
     local currTarget = self:GetCurrTarget()
 
     -- read before surfacing, which decays the very slight this is judged on

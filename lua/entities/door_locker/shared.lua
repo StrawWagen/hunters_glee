@@ -189,6 +189,15 @@ end
 
 function ENT:Place()
     if not SERVER then return end
+
+    -- GetCanPlace is cached on a timer, the door may have broken/been aimed away from since
+    local canPlace, reason = self:CalculateCanPlace()
+    if not canPlace then
+        if reason then huntersGlee_Announce( { self.player }, 10, 5, reason ) end
+        return
+
+    end
+
     local door = self:GetCurrTarget()
     local wasOpen = LockDoorAndRunAFunctionWhenTheDoorIsUsed( door, self.player, DoorOnUsedInitial )
     door:EmitSound( "doors/door_locked2.wav", 80 )

@@ -327,17 +327,27 @@ function GM:GetGroupThatNavareaExistsIn( navArea, navAreaGroups, yieldable )
     end
 end
 
--- will return an underwater area if all of them are underwater
-local function areaThatIsntUnderwater( areas )
-    local bestArea = nil
-    local clone = table.Copy( areas )
+-- groups aren't rebuilt, so areas removed since they were built are NULL in them
+-- with noUnderWater, falls back to an underwater area if all are underwater. nil if none are valid
+local function randomValidArea( areas, noUnderWater )
+    local area = areas[math.random( 1, #areas )]
+    if IsValid( area ) and not ( noUnderWater and area:IsUnderwater() ) then return area end
 
-    for _ = 1, #clone do
-        bestArea = table.remove( clone, math.random( 1, #clone ) )
-        if not bestArea:IsUnderwater() then break end
+    local clone = terminator_Extras.tableCopySimple( areas )
+    local underwaterArea
 
+    for remaining = #clone, 1, -1 do
+        local pick = math.random( 1, remaining )
+        area = clone[pick]
+        clone[pick] = clone[remaining]
+
+        if IsValid( area ) then
+            if not noUnderWater or not area:IsUnderwater() then return area end
+            underwaterArea = area
+
+        end
     end
-    return bestArea
+    return underwaterArea
 
 end
 
@@ -363,12 +373,7 @@ function GM:GetAreaInOccupiedBigGroupOrRandomBigGroup( noUnderWater )
     end
 
     if bigGroupThatSomeoneIsIn then
-        local area = bigGroupThatSomeoneIsIn[math.random( 1, #bigGroupThatSomeoneIsIn )]
-
-        if noUnderWater and area:IsUnderwater() then
-            area = areaThatIsntUnderwater( bigGroupThatSomeoneIsIn )
-
-        end
+        local area = randomValidArea( bigGroupThatSomeoneIsIn, noUnderWater )
         return area, bigGroupThatSomeoneIsIn
 
     -- main person is not in a big group, just pick one with hunters in it
@@ -388,12 +393,7 @@ function GM:GetAreaInOccupiedBigGroupOrRandomBigGroup( noUnderWater )
         if not bigGroupThatHunterIsIn then goto getareainbigoroccupiedFail end
 
 
-        local area = bigGroupThatHunterIsIn[math.random( 1, #bigGroupThatHunterIsIn )]
-
-        if noUnderWater and area:IsUnderwater() then
-            area = areaThatIsntUnderwater( bigGroupThatHunterIsIn )
-
-        end
+        local area = randomValidArea( bigGroupThatHunterIsIn, noUnderWater )
         return area, bigGroupThatHunterIsIn
 
     end
@@ -402,13 +402,7 @@ function GM:GetAreaInOccupiedBigGroupOrRandomBigGroup( noUnderWater )
     ::getareainbigoroccupiedFail::
 
     local randBigGroup = bigGroups[math.random( 1, #bigGroups )]
-    local randAreaInRandGroup = randBigGroup[math.random( 1, #randBigGroup )]
-
-    if noUnderWater and randAreaInRandGroup:IsUnderwater() then
-        randAreaInRandGroup = areaThatIsntUnderwater( randBigGroup )
-
-    end
-
+    local randAreaInRandGroup = randomValidArea( randBigGroup, noUnderWater )
     return randAreaInRandGroup, randBigGroup
 
 end

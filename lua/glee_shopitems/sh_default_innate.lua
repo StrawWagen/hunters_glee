@@ -962,9 +962,14 @@ if SERVER then
                 self.countdown = self.countdown - 1
 
                 if self.countdown <= 0 then -- do the teleport
-                    local beamStart = owner:WorldSpaceCenter()
-
                     local randomNavArea = GAMEMODE:GetAreaInOccupiedBigGroupOrRandomBigGroup( true )
+                    if not IsValid( randomNavArea ) then
+                        owner:RemoveStatusEffect( "temporal_dice_roll" )
+                        return
+
+                    end
+
+                    local beamStart = owner:WorldSpaceCenter()
                     local randomPos = randomNavArea:GetCenter()
 
                     owner:TeleportTo( randomPos )
