@@ -1,3 +1,5 @@
+local GAMEMODE = GAMEMODE or GM
+
 local spawns = {
     ["weapon_physgun"] = {
         prob = 0.005,

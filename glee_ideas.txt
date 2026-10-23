@@ -580,3 +580,5 @@ goes in a glee rebinding menu?
 -- improves subway ledgibility if "beartrapped a player" ends up on gui
 
 -- make radial menu use proper ghost style
+
+-- heal someone else to stop their heart attack for a bit

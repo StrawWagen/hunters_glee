@@ -539,7 +539,7 @@ if SERVER then
                         return
 
                     end
-                    GAMEMODE.roundExtraData.divinePatienceEnds = math.max( CurTime() + 90, GAMEMODE.roundExtraData.divinePatienceEnds + 40 )
+                    GAMEMODE.roundExtraData.divinePatienceEnds = math.max( CurTime() + 60, GAMEMODE.roundExtraData.divinePatienceEnds + 20 )
 
                 end
             end )
@@ -658,7 +658,7 @@ if SERVER then
             end )
 
             -- always reset patience for a newly chosen player, even if a previous one already expired it
-            GAMEMODE.roundExtraData.divinePatienceEnds = CurTime() + 120
+            GAMEMODE.roundExtraData.divinePatienceEnds = CurTime() + 90
             beginChosenPatience()
 
             -- pre-resurrect warning
@@ -859,7 +859,17 @@ local items = {
     ["divinechosen"] = {
         name = "grigori",
         desc = "grigori.",
-        shCost = 2000,
+        shCost = function()
+            local cost = 2000
+            for _, ply in player.Iterator() do
+                if ply:HasStatusEffect( "divine_chosen" ) then
+                    cost = cost + 2000
+
+                end
+            end
+            return cost
+
+        end,
         markup = 1,
         markupPerPurchase = 0,
         cooldown = 0,

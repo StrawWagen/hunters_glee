@@ -375,9 +375,9 @@ function ENT:HasEnoughToPurchase()
     local given = self:GetGivenScore()
 
     local intoDebt = myScore + given < 0
-    local justProfit = ( myScore + given ) > myScore
+    local costsNothing = given >= 0
 
-    if intoDebt and not justProfit then return end
+    if intoDebt and not costsNothing then return end
 
     return true
 end

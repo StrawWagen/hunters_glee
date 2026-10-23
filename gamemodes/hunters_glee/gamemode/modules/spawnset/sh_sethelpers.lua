@@ -7,7 +7,7 @@ local setHelpers = GM.setHelpers or {}
 GM.setHelpers = setHelpers
 
 
--- No shop for the living, only "Hardcore" tagged items for the dead, and they wait twice as long, the Door Locker 4x.
+-- No shop for the living, only "Hardcore" tagged items for the dead, and they wait twice as long, the Door Locker 4x. Linked Hunter costs 10x.
 -- Call from an sh_ spawnset's Activate. Server only and the client draws a shop that won't sell
 function setHelpers.makeHardcore( lifecycle )
     -- escaped players sit at health 0, so the Horrors stay open to them
@@ -33,6 +33,12 @@ function setHelpers.makeHardcore( lifecycle )
 
         end
         adjust.mul = adjust.mul * mul
+
+    end )
+    lifecycle:Hook( "glee_shop_itemcostmul", function( _ply, itemData, adjust )
+        if itemData.identifier ~= "additionalterm" then return end
+        if adjust.value <= 0 then return end
+        adjust.mul = adjust.mul * 10
 
     end )
 end

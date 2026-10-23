@@ -84,6 +84,9 @@ function GM:GetOrbitOrigin( subject, pivot, ang )
         end,
     } )
 
+    -- just use the endpos if something fucked is going on ( evac heli )
+    if isPartOf( tr.Entity, subject, vehicle ) then return desiredPos end
+
     return tr.HitPos
 
 end

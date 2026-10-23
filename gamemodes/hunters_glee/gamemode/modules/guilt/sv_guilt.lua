@@ -181,11 +181,12 @@ end
         adds a massive downside to killing people for no reason
     @param attacker: The player who did the killing.
     @param died: The player who died.
+    @param persistGuiltMul: Scales the persistent guilt it adds, nil for 1.
     @return: None
 --]]---------------------------------------------------------
-function GM:OnKilledTrulyInnocentSoul( attacker, died )
+function GM:OnKilledTrulyInnocentSoul( attacker, died, persistGuiltMul )
 
-    hook.Run( "glee_onkilledtrulyinnocentsoul", attacker, died )
+    hook.Run( "glee_onkilledtrulyinnocentsoul", attacker, died, persistGuiltMul )
 
     -- every 2 innocent player kills, it surfaces
     local currentEvilnessToSurface = GAMEMODE.roundExtraData.nextHomicidalGleeSurfaces[attacker:SteamID()] or autoHomicidalEvilnessIncrements
@@ -226,8 +227,17 @@ hook.Add( "PlayerDeath", "glee_storeslights", function( died, inflictor, attacke
 
     if not attacker:IsPlayer() then return end
 
-    -- this inflictor is guilt-free
-    if inflictor.glee_GuiltFreeInflictor then return end
+    local persistGuiltMul = 1
+
+    -- some guilt-free inflictors still punish killing the innocent
+    if inflictor.glee_GuiltFreeInflictor then
+        local innocentMul = inflictor.glee_InnocentVictimGuiltMul
+        if not innocentMul then return end
+        if GAMEMODE:GetStoredPersistentGuilt( died ) >= 1 then return end
+
+        persistGuiltMul = innocentMul
+
+    end
 
     -- the chosen doesn't get guilt
     if attacker:HasStatusEffect( "divine_chosen" ) then return end
@@ -266,7 +276,7 @@ hook.Add( "PlayerDeath", "glee_storeslights", function( died, inflictor, attacke
     -- only for killing innocent people
     if not GAMEMODE:IsInnocent( died ) then return end
 
-    GAMEMODE:OnKilledTrulyInnocentSoul( attacker, died )
+    GAMEMODE:OnKilledTrulyInnocentSoul( attacker, died, persistGuiltMul )
 
 end )
 
@@ -470,7 +480,7 @@ hook.Add( "PlayerInitialSpawn", "glee_checkpersistentguilt", function( ply )
 
 end )
 
-hook.Add( "glee_onkilledtrulyinnocentsoul", "glee_incrementpersistentguilt", function( attacker, died )
+hook.Add( "glee_onkilledtrulyinnocentsoul", "glee_incrementpersistentguilt", function( attacker, died, persistGuiltMul )
     -- persistent guilt is a dedicated server only mechanic
     -- developer 1 enables it for testing
     if not game.IsDedicated() and not developerVar:GetBool() then return end
@@ -481,7 +491,7 @@ hook.Add( "glee_onkilledtrulyinnocentsoul", "glee_incrementpersistentguilt", fun
 
     end
 
-    GAMEMODE:IncrementPersistentGuilt( attacker, daysToAdd )
+    GAMEMODE:IncrementPersistentGuilt( attacker, daysToAdd * ( persistGuiltMul or 1 ) )
 
 end )
 

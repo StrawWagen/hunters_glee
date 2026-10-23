@@ -39,6 +39,21 @@ hook.Add( "glee_PreStripWeapons", "glee_carrying_dropbeforestrip", function( ply
     end
 end )
 
+-- What's on their back leaves with them, the escape kills them right after, and their weapons with it,
+-- which would leave it where they escaped. What's in their hands is left behind. Outside the gamemode
+-- the hook never runs. glee_carrying_escapedwith( ply, ent ), first, is for whatever wants to reward it
+hook.Add( "glee_ply_escaped", "glee_carrying_escapewithback", function( ply )
+    for _, wep in ipairs( glee_Carrying.GetCarriedWeapons( ply ) ) do
+        local ent = wep:GetCarriedEnt()
+        if not wep:GetOnBack() or not IsValid( ent ) then continue end
+
+        hook.Run( "glee_carrying_escapedwith", ply, ent )
+        -- now, not next tick, or the kill releases it first and it springs back to life for a tick
+        ent:Remove() -- takes its weapon with it
+
+    end
+end )
+
 -- Gives them weaponClass, or its twin, carrying a brand new entity it makes itself, eg from a shop.
 -- The one way to, a weapon given any other way with nothing to carry removes itself. False if there's no room
 function glee_Carrying.GiveNewCarryable( ply, weaponClass )

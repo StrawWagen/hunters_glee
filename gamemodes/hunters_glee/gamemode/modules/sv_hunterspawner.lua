@@ -763,7 +763,7 @@ function GM:AttemptToSpawnHunter( spawnEntry )
 
     if spawnEntry.preSpawnedFuncs then
         for _, func in ipairs( spawnEntry.preSpawnedFuncs ) do
-            ProtectedCall( function( _spawnEntry, _hunter ) func( _spawnEntry, _hunter ) end, spawnEntry, hunter )
+            ProtectedCall( function( _spawnEntry, _hunter, _spawnPos ) func( _spawnEntry, _hunter, _spawnPos ) end, spawnEntry, hunter, spawnPos )
 
         end
     end

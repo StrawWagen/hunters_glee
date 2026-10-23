@@ -15,6 +15,7 @@ ENT.heliCostMult = 4
 ENT.heliNearbyDist = 3000
 ENT.mischiefOnPlace = 10
 ENT.mischiefReason = "applauded thunderously"
+ENT.innocentVictimGuiltMul = 0.25 -- an escaped item, near guilt free
 ENT.radius = 1050
 
 if CLIENT then
@@ -224,6 +225,7 @@ function ENT:BeginStrike( strikePos )
                 lightning:SetOwner( self.attackerInflictor )
                 lightning:SetPos( strikingPos )
                 lightning:SetPowa( powa )
+                lightning.glee_InnocentVictimGuiltMul = self.innocentVictimGuiltMul
                 lightning:Spawn()
 
             end

@@ -93,6 +93,8 @@ if CLIENT then
             self.doneInitParticle = true
 
             local pushEffect = self:CreateParticleEffect( "glee_ghostly_wind_initial", PATTACH_ABSORIGIN_FOLLOW )
+            if not pushEffect then return end
+
             local size600 = 55
             local myActualSize = self.HullSize.x
             local size = size600 * ( myActualSize / 600 )
@@ -106,6 +108,8 @@ if CLIENT then
             self.windParticleBigPushDone = true
 
             local pushEffect = self:CreateParticleEffect( "glee_ghostly_wind", PATTACH_ABSORIGIN_FOLLOW )
+            if not pushEffect then return end
+
             local size600 = 55
             local myActualSize = self.HullSize.x
             local size = size600 * ( myActualSize / 600 )

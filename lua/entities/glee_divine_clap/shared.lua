@@ -21,6 +21,7 @@ ENT.heliCostMult = 3 -- cost multiplier when placed near the escape heli
 ENT.heliNearbyDist = 2000
 ENT.mischiefOnPlace = 2
 ENT.mischiefReason = "called down a smite"
+ENT.innocentVictimGuiltMul = 1 -- persistent guilt for killing someone with none, anyone else is guilt free
 
 -- only used by the default ( clap ) telegraph/strike, which derived entities override
 local strikePowa = 8
@@ -222,6 +223,7 @@ function ENT:BeginStrike( strikePos )
             lightning:SetOwner( self.attackerInflictor )
             lightning:SetPos( strikePos )
             lightning:SetPowa( strikePowa )
+            lightning.glee_InnocentVictimGuiltMul = self.innocentVictimGuiltMul
             lightning:Spawn()
 
             SafeRemoveEntity( self )
