@@ -13,7 +13,7 @@ local rareChance = 15
 local chancePerConsecutiveVote = 0.1
 GM.glee_ConsecutiveSpawnsetVotes = GM.glee_ConsecutiveSpawnsetVotes or 0
 
-local chanceLostPerUnvotedAppearance = { 1, 3 }
+local chanceLostPerUnvotedAppearance = { 4, 8 }
 -- [spawnset name] = times it was a vote option and got 0 votes, this session
 GM.glee_UnvotedSpawnsetCounts = GM.glee_UnvotedSpawnsetCounts or {}
 
