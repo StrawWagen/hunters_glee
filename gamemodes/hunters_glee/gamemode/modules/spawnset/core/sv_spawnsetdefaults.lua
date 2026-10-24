@@ -36,7 +36,7 @@ local defaults = {
 local ignored = {
     easy = true,
     tutorialExit = true,
-    alwaysHordeSpawn = true,
+    hordeSpawn = true,
     Activate = true,
     OnRemove = true,
 }

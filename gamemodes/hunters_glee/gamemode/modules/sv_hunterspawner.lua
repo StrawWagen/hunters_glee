@@ -960,12 +960,15 @@ function GM:MarchValidHunterPos( spawnEntry )
     if not self.biggestNavmeshGroups then return nil, nil, nil end
 
     local waveSize = GAMEMODE.currentSpawnWaveSize or 0
-    local alwaysHordeSpawn = spawnEntry.alwaysHordeSpawn
-    if alwaysHordeSpawn == nil then
-        alwaysHordeSpawn = spawnSet.alwaysHordeSpawn
+    local hordeSpawn = spawnEntry.hordeSpawn -- first priority, spawnentry's value
+    if hordeSpawn == nil then
+        hordeSpawn = spawnSet.hordeSpawn -- otherwise spawnset
 
     end
-    local hordeSpawn = alwaysHordeSpawn or waveSize >= 8
+    if hordeSpawn == nil then
+        hordeSpawn = waveSize >= 8 -- otherwise big waves
+
+    end
 
     local preferredEFlags = spawnEntry.preferredEFlags
     local firmPreference = preferredEFlags and spawnEntry.firmPreferredEFlags

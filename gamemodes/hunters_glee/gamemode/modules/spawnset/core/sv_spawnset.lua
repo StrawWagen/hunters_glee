@@ -55,7 +55,7 @@ local spawnSpecialCases = { -- special cases for spawn entries
     preferredEFlags = enumCheck, -- will attempt to spawn this .spawn entry in areas with these Extra Navmesh flags, see sv_navmeshcategorizer
     firmPreferredEFlags = boolCheck, -- never spawn outside areas with ALL preferredEFlags, even if that means never spawning on this map
     scaryAsATerminator = boolCheck,
-    alwaysHordeSpawn = boolCheck,
+    hordeSpawn = boolCheck,
 }
 
 -- misspelled keys would otherwise be silently ignored, or silently replaced by their default
