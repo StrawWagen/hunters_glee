@@ -44,6 +44,7 @@ hunters_glee/
 │   └── send.txt                       # Clientside files, mirrors AddCSLuaFile
 ├── lua/
 │   ├── glee_shopitems/                # Shop item definitions (auto-loaded)
+│   ├── glee_sethelpers/               # Addon-defined spawnset helpers (auto-loaded)
 │   ├── glee_spawnsets/                # Enemy spawnset(misery) definitions (auto-loaded)
 │   ├── glee_music/                    # Music track definitions (auto-loaded)
 │   ├── glee_hud/                      # HUD drawing, fonts, and the swappable HUD styles
@@ -544,6 +545,7 @@ Number values can be:
 | `preSpawnedFuncs` | ❌ | Functions called before hunter:SetPos() and hunter:Spawn() : `function(spawnData, npc, spawnPos)`. spawnPos is 20 units above the nav area, hunters fall into place |
 | `postSpawnedFuncs` | ❌ | Functions called after hunter:Spawn() : `function(spawnData, npc)` |
 | `isBoss` | ❌ | `true` marks as boss; `false` opts out of auto-detection. When the boss is killed, all alive players escape. Auto-detected when `spawnSet.maxSpawnCount <= 1` (highest `difficultyCost` entry becomes boss). |
+| `alwaysHordeSpawn` | ❌ | `true` always reuses the last good spawn area, stacking spawns into a horde. Otherwise only waves of 8+ do |
 | `scaryAsATerminator` | ❌ | `true` makes players panic like it's a full hp terminator, for low hp npcs that are scarier than they look |
 | `removeAfterStillSeconds` | ❌ | Removes the hunter once it's stayed within 50 units of one spot for this many seconds. Only counts while the round is active |
 
@@ -622,6 +624,21 @@ Only write an `OnRemove` for things you didn't make through `self`.
 A `waveInterval` of `{ 60, 90 }` is still `{ 60, 90 }` here, use `GAMEMODE:GetSpawnSet()` for the rolled number.
 
 A `cl_` file with the same `name` gets its own `Activate`, for HUD and sounds.
+
+#### Set Helpers
+
+`GAMEMODE.setHelpers` holds shared building blocks, like `makeHardcore( self )` for `Activate`, or `postSpawnedOvercharge` for `.postSpawnedFuncs`.
+Add your own with `sh_`/`sv_`/`cl_` files in `lua/glee_sethelpers/`. They're included before any spawnset, during gamemode load, so reach the table through `GM`.
+
+```lua
+-- lua/glee_sethelpers/sv_my_helpers.lua
+local setHelpers = ( GM or GAMEMODE ).setHelpers
+
+function setHelpers.postSpawnedRed( spawnData, npc )
+    npc:SetColor( Color( 255, 0, 0 ) )
+
+end
+```
 
 ---
 

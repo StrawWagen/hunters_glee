@@ -360,6 +360,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
             table.Add( GAMEMODE.currentSpawnWave, pickedSpawns )
             GAMEMODE.nextSpawnWave = cur + spawnSet.waveInterval / speedOverride
             GAMEMODE.lastSpawnWave = cur
+            GAMEMODE.currentSpawnWaveSize = #GAMEMODE.currentSpawnWave
 
             ProtectedCall( function( _pickedSpawns )
                 hook.Run( "huntersglee_postwavegenerated", _pickedSpawns )
@@ -958,6 +959,9 @@ function GM:MarchValidHunterPos( spawnEntry )
 
     if not self.biggestNavmeshGroups then return nil, nil, nil end
 
+    local waveSize = GAMEMODE.currentSpawnWaveSize or 0
+    local hordeSpawn = spawnEntry.alwaysHordeSpawn or waveSize >= 8
+
     local preferredEFlags = spawnEntry.preferredEFlags
     local firmPreference = preferredEFlags and spawnEntry.firmPreferredEFlags
     -- a soft preference the map can't satisfy would only burn fails until it bends
@@ -1029,6 +1033,9 @@ function GM:MarchValidHunterPos( spawnEntry )
     -- makes it super random yet grounded
     local cost = 0
     while cost < tries do
+        local doHordeSpawn = fails > 200 or hordeSpawn
+        local goodAreaBite
+
         cost = cost + 0.1
         local currentArea
         -- failing alot, try checking great spawn areas!
@@ -1037,25 +1044,31 @@ function GM:MarchValidHunterPos( spawnEntry )
             breakingMaxDist = spawnSet.goodAreaBreakingMaxDist
 
         -- if we have a good spawn area, use it NOW!
-        elseif cost < tries * 0.5 and IsValid( spawnSet.lastGoodSpawnArea ) and spawnSet.lastGoodSpawnAreaWeight > 0 then
+        elseif cost < tries * 0.5 and doHordeSpawn and IsValid( spawnSet.lastGoodSpawnArea ) and spawnSet.lastGoodSpawnAreaWeight > 0 then
             currentArea = spawnSet.lastGoodSpawnArea
             breakingMaxDist = spawnSet.goodAreaBreakingMaxDist
-            local usedBite = 1
             if spawnSet.staleSpawnAreasMask[currentArea] then
-                usedBite = 10
+                goodAreaBite = 10
 
-            end
-            spawnSet.lastGoodSpawnAreaWeight = spawnSet.lastGoodSpawnAreaWeight - usedBite
-            if spawnSet.lastGoodSpawnAreaWeight <= 0 then
-                spawnSet.lastGoodSpawnArea = nil
-                spawnSet.goodAreaBreakingMaxDist = breakingMaxDist
-                spawnSet.lastGoodSpawnAreaWeight = 0
+            else
+                goodAreaBite = 1
 
             end
         elseif #areas > 0 then -- filtering by preferredEFlags can empty it
+            goodAreaBite = 0.1
             currentArea = areas[math.random( 1, #areas )] -- pick a random area
 
         end
+
+        if goodAreaBite then
+            spawnSet.lastGoodSpawnAreaWeight = spawnSet.lastGoodSpawnAreaWeight - goodAreaBite
+            if spawnSet.lastGoodSpawnAreaWeight <= 0 then
+                spawnSet.lastGoodSpawnArea = nil
+                spawnSet.lastGoodSpawnAreaWeight = 0
+
+            end
+        end
+
         if not currentArea or not IsValid( currentArea ) then continue end -- outdated
         -- great/good spawn areas and the area cache are shared by every entry in the spawnset
         if firmPreference and not self:HasAllExtraFlags( currentArea, preferredEFlags ) then continue end
@@ -1241,8 +1254,9 @@ function GM:MarchValidHunterPos( spawnEntry )
             local currentIsStale = spawnSet.staleSpawnAreasMask[currentArea]
             local isGoodArea = IsValid( spawnSet.lastGoodSpawnArea )
 
-            -- chance to march goodspawnarea in a random direction, so the spawns stack up less
-            if isGoodArea and math.random( 0, 100 ) <= 10 then
+            -- chance to march goodSpawnAreas in a random direction, so the spawns stack up less
+            -- also places goodSpawnAreas next to random spawns if we're not doing horde spawning, keeping goodSpawnArea up to date
+            if isGoodArea and math.random( 0, 100 ) <= 15 then
                 local potentials = currentArea:GetAdjacentAreas()
                 table.Shuffle( potentials )
                 for _, adjArea in ipairs( potentials ) do

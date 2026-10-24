@@ -103,7 +103,36 @@ function setHelpers.addDefaultWeapon( lifecycle, class )
 end
 
 
-if CLIENT then return end
+-- addons add their own helpers with sh_, sv_ or cl_ files in lua/glee_sethelpers/.
+-- those run during gamemode load, where GAMEMODE is still nil, so they reach this table through GM
+local function gobbleHelperModules()
+    for _, fileName in ipairs( file.Find( "glee_sethelpers/*.lua", "LUA" ) ) do
+        local prefix = string.sub( fileName, 1, 3 )
+        local path = "glee_sethelpers/" .. fileName
+        if prefix ~= "sh_" and prefix ~= "sv_" and prefix ~= "cl_" then
+            ErrorNoHaltWithStack( "GLEE: Invalid sethelper prefix '" .. prefix .. "' in " .. fileName .. "\nNeeds to be sh_, sv_, or cl_" )
+            continue
+
+        end
+
+        if SERVER and prefix ~= "sv_" then
+            AddCSLuaFile( path )
+
+        end
+
+        if prefix == "sh_" or ( prefix == "sv_" ) == SERVER then
+            ProtectedCall( function( pathProtected ) include( pathProtected ) end, path )
+
+        end
+    end
+end
+
+-- gobbled after the stock helpers, so a module can use them as it loads
+if CLIENT then
+    gobbleHelperModules()
+    return
+
+end
 
 
 -- rolled at load, so the escalation curve is this session's own, not this round's
@@ -188,3 +217,6 @@ function setHelpers.postSpawnedOvercharge( spawnDat, spawned )
 
     end
 end
+
+
+gobbleHelperModules()
