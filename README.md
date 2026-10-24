@@ -541,10 +541,11 @@ Number values can be:
 | `spawnBelow` | ❌ | Prefer spawning below the lowest player |
 | `preferredEFlags` | ❌ | Prefer nav areas carrying all of these Extra Navmesh flags ( see sv_navmeshcategorizer ) |
 | `firmPreferredEFlags` | ❌ | `true` stops `preferredEFlags` from bending, the entry never spawns outside those areas |
-| `preSpawnedFuncs` | ❌ | Functions called before hunter:Spawn() : `function(spawnData, npc)` |
+| `preSpawnedFuncs` | ❌ | Functions called before hunter:SetPos() and hunter:Spawn() : `function(spawnData, npc, spawnPos)`. spawnPos is 20 units above the nav area, hunters fall into place |
 | `postSpawnedFuncs` | ❌ | Functions called after hunter:Spawn() : `function(spawnData, npc)` |
 | `isBoss` | ❌ | `true` marks as boss; `false` opts out of auto-detection. When the boss is killed, all alive players escape. Auto-detected when `spawnSet.maxSpawnCount <= 1` (highest `difficultyCost` entry becomes boss). |
 | `scaryAsATerminator` | ❌ | `true` makes players panic like it's a full hp terminator, for low hp npcs that are scarier than they look |
+| `removeAfterStillSeconds` | ❌ | Removes the hunter once it's stayed within 50 units of one spot for this many seconds. Only counts while the round is active |
 
 Only one of `spawnSameZ`, `spawnAbove`, `spawnBelow` applies, they're checked in that order.
 Those three and `preferredEFlags` all loosen the longer the spawner fails to find a spot, so they bend rather than block. A non-firm `preferredEFlags` is ignored outright on maps without those flags.

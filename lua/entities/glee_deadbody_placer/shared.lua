@@ -15,6 +15,7 @@ ENT.Model = "models/humans/group01/male_07.mdl"
 ENT.HullCheckSize = Vector( 12, 12, 20 )
 ENT.PosOffset = Vector( 0, 0, 20 )
 
+ENT.DecapitatedReward = 300
 ENT.noPurchaseReason_NoSkull = "You need a skull to place this."
 
 local bodyModels = {
@@ -35,6 +36,12 @@ if CLIENT then
     function ENT:DoHudStuff()
         self:DrawPlacingLine( "A body, with a skull." )
 
+        local scoreGained = math.Round( self:GetGivenScore() )
+        if scoreGained < 0 then
+            self:DrawPlacingLine( "Cost: " .. scoreGained, nil, 1 )
+            self:DrawPlacingLine( "Pays +" .. self.DecapitatedReward .. " when its skull comes off", nil, 2 )
+
+        end
     end
 end
 
@@ -49,7 +56,7 @@ function ENT:ManageMyPos()
 end
 
 function ENT:UpdateGivenScore()
-    self:SetGivenScore( 0 )
+    self:SetGivenScore( -( self.scoreCost or 0 ) )
 
 end
 
@@ -85,6 +92,31 @@ function ENT:Place()
 
     end
 
+    local score = self:GetGivenScore()
+    if score ~= 0 and IsValid( self.player ) and self.player.GivePlayerScore then
+        self.player:GivePlayerScore( score )
+        GAMEMODE:sendPurchaseConfirm( self.player, score )
+
+    end
+
+    if self.rewardsDecapitation then
+        body.glee_deadbodyRewardee = self.player
+
+    end
+
     SafeRemoveEntity( self )
 
 end
+
+local decapitatedReward = ENT.DecapitatedReward
+
+hook.Add( "glee_ragdollskulldecapitated", "glee_deadbody_payrewardee", function( ragdoll, skull )
+    local rewardee = ragdoll.glee_deadbodyRewardee
+    if not IsValid( rewardee ) then return end
+    ragdoll.glee_deadbodyRewardee = nil
+
+    local reward = decapitatedReward
+    rewardee:GivePlayerScore( reward )
+    GAMEMODE:SendPlacableScorePopup( rewardee, skull, reward )
+
+end )

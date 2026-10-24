@@ -737,6 +737,37 @@ hook.Add( "OnNPCKilled", "glee_goodkilledhunters", function( npc, attacker )
 end )
 
 
+-- wandering within this of where it last moved from still counts as standing still
+local stillWanderDistSqr = 50^2
+
+-- for .removeAfterStillSeconds, catches hunters that got wedged somewhere, or never could move
+local function manageIfStill( hunter, secondsToRemove )
+    local anchor = hunter:GetPos()
+    local stillFor = 0
+    local timerName = "glee_hunter_removestill_" .. hunter:GetCreationID()
+    timer.Create( timerName, 1, 0, function()
+        if not IsValid( hunter ) then timer.Remove( timerName ) return end
+        if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
+
+        local pos = hunter:GetPos()
+        if pos:DistToSqr( anchor ) > stillWanderDistSqr then
+            anchor = pos
+            stillFor = 0
+            return
+
+        end
+
+        stillFor = stillFor + 1
+        if stillFor < secondsToRemove then return end
+
+        timer.Remove( timerName )
+        SafeRemoveEntity( hunter )
+        debugPrint( "REMOVE STILL", hunter )
+
+    end )
+end
+
+
 function GM:RegisterAsSpawnedHunter( hunter )
     table.insert( self.glee_Hunters, hunter )
     hunter:SetNW2Bool( "glee_IsHunter", true )
@@ -781,6 +812,10 @@ function GM:AttemptToSpawnHunter( spawnEntry )
     end
 
     self:RegisterAsSpawnedHunter( hunter )
+    if spawnEntry.removeAfterStillSeconds then
+        manageIfStill( hunter, spawnEntry.removeAfterStillSeconds )
+
+    end
     if spawnEntry.isBoss then
         self:RegisterBoss( hunter )
 

@@ -376,9 +376,17 @@ local items = {
     ["deadbody"] = {
         name = "Soulless Body",
         desc = "A body, with a skull.\nThis body contains no soul. No matter how much it may try to convince you.",
-        shCost = 0,
-        shSkullCost = 1,
-        fakeCost = true, -- the placer takes the skull when it's placed
+        shCost = function( purchaser )
+            if purchaser:HasEscaped() then return 100 end
+            return 0
+
+        end,
+        shSkullCost = function( purchaser )
+            if purchaser:HasEscaped() then return 0 end
+            return 1
+
+        end,
+        fakeCost = true, -- the placer charges when it's placed
         markup = 1,
         cooldown = 60,
         tags = { "DEADGIFTS", "CloseShopOnPurchase", "SkullCost", "Hardcore" },
@@ -390,6 +398,8 @@ local items = {
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
             local placer = shopHelpers.setupPlacable( "glee_deadbody_placer", purchaser, itemIdentifier )
             placer.skullCost = GAMEMODE:shopItemSkullCost( itemIdentifier, purchaser )
+            placer.scoreCost = GAMEMODE:shopItemCost( itemIdentifier, purchaser )
+            placer.rewardsDecapitation = purchaser:HasEscaped()
 
         end,
     },

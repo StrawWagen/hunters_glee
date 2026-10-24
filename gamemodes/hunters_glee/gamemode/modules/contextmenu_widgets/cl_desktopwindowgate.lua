@@ -1,5 +1,6 @@
 
--- Context menu icons that only show while canShow( LocalPlayer() ) holds, rechecked whenever a watched NW2 var changes
+-- Context menu icons that only show while canShow( LocalPlayer() ) holds, rechecked whenever a watched NW2 var changes,
+-- and every few seconds in case a change slipped past
 
 -- [id] = { windowData = windowData, canShow = canShow }
 local gates = {}
@@ -112,6 +113,18 @@ hook.Add( "InitPostEntity", "glee_desktopwindowgate_init", function()
         installProxy( varName )
 
     end
+
+    for id, _ in pairs( gates ) do
+        pending[id] = true
+
+    end
+    checkPendingNextTick()
+
+end )
+
+-- after a map change, a var's first value can land after InitPostEntity without ever firing its proxy
+timer.Create( "glee_desktopwindowgate_recheck", 2, 0, function()
+    if not entitiesReady() then return end
 
     for id, _ in pairs( gates ) do
         pending[id] = true
