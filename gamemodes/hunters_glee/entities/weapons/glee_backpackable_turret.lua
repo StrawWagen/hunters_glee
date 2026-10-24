@@ -268,6 +268,8 @@ local turretNames = {
     "ALYX VANCE",
     "SUPREME OVERLORD",
     "DIMENSIONAL RIFT",
+    "THE MEAT GRINDER",
+    "#1 CAT FACTORY EMPLOYEE",
     "VEGAN",
     "CARNIVORE",
     "I_EAT_JERMAS",
@@ -288,12 +290,16 @@ local turretNames = {
     "POOR PENNILESS ORPHAN",
     "WELL-LOVED CHILD",
     "ABUSED CHILD",
+    "MAGIC POWERS",
+    "ABANDONED INFANT",
 
     "BART",
     "HOMER",
     "EVIL HOMER",
     "BIG BAG FULL OF SNACKS",
-    "ANGRY MEXICAN MOM"
+    "ANGRY MEXICAN MOM",
+    "THE BIG BAD WOLF",
+    "MINECRAFT 2019 FREE DOWNLOAD",
 
 }
 
@@ -322,6 +328,9 @@ local rareTurretNames = {
     "BABY HITLER KILLER",
     "CLANKER",
     "BRAP GODDESS",
+    "CAN OF WHOOPASS",
+    "12 GNOMES IN A TRENCHCOAT",
+    "SMARTER THAN THE AVERAGE TURRET",
 
 }
 

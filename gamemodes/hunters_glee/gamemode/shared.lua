@@ -45,10 +45,14 @@ include( "modules/battery/sh_battery.lua" )
 include( "modules/thirdpersonflashlight/sh_flashlight.lua" )
 include( "modules/sh_detecthunterkills.lua" )
 include( "modules/shopitems/sh_shophelpers.lua" )
-include( "modules/spawnset/sh_spawnpoolutil.lua" )
-include( "modules/spawnset/sh_spawnsetcontent.lua" )
-include( "modules/spawnset/sh_sethelpers.lua" )
-include( "modules/spawnset/sh_bosshandler.lua" )
+include( "modules/spawnset/core/sh_spawnsetregistry.lua" )
+include( "modules/spawnset/core/sh_spawnsetcommands.lua" )
+include( "modules/spawnset/vote/sh_spawnsetvote.lua" )
+include( "modules/spawnset/nominate/sh_spawnsetnominate.lua" )
+include( "modules/spawnset/runtime/sh_spawnpoolutil.lua" )
+include( "modules/spawnset/runtime/sh_spawnsetcontent.lua" )
+include( "modules/spawnset/runtime/sh_sethelpers.lua" )
+include( "modules/spawnset/bosses/sh_bosshandler.lua" )
 include( "modules/unsandboxing/sh_unsandboxing.lua" )
 include( "modules/stickyslams/sh_stickyslams.lua" )
 
@@ -127,12 +131,20 @@ function GM:ResetShopItemCooldowns()
 end
 
 function GM:GetSpawnSetName()
-    return GetGlobalString( "GLEE_SpawnSetName", "N/A" ), GetGlobalString( "GLEE_SpawnSetPrettyName", "N/A" )
+    local name = GetGlobalString( "GLEE_SpawnSetName", "N/A" )
+    local registered = self:GetRegisteredSpawnSet( name )
+    if not registered then return name, "N/A" end
+
+    return name, registered.prettyName
 
 end
 
 function GM:GetSpawnSetDescription()
-    return GetGlobalString( "GLEE_SpawnSetDescription", "" )
+    local name = self:GetSpawnSetName()
+    local registered = self:GetRegisteredSpawnSet( name )
+    if not registered then return "" end
+
+    return registered.description
 
 end
 

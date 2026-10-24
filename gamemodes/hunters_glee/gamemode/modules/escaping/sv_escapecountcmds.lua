@@ -6,7 +6,14 @@ concommand.Add( "huntersglee_debug_printescapemuls", function( ply, cmd, args )
     local spawnSetName = args[2] or GAMEMODE:GetSpawnSet()
 
     permaPrint( "Map:", mapName, " | ", GAMEMODE:GetMapsEscapeMultiplier( mapName ) )
+    local nominatedRows = sql.Query( "SELECT nominated FROM glee_escape_by_spawnset WHERE spawnset = " .. sql.SQLStr( spawnSetName ) )
+    local nominated = nominatedRows and tonumber( nominatedRows[1].nominated ) or 0
+
     permaPrint( "Spawnset:", spawnSetName, " | ", GAMEMODE:GetSpawnsetsEscapeMultiplier( spawnSetName ) )
+    if nominated > 0 then
+        permaPrint( "Spawnset nominated:", nominated )
+
+    end
 
 end )
 
@@ -47,10 +54,18 @@ concommand.Add( "huntersglee_resetescapecount_spawnset", function( ply, cmd, arg
 end )
 
 
+-- last, so leaving it off a row doesn't misalign the columns before it
+local function nominatedSuffix( nominated )
+    if tonumber( nominated ) <= 0 then return "" end
+    return "  nominated: " .. nominated
+
+end
+
 local function printEscapeTable( tblName, keyCol, sortCol )
+    -- a misery nominated but never played still shows
     local rows = sql.Query(
-        "SELECT " .. keyCol .. ", escaped, remained FROM " .. tblName ..
-        " WHERE escaped + remained > 0 ORDER BY " .. sortCol .. " DESC"
+        "SELECT " .. keyCol .. ", escaped, remained, nominated FROM " .. tblName ..
+        " WHERE escaped + remained + nominated > 0 ORDER BY " .. sortCol .. " DESC"
     )
     if not rows then
         permaPrint( "  (none)" )
@@ -58,8 +73,8 @@ local function printEscapeTable( tblName, keyCol, sortCol )
 
     end
     for i, row in ipairs( rows ) do
-        permaPrint( string.format( "  #%-3d  %-42s  escaped: %-6s  remained: %s",
-            i, row[keyCol], row.escaped, row.remained ) )
+        permaPrint( string.format( "  #%-3d  %-42s  escaped: %-6s  remained: %-6s",
+            i, row[keyCol], row.escaped, row.remained ) .. nominatedSuffix( row.nominated ) )
 
     end
 end
@@ -87,7 +102,7 @@ concommand.Add( "huntersglee_print_byremained", function( ply )
 end )
 
 local function printMultiplierTable( tblName, keyCol, getMul )
-    local rows = sql.Query( "SELECT " .. keyCol .. ", lastescapetime FROM " .. tblName )
+    local rows = sql.Query( "SELECT " .. keyCol .. ", lastescapetime, nominated FROM " .. tblName )
     if not rows then
         permaPrint( "  (none)" )
         return
@@ -113,15 +128,15 @@ local function printMultiplierTable( tblName, keyCol, getMul )
 
         end
 
-        entries[#entries + 1] = { key = key, mul = mul, escaped = escaped, remained = remained, weeksSince = weeksSince }
+        entries[#entries + 1] = { key = key, mul = mul, escaped = escaped, remained = remained, nominated = row.nominated, weeksSince = weeksSince }
 
     end
 
     table.sort( entries, function( a, b ) return a.mul > b.mul end )
 
     for i, e in ipairs( entries ) do
-        permaPrint( string.format( "  #%-3d  %-42s  mul: %-5s  escaped: %-6s  remained: %-6s  weeks since escape: %s",
-            i, e.key, e.mul, e.escaped, e.remained, e.weeksSince ) )
+        permaPrint( string.format( "  #%-3d  %-42s  mul: %-5s  escaped: %-6s  remained: %-6s  weeks since escape: %-6s",
+            i, e.key, e.mul, e.escaped, e.remained, e.weeksSince ) .. nominatedSuffix( e.nominated ) )
 
     end
 end

@@ -209,7 +209,7 @@ function GAMEMODE:TutorializeNewPlayers( players )
     local threshold = #players / 2
     local switchingToTutorialMisery = #nonKnowers > threshold
     if switchingToTutorialMisery then
-        RunConsoleCommand( "huntersglee_spawnset", self.TheTutorialMisery )
+        RunConsoleCommand( "huntersglee_misery", self.TheTutorialMisery )
 
     end
     -- spawn in dead if round didn't JUST start right now
@@ -260,7 +260,7 @@ net.Receive( "glee_tutorial_jumpin", function( _, ply )
     permaPrint( "GLEE: ", ply, "CHOSE A REAL MISERY" )
 
     jumpedInSteamID = ply:SteamID()
-    RunConsoleCommand( "huntersglee_spawnset", "hunters_glee" )
+    RunConsoleCommand( "huntersglee_misery", "hunters_glee" )
     GAMEMODE:LearnLesson( ply, "ExperiencedMiseryVote" ) -- skip the .tutorialExit options
 
     hook.Add( "terminator_enemythink", "glee_playTutorialHardOptionTrack", function( bot, spotted )
@@ -305,7 +305,7 @@ net.Receive( "glee_tutorial_goback", function( _, ply )
     if GAMEMODE:GetSpawnSet() ~= "hunters_glee" then return end
 
     permaPrint( "GLEE: ", ply, "WENT BACK TO THE INFERNAL HORDE" )
-    RunConsoleCommand( "huntersglee_spawnset", GAMEMODE.TheTutorialMisery )
+    RunConsoleCommand( "huntersglee_misery", GAMEMODE.TheTutorialMisery )
 
 end )
 

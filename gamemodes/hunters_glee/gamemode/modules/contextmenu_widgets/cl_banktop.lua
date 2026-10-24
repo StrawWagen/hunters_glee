@@ -538,15 +538,21 @@ end )
 -- Desktop Windows launcher mirrors taunt menu
 local dskW1080, dskH1080 = computeFrameSize1080p()
 local width, height = glee_sizeScaled( dskW1080, dskH1080 )
-list.Set( "DesktopWindows", "HuntersGlee_BankTop", {
+GM:DoGatedDesktopIcon( "HuntersGlee_BankTop", {
     title = "Bank Leaderboard",
     icon = "icon16/coins.png",
     width = width,
     height = height,
     onewindow = true,
     init = function( _, window )
-    if IsValid( window ) then window:Remove() end
+        if IsValid( window ) then window:Remove() end
         RunConsoleCommand( "glee_banktop_open" )
 
     end
+}, {
+    nw2Vars = { "Glee_HasBankAccount" },
+    canShow = function( me )
+        return me:BankHasAccount()
+
+    end,
 } )

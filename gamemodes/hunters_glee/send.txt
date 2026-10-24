@@ -13,10 +13,12 @@ gamemodes\hunters_glee\gamemode\modules\cl_spectateflashlight.lua
 
 gamemodes\hunters_glee\gamemode\modules\modelscale\cl_modelscale.lua
 
+gamemodes\hunters_glee\gamemode\modules\contextmenu_widgets\cl_desktopwindowgate.lua
 gamemodes\hunters_glee\gamemode\modules\contextmenu_widgets\cl_banktop.lua
 gamemodes\hunters_glee\gamemode\modules\contextmenu_widgets\cl_tauntmenu.lua
 gamemodes\hunters_glee\gamemode\modules\contextmenu_widgets\cl_settingsmenu.lua
 gamemodes\hunters_glee\gamemode\modules\contextmenu_widgets\cl_guiltchecker.lua
+gamemodes\hunters_glee\gamemode\modules\contextmenu_widgets\cl_miserynominations.lua
 gamemodes\hunters_glee\gamemode\modules\contextmenu_widgets\cl_desktopiconbackdrops.lua
 
 gamemodes\hunters_glee\gamemode\lib\sh_gleehelpers.lua
@@ -75,6 +77,7 @@ gamemodes\hunters_glee\gamemode\modules\firsttimeplayers\cl_spawnprotection.lua
 gamemodes\hunters_glee\gamemode\modules\firsttimeplayers\cl_gleetings.lua
 gamemodes\hunters_glee\gamemode\modules\firsttimeplayers\sh_firsttimeplayers.lua
 
+gamemodes\hunters_glee\gamemode\modules\clientsets\cl_clientsets.lua
 gamemodes\hunters_glee\gamemode\modules\lessons\cl_lessons.lua
 
 gamemodes\hunters_glee\gamemode\modules\unsandboxing\sh_unsandboxing.lua
@@ -89,11 +92,19 @@ gamemodes\hunters_glee\gamemode\modules\shopitems\sh_itemverification.lua
 gamemodes\hunters_glee\gamemode\modules\statuseffects\cl_statuseffects.lua
 gamemodes\hunters_glee\gamemode\modules\statuseffects\sh_statuseffectbase.lua
 
-gamemodes\hunters_glee\gamemode\modules\spawnset\cl_spawnsetvote.lua
-gamemodes\hunters_glee\gamemode\modules\spawnset\sh_spawnpoolutil.lua
-gamemodes\hunters_glee\gamemode\modules\spawnset\sh_spawnsetcontent.lua
-gamemodes\hunters_glee\gamemode\modules\spawnset\sh_sethelpers.lua
-gamemodes\hunters_glee\gamemode\modules\spawnset\sh_bosshandler.lua
+gamemodes\hunters_glee\gamemode\modules\spawnset\core\cl_spawnsetgobbler.lua
+gamemodes\hunters_glee\gamemode\modules\spawnset\core\sh_spawnsetlifecyclebase.lua
+gamemodes\hunters_glee\gamemode\modules\spawnset\core\sh_spawnsetregistry.lua
+gamemodes\hunters_glee\gamemode\modules\spawnset\core\sh_spawnsetcommands.lua
+gamemodes\hunters_glee\gamemode\modules\spawnset\runtime\sh_spawnpoolutil.lua
+gamemodes\hunters_glee\gamemode\modules\spawnset\runtime\sh_spawnsetcontent.lua
+gamemodes\hunters_glee\gamemode\modules\spawnset\runtime\sh_sethelpers.lua
+gamemodes\hunters_glee\gamemode\modules\spawnset\bosses\sh_bosshandler.lua
+gamemodes\hunters_glee\gamemode\modules\spawnset\vote\cl_spawnsetvote.lua
+gamemodes\hunters_glee\gamemode\modules\spawnset\vote\sh_spawnsetvote.lua
+gamemodes\hunters_glee\gamemode\modules\spawnset\nominate\cl_spawnsetnominate.lua
+gamemodes\hunters_glee\gamemode\modules\spawnset\nominate\sh_spawnsetnominate.lua
+gamemodes\hunters_glee\gamemode\modules\spawnset\seen\cl_seenmiseries.lua
 
 lua\autorun\client\cl_shadowedtextfunc.lua
 lua\autorun\sh_generic_progress.lua

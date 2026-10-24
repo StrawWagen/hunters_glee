@@ -291,6 +291,57 @@ documents.gleeful_envoy = function( _ply )
 
 end
 
+documents.miserynomination = function( _ply )
+    local termDays = realTimeDays( GAMEMODE.bankItems.miserynomination.lifetime )
+    local baseCost = GAMEMODE.MiseryNominationBaseCost
+    local blindMul = GAMEMODE.MiseryNominationBlindCostMul
+    local rarestChance = GAMEMODE.MiseryNominationRarestChance
+    local maxNominations = GAMEMODE:GetMiseryVoteMaxOptions()
+
+    local exampleChance = 25
+    local exampleRarity = math.Round( GAMEMODE:GetMiseryNominationRarityMul( exampleChance ), 2 )
+    local rarestRarity = math.Round( GAMEMODE:GetMiseryNominationRarityMul( rarestChance ), 2 )
+
+    return "PRIVILEGE OF NOMINATION:\nADDENDUM TO THE ACCOUNT AGREEMENT", {
+        {
+            heading = "GRANT",
+            body = "By this Addendum, the Bank grants the Account Holder the Privilege of Nomination (the \"Privilege\"): the right, upon further payment, to place a Misery of their choosing on the ballot of the next Misery vote. The Bank has no say in what wins. The democratic process is preserved, you simply buy a place on the ballot, and nothing more.",
+        },
+        {
+            heading = "NOMINATION",
+            body = table.concat( {
+                "(a) The Account Holder may hold one (1) nomination at a time.",
+                "(b) A nomination may not be made while a Misery vote is underway, for the Misery currently being suffered, or for a Misery another soul has already nominated.",
+                "(c) No more than " .. maxNominations .. " nominations may stand at once, that being the number of places on the ballot.",
+                "(d) Nominated Miseries are placed on the ballot before any other. The Bank makes no representation that anyone will vote for them.",
+            }, "\n" ),
+        },
+        {
+            heading = "FEES",
+            body = table.concat( {
+                "(a) Each nomination costs " .. baseCost .. " Score, multiplied by the nominated Misery's own multiplier, and by its rarity.",
+                "(b) Rarity is the square root of 100, divided by the Misery's percent chance to appear on a ballot. A Misery offered " .. exampleChance .. "% of the time costs " .. exampleRarity .. "x. The rarest, at " .. rarestChance .. "% or less, cost " .. rarestRarity .. "x, and no more.",
+                "(c) A Misery the Account Holder has never seen, being never suffered, never offered to them in a vote, and never nominated by them, costs " .. blindMul .. "x again. Nominating it counts as seeing it. The Bank charges for the introduction.",
+                "(d) Fees are paid in Score, at the time of nomination, and are not deposited into the Account.",
+            }, "\n" ),
+        },
+        {
+            heading = "FORFEITURE",
+            body = table.concat( {
+                "(a) A nomination is spent when the next Misery vote begins, whether or not it reaches the ballot.",
+                "(b) A nomination may be withdrawn at any time before then. Its fee is forfeit.",
+                "(c) Should the Account Holder disconnect, their nomination is suspended, and reinstated upon their return once the ballot has room for it. A suspended nomination is not spent by any vote held in their absence. It may still be withdrawn.",
+                "(d) The word \"refund\" retains the meaning given to it in the Account Agreement.",
+            }, "\n" ),
+        },
+        {
+            heading = "TERM",
+            body = "The Privilege lasts " .. termDays .. " Real-Time Day(s) from purchase, whether or not it is exercised.",
+        },
+    }
+
+end
+
 -- under every document. Fresh each call, the opener numbers headings in place
 local function generalProvisions()
     return {

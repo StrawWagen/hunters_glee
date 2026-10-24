@@ -319,6 +319,59 @@ concommand.Add( "glee_bank_printtop", function( ply )
     end
 end )
 
+-- admin tool: deletes a player's account, funds and items, so the bank's documents can be tested from scratch
+-- [caller, or "console"] = { steamID = who they asked to obliterate, expires = CurTime() }
+local pendingObliterations = {}
+local obliterateConfirmWindow = 30
+
+-- glee_bank_obliterate [player], defaults to whoever ran it. Offline players by SteamID
+-- Only obliterates when run twice in a row on the same target
+concommand.Add( "glee_bank_obliterate", function( ply, _, args )
+    if IsValid( ply ) and not ply:IsAdmin() then return end
+
+    local target, steamID = ply, IsValid( ply ) and ply:SteamID()
+    if args[1] then
+        target, steamID = GAMEMODE:FindPlayerByArg( args[1] )
+
+    end
+
+    if not steamID then
+        permaPrint( "GLEE: No player to obliterate the bank account of." )
+        return
+
+    end
+
+    local who = IsValid( target ) and target:Nick() or steamID
+    if not GAMEMODE.bankInfoTable.accounts[steamID] then
+        permaPrint( "GLEE: " .. who .. " has no bank account." )
+        return
+
+    end
+
+    local callerKey = IsValid( ply ) and ply or "console"
+    local pending = pendingObliterations[callerKey]
+    if not pending or pending.steamID ~= steamID or pending.expires < CurTime() then
+        pendingObliterations[callerKey] = { steamID = steamID, expires = CurTime() + obliterateConfirmWindow }
+        local again = "glee_bank_obliterate" .. ( args[1] and ( " " .. args[1] ) or "" )
+        permaPrint( "GLEE: Run " .. again .. " again to confirm obliteration of " .. who .. "'s bank account." )
+        return
+
+    end
+
+    pendingObliterations[callerKey] = nil
+    bankFunctions.closeAccount( steamID )
+    hook.Run( "glee_bankAccountClose", steamID )
+    if IsValid( target ) then
+        bankFunctions.checkBankAccount( target )
+
+    end
+    somethingHasChanged = true
+    bankFunctions.updateBankTimer()
+
+    permaPrint( "GLEE: Obliterated " .. who .. "'s bank account." )
+
+end )
+
 
 local meta = FindMetaTable( "Player" )
 

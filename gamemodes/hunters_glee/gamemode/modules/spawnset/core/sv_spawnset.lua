@@ -9,9 +9,7 @@ local function errorCatchingMitt( errMessage )
 
 end
 
-GAMEMODE.RegisteredSpawnSets = GAMEMODE.RegisteredSpawnSets or {}
-
--- sibling data file in this same spawnset/ folder
+-- sibling data file in this same core/ folder
 local setDefaults, setIgnored = include( "sv_spawnsetdefaults.lua" )
 
 local spawnDefaults = {
@@ -313,11 +311,9 @@ function GM:SetSpawnSet( setName )
     self.CurrSpawnSet = spawnSet
 
     SetGlobalString( "GLEE_SpawnSetName", setName )
-    SetGlobalString( "GLEE_SpawnSetPrettyName", spawnSet.prettyName )
-    SetGlobalString( "GLEE_SpawnSetDescription", spawnSet.description or "" )
 
     if oldSetName ~= setName then
-        self.CurrSpawnSetLifecycle = include( "hunters_glee/gamemode/modules/spawnset/sh_spawnsetlifecyclebase.lua" )
+        self.CurrSpawnSetLifecycle = include( "hunters_glee/gamemode/modules/spawnset/core/sh_spawnsetlifecyclebase.lua" )
         self.CurrSpawnSetLifecycle:Apply( asRegistered )
 
         self:TellClientsSpawnsetActivated( setName )
@@ -346,36 +342,9 @@ function GM:RegisterSpawnSet( spawnSet )
 
 end
 
-function GM:GetSpawnSets()
-    return self.RegisteredSpawnSets
-
-end
-
 function GM:GetSpawnSet( setName )
     if setName then error( "GAMEMODE:GetSpawnSet is for getting the current spawnset's name, and data\nUse GAMEMODE:GetRegisteredSpawnSet" ) end
     return self.CurrSpawnSetName, self.CurrSpawnSet
-
-end
-
-function GM:GetRegisteredSpawnSet( setName )
-    local asRegistered = self.RegisteredSpawnSets[setName]
-    return asRegistered
-
-end
-
-function GM:GetPrettyNameOfSpawnSet( setName )
-    local asRegistered = self.RegisteredSpawnSets[setName]
-    if not asRegistered then return "" end
-    return asRegistered.prettyName
-
-end
-
-function GM:IsSpawnsetEasy( setName )
-    setName = setName or self.CurrSpawnSetName
-    local registered = self.RegisteredSpawnSets[setName]
-    if not registered then return end
-
-    return registered.easy
 
 end
 
@@ -398,7 +367,7 @@ local defaultSpawnSetName = GAMEMODE.TheTutorialMisery
 local function postSetSpawnset( new ) -- validate the spawnset cvar
     if not GAMEMODE:IsValidSpawnSet( new ) then
         if GAMEMODE:IsValidSpawnSet( defaultSpawnSetName ) then
-            RunConsoleCommand( "huntersglee_spawnset", defaultSpawnSetName )
+            RunConsoleCommand( "huntersglee_misery", defaultSpawnSetName )
             permaPrint( "Valid spawnsets are..." )
             for _, set in SortedPairsByMemberValue( GAMEMODE:GetSpawnSets(), "name" ) do
                 permaPrint( set.name )
@@ -412,8 +381,8 @@ local function postSetSpawnset( new ) -- validate the spawnset cvar
 end
 
 
-local spawnSetVar = CreateConVar( "huntersglee_spawnset", defaultSpawnSetName, { FCVAR_ARCHIVE, FCVAR_REPLICATED, FCVAR_NOTIFY }, "What spawnset the gamemode should use." )
-cvars.AddChangeCallback( "huntersglee_spawnset", function( _, _, new )
+local spawnSetVar = CreateConVar( "huntersglee_misery", defaultSpawnSetName, { FCVAR_ARCHIVE, FCVAR_REPLICATED, FCVAR_NOTIFY }, "What spawnset the gamemode should use." )
+cvars.AddChangeCallback( "huntersglee_misery", function( _, _, new )
     if not GAMEMODE.GobbledSpawnsets then -- wait until spawnsets are valid
         hook.Add( "glee_post_spawnsetgobble", "glee_validatecvar_delayed", function()
             postSetSpawnset( new )
@@ -439,7 +408,7 @@ function GM:SpawnSetInitialThink()
     if not self:IsValidSpawnSet( spawnSetPicked ) then
         permaPrint( "GLEE: INVALID SPAWNSET " .. spawnSetPicked )
         spawnSetPicked = defaultSpawnSetName
-        RunConsoleCommand( "huntersglee_spawnset", spawnSetPicked )
+        RunConsoleCommand( "huntersglee_misery", spawnSetPicked )
 
     end
 
@@ -462,7 +431,7 @@ hook.Add( "huntersglee_emptyserver", "glee_reset_spawnset", function()
     GAMEMODE.DeadServerPendingUpgrade = true
 
     permaPrint( "GLEE: empty server, setting to tutorial mode, will reset to " .. veteranSpawnSetName .. " if a veteran joins" )
-    RunConsoleCommand( "huntersglee_spawnset", defaultSpawnSetName )
+    RunConsoleCommand( "huntersglee_misery", defaultSpawnSetName )
 
 end )
 
@@ -483,7 +452,7 @@ hook.Add( "glee_full_load", "glee_resetspawnset_onjoin", function( ply )
         GAMEMODE.DeadServerPendingUpgrade = nil
 
         if not GAMEMODE:HasLearnedLesson( ply, "WonAHardMisery" ) then return end
-        RunConsoleCommand( "huntersglee_spawnset", veteranSpawnSetName )
+        RunConsoleCommand( "huntersglee_misery", veteranSpawnSetName )
 
         permaPrint( "GLEE: Updating spawnset, veteran is joining dead server" )
 

@@ -117,12 +117,21 @@ PANEL.OnHudStyleChanged = PANEL.ApplyPadding
 --[[---------------------------------------------------------
     frame:SizeToContents
     As wide as its widest docked child wants, then as tall as they stack at that width.
-    Keeps its centre where it was, so call Center after the first one.
+    Keeps its centre where it was, so call Center after the first one. Calls after the
+    first only ever grow it.
     @param maxHeight: Stops growing here, for contents in a scroll panel. Optional.
     @return: None
 --]]---------------------------------------------------------
 PANEL.SizeToContents = function( self, maxHeight )
     self:StopShaking() -- it keeps its centre, which mustn't be a shaken one
+
+    -- once open, contents that hid themselves, like rows filtered out by a search, mustn't shrink it
+    local minW, minH = 0, 0
+    if self._sizesToContents then
+        minW, minH = self:GetSize()
+
+    end
+
     self._sizesToContents  = true
     self._maxContentHeight = maxHeight
 
@@ -130,7 +139,7 @@ PANEL.SizeToContents = function( self, maxHeight )
     local left, top, right, bottom = self:GetDockPadding()
 
     local contentW = terminator_Extras.glee_DockedContentSize( self )
-    self:SetWide( contentW + left + right )
+    self:SetWide( math.max( contentW + left + right, minW ) )
 
     -- docks the children to that width now, since what they wrap to depends on it
     self:InvalidateLayout( true )
@@ -141,6 +150,8 @@ PANEL.SizeToContents = function( self, maxHeight )
         height = math.min( height, maxHeight )
 
     end
+
+    height = math.max( height, minH )
 
     self:SetTall( height )
     self:SetPos( centerX - self:GetWide() * 0.5, centerY - height * 0.5 )

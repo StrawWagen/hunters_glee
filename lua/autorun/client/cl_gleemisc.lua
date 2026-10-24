@@ -61,10 +61,14 @@ function terminator_Extras.easyClosePanel( pnl, callFirst )
         -- bail if they press escape
         if input_IsKeyDown( KEY_ESCAPE ) then ShutDownPanel( self ) return end
 
+        -- a letter typed into a text box isn't a keybind
+        local focus = vgui.GetKeyboardFocus()
+        local typing = IsValid( focus ) and focus:GetClassName() == "TextEntry"
+
         -- bail if they open any menu, or press use
         if clientsUseKey then
             if input_IsKeyDown( clientsUseKey ) then
-                if not pnl.keyWasDown[clientsUseKey] then
+                if not pnl.keyWasDown[clientsUseKey] and not typing then
                     ShutDownPanel( self )
                     return
 
@@ -80,7 +84,7 @@ function terminator_Extras.easyClosePanel( pnl, callFirst )
 
         if clientsMenuKey then
             if input_IsKeyDown( clientsMenuKey ) then
-                if not pnl.keyWasDown[clientsMenuKey] then
+                if not pnl.keyWasDown[clientsMenuKey] and not typing then
                     ShutDownPanel( self )
                     return
 

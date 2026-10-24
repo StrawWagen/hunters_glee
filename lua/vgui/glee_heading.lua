@@ -37,6 +37,17 @@ PANEL.SetText = function( self, text )
 
 end
 
+-- On the box, so it shows over the text and not the empty row beside it. false clears it
+PANEL.SetTooltip = function( self, text )
+    self._box:SetTooltip( text )
+
+    -- glee_panels start deaf to the mouse, and a deaf parent hides its children from the cursor too
+    local hearsMouse = text and true or false
+    self:SetMouseInputEnabled( hearsMouse )
+    self._box:SetMouseInputEnabled( hearsMouse )
+
+end
+
 PANEL.SizeToBox = function( self )
     self._box:AutoSize()
     self:SetTall( self._box:GetTall() )

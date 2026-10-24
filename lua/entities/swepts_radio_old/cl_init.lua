@@ -7,7 +7,7 @@ end
 
 
 --[[------------------------------------
-    The tuner: the station's name over a dial you drag to find one. No list, finding a
+    The tuner: the station's name over a dial you drag or scroll to find one. No list, finding a
     song is meant to take fiddling.
 
     While a drag is unsent, or the server hasn't caught up, it shows where the dial is.
@@ -98,6 +98,19 @@ local function openTuner( radio )
     function dial:OnReleased( position )
         pending = math.Round( position )
         releasedAt = CurTime()
+
+    end
+
+    -- a station per notch, from wherever the dial is headed
+    function frame:OnMouseWheeled( delta )
+        if dial:IsDragging() then return true end
+
+        local from = pending or radio:GetSong()
+        pending = math.Clamp( from + delta, 0, #radio.Stations )
+        releasedAt = CurTime()
+        dial:SetPosition( pending )
+
+        return true
 
     end
 

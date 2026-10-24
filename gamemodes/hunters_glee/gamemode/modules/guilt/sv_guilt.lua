@@ -499,16 +499,15 @@ end )
 concommand.Add( "glee_test_guilt_reset", function( caller, _, args )
     if IsValid( caller ) and not caller:IsAdmin() then return end
 
-    local steamId = args[1]
+    local ply, steamId = GAMEMODE:FindPlayerByArg( args[1] )
     if not steamId then
-        permaPrint( "Usage: glee_test_guilt_reset <steamid>" )
+        permaPrint( "Usage: glee_test_guilt_reset <player>, offline players by SteamID" )
         return
 
     end
 
     util.SetPData( steamId, "glee_persistentguilt", 0 )
 
-    local ply = player.GetBySteamID( steamId )
     if IsValid( ply ) then
         ply:SetNWFloat( "glee_persistentguilt_days", 0 )
         permaPrint( "GLEE: Reset guilt for " .. ply:Nick() .. " (" .. steamId .. ")" )
@@ -522,18 +521,17 @@ end )
 concommand.Add( "glee_test_guilt_adddays", function( caller, _, args )
     if IsValid( caller ) and not caller:IsAdmin() then return end
 
-    local steamId = args[1]
+    local ply, steamId = GAMEMODE:FindPlayerByArg( args[1] )
     local days = tonumber( args[2] )
-    if not steamId or not days then
-        permaPrint( "Usage: glee_test_guilt_adddays <steamid> <days>" )
+    if not args[1] or not days then
+        permaPrint( "Usage: glee_test_guilt_adddays <player> <days>" )
         return
 
     end
 
     -- IncrementPersistentGuilt works off a live player ( GetPData/SetPData/net ), so they must be online
-    local ply = player.GetBySteamID( steamId )
     if not IsValid( ply ) then
-        permaPrint( "GLEE: glee_test_guilt_adddays needs " .. steamId .. " to be online." )
+        permaPrint( "GLEE: glee_test_guilt_adddays needs " .. ( steamId or args[1] ) .. " to be online." )
         return
 
     end

@@ -77,8 +77,27 @@ function GM:GobbleSpawnsets()
 end
 
 
--- we never send spawnsets to clients, just the files to include() and the names we registered.
--- the names are so a client can tell when it has a spawnset the server doesn't
+local function writeOptionalFloat( num )
+    net.WriteBool( num ~= nil )
+    if num == nil then return end
+    net.WriteFloat( num )
+
+end
+
+-- the only spawnset fields clients get, everything else stays on the server.
+-- cl_spawnsetgobbler's readPublicSet mirrors this, field for field
+local function writePublicSet( spawnSet )
+    net.WriteString( spawnSet.name )
+    net.WriteString( spawnSet.prettyName )
+    net.WriteString( spawnSet.description )
+    net.WriteBool( spawnSet.easy == true )
+    net.WriteBool( spawnSet.tutorialExit == true )
+    writeOptionalFloat( spawnSet.chanceToBeVotable )
+    writeOptionalFloat( spawnSet.chanceToBeVotableWhenHard )
+
+end
+
+-- clients get the files to include(), and the public fields of every spawnset we registered
 util.AddNetworkString( "glee_spawnsetgobble" )
 
 function GM:UpdateSpawnsetsFor( plyOrPlys )
@@ -92,8 +111,8 @@ function GM:UpdateSpawnsetsFor( plyOrPlys )
         end
 
         net.WriteUInt( table.Count( self.RegisteredSpawnSets ), 16 )
-        for name, _ in pairs( self.RegisteredSpawnSets ) do
-            net.WriteString( name )
+        for _, spawnSet in pairs( self.RegisteredSpawnSets ) do
+            writePublicSet( spawnSet )
 
         end
 

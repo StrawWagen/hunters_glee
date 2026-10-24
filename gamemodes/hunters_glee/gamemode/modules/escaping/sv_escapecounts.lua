@@ -14,6 +14,7 @@ local function initTables()
         { "remained",       "INTEGER NOT NULL DEFAULT 0" },
         { "lastupdatetime", "INTEGER" },
         { "lastescapetime", "INTEGER" },
+        { "nominated",      "INTEGER NOT NULL DEFAULT 0" }, -- times it went into a vote as a nomination
     }
 
     local function ensureTable( tblName, keyCol, columns )
@@ -66,6 +67,25 @@ local function addCounts( tblName, keyCol, keyVal, escaped, remained )
     end
 end
 
+-- a row this creates has no escapes, deaths or times, so it reads the same as no row at all
+local function addNomination( tblName, keyCol, keyVal )
+    local result = sql.QueryTyped(
+        "INSERT INTO " .. tblName .. " (" .. keyCol .. ", nominated) VALUES (?, 1)" ..
+        " ON CONFLICT(" .. keyCol .. ") DO UPDATE SET nominated = nominated + 1",
+        keyVal
+    )
+
+    if result == false then
+        ErrorNoHaltWithStack( "GLEE escape counts: SQL error on " .. tblName .. ": " .. sql.LastError() )
+
+    end
+end
+
+function GM:CountSpawnsetNomination( spawnSetName )
+    addNomination( "glee_escape_by_spawnset", "spawnset", spawnSetName )
+
+end
+
 -- ["name"] = { escaped, remained, staleSince }
 GM.mapEscapeCountsCache = {}
 GM.spawnsetEscapeCountsCache = {}
@@ -115,7 +135,6 @@ end
 
 local rewardPerStaleWeek = 0.1
 local maxStaleReward = 2.5
-GM.easyCostSoftMax = 0.75
 
 local function escapeRatioToMultiplier( escaped, remained, staleSince )
     local base = 1

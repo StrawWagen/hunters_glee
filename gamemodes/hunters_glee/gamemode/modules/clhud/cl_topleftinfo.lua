@@ -21,7 +21,12 @@ local oldInfo         = "---"
 local infoColorExpiry = 0
 
 local function thinkRoundInfo( ply, cur )
-    local typeVal = GetGlobalString( "GLEE_SpawnSetPrettyName", "Hunter's Glee" )
+    local spawnSetName = GAMEMODE:GetSpawnSetName()
+    local typeVal = GAMEMODE:GetPrettyNameOfSpawnSet( spawnSetName )
+    if typeVal == "" then
+        typeVal = "Hunter's Glee"
+
+    end
     local timeVal = GetGlobalInt( "TERMHUNT_PLAYERTIMEVALUE", 0 )
     local infoVal = GetGlobalString( "TERMHUNT_PLAYERVALUENAME", "---" )
 

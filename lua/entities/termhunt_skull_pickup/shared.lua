@@ -487,8 +487,6 @@ hook.Add( "EntityTakeDamage", "glee_hadaskullpickup", function( target, dmg )
     if dmgPos:DistToSqr( theSkull:WorldSpaceCenter() ) > distToGotoSkull then return end
     theSkull:TakeDamageInfo( dmg )
 
-    return true
-
 end )
 
 function ENT:AttachToRagdollsSkull( ragdoll )

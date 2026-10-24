@@ -12,6 +12,28 @@ local panelTopGap = 250
 local titleText = "CHOOSE your Misery..."
 local urgentSeconds = 5 -- countdown flashes and clicks from here down
 
+-- tags the options that lead out of the difficulty you're in.
+-- the registry is empty until the first gobble lands, so an option can arrive unknown
+local function voteOptionData( name, leavingEasy )
+    local registered = GAMEMODE:GetRegisteredSpawnSet( name )
+    if not registered then
+        return { name = name, prettyName = name, description = "" }
+
+    end
+
+    local prettyName = registered.prettyName
+    if leavingEasy and not registered.easy then
+        prettyName = prettyName .. " (HARD)"
+
+    elseif not leavingEasy and registered.easy then
+        prettyName = prettyName .. " (EASY)"
+
+    end
+
+    return { name = name, prettyName = prettyName, description = registered.description }
+
+end
+
 net.Receive( "glee_begin_spawnsetvote", function()
     local voteEnd = net.ReadInt( 20 )
     if not voteEnd then return end
@@ -19,12 +41,11 @@ net.Receive( "glee_begin_spawnsetvote", function()
     local tblCount = net.ReadInt( 16 )
     if not tblCount then return end
 
+    local leavingEasy = GAMEMODE:IsSpawnsetEasy()
+
     local options = {}
     for _ = 1, tblCount do
-        local currName = net.ReadString()
-        local currPrettyName = net.ReadString()
-        local currDescription = net.ReadString()
-        local data = { name = currName, prettyName = currPrettyName, description = currDescription }
+        local data = voteOptionData( net.ReadString(), leavingEasy )
         table.insert( options, data ) -- order matters
 
     end

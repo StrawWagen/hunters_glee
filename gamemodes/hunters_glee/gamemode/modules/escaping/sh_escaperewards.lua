@@ -1,4 +1,7 @@
 
+-- easy miseries' escape multipliers are soft clamped down to this, see sv_escapecounts
+GM.easyCostSoftMax = 0.75
+
 -- -1 on these convars means the default in code, so changing a default reaches servers that already archived the convar
 function GM.CreateDefaultingConVar( name, default, help )
     local cvar = CreateConVar( name, "-1", { FCVAR_ARCHIVE, FCVAR_REPLICATED }, help .. " -1 is default, " .. default, -1, 999999 )

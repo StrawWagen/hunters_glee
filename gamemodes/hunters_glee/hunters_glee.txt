@@ -43,7 +43,7 @@
         }
         5
         {
-            "name"        "huntersglee_spawnset"
+            "name"        "huntersglee_misery"
             "text"        "Misery"
             "help"        "What flavor of Misery to experience, eg. hunters_glee, jermas_glee"
             "type"        "Text"

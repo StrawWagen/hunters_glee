@@ -6,6 +6,7 @@ local day = 86400
 GAMEMODE:RegisterBankItem( "skull_gains", {} )
 GAMEMODE:RegisterBankItem( "skull_loophole", { lifetime = day * 2 } )
 GAMEMODE:RegisterBankItem( "gleeful_envoy", { lifetime = day * 14 } )
+GAMEMODE:RegisterBankItem( "miserynomination", { lifetime = day * 28 } )
 
 -- eg "1d 23h", "4h 12m", "9m"
 local function formatTimeLeft( seconds )
@@ -527,6 +528,42 @@ local items = {
             timer.Simple( 0.05, function()
                 if not IsValid( purchaser ) then return end
                 purchaser:GiveBankItem( "gleeful_envoy" )
+
+            end )
+        end,
+    },
+    -- TODO: placeholder, needs its real desc
+    ["bankmiserynomination"] = {
+        name = "Privilege of\nNomination",
+        desc = function()
+            local termDays = math.Round( GAMEMODE.bankItems.miserynomination.lifetime / day, 1 )
+            return table.concat( {
+                "A bank account add-on\n",
+                "Nominate any Misery of your choice...\nTo appear in the next upcoming Misery Vote\n",
+                "Lasts " .. termDays .. " real-time days.",
+            } )
+
+        end,
+        shCost = 5000,
+        cooldown = 0,
+        tags = { "BANK", "BankItem" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_INACTIVE,
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = 1500,
+        shPurchaseCheck = { hasBankAccount, function( purchaser )
+            local timeLeft = purchaser:BankItemTimeLeft( "miserynomination" )
+            if timeLeft then return false, "You already hold the Privilege.\nYour term ends in " .. formatTimeLeft( timeLeft ) .. "." end
+            return true
+
+        end },
+        shCanShowInShop = { hasBankAccount },
+        clDocument = "miserynomination",
+        svOnPurchaseFunc = function( purchaser )
+            timer.Simple( 0.05, function()
+                if not IsValid( purchaser ) then return end
+                purchaser:GiveBankItem( "miserynomination" )
 
             end )
         end,

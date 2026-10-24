@@ -1028,7 +1028,7 @@ local SCORE_BOARD = {
         local mapMulText = math.Round( mapMul, 2 ) .. "x"
         self.MapMultiplierLabel:SetText( mapMulText )
 
-        local spawnsetPrettyName  = GetGlobalString( "GLEE_SpawnSetPrettyName", "" )
+        local spawnsetPrettyName  = GAMEMODE:GetPrettyNameOfSpawnSet( currentSpawnset )
         local spawnsetDescription = GAMEMODE:GetSpawnSetDescription()
         local spawnsetTooltip     = spawnsetDescription .. "\nLeft click to copy identifier"
         self.SpawnSetLabel:SetText( spawnsetPrettyName )

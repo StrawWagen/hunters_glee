@@ -735,35 +735,12 @@ function GM:SpectateThing( ply, thing, msg )
 
 end
 
--- spectate player by steamid ( left click on players names in tab menu )
+-- left click on players names in tab menu
 concommand.Add( "glee_spectate_player", function( ply, _cmd, args )
     if not IsValid( ply ) then return end
     if ply.termHuntTeam == GAMEMODE.TEAM_PLAYING then return end
-    if not args[1] then return end
 
-    local ID = args[1]
-    local targetPly = nil
-    if string.StartsWith( ID, "STEAM_" ) then
-        -- steamid
-        for _, checkPly in ipairs( player.GetAll() ) do
-            if checkPly:SteamID() == ID then
-                targetPly = checkPly
-                break
-
-            end
-        end
-    else-- userid
-        local userIDNum = tonumber( ID )
-        if not userIDNum then return end
-        for _, checkPly in ipairs( player.GetAll() ) do
-            if checkPly:UserID() == userIDNum then
-                targetPly = checkPly
-                break
-
-            end
-        end
-    end
-
+    local targetPly = GAMEMODE:FindPlayerByArg( args[1] )
     if not IsValid( targetPly ) then return end
     if targetPly:Health() <= 0 then return end
     GAMEMODE:SpectateThing( ply, targetPly )

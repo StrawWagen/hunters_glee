@@ -1,6 +1,5 @@
 local defaultDuration = CreateConVar( "hunterslglee_modevote_duration", 20, FCVAR_ARCHIVE, "Default duration of the Misery vote" )
 local easyDurationMul = CreateConVar( "hunterslglee_modevote_easydurationmul", 2, FCVAR_ARCHIVE, "How much to mul the duration of Misery votes when leaving an easy mode?" )
-local defaultMaxOptions = CreateConVar( "hunterslglee_modevote_maxoptions", 6, FCVAR_ARCHIVE, "Amount of options that show up in the Misery vote", 2, 9 )
 
 local GM = GM or GAMEMODE
 
@@ -38,8 +37,9 @@ function spawnSetVote:BeginVote( duration, maxOptions, toAdd )
 
     currVote.voteEnd = CurTime() + duration
     currVote.votes = {}
+    SetGlobal2Float( "glee_MiseryVoteEnd", currVote.voteEnd )
 
-    maxOptions = maxOptions or defaultMaxOptions:GetInt()
+    maxOptions = maxOptions or GAMEMODE:GetMiseryVoteMaxOptions()
     maxOptions = math.Round( maxOptions )
     maxOptions = math.Clamp( maxOptions, 2, 9 )
 
@@ -64,6 +64,23 @@ function spawnSetVote:BeginVote( duration, maxOptions, toAdd )
 
         toBrowse[currentSpawnsetName] = nil -- remove current mode from options
 
+        -- paid for, so they're in before anything is picked at random
+        for steamID64, nomination in pairs( GAMEMODE:SpendMiseryNominations() ) do
+            local setName = nomination.setName
+            local nominated = toBrowse[setName] -- nil if it became the current misery since, or stopped being registered
+            local madeBallot = nominated ~= nil and #toAdd < maxOptions
+
+            if madeBallot then
+                toBrowse[setName] = nil
+                table.insert( toAdd, nominated )
+                GAMEMODE:CountSpawnsetNomination( setName )
+
+            end
+
+            GAMEMODE:NotifyMiseryNominationSpent( steamID64, setName, madeBallot )
+
+        end
+
         while table.Count( toBrowse ) > 0 do
             if ( #toAdd + 1 ) > maxOptions then break end
 
@@ -78,13 +95,8 @@ function spawnSetVote:BeginVote( duration, maxOptions, toAdd )
 
             local optionsMul = GAMEMODE:GetSpawnsetsEscapeMultiplier( key )
             local easy = option.easy
-            local hardThresh = easy and GAMEMODE.easyCostSoftMax or 1
 
-            local chance = option.chanceToBeVotable
-            if option.chanceToBeVotableWhenHard and optionsMul >= hardThresh then -- make spawnsets fade into the background if they aren't challenging people
-                chance = option.chanceToBeVotableWhenHard
-
-            end
+            local chance = GAMEMODE:GetSpawnsetVotableChance( key )
 
             if isnumber( chance ) and chance < rareChance then -- if rtm is being done a bunch of times, make rare ones more common
                 local added = GAMEMODE.glee_ConsecutiveSpawnsetVotes * chancePerConsecutiveVote
@@ -145,21 +157,20 @@ function spawnSetVote:BeginVote( duration, maxOptions, toAdd )
             table.insert( toAdd, option )
 
         end
+    else
+        -- a ballot handed in, like sv_rtm's first one out of the tutorial, has no room for nominations
+        for steamID64, nomination in pairs( GAMEMODE:GetMiseryNominations() ) do
+            local nominator = player.GetBySteamID64( steamID64 )
+            if not IsValid( nominator ) then continue end
+
+            nominator:PrintMessage( HUD_PRINTTALK, "Your nomination of " .. GAMEMODE:GetPrettyNameOfSpawnSet( nomination.setName ) .. " is held for the next Misery vote." )
+
+        end
     end
 
     for _, set in SortedPairsByMemberValue( toAdd, "prettyName" ) do -- sorted so its alphabetical
-        local prettyName = set.prettyName
-        if wantsOtherEasyOnes and not set.easy then
-            prettyName = prettyName .. " (HARD)"
-
-        elseif not wantsOtherEasyOnes and set.easy then
-            prettyName = prettyName .. " (EASY)"
-
-        end
         local data = {
             name = set.name,
-            prettyName = prettyName,
-            description = set.description,
         }
         table.insert( optionsSeq, data )
         options[set.name] = data
@@ -168,13 +179,19 @@ function spawnSetVote:BeginVote( duration, maxOptions, toAdd )
 
     GAMEMODE:SyncEscapeMultipliersForSpawnsets( table.GetKeys( options ) )
 
+    for _, ply in ipairs( player.GetHumans() ) do
+        for setName, _ in pairs( options ) do
+            GAMEMODE:MarkMiserySeen( ply, setName )
+
+        end
+    end
+
+    -- clients look up everything else about each option in their spawnset registry
     net.Start( "glee_begin_spawnsetvote" )
         net.WriteInt( currVote.voteEnd, 20 ) -- overflows with 6d uptime, servers are never up that long
         net.WriteInt( #optionsSeq, 16 )
-        for _, data in pairs( optionsSeq ) do
+        for _, data in ipairs( optionsSeq ) do
             net.WriteString( data.name )
-            net.WriteString( data.prettyName )
-            net.WriteString( data.description )
 
         end
     net.Send( player.GetAll() )
@@ -209,7 +226,7 @@ end
 
 local function applyVotedSpawnSet( set )
     GAMEMODE.rtmWaitingForRoundEnd = nil
-    game.ConsoleCommand( "huntersglee_spawnset " .. set .. "\n" )
+    game.ConsoleCommand( "huntersglee_misery " .. set .. "\n" )
     huntersGlee_Announce( player.GetAll(), 150, 3, "NEW MISERY..." )
     timer.Simple( 2, function()
         huntersGlee_AnnounceDramatic( player.GetAll(), 1001, 5, GAMEMODE:GetPrettyNameOfSpawnSet( set ) .. "\nis your new Misery..." )
@@ -292,6 +309,7 @@ function spawnSetVote:CancelVote()
     if not spawnSetVote.currVote then return end
     spawnSetVote.currVote = nil
     timer.Remove( "glee_spawnsetvote_end" )
+    SetGlobal2Float( "glee_MiseryVoteEnd", 0 )
 
     net.Start( "glee_cancel_spawnsetvote" )
     net.Broadcast()

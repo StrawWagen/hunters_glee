@@ -1,4 +1,5 @@
 include( "shared.lua" )
+include( "modules/clientsets/cl_clientsets.lua" )
 include( "modules/lessons/cl_lessons.lua" )
 include( "modules/shop/cl_shopstandards.lua" ) -- has to load almost first
 include( "modules/shop/cl_shoppinggui.lua" )
@@ -9,8 +10,10 @@ include( "modules/cl_obfuscation.lua" )
 include( "modules/cl_fallingwind.lua" )
 include( "modules/killfeed/cl_killfeedoverride.lua" )
 include( "modules/cl_spectateflashlight.lua" )
-include( "modules/spawnset/cl_spawnsetvote.lua" )
-include( "modules/spawnset/cl_spawnsetgobbler.lua" )
+include( "modules/spawnset/vote/cl_spawnsetvote.lua" )
+include( "modules/spawnset/core/cl_spawnsetgobbler.lua" )
+include( "modules/spawnset/seen/cl_seenmiseries.lua" )
+include( "modules/spawnset/nominate/cl_spawnsetnominate.lua" )
 include( "modules/shopitems/cl_shopgobbler.lua" )
 include( "modules/music/cl_music.lua" )
 include( "modules/signalstrength/cl_signalstrength.lua" )
@@ -35,10 +38,12 @@ include( "modules/deadplayerfx/cl_deaddesaturation.lua" )
 
 include( "modules/bonemaniphandler/cl_bonemanip.lua" )
 
+include( "modules/contextmenu_widgets/cl_desktopwindowgate.lua" ) -- the widgets gate their icons through it
 include( "modules/contextmenu_widgets/cl_banktop.lua" )
 include( "modules/contextmenu_widgets/cl_tauntmenu.lua" )
 include( "modules/contextmenu_widgets/cl_settingsmenu.lua" )
 include( "modules/contextmenu_widgets/cl_guiltchecker.lua" )
+include( "modules/contextmenu_widgets/cl_miserynominations.lua" )
 include( "modules/contextmenu_widgets/cl_desktopiconbackdrops.lua" )
 
 local GAMEMODE = GAMEMODE or GM

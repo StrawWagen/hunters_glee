@@ -22,6 +22,52 @@ local noNavTextures = {
 
 }
 
+-- these walk every physobj, so ragdolls freeze and wake whole, not just their root bone
+
+local function entIsFrozen( ent )
+    for objIndex = 0, ent:GetPhysicsObjectCount() - 1 do
+        local obj = ent:GetPhysicsObjectNum( objIndex )
+        if IsValid( obj ) and obj:IsMotionEnabled() then return false end
+
+    end
+    return true
+
+end
+
+local function freezeEnt( ent )
+    for objIndex = 0, ent:GetPhysicsObjectCount() - 1 do
+        local obj = ent:GetPhysicsObjectNum( objIndex )
+        if IsValid( obj ) then
+            obj:EnableMotion( false )
+
+        end
+    end
+end
+
+local function wakeEnt( ent )
+    for objIndex = 0, ent:GetPhysicsObjectCount() - 1 do
+        local obj = ent:GetPhysicsObjectNum( objIndex )
+        if IsValid( obj ) then
+            obj:EnableMotion( true )
+            obj:Wake()
+
+        end
+    end
+end
+
+local function entSpeedSqr( ent )
+    local fastest = 0
+    for objIndex = 0, ent:GetPhysicsObjectCount() - 1 do
+        local obj = ent:GetPhysicsObjectNum( objIndex )
+        if IsValid( obj ) then
+            fastest = math.max( fastest, obj:GetVelocity():LengthSqr() )
+
+        end
+    end
+    return fastest
+
+end
+
 local function handleSleep( ent, cur, lagging ) -- think func
     if not IsValid( ent ) then return end
     if not ent.glee_smartSleeping then return end
@@ -33,7 +79,7 @@ local function handleSleep( ent, cur, lagging ) -- think func
 
     end
 
-    if ent:GetVelocity():LengthSqr() > slowEnoughToFreeze then
+    if entSpeedSqr( ent ) > slowEnoughToFreeze then
         ent.glee_smartSleep_nextCheck = cur + ent.glee_smartSleep_interval
         return
 
@@ -41,8 +87,7 @@ local function handleSleep( ent, cur, lagging ) -- think func
 
     if ent.huntersglee_breakablenails then return end
 
-    local obj = ent:GetPhysicsObject()
-    if IsValid( obj ) and obj:IsMotionEnabled() then
+    if not entIsFrozen( ent ) then
 
         local tr = terminator_Extras.getFloorTr( ent:GetPos() )
         local needsRemove
@@ -69,34 +114,40 @@ local function handleSleep( ent, cur, lagging ) -- think func
 
         -- capture supporters before motion is disabled
         local supportingEnts
-        local snapshot = obj:GetFrictionSnapshot()
         local supporterUnfrozen
-        for _, data in pairs( snapshot ) do
-            local otherEnt = data.Other:GetEntity()
-            if not IsValid( otherEnt ) then continue end
+        for objIndex = 0, ent:GetPhysicsObjectCount() - 1 do
+            local obj = ent:GetPhysicsObjectNum( objIndex )
+            if not IsValid( obj ) then continue end
 
-            -- can fail for like hook shaped props, but bleh
-            -- skip ents that are resting on top of us
-            if data.ContactPoint.z > ent:WorldSpaceCenter().z then continue end
+            local objsCenterZ = obj:LocalToWorld( obj:GetMassCenter() ).z
 
-            local unfrozen = data.Other:IsMotionEnabled()
-            supporterUnfrozen = supporterUnfrozen or unfrozen
+            for _, data in pairs( obj:GetFrictionSnapshot() ) do
+                local otherEnt = data.Other:GetEntity()
+                if not IsValid( otherEnt ) then continue end
+                if otherEnt == ent then continue end -- a ragdoll's bones touching each other
 
-            supportingEnts = supportingEnts or {}
-            local dependDat = {
-                ent = otherEnt,
-                id = otherEnt:GetCreationID(),
-            }
-            table.insert( supportingEnts, dependDat )
+                -- can fail for like hook shaped props, but bleh
+                -- skip ents that are resting on top of us
+                if data.ContactPoint.z > objsCenterZ then continue end
 
+                local unfrozen = data.Other:IsMotionEnabled()
+                supporterUnfrozen = supporterUnfrozen or unfrozen
+
+                supportingEnts = supportingEnts or {}
+                local dependDat = {
+                    ent = otherEnt,
+                    id = otherEnt:GetCreationID(),
+                }
+                table.insert( supportingEnts, dependDat )
+
+            end
         end
 
         -- if an ent supporting us is unfrozen, don't freeze ourselves
         -- unless the session is lagging
         if not lagging and supporterUnfrozen then return end
 
-        -- freeze it
-        obj:EnableMotion( false )
+        freezeEnt( ent )
         --debugoverlay.Cross( ent:GetPos(), 10, 5, color_white, true )
 
         -- then save supportingEnts if there are any
@@ -280,11 +331,8 @@ hook.Add( "Think", "glee_dynamicfreezing_laggingthink", function() -- deal damag
 
     end
 
-    -- freeze the ent
-    local entsObj = randomEnt:GetPhysicsObject()
-    if not IsValid( entsObj ) then return end
-    if not entsObj:IsMotionEnabled() then return end -- already frozen!
-    entsObj:EnableMotion( false )
+    if entIsFrozen( randomEnt ) then return end
+    freezeEnt( randomEnt )
 
     permaPrint( "GLEE: Really lagging, " .. lagType .. " freezing " .. tostring( randomEnt ) )
 
@@ -321,12 +369,8 @@ local function unchainSleeper( sleeper ) -- wakes stuff up
     if not sleeper.glee_smartSleeping then return end
     if sleeper.huntersglee_breakablenails then return end
 
-    local obj = sleeper:GetPhysicsObject()
-    if not IsValid( obj ) then return end
-
     sleeper.glee_smartSleep_nextCheck = CurTime() + sleeper.glee_smartSleep_interval * 2
-    obj:EnableMotion( true )
-    obj:Wake()
+    wakeEnt( sleeper )
 
     --debugoverlay.Cross( sleeper:GetPos(), 20, 5, color_white, true )
 
@@ -444,6 +488,12 @@ local function setupOnCreateHook()
 
             end
             terminator_Extras.SmartSleepEntity( ent, sleepTime )
+            return
+
+        end
+        -- many physobjs each, so always worth sleeping, unlike props
+        if class == "prop_ragdoll" then
+            terminator_Extras.SmartSleepEntity( ent, 20 )
             return
 
         end

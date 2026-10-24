@@ -18,6 +18,9 @@ local HEADER_FONT = "mediumLarge" -- a font role
 
 local FRAME_MAX_H_1080P = 775
 local METER_MIN_W_1080P = 200
+local SEARCH_WIDTH_1080P = 200
+
+local SEARCH_PLACEHOLDER = "Search..."
 
 -- the widest string a value column can print, reserved so no bar runs under a number
 local WIDEST_VALUE = "(0.00)"
@@ -428,6 +431,33 @@ local function buildSettingsMenu()
     local pad   = style:Metric( "blockPadding" )
     local gap   = style:Metric( "laneSpacing" )
 
+    -- outside the scroll, so the search stays put however far down the list is scrolled
+    local title = vgui.Create( "glee_heading", frame )
+    title:SetFont( HEADER_FONT )
+    title:SetText( "SETTINGS" )
+    title:Dock( TOP )
+    title:DockMargin( 0, 0, pad, gap ) -- lines the search up with the rows' right edge
+    title:SetMouseInputEnabled( true ) -- glee_panels start deaf, and a deaf parent hides the search from the cursor
+
+    local search = vgui.Create( "glee_textentry", title )
+    search:SetPlaceholder( SEARCH_PLACEHOLDER )
+    search:SetWide( style:Scaled( SEARCH_WIDTH_1080P ) )
+    search:Dock( RIGHT )
+    search:DockMargin( 0, 0, pad, 0 )
+    search:SetTooltip( "Search for a setting by name, or a section by its heading." )
+
+    function search:OnHudStyleChanged()
+        vgui.GetControlTable( "glee_textentry" ).OnHudStyleChanged( self )
+        self:SetWide( self:Style():Scaled( SEARCH_WIDTH_1080P ) )
+
+    end
+
+    -- so a narrow list can't squeeze the search over the heading
+    function title:GetContentWidth()
+        return vgui.GetControlTable( "glee_heading" ).GetContentWidth( self ) + gap + search:GetWide()
+
+    end
+
     local scroll = vgui.Create( "glee_scrollpanel", frame )
     scroll:Dock( FILL )
 
@@ -441,13 +471,20 @@ local function buildSettingsMenu()
     -- only a slider shares its row with a bar, so only sliders line their labels up
     local sliderColumn = {}
 
+    -- { name, heading, rows = { { row, label } } }, label lowercased for searching
+    local sections = {}
+
     for catIndex, cat in ipairs( settingsCategories ) do
         local heading = vgui.Create( "glee_heading", scroll )
         heading:SetFont( HEADER_FONT )
         heading:SetText( cat.name )
         dockIntoList( heading, catIndex > 1 and gap * 3 or nil )
 
+        local section = { name = string.lower( cat.name ), heading = heading, rows = {} }
+        table.insert( sections, section )
+
         for _, def in ipairs( cat.items ) do
+            local row
             if not GetConVar( def.cvar ) then
                 ErrorNoHaltWithStack( "glee settings menu: no such convar, " .. tostring( def.cvar ) .. "\n" )
 
@@ -455,13 +492,51 @@ local function buildSettingsMenu()
                 continue
 
             elseif def.type == "slider" then
-                dockIntoList( makeSliderRow( scroll, def, sliderColumn ) )
+                row = makeSliderRow( scroll, def, sliderColumn )
 
             elseif def.type == "check" then
-                dockIntoList( makeCheckRow( scroll, def ) )
+                row = makeCheckRow( scroll, def )
+
+            end
+
+            if row then
+                dockIntoList( row )
+                table.insert( section.rows, { row = row, label = string.lower( def.prettyName or def.cvar ) } )
 
             end
         end
+    end
+
+    -- a heading that matches shows its whole section. An empty filter matches everything
+    function search:OnChange( text )
+        local filter = string.lower( string.Trim( text ) )
+        local firstShown = true
+
+        for _, section in ipairs( sections ) do
+            local sectionMatches = string.find( section.name, filter, 1, true ) ~= nil
+            local anyRowShown = false
+
+            for _, entry in ipairs( section.rows ) do
+                local shown = sectionMatches or string.find( entry.label, filter, 1, true ) ~= nil
+                entry.row:SetVisible( shown )
+                anyRowShown = anyRowShown or shown
+
+            end
+
+            local headingShown = sectionMatches or anyRowShown
+            section.heading:SetVisible( headingShown )
+
+            -- the gap above a heading only separates it from the section before
+            if headingShown then
+                dockIntoList( section.heading, not firstShown and gap * 3 or nil )
+                firstShown = false
+
+            end
+        end
+
+        scroll:GetCanvas():InvalidateLayout()
+        scroll:InvalidateLayout()
+
     end
 
     frame:SizeToContents( math.min( style:Scaled( FRAME_MAX_H_1080P ), ScrH() * 0.9 ) )
