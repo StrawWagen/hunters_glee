@@ -519,6 +519,7 @@ Number values can be:
 | `chanceToBeVotable` | ❌ | Percent chance to appear in !rtm vote, 0-100, accepts float |
 | `chanceToBeVotableWhenHard` | ❌ | Percent chance to appear in !rtm when this misery's escape multiplier is 1x or more, for making spawnsets fade into the background when they no longer challenge the host |
 | `easy` | ❌ | Marks this as a beginner misery. Tagged `(EASY)` in the !rtm vote, and while an easy one is active the vote prefers offering other easy ones. Also soft-caps its escape reward multiplier |
+| `alwaysHordeSpawn` | ❌ | `true` makes every `.spawns` entry horde spawn, unless it sets its own `alwaysHordeSpawn = false` |
 | `Activate` | ❌ | Called when this becomes the active misery ( see Spawnset Lifecycle ) |
 | `OnRemove` | ❌ | Called when the misery changes away from this ( see Spawnset Lifecycle ) |
 
@@ -545,7 +546,7 @@ Number values can be:
 | `preSpawnedFuncs` | ❌ | Functions called before hunter:SetPos() and hunter:Spawn() : `function(spawnData, npc, spawnPos)`. spawnPos is 20 units above the nav area, hunters fall into place |
 | `postSpawnedFuncs` | ❌ | Functions called after hunter:Spawn() : `function(spawnData, npc)` |
 | `isBoss` | ❌ | `true` marks as boss; `false` opts out of auto-detection. When the boss is killed, all alive players escape. Auto-detected when `spawnSet.maxSpawnCount <= 1` (highest `difficultyCost` entry becomes boss). |
-| `alwaysHordeSpawn` | ❌ | `true` always reuses the last good spawn area, stacking spawns into a horde. Otherwise only waves of 8+ do |
+| `alwaysHordeSpawn` | ❌ | `true` always reuses the last good spawn area, stacking spawns into a horde. Otherwise only waves of 8+ do. `false` opts out of the spawnset's `alwaysHordeSpawn` |
 | `scaryAsATerminator` | ❌ | `true` makes players panic like it's a full hp terminator, for low hp npcs that are scarier than they look |
 | `removeAfterStillSeconds` | ❌ | Removes the hunter once it's stayed within 50 units of one spot for this many seconds. Only counts while the round is active |
 
