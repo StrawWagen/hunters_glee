@@ -102,4 +102,6 @@ net.Receive( "glee_clientsets", function( _, ply )
 
     state.keys = keys
 
+    hook.Run( "glee_clientset_synced", ply, set.name )
+
 end )

@@ -395,6 +395,15 @@ local function forceResetTutorial( ply )
 
 end
 
+local loadedIn = {}
+local lessonsArrived = {}
+
+local function markReadyForTutorial( ply )
+    if not loadedIn[ply] or not lessonsArrived[ply] then return end
+    spawned[ply] = true
+
+end
+
 -- they're done loading
 hook.Add( "glee_full_load", "glee_firsttimeplayercheck", function( ply )
     -- wait a couple seconds
@@ -408,10 +417,19 @@ hook.Add( "glee_full_load", "glee_firsttimeplayercheck", function( ply )
 
         end
 
-        -- and mark them as ready for the tutorial
-        spawned[ply] = true
+        loadedIn[ply] = true
+        markReadyForTutorial( ply )
 
     end )
+end )
+
+-- isEducated falls back on their lessons, the client sends them on its own schedule
+hook.Add( "glee_clientset_synced", "glee_firsttimeplayercheck", function( ply, setName )
+    if setName ~= "lessons" then return end
+
+    lessonsArrived[ply] = true
+    markReadyForTutorial( ply )
+
 end )
 
 hook.Add( "glee_test_tutorial", "firsttimeplayers", function()

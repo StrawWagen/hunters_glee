@@ -431,6 +431,7 @@ if SERVER then
     local tumorFirstDamage = 2.5
     local tumorDamageRamp = 0.75
     local tumorMaxBloodEffects = 8
+    local tumorSpreadsAboveDamage = 50
 
     GAMEMODE:RegisterStatusEffect( "the_growth",
         function( self, owner ) -- setup func
@@ -466,6 +467,25 @@ if SERVER then
                 self:PickTumorBone()
                 self.tumorSteps = 0
                 self.tumorDamageTicks = 0
+                self.spreadTumorSteps = {}
+
+            end
+
+            -- spreading ignores tumorBones, anything but the root goes once it's this far gone
+            function self:SpreadTumor()
+                local available = {}
+                for bone = 0, ( owner:GetBoneCount() or 0 ) - 1 do
+                    local boneName = owner:GetBoneName( bone )
+                    local isRoot = owner:GetBoneParent( bone ) < 0
+                    if not isRoot and boneName ~= self.tumorBoneName and not self.spreadTumorSteps[boneName] then
+                        available[#available + 1] = boneName
+
+                    end
+                end
+
+                if #available <= 0 then return end
+
+                self.spreadTumorSteps[available[math.random( 1, #available )]] = 0
 
             end
 
@@ -485,9 +505,26 @@ if SERVER then
                 owner:RemoveBoneManips( tumorManipKey )
                 owner:ApplyBoneScaleManip( tumorManipKey, bone, Vector( scale, scale, scale ) )
 
+                for boneName, steps in pairs( self.spreadTumorSteps ) do
+                    steps = steps + 1
+                    self.spreadTumorSteps[boneName] = steps
+
+                    local spreadBone = owner:LookupBone( boneName )
+                    if spreadBone then
+                        local spreadScale = 1 + steps * tumorGrowthPerStep
+                        owner:ApplyBoneScaleManip( tumorManipKey, spreadBone, Vector( spreadScale, spreadScale, spreadScale ) )
+
+                    end
+                end
+
                 if self.tumorSteps <= tumorStepsBeforeHurting then return end
 
                 local damage = tumorFirstDamage + self.tumorDamageTicks * tumorDamageRamp
+
+                if damage > tumorSpreadsAboveDamage then
+                    self:SpreadTumor()
+
+                end
 
                 if self.lastDeathsHintedAt ~= owner:Deaths() then
                     self.lastDeathsHintedAt = owner:Deaths()

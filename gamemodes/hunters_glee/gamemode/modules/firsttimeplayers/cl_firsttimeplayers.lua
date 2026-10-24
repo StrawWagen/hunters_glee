@@ -33,7 +33,11 @@ end
 
 local function markTutorialSeen()
     local level = tutorialLevel()
-    RunConsoleCommand( "cl_huntersglee_firsttimetutorial", tostring( level ) )
+    -- never lower it, seeing the singleplayer tutorial doesn't undo having seen the multiplayer one
+    if hasSeenTutorialVar:GetInt() < level then
+        RunConsoleCommand( "cl_huntersglee_firsttimetutorial", tostring( level ) )
+
+    end
     GAMEMODE:LearnLesson( tutorialLessonName( level ) )
 
 end
