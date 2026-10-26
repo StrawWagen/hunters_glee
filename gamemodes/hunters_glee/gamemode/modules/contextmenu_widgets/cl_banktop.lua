@@ -314,6 +314,13 @@ local function makeCarousel( parent )
     function carousel:OnHoveredChanged( _tile )
     end
 
+    -- how styles find a scrolling viewport, to fade out the smudges of tiles scrolled past its ends.
+    -- RNDX draws those with clipping off, so they'd show outside it
+    function carousel:GetCanvas()
+        return self
+
+    end
+
     function carousel:SetAccounts( accounts )
         for _, tile in ipairs( self.tiles ) do
             tile:Remove()
