@@ -292,6 +292,7 @@ local turretNames = {
     "ABUSED CHILD",
     "MAGIC POWERS",
     "ABANDONED INFANT",
+    "BARGAIN BIN BILLY",
 
     "BART",
     "HOMER",
@@ -331,6 +332,7 @@ local rareTurretNames = {
     "CAN OF WHOOPASS",
     "12 GNOMES IN A TRENCHCOAT",
     "SMARTER THAN THE AVERAGE TURRET",
+    "THE OFFENDER",
 
 }
 
@@ -382,6 +384,8 @@ function SWEP:CreateCarryEnt( pos )
 
     end )
     setAmmo( turret, maxAmmo )
+
+    turret.glee_TriggersForwardSpawns = true
 
     turret.Nick = function()
         return turret:GetNW2String( "glee_TurretName", "???" )

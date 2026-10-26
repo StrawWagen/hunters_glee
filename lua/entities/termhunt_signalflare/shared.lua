@@ -143,6 +143,7 @@ if SERVER and terminator_Extras then
     local heli_TooFarFromGround = 1250
     local heli_TooCloseToGround = 300
     local heli_ExitPos = Vector( 0, 0, -100 )
+    local heli_ExitBarId = "glee_rescueheli_exit"
     local heli_RopeOriginOffset = Vector( -7.1, 50.8, -40.5 )
 
     -- hullsize for finding a corridor from flare to sky 
@@ -846,13 +847,43 @@ if SERVER and terminator_Extras then
             end
         end )
 
-        -- don't exit IMMEDIATELY after entering
-        hook.Add( "CanExitVehicle", heli, function( self, vehicle, ply )
+        -- only the hold-use below gets anyone out, ExitVehicle bypasses this
+        hook.Add( "CanExitVehicle", heli, function( self, vehicle )
+            if vehicle:GetParent() ~= self then return end
+            return false
+
+        end )
+
+        hook.Add( "PlayerEnteredVehicle", heli, function( self, ply, vehicle )
+            if vehicle:GetParent() ~= self then return end
+            ply.glee_heliExitArmed = nil
+            ply.glee_heliExitHolding = nil
+
+        end )
+
+        hook.Add( "VehicleMove", heli, function( self, ply, vehicle, mv )
             if vehicle:GetParent() ~= self then return end
 
-            local nextInteract = ply.glee_nextHeliSeatInteract or 0
-            if CurTime() < nextInteract then return false end
-            ply.glee_nextHeliSeatInteract = CurTime() + 1
+            if not mv:KeyDown( IN_USE ) then
+                ply.glee_heliExitArmed = true
+                if ply.glee_heliExitHolding then
+                    ply.glee_heliExitHolding = nil
+                    generic_KillProgressBar( ply, heli_ExitBarId )
+
+                end
+                return
+
+            end
+            -- still holding the use that boarded
+            if not ply.glee_heliExitArmed then return end
+
+            ply.glee_heliExitHolding = true
+            local progress = generic_WaitForProgressBar( ply, heli_ExitBarId, 0.1, 7, { progInfo = "Leaving the heli..." } )
+            if progress < 100 then return end
+
+            generic_KillProgressBar( ply, heli_ExitBarId )
+            ply.glee_heliExitHolding = nil
+            ply:ExitVehicle()
 
         end )
 

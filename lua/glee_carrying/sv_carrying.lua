@@ -164,6 +164,27 @@ hook.Add( "AllowPlayerPickup", "glee_carrying_wheelonly", function( _, ent )
 
 end )
 
+-- The engine's +use can land on what they carry. Swapped for what they're aiming at past it
+hook.Add( "FindUseEntity", "glee_carrying_notowncarried", function( ply, defaultEnt )
+    if not IsValid( defaultEnt ) or not glee_Carrying.IsCarriedBy( defaultEnt, ply ) then return end
+
+    local shootPos = ply:GetShootPos()
+    local tr = util.TraceLine( {
+        start = shootPos,
+        endpos = shootPos + ply:GetAimVector() * glee_Carrying.UseRange,
+        filter = glee_Carrying.GetCarrierTraceFilter( ply ),
+    } )
+
+    -- NULL isn't an answer to the engine, it keeps its own pick, so the PlayerUse below refuses that
+    if IsValid( tr.Entity ) then return tr.Entity end
+
+end )
+
+hook.Add( "PlayerUse", "glee_carrying_notowncarried", function( ply, used )
+    if glee_Carrying.IsCarriedBy( used, ply ) then return false end
+
+end )
+
 
 -- Lifted with use, reload stashes it ----------------------------------------
 

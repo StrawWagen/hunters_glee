@@ -116,6 +116,15 @@ bankFunctions.updateOwnerName = function( account, ownerEnt )
 
 end
 
+-- cl_playermodel is a name, and one this server doesn't know would translate to kleiner, so the last known path is kept instead
+bankFunctions.updateOwnerModel = function( account, ownerEnt )
+    local name = ownerEnt:GetInfo( "cl_playermodel" )
+    if not player_manager.AllValidModels()[name] then return end
+
+    account.modelPath = player_manager.TranslatePlayerModel( name )
+
+end
+
 bankFunctions.setAccountsFunds = function( account, newFunds )
     -- store rounded to 1 decimal place, so the saved bank data file stays readable
     newFunds = math.Round( newFunds, 1 )
@@ -164,6 +173,7 @@ bankFunctions.createAccount = function( ply )
     account.creationTime = os.time()
     account.lastCharge = account.creationTime
     account.ownersName = ply:Nick()
+    bankFunctions.updateOwnerModel( account, ply )
     GAMEMODE.bankInfoTable.accounts[ply:SteamID()] = account
 
 end
@@ -267,6 +277,15 @@ hook.Add( "PlayerInitialSpawn", "glee_updateplybankstuff", function( spawned )
     end )
 end )
 
+-- a new cl_playermodel only takes effect on spawning
+hook.Add( "PlayerSpawn", "glee_updatebankownermodel", function( spawned )
+    local account = GAMEMODE.bankInfoTable.accounts[spawned:SteamID()]
+    if not account then return end
+
+    bankFunctions.updateOwnerModel( account, spawned )
+
+end )
+
 hook.Add( "glee_roundstatechanged", "glee_validatebank_roundchangestates", bankFunctions.validateBank )
 
 local nextSend = 0
@@ -284,6 +303,7 @@ net.Receive( "glee_requestallbankaccounts", function( _, ply )
         net.WriteString( ownersId ) -- steamid
         net.WriteString( value.ownersName or "Unknown" )
         net.WriteUInt( value.funds or 0, 32 )
+        net.WriteString( value.modelPath or "" )
 
     end
     net.Send( ply )

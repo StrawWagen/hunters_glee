@@ -164,10 +164,11 @@ function glee_Carrying.InUseRange( ply, ent, slack )
 
 end
 
--- Alive, and the action's CanUseAction allows it. Without a CanUseAction, every action's allowed.
--- A refusal passes on CanUseAction's reason, when it gives one. PickUpAction's always CanCarry's
+-- Alive, not carrying it, and the action's CanUseAction allows it. Without a CanUseAction, every action's
+-- allowed. A refusal passes on CanUseAction's reason, when it gives one. PickUpAction's always CanCarry's
 function glee_Carrying.CanPick( ply, ent, key )
     if not ply:Alive() then return false end
+    if glee_Carrying.IsCarriedBy( ent, ply ) then return false end
     if key == glee_Carrying.PickUpAction.key then return glee_Carrying.CanCarry( ply, ent ) end
 
     local def = getDef( ent )
@@ -253,6 +254,11 @@ local function getCarrier( ent )
 
 end
 
+function glee_Carrying.IsCarriedBy( ent, ply )
+    return getCarrier( ent ) == ply
+
+end
+
 -- owned by ply, or by something they own, like a projectile some SWEPs give to themselves
 local function isOwnedBy( ent, ply )
     local owner = ent:GetOwner()
@@ -320,6 +326,22 @@ function glee_Carrying.GetCarriedWeapons( ply )
     end
 
     return carried
+
+end
+
+-- A trace filter of them and everything they carry. A filter table doesn't skip what they own, as one
+-- entity does serverside, and clientside not even one entity does. A new table each call
+function glee_Carrying.GetCarrierTraceFilter( ply )
+    local filter = { ply }
+    for _, wep in ipairs( glee_Carrying.GetCarriedWeapons( ply ) ) do
+        local carried = wep:GetCarriedEnt()
+        if IsValid( carried ) then
+            filter[#filter + 1] = carried
+
+        end
+    end
+
+    return filter
 
 end
 
@@ -466,25 +488,18 @@ function glee_Carrying.ElitesBoneMods( armsInward, leftHandRoll, rightHandRoll )
     }
 end
 
--- What's in their hands can't be switched away from, onto their back, when their back's full or their
--- carry rules give them none. Shared, so prediction agrees
-hook.Add( "PlayerSwitchWeapon", "glee_carrying_handsfull", function( ply, oldWep, newWep )
-    if not IsValid( oldWep ) or not oldWep.IsGleeBackpackable then return end
-    if not IsValid( oldWep:GetCarriedEnt() ) then return end
-
-    -- nothing goes on their back at all, what's in their hands stays there till it's put down
-    if glee_Carrying.GetCarryRules( ply ).backSlots <= 0 then
-        if SERVER then glee_Carrying.HintCantBackpack( ply ) end
-        return true
-
-    end
+-- Whether what's in their hands, inHands, can go on their back as they switch to newWep. False and
+-- "noback" when their carry rules give them none, false and "backfull" when something's already there.
+-- Shared, so prediction agrees
+function glee_Carrying.CanPutAway( ply, inHands, newWep )
+    if glee_Carrying.GetCarryRules( ply ).backSlots <= 0 then return false, "noback" end
 
     for _, wep in ipairs( glee_Carrying.GetCarriedWeapons( ply ) ) do
         -- switching to what's on the back swaps the two, that's fine
-        if wep ~= oldWep and wep ~= newWep then
-            if SERVER then glee_Carrying.HintHandsFull( ply ) end
-            return true
+        if wep ~= inHands and wep ~= newWep then return false, "backfull" end
 
-        end
     end
-end )
+
+    return true
+
+end

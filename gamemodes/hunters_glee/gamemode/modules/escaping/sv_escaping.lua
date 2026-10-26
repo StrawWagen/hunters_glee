@@ -192,6 +192,21 @@ hook.Add( "glee_rescueheliescape", "glee_escapeviarescueheli", function( heli )
 
 end )
 
+hook.Add( "PlayerEnteredVehicle", "glee_rescueheli_entertime", function( ply, vehicle )
+    if not vehicle.isARescueHeliSeat then return end
+    ply.glee_rescueHeliEnterTime = CurTime()
+
+end )
+
+-- base toggles third person on crouch, blocked briefly after boarding the heli
+local heliThirdPersonBlockTime = 5
+
+function GM:VehicleMove( ply, vehicle, mv )
+    if vehicle.isARescueHeliSeat and ( ply.glee_rescueHeliEnterTime or 0 ) + heliThirdPersonBlockTime > CurTime() then return end
+    return self.BaseClass.VehicleMove( self, ply, vehicle, mv )
+
+end
+
 hook.Add( "glee_onescapehelicalled", "glee_escapehelicalled_lesson", function( caller )
     if not caller:IsPlayer() then return end
     GAMEMODE:LearnLesson( caller, "SuccessfullyCalledHeli" )

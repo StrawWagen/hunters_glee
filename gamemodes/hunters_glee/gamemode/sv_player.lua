@@ -3,7 +3,7 @@ local math = math
 
 local punishEscaping = CreateConVar( "huntersglee_punish_navmesh_escapers", 1, bit.bor( FCVAR_NOTIFY, FCVAR_ARCHIVE ), "Should the life of players who tread off the navmesh be sapped away?.", 0, 32 )
 
-local debuggingVar = CreateConVar( "huntersglee_debug_spawning", 0, "Debug the respawning of players" )
+local debuggingVar = CreateConVar( "huntersglee_debug_plyspawning", 0, "Debug the respawning of players" )
 local function debugPrint( ... )
     if not debuggingVar:GetBool() then return end
     permaPrint( ... )

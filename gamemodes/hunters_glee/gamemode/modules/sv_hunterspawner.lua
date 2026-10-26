@@ -27,6 +27,13 @@ local minute = 60
 local hardMinSpawnDist = 500 -- absolute minimum spawn distance
 local tooFarWhoCares = 5000^2 -- dont check visibility farther than this, leads to more spawns on big maps
 
+-- forward spawning, horde spawns pour in from where hunters snuck up on players, so breaches fill up
+local forwardSpawnChance = 50 -- percent of horde spawns that try forward areas first
+local forwardSpawnMinDist = 300 -- forward areas ignore dynamicTooCloseDist, they're close by design
+local forwardSpawnLifetime = 100 -- seconds until a forward area is forgotten
+local forwardSpawnMaxAreas = 30
+local forwardSampleInterval = 5 -- how stale a hunter's last unseen area can be, higher means further back from the breach
+
 -- the spawnset module ( sv_spawnset.lua ) hands us a freshly parsed set via this
 -- hook; we attach the spawner's own runtime fields to it, so the module stays
 -- ignorant of spawner internals while we keep the convenience of storing them
@@ -50,6 +57,9 @@ hook.Add( "glee_spawnset_parsed", "glee_spawner_runtimefields", function( spawnS
 
     spawnSet.staleSpawnAreasMask = {}
     spawnSet.staleSpawnAreasIndexed = {}
+
+    spawnSet.forwardSpawnAreasMask = {} -- area = when it's forgotten
+    spawnSet.forwardSpawnAreasIndexed = {}
 
 end )
 
@@ -548,6 +558,7 @@ local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they 
 
     local timerAdjusted
     local nextProgressSample = 0
+    local nextHiddenSample = 0
     local lastProgressDist
     local closingIn
     local timerName = "glee_fodderhunter_removestale_" .. hunter:GetCreationID()
@@ -587,7 +598,18 @@ local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they 
 
         end
 
-        local seesEnemy = ( hunter.glee_SeeEnemy or 0 ) > CurTime()
+        local krangledSeesEnemy = ( hunter.glee_SeeEnemy or 0 ) > CurTime()
+
+        if not hunter.IsSeeEnemy and not krangledSeesEnemy and nextHiddenSample < CurTime() then
+            if debuggingVar:GetBool() then
+                debugoverlay.Cross( hunter:WorldSpaceCenter(), 5, 1, Color( 255, 255, 0 ), false )
+
+            end
+            nextHiddenSample = CurTime() + forwardSampleInterval
+            hunter.glee_LastHiddenArea = hunter.TerminatorNextBot and hunter:GetTrueCurrentNavArea() or GAMEMODE:getNearestNav( hunter:GetPos(), 200 )
+
+        end
+
         local goodEnemy = IsValid( enemy ) and enemy.isTerminatorHunterChummy ~= hunter.isTerminatorHunterChummy
 
         if seesEnemy or goodEnemy or closingIn then
@@ -703,16 +725,32 @@ hook.Add( "PlayerDeath", "glee_fodderenemy_catchkrangled", function( died, infli
 
     end
 
+    GAMEMODE:RememberForwardSpawnArea( died, killer.glee_LastHiddenArea )
+
     killer.glee_FodderKills = ( killer.glee_FodderKills or 0 ) + 1
     killer.glee_StaleNoEnemyCount = math.min( -30, oldCount + -30 )
 
 end )
 
+-- anything holding ground against hunters, a hunter that gets close before dying to it makes a forward spawn area
+hook.Add( "PlayerInitialSpawn", "glee_triggersforwardspawns", function( ply )
+    ply.glee_TriggersForwardSpawns = true
+
+end )
+
+local boringKillDist = 750 -- hunters killed farther than this from their enemy weren't a threat
+
 hook.Add( "OnNPCKilled", "glee_goodkilledhunters", function( npc, attacker )
     if not npc:GetNW2Bool( "glee_IsHunter" ) then return end
+
+    local closeKill = npc.DistToEnemy and npc.DistToEnemy <= boringKillDist
+    if closeKill and attacker.glee_TriggersForwardSpawns then
+        GAMEMODE:RememberForwardSpawnArea( npc, npc.glee_LastHiddenArea )
+
+    end
+
     if attacker:IsPlayer() then -- only mark spawns as great if the hunter died to a PLAYER!
-        if not npc.DistToEnemy then return end
-        if npc.DistToEnemy > 750 then return end -- don't reward boring kills where the bot was far away
+        if not closeKill then return end
 
         GAMEMODE.waveExtraData.realKillCount = ( GAMEMODE.waveExtraData.realKillCount or 0 ) + 1
 
@@ -924,6 +962,8 @@ function GM:MarkSpawnAreaAsStale( area )
     spawnSet.staleSpawnAreasMask[area] = true
     spawnSet.staleSpawnAreasIndexed[#spawnSet.staleSpawnAreasIndexed + 1] = area
 
+    self:ForgetForwardSpawnArea( area, spawnSet )
+
 end
 
 function GM:UnmarkSpawnAreaAsStale( area )
@@ -940,6 +980,63 @@ function GM:UnmarkSpawnAreaAsStale( area )
         break
 
     end
+end
+
+function GM:RememberForwardSpawnArea( npc, area )
+    local _, spawnSet = self:GetSpawnSet()
+    if not spawnSet then return end
+    if not area or not IsValid( area ) then return end
+    if spawnSet.staleSpawnAreasMask[area] then return end
+
+    local alreadyRemembered = spawnSet.forwardSpawnAreasMask[area]
+    spawnSet.forwardSpawnAreasMask[area] = CurTime() + forwardSpawnLifetime
+    if alreadyRemembered then return end
+
+    if debuggingVar:GetBool() then
+        debugoverlay.Cross( npc:WorldSpaceCenter(), 30, 5, Color( 255, 255, 0 ), true )
+        debugoverlay.Line( npc:WorldSpaceCenter(), area:GetCenter(), 5, Color( 255, 255, 0 ), Color( 255, 255, 0 ), true )
+        local areaCenter = area:GetCenter()
+        debugoverlay.Box( areaCenter, area:GetCorner( 0 ) - areaCenter, area:GetCorner( 2 ) - areaCenter, 5, Color( 255, 255, 0, 50 ) )
+
+    end
+
+    local indexed = spawnSet.forwardSpawnAreasIndexed
+    indexed[#indexed + 1] = area
+    if #indexed > forwardSpawnMaxAreas then
+        self:ForgetForwardSpawnArea( indexed[1], spawnSet )
+
+    end
+end
+
+function GM:ForgetForwardSpawnArea( area, spawnSet )
+    if not spawnSet.forwardSpawnAreasMask[area] then return end
+    spawnSet.forwardSpawnAreasMask[area] = nil
+
+    for ind, checkArea in ipairs( spawnSet.forwardSpawnAreasIndexed ) do
+        if checkArea ~= area then continue end
+        table.remove( spawnSet.forwardSpawnAreasIndexed, ind )
+        break
+
+    end
+end
+
+-- forgets expired areas, then returns a random remembered one, or nil
+function GM:PickForwardSpawnArea( spawnSet )
+    local indexed = spawnSet.forwardSpawnAreasIndexed
+    local mask = spawnSet.forwardSpawnAreasMask
+    local cur = CurTime()
+    for ind = #indexed, 1, -1 do
+        local area = indexed[ind]
+        if not IsValid( area ) or mask[area] < cur then
+            mask[area] = nil
+            table.remove( indexed, ind )
+
+        end
+    end
+    if #indexed <= 0 then return end
+
+    return indexed[math.random( 1, #indexed )]
+
 end
 
 local up20 = Vector( 0, 0, 20 )
@@ -969,6 +1066,9 @@ function GM:MarchValidHunterPos( spawnEntry )
         hordeSpawn = waveSize >= 8 -- otherwise big waves
 
     end
+
+    -- fails > 200 is when the spawner starts breaking maxSpawnDist, forward areas are a better fallback than far ones
+    local tryForward = fails > 200 or ( hordeSpawn and math.random( 0, 100 ) < forwardSpawnChance )
 
     local preferredEFlags = spawnEntry.preferredEFlags
     local firmPreference = preferredEFlags and spawnEntry.firmPreferredEFlags
@@ -1046,8 +1146,17 @@ function GM:MarchValidHunterPos( spawnEntry )
 
         cost = cost + 0.1
         local currentArea
-        -- failing alot, try checking great spawn areas!
-        if fails > 10 and cost > tries * 0.75 and #spawnSet.greatSpawnAreasIndexed >= 1 then
+        local isForward
+        local forwardArea = tryForward and cost < tries * 0.5 and self:PickForwardSpawnArea( spawnSet )
+
+        if forwardArea then
+            currentArea = forwardArea
+            isForward = true
+
+        -- failing alot,
+        -- or breaking max spawn dist
+        -- prefer areas that spawned bots, that players killed
+        elseif ( breakingMaxDist or ( fails > 10 and cost > tries * 0.75 ) ) and #spawnSet.greatSpawnAreasIndexed >= 1 then
             currentArea = spawnSet.greatSpawnAreasIndexed[math.random( 1, #spawnSet.greatSpawnAreasIndexed )]
             breakingMaxDist = spawnSet.goodAreaBreakingMaxDist
 
@@ -1161,8 +1270,14 @@ function GM:MarchValidHunterPos( spawnEntry )
             end
         end
 
+        local tooCloseDist = dynamicTooCloseDist
+        if isForward then
+            tooCloseDist = forwardSpawnMinDist
+
+        end
+
         local tooFarDistAdjusted = dynamicTooFarDist
-        if fails > 200 or breakingMaxDist then
+        if not isForward and ( fails > 200 or breakingMaxDist ) then
             if not breakingMaxDist then
                 debugPrint( "!!!!!!!!!!BREAKING spawnSet.maxSpawnDist!!!!!!!!!!!!!!!" )
 
@@ -1207,7 +1322,7 @@ function GM:MarchValidHunterPos( spawnEntry )
 
             end
 
-            if distSqr < dynamicTooCloseDist^2 then -- dist check!
+            if distSqr < tooCloseDist^2 then -- dist check!
                 tooClose = true
                 break -- only break here so the justSpawnSomething doesnt spawn stuff next to people!!!!!
 
@@ -1223,6 +1338,31 @@ function GM:MarchValidHunterPos( spawnEntry )
         end
 
         cost = cost + 1
+
+        -- skips the cutoff marching and good area picking below, both are tuned for far spawns
+        if isForward then
+            -- forward areas are close to players, so catch ones that are just around the corner from them
+            if not visibleToAPly and nearestPlyPos then
+                for _, neighbor in ipairs( currentArea:GetAdjacentAreas() ) do
+                    if neighbor:IsVisible( nearestPlyPos ) then
+                        visibleToAPly = true
+                        break
+
+                    end
+                end
+            end
+
+            if visibleToAPly or tooClose or nearestDist > dynamicTooFarDist^2 then
+                self:ForgetForwardSpawnArea( currentArea, spawnSet )
+                continue
+
+            end
+
+            fails = 0
+            debugPrint( "forward spawn" )
+            return spawnPos, currentArea, true
+
+        end
 
         local goodConventional = not visibleToAPly and not tooClose and not tooFar -- great spot to spawn!
         local overFailed = fails > 800 or ( GAMEMODE.roundExtraData.hunterSpawnerOverFailed and fails > 200 )

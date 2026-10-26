@@ -75,6 +75,8 @@ SWEP.PlacedSound = {
 SWEP.PlacedUpOffset = 0 -- off the floor, along its slope, for a model whose bounds don't reach its real base
 SWEP.PlaceGhostAng = nil -- PlaceAng for the preview only, when its still pose sits differently than the placed entity's
 SWEP.PlaceMinFloorUp = 0.25 -- of the surface normal, steeper than this isn't a floor
+SWEP.PlaceCoreFraction = 0.5 -- of its narrowest width, how much of its middle has to be clear to place it
+SWEP.PlaceCoreLift = 18 -- step height, clutter under it lower than this doesn't block a place
 
 SWEP.Primary.ClipSize = -1
 SWEP.Primary.DefaultClip = -1
@@ -156,13 +158,34 @@ function SWEP:Deploy()
 
 end
 
-function SWEP:Holster()
+-- Refuses a switch when there's no room on the back, see glee_Carrying.CanPutAway. Here and not in a
+-- PlayerSwitchWeapon hook, any other addon's hook that returns a value there stops ours from running
+function SWEP:Holster( newWep )
+    local owner = self:GetOwner()
+    -- holstered as it's dropped or its owner dies, there's nothing left to put away
+    local puttingAway = IsValid( self:GetCarriedEnt() ) and IsValid( owner ) and owner:Alive()
+
+    if puttingAway and IsValid( newWep ) then
+        local canPutAway, reason = glee_Carrying.CanPutAway( owner, self, newWep )
+        if not canPutAway then
+            if SERVER then
+                if reason == "noback" then
+                    glee_Carrying.HintCantBackpack( owner )
+
+                else
+                    glee_Carrying.HintHandsFull( owner )
+
+                end
+            end
+            return false
+
+        end
+    end
+
     if SERVER then
         self.glee_PlaceHeld = nil
 
-        -- holstered as it's dropped or its owner dies, there's nothing left to put away
-        local owner = self:GetOwner()
-        if IsValid( self:GetCarriedEnt() ) and IsValid( owner ) and owner:Alive() then
+        if puttingAway then
             self:AttachCarried( self.WorldModelBackBone, self.WorldModelBackPos, self.WorldModelBackAng, self.WorldModelBackScale )
             self:SetOnBack( true )
 
@@ -257,21 +280,13 @@ local function averageFloorNormal( center, yawAng, mins, maxs, rise, filter )
 end
 
 -- Where it'd land: pos, ang, then the slope's angle before PlaceAng, for the ghost to apply its own.
--- On the floor the placer's aiming at, tilted to its slope, nil when there's no floor there or no
--- room for it. Fits the model at scale 1, so it's off for anything that was scaled before it was carried
+-- On the floor the placer's aiming at, tilted to its slope. Nil and why when it can't go there,
+-- "nofloor" or "blocked". Fits the model at scale 1, so it's off for anything that was scaled before it was carried
 function SWEP:GetPlacement( placer )
     local ent = self:GetCarriedEnt()
     if not IsValid( ent ) then return end
 
-    -- everything they carry, not just this. A filter table doesn't skip what the placer owns, as one entity does
-    local filter = { placer }
-    for _, wep in ipairs( glee_Carrying.GetCarriedWeapons( placer ) ) do
-        local carried = wep:GetCarriedEnt()
-        if IsValid( carried ) then
-            filter[#filter + 1] = carried
-
-        end
-    end
+    local filter = glee_Carrying.GetCarrierTraceFilter( placer )
     local shootPos = placer:GetShootPos()
 
     local floorTr = util.TraceLine( {
@@ -279,7 +294,7 @@ function SWEP:GetPlacement( placer )
         endpos = shootPos + placer:GetAimVector() * self.PlaceDistance,
         filter = filter,
     } )
-    if not floorTr.Hit or floorTr.HitNormal.z < self.PlaceMinFloorUp then return end
+    if not floorTr.Hit or floorTr.HitNormal.z < self.PlaceMinFloorUp then return nil, "nofloor" end
 
     local modelMins, modelMaxs = ent:GetModelBounds()
     local mins, maxs = placedBounds( modelMins, modelMaxs, self.PlaceAng )
@@ -289,20 +304,9 @@ function SWEP:GetPlacement( placer )
     local footprintRadius = math.max( -mins.x, maxs.x, -mins.y, maxs.y ) * math.sqrt( 2 )
     local rise = footprintRadius * math.sqrt( 1 - normalZ ^ 2 ) / normalZ + 1
 
-    -- room for it, dropped from above that so the slope itself isn't in the way
-    local resting = floorTr.HitPos - Vector( 0, 0, mins.z )
-    local roomTr = util.TraceHull( {
-        start = resting + Vector( 0, 0, rise ),
-        endpos = resting - Vector( 0, 0, rise ),
-        mins = mins,
-        maxs = maxs,
-        filter = filter,
-    } )
-    if roomTr.StartSolid then return end
-
     local yawAng = Angle( 0, placer:EyeAngles().y, 0 )
     local floorNormal = averageFloorNormal( floorTr.HitPos, yawAng, mins, maxs, rise, filter )
-    if not floorNormal or floorNormal.z < self.PlaceMinFloorUp then return end
+    if not floorNormal or floorNormal.z < self.PlaceMinFloorUp then return nil, "nofloor" end
 
     -- the placer's facing, laid flat along the slope
     local forward = yawAng:Forward()
@@ -310,7 +314,28 @@ function SWEP:GetPlacement( placer )
     local slopeAng = forward:AngleEx( floorNormal )
     local _, placedAng = LocalToWorld( vector_origin, self.PlaceAng, vector_origin, slopeAng )
 
-    return floorTr.HitPos + floorNormal * ( self.PlacedUpOffset - mins.z ), placedAng, slopeAng
+    local pos = floorTr.HitPos + floorNormal * ( self.PlacedUpOffset - mins.z )
+
+    -- Lenient on purpose, only its middle has to be clear, physics pushes the rest out of what it clips.
+    -- Square, so it's the same whichever way it faces
+    local coreCenter = ( mins + maxs ) * 0.5
+    coreCenter.z = 0
+    coreCenter:Rotate( yawAng )
+
+    local coreHalfWidth = math.min( maxs.x - mins.x, maxs.y - mins.y ) * 0.5 * self.PlaceCoreFraction
+    local coreTop = maxs.z - ( maxs.z - mins.z ) * 0.1 -- a ceiling it'd only brush doesn't block it
+    local coreBottom = math.min( mins.z + self.PlaceCoreLift, coreTop - 1 )
+
+    local coreTr = util.TraceHull( {
+        start = pos + coreCenter,
+        endpos = pos + coreCenter,
+        mins = Vector( -coreHalfWidth, -coreHalfWidth, coreBottom ),
+        maxs = Vector( coreHalfWidth, coreHalfWidth, coreTop ),
+        filter = filter,
+    } )
+    if coreTr.StartSolid then return nil, "blocked" end
+
+    return pos, placedAng, slopeAng
 
 end
 
@@ -778,9 +803,14 @@ end
 function SWEP:UpdatePlacementGhost()
     local ent = self:GetCarriedEnt()
     local pos, ang, slopeAng
+    self.glee_PlacementDenied = nil
     if self:IsPreviewingPlacement() then
         pos, ang, slopeAng = self:GetPlacement( LocalPlayer() )
+        if not pos then
+            self.glee_PlacementDenied = ang -- why, see GetPlacement
+            ang = nil
 
+        end
     end
 
     if pos and self.PlaceGhostAng then
@@ -851,6 +881,7 @@ end )
 
 function SWEP:HintPostStack()
     if self:IsPreviewingPlacement() and not IsValid( self.glee_PlacementGhost ) then
+        if self.glee_PlacementDenied == "blocked" then return true, "Something's in the way." end
         return true, "Aim at some nearby, flat floor."
 
     end

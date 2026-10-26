@@ -439,6 +439,7 @@ local function openMiseryNominations()
 
     -- sorted once every multiplier is in, so rows don't jump around while they arrive
     local sorted = false
+    local loading -- stands in for the list until then
 
     local function sortRows()
         table.sort( rows, cheapestFirst )
@@ -471,6 +472,12 @@ local function openMiseryNominations()
             sorted = true
             sortRows()
 
+            if IsValid( loading ) then
+                loading:Remove()
+                scroll:SetVisible( true )
+                frame:InvalidateLayout()
+
+            end
         end
 
         local slotText = slotsText()
@@ -540,6 +547,19 @@ local function openMiseryNominations()
     frame:SizeToContents( math.min( style:Scaled( MAX_HEIGHT_1080P ), ScrH() * 0.9 ) )
     frame:Center()
 
+    -- after sizing, so the frame is already as big as the full list it's waiting on
+    if not sorted then
+        scroll:SetVisible( false )
+
+        loading = vgui.Create( "glee_panel", frame )
+        loading:SetPaintBackground( false )
+        loading:SetFont( HEADER_FONT )
+        loading:SetContentColor( "text" )
+        loading:SetText( "Fetching Miseries..." )
+        loading:Dock( FILL )
+
+    end
+
     terminator_Extras.easyClosePanel( frame )
 
     me:EmitSound( "physics/wood/wood_crate_impact_soft3.wav", 50, 160, 0.45 )
@@ -585,11 +605,7 @@ GM:DoGatedDesktopIcon( "HuntersGlee_MiseryNominations", {
         RunConsoleCommand( "glee_miserynominations_open" )
 
     end
-}, {
-    -- sv_banking syncs bank items as NW2 bools, see cl_banking
-    nw2Vars = { "Glee_BankItem_" .. GM.MiseryNominationBankItem },
-    canShow = function( me )
-        return me:HasBankItem( GAMEMODE.MiseryNominationBankItem )
+}, function( me )
+    return me:HasBankItem( GAMEMODE.MiseryNominationBankItem )
 
-    end,
-} )
+end )

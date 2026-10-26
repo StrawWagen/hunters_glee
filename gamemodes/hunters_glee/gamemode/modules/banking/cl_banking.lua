@@ -57,9 +57,15 @@ net.Receive( "glee_requestallbankaccounts", function()
         local steamID = net.ReadString()
         local ownersName = net.ReadString()
         local funds = net.ReadUInt( 32 )
+        local modelPath = net.ReadString()
+        if modelPath == "" then
+            modelPath = nil -- an account whose owner hasn't spawned since the bank started keeping models
+
+        end
         accounts[steamID] = {
             ownersName = ownersName,
             funds = funds,
+            modelPath = modelPath,
 
         }
     end

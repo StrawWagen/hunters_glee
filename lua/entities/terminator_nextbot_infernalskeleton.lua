@@ -172,6 +172,8 @@ function ENT:PostHitObject( object, damage )
         end
     end
 
+    time = math.Clamp( time, 0, 15 )
+
     object:Ignite( time )
 
 end
@@ -517,7 +519,7 @@ function ENT:DoCustomTasks( defaultTasks )
                             chosenPos = areasCenter
                             chosenArea = area
                             data.NextWanderChooseTime = CurTime() + math.Rand( 2, 5 )
-                            debugoverlay.Line( self:WorldSpaceCenter(), chosenPos, 5, Color( 0, 255, 0 ), true )
+                            --debugoverlay.Line( self:WorldSpaceCenter(), chosenPos, 5, Color( 0, 255, 0 ), true )
                             break
 
                         end

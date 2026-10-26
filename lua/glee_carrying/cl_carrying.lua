@@ -99,11 +99,14 @@ local useWasDown = false
 local pressedEnt
 local pressedAt
 
--- What they're aiming at in use range, if it has actions
+-- What they're aiming at in use range, if it has actions. Never what they carry
 local function findTarget( ply )
-    -- cached for the frame, but it runs on as far as it can, so it's cut to use range here
-    local tr = ply:GetEyeTrace()
-    if tr.StartPos:DistToSqr( tr.HitPos ) > glee_Carrying.UseRange ^ 2 then return end
+    local shootPos = ply:EyePos()
+    local tr = util.TraceLine( {
+        start = shootPos,
+        endpos = shootPos + ply:GetAimVector() * glee_Carrying.UseRange,
+        filter = glee_Carrying.GetCarrierTraceFilter( ply ),
+    } )
 
     local ent = tr.Entity
     if not IsValid( ent ) or not glee_Carrying.GetUseActions( ent ) then return end
