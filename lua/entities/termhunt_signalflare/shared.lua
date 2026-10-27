@@ -834,6 +834,8 @@ if SERVER and terminator_Extras then
             if ent ~= self then return end
 
             if ply:KeyDown( IN_WALK ) then return end
+            -- PlayerUse fires every tick use is held, and leaving is done by holding use
+            if not ply:KeyPressed( IN_USE ) then return end
 
             local nextInteract = ply.glee_nextHeliSeatInteract or 0
             if CurTime() < nextInteract then return end
@@ -878,7 +880,7 @@ if SERVER and terminator_Extras then
             if not ply.glee_heliExitArmed then return end
 
             ply.glee_heliExitHolding = true
-            local progress = generic_WaitForProgressBar( ply, heli_ExitBarId, 0.1, 7, { progInfo = "Leaving the heli..." } )
+            local progress = generic_WaitForProgressBar( ply, heli_ExitBarId, 0.1, 7, { progInfo = "Exiting the heli..." } )
             if progress < 100 then return end
 
             generic_KillProgressBar( ply, heli_ExitBarId )
