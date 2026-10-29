@@ -515,6 +515,11 @@ if CLIENT then
     )
 end
 if SERVER then
+    local grigoriPanicStrength = 6 -- per second, panic drains 2.5 a second
+    local grigoriPanicRadius = 600
+    local grigoriIgniteRadius = 75
+    local grigoriIgniteDuration = 3
+
     local function isStillGoing()
         if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE or GAMEMODE:countHuntablePlayers() <= 0 then return false end
         return true
@@ -624,6 +629,30 @@ if SERVER then
 
                 end
             end
+
+            owner:SetNW2Bool( "glee_ScaryAsATerminator", true )
+            table.insert( GAMEMODE.glee_OtherScaryThings, owner )
+
+            -- hits other grigori too, but maintainWeapon drains their panic far faster
+            self:Timer( "panicNearby", 1, 0, function()
+                if owner:Health() <= 0 then return end
+                GAMEMODE:PanicSource( owner:WorldSpaceCenter(), grigoriPanicStrength, grigoriPanicRadius )
+
+            end )
+
+            self:Timer( "igniteNearby", 0.25, 0, function()
+                if owner:Health() <= 0 then return end
+                local myPos = owner:WorldSpaceCenter()
+                for _, ent in ipairs( ents.FindInSphere( myPos, grigoriIgniteRadius ) ) do
+                    if not ent:IsPlayer() then continue end
+                    if ent:Health() <= 0 then continue end
+                    if ent:HasStatusEffect( "divine_chosen" ) then continue end
+                    if not terminator_Extras.PosCanSee( myPos, ent:WorldSpaceCenter() ) then continue end -- not through thin walls
+
+                    ent:Ignite( grigoriIgniteDuration )
+
+                end
+            end )
 
             -- weapon maintenance timer
             self:Timer( "maintainWeapon", 0.1, 0, function()
@@ -751,6 +780,9 @@ if SERVER then
         end,
         function( _self, owner ) -- teardown func
             owner.glee_divineChosenResurrect = nil
+
+            owner:SetNW2Bool( "glee_ScaryAsATerminator", false )
+            table.RemoveByValue( GAMEMODE.glee_OtherScaryThings, owner )
 
             owner:SetNW2Int( "glee_divineintervention_respawncount", 0 )
 

@@ -86,6 +86,7 @@ gamemodes\hunters_glee\gamemode\modules\stickyslams\sh_stickyslams.lua
 
 gamemodes\hunters_glee\gamemode\modules\shopitems\cl_shopgobbler.lua
 gamemodes\hunters_glee\gamemode\modules\shopitems\sh_shoptags.lua
+gamemodes\hunters_glee\gamemode\modules\shopitems\sh_shopslots.lua
 gamemodes\hunters_glee\gamemode\modules\shopitems\sh_shophelpers.lua
 gamemodes\hunters_glee\gamemode\modules\shopitems\sh_itemverification.lua
 

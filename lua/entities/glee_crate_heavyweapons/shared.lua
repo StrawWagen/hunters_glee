@@ -47,6 +47,8 @@ function GM:HeavyWeaponsCrate( pos )
         return MEMORY_BREAKABLE
     end
 
+    hook.Run( "huntersglee_crate_becamecrate", crate, "heavyweapons" )
+
     return crate
 
 end

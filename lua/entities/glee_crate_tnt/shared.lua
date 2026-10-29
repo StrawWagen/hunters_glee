@@ -88,6 +88,8 @@ function GM:BombCrate( pos, crateStatsRef )
 
     end
 
+    hook.Run( "huntersglee_crate_becamecrate", crate, "tnt" )
+
     return crate
 
 end

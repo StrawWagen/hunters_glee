@@ -75,6 +75,7 @@ AddCSLuaFile( "modules/sh_detecthunterkills.lua" )
 AddCSLuaFile( "modules/shopitems/cl_shopgobbler.lua" )
 AddCSLuaFile( "modules/shopitems/sh_shophelpers.lua" )
 AddCSLuaFile( "modules/shopitems/sh_shoptags.lua" )
+AddCSLuaFile( "modules/shopitems/sh_shopslots.lua" )
 AddCSLuaFile( "modules/shop/sh_shopcategories.lua" )
 AddCSLuaFile( "modules/shopitems/sh_itemverification.lua" )
 
@@ -243,6 +244,7 @@ function GM:TermHuntSetup()
     self.canScore                       = nil
     self.doProxChat                     = nil -- used in playercomms
     self.glee_Hunters                   = {}
+    self.glee_OtherScaryThings          = {} -- not hunters, but raise bpm like one, eg grigori
     self.deadPlayers                    = {}
     self.roundScore                     = {}
     self.roundExtraData                 = {} -- helper tbl that is reset on round end
@@ -1084,6 +1086,7 @@ function GM:beginSetup()
     self:UpdateEscapeCounts()
 
     self:RemoveHunters()
+    self.glee_OtherScaryThings = {}
 
     for _, ply in player.Iterator() do
         hook.Run( "huntersglee_player_pre_reset", ply )

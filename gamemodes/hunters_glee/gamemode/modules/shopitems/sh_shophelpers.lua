@@ -3,6 +3,9 @@ local GM = GM or GAMEMODE
 local shopHelpers = GM.shopHelpers or {}
 GM.shopHelpers = shopHelpers
 
+-- appended on the end of all bargain items' descriptions
+GM.glee_BargainDescrip = "\n\nThis is a bargain. You might not see it again..."
+
 
 -- An item's own fields can be functions, and a shop item is third party code as often as not.
 -- Everything that calls one goes through these, so a thrown error is a dead item, not a dead shop.
@@ -153,7 +156,7 @@ end
     @desc Runs hookName, then checkFuncs, and stops at the first one that says no.
     @param ply: Player. The purchaser, passed to the hook and to every check.
     @param itemData: table. The item being checked. Passed to the hook, NOT to the checks.
-    @param hookName: string. Run as ( ply, itemData ). Only an explicit false blocks.
+    @param hookName: string or nil. Run as ( ply, itemData ). Only an explicit false blocks. nil skips the hook.
     @param checkFuncs: function or table of functions, each ( ply ) returning allowed, reason.
         A check must return true to pass, so a check that returns nothing blocks with no reason.
     @param funcName: string. Which field checkFuncs came from, for the error shout.
@@ -161,15 +164,19 @@ end
 --]]---------------------------------------------------------
 function shopHelpers.runChecks( ply, itemData, hookName, checkFuncs, funcName )
     local identifier = itemData.identifier
+    local success, returned, reason
 
-    local success, returned, reason = xpcall( hook.Run, shopHelpers.errorMitt, hookName, ply, itemData )
-    if not success then
-        GAMEMODE:invalidateShopItem( identifier )
-        permaPrint( "GLEE: !!!!!!!!!! " .. hookName .. " errored for " .. identifier .. "!!!!!!!!!!!" )
-        return false, REASON_ERROR
+    if hookName then
+        success, returned, reason = xpcall( hook.Run, shopHelpers.errorMitt, hookName, ply, itemData )
+        if not success then
+            GAMEMODE:invalidateShopItem( identifier )
+            permaPrint( "GLEE: !!!!!!!!!! " .. hookName .. " errored for " .. identifier .. "!!!!!!!!!!!" )
+            return false, REASON_ERROR
+
+        end
+        if returned == false then return false, reason end -- Blocked
 
     end
-    if returned == false then return false, reason end -- Blocked
 
     if isfunction( checkFuncs ) then
         checkFuncs = { checkFuncs }

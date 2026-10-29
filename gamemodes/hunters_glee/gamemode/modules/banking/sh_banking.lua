@@ -97,11 +97,6 @@ function meta:BankCanWithdraw( toWithdraw )
 
 end
 
-function meta:BankHasAccount()
-    return istable( bankFunctions.checkBankAccount( self ) )
-
-end
-
 function meta:BankAccount()
     return bankFunctions.checkBankAccount( self )
 

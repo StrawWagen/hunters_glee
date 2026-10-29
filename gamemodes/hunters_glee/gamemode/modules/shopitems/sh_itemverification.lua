@@ -40,6 +40,7 @@ function GM:getDebugShopItemStructureTable()
             globalCooldowns =   "Optional. Cooldowns everyone shares, keyed by what starts them, see GM.globalCooldownTriggers. Eg { onGhostPlace = { time = 120, reason = \"Wait.\", ignoredWithCheats = true } }. reason must not state a duration, glee_shop_itemglobalcooldownmul can scale it.",
             shCooldownCheck =   "Optional. Function or table of functions( purchaser ), for cooldowns that don't start at purchase. Return the CurTime it ends, and optionally a reason string. The latest end, of these and .cooldown, wins. Ran wherever shPurchaseCheck is.",
             tags =              "Tags that define attributes of this item, categories included. Accepts an indexed table of strings, converted to a mask after adding.",
+            slots =             "Optional. Indexed table of strings, eg { \"legs\" }. Items sharing a slot are mutually exclusive, can't be bought if another item in any of its slots was bought this round. See sh_shopslots.lua.",
             purchaseTimes =     "Item will only be purchasble in the round states specified by this table. Eg GAMEMODE.ROUND_ACTIVE ( hunting ).",
             weight =            "Optional. Where to order this relative to everything else in our category, accepts negative values.",
             shPurchaseCheck =   "Optional. Function or table of functions checked to see if this is purchasable, ran clientside on every item, every frame when shop is open. ran once serverside when purchased",
@@ -87,6 +88,7 @@ function GM:AddShopItem( shopItemIdentifier, shopItemData )
     if not shopItemData.purchaseTimes or table.Count( shopItemData.purchaseTimes ) <= 0 then addShopFail( shopItemIdentifier, ".purchaseTimes are not specified" ) return end
     if not shopItemData.svOnPurchaseFunc then addShopFail( shopItemIdentifier, "invalid .svOnPurchaseFunc" ) return end
     if shopItemData.shCanShowInShop and not isfunction( shopItemData.shCanShowInShop ) and not istable( shopItemData.shCanShowInShop ) then addShopFail( shopItemIdentifier, "invalid .shCanShowInShop" ) return end
+    if shopItemData.slots and not istable( shopItemData.slots ) then addShopFail( shopItemIdentifier, "invalid .slots" ) return end
     if shopItemData.shCooldownCheck and not isfunction( shopItemData.shCooldownCheck ) and not istable( shopItemData.shCooldownCheck ) then addShopFail( shopItemIdentifier, "invalid .shCooldownCheck" ) return end
     if shopItemData.globalCooldowns then
         local problem = globalCooldownsProblem( shopItemData.globalCooldowns )

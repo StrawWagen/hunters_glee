@@ -834,6 +834,8 @@ function GM:ScreamingCrate( pos, placer, refundAndBonus )
         return MEMORY_BREAKABLE
     end
 
+    hook.Run( "huntersglee_crate_becamecrate", crate, "screamer" )
+
     return crate
 
 end

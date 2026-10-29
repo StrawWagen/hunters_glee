@@ -16,7 +16,7 @@ if SERVER then
     GAMEMODE:RegisterStatusEffect( "linked_hunter",
         function( self, owner ) -- setup func
             self.spawnHunterTimerName = self:Timer( "spawnHunter", 0.2, 0, function()
-                local hunter = GAMEMODE:AttemptToSpawnHunter( linked_hunter )
+                local hunter = GAMEMODE:AttemptToSpawnHunter( linked_hunter, false )
                 if not IsValid( hunter ) then return end
 
                 if hunter.MimicPlayer then

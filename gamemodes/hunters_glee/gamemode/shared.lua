@@ -61,6 +61,7 @@ include( "modules/shop/sh_globalcooldowns.lua" )
 include( "modules/firsttimeplayers/sh_firsttimeplayers.lua" )
 
 include( "modules/shopitems/sh_shoptags.lua" )
+include( "modules/shopitems/sh_shopslots.lua" )
 include( "modules/shop/sh_shopcategories.lua" )
 include( "modules/shopitems/sh_itemverification.lua" )
 

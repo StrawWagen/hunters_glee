@@ -86,6 +86,8 @@ function GM:ManhackCrate( pos )
 
     end
 
+    hook.Run( "huntersglee_crate_becamecrate", crate, "manhack" )
+
     return crate
 
 end

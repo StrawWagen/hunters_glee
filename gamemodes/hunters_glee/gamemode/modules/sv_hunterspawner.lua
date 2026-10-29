@@ -463,7 +463,7 @@ function GM:SpawnWaveSpawnIn()
 
         end
 
-        local hunter = self:AttemptToSpawnHunter( currSpawnEntry )
+        local hunter = self:AttemptToSpawnHunter( currSpawnEntry, true )
 
         if IsValid( hunter ) then
             debugPrint( "spawned", hunter, currSpawnEntry.name, currSpawnEntry.prettyName )
@@ -807,22 +807,33 @@ local function manageIfStill( hunter, secondsToRemove )
 end
 
 
-function GM:RegisterAsSpawnedHunter( hunter )
+function GM:RegisterAsSpawnedHunter( hunter, fromMiseryWave )
     table.insert( self.glee_Hunters, hunter )
     hunter:SetNW2Bool( "glee_IsHunter", true )
     hunter.glee_IsAHunter = true
-    hunter.glee_SpawnsetThatMadeMe = self.CurrSpawnSetName
+    if fromMiseryWave then
+        hunter.glee_SpawnsetThatMadeMe = self.CurrSpawnSetName
+
+    else
+        hunter.glee_SpawnsetThatMadeMe = self.CurrSpawnSetName .. "_alternate"
+
+    end
 
     manageIfStale( hunter )
 
 end
+
+hook.Add( "terminator_event_spawned", "glee_capture_eventspawns", function( _, spawned )
+    GAMEMODE:RegisterAsSpawnedHunter( spawned )
+
+end )
 
 
 local randYawAng = Angle( 0, 0, 0 )
 
 
 
-function GM:AttemptToSpawnHunter( spawnEntry )
+function GM:AttemptToSpawnHunter( spawnEntry, fromMiseryWave )
     local spawnPos, spawnArea, valid = self:MarchValidHunterPos( spawnEntry )
     if not valid then return end
 
@@ -850,7 +861,7 @@ function GM:AttemptToSpawnHunter( spawnEntry )
 
     end
 
-    self:RegisterAsSpawnedHunter( hunter )
+    self:RegisterAsSpawnedHunter( hunter, fromMiseryWave )
     if spawnEntry.removeAfterStillSeconds then
         manageIfStill( hunter, spawnEntry.removeAfterStillSeconds )
 

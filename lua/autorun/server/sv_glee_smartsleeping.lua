@@ -10,6 +10,10 @@ local slowEnoughToFreeze = 20^2
 terminator_Extras.glee_smartSleep_toFreeze = terminator_Extras.glee_smartSleep_toFreeze or {}
 terminator_Extras.glee_smartSleep_supportingTbls = terminator_Extras.glee_smartSleep_supportingTbls or {}
 
+-- kept off the ent so not-yet-due sleepers cost no Entity __index per pass
+terminator_Extras.glee_smartSleep_nextChecks = terminator_Extras.glee_smartSleep_nextChecks or setmetatable( {}, { __mode = "k" } )
+local nextChecks = terminator_Extras.glee_smartSleep_nextChecks
+
 -- freeze inactive ents to reduce lag
 -- eg guns, skulls
 -- likely will majorly decrease lag on big glee sessions
@@ -69,18 +73,20 @@ local function entSpeedSqr( ent )
 end
 
 local function handleSleep( ent, cur, lagging ) -- think func
+    -- missing means due, so sleepers from before an autorefresh get rescheduled
+    local nextCheck = nextChecks[ent]
+    if nextCheck and nextCheck > cur then return end
     if not IsValid( ent ) then return end
     if not ent.glee_smartSleeping then return end
-    if ent.glee_smartSleep_nextCheck > cur then return end
 
     if IsValid( ent:GetParent() ) then
-        ent.glee_smartSleep_nextCheck = cur + ent.glee_smartSleep_interval * 2
+        nextChecks[ent] = cur + ent.glee_smartSleep_interval * 2
         return
 
     end
 
     if entSpeedSqr( ent ) > slowEnoughToFreeze then
-        ent.glee_smartSleep_nextCheck = cur + ent.glee_smartSleep_interval
+        nextChecks[ent] = cur + ent.glee_smartSleep_interval
         return
 
     end
@@ -107,7 +113,7 @@ local function handleSleep( ent, cur, lagging ) -- think func
 
         end
 
-        ent.glee_smartSleep_nextCheck = cur + ent.glee_smartSleep_interval * 2
+        nextChecks[ent] = cur + ent.glee_smartSleep_interval * 2
 
         -- only consider freezing this if the session is lagging
         if ent.glee_smartSleeping_lazyWake and not lagging then return end
@@ -185,10 +191,10 @@ local function handleSleep( ent, cur, lagging ) -- think func
 
             end
             -- randomize this path only, so we con't unfreeze everything at once
-            ent.glee_smartSleep_nextCheck = cur + ent.glee_smartSleep_interval * math.Rand( 1.9, 2.1 )
+            nextChecks[ent] = cur + ent.glee_smartSleep_interval * math.Rand( 1.9, 2.1 )
 
         else
-            ent.glee_smartSleep_nextCheck = cur + ent.glee_smartSleep_interval * 2
+            nextChecks[ent] = cur + ent.glee_smartSleep_interval * 2
 
         end
     end
@@ -218,7 +224,7 @@ local function handleSupporterTbl( supportingTbl, disturbedId, cur )
         if not IsValid( supportedEnt ) then continue end
         --debugoverlay.Line( supportingTbl.pos, supportedEnt:GetPos(), 5, Color( 255, 0, 0 ), true )
         hook.Run( "glee_smartsleep_unsupported", supportedEnt )
-        supportedEnt.glee_smartSleep_nextCheck = cur + math.Rand( 0.1, 1 )
+        nextChecks[supportedEnt] = cur + math.Rand( 0.1, 1 )
 
     end
 
@@ -326,7 +332,7 @@ hook.Add( "Think", "glee_dynamicfreezing_laggingthink", function() -- deal damag
     -- lil bit laggy?
     -- think about whether or not we should freeze this, NOW!
     if not lagging then
-        randomEnt.glee_smartSleep_nextCheck = cur
+        nextChecks[randomEnt] = cur
         return
 
     end
@@ -352,7 +358,7 @@ function terminator_Extras.SmartSleepEntity( ent, interval )
     table.insert( terminator_Extras.glee_smartSleep_toFreeze, ent )
     ent.glee_smartSleeping = true
     ent.glee_smartSleep_interval = interval
-    ent.glee_smartSleep_nextCheck = CurTime() + ent.glee_smartSleep_interval
+    nextChecks[ent] = CurTime() + interval
 
 end
 
@@ -369,7 +375,7 @@ local function unchainSleeper( sleeper ) -- wakes stuff up
     if not sleeper.glee_smartSleeping then return end
     if sleeper.huntersglee_breakablenails then return end
 
-    sleeper.glee_smartSleep_nextCheck = CurTime() + sleeper.glee_smartSleep_interval * 2
+    nextChecks[sleeper] = CurTime() + sleeper.glee_smartSleep_interval * 2
     wakeEnt( sleeper )
 
     --debugoverlay.Cross( sleeper:GetPos(), 20, 5, color_white, true )

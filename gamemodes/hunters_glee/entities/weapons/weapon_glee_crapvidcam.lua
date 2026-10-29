@@ -325,6 +325,11 @@ else
 
     local currConfig
 
+    -- steam's F12 screenshot crashes mid recording and Lua can't block it, so no frames get written around the press
+    local f12SkipSeconds = 0.5
+    local skipFramesUntil
+    local skippedFrameTime = 0
+
     -- sized off the player's screen, and vp8 rejects some odd sizes. multiples of 8 dodge every common restriction
     local function encoderSafeSize( size )
         return math.floor( size / 8 ) * 8
@@ -409,7 +414,19 @@ else
 
             end
 
-            writer:AddFrame( FrameTime(), true )
+            if input.IsKeyDown( KEY_F12 ) then
+                skipFramesUntil = RealTime() + f12SkipSeconds
+
+            end
+            if skipFramesUntil and skipFramesUntil > RealTime() then
+                skippedFrameTime = skippedFrameTime + FrameTime()
+                return
+
+            end
+
+            -- the skipped time goes on the next frame, or the tape shortens and the audio runs ahead of it
+            writer:AddFrame( FrameTime() + skippedFrameTime, true )
+            skippedFrameTime = 0
             me:SetDSP( 38, true )
 
         end )
@@ -425,6 +442,8 @@ else
             recordingCam = nil
             lastTapeState = nil
             stopTapeAt = nil
+            skipFramesUntil = nil
+            skippedFrameTime = 0
             LocalPlayer():SetDSP( 0, true )
 
         elseif IsValid( camera ) then
@@ -485,6 +504,24 @@ else
         if math.sin( CurTime() * 8 ) <= 0 then return end
 
         draw.SimpleTextOutlined( "RECORDING", "DermaLarge", ScrW() * 0.5, 0, recTextColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP, 2, recOutlineColor )
+
+    end )
+
+    -- the engine crashes if "jpeg" runs mid recording. it's an engine command, so Lua can't intercept it, only the inputs that run it
+    hook.Add( "PlayerBindPress", "glee_crapvidcam_blockjpeg", function( _, bind )
+        if not writer then return end
+        if string.find( bind, "jpeg", 1, true ) then return true end
+
+    end )
+
+    -- gmod_camera runs "jpeg" on fire, dropping the attack here stops it in singleplayer too, where the server runs it
+    hook.Add( "CreateMove", "glee_crapvidcam_blockcamera", function( cmd )
+        if not writer then return end
+
+        local wep = LocalPlayer():GetActiveWeapon()
+        if not IsValid( wep ) or wep:GetClass() ~= "gmod_camera" then return end
+
+        cmd:RemoveKey( IN_ATTACK )
 
     end )
 

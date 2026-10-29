@@ -134,6 +134,8 @@ function GM:NormalCrate( pos )
         return MEMORY_BREAKABLE
     end
 
+    hook.Run( "huntersglee_crate_becamecrate", crate, "normal" )
+
     return crate
 
 end

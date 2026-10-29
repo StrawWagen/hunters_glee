@@ -22,10 +22,24 @@ local function getOfferCount()
 
 end
 
-GAMEMODE.glee_BargainOffersPerPly = GAMEMODE.glee_BargainOffersPerPly or {} -- [ply] = { [shopItemName] = true, __count = count, }
+-- odds of being offered, relative to each other. 0 or less is never offered
+local defaultBargainWeight = 1
+local defaultRareBargainWeight = 0.1
 
--- appended on the end of all bargain items' descriptions
-local bargainDescrip = "\n\nThis is a bargain. You might not see it again..."
+local function getBargainWeight( ply, item )
+    local weight = item.tags.RareBargain and defaultRareBargainWeight or defaultBargainWeight
+
+    local hookResult = hook.Run( "glee_bargains_overrideweight", ply, item, weight )
+    if isnumber( hookResult ) then
+        weight = hookResult
+
+    end
+
+    return weight
+
+end
+
+GAMEMODE.glee_BargainOffersPerPly = GAMEMODE.glee_BargainOffersPerPly or {} -- [ply] = { [shopItemName] = true, __count = count, }
 
 
 -- returns offerTbl, calledReset
@@ -103,14 +117,38 @@ if SERVER then
 
         end
 
-        local items = shopHelpers.getItemsByTag( "Bargain" )
+        local candidates = {}
+        local totalWeight = 0
+        for _, item in ipairs( shopHelpers.getItemsByTag( "Bargain" ) ) do
+            -- no hook, our own glee_shop_canshow would block everything, nothing's on offer yet
+            if not shopHelpers.runChecks( ply, item, nil, item.shCanShowInShop, "shCanShowInShop" ) then continue end
 
-        local offersLeft = math.min( offerCount, #items )
+            local weight = getBargainWeight( ply, item )
+            if weight <= 0 then continue end
+
+            table.insert( candidates, { item = item, weight = weight } )
+            totalWeight = totalWeight + weight
+
+        end
+
+        local offersLeft = math.min( offerCount, #candidates )
         offerTbl.__count = offersLeft
 
         while offersLeft > 0 do
-            local item = table.remove( items, math.random( 1, #items ) )
-            offerTbl[item.identifier] = true
+            local roll = math.Rand( 0, totalWeight )
+            local pickedIndex = #candidates -- float drift can leave roll a hair above 0 after the last one
+            for index, candidate in ipairs( candidates ) do
+                roll = roll - candidate.weight
+                if roll <= 0 then
+                    pickedIndex = index
+                    break
+
+                end
+            end
+
+            local picked = table.remove( candidates, pickedIndex )
+            totalWeight = totalWeight - picked.weight
+            offerTbl[picked.item.identifier] = true
             offersLeft = offersLeft - 1
 
         end
@@ -631,6 +669,195 @@ if SERVER then
             end
         end
     )
+
+
+    local function canSeePlayer( ply, other )
+        local trace = util.TraceLine( {
+            start = ply:GetShootPos(),
+            endpos = other:GetShootPos(),
+            mask = MASK_BLOCKLOS,
+            filter = { ply, other },
+        } )
+        return not trace.Hit
+
+    end
+
+    local panicTickInterval = 0.5
+    local noticeablePanic = GAMEMODE.PanicDrainPerSecond * panicTickInterval -- any less per tick is outpaced by drain
+
+    local socialAnxietyRadius = 600
+    local socialAnxietyPanicPerPly = 6 -- per tick, at point blank
+
+    GAMEMODE:RegisterStatusEffect( "social_anxiety",
+        function( self, owner ) -- setup func
+            self:Timer( "crowded_panic", panicTickInterval, 0, function()
+                if owner:Health() <= 0 then return end
+
+                local myPos = owner:GetShootPos()
+                local panic = 0
+                for _, other in player.Iterator() do
+                    if other == owner then continue end
+                    if other:Health() <= 0 then continue end
+
+                    local dist = other:GetShootPos():Distance( myPos )
+                    if dist > socialAnxietyRadius then continue end
+                    if not canSeePlayer( owner, other ) then continue end
+
+                    panic = panic + socialAnxietyPanicPerPly * ( 1 - dist / socialAnxietyRadius )
+
+                end
+
+                GAMEMODE:GivePanic( owner, panic )
+
+                if panic >= noticeablePanic and self.lastDeathsHintedAt ~= owner:Deaths() then
+                    self.lastDeathsHintedAt = owner:Deaths()
+                    huntersGlee_Announce( { owner }, 50, 5, "Someone else...\nThey make me feel, anxious..." )
+
+                end
+
+            end )
+        end
+    )
+
+
+    local bodyOdorRadius = 350
+    local bodyOdorPanic = 8 -- per tick, at point blank
+
+    GAMEMODE:RegisterStatusEffect( "body_odor",
+        function( self, owner ) -- setup func
+            self.victimDeathsHintedAt = {}
+
+            self:Timer( "stink_panic", panicTickInterval, 0, function()
+                if owner:Health() <= 0 then return end
+
+                local myPos = owner:GetShootPos()
+                for _, other in player.Iterator() do
+                    if other == owner then continue end
+                    if other:Health() <= 0 then continue end
+
+                    local dist = other:GetShootPos():Distance( myPos )
+                    if dist > bodyOdorRadius then continue end
+                    if not canSeePlayer( owner, other ) then continue end
+
+                    local panic = bodyOdorPanic * ( 1 - dist / bodyOdorRadius )
+                    GAMEMODE:GivePanic( other, panic )
+
+                    if panic < noticeablePanic then continue end
+
+                    if self.victimDeathsHintedAt[other] ~= other:Deaths() then
+                        self.victimDeathsHintedAt[other] = other:Deaths()
+                        huntersGlee_Announce( { other }, 50, 5, "Ugh...\n" .. owner:Nick() .. " reeks." )
+
+                    end
+
+                    if self.lastDeathsHintedAt ~= owner:Deaths() then
+                        self.lastDeathsHintedAt = owner:Deaths()
+                        huntersGlee_Announce( { owner }, 50, 5, "They can smell you...\nNobody can stand to be near you." )
+
+                    end
+                end
+            end )
+        end
+    )
+
+
+    local abandonmentRadius = 1250
+    local abandonmentGrace = 10
+    local abandonmentRamp = 0.1 -- panic per tick, per second abandoned past the grace
+    local abandonmentMinPanic = noticeablePanic * 0.75
+    local abandonmentMaxPanic = 8
+
+    GAMEMODE:RegisterStatusEffect( "abandonment_anxiety",
+        function( self, owner ) -- setup func
+            self.lastHadCompany = CurTime()
+
+            self:Hook( "glee_true_PlayerSpawn", function( spawned )
+                if spawned ~= owner then return end
+                self.lastHadCompany = CurTime()
+
+            end )
+
+            self:Timer( "abandoned_panic", panicTickInterval, 0, function()
+                if owner:Health() <= 0 then return end
+
+                local myPos = owner:GetShootPos()
+                for _, other in player.Iterator() do
+                    if other == owner then continue end
+                    if other:Health() <= 0 then continue end
+                    if other:GetShootPos():Distance( myPos ) > abandonmentRadius then continue end
+                    if not canSeePlayer( owner, other ) then continue end
+
+                    self.lastHadCompany = CurTime()
+                    return
+
+                end
+
+                local abandonedFor = CurTime() - self.lastHadCompany - abandonmentGrace
+                if abandonedFor <= 0 then return end
+
+                local panic = math.Clamp( abandonedFor * abandonmentRamp, abandonmentMinPanic, abandonmentMaxPanic )
+                GAMEMODE:GivePanic( owner, panic )
+
+                if panic >= noticeablePanic and self.lastDeathsHintedAt ~= owner:Deaths() then
+                    self.lastDeathsHintedAt = owner:Deaths()
+                    huntersGlee_Announce( { owner }, 50, 5, "Where did everyone go...?\nDid they abandon you?!" )
+
+                end
+
+            end )
+        end
+    )
+end
+
+if CLIENT then
+    local stinkAlpha = 40
+    local stinkOwnAlpha = 25 -- the owner's eyes are in the middle of it
+
+    GAMEMODE:RegisterStatusEffect( "body_odor",
+        function( self, owner ) -- setup func
+            self.emitter = ParticleEmitter( owner:GetPos() )
+
+            self:Timer( "waft_stink", 0.3, 0, function()
+                if not IsValid( owner ) then return end
+                if owner:IsDormant() then return end
+                if owner:Health() <= 0 then return end
+
+                local outward = VectorRand()
+                outward.z = 0
+                outward:Normalize()
+
+                local mins, maxs = owner:OBBMins(), owner:OBBMaxs()
+                local origin = owner:LocalToWorld( Vector(
+                    math.Rand( mins.x, maxs.x ),
+                    math.Rand( mins.y, maxs.y ),
+                    math.Rand( mins.z, maxs.z )
+                ) )
+                self.emitter:SetPos( origin )
+
+                local particle = self.emitter:Add( "particle/particle_smokegrenade1", origin )
+                if not particle then return end
+
+                local alpha = owner == GetViewEntity() and stinkOwnAlpha or stinkAlpha
+
+                particle:SetVelocity( outward * math.Rand( 10, 25 ) + Vector( 0, 0, math.Rand( 10, 20 ) ) )
+                particle:SetDieTime( math.Rand( 3, 5 ) )
+                particle:SetColor( 120, 160, 50 )
+                particle:SetStartAlpha( alpha )
+                particle:SetEndAlpha( 0 )
+                particle:SetStartSize( 8 )
+                particle:SetEndSize( 30 )
+                particle:SetRoll( math.Rand( -360, 360 ) )
+                particle:SetRollDelta( math.Rand( -1, 1 ) * 2 )
+                particle:SetAirResistance( 10 )
+                particle:SetCollide( false )
+
+            end )
+        end,
+        function( self, _ ) -- teardown func
+            self.emitter:Finish()
+
+        end
+    )
 end
 
 
@@ -955,7 +1182,7 @@ local items = {
     -- Risk vs reward.
     ["blooddonor"] = {
         name = "Donate Blood.",
-        desc = "Donate blood for score." .. bargainDescrip,
+        desc = "Donate blood for score." .. GAMEMODE.glee_BargainDescrip,
         shCost = bloodDonorCost,
         cooldown = math.huge,
         tags = { "MUTATIONS", "Debuff", "Bargain", "Essential" },
@@ -982,7 +1209,7 @@ local items = {
     },
     ["deafness"] = {
         name = "Hard of Hearing.",
-        desc = "You can barely hear a thing!" .. bargainDescrip,
+        desc = "You can barely hear a thing!" .. GAMEMODE.glee_BargainDescrip,
         shCost = -100,
         markup = 0.25,
         cooldown = math.huge,
@@ -1001,7 +1228,7 @@ local items = {
     -- flat DOWNGRADE
     ["blindness"] = {
         name = "Legally Blind.",
-        desc = "Become unable to see more than a few feet ahead." .. bargainDescrip,
+        desc = "Become unable to see more than a few feet ahead." .. GAMEMODE.glee_BargainDescrip,
         shCost = -300,
         markup = 0.2,
         cooldown = math.huge,
@@ -1020,7 +1247,7 @@ local items = {
     -- increased bpm but you get heart attacks easier
     ["highcholesterol"] = {
         name = "37 Years of\nCholesterol",
-        desc = "All that delicious food, clogging everything up...\nYour heart beats much faster, but Heart Attacks may strike..." .. bargainDescrip,
+        desc = "All that delicious food, clogging everything up...\nYour heart beats much faster, but Heart Attacks may strike..." .. GAMEMODE.glee_BargainDescrip,
         shCost = -175,
         markup = 0.25,
         cooldown = math.huge,
@@ -1039,7 +1266,7 @@ local items = {
     -- hilarious downgrade
     ["greasyhands"] = {
         name = "Greasy Hands.",
-        desc = "Eating greasy food all your life,\nyour hands... adapted to their new, circumstances...\nUnder stress, the grease flows like a faucet." .. bargainDescrip,
+        desc = "Eating greasy food all your life,\nyour hands... adapted to their new, circumstances...\nUnder stress, the grease flows like a faucet." .. GAMEMODE.glee_BargainDescrip,
         shCost = -200,
         markup = 0.25,
         cooldown = math.huge,
@@ -1058,7 +1285,7 @@ local items = {
     -- flat downgrade
     ["badknees"] = {
         name = "62 Year old Knees.",
-        desc = "62 years of living a sedentary lifestyle.\nJumping hurts, and is relatively useless.\nFall damage is lethal." .. bargainDescrip,
+        desc = "62 years of living a sedentary lifestyle.\nJumping hurts, and is relatively useless.\nFall damage is lethal." .. GAMEMODE.glee_BargainDescrip,
         shCost = -162,
         markup = 0.25,
         cooldown = math.huge,
@@ -1076,7 +1303,7 @@ local items = {
     },
     ["beacon"] = {
         name = "Beacon",
-        desc = "A beacon.\nThe hunters will never lose you for long." .. bargainDescrip,
+        desc = "A beacon.\nThe hunters will never lose you for long." .. GAMEMODE.glee_BargainDescrip,
         shCost = -140,
         markup = 0.25,
         cooldown = math.huge,
@@ -1115,7 +1342,7 @@ local items = {
     -- you know what that means
     ["fishlungedsinker"] = {
         name = "Fish Lunged Sinker.",
-        desc = "Your lungs have adapted to the wrong medium.\nAir chokes you. Water does not." .. bargainDescrip,
+        desc = "Your lungs have adapted to the wrong medium.\nAir chokes you. Water does not." .. GAMEMODE.glee_BargainDescrip,
         shCost = -500,
         markup = 0.25,
         cooldown = math.huge,
@@ -1133,7 +1360,7 @@ local items = {
     },
     ["thegrowth"] = {
         name = "The Growth",
-        desc = "Acquire an unstable genome.\nYou will grow a... companion, every life..." .. bargainDescrip,
+        desc = "Acquire an unstable genome.\nYou will grow a... companion, every life..." .. GAMEMODE.glee_BargainDescrip,
         shCost = -200,
         markup = 0.25,
         cooldown = math.huge,
@@ -1151,7 +1378,7 @@ local items = {
     },
     ["thehops"] = {
         name = "The Hops.",
-        desc = "Your legs will never rest again.\nYou hop the moment you touch the ground, forever." .. bargainDescrip,
+        desc = "Your legs will never rest again.\nYou hop the moment you touch the ground, forever." .. GAMEMODE.glee_BargainDescrip,
         shCost = -75,
         markup = 0.25,
         cooldown = math.huge,
@@ -1169,7 +1396,7 @@ local items = {
     },
     ["bighead"] = {
         name = "Big Head.",
-        desc = "Your intellect has lead to your head becoming the size of a small refrigerator!" .. bargainDescrip,
+        desc = "Your intellect has lead to your head becoming the size of a small refrigerator!" .. GAMEMODE.glee_BargainDescrip,
         shCost = -150,
         markup = 0.25,
         cooldown = math.huge,
@@ -1180,8 +1407,68 @@ local items = {
         },
         weight = -90,
         shPurchaseCheck = { shopHelpers.aliveCheck, },
+        shCanShowInShop = shopHelpers.hasMultiplePeople,
         svOnPurchaseFunc = function( ply )
             ply:GiveStatusEffect( "big_head" )
+
+        end,
+    },
+    ["socialanxiety"] = {
+        name = "Social Anxiety.",
+        desc = "People make you nervous.\nPanic when anyone gets close." .. GAMEMODE.glee_BargainDescrip,
+        shCost = -150,
+        markup = 0.25,
+        cooldown = math.huge,
+        tags = { "MUTATIONS", "Debuff", "Bargain", "Essential" },
+        slots = { "sociability" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_INACTIVE,
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = -90,
+        shPurchaseCheck = { shopHelpers.aliveCheck, },
+        shCanShowInShop = shopHelpers.hasMultiplePeople,
+        svOnPurchaseFunc = function( ply )
+            ply:GiveStatusEffect( "social_anxiety" )
+
+        end,
+    },
+    ["terriblebodyodor"] = {
+        name = "Terrible Body Odor.",
+        desc = "You reek.\nAnyone near you panics." .. GAMEMODE.glee_BargainDescrip,
+        shCost = -150,
+        markup = 0.25,
+        cooldown = math.huge,
+        tags = { "MUTATIONS", "Debuff", "Bargain", "Essential" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_INACTIVE,
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = -90,
+        shPurchaseCheck = { shopHelpers.aliveCheck, },
+        shCanShowInShop = shopHelpers.hasMultiplePeople,
+        svOnPurchaseFunc = function( ply )
+            ply:GiveStatusEffect( "body_odor" )
+
+        end,
+    },
+    ["abandonmentanxiety"] = {
+        name = "Abandonment Anxiety.",
+        desc = "You have a potent fear of being alone.\nPanic when nobody's nearby." .. GAMEMODE.glee_BargainDescrip,
+        shCost = -150,
+        markup = 0.25,
+        cooldown = math.huge,
+        tags = { "MUTATIONS", "Debuff", "Bargain", "Essential" },
+        slots = { "sociability" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_INACTIVE,
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = -90,
+        shPurchaseCheck = { shopHelpers.aliveCheck, },
+        shCanShowInShop = shopHelpers.hasMultiplePeople,
+        svOnPurchaseFunc = function( ply )
+            ply:GiveStatusEffect( "abandonment_anxiety" )
 
         end,
     },

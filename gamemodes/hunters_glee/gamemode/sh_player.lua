@@ -14,17 +14,17 @@ function GM:GetBotScaryness( ply, bot ) -- AAH
     local maxScaryness = 1.25
 
     local plysHealth = ply:Health()
-    if plysHealth <= 50 then
-        minScaryness = 0.35
-
-    elseif plysHealth <= 35 then
-        minScaryness = 0.75
+    if plysHealth <= 5 then
+        minScaryness = 1.25
 
     elseif plysHealth <= 15 then
         minScaryness = 1.15
 
-    elseif plysHealth <= 5 then
-        minScaryness = 1.25
+    elseif plysHealth <= 35 then
+        minScaryness = 0.75
+
+    elseif plysHealth <= 50 then
+        minScaryness = 0.35
 
     end
 
@@ -35,7 +35,7 @@ function GM:GetBotScaryness( ply, bot ) -- AAH
 
     local velLeng = bot:GetVelocity():Length()
     local hp
-    if bot:GetNW2Bool( "glee_ScaryAsATerminator" ) then -- spawn entry's .scaryAsATerminator
+    if bot:GetNW2Bool( "glee_ScaryAsATerminator" ) then -- spawn entry's .scaryAsATerminator, or grigori
         hp = healthDefault
 
     else

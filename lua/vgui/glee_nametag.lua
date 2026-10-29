@@ -40,6 +40,9 @@
 local MODE_FULL  = 1
 local MODE_WORLD = 2
 
+-- skips the per-frame Entity __index. Nick and GetPlayerColor stay method calls, ents like the ATM define their own
+local entMeta = FindMetaTable( "Entity" )
+
 
 local PANEL = {
     MODE_FULL  = 1,
@@ -183,7 +186,7 @@ function PANEL:UpdateForPlayer( ply, cur, data )
         pos = ply.glee_SoulDisplayPos
 
     else
-        pos = ply:WorldSpaceCenter()
+        pos = entMeta.WorldSpaceCenter( ply )
 
     end
 
@@ -197,7 +200,7 @@ function PANEL:UpdateForPlayer( ply, cur, data )
     local dist = EyePos():Distance( pos )
 
     if not ignoreDist then
-        if ply:IsDormant() then -- automatically fade out if dormant
+        if entMeta.IsDormant( ply ) then -- automatically fade out if dormant
             local sinceAwake = cur - self._lastAwakeTime
             dist = dist + sinceAwake * 100
 
@@ -269,7 +272,7 @@ function PANEL:UpdateForPlayer( ply, cur, data )
 
     end
 
-    local theyDead = ply:Health() <= 0
+    local theyDead = entMeta.Health( ply ) <= 0
     if not theyDead then
         if isLookedAt then
             bgTransition = 0

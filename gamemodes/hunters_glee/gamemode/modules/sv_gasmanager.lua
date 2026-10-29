@@ -21,6 +21,7 @@ end
 
 function GM:RegisterAsGas( ent )
     if not IsValid( ent ) then return end
+    if ent.glee_IsGas then return end -- spawners register it, then OnEntityCreated sees the gas model and tries again
 
     ent.glee_IsGas = true
 
@@ -31,6 +32,9 @@ function GM:RegisterAsGas( ent )
         table.RemoveByValue( self.GasList, ent )
 
     end )
+
+    hook.Run( "huntersglee_gas_becamegas", ent )
+
 end
 
 local gasMessagesOnPickup = {

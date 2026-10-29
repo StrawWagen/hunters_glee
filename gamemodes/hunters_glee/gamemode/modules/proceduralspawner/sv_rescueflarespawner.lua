@@ -329,8 +329,14 @@ hook.Add( "glee_sv_validgmthink_active", "glee_rescueflarespawning", function()
     if remain > GAMEMODE:ScaledGenericSpawnerRate( randomlySpawnItDelay ) then
         if GAMEMODE:IsGenericSpawning( "termhunt_aeromatix_signalflare_gun" ) then return end
 
+        local radius = 20000
+        if player.GetCount() <= 1 then -- no ghosts to spot the flaregun
+            radius = 7500
+
+        end
+
         GAMEMODE:RandomlySpawnEntTbl( "termhunt_aeromatix_signalflare_gun", {
-            radius = 10000,
+            radius = radius,
             chance = 100,
             maxCount = 1,
             minAreaSize = 75,

@@ -25,6 +25,7 @@ ENT.GleeUseWheelOnly = true -- there's nothing for a plain +use to do on it
 ENT.TuneRange = 400
 
 -- Song 0 is off. https://combineoverwiki.net/wiki/Half-Life_2_soundtrack
+-- loop: clients play these through BASS, which ignores a wav's loop points
 ENT.OffSound = "ambient/_period.wav"
 ENT.Stations = {
     { name = "The Innsbruck Experiment",        path = "music/hl2_song4.mp3" },
@@ -63,21 +64,21 @@ ENT.Stations = {
     { name = "Entanglement",                    path = "music/hl2_song0.mp3" },
     { name = "Train Station 1",                 path = "music/hl2_song26_trainstation1.mp3" },
     { name = "Train Station 2",                 path = "music/hl2_song27_trainstation2.mp3" },
-    { name = "---",                             path = "music/radio1.mp3" },
-    { name = "CSS: The Sweet Sound of Bongo",   path = "ambient/music/bongo.wav" },
-    { name = "CSS: Only the Classics",          path = "ambient/music/piano1.wav" },
-    { name = "CSS: Country Rockin' Radio",      path = "ambient/music/country_rock_am_radio_loop.wav" },
-    { name = "CSS: Cubic Cuban",                path = "ambient/music/cubanmusic1.wav" },
-    { name = "CSS: Desert Sands FM",            path = "ambient/music/dustmusic2.wav" },
-    { name = "CSS: Fine-Tuned Tunes",           path = "ambient/music/piano2.wav" },
-    { name = "CSS: Flamenco Folk Music",        path = "ambient/music/flamenco.wav" },
-    { name = "CSS: Glamorous Guitar",           path = "ambient/guit1.wav" },
-    { name = "CSS: Countryside Jams",           path = "test/temp/soundscape_test/tv_music.wav" },
-    { name = "CSS: Latin Listening",            path = "ambient/music/latin.wav" },
-    { name = "CSS: Tunes of the Middle East",   path = "ambient/music/dustmusic1.wav" },
-    { name = "CSS: Outstanding Opera",          path = "ambient/opera.wav" },
-    { name = "CSS: Songs of the Salsa",         path = "ambient/music/mirame_radio_thru_wall.wav" },
-    { name = "CSS: Syrian Serenade",            path = "ambient/music/dustmusic3.wav" },
+    { name = "---",                             path = "music/radio1.mp3",                              loop = true },
+    { name = "CSS: The Sweet Sound of Bongo",   path = "ambient/music/bongo.wav",                       loop = true },
+    { name = "CSS: Only the Classics",          path = "ambient/music/piano1.wav",                      loop = true },
+    { name = "CSS: Country Rockin' Radio",      path = "ambient/music/country_rock_am_radio_loop.wav",  loop = true },
+    { name = "CSS: Cubic Cuban",                path = "ambient/music/cubanmusic1.wav",                 loop = true },
+    { name = "CSS: Desert Sands FM",            path = "ambient/music/dustmusic2.wav",                  loop = true },
+    { name = "CSS: Fine-Tuned Tunes",           path = "ambient/music/piano2.wav",                      loop = true },
+    { name = "CSS: Flamenco Folk Music",        path = "ambient/music/flamenco.wav",                    loop = true },
+    { name = "CSS: Glamorous Guitar",           path = "ambient/guit1.wav",                             loop = true },
+    { name = "CSS: Countryside Jams",           path = "test/temp/soundscape_test/tv_music.wav",        loop = true },
+    { name = "CSS: Latin Listening",            path = "ambient/music/latin.wav",                       loop = true },
+    { name = "CSS: Tunes of the Middle East",   path = "ambient/music/dustmusic1.wav",                  loop = true },
+    { name = "CSS: Outstanding Opera",          path = "ambient/opera.wav",                             loop = true },
+    { name = "CSS: Songs of the Salsa",         path = "ambient/music/mirame_radio_thru_wall.wav",      loop = true },
+    { name = "CSS: Syrian Serenade",            path = "ambient/music/dustmusic3.wav",                  loop = true },
     { name = "VACANT: 8.22.theGLEE_reduce.ogg",                      path = "hunters_glee/music/VACANT/8.22.theGLEE_reduce.ogg" },
     { name = "VACANT: 8.23.GleeExp2.ogg",                            path = "hunters_glee/music/VACANT/8.23.GleeExp2.ogg" },
     { name = "VACANT: 8.23.GleeExp3.ogg",                            path = "hunters_glee/music/VACANT/8.23.GleeExp3.ogg" },
@@ -96,6 +97,8 @@ ENT.Stations = {
 
 function ENT:SetupDataTables()
     self:NetworkVar( "Int", 0, "Song" ) -- index into Stations, 0 is off
+    self:NetworkVar( "Float", 0, "SongStart" ) -- CurTime it started, clients play from here
+    self:NetworkVar( "Bool", 0, "SongEmitted" ) -- the server's playing it, see PlaySong
 
 end
 

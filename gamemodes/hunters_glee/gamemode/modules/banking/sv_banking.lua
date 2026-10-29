@@ -403,6 +403,11 @@ function meta:BankFunds()
 
 end
 
+function meta:BankHasAccount()
+    return istable( bankFunctions.checkBankAccount( self ) )
+
+end
+
 -- bank funds without .checkBankAccount check, very lazy
 function meta:BankFundsFast()
     return self:GetNW2Int( "Glee_BankFunds", 0 )

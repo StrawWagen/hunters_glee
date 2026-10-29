@@ -62,6 +62,8 @@ function GM:ScoreCrate( pos, scoreBallsToGive )
         return MEMORY_BREAKABLE
     end
 
+    hook.Run( "huntersglee_crate_becamecrate", crate, "score" )
+
     return crate
 
 end

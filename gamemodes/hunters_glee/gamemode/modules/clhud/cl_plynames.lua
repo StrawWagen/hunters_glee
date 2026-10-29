@@ -119,9 +119,9 @@ local promptTarget = nil
 local prospectiveLine = "Prospective Account Holder"
 
 -- Envoys are paid for these souls, so they get pointed out
-local function envoysExtraLine( localPlayer, ent )
+local function envoysExtraLine( isEnvoy, ent )
+    if not isEnvoy then return end
     if not ent:IsPlayer() then return end
-    if not localPlayer:HasBankItem( "gleeful_envoy" ) then return end
     if not GAMEMODE:IsProspectiveAccountHolder( ent ) then return end
 
     return prospectiveLine
@@ -146,6 +146,7 @@ local function whileDeadPaintOtherPlys( localPlayer, cur )
     local paintedSpecHint
 
     local drawWhenDead = drawPlayerNamesWhenDead:GetBool()
+    local isEnvoy = localPlayer:HasBankItem( "gleeful_envoy" )
     local paintData = {}
 
     for ent, panel in pairs( terminator_Extras.glee_EntNamePanels ) do
@@ -203,7 +204,7 @@ local function whileDeadPaintOtherPlys( localPlayer, cur )
 
         -- extraLine: spectate prompt when looking directly at them with no current target
         local pleasePaintSpectateHint = isLookedAt and not hasObsTarg
-        local extraLine  = pleasePaintSpectateHint and spectatePromptText or envoysExtraLine( localPlayer, ent )
+        local extraLine  = pleasePaintSpectateHint and spectatePromptText or envoysExtraLine( isEnvoy, ent )
 
         paintedSpecHint = pleasePaintSpectateHint
 
@@ -276,6 +277,7 @@ local function whileAlivePaintOtherEnts( localPlayer, cur )
 
     end
 
+    local isEnvoy = localPlayer:HasBankItem( "gleeful_envoy" )
     local paintData = {}
 
     for ent, panel in pairs( terminator_Extras.glee_EntNamePanels ) do
@@ -332,7 +334,7 @@ local function whileAlivePaintOtherEnts( localPlayer, cur )
 
         paintData.posOverride = posOverride
         paintData.infoLine = infoLine
-        paintData.extraLine = envoysExtraLine( localPlayer, ent )
+        paintData.extraLine = envoysExtraLine( isEnvoy, ent )
         paintData.ignoreDist = ignoreDist
         paintData.isLookedAt = isLookedAt
 

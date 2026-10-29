@@ -34,6 +34,11 @@ function meta:BankFunds()
 
 end
 
+function meta:BankHasAccount()
+    return self:GetNW2Bool( "Glee_HasBankAccount", false )
+
+end
+
 local nextAsk = 0
 local currCallback
 function GAMEMODE:RequestAllBankAccounts( callback )

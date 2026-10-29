@@ -386,7 +386,7 @@ local items = {
         fakeCost  = true, -- the sweep decides the price, so it is charged in svOnPurchaseFunc
         costDecorative = { "-750", "-1500" },
         cooldown  = 0,
-        tags      = { "BANK" },
+        tags      = { "BANK", "Essential" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -417,7 +417,7 @@ local items = {
         shCost = 0,
         costDecorative = { "-750", "-1500" },
         cooldown = 0,
-        tags = { "BANK", "CloseShopOnPurchase" },
+        tags = { "BANK", "CloseShopOnPurchase", "Essential" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },

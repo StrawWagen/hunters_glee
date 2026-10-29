@@ -35,6 +35,14 @@ function GM:IsMusicPlaying()
 
 end
 
+-- For ducking under. IsMusicPlaying is also true at 0 music volume, out of an entity's range, and while fading out
+function GM:IsMusicAudible()
+    if not isPlaying() then return false end
+
+    return currentSound.channel:GetVolume() > 0
+
+end
+
 cvars.AddChangeCallback( "cl_huntersglee_musicvolume", function( _, _, _ )
     if not isPlaying() then return end
     if currentSound.fadeIn.active then return end  -- next Think will pick up the new value naturally

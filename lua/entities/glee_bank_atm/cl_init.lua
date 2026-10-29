@@ -526,7 +526,7 @@ function ENT:Think()
 
         end
 
-        if GAMEMODE.IsMusicPlaying and GAMEMODE:IsMusicPlaying() then
+        if GAMEMODE.IsMusicAudible and GAMEMODE:IsMusicAudible() then
             volume = 0.1
 
         end

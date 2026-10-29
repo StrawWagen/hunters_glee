@@ -28,6 +28,9 @@ if CLIENT then
     end )
 
 elseif SERVER then
+    local panicThinkInterval = 0.2
+    GM.PanicDrainPerSecond = 2.5 -- when healthy, hurt players drain slower
+
     function GM:GetPanic( ply )
         if not IsValid( ply ) then return 0 end
         return ply:GetNWFloat( "huntersglee_panic", 0 )
@@ -80,7 +83,7 @@ elseif SERVER then
 
     function GM:PanicThinkSV( ply )
         local panic = self:GetPanic( ply )
-        local panicDrain = 0.5
+        local panicDrain = self.PanicDrainPerSecond * panicThinkInterval
 
         local plysHealth = ply:Health()
 
@@ -332,7 +335,7 @@ elseif SERVER then
 
     local panicTimer = "huntersglee_panicmanagethinkserver"
     function GM:DoPanicThinkTimer( timerName )
-        timer.Create( timerName, 0.2, 0, function()
+        timer.Create( timerName, panicThinkInterval, 0, function()
             for _, ply in ipairs( player.GetAll() ) do
                 self:PanicThinkSV( ply )
 

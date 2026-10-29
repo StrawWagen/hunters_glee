@@ -106,14 +106,9 @@ end
 function SWEP:Think()
 end
 
-local gtfo = Vector( 1, 1, 1 ) * 65000
+function SWEP:ShouldDrawViewModel()
+    return false
 
-function SWEP:GetViewModelPosition( _, ang )
-    return gtfo, ang
-end
-
-function SWEP:PreDrawViewModel()
-    return true
 end
 
 

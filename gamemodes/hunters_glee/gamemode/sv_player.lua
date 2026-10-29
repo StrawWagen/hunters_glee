@@ -47,10 +47,24 @@ end
 
 -- manage the BPM of ppl HERE
 
+local function nearestScaryThingTo( ply, plyPos, scaryThings )
+    local _, byDistance = GAMEMODE:getNearestHunter( plyPos, scaryThings )
+    for _, thing in ipairs( byDistance ) do
+        if not IsValid( thing ) then return end -- invalid ones sort last
+        if thing == ply then continue end
+        -- krangled hunters often sit at 0 health and are still scary, only dead players aren't
+        if thing:IsPlayer() and thing:Health() <= 0 then continue end
+        return thing
+
+    end
+end
+
 function GM:calculateBPM( cur, players )
     local hasNavmesh = self.hasNavmesh
     local punishEscapingBool = punishEscaping:GetBool()
-    local hunters = self.glee_Hunters
+    local scaryThings = {}
+    terminator_Extras.tableAdd( scaryThings, self.glee_Hunters )
+    terminator_Extras.tableAdd( scaryThings, self.glee_OtherScaryThings )
     for _, ply in ipairs( players ) do
         local plyHealth = ply:Health()
         if plyHealth <= 0 then
@@ -62,7 +76,7 @@ function GM:calculateBPM( cur, players )
 
         local plyPos = ply:GetShootPos()
         local plysMoveType = ply:GetMoveType()
-        local nearestHunter = self:getNearestHunter( plyPos, hunters )
+        local nearestHunter = nearestScaryThingTo( ply, plyPos, scaryThings )
         local nextDistancePosSave = ply.nextDistancePosSave or 0
         local directlyUnderneathArea, distToAreaSqr = ply:GetNavAreaData()
 
@@ -878,6 +892,12 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
         table.Add( protoStuffToSpectate, table.Copy( ents.FindByClass( "glee_bank_atm" ) ) )
         if IsValid( terminator_Extras.glee_CurrentRescueHeli ) then
             table.insert( protoStuffToSpectate, terminator_Extras.glee_CurrentRescueHeli )
+
+        end
+        local flareGuns = ents.FindByClass( "termhunt_aeromatix_signalflare_gun" )
+        for _, flareGun in ipairs( flareGuns ) do
+            if IsValid( flareGun:GetOwner() ) then continue end
+            table.insert( protoStuffToSpectate, flareGun )
 
         end
 

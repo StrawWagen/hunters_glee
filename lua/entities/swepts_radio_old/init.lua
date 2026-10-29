@@ -32,17 +32,24 @@ end
 
 -- Playing -------------------------------------------------------------------
 
+-- Clients play the song themselves, synced to SongStart, see cl_init.
+-- Except once broken, BASS can't take the DSP, so those go out through EmitSound and only reach whoever's around as it starts
 function ENT:PlaySong( index )
     local station = self.Stations[index]
-    local path = station and station.path or self.OffSound
+    local emitted = self.RadioBroken == true
 
-    local level = self.RadioBroken and 70 or 80
+    self:SetSong( station and index or 0 )
+    self:SetSongStart( CurTime() )
+    self:SetSongEmitted( emitted )
+
+    if not emitted then return end
+
+    local path = station and station.path or self.OffSound
 
     local filterAllPlayers = RecipientFilter()
     filterAllPlayers:AddAllPlayers()
 
-    self:EmitSound( path, level, self.audioPitch, 1, CHAN_ITEM, nil, self.audioDSP, filterAllPlayers )
-    self:SetSong( station and index or 0 )
+    self:EmitSound( path, 70, self.audioPitch, 1, CHAN_ITEM, nil, self.audioDSP, filterAllPlayers )
 
 end
 
