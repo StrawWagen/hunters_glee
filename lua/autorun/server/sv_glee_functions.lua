@@ -28,6 +28,25 @@ function terminator_Extras.GleeFancySplode( pos, damage, radius, attacker, infli
 
 end
 
+-- for single use weapons, call once it's used up
+-- switches the holder to shove, then removes it
+-- removing it straight away auto-switches to their next gun while attack's still held, and fires it
+function terminator_Extras.glee_RemoveSpentWeapon( wep )
+    local owner = wep:GetOwner()
+    if IsValid( owner ) and owner:IsPlayer() then
+        timer.Simple( 1, function()
+            if not IsValid( wep ) then return end
+            if not IsValid( owner ) then return end
+            if owner:GetActiveWeapon() ~= wep then return end
+            owner:SelectWeapon( "termhunt_shove" )
+
+        end )
+    end
+
+    SafeRemoveEntityDelayed( wep, 2 )
+
+end
+
 -- Creates a prop_physics parented to `parent`, positioned/angled via local-space offsets.
 -- On parent removal, the detail unparents, falls to the world, then is cleaned up.
 function terminator_Extras.AttachParentedDetail( parent, toSpawn, localPos, localAng )

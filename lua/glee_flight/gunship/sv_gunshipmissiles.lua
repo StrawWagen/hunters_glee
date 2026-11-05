@@ -110,6 +110,7 @@ function gunship.ManageMissiles( npc, state, segment, target, distToTarget, canS
 
     launch( npc, spawnPos, aimPos )
     state.ammo = state.ammo - 1
+    gunship.SpendSpite( state, gunship.SpiteCfg.perMissile )
     if sighting then
         sighting.missilesSince = sighting.missilesSince + 1
 

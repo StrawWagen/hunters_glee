@@ -10,7 +10,10 @@ local damageCfg = gunship.DamageCfg
 function gunship.SetupStanding( npc )
     local state = npc.glee_GunshipState
     state.biggestHitTaken = 0
-    state.spiteDamage = 0
+    state.spite = 0
+    state.grudges = {} -- [player] = damage they've dealt it, or tried to
+    state.raging = false
+    state.nextRageReroll = 0
     state.hurtSinceBombRun = false -- it only dodges rockets once they've proven they can hurt it
     state.nextHurtable = 0
     state.nextTauHalving = 0
@@ -126,7 +129,7 @@ hook.Add( "EntityTakeDamage", "glee_gunship_damage", function( target, dmg )
     end
 end )
 
-hook.Add( "PostEntityTakeDamage", "glee_gunship_realdamage", function( target, _dmg, took )
+hook.Add( "PostEntityTakeDamage", "glee_gunship_realdamage", function( target, dmg, took )
     local state = target.glee_GunshipState
     if not state then return end
 
@@ -136,17 +139,21 @@ hook.Add( "PostEntityTakeDamage", "glee_gunship_realdamage", function( target, _
 
     if target:Health() <= 0 then return end
 
-    -- immune to it, bullets and the like, it still holds a grudge
+    local attacker = dmg:GetAttacker()
+    if attacker ~= target then
+        gunship.GainSpite( state, state.hitRawDamage, attacker )
+
+    end
+
+    -- immune to it, bullets and the like
     if not took then
         target:SetHealth( before )
-        state.spiteDamage = state.spiteDamage + state.hitRawDamage
         return
 
     end
 
     local damage = state.hitDamage
     target:SetHealth( math.ceil( before - damage ) )
-    state.spiteDamage = state.spiteDamage + math.max( state.hitRawDamage - damage, 0 )
     if damage <= 0 then return end
 
     local cur = CurTime()

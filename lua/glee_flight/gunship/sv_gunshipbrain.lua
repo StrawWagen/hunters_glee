@@ -6,6 +6,7 @@ local orbitCfg = gunship.OrbitCfg
 local boomerangCfg = gunship.BoomerangCfg
 local bombCfg = gunship.BombCfg
 local chargeCfg = gunship.ChargeCfg
+local spiteCfg = gunship.SpiteCfg
 
 local debugging = gunship.Debugging
 
@@ -55,6 +56,7 @@ local attackModes = {
     bomb = true,
     bellycannon = true,
     charge = true,
+    rage = true,
 }
 
 local function gunshipSetMode( self, state, mode, segment )
@@ -109,16 +111,24 @@ local function gunshipManageBoomerang( self, state, rocket, orbitCenter )
     end
 
     if not rocket or state.boomerangStart then return end
+
+    -- one more hit like the worst it's taken kills it, run like hell
+    local lastHit = self:Health() <= state.biggestHitTaken
+    -- raging, rockets don't faze it, unless the next one kills it
+    if state.mode == "rage" then
+        if not lastHit then return end
+
     -- not in the belly cannon routine, it's committed, rockets or not
-    if state.mode ~= "duel" and state.mode ~= "bomb" then return end
+    elseif state.mode ~= "duel" and state.mode ~= "bomb" then
+        return
+
+    end
     -- unhurt, it trusts its gun to shoot the rocket down, and holds its orbit
     if not state.hurtSinceBombRun then return end
     if not orbitCenter then return end
 
     gunship.StartBoomerang( self, state )
 
-    -- one more hit like the worst it's taken kills it, run like hell
-    local lastHit = self:Health() <= state.biggestHitTaken
     if lastHit then
         state.fleeing = true
         gleeFlightNavigator.SetSpeedOverride( self, gunship.FleeSpeed )
@@ -165,6 +175,12 @@ function gunship.Think( self )
     local rocket = validEnemy and currEnemy:GetClass() == "rpg_missile" and currEnemy or nil
     local target = validEnemy and not rocket and currEnemy or nil
     local rememberedTarget = gunshipUpdateMemory( state, target, rocket )
+    -- raging, it picks who to fight itself, the engine never has to acquire them
+    local rageTarget = gunship.ManageRage( self, state )
+    if rageTarget then
+        rememberedTarget = rageTarget
+
+    end
 
     if not state.spottedAPlayer and target and target:IsPlayer() then
         state.spottedAPlayer = true
@@ -173,7 +189,7 @@ function gunship.Think( self )
     end
 
     -- a rocket as its enemy doesn't blind it to whoever fired it
-    local fighting = target or rememberedTarget
+    local fighting = rageTarget or target or rememberedTarget
     local canSeeTarget = false
     if fighting then
         local targetsCenter = fighting:WorldSpaceCenter()
@@ -226,6 +242,12 @@ function gunship.Think( self )
     local wandering
     local searching
     local bellyCannoning
+
+    -- a belly cannon shot it's lining up gets finished first
+    if rageTarget and state.mode ~= "rage" and state.mode ~= "bellycannon" then
+        gunshipSetMode( self, state, "rage", segment )
+
+    end
 
     local currMode = state.mode
     -- nobody to fight
@@ -313,7 +335,7 @@ function gunship.Think( self )
         end
     -- circle them, pulse gun blazing
     elseif currMode == "duel" then
-        local spiteful = state.spiteDamage >= bombCfg.spiteDamage
+        local spiteful = state.spite >= spiteCfg.attackAt
         local overhead = distToTarget < bombCfg.overheadRadius
         local gunQuiet = CurTime() - state.lastGunVolley > bombCfg.quietGunTime
 
@@ -330,7 +352,6 @@ function gunship.Think( self )
 
         elseif spiteful or segmentDropped or CurTime() >= state.nextDuelBomb then
             state.currentGunshipTask = "duel_attack"
-            state.spiteDamage = 0
             gunshipAttack( self, state, target, segment, canSeeTarget )
 
         -- a crowd around the target is worth the cannon, owed or not
@@ -372,6 +393,23 @@ function gunship.Think( self )
             orbitRadius = orbitCfg.duelRadius * orbitCfg.bombRadiusMul
 
         end
+    -- spite's boiled over, bombard whoever's hurt it, missiles never run out while the spite lasts
+    elseif currMode == "rage" then
+        if not rageTarget then
+            state.currentGunshipTask = "rage_calmedDown"
+            gunshipSetMode( self, state, "handler", segment )
+
+        elseif state.spite >= spiteCfg.perBellyCannon and gunship.PlanBellyCannon( self, state, rageTarget, canSeeTarget ) then
+            state.currentGunshipTask = "rage_bellyCannon"
+            gunshipAttack( self, state, rageTarget, segment, canSeeTarget )
+
+        else
+            state.currentGunshipTask = "rage_bombard"
+            state.canFire = true
+            state.ammo = math.max( state.ammo, 2 )
+            orbitRadius = orbitCfg.duelRadius * orbitCfg.bombRadiusMul
+
+        end
     -- line the belly up, then fire
     elseif currMode == "bellycannon" then
         bellyCannoning = true
@@ -387,6 +425,7 @@ function gunship.Think( self )
             -- paid in full
             state.currentGunshipTask = "bellycannon_done"
             state.ammo = 0
+            gunship.SpendSpite( state, spiteCfg.perBellyCannon )
             -- backing off often loses them, if so, it'll charge back in
             if plan == "backoff" then
                 state.chargeWindowEnd = CurTime() + chargeCfg.window
@@ -425,7 +464,8 @@ function gunship.Think( self )
 
         local heading, offCenter = gunship.BoomerangHeading( self, state, orbitCenter )
         idealMovePos = gunshipCarrotAlong( self, rememberedTarget, heading )
-        state.canFire = state.mode == "bomb" and offCenter < boomerangCfg.canFireBelowAngle and not distracted
+        local bombing = state.mode == "bomb" or state.mode == "rage"
+        state.canFire = bombing and offCenter < boomerangCfg.canFireBelowAngle and not distracted
 
     elseif orbitRadius then
         if not state.wasCircling then
@@ -452,7 +492,9 @@ function gunship.Think( self )
     end
 
     if state.canFire and rememberedTarget then
-        gunship.ManageMissiles( self, state, segment, rememberedTarget, distToTarget, canSeeTarget )
+        -- raging, it fires as fast as it does nearly dead
+        local missileSegment = state.mode == "rage" and 1 or segment
+        gunship.ManageMissiles( self, state, missileSegment, rememberedTarget, distToTarget, canSeeTarget )
 
     end
 

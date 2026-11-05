@@ -17,6 +17,7 @@ include( "glee_flight/rescueheli/sv_rescuehelicall.lua" )
 
 include( "glee_flight/gunship/sv_gunship.lua" )
 include( "glee_flight/gunship/sv_gunshipstanding.lua" )
+include( "glee_flight/gunship/sv_gunshiprage.lua" )
 include( "glee_flight/gunship/sv_gunshipskycheck.lua" )
 include( "glee_flight/gunship/sv_gunshiporbit.lua" )
 include( "glee_flight/gunship/sv_gunshipmissiles.lua" )

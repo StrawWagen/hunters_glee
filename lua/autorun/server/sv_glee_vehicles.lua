@@ -195,7 +195,9 @@ hook.Add( "OnPlayerRappelReachedVehicle", "glee_vehicles_rappelboard", function(
     if ply:KeyDown( IN_WALK ) then return end
     if gleeVehicles.TryBoard( ent, ply ) then return end
 
-    ply:StopRapelling()
+    -- can't board, lower them out of reach instead of cutting the rope
+    local anchorPos = ent:LocalToWorld( ply:GetNWVector( "glee_RappelSourceOffset" ) )
+    ply:SetNWFloat( "glee_RappelRopeLength", ply:GetPos():Distance( anchorPos ) + 100 )
 
 end )
 

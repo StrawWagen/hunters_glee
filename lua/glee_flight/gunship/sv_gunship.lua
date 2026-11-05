@@ -86,7 +86,6 @@ gunship.BombCfg = {
     madAmmo = 8, -- segment 1, every incoming rocket reloads it to this
     -- a rocket coming at it holds its missiles and belly cannon, like its gun, until it's under this fraction of its health
     rocketDistractsAbove = 0.5,
-    spiteDamage = 200, -- damage it shrugs off before it bombs out of spite, bullets it's immune to count
     -- right over its target, the pulse gun often can't angle down to it, gone quiet this long there, it's owed missiles
     quietGunTime = 4,
     overheadRadius = 1000, -- 2d
@@ -139,6 +138,21 @@ gunship.BellyCannonCfg = {
     recoilSpeed = 800,
     recoilTime = 0.5,
     recoilDist = 300,
+}
+
+-- every hit banks spite, taken or shrugged off, bullets it's immune to count
+-- only firing back spends it, so a horde that keeps shooting keeps it furious
+gunship.SpiteCfg = {
+    attackAt = 200, -- duelling with this much banked, it bombs out of spite
+    perMissile = 100,
+    perBellyCannon = 500,
+    -- under this fraction of its health, with rageAt banked, it stops waiting to acquire anyone
+    -- and bombards whoever's hurt it, rockets coming at it or not
+    rageBelowHealth = 0.5,
+    rageAt = 1000,
+    rageUntil = 300, -- spent down under this, it calms down
+    rageRerollEvery = 1.8, -- about a missile pair, so the whole horde gets some
+    rageUnseenWeight = 0.2, -- a grudge against someone it can't see counts this much
 }
 
 -- backed off to fire the belly cannon, and lost them, it reloads and charges where it last saw them, missiles away

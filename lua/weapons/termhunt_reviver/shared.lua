@@ -80,6 +80,7 @@ end
 function SWEP:PrimaryAttack()
 
     if CLIENT then return end
+    if self:Clip1() <= 0 then return end -- spent, waiting to be removed
 
     local owner = self:GetOwner()
     if not IsValid( owner ) then return end -- istg this will happen sometime
@@ -178,6 +179,12 @@ function SWEP:ResurrectPly( ply )
 
     local owner = self:GetOwner()
     self:TakePrimaryAmmo( 1 )
+
+    -- single use, like grenades, the only way to recharge is buying another kit
+    if self:Clip1() <= 0 then
+        terminator_Extras.glee_RemoveSpentWeapon( self )
+
+    end
 
     owner:SetNW2Bool( "gleereviver_resurrected", true )
 
@@ -295,13 +302,6 @@ function SWEP:Think()
             self.resurrectEnd = nil
             self:SetNWBool( "RevivingPly", false )
         end
-    end
-    -- single use, like grenades, the only way to recharge is buying another kit
-    if SERVER and self:Clip1() <= 0 then
-        owner.blockSwitchingWeaponsReviver = nil
-        owner:StripWeapon( self:GetClass() )
-        return
-
     end
     if not ( self.resurrecting and IsValid( self.toResurrect ) ) then
         owner.blockSwitchingWeaponsReviver = nil

@@ -141,7 +141,7 @@ function SWEP:ShootFlare()
     hook.Run( "glee_signalflare_shoot", owner, self, flare )
 
     if not owner:IsPlayer() then
-        SafeRemoveEntityDelayed( self, 2 )
+        terminator_Extras.glee_RemoveSpentWeapon( self )
         return
 
     end
@@ -151,14 +151,7 @@ function SWEP:ShootFlare()
         if self:Clip1() > 0 then return end
         if owner:GetAmmoCount( self.Primary.Ammo ) > 0 then return end
 
-        timer.Simple( 1, function()
-            if not IsValid( self ) then return end
-            if not IsValid( owner ) then return end
-            if owner:GetActiveWeapon() ~= self then return end
-            owner:SelectWeapon( "termhunt_shove" )
-
-        end )
-        SafeRemoveEntityDelayed( self, 2 )
+        terminator_Extras.glee_RemoveSpentWeapon( self )
 
     end )
 end
