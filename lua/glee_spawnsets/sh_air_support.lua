@@ -83,6 +83,3 @@ end
 
 -- put the spawnset IN the global table to be gobbled
 table.insert( GLEE_SPAWNSETS, set )
-
--- put the spawnset IN the global table to be gobbled
-table.insert( GLEE_SPAWNSETS, set )
