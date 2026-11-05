@@ -82,7 +82,7 @@ function playerMeta:RappelTo( ent, hitPos )
             if not hitGood then return end
             if plysShoot:Distance( tr.HitPos ) > glee_RappelSettings.boardDistance then return end
 
-            hook.Run( "OnPlayerRappelBoardVehicle", self, ent )
+            hook.Run( "OnPlayerRappelReachedVehicle", self, ent )
 
         end
     end )

@@ -33,7 +33,7 @@ GM.GetSkullRelayMultiplier = defaultingConVar( "huntersglee_escape_skullreward_r
 -- The Escape Multiplier for the current map and misery: their product, then the map's and the misery's.
 -- Unrounded. Nil on client if a sync failed
 function GM:GetEscapeMultiplier()
-    -- 0 is the client cache's "not here", real multipliers never go below 0.15
+    -- 0 is the client map cache's "not here", real multipliers never go below 0.15
     local mapMul = self:GetMapsEscapeMultiplier( game.GetMap() )
     if mapMul <= 0 then return end
 
@@ -41,7 +41,7 @@ function GM:GetEscapeMultiplier()
     local spawnsetMul = 1 -- the server's answer for no misery, the client's cache has nothing for it
     if spawnsetName ~= "" then
         spawnsetMul = self:GetSpawnsetsEscapeMultiplier( spawnsetName )
-        if spawnsetMul <= 0 then return end
+        if not spawnsetMul then return end
 
     end
 

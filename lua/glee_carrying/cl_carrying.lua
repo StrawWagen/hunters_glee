@@ -4,7 +4,8 @@ local glee_Carrying = terminator_Extras.glee_Carrying
 
 -- Carrying -------------------------------------------------------------------
 
--- The carrier sees through what they carry in first person, it rides their bones, right in front of the camera
+-- in first person, the carrier sees right through what they carry
+-- it rides their bones, so it'd sit right in front of the camera
 local function isHiddenFromView( ent )
     local wep = glee_Carrying.GetCarrierWeapon( ent )
     if not IsValid( wep ) then return false end
@@ -16,13 +17,18 @@ local function isHiddenFromView( ent )
 
 end
 
--- Draws as it would've, unless it's hidden. Left on once it's put down, it only ever hides while carried
+-- draws it the way it would've drawn anyway, unless it's hidden
+-- stays on after it's put down, that's fine, it only hides while carried
 function glee_Carrying.DrawUnlessHidden( ent, flags )
     if isHiddenFromView( ent ) then return end
 
     local underneath = ent.glee_PreCarryRenderOverride
     if underneath then
         underneath( ent, flags )
+
+    -- RenderOverride stands in for both Draw and DrawTranslucent, each pass gets the one it'd have run
+    elseif bit.band( flags, STUDIO_TRANSPARENCY ) ~= 0 and ent.DrawTranslucent then
+        ent:DrawTranslucent( flags )
 
     elseif ent.Draw then
         ent:Draw( flags )
@@ -33,43 +39,100 @@ function glee_Carrying.DrawUnlessHidden( ent, flags )
     end
 end
 
--- By name each call, so an autorefresh reaches entities wrapped before it
-local function carriedRenderOverride( ent, flags )
+-- clientside models stuck onto carried things, see terminator_cl_extramodels.lua in the terminator addon
+hook.Add( "ShouldDrawMyExtraModels", "glee_carrying_hidefromcarrier", function( ent )
+    if isHiddenFromView( ent ) then return false end
+
+end )
+
+-- kept on the table, so it's the same function after an autorefresh
+-- a new one would look like something else replaced it, and get wrapped in itself
+-- looks DrawUnlessHidden up by name each call, so an autorefresh still reaches it
+glee_Carrying.CarriedRenderOverride = glee_Carrying.CarriedRenderOverride or function( ent, flags )
     glee_Carrying.DrawUnlessHidden( ent, flags )
 
 end
 
--- Per entity, so it reaches props and engine entities too, which have no ENT table to put it on.
--- Polled, the weapon a carried thing points at can reach this client after the carried thing does.
--- Wrapped once ever, a flag not a function compare, or a refresh would wrap the old wrapper in the new
+-- what this client has turned ShouldCollide on for, and what it was before
+-- the server sets that flag on what it carries, but the wiki never says it's networked
+-- kept on the table, or an autorefresh would take our own true as what it was before
+glee_Carrying.ClientCollisionChecked = glee_Carrying.ClientCollisionChecked or setmetatable( {}, { __mode = "k" } )
+local collisionChecked = glee_Carrying.ClientCollisionChecked
+
+-- what the local player carries this frame, reused so Think makes no garbage
+local carriedNow = {}
+
+local function startCollisionCheck( ent )
+    collisionChecked[ent] = ent:GetCustomCollisionCheck()
+    ent:SetCustomCollisionCheck( true )
+    ent:CollisionRulesChanged()
+
+end
+
+local function stopCollisionCheck( ent )
+    ent:SetCustomCollisionCheck( collisionChecked[ent] )
+    ent:CollisionRulesChanged()
+    collisionChecked[ent] = nil
+
+end
+
+-- wraps each carried thing's RenderOverride, so it can hide
+-- per entity, so it reaches props and engine entities too, they've no ENT table to put it on
+-- polled, the weapon can reach this client after the thing it carries does
+-- and until then the carrier reads as nobody, so collision rules are worked out here too
 hook.Add( "Think", "glee_carrying_hidefromcarrier", function()
     local ply = LocalPlayer()
     if not IsValid( ply ) then return end -- joining, there's no local player yet
 
-    local carrying = false
+    local carried = carriedNow
+    table.Empty( carried )
+
     for _, wep in ipairs( ply:GetWeapons() ) do
         if not wep.IsGleeBackpackable then continue end
 
         local ent = wep:GetCarriedEnt()
         if not IsValid( ent ) then continue end
 
-        carrying = true
-        if not ent.glee_HidesFromCarrier then
-            ent.glee_HidesFromCarrier = true
+        carried[ent] = true
+
+        -- again whenever something else swaps it out, eg the ent setting its own
+        local wrapper = glee_Carrying.CarriedRenderOverride
+        if ent.RenderOverride ~= wrapper then
             ent.glee_PreCarryRenderOverride = ent.RenderOverride
-            ent.RenderOverride = carriedRenderOverride
+            ent.RenderOverride = wrapper
 
         end
     end
 
     -- only their own projectiles are predicted, so only what they carry needs the client's answer
-    glee_Carrying.SetOwnProjectilesHooked( carrying )
+    -- hooked before the rules change, so ShouldCollide's there to be asked
+    if next( carried ) then glee_Carrying.SetOwnProjectilesHooked( true ) end
+
+    for ent in pairs( carried ) do
+        if collisionChecked[ent] == nil then startCollisionCheck( ent ) end
+
+    end
+
+    for ent in pairs( collisionChecked ) do
+        if carried[ent] then continue end
+
+        if IsValid( ent ) then
+            stopCollisionCheck( ent )
+
+        else
+            collisionChecked[ent] = nil
+
+        end
+    end
+
+    if not next( carried ) then glee_Carrying.SetOwnProjectilesHooked( false ) end
 
 end )
 
 
--- sh_carrying's ShouldCollide reads the carrier, so a change of carrier changes its answer. The server
--- calls this itself as it picks up and puts down, the client's told by the carrier arriving
+-- sh_carrying's ShouldCollide reads the carrier, so a new carrier changes its answer
+-- the server calls CollisionRulesChanged itself as it picks up and puts down
+-- the client finds out when the carrier var arrives
 hook.Add( "EntityNetworkedVarChanged", "glee_carrying_collisionrules", function( ent, name )
     if name ~= "glee_CarrierWeapon" then return end
 
@@ -99,7 +162,8 @@ local useWasDown = false
 local pressedEnt
 local pressedAt
 
--- What they're aiming at in use range, if it has actions. Never what they carry
+-- what they're aiming at in use range, if it has actions
+-- never what they carry, the trace skips it
 local function findTarget( ply )
     local shootPos = ply:EyePos()
     local tr = util.TraceLine( {
@@ -115,8 +179,9 @@ local function findTarget( ply )
 
 end
 
--- Asks the server to run one of ent's actions, which checks it all again.
--- The key, not a wheel slot, the actions can change in between, eg it's picked up by someone else
+-- asks the server to run one of ent's actions, it checks everything again
+-- sent by key, not wheel slot, the actions can change in between
+-- eg someone else picks it up
 local function sendPick( ent, key )
     net.Start( "glee_carrying_wheelpick" )
         net.WriteEntity( ent )
@@ -125,7 +190,8 @@ local function sendPick( ent, key )
 
 end
 
--- Aimed by the mouse while use stays held, letting go of use picks. Replaces any wheel already open
+-- the mouse aims it while use stays held, letting go of use picks
+-- replaces any wheel already open
 local function openWheel( ply, ent )
     local oldWheel = getCurrentWheel()
     if IsValid( oldWheel ) then oldWheel:Remove() end
@@ -170,14 +236,15 @@ local function openWheel( ply, ent )
 
 end
 
--- What using ent does, the one place that decides. Nothing with no actions, the wheel with several, and
--- one action's just run. Except a lone PickUpAction on what use can lift, that's lift-then-reload,
--- so a tap of use stays a plain lift
+-- what using ent does, decided here and nowhere else
+-- one action just runs, several open the wheel
+-- a lone PickUpAction is left to use, which lifts it, then reload carries it
+-- wheel-only ents can't be lifted, so theirs just runs
 local function useOn( ply, ent )
     local actions = glee_Carrying.GetUseActions( ent )
     if not actions then return end
 
-    if glee_Carrying.IsLiftThenReload( actions ) and glee_Carrying.CanLift( ent ) then return end
+    if glee_Carrying.IsLiftThenReload( actions ) and not glee_Carrying.IsUseWheelOnly( ent ) then return end
 
     if #actions == 1 then
         sendPick( ent, actions[1].key )
@@ -209,7 +276,7 @@ hook.Add( "CreateMove", "glee_carrying_holduse", function( cmd )
 
         local target = findTarget( ply )
 
-        -- a plain +use does nothing on these, so there's nothing to wait out
+        -- GleeUseWheelOnly, a plain +use does nothing on these, so there's nothing to wait out
         if target and glee_Carrying.IsUseWheelOnly( target ) then
             useOn( ply, target )
             return
@@ -234,7 +301,8 @@ hook.Add( "CreateMove", "glee_carrying_holduse", function( cmd )
 
 end )
 
--- the gamemode's hint stack, so its lessons are always there
+-- tells them what reload would do with what they're lifting
+-- the hint stack is the gamemode's, so GAMEMODE's lessons are always there when this runs
 hook.Add( "huntersglee_cl_displayhint_poststack", "glee_carrying_heldactionhint", function( ply )
     local ent, action, canPick, reason = glee_Carrying.GetHeldPickUp( ply )
     if not ent then return end
@@ -246,11 +314,12 @@ hook.Add( "huntersglee_cl_displayhint_poststack", "glee_carrying_heldactionhint"
 
     end
 
-    local learned = action.lesson and GAMEMODE:HasLearnedLesson( ply, action.lesson )
-    if learned and action.shortHint then return true, action.shortHint end
-    if action.hint then return true, action.hint end
+    local valid, reloadKey = GAMEMODE:TranslatedBind( "+reload" )
+    if not valid then return GAMEMODE:UnboundHint( "+reload", "You can't pick this up...", true ) end
 
-    local reloadKey = input.LookupBinding( "+reload" ) or "+reload"
-    return true, string.upper( reloadKey ) .. " to " .. string.lower( action.label )
+    local learned = action.lesson and GAMEMODE:HasLearnedLesson( ply, action.lesson )
+    local hint = learned and action.shortHint or action.hint
+
+    return true, string.format( hint, string.upper( reloadKey ) )
 
 end )

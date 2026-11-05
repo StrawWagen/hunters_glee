@@ -1,6 +1,7 @@
 
 local vacant = "VACANT"
 local compakt = "COMPAKT"
+local kelley = "KELLYBAILEY"
 
 local tracks = {
     heliEvac = {
@@ -208,6 +209,45 @@ local tracks = {
         priority        = 5000,
         randomOrder     = true,
     },
+
+    gunshipBattle = {
+        sounds = {
+            {
+                author = kelley,
+                snd = "music/hl2_song16.mp3",
+            },
+            {
+                author = kelley,
+                snd = "music/hl2_song14.mp3",
+            },
+            {
+                author = kelley,
+                snd = "music/hl2_song29.mp3",
+            },
+            {
+                author = kelley,
+                snd = "music/hl2_song15.mp3",
+            },
+            {
+                author = kelley,
+                snd = "music/hl1_song10.mp3",
+            },
+            {
+                author = kelley,
+                snd = "music/hl2_song20_submix0.mp3",
+            },
+            {
+                minDifficulty = 75,
+                author = kelley,
+                snd = "music/hl2_song3.mp3",
+            },
+        },
+        priority     = 0,
+        randomOrder     = true,
+        fadeInLength = 1,
+        neverOverrides = { "grigoriArrival", "secondGrigoriArrival" },
+        alwaysOverrides = { "roundEnd", "roundWin", "roundPerfectWin" },
+    }
 }
 
 GAMEMODE:GobbleMusicTracks( tracks )

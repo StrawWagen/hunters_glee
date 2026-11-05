@@ -23,34 +23,15 @@ local function canSpawnMenu( ply )
     end
     if not IsValid( ply ) then return false end
     if not ply:IsAdmin() then return false end
-    return true
 
 end
 
 function GM:CanProperty( ply, _property, _ent )
-    return canSpawnMenu( ply )
+    return canSpawnMenu( ply ) ~= false
 
 end
 
 if CLIENT then
-    -- will fail on first creation because of invalid localplayer
-    function GM:SpawnMenuEnabled()
-        return canSpawnMenu()
-
-    end
-
-    -- we then call it again when localplayer is valid
-    hook.Add( "InitPostEntity", "glee_CreateSpawnMenu", function()
-        if not canSpawnMenu() then return end
-        RunConsoleCommand( "spawnmenu_reload" ) -- calls CreateSpawnMenu
-
-    end )
-
-    function GM:SpawnMenuOpen()
-        return canSpawnMenu()
-
-    end
-
     local function supressHints()
         local toSupress = {
             "OpeningMenu",
@@ -75,20 +56,38 @@ if CLIENT then
         end
     end
 
+    -- will fail on first creation because of invalid localplayer
+    function GM:SpawnMenuEnabled()
+        return canSpawnMenu() ~= false
+
+    end
+
+    -- we then call it again when localplayer is valid
+    hook.Add( "InitPostEntity", "glee_CreateSpawnMenu", function()
+        if canSpawnMenu() == false then return end
+        RunConsoleCommand( "spawnmenu_reload" ) -- calls CreateSpawnMenu
+
+    end )
+
+    function GM:SpawnMenuOpen()
+        return canSpawnMenu() ~= false
+
+    end
+
     local function postLoaded()
         supressHints()
 
         -- kill menubar for non-admins
         menubar.glee_oldMenuBarInit = menubar.glee_oldMenuBarInit or menubar.Init
         menubar.Init = function()
-            if not canSpawnMenu() then return end
+            if canSpawnMenu() == false then return end
             menubar.glee_oldMenuBarInit()
 
         end
 
         menubar.glee_oldMenuParentTo = menubar.glee_oldMenuParentTo or menubar.ParentTo
         menubar.ParentTo = function( to )
-            if not canSpawnMenu() then return end
+            if canSpawnMenu() == false then return end
             menubar.glee_oldMenuParentTo( to )
 
         end

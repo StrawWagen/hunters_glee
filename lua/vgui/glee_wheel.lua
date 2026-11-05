@@ -1,9 +1,5 @@
 --[[
-    glee_wheel — extends glee_panel
-
-    A radial menu. Up to 8 items a page on a ring of wedges, picked by direction from the
-    centre, clockwise from the top. Each wedge shows its item's icon, or its label when it
-    has no icon, the icon failed to load, or it's hovered. The hole in the middle is left clear.
+    glee_wheel, a radial menu. Extends glee_panel.
 
         local wheel = vgui.Create( "glee_wheel" )
         wheel:SetSize( 600, 600 )
@@ -18,26 +14,35 @@
             return canPick, cooldownEnd, cooldownLength
         end
 
-    Two ways to aim it:
-        Clicked: MakePopup it, the cursor aims and a click on the ring picks. A click anywhere
-            else closes it, the hole here, off the panel through easyClosePanel.
-        Held: HoldAim it while a key is down, the mouse aims without turning the view.
+    up to 8 wedges a page, clockwise from the top.
+    picked by direction from the centre, so a flick picks without aiming at the wedge.
+    each wedge shows its icon, or its label while hovered or when it has no icon.
+
+    two ways to aim it:
+        clicked, MakePopup it.
+            a click on the ring picks, a click anywhere else closes it.
+            off the panel, that's easyClosePanel's job.
+        held, HoldAim it while a key is down.
+            the mouse aims, the view holds still.
             Release it when the key comes up, that picks whatever's aimed at, then closes.
 
-    Past 8 items it pages, the mouse wheel flips them. Keys 1 to 8 pick on the current page.
+    past 8 items it pages, the mouse wheel flips them.
+    keys 1 to 8 pick on the current page.
     Close fades it out, then removes it.
 ]]
 
 local PER_PAGE = 8
 local START_ANGLE = -90 -- the top
 
--- radii, of half the width. OUTER + CHOSEN_PUSH must stay under 1, or the chosen wedge clips
+-- radii, as a share of half the width
+-- OUTER + CHOSEN_PUSH must stay under 1, or the chosen wedge clips
 local INNER_RATIO       = 0.46
 local OUTER_RATIO       = 0.84
 local HOVER_PUSH_RATIO  = 0.05
 local CHOSEN_PUSH_RATIO = 0.09
--- of the inner radius, nothing's picked inside it while HoldAim'd. It must stay under 1, held aim is
--- clamped to the inner radius. Clicked, the dead zone is the hole inside the page bar, see holeRadius
+-- held, nothing's picked inside this share of the inner radius
+-- must stay under 1, held aim is clamped to the inner radius
+-- clicked, the dead zone is holeRadius instead
 local DEAD_ZONE_RATIO   = 0.5
 
 local ICON_FILL = 0.75 -- of the wedge's thickness, or its width if that's narrower
@@ -77,7 +82,8 @@ PANEL.Init = function( self )
     end
 
     self._focus = 0 -- eases to 1 while anything's hovered
-    -- pages flipped, never wrapped, so the grip keeps turning the way it's scrolled past the last page
+    -- pages flipped, never wrapped
+    -- so the grip keeps turning the way it's scrolled, past the last page
     self._pageSteps  = 0
     self._pageScroll = 0 -- eases to _pageSteps
 
@@ -97,14 +103,18 @@ end
 PANEL.OnItemSelected = function( _self, _item, _index )
 end
 
--- stub. canPick false greys the item out and refuses the pick.
--- cooldownEnd is a CurTime, cooldownLength its full length; the wedge sweeps only when given both
+-- stub, polled for the items on the page
+-- canPick false, or nothing, greys the item out and refuses the pick
+-- cooldownEnd is a CurTime, cooldownLength its full length
+-- the wedge only sweeps when it gets both
 PANEL.GetItemStatus = function( _self, _item, _index )
     return true
 
 end
 
--- items: { { label = "Wave", icon = Material or nil, ... }, ... }. Anything else on an item is the caller's
+-- items: { { label = "Wave", icon = Material or nil }, ... }
+-- anything else on an item is yours, it's handed back to OnItemSelected
+-- starts back on page 1
 PANEL.SetItems = function( self, items )
     self._items = items
     self._page = 1
@@ -143,8 +153,9 @@ local function radii( self )
 
 end
 
--- The page bar's frame and track, out from the middle, inside a ring whose inner edge is ringInner.
--- Its own frame sits a lane's spacing in, padded like the main ring's wedges
+-- the page bar's frame and track radii, out from the middle
+-- it sits a lane's spacing inside ringInner
+-- the track's padded inside its frame, like the main ring's wedges
 local function pageRingRadii( style, ringInner )
     local pad = style:Metric( "blockPadding" )
     local frameOuter = ringInner - style:Metric( "laneSpacing" )
@@ -156,8 +167,8 @@ local function pageRingRadii( style, ringInner )
 
 end
 
--- Where a click stops picking and closes: inside the page bar when there is one, so aiming at
--- it still picks, or else inside the ring
+-- inside this, a click closes instead of picking
+-- with pages it's inside the page bar, so aiming at the bar still picks
 local function holeRadius( self )
     local inner = radii( self )
     if pageCount( self ) <= 1 then return inner end
@@ -253,8 +264,8 @@ local function slotUnderAim( self )
         if distanceSqr < deadZone * deadZone then return end
 
     else
-        -- clicked, only the ring picks, so nothing lights up where a click would close it.
-        -- Out to a hovered wedge's push, or it would flicker off the edge it just pushed out
+        -- clicked, only the ring picks, so nothing lights up where a click would close it
+        -- reach goes out to a hovered wedge's push, or it'd flicker off the edge it just pushed out
         local deadZone = holeRadius( self )
         local _, outer, halfW = radii( self )
         local reach = outer + halfW * HOVER_PUSH_RATIO
@@ -269,7 +280,8 @@ local function slotUnderAim( self )
 
 end
 
--- OnItemSelected may Close or Remove the wheel, nothing may touch self after it
+-- OnItemSelected may Close or Remove the wheel
+-- check IsValid before touching self after this
 local function selectSlot( self, slot )
     local first = pageRange( self )
     local index = first + slot - 1
@@ -362,7 +374,8 @@ PANEL.Release = function( self )
 
 end
 
--- Plays the style's exit, then removes it. easyClosePanel calls this every frame escape is down
+-- plays the style's exit, then removes it
+-- safe to call again, easyClosePanel calls it every frame escape is down
 PANEL.Close = function( self )
     if self._exitingAt then return end
 
@@ -380,7 +393,8 @@ end
 
 -- Animation -------------------------------------------------------------------
 
--- the chosen wedge's pop, the wheel's own. Coming in and leaving are the style's
+-- for the chosen wedge's pop
+-- coming in and leaving are the style's, see style:Entrance and style:Exit
 local function easeOut( t )
     local inverse = 1 - t
     return 1 - inverse * inverse * inverse
@@ -396,6 +410,9 @@ PANEL.Think = function( self )
     if self._exitingAt then return end
 
     pollStatuses( self )
+
+    -- a release off the panel never reaches OnMouseReleased
+    if self._pressed and not input.IsMouseDown( MOUSE_LEFT ) then self._pressed = false end
 
     local hovered = slotUnderAim( self )
     if hovered ~= self._hovered then
@@ -422,7 +439,8 @@ PANEL.Think = function( self )
 
 end
 
--- The style's exit for one part: fade, scale and progress. Nothing's moved while it isn't leaving
+-- the style's exit for one part, fade, scale and progress
+-- all at rest while it isn't leaving
 local function exitMotion( self, style, order )
     if not self._exitingAt then return 1, 1, 0 end
 
@@ -431,8 +449,21 @@ local function exitMotion( self, style, order )
 
 end
 
--- each slot's radii, push and fade this frame, onto self._slots. Wedges come in and leave in
--- order, clockwise from the top, as the style staggers its parts
+-- how far a wedge is pushed out from the ring
+-- hovered, a little, if it can be picked
+-- the pick pops out to CHOSEN_PUSH while the rest leave, picked by key or by aim
+local function slotPush( self, slot, isChosen, exitProgress, halfW )
+    local hoverPush = 0
+    if canPickSlot( self, slot ) then hoverPush = halfW * HOVER_PUSH_RATIO * self._slots[slot].hover end
+
+    if not isChosen then return hoverPush end
+
+    return Lerp( easeOut( exitProgress ), hoverPush, halfW * CHOSEN_PUSH_RATIO )
+
+end
+
+-- each slot's radii, push and fade this frame, onto self._slots
+-- wedges come in and leave one after another, clockwise from the top
 local function layoutSlots( self, style, inner, outer, halfW )
     for slot = 1, slotsOnPage( self ) do
         local data = self._slots[slot]
@@ -441,7 +472,8 @@ local function layoutSlots( self, style, inner, outer, halfW )
         local fade, scale = style:Entrance( self._enteredAt, order )
         local exitFade, exitScale, exitProgress = exitMotion( self, style, order )
 
-        -- the pick stays whole and pops out while the rest leave, and fades only at the last
+        -- the pick stays whole and pops out while the rest leave
+        -- it only fades at the very end
         local isChosen = self._exitingAt and slot == self._chosenSlot
         if isChosen then
             fade = fade * ( 1 - exitProgress * exitProgress * exitProgress )
@@ -451,9 +483,7 @@ local function layoutSlots( self, style, inner, outer, halfW )
 
         end
 
-        local push = 0
-        if canPickSlot( self, slot ) then push = halfW * HOVER_PUSH_RATIO * data.hover end
-        if isChosen then push = push + halfW * ( CHOSEN_PUSH_RATIO - HOVER_PUSH_RATIO ) * easeOut( exitProgress ) end
+        local push = slotPush( self, slot, isChosen, exitProgress, halfW )
 
         local startDeg, endDeg = slotAngles( self, slot )
         local mid = math.rad( ( startDeg + endDeg ) * 0.5 )
@@ -492,9 +522,10 @@ local function fadedColor( self, color, alphaMul )
 
 end
 
--- Backdrops, the ring and the wedges, are the style's, see handle:ArcBackground. This is for the
--- plain fills over them, the page grip and the cooldown sweep. fromFrac and toFrac, 0 to 1, keep
--- part of it clockwise. Drawn with RNDX like the backdrops, surface would blend it darker
+-- plain fills over the backdrops, the page grip and the cooldown sweep
+-- the backdrops themselves are the style's, see handle:ArcBackground
+-- fromFrac and toFrac, 0 to 1, keep part of it, clockwise
+-- RNDX like the backdrops, surface would blend it darker
 local function drawWedge( centerX, centerY, inner, outer, startDeg, endDeg, gap, color, fromFrac, toFrac )
     local shape = terminator_Extras.glee_HudHelpers.ArcShape( centerX, centerY, inner, outer, startDeg, endDeg, gap, fromFrac, toFrac )
     if shape then shape:Color( color ):Draw() end
@@ -506,8 +537,10 @@ local function isLifted( data )
 
 end
 
--- the ring is the wheel's frame, each wedge sits in it padded like a settings row in its menu.
--- Drawn without the lifted wedges' pieces, in unbroken runs between them, so no seams show at slot edges
+-- the ring is the wheel's frame
+-- each wedge sits in it, padded like a settings row in its menu
+-- lifted wedges carry their own piece, so the rest is drawn in runs between them
+-- runs, not a piece per slot, so no seams show at slot edges
 local function paintRing( self, style, centerX, centerY, inner, outer, fade )
     local count = slotsOnPage( self )
 
@@ -572,8 +605,10 @@ local function paintWedge( self, style, slot, centerX, centerY, pad, gap, chosen
     -- what's left of the cooldown, shrinking clockwise
     local remaining = cooldownRemaining( slotStatus( self, slot ) )
     if remaining > 0 then
-        local sweepColor = fadedColor( self, style:Color( "text" ), data.fade )
-        sweepColor.a = COOLDOWN_SWEEP_ALPHA * data.fade
+        -- text's colour, at the sweep's own alpha
+        local textColor = style:Color( "text" )
+        local sweepColor = self._drawColor
+        sweepColor.r, sweepColor.g, sweepColor.b, sweepColor.a = textColor.r, textColor.g, textColor.b, COOLDOWN_SWEEP_ALPHA * data.fade
         drawWedge( wedgeX, wedgeY, wedgeInner, wedgeOuter, data.startDeg, data.endDeg, gap, sweepColor, 1 - remaining, 1 )
 
     end
@@ -597,7 +632,9 @@ local function paintWedges( self, style, centerX, centerY, now )
     end
 end
 
--- the colours a settings row's text takes: happy, or disabled. Hover only touches the backdrop
+-- each wedge's icon, or its label
+-- coloured like a settings row's text, happy or disabled
+-- the rest dim while one's hovered
 local function paintContents( self, style, centerX, centerY )
     local font = style:Font( LABEL_FONT )
     local pad, gap = style:Metric( "blockPadding" ), style:Metric( "laneSpacing" )
@@ -631,8 +668,9 @@ local function paintContents( self, style, centerX, centerY )
     end
 end
 
--- glee_scrollpanel's bar bent into a second ring inside the first, so the mouse wheel reads as
--- the way to page. The grip is one page's share of it, page 1 at the top, turning clockwise
+-- glee_scrollpanel's bar, bent into a second ring inside the first
+-- so the mouse wheel reads as the way to page
+-- the grip is one page's share of it, page 1 at the top, turning clockwise
 local function paintPages( self, style, centerX, centerY, ringInner, fade )
     local pages = pageCount( self )
     if pages <= 1 then return end
@@ -654,7 +692,7 @@ PANEL.Paint = function( self, w, h )
     local centerX, centerY = w * 0.5, h * 0.5
     local inner, outer, halfW = radii( self )
 
-    -- the ring and page bar, as one part, the first
+    -- the ring and page bar move as one part, the first
     local fade, scale = style:Entrance( self._enteredAt )
     local exitFade, exitScale = exitMotion( self, style, 0 )
     fade, scale = fade * exitFade, scale * exitScale

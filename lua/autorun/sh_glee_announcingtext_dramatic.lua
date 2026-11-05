@@ -10,7 +10,7 @@ if SERVER then
 
     function huntersGlee_AnnounceDramatic( plys, priority, length, announcement )
         for _, ply in ipairs( plys ) do
-            if not IsValid( ply ) then error( "GLEE: Tried to dramatic announce to invalid ply" ) return end
+            if not IsValid( ply ) then ErrorNoHaltWithStack( "GLEE: Tried to dramatic announce to invalid ply" ) continue end
             local oldPriority = ply.glee_DramaticAnnouncement_Priority or 0
             if oldPriority > priority then continue end
 

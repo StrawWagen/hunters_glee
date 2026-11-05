@@ -9,7 +9,8 @@ util.AddNetworkString( "glee_carrying_wheelopened" )
 
 local hintCooldown = 3
 
--- Once every hintCooldown at most, a switch blocked by the hands-full rule can try every tick
+-- at most once every hintCooldown
+-- a switch blocked by the hands-full rule tries again every tick
 function glee_Carrying.HintHandsFull( ply )
     if ( ply.glee_NextHandsFullHint or 0 ) > CurTime() then return end
     ply.glee_NextHandsFullHint = CurTime() + hintCooldown
@@ -19,7 +20,8 @@ function glee_Carrying.HintHandsFull( ply )
 
 end
 
--- For those whose carry rules give them no back, same cooldown as HintHandsFull
+-- for those whose carry rules give them no back slots
+-- shares HintHandsFull's cooldown
 function glee_Carrying.HintCantBackpack( ply )
     if ( ply.glee_NextHandsFullHint or 0 ) > CurTime() then return end
     ply.glee_NextHandsFullHint = CurTime() + hintCooldown
@@ -28,8 +30,10 @@ function glee_Carrying.HintCantBackpack( ply )
 
 end
 
--- The gamemode's strips, eg being grabbed, drop what they carry first, as the camera and flashlight do,
--- rather than removing the weapons out from under it. Outside the gamemode the hook never runs
+-- the gamemode's strips, eg being grabbed, drop what they carry first
+-- rather than removing the weapons out from under it
+-- the camera and flashlight do the same
+-- outside the gamemode this hook never runs
 hook.Add( "glee_PreStripWeapons", "glee_carrying_dropbeforestrip", function( ply )
     if not ply.DropWeaponKeepAmmo then return end
 
@@ -39,9 +43,11 @@ hook.Add( "glee_PreStripWeapons", "glee_carrying_dropbeforestrip", function( ply
     end
 end )
 
--- What's on their back leaves with them, the escape kills them right after, and their weapons with it,
--- which would leave it where they escaped. What's in their hands is left behind. Outside the gamemode
--- the hook never runs. glee_carrying_escapedwith( ply, ent ), first, is for whatever wants to reward it
+-- what's on their back escapes with them
+-- the escape kills them right after, which would leave it lying where they escaped
+-- what's in their hands is left behind
+-- glee_carrying_escapedwith( ply, ent ) runs first, for whatever wants to reward it
+-- outside the gamemode this hook never runs
 hook.Add( "glee_ply_escaped", "glee_carrying_escapewithback", function( ply )
     for _, wep in ipairs( glee_Carrying.GetCarriedWeapons( ply ) ) do
         local ent = wep:GetCarriedEnt()
@@ -54,8 +60,10 @@ hook.Add( "glee_ply_escaped", "glee_carrying_escapewithback", function( ply )
     end
 end )
 
--- Gives them weaponClass, or its twin, carrying a brand new entity it makes itself, eg from a shop.
--- The one way to, a weapon given any other way with nothing to carry removes itself. False if there's no room
+-- gives them weaponClass, or its twin, carrying a brand new entity, eg from a shop
+-- the weapon makes that entity itself
+-- given any other way, with nothing to carry, it removes itself, see its Equip
+-- false if there's no room
 function glee_Carrying.GiveNewCarryable( ply, weaponClass )
     if not glee_Carrying.HasRoomFor( ply, weaponClass ) then return false end
 
@@ -78,7 +86,8 @@ function glee_Carrying.GiveNewCarryable( ply, weaponClass )
 
 end
 
--- Gives them its weapon, which grabs ent, and switches to it. False and CanCarry's reason if they can't
+-- gives them ent's carry weapon, which grabs ent, and switches to it
+-- false, and CanCarry's reason, if they can't
 function glee_Carrying.Carry( ply, ent )
     local canCarry, reason = glee_Carrying.CanCarry( ply, ent )
     if not canCarry then return false, reason end
@@ -158,13 +167,14 @@ net.Receive( "glee_carrying_wheelopened", function( _, ply )
 
 end )
 
--- see CanLift, wheel-only ones open their wheel straight away, lifting them too would fight it
+-- wheel-only ones open their wheel straight away, lifting them too would fight it
 hook.Add( "AllowPlayerPickup", "glee_carrying_wheelonly", function( _, ent )
-    if not glee_Carrying.CanLift( ent ) then return false end
+    if glee_Carrying.IsUseWheelOnly( ent ) then return false end
 
 end )
 
--- The engine's +use can land on what they carry. Swapped for what they're aiming at past it
+-- the engine's +use can land on what they carry
+-- this swaps it for whatever they're aiming at past it
 hook.Add( "FindUseEntity", "glee_carrying_notowncarried", function( ply, defaultEnt )
     if not IsValid( defaultEnt ) or not glee_Carrying.IsCarriedBy( defaultEnt, ply ) then return end
 
@@ -182,6 +192,16 @@ end )
 
 hook.Add( "PlayerUse", "glee_carrying_notowncarried", function( ply, used )
     if glee_Carrying.IsCarriedBy( used, ply ) then return false end
+
+end )
+
+-- bots have no client to hold use or open the wheel
+-- so their use just picks up whatever offers it
+hook.Add( "PlayerUse", "glee_carrying_botpickup", function( ply, used )
+    if not ply:IsBot() or not glee_Carrying.OffersPickUp( used ) then return end
+    if not glee_Carrying.Carry( ply, used ) then return end
+
+    return false -- carried now, the engine's own use would lift it
 
 end )
 

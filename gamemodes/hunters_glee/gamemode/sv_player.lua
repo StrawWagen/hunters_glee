@@ -948,7 +948,7 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
                     or eyeTraceHit:IsNPC()
 
                 local parent = eyeTraceHit:GetParent()
-                if not spectateable and IsValid( parent ) and parent:GetNW2Bool( "glee_IsSpectatable", false ) then
+                if not spectatable and IsValid( parent ) and parent:GetNW2Bool( "glee_IsSpectatable", false ) then
                     eyeTraceHit = parent
                     spectatable = true
 

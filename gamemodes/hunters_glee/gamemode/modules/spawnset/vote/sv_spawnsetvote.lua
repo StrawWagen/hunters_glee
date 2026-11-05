@@ -64,6 +64,13 @@ function spawnSetVote:BeginVote( duration, maxOptions, toAdd )
 
         toBrowse[currentSpawnsetName] = nil -- remove current mode from options
 
+        -- filter for ones that suit this map
+        for setName, _ in pairs( spawnSets ) do
+            if GAMEMODE:DoesSpawnsetSuitMap( setName ) then continue end
+            toBrowse[setName] = nil
+
+        end
+
         -- paid for, so they're in before anything is picked at random
         for steamID64, nomination in pairs( GAMEMODE:SpendMiseryNominations() ) do
             local setName = nomination.setName
@@ -196,7 +203,7 @@ function spawnSetVote:BeginVote( duration, maxOptions, toAdd )
         end
     net.Send( player.GetAll() )
 
-    permaPrint( "GLEE: A mode vote has begun" )
+    permaPrint( "GLEE: A Misery vote has begun" )
 
     GAMEMODE.glee_ConsecutiveSpawnsetVotes = GAMEMODE.glee_ConsecutiveSpawnsetVotes + 1
 
@@ -291,6 +298,7 @@ function spawnSetVote:OnVoteEnd()
         GAMEMODE:RoundState() == GAMEMODE.ROUND_ACTIVE
         and GAMEMODE:getRemaining( GAMEMODE.termHunt_roundBegunTime, CurTime() ) > 60
         and not currentSpawnSet.easy -- always allow switching if easy
+        and GAMEMODE:DoesSpawnsetSuitMap( GAMEMODE:GetSpawnSetName() ) -- or if it can't spawn anything here, the round's dead anyway
 
     then -- if round has properly started
         huntersGlee_AnnounceDramatic( player.GetAll(), 1001, 10, "The next Misery; " .. GAMEMODE:GetPrettyNameOfSpawnSet( spawnSetVote.winner ) .. "\nwill arrive upon round end..." )
@@ -314,7 +322,7 @@ function spawnSetVote:CancelVote()
     net.Start( "glee_cancel_spawnsetvote" )
     net.Broadcast()
 
-    permaPrint( "GLEE: The mode vote was cancelled" )
+    permaPrint( "GLEE: The Misery vote was cancelled" )
 
 end
 

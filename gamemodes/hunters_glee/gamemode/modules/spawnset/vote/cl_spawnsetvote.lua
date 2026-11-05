@@ -349,8 +349,11 @@ function spawnSetVote:CreateVotePanel()
         currButton:DockMargin( 0, lineGap, 0, 0 )
 
         local tooltipText = data.description
+        -- sv_spawnsetvote syncs these just before the vote, the fallbacks are just in case
         local multiplier, escaped, remained = GAMEMODE:GetSpawnsetsEscapeMultiplier( currButton.name )
-        multiplier = math.Round( multiplier, 2 )
+        multiplier = math.Round( multiplier or 1, 2 )
+        escaped = escaped or 0
+        remained = remained or 0
         currButton.multiplier = multiplier
 
         local escapeYap

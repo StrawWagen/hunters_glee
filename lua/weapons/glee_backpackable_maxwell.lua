@@ -11,6 +11,9 @@ SWEP.SlotPos = 7
 SWEP.DrawCrosshair = false
 SWEP.BounceWeaponIcon = true
 
+SWEP.Category = "Hunter's Glee"
+SWEP.Spawnable = true
+
 -- CREDIT https://steamcommunity.com/sharedfiles/filedetails/?id=2878054450 by bean
 
 if CLIENT then
@@ -20,9 +23,6 @@ end
 
 SWEP.Purpose = "I still have nightmares about that cat..."
 SWEP.Instructions = "What cat?"
-
-SWEP.Spawnable = false -- glee_maxwell_dancing is, see there
-SWEP.Category = "Hunter's Glee"
 
 SWEP.CarryEntClass = "glee_maxwell_dancing"
 

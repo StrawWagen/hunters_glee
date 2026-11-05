@@ -99,6 +99,9 @@ ENT.HealthRegenInterval = 1 -- time between health regens
 ENT.TakesFallDamage = false
 ENT.Sentinel_ExplosionDamageMaxHpFrac = 0.25
 
+ENT.ChargeCrushes = true
+ENT.ChargeCrushDmgMinSpeed = 500 -- only the sprint
+
 local shockwaveStartingHeight = 250
 local fallHeightPerLandingScale = 200
 local maxLandingScale = 4

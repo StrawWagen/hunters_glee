@@ -53,7 +53,8 @@ function GM:GobbleSpawnsets()
         end
 
         if prefix ~= "cl_" then
-            ProtectedCall( function( nameProtected ) include( "glee_spawnsets/" .. nameProtected ) end, fileName )
+            -- CompileFile, not include, so saving a spawnset doesn't autorefresh the whole gamemode
+            ProtectedCall( function( nameProtected ) CompileFile( "glee_spawnsets/" .. nameProtected )() end, fileName )
 
         end
 

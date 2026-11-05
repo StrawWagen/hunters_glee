@@ -70,6 +70,7 @@ AddCSLuaFile( "modules/sh_deathsounds.lua" )
 AddCSLuaFile( "modules/sh_slowmopitch.lua" )
 AddCSLuaFile( "modules/sh_danceslowdown.lua" )
 AddCSLuaFile( "modules/sh_playerdrowning.lua" )
+AddCSLuaFile( "modules/sh_compathacks.lua" )
 AddCSLuaFile( "modules/sh_detecthunterkills.lua" )
 
 AddCSLuaFile( "modules/shopitems/cl_shopgobbler.lua" )
@@ -138,6 +139,7 @@ include( "modules/sv_rejoinpersist.lua" )
 include( "modules/sv_firstfallgrace.lua" )
 include( "modules/spawnset/core/sv_spawnsetgobbler.lua" )
 include( "modules/spawnset/core/sv_spawnset.lua" )
+include( "modules/spawnset/core/sv_spawnsetmapcheck.lua" )
 include( "modules/sv_blamedfalldamage.lua" )
 include( "modules/sv_seeding_rewarder.lua" )
 include( "modules/music/sv_music.lua" )
@@ -1006,10 +1008,15 @@ function GM:roundEnd()
         if hasEscaped then
             GAMEMODE.roundExtraData.someoneEscaped = true
 
-        else
+        elseif not ply:HasStatusEffect( "astrallyprojected" ) then -- they chose to leave their body, don't rob everyone else of the boon
             GAMEMODE.roundExtraData.everyoneEscaped = false
 
         end
+    end
+    -- a round where everyone astrally projected isn't a round where everyone escaped
+    if not GAMEMODE.roundExtraData.someoneEscaped then
+        GAMEMODE.roundExtraData.everyoneEscaped = false
+
     end
 
     SetGlobalBool( "glee_EveryoneEscapedLastRound", GAMEMODE.roundExtraData.everyoneEscaped )

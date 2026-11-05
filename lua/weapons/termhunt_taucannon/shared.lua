@@ -98,6 +98,7 @@ end
 local instaKillBlacklist = {
     ["prop_vehicle_apc"] = true,
     ["npc_helicopter"] = true,
+    ["npc_combinegunship"] = true,
 }
 
 function SWEP:DumpCharge()
@@ -149,6 +150,7 @@ function SWEP:DumpCharge()
         local class = trace.Entity:GetClass()
         if chargeLevel == max_Charge then
             terminator_Extras.DoPFXAtPos( "glee_taucannon_explosion", trace.HitPos )
+            hook.Run( "glee_taucannon_overchargehit", trace.Entity, self )
 
             if not instaKillBlacklist[class] then
                 trace.Entity:SetHealth( 0 )
@@ -358,7 +360,7 @@ function SWEP:PrimaryAttack()
     self:SetNextSecondaryFire( CurTime() + 1 )
     self.nextInspect = CurTime() + 1
 
-    local canFire = not owner:IsPlayer() or owner:GetAmmoCount( self.Primary.Ammo ) > 0 
+    local canFire = not owner:IsPlayer() or owner:GetAmmoCount( self.Primary.Ammo ) > 0
     if not canFire then return end
 
     self:EmitSound( self.Primary.Sound )
@@ -514,7 +516,7 @@ function SWEP:Explode() -- YOU LET IT OVERCHARGE!
     dmginfo:SetDamage( 1000 )
     dmginfo:SetAttacker( owner )
     dmginfo:SetInflictor( self )
-    dmginfo:SetDamageType( bit.bor( DMG_BLAST,DMG_AIRBOAT ) )
+    dmginfo:SetDamageType( bit.bor( DMG_BLAST, DMG_AIRBOAT ) )
     owner:TakeDamageInfo( dmginfo )
 
     if owner.DropWeaponKeepAmmo then

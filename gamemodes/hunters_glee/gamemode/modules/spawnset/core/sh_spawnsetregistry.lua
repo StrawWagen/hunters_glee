@@ -24,6 +24,15 @@ function GM:GetPrettyNameOfSpawnSet( setName )
 
 end
 
+-- [setName] = true, for miseries that can't spawn anything on this map, sv_spawnsetmapcheck works these out
+-- empty until the navpatcher's done, so everything suits the map until then
+GM.glee_SpawnsetsUnsuitedToMap = GM.glee_SpawnsetsUnsuitedToMap or {}
+
+function GM:DoesSpawnsetSuitMap( setName )
+    return not self.glee_SpawnsetsUnsuitedToMap[setName]
+
+end
+
 function GM:IsSpawnsetEasy( setName )
     setName = setName or self:GetSpawnSetName()
     local registered = self.RegisteredSpawnSets[setName]

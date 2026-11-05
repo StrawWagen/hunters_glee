@@ -30,7 +30,7 @@ net.Receive( "glee_gobbledirectories", function()
 
     for _ = 1, count do
         local dir = net.ReadString()
-        local ok = ProtectedCall( function( dirProtected ) include( "glee_shopitems/" .. dirProtected ) end, dir )
+        local ok = ProtectedCall( function( dirProtected ) CompileFile( "glee_shopitems/" .. dirProtected )() end, dir )
 
         if ok then
             GAMEMODE.validClientItemDirectories[dir] = true
@@ -57,7 +57,7 @@ function GM:GobbleShopItems( items )
                 self.ItemGobbleCount = self.ItemGobbleCount + 1
 
             elseif not wasGood then
-                return
+                continue
 
             end
         end

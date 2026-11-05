@@ -4,14 +4,43 @@ local developerVar = GetConVar( "developer" )
 local entMeta = FindMetaTable( "Entity" )
 local nw2NamePrefix = "glee_hasstatuseffect_"
 
+-- data.extraModels, MyExtraModels entries stuck on the owner while the effect's on
+-- not made in setup, so this can potentially work with autorefresh down the line
+-- different from statusEffect:AddExtraModel, that can add extra models live
+local function dataExtrasKey( name )
+    return "glee_statuseffect_" .. name .. "_data"
+
+end
+
+local function attachDataExtras( ent, name, data )
+    local key = dataExtrasKey( name )
+    if data.extraModels then
+        terminator_Extras.AttachMyExtraModels( ent, data.extraModels, key )
+
+    else
+        terminator_Extras.RemoveMyExtraModels( ent, key )
+
+    end
+end
+
 function GM:RegisterStatusEffect( name, setup, teardown, data )
+    data = data or {}
+
     self.RegisteredStatusEffects = self.RegisteredStatusEffects or {}
     self.RegisteredStatusEffects[name] = {
         setup = setup,
         teardown = teardown,
-        data = data or {},
+        data = data,
 
     }
+
+    -- registered again, an autorefresh. effects already running get the new extras
+    for _, ent in ipairs( ents.GetAll() ) do
+        if ent:GetStatusEffect( name ) then
+            attachDataExtras( ent, name, data )
+
+        end
+    end
 end
 
 function entMeta:HasStatusEffect( name )
@@ -51,6 +80,7 @@ function entMeta:StatusEffectApplyCL( name ) -- no way to give status effects on
     effect:Apply( self )
 
     entsEffects[name] = effect
+    attachDataExtras( self, name, registeredEffect.data )
 
     self:CallOnRemove( "glee_statuseffectcleanup_" .. name, function()
         if developerVar:GetBool() then
@@ -73,6 +103,7 @@ function entMeta:StatusEffectRemoveCL( name )
     effect:InternalTeardown( self )
 
     entsEffects[name] = nil
+    terminator_Extras.RemoveMyExtraModels( self, dataExtrasKey( name ) )
     self:RemoveCallOnRemove( "glee_statuseffectcleanup_" .. name )
 
 end

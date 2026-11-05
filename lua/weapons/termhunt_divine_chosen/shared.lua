@@ -737,21 +737,7 @@ function SWEP:DoEpicness( amount )
         if nextEpicZzarp > CurTime() then return end
         self.nextEpicZzarp = CurTime() + math.Rand( .1, .5 )
 
-        local hitboxSetCount = owner:GetHitboxSetCount()
-        local randomSet = math.random( 0, hitboxSetCount - 1 )
-
-        local hitboxCount = owner:GetHitBoxCount( randomSet )
-        local randomHitboxId = math.random( 0, hitboxCount - 1 )
-
-        local bone = owner:GetHitBoxBone( randomHitboxId, randomSet )
-
-        local randomBone = owner:GetBonePosition( bone )
-
-        local startPos = owner:WorldSpaceCenter()
-        if randomBone then
-            startPos = randomBone
-
-        end
+        local startPos = terminator_Extras.GetRandomHitboxPoint( owner )
 
         local startingDir = vector_up + VectorRand()
         startingDir:Normalize()

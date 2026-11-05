@@ -39,8 +39,14 @@ SWEP.ConsecutiveShotsDecay = 2
 SWEP.HeatDecay = 0.004
 SWEP.HeatPerShot = 0.004
 SWEP.UnbearableHeat = 0.25
+SWEP.SizzleWarmup = 0.4 -- heat below ignition where the flesh sizzle fades in, ~3.5s of full auto
 
-SWEP.LastAttack = 0
+SWEP.HeatStepInterval = 0.05
+SWEP.CoolGrace = 0.05 -- covers tick rounding on the next shot, so steady fire never cools
+
+SWEP.CoolStart = 0
+SWEP.NextHeatStep = 0
+SWEP.ThinkSteppedAt = 0
 
 if CLIENT then
     terminator_Extras.glee_CL_SetupSwep( SWEP, "termhunt_ar3", "materials/vgui/hud/killicon/termhunt_ar3.png" )
@@ -112,7 +118,7 @@ function SWEP:PrimaryAttack()
     self:SetConsecutiveShots( self:GetConsecutiveShots() + 1 )
     self:SetHeat( self:GetHeat() + self.HeatPerShot )
 
-    self.LastAttack = CurTime()
+    self.CoolStart = CurTime() + add + self.CoolGrace
 
 end
 
@@ -123,41 +129,124 @@ function SWEP:Initialize()
     self:SetHoldType( "physgun" )
     if not SERVER then return end
 
+    -- steps the heat whenever Think isn't, holstered, dropped, or held by a non player
     local timerName = "glee_ar3_heatthinktimer" .. self:GetCreationID()
-    timer.Create( timerName, 0.05, 0, function()
+    timer.Create( timerName, self.HeatStepInterval, 0, function()
         if not IsValid( self ) then timer.Remove( timerName ) return end
+        if SysTime() - self.ThinkSteppedAt < 0.2 then return end
 
-        local owner = self:GetOwner()
-        if self.LastAttack + 0.1 < CurTime() then
-            local shots = self:GetConsecutiveShots()
-            if shots > 0 then
-                self:SetConsecutiveShots( math.max( 0, shots - self.ConsecutiveShotsDecay ) )
+        self:KillSizzle()
+        self:HeatStep()
 
-            end
-            local heat = self:GetHeat()
-            if heat > 0 then
-                self:SetHeat( math.max( 0, heat - self.HeatDecay ) )
+    end )
+end
 
-            end
-        elseif IsValid( owner ) then
-            local heat = self:GetHeat()
-            local thresh = self.UnbearableHeat
-            local overThresh = math.max( heat - thresh, 0 )
+-- players have to step from Think
+-- PrimaryAttack stamps CoolStart with the player's CurTime, which drifts from the server's CurTime that timers see
+function SWEP:Think()
+    if not SERVER then return end
 
-            if overThresh > 0 then
-                if overThresh > 1 and math.Rand( 0, 1 ) < overThresh then
-                    owner:Ignite( overThresh * 2 )
-                    if GAMEMODE.GivePanic then
-                        GAMEMODE:GivePanic( owner, overThresh * 4 )
+    local owner = self:GetOwner()
+    if not IsValid( owner ) or not owner:IsPlayer() then return end
 
-                    end
-                elseif GAMEMODE.GivePanic then
-                    GAMEMODE:GivePanic( owner, overThresh * 2 )
+    self.ThinkSteppedAt = SysTime()
+
+    if self.NextHeatStep > CurTime() then return end
+    self.NextHeatStep = CurTime() + self.HeatStepInterval
+
+    self:HeatStep()
+    self:UpdateSizzle()
+
+end
+
+function SWEP:HeatStep()
+    local owner = self:GetOwner()
+    if self.CoolStart < CurTime() then
+        local shots = self:GetConsecutiveShots()
+        if shots > 0 then
+            self:SetConsecutiveShots( math.max( 0, shots - self.ConsecutiveShotsDecay ) )
+
+        end
+        local heat = self:GetHeat()
+        if heat > 0 then
+            self:SetHeat( math.max( 0, heat - self.HeatDecay ) )
+
+        end
+    elseif IsValid( owner ) then
+        local heat = self:GetHeat()
+        local thresh = self.UnbearableHeat
+        local overThresh = math.max( heat - thresh, 0 )
+
+        if overThresh > 0 then
+            if overThresh > 1 and math.Rand( 0, 1 ) < overThresh then
+                owner:Ignite( overThresh * 2 )
+                if GAMEMODE.GivePanic then
+                    GAMEMODE:GivePanic( owner, overThresh * 4 )
 
                 end
+            elseif GAMEMODE.GivePanic then
+                GAMEMODE:GivePanic( owner, overThresh * 2 )
+
             end
         end
-    end )
+    end
+end
+
+-- fades in as heat nears ignition, see HeatStep's overThresh > 1
+function SWEP:UpdateSizzle()
+    local igniteHeat = self.UnbearableHeat + 1
+    local warmupStart = igniteHeat - self.SizzleWarmup
+    local volume = math.Clamp( ( self:GetHeat() - warmupStart ) / self.SizzleWarmup, 0, 1 )
+
+    if volume <= 0 then self:KillSizzle() return end
+
+    if not self.sizzleSound then
+        local sizzleSound = CreateSound( self:GetOwner(), "npc/stalker/laser_flesh.wav" )
+        self.sizzleSound = sizzleSound
+        self:CallOnRemove( "glee_ar3_sizzleSound", function() -- ALWAYS KILL THE SOUND WHEN GUN GOES AWAY
+            if sizzleSound and sizzleSound:IsPlaying() then
+                sizzleSound:Stop()
+
+            end
+        end )
+    end
+
+    if not self.sizzleSound:IsPlaying() then -- stopsound WILL be called somehow
+        self.sizzleSound:PlayEx( volume, 100 )
+
+    end
+    self.sizzleSound:ChangeVolume( volume, self.HeatStepInterval )
+
+end
+
+function SWEP:KillSizzle() -- looping sounds stick to weapons, call this everywhere the gun stops being held
+    if self.sizzleSound and self.sizzleSound:IsPlaying() then
+        self.sizzleSound:Stop()
+
+    end
+    self.sizzleSound = nil
+
+end
+
+function SWEP:Holster()
+    self:KillSizzle()
+    return true
+
+end
+
+function SWEP:OnDrop()
+    self:KillSizzle()
+
+end
+
+function SWEP:OwnerChanged()
+    self:KillSizzle()
+
+end
+
+function SWEP:OnRemove()
+    self:KillSizzle()
+
 end
 
 function SWEP:DoImpactEffect( tr, _nDamageType )

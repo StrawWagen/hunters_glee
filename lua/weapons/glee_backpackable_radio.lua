@@ -7,6 +7,9 @@ SWEP.Purpose = "Play some good music, wherever you go."
 SWEP.Instructions = "Primary to tune. Reload to place it down."
 SWEP.Slot = 4
 
+SWEP.Category = "Hunter's Glee"
+SWEP.Spawnable = true
+
 if CLIENT then
     terminator_Extras.glee_CL_SetupSwep( SWEP, "glee_backpackable_radio", "materials/entities/swepts_radio_old.png" )
 
@@ -21,7 +24,7 @@ SWEP.WorldModelHandPos, SWEP.WorldModelHandAng = terminator_Extras.glee_Carrying
 SWEP.WorldModelBackPos = Vector( 4, -1.5, 0 )
 SWEP.WorldModelBackAng = Angle( 90, 0, 90 )
 
-SWEP.PlaceAng = Angle( 0, 180, 0 ) -- facing back at whoever placed it
+SWEP.PlaceAng = Angle( 0, 180, 0 )
 SWEP.PlacedSound = {
     pitch = 80,
     sounds = {

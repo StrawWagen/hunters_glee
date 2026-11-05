@@ -85,7 +85,7 @@ local function buildSections( startTime )
     else
         local sIfMultipleEscaped = escapedCount == 1 and "" or "s"
         escapedEntries[1] = { text = escapedCount .. " Soul" .. sIfMultipleEscaped .. " Escaped", color = "endscreen" }
-        if remainedCount <= 0 then
+        if remainedCount <= 0 or GetGlobalBool( "glee_EveryoneEscapedLastRound", false ) then
             escapedEntries[2] = { text = "A great boon awaits...", color = "boon", jitter = true }
 
         else

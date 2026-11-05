@@ -295,7 +295,7 @@ function GM:shopItemSkullCost( toPurchase, purchaser )
 end
 
 local cooldownSpec = {
-    default = nil, -- nil is a real answer here, it means no cooldown
+    default = nil, -- no cooldown, for a missing item or a cooldown that errored
     check = isnumber,
     typeName = "number",
     hook = "glee_shop_itemcooldownmul",
@@ -303,6 +303,15 @@ local cooldownSpec = {
 
 function GM:shopItemCooldown( ply, toPurchase )
     if not toPurchase then return end
+
+    -- an item with no cooldown still goes through the hook, as 0
+    -- so a misery's minimum cooldown reaches it too
+    local itemData = GAMEMODE:GetShopItemData( toPurchase )
+    if itemData and itemData.cooldown == nil then
+        -- hook.Run( "glee_shop_itemcooldownmul"
+        return shopHelpers.runAdjustHook( toPurchase, cooldownSpec, 0, ply, itemData )
+
+    end
 
     -- hook.Run( "glee_shop_itemcooldownmul", ply, itemData, adjust ) -- adjust.value is the cooldown, adjust.mul scales it
     return shopHelpers.resolveItemField( toPurchase, "cooldown", ply, cooldownSpec )

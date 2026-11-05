@@ -5,6 +5,8 @@ function ENT:Draw()
 
 end
 
+ENT.IconOverride = "materials/entities/glee_backpackable_radio.png"
+
 
 --[[------------------------------------
     Playback: every client plays the song from where SongStart says it's up to, so anyone arriving
@@ -279,7 +281,11 @@ local function bassEnergy( channel )
 
 end
 
+local nextThink = 0
+
 hook.Add( "Think", "glee_radio_shake", function()
+    if nextThink > CurTime() then return end
+
     local scale = shakeVar:GetFloat()
     if scale <= 0 then return end
 
@@ -295,7 +301,11 @@ hook.Add( "Think", "glee_radio_shake", function()
         end
     end
 
-    if not loudest then return end
+    if not loudest then
+        nextThink = CurTime() + 0.25
+        return
+
+    end
 
     local energy = bassEnergy( loudest.channel )
     local average = loudest.bassAverage or energy

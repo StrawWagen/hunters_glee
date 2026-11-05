@@ -11,6 +11,7 @@ ENT.AdminOnly    = game.IsDedicated()
 ENT.Category = "Hunter's Glee"
 
 local IsValid = IsValid
+local entMeta = FindMetaTable( "Entity" )
 
 ENT.TriggerBoundsNormal = 12
 -- bigger when on a ragdoll to give players a strong hint about skulls in bodies
@@ -250,30 +251,35 @@ end
 
 local closeEnoughToStepOn = 10^2
 
+-- fires every tick for everything in our trigger bounds, including the ragdoll we're parented to
 function ENT:Touch( touched )
+    local myTbl = entMeta.GetTable( self )
+    if myTbl.nextPickup > CurTime() then return end
 
-    if self.nextPickup > CurTime() then return end
+    local touchedIsPly = touched:IsPlayer()
+    local touchedTbl = entMeta.GetTable( touched )
+    if not touchedIsPly and not touchedTbl.isTerminatorHunterChummy then return end
 
-    local parent = self:GetParent()
+    local parent = entMeta.GetParent( self )
 
     if not IsValid( parent ) then
-        self:DoScore( touched )
+        myTbl.DoScore( self, touched )
 
-    elseif parent:IsRagdoll() and touched:IsPlayer() and touched.glee_skullhinted and not touched.glee_skullInBodyHint then
-        touched.glee_skullInBodyHint = true
+    elseif touchedIsPly and entMeta.IsRagdoll( parent ) and touchedTbl.glee_skullhinted and not touchedTbl.glee_skullInBodyHint then
+        touchedTbl.glee_skullInBodyHint = true
         huntersGlee_Announce( { touched }, 11, 10, "A body...\nWith a skull...?" )
 
     end
 
-    if self:GetIsTerminatorSkull() then return end
-    if self.crushImmunityTime > CurTime() then return end
+    if myTbl.GetIsTerminatorSkull( self ) then return end
+    if myTbl.crushImmunityTime > CurTime() then return end
 
     -- just like in tha movie goyss!!!!
-    if touched.isTerminatorHunterChummy and touched.ReallyHeavy and touched:GetPos():DistToSqr( self:WorldSpaceCenter() ) < closeEnoughToStepOn then
-        if self.nextCrushRoll > CurTime() then return end
-        self.nextCrushRoll = CurTime() + 10
+    if touchedTbl.isTerminatorHunterChummy and touchedTbl.ReallyHeavy and entMeta.GetPos( touched ):DistToSqr( entMeta.WorldSpaceCenter( self ) ) < closeEnoughToStepOn then
+        if myTbl.nextCrushRoll > CurTime() then return end
+        myTbl.nextCrushRoll = CurTime() + 10
         if math.random( 1, 100 ) < 75 then return end
-        self:Crumble()
+        myTbl.Crumble( self )
 
     end
 end
@@ -568,7 +574,6 @@ end
 
 if not CLIENT then return end
 
-local entMeta = FindMetaTable( "Entity" )
 local NULL = NULL
 
 function ENT:Draw()

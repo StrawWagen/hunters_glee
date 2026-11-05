@@ -302,8 +302,7 @@ function ENT:UpdateGivenScore()
     if not IsValid( currTarget ) then return end
 
     local givenScore = -400
-    local vehicle = currTarget:GetVehicle()
-    if IsValid( vehicle ) and vehicle.isARescueHeliSeat then
+    if terminator_Extras.gleeVehicles.IsInEscapeSeat( currTarget ) then
         givenScore = -1800
 
     end

@@ -63,7 +63,22 @@ function GM:SendMusic( path, data )
     elseif self:IsPathAMusicTrack( path ) then -- tracks/NAME
         local name = string.sub( path, 8 )
         local resolvedPath, trackData = self:GetAMusicTrack( name )
-        if not resolvedPath then error( "glee_music: invalid track: " .. initialPath ) end
+        if not resolvedPath then
+            if self.musicTracks[name] then
+                error( "glee_music: track \"" .. name .. "\" has no sounds for difficulty " .. self:GetCurrWaveDifficulty() )
+
+            end
+
+            local validNames = table.GetKeys( self.musicTracks )
+            table.sort( validNames )
+            print( "glee_music: valid tracks are..." )
+            for _, validName in ipairs( validNames ) do
+                print( "    tracks/" .. validName )
+
+            end
+            error( "glee_music: invalid track: " .. initialPath )
+
+        end
         path      = resolvedPath
         trackName = name
         data      = table.Copy( trackData )  -- avoid mutating trackData

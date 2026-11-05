@@ -29,16 +29,8 @@ local UNKNOWN_LABEL = "???"
 local WIDEST_MULT   = "00.00x"
 local WIDEST_VALUE  = "000000"
 
--- an escape multiplier never really reads 0, it floors above it. 0 is one that hasn't synced yet
-local function knownMultiplier( setName )
-    local mul = GAMEMODE:GetSpawnsetsEscapeMultiplier( setName )
-    if mul <= 0 then return end
-    return mul
-
-end
-
 local function multiplierText( setName )
-    local mul = knownMultiplier( setName )
+    local mul = GAMEMODE:GetSpawnsetsEscapeMultiplier( setName )
     if not mul then return "?x" end
     return math.Round( mul, 2 ) .. "x"
 
@@ -60,7 +52,7 @@ local corruptedCache = {}
 -- An unseen misery's description, its letters swapped for ? marks, more of them the harder it is.
 -- The same letters go every time, so it doesn't flicker as the window refreshes
 local function corruptedDescription( setName, description )
-    local mul = knownMultiplier( setName ) or FULLY_CORRUPT_MUL
+    local mul = GAMEMODE:GetSpawnsetsEscapeMultiplier( setName ) or FULLY_CORRUPT_MUL
     local cached = corruptedCache[setName]
     if cached and cached.mul == mul then return cached.text end
 
@@ -113,9 +105,10 @@ local function rowValue( setName )
     local mine = myNominationOf( setName )
     if mine then return tostring( mine.cost ) end
     if nominatorOf( setName ) then return "TAKEN" end
-    if not knownMultiplier( setName ) then return "?" end
+    local cost = GAMEMODE:GetMiseryNominationCost( LocalPlayer(), setName )
+    if not cost then return "?" end
 
-    return tostring( GAMEMODE:GetMiseryNominationCost( LocalPlayer(), setName ) )
+    return tostring( cost )
 
 end
 
@@ -161,16 +154,10 @@ local function slotsText()
 
 end
 
-local function knownCost( setName )
-    if not knownMultiplier( setName ) then return end
-    return GAMEMODE:GetMiseryNominationCost( LocalPlayer(), setName )
-
-end
-
 -- cheapest first, unsynced ones last. Ties go by name, so the order is the same every open
 local function cheapestFirst( a, b )
-    local aCost = knownCost( a.setName )
-    local bCost = knownCost( b.setName )
+    local aCost = GAMEMODE:GetMiseryNominationCost( LocalPlayer(), a.setName )
+    local bCost = GAMEMODE:GetMiseryNominationCost( LocalPlayer(), b.setName )
     if ( aCost == nil ) ~= ( bCost == nil ) then return aCost ~= nil end
     if aCost and aCost ~= bCost then return aCost < bCost end
 
@@ -429,6 +416,7 @@ local function openMiseryNominations()
     for setName, _ in pairs( GAMEMODE:GetSpawnSets() ) do
         -- unless it's what your suspended nomination is waiting on, which needs a row to be withdrawn from
         if setName == GAMEMODE:GetSpawnSetName() and not myNominationOf( setName ) then continue end
+        if not GAMEMODE:DoesSpawnsetSuitMap( setName ) and not myNominationOf( setName ) then continue end
 
         local row = makeRow( frame, scroll, setName )
         row:Dock( TOP )
@@ -436,6 +424,14 @@ local function openMiseryNominations()
         table.insert( rows, row )
 
     end
+
+    -- the server charges what it works out when you click, so prices are fetched fresh every open
+    local toForget = {}
+    for _, row in ipairs( rows ) do
+        table.insert( toForget, { isSpawnset = true, key = row.setName } )
+
+    end
+    GAMEMODE:ForgetEscapeMultipliers( toForget )
 
     -- sorted once every multiplier is in, so rows don't jump around while they arrive
     local sorted = false
@@ -463,7 +459,7 @@ local function openMiseryNominations()
         local allKnown = true
         for _, row in ipairs( rows ) do
             table.insert( toRequest, { isSpawnset = true, key = row.setName } )
-            allKnown = allKnown and knownMultiplier( row.setName ) ~= nil
+            allKnown = allKnown and GAMEMODE:GetSpawnsetsEscapeMultiplier( row.setName ) ~= nil
 
         end
         GAMEMODE:RequestEscapeMultipliers( toRequest )

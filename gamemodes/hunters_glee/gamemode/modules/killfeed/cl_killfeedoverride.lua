@@ -283,7 +283,7 @@ function GM:DrawDeathNotice( x, y )
 	local feedLeft, feedRight
 
 	-- Draw
-	for i, Death in ipairs( Deaths ) do
+	for _, Death in ipairs( Deaths ) do
 
 		if ( Death.time + time > CurTime() ) then
 
@@ -296,13 +296,11 @@ function GM:DrawDeathNotice( x, y )
 			Death.lerp.x = x
 			Death.lerp.y = y
 
-			if not ( x and y ) then Deaths[i] = nil return end -- invalid/tiny killicon
-
-			local rowLeft, rowRight
-			y, rowLeft, rowRight = DrawDeath( math.floor( x ), math.floor( y ), Death, time )
+			local rowBottom, rowLeft, rowRight = DrawDeath( math.floor( x ), math.floor( y ), Death, time )
 
 			-- a row with no icon size draws nothing and returns nothing
-			if y then
+			if rowBottom then
+				y = rowBottom
 				feedBottom = y
 				feedLeft = math.min( feedLeft or rowLeft, rowLeft )
 				feedRight = math.max( feedRight or rowRight, rowRight )

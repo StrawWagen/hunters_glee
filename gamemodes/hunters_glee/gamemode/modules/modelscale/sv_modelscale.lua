@@ -99,8 +99,19 @@ local function SetupCharacterChars( name )
 
 end
 
+-- a misery's model decides their size, see setHelpers.overridePlayerModel
+local function characterName( ply )
+    local override = ply.glee_ModelOverride
+    if override then
+        return player_manager.TranslateToPlayerModelName( override )
+
+    end
+    return ply:GetInfo( "cl_playermodel" )
+
+end
+
 local function Update( ply )
-    local name = ply:GetInfo( "cl_playermodel" )
+    local name = characterName( ply )
     local character_chars = characters_chars[name]
 
     if not character_chars then -- bot probably
@@ -136,7 +147,7 @@ local function Update( ply )
 
     end
 
-    ply.PDM_charactername = ply:GetInfo( "cl_playermodel" )
+    ply.PDM_charactername = characterName( ply )
 
     net.Start( "GLEE_PDM:UpdatePlyHull" )
         net.WriteUInt( character_chars["hull"], 16 )

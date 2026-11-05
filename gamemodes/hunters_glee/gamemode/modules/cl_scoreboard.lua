@@ -960,6 +960,8 @@ local SCORE_BOARD = {
 
         local mapMul,       mapEscaped,         mapRemained         = GAMEMODE:GetMapsEscapeMultiplier( currentMap )
         local spawnsetMul,  spawnsetEscaped,    spawnsetRemained    = GAMEMODE:GetSpawnsetsEscapeMultiplier( currentSpawnset )
+        spawnsetEscaped  = spawnsetEscaped or 0 -- unsynced, it's requested above
+        spawnsetRemained = spawnsetRemained or 0
 
         local mapEscapedYap
         if mapEscaped <= 0 then
@@ -1038,7 +1040,7 @@ local SCORE_BOARD = {
 
         end
 
-        local spawnsetMulText = math.Round( spawnsetMul, 2 ) .. "x"
+        local spawnsetMulText = spawnsetMul and math.Round( spawnsetMul, 2 ) .. "x" or "?x"
         self.SpawnSetMultiplierLabel:SetText( spawnsetMulText )
 
         local fullEscapeMul, escapeMapMul, escapeSpawnsetMul = GAMEMODE:GetEscapeMultiplier()

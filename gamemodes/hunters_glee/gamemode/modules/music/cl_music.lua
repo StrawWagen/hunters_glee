@@ -11,6 +11,14 @@ local loadGen          = 0  -- incremented on every load; callbacks compare to r
 local nextThink      = 0
 local THINK_INTERVAL = 1  -- recovery check rate-limit; 1 second of lost audio is acceptable
 
+-- paths that already failed to load, so each one only warns once per round
+local warnedPaths = {}
+
+hook.Add( "PostCleanupMap", "glee_music_resetwarnedpaths", function()
+    warnedPaths = {}
+
+end )
+
 local function getUserVolume()
     local v = volumeVar:GetFloat()
     return v < 0 and defaultMusicVolume or v
@@ -51,6 +59,20 @@ cvars.AddChangeCallback( "cl_huntersglee_musicvolume", function( _, _, _ )
 
 end, "huntersglee_musicvolume_update" )
 
+local function endCurrentSong()
+    if currentSound and IsValid( currentSound.channel ) then currentSound.channel:Stop() end
+    currentSound = nil
+
+end
+
+local function stopAndClear()
+    endCurrentSong()
+    currentPriority  = 0
+    currentTrackName = ""
+    loadGen          = loadGen + 1  -- invalidate any in-flight load
+
+end
+
 local function startSound( path, pitch, vol, offset, fadeInLength, fadeOutLength, entity, startFadeOutDist, endFadeOutDist )
     if currentSound and IsValid( currentSound.channel ) then
         currentSound.channel:Stop()
@@ -87,14 +109,25 @@ local function startSound( path, pitch, vol, offset, fadeInLength, fadeOutLength
     -- channel won't be valid for a couple frames while the sound loads
     nextThink = SysTime() + THINK_INTERVAL
 
-    sound.PlayFile( realPath, "noblock noplay", function( channel, errNum, _errStr )
-        if errNum and errNum ~= 0 then return end
-        if not IsValid( channel )   then return end
+    sound.PlayFile( realPath, "noblock noplay", function( channel, errNum, errStr )
         if loadGen ~= myGen then
-            channel:Stop()
+            if IsValid( channel ) then channel:Stop() end
             return
 
         end
+
+        -- give up on the track, otherwise the Think recovery check retries it every THINK_INTERVAL forever
+        if errNum and errNum ~= 0 then
+            if not warnedPaths[realPath] then
+                warnedPaths[realPath] = true
+                permaPrint( "GLEE: music failed to load " .. realPath .. " (" .. tostring( errStr ) .. ")" )
+
+            end
+            stopAndClear()
+            return
+
+        end
+        if not IsValid( channel ) then return end
 
         currentSound.channel = channel
         if offset > 0 then channel:SetTime( offset ) end
@@ -116,20 +149,6 @@ local function startSound( path, pitch, vol, offset, fadeInLength, fadeOutLength
         channel:Play()
 
     end )
-end
-
-local function endCurrentSong()
-    if currentSound and IsValid( currentSound.channel ) then currentSound.channel:Stop() end
-    currentSound = nil
-
-end
-
-local function stopAndClear()
-    endCurrentSong()
-    currentPriority  = 0
-    currentTrackName = ""
-    loadGen          = loadGen + 1  -- invalidate any in-flight load
-
 end
 
 local function beginFade( path, pitch, vol, fadeInLength, fadeOutLength, entity, startFadeOutDist, endFadeOutDist )

@@ -38,9 +38,6 @@ if CLIENT then
     function SWEP:HintPostStack()
         local owner = self:GetOwner()
 
-        -- .Primary.Ammo is "none", the clip IS the resurrections left
-        if self:Clip1() <= 0 then return true, "NO MORE REVIVES\nTime to buy a recharge in the shop..." end
-
         if not owner:GetNW2Bool( "gleereviver_resurrected", false ) then
             return true, "Primary attack to resurrect a dead player!"
         end
@@ -56,20 +53,6 @@ function SWEP:Initialize()
     self:SetHoldType( self.HoldType )
 
     self:SetClip1( self.Primary.DefaultClip )
-    self:UpdateColor()
-
-end
-
-function SWEP:UpdateColor()
-    local resurrects = self:Clip1()
-    if resurrects > 0 then
-        color = Color( 255, 255, 255 )
-
-    else
-        color = Color( 160, 160, 160 )
-
-    end
-    self:SetColor( color )
 
 end
 
@@ -94,17 +77,9 @@ function SWEP:GetGamemodeDeadPlayerData()
 
 end
 
-function SWEP:OnEmpty()
-    self:GetOwner():EmitSound( DenySound, 75, 80 )
-    self:SetNextPrimaryFire( CurTime() + 0.5 )
-
-end
-
 function SWEP:PrimaryAttack()
 
     if CLIENT then return end
-
-    if self:Clip1() <= 0 then self:OnEmpty() return end
 
     local owner = self:GetOwner()
     if not IsValid( owner ) then return end -- istg this will happen sometime
@@ -154,8 +129,6 @@ function SWEP:PrimaryAttack()
         self:SetNextPrimaryFire( CurTime() + 0.5 )
 
     end
-
-    self:UpdateColor()
 
 end
 
@@ -274,10 +247,7 @@ end
 
 function SWEP:GetViewModelPosition( pos, ang )
     local offset = Vector( 0 )
-    if self:Clip1() <= 0 then
-        offset = Vector( 0, 0, -10 )
-
-    elseif self:GetNWBool( "RevivingPly", false ) then
+    if self:GetNWBool( "RevivingPly", false ) then
         offset = Vector( 0, 0, -10 )
 
     end
@@ -325,6 +295,13 @@ function SWEP:Think()
             self.resurrectEnd = nil
             self:SetNWBool( "RevivingPly", false )
         end
+    end
+    -- single use, like grenades, the only way to recharge is buying another kit
+    if SERVER and self:Clip1() <= 0 then
+        owner.blockSwitchingWeaponsReviver = nil
+        owner:StripWeapon( self:GetClass() )
+        return
+
     end
     if not ( self.resurrecting and IsValid( self.toResurrect ) ) then
         owner.blockSwitchingWeaponsReviver = nil
@@ -384,7 +361,6 @@ end
 
 function SWEP:AddResurrect()
     self:SetClip1( self:Clip1() + 1 )
-    self:UpdateColor()
 
 end
 

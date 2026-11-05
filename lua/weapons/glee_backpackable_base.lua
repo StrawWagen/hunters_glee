@@ -1,20 +1,25 @@
 AddCSLuaFile()
 
 --[[
-    A handle to a big carried entity, see glee_carrying/sh_carrying.lua. The entity rides the hand bone
-    while this is out, and the spine while it's not. It's never copied or remade, it keeps doing
-    whatever it does the whole time.
+    The weapon half of a carried thing, see glee_carrying/sh_carrying.lua.
 
-    Subclasses set CarryEntClass, or override CreateCarryEnt for what needs more than a class, and the
-    bone offsets below. They may define, server side,
+        SWEP.Base = "glee_backpackable_base"
+        SWEP.CarryEntClass = "my_ent" -- or override CreateCarryEnt, for what needs more than a class
+        -- then the bone offsets below
+
+    The entity rides the hand bone while this is out,
+    and the spine while it's not.
+    It's never copied or remade, it keeps doing whatever it does the whole time.
+
+    Hold reload to preview where it'd go, let go to place it.
+    Any other way this weapon leaves its owner, it's let go where it is.
+    The gamemode's dropper then throws it, see GetDroppedEntity.
+
+    Optional, all server side
         SWEP:OnCarryStart( ent, carrier )
-        SWEP:OnCarryEnd( ent, carrier, placed ) -- carrier can be NULL. Not placed, it was dropped, and may get flung right after
-
-    Holding reload previews where it'd be placed, letting go places it there. Any other way this weapon
-    leaves its owner, it's let go where it is. The gamemode's dropper then throws it, see GetDroppedEntity.
-
-    Think only runs while it's out, subclasses can define SWEP:OnBackThink(), server side, every tick
-    it's on the back instead.
+        SWEP:OnCarryEnd( ent, carrier, placed ) -- carrier can be NULL
+            -- not placed means it was dropped, and may get flung right after
+        SWEP:OnBackThink() -- every tick it's on the back, Think only runs while it's out
 ]]
 
 local glee_Carrying = terminator_Extras.glee_Carrying
@@ -27,7 +32,9 @@ SWEP.Category = "Hunter's Glee"
 SWEP.DrawCrosshair = false
 SWEP.DrawAmmo = false
 
-SWEP.CarryEntClass = nil -- what the base CreateCarryEnt spawns, only for glee_Carrying.GiveNewCarryable
+-- what the base CreateCarryEnt spawns
+-- for a weapon handed out with nothing to carry, see Equip
+SWEP.CarryEntClass = nil
 
 SWEP.HoldType = "duel" -- never "normal", the gamemode's dropper refuses to drop those
 
@@ -39,8 +46,9 @@ SWEP.ViewModelFlip = false
 SWEP.WorldModel = "models/weapons/w_c4.mdl" -- never drawn, the carried entity is the world model
 SWEP.ViewModelOffset = Vector( 0, 0, 0 ) -- the whole viewmodel, arms and held model, along right, forward, up
 
--- { [boneName] = { scale = Vector, pos = Vector, angle = Angle } }, as SWEP Construction Kit writes them.
--- A bone's scale carries down to its children. Maxwell's pose, palms rolled up
+-- { [boneName] = { scale = Vector, pos = Vector, angle = Angle } }, as SWEP Construction Kit writes them
+-- a bone's scale carries down to its children
+-- this one's Maxwell's pose, palms rolled up
 SWEP.ViewModelBoneMods = glee_Carrying.ElitesBoneMods( 0, -80.047, 71.204 )
 
 -- the carried entity's model, drawn on the viewmodel
@@ -59,11 +67,14 @@ SWEP.WorldModelBackPos = Vector( 0, 0, 0 )
 SWEP.WorldModelBackAng = Angle( 0, 0, 0 )
 SWEP.WorldModelBackScale = 1
 
-SWEP.SpeedModifier = -50 -- run speed, while it's carried, in hand or on the back, see UpdateCarrySlow. Hunter's Glee only
+-- run speed, while it's carried, see UpdateCarrySlow
+-- Hunter's Glee only
+SWEP.SpeedModifier = -50
 
 SWEP.PlaceDistance = 100
 SWEP.PlaceAng = Angle( 0, 0, 0 ) -- turns the model within its placement, upright and facing the same way as the placer
--- From the placed entity, one of sounds at random. An entry's own pitch beats the root's
+-- played from the placed entity, one of sounds at random
+-- an entry's own pitch beats the root's
 SWEP.PlacedSound = {
     pitch = 80,
     sounds = {
@@ -88,12 +99,12 @@ SWEP.Secondary.DefaultClip = -1
 SWEP.Secondary.Automatic = false
 SWEP.Secondary.Ammo = "none"
 
--- Entity and Bool slot 0 are taken, subclasses start theirs at 1
 function SWEP:SetupDataTables()
-    self:NetworkVar( "Entity", 0, "CarriedEnt" )
-    self:NetworkVar( "Bool", 0, "OnBack" ) -- what it carries rides the back, not the hands
-    -- handed out without an entity, it may make one, see glee_Carrying.GiveNewCarryable. Used up as it's equipped
-    self:NetworkVar( "Bool", 1, "MakesOwnCarryEnt" )
+    self:NetworkVar( "Entity", "CarriedEnt" )
+    self:NetworkVar( "Bool", "OnBack" ) -- what it carries rides the back, not the hands
+    -- makes its own entity as it's equipped, see glee_Carrying.GiveNewCarryable
+    -- used up as it's equipped
+    self:NetworkVar( "Bool", "MakesOwnCarryEnt" )
 
     if SERVER then
         self:NetworkVarNotify( "OnBack", function( wep, _, _, onBack )
@@ -108,7 +119,8 @@ function SWEP:Initialize()
 
 end
 
--- Autorefresh. The offsets are applied once, as it's held or put away, so they're put back on here
+-- autorefresh
+-- the offsets are only applied as it's held or put away, so they're put back on here
 function SWEP:OnReloaded()
     self:SetHoldType( self.HoldType )
 
@@ -141,7 +153,7 @@ function SWEP:Deploy()
 
     if SERVER then
         local owner = self:GetOwner()
-        if self:GetOnBack() then
+        if IsValid( owner ) and self:GetOnBack() then
             owner:EmitSound( "npc/footsteps/softshoe_generic6.wav", 65, 110 )
             owner:ViewPunch( Angle( -1, 0, math.Rand( -1, -2 ) ) )
 
@@ -158,17 +170,20 @@ function SWEP:Deploy()
 
 end
 
--- Refuses a switch when there's no room on the back, see glee_Carrying.CanPutAway. Here and not in a
--- PlayerSwitchWeapon hook, any other addon's hook that returns a value there stops ours from running
+-- won't go on the back when there's no room, see glee_Carrying.CanPutAway
+-- it stays in their hands, and a switch is refused
+-- here, not in a PlayerSwitchWeapon hook
+-- any other addon's hook that returns a value there stops ours from running
 function SWEP:Holster( newWep )
     local owner = self:GetOwner()
     -- holstered as it's dropped or its owner dies, there's nothing left to put away
     local puttingAway = IsValid( self:GetCarriedEnt() ) and IsValid( owner ) and owner:Alive()
 
-    if puttingAway and IsValid( newWep ) then
+    if puttingAway then
         local canPutAway, reason = glee_Carrying.CanPutAway( owner, self, newWep )
         if not canPutAway then
-            if SERVER then
+            -- no newWep, they didn't pick this switch, eg a strip, so no hint
+            if SERVER and IsValid( newWep ) then
                 if reason == "noback" then
                     glee_Carrying.HintCantBackpack( owner )
 
@@ -210,7 +225,7 @@ function SWEP:Holster( newWep )
 
 end
 
--- The model's bounds once PlaceAng's turned it, in the frame it's placed in
+-- the model's bounds once PlaceAng's turned it, in the frame it's placed in
 local function placedBounds( mins, maxs, placeAng )
     local placedMins = Vector( math.huge, math.huge, math.huge )
     local placedMaxs = -placedMins
@@ -245,8 +260,9 @@ local footprintSamples = {
     { -1, -1 },
 }
 
--- Several traces down across the footprint, so one bump or seam doesn't tilt the whole thing.
--- Nil when none of them found a floor
+-- several traces down across the footprint
+-- so one bump or seam doesn't tilt the whole thing
+-- nil when none of them found a floor
 local function averageFloorNormal( center, yawAng, mins, maxs, rise, filter )
     local total = Vector( 0, 0, 0 )
     local hits = 0
@@ -279,9 +295,10 @@ local function averageFloorNormal( center, yawAng, mins, maxs, rise, filter )
 
 end
 
--- Where it'd land: pos, ang, then the slope's angle before PlaceAng, for the ghost to apply its own.
--- On the floor the placer's aiming at, tilted to its slope. Nil and why when it can't go there,
--- "nofloor" or "blocked". Fits the model at scale 1, so it's off for anything that was scaled before it was carried
+-- where it'd land, on the floor the placer's aiming at, tilted to its slope
+-- returns pos, ang, and the slope's angle before PlaceAng, for the ghost to apply its own
+-- nil and why when it can't go there, "nofloor" or "blocked"
+-- fits the model at scale 1, so it's off for anything that was scaled before it was carried
 function SWEP:GetPlacement( placer )
     local ent = self:GetCarriedEnt()
     if not IsValid( ent ) then return end
@@ -316,8 +333,9 @@ function SWEP:GetPlacement( placer )
 
     local pos = floorTr.HitPos + floorNormal * ( self.PlacedUpOffset - mins.z )
 
-    -- Lenient on purpose, only its middle has to be clear, physics pushes the rest out of what it clips.
-    -- Square, so it's the same whichever way it faces
+    -- lenient on purpose, only its middle has to be clear
+    -- physics pushes the rest out of what it clips
+    -- square, so it's the same whichever way it faces
     local coreCenter = ( mins + maxs ) * 0.5
     coreCenter.z = 0
     coreCenter:Rotate( yawAng )
@@ -341,7 +359,8 @@ end
 
 local placedLesson = "PlacedAHoldable"
 
--- Reload runs every tick it's held, Think places on the tick it's let go
+-- Reload runs every tick it's held
+-- Think places it on the tick it's let go
 function SWEP:Reload()
     if not SERVER then return end
     if self.glee_ReloadBlocked then return end
@@ -407,6 +426,9 @@ function SWEP:Think()
     if IsValid( previous ) and previous:IsWeapon() and previous ~= self then
         owner:SelectWeapon( previous:GetClass() )
 
+    else
+        owner:SwitchToDefaultWeapon()
+
     end
 
     SafeRemoveEntity( self )
@@ -426,6 +448,65 @@ end
 
 
 if SERVER then
+    -- is something they were the last to carry, as weaponClass, still out there?
+    -- forgets what's gone, or since been carried by someone else, as it goes
+    local function stillHasOneOut( ply, weaponClass )
+        local carried = ply.glee_EverCarried
+        if not carried then return false end
+
+        for ent in pairs( carried ) do
+            if not IsValid( ent ) or ent.glee_LastCarrier ~= ply then
+                carried[ent] = nil
+
+            elseif glee_Carrying.GetCarryWeaponClass( ent ) == weaponClass then
+                return true
+
+            end
+        end
+
+        return false
+
+    end
+
+    -- what's out there of weaponClass stops counting against them, see stillHasOneOut
+    local function forgetOnesOut( ply, weaponClass )
+        local carried = ply.glee_EverCarried
+        if not carried then return end
+
+        for ent in pairs( carried ) do
+            if not IsValid( ent ) or glee_Carrying.GetCarryWeaponClass( ent ) == weaponClass then
+                carried[ent] = nil
+
+            end
+        end
+    end
+
+    -- Sandbox's spawnmenu --------------------------------------------------------
+    -- a Spawnable one, given from it, comes carrying a new entity
+    -- spawned from it, it's just the entity
+
+    -- so sandbox's Give makes them a new one, see Equip
+    hook.Add( "PlayerGiveSWEP", "glee_backpackable_spawnmenugive", function( ply, class )
+        forgetOnesOut( ply, class )
+
+    end )
+
+    hook.Add( "PlayerSpawnedSWEP", "glee_backpackable_spawnmenuspawn", function( ply, wep )
+        if not wep.IsGleeBackpackable or not wep.Spawnable then return end
+
+        local ent = wep:CreateCarryEnt( wep:GetPos() )
+        if IsValid( ent ) then
+            ent:SetCreator( ply )
+            undo.ReplaceEntity( wep, ent )
+            cleanup.ReplaceEntity( wep, ent )
+
+        end
+
+        SafeRemoveEntity( wep )
+
+    end )
+    -- ----------------------------------------------------------------------------
+
     function SWEP:Equip( newOwner )
         self.glee_Carrier = newOwner
 
@@ -435,8 +516,25 @@ if SERVER then
         local makesOwn = self:GetMakesOwnCarryEnt()
         self:SetMakesOwnCarryEnt( false )
 
-        -- handed out by class with nothing to carry, eg weapons restored from a snapshot. Making one
-        -- would duplicate what was released when they were stripped, so only GiveNewCarryable's does
+        -- handed out by class with nothing to carry
+        -- eg Map Sweepers' shop, its restores on respawn, or weapons restored from a snapshot
+        -- a restore's entity is still out there, let go as they died or were stripped
+        -- so a Spawnable one only makes its own while that's gone
+        -- not for spectators, Map Sweepers' lobby gives them its loadout as a preview
+        -- a twin goes by the class it twins, see registerTwin in glee_carrying
+        local carryClass = self.GleeTwinOf or self:GetClass()
+        local spawnable = self.Spawnable
+        if self.GleeTwinOf then
+            spawnable = weapons.Get( self.GleeTwinOf ).Spawnable
+
+        end
+
+        local spectating = newOwner:IsPlayer() and newOwner:GetObserverMode() ~= OBS_MODE_NONE
+        if not makesOwn and spawnable and not spectating and not stillHasOneOut( newOwner, carryClass ) then
+            makesOwn = true
+
+        end
+
         if not IsValid( ent ) then
             if not makesOwn then
                 SafeRemoveEntity( self )
@@ -456,11 +554,13 @@ if SERVER then
 
     end
 
-    -- Its carrier's slowed by SpeedModifier while it's on their back, and in their hands by that times
-    -- their carry rules' handsSpeedMul, see glee_Carrying.GetCarryRules. None once it's let go.
-    -- onBack's for OnBack's change callback, which runs before GetOnBack changes. The gamemode's speed
-    -- handler does it, so it's nothing outside the gamemode. Keyed per weapon, a hands-and-back swap
-    -- holsters one before deploying the other, a shared key would have the deploy wipe what the holster added
+    -- slows its carrier by SpeedModifier while it's on their back
+    -- in their hands, by that times handsSpeedMul, see glee_Carrying.GetCarryRules
+    -- none once it's let go
+    -- onBack's for OnBack's change callback, which runs before GetOnBack changes
+    -- the gamemode's speed handler does the slowing, so it's nothing outside the gamemode
+    -- keyed per weapon, a hands-and-back swap holsters one before deploying the other
+    -- a shared key would have the deploy wipe what the holster added
     function SWEP:UpdateCarrySlow( onBack )
         local carrier = self.glee_Carrier -- not GetOwner, that's gone by the time OnDrop releases it
         if not IsValid( carrier ) or not carrier.DoSpeedModifier then return end
@@ -485,7 +585,8 @@ if SERVER then
 
     end
 
-    -- Spawned, for a weapon handed out without one. Override for what needs more than its class
+    -- spawns something to carry, for a weapon handed out without one
+    -- override it for what needs more than CarryEntClass
     function SWEP:CreateCarryEnt( pos )
         local ent = ents.Create( self.CarryEntClass )
         if not IsValid( ent ) then return end
@@ -503,8 +604,9 @@ if SERVER then
 
     end
 
-    -- For whatever dropped this, the entity to throw in its place. This removes itself as it drops,
-    -- so flinging the weapon would do nothing. NULL if it never let go of anything
+    -- for whatever dropped this, the entity to throw in its place
+    -- this removes itself as it drops, so flinging the weapon would do nothing
+    -- NULL if it never let go of anything
     function SWEP:GetDroppedEntity()
         return self.glee_ReleasedEnt or NULL
 
@@ -527,8 +629,8 @@ if SERVER then
         }
     end
 
-    -- Recounted, not toggled, they can carry two and let go of one. Read by the terminator's stealth
-    -- checks, see terminator_nextbot/enemyoverrides.lua
+    -- recounted, not toggled, they can carry two and let go of one
+    -- read by the terminator's stealth checks, see terminator_nextbot/enemyoverrides.lua
     local function updateIsCarrying( carrier )
         if not IsValid( carrier ) then return end
 
@@ -546,7 +648,8 @@ if SERVER then
     end
 
     do
-        -- the ones with an OnBackThink, riding a back right now. Breaks with autorefresh, it comes back empty
+        -- the ones with an OnBackThink, riding a back right now
+        -- breaks with autorefresh, it comes back empty
         local onBackWeapons = {}
 
         local thinkingWeapons = {}
@@ -574,7 +677,8 @@ if SERVER then
             end
         end )
 
-        -- OnBack's change callback, OnBackThink runs while it's true. A weapon without one is never tracked
+        -- OnBack's change callback
+        -- OnBackThink runs while it's true
         function SWEP:OnBackChanged( onBack )
             if onBack and self.OnBackThink then
                 onBackWeapons[self] = true
@@ -589,11 +693,19 @@ if SERVER then
         end
     end
 
-    -- Takes ent on as what this carries: frozen, walked through but still shot, and riding the owner's back.
-    -- StopCarrying undoes all of it. Removing ent removes this weapon
+    -- takes ent on as what this carries
+    -- frozen, walked through but still shot, and riding the owner's back
+    -- StopCarrying undoes all of it
+    -- removing ent removes this weapon
     function SWEP:StartCarrying( ent )
         self:SetCarriedEnt( ent )
         ent:SetNW2Entity( "glee_CarrierWeapon", self )
+
+        -- see stillHasOneOut
+        local carrier = self.glee_Carrier
+        ent.glee_LastCarrier = carrier
+        carrier.glee_EverCarried = carrier.glee_EverCarried or {}
+        carrier.glee_EverCarried[ent] = true
 
         rememberEntState( ent )
 
@@ -610,8 +722,8 @@ if SERVER then
         -- the carrier's traces skip what they own, so it's not in the way of their own use or aim
         ent:SetOwner( self.glee_Carrier )
 
-        -- a box where it's carried, its physics object is back where it was picked up. Players and their
-        -- movement pass through weapons, bullets and swings don't
+        -- a box where it's carried, its physics object is back where it was picked up
+        -- players and their movement pass through weapons, bullets and swings don't
         ent:SetSolid( SOLID_BBOX )
         ent:SetNotSolid( false )
         ent:SetCollisionGroup( COLLISION_GROUP_WEAPON )
@@ -622,7 +734,8 @@ if SERVER then
 
         glee_Carrying.SetCarriedTracked( ent, true )
 
-        -- StopCarrying bails on a removed ent, so it's untracked here
+        -- the ent's still valid while this runs
+        -- so the weapon's OnRemove gets a full StopCarrying, slow and all
         ent:CallOnRemove( "glee_carrying_removeweapon", function( removed, wep )
             glee_Carrying.SetCarriedTracked( removed, false )
             SafeRemoveEntity( wep )
@@ -645,7 +758,8 @@ if SERVER then
     function SWEP:OnCarryEnd( _ent, _carrier, _placed )
     end
 
-    -- Onto one of the owner's bones, at that offset and model scale. Nothing without an entity or an owner
+    -- puts what it carries onto one of the owner's bones, at that offset and model scale
+    -- does nothing without an entity or an owner
     function SWEP:AttachCarried( boneName, pos, ang, scale )
         local ent = self:GetCarriedEnt()
         local owner = self:GetOwner()
@@ -667,8 +781,10 @@ if SERVER then
         end
     end
 
-    -- Placed at placePos and placeAng, or without them dropped where it is, at the carrier's speed.
-    -- Puts back what StartCarrying changed, then OnCarryEnd. Leaves the weapon, removing it is the caller's
+    -- lets go, placed at placePos and placeAng
+    -- or without them, dropped where it is, moving at the carrier's speed
+    -- puts back what StartCarrying changed, then runs OnCarryEnd
+    -- the weapon stays, removing it is up to the caller
     function SWEP:StopCarrying( placePos, placeAng )
         local ent = self:GetCarriedEnt()
         if not IsValid( ent ) then return end
@@ -761,7 +877,8 @@ local function isReloadHeld()
 
 end
 
--- The client's side of the server's Reload, so the preview shows when a place would happen
+-- the client's side of the server's Reload
+-- so the preview only shows when letting go would place it
 function SWEP:IsPreviewingPlacement()
     if self.glee_ReloadBlocked then return false end
     if not IsValid( self:GetCarriedEnt() ) then return false end
@@ -799,7 +916,8 @@ function SWEP:RemovePlacementGhost()
 
 end
 
--- The see-through copy where a place would land, only while one's being readied and there's somewhere to
+-- the see-through copy, where it'd land
+-- only while they're readying a place, and there's somewhere to put it
 function SWEP:UpdatePlacementGhost()
     local ent = self:GetCarriedEnt()
     local pos, ang, slopeAng
@@ -895,9 +1013,11 @@ function SWEP:HintPostStack()
 
 end
 
--- A copy of the carried entity's model, on the viewmodel's HeldModelBone this frame. Nil when there's
--- nothing to draw. Never parented, the viewmodel's shared by every weapon, and following one of its
--- bones went stale whenever another weapon swapped its model out. So it's placed fresh every draw
+-- a copy of the carried entity's model, on the viewmodel's HeldModelBone this frame
+-- nil when there's nothing to draw
+-- never parented, the viewmodel's shared by every weapon
+-- following one of its bones went stale whenever another weapon swapped its model out
+-- so it's placed fresh every draw
 function SWEP:EnsureHeldModel( vm )
     local ent = self:GetCarriedEnt()
     if not IsValid( ent ) then return end
@@ -934,8 +1054,9 @@ end
 
 local scaleOne = Vector( 1, 1, 1 )
 
--- Every bone the mods move, scale included, once per viewmodel model.
--- Bone indices run parents first, so a parent's scale is always ready for its children
+-- every bone the mods move, inherited scale included
+-- worked out once per viewmodel model
+-- bone indices run parents first, so a parent's scale is always ready for its children
 function SWEP:GetResolvedBoneMods( vm )
     local model = vm:GetModel()
     if self.glee_BoneModsModel == model then return self.glee_BoneMods end
@@ -972,8 +1093,9 @@ function SWEP:GetResolvedBoneMods( vm )
 
 end
 
--- Bone mods only last the frame they're drawn in, so a missed holster can't leave them on the next weapon.
--- Breaks with autorefresh, mods applied as this file reloads are forgotten and never reset
+-- bone mods only last the frame they're drawn in
+-- so a missed holster can't leave them on the next weapon
+-- breaks with autorefresh, mods applied as this file reloads are forgotten and never reset
 local manipulatedVM
 local manipulatedBones
 
@@ -1022,7 +1144,7 @@ function SWEP:PreDrawViewModel( vm )
     end
 end
 
--- The held model's drawn after the viewmodel, so it follows bones the mods already moved
+-- the held model's drawn after the viewmodel, so it follows bones the mods already moved
 function SWEP:PostDrawViewModel( vm )
     for index = 0, ( self.glee_HiddenMaterialCount or 0 ) - 1 do
         render.MaterialOverrideByIndex( index, nil )
@@ -1035,4 +1157,10 @@ function SWEP:PostDrawViewModel( vm )
 
     held:DrawModel()
 
+    local ent = self:GetCarriedEnt()
+    local extras = ent.HeldExtraModels or ent.MyExtraModels
+    if extras then
+        terminator_Extras.DrawMyExtraModels( held, extras, nil, ent )
+
+    end
 end

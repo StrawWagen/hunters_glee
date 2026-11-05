@@ -64,7 +64,7 @@ function ENT:Place()
 
     local plysToAlert = {}
     local targetsPos = target:GetPos()
-    for _, thing in ipairs( ents.FindInPVS( target:GetShootPos() ) ) do
+    for _, thing in ipairs( ents.FindInPVS( target:WorldSpaceCenter() ) ) do
         if not thing:IsPlayer() then continue end
         if thing == target then continue end
         if thing == placer then continue end

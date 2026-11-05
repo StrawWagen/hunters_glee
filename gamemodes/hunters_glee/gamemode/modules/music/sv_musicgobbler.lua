@@ -13,7 +13,8 @@ function GM:MusicInitialThink()
             continue
         end
 
-        ProtectedCall( function( n ) include( "glee_music/" .. n ) end, name )
+        -- CompileFile, not include, so saving a track file doesn't autorefresh the whole gamemode
+        ProtectedCall( function( n ) CompileFile( "glee_music/" .. n )() end, name )
     end
 
     local count = table.Count( self.musicTracks )
@@ -25,8 +26,23 @@ function GM:MusicInitialThink()
 end
 
 
+-- Skips the whole track rather than erroring, an error here would drop every other track in the file.
+local function isTrackValid( name, data )
+    local valid = true
+    for index, entry in ipairs( data.sounds ) do
+        if not isstring( entry.snd ) then
+            ErrorNoHaltWithStack( "GLEE: Music track '" .. name .. "' sound #" .. index .. " has no 'snd' path, skipping track" )
+            valid = false
+
+        end
+    end
+    return valid
+
+end
+
 function GM:GobbleMusicTracks( tracks )
     for name, data in pairs( tracks ) do
+        if not isTrackValid( name, data ) then continue end
         self.musicTracks[name] = data
 
     end

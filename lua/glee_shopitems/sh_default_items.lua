@@ -140,6 +140,45 @@ hook.Add( "glee_post_new_spawnset", "glee_shophandler_resetpersistpurchasecounts
 end )
 
 local items = {
+    ["signalflare"] = {
+        name = "Escape Flaregun",
+        desc = "Very bright flaregun, It could probably be seen from miles away...",
+        shCost = 0,
+        shSkullCost = function()
+            local costPerPurchase = 15
+            local purchaseCount = GetGlobalInt( "glee_SignalFlarePurchaseCount", 0 )
+            local cost = costPerPurchase + ( purchaseCount * costPerPurchase )
+            return cost
+
+        end,
+        cooldown = 0.5,
+        tags = { "ITEMS", "Essential", "Utility", "SkullCost" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_INACTIVE,
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = -10000,
+        shPurchaseCheck = shopHelpers.aliveCheck,
+        svOnPurchaseFunc = function( purchaser )
+            shopHelpers.purchaseWeapon( purchaser, {
+                class = "termhunt_aeromatix_signalflare_gun",
+                confirmSoundWeight = 10,
+                ammoType = nil, -- auto
+                purchaseClips = 0,
+                resupplyClips = 1,
+
+            } )
+
+            local oldCount = GetGlobalInt( "glee_SignalFlarePurchaseCount", 0 )
+            SetGlobalInt( "glee_SignalFlarePurchaseCount", oldCount + 1 )
+
+        end,
+        shCanShowInShop = function()
+            if not GetGlobalBool( "glee_isSkyOnMap", false ) then return false, "There's nowhere to signal to..." end
+            return true, ""
+
+        end,
+    },
     -- lol you ran out of battery
     ["armor"] = {
         name = "Suit Battery",
@@ -610,45 +649,30 @@ local items = {
             } )
         end,
     },
-    ["signalflare"] = {
-        name = "Escape Flaregun",
-        desc = "Very bright flaregun, It could probably be seen from miles away...",
+    -- carried in, placed down, see glee_heavyturret
+    ["heavy_sentry_turret"] = {
+        name = "Heavy Sentry Turret",
+        desc = "The Escape Helicopter's gun...\nIn your hands.",
         shCost = 0,
-        shSkullCost = function()
-            local costPerPurchase = 15
-            local purchaseCount = GetGlobalInt( "glee_SignalFlarePurchaseCount", 0 )
-            local cost = costPerPurchase + ( purchaseCount * costPerPurchase )
-            return cost
-
-        end,
-        cooldown = 0.5,
-        tags = { "ITEMS", "Essential", "Utility", "SkullCost" },
+        shSkullCost = 15,
+        cooldown = 5,
+        tags = { "ITEMS", "Utility", "SkullCost" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
         },
-        weight = -10000,
-        shPurchaseCheck = shopHelpers.aliveCheck,
+        weight = 1200,
+        shPurchaseCheck = { shopHelpers.aliveCheck, function( purchaser )
+            return terminator_Extras.glee_Carrying.HasRoomFor( purchaser, "glee_backpackable_heavyturret" )
+
+        end },
         svOnPurchaseFunc = function( purchaser )
-            shopHelpers.purchaseWeapon( purchaser, {
-                class = "termhunt_aeromatix_signalflare_gun",
-                confirmSoundWeight = 10,
-                ammoType = nil, -- auto
-                purchaseClips = 0,
-                resupplyClips = 1,
+            if not terminator_Extras.glee_Carrying.GiveNewCarryable( purchaser, "glee_backpackable_heavyturret" ) then return end
 
-            } )
-
-            local oldCount = GetGlobalInt( "glee_SignalFlarePurchaseCount", 0 )
-            SetGlobalInt( "glee_SignalFlarePurchaseCount", oldCount + 1 )
+            shopHelpers.loadoutConfirm( purchaser, 1 )
 
         end,
-        shCanShowInShop = function()
-            if not GetGlobalBool( "glee_isSkyOnMap", false ) then return false, "There's nowhere to signal to..." end
-            return true, ""
-
-        end,
-    }
+    },
 }
 
 GAMEMODE:GobbleShopItems( items )

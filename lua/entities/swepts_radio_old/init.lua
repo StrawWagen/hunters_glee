@@ -70,14 +70,6 @@ end
 
 -- Tuning --------------------------------------------------------------------
 
--- Bots don't hold use for the wheel, so their use just picks it up. A player's use is the wheel's, see glee_carrying
-function ENT:Use( _, caller )
-    if not IsValid( caller ) or not caller:IsPlayer() or not caller:IsBot() then return end
-
-    terminator_Extras.glee_Carrying.Carry( caller, self )
-
-end
-
 -- The wheel's pick, see glee_carrying. Only ever "tune", checked against CanUseAction already
 function ENT:OnUseAction( ply )
     self:OpenTunerFor( ply )
