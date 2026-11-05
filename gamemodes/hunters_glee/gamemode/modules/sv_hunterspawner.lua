@@ -551,6 +551,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_anti_abysmallag", function( _, _,
     for _, hunter in pairs( allHunters ) do
         if not IsValid( hunter ) then continue end
         if hunter:Health() <= 0 then continue end
+        if GAMEMODE:IsActiveBoss( hunter ) then continue end -- the round's whole point, it stays
 
         local creationID = hunter:GetCreationID()
         if creationID < oldestTime then
@@ -611,12 +612,6 @@ function GM:SpawnWaveSpawnIn()
 
         if IsValid( hunter ) then
             debugPrint( "spawned", hunter, currSpawnEntry.name, currSpawnEntry.prettyName )
-            if currSpawnEntry.postSpawnedFuncs then
-                for _, func in ipairs( currSpawnEntry.postSpawnedFuncs ) do
-                    ProtectedCall( function( _currSpawnEntry, _hunter ) func( _currSpawnEntry, _hunter ) end, currSpawnEntry, hunter )
-
-                end
-            end
             hunter:SetNWString( "glee_PrettyName", currSpawnEntry.prettyName or "" )
             self.currentSpawning = nil -- spawn next one pls
             self.waveWasAlive = aliveHuntersCount()
@@ -749,14 +744,22 @@ local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they 
         end
 
         local krangledSeesEnemy = ( hunter.glee_SeeEnemy or 0 ) > CurTime()
+        local seesEnemy = hunter.IsSeeEnemy or krangledSeesEnemy
 
-        if not hunter.IsSeeEnemy and not krangledSeesEnemy and nextHiddenSample < CurTime() then
+        if not seesEnemy and nextHiddenSample < CurTime() then
             if debuggingVar:GetBool() then
                 debugoverlay.Cross( hunter:WorldSpaceCenter(), 5, 1, Color( 255, 255, 0 ), false )
 
             end
             nextHiddenSample = CurTime() + forwardSampleInterval
             hunter.glee_LastHiddenArea = hunter.TerminatorNextBot and hunter:GetTrueCurrentNavArea() or GAMEMODE:getNearestNav( hunter:GetPos(), 200 )
+
+        end
+
+        -- full leeway once the battle's over
+        if GAMEMODE:IsThisABattlingBoss( hunter ) then
+            hunter.glee_StaleNoEnemyCount = startingCount
+            return
 
         end
 
@@ -860,6 +863,8 @@ hook.Add( "PlayerDeath", "glee_fodderenemy_catchkrangled", function( died, infli
     local killer = staleTrackedHunterOf( inflic ) or staleTrackedHunterOf( attacker ) or nearestKrangledHunter( died:GetPos() )
     if not killer then return end
     if not killer:GetNW2Bool( "glee_IsHunter" ) then return end
+
+    GAMEMODE:MarkBossAsBattling( killer )
 
     local oldCount = killer.glee_StaleNoEnemyCount
 
@@ -1005,6 +1010,14 @@ function GM:AttemptToSpawnHunter( spawnEntry, fromMiseryWave )
     hunter:Spawn()
     hunter.glee_SpawnArea = spawnArea -- so we can prefer to spawn enemies from this area, if this bot ends up killing someone!
     hunter.glee_SpawnEntry = spawnEntry
+
+    -- before registering, the stale removal reads its max health then, and these can set it
+    if spawnEntry.postSpawnedFuncs then
+        for _, func in ipairs( spawnEntry.postSpawnedFuncs ) do
+            ProtectedCall( function( _spawnEntry, _hunter ) func( _spawnEntry, _hunter ) end, spawnEntry, hunter )
+
+        end
+    end
 
     -- networked, GetBotScaryness runs clientside too
     if spawnEntry.scaryAsATerminator then

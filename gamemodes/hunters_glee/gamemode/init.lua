@@ -150,6 +150,7 @@ include( "modules/spawnset/vote/sv_spawnsetvote.lua" )
 include( "modules/spawnset/seen/sv_seenmiseries.lua" )
 include( "modules/spawnset/nominate/sv_spawnsetnominate.lua" )
 include( "modules/spawnset/bosses/sv_bosshandler.lua" )
+include( "modules/spawnset/bosses/sv_bossbattling.lua" )
 include( "modules/spawnset/runtime/sv_breathingroom.lua" )
 include( "modules/sv_falldamage_andgoomba.lua" )
 include( "modules/firsttimeplayers/sv_firsttimeplayers.lua" )
@@ -673,7 +674,9 @@ local function huntersAreInCorrectGroupsFunc()
 
         local battling = hunterNotInPlay.TerminatorNextBot and IsValid( hunterNotInPlay:GetEnemy() )
         local pathing = hunterNotInPlay.TerminatorNextBot and hunterNotInPlay:GetPath() and hunterNotInPlay:GetPath():GetLength() > 500
-        if battling or pathing then
+        -- flying bosses are nowhere near the navmesh, so they're never in play
+        local battlingBoss = GAMEMODE:IsThisABattlingBoss( hunterNotInPlay )
+        if battling or pathing or battlingBoss then
             hunterNotInPlay.glee_IncorrectGroupCount = nil
 
         elseif incorrectGroupCount > 50 then
