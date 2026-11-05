@@ -15,7 +15,7 @@ function GM:IsMiseryVoteRunning()
 end
 
 -- A misery's percent chance to be picked for a vote, before the vote's own adjustments. nil is always.
--- Clientside, the escape multiplier is only known once it's been synced or requested
+-- clientside, check its escape multiplier has synced first
 function GM:GetSpawnsetVotableChance( setName )
     local registered = self:GetRegisteredSpawnSet( setName )
     if not registered then return end

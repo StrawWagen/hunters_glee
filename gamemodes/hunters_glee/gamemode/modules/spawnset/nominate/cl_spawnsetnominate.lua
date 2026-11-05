@@ -33,6 +33,7 @@ local function autoComplete( cmd, argStr )
     local completions = {}
     for setName, _ in SortedPairs( GAMEMODE:GetSpawnSets() ) do
         if not GAMEMODE:HasSeenMisery( setName ) then continue end
+        if not GAMEMODE:DoesSpawnsetSuitMap( setName ) then continue end
         if not string.find( string.lower( setName ), typed, 1, true ) then continue end
         table.insert( completions, cmd .. " " .. setName )
 

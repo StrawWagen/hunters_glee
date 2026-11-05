@@ -130,6 +130,13 @@ function PLAYER:GetHandsModel()
 
     -- return { model = "models/weapons/c_arms_cstrike.mdl", skin = 1, body = "0100000" }
 
+    -- a misery's model, see setHelpers.overridePlayerModel
+    local override = self.Player.glee_ModelOverride
+    if override then
+        return player_manager.TranslatePlayerHands( player_manager.TranslateToPlayerModelName( override ) )
+
+    end
+
     local cl_playermodel = self.Player:GetInfo( "cl_playermodel" )
     return player_manager.TranslatePlayerHands( cl_playermodel )
 

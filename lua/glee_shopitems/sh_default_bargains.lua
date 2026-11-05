@@ -626,6 +626,7 @@ if SERVER then
     local bigHeadManipKey = "big_head"
     local bigHeadScale = Vector( 2.5, 2.5, 2.5 )
     local bigHeadSpeedModifier = -25
+    local bigHeadSkullWorth = 4 -- a 4 skull pickup renders at 2.5x, matching the head
 
     GAMEMODE:RegisterStatusEffect( "big_head",
         function( self, owner ) -- setup func
@@ -647,6 +648,7 @@ if SERVER then
 
             self:ApplyBigHead()
             owner:DoSpeedModifier( bigHeadManipKey, bigHeadSpeedModifier )
+            owner.glee_SkullWorth = bigHeadSkullWorth
 
             self:Hook( "PlayerSpawn", function( spawned )
                 if spawned ~= owner then return end
@@ -662,6 +664,7 @@ if SERVER then
         end,
         function( self, owner ) -- teardown func
             owner:DoSpeedModifier( bigHeadManipKey, nil )
+            owner.glee_SkullWorth = nil
             owner:RemoveBoneManips( bigHeadManipKey )
             if self.jiggledBone then
                 owner:ManipulateBoneJiggle( self.jiggledBone, 0 )
@@ -711,7 +714,7 @@ if SERVER then
 
                 if panic >= noticeablePanic and self.lastDeathsHintedAt ~= owner:Deaths() then
                     self.lastDeathsHintedAt = owner:Deaths()
-                    huntersGlee_Announce( { owner }, 50, 5, "Someone else...\nThey make me feel, anxious..." )
+                    huntersGlee_Announce( { owner }, 25, 5, "Someone else...\nThey make me feel, anxious..." )
 
                 end
 
@@ -746,13 +749,13 @@ if SERVER then
 
                     if self.victimDeathsHintedAt[other] ~= other:Deaths() then
                         self.victimDeathsHintedAt[other] = other:Deaths()
-                        huntersGlee_Announce( { other }, 50, 5, "Ugh...\n" .. owner:Nick() .. " reeks." )
+                        huntersGlee_Announce( { other }, 5, 5, "Ugh...\n" .. owner:Nick() .. " reeks." )
 
                     end
 
                     if self.lastDeathsHintedAt ~= owner:Deaths() then
                         self.lastDeathsHintedAt = owner:Deaths()
-                        huntersGlee_Announce( { owner }, 50, 5, "They can smell you...\nNobody can stand to be near you." )
+                        huntersGlee_Announce( { owner }, 25, 5, "They can smell you...\nNobody can stand to be near you." )
 
                     end
                 end
@@ -800,10 +803,115 @@ if SERVER then
 
                 if panic >= noticeablePanic and self.lastDeathsHintedAt ~= owner:Deaths() then
                     self.lastDeathsHintedAt = owner:Deaths()
-                    huntersGlee_Announce( { owner }, 50, 5, "Where did everyone go...?\nDid they abandon you?!" )
+                    huntersGlee_Announce( { owner }, 25, 5, "Where did everyone go...?\nDid they abandon you?!" )
 
                 end
 
+            end )
+        end
+    )
+
+
+    local lifeTransferInterval = 0.5
+    local lifeTransferRadius = 150
+    local lifeTransferPerPly = 1 -- per tick
+    local lifeTransferFloorFrac = 0.1 -- of max health, nobody gets drained below it
+
+    local function lifeTransferFloor( ply )
+        return math.ceil( ply:GetMaxHealth() * lifeTransferFloorFrac )
+
+    end
+
+    local function lifeTransferTargets( owner )
+        local targets = {}
+        local myPos = owner:GetShootPos()
+        for _, other in player.Iterator() do
+            if other == owner then continue end
+            if other:Health() <= 0 then continue end
+            if other:GetShootPos():Distance( myPos ) > lifeTransferRadius then continue end
+            if not canSeePlayer( owner, other ) then continue end
+
+            targets[#targets + 1] = other
+
+        end
+        return targets
+
+    end
+
+    GAMEMODE:RegisterStatusEffect( "parasitic_vibes",
+        function( self, owner ) -- setup func
+            self.victimDeathsHintedAt = {}
+
+            self:Timer( "drain_life", lifeTransferInterval, 0, function()
+                if owner:Health() <= 0 then return end
+
+                local drained = 0
+                for _, victim in ipairs( lifeTransferTargets( owner ) ) do
+                    local victimHealth = victim:Health()
+                    local taken = math.min( lifeTransferPerPly, victimHealth - lifeTransferFloor( victim ) )
+                    if taken <= 0 then continue end
+
+                    victim:SetHealth( victimHealth - taken )
+                    victim.glee_LastSetHealthReason = "glee_parasitic_vibes_drained"
+                    drained = drained + taken
+
+                    if self.victimDeathsHintedAt[victim] ~= victim:Deaths() then
+                        self.victimDeathsHintedAt[victim] = victim:Deaths()
+                        huntersGlee_Announce( { victim }, 5, 5, "You feel... drained.\nBeing near " .. owner:Nick() .. " saps your strength." )
+
+                    end
+                end
+
+                if drained <= 0 then return end
+
+                local ownerHealth = owner:Health()
+                local healed = math.max( ownerHealth, math.min( ownerHealth + drained, owner:GetMaxHealth() ) )
+                if healed ~= ownerHealth then
+                    owner:SetHealth( healed )
+                    owner.glee_LastSetHealthReason = "glee_parasitic_vibes_fed"
+
+                end
+
+                if self.lastDeathsHintedAt ~= owner:Deaths() then
+                    self.lastDeathsHintedAt = owner:Deaths()
+                    huntersGlee_Announce( { owner }, 25, 5, "Their life force...\nIt flows into you." )
+
+                end
+            end )
+        end
+    )
+
+    GAMEMODE:RegisterStatusEffect( "bleeding_heart",
+        function( self, owner ) -- setup func
+            self.recipientDeathsHintedAt = {}
+
+            self:Timer( "give_life", lifeTransferInterval, 0, function()
+                if owner:Health() <= 0 then return end
+
+                for _, recipient in ipairs( lifeTransferTargets( owner ) ) do
+                    local recipientHealth = recipient:Health()
+                    local spareHealth = owner:Health() - lifeTransferFloor( owner )
+                    local given = math.min( lifeTransferPerPly, spareHealth, recipient:GetMaxHealth() - recipientHealth )
+                    if given <= 0 then continue end
+
+                    recipient:SetHealth( recipientHealth + given )
+                    recipient.glee_LastSetHealthReason = "glee_bleeding_heart_given"
+
+                    owner:SetHealth( owner:Health() - given )
+                    owner.glee_LastSetHealthReason = "glee_bleeding_heart_drained"
+
+                    if self.recipientDeathsHintedAt[recipient] ~= recipient:Deaths() then
+                        self.recipientDeathsHintedAt[recipient] = recipient:Deaths()
+                        huntersGlee_Announce( { recipient }, 5, 5, "You feel... better?\n" .. owner:Nick() .. " is giving you their life." )
+
+                    end
+
+                    if self.lastDeathsHintedAt ~= owner:Deaths() then
+                        self.lastDeathsHintedAt = owner:Deaths()
+                        huntersGlee_Announce( { owner }, 25, 5, "They need you...\nYou can't help but give." )
+
+                    end
+                end
             end )
         end
     )
@@ -1416,7 +1524,7 @@ local items = {
     ["socialanxiety"] = {
         name = "Social Anxiety.",
         desc = "People make you nervous.\nPanic when anyone gets close." .. GAMEMODE.glee_BargainDescrip,
-        shCost = -150,
+        shCost = -125,
         markup = 0.25,
         cooldown = math.huge,
         tags = { "MUTATIONS", "Debuff", "Bargain", "Essential" },
@@ -1455,7 +1563,7 @@ local items = {
     ["abandonmentanxiety"] = {
         name = "Abandonment Anxiety.",
         desc = "You have a potent fear of being alone.\nPanic when nobody's nearby." .. GAMEMODE.glee_BargainDescrip,
-        shCost = -150,
+        shCost = -125,
         markup = 0.25,
         cooldown = math.huge,
         tags = { "MUTATIONS", "Debuff", "Bargain", "Essential" },
@@ -1469,6 +1577,46 @@ local items = {
         shCanShowInShop = shopHelpers.hasMultiplePeople,
         svOnPurchaseFunc = function( ply )
             ply:GiveStatusEffect( "abandonment_anxiety" )
+
+        end,
+    },
+    ["parasiticvibes"] = {
+        name = "Parasitic Physiology",
+        desc = "Slowly drain the life force of everyone around you." .. GAMEMODE.glee_BargainDescrip,
+        shCost = -75,
+        markup = 0.25,
+        cooldown = math.huge,
+        tags = { "MUTATIONS", "Debuff", "Bargain", "Essential" },
+        slots = { "physiology" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_INACTIVE,
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = -90,
+        shPurchaseCheck = { shopHelpers.aliveCheck, },
+        shCanShowInShop = shopHelpers.hasMultiplePeople,
+        svOnPurchaseFunc = function( ply )
+            ply:GiveStatusEffect( "parasitic_vibes" )
+
+        end,
+    },
+    ["bleedingheart"] = {
+        name = "Altruistic Physiology",
+        desc = "You just want everyone to be happy your entire life.\nYour physiology has finally adapted to your soul.\nYou give your life force to everyone around you." .. GAMEMODE.glee_BargainDescrip,
+        shCost = -200,
+        markup = 0.25,
+        cooldown = math.huge,
+        tags = { "MUTATIONS", "Debuff", "Bargain", "Essential" },
+        slots = { "physiology" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_INACTIVE,
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = -90,
+        shPurchaseCheck = { shopHelpers.aliveCheck, },
+        shCanShowInShop = shopHelpers.hasMultiplePeople,
+        svOnPurchaseFunc = function( ply )
+            ply:GiveStatusEffect( "bleeding_heart" )
 
         end,
     },

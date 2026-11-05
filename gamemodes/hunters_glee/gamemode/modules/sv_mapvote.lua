@@ -28,6 +28,9 @@ local function startTheMapVoteTimer()
         if not doingMapVote then
             if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
 
+            -- new players get kicked to a new map mid tutorial otherwise
+            if GAMEMODE:GetSpawnSet() == GAMEMODE.TheTutorialMisery then return end
+
             local varTranslated = mapvoteVar:GetInt()
             if varTranslated < 0 then
                 varTranslated = mavoteDefaultTime

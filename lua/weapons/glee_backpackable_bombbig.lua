@@ -7,6 +7,9 @@ SWEP.Purpose = "Squishy. Volatile."
 SWEP.Instructions = "Reload to place it down."
 SWEP.Slot = 4
 
+SWEP.Category = "Hunter's Glee"
+SWEP.Spawnable = true
+
 if CLIENT then
     terminator_Extras.glee_CL_SetupSwep( SWEP, "glee_backpackable_bombbig", "vgui/hud/killicon/termhunt_bombbig.png" )
 
@@ -21,8 +24,8 @@ SWEP.ViewModelOffset = Vector( 0, 0, 0 )
 -- arms out, palms rolled up
 SWEP.ViewModelBoneMods = terminator_Extras.glee_Carrying.ElitesBoneMods( 0, -80.047, 71.204 )
 
--- too heavy for use to lift, use is held on it to pick it up instead
-terminator_Extras.glee_Carrying.RegisterCarryable( "termhunt_bombbig", "glee_backpackable_bombbig", nil, { GleeTooHeavyToLift = true } )
+-- too heavy for use to lift, a press of use picks it up instead
+terminator_Extras.glee_Carrying.RegisterCarryable( "termhunt_bombbig", "glee_backpackable_bombbig", nil, { GleeUseWheelOnly = true } )
 
 SWEP.SpeedModifier = -100 -- twice the others', it's heavy
 
@@ -36,7 +39,7 @@ SWEP.WorldModelHandScale = 0.824
 SWEP.WorldModelBackPos = Vector( 4, -8, 0 )
 SWEP.WorldModelBackAng = Angle( -40, 0, 0 )
 
-SWEP.PlaceAng = Angle( -45, 90, 0 ) -- facing back at whoever placed it
+SWEP.PlaceAng = Angle( -45, -90, 50 )
 
 -- squeeze
 function SWEP:PrimaryAttack()

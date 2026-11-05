@@ -85,6 +85,7 @@ local lightSourceModels = {
     ["models/weapons/w_rocket_launcher.mdl"] = { pos = Vector( -30, 4, -26 ), ang = Angle( 0, 0, 0 ) }, -- termhunt_taucannon, on top of the body, behind the prongs
 }
 local lowerModelNames = {}
+local lightSourceLocalPositions = {}
 
 -- pos and ang of ent's entry in lightSourceModels, nil if it has none
 local function getModelLightSource( ent )
@@ -105,10 +106,15 @@ local function getModelLightSource( ent )
     local rootMatrix = ent:GetBoneMatrix( 0 )
     if not rootMatrix then return end
 
-    local mins, maxs = ent:GetModelBounds()
-    local topFront = Vector( maxs.x, ( mins.y + maxs.y ) / 2, maxs.z )
+    local localPos = lightSourceLocalPositions[lowerMdl]
+    if not localPos then
+        local mins, maxs = ent:GetModelBounds()
+        localPos = Vector( maxs.x, ( mins.y + maxs.y ) / 2, maxs.z ) + lightSource.pos
+        lightSourceLocalPositions[lowerMdl] = localPos
 
-    return LocalToWorld( topFront + lightSource.pos, lightSource.ang, rootMatrix:GetTranslation(), rootMatrix:GetAngles() )
+    end
+
+    return LocalToWorld( localPos, lightSource.ang, rootMatrix:GetTranslation(), rootMatrix:GetAngles() )
 
 end
 

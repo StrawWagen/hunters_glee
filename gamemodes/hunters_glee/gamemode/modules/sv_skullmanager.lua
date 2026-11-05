@@ -26,6 +26,10 @@ function GM:SpawnASkull( pos, ang, termSkull, persistParent )
             skull:SetSkulls( skullWorth )
 
         end
+        if persistParent.glee_SkullWorth then
+            skull:SetSkulls( math.max( skull:GetSkulls(), persistParent.glee_SkullWorth ) )
+
+        end
     end
 
     skull:SetPos( pos )

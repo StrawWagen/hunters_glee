@@ -147,6 +147,12 @@ local settingsCategories = {
                 prettyName = "High contrast",
                 desc = "All HUD and menu text in plain white.",
             },
+            {
+                cvar = "cl_huntersglee_panicdistort",
+                type = "check",
+                prettyName = "Panic fisheye",
+                desc = "Distort your view with a fisheye effect when panicking?",
+            },
         },
     },
     {

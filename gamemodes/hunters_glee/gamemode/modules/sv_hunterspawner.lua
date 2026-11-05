@@ -34,6 +34,15 @@ local forwardSpawnLifetime = 100 -- seconds until a forward area is forgotten
 local forwardSpawnMaxAreas = 30
 local forwardSampleInterval = 5 -- how stale a hunter's last unseen area can be, higher means further back from the breach
 
+-- MarchValidHunterPos's fails since something last spawned, its fallbacks unlock as this climbs
+local fails = 0
+-- past every fallback, justSpawnSomething kicks in at 800
+-- a wave entry that still can't place, eg areaFilter rejects everywhere, is dropped so it doesn't block the rest
+local discardEntryAtFails = 1000
+
+-- lag only bumps difficulty when it starts, a host tabbed out of a listen server lags forever
+local wasLagging = false
+
 -- the spawnset module ( sv_spawnset.lua ) hands us a freshly parsed set via this
 -- hook; we attach the spawner's own runtime fields to it, so the module stays
 -- ignorant of spawner internals while we keep the convenience of storing them
@@ -61,6 +70,9 @@ hook.Add( "glee_spawnset_parsed", "glee_spawner_runtimefields", function( spawnS
     spawnSet.forwardSpawnAreasMask = {} -- area = when it's forgotten
     spawnSet.forwardSpawnAreasIndexed = {}
 
+    -- .spawns entry name = when its .cooldown ends, math.huge while it's alive or queued
+    spawnSet.cooldownsUntil = {}
+
 end )
 
 function GM:NewSpawnWaveNow()
@@ -75,6 +87,8 @@ local function resetWave()
     GAMEMODE.waveWasAlive = nil
     GAMEMODE.currentSpawnWave = nil
     GAMEMODE.currentSpawning = nil
+    fails = 0
+    wasLagging = false
 
 end
 
@@ -99,6 +113,84 @@ local function aliveHuntersCount()
 
     end
     return aliveTermsCount
+
+end
+
+-- alive and queued spawns from the current spawnset, counted per .slots slot and per .spawns entry name
+local function tallyAliveAndQueued()
+    local slotCounts = {}
+    local entryCounts = {}
+
+    local function tally( spawnEntry )
+        local name = spawnEntry.name
+        entryCounts[name] = ( entryCounts[name] or 0 ) + 1
+
+        local slots = spawnEntry.slots
+        if not slots then return end
+        for _, slot in ipairs( slots ) do
+            slotCounts[slot] = ( slotCounts[slot] or 0 ) + 1
+
+        end
+    end
+
+    local currentSpawnsetsName = GAMEMODE.CurrSpawnSetName
+    for _, hunter in pairs( GAMEMODE.glee_Hunters ) do
+        if not IsValid( hunter ) then continue end
+        if hunter:Health() <= 0 then continue end
+        if hunter.glee_SpawnsetThatMadeMe ~= currentSpawnsetsName then continue end
+
+        local spawnEntry = hunter.glee_SpawnEntry
+        if spawnEntry then
+            tally( spawnEntry )
+
+        end
+    end
+
+    if GAMEMODE.currentSpawning then
+        tally( GAMEMODE.currentSpawning )
+
+    end
+    if GAMEMODE.currentSpawnWave then
+        for _, spawnEntry in ipairs( GAMEMODE.currentSpawnWave ) do
+            tally( spawnEntry )
+
+        end
+    end
+
+    return slotCounts, entryCounts
+
+end
+
+-- a .cooldown starts once the entry's last hunter is gone
+local function updateCooldowns( spawnSet, entryCounts, cur )
+    local cooldownsUntil = spawnSet.cooldownsUntil
+    for _, spawnEntry in ipairs( spawnSet.spawns ) do
+        local cooldown = spawnEntry.cooldown
+        if not cooldown then continue end
+
+        local name = spawnEntry.name
+        if entryCounts[name] then
+            cooldownsUntil[name] = math.huge
+
+        elseif cooldownsUntil[name] == math.huge then
+            cooldownsUntil[name] = cur + cooldown
+
+        end
+    end
+end
+
+-- slots are 1 big unless the spawnset's .slotSizes says otherwise
+local function slotSize( spawnSet, slot, minutes )
+    local slotSizes = spawnSet.slotSizes
+    if not slotSizes then return 1 end
+
+    local size = slotSizes[slot]
+    if isstring( size ) then -- "minutes*N"
+        local perMinute = tonumber( string.match( size, "[%d%.]+$" ) )
+        size = math.floor( minutes * perMinute )
+
+    end
+    return size
 
 end
 
@@ -229,6 +321,10 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
 
     end
 
+    -- every check, not just on new waves, so cooldowns start when the hunter actually goes
+    local slotCounts, entryCounts = tallyAliveAndQueued()
+    updateCooldowns( spawnSet, entryCounts, cur )
+
     -- wait!
     if GAMEMODE.nextSpawnWave > cur or GAMEMODE.currentSpawnWave then return end
     if hook.Run( "huntersglee_spawnwavegeneration_block" ) == true then return end
@@ -276,12 +372,33 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
         local classCounts = {}
         local pickedSpawns = {}
         local spawns = spawnSet.spawns
+        local cooldownsUntil = spawnSet.cooldownsUntil
+
+        local slotRoom = {}
+        local function slotsHaveRoom( slots )
+            for _, slot in ipairs( slots ) do
+                if not slotRoom[slot] then
+                    slotRoom[slot] = slotSize( spawnSet, slot, minutes ) - ( slotCounts[slot] or 0 )
+
+                end
+                if slotRoom[slot] <= 0 then return false end
+
+            end
+            return true
+
+        end
+        -- only after slotsHaveRoom, which fills in slotRoom
+        local function takeSlotRoom( slots )
+            for _, slot in ipairs( slots ) do
+                slotRoom[slot] = slotRoom[slot] - 1
+
+            end
+        end
 
         debugPrint( "STARTING WAVE GENERATION! with " .. budget .. " difficulty." )
 
         while budget > 0 do
             local addedOne
-            local freebie
             debugPrint( "picking with " .. budget .. " remaining" )
 
             for _, spawnEntry in SortedPairsByMemberValue( spawns, "difficultyCost", true ) do -- go from highest to lowest cost
@@ -316,6 +433,23 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
 
                 end
 
+                if ( cooldownsUntil[spawnEntry.name] or 0 ) > cur then
+                    continue
+
+                end
+
+                if not GAMEMODE:CanEntrySpawnOnMap( spawnEntry ) then
+                    continue
+
+                end
+
+                -- slots win over minCount
+                local slots = spawnEntry.slots
+                if slots and not slotsHaveRoom( slots ) then
+                    continue
+
+                end
+
                 local countClass = spawnEntry.countClass or spawnEntry.class
                 local count = classCounts[countClass]
                 if not count then
@@ -328,6 +462,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
                 local good = spawnEntry.difficultyCost <= budget
 
                 -- does it have a minCount we should respect?
+                local freebie
                 if spawnEntry.minCount > -1 and not good then -- minCount bypasses budget
                     good = count < spawnEntry.minCount
                     freebie = true
@@ -347,6 +482,10 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
                     spawnEntry.minutesWhenAdded = minutes
                     table.insert( pickedSpawns, spawnEntry )
                     classCounts[countClass] = count + 1
+                    if slots then
+                        takeSlotRoom( slots )
+
+                    end
                     local wasFreebie = freebie and "was a freebie" or ""
                     debugPrint( "added", spawnEntry.prettyName, " with difficultyCost, ", spawnEntry.difficultyCost, ", ", wasFreebie )
                     break
@@ -451,14 +590,19 @@ function GM:SpawnWaveSpawnIn()
 
     if currSpawnEntry.spawnType == "hunter" then
         local lagging, currTickrate, threshold = self:IsLagging()
+        local startedLagging = lagging and not wasLagging
+        wasLagging = lagging
 
         if lagging then
             debugPrint( "not spawning hunter, laggy, tickrate is " .. currTickrate .. " threshold is " .. threshold )
             nextHunterSpawn = cur + 1
 
             -- bump the difficulty up, unlock the harder enemies sooner!
-            local _, spawnSet = self:GetSpawnSet()
-            GAMEMODE:BumpRoundDifficulty( spawnSet.diffBumpWhenWaveKilled / 50, "lag_bump" )
+            if startedLagging then
+                local _, spawnSet = self:GetSpawnSet()
+                GAMEMODE:BumpRoundDifficulty( spawnSet.diffBumpWhenWaveKilled / 50, "lag_bump" )
+
+            end
             return
 
         end
@@ -495,6 +639,12 @@ function GM:SpawnWaveSpawnIn()
             local _, spawnSet = self:GetSpawnSet()
             debugPrint( "didnt spawn", currSpawnEntry.name, currSpawnEntry.prettyName, spawnSet.dynamicTooCloseDist, spawnSet.dynamicTooFarDist )
 
+            if fails > discardEntryAtFails then
+                permaPrint( "GLEE: " .. currSpawnEntry.name .. " couldn't find anywhere to spawn, dropping it from the wave" )
+                fails = 0
+                self.currentSpawning = nil
+
+            end
         end
     end
 
@@ -854,6 +1004,7 @@ function GM:AttemptToSpawnHunter( spawnEntry, fromMiseryWave )
     hunter:SetAngles( randYawAng )
     hunter:Spawn()
     hunter.glee_SpawnArea = spawnArea -- so we can prefer to spawn enemies from this area, if this bot ends up killing someone!
+    hunter.glee_SpawnEntry = spawnEntry
 
     -- networked, GetBotScaryness runs clientside too
     if spawnEntry.scaryAsATerminator then
@@ -883,8 +1034,6 @@ function GM:AttemptToSpawnHunter( spawnEntry, fromMiseryWave )
     return hunter
 
 end
-
-local fails = 0
 
 -- OVERCOMPLICATED!!!!!!
 function GM:AdjustDynamicTooCloseCutoff( adjust, spawnSet )
@@ -1200,6 +1349,7 @@ function GM:MarchValidHunterPos( spawnEntry )
         if not currentArea or not IsValid( currentArea ) then continue end -- outdated
         -- great/good spawn areas and the area cache are shared by every entry in the spawnset
         if firmPreference and not self:HasAllExtraFlags( currentArea, preferredEFlags ) then continue end
+        if spawnEntry.areaFilter and not spawnEntry.areaFilter( spawnEntry, currentArea ) then continue end
 
         local spawnPos = currentArea:GetRandomPoint()
         spawnPos = spawnPos + up20
@@ -1455,7 +1605,8 @@ function GM:MarchValidHunterPos( spawnEntry )
         fails = fails + 0.75
 
         if tooClose then
-            spawnSet.dynamicTooCloseFailCounts = dynamicTooCloseFailCounts + 1
+            dynamicTooCloseFailCounts = dynamicTooCloseFailCounts + 1
+            spawnSet.dynamicTooCloseFailCounts = dynamicTooCloseFailCounts
             GAMEMODE:AdjustDynamicTooCloseCutoff( -( dynamicTooCloseFailCounts * 5 ), spawnSet ) -- let it get closer next time
             debugPrint( "too close bite" )
 

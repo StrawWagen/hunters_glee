@@ -465,6 +465,8 @@ ghost ropes
 reeling in when revived
 reeling back to last death position when not moving
 
+-- skull on a fishing line from ghosts
+
 f1 help menu
 
 system where you register a command, default bind
@@ -604,3 +606,9 @@ goes in a glee rebinding menu?
 -- signal relay use up back slot?
 
 -- some kinda way to make people inflate, opposite of infernal intervention
+
+-- bargain that makes it so you can only see when you are speaking/using vc
+
+-- rare bargian bundles, frog legs + the hops 
+
+-- metal box for comedic effect

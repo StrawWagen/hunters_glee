@@ -449,8 +449,7 @@ function ENT:UpdateGivenScore()
     end
 
     if IsValid( target ) and target.InVehicle and target:InVehicle() then
-        local theirVehicle = target:GetVehicle()
-        if IsValid( theirVehicle ) and theirVehicle.isARescueHeliSeat and GAMEMODE:IsInnocent( target ) then
+        if terminator_Extras.gleeVehicles.IsInEscapeSeat( target ) and GAMEMODE:IsInnocent( target ) then
             cost = cost + self.CostInnocentEscapeHeliRider
 
         else

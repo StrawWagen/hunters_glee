@@ -7,23 +7,23 @@ end )
 
 local navCheckDist = 150
 
-function GM:GetBotScaryness( ply, bot ) -- AAH
+function GM:GetBotScaryness( ent, bot ) -- AAH
     if bot.IsSilentStepping and bot:IsSilentStepping() then return 0 end
 
     local minScaryness = 0.15
     local maxScaryness = 1.25
 
-    local plysHealth = ply:Health()
-    if plysHealth <= 5 then
+    local entsHealth = ent:Health()
+    if entsHealth <= 5 then
         minScaryness = 1.25
 
-    elseif plysHealth <= 15 then
+    elseif entsHealth <= 15 then
         minScaryness = 1.15
 
-    elseif plysHealth <= 35 then
+    elseif entsHealth <= 35 then
         minScaryness = 0.75
 
-    elseif plysHealth <= 50 then
+    elseif entsHealth <= 50 then
         minScaryness = 0.35
 
     end

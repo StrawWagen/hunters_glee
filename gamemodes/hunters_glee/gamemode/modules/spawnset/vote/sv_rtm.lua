@@ -69,7 +69,15 @@ function RTM.GetVoteCount()
 
 end
 
+-- a misery that can't spawn anything here is a dead round, so anyone can vote it out
+local function currentMiseryUnsuited()
+    return not GAMEMODE:DoesSpawnsetSuitMap( GAMEMODE:GetSpawnSetName() )
+
+end
+
 function RTM.GetThreshold()
+    if currentMiseryUnsuited() then return 1 end
+
     local conf = config
     local totalPlayers = RTM.GetPlayerCount()
 
@@ -101,7 +109,14 @@ end
 function RTM.Start()
     if hook.Run( "SpawnSetVote_RTMStart" ) == false then return end
 
-    PrintMessage( HUD_PRINTTALK, "The vote has been rocked, Misery vote imminent." )
+    if currentMiseryUnsuited() then
+        local prettyName = GAMEMODE:GetPrettyNameOfSpawnSet( GAMEMODE:GetSpawnSetName() )
+        PrintMessage( HUD_PRINTTALK, "GLEE: " .. prettyName .. " doesn't fit this Map...\nThis vote came already rocked." )
+
+    else
+        PrintMessage( HUD_PRINTTALK, "The vote has been rocked, Misery vote imminent." )
+
+    end
 
     local hasMiseryVotedBefore
     for _, ply in player.Iterator() do

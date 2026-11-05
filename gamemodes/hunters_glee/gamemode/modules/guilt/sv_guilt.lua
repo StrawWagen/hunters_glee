@@ -11,6 +11,7 @@ hook.Add( "huntersglee_round_into_active", "glee_slighting_initialize", function
     GAMEMODE.roundExtraData.generalMischievousness = {}
     GAMEMODE.roundExtraData.mischievousnessReasons = {}
     GAMEMODE.roundExtraData.nextHomicidalGleeSurfaces = {}
+    GAMEMODE.roundExtraData.newbieKillers = {}
 
 end )
 
@@ -434,6 +435,13 @@ end
 
 local developerVar = GetConVar( "developer" )
 
+-- persistent guilt is a dedicated server only mechanic
+-- developer 1 enables it for testing
+function GM:PersistentGuiltIsEnabled()
+    return game.IsDedicated() or developerVar:GetBool()
+
+end
+
 -- guilt is the timestamp they're guilty until, so every row already in the past is dead weight
 -- PData keys are "<steamid64>[<name>]", and LIKE treats _ as a single-char wildcard, hence the escape
 -- value is a TEXT column, so a bare compare is lexicographic, and only correct while every
@@ -481,18 +489,47 @@ hook.Add( "PlayerInitialSpawn", "glee_checkpersistentguilt", function( ply )
 end )
 
 hook.Add( "glee_onkilledtrulyinnocentsoul", "glee_incrementpersistentguilt", function( attacker, died, persistGuiltMul )
-    -- persistent guilt is a dedicated server only mechanic
-    -- developer 1 enables it for testing
-    if not game.IsDedicated() and not developerVar:GetBool() then return end
+    if not GAMEMODE:PersistentGuiltIsEnabled() then return end
 
     local daysToAdd = 1
-    if GAMEMODE:IsFirstTimePlayer( died ) and not GAMEMODE:IsFirstTimePlayer( attacker ) then
+    local killedNewbie = GAMEMODE:IsFirstTimePlayer( died ) and not GAMEMODE:IsFirstTimePlayer( attacker )
+    if killedNewbie then
         daysToAdd = 10
 
     end
 
-    GAMEMODE:IncrementPersistentGuilt( attacker, daysToAdd * ( persistGuiltMul or 1 ) )
+    daysToAdd = daysToAdd * ( persistGuiltMul or 1 )
+    GAMEMODE:IncrementPersistentGuilt( attacker, daysToAdd )
 
+    if not killedNewbie then return end
+
+    local allNewbieKillers = GAMEMODE.roundExtraData.newbieKillers
+    local diedsKillers = allNewbieKillers[died] or {}
+    diedsKillers[attacker] = daysToAdd
+    allNewbieKillers[died] = diedsKillers
+
+end )
+
+-- a new player who rage quits after being killed costs each killer their newbie guilt again
+hook.Add( "PlayerDisconnected", "glee_newbieragequit_guilt", function( leaver )
+    if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
+
+    local allNewbieKillers = GAMEMODE.roundExtraData.newbieKillers
+    if not allNewbieKillers then return end
+
+    local leaversKillers = allNewbieKillers[leaver]
+    if not leaversKillers then return end
+
+    allNewbieKillers[leaver] = nil
+
+    local msg = leaver:Nick() .. " was new here, and you killed them.\nNow they've left... Your guilt grows."
+
+    for killer, daysGiven in pairs( leaversKillers ) do
+        if not IsValid( killer ) then continue end
+        GAMEMODE:IncrementPersistentGuilt( killer, daysGiven )
+        huntersGlee_Announce( { killer }, 10, 8, msg )
+
+    end
 end )
 
 

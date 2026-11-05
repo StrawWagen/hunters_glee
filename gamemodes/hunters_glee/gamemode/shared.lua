@@ -39,6 +39,7 @@ include( "modules/sh_deathsounds.lua" )
 include( "modules/sh_slowmopitch.lua" )
 include( "modules/sh_danceslowdown.lua" )
 include( "modules/sh_playerdrowning.lua" )
+include( "modules/sh_compathacks.lua" )
 
 include( "modules/guilt/sh_guilt.lua" )
 include( "modules/battery/sh_battery.lua" )

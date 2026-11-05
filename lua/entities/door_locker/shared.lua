@@ -24,23 +24,22 @@ ENT.HullCheckSize = Vector( 20, 20, 10 )
 ENT.PosOffset = Vector( 0, 0, 10 )
 
 local doorClasses = {
-    ["prop_door_rotating"] = true,
-    ["func_door"] = true,
+    "prop_door_rotating",
+    "func_door",
 }
 
+local maxDoorDistance = 2048
+
+-- runs every think while the ghost is out
 function ENT:GetNearestTarget()
     local nearestDoor = nil
-    local nearestDistance = math.huge
+    local nearestDistance = maxDoorDistance
     local myPos = self:GetPos()
 
-    -- Find all applicable door entities within a radius of 2048 units
-    local doors = ents.FindInSphere( myPos, 2048 )
-    for _, door in ipairs( doors ) do
-        if doorClasses[door:GetClass()] then
+    for _, class in ipairs( doorClasses ) do
+        for _, door in ipairs( ents.FindByClass( class ) ) do
             if not terminator_Extras.CanBashDoor( door ) then continue end
             if not door:IsSolid() then continue end
-            if door:GetClass() == "prop_door_rotating" and not terminator_Extras.CanBashDoor( door ) then continue end
-            -- Calculate the distance between the door and the entity
             local distance = myPos:Distance( door:NearestPoint( myPos ) )
             if distance < nearestDistance then
                 nearestDoor = door

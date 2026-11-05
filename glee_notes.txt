@@ -136,8 +136,8 @@ FULL TUTORIAL FOR PLACING ALL ESSENTIAL ITEMS
 
 
 VAN teleport sequence
-find static beacon in map ( combine theme? )
-need to gas it up?
+find backpackable beacon in map
+need to gas it up? ( bring it to generators in the map that also spawn? )
 starts countdown
 van will arrive after 60s
 violently arrives, dissolves anything near, in the room, massive explosion
@@ -147,6 +147,10 @@ van is ready to pick people up
 sticks around for 30s
 then starts teleport away countdown
 fucks off
+
+questions
+relationships, hating enemies, maybe use a npc_citizen pilot?
+needs heavy sentry turret?
 
 van build is done, with help from anot
 

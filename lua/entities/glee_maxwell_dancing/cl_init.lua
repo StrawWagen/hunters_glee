@@ -1,5 +1,7 @@
 include( "shared.lua" )
 
+ENT.IconOverride = "materials/entities/glee_backpackable_maxwell.png"
+
 function ENT:Draw()
 	self:DrawModel()
 

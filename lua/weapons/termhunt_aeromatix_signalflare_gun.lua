@@ -58,17 +58,35 @@ SWEP.Secondary.DefaultClip        = 0
 SWEP.Secondary.Automatic = false
 SWEP.Secondary.Delay = 1
 
+local function hasClearShot( swep, owner )
+    local startPos = owner.GetShootPos and owner:GetShootPos() or owner:WorldSpaceCenter()
+    local aimVec = owner.GetAimVector and owner:GetAimVector() or owner:GetForward()
+    local see, trResult = terminator_Extras.PosCanSeeComplex( startPos, startPos + aimVec * 1000, swep, MASK_SOLID )
+
+    return see or trResult.HitSky
+
+end
+
+-- stops the click that picked it up from wasting the flare into a wall
+local pickupGraceTime = 2
+
+function SWEP:SetupDataTables()
+    self:NetworkVar( "Float", "PickedUpTime" )
+
+end
+
 function SWEP:CanPrimaryAttack()
     local owner = self:GetOwner()
-    if SERVER and owner:IsPlayer() and GAMEMODE.HasLearnedLesson and not GAMEMODE:HasLearnedLesson( owner, "SuccessfullyCalledHeli" ) then
-        local startPos = owner.GetShootPos and owner:GetShootPos() or owner:WorldSpaceCenter()
-        local aimVec = owner.GetAimVector and owner:GetAimVector() or owner:GetForward()
-        local see, trResult = terminator_Extras.PosCanSeeComplex( startPos, startPos + aimVec * 1000, self, MASK_SOLID )
+    if owner:IsPlayer() then
+        local justPickedUp = self:GetPickedUpTime() + pickupGraceTime > CurTime()
+        local needsTutorial = GAMEMODE.HasLearnedLesson and not GAMEMODE:HasLearnedLesson( owner, "SuccessfullyCalledHeli" )
 
-        local clearShot = see or trResult.HitSky
-        if not clearShot then
-            GAMEMODE:LearnLesson( owner, "CrappyFlaregunShot" )
-            huntersGlee_Announce( { owner }, 1000, 5, "I should probably shoot this somewhere better\nAt the sky, somewhere open..." )
+        if ( justPickedUp or needsTutorial ) and not hasClearShot( self, owner ) then
+            if SERVER and needsTutorial then
+                GAMEMODE:LearnLesson( owner, "CrappyFlaregunShot" )
+                huntersGlee_Announce( { owner }, 1000, 5, "I should probably shoot this somewhere better\nAt the sky, somewhere open..." )
+
+            end
             return false
 
         end
@@ -146,7 +164,7 @@ function SWEP:ShootFlare()
 end
 
 function SWEP:Equip()
-    self:SetNextPrimaryFire( CurTime() + 2 )
+    self:SetPickedUpTime( CurTime() )
     timer.Simple( 0, function()
         if not IsValid( self ) then return end
         local owner = self:GetOwner()

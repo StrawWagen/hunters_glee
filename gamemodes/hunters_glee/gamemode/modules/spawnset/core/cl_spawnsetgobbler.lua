@@ -107,7 +107,7 @@ net.Receive( "glee_spawnsetgobble", function()
     GLEE_SPAWNSETS = {}
 
     for _, fileName in ipairs( fileNames ) do
-        ProtectedCall( function( nameProtected ) include( "glee_spawnsets/" .. nameProtected ) end, fileName )
+        ProtectedCall( function( nameProtected ) CompileFile( "glee_spawnsets/" .. nameProtected )() end, fileName )
 
     end
 
@@ -122,6 +122,18 @@ net.Receive( "glee_spawnsetgobble", function()
 
     if activeSetName == "" then return end
     activate( activeSetName )
+
+end )
+
+-- mirrors sv_spawnsetmapcheck's sendUnsuitedSpawnsets
+net.Receive( "glee_spawnsetsunsuitedtomap", function()
+    local unsuited = {}
+    local count = net.ReadUInt( 16 )
+    for _ = 1, count do
+        unsuited[net.ReadString()] = true
+
+    end
+    GAMEMODE.glee_SpawnsetsUnsuitedToMap = unsuited
 
 end )
 

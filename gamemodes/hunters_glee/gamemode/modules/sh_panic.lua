@@ -2,6 +2,8 @@ if CLIENT then
 
     local LocalPlayer = LocalPlayer
 
+    local doPanicDistortVar = CreateClientConVar( "cl_huntersglee_panicdistort", "1", true, false, "Distort your view when panicking?", 0, 1 )
+
     -- cache panic so we aren't calling getnwfloat
     local clPanic = nil
     function doPanicDistort( scale )
@@ -15,6 +17,7 @@ if CLIENT then
     hook.Add( "RenderScreenspaceEffects", "huntersglee_panicmessupview", function()
         if not clPanic or clPanic <= 0 then return end
         if LocalPlayer():Health() <= 0 then return end
+        if not doPanicDistortVar:GetBool() then return end
         doPanicDistort( clPanic )
 
     end )

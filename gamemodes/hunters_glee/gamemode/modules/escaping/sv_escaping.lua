@@ -77,22 +77,21 @@ function GM:escapifyVehicle( vehicle )
     end
     local riders = allRidersOf( vehicle )
     local ridersMask = {}
+    local escapedRiders = {}
     local actualRidersNoDriver = {}
     local everyoneElse = {}
     local riderCount = 0
 
     if #riders <= 0 then return end
 
-    local delayUntil = CurTime() + textDisplayDuration + 0.15
-    self:DelayRoundEndingUntil( delayUntil )
-
     for _, rider in ipairs( riders ) do
-        if not self:CanEscape( rider ) then return end
+        if not self:CanEscape( rider ) then continue end
 
         local blockEscape = hook.Run( "glee_blockescape_invehicle", rider, vehicle )
-        if blockEscape == true then return end
+        if blockEscape == true then continue end
 
         ridersMask[rider] = true
+        table.insert( escapedRiders, rider )
         self:escapifyPlayer( rider )
         if rider ~= driver then
             riderCount = riderCount + 1
@@ -100,6 +99,11 @@ function GM:escapifyVehicle( vehicle )
 
         end
     end
+
+    if #escapedRiders <= 0 then return end
+
+    local delayUntil = CurTime() + textDisplayDuration + 0.15
+    self:DelayRoundEndingUntil( delayUntil )
 
     for _, ply in player.Iterator() do
         if ridersMask[ply] then continue end
@@ -125,14 +129,14 @@ function GM:escapifyVehicle( vehicle )
         else
             local escapablePlyCount = potentialEscapersCount()
             if escapablePlyCount > 0 then
-                huntersGlee_AnnounceDramatic( riders, 1000, textDisplayDuration, "You've escaped!\nBut who did you leave behind?" )
+                huntersGlee_AnnounceDramatic( escapedRiders, 1000, textDisplayDuration, "You've escaped!\nBut who did you leave behind?" )
 
                 local sOrNoS = riderCount == 1 and "" or "s"
                 local veOrS = riderCount == 1 and "s" or "ve"
                 huntersGlee_AnnounceDramatic( everyoneElse, 50, textDisplayDuration, riderCount .. " soul" .. sOrNoS .. " ha" .. veOrS .. " escaped the hunt..." )
 
             else
-                huntersGlee_AnnounceDramatic( riders, 1000, textDisplayDuration, "You've escaped!\nYou can finally leave this all behind..." )
+                huntersGlee_AnnounceDramatic( escapedRiders, 1000, textDisplayDuration, "You've escaped!\nYou can finally leave this all behind..." )
 
             end
         end
@@ -185,24 +189,24 @@ hook.Add( "PlayerEnteredVehicle", "glee_findescapablevehicles", function( _drive
     end )
 end )
 
--- rescue heli npc
-hook.Add( "glee_rescueheliescape", "glee_escapeviarescueheli", function( heli )
-    if not IsValid( heli ) then return end
-    GAMEMODE:escapifyVehicle( heli )
+-- gleeVehicles, eg the rescue heli
+hook.Add( "glee_vehicle_depart", "glee_escapeviagleevehicle", function( host )
+    if not IsValid( host ) then return end
+    GAMEMODE:escapifyVehicle( host )
 
 end )
 
-hook.Add( "PlayerEnteredVehicle", "glee_rescueheli_entertime", function( ply, vehicle )
-    if not vehicle.isARescueHeliSeat then return end
-    ply.glee_rescueHeliEnterTime = CurTime()
+hook.Add( "PlayerEnteredVehicle", "glee_escapeseat_entertime", function( ply )
+    if not terminator_Extras.gleeVehicles.IsInEscapeSeat( ply ) then return end
+    ply.glee_escapeSeatEnterTime = CurTime()
 
 end )
 
--- base toggles third person on crouch, blocked briefly after boarding the heli
-local heliThirdPersonBlockTime = 5
+-- base toggles third person on crouch, blocked briefly after boarding an escape vehicle
+local escapeSeatThirdPersonBlockTime = 5
 
 function GM:VehicleMove( ply, vehicle, mv )
-    if vehicle.isARescueHeliSeat and ( ply.glee_rescueHeliEnterTime or 0 ) + heliThirdPersonBlockTime > CurTime() then return end
+    if terminator_Extras.gleeVehicles.IsInEscapeSeat( ply ) and ( ply.glee_escapeSeatEnterTime or 0 ) + escapeSeatThirdPersonBlockTime > CurTime() then return end
     return self.BaseClass.VehicleMove( self, ply, vehicle, mv )
 
 end

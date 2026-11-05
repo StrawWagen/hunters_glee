@@ -49,6 +49,18 @@ function GM:RequestEscapeMultipliers( list )
 
 end
 
+-- drops cached multipliers, so the next RequestEscapeMultipliers asks the server again
+-- for when an old one won't do, like a price about to be charged
+-- they read as unknown until the server answers
+-- list is the same format as RequestEscapeMultipliers
+function GM:ForgetEscapeMultipliers( list )
+    for _, entry in ipairs( list ) do
+        local cache = entry.isSpawnset and spawnsetCache or mapCache
+        cache[entry.key] = nil
+
+    end
+end
+
 function GM:GetMapsEscapeMultiplier( mapName )
     local entry = mapCache[mapName]
     if not entry then return 0, 0, 0 end
@@ -56,9 +68,11 @@ function GM:GetMapsEscapeMultiplier( mapName )
 
 end
 
+-- nil until it's synced or requested
+-- the server's never returns nil
 function GM:GetSpawnsetsEscapeMultiplier( spawnSetName )
     local entry = spawnsetCache[spawnSetName]
-    if not entry then return 0, 0, 0 end
+    if not entry then return end
     return entry.mul, entry.escaped, entry.remained
 
 end

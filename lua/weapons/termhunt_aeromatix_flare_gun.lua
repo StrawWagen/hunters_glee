@@ -115,15 +115,6 @@ function SWEP:ShootFlare()
 
     owner:EmitSound( "Weapon_FlareGun.Single", 90, 100, 1, CHAN_STATIC  )
 
-    -- ECHO echo echo ehco
-    local filter = RecipientFilter()
-    filter:AddAllPlayers()
-
-    local flareSound = CreateSound( self, "Weapon_FlareGun.Single", filter )
-    flareSound:SetDSP( 22 )
-    flareSound:SetSoundLevel( 140 )
-    flareSound:PlayEx( 0.8, 60 )
-
     sound.EmitHint( SOUND_COMBAT, owner:GetShootPos(), 6000, 1, owner )
 
 end

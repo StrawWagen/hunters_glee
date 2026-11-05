@@ -7,9 +7,22 @@ local setHelpers = GM.setHelpers or {}
 GM.setHelpers = setHelpers
 
 
--- No shop for the living, only "Hardcore" tagged items for the dead, and they wait twice as long, the Door Locker 4x. Linked Hunter costs 10x.
--- Call from an sh_ spawnset's Activate. Server only and the client draws a shop that won't sell
+-- true while the active misery called setHelpers.makeHardcore
+function GM:MiseryIsHardcore()
+    return hook.Run( "glee_miseryishardcore" ) == true
+
+end
+
+-- no shop for the living
+-- the dead only get "Hardcore" tagged items, and wait twice as long for them, the Door Locker 4x
+-- Linked Hunter costs 10x
+-- call from an sh_ spawnset's Activate
+-- from an sv_ one, clients still draw a shop that won't sell
 function setHelpers.makeHardcore( lifecycle )
+    lifecycle:Hook( "glee_miseryishardcore", function()
+        return true
+
+    end )
     -- escaped players sit at health 0, so the Horrors stay open to them
     lifecycle:Hook( "glee_blockshopopen", function()
         if LocalPlayer():Health() <= 0 then return end
@@ -25,6 +38,7 @@ function setHelpers.makeHardcore( lifecycle )
 
     end )
     lifecycle:Hook( "glee_shop_itemcooldownmul", function( _ply, itemData, adjust )
+        -- seconds, before the multiplier, so even an item with no cooldown waits
         adjust.value = math.max( adjust.value, 20 )
 
         local mul = 2
@@ -43,8 +57,9 @@ function setHelpers.makeHardcore( lifecycle )
     end )
 end
 
--- No "Resurrecting" tagged shop items, so the only revives are Revive Kits found in crates.
--- Call from an sh_ spawnset's Activate
+-- no "Resurrecting" tagged shop items
+-- so the only revives are Revive Kits found in crates
+-- call from an sh_ spawnset's Activate
 function setHelpers.makeNoReviving( lifecycle )
     lifecycle:Hook( "glee_shop_canshow", function( ply, itemData )
         if not itemData.tags.Resurrecting then return end
@@ -56,8 +71,9 @@ function setHelpers.makeNoReviving( lifecycle )
     end )
 end
 
--- No "SelfResurrecting" tagged shop items, the dead must wait on the living to revive them.
--- Call from an sh_ spawnset's Activate
+-- no "SelfResurrecting" tagged shop items
+-- the dead have to wait on the living to revive them
+-- call from an sh_ spawnset's Activate
 function setHelpers.makeNoSelfReviving( lifecycle )
     lifecycle:Hook( "glee_shop_canshow", function( ply, itemData )
         if not itemData.tags.SelfResurrecting then return end
@@ -69,33 +85,202 @@ function setHelpers.makeNoSelfReviving( lifecycle )
     end )
 end
 
--- Every alive player gets one of class. Dropping it doesn't earn another, only losing it entirely does.
--- Call from an sh_ spawnset's Activate
-function setHelpers.addDefaultWeapon( lifecycle, class )
-    if CLIENT then return end
+-- a function's pick is kept per player, by SteamID64, so a top-up or a rejoin hands back the same thing
+local function weaponFor( ply, entry )
+    local weapon = entry.weapon
+    if not isfunction( weapon ) then return weapon end
 
-    -- lifecycle:Hook ids are per hook name, a second hook would replace the first, so every class shares one
-    local classes = lifecycle.glee_DefaultWeaponClasses
-    if classes then
-        table.insert( classes, class )
-        return
+    local id = ply:SteamID64()
+    local picked = entry.picks[id]
+    if picked == nil then
+        picked = weapon( ply )
+        entry.picks[id] = picked
 
     end
-    classes = { class }
-    lifecycle.glee_DefaultWeaponClasses = classes
+    return picked
 
+end
+
+local function classOf( weapon )
+    if istable( weapon ) then return weapon.class end
+    return weapon
+
+end
+
+-- carried on the back, like the sentry turret, see glee_Carrying
+local function isCarryable( class )
+    return weapons.IsBasedOn( class, "glee_backpackable_base" )
+
+end
+
+-- what they hold of the weapon, given now or already had
+-- nil when entry.shouldGiveFunc turns them down, or there's no room to carry it
+local function giveWeapon( ply, entry )
+    if entry.shouldGiveFunc and not entry.shouldGiveFunc( ply ) then return end
+
+    local weapon = weaponFor( ply, entry )
+    local class = classOf( weapon )
+    local held = ply:GetWeapon( class )
+    if IsValid( held ) then return held end
+
+    if isCarryable( class ) then
+        if not terminator_Extras.glee_Carrying.GiveNewCarryable( ply, class ) then return end
+        return ply:GetWeapon( class )
+
+    end
+
+    if istable( weapon ) then
+        local resolved = {}
+        for key, value in pairs( weapon ) do
+            if isfunction( value ) then
+                value = value( ply )
+
+            end
+            resolved[key] = value
+
+        end
+        GAMEMODE.shopHelpers.purchaseWeapon( ply, resolved )
+        return ply:GetWeapon( class )
+
+    end
+    return ply:Give( weapon )
+
+end
+
+local function makeWeaponEntry( weapon, shouldGiveFunc )
+    return { weapon = weapon, shouldGiveFunc = shouldGiveFunc, picks = {} }
+
+end
+
+-- start and default weapons share one set of hooks
+-- lifecycle:Hook ids are per hook name, a second hook would replace the first
+local function spawnWeaponLists( lifecycle )
+    local lists = lifecycle.glee_SpawnWeaponLists
+    if lists then return lists end
+
+    lists = {
+        start = {},
+        default = {},
+        -- by SteamID64, so rejoining doesn't earn another set
+        startGiven = {},
+    }
+    lifecycle.glee_SpawnWeaponLists = lists
+
+    lifecycle:Hook( "glee_true_PlayerSpawn", function( spawned )
+        for _, entry in ipairs( lists.default ) do
+            giveWeapon( spawned, entry )
+
+        end
+
+        local id = spawned:SteamID64()
+        if lists.startGiven[id] then return end
+        lists.startGiven[id] = true
+
+        for _, entry in ipairs( lists.start ) do
+            giveWeapon( spawned, entry )
+
+        end
+    end )
+
+    -- remembers what it gave, so dropping a start weapon doesn't earn another, it has to be gone entirely
     lifecycle:Hook( "glee_sv_validgmthink_inactive", function()
         for _, ply in ipairs( GAMEMODE:getAlivePlayers() ) do
-            ply.glee_DefaultWeapons = ply.glee_DefaultWeapons or {}
-            for _, currClass in ipairs( classes ) do
-                if IsValid( ply.glee_DefaultWeapons[currClass] ) then continue end
-                local weap = ply:GetWeapon( currClass )
-                if IsValid( weap ) then
-                    ply.glee_DefaultWeapons[currClass] = weap
-                    continue
+            ply.glee_StartWeapons = ply.glee_StartWeapons or {}
+            for _, entry in ipairs( lists.start ) do
+                local class = classOf( weaponFor( ply, entry ) )
+                if IsValid( ply.glee_StartWeapons[class] ) then continue end
+                -- placing a carryable removes its weapon, topping that up would hand out endless turrets
+                if isCarryable( class ) then continue end
 
-                end
-                ply.glee_DefaultWeapons[currClass] = ply:Give( currClass )
+                ply.glee_StartWeapons[class] = giveWeapon( ply, entry )
+
+            end
+        end
+    end )
+
+    return lists
+
+end
+
+-- a weapon everyone starts this misery with
+-- anyone alive when the misery starts gets it on the spot, everyone else on their first spawn, so late joiners get one too
+-- and while the round's waiting to start, every alive player gets topped up, except carryables like the sentry turret
+-- once the hunt's on, losing it is for keeps
+-- weapon is a class, or a shopHelpers.purchaseWeapon table, for one that comes with extra ammo
+-- any of the table's fields but class can be a function( ply ), eg ammo that depends on how many are playing
+-- weapon can also be a function( ply ) returning either, eg a random pick, it's called once per player per misery
+-- shouldGiveFunc( ply ) is optional, return false to leave them out
+-- call from an sh_ spawnset's Activate, once per weapon
+function setHelpers.addStartWeapon( lifecycle, weapon, shouldGiveFunc )
+    if CLIENT then return end
+
+    local lists = spawnWeaponLists( lifecycle )
+    local entry = makeWeaponEntry( weapon, shouldGiveFunc )
+    table.insert( lists.start, entry )
+
+    for _, ply in ipairs( GAMEMODE:getAlivePlayers() ) do
+        lists.startGiven[ply:SteamID64()] = true
+        giveWeapon( ply, entry )
+
+    end
+end
+
+-- players spawn with this weapon every time they come back from the dead, round or no round
+-- anyone alive when the misery starts gets it on the spot
+-- a spawn that isn't after a death doesn't count, eg the gamemode unsticking them, see glee_true_PlayerSpawn
+-- weapon and shouldGiveFunc work like addStartWeapon's
+-- call from an sh_ spawnset's Activate, once per weapon
+function setHelpers.addDefaultWeapon( lifecycle, weapon, shouldGiveFunc )
+    if CLIENT then return end
+
+    local lists = spawnWeaponLists( lifecycle )
+    local entry = makeWeaponEntry( weapon, shouldGiveFunc )
+    table.insert( lists.default, entry )
+
+    for _, ply in ipairs( GAMEMODE:getAlivePlayers() ) do
+        giveWeapon( ply, entry )
+
+    end
+end
+
+-- puts pickModel( ply ) on every player, a model path, or nil to let them wear their own
+-- anyone alive when the misery starts changes on the spot, and changes back when it ends
+-- call from a spawnset's Activate
+function setHelpers.overridePlayerModel( lifecycle, pickModel )
+    if CLIENT then return end
+
+    local function redress( ply )
+        hook.Call( "PlayerSetModel", GAMEMODE, ply )
+        ply:SetupHands()
+
+    end
+
+    -- hands and model scaling read glee_ModelOverride, so the arms and hull match the body
+    lifecycle:Hook( "PlayerSetModel", function( ply )
+        local model = pickModel( ply )
+        ply.glee_ModelOverride = model
+        if not model then return end
+
+        ply:SetModel( model )
+        return true
+
+    end )
+
+    for _, ply in player.Iterator() do
+        if ply:Alive() then
+            redress( ply )
+
+        end
+    end
+
+    -- the PlayerSetModel hook is gone by now, so this puts their own model back
+    lifecycle:AddTeardown( function()
+        for _, ply in player.Iterator() do
+            if not ply.glee_ModelOverride then continue end
+            ply.glee_ModelOverride = nil
+
+            if ply:Alive() then
+                redress( ply )
 
             end
         end
@@ -136,6 +321,7 @@ end
 
 
 -- rolled at load, so the escalation curve is this session's own, not this round's
+-- percent chance to overcharge, by minutes into the round
 local overchargedChanceAtMinutes = {
     [0] = 0,
     [10] = math.Rand( 0, 1 ),
@@ -146,8 +332,10 @@ local overchargedChanceAtMinutes = {
 
 }
 
--- A .postSpawnedFuncs entry. Reads spawnDat.minutesWhenAdded, which the spawner sets as it
--- picks the entry into a wave. A heated session angers every hunter, overcharge roll or not
+-- a .postSpawnedFuncs entry
+-- the longer the hunt goes, the likelier a hunter spawns overcharged
+-- reads spawnDat.minutesWhenAdded, the spawner sets it as it picks the entry into a wave
+-- a heated session angers every hunter, overcharged or not
 function setHelpers.postSpawnedOvercharge( spawnDat, spawned )
 
     local overchargedChance = 0
@@ -158,7 +346,7 @@ function setHelpers.postSpawnedOvercharge( spawnDat, spawned )
 
         end
     end
-    local tooLong = overchargedChance >= 5
+    local tooLong = overchargedChance >= 5 -- where the curve sits from 30 minutes on
 
     local _, richestScore = GAMEMODE:GetRichestPlayer()
 
@@ -204,6 +392,8 @@ function setHelpers.postSpawnedOvercharge( spawnDat, spawned )
     end )
 
     if GAMEMODE.roundExtraData.overchargedWarning then return end
+    -- once a round, so only spend it on an overcharge there's a message for
+    if not ( tooLong or wayTooRich or tooDifficult ) then return end
     GAMEMODE.roundExtraData.overchargedWarning = true
 
     if tooLong then

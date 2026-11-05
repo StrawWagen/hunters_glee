@@ -143,7 +143,7 @@ function ENT:UpdateGivenScore()
         local vehicle = currTarget:GetVehicle()
 
         if IsValid( vehicle ) then
-            cost = vehicle.isARescueHeliSeat and inRescueHeliCost or inVehicleCost
+            cost = terminator_Extras.gleeVehicles.IsInEscapeSeat( currTarget ) and inRescueHeliCost or inVehicleCost
 
         end
     end

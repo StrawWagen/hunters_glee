@@ -8,6 +8,19 @@ local function ghostCanPurchase( purchaser )
 
 end
 
+local function doppelsAreInSpawnPool()
+    return GAMEMODE:ClassIsInSpawnPool( "terminator_nextbot_snail_disguised" )
+
+end
+
+local function linkedHunterGuiltDays()
+    -- one more terminator, among terminators, is no great sin
+    if GAMEMODE:PartialClassIsInSpawnPool( "terminator_nextbot_snail" ) then return 0 end
+    if GAMEMODE:MiseryIsHardcore() then return 1 end
+    return 0.25
+
+end
+
 if SERVER then
     local linked_hunter = {
         class = "terminator_nextbot_snail_disguised",
@@ -208,7 +221,7 @@ local items = {
         name = "Linked Hunter",
         desc = "Spawn another hunter.\nThey will take on your appearance.\nIf you personally kill it, you will gain 350 score.\nThe newcomer will never lose you, if you regain your life...",
         shCost = function()
-            if GAMEMODE:ClassIsInSpawnPool( "terminator_nextbot_snail_disguised" ) then
+            if doppelsAreInSpawnPool() then
                 return -150
 
             else
@@ -234,6 +247,14 @@ local items = {
         svOnPurchaseFunc = function( purchaser )
             purchaser:GiveStatusEffect( "linked_hunter" )
             GAMEMODE:CloseShopOnPly( purchaser )
+
+            if GAMEMODE:PersistentGuiltIsEnabled() then
+                local guiltDays = linkedHunterGuiltDays()
+                if guiltDays > 0 then
+                    GAMEMODE:IncrementPersistentGuilt( purchaser, guiltDays )
+
+                end
+            end
 
         end,
     },

@@ -35,7 +35,8 @@ function GM:ShopInitialThink()
         local gobbleCl = client or shared
 
         if gobbleSv then
-            local ok = ProtectedCall( function( nameProtected ) include( "glee_shopitems/" .. nameProtected ) end, name )
+            -- CompileFile, not include, so saving an item file doesn't autorefresh the whole gamemode
+            local ok = ProtectedCall( function( nameProtected ) CompileFile( "glee_shopitems/" .. nameProtected )() end, name )
 
             if ok then
                 self.validServerItemDirectories[name] = true

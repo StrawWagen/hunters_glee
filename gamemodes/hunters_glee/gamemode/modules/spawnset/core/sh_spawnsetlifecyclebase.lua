@@ -119,4 +119,16 @@ function lifecycle:TimerRemove( timerName )
 
 end
 
+--[[---------------------------------------------------------
+    lifecycle:AddTeardown
+    @desc Runs func when the spawnset is swapped away, for undoing what hooks and timers can't.
+    Teardown runs in the order things were added, so the hooks and timers made before this are already gone.
+    @param func: The function to call on teardown.
+    @return: None
+--]]---------------------------------------------------------
+function lifecycle:AddTeardown( func )
+    table.insert( self._teardownTasks, func )
+
+end
+
 return lifecycle

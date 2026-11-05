@@ -179,4 +179,35 @@ function statusEffect:TimerRemove( timerName )
 
 end
 
+if CLIENT then
+    --[[---------------------------------------------------------
+        statusEffect:AddExtraModel
+        @desc Sticks a clientside model onto the owner's model. When the effect is torn down, the model is removed.
+              Call it from the effect's clientside setup.
+              Doesn't pick up autorefresh, setup doesn't run again. For models that don't depend on the owner,
+              data.extraModels in the client RegisterStatusEffect does.
+        @param entry: One MyExtraModels entry, see terminator_cl_extramodels.lua in the terminator addon.
+        @return: None
+    --]]---------------------------------------------------------
+    function statusEffect:AddExtraModel( entry )
+        local owner = self:GetOwner()
+        local key = "glee_statuseffect_" .. self:GetPrintName()
+
+        local extras = self._extraModels
+        if not extras then
+            extras = {}
+            self._extraModels = extras
+
+            table.insert( self._teardownTasks, function()
+                terminator_Extras.RemoveMyExtraModels( owner, key )
+
+            end )
+        end
+
+        extras[#extras + 1] = entry
+        terminator_Extras.AttachMyExtraModels( owner, extras, key )
+
+    end
+end
+
 return statusEffect

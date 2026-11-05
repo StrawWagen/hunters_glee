@@ -9,64 +9,19 @@ local function errorCatchingMitt( errMessage )
 
 end
 
--- sibling data file in this same core/ folder
-local setDefaults, setIgnored = include( "sv_spawnsetdefaults.lua" )
+-- sibling file in this same core/ folder, field defaults and validators
+local schema = include( "sv_spawnsetschema.lua" )
+local setDefaults = schema.setDefaults
+local rawSpawnSetFields = schema.rawSpawnSetFields
+local spawnDefaults = schema.spawnDefaults
+local slotSizeDefaults = schema.slotSizeDefaults
+local validSpawnTypes = schema.validSpawnTypes
+local rawSpawnFieldValidators = schema.rawSpawnFieldValidators
+local minutesSlotSizePattern = schema.minutesSlotSizePattern
+local setCommonTypos = schema.setCommonTypos
+local spawnCommonTypos = schema.spawnCommonTypos
 
-local spawnDefaults = {
-    minCount = -1, -- if these aren't defined, sets to -1 which makes them ignored
-    maxCount = -1, -- just this is ignored, it still respects spawnset.maxSpawnCount tho
-}
-
-local function isTableOfFunctions( dat )
-    if not istable( dat ) then return false, "is not a table" end
-    for _, entry in ipairs( dat ) do
-        if not isfunction( entry ) then return false, "is not a table of functions" end
-
-    end
-    return true
-
-end
-
-local function boolCheck( dat )
-    if not isbool( dat ) then return false, "expected to be a bool" end
-    return true
-
-end
-
-local function enumCheck( dat )
-    if not isnumber( dat ) then return false, "expected to be an enum" end
-
-    return true
-
-end
-
--- sv_hunterspawner only acts on these, so an unknown spawnType would register fine and never spawn
-local validSpawnTypes = {
-    hunter = true,
-}
-
-local spawnSpecialCases = { -- special cases for spawn entries
-    preSpawnedFuncs = isTableOfFunctions,
-    postSpawnedFuncs = isTableOfFunctions,
-    isBoss = boolCheck, -- boolean, this is automatically set for some spawnsets by sv_bosshandler
-    spawnSameZ = boolCheck,
-    spawnBelow = boolCheck,
-    spawnAbove = boolCheck,
-    preferredEFlags = enumCheck, -- will attempt to spawn this .spawn entry in areas with these Extra Navmesh flags, see sv_navmeshcategorizer
-    firmPreferredEFlags = boolCheck, -- never spawn outside areas with ALL preferredEFlags, even if that means never spawning on this map
-    scaryAsATerminator = boolCheck,
-    hordeSpawn = boolCheck,
-}
-
--- misspelled keys would otherwise be silently ignored, or silently replaced by their default
--- typo = correct
-local setCommonTypos = {
-    chanceToBeVotableIfHard = "chanceToBeVotableWhenHard",
-}
-
-local spawnCommonTypos = {
-    difficultyRequired = "difficultyNeeded",
-}
+local developerVar = GetConVar( "developer" )
 
 local function findTypo( tbl, commonTypos )
     for typo, correct in pairs( commonTypos ) do
@@ -156,8 +111,22 @@ function GM:IsValidSpawnSet( spawnSet )
         end
     end
 
+    local slotSizes = spawnSet.slotSizes
+    if slotSizes ~= nil then
+        if not istable( slotSizes ) then yapErr( spawnSet, "has invalid .slotSizes" ) return end
+        for slot, size in pairs( slotSizes ) do
+            local isMinutes = isstring( size ) and string.match( size, minutesSlotSizePattern )
+            if not isMinutes and not asParsed( size, slot, slotSizeDefaults ) then
+                yapErr( spawnSet, "has invalid .slotSizes " .. slot )
+                return
+
+            end
+        end
+    end
+
     local spawns = spawnSet.spawns
     if not istable( spawns ) then yapErr( spawnSet, "has invalid .spawns" ) return end
+    local seenNames = {}
     for ind, spawn in ipairs( spawns ) do
         local name = spawn.name
         if not isstring( name ) then
@@ -168,6 +137,13 @@ function GM:IsValidSpawnSet( spawnSet )
 
         end
 
+        -- .cooldown is tracked by name, so entries sharing one share a cooldown
+        if seenNames[name] and developerVar:GetBool() then
+            permaPrint( "GLEE: spawnSet " .. spawnSet.name .. " has more than one .spawns entry named " .. name )
+
+        end
+        seenNames[name] = true
+
         local spawnTypo, spawnCorrect = findTypo( spawn, spawnCommonTypos )
         if spawnTypo then yapErr( spawnSet, ".spawns " .. name .. " has ." .. spawnTypo .. ", did you mean ." .. spawnCorrect .. "?" ) return end
 
@@ -175,11 +151,11 @@ function GM:IsValidSpawnSet( spawnSet )
         if not isstring( spawn.class ) then yapErr( spawnSet, ".spawns " .. name .. " invalid .class" ) return end
         if not validSpawnTypes[spawn.spawnType] then yapErr( spawnSet, ".spawns " .. name .. " invalid .spawnType" ) return end
 
-        for specialVar, validator in pairs( spawnSpecialCases ) do
-            local whatSpawnHas = spawn[specialVar]
+        for fieldName, validator in pairs( rawSpawnFieldValidators ) do
+            local whatSpawnHas = spawn[fieldName]
             if not whatSpawnHas then continue end
             local valid, notValidReason = validator( whatSpawnHas )
-            if not valid then yapErr( spawnSet, ".spawns " .. name .. " " .. specialVar .. " " .. notValidReason ) return end
+            if not valid then yapErr( spawnSet, ".spawns " .. name .. " " .. fieldName .. " " .. notValidReason ) return end
 
         end
 
@@ -203,6 +179,16 @@ function GM:IsValidSpawnSet( spawnSet )
         end
 
         if not asParsed( spawn.difficultyCost, "difficultyCost", spawnDefaults ) then yapErr( spawnSet, ".spawns " .. name .. " invalid .difficultyCost" ) return end
+
+        if spawn.cooldown ~= nil and not asParsed( spawn.cooldown, "cooldown", spawnDefaults ) then yapErr( spawnSet, ".spawns " .. name .. " invalid .cooldown" ) return end
+
+        -- without .slotSizes, every slot holds 1
+        if slotSizes and spawn.slots then
+            for _, slot in ipairs( spawn.slots ) do
+                if slotSizes[slot] == nil then yapErr( spawnSet, ".spawns " .. name .. " has slot " .. slot .. " that isn't in .slotSizes" ) return end
+
+            end
+        end
 
     end
 
@@ -254,29 +240,37 @@ function GM:ParsedSpawnSet( asRegistered )
 
     local setParsed = {}
     for name, _ in pairs( spawnSet ) do -- parse all existing spawnset variables
-        if setIgnored[name] then setParsed[name] = true continue end
+        if rawSpawnSetFields[name] then setParsed[name] = true continue end
         parse( spawnSet, name, setDefaults, spawnSet )
         setParsed[name] = true
 
     end
     for name, _ in pairs( setDefaults ) do -- setup the nil defaults that weren't set
         if setParsed[name] then continue end
-        if setIgnored[name] then continue end
+        if rawSpawnSetFields[name] then continue end
         parse( spawnSet, name, setDefaults, spawnSet )
 
+    end
+
+    local slotSizes = spawnSet.slotSizes
+    if slotSizes then
+        for slot, _ in pairs( slotSizes ) do
+            parse( slotSizes, slot, slotSizeDefaults, spawnSet )
+
+        end
     end
 
     for _, currSpawn in ipairs( spawnSet.spawns ) do
         local spawnParsed = {}
         for name, _ in pairs( currSpawn ) do -- parse all existing spawnset variables
-            if spawnSpecialCases[name] then spawnParsed[name] = true continue end
+            if rawSpawnFieldValidators[name] then spawnParsed[name] = true continue end
             parse( currSpawn, name, spawnDefaults, spawnSet )
             spawnParsed[name] = true
 
         end
         for name, _ in pairs( spawnDefaults ) do -- get the nil defaults
             if spawnParsed[name] then continue end
-            if spawnSpecialCases[name] then continue end
+            if rawSpawnFieldValidators[name] then continue end
             parse( currSpawn, name, spawnDefaults, spawnSet )
 
         end

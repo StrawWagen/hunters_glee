@@ -48,7 +48,8 @@ hunters_glee/
 │   ├── glee_spawnsets/                # Enemy spawnset(misery) definitions (auto-loaded)
 │   ├── glee_music/                    # Music track definitions (auto-loaded)
 │   ├── glee_hud/                      # HUD drawing, fonts, and the swappable HUD styles
-│   ├── glee_carrying/                 # Carrying big entities as weapons
+│   ├── glee_carrying/                 # Carrying big entities as weapons, and the use wheel
+│   ├── glee_turrets/                  # The shop's turrets: names, ammo, recharging
 │   ├── autorun/                       # Loaded by gmod itself, so it runs outside the gamemode too
 │   ├── entities/                      # Custom entities
 │   ├── weapons/                       # Custom weapons
@@ -410,6 +411,25 @@ if CLIENT then
 end
 ```
 
+##### Clientside Example C: Wearing it
+
+```lua
+if CLIENT then
+    GAMEMODE:RegisterStatusEffect( "caffeinated", nil, nil, {
+        extraModels = {
+            {
+                model = "models/props_junk/garbage_coffeemug001a.mdl",
+                bone = "ValveBiped.Bip01_Head1",
+                pos = Vector( 8, 0, 0 ),
+            },
+        },
+    } )
+end
+```
+
+Everyone sees it, and it comes off when the effect does.  
+Each entry is a [MyExtraModels](../terminator-hunter/README.md#entmyextramodels) entry. Autorefresh works, save the file and the mug moves.
+
 A client registration is entirely optional, plenty of effects are server-only. You can
 also register with no funcs at all ( like channel_666 ), if you just want a flag other code can check.
 
@@ -520,6 +540,7 @@ Number values can be:
 | `chanceToBeVotableWhenHard` | ❌ | Percent chance to appear in !rtm when this misery's escape multiplier is 1x or more, for making spawnsets fade into the background when they no longer challenge the host |
 | `easy` | ❌ | Marks this as a beginner misery. Tagged `(EASY)` in the !rtm vote, and while an easy one is active the vote prefers offering other easy ones. Also soft-caps its escape reward multiplier |
 | `hordeSpawn` | ❌ | `true` Always reuses the last good spawn area, stacking hunter spawns into a horde. Defaults to true for waves of 8+ spawns, `false` disables it even then. |
+| `slotSizes` | ❌ | How many hunters fit in each `.slots` slot, eg `{ miniboss = 1 }`. Takes the usual number values, or `"minutes*N"` to grow with the round, `"minutes*0.1"` is one slot every 10 minutes. Without it every slot holds 1 |
 | `Activate` | ❌ | Called when this becomes the active misery ( see Spawnset Lifecycle ) |
 | `OnRemove` | ❌ | Called when the misery changes away from this ( see Spawnset Lifecycle ) |
 
@@ -537,12 +558,16 @@ Number values can be:
 | `countClass` | ❌ | Class pattern for .min/max count counting ( `*` = wildcard ). Falls back to `class` if nil |
 | `minCount` | ❌ | Minimum maintained count, hard minimum, bypasses budget |
 | `maxCount` | ❌ | Maximum allowed count |
+| `slots` | ❌ | Slots this takes up, eg `{ "miniboss" }`. Only spawns while every one of its slots has room, see the spawnset's `slotSizes` |
+| `cooldown` | ❌ | Seconds this has to stay gone before it spawns again. A wave can still spawn several, but no more until they've all died or despawned, then the cooldown starts |
 | `hardRandomChance` | ❌ | Percent chance to even be considered, works since spawns are checked from highest to lowest cost. Rolled multiple times per wave, more if there's more budget |
 | `spawnSameZ` | ❌ | Prefer spawning at roughly the same height as a player |
 | `spawnAbove` | ❌ | Prefer spawning above the highest player |
 | `spawnBelow` | ❌ | Prefer spawning below the lowest player |
 | `preferredEFlags` | ❌ | Prefer nav areas carrying all of these Extra Navmesh flags ( see sv_navmeshcategorizer ) |
-| `firmPreferredEFlags` | ❌ | `true` stops `preferredEFlags` from bending, the entry never spawns outside those areas |
+| `firmPreferredEFlags` | ❌ | `true` stops `preferredEFlags` from bending, the entry never spawns outside those areas, and is never picked on maps without them |
+| `canSpawnOnMap` | ❌ | `function(spawnData)`, asked once a map, after the navmesh is categorized. Return false and the entry never spawns on this map, eg the map's too cramped for it. A misery none of whose entries can spawn is left out of the vote, and can't be nominated. If it's already active, one !rtm is enough to start a vote |
+| `areaFilter` | ❌ | `function(spawnData, area)`, return false and the entry won't spawn in that nav area. Pair it with `canSpawnOnMap`, an entry no area passes holds up its wave until it's dropped |
 | `preSpawnedFuncs` | ❌ | Functions called before hunter:SetPos() and hunter:Spawn() : `function(spawnData, npc, spawnPos)`. spawnPos is 20 units above the nav area, hunters fall into place |
 | `postSpawnedFuncs` | ❌ | Functions called after hunter:Spawn() : `function(spawnData, npc)` |
 | `isBoss` | ❌ | `true` marks as boss; `false` opts out of auto-detection. When the boss is killed, all alive players escape. Auto-detected when `spawnSet.maxSpawnCount <= 1` (highest `difficultyCost` entry becomes boss). |
@@ -552,6 +577,7 @@ Number values can be:
 
 Only one of `spawnSameZ`, `spawnAbove`, `spawnBelow` applies, they're checked in that order.
 Those three and `preferredEFlags` all loosen the longer the spawner fails to find a spot, so they bend rather than block. A non-firm `preferredEFlags` is ignored outright on maps without those flags.
+`areaFilter` and a firm `preferredEFlags` never bend, an entry they leave nowhere to go holds up its wave for about a minute, then gets dropped from it.
 
 #### Spawnset Example B: Functions on spawn!
 
@@ -617,6 +643,7 @@ end
 | `self:Hook( hookName, func )` | A `hook.Add` scoped to this spawnset. The identifier is made for you, don't pass one |
 | `self:Timer( timerName, delay, reps, func )` | A `timer.Create` scoped to this spawnset. `reps` of 0 is infinite |
 | `self:TimerRemove( timerName )` | Kill one of this spawnset's timers early |
+| `self:AddTeardown( func )` | Runs `func` when the misery changes, for undoing what hooks and timers can't |
 
 These are removed for you when the misery changes.
 Only write an `OnRemove` for things you didn't make through `self`.
@@ -629,6 +656,21 @@ A `cl_` file with the same `name` gets its own `Activate`, for HUD and sounds.
 #### Set Helpers
 
 `GAMEMODE.setHelpers` holds shared building blocks, like `makeHardcore( self )` for `Activate`, or `postSpawnedOvercharge` for `.postSpawnedFuncs`.
+
+```lua
+function set:Activate()
+    -- an RPG every spawn, with 3 rockets more than it comes with
+    GAMEMODE.setHelpers.addDefaultWeapon( self, { class = "weapon_rpg", ammoType = "RPG_Round", purchaseClips = 3 } )
+    -- everyone's a rebel
+    GAMEMODE.setHelpers.overridePlayerModel( self, function( ply ) return "models/player/group03/male_07.mdl" end )
+
+end
+```
+
+Weapons are a class, or a `shopHelpers.purchaseWeapon` table when they should come with ammo.
+Any of that table's fields but `class` can be a `function( ply )`, for ammo that depends on how many are playing.
+The weapon itself can be a `function( ply )` too, for a random pick. It's called once per player per misery.
+`addStartWeapon` gives one per misery instead of one per life.
 Add your own with `sh_`/`sv_`/`cl_` files in `lua/glee_sethelpers/`. They're included before any spawnset, during gamemode load, so reach the table through `GM`.
 
 ```lua
