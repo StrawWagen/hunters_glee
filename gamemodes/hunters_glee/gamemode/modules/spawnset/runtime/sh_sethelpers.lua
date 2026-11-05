@@ -554,5 +554,3 @@ end
 
 
 gobbleHelperModules()
-
-gobbleHelperModules()
