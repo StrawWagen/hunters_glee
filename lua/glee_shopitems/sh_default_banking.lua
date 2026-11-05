@@ -417,7 +417,7 @@ local items = {
         shCost = 0,
         costDecorative = { "-750", "-1500" },
         cooldown = 0,
-        tags = { "BANK", "CloseShopOnPurchase", "Essential" },
+        tags = { "BANK", "CloseShopOnPurchase", "Essential", "Hardcore" },
         purchaseTimes = {
             GAMEMODE.ROUND_ACTIVE,
         },
