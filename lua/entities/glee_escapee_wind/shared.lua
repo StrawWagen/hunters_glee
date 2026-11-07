@@ -49,6 +49,9 @@ PrecacheParticleSystem( "glee_ghostly_wind" )
 game.AddParticles( "particles/glee/glee_ghostly_wind_initial.pcf" )
 PrecacheParticleSystem( "glee_ghostly_wind_initial" )
 
+ENT.CanInstantlyProfit = false
+ENT.CanProfitLater = false
+
 --[[ TODO:
     - Better sounds + param tuning
     - Temporarily ragdoll players on full gust

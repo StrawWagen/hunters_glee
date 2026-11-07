@@ -16,6 +16,7 @@ ENT.HullCheckSize = Vector( 12, 12, 20 )
 ENT.PosOffset = Vector( 0, 0, 20 )
 
 ENT.DecapitatedReward = 300
+ENT.CanProfitLater = true
 ENT.noPurchaseReason_NoSkull = "You need a skull to place this."
 
 local bodyModels = {

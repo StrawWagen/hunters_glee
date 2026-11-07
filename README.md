@@ -464,6 +464,7 @@ local mySpawnSet = {
     name = "mycustom_misery",                       -- Unique identifier
     prettyName = "My Custom Misery",                -- Display name
     description = "It's my misery, it's custom!",   -- Description, best used as a "hint" that teases the spawnset's content
+    author = "Me",                                  -- Optional, credited in the vote tooltip
     
     -- Use "default" to inherit base values, or "default*2" for multipliers
     -- Difficulty is very dynamic, so it's best to use "default" or multipliers of it,
@@ -523,6 +524,7 @@ Number values can be:
 | `name` | ✅ | Unique identifier, should match filename |
 | `prettyName` | ✅ | Display name for voting/UI |
 | `description` | ✅ | Description shown to players |
+| `author` | ❌ | Who made it, shown under the description as "by ..." |
 | `spawns` | ✅ | THE indexed table of potential spawns ( see below ) |
 | `difficultyPerMin` | ❌ | How fast difficulty scales |
 | `waveInterval` | ❌ | Time between spawn waves, skipped if all hunters are cleared |

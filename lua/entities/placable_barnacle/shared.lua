@@ -13,6 +13,9 @@ ENT.RenderGroup = RENDERGROUP_BOTH
 ENT.Category = "Hunter's Glee"
 ENT.Model = "models/barnacle.mdl"
 
+ENT.CanInstantlyProfit = false
+ENT.CanProfitLater = true
+
 --sandbox support
 function ENT:SpawnFunction( ply, tr, ClassName )
 

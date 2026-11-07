@@ -102,6 +102,7 @@ function GM:IsValidSpawnSet( spawnSet )
 
     if not isstring( spawnSet.prettyName ) then yapErr( spawnSet, "has invalid .prettyName" ) return end
     if not isstring( spawnSet.description ) then yapErr( spawnSet, "has invalid .description" ) return end
+    if spawnSet.author ~= nil and not isstring( spawnSet.author ) then yapErr( spawnSet, "has invalid .author" ) return end
 
     for name, _ in pairs( setDefaults ) do
         if not asParsed( spawnSet[name], name, setDefaults ) then

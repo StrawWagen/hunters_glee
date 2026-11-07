@@ -19,7 +19,8 @@ ENT.noPurchaseReason_NoRoom = "No room to place this."
 ENT.noPurchaseReason_OffNavmesh = "The hunters can't path to that spot."
 ENT.noPurchaseReason_TooPoor = "You're too poor."
 ENT.noPurchaseReason_InDebt = "You're in debt."
-ENT.noPurchaseReason_Unprofitable = "Unprofitable. Hold {+reload} to confirm."
+ENT.noPurchaseReason_Unprofitable = "Unprofitable placement.\nHold {+reload} to confirm."
+ENT.noPurchaseReason_UnprofitableForNow = "Costs score now, can earn it back later.\nHold {+reload} to confirm."
 
 ENT.CanPlaceColor = Color( 0, 255, 0, 255 )
 ENT.CannotPlaceColor = Color( 255, 0, 0, 255 )
@@ -29,7 +30,11 @@ ENT.OnlyNetworkToOwner = true
 -- True on items that pay out when placed well.
 -- Placing one somewhere it would cost then needs Reload held, every time.
 -- Items that only ever cost just get a warning, until the placer's placed a few.
-ENT.CanProfit = false
+ENT.CanInstantlyProfit = false
+
+-- True on items that cost to place, but pay out if they get someone later. A beartrap.
+-- Their warning says so, and is learned apart from the plain cost one.
+ENT.CanProfitLater = true
 
 local beaconVecOffset = Vector( 6.94, -8.67, 25.83 )
 local beaconAngOffset = Angle( 0, -90, 0 )
@@ -41,8 +46,9 @@ local noGateVarName = "cl_huntersglee_unprofitableplacing_gate"
 
 -- lessons are a set, not a counter, so each warned place learns the next of these
 local lossyWarnPlaces = 5
-local function lossyLessonName( count )
-    return "LossyPlace" .. count
+local function lossyLessonName( canProfitLater, count )
+    local prefix = canProfitLater and "LaterProfitPlace" or "LossyPlace"
+    return prefix .. count
 
 end
 
@@ -123,29 +129,35 @@ if CLIENT then
 
     --[[---------------------------------------------------------
         ENT:DrawLossWarning
-        Warns, under the readout, when placing here would cost score. See ENT.CanProfit.
+        Warns, under the readout, when placing here would cost score. See ENT.CanInstantlyProfit.
         @return: None
     --]]---------------------------------------------------------
     function ENT:DrawLossWarning()
-        if self:GetGivenScore() >= 0 then return end
+        local warning = self:LossWarningText()
+        if not warning then return end
 
-        if not self.CanProfit then
-            if GAMEMODE:HasLearnedLesson( lossyLessonName( lossyWarnPlaces ) ) then return end
-            self:DrawPlacingLine( "This costs score.", "alert" )
-            return
+        -- half a line apart, so it doesn't read as part of the readout above
+        self.nextPlacingLine = self.nextPlacingLine + 0.5
+        self:DrawPlacingLine( warning, "alert" )
+
+    end
+
+    function ENT:LossWarningText()
+        local charge, canProfitLater = self:PlacingCharge()
+        if charge >= 0 then return end
+
+        if not self.CanInstantlyProfit then
+            if GAMEMODE:HasLearnedLesson( lossyLessonName( canProfitLater, lossyWarnPlaces ) ) then return end
+            if canProfitLater then return "This costs score now.\nBut can profit later." end
+            return "This costs score."
 
         end
 
         local ply = LocalPlayer()
         if not self:IsLossGated( ply ) then return end
+        if ply:KeyDown( IN_RELOAD ) then return "Placing at a loss..." end
 
-        if ply:KeyDown( IN_RELOAD ) then
-            self:DrawPlacingLine( "Placing at a loss...", "alert" )
-            return
-
-        end
-
-        self:DrawPlacingLine( GAMEMODE:FillBinds( self.noPurchaseReason_Unprofitable ), "alert" )
+        return GAMEMODE:FillBinds( self:UnprofitableReason() )
 
     end
 
@@ -398,9 +410,32 @@ function ENT:OffsettedPlacingPos()
 
 end
 
--- Does placing here need Reload held? Ignores whether it's held, see ENT.CanProfit
+--[[---------------------------------------------------------
+    ENT:PlacingCharge
+    What placing here takes off the placer's score right now.
+    @return: The change to their score, negative is a cost. And whether any of it can come back later.
+--]]---------------------------------------------------------
+function ENT:PlacingCharge()
+    local given = self:GetGivenScore()
+    -- this file is the base for every placeable, only the real screaming crate takes a deposit
+    if self:GetClass() ~= "screamer_crate" then return given, self.CanProfitLater end
+
+    -- the beacon pays the deposit back, with the bonus, at its first beep
+    if given > 0 then return deposit, true end
+    return given, false
+
+end
+
+-- What a loss gated placing says, see IsLossGated
+function ENT:UnprofitableReason()
+    if self.CanProfitLater then return self.noPurchaseReason_UnprofitableForNow end
+    return self.noPurchaseReason_Unprofitable
+
+end
+
+-- Does placing here need Reload held? Ignores whether it's held, see ENT.CanInstantlyProfit
 function ENT:IsLossGated( ply )
-    if not self.CanProfit then return false end
+    if not self.CanInstantlyProfit then return false end
     if self:GetGivenScore() >= 0 then return false end
 
     return ply:GetInfoNum( noGateVarName, 0 ) == 0
@@ -811,11 +846,11 @@ function ENT:BlockedForLoss( ply )
 end
 
 -- once enough of these are learned, DrawLossWarning stops warning
-local function countLossyPlace( ply )
+local function countLossyPlace( ply, canProfitLater )
     if not GAMEMODE.IsReallyHuntersGlee then return end
 
     for count = 1, lossyWarnPlaces do
-        if GAMEMODE:LearnLesson( ply, lossyLessonName( count ) ) then return end
+        if GAMEMODE:LearnLesson( ply, lossyLessonName( canProfitLater, count ) ) then return end
 
     end
 end
@@ -825,12 +860,13 @@ function ENT:HandleKeys( ply, key )
 
     if key == IN_ATTACK then
         if self:GetCanPlace() and self:BlockedForLoss( ply ) then
-            huntersGlee_Announce( { ply }, 10, 5, self.noPurchaseReason_Unprofitable )
+            huntersGlee_Announce( { ply }, 10, 5, self:UnprofitableReason() )
             ply.glee_ghostEntActionTime = CurTime()
 
         elseif self:GetCanPlace() then
-            if not self.CanProfit and self:GetGivenScore() < 0 then
-                countLossyPlace( ply )
+            local charge, canProfitLater = self:PlacingCharge()
+            if not self.CanInstantlyProfit and charge < 0 then
+                countLossyPlace( ply, canProfitLater )
 
             end
 
@@ -968,7 +1004,7 @@ function ENT:Place()
     terminator_Extras.DoPFXFromEnt( "glee_ghostly_ectoplasm", crate )
 
     if self.player and self.player.GivePlayerScore then
-        local charged = refundAndBonus > 0 and deposit or refundAndBonus
+        local charged = self:PlacingCharge()
         self.player:GivePlayerScore( charged )
         GAMEMODE:sendPurchaseConfirm( self.player, charged )
 

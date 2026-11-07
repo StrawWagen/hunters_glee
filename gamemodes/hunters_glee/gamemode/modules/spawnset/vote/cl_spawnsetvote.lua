@@ -30,7 +30,7 @@ local function voteOptionData( name, leavingEasy )
 
     end
 
-    return { name = name, prettyName = prettyName, description = registered.description }
+    return { name = name, prettyName = prettyName, description = registered.description, author = registered.author }
 
 end
 
@@ -349,6 +349,10 @@ function spawnSetVote:CreateVotePanel()
         currButton:DockMargin( 0, lineGap, 0, 0 )
 
         local tooltipText = data.description
+        if data.author then
+            tooltipText = tooltipText .. "\nby " .. data.author
+
+        end
         -- sv_spawnsetvote syncs these just before the vote, the fallbacks are just in case
         local multiplier, escaped, remained = GAMEMODE:GetSpawnsetsEscapeMultiplier( currButton.name )
         multiplier = math.Round( multiplier or 1, 2 )

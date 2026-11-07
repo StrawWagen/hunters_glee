@@ -18,6 +18,9 @@ ENT.mischiefReason = "applauded thunderously"
 ENT.innocentVictimGuiltMul = 0.25 -- an escaped item, near guilt free
 ENT.radius = 1050
 
+ENT.CanInstantlyProfit = false
+ENT.CanProfitLater = false
+
 if CLIENT then
     function ENT:OnDetachedFromOwner()
         self:CircleAway()

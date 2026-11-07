@@ -58,6 +58,7 @@ local minutesSlotSizePattern = "^minutes%*[%d%.]+$"
 -- typo = correct
 local setCommonTypos = {
     chanceToBeVotableIfHard = "chanceToBeVotableWhenHard",
+    authors = "author",
 }
 
 local spawnCommonTypos = {

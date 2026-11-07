@@ -51,6 +51,9 @@ ENT.TargetSoundVolumeMax = 1
 ENT.NPCCostMult = 0.5 -- Applies to all costs when picking up NPCs.
 ENT.NextBotCostMult = 0.5 -- Applies to all costs when picking up NextBots.
 
+ENT.CanInstantlyProfit = false
+ENT.CanProfitLater = false
+
 function ENT:DynamicCooldown( elapsed )
     return math.Clamp( math.pow( elapsed, 1.4 ), 50, 60 * 5 )
 end

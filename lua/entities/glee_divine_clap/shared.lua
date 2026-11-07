@@ -23,6 +23,9 @@ ENT.mischiefOnPlace = 2
 ENT.mischiefReason = "called down a smite"
 ENT.innocentVictimGuiltMul = 1 -- persistent guilt for killing someone with none, anyone else is guilt free
 
+ENT.CanInstantlyProfit = false
+ENT.CanProfitLater = false
+
 -- only used by the default ( clap ) telegraph/strike, which derived entities override
 local strikePowa = 8
 local chargeTime = 4 -- seconds of telegraph before the bolt lands

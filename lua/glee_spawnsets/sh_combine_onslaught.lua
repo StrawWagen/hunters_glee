@@ -14,7 +14,8 @@ if SERVER then
 
     local setSv = {
         prettyName = "COMBINE ONSLAUGHT",
-        description = "The Combine are coming for every last one of you...\nThere's no one left to save you. (by boomertaters)", -- sorry for the plug i wanna be credited
+        description = "The Combine are coming for every last one of you...\nThere's no one left to save you.",
+        author = "boomertaters",
         difficultyPerMin = "default*2", -- difficulty per minute
         waveInterval = "default*0.5", -- time between spawn waves
         diffBumpWhenWaveKilled = "default*2", -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount

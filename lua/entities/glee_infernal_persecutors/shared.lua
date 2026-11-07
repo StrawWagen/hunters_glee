@@ -37,7 +37,8 @@ ENT.CostAllGuilty = -250 -- only guilty nearby, profitable
 ENT.CloseCostMult = 2
 ENT.CostMulWhenEscaped = 1
 
-ENT.CanProfit = true -- see CostAllGuilty
+ENT.CanInstantlyProfit = true -- see CostAllGuilty
+ENT.CanProfitLater = false
 
 ENT.noPurchaseReason_Touching = "Summon them somewhere... Empty."
 

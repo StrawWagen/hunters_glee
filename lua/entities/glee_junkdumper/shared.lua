@@ -26,7 +26,8 @@ ENT.CanPlaceColor = Color( 0, 255, 0, 100 )
 ENT.CannotPlaceColor = Color( 255, 0, 0, 100 )
 ENT.UnprofitableColor = Color( 255, 150, 0, 100 )
 
-ENT.CanProfit = true
+ENT.CanInstantlyProfit = true
+ENT.CanProfitLater = false
 
 if CLIENT then
     function ENT:DoHudStuff()
