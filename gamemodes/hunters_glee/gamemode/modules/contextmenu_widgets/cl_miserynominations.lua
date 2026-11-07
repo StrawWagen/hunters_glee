@@ -12,6 +12,7 @@ local DRAIN_TIME = 0.4
 local TICKS      = 12 -- scratches across one hold
 
 local FILL_ALPHA = 60
+local FADE_TIME  = 1.5 -- a finished hold fades out, draining would look like letting go
 
 -- half a bank document's fanfare, see glee_consentform
 local SHAKE_STRENGTH_1080P = 5
@@ -204,9 +205,20 @@ local function scratch( row )
 
 end
 
+local function fillColorName( row )
+    return isMine( row ) and "alert" or "happy"
+
+end
+
 local function commit( row )
     stopHolding( row )
     row:Style():PlaySound( "press", 80, nil, 1 )
+
+    -- the colour's caught now, the row turns yours partway through the fade
+    row._fill = 0
+    row._lastTick = 0
+    row._fadeAt = RealTime()
+    row._fadeColorName = fillColorName( row )
 
     if isMine( row ) then
         RunConsoleCommand( "huntersglee_misery_withdraw" )
@@ -243,11 +255,22 @@ local function wobbleReach( row )
 
 end
 
+local function paintFade( row, w, h )
+    local fadeProgress = ( RealTime() - row._fadeAt ) / FADE_TIME
+    if fadeProgress >= 1 then return end
+
+    local style = row:Style()
+    local color = ColorAlpha( style:Color( row._fadeColorName ), FILL_ALPHA * ( 1 - fadeProgress ) )
+    draw.RoundedBox( style:Metric( "boxCornerRadius" ), 0, 0, w, h, color )
+
+end
+
 local function paintFill( row, w, h )
+    paintFade( row, w, h )
     if row._fill <= 0 then return end
 
     local style = row:Style()
-    local color = ColorAlpha( style:Color( isMine( row ) and "alert" or "happy" ), FILL_ALPHA )
+    local color = ColorAlpha( style:Color( fillColorName( row ) ), FILL_ALPHA )
     local screenX, screenY = row:LocalToScreen( 0, 0 )
 
     render.SetScissorRect( screenX, screenY, screenX + w * row._fill, screenY + h, true )
@@ -264,6 +287,8 @@ local function makeRow( frame, parent, setName )
     row._holding  = false
     row._lastTick = 0
     row._burstAt  = -math.huge
+    row._fadeAt   = -math.huge
+    row._fadeColorName = "happy"
 
     -- only measured, never drawn, so the frame already fits the name once it's seen
     row:SetLabel( GAMEMODE:GetPrettyNameOfSpawnSet( setName ) )

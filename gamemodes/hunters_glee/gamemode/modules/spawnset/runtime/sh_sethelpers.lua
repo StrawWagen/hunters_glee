@@ -19,25 +19,25 @@ end
 -- call from an sh_ spawnset's Activate
 -- from an sv_ one, clients still draw a shop that won't sell
 function setHelpers.makeHardcore( lifecycle )
-    lifecycle:Hook( "glee_miseryishardcore", function()
+    lifecycle:Hook( "glee_miseryishardcore", "glee_makeHardcore", function()
         return true
 
     end )
     -- escaped players sit at health 0, so the Horrors stay open to them
-    lifecycle:Hook( "glee_blockshopopen", function()
+    lifecycle:Hook( "glee_blockshopopen", "glee_makeHardcore", function()
         if LocalPlayer():Health() <= 0 then return end
 
         return true, "This Misery is Hardcore.\nThe shop is closed to the living..."
 
     end )
     -- the shop panel is one way in, termhunt_purchase is the other, and this closes both
-    lifecycle:Hook( "glee_shop_canshow", function( _ply, itemData )
+    lifecycle:Hook( "glee_shop_canshow", "glee_makeHardcore", function( _ply, itemData )
         if itemData.tags.Hardcore then return end
 
         return false, "Too soft for this Misery."
 
     end )
-    lifecycle:Hook( "glee_shop_itemcooldownmul", function( _ply, itemData, adjust )
+    lifecycle:Hook( "glee_shop_itemcooldownmul", "glee_makeHardcore", function( _ply, itemData, adjust )
         -- seconds, before the multiplier, so even an item with no cooldown waits
         adjust.value = math.max( adjust.value, 20 )
 
@@ -49,7 +49,7 @@ function setHelpers.makeHardcore( lifecycle )
         adjust.mul = adjust.mul * mul
 
     end )
-    lifecycle:Hook( "glee_shop_itemcostmul", function( _ply, itemData, adjust )
+    lifecycle:Hook( "glee_shop_itemcostmul", "glee_makeHardcore", function( _ply, itemData, adjust )
         if itemData.identifier ~= "additionalterm" then return end
         if adjust.value <= 0 then return end
         adjust.mul = adjust.mul * 10
@@ -61,7 +61,7 @@ end
 -- so the only revives are Revive Kits found in crates
 -- call from an sh_ spawnset's Activate
 function setHelpers.makeNoReviving( lifecycle )
-    lifecycle:Hook( "glee_shop_canshow", function( ply, itemData )
+    lifecycle:Hook( "glee_shop_canshow", "glee_makeNoReviving", function( ply, itemData )
         if not itemData.tags.Resurrecting then return end
         -- grigori respawns by buying resurrection
         if ply:HasStatusEffect( "divine_chosen" ) then return end
@@ -75,7 +75,7 @@ end
 -- the dead have to wait on the living to revive them
 -- call from an sh_ spawnset's Activate
 function setHelpers.makeNoSelfReviving( lifecycle )
-    lifecycle:Hook( "glee_shop_canshow", function( ply, itemData )
+    lifecycle:Hook( "glee_shop_canshow", "glee_makeNoSelfReviving", function( ply, itemData )
         if not itemData.tags.SelfResurrecting then return end
         -- grigori respawns by buying resurrection
         if ply:HasStatusEffect( "divine_chosen" ) then return end
@@ -85,7 +85,7 @@ function setHelpers.makeNoSelfReviving( lifecycle )
     end )
 end
 
--- a function's pick is kept per player, by SteamID64, so a top-up or a rejoin hands back the same thing
+-- a function's pick is kept per player for the round, by SteamID64, so a top-up or a rejoin hands back the same thing
 local function weaponFor( ply, entry )
     local weapon = entry.weapon
     if not isfunction( weapon ) then return weapon end
@@ -153,7 +153,7 @@ local function makeWeaponEntry( weapon, shouldGiveFunc )
 end
 
 -- start and default weapons share one set of hooks
--- lifecycle:Hook ids are per hook name, a second hook would replace the first
+-- a second set under the same id would replace the first
 local function spawnWeaponLists( lifecycle )
     local lists = lifecycle.glee_SpawnWeaponLists
     if lists then return lists end
@@ -163,10 +163,33 @@ local function spawnWeaponLists( lifecycle )
         default = {},
         -- by SteamID64, so rejoining doesn't earn another set
         startGiven = {},
+        -- a misery voted in during limbo activates on the way into setup, its first round hasn't been played yet
+        resetDue = false,
     }
     lifecycle.glee_SpawnWeaponLists = lists
 
-    lifecycle:Hook( "glee_true_PlayerSpawn", function( spawned )
+    lifecycle:Hook( "huntersglee_round_into_limbo", "glee_spawnWeapons", function()
+        lists.resetDue = true
+
+    end )
+
+    -- everyone's dead by setup, their free respawn brings a fresh set
+    lifecycle:Hook( "huntersglee_round_into_inactive", "glee_spawnWeapons", function()
+        if not lists.resetDue then return end
+        lists.resetDue = false
+
+        lists.startGiven = {}
+        for _, entry in ipairs( lists.start ) do
+            entry.picks = {}
+
+        end
+        for _, entry in ipairs( lists.default ) do
+            entry.picks = {}
+
+        end
+    end )
+
+    lifecycle:Hook( "glee_true_PlayerSpawn", "glee_spawnWeapons", function( spawned )
         for _, entry in ipairs( lists.default ) do
             giveWeapon( spawned, entry )
 
@@ -183,7 +206,7 @@ local function spawnWeaponLists( lifecycle )
     end )
 
     -- remembers what it gave, so dropping a start weapon doesn't earn another, it has to be gone entirely
-    lifecycle:Hook( "glee_sv_validgmthink_inactive", function()
+    lifecycle:Hook( "glee_sv_validgmthink_inactive", "glee_spawnWeapons", function()
         for _, ply in ipairs( GAMEMODE:getAlivePlayers() ) do
             ply.glee_StartWeapons = ply.glee_StartWeapons or {}
             for _, entry in ipairs( lists.start ) do
@@ -202,13 +225,13 @@ local function spawnWeaponLists( lifecycle )
 
 end
 
--- a weapon everyone starts this misery with
--- anyone alive when the misery starts gets it on the spot, everyone else on their first spawn, so late joiners get one too
+-- a weapon everyone starts each round with
+-- anyone alive when the misery starts gets it on the spot, everyone else on their first spawn of the round, so late joiners get one too
 -- and while the round's waiting to start, every alive player gets topped up, except carryables like the sentry turret
 -- once the hunt's on, losing it is for keeps
 -- weapon is a class, or a shopHelpers.purchaseWeapon table, for one that comes with extra ammo
 -- any of the table's fields but class can be a function( ply ), eg ammo that depends on how many are playing
--- weapon can also be a function( ply ) returning either, eg a random pick, it's called once per player per misery
+-- weapon can also be a function( ply ) returning either, eg a random pick, it's called once per player per round
 -- shouldGiveFunc( ply ) is optional, return false to leave them out
 -- call from an sh_ spawnset's Activate, once per weapon
 function setHelpers.addStartWeapon( lifecycle, weapon, shouldGiveFunc )
@@ -243,20 +266,29 @@ function setHelpers.addDefaultWeapon( lifecycle, weapon, shouldGiveFunc )
     end
 end
 
+-- gives them weapon right now, in any form addStartWeapon takes
+-- a function weapon is rolled fresh every call
+function setHelpers.giveWeapon( ply, weapon )
+    return giveWeapon( ply, makeWeaponEntry( weapon ) )
+
+end
+
+-- puts their model back on through PlayerSetModel
+-- for when overridePlayerModel's pickModel would now pick something else for them
+function setHelpers.redressPlayer( ply )
+    hook.Call( "PlayerSetModel", GAMEMODE, ply )
+    ply:SetupHands()
+
+end
+
 -- puts pickModel( ply ) on every player, a model path, or nil to let them wear their own
 -- anyone alive when the misery starts changes on the spot, and changes back when it ends
 -- call from a spawnset's Activate
 function setHelpers.overridePlayerModel( lifecycle, pickModel )
     if CLIENT then return end
 
-    local function redress( ply )
-        hook.Call( "PlayerSetModel", GAMEMODE, ply )
-        ply:SetupHands()
-
-    end
-
     -- hands and model scaling read glee_ModelOverride, so the arms and hull match the body
-    lifecycle:Hook( "PlayerSetModel", function( ply )
+    lifecycle:Hook( "PlayerSetModel", "glee_overridePlayerModel", function( ply )
         local model = pickModel( ply )
         ply.glee_ModelOverride = model
         if not model then return end
@@ -268,7 +300,7 @@ function setHelpers.overridePlayerModel( lifecycle, pickModel )
 
     for _, ply in player.Iterator() do
         if ply:Alive() then
-            redress( ply )
+            setHelpers.redressPlayer( ply )
 
         end
     end
@@ -280,155 +312,11 @@ function setHelpers.overridePlayerModel( lifecycle, pickModel )
             ply.glee_ModelOverride = nil
 
             if ply:Alive() then
-                redress( ply )
+                setHelpers.redressPlayer( ply )
 
             end
         end
     end )
-end
-
-
--- 1 in 4 players, rounded up, so a squad always has a medic
-local medicShare = 0.25
-
-local function twoOrThreeClips()
-    return math.random( 2, 3 )
-
-end
-
-local function withExtraClips( class )
-    return { class = class, purchaseClips = twoOrThreeClips }
-
-end
-
--- everyone gets one of these
-local randomWeapons = {
-    withExtraClips( "weapon_frag" ),
-    withExtraClips( "weapon_crossbow" ),
-    withExtraClips( "weapon_pistol" ),
-    withExtraClips( "weapon_357" ),
-    withExtraClips( "weapon_shotgun" ),
-    withExtraClips( "weapon_ar2" ),
-    withExtraClips( "weapon_slam" ),
-    withExtraClips( "weapon_smg1" ),
-    "weapon_physcannon",
-    "glee_backpackable_turret",
-}
-
--- every player model in a folder, eg "/group03/"
-local function modelsIn( folder )
-    local models = {}
-    local seen = {}
-    for _, path in SortedPairs( player_manager.AllValidModels() ) do
-        local lowered = string.lower( path )
-        if seen[lowered] then continue end
-        if not string.find( lowered, folder, 1, true ) then continue end
-
-        seen[lowered] = true
-        table.insert( models, path )
-
-    end
-    return models
-
-end
-
--- the same face every spawn, so the squad can tell each other apart
-local function stablePick( ply, models )
-    if #models <= 0 then return end
-    local index = tonumber( util.CRC( ply:SteamID64() ) ) % #models + 1
-    return models[index]
-
-end
-
--- a fresh set of medic picks, returns isMedic( ply )
-local function medicChecker()
-    -- picked once, and kept for as long as this misery is
-    -- by SteamID64, so rejoining doesn't reroll it
-    local medicsById = {}
-
-    -- everyone without a pick yet is picked together, least persistent guilt first
-    -- ties go in a random order, so whoever spawns first isn't always the medic
-    local function pickMedics()
-        local unpicked = {}
-        local guilts = {}
-        local tieBreaks = {}
-        local medicCount = 0
-        for _, ply in player.Iterator() do
-            local isMedic = medicsById[ply:SteamID64()]
-            if isMedic == nil then
-                table.insert( unpicked, ply )
-                guilts[ply] = GAMEMODE:GetPersistentGuilt( ply )
-                tieBreaks[ply] = math.random()
-
-            elseif isMedic then
-                medicCount = medicCount + 1
-
-            end
-        end
-
-        table.sort( unpicked, function( a, b )
-            if guilts[a] ~= guilts[b] then
-                return guilts[a] < guilts[b]
-
-            end
-            return tieBreaks[a] < tieBreaks[b]
-
-        end )
-
-        -- alone, there's nobody to heal or revive, so they're a plain rebel for good
-        local wantedMedics = 0
-        if player.GetCount() >= 2 then
-            wantedMedics = math.ceil( player.GetCount() * medicShare )
-
-        end
-        for _, ply in ipairs( unpicked ) do
-            local isMedic = medicCount < wantedMedics
-            medicsById[ply:SteamID64()] = isMedic
-            if isMedic then
-                medicCount = medicCount + 1
-
-            end
-        end
-    end
-
-    local function isMedic( ply )
-        if medicsById[ply:SteamID64()] == nil then
-            pickMedics()
-
-        end
-        return medicsById[ply:SteamID64()]
-
-    end
-    return isMedic
-
-end
-
--- everyone becomes a rebel, one in four a medic, and everyone gets a random weapon
--- medics get a medkit and a reviver, and the medic models
--- call from an sh_ spawnset's Activate
-function setHelpers.makeRebels( lifecycle )
-    if CLIENT then return end
-
-    local isMedic = medicChecker()
-    local rebelModels = modelsIn( "/group03/" )
-    local medicModels = modelsIn( "/group03m/" )
-
-    setHelpers.overridePlayerModel( lifecycle, function( ply )
-        if isMedic( ply ) then
-            return stablePick( ply, medicModels )
-
-        end
-        return stablePick( ply, rebelModels )
-
-    end )
-
-    setHelpers.addStartWeapon( lifecycle, function()
-        return randomWeapons[math.random( #randomWeapons )]
-
-    end )
-    setHelpers.addStartWeapon( lifecycle, "termhunt_medkit", isMedic )
-    setHelpers.addStartWeapon( lifecycle, "termhunt_reviver", isMedic )
-
 end
 
 

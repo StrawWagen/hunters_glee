@@ -190,6 +190,7 @@ end
 function SWEP:Initialize()
     self:SetHoldType( self.HoldType )
     if SERVER then
+        self:SetSubMaterial( 0, "models/weapons/dk_flaregun/signal_gm" )
         timer.Simple( 0, function()
             if not IsValid( self ) then return end
             applyBuoyancy( self )
@@ -206,32 +207,15 @@ end
 
 if not CLIENT then return end
 
-local blueFlaregunWMat = Material( "models/weapons/dk_flaregun/signal_gm.vmt" )
+local blueFlaregunVMat = Material( "models/weapons/v_flaregun/signal_flaregun_sheet.vmt" )
 
-local posOffset = Vector( 4, 0, 3 )
-local angOffset = Angle( 0, 180, -90 )
-
-function SWEP:DrawWorldModel()
-    local owner = self:GetOwner()
-    if IsValid( owner ) and owner:GetActiveWeapon() == self then
-        local attachId = owner:LookupAttachment( "anim_attachment_RH" )
-        if attachId <= 0 then return end
-        local attachTbl = owner:GetAttachment( attachId )
-        local posOffsetW, angOffsetW = LocalToWorld( posOffset, angOffset, attachTbl.Pos, attachTbl.Ang )
-        self:SetPos( posOffsetW )
-        self:SetAngles( angOffsetW )
-
-        self:SetupBones()
-
-    end
-    render.MaterialOverrideByIndex( 0, blueFlaregunWMat )
-    self:DrawModel()
+-- the viewmodel entity is shared by every weapon, so override per draw instead of SetSubMaterial
+function SWEP:PreDrawViewModel()
+    render.MaterialOverrideByIndex( 1, blueFlaregunVMat )
 
 end
 
-local blueFlaregunVMat = Material( "models/weapons/v_flaregun/signal_flaregun_sheet.vmt" )
-
-function SWEP:PreDrawViewModel()
-    render.MaterialOverrideByIndex( 1, blueFlaregunVMat )
+function SWEP:PostDrawViewModel()
+    render.MaterialOverrideByIndex( 1, nil )
 
 end

@@ -296,11 +296,17 @@ hook.Add( "Think", "glee_dynamicfreezing_think", function() -- calls the thinker
 end )
 
 local nextBreak = 0
+local lastBreak = 0
 
 hook.Add( "Think", "glee_dynamicfreezing_laggingthink", function() -- deal damage to random sleepers if the server is lagging
     local cur = CurTime()
     if nextBreak > cur then return end
     nextBreak = cur + 0.1
+
+    -- this only runs once per tick, so at tickrate 2 the 0.1 gate freezes 2/sec instead of 10
+    -- budget by the game time that passed, so the worse it lags, the more we freeze per call
+    local budget = math.Clamp( math.ceil( ( cur - lastBreak ) / 0.1 ), 1, 10 )
+    lastBreak = cur
 
     local bitLaggy
     local lagging
@@ -325,22 +331,35 @@ hook.Add( "Think", "glee_dynamicfreezing_laggingthink", function() -- deal damag
     if not ( lagging or bitLaggy ) then return end
 
     local toFreeze = terminator_Extras.glee_smartSleep_toFreeze
-    local randomEnt = toFreeze[math.random( 1, #toFreeze )]
-    if not IsValid( randomEnt ) then return end
-    if IsValid( randomEnt:GetParent() ) then return end
+    if #toFreeze == 0 then return end
 
     -- lil bit laggy?
     -- think about whether or not we should freeze this, NOW!
     if not lagging then
+        local randomEnt = toFreeze[math.random( 1, #toFreeze )]
+        if not IsValid( randomEnt ) then return end
+        if IsValid( randomEnt:GetParent() ) then return end
+
         nextChecks[randomEnt] = cur
         return
 
     end
 
-    if entIsFrozen( randomEnt ) then return end
-    freezeEnt( randomEnt )
+    local frozenCount = 0
+    local frozen = {}
+    for _ = 1, budget * 2 do -- some picks are already frozen or parented
+        local randomEnt = toFreeze[math.random( 1, #toFreeze )]
+        if IsValid( randomEnt ) and not IsValid( randomEnt:GetParent() ) and not entIsFrozen( randomEnt ) then
+            freezeEnt( randomEnt )
+            frozenCount = frozenCount + 1
+            frozen[frozenCount] = randomEnt
+            if frozenCount >= budget then break end
 
-    permaPrint( "GLEE: Really lagging, " .. lagType .. " freezing " .. tostring( randomEnt ) )
+        end
+    end
+
+    if frozenCount <= 0 then return end
+    permaPrint( "GLEE: Really lagging, " .. lagType .. " froze " .. frozenCount .. " ents; ",   unpack( frozen ) )
 
 end )
 

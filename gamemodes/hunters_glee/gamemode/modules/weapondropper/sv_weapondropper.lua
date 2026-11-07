@@ -16,6 +16,22 @@ hook.Add( "DoPlayerDeath", "glee_dropper_dropweaponoverride", function( ply )
 end )
 
 
+local function topUpToMinClips( wep, ply )
+    local minClips = wep.glee_ammoInside.minClips
+    if not minClips then return end
+    wep.glee_ammoInside.minClips = nil
+
+    local ammoType = wep:GetPrimaryAmmoType()
+    if ammoType <= -1 then return end
+
+    local minAmmo = math.Round( wep:GetMaxClip1() * minClips )
+    local missing = minAmmo - ply:GetAmmoCount( ammoType )
+    if missing <= 0 then return end
+
+    ply:GiveAmmo( missing, ammoType )
+
+end
+
 local function checkAndRestoreWeapsAmmo( wep, ply )
     if not wep.glee_ammoInside then return end
     for _, ammoDat in pairs( wep.glee_ammoInside ) do
@@ -25,6 +41,14 @@ local function checkAndRestoreWeapsAmmo( wep, ply )
         ply:GiveAmmo( ammoDat.count, ammoDat.type )
 
     end
+
+    -- a tick late, so the weapon's loaded clip has already become ammo and counts toward the minimum
+    timer.Simple( 0, function()
+        if not IsValid( wep ) then return end
+        if not IsValid( ply ) then return end
+        topUpToMinClips( wep, ply )
+
+    end )
 
     local clips = wep.glee_ammoInside.clips
     if not isnumber( clips ) then return end
@@ -48,7 +72,7 @@ local function checkAndRestoreWeapsAmmo( wep, ply )
         local wepsClipSize2 = wep:GetMaxClip2() * clips
         wepsClipSize2 = math.Round( wepsClipSize2 )
 
-        local wepsAmmoType2 = wep:GetPrimaryAmmoType()
+        local wepsAmmoType2 = wep:GetSecondaryAmmoType()
 
         if wepsAmmoType2 > -1 then
             ply:GiveAmmo( wepsClipSize2, wepsAmmoType2 )
@@ -68,6 +92,15 @@ function GM:GiveWeaponClipsOfAmmo( wep, clips )
     if clips <= 0 then return end
     wep.glee_ammoInside = wep.glee_ammoInside or {}
     wep.glee_ammoInside.clips = clips
+
+end
+
+-- on pickup, tops the player's ammo up to minClips worth
+-- players already past that get nothing extra
+function GM:GiveWeaponMinClipsOfAmmo( wep, minClips )
+    if minClips <= 0 then return end
+    wep.glee_ammoInside = wep.glee_ammoInside or {}
+    wep.glee_ammoInside.minClips = minClips
 
 end
 
@@ -187,5 +220,12 @@ net.Receive( "glee_dropcurrentweapon", function( _, ply )
     ply:EmitSound( "common/wpn_select.wav", 65, 120, 0.5, CHAN_ITEM )
     ply:DropActiveWeaponKeepAmmo( 15 )
     ply.nextDropWeaponThink = CurTime() + 0.5
+
+end )
+
+local npcDropMinClips = { 2, 4 }
+
+hook.Add( "TerminatorDropWeaponOnDeath", "glee_npcdroppedweapons_ammoinside", function( _died, wep )
+    GAMEMODE:GiveWeaponMinClipsOfAmmo( wep, math.Rand( npcDropMinClips[1], npcDropMinClips[2] ) )
 
 end )

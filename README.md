@@ -640,7 +640,8 @@ end
 
 | Method | Description |
 |--------|-------------|
-| `self:Hook( hookName, func )` | A `hook.Add` scoped to this spawnset. The identifier is made for you, don't pass one |
+| `self:Hook( hookName, func )` | A `hook.Add` scoped to this spawnset. One per `hookName`, a second replaces the first |
+| `self:Hook( hookName, id, func )` | Same, the `id` lets you keep more than one on a `hookName` |
 | `self:Timer( timerName, delay, reps, func )` | A `timer.Create` scoped to this spawnset. `reps` of 0 is infinite |
 | `self:TimerRemove( timerName )` | Kill one of this spawnset's timers early |
 | `self:AddTeardown( func )` | Runs `func` when the misery changes, for undoing what hooks and timers can't |
@@ -669,8 +670,8 @@ end
 
 Weapons are a class, or a `shopHelpers.purchaseWeapon` table when they should come with ammo.
 Any of that table's fields but `class` can be a `function( ply )`, for ammo that depends on how many are playing.
-The weapon itself can be a `function( ply )` too, for a random pick. It's called once per player per misery.
-`addStartWeapon` gives one per misery instead of one per life.
+The weapon itself can be a `function( ply )` too, for a random pick. It's called once per player per round.
+`addStartWeapon` gives one per round instead of one per life.
 Add your own with `sh_`/`sv_`/`cl_` files in `lua/glee_sethelpers/`. They're included before any spawnset, during gamemode load, so reach the table through `GM`.
 
 ```lua

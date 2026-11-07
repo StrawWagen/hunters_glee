@@ -17,9 +17,18 @@ function rescueHeli.MakeFeudWith( heli, thing )
 
 end
 
+-- the shop's heavy turret is a player ally, which hates the heli's real class
+-- npc_helicopter's Classify ignores the m_iClass we set, so it's allied by hand
+local heavyTurretClass = "glee_heavyturret"
+
 -- the spawnmenu's Resistance Turret, which the shop's is, out of a class we otherwise hate
 local function isResistanceTurret( ent )
     return ent:GetClass() == "npc_turret_floor" and ent:HasSpawnFlags( SF_FLOOR_TURRET_CITIZEN )
+
+end
+
+local function isFriendlyTurret( ent )
+    return ent:GetClass() == heavyTurretClass or isResistanceTurret( ent )
 
 end
 
@@ -118,11 +127,12 @@ function rescueHeli.SetupStanding( heli )
 
     -- spawnflags are set between creation and Spawn, so it's judged a tick later
     hook.Add( "OnEntityCreated", heli, function( self, ent )
-        if ent:GetClass() ~= "npc_turret_floor" then return end
+        local class = ent:GetClass()
+        if class ~= "npc_turret_floor" and class ~= heavyTurretClass then return end
 
         timer.Simple( 0, function()
             if not IsValid( self ) or not IsValid( ent ) then return end
-            if not isResistanceTurret( ent ) then return end
+            if not isFriendlyTurret( ent ) then return end
 
             makeAlliesWith( self, ent )
 
@@ -178,5 +188,10 @@ function rescueHeli.SetupStanding( heli )
 
             end
         end
+    end
+
+    for _, ent in ipairs( ents.FindByClass( heavyTurretClass ) ) do
+        makeAlliesWith( heli, ent )
+
     end
 end

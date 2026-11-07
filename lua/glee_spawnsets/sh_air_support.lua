@@ -49,9 +49,11 @@ local rocketsWithLauncher = 3
 function set:Activate()
     local setHelpers = GAMEMODE.setHelpers
     setHelpers.makeHardcore( self )
-    setHelpers.makeRebels( self )
 
     if CLIENT then return end
+
+    setHelpers.setBaseRole( self, "rebel" )
+    setHelpers.addRoleVariant( self, "medic" )
 
     setHelpers.addStartWeapon( self, {
         class = "weapon_rpg",

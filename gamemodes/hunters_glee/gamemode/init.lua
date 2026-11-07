@@ -152,6 +152,8 @@ include( "modules/spawnset/nominate/sv_spawnsetnominate.lua" )
 include( "modules/spawnset/bosses/sv_bosshandler.lua" )
 include( "modules/spawnset/bosses/sv_bossbattling.lua" )
 include( "modules/spawnset/runtime/sv_breathingroom.lua" )
+include( "modules/spawnset/roles/sv_rolegobbler.lua" )
+include( "modules/spawnset/roles/sv_roles.lua" )
 include( "modules/sv_falldamage_andgoomba.lua" )
 include( "modules/firsttimeplayers/sv_firsttimeplayers.lua" )
 

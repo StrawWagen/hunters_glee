@@ -8,8 +8,65 @@ function gunship.PreSpawn( _, npc )
 
 end
 
+-- the spawner waits on every try, so not too many
+local skyEntryTries = 25
+-- each try searches from somewhere this close to where it lifted to
+local skyEntryJitter = 1000
+
+local jitterHull = gunship.SkyCorridorCfg.minHull
+local jitterTrData = {
+    mask = MASK_NPCSOLID_BRUSHONLY,
+    mins = Vector( -jitterHull, -jitterHull, -jitterHull / 2 ),
+    maxs = Vector( jitterHull, jitterHull, jitterHull / 2 ),
+}
+
+-- somewhere near pos, without going through a wall to get there
+local function jitteredPos( pos )
+    local offset = VectorRand()
+    offset.z = 0
+    offset:Normalize()
+    offset:Mul( math.Rand( 0, skyEntryJitter ) )
+
+    jitterTrData.start = pos
+    jitterTrData.endpos = pos + offset
+
+    return util.TraceHull( jitterTrData ).HitPos
+
+end
+
+-- where it enters the map from, out by the skybox, and the spot that way in leads to
+-- no way in found, it rises off groundPos, with no spot to head to
+function gunship.SkyEntry( groundPos )
+    local liftedPos = gunship.LiftedPos( groundPos )
+    local search = gleeFlightNavigator.NewSkyCorridorSearch( gunship.SkyCorridorCfg )
+
+    for _ = 1, skyEntryTries do
+        local entryPos, goalPos = search:Step( jitteredPos( liftedPos ) )
+        if entryPos then return entryPos, goalPos end
+
+    end
+
+    local fallbackPos = search:GetFallbackPos()
+    if fallbackPos then return fallbackPos, liftedPos end
+
+    return liftedPos
+
+end
+
+-- puts it at its sky entry, facing in, returns the spot it should head to first, if it found one
+local function placeAtSkyEntry( npc, groundPos )
+    local entryPos, goalPos = gunship.SkyEntry( groundPos )
+    npc:SetPos( entryPos )
+    if not goalPos then return end
+
+    npc:SetAngles( Angle( 0, ( goalPos - entryPos ):Angle().y, 0 ) )
+    return goalPos
+
+end
+
 -- after Spawn, makes an npc_combinegunship into a glee gunship
-function gunship.Setup( npc )
+-- firstGoalPos, optional, where it flies before its brain takes over
+function gunship.Setup( npc, firstGoalPos )
     local state = {
         mode = "handler",
         currentGunshipTask = "handler_pickMode",
@@ -40,7 +97,8 @@ function gunship.Setup( npc )
 
     end
 
-    gleeFlightNavigator.Attach( npc, gunship.FlightCfg, npc:GetPos() + npc:GetForward() * 1000 )
+    firstGoalPos = firstGoalPos or npc:GetPos() + npc:GetForward() * 1000
+    gleeFlightNavigator.Attach( npc, gunship.FlightCfg, firstGoalPos )
 
     npc:CallOnRemove( "glee_gunship_stopsounds", function()
         for _, slot in ipairs( { "bombSound", "terrorSound", "prefireSound", "planSound" } ) do
@@ -65,23 +123,22 @@ end
 
 -- spawnset .postSpawnedFuncs, the spawner left it on the ground
 function gunship.PostSpawn( _, npc )
-    npc:SetPos( gunship.LiftedPos( npc:GetPos() ) )
-    gunship.Setup( npc )
+    local firstGoalPos = placeAtSkyEntry( npc, npc:GetPos() )
+    gunship.Setup( npc, firstGoalPos )
 
 end
 
--- rises off groundPos, as high as it fits up to cruise height
-function gunship.Spawn( groundPos, ang )
+-- flies in from the skybox, towards groundPos
+function gunship.Spawn( groundPos )
     local npc = ents.Create( "npc_combinegunship" )
     if not IsValid( npc ) then return end
 
-    npc:SetPos( gunship.LiftedPos( groundPos ) )
-    npc:SetAngles( ang or angle_zero )
+    local firstGoalPos = placeAtSkyEntry( npc, groundPos )
     gunship.PreSpawn( nil, npc )
     npc:Spawn()
     npc:Activate()
 
-    gunship.Setup( npc )
+    gunship.Setup( npc, firstGoalPos )
 
     return npc
 
@@ -89,6 +146,6 @@ end
 
 concommand.Add( "glee_test_gunship", function( ply )
     if not ply:IsAdmin() then return end
-    gunship.Spawn( ply:GetPos(), Angle( 0, ply:EyeAngles().y, 0 ) )
+    gunship.Spawn( ply:GetPos() )
 
 end )
