@@ -199,7 +199,7 @@ if CLIENT then
         end
 
         cooldownString = cooldownString .. cooldownSecs .. "s"
-        self:DrawPlacingLine( cooldownString, nil, 1 )
+        self:DrawPlacingLine( cooldownString )
 
     end
 

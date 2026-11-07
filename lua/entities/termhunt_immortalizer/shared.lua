@@ -25,7 +25,7 @@ if CLIENT then
 
         local target = self:GetCurrTarget()
         if IsValid( target ) and target:HasStatusEffect( "witness_me" ) then
-            self:DrawPlacingLine( "WARNING: Witnessable...", "alert", 1 )
+            self:DrawPlacingLine( "WARNING: Witnessable...", "alert" )
 
         end
     end

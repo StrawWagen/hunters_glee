@@ -20,6 +20,7 @@ ENT.HullCheckSize = Vector( 10, 10, 8 )
 ENT.PosOffset     = Vector( 0, 0, 8 )
 ENT.placeCount    = 1
 ENT.OverrideOffsetFromFloor = 25
+ENT.CanProfit = true
 
 if CLIENT then
     function ENT:DoHudStuff()

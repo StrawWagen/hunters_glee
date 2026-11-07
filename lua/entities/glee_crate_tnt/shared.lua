@@ -30,6 +30,8 @@ ENT.TNTDelayMin = 2
 ENT.TNTDelayMax = 2.5 -- just enough variance so they dont explode at the same exact time
 ENT.TNTEffectScale = 2
 
+ENT.CanProfit = true
+
 
 if CLIENT then
     function ENT:DoHudStuff()

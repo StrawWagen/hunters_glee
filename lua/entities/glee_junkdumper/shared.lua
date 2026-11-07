@@ -24,6 +24,9 @@ ENT.ScoreMax = 100
 
 ENT.CanPlaceColor = Color( 0, 255, 0, 100 )
 ENT.CannotPlaceColor = Color( 255, 0, 0, 100 )
+ENT.UnprofitableColor = Color( 255, 150, 0, 100 )
+
+ENT.CanProfit = true
 
 if CLIENT then
     function ENT:DoHudStuff()

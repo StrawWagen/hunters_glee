@@ -571,8 +571,6 @@ goes in a glee rebinding menu?
 
 -- 1min delay before forced map vote?
 
--- hold crouch to be able to place dead stuff unprofitably
-
 -- rope swep, use this vm https://steamcommunity.com/sharedfiles/filedetails/?id=3727222594
 
 -- terms can shoot while underwater

@@ -43,6 +43,7 @@ local function rowLabel( setName )
 end
 
 local UNKNOWN_HEADER = "A MISERY UNKNOWN TO YOU..."
+local MAP_UNSUITED   = "This Misery wants a different, better map for its purposes..."
 local FULLY_CORRUPT_MUL  = 3 -- at this multiplier and up, not a letter of the description survives
 local LEAST_CORRUPTION   = 0.3 -- even the easiest keep this much of it hidden
 
@@ -137,6 +138,10 @@ local function rowTooltip( setName, reason )
         local ply = player.GetBySteamID64( nominator )
         table.insert( lines, "Nominated by " .. ( IsValid( ply ) and ply:Nick() or "someone" ) .. "." )
 
+    -- before reason, which might only say to withdraw first, or wait out the vote
+    elseif not GAMEMODE:DoesSpawnsetSuitMap( setName ) then
+        table.insert( lines, MAP_UNSUITED )
+
     elseif reason then
         table.insert( lines, reason )
 
@@ -154,8 +159,13 @@ local function slotsText()
 
 end
 
--- cheapest first, unsynced ones last. Ties go by name, so the order is the same every open
+-- cheapest first, unsynced ones last, and ones that can't happen on this map after those.
+-- Ties go by name, so the order is the same every open
 local function cheapestFirst( a, b )
+    local aSuits = GAMEMODE:DoesSpawnsetSuitMap( a.setName )
+    local bSuits = GAMEMODE:DoesSpawnsetSuitMap( b.setName )
+    if aSuits ~= bSuits then return aSuits end
+
     local aCost = GAMEMODE:GetMiseryNominationCost( LocalPlayer(), a.setName )
     local bCost = GAMEMODE:GetMiseryNominationCost( LocalPlayer(), b.setName )
     if ( aCost == nil ) ~= ( bCost == nil ) then return aCost ~= nil end
@@ -416,7 +426,6 @@ local function openMiseryNominations()
     for setName, _ in pairs( GAMEMODE:GetSpawnSets() ) do
         -- unless it's what your suspended nomination is waiting on, which needs a row to be withdrawn from
         if setName == GAMEMODE:GetSpawnSetName() and not myNominationOf( setName ) then continue end
-        if not GAMEMODE:DoesSpawnsetSuitMap( setName ) and not myNominationOf( setName ) then continue end
 
         local row = makeRow( frame, scroll, setName )
         row:Dock( TOP )
