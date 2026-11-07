@@ -15,6 +15,9 @@ ENT.Model = "models/stiffy360/beartrap.mdl"
 ENT.HullCheckSize = Vector( 1, 1, 1 )
 ENT.PosOffset = Vector( 0, 0, 10 )
 
+ENT.CanInstantlyProfit = false
+ENT.CanProfitLater = true
+
 
 if CLIENT then
     function ENT:DoHudStuff()

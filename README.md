@@ -464,6 +464,7 @@ local mySpawnSet = {
     name = "mycustom_misery",                       -- Unique identifier
     prettyName = "My Custom Misery",                -- Display name
     description = "It's my misery, it's custom!",   -- Description, best used as a "hint" that teases the spawnset's content
+    author = "Me",                                  -- Optional, credited in the vote tooltip
     
     -- Use "default" to inherit base values, or "default*2" for multipliers
     -- Difficulty is very dynamic, so it's best to use "default" or multipliers of it,
@@ -523,6 +524,7 @@ Number values can be:
 | `name` | ✅ | Unique identifier, should match filename |
 | `prettyName` | ✅ | Display name for voting/UI |
 | `description` | ✅ | Description shown to players |
+| `author` | ❌ | Who made it, shown under the description as "by ..." |
 | `spawns` | ✅ | THE indexed table of potential spawns ( see below ) |
 | `difficultyPerMin` | ❌ | How fast difficulty scales |
 | `waveInterval` | ❌ | Time between spawn waves, skipped if all hunters are cleared |
@@ -640,7 +642,8 @@ end
 
 | Method | Description |
 |--------|-------------|
-| `self:Hook( hookName, func )` | A `hook.Add` scoped to this spawnset. The identifier is made for you, don't pass one |
+| `self:Hook( hookName, func )` | A `hook.Add` scoped to this spawnset. One per `hookName`, a second replaces the first |
+| `self:Hook( hookName, id, func )` | Same, the `id` lets you keep more than one on a `hookName` |
 | `self:Timer( timerName, delay, reps, func )` | A `timer.Create` scoped to this spawnset. `reps` of 0 is infinite |
 | `self:TimerRemove( timerName )` | Kill one of this spawnset's timers early |
 | `self:AddTeardown( func )` | Runs `func` when the misery changes, for undoing what hooks and timers can't |
@@ -669,8 +672,8 @@ end
 
 Weapons are a class, or a `shopHelpers.purchaseWeapon` table when they should come with ammo.
 Any of that table's fields but `class` can be a `function( ply )`, for ammo that depends on how many are playing.
-The weapon itself can be a `function( ply )` too, for a random pick. It's called once per player per misery.
-`addStartWeapon` gives one per misery instead of one per life.
+The weapon itself can be a `function( ply )` too, for a random pick. It's called once per player per round.
+`addStartWeapon` gives one per round instead of one per life.
 Add your own with `sh_`/`sv_`/`cl_` files in `lua/glee_sethelpers/`. They're included before any spawnset, during gamemode load, so reach the table through `GM`.
 
 ```lua

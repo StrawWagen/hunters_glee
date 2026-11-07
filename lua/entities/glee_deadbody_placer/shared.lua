@@ -16,6 +16,7 @@ ENT.HullCheckSize = Vector( 12, 12, 20 )
 ENT.PosOffset = Vector( 0, 0, 20 )
 
 ENT.DecapitatedReward = 300
+ENT.CanProfitLater = true
 ENT.noPurchaseReason_NoSkull = "You need a skull to place this."
 
 local bodyModels = {
@@ -38,8 +39,8 @@ if CLIENT then
 
         local scoreGained = math.Round( self:GetGivenScore() )
         if scoreGained < 0 then
-            self:DrawPlacingLine( "Cost: " .. scoreGained, nil, 1 )
-            self:DrawPlacingLine( "Pays +" .. self.DecapitatedReward .. " when its skull comes off", nil, 2 )
+            self:DrawPlacingLine( "Cost: " .. scoreGained )
+            self:DrawPlacingLine( "Pays +" .. self.DecapitatedReward .. " when its skull comes off" )
 
         end
     end

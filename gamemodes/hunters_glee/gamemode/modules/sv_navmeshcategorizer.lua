@@ -22,6 +22,8 @@ flagsEnums.LOCALE_RUNWAY = 32 -- big areas with long sightlines in at least one 
 flagsEnums.LOCALE_PEAK = 64 -- in highest 10% of the map, and higher center than all neighbors
 flagsEnums.LOCALE_DREG = 128 -- lowest 10% of the map, can be underwater
 flagsEnums.LOCALE_DAMP = 256 -- right next to water
+flagsEnums.LOCALE_DEEP_UNDERSKY = 512 -- not under sky, but inside the square of a patch of sky, a shaded balcony, a floor of a tower
+flagsEnums.LOCALE_DEEP_UNDERNOSKY = 1024 -- not under sky, nor inside any patch of sky's square
 
 concommand.Add( "glee_test_highlightallareaswithflag", function( ply, cmd, args )
     if not ply:IsAdmin() then return end
@@ -183,6 +185,9 @@ local function reset()
     GAMEMODE.PeakCutoff = -math.huge -- highestAreaZ - 10% of Z range
     GAMEMODE.navmeshTotalSurfaceArea = 0
     GAMEMODE.navmeshUnderSkySurfaceArea = 0
+    GAMEMODE.underSkySquares = {}
+    GAMEMODE.navmeshDeepUnderSkySurfaceArea = 0
+    GAMEMODE.navmeshDeepUnderNoSkySurfaceArea = 0
 
 end
 
@@ -360,6 +365,62 @@ hook.Add( "glee_navmesh_postvisit_start", "glee_set_dreg_cutoff", function()
 
 end )
 
+-- floods out from startArea through connected UNDER_SKY areas, returns the 2d box around them
+local function underSkyGroupSquare( startArea, grouped )
+    local startCenter = startArea:GetCenter()
+    local square = { minX = startCenter.x, minY = startCenter.y, maxX = startCenter.x, maxY = startCenter.y }
+
+    grouped[startArea] = true
+    local open = { startArea }
+    while #open > 0 do
+        local cur = table.remove( open )
+        local curCenter = cur:GetCenter()
+        local halfX = cur:GetSizeX() / 2
+        local halfY = cur:GetSizeY() / 2
+
+        square.minX = math.min( square.minX, curCenter.x - halfX )
+        square.minY = math.min( square.minY, curCenter.y - halfY )
+        square.maxX = math.max( square.maxX, curCenter.x + halfX )
+        square.maxY = math.max( square.maxY, curCenter.y + halfY )
+
+        for _, adj in ipairs( cur:GetAdjacentAreas() ) do
+            if grouped[adj] then continue end
+            if not GAMEMODE:HasAnyExtraFlag( adj, flagsEnums.UNDER_SKY ) then continue end
+            grouped[adj] = true
+            open[#open + 1] = adj
+
+        end
+    end
+
+    return square
+
+end
+
+-- operate over all under sky areas, build simple squares for each one
+-- needs every area's UNDER_SKY known, so it can't flood during the visit
+hook.Add( "glee_navmesh_postvisit_start", "glee_detect_skygroups", function()
+    local squares = GAMEMODE.underSkySquares
+    local grouped = {}
+
+    for _, area in ipairs( GAMEMODE:GetAreasWithEFlags( flagsEnums.UNDER_SKY ) ) do
+        if grouped[area] then continue end
+        squares[#squares + 1] = underSkyGroupSquare( area, grouped )
+
+    end
+end )
+
+local function isInUnderSkySquare( pos )
+    for _, square in ipairs( GAMEMODE.underSkySquares ) do
+        if pos.x >= square.minX and pos.x <= square.maxX and pos.y >= square.minY and pos.y <= square.maxY then
+            return true
+
+        end
+    end
+
+    return false
+
+end
+
 hook.Add( "glee_navmesh_postvisit", "glee_precache_extraflags", function( area )
     local areasCenter = area:GetCenter()
     local currAreaZ = areasCenter.z
@@ -368,6 +429,19 @@ hook.Add( "glee_navmesh_postvisit", "glee_precache_extraflags", function( area )
     if currAreaZ <= GAMEMODE.dregCutoff then
         GAMEMODE:RegisterFlagStatus( area, flagsEnums.LOCALE_DREG )
 
+    end
+
+    if not GAMEMODE:HasAnyExtraFlag( area, flagsEnums.UNDER_SKY ) then
+        local areasSurface = areasSurfaceArea( area )
+        if isInUnderSkySquare( areasCenter ) then
+            GAMEMODE.navmeshDeepUnderSkySurfaceArea = GAMEMODE.navmeshDeepUnderSkySurfaceArea + areasSurface
+            GAMEMODE:RegisterFlagStatus( area, flagsEnums.LOCALE_DEEP_UNDERSKY )
+
+        else
+            GAMEMODE.navmeshDeepUnderNoSkySurfaceArea = GAMEMODE.navmeshDeepUnderNoSkySurfaceArea + areasSurface
+            GAMEMODE:RegisterFlagStatus( area, flagsEnums.LOCALE_DEEP_UNDERNOSKY )
+
+        end
     end
 
     local adjacents = area:GetAdjacentAreas()

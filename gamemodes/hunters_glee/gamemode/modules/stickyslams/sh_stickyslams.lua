@@ -32,17 +32,30 @@ function GM:CanStickSlamTo( ent )
 
 end
 
+local function isLooseSlam( ent )
+    return ent:GetClass() == "glee_sticky_slam" and not IsValid( ent:GetParent() )
+
+end
+
 -- returns what we're aiming at, and the world pos & surface normal to stick to, or nil if it's out of reach or not stickable
+-- aiming at a stuck slam sticks onto whatever that slam is stuck to, so slams stack
 function GM:FindStickySlamTarget( ply, aimDir )
     local start = ply:GetShootPos()
     local aimTr = util.TraceLine( {
         start = start,
         endpos = start + aimDir * reach,
-        filter = { ply, "glee_sticky_slam" }, -- so slams already stuck on don't block more
+        filter = function( ent )
+            return ent ~= ply and not isLooseSlam( ent )
+
+        end,
         mask = MASK_SHOT,
     } )
 
     local target = aimTr.Entity
+    if IsValid( target ) and target:GetClass() == "glee_sticky_slam" then
+        target = target:GetParent()
+
+    end
     if not IsValid( target ) or not self:CanStickSlamTo( target ) then return end
 
     return target, aimTr.HitPos, aimTr.HitNormal

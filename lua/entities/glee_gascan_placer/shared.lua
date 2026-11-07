@@ -21,6 +21,9 @@ ENT.PosOffset     = Vector( 0, 0, 8 )
 ENT.placeCount    = 1
 ENT.OverrideOffsetFromFloor = 25
 
+ENT.CanInstantlyProfit = true
+ENT.CanProfitLater = false
+
 if CLIENT then
     function ENT:DoHudStuff()
         local scoreGained = math.Round( self:GetGivenScore() )

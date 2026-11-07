@@ -102,6 +102,7 @@ function GM:IsValidSpawnSet( spawnSet )
 
     if not isstring( spawnSet.prettyName ) then yapErr( spawnSet, "has invalid .prettyName" ) return end
     if not isstring( spawnSet.description ) then yapErr( spawnSet, "has invalid .description" ) return end
+    if spawnSet.author ~= nil and not isstring( spawnSet.author ) then yapErr( spawnSet, "has invalid .author" ) return end
 
     for name, _ in pairs( setDefaults ) do
         if not asParsed( spawnSet[name], name, setDefaults ) then
@@ -285,9 +286,13 @@ function GM:ParsedSpawnSet( asRegistered )
 end
 
 -- set spawnset
-function GM:SetSpawnSet( setName )
+-- the same misery again only rerolls its random fields, it's called that way every round
+-- rebuildLifecycle runs its Activate fresh anyway, so gmod_admin_cleanup applies edits to the misery that's running
+function GM:SetSpawnSet( setName, rebuildLifecycle )
 
     local oldSetName = self.CurrSpawnSetName
+    local isNewSet = oldSetName ~= setName
+    local newLifecycle = isNewSet or rebuildLifecycle
 
     local asRegistered = self.RegisteredSpawnSets[setName]
     if not asRegistered then ErrorNoHaltWithStack( "GLEE: Tried to enable invalid spawnset " .. setName ) return end
@@ -296,7 +301,7 @@ function GM:SetSpawnSet( setName )
 
     self:HandleBossDetection( spawnSet )
 
-    if oldSetName ~= setName and self.CurrSpawnSetLifecycle then
+    if newLifecycle and self.CurrSpawnSetLifecycle then
         self.CurrSpawnSetLifecycle:InternalTeardown()
         self.CurrSpawnSetLifecycle = nil
 
@@ -307,12 +312,15 @@ function GM:SetSpawnSet( setName )
 
     SetGlobalString( "GLEE_SpawnSetName", setName )
 
-    if oldSetName ~= setName then
+    if newLifecycle then
         self.CurrSpawnSetLifecycle = include( "hunters_glee/gamemode/modules/spawnset/core/sh_spawnsetlifecyclebase.lua" )
         self.CurrSpawnSetLifecycle:Apply( asRegistered )
 
         self:TellClientsSpawnsetActivated( setName )
 
+    end
+
+    if isNewSet then
         hook.Run( "glee_post_new_spawnset", setName, spawnSet, oldSetName )
         permaPrint( "GLEE: Misery set to, " .. setName )
 
@@ -393,6 +401,9 @@ end, "glee_notifyinvalidspawnsets" )
 
 
 function GM:SpawnSetInitialThink()
+    -- first, the misery activated below can hand out roles
+    self:RolesInitialThink()
+
     local count = self:GobbleSpawnsets()
     permaPrint( "GLEE: Gobbled " .. count .. " spawnsets..." )
 
@@ -407,7 +418,8 @@ function GM:SpawnSetInitialThink()
 
     end
 
-    self:SetSpawnSet( spawnSetPicked )
+    -- startup, or gmod_admin_cleanup, which just reloaded every spawnset
+    self:SetSpawnSet( spawnSetPicked, true )
 
 end
 

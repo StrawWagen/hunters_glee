@@ -63,16 +63,25 @@ end
 --[[---------------------------------------------------------
     lifecycle:Hook
     @desc Adds a hook that is tied to this spawnset. When the spawnset is swapped away, the hook is removed.
-    @param hookName: What should we hook into?
-    @param func: The function to insert into the hook.
+
+    self:Hook( "PlayerSay", function( ply, text ) end )
+    self:Hook( "PlayerSay", "secondOne", function( ply, text ) end )
+
+    One hook per hookName, a second replaces the first.
+    Give each extra one its own id to keep both.
     @return: The hook's identifier.
 --]]---------------------------------------------------------
-function lifecycle:Hook( hookName, func )
-    if isstring( func ) then
-        error( "GLEE: lifecycle:Hook doesn't need a hook name!" )
+function lifecycle:Hook( hookName, id, func )
+    if func == nil then
+        func = id
+        id = ""
 
     end
-    local fullHookIdentifier = "glee_lifecycle_" .. self.name .. "_" .. hookName .. "_" .. tostring( self )
+    if not isfunction( func ) then
+        error( "GLEE: lifecycle:Hook takes ( hookName, func ), or ( hookName, id, func )", 2 )
+
+    end
+    local fullHookIdentifier = "glee_lifecycle_" .. self.name .. "_" .. hookName .. "_" .. id .. "_" .. tostring( self )
     table.insert( self._teardownTasks, function()
         hook.Remove( hookName, fullHookIdentifier )
 

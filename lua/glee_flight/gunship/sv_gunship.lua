@@ -16,15 +16,26 @@ gunship.SteerInterval = 0.9
 -- above the floor under us, when it's not fighting
 local cruiseHeight = 1200
 
+local obstacleHull = 175
+local wayfindingHull = 250
+
 gunship.FlightCfg = {
     speedLimit = 1500,
     closeToObstacleSpeedLimit = 400,
     tooFarFromGround = 2200, -- above cruiseHeight, or it fights the orbit's altitude
     tooCloseToGround = 300,
-    obstacleHull = 175,
-    wayfindingHull = 250,
+    obstacleHull = obstacleHull,
+    wayfindingHull = wayfindingHull,
     slowMovingHull = 175,
+    startAtTopSpeed = true, -- it enters from the skybox
     wanderHeight = cruiseHeight,
+    debugConVar = gunship.Debugging,
+}
+
+-- for finding its way in from the skybox
+gunship.SkyCorridorCfg = {
+    corridorHull = wayfindingHull,
+    minHull = obstacleHull,
     debugConVar = gunship.Debugging,
 }
 
@@ -119,7 +130,7 @@ gunship.BellyCannonCfg = {
     desperateHealth = 1 / 3, -- at or under this fraction of its health, maxDist's off, it'll try from anywhere
     landTolerance = 400, -- the shot has to land at least this close to the target
     -- it won't plan a shot that needs backing off without this much clear behind it, and the shot landing from there
-    backoffRoom = 1200,
+    backoffRoom = 1800,
 
     prefireTime = 2, -- the strider's is 1.25, its charge visuals stretch to fit
 

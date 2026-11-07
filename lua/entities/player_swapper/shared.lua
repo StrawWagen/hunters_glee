@@ -19,6 +19,9 @@ ENT.PosOffset = Vector( 0, 0, 10 )
 
 ENT.SwapSound = "ambient/levels/labs/electric_explosion5.wav"
 
+ENT.CanInstantlyProfit = false
+ENT.CanProfitLater = false
+
 if SERVER then
     util.AddNetworkString( "glee_cleartargetedplacable" )
 

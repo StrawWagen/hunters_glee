@@ -17,6 +17,9 @@ ENT.Model = "models/Items/item_item_crate.mdl"
 ENT.HullCheckSize = Vector( 20, 20, 10 )
 ENT.PosOffset = Vector( 0, 0, 10 )
 
+ENT.CanInstantlyProfit = false
+ENT.CanProfitLater = false
+
 if CLIENT then
     function ENT:DoHudStuff()
         local scoreGained = math.Round( self:GetGivenScore() )
@@ -25,7 +28,7 @@ if CLIENT then
 
         local target = self:GetCurrTarget()
         if IsValid( target ) and target:HasStatusEffect( "witness_me" ) then
-            self:DrawPlacingLine( "WARNING: Witnessable...", "alert", 1 )
+            self:DrawPlacingLine( "WARNING: Witnessable...", "alert" )
 
         end
     end

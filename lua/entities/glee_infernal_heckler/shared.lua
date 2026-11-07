@@ -30,6 +30,9 @@ ENT.CostAllGuilty = -100 -- only guilty nearby, profitable
 ENT.CloseCostMult = 2
 ENT.CostMulWhenEscaped = 0.15
 
+ENT.CanInstantlyProfit = true
+ENT.CanProfitLater = false
+
 if not SERVER then return end
 
 

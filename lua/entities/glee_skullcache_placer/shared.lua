@@ -23,6 +23,9 @@ ENT.weapCrateScoreMultiplier = 3
 ENT.weapCrateNearbyClass = "termhunt_skull_pickup"
 ENT.weapCrateNearbyBlameReason = "Other Skulls"
 
+ENT.CanInstantlyProfit = true
+ENT.CanProfitLater = false
+
 
 if CLIENT then
     function ENT:DoHudStuff()

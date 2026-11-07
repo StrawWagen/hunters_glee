@@ -558,7 +558,11 @@ local items = {
             return true
 
         end },
-        shCanShowInShop = { hasBankAccount },
+        shCanShowInShop = { hasBankAccount, function( purchaser )
+            if not purchaser:HasBankItem( "skull_gains" ) then return false, "You don't have Skull Gains." end
+            return true
+
+        end },
         clDocument = "miserynomination",
         svOnPurchaseFunc = function( purchaser )
             timer.Simple( 0.05, function()

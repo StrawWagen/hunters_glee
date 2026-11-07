@@ -16,6 +16,8 @@ ENT.HullCheckSize = Vector( 20, 20, 10 )
 ENT.PosOffset = Vector( 0, 0, 10 )
 
 ENT.placeCount = 3
+ENT.CanInstantlyProfit = true
+ENT.CanProfitLater = false
 
 if CLIENT then
     function ENT:DoHudStuff()

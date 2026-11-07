@@ -166,6 +166,15 @@ function SWEP:Fail()
     self:SetLockpickEnt( nil )
 end
 
+-- same order as Succeed's branches, so the bar says what finishing will do
+local function pickingText( ent )
+    if ent:GetClass() == "func_breakable_surf" then return "Breaking silently..." end
+    if ent:Health() > 0 and ent:Health() <= 90 then return "Breaking silently..." end
+    if ent:GetInternalVariable( "m_bLocked" ) == true then return "Unlocking..." end
+    return "Locking..."
+
+end
+
 function SWEP:Think()
     if not self:GetIsLockpicking() or self:GetLockpickEndTime() == 0 then return end
 
@@ -190,7 +199,9 @@ function SWEP:Think()
     if not SERVER then return end
 
     local step = 6
-    local status = generic_WaitForProgressBar( self:GetOwner(), "termhunt_weapon_lockpick_picking", 0.25, step )
+    local pickingEnt = self:GetLockpickEnt()
+    local progInfo = IsValid( pickingEnt ) and pickingText( pickingEnt ) or ""
+    local status = generic_WaitForProgressBar( self:GetOwner(), "termhunt_weapon_lockpick_picking", 0.25, step, { progInfo = progInfo } )
 
     if not IsValid( ent ) or ent ~= self:GetLockpickEnt() or trace.HitPos:DistToSqr( self:GetOwner():GetShootPos() ) > 100^2 then
         self:Fail()

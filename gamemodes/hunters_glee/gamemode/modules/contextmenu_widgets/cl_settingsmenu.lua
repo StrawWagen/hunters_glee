@@ -112,6 +112,12 @@ local settingsCategories = {
                 desc = "Hide the beam hints when placing items?",
             },
             {
+                cvar = "cl_huntersglee_unprofitableplacing_gate",
+                type = "check",
+                prettyName = "Place unprofitably without confirming",
+                desc = "Place items where they'd cost score, without holding Reload to confirm?",
+            },
+            {
                 cvar = "cl_huntersglee_draw_bosshealthbar",
                 type = "check",
                 prettyName = "Draw boss health bar",

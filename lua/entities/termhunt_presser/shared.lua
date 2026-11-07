@@ -18,6 +18,9 @@ ENT.PosOffset = Vector( 0, 0, 10 )
 ENT.SwapSound = "ui/buttonrollover.wav"
 ENT.DrawOriginHint = true
 
+ENT.CanInstantlyProfit = false
+ENT.CanProfitLater = false
+
 if CLIENT then
 
     local traitorButtonColor = Color( 100, 255, 255, 255 )

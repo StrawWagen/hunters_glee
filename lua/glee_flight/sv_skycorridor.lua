@@ -196,6 +196,11 @@ function SkyCorridorSearch:Step( fromPos, ignoreTooClose )
     local tooClose = hitPos:Distance( startPos ) < self.tooCloseDist
     tooClose = tooClose and not ignoreTooClose
 
+    if spawnPosResult.StartSolid then
+        self.startingOffset = self.startingOffset + math.random( 0, 100 )
+
+    end
+
     if spawnPosResult.StartSolid or tooClose then
         self.tooCloseDist = math.max( self.tooCloseDist - 250, minTooCloseDist )
         self.dirMaxZ = math.Clamp( self.dirMaxZ + 0.05, 0, maxDirMaxZ )
@@ -203,11 +208,6 @@ function SkyCorridorSearch:Step( fromPos, ignoreTooClose )
 
     end
 
-    if spawnPosResult.StartSolid then
-        self.startingOffset = self.startingOffset + math.random( 0, 100 )
-        return
-
-    end
     if not findSkyResult.HitSky then
         self.dirMaxZ = math.Clamp( self.dirMaxZ + 0.05, 0, maxDirMaxZ )
         return

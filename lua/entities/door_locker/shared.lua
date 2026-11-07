@@ -12,6 +12,9 @@ ENT.AdminOnly    = game.IsDedicated()
 ENT.Category = "Hunter's Glee"
 ENT.Model = "models/Items/item_item_crate.mdl"
 
+ENT.CanInstantlyProfit = false
+ENT.CanProfitLater = true
+
 if CLIENT then
     function ENT:DoHudStuff()
     end

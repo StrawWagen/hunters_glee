@@ -19,16 +19,38 @@ ENT.noPurchaseReason_NoRoom = "No room to place this."
 ENT.noPurchaseReason_OffNavmesh = "The hunters can't path to that spot."
 ENT.noPurchaseReason_TooPoor = "You're too poor."
 ENT.noPurchaseReason_InDebt = "You're in debt."
+ENT.noPurchaseReason_Unprofitable = "Unprofitable placement.\nHold {+reload} to confirm."
+ENT.noPurchaseReason_UnprofitableForNow = "Costs score now, can earn it back later.\nHold {+reload} to confirm."
 
 ENT.CanPlaceColor = Color( 0, 255, 0, 255 )
 ENT.CannotPlaceColor = Color( 255, 0, 0, 255 )
+ENT.UnprofitableColor = Color( 255, 150, 0, 255 )
 ENT.OnlyNetworkToOwner = true
+
+-- True on items that pay out when placed well.
+-- Placing one somewhere it would cost then needs Reload held, every time.
+-- Items that only ever cost just get a warning, until the placer's placed a few.
+ENT.CanInstantlyProfit = false
+
+-- True on items that cost to place, but pay out if they get someone later. A beartrap.
+-- Their warning says so, and is learned apart from the plain cost one.
+ENT.CanProfitLater = true
 
 local beaconVecOffset = Vector( 6.94, -8.67, 25.83 )
 local beaconAngOffset = Angle( 0, -90, 0 )
 
 local deposit = -100
 local placingCost = math.abs( deposit )
+
+local noGateVarName = "cl_huntersglee_unprofitableplacing_gate"
+
+-- lessons are a set, not a counter, so each warned place learns the next of these
+local lossyWarnPlaces = 5
+local function lossyLessonName( canProfitLater, count )
+    local prefix = canProfitLater and "LaterProfitPlace" or "LossyPlace"
+    return prefix .. count
+
+end
 
 ENT.placedItems = 0
 
@@ -89,17 +111,55 @@ ENT.PosOffset = Vector( 0, 0, 10 )
 if CLIENT then
 
     local hidePlacingBeamHints = CreateClientConVar( "cl_huntersglee_hideplacingbeamhints", "0", true, false )
+    CreateClientConVar( noGateVarName, "0", true, true ) -- userinfo, the server enforces the gate
 
     local LocalPlayer = LocalPlayer
 
     hook.Add( "HUDPaint", "glee_placablestuff_hudthink", function()
         if not GAMEMODE.CanShowDefaultHud or not GAMEMODE:CanShowDefaultHud() then return end
-        if not IsValid( LocalPlayer().ghostEnt ) then return end
+        local ghostEnt = LocalPlayer().ghostEnt
+        if not IsValid( ghostEnt ) then return end
 
-        LocalPlayer().ghostEnt:DoHudStuff()
+        ghostEnt.nextPlacingLine = 0
+        ghostEnt:DoHudStuff()
+        ghostEnt:DrawLossWarning()
         hook.Run( "glee_cl_pleasepainttopleft_for", "score", 0.5 )
 
     end )
+
+    --[[---------------------------------------------------------
+        ENT:DrawLossWarning
+        Warns, under the readout, when placing here would cost score. See ENT.CanInstantlyProfit.
+        @return: None
+    --]]---------------------------------------------------------
+    function ENT:DrawLossWarning()
+        local warning = self:LossWarningText()
+        if not warning then return end
+
+        -- half a line apart, so it doesn't read as part of the readout above
+        self.nextPlacingLine = self.nextPlacingLine + 0.5
+        self:DrawPlacingLine( warning, "alert" )
+
+    end
+
+    function ENT:LossWarningText()
+        local charge, canProfitLater = self:PlacingCharge()
+        if charge >= 0 then return end
+
+        if not self.CanInstantlyProfit then
+            if GAMEMODE:HasLearnedLesson( lossyLessonName( canProfitLater, lossyWarnPlaces ) ) then return end
+            if canProfitLater then return "This costs score now.\nBut can profit later." end
+            return "This costs score."
+
+        end
+
+        local ply = LocalPlayer()
+        if not self:IsLossGated( ply ) then return end
+        if ply:KeyDown( IN_RELOAD ) then return "Placing at a loss..." end
+
+        return GAMEMODE:FillBinds( self:UnprofitableReason() )
+
+    end
 
     hook.Add( "huntersglee_cl_displayhint_predeadhints", "placeables_hints", function( ply )
         if not IsValid( ply.ghostEnt ) then return end
@@ -165,18 +225,32 @@ if CLIENT then
 
     end
 
+    -- the HUDPaint hook above sets this back to 0 each frame, before DoHudStuff
+    ENT.nextPlacingLine = 0
+
     --[[---------------------------------------------------------
         ENT:DrawPlacingLine
-        Draws one line of the floating readout while placing.
+        Draws the next line of the floating readout while placing, under the last one.
         @param text: The line to show.
         @param colorRole: A colour role of the soulthought style. Defaults to happy.
-        @param line: Which line down, 0 being the first. Defaults to 0.
         @return: None
     --]]---------------------------------------------------------
-    function ENT:DrawPlacingLine( text, colorRole, line )
-        local y = screenMiddleH + glee_sizeScaled( nil, self.PlacingDrop + ( line or 0 ) * self.PlacingLineGap )
+    function ENT:DrawPlacingLine( text, colorRole )
+        local line = self.nextPlacingLine
+        local y = screenMiddleH + glee_sizeScaled( nil, self.PlacingDrop + line * self.PlacingLineGap )
 
         self:PlacingStyle():Draw( text, self.PlacingFont, screenMiddleW, y, colorRole or "happy" )
+
+        -- the placing font is PlacingLineGap tall, so a newline moves down one line
+        line = line + 1
+        local newlineAt = string.find( text, "\n", 1, true )
+        while newlineAt do
+            line = line + 1
+            newlineAt = string.find( text, "\n", newlineAt + 1, true )
+
+        end
+
+        self.nextPlacingLine = line
 
     end
 
@@ -253,7 +327,7 @@ if CLIENT then
         end
 
         self:DrawPlacingLine( "Projected profit: " .. ( scoreGained + deposit ) )
-        self:DrawPlacingLine( "Deposit: " .. deposit, nil, 1 )
+        self:DrawPlacingLine( "Deposit: " .. deposit )
 
     end
 
@@ -333,6 +407,38 @@ end
 
 function ENT:OffsettedPlacingPos()
     return self:GetPos() + self.PosOffset
+
+end
+
+--[[---------------------------------------------------------
+    ENT:PlacingCharge
+    What placing here takes off the placer's score right now.
+    @return: The change to their score, negative is a cost. And whether any of it can come back later.
+--]]---------------------------------------------------------
+function ENT:PlacingCharge()
+    local given = self:GetGivenScore()
+    -- this file is the base for every placeable, only the real screaming crate takes a deposit
+    if self:GetClass() ~= "screamer_crate" then return given, self.CanProfitLater end
+
+    -- the beacon pays the deposit back, with the bonus, at its first beep
+    if given > 0 then return deposit, true end
+    return given, false
+
+end
+
+-- What a loss gated placing says, see IsLossGated
+function ENT:UnprofitableReason()
+    if self.CanProfitLater then return self.noPurchaseReason_UnprofitableForNow end
+    return self.noPurchaseReason_Unprofitable
+
+end
+
+-- Does placing here need Reload held? Ignores whether it's held, see ENT.CanInstantlyProfit
+function ENT:IsLossGated( ply )
+    if not self.CanInstantlyProfit then return false end
+    if self:GetGivenScore() >= 0 then return false end
+
+    return ply:GetInfoNum( noGateVarName, 0 ) == 0
 
 end
 
@@ -519,6 +625,11 @@ function ENT:DoScoreThink()
     self:UpdateGivenScore()
     self:BlamingThink()
 
+    if self:GetGivenScore() >= 0 then
+        self.lastProfitableTime = CurTime()
+
+    end
+
     local canPlace, noBuyReason = self:GlobalCooldownCanPlace()
     if canPlace then
         canPlace, noBuyReason = self:CalculateCanPlace()
@@ -633,23 +744,24 @@ function ENT:ColorThink()
 
         end
         -- reset it
-        self.couldPlace = nil
+        self.shownColor = nil
     end
     self.canShow = canShow
 
-    local canPlace = self:GetCanPlace() and self:HasEnoughToPurchase()
-    canPlace = canPlace or false -- never nil
-
-    if self.couldPlace ~= canPlace then
-        if not canPlace then
-            self:SetColor( self.CannotPlaceColor )
-
-        elseif canPlace then
-            self:SetColor( self.CanPlaceColor )
+    local color = self.CannotPlaceColor
+    if self:GetCanPlace() and self:HasEnoughToPurchase() then
+        color = self.CanPlaceColor
+        if self:IsLossGated( self.player ) and not self.player:KeyDown( IN_RELOAD ) then
+            color = self.UnprofitableColor
 
         end
     end
-    self.couldPlace = canPlace
+
+    if self.shownColor ~= color then
+        self:SetColor( color )
+
+    end
+    self.shownColor = color
 
 end
 
@@ -721,11 +833,43 @@ function ENT:PlaceFailed()
 
 end
 
+-- the score they read off the HUD is a little behind the server's,
+-- so a spot that only just stopped paying still counts as paying
+local lossGateGrace = 0.5
+
+function ENT:BlockedForLoss( ply )
+    if not self:IsLossGated( ply ) then return false end
+    if ply:KeyDown( IN_RELOAD ) then return false end
+
+    return ( self.lastProfitableTime or 0 ) + lossGateGrace < CurTime()
+
+end
+
+-- once enough of these are learned, DrawLossWarning stops warning
+local function countLossyPlace( ply, canProfitLater )
+    if not GAMEMODE.IsReallyHuntersGlee then return end
+
+    for count = 1, lossyWarnPlaces do
+        if GAMEMODE:LearnLesson( ply, lossyLessonName( canProfitLater, count ) ) then return end
+
+    end
+end
+
 function ENT:HandleKeys( ply, key )
     if ( self.nextPlaceThink or 0 ) > CurTime() then return end
 
     if key == IN_ATTACK then
-        if self:GetCanPlace() then
+        if self:GetCanPlace() and self:BlockedForLoss( ply ) then
+            huntersGlee_Announce( { ply }, 10, 5, self:UnprofitableReason() )
+            ply.glee_ghostEntActionTime = CurTime()
+
+        elseif self:GetCanPlace() then
+            local charge, canProfitLater = self:PlacingCharge()
+            if not self.CanInstantlyProfit and charge < 0 then
+                countLossyPlace( ply, canProfitLater )
+
+            end
+
             self:Place()
             if self.itemIdentifier then
                 GAMEMODE:triggerGlobalCooldowns( self.itemIdentifier, "onGhostPlace" )
@@ -860,7 +1004,7 @@ function ENT:Place()
     terminator_Extras.DoPFXFromEnt( "glee_ghostly_ectoplasm", crate )
 
     if self.player and self.player.GivePlayerScore then
-        local charged = refundAndBonus > 0 and deposit or refundAndBonus
+        local charged = self:PlacingCharge()
         self.player:GivePlayerScore( charged )
         GAMEMODE:sendPurchaseConfirm( self.player, charged )
 

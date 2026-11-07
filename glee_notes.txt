@@ -50,26 +50,27 @@ shop rewrite
     -- can search, 
     -- can check a box to sort by most recently purchased
     -- drag and drop to sort categories yourself?
+    -- REVERSE MARKUP WORDING/FLOW, turn it into items being on sale before round starts.
 -- category #1 will be favourited items ( including some defaults )
 -- while alive
    -- #1, emergency items, items to heal and help
    -- #2, items to defend yourself
-   -- #3, mutations
-   -- #4, bargains
+   -- #3, bargains ( auto collapsed by default if you have >200 score? )
+   -- #4, mutations
 -- while dead
     -- #1 items to make money
     -- #2 items to respawn yourself
     -- #3 items to cause mischeif
 -- tabs
     -- #1 normal shop
-    -- #2 banking
+    -- #2 banking, ( bigger withdrawls?, more time for bigger withdrawls? )
+        ( deposit all button that just queues up a bunch of deposits? )
     -- #3 playermodel
 -- favourites as radial menu
 -- right side,
-    -- tags filter
     -- search bar
-    -- clicked item description
--- review items
+    -- hovered item description ( hover for a second or two to lock description )
+    -- item reviews
 
 -- l4d2 hud looks alot like ghost hud
 

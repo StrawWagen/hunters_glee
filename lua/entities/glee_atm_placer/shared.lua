@@ -22,6 +22,9 @@ ENT.BodyCheckSize   = Vector( 18, 18, 45 )
 
 ENT.noPurchaseReason_NoArrival = "There's no way to get an ATM in there."
 
+ENT.CanInstantlyProfit = false
+ENT.CanProfitLater = true
+
 function ENT:SetupDataTablesExtra()
     self:NetworkVar( "String", 0, "ArrivalMethod" ) -- "" when nothing can reach here
 

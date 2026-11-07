@@ -182,6 +182,21 @@ function GAMEMODE:TranslatedBind( bind )
 
 end
 
+-- The server can't see anyone's binds, so it writes them as {+reload} and this fills in the key.
+--     GAMEMODE:FillBinds( "Hold {+reload} to confirm." ) -- "Hold R to confirm."
+function GAMEMODE:FillBinds( text )
+    local filled = string.gsub( text, "{(%+[%w_]+)}", function( bind )
+        local valid, key = self:TranslatedBind( bind )
+        if not valid then return "\"" .. bind .. "\"" end
+
+        return string.upper( key )
+
+    end )
+
+    return filled
+
+end
+
 local unboundHintDuration = 60 -- from first asked, not first shown. Resets each map
 local unboundHintsUntil = {}
 

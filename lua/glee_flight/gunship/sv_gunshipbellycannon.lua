@@ -120,9 +120,11 @@ local function backingOff( npc )
 end
 
 -- straight away from where it's aiming, it keeps facing that way, so this flies it backwards
+-- never lower, dropping only flattens the angle, eg backing off a skyscraper roof would dive it to street cruise height
 local function carrotAwayFrom( npc, target, aimPos )
-    local carrot = npc:GetPos() + awayFrom( npc, aimPos ) * gunship.OrbitCfg.carrotDist
-    carrot.z = gunship.OrbitAltitude( npc, carrot, target:GetPos().z )
+    local myPos = npc:GetPos()
+    local carrot = myPos + awayFrom( npc, aimPos ) * gunship.OrbitCfg.carrotDist
+    carrot.z = math.max( gunship.OrbitAltitude( npc, carrot, target:GetPos().z ), myPos.z )
     return carrot
 
 end

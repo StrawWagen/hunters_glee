@@ -12,6 +12,8 @@ local function readPublicSet()
     local name = net.ReadString()
     local prettyName = net.ReadString()
     local description = net.ReadString()
+    local author = net.ReadString()
+    if author == "" then author = nil end
     local easy = net.ReadBool()
     local tutorialExit = net.ReadBool()
     local chanceToBeVotable = readOptionalFloat()
@@ -21,6 +23,7 @@ local function readPublicSet()
         name = name,
         prettyName = prettyName,
         description = description,
+        author = author,
         easy = easy,
         tutorialExit = tutorialExit,
         chanceToBeVotable = chanceToBeVotable,

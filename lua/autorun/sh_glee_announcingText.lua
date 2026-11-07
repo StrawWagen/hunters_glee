@@ -95,6 +95,12 @@ net.Receive( "glee_clean_announcement", function()
     currAnnouncement = net.ReadString()
     currPriority = net.ReadInt( 16 )
 
+    -- this file runs under any gamemode, only glee has the helper
+    if GAMEMODE.FillBinds then
+        currAnnouncement = GAMEMODE:FillBinds( currAnnouncement )
+
+    end
+
     if expireTime and currAnnouncement then
         expireTime = CurTime() + expireTime
 
