@@ -28,7 +28,7 @@ function GM:purchaseItem( ply, toPurchase )
                 permaPrint( notPurchasableReason ) -- we need to know WHY!!!
 
             else
-                ply:PrintMessage( HUD_PRINTTALK, notPurchasableReason )
+                huntersGlee_Notify( { ply }, { text = notPurchasableReason, kind = "bad", time = 6 } )
 
             end
             hook.Run( "glee_CouldntPurchase", ply, toPurchase, notPurchasableReason )

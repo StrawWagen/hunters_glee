@@ -85,7 +85,34 @@ function ENT:Place()
 
     targ.CoroutineThresh = math.max( terminator_Extras.baseCoroutineThresh * 2, targ.CoroutineThresh ) -- this guy gets to be really smart!
 
-    huntersGlee_Announce( player.GetAll(), 25, 8, self.player:Nick() .. " has overcharged " .. GAMEMODE:GetNameOfBot( targ ) ..  "..." )
+    local targName = GAMEMODE:GetNameOfBot( targ )
+    local source = "\n" .. GAMEMODE:SuitNameOf( self.player ) .. " is most likely to blame..."
+
+    -- a doppelganger wears a player's name, the suit can't tell it's hostile
+    local livingData
+    if GAMEMODE:LooksLikePlayer( targ ) then
+        livingData = {
+            text = "POWER OVERCHARGE DETECTED",
+            description = targName .. " is overcharged?" .. source,
+            kind = "bad",
+            time = 12,
+        }
+
+    else
+        livingData = {
+            text = "POWER OVERCHARGE DETECTED",
+            description = "WARNING: AVOID HOSTILE ORIGIN " .. targName .. "." .. source,
+            kind = "bad",
+            time = 12,
+        }
+
+    end
+
+    huntersGlee_NotifyLivingAndDead( player.GetAll(), livingData, {
+        text = self.player:Nick() .. " has overcharged " .. targName .. "...",
+        kind = "bad",
+        time = 12,
+    } )
 
     local score = self:GetGivenScore()
 

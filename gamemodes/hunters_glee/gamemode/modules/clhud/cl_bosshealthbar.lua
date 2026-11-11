@@ -7,6 +7,9 @@
     Dead, it shows whenever you're near a boss, spotted or not.
 
     A boss outside our PVS shows the health it last had here.
+
+    Spectating the boss it names, it leaves room above itself for the spectate box,
+    which drops the name the bar already shows.
 --]]-------------------------------------
 
 local GAMEMODE = GAMEMODE or GM
@@ -46,7 +49,11 @@ local corruptCurve = 4 -- higher stays legible longer, then fizzles faster. 1 is
 local corruptRerollInterval = 0.08
 local corruptGlyphs = { "#", "%", "&", "@", "$", "*", "!", "?", "/", "\\", "|", "_", "=", "+", "<", ">", "~" }
 
-local knownBossIndexes = {}
+-- on the gamemode so it survives an autorefresh, the server only tells us on spawn and join.
+-- Cleared in place, never replaced, or this alias goes stale
+GAMEMODE.glee_KnownBossIndexes = GAMEMODE.glee_KnownBossIndexes or {}
+local knownBossIndexes = GAMEMODE.glee_KnownBossIndexes
+
 local spotted = false
 local nextLook = 0
 
@@ -262,6 +269,19 @@ end
 hook.Add( "OnGamemodeLoaded", "glee_bosshealthbar_create", createBoxes )
 if GAMEMODE then createBoxes() end
 
+local spectateSlotY -- top of the room left for the spectate box, nil when none is left
+
+-- The boss the bar is naming, and the y of the room it left for the spectate box when
+-- that's who you're watching. Nothing while it's hidden, or saying NO POWER
+function GM:BossBarShowing()
+    if not IsValid( nameBox ) then return end
+    if nameBox:GetStateAlpha() <= 0 then return end
+    if noPowerSince then return end
+
+    return trackedBoss, spectateSlotY
+
+end
+
 local function hideBoxes()
     if not IsValid( nameBox ) then return end
 
@@ -288,7 +308,7 @@ local function playIntro( cur )
 end
 
 local function forget()
-    knownBossIndexes = {}
+    table.Empty( knownBossIndexes )
     spotted = false
     trackedBoss = nil
     introAt = nil
@@ -306,8 +326,8 @@ hook.Add( "glee_roundstatechanged", "glee_bosshealthbar_forget", function( _oldS
 end )
 
 -- The name box fits its text like the top left lane's, centred over a meter that's
--- never narrower than it
-local function layoutBoxes( xOffset )
+-- never narrower than it. Watching the boss, the spectate box's room goes on top
+local function layoutBoxes( xOffset, watchingBoss )
     local style = meter:Style()
     local pad = style:Metric( "blockPadding" )
     local gap = style:Metric( "laneSpacing" )
@@ -315,19 +335,22 @@ local function layoutBoxes( xOffset )
     local width = math.max( style:Scaled( METER_MIN_WIDTH ), nameBox:GetWide() )
     meter:SetBarSize( width - pad * 2, style:Scaled( METER_BAR_HEIGHT ) )
 
-    local height = nameBox:GetTall() + gap + meter:GetTall()
-    local centerX = ScrW() * 0.5
-    local x = centerX - width * 0.5
-    local y = topPadding
-
-    local inTheWay = GAMEMODE:HudSpaceInMyWay( x, y, width, height )
-    if inTheWay then
-        y = inTheWay + gap
+    local slotH = 0
+    if watchingBoss then
+        slotH = GAMEMODE:WatchingLabelTall() + gap
 
     end
 
-    nameBox:SetPos( centerX - nameBox:GetWide() * 0.5 + xOffset, y )
-    meter:SetPos( x, y + nameBox:GetTall() + gap )
+    local height = slotH + nameBox:GetTall() + gap + meter:GetTall()
+    local centerX = ScrW() * 0.5
+    local x = centerX - width * 0.5
+    local y = GAMEMODE:ClearHudY( x, topPadding, width, height, gap )
+
+    spectateSlotY = watchingBoss and y or nil
+
+    local nameY = y + slotH
+    nameBox:SetPos( centerX - nameBox:GetWide() * 0.5 + xOffset, nameY )
+    meter:SetPos( x, nameY + nameBox:GetTall() + gap )
 
     if nameBox:GetStateAlpha() <= 0 then return end
 
@@ -382,6 +405,7 @@ hook.Add( "glee_cl_aliveordeadplyhud", "glee_bosshealthbar_draw", function( ply,
     end
 
     local xOffset = 0
+    local watchingBoss = false
 
     if powered then
         noPowerSince = nil
@@ -415,6 +439,8 @@ hook.Add( "glee_cl_aliveordeadplyhud", "glee_bosshealthbar_draw", function( ply,
         nameBox.showThreatTag = true
         nameBox:SetWide( nameBox:GetWide() + threatTagWidth( nameBox:Style() ) + nameBox:Style():Metric( "laneSpacing" ) )
 
+        watchingBoss = not alive and GAMEMODE:WhoImWatching( ply ) == trackedBoss
+
         if wanted and bossAlive and fraction < criticalFraction then
             nameBox:SetState( nameBox.STATE_URGENT )
 
@@ -433,7 +459,7 @@ hook.Add( "glee_cl_aliveordeadplyhud", "glee_bosshealthbar_draw", function( ply,
 
     end
 
-    layoutBoxes( xOffset )
+    layoutBoxes( xOffset, watchingBoss )
 
 end )
 

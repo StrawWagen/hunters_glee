@@ -38,7 +38,7 @@ if CLIENT then
     function ENT:HintPreStack()
         if GAMEMODE:HasLearnedLesson( "BarrelsProfitablePlace" ) then return end
 
-        return true, "Barrels.\nPlace them close to stuff you want to EXPLODE.\nPlace within a medium proximity of survivors to profit."
+        return true, "Barrels.\nPlace them close to stuff you want to EXPLODE.\nPlace within a medium proximity of bodied souls to profit."
 
     end
 end

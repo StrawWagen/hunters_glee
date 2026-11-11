@@ -112,12 +112,6 @@ local settingsCategories = {
                 desc = "Hide the beam hints when placing items?",
             },
             {
-                cvar = "cl_huntersglee_unprofitableplacing_gate",
-                type = "check",
-                prettyName = "Place unprofitably without confirming",
-                desc = "Place items where they'd cost score, without holding Reload to confirm?",
-            },
-            {
                 cvar = "cl_huntersglee_draw_bosshealthbar",
                 type = "check",
                 prettyName = "Draw boss health bar",
@@ -153,16 +147,27 @@ local settingsCategories = {
                 prettyName = "High contrast",
                 desc = "All HUD and menu text in plain white.",
             },
+        },
+    },
+    {
+        name = "SCREEN EFFECTS",
+        items = {
             {
                 cvar = "cl_huntersglee_panicdistort",
                 type = "check",
                 prettyName = "Panic fisheye",
                 desc = "Distort your view with a fisheye effect when panicking?",
             },
+            {
+                cvar = "cl_huntersglee_tunnelvision",
+                type = "check",
+                prettyName = "Tunnel vision",
+                desc = "Let your view close in during heart attacks, and when a guardian halo notices you?",
+            },
         },
     },
     {
-        name = "Souls",
+        name = "GHOSTLY",
         items = {
             {
                 cvar = "cl_huntersglee_dosoulragdolls",
@@ -184,6 +189,12 @@ local settingsCategories = {
                 decimals = 2,
                 prettyName = "Own soul transparency",
                 desc = "How transparent should your own soul be when it's near you",
+            },
+            {
+                cvar = "cl_huntersglee_unprofitableplacing_gate",
+                type = "check",
+                prettyName = "Place unprofitably without confirming",
+                desc = "Place items where they'd cost score, without holding Reload to confirm?",
             },
         }
     },

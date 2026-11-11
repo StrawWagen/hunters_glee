@@ -38,6 +38,7 @@ hunters_glee/
 │   │       ├── contextmenu_widgets/   # Context menu desktop: settings, taunts, etc
 │   │       ├── firsttimeplayers/      # Tutorial and spawn protection
 │   │       ├── lessons/               # Hints taught during play
+│   │       ├── panic/                 # Panic, and what a racing heart does to your view
 │   │       ├── ...                    # Smaller systems, each in its own folder
 │   │       └── sv_*.lua, cl_*.lua     # Single file systems
 │   ├── entities/                      # Gamemode-only entities and weapons

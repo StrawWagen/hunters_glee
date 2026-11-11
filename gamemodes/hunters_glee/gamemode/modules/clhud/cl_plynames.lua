@@ -252,7 +252,6 @@ local function whileDeadPaintOtherPlys( localPlayer, cur )
     end
 end
 
-local dontShootHintFor = 0
 local hideNamesFor = 0
 
 local function whileAlivePaintOtherEnts( localPlayer, cur )
@@ -349,17 +348,22 @@ local function whileAlivePaintOtherEnts( localPlayer, cur )
     end
 end
 
-hook.Add( "huntersglee_cl_displayhint_poststack", "glee_hintafterattacking", function()
-    if dontShootHintFor < CurTime() then return end
-    return true, "Homicidal action detected.\nFriendlies display on cooldown..."
+local function noticeHomicidalAction( time )
+    if LocalPlayer():Health() <= 0 then return end -- the feed is the suit talking, the dead have no suit
 
-end )
+    huntersGlee_Notify( nil, {
+        text = "Homicidal action detected.\nFriendlies display on cooldown...",
+        kind = "bad",
+        time = time,
+    } )
+
+end
 
 hook.Add( "glee_dealtpvpdamage", "glee_hidenames_afterdamaging", function( dmgAmount )
     if LocalPlayer():HasStatusEffect( "divine_chosen" ) then return end
     if dmgAmount <= 50 then return end
     if hideNamesFor < CurTime() then
-        dontShootHintFor = CurTime() + 3
+        noticeHomicidalAction()
 
     end
     hideNamesFor = CurTime() + 30
@@ -368,7 +372,7 @@ end )
 
 hook.Add( "glee_homicidallygleeful", "glee_hidenames_afterdamaging", function()
     if LocalPlayer():HasStatusEffect( "divine_chosen" ) then return end
-    dontShootHintFor = CurTime() + 10
+    noticeHomicidalAction( 10 )
     hideNamesFor = math.max( CurTime() + 120, hideNamesFor + 120 )
 
 end )

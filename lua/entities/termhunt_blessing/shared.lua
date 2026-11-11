@@ -77,14 +77,45 @@ function ENT:Place()
 
     end
 
+    local targetName = GAMEMODE:GetNameOfBot( target )
+    local looksLikePlayer = GAMEMODE:LooksLikePlayer( target )
+    local advice = looksLikePlayer and "" or "\nAvoid " .. targetName .. "."
+    huntersGlee_NotifyLivingAndDead( plysToAlert, {
+        text = "DIVINE BLESSING DETECTED",
+        description = GAMEMODE:SuitNameOf( self.player ) .. " has blessed " .. targetName .. "." .. advice,
+        time = 10,
+    }, {
+        text = self.player:Nick() .. " has blessed " .. targetName .. "!",
+        time = 10,
+    } )
+
     if target:IsPlayer() then
-        huntersGlee_Announce( plysToAlert, 5, 6, "You feel... Jealous?\n" .. self.player:Nick() .. " has blessed...\n" .. target:Nick() )
-        huntersGlee_Announce( { target }, 10, 10, "Something's right, you feel calmer, healthier, you feel... blessed.\n" .. self.player:Nick() .. " has blessed you from beyond the grave!" )
-        huntersGlee_Announce( { placer }, 10, 10, "You've blessed " .. target:Nick() .. "!\nSurely they'll survive now...?" )
+        huntersGlee_Notify( { target }, {
+            text = "DIVINE BLESSING DETECTED",
+            description = "Soul to thank? is MOST LIKELY:\n " .. GAMEMODE:SuitNameOf( self.player ),
+            kind = "good",
+            time = 15,
+            replaceKey = "divineBlessed",
+            style = "hl2",
+        } )
+    end
+
+    if looksLikePlayer then
+        huntersGlee_Notify( { placer }, {
+            text = "You've blessed " .. targetName .. "!",
+            description = "Surely they'll survive now...?",
+            kind = "good",
+            time = 12,
+            style = "soulthought",
+        } )
 
     else
-        huntersGlee_Announce( plysToAlert, 5, 6, "Something isn't right..\n" .. self.player:Nick() .. " has blessed " .. GAMEMODE:GetNameOfBot( target ) .. "!" )
-        huntersGlee_Announce( { placer }, 10, 10, "You've blessed " .. GAMEMODE:GetNameOfBot( target ) .. "!" )
+        huntersGlee_Notify( { placer }, {
+            text = "You've blessed " .. targetName .. "!",
+            kind = "good",
+            time = 12,
+            style = "soulthought",
+        } )
 
     end
 
@@ -114,6 +145,10 @@ function ENT:Place()
         target.glee_Blessed = nil
         target.glee_BlessedExpires = nil
 
+        if target:IsPlayer() then
+            huntersGlee_CancelNotify( { target }, "divineBlessed", { noFade = true } )
+
+        end
     end
 
     hook.Add( "huntersglee_player_reset", hookName, function( ply )
@@ -144,15 +179,19 @@ function ENT:Place()
         local timeLeft = timer.RepsLeft( timerName )
         timeLeft = timeLeft + -1
 
-        local message
-
-        if timeLeft <= 5 and timeLeft > 0 then
-            message = "You feel your blessing fading...\n" .. tostring( timeLeft ) .. "."
+        local fading = timeLeft <= 10 and timeLeft > 0
+        if fading then
             target.glee_BlessRegen = target.glee_BlessRegen * ( timeLeft / 5 )
 
         end
-        if message and target:IsPlayer() then
-            huntersGlee_Announce( { target }, 10, 1.5, message )
+        if fading and target:IsPlayer() then
+            huntersGlee_Notify( { target }, {
+                text = "DIVINE BLESSING FADING",
+                description = "Blessing projected to end in... " .. timeLeft,
+                kind = "bad",
+                time = 1.5,
+                replaceKey = "blessing_countdown",
+            } )
 
         end
 
@@ -178,8 +217,11 @@ function ENT:Place()
         GAMEMODE.roundExtraData.hasBlessedTbl = GAMEMODE.roundExtraData.hasBlessedTbl or {}
         if GAMEMODE:GetStoredPersistentGuilt( self.player ) > 0 and not GAMEMODE.roundExtraData.hasBlessedTbl[target] then
             GAMEMODE.roundExtraData.hasBlessedTbl[target] = true
-            local reduction = GAMEMODE:IsFirstTimePlayer( target ) and -0.5 or -0.05
-            GAMEMODE:IncrementPersistentGuilt( self.player, reduction )
+            local isFirst = GAMEMODE:IsFirstTimePlayer( target )
+            local reduction = isFirst and -0.5 or -0.05
+            local msg = isFirst and "A new soul!\nYour guilt lifts..." or "Your guilt barely lifts..."
+
+            GAMEMODE:IncrementPersistentGuilt( self.player, reduction, msg )
 
         end
     else

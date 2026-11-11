@@ -92,12 +92,27 @@ local slightThatEarnsIt = 50
 -- one of those this round costs this much more than the last
 local unjustifiedCostMul = 3
 
+-- the "You're evil" guilt tier, picking on them over and over stops costing more
+local guiltDaysForNoEscalation = 20
+
+-- the "You're extremely evil" guilt tier, whatever they're sitting in no longer protects them
+local guiltDaysForNoVehicleCost = 50
+
 -- How much currTarget has wronged the placer. Zero outside hunters glee, where nobody
 -- is keeping score.
 local function slightAgainstPlacer( currTarget, placer )
     if not GAMEMODE.HasSlighted then return 0 end
 
     return GAMEMODE:HasSlighted( currTarget, placer )
+
+end
+
+-- 0 for a clear conscience, 1 once they've got daysForFull of guilt
+local function guiltProgress( currTarget, daysForFull )
+    if not GAMEMODE.PersistentGuiltIsEnabled then return 0 end
+    if not GAMEMODE:PersistentGuiltIsEnabled() then return 0 end
+
+    return math.min( GAMEMODE:GetPersistentGuilt( currTarget ) / daysForFull, 1 )
 
 end
 
@@ -146,13 +161,18 @@ function ENT:UpdateGivenScore()
         local vehicle = currTarget:GetVehicle()
 
         if IsValid( vehicle ) then
-            cost = terminator_Extras.gleeVehicles.IsInEscapeSeat( currTarget ) and inRescueHeliCost or inVehicleCost
+            local vehicleCost = terminator_Extras.gleeVehicles.IsInEscapeSeat( currTarget ) and inRescueHeliCost or inVehicleCost
+            cost = Lerp( guiltProgress( currTarget, guiltDaysForNoVehicleCost ), vehicleCost, baseCost )
 
         end
     end
 
     if slightSize <= 0 then
-        cost = cost * unjustifiedCostMul ^ unjustifiedPlaces( self.player )
+        local forgiven = guiltProgress( currTarget, guiltDaysForNoEscalation )
+        local escalatedCost = cost * unjustifiedCostMul ^ unjustifiedPlaces( self.player )
+
+        cost = Lerp( forgiven, escalatedCost, cost )
+        refund = refund * ( 1 - forgiven ) -- surfacing them again pushes slight negative, that surcharge is escalation too
 
     end
 
@@ -180,7 +200,7 @@ function ENT:Place()
     -- GetCanPlace is cached on a timer, the target may have died/started dancing since
     local canPlace, reason = self:CalculateCanPlace()
     if not canPlace then
-        if reason then huntersGlee_Announce( { self.player }, 10, 5, reason ) end
+        if reason then huntersGlee_Notify( { self.player }, { text = reason, kind = "bad", time = 5 } ) end
         return
 
     end
@@ -217,7 +237,7 @@ hook.Add( "glee_slightsizeoverride", "noguilt_forkilling_dancers", function( die
 
 end )
 
-function GAMEMODE:SurfaceHomicidalGlee( dancer, surfacer )
+function GAMEMODE:SurfaceHomicidalGlee( dancer, surfacer, surfaceType )
     if not IsValid( dancer ) then return end
 
     local danceSeq = getDanceSeq( dancer )
@@ -280,7 +300,13 @@ function GAMEMODE:SurfaceHomicidalGlee( dancer, surfacer )
 
     local reason = ""
     local reasonGlobal = ""
-    if validSurfacer then
+    local surfacedBy -- only when the dancer is innocent, so bystanders know who's to blame
+    if surfaceType == "harmedInnocent" then
+        reason = "Harming the innocent has left you boiling with GUILTY HOMICIDAL GLEE...\nYou can't help but let it out!"
+        reasonGlobal = dancer:Nick() .. "'s Guilty Homicidal Glee boils to the surface..."
+        dancer.glee_guiltyHomicidalGlee = true
+
+    elseif validSurfacer then
         if surfacer:GetClass() == "npc_helicopter" then
             reason = "The idea of stopping everyone from escaping...\nit just fills you with GUILTY HOMICIDAL GLEE!"
             reasonGlobal = dancer:Nick() .. " is overcome with Guilty Homicidal Glee."
@@ -294,6 +320,7 @@ function GAMEMODE:SurfaceHomicidalGlee( dancer, surfacer )
         else
             reason = "You can't help but dance as " .. surfacer:Nick() .. "\nbrings your HOMICIDAL GLEE to the surface..."
             reasonGlobal = dancer:Nick() .. " is overcome with Homicidal Glee."
+            surfacedBy = GAMEMODE:SuitNameOf( surfacer )
             dancer.glee_guiltyHomicidalGlee = false
 
         end
@@ -317,11 +344,25 @@ function GAMEMODE:SurfaceHomicidalGlee( dancer, surfacer )
 
     if dancer.glee_guiltyHomicidalGlee then
         dancer:DropActiveWeaponKeepAmmo()
-        hook.Run( "glee_homicidallygleeful", dancer, surfacer, reason, reasonGlobal )
+        hook.Run( "glee_homicidallygleeful", dancer, surfacer, reason, reasonGlobal, surfaceType )
 
     end
 
     huntersGlee_Announce( { dancer }, 10, 8, reason )
-    huntersGlee_Announce( plysToAlert, 5, 6, reasonGlobal )
+
+    local livingDescription = reasonGlobal
+    if surfacedBy then
+        livingDescription = livingDescription .. "\nLikely cause: " .. surfacedBy .. "."
+
+    end
+
+    huntersGlee_NotifyLivingAndDead( plysToAlert, {
+        text = dancer.glee_guiltyHomicidalGlee and "GUILTY HOMICIDAL GLEE DETECTED" or "HOMICIDAL VIBES DETECTED",
+        description = livingDescription,
+        time = 12,
+    }, {
+        text = reasonGlobal,
+        time = 12,
+    } )
 
 end

@@ -54,6 +54,7 @@ function set:Activate()
 
     setHelpers.setBaseRole( self, "rebel" )
     setHelpers.addRoleVariant( self, "medic" )
+    setHelpers.addRoleVariant( self, "reporter" )
 
     setHelpers.addStartWeapon( self, {
         class = "weapon_rpg",

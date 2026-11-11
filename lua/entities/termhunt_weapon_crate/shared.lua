@@ -30,7 +30,7 @@ if CLIENT then
     function ENT:HintPreStack()
         if GAMEMODE:HasLearnedLesson( "WeaponsCrateProfitablePlace" ) then return end
 
-        return true, "Place the weapons FAR from survivors,\nand away from OTHER SUPPLIES.\nThe more HIDDEN? The more profit!\nSmart enemies can EQUIP WEAPONS, so beware..."
+        return true, "Place the weapons FAR from bodied souls,\nand away from OTHER SUPPLIES.\nThe more HIDDEN? The more profit!\nSmart enemies can EQUIP WEAPONS, so beware..."
 
     end
 end

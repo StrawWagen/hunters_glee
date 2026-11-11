@@ -346,17 +346,18 @@ local obliterateConfirmWindow = 30
 
 -- glee_bank_obliterate [player], defaults to whoever ran it. Offline players by SteamID
 -- Only obliterates when run twice in a row on the same target
-concommand.Add( "glee_bank_obliterate", function( ply, _, args )
+concommand.Add( "glee_bank_obliterate", function( ply, _, _args, argStr )
     if IsValid( ply ) and not ply:IsAdmin() then return end
 
-    local target, steamID = ply, IsValid( ply ) and ply:SteamID()
-    if args[1] then
-        target, steamID = GAMEMODE:FindPlayerByArg( args[1] )
+    local playerArg = GAMEMODE:ArgWords( argStr )[1]
+    local target, steamID, failReason = ply, IsValid( ply ) and ply:SteamID()
+    if playerArg then
+        target, steamID, failReason = GAMEMODE:FindPlayerByArg( playerArg )
 
     end
 
     if not steamID then
-        permaPrint( "GLEE: No player to obliterate the bank account of." )
+        permaPrint( failReason or "GLEE: No player to obliterate the bank account of." )
         return
 
     end
@@ -372,7 +373,7 @@ concommand.Add( "glee_bank_obliterate", function( ply, _, args )
     local pending = pendingObliterations[callerKey]
     if not pending or pending.steamID ~= steamID or pending.expires < CurTime() then
         pendingObliterations[callerKey] = { steamID = steamID, expires = CurTime() + obliterateConfirmWindow }
-        local again = "glee_bank_obliterate" .. ( args[1] and ( " " .. args[1] ) or "" )
+        local again = "glee_bank_obliterate" .. ( playerArg and ( " " .. playerArg ) or "" )
         permaPrint( "GLEE: Run " .. again .. " again to confirm obliteration of " .. who .. "'s bank account." )
         return
 

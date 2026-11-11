@@ -186,7 +186,13 @@ hook.Add( "PostEntityTakeDamage", "glee_rewarding_tnt_crate_reward", function ( 
         else
             owner:GivePlayerScore( 75 )
             GAMEMODE:SendPlacableScorePopup( owner, target, 75 )
-            huntersGlee_Announce( { owner }, 5, 8, "Your timed TNT damaged a player! You gain 75 score!" )
+            huntersGlee_Notify( { owner }, {
+                text = "Your timed TNT damaged a player!",
+                description = "You gain 75 score!",
+                kind = "good",
+                time = 8,
+                style = "soulthought",
+            } )
 
         end
     elseif target:IsNextBot() or target:IsNPC() then

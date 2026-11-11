@@ -298,6 +298,10 @@ end )
 local nextBreak = 0
 local lastBreak = 0
 
+-- one laggy tick is usually a spawn or a map load hitch, not worth freezing over
+local laggingStreak = 0
+local streakToFreeze = 5
+
 hook.Add( "Think", "glee_dynamicfreezing_laggingthink", function() -- deal damage to random sleepers if the server is lagging
     local cur = CurTime()
     if nextBreak > cur then return end
@@ -328,14 +332,22 @@ hook.Add( "Think", "glee_dynamicfreezing_laggingthink", function() -- deal damag
 
     end
 
+    if lagging then
+        laggingStreak = laggingStreak + 1
+
+    else
+        laggingStreak = 0
+
+    end
+
     if not ( lagging or bitLaggy ) then return end
 
     local toFreeze = terminator_Extras.glee_smartSleep_toFreeze
     if #toFreeze == 0 then return end
 
-    -- lil bit laggy?
+    -- lil bit laggy, or not lagging for long enough yet?
     -- think about whether or not we should freeze this, NOW!
-    if not lagging then
+    if laggingStreak < streakToFreeze then
         local randomEnt = toFreeze[math.random( 1, #toFreeze )]
         if not IsValid( randomEnt ) then return end
         if IsValid( randomEnt:GetParent() ) then return end

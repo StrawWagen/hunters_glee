@@ -182,6 +182,9 @@ local function createSoul( ply )
 
     end
 
+    -- for anything that rides along on souls, eg the innocent halo
+    hook.Run( "glee_soulcreated", soul, ply )
+
     return soul
 
 end

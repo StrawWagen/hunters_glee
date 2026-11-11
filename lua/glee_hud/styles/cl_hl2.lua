@@ -17,6 +17,8 @@ terminator_Extras.glee_RegisterStyle( "hl2", {
     fonts = {
         tiny        = { size = 16, weight = 1000 }, -- two lines of it fit beside a mediumLarge line
         small       = { size = 22, weight = 1000 },
+        notice      = { size = 24, weight = 1000 }, -- the notice feed's, see cl_noticefeed.lua
+        noticeDescription = { size = 20, weight = 1000 },
         medium      = { size = 28, weight = 1000 },
         mediumLarge = { size = mediumLargeSize, weight = 2000, scanlines = 1 },
         placing     = { size = 40, weight = 1000 }, -- the readout while placing something

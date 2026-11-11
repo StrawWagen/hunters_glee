@@ -154,18 +154,35 @@ hook.Add( "EntityTakeDamage", "glee_rewarding_manhacks_reward", function ( targe
     owner.glee_ManhacksThatCanDamage[attacker.glee_ManhackCrateDamagingId] = nil
     if target:IsPlayer() then
         if target == owner then
-            huntersGlee_Announce( { owner }, 5, 8, "You've been damaged by your own manhacks..." )
+            huntersGlee_Notify( { owner }, {
+                text = "You've been damaged by your own manhacked supplies...",
+                kind = "bad",
+                time = 12,
+                style = "soulthought",
+            } )
 
         else
             owner:GivePlayerScore( 75 )
             GAMEMODE:SendPlacableScorePopup( owner, target, 75 )
-            huntersGlee_Announce( { owner }, 5, 8, "The manhacks have damaged a player! You gain 75 score!" )
+            huntersGlee_Notify( { owner }, {
+                text = "Your manhacked supplies have damaged a player!",
+                description = "You gain 75 score!",
+                kind = "good",
+                time = 12,
+                style = "soulthought",
+            } )
 
         end
     elseif target:IsNextBot() or target:IsNPC() then
         owner:GivePlayerScore( 25 )
         GAMEMODE:SendPlacableScorePopup( owner, target, 25 )
-        huntersGlee_Announce( { owner }, 5, 8, "The manhacks have damaged " .. GAMEMODE:GetNameOfBot( target ) .. ". You only gain 25 score." )
+        huntersGlee_Notify( { owner }, {
+            text = "Your manhacked supplies have damaged " .. GAMEMODE:GetNameOfBot( target ) .. ".",
+            description = "You only gain 25 score.",
+            kind = "good",
+            time = 10,
+            style = "soulthought",
+        } )
 
     end
 end )

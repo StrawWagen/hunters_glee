@@ -24,7 +24,9 @@ gamemodes\hunters_glee\gamemode\modules\contextmenu_widgets\cl_desktopiconbackdr
 gamemodes\hunters_glee\gamemode\lib\sh_gleehelpers.lua
 gamemodes\hunters_glee\gamemode\sh_player.lua
 
-gamemodes\hunters_glee\gamemode\modules\sh_panic.lua
+gamemodes\hunters_glee\gamemode\modules\panic\sh_panic.lua
+gamemodes\hunters_glee\gamemode\modules\panic\cl_tunnelvision.lua
+gamemodes\hunters_glee\gamemode\modules\panic\cl_heartattacktunnel.lua
 gamemodes\hunters_glee\gamemode\modules\sh_slowmopitch.lua
 gamemodes\hunters_glee\gamemode\modules\sh_playerdrowning.lua
 gamemodes\hunters_glee\gamemode\modules\sh_compathacks.lua
@@ -45,10 +47,12 @@ gamemodes\hunters_glee\gamemode\modules\orbitcamera\cl_orbitcamera.lua
 gamemodes\hunters_glee\gamemode\modules\clhud\cl_plynames.lua
 gamemodes\hunters_glee\gamemode\modules\clhud\cl_whowespectating.lua
 gamemodes\hunters_glee\gamemode\modules\clhud\cl_bosshealthbar.lua
+gamemodes\hunters_glee\gamemode\modules\clhud\cl_noticefeed.lua
 
 gamemodes\hunters_glee\gamemode\modules\battery\sh_battery.lua
 
 gamemodes\hunters_glee\gamemode\modules\guilt\sh_guilt.lua
+gamemodes\hunters_glee\gamemode\modules\guilt\sh_innocenthalo.lua
 
 gamemodes\hunters_glee\gamemode\modules\deadplayerfx\cl_souls.lua
 gamemodes\hunters_glee\gamemode\modules\deadplayerfx\cl_deaddesaturation.lua
@@ -111,3 +115,4 @@ gamemodes\hunters_glee\gamemode\modules\spawnset\seen\cl_seenmiseries.lua
 lua\autorun\client\cl_shadowedtextfunc.lua
 lua\autorun\sh_generic_progress.lua
 lua\autorun\sh_glee_announcingText.lua
+lua\autorun\sh_glee_notify.lua

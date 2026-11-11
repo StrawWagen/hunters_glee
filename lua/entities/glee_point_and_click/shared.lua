@@ -20,6 +20,8 @@ ENT.OnlyNetworkToOwner = false
 ENT.PurchaseCost = 100 -- inital purchase cost
 ENT.CostPerSec = 0.5 -- cost per second held
 ENT.CostPerSecPerSec = 2 -- added cost per second held, multiplied by how long you've been holding
+ENT.GuiltyCostRampMult = 0.5 -- never 0, this ramp is what stops someone being held forever
+ENT.GuiltyCostRampDays = 20 -- days of guilt the target needs for the full GuiltyCostRampMult
 ENT.CostInterval = 0.5 -- interval at which we update cost
 ENT.CostPerDistance = 2 -- amount of score to add per distance dragged from start
 ENT.CostPerDistancePow = 0.8
@@ -56,6 +58,7 @@ ENT.CanProfitLater = false
 
 function ENT:DynamicCooldown( elapsed )
     return math.Clamp( math.pow( elapsed, 1.4 ), 50, 60 * 5 )
+
 end
 
 -- For the current distance from the target's pre-grab position, return the one-time cost.
@@ -199,6 +202,7 @@ if CLIENT then
 
         if cooldownMins > 0 then
             cooldownString = cooldownString .. cooldownMins .. "m "
+
         end
 
         cooldownString = cooldownString .. cooldownSecs .. "s"
@@ -485,7 +489,15 @@ function ENT:Place()
     -- GetCanPlace is cached on a timer, the target may have died/been grabbed since
     local canPlace, reason = self:CalculateCanPlace()
     if not canPlace then
-        if reason then huntersGlee_Announce( { owner }, 10, 5, reason ) end
+        if reason then
+            huntersGlee_Notify( { owner }, {
+                text = reason,
+                kind = "bad",
+                time = 5,
+                style = "soulthought",
+            } )
+
+        end
         return
 
     end
@@ -498,7 +510,12 @@ function ENT:Place()
 
         if target:InVehicle() then
             -- Exit blocked for some reason :(
-            huntersGlee_Announce( { owner }, 5, 5, "Try as you might, you can't pull them out." )
+            huntersGlee_Notify( { owner }, {
+                text = "Try as you might, you can't pull them out.",
+                kind = "bad",
+                time = 5,
+                style = "soulthought",
+            } )
 
             if self.itemIdentifier then
                 GAMEMODE:RefundShopItemCooldown( owner, self.itemIdentifier )
@@ -521,6 +538,7 @@ function ENT:Place()
 
     self.glee_PointAndClick_Target = target
     self.glee_PointAndClick_CostPerSec = self.CostPerSec
+    self.glee_PointAndClick_CostRamp = self:GetCostRamp( target )
     self.glee_PointAndClick_StartTime = CurTime()
     self.glee_PointAndClick_PrevCostTime = CurTime()
     self.glee_PointAndClick_PrevCostPos = target:WorldSpaceCenter()
@@ -549,6 +567,15 @@ function ENT:GetCostMult()
 
 end
 
+function ENT:GetCostRamp( target )
+    if not target:IsPlayer() then return self.CostPerSecPerSec end
+    if not GAMEMODE:PersistentGuiltIsEnabled() then return self.CostPerSecPerSec end
+
+    local guiltFraction = math.min( GAMEMODE:GetPersistentGuilt( target ) / self.GuiltyCostRampDays, 1 )
+    return self.CostPerSecPerSec * Lerp( guiltFraction, 1, self.GuiltyCostRampMult )
+
+end
+
 function ENT:CostTick( force )
     local owner = self.player
     if not IsValid( owner ) then return end
@@ -558,7 +585,7 @@ function ENT:CostTick( force )
     if not force and now < prevTime + self.CostInterval then return end
 
     local dt = now - prevTime
-    local costPerSec = self.glee_PointAndClick_CostPerSec + self.CostPerSecPerSec * dt
+    local costPerSec = self.glee_PointAndClick_CostPerSec + self.glee_PointAndClick_CostRamp * dt
     local costMult = self:GetCostMult()
     local target = self.glee_PointAndClick_Target
     local distCostPrev = self.glee_PointAndClick_DistCostMax

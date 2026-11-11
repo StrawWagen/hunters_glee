@@ -31,7 +31,7 @@ include( "lib/sh_gleehelpers.lua" )
 include( "player_class/player_termrunner.lua" )
 include( "sh_player.lua" )
 
-include( "modules/sh_panic.lua" )
+include( "modules/panic/sh_panic.lua" )
 include( "modules/banking/sh_banking.lua" )
 include( "modules/escaping/sh_escaperewards.lua" )
 include( "modules/banking/sh_envoy.lua" ) -- uses sh_escaperewards' CreateDefaultingConVar

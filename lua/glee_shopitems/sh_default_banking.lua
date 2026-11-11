@@ -233,7 +233,17 @@ if SERVER then
 
         timer.Simple( 2, function()
             if not IsValid( ply ) then return end
-            huntersGlee_Announce( player.GetAll(), 100, 6, ply:Nick() .. "'s gluttonous wealth knows no bounds...\nThe ATM has arrived..." )
+            huntersGlee_NotifyLivingAndDead( player.GetAll(), {
+                text = "ATM INBOUND",
+                description = ply:Nick() .. "'s OVERPOWERING wealth is\nmost likely to blame...",
+                kind = "good",
+                time = 6,
+            }, {
+                text = "The ATM has arrived...",
+                description = ply:Nick() .. "'s gluttonous wealth knows no bounds...",
+                kind = "good",
+                time = 6,
+            } )
 
         end )
     end
@@ -399,7 +409,12 @@ local items = {
 
             if not IsValid( atm ) then
                 GAMEMODE:RefundShopItemCooldown( purchaser, itemIdentifier )
-                huntersGlee_Announce( { purchaser }, 10, 5, "The ATM has nowhere to arrive that you can afford." )
+                huntersGlee_Notify( { purchaser }, {
+                    text = "All ATM locations TOO EXPENSIVE",
+                    description = "The ATM has nowhere to arrive you can afford...",
+                    kind = "bad",
+                    time = 5
+                } )
                 return
 
             end

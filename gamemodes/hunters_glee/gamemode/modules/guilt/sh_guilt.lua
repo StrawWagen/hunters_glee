@@ -4,6 +4,7 @@ local infernalSEffectName = "infernalintervention_rawendofthedeal"
 local PermaGuiltLevels = {
     NOT_GUILTY = 0,
     SLIGHTLY_GUILTY = 1,
+    BARELY_GUILTY = 2,
     SOMEWHAT_GUILTY = 5,
     ALMOST_GUILTY = 10,
     GUILTY = 20,
@@ -46,24 +47,32 @@ GM.PermaGuiltInfo = {
         desc = "Your conscience is still.. a bit clear...",
         color = colorMix( calmColor, evilColor, 0.25 ),
     },
+    [PermaGuiltLevels.BARELY_GUILTY]  = {
+        desc = "You're just starting to become evil... Nobody will feel guilty for killing you.",
+        color = colorMix( calmColor, evilColor, 0.25 ),
+        killedForNoGuilt = true,
+    },
     [PermaGuiltLevels.SOMEWHAT_GUILTY]  = {
-        desc = "You're a bit evil. But you are still forgiven.",
+        desc = "You're a bit evil.",
         message = "Your guilt grows.\nYou're a bit evil.",
         color = colorMix( calmColor, evilColor, 0.5 ),
         divineCostMul = 1.15,
+        killedForNoGuilt = true,
     },
     [PermaGuiltLevels.ALMOST_GUILTY]  = {
         desc = "Things can't continue like this. You're almost evil.",
         color = colorMix( calmColor, evilColor, 0.7 ),
         message = "Your guilt grows.\nYou're almost evil.",
         divineCostMul = 1.25,
+        killedForNoGuilt = true,
     },
     [PermaGuiltLevels.GUILTY]  = {
-        desc = "You're evil. Your access to divine avenues is limited.",
+        desc = "You're evil. Your access to divine avenues is limited. You see halos over the innocent.",
         color = colorMix( calmColor, evilColor, 0.8 ),
         message = "You're evil.\nThe divine actors are displeased.",
         divineCostMul = 1.5,
         canPurchaseForgivenessRitual = true,
+        killedForNoGuilt = true,
     },
     [PermaGuiltLevels.VERY_GUILTY] = {
         desc = "You're very evil. Divine paths are almost out of your reach.",
@@ -72,9 +81,10 @@ GM.PermaGuiltInfo = {
         divineCostMul = 2.5,
         canPurchaseForgivenessRitual = true,
         horriblyEvil = true,
+        killedForNoGuilt = true,
     },
     [PermaGuiltLevels.EXTREMELY_GUILTY] = {
-        desc = "You're extremely evil. The divine ways are closed to you. You are always one with the infernal powers.",
+        desc = "You're extremely evil. The divine ways are closed to you. You are always one with the infernal powers. Smiting you atones for past sins.",
         message = "You're extremely evil.\nYou are now one with the infernal powers.",
         color = evilColor,
         divineItemsNotPurchaseable = true,
@@ -82,9 +92,11 @@ GM.PermaGuiltInfo = {
         canPurchaseForgivenessRitual = true,
         horriblyEvil = true,
         cooldownMul = 1.25,
+        killedForNoGuilt = true,
+        godlySlayingRelievesGuilt = true, -- divine lightning and infernal summons forgive whoever killed them, see sv_guilt
     },
     [PermaGuiltLevels.SUPREMELY_GUILTY] = {
-        desc = "You're supremely evil. The divine ways are closed to you. You are always one with the infernal powers. You are punished wickedly for harming the innocent. All shop item cooldowns are longer.",
+        desc = "You're supremely evil. The divine ways are closed to you. You are always one with the infernal powers. Smiting you atones for past sins. You are punished wickedly for harming the innocent. All shop item cooldowns are longer.",
         message = "You're supremely evil.\nYou are now punished wickedly for harming the innocent.",
         color = evilColor,
         divineItemsNotPurchaseable = true,
@@ -94,6 +106,8 @@ GM.PermaGuiltInfo = {
         canPurchaseForgivenessRitual = true,
         horriblyEvil = true,
         cooldownMul = 2,
+        killedForNoGuilt = true,
+        godlySlayingRelievesGuilt = true,
     },
 }
 
@@ -193,41 +207,6 @@ if CLIENT then
         hook.Run( "glee_homicidallygleeful" )
 
     end )
-
-    local oldLevel
-
-    hook.Add( "glee_persistentguilt_increased", "glee_guiltnotif", function( days )
-        if not active then return end
-        timer.Create( "glee_persistguilt_delayeddesc", 0.1, 1, function()
-            local msg
-            local level, levelData = GAMEMODE:GetPlysGuiltLevel( LocalPlayer() )
-            if oldLevel and level ~= oldLevel and level > oldLevel then -- play transition message if this teir has one
-                msg = levelData.message
-
-            elseif days <= 1 then -- first day of guilt
-                msg = "Killing an innocent soul...\nYou feel... Guilty?"
-
-            elseif days <= 5 then -- first 5 days
-                msg = "Your guilt grows"
-                for _ = 1, math.floor( days ) do
-                    msg = msg .. "."
-
-                end
-            end
-            if msg then
-                notification.AddLegacy( msg, NOTIFY_ERROR, 10 )
-
-            end
-        end )
-    end )
-    hook.Add( "glee_persistentguilt_decreased", "glee_guiltnotif", function( _newGuiltInDays )
-        if not active then return end
-        timer.Create( "glee_persistguilt_delayeddesc", 0.1, 1, function()
-            local msg = "You feel some of your guilt fade..."
-            notification.AddLegacy( msg, NOTIFY_HINT, 10 )
-
-        end )
-    end )
 end
 if SERVER then
     local function applyPermaInfernal( spawned )
@@ -259,15 +238,58 @@ if SERVER then
 
     local guiltyGleeIgniteDuration = 8
 
+    -- the Watchers' fury, the lightning that lights them. see eff_glee_halosmite
+    -- hurt an innocent, and their halo strikes you itself
+    -- otherwise it comes from just above your head
+    local haloAboveEyes = 12 -- about where the halo is, for anyone not drawing it
+    local smiteAboveGuilty = 40
+    local smiteDelay = { 0.25, 0.5 } -- min, max seconds after the dance starts
+    local thunderCracks = {
+        "ambient/atmosphere/thunder1.wav",
+        "ambient/atmosphere/thunder2.wav",
+        "ambient/atmosphere/thunder3.wav",
+        "ambient/atmosphere/thunder4.wav",
+    }
+
+    local function smiteFromHalo( guilty, innocent )
+        local from
+        if IsValid( innocent ) then
+            from = innocent:EyePos() + Vector( 0, 0, haloAboveEyes )
+
+        else
+            from = guilty:EyePos() + Vector( 0, 0, smiteAboveGuilty )
+
+        end
+
+        local fx = EffectData()
+            fx:SetOrigin( from )
+            fx:SetStart( guilty:WorldSpaceCenter() )
+            fx:SetEntity( innocent or NULL )
+        util.Effect( "eff_glee_halosmite", fx )
+
+        guilty:EmitSound( thunderCracks[math.random( #thunderCracks )], 95, math.random( 95, 110 ), 1, CHAN_STATIC )
+
+    end
+
     -- only runs for Guilty Homicidal Glee, innocent dancers never reach this hook
-    hook.Add( "glee_homicidallygleeful", "glee_guiltyglee_ignite", function( dancer )
+    hook.Add( "glee_homicidallygleeful", "glee_guiltyglee_ignite", function( dancer, surfacer, _reason, _reasonGlobal, surfaceType )
         if not active then return end
 
         local _, guiltData = GAMEMODE:GetPlysGuiltLevel( dancer )
         if not guiltData.ignitesWhenGuiltyGleeful then return end
 
-        dancer:Ignite( guiltyGleeIgniteDuration )
+        -- only the innocent have a halo to strike from, any other surfacer is a ghost or the heli
+        local innocent = surfaceType == "harmedInnocent" and surfacer or nil
 
+        -- wait for the third person dance camera to pull out, so they see it land
+        timer.Simple( math.Rand( smiteDelay[1], smiteDelay[2] ), function()
+            if not IsValid( dancer ) then return end
+            if not dancer:Alive() then return end
+
+            dancer:Ignite( guiltyGleeIgniteDuration )
+            smiteFromHalo( dancer, innocent )
+
+        end )
     end )
 
     -- ignite if attacking perfectly innocment players
@@ -289,9 +311,10 @@ if SERVER then
         local _, guiltData = GAMEMODE:GetPlysGuiltLevel( attacker )
         if not guiltData.gleefulOnInnocentDamage then return end
 
-        if GAMEMODE:GetStoredPersistentGuilt( damaged ) >= 1 then return end
+        local _, damagedsGuiltData = GAMEMODE:GetPlysGuiltLevel( damaged )
+        if damagedsGuiltData.killedForNoGuilt then return end
 
-        GAMEMODE:SurfaceHomicidalGlee( attacker )
+        GAMEMODE:SurfaceHomicidalGlee( attacker, damaged, "harmedInnocent" )
 
     end )
 end

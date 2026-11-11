@@ -183,12 +183,19 @@ function ENT:Place()
 
     end
 
-    if target:IsPlayer() then
-        huntersGlee_Announce( plysToAlert, 5, 6, "You feel an imposing presence..\n" .. self.player:Nick() .. " has gifted immortality to...\n" .. target:Nick() )
-        huntersGlee_Announce( { target }, 10, 10, "Something's off, you feel strong, you feel... Immortal.\n" .. self.player:Nick() .. " has gifted you temporary Immortality." )
+    local targetName = GAMEMODE:GetNameOfBot( target )
+    local advice = GAMEMODE:LooksLikePlayer( target ) and "SUGGESTED ACTION: Use " .. targetName .. " as cover." or "RETREAT, Avoid " .. targetName .. "."
+    huntersGlee_NotifyLivingAndDead( plysToAlert, {
+        text = "ANOMALOUS ENERGY DETECTED",
+        description = GAMEMODE:SuitNameOf( self.player ) .. " has gifted likely immortality to " .. targetName .. ".\n" .. advice,
+        time = 12,
+    }, {
+        text = self.player:Nick() .. " has gifted immortality to " .. targetName,
+        time = 12,
+    } )
 
-    else
-        huntersGlee_Announce( plysToAlert, 5, 6, "You feel an imposing presence..\n" .. self.player:Nick() .. " has gifted immortality to " .. GAMEMODE:GetNameOfBot( target ) )
+    if target:IsPlayer() then
+        huntersGlee_Announce( { target }, 10, 10, "Something's off, you feel strong, you feel... Immortal.\n" .. self.player:Nick() .. " has gifted you temporary Immortality." )
 
     end
 
@@ -212,8 +219,11 @@ function ENT:Place()
         GAMEMODE.roundExtraData.hasImmortalizedTbl = GAMEMODE.roundExtraData.hasImmortalizedTbl or {}
         if GAMEMODE:GetStoredPersistentGuilt( self.player ) > 0 and not GAMEMODE.roundExtraData.hasImmortalizedTbl[target] then
             GAMEMODE.roundExtraData.hasImmortalizedTbl[target] = true
-            local reduction = GAMEMODE:IsFirstTimePlayer( target ) and -0.5 or -0.05
-            GAMEMODE:IncrementPersistentGuilt( self.player, reduction )
+            local isFirst = GAMEMODE:IsFirstTimePlayer( target )
+            local reduction = isFirst and -0.5 or -0.05
+            local msg = isFirst and "A new soul!\nYour guilt lifts..." or "Your guilt barely lifts..."
+
+            GAMEMODE:IncrementPersistentGuilt( self.player, reduction, msg )
 
         end
     else
@@ -314,7 +324,13 @@ GAMEMODE:RegisterStatusEffect( "immortal",
             if secondsLeft <= 8 then
                 owner:EmitSound( "physics/metal/metal_canister_impact_hard3.wav", 80, 80 + secondsLeft * 2, 1, CHAN_STATIC )
                 if owner:IsPlayer() then
-                    huntersGlee_Announce( { owner }, 10, 1.5, "You feel your mortality returning...\n" .. tostring( secondsLeft ) .. "." )
+                    huntersGlee_Notify( { owner }, {
+                        text = "IMMORTALITY FAILING" .. secondsLeft,
+                        description = "SUGGESTED ACTION: Seek cover.",
+                        kind = "bad",
+                        time = 1.5,
+                        replaceKey = "immortality_countdown",
+                    } )
 
                 end
             end
@@ -325,15 +341,25 @@ GAMEMODE:RegisterStatusEffect( "immortal",
 
         endSounds( owner )
 
+        if owner:IsPlayer() then
+            huntersGlee_CancelNotify( { owner }, "immortality_countdown" )
+
+        end
+
         if not self.ranOutOfMoney then return end
 
         if IsValid( self.placer ) then
             local name = owner:IsPlayer() and owner:Nick() or GAMEMODE:GetNameOfBot( owner )
-            huntersGlee_Announce( { self.placer }, 10, 4, name .. "'s\nimmortality cost too much for you..." )
+            huntersGlee_Notify( { self.placer }, {
+                text = name .. "'s cost of immortality has ballooned too much...",
+                kind = "bad",
+                time = 10,
+                style = "soulthought",
+            } )
 
         end
         if owner:IsPlayer() then
-            huntersGlee_Announce( { owner }, 10, 4, "Your immortality FAILS?!\nThe soul funding it is broke..." )
+            huntersGlee_Announce( { owner }, 10, 4, "Your immortality FAILS?!\nThe funder has run out of Score..." )
 
         end
     end
