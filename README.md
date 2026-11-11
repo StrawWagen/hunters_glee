@@ -543,7 +543,6 @@ Number values can be:
 | `chanceToBeVotableWhenHard` | ❌ | Percent chance to appear in !rtm when this misery's escape multiplier is 1x or more, for making spawnsets fade into the background when they no longer challenge the host |
 | `easy` | ❌ | Marks this as a beginner misery. Tagged `(EASY)` in the !rtm vote, and while an easy one is active the vote prefers offering other easy ones. Also soft-caps its escape reward multiplier |
 | `hordeSpawn` | ❌ | `true` Always reuses the last good spawn area, stacking hunter spawns into a horde. Defaults to true for waves of 8+ spawns, `false` disables it even then. |
-| `slotSizes` | ❌ | How many hunters fit in each `.slots` slot, eg `{ miniboss = 1 }`. Takes the usual number values, or `"minutes*N"` to grow with the round, `"minutes*0.1"` is one slot every 10 minutes. Without it every slot holds 1 |
 | `slotSizes` | ❌ | How many hunters fit in each `.slots` slot, eg `{ miniboss = 1 }`. Takes the usual number values, or `"minutes*N"` to grow with the round, `"minutes*0.1"` is one slot every 10 minutes, `"minutes*0.2"` is one every 5. Without it every slot holds 1 |
 | `Activate` | ❌ | Called when this becomes the active misery ( see Spawnset Lifecycle ) |
 | `OnRemove` | ❌ | Called when the misery changes away from this ( see Spawnset Lifecycle ) |
