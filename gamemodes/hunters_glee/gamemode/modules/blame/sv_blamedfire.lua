@@ -98,6 +98,8 @@ hook.Add( "PostEntityTakeDamage", "glee_blamedfire_damageended", function( targe
     local attacker = dmg:GetAttacker()
     if not IsValid( attacker ) then return end
     if attacker == target then return end
+    -- burn from a flame nobody's credited for still names the flame, inferring from that loops forever
+    if isFlame( attacker ) then return end
 
     target.glee_lastAttacker = attacker
     target.glee_lastAttackInflictor = dmg:GetInflictor()
