@@ -43,6 +43,7 @@ if SERVER then
 
     -- polled, innocence moves with guilt, bank funds, the tutorial, and effects get wiped on round change
     timer.Create( "glee_innocenthalos", 1, 0, function()
+        if not IsValid( LocalPlayer() ) then return end
         if not GAMEMODE:PersistentGuiltIsEnabled() then return end
 
         for _, ply in player.Iterator() do
