@@ -1,0 +1,6 @@
+"VertexLitGeneric"
+{
+	"$basetexture" "models/glee/weapons/shield/riotshield_sheet"
+	"$halflambert"	1	//so lighting doesn't look too shitty
+	//"$translucent" 	1
+}
