@@ -51,7 +51,7 @@ local function modelsIn( folder )
 end
 
 local roles = {
-    ["grunt"] = {
+    ["swatGrunt"] = {
         models = {"models/player/swat.mdl"},
         startWeapons = {
             {

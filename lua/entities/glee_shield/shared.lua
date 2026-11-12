@@ -27,7 +27,6 @@ glee_Carrying.MakeCarryable( ENT, "glee_backpackable_shield" )
 function ENT:Initialize()
     self:SetModel( self.Model )
 	self:PhysicsInit( SOLID_VPHYSICS )
-    //self:SetModelScale(12.0) -- im so lazy i dont want to scale it manually rn
 	self:SetSolid( SOLID_VPHYSICS )
 	--self:SetCollisionGroup( COLLISION_GROUP_WEAPON )
 	self:DrawShadow( true )

@@ -24,7 +24,7 @@ if SERVER then
         author = "dedactedlife and IndefiniteXD",
         description = "They're mad at your creations, and want all of you dead. Stop them.",
         difficultyPerMin = "default", -- difficulty per minute
-        waveInterval = {3, 5}, -- time between spawn waves
+        waveInterval = "default", -- time between spawn waves
         maxSpawnDist = { 2500, 3500 }, -- CLOSE!
         startingSpawnCount = 1,
         maxSpawnCount = 12,
@@ -54,7 +54,7 @@ function set:Activate()
 
     if CLIENT then return end
 
-    setHelpers.setBaseRole( self, "grunt" )
+    setHelpers.setBaseRole( self, "swatGrunt" )
 
     setHelpers.addRoleVariant( self, "medic" )
     setHelpers.addRoleVariant( self, "tank" )
