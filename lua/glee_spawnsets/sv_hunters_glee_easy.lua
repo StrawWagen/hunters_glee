@@ -26,7 +26,6 @@ local set = {
             spawnType = "hunter",
             difficultyCost = { 5, 10 },
             difficultyStopAfter = { 50, 75 },
-            countClass = "terminator_nextbot_snail_skinlessrusty", -- class COUNTED, uses findbyclass
             minCount = { 1 }, -- will ALWAYS maintain this count
             maxCount = { 1 }, -- will ALWAYS maintain this count
         },

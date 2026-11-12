@@ -23,7 +23,6 @@ local terminatorSpawnSet = {
             class = "terminator_nextbot_wraith",
             spawnType = "hunter",
             difficultyCost = { 5, 10 },
-            countClass = "terminator_nextbot_wraith",
             minCount = { 3 },
             postSpawnedFuncs = nil,
         },

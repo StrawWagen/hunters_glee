@@ -39,7 +39,6 @@ if SERVER then -- NavEFlags no exist on client
                 spawnType = "hunter",
                 spawnAbove = true,
                 difficultyCost = 125,
-                countClass = "terminator_nextbot_infernalskeleton",
                 maxCount = { 1 },
                 preSpawnedFuncs = { function( _, spawned )
                     spawned.SpawnHealth = spawned.SpawnHealth * 0.5
@@ -58,7 +57,6 @@ if SERVER then -- NavEFlags no exist on client
                 preferredEFlags = GAMEMODE.NavEFlags.UNDER_SKY,
                 difficultyCost = 90,
                 minutesNeeded = { 1, 2 },
-                countClass = "terminator_nextbot_infernalskeleton",
                 maxCount = { 4 },
                 preSpawnedFuncs = { function( _, spawned )
                     spawned.SpawnHealth = spawned.SpawnHealth * 0.5
@@ -76,7 +74,6 @@ if SERVER then -- NavEFlags no exist on client
                 spawnSameZ = true,
                 preferredEFlags = GAMEMODE.NavEFlags.UNDER_SKY,
                 difficultyCost = 500,
-                countClass = "terminator_nextbot_infernalskeleton",
                 preSpawnedFuncs = { function( _, spawned )
                     spawned.SpawnHealth = spawned.SpawnHealth * 0.5
                     spawned.FistDamageMul = 0.2
@@ -93,7 +90,6 @@ if SERVER then -- NavEFlags no exist on client
                 spawnType = "hunter",
                 spawnAbove = true,
                 difficultyCost = { 1500, 2500 }, -- super rare early one, just added in here for fun
-                countClass = "terminator_nextbot_infernalskeleton_large",
                 maxCount = { 1 },
                 isBoss = true, -- kill it to win!
                 preSpawnedFuncs = { function( _, spawned )
@@ -111,7 +107,6 @@ if SERVER then -- NavEFlags no exist on client
                 preferredEFlags = GAMEMODE.NavEFlags.UNDER_SKY,
                 difficultyCost = 150,
                 minutesNeeded = { 3, 4 },
-                countClass = "terminator_nextbot_infernalskeleton_large",
                 maxCount = { 1 },
                 isBoss = true, -- kill it to win!
                 preSpawnedFuncs = { function( _, spawned )

@@ -73,7 +73,6 @@ local set = {
             spawnSameZ = true,
             preferredEFlags = GAMEMODE.NavEFlags.UNDER_SKY,
             difficultyCost = { 50, 100 },
-            countClass = "terminator_nextbot_infernalskeleton_large",
             maxCount = { 1 },
             preSpawnedFuncs = {
                 function( _, spawned )
@@ -91,7 +90,6 @@ local set = {
             spawnSameZ = true,
             preferredEFlags = GAMEMODE.NavEFlags.UNDER_SKY,
             difficultyCost = { 100, 200 },
-            countClass = "terminator_nextbot_infernalskeleton_big",
             maxCount = { 1 },
         },
         {
@@ -101,7 +99,6 @@ local set = {
             class = "terminator_nextbot_infernalskeleton_large", -- class spawned
             spawnType = "hunter",
             difficultyCost = { 500, 1000 },
-            countClass = "terminator_nextbot_infernalskeleton_large",
             maxCount = { 10 },
             preSpawnedFuncs = {
                 function( _, spawned )
@@ -118,7 +115,6 @@ local set = {
             spawnType = "hunter",
             spawnSameZ = true,
             difficultyCost = { 1000, 2000 },
-            countClass = "terminator_nextbot_infernalskeleton_big",
             maxCount = { 10 },
         },
     }

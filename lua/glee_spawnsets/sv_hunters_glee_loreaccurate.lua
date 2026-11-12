@@ -23,7 +23,6 @@ local set = {
             spawnType = "hunter",
             difficultyCost = 1,
             maxCount = 1,
-            countClass = "terminator_nextbot_loreaccurate",
         },
     }
 }
