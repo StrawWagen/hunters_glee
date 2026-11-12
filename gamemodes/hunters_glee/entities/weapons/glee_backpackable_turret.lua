@@ -214,6 +214,8 @@ SWEP.TurretNames = {
     "ALEXANDER THE GREAT",
     "Child 1",
     "FUNGUS SNIFFER",
+    "THE BABY BOILER",
+    "#1 GUILT ENJOYER",
 
     "BART",
     "HOMER",

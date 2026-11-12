@@ -142,7 +142,7 @@ local nearbyEntHints = {
         local valid, phrase = GAMEMODE:TranslatedBind( "+use" )
         if not valid then return GAMEMODE:UnboundHint( "+use", "You can't open doors..." ) end
 
-        return true, "Press " .. phrase .. " to open doors!"
+        return true, "Press " .. string.upper( phrase ) .. " to open doors!"
 
     end,
     terminator_nextbot_infernalskeleton_slow = function( _me )

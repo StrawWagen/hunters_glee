@@ -17,7 +17,7 @@ local spawnDefaults = schema.spawnDefaults
 local slotSizeDefaults = schema.slotSizeDefaults
 local validSpawnTypes = schema.validSpawnTypes
 local rawSpawnFieldValidators = schema.rawSpawnFieldValidators
-local minutesSlotSizePattern = schema.minutesSlotSizePattern
+local slotSizeScales = schema.slotSizeScales
 local setCommonTypos = schema.setCommonTypos
 local spawnCommonTypos = schema.spawnCommonTypos
 
@@ -28,6 +28,21 @@ local function findTypo( tbl, commonTypos )
         if tbl[typo] ~= nil then return typo, correct end
 
     end
+end
+
+-- "default*1.5" gives "default", 1.5
+-- nil for anything else, eg "default*1.2.3" or 5
+local function splitMul( str )
+    if not isstring( str ) then return end
+
+    local word, mulStr = string.match( str, "^(%a+)%*([%d%.]+)$" )
+    if not word then return end
+
+    local mul = tonumber( mulStr )
+    if not mul then return end
+
+    return word, mul
+
 end
 
 local function asParsed( toParse, name, defaultsTbl )
@@ -43,15 +58,15 @@ local function asParsed( toParse, name, defaultsTbl )
             if toParse == "default" then
                 toParse = default
 
-            -- dynamically mul the default!
-            -- eg default*1.5, default*0.25
-            -- much better than setting something independant from the default
-            -- because the defaults will change eventually....
-            elseif string.match( toParse, "^default%*[%d%.]+$" ) then
-                local multiplier = tonumber( string.match( toParse, "[%d%.]+$" ) )
-                if multiplier then
+            else
+                -- dynamically mul the default!
+                -- eg default*1.5, default*0.25
+                -- much better than setting something independant from the default
+                -- because the defaults will change eventually....
+                local word, mul = splitMul( toParse )
+                if word == "default" then
                     toParse = default
-                    finalMul = multiplier
+                    finalMul = mul
 
                 end
             end
@@ -116,8 +131,9 @@ function GM:IsValidSpawnSet( spawnSet )
     if slotSizes ~= nil then
         if not istable( slotSizes ) then yapErr( spawnSet, "has invalid .slotSizes" ) return end
         for slot, size in pairs( slotSizes ) do
-            local isMinutes = isstring( size ) and string.match( size, minutesSlotSizePattern )
-            if not isMinutes and not asParsed( size, slot, slotSizeDefaults ) then
+            local scale = splitMul( size )
+            local isScaled = scale and slotSizeScales[scale]
+            if not isScaled and not asParsed( size, slot, slotSizeDefaults ) then
                 yapErr( spawnSet, "has invalid .slotSizes " .. slot )
                 return
 
@@ -165,17 +181,21 @@ function GM:IsValidSpawnSet( spawnSet )
         local maxCount = asParsed( spawn.maxCount, "maxCount", spawnDefaults )
         if not maxCount then yapErr( spawnSet, ".spawns " .. name .. " invalid .maxCount" ) return end
 
-        local thisEntryHasMinMax = maxCount > -1 or minCount > -1
+        -- nil falls back to .class
         local countClass = spawn.countClass
-        -- if min or max count, .countClass needs to be a string
-        if thisEntryHasMinMax and not isstring( countClass ) then
+        if not isstring( countClass ) and countClass ~= nil then
             yapErr( spawnSet, ".spawns " .. name .. " invalid .countClass" )
             return
 
-        -- else, .countClass needs to be a string or nil
-        elseif not isstring( countClass ) and countClass ~= nil then
-            yapErr( spawnSet, ".spawns " .. name .. " invalid .countClass" )
-            return
+        end
+        -- only .minCount and .maxCount read it
+        local hasMinMax = maxCount > -1 or minCount > -1
+        if countClass and not hasMinMax and developerVar:GetBool() then
+            permaPrint( "GLEE: spawnSet " .. spawnSet.name .. " .spawns entry " .. name .. " has a .countClass but no .minCount or .maxCount" )
+
+        end
+        if countClass == spawn.class and developerVar:GetBool() then
+            permaPrint( "GLEE: spawnSet " .. spawnSet.name .. " .spawns entry " .. name .. " has a .countClass that's the same as its .class, it can be left out" )
 
         end
 
@@ -255,9 +275,15 @@ function GM:ParsedSpawnSet( asRegistered )
 
     local slotSizes = spawnSet.slotSizes
     if slotSizes then
-        for slot, _ in pairs( slotSizes ) do
-            parse( slotSizes, slot, slotSizeDefaults, spawnSet )
+        for slot, size in pairs( slotSizes ) do
+            local scale, mul = splitMul( size )
+            if scale then
+                slotSizes[slot] = { scale = scale, mul = mul }
 
+            else
+                parse( slotSizes, slot, slotSizeDefaults, spawnSet )
+
+            end
         end
     end
 

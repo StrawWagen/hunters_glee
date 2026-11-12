@@ -16,6 +16,15 @@ game.AddAmmoType( {
 
 } )
 
+-- the tissue reclaimer's, heals and revives
+game.AddAmmoType( {
+    name = "GLEE_JUICE",
+    dmgtype = DMG_GENERIC,
+    tracer = TRACER_NONE,
+    maxcarry = 9999,
+
+} )
+
 game.AddAmmoType( {
     name = "GLEE_FLAREGUN_PLAYER", -- Note that whenever picked up, the localization string will be '#BULLET_PLAYER_556MM_ammo'
     dmgtype = DMG_BURN,

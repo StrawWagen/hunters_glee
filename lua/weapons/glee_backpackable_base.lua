@@ -624,6 +624,7 @@ if SERVER then
             collisionGroup = ent:GetCollisionGroup(),
             customCollisionCheck = ent:GetCustomCollisionCheck(),
             notSolid = bit.band( ent:GetSolidFlags(), FSOLID_NOT_SOLID ) ~= 0,
+            blocksLOS = not ent:IsEFlagSet( EFL_DONTBLOCKLOS ),
             motionEnabled = IsValid( phys ) and phys:IsMotionEnabled(),
             collisionsEnabled = IsValid( phys ) and phys:IsCollisionEnabled(),
         }
@@ -694,7 +695,7 @@ if SERVER then
     end
 
     -- takes ent on as what this carries
-    -- frozen, walked through but still shot, and riding the owner's back
+    -- frozen, walked through but still shot, seen through, and riding the owner's back
     -- StopCarrying undoes all of it
     -- removing ent removes this weapon
     function SWEP:StartCarrying( ent )
@@ -727,6 +728,10 @@ if SERVER then
         ent:SetSolid( SOLID_BBOX )
         ent:SetNotSolid( false )
         ent:SetCollisionGroup( COLLISION_GROUP_WEAPON )
+
+        -- the engine refuses a weapon pickup unless the weapon can see the player's eyes
+        -- something on their back is in the way of that
+        ent:AddEFlags( EFL_DONTBLOCKLOS )
 
         -- so glee_carrying's ShouldCollide is asked about it, see there
         ent:SetCustomCollisionCheck( true )
@@ -813,6 +818,11 @@ if SERVER then
         ent:SetSolid( state.solidType )
         ent:SetNotSolid( state.notSolid )
         ent:SetCollisionGroup( state.collisionGroup )
+
+        if state.blocksLOS then
+            ent:RemoveEFlags( EFL_DONTBLOCKLOS )
+
+        end
 
         ent:SetCustomCollisionCheck( state.customCollisionCheck )
         ent:CollisionRulesChanged()

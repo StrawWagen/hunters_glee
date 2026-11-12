@@ -227,15 +227,15 @@ local items = {
             } )
         end,
     },
-    -- heal jooce
+    -- heal jooce, and soft reason to get around the map, go places people have died
     ["healthkit"] = {
-        name = "Medkit",
-        desc = "Heals.\nYou gain score for healing players.\nHealing yourself is unweildy and slow.\nExcess health you find, will reload it.",
+        name = "Tissue Reclaimer",
+        desc = "Heals the living, revives the dead.\nYou gain score for healing players, 300 per resurrection.\nHealing yourself is unweildy and slow.\nExcess health you find, will reload it.",
         shCost = 80,
         markup = 2,
         markupPerPurchase = 0.15,
         cooldown = 0.5,
-        tags = { "ITEMS", "Essential", "Weapon", "Utility" },
+        tags = { "ITEMS", "Essential", "Resurrecting", "Weapon", "Utility" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -243,18 +243,14 @@ local items = {
         weight = -100,
         shPurchaseCheck = shopHelpers.aliveCheck,
         svOnPurchaseFunc = function( purchaser )
-            local medkit = "termhunt_medkit"
-            local weap = purchaser:GetWeapon( medkit )
-            local hasWeap = IsValid( weap )
+            -- a first purchase gets the DefaultClip from Give
+            shopHelpers.purchaseWeapon( purchaser, {
+                class = "termhunt_tissue_reclaimer",
+                confirmSoundWeight = 1,
+                ammoType = "GLEE_JUICE",
+                resupplyClips = 1,
 
-            if hasWeap then
-                weap:HealJuice( 200 )
-
-            else
-                purchaser:Give( medkit, false )
-                shopHelpers.loadoutConfirm( purchaser, 1 )
-
-            end
+            } )
         end,
     },
     -- funny bear trap

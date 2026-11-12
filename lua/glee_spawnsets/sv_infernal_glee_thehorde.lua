@@ -4,7 +4,7 @@ local set = {
     prettyName = "The Infernal Horde",
     description = "It burns, it burns! IT BURNS!",
     difficultyPerMin = "default*3", -- difficulty per minute
-    waveInterval = "default", -- time between spawn waves
+    waveInterval = "default*0.35", -- time between spawn waves
     diffBumpWhenWaveKilled = "default*4", -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
     startingBudget = "default", -- so budget isnt 0
     spawnCountPerDifficulty = "default",

@@ -51,8 +51,13 @@ local spawnDefaults = {
 local slotSizeDefaults = {}
 
 -- "minutes*0.1", one slot every 10 minutes
--- left as a string by the generic parsing, the spawner works it out each wave
-local minutesSlotSizePattern = "^minutes%*[%d%.]+$"
+-- "difficulty*0.01", one slot every 100 difficulty
+-- parsed into { scale, mul }, the spawner works it out each wave
+-- slotSize in sv_hunterspawner gives each of these its value
+local slotSizeScales = {
+    minutes = true,
+    difficulty = true,
+}
 
 -- misspelled keys would otherwise be silently ignored, or silently replaced by their default
 -- typo = correct
@@ -133,7 +138,7 @@ return {
     slotSizeDefaults = slotSizeDefaults,
     validSpawnTypes = validSpawnTypes,
     rawSpawnFieldValidators = rawSpawnFieldValidators,
-    minutesSlotSizePattern = minutesSlotSizePattern,
+    slotSizeScales = slotSizeScales,
     setCommonTypos = setCommonTypos,
     spawnCommonTypos = spawnCommonTypos,
 }

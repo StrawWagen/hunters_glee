@@ -27,7 +27,7 @@ if SERVER then
         spawns = {
             {
                 hardRandomChance = { 0, 15 },
-                name = "combine_soldier_early",
+                name = "combine_soldier_reallyearly",
                 prettyName = "A Combine Soldier",
                 class = "terminator_nextbot_csoldier",
                 spawnType = "hunter",

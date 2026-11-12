@@ -87,9 +87,8 @@ function meta:SeesDeadPeople()
 end
 
 -- false while dead, or alive but taken out of their own eyes, eg grabbed by the evil crawler
--- KillSilent leaves health above 0, and Alive() can lag behind health during DoPlayerDeath, so check both
 function meta:SeesThroughOwnEyes()
-    return self:Alive() and self:Health() > 0 and self:GetObserverMode() == OBS_MODE_NONE
+    return self:Health() > 0 and self:GetObserverMode() == OBS_MODE_NONE
 
 end
 
