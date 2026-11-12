@@ -180,14 +180,14 @@ local function updateCooldowns( spawnSet, entryCounts, cur )
 end
 
 -- slots are 1 big unless the spawnset's .slotSizes says otherwise
-local function slotSize( spawnSet, slot, minutes )
+local function slotSize( spawnSet, slot, minutes, difficulty )
     local slotSizes = spawnSet.slotSizes
     if not slotSizes then return 1 end
 
     local size = slotSizes[slot]
-    if isstring( size ) then -- "minutes*N"
-        local perMinute = tonumber( string.match( size, "[%d%.]+$" ) )
-        size = math.floor( minutes * perMinute )
+    if istable( size ) then -- "minutes*N" or "difficulty*N", parsed in ParsedSpawnSet
+        local units = { minutes = minutes, difficulty = difficulty }
+        size = math.floor( units[size.scale] * size.mul )
 
     end
     return size
@@ -378,7 +378,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
         local function slotsHaveRoom( slots )
             for _, slot in ipairs( slots ) do
                 if not slotRoom[slot] then
-                    slotRoom[slot] = slotSize( spawnSet, slot, minutes ) - ( slotCounts[slot] or 0 )
+                    slotRoom[slot] = slotSize( spawnSet, slot, minutes, difficulty ) - ( slotCounts[slot] or 0 )
 
                 end
                 if slotRoom[slot] <= 0 then return false end

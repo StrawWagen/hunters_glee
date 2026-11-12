@@ -23,7 +23,6 @@ local CurTime = CurTime
 local math = math
 
 if CLIENT then
-
     local offsetVec = Vector( 0, 0, 5 )
     function ENT:GetFireEffects()
         return {

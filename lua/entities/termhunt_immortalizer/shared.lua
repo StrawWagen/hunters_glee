@@ -325,7 +325,7 @@ GAMEMODE:RegisterStatusEffect( "immortal",
                 owner:EmitSound( "physics/metal/metal_canister_impact_hard3.wav", 80, 80 + secondsLeft * 2, 1, CHAN_STATIC )
                 if owner:IsPlayer() then
                     huntersGlee_Notify( { owner }, {
-                        text = "IMMORTALITY FAILING" .. secondsLeft,
+                        text = "IMMORTALITY FAILING " .. secondsLeft,
                         description = "SUGGESTED ACTION: Seek cover.",
                         kind = "bad",
                         time = 1.5,

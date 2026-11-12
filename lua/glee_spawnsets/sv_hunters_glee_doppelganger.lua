@@ -26,7 +26,6 @@ local set = {
             spawnType = "hunter",
             difficultyCost = 1,
             maxCount = 1,
-            countClass = "terminator_nextbot_snail_disguised",
             postSpawnedFuncs = { maybeOverchargeThisDude },
             isBoss = true,
         },

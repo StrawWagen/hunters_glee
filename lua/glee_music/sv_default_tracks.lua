@@ -2,6 +2,7 @@
 local vacant = "VACANT"
 local compakt = "COMPAKT"
 local kelley = "KELLYBAILEY"
+local alexscott = "ALEXSCOTT"
 
 local tracks = {
     heliEvac = {
@@ -49,6 +50,17 @@ local tracks = {
         neverOverrides = { "grigoriArrival", "secondGrigoriArrival" },
         alwaysOverrides = { "roundEnd", "roundWin", "roundPerfectWin" },
     },
+
+    heliLateLeave = {
+        sounds = {
+            {
+                author = alexscott,
+                snd = "hunters_glee/music/ALEXSCOTT/glee_allsoulsaboard_alt.mp3"
+            },
+        },
+        neverOverrides = { "heliEvac" },
+    },
+
     tutorialPickedHardOption = {
         sounds = {
             {

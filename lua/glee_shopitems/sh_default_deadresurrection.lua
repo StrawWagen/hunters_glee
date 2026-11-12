@@ -978,38 +978,6 @@ local items = {
         end,
         shCanShowInShop = shopHelpers.deadNotEscapedCheck,
     },
-    -- soft reason to get around the map, go places people have died 
-    ["revivekit"] = {
-        name = "Revive Kit",
-        desc = "Revives dead players.\nYou gain 300 score per resurrection.",
-        shCost = 30,
-        markup = 2,
-        markupPerPurchase = 0.5,
-        cooldown = 0.5,
-        tags = { "ITEMS", "Essential", "Resurrecting", "Weapon", "Utility" },
-        purchaseTimes = {
-            GAMEMODE.ROUND_INACTIVE,
-            GAMEMODE.ROUND_ACTIVE,
-        },
-        weight = -100,
-        shPurchaseCheck = shopHelpers.aliveCheck,
-        svOnPurchaseFunc = function( purchaser )
-            local weap = purchaser:GetWeapon( "termhunt_reviver" )
-            local hasWeap = IsValid( weap )
-
-            if hasWeap then
-                weap:AddResurrect()
-                weap:AddResurrect()
-
-            else
-                weap = purchaser:Give( "termhunt_reviver", false )
-                weap:AddResurrect()
-                shopHelpers.loadoutConfirm( purchaser, 2 )
-
-            end
-        end,
-        shCanShowInShop = shopHelpers.hasMultiplePeople,
-    },
 }
 
 GAMEMODE:GobbleShopItems( items )

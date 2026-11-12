@@ -20,13 +20,12 @@ local set = {
     spawns = {
         {
             hardRandomChance = nil,
-            name = "terminator", -- unique name
+            name = "terminator_rusty", -- unique name
             prettyName = "A Terminator",
             class = "terminator_nextbot_snail_skinlessrusty", -- class spawned
             spawnType = "hunter",
             difficultyCost = { 5, 10 },
             difficultyStopAfter = { 50, 75 },
-            countClass = "terminator_nextbot_snail_skinlessrusty", -- class COUNTED, uses findbyclass
             minCount = { 1 }, -- will ALWAYS maintain this count
             maxCount = { 1 }, -- will ALWAYS maintain this count
         },
@@ -37,7 +36,6 @@ local set = {
             class = "terminator_nextbot_snail", -- class spawned
             spawnType = "hunter",
             difficultyCost = { 15, 25 },
-            countClass = "terminator_nextbot_snail*", -- class COUNTED, uses findbyclass
         },
         {
             hardRandomChance = { 0, 2 }, -- chance this is even checked
@@ -46,7 +44,6 @@ local set = {
             class = "terminator_nextbot_snail_disguised",
             spawnType = "hunter",
             difficultyCost = { 20 },
-            countClass = "terminator_nextbot_snail*",
         }
     }
 }

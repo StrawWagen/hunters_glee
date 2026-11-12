@@ -101,8 +101,12 @@ function GM:AddNotice( data )
     local existing = findByKey( data.replaceKey ) or findSame( text, description )
     local notice = existing or newNotice()
     notice.replaceKey = data.replaceKey
+    -- a resend can land after the death did, it can't forget it was held
+    if notice.onlyWhile ~= data.onlyWhile then
+        notice.onlyWhileHeld = false
+
+    end
     notice.onlyWhile = data.onlyWhile
-    notice.onlyWhileHeld = false
 
     -- a countdown updates the one box every second, logging each would flood the console
     if not existing and printNotices:GetBool() then
@@ -263,7 +267,7 @@ hook.Add( "HUDPaint", "glee_noticefeed_layout", function()
     updateGap()
 
     local ply = LocalPlayer()
-    local isAlive = IsValid( ply ) and ply:Alive() and ply:Health() > 0 -- KillSilent leaves health above 0
+    local isAlive = IsValid( ply ) and ply:Health() > 0
     local cur = CurTime()
     local right = ScrW() - paddingFromEdge * 1.5
     local stackBottom = ScrH() - currentGap

@@ -349,12 +349,11 @@ local function whileAlivePaintOtherEnts( localPlayer, cur )
 end
 
 local function noticeHomicidalAction( time )
-    if LocalPlayer():Health() <= 0 then return end -- the feed is the suit talking, the dead have no suit
-
     huntersGlee_Notify( nil, {
         text = "Homicidal action detected.\nFriendlies display on cooldown...",
         kind = "bad",
         time = time,
+        onlyWhile = "alive", -- the feed is the suit talking, the dead have no suit
     } )
 
 end

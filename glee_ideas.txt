@@ -612,3 +612,41 @@ goes in a glee rebinding menu?
 -- metal box for comedic effect
 
 -- fishing while dead
+-- dead air when round starting
+-- cant pickup suit when you have suit
+-- suit is something people have to learn
+-- stuff overlays in top left ( discord ) conflicts with hints 
+
+-- stuff in the corner is easy to miss 
+-- bigger initial hints
+-- infernal heckler needs to have more powerful feeling to match its threat
+    -- draw playermodel with energy
+-- upgrade suit increase feel
+-- shoot beartrap to break beartrap
+-- E to interact is weak
+-- add hints
+-- tutorial enemies don't sprint if their enemy never sprinted before
+-- shove rename to hands
+-- different hint in later tutorial rounds
+-- a body with a skull hint plays through objects
+-- a flaregun 
+-- grab the rope hint
+-- type "!rtm" makes them type it without opening chat
+-- open bank account hint
+-- rpg ( role playing game? )
+-- first bargain you buy has a confirmation dialog
+-- give all vending machines without 
+-- invisible wall hint?
+-- crouch jump hint?
+-- HIM SWITCHED TARGETS TO A NEW PLAYER
+-- make bad notifies less hard to see ( default to having blurring background on all hud elements? )
+-- pull nails?
+-- R to start placing should drop the ghost to the floor when aiming upwards
+-- put turret in tutorial misery
+-- cancel taunts?
+-- flashlight hint!!!!!
+-- unsufficient power for flashlight hint
+-- additional weapon pickup fails with carryable on back
+
+-- favourites as reduced selection of the rest of the shop
+-- text can advance by itself when you are shift tabbed 

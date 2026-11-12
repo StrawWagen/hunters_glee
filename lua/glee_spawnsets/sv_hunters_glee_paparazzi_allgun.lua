@@ -68,7 +68,6 @@ local set = {
             class = "terminator_nextbot_fakeply", -- class spawned
             spawnType = "hunter",
             difficultyCost = { 1, 3 }, -- reduced from 2 to make more common
-            countClass = "terminator_nextbot_fakeply", -- class COUNTED, uses findbyclass
             preSpawnedFuncs =  { givePistol },
         },
         {
@@ -78,7 +77,6 @@ local set = {
             class = "terminator_nextbot_fakeply", -- class spawned
             spawnType = "hunter",
             difficultyCost = { 2, 4 },
-            countClass = "terminator_nextbot_fakeply", -- class COUNTED, uses findbyclass
             preSpawnedFuncs =  { giveSMG },
         },
         {
@@ -88,7 +86,6 @@ local set = {
             class = "terminator_nextbot_fakeply", -- class spawned
             spawnType = "hunter",
             difficultyCost = { 6, 12 },
-            countClass = "terminator_nextbot_fakeply", -- class COUNTED, uses findbyclass
             preSpawnedFuncs =  { giveAR2 },
         },
         {
@@ -98,7 +95,6 @@ local set = {
             class = "terminator_nextbot_fakeply", -- class spawned
             spawnType = "hunter",
             difficultyCost = { 6, 12 },
-            countClass = "terminator_nextbot_fakeply", -- class COUNTED, uses findbyclass
             preSpawnedFuncs =  { give357 },
         },
         {
@@ -108,7 +104,6 @@ local set = {
             class = "terminator_nextbot_fakeply", -- class spawned
             spawnType = "hunter",
             difficultyCost = { 8, 16 },
-            countClass = "terminator_nextbot_fakeply", -- class COUNTED, uses findbyclass
             preSpawnedFuncs =  { giveFlareGun },
         },
         {
@@ -118,7 +113,6 @@ local set = {
             class = "terminator_nextbot_fakeply", -- class spawned
             spawnType = "hunter",
             difficultyCost = { 50, 150 },
-            countClass = "terminator_nextbot_fakeply", -- class COUNTED, uses findbyclass
             preSpawnedFuncs =  { giveXBOW },
         },
         {
@@ -128,7 +122,6 @@ local set = {
             class = "terminator_nextbot_fakeply", -- class spawned
             spawnType = "hunter",
             difficultyCost = { 25, 75 }, -- doubled from 10 to spawn much later
-            countClass = "terminator_nextbot_fakeply", -- class COUNTED, uses findbyclass
             preSpawnedFuncs =  { giveRPG },
         },
         {
@@ -138,7 +131,6 @@ local set = {
             class = "terminator_nextbot_fakeply", -- class spawned
             spawnType = "hunter",
             difficultyCost = { 50, 150 },
-            countClass = "terminator_nextbot_fakeply", -- class COUNTED, uses findbyclass
             preSpawnedFuncs =  { giveAR3 },
         },
         {
@@ -148,7 +140,6 @@ local set = {
             class = "terminator_nextbot_fakeply", -- class spawned
             spawnType = "hunter",
             difficultyCost = { 100, 200 },
-            countClass = "terminator_nextbot_fakeply", -- class COUNTED, uses findbyclass
             preSpawnedFuncs =  { giveTauCannon },
         },
     }
