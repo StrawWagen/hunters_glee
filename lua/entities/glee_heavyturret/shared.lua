@@ -797,9 +797,9 @@ local chargeConeCos = math.cos( math.rad( 15 ) ) -- how close to the gun's aim a
 local firingCone = 6 -- degrees
 local spread = math.sin( math.rad( firingCone * 0.5 ) )
 
-local npcDamage = 6 -- sk_npc_dmg_helicopter
-local playerDamage = 3 -- sk_npc_dmg_helicopter_to_plr
-local npcDamageMul = 15 -- players take playerDamage instead, see onBulletHit
+local enemyDamage = 6 -- sk_npc_dmg_helicopter
+local enemyDamageMul = 15
+local allyDamage = 3 -- sk_npc_dmg_helicopter_to_plr, anything it wouldn't target, see onBulletHit
 
 -- armoured like a floor turret, only the strongest hits hurt it
 -- unlike one, it takes a few of them
@@ -1424,8 +1424,9 @@ local function onBulletHit( turret, tr, dmgInfo )
 
     end
 
-    if IsValid( tr.Entity ) and tr.Entity:IsPlayer() then
-        dmgInfo:SetDamage( playerDamage )
+    local hit = tr.Entity
+    if IsValid( hit ) and not turret:IsValidTarget( hit ) then
+        dmgInfo:SetDamage( allyDamage )
 
     end
 end
@@ -1480,7 +1481,7 @@ function ENT:ShootBurst( gun, rounds )
         Distance = 8192,
         Tracer = 0,
         AmmoType = "HelicopterGun",
-        Damage = npcDamage * npcDamageMul,
+        Damage = enemyDamage * enemyDamageMul,
         IgnoreEntity = gun,
         -- its first argument is the attacker, not always the turret, see GetBulletAttacker
         Callback = function( _attacker, tr, dmgInfo )

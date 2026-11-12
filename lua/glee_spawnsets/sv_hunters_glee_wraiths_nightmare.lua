@@ -57,7 +57,6 @@ local set = {
             class = "terminator_nextbot_wraith", -- class spawned
             spawnType = "hunter",
             difficultyCost = { 5, 10 },
-            countClass = "terminator_nextbot_wraith", -- class COUNTED, uses findbyclass
             minCount = { 3 },
             maxCount = { 15 }, -- will never exceed this count, uses findbycount
             postSpawnedFuncs = { postSpawnedOvercharge }, -- this can be nil

@@ -28,12 +28,11 @@ local set = {
         },
         {
             hardRandomChance = nil,
-            name = "terminator", -- unique name
+            name = "terminator_shinyandnew", -- unique name
             prettyName = "The New Terminator",
             class = "terminator_nextbot_snail_skinless", -- class spawned
             spawnType = "hunter",
             difficultyCost = { 50, 100 },
-            countClass = "terminator_nextbot_snail_skinless",
             maxCount = { 1 },
         },
     }

@@ -130,11 +130,91 @@ hook.Add( "Think", "glee_carrying_hidefromcarrier", function()
 end )
 
 
+-- OVERRIDING ENGINE "Impact" EFFECT HACK --
+-- fixes other people seeing people shoot stuff on their back
+
+-- what's on their back reaches past their eyes
+-- their bullets go through it, but the impact the server sends lands on it, right where the shot started
+-- this takes over the engine's "Impact", and traces those again, past what they carry
+-- a hit on something carried, this close to where the shot started, came from inside it
+-- someone else's shot can't start that close
+local fromInsideDist = 8
+
+-- as far as a bullet goes
+local bulletRange = 56756
+
+-- the impact with what the shot really hit, or nil if it hit nothing
+local function pastCarried( data, carried )
+    local carrier = glee_Carrying.GetCarrierWeapon( carried ):GetOwner()
+    if not IsValid( carrier ) then return end
+
+    local start = data:GetStart()
+    local dir = data:GetOrigin() - start
+    dir:Normalize()
+
+    local tr = util.TraceLine( {
+        start = start,
+        endpos = start + dir * bulletRange,
+        mask = MASK_SHOT,
+        filter = glee_Carrying.GetCarrierTraceFilter( carrier ),
+    } )
+    if not tr.Hit or tr.HitSky then return end
+
+    data:SetOrigin( tr.HitPos )
+    data:SetEntity( tr.Entity )
+    data:SetSurfaceProp( tr.SurfaceProps )
+    data:SetHitBox( tr.HitBox )
+
+    return data
+
+end
+
+local IMPACT = {}
+
+function IMPACT:Init( data )
+    local hitEnt = data:GetEntity()
+
+    if IsValid( hitEnt ) and glee_Carrying.IsCarried( hitEnt ) and data:GetStart():DistToSqr( data:GetOrigin() ) < fromInsideDist ^ 2 then
+        data = pastCarried( data, hitEnt )
+        if not data then return end
+
+    end
+
+    -- false hands it to the engine's own, true would land it back here
+    util.Effect( "Impact", data, false )
+
+end
+
+function IMPACT:Think()
+    return false
+
+end
+
+function IMPACT:Render()
+end
+
+-- only once something's been carried, until then every impact is the engine's alone
+-- there's no unregistering, it stays for the session
+local impactOverridden = false
+
+local function overrideImpact()
+    if impactOverridden then return end
+    impactOverridden = true
+
+    effects.Register( IMPACT, "Impact" )
+
+end
+
+
 -- sh_carrying's ShouldCollide reads the carrier, so a new carrier changes its answer
 -- the server calls CollisionRulesChanged itself as it picks up and puts down
 -- the client finds out when the carrier var arrives
+-- any change means carrying happens here, so it's when the impact hack goes in too
+-- the weapon can arrive after this, so its value isn't checked
 hook.Add( "EntityNetworkedVarChanged", "glee_carrying_collisionrules", function( ent, name )
     if name ~= "glee_CarrierWeapon" then return end
+
+    overrideImpact()
 
     -- a tick late, the var's not set till after this hook
     timer.Simple( 0, function()

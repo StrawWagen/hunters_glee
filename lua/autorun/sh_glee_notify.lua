@@ -55,9 +55,12 @@ local function checkedData( data )
 
     end
 
+    local time = data.time or defaultTime
+    if not isnumber( time ) then error( "GLEE: notify time has to be a number", 3 ) end
+
     local onlyWhile = data.onlyWhile
-    if onlyWhile ~= nil and onlyWhile ~= "alive" and onlyWhile ~= "dead" then
-        error( "GLEE: notify onlyWhile has to be \"alive\" or \"dead\"", 3 )
+    if onlyWhile ~= nil and onlyWhile ~= false and onlyWhile ~= "alive" and onlyWhile ~= "dead" then
+        error( "GLEE: notify onlyWhile has to be \"alive\", \"dead\" or false", 3 )
 
     end
 
@@ -65,13 +68,30 @@ local function checkedData( data )
         text = data.text,
         description = data.description ~= "" and data.description or nil,
         kind = kind,
-        time = data.time or defaultTime,
+        time = time,
         replaceKey = data.replaceKey,
         style = data.style,
         extraFlashes = extraFlashes,
         flashInterval = data.flashInterval,
-        onlyWhile = onlyWhile,
+        onlyWhile = onlyWhile or nil,
     }
+
+end
+
+local function checkedReplaceKey( replaceKey )
+    if not isstring( replaceKey ) or replaceKey == "" then error( "GLEE: cancelling a notify needs its replaceKey", 3 ) end
+
+end
+
+local function isAlive( ply )
+    return ply:Health() > 0
+
+end
+
+-- an onlyWhile message for someone who isn't that already, nothing would ever take it down
+local function outsideOnlyWhile( ply, onlyWhile )
+    if not onlyWhile then return false end
+    return isAlive( ply ) ~= ( onlyWhile == "alive" )
 
 end
 
@@ -92,12 +112,13 @@ if SERVER then
     util.AddNetworkString( "glee_notify_cancel" )
 
     -- the valid players in plys, complaining about the rest
-    local function recipients( plys )
+    local function recipients( plys, onlyWhile )
         if not istable( plys ) then error( "GLEE: notify needs a table of players", 3 ) end
 
         local valid = {}
         for _, ply in ipairs( plys ) do
             if not IsValid( ply ) then ErrorNoHaltWithStack( "GLEE: Tried to notify invalid ply" ) continue end
+            if outsideOnlyWhile( ply, onlyWhile ) then continue end
             valid[#valid + 1] = ply
 
         end
@@ -120,11 +141,13 @@ if SERVER then
             flashInterval, optional, seconds between those flashes, defaults to 0.5.
             onlyWhile, optional, "alive" or "dead". The message vanishes when the player stops being that.
                 For a warning that means nothing once they've died.
+                Whoever isn't that already doesn't get it at all.
+                false is the same as leaving it out.
         @return: None
     --]]---------------------------------------------------------
     function huntersGlee_Notify( plys, data )
         data = checkedData( data )
-        local sendTo = recipients( plys )
+        local sendTo = recipients( plys, data.onlyWhile )
 
         if not inGlee() then
             local line = oneLine( data )
@@ -155,10 +178,25 @@ if SERVER then
 
     end
 
+    -- a copy, callers send the same table again, eg every second of a countdown
+    local function withOnlyWhile( data, onlyWhile )
+        if not istable( data ) or data.onlyWhile ~= nil then return data end
+
+        local copy = {}
+        for key, value in pairs( data ) do
+            copy[key] = value
+
+        end
+        copy.onlyWhile = onlyWhile
+        return copy
+
+    end
+
     --[[---------------------------------------------------------
         huntersGlee_NotifyLivingAndDead
         huntersGlee_Notify, worded for each side of death.
         Escaped players count as dead, they're souls too.
+        Each side's message vanishes once they cross over, set onlyWhile = false to keep it up.
         @param plys: A table of players.
         @param livingData: What their suit tells the living.
         @param deadData: What the dead think. nil sends them nothing.
@@ -170,7 +208,7 @@ if SERVER then
         for _, ply in ipairs( plys ) do
             if not IsValid( ply ) then continue end
 
-            if ply:Health() > 0 then
+            if isAlive( ply ) then
                 living[#living + 1] = ply
 
             else
@@ -179,8 +217,8 @@ if SERVER then
             end
         end
 
-        if #living > 0 then huntersGlee_Notify( living, livingData ) end
-        if deadData and #dead > 0 then huntersGlee_Notify( dead, deadData ) end
+        if #living > 0 then huntersGlee_Notify( living, withOnlyWhile( livingData, "alive" ) ) end
+        if deadData and #dead > 0 then huntersGlee_Notify( dead, withOnlyWhile( deadData, "dead" ) ) end
 
     end
 
@@ -196,6 +234,7 @@ if SERVER then
         @return: None
     --]]---------------------------------------------------------
     function huntersGlee_CancelNotify( plys, replaceKey, options )
+        checkedReplaceKey( replaceKey )
         local sendTo = recipients( plys )
         if not inGlee() then return end
 
@@ -224,6 +263,7 @@ end
 function huntersGlee_Notify( plys, data )
     checkLocal( plys )
     data = checkedData( data )
+    if outsideOnlyWhile( LocalPlayer(), data.onlyWhile ) then return end
 
     if not inGlee() then
         chat.AddText( huntersGlee_NotifyKinds[data.kind].chatColor, oneLine( data ) )
@@ -237,6 +277,7 @@ end
 
 function huntersGlee_CancelNotify( plys, replaceKey, options )
     checkLocal( plys )
+    checkedReplaceKey( replaceKey )
     if not inGlee() then return end
 
     GAMEMODE:CancelNotice( replaceKey, options )

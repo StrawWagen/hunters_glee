@@ -235,7 +235,10 @@ function rescueHeli.Think( self )
             state.currentHeliTask = "rescue_switchToEscape"
             state.currentHeliGoal = "escape"
             huntersGlee_AnnounceDramatic( player.GetAll(), 502, 5, "Rescue is leaving, it's been here too long..." )
+            if GAMEMODE.IsReallyHuntersGlee then
+                GAMEMODE:SendMusic( "tracks/heliLateLeave" )
 
+            end
         elseif self:Health() < self:GetMaxHealth() * 0.5 then
             state.currentHeliTask = "rescue_switchToEscape"
             state.currentHeliGoal = "escape"

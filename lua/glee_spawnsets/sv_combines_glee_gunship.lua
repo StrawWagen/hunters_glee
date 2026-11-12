@@ -18,7 +18,6 @@ local set = {
             spawnType = "hunter",
             isBoss = true,
             difficultyCost = 1,
-            countClass = "npc_combinegunship",
             maxCount = 1,
             preferredEFlags = GAMEMODE.NavEFlags.UNDER_SKY,
             firmPreferredEFlags = true,

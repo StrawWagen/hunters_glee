@@ -131,7 +131,7 @@ FULL TUTORIAL FOR PLACING ALL ESSENTIAL ITEMS
     -- how do i respawn?
     -- last priority for some players, hijinx
 
-
+-- can only browse full selection while dead? browse the full selection at shop terminals in the map ( ehh )
 
 
 
