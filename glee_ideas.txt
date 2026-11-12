@@ -613,8 +613,9 @@ goes in a glee rebinding menu?
 
 -- fishing while dead
 -- dead air when round starting
--- cant pickup suit when you have suit
--- suit is something people have to learn
+-- gm_born
+    -- cant pickup suit when you have suit
+    -- suit is something people have to learn
 -- stuff overlays in top left ( discord ) conflicts with hints 
 
 -- stuff in the corner is easy to miss 
