@@ -205,19 +205,30 @@ function SWEP:ResurrectPly( ply )
             reward = 150
             if not owner.glee_InfernalReviveHint then
                 owner.glee_InfernalReviveHint = true
-                huntersGlee_Announce( { owner }, 5, 6, "Half score, since they side with the infernal powers..." )
+                huntersGlee_Notify( { owner }, {
+                    text = "REVIVAL PAYOUT HALVED",
+                    description = "Patient is bound by an infernal contract.",
+                    time = 6,
+                } )
 
             end
         elseif GAMEMODE:HasSlighted( owner, ply ) >= 50 then
             reward = 150
             if not owner.glee_HomicideReviveHint then
                 owner.glee_HomicideReviveHint = true
-                huntersGlee_Announce( { owner }, 5, 6, "Half score for reviving, since you killed this person earlier." )
+                huntersGlee_Notify( { owner }, {
+                    text = "REVIVAL PAYOUT HALVED",
+                    description = "You killed this patient.",
+                    time = 6,
+                } )
 
             end
         elseif not owner.glee_revivemoneyhint then
             owner.glee_revivemoneyhint = true
-            huntersGlee_Announce( { owner }, 4, 6, "+" .. tostring( reward ) .. " score!" )
+            huntersGlee_Notify( { owner }, {
+                text = "+" .. tostring( reward ) .. " score!",
+                kind = "good", time = 6
+            } )
 
         end
 
@@ -239,13 +250,15 @@ function SWEP:ResurrectPly( ply )
         GAMEMODE.roundExtraData.hasRevivedTbl = GAMEMODE.roundExtraData.hasRevivedTbl or {}
         if reward == fullReward and GAMEMODE:GetStoredPersistentGuilt( owner ) > 0 and not GAMEMODE.roundExtraData.hasRevivedTbl[ply] then
             GAMEMODE.roundExtraData.hasRevivedTbl[ply] = true
-            GAMEMODE:IncrementPersistentGuilt( owner, -0.15 )
+            GAMEMODE:IncrementPersistentGuilt( owner, -0.15, "You brought someone back.\nYour guilt barely lifts..." )
 
         end
 
         ply.glee_resurrectDecreasingScore = math.max( CurTime() + 60, ply.glee_resurrectDecreasingScore + 60 )
 
     end
+
+    GAMEMODE:ForgiveKillByRevive( owner, ply )
 
     ply:Resurrect( self.toResurrectPos )
     return true

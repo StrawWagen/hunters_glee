@@ -42,10 +42,11 @@ local threatGrowth = 26
 local threatFalloff = 1.16
 local threatGrowthJitter = 1 / 18
 
--- paths need you to stop and pay attention, anything faster than a walk drowns them out
+-- paths need you to stop and pay attention, anything faster than a walk drowns them out, so does driving
 local walkSpeedTolerance = 1.1 -- walking can overshoot WalkSpeed a hair
 
-local function isMovingTooFast( owner )
+local function isDistracted( owner )
+    if owner:InVehicle() then return true end
     return owner:GetVelocity():Length2DSqr() > ( owner:GetWalkSpeed() * walkSpeedTolerance ) ^ 2
 
 end
@@ -631,7 +632,7 @@ if CLIENT then
                 if depth or skybox then return end
                 if owner:Health() <= 0 then return end
 
-                if isMovingTooFast( owner ) then
+                if isDistracted( owner ) then
                     self.attention = math.max( self.attention - FrameTime() / strandAttentionLoseTime, 0 )
                     if self.attention <= 0 then
                         table.Empty( self.strands ) -- built from where we used to be, wait for fresh ones
@@ -905,7 +906,7 @@ if SERVER then
             local ent = target.ent
             if not IsValid( ent ) then continue end
             if not IsValid( owner ) then return end
-            if isMovingTooFast( owner ) then return end
+            if isDistracted( owner ) then return end
 
             -- onPathBuilt can wait a while, so start from wherever we are now
             local startArea = navmesh.GetNearestNavArea( owner:GetPos(), false, 200, false, true )
@@ -1026,7 +1027,7 @@ if SERVER then
 
             local function onPathBuilt( path )
                 if not IsValid( owner ) then return end
-                if isMovingTooFast( owner ) then return end -- went stale while it was building
+                if isDistracted( owner ) then return end -- went stale while it was building
                 sendSensePath( owner, path )
                 sleep( math.Rand( 0, pathSendDelayMax ) )
 
@@ -1037,7 +1038,7 @@ if SERVER then
                 local pathingCor = self.pathingCor
                 if not pathingCor then
                     if owner:Health() <= 0 then return end
-                    if isMovingTooFast( owner ) then
+                    if isDistracted( owner ) then
                         self.nextPathRefresh = 0 -- fresh paths the moment we slow down
                         return
 

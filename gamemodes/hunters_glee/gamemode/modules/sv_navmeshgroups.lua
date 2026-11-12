@@ -472,6 +472,7 @@ end
 
 
 -- check if this map has all spawns in a separate room
+-- TODO: remove need for "someone was off the navmesh" path
 function GM:TeleportRoomCheck()
     if not GAMEMODE.biggestNavmeshGroups or not GAMEMODE.navmeshGroups then
         GAMEMODE.navmeshGroups = GAMEMODE:GetConnectedNavAreaGroups( navmesh.GetAllNavAreas() )
@@ -482,6 +483,7 @@ function GM:TeleportRoomCheck()
 
     local doReset = nil
     local reason = ""
+    local whatHappens = ""
 
     -- randomly force people to spawn on one of the other "big groups"
     local forceReset = #GAMEMODE.biggestNavmeshGroups > 1 and math.random( 0, 100 ) > ( 100 / #GAMEMODE.biggestNavmeshGroups )
@@ -491,17 +493,20 @@ function GM:TeleportRoomCheck()
         local plysNearestNav = GAMEMODE:getNearestNav( ply:GetPos(), 200 )
         if forceReset then
             doReset = true
-            reason = "Map has other areas...\nShuffling..."
+            reason = "TEMPORAL DISPLACEMENT DETECTED"
+            whatHappens = "You are being sent to an under-utilized sub-locale.\nBRACE..."
 
         elseif not plysNearestNav or not plysNearestNav.IsValid then
             doReset = true
-            reason = "Someone was off the navmesh...\nRespawning..."
+            reason = "TEMPORAL MISPLACEMENT DETECTED"
+            whatHappens = "A bodied soul was misplaced\nBRACE..."
 
         else
             local moveType = ply:GetMoveType()
             if moveType ~= MOVETYPE_NOCLIP and not GAMEMODE:NavAreaExistsInGroups( plysNearestNav, GAMEMODE.biggestNavmeshGroups ) then
                 doReset = true
-                reason = "Someone is outside the biggest parts of the map!\nReturning..."
+                reason = "TEMPORAL MISPLACEMENT DETECTED"
+                whatHappens = "A bodied soul was in a fragment\nBRACE..."
             end
         end
         if doReset then
@@ -515,7 +520,7 @@ function GM:TeleportRoomCheck()
 
         end
         permaPrint( reason ) -- log it
-        huntersGlee_Announce( player.GetAll(), 1, 5, reason )
+        huntersGlee_Notify( player.GetAll(), { text = reason, description = whatHappens, time = 5 } )
 
     end
 end

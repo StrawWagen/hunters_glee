@@ -11,6 +11,7 @@ function GLEE_TauntCamera()
     local CAM = {}
 
     local WasOn                    = false
+    local WasMoveOn                = false
 
     local CustomAngles            = angle_zero
 
@@ -85,7 +86,23 @@ function GLEE_TauntCamera()
     --
     CAM.CreateMove = function( _, cmd, ply, on )
         if not ply:Alive() then on = false end
-        if not on then return end
+        if not on then
+            if WasMoveOn then
+                WasMoveOn = false
+
+                -- the taunt can leave us tilted
+                if not hook.Run( "glee_blockTauntAngFix", ply ) then
+                    local ang = cmd:GetViewAngles()
+                    ang.r = 0
+                    cmd:SetViewAngles( ang )
+
+                end
+            end
+            return
+
+        end
+
+        WasMoveOn = true
 
         if PlayerLockAngles == nil then
             PlayerLockAngles = CustomAngles * 1

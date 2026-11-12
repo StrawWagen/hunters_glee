@@ -118,6 +118,7 @@ function rescueHeli.Spawn( spawnPos, faceDir, targetPos )
         exitOffset = Vector( 0, 0, -100 ),
         exitText = "Exiting the heli...",
         canBoard = rescueHeli.CanBoard,
+        trueEscape = true,
     } )
 
     hook.Add( "OnNPCKilled", heli, function( self, npc )

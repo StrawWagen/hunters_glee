@@ -313,7 +313,7 @@ function setHelpers.setBaseRole( lifecycle, name )
     end )
 
     -- setup, before the next round
-    -- the map cleanup just before this wiped everyone's status effects, and survivors don't respawn to get them back
+    -- the map cleanup just before this wiped everyone's status effects, and bodied souls don't respawn to get them back
     lifecycle:Hook( "huntersglee_round_into_inactive", "glee_roles", function()
         if roles.rerollDue then
             roles.rerollDue = false

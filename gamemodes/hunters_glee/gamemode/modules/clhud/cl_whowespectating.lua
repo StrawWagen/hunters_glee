@@ -9,6 +9,9 @@
     in different fonts. See nameFontRole.
 
     It dodges the lane above it, but claims no space of its own.
+
+    Watching the boss the boss bar names, it drops the name and sits in the room the bar
+    left above itself.
 --]]-------------------------------------
 
 local GAMEMODE = GAMEMODE or GM
@@ -66,9 +69,19 @@ local function sizeBox()
     surface.SetFont( nameFont )
     local nameWidth = surface.GetTextSize( box.watched )
 
-    local textHeight = draw.GetFontHeight( labelFont ) + draw.GetFontHeight( nameFont )
+    local textHeight = draw.GetFontHeight( labelFont )
+    if box.watched ~= "" then
+        textHeight = textHeight + draw.GetFontHeight( nameFont )
+
+    end
 
     box:SetSize( math.max( labelWidth, nameWidth ) + textPadding * 4, textHeight + textPadding * 2 )
+
+end
+
+-- How tall the box is with its name dropped, so the boss bar can leave room for it
+function GM:WatchingLabelTall()
+    return draw.GetFontHeight( box:Style():Font( LABEL_FONT ) ) + textPadding * 2
 
 end
 
@@ -78,20 +91,15 @@ local function hasNick( ent )
 
 end
 
--- Label, name, and whether it has a Nick. Nothing when there's nothing to watch.
+-- What a dead player is watching, and the word for it. Nothing when there's nothing to watch.
 -- Driving first: spectate targets don't update while you drive, so that one is stale
-local function watchingParts( ply )
+function GM:WhoImWatching( ply )
     local driven = ply:GetDrivingEntity()
-    if IsValid( driven ) then
-        return "Posessing", GAMEMODE:GetNameOfBot( driven ), hasNick( driven )
-
-    end
+    if IsValid( driven ) then return driven, "Posessing" end
 
     local observed = ply:GetObserverTarget()
-    if IsValid( observed ) then
-        return "Spectating", GAMEMODE:GetNameOfBot( observed ), hasNick( observed )
+    if IsValid( observed ) then return observed, "Spectating" end
 
-    end
 end
 
 local function hideBox()
@@ -104,27 +112,30 @@ end
 hook.Add( "glee_cl_deadplyhud", "glee_whowespectating_draw", function( ply, _cur )
     if not IsValid( box ) then return end
 
-    local label, watched, watchedHasNick = watchingParts( ply )
-    if not label or not GAMEMODE:CanShowDefaultHud() then
+    local watched, label = GAMEMODE:WhoImWatching( ply )
+    if not watched or not GAMEMODE:CanShowDefaultHud() then
         hideBox()
         return
 
     end
 
+    -- the boss bar runs first, so this is this frame's answer
+    local barsBoss, slotY = GAMEMODE:BossBarShowing()
+    local inBossSlot = watched == barsBoss and slotY
+
     box.label = label
-    box.watched = watched
-    box.watchedHasNick = watchedHasNick
+    box.watched = inBossSlot and "" or GAMEMODE:GetNameOfBot( watched )
+    box.watchedHasNick = hasNick( watched )
     sizeBox()
     box:SetState( box.STATE_NORMAL )
 
     local x = ScrW() * 0.5 - box:GetWide() * 0.5
-    local y = topPadding
 
-    -- a long Misery name stretches the top left lane out to here, and the lane shrinks
-    -- back smoothly as it fades, so this slides rather than snaps
-    local inTheWay = GAMEMODE:HudSpaceInMyWay( x, y, box:GetWide(), box:GetTall() )
-    if inTheWay then
-        y = inTheWay + gapBelowHud
+    local y = slotY
+    if not inBossSlot then
+        -- a long Misery name stretches the top left lane out to here, and the lane shrinks
+        -- back smoothly as it fades, so this slides rather than snaps
+        y = GAMEMODE:ClearHudY( x, topPadding, box:GetWide(), box:GetTall(), gapBelowHud )
 
     end
 

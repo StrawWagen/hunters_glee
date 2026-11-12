@@ -141,8 +141,9 @@ hook.Add( "glee_beartrap_snapped", "trackundeadbeartraps", function( trap, snapp
     if not IsValid( placer ) then return end
     if not IsValid( snapped ) then return end
 
-    local msg = ""
+    local msg = GAMEMODE:GetNameOfBot( snapped ) .. " snapped your beartrap."
     local score = 0
+    local inTheFeed -- the small fry, the rest keeps the middle of the screen
 
     -- unfrozen, crap placement
     if trap:GetPhysicsObject():IsMotionEnabled() then
@@ -150,13 +151,19 @@ hook.Add( "glee_beartrap_snapped", "trackundeadbeartraps", function( trap, snapp
         if snapped:IsPlayer() then
             -- give the player some score
             score = 75
-            msg = "You've damaged a player, 75 score."
+            inTheFeed = {
+                text = "Your beartrap damaged a player.",
+                description = "75 score.",
+            }
 
         -- check if the thing trapped is a nextbot
         elseif snapped:IsNextBot() then
             -- give the player a bit less score
             score = 40
-            msg = "You've damaged " .. GAMEMODE:GetNameOfBot( snapped ) .. ", 40 score."
+            inTheFeed = {
+                text = "Your beartrap damaged " .. GAMEMODE:GetNameOfBot( snapped ) .. ".",
+                description = "40 score.",
+            }
 
         end
     -- frozen, great placement
@@ -185,7 +192,10 @@ hook.Add( "glee_beartrap_snapped", "trackundeadbeartraps", function( trap, snapp
             GAMEMODE:LearnLesson( placer, "BeartrapGoodPlace" )
             -- give the player a bit less score
             score = 80
-            msg = "You've trapped " .. GAMEMODE:GetNameOfBot( snapped ) .. ", you gain 80 score!"
+            inTheFeed = {
+                text = "You've trapped " .. GAMEMODE:GetNameOfBot( snapped ) .. ".",
+                description = "You gain 80 score!",
+            }
 
         end
     end
@@ -195,6 +205,16 @@ hook.Add( "glee_beartrap_snapped", "trackundeadbeartraps", function( trap, snapp
         GAMEMODE:SendPlacableScorePopup( placer, snapped, score )
 
     end
-    huntersGlee_Announce( { placer }, 5, 8, msg )
+
+    if inTheFeed then
+        inTheFeed.kind = "good"
+        inTheFeed.time = 8
+        inTheFeed.style = "soulthought"
+        huntersGlee_Notify( { placer }, inTheFeed )
+
+    else
+        huntersGlee_Announce( { placer }, 5, 8, msg )
+
+    end
 
 end )

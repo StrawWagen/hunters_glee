@@ -222,10 +222,10 @@ local function genericHints()
         -- hey you should open the shop!!!!
         if not blockShop and ( timeToBuy or meagreWealth ) then
             if not GAMMODE:HasLearnedLesson( "OpenedAliveShop" ) and me:GetNWInt( "termHuntPlyBPM" ) <= 80 then
-                return true, "You have score to spend, things to buy!\nPress \" " .. string.upper( phrase ) .. " \" to open the shop."
+                return true, "UNSPENT SCORE: " .. myScore .. "\nScore exists to be spent.\nPress\" " .. string.upper( phrase ) .. " \" uplink to the shop."
 
             elseif not hasBoughtSomething and me:GetNWInt( "termHuntPlyBPM" ) <= 75 then
-                return true, "You can't stop thinking about the shop...\nYou should buy something to make this hunt bearable...\nPress \" " .. string.upper( phrase ) .. " \" to open the shop."
+                return true, "YOU HAVE UNREALIZED SCORE\nPurchase something, a loadout, DEFEND YOURSELF.\nPress \" " .. string.upper( phrase ) .. " \" to open the shop."
 
             end
         end
@@ -233,7 +233,7 @@ local function genericHints()
         if not blockShop and not GAMMODE:HasLearnedLesson( "BoughtSignalFlare" ) and GAMMODE:canShowInShop( me, "signalflare" ) then
             local skulls = me:GetSkulls()
             if skulls >= GAMMODE:shopItemSkullCost( "signalflare", me ) then
-                return true, "Purchase an Escape Flaregun from the SHOP\nIt's time to get out of here."
+                return true, "EXTRACTION POSSIBLE\nBuy an Escape Flaregun from the shop.\nSPEND YOUR SKULLS"
 
             end
         end

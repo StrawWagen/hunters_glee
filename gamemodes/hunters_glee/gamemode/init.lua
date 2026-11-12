@@ -35,6 +35,7 @@ AddCSLuaFile( "modules/clhud/cl_backslot.lua" )
 AddCSLuaFile( "modules/orbitcamera/cl_orbitcamera.lua" )
 AddCSLuaFile( "modules/clhud/cl_plynames.lua" )
 AddCSLuaFile( "modules/clhud/cl_bosshealthbar.lua" )
+AddCSLuaFile( "modules/clhud/cl_noticefeed.lua" )
 AddCSLuaFile( "modules/cl_spectateflashlight.lua" )
 AddCSLuaFile( "modules/music/cl_music.lua" )
 AddCSLuaFile( "modules/thirdpersonflashlight/cl_flashlight.lua" )
@@ -62,7 +63,9 @@ AddCSLuaFile( "lib/sh_gleehelpers.lua" )
 AddCSLuaFile( "sh_player.lua" )
 
 -- SHARED INCLUDES
-AddCSLuaFile( "modules/sh_panic.lua" )
+AddCSLuaFile( "modules/panic/sh_panic.lua" )
+AddCSLuaFile( "modules/panic/cl_tunnelvision.lua" )
+AddCSLuaFile( "modules/panic/cl_heartattacktunnel.lua" )
 AddCSLuaFile( "modules/banking/sh_banking.lua" )
 AddCSLuaFile( "modules/escaping/sh_escaperewards.lua" )
 AddCSLuaFile( "modules/banking/sh_envoy.lua" )
@@ -81,6 +84,7 @@ AddCSLuaFile( "modules/shop/sh_shopcategories.lua" )
 AddCSLuaFile( "modules/shopitems/sh_itemverification.lua" )
 
 AddCSLuaFile( "modules/guilt/sh_guilt.lua" )
+AddCSLuaFile( "modules/guilt/sh_innocenthalo.lua" )
 AddCSLuaFile( "modules/battery/sh_battery.lua" )
 AddCSLuaFile( "modules/spawnset/vote/cl_spawnsetvote.lua" )
 AddCSLuaFile( "modules/spawnset/core/cl_spawnsetgobbler.lua" )
@@ -101,6 +105,7 @@ AddCSLuaFile( "modules/stickyslams/sh_stickyslams.lua" )
 
 -- SV
 include( "lib/sv_gleehelpers.lua" )
+include( "lib/sv_expiringpdata.lua" )
 
 include( "shared.lua" )
 include( "sv_player.lua" )
@@ -112,6 +117,7 @@ include( "modules/banking/sv_bankbackups.lua" )
 include( "modules/banking/sv_envoy.lua" )
 
 include( "modules/shop/sv_shophandler.lua" )
+include( "modules/shop/sv_placetest.lua" )
 
 include( "modules/clientsets/sv_clientsets.lua" )
 include( "modules/lessons/sv_lessons.lua" )
@@ -140,7 +146,9 @@ include( "modules/sv_firstfallgrace.lua" )
 include( "modules/spawnset/core/sv_spawnsetgobbler.lua" )
 include( "modules/spawnset/core/sv_spawnset.lua" )
 include( "modules/spawnset/core/sv_spawnsetmapcheck.lua" )
-include( "modules/sv_blamedfalldamage.lua" )
+include( "modules/blame/sv_blamehelpers.lua" )
+include( "modules/blame/sv_blamedfalldamage.lua" )
+include( "modules/blame/sv_blamedfire.lua" )
 include( "modules/sv_seeding_rewarder.lua" )
 include( "modules/music/sv_music.lua" )
 include( "modules/music/sv_musicgobbler.lua" )
@@ -158,6 +166,7 @@ include( "modules/sv_falldamage_andgoomba.lua" )
 include( "modules/firsttimeplayers/sv_firsttimeplayers.lua" )
 
 include( "modules/guilt/sv_guilt.lua" )
+include( "modules/guilt/sh_innocenthalo.lua" ) -- after the status effects and IsFirstTimePlayer
 
 include( "modules/escaping/sv_escapecounts.lua" )
 include( "modules/escaping/sv_escapecountcmds.lua" )
@@ -351,7 +360,24 @@ function GM:Think()
         if not dedi and NAVOPTIMIZER_tbl and superIncrementalGeneration then
             local cheats = GetConVar( "sv_cheats" ):GetBool()
             if cheats then
-                huntersGlee_Announce( player.GetAll(), 1000, 5, "Incrementally generating navmesh via Navmesh Optimizer..." )
+                -- this runs every think, a notice sent each time would never stop flashing
+                -- it stays up until generation's next step replaces it, see GenerateANavmeshPls
+                self.glee_NavgenNotified = self.glee_NavgenNotified or {}
+                local unnotified = {}
+                for _, ply in ipairs( players ) do
+                    if self.glee_NavgenNotified[ply] then continue end
+                    self.glee_NavgenNotified[ply] = true
+                    unnotified[#unnotified + 1] = ply
+
+                end
+                if #unnotified > 0 then
+                    huntersGlee_Notify( unnotified, {
+                        text = "Incrementally generating navmesh via Navmesh Optimizer...",
+                        time = math.huge,
+                        replaceKey = "navgen",
+                    } )
+
+                end
 
             else
                 huntersGlee_Announce( player.GetAll(), 100, 1, "NO NAVMESH.\nNavmesh Optimizer detected, run console command 'SV_CHEATS 1' for automatic navmesh generation." )
@@ -903,7 +929,13 @@ function GM:GenerateANavmeshPls()
 
     -- when generation is done
     hook.Add( "navoptimizer_done_gencheapexpanded", "glee_detectrealnavgenfinish", function()
-        huntersGlee_Announce( player.GetAll(), 1001, 5, "Navmesh generation complete! Removing any stray skybox areas... " )
+        huntersGlee_Notify( player.GetAll(), {
+            text = "Navmesh generation complete!",
+            description = "Removing any stray skybox areas...",
+            kind = "good",
+            time = 5,
+            replaceKey = "navgen",
+        } )
         timer.Simple( 1, function()
             -- the skybox is NOT A PLAYABLE AREA!
             RunConsoleCommand( "navmesh_delete_skyboxareas" )
@@ -914,7 +946,11 @@ function GM:GenerateANavmeshPls()
     end )
 
     hook.Add( "navoptimizer_done_removingskyboxareas", "glee_detectskyboxcleanupfinish", function()
-        huntersGlee_Announce( player.GetAll(), 1002, 5, "Skybox areas handled, now optimizing..." )
+        huntersGlee_Notify( player.GetAll(), {
+            text = "Skybox areas handled, now optimizing...",
+            time = 5,
+            replaceKey = "navgen",
+        } )
         timer.Simple( 1, function()
             RunConsoleCommand( "navmesh_globalmerge_auto" )
 

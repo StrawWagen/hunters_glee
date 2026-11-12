@@ -151,7 +151,18 @@ if SERVER then
 
                 end
 
-                huntersGlee_Announce( witnessing, 20, 10, "YOU WITNESS " .. string.upper( owner:Nick() ) )
+                local witnessFlashes = 4
+                huntersGlee_NotifyLivingAndDead( witnessing, {
+                    text = "TEMPORAL SLOWDOWN DETECTED\nYOU WITNESS THE GRIM FATE OF\n" .. string.upper( owner:Nick() ),
+                    time = 10,
+                    kind = "alert",
+                    extraFlashes = witnessFlashes,
+
+                }, {
+                    text = "YOU WITNESS THE GRIM FATE OF\n" .. string.upper( owner:Nick() ),
+                    time = 10,
+                    extraFlashes = witnessFlashes,
+                } )
 
                 local notWitnessing = {}
                 for _, ply in ipairs( player.GetAll() ) do
@@ -163,12 +174,16 @@ if SERVER then
 
                 -- let everyone else know that this 'lag' is intentional
                 if #notWitnessing > 0 then
-                    local blab = " SOUL WITNESSES THE GRIM FATE OF "
-                    if witnessingCount > 1 then
-                        blab = " SOULS BEAR WITNESS TO THE GRIM FATE OF "
-
-                    end
-                    huntersGlee_Announce( notWitnessing, 20, 5, witnessingCount .. blab .. string.upper( owner:Nick() ) )
+                    local witnessWord = witnessingCount > 1 and "souls" or "soul"
+                    local blab = witnessingCount > 1 and " SOULS BEAR WITNESS TO THE GRIM FATE OF " or " SOUL WITNESSES THE GRIM FATE OF "
+                    huntersGlee_NotifyLivingAndDead( notWitnessing, {
+                        text = "TEMPORAL SLOWDOWN DETECTED",
+                        description = "The grim fate of " .. owner:Nick() .. " is being witnessed by " .. witnessingCount .. " " .. witnessWord .. "...",
+                        time = 6,
+                    }, {
+                        text = witnessingCount .. blab .. string.upper( owner:Nick() ),
+                        time = 6,
+                    } )
 
                 end
 
@@ -377,7 +392,9 @@ if SERVER then
 
             self:HookOnce( "KeyPress", function( ply, key )
                 if key ~= IN_JUMP then return end
-                if not ply:HasStatusEffect( "mecha_legs" ) then return end
+
+                local effect = ply:GetStatusEffect( "mecha_legs" )
+                if not effect then return end
 
                 if not ply:OnGround() then return end
                 if ply:WaterLevel() >= 3 then return end
@@ -388,10 +405,10 @@ if SERVER then
                     local jumpBoost
                     if armor > 0 then
                         ply:GivePlayerBatteryCharge( -0.25 )
-                        jumpBoost = self.originalJumpPower * 0.3
+                        jumpBoost = effect.originalJumpPower * 0.3
 
                     else
-                        jumpBoost = self.originalJumpPower * -0.3
+                        jumpBoost = effect.originalJumpPower * -0.3
 
                     end
                     -- Applies velocity, thanks plymeta
@@ -663,10 +680,11 @@ if SERVER then
             end )
 
             self:HookOnce( "KeyPress", function( ply, key )
-                if not ply:HasStatusEffect( "frog_legs" ) then return end
+                local effect = ply:GetStatusEffect( "frog_legs" )
+                if not effect then return end
 
-                if key == IN_DUCK and ply:OnGround() and not self.primedJump then
-                    self.primedJump = true
+                if key == IN_DUCK and ply:OnGround() and not effect.primedJump then
+                    effect.primedJump = true
                     ply:EmitSound( "weapons/bugbait/bugbait_squeeze3.wav", 78, math.random( 110, 120 ), 0.6, CHAN_STATIC )
 
                 end
@@ -681,8 +699,8 @@ if SERVER then
                     local pitchOff = 0
                     local scalar = 150
                     if ply:Crouching() then
-                        if self.primedJump then
-                            self.primedJump = nil
+                        if effect.primedJump then
+                            effect.primedJump = nil
                             scalar = 350
                             pitchOff = -20
 
@@ -995,10 +1013,19 @@ if SERVER then
                     GAMEMODE:GivePanic( owner, 15 )
                     local pitch = 80 + ( 8 - self.countdown ) * 5
                     owner:EmitSound( "Chain.ImpactHard", 75, pitch )
-                    huntersGlee_Announce( { owner }, 10, 2, "Rolling in... " .. self.countdown )
+                    huntersGlee_Notify( { owner }, {
+                        text = "TEMPORAL ENERGY PEAKING... " .. self.countdown,
+                        kind = "bad",
+                        time = 2,
+                        replaceKey = "dice_roll_countdown",
+                    } )
 
                 end
             end )
+        end,
+        function( _self, owner ) -- teardown func
+            huntersGlee_CancelNotify( { owner }, "dice_roll_countdown" )
+
         end
     )
 

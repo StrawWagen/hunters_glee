@@ -93,10 +93,19 @@ function GM:NotifyMiseryNominationSpent( steamID64, setName, madeBallot )
 
     local prettyName = self:GetPrettyNameOfSpawnSet( setName )
     if madeBallot then
-        ply:PrintMessage( HUD_PRINTTALK, "Your nomination of " .. prettyName .. " has been placed on the ballot." )
+        huntersGlee_Notify( { ply }, {
+            text = "Your nomination of " .. prettyName .. " has been placed on the ballot.",
+            kind = "good",
+            time = 15,
+        } )
 
     else
-        ply:PrintMessage( HUD_PRINTTALK, "Your nomination of " .. prettyName .. " was spent, but could not be placed on the ballot." )
+        huntersGlee_Notify( { ply }, {
+            text = "Your nomination of " .. prettyName .. " was spent...",
+            description = "But could not be placed on the ballot.",
+            kind = "bad",
+            time = 15,
+        } )
 
     end
 end

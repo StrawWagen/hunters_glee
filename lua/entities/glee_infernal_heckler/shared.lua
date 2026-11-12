@@ -21,6 +21,7 @@ ENT.MinNpcs = 1
 ENT.MaxNpcs = 1
 
 ENT.PersistGuiltAdded = 0
+ENT.GuiltReliefPerSlaying = 0.5
 
 -- configurable cost tiers
 ENT.CostNobody = 10

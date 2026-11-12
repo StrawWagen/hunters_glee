@@ -205,11 +205,21 @@ function GM:RewardSeedPly( seedPly, plyThatJoined )
 
     -- big if true
     if big then
-        huntersGlee_Announce( { seedPly }, 500 * distToNone, 12 * distToNone, plyThatJoined:Nick() .. " Joined because of you!\nYou laid the seeds for this...\n" .. theReward .. " Seeding bonus!" )
+        huntersGlee_Notify( { seedPly }, {
+            text = plyThatJoined:Nick() .. " Joined because of you!",
+            description = "You laid the seeds for this...\n" .. theReward .. " Seeding bonus!",
+            kind = "jackpot",
+            time = 12 * distToNone,
+        } )
 
     -- ok they got the gist
     else
-        huntersGlee_Announce( { seedPly }, 20 * distToNone, 10 * distToNone, plyThatJoined:Nick() .. " Joined.\n" .. theReward .. " Seeding bonus!" )
+        huntersGlee_Notify( { seedPly }, {
+            text = plyThatJoined:Nick() .. " Joined.",
+            description = theReward .. " Seeding bonus!",
+            kind = "good",
+            time = math.max( 10 * distToNone, 4 ),
+        } )
 
     end
     seedPly:GivePlayerScore( theReward )

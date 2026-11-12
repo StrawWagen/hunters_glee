@@ -43,11 +43,12 @@ local function onlineEnvoys( except )
 
 end
 
-local function alertEnvoys( about, msg )
+local function alertEnvoys( about, data )
     local envoys = onlineEnvoys( about )
     if #envoys <= 0 then return end
 
-    huntersGlee_Announce( envoys, 50, 6, msg )
+    data.kind = data.kind or "good"
+    huntersGlee_Notify( envoys, data )
 
 end
 
@@ -57,7 +58,11 @@ hook.Add( "glee_bankAccountOpen", "glee_envoy_payfornewaccount", function( opene
     for _, envoy in ipairs( onlineEnvoys( opener ) ) do
         envoy:GivePlayerScore( reward )
         GAMEMODE:sendPurchaseConfirm( envoy, -reward )
-        huntersGlee_Announce( { envoy }, 50, 6, opener:Nick() .. "\nIs now an Account Holder...\n+" .. reward .. " Score." )
+        huntersGlee_Notify( { envoy }, {
+            text = opener:Nick(),
+            description = "Is now an Account Holder...\n+" .. reward .. " Score.",
+            kind = "jackpot",
+        } )
 
     end
 end )
@@ -65,14 +70,20 @@ end )
 hook.Add( "glee_full_load", "glee_envoy_alertarrival", function( ply )
     if not GAMEMODE:IsProspectiveAccountHolder( ply ) then return end
 
-    alertEnvoys( ply, "A Prospective Account Holder has arrived...\nGet them up to speed!\nSee that " .. ply:Nick() .. " escapes..." )
+    alertEnvoys( ply, {
+        text = ply:Nick() .. " joins...",
+        description = "They're A Prospective Account Holder.\n See that they escape...",
+        time = 9,
+    } )
 
 end )
 
 hook.Add( "glee_ply_escaped", "glee_envoy_alertescape", function( ply )
     if not GAMEMODE:IsProspectiveAccountHolder( ply ) then return end
 
-    local msg = ply:Nick() .. ",\nA Prospective Account Holder, has escaped."
-    alertEnvoys( ply, msg )
-
+    alertEnvoys( ply, {
+        text = ply:Nick() .. " HAS ESCAPED...",
+        description = "(Prospective Account Holder)",
+        time = 12,
+    } )
 end )

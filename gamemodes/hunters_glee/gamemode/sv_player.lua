@@ -374,7 +374,12 @@ function GM:calculateBPM( cur, players )
 
                     local damage = math.ceil( ply:GetMaxHealth() / divisor )
                     ply:TakeDamage( damage, game.GetWorld(), game.GetWorld() )
-                    huntersGlee_Announce( { ply }, 100, 2.5, "Something is off.\nIt feels like you're somewhere wrong..." )
+                    huntersGlee_Notify( { ply }, {
+                        text = "WARNING: SPATIAL ANOMALY DETECTED",
+                        description = "You are somewhere WRONG.\nReturn to stable ground immediately.",
+                        kind = "bad",
+                        time = 2.5,
+                    } )
 
                     damaged = true
 
@@ -489,6 +494,13 @@ end )
 
 -- heart attack thinker!
 
+-- glee_heartattack is how far into the heart attack, 1 is where it starts hurting. closes cl_heartattacktunnel.lua in
+local function setHeartAttackScore( ply, score, threshold )
+    ply.glee_HeartAttackScore = score
+    ply:SetNWFloat( "glee_heartattack", score / threshold )
+
+end
+
 function GM:DoHeartAttackThink( ply )
     if not IsValid( ply ) then return end
     local nextThink = ply.glee_NextHeartAttackThink or 0
@@ -501,6 +513,7 @@ function GM:DoHeartAttackThink( ply )
     -- you're done
     if heartAttackScore > threshold then
         heartAttackScore = heartAttackScore + 50
+        setHeartAttackScore( ply, heartAttackScore, threshold ) -- before the damage, dying clears it
 
         local damage = ( ply:GetMaxHealth() / 10 ) + ( heartAttackScore / threshold )
 
@@ -519,15 +532,15 @@ function GM:DoHeartAttackThink( ply )
         GAMEMODE:GivePanic( ply, 50 )
 
     elseif heartAttackScore > threshold * 0.533 then
-        heartAttackScore = heartAttackScore + 4
+        setHeartAttackScore( ply, heartAttackScore + 4, threshold )
         GAMEMODE:GivePanic( ply, 12 )
 
     elseif heartAttackScore > threshold * math.Rand( 0.3, 0.4 ) then
-        heartAttackScore = heartAttackScore + -0.5
+        setHeartAttackScore( ply, heartAttackScore + -0.5, threshold )
         GAMEMODE:GivePanic( ply, 6 )
 
     else
-        heartAttackScore = heartAttackScore + -2
+        setHeartAttackScore( ply, math.max( heartAttackScore + -2, 0 ), threshold )
         if not ply.glee_HasHeartAttackWarned then
             huntersGlee_Announce( { ply }, 5, 5, "You feel a deep, sharp pain..." )
             GAMEMODE:GivePanic( ply, 50 )
@@ -555,7 +568,7 @@ hook.Add( "huntersglee_heartbeat_beat", "glee_heartattack_think", function( ply,
         local added = math.abs( BPM - threshold )
         added = added / 4
         local oldScore = ply.glee_HeartAttackScore or 0
-        ply.glee_HeartAttackScore = oldScore + added
+        setHeartAttackScore( ply, oldScore + added, threshold )
         GAMEMODE:GivePanic( ply, ply.glee_HeartAttackScore )
 
     elseif BPM > bpmStartScreamingLikeCrazy then
@@ -565,15 +578,30 @@ hook.Add( "huntersglee_heartbeat_beat", "glee_heartattack_think", function( ply,
 end )
 
 
-hook.Add( "PlayerDeath", "glee_resetbeatstuff", function( ply )
+local function resetHeartAttack( ply )
+    ply.glee_HasHeartAttackWarned = nil
+    ply.glee_HeartAttackScore = nil
+    ply:SetNWFloat( "glee_heartattack", 0 )
+
+end
+
+-- Post, it's the one KillSilent runs too, escaping uses that
+hook.Add( "PostPlayerDeath", "glee_resetbeatstuff", function( ply )
     ply.glee_BPMHistoric = nil
     ply.glee_historicBPMDecrease = nil
     ply:SetNWInt( "termHuntPlyBPM", restingBPMPermanent )
     ply:SetNWBool( "termHuntBlockScoring", false )
 
-    ply.glee_HasHeartAttackWarned = nil
-    ply.glee_HeartAttackScore = nil
+    resetHeartAttack( ply )
 
+end )
+
+-- not everyone dies before the round ends
+hook.Add( "PostCleanupMap", "glee_resetheartattacks", function()
+    for _, ply in player.Iterator() do
+        resetHeartAttack( ply )
+
+    end
 end )
 
 

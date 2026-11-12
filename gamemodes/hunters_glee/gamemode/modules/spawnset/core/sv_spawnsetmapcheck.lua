@@ -51,6 +51,8 @@ local function warnIfActiveIsUnsuited()
 
 end
 
+local developer = GetConVar( "developer" )
+
 -- a misery with spawns, none of which can ever spawn here, doesn't suit the map
 -- one with no spawns at all meant it
 local function findUnsuitedSpawnsets()
@@ -73,6 +75,8 @@ local function findUnsuitedSpawnsets()
 
         if anyCanSpawn then continue end
         unsuited[setName] = true
+
+        if not developer:GetBool() then continue end
         permaPrint( "GLEE: " .. setName .. " can't spawn anything on this map, it's out of the Misery vote" )
 
     end

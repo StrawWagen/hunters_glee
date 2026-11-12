@@ -11,7 +11,13 @@ hook.Add( "PlayerDeath", "glee_DropScoreOnSuicide", function( victim, inflictor,
     scoreToDrop = math.ceil( scoreToDrop )
 
     victim:GivePlayerScore( -scoreToDrop )
-    huntersGlee_Announce( { victim }, 1, 5, "You've suicided.\n" .. scoreToDrop .. " score is left behind." )
+    huntersGlee_Notify( { victim }, {
+        text = "You've suicided.",
+        description = scoreToDrop .. " score is left behind.",
+        kind = "bad",
+        time = 5,
+        style = "soulthought",
+    } )
 
     while scoreToDrop > 0 do
         local droppedBall = ents.Create( "termhunt_score_pickup" )
@@ -46,7 +52,13 @@ hook.Add( "PlayerDeath", "glee_DropScoreWithTooMuch", function( victim, inflicto
     scoreToDrop = math.ceil( scoreToDrop )
 
     victim:GivePlayerScore( -scoreToDrop )
-    huntersGlee_Announce( { victim }, 1, 5, "You've died with too much score.\n" .. scoreToDrop .. " score is left behind." )
+    huntersGlee_Notify( { victim }, {
+        text = "You've died with too much score.",
+        description = scoreToDrop .. " score is left behind.",
+        kind = "bad",
+        time = 5,
+        style = "soulthought",
+    } )
 
     local amount = math.random( 90, 110 )
 

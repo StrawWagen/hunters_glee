@@ -350,7 +350,7 @@ hook.Add( "PlayerDeath", "glee_winnerdropsskulls", function( victim )
     if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
 
     local theirSkulls = victim:GetSkulls()
-    skullsToDrop = theirSkulls / 10
+    local skullsToDrop = theirSkulls / 10
 
     skullsToDrop = math.floor( skullsToDrop )
 
@@ -362,7 +362,13 @@ hook.Add( "PlayerDeath", "glee_winnerdropsskulls", function( victim )
         sIfMultiple = "s"
 
     end
-    huntersGlee_Announce( { victim }, 1, 5, "You've died with too many skulls.\nDropping " .. skullsToDrop .. " extra skull" .. sIfMultiple .. "..." )
+    huntersGlee_Notify( { victim }, {
+        text = "You've died with too many skulls.",
+        description = "Dropping " .. skullsToDrop .. " extra skull" .. sIfMultiple .. "...",
+        kind = "bad",
+        time = 5,
+        style = "soulthought"
+    } )
 
     while skullsToDrop > 0 do
         skullsToDrop = skullsToDrop + -1
@@ -386,10 +392,22 @@ hook.Add( "glee_plypickedupskull", "glee_skullpickupsinkillfeed", function( pick
 
 end )
 
+local notActiveHintCooldown = 1
+
 hook.Add( "glee_blockskullpickup", "glee_pickupwhenactive", function( picker )
     if GAMEMODE:RoundState() == GAMEMODE.ROUND_ACTIVE then return end
 
-    huntersGlee_Announce( { picker }, 1, 1, "You can only pick up skulls during the hunt." )
+    -- asked every tick they touch a skull, every repeat would flash the notice
+    if ( picker.glee_NextSkullNotActiveHint or 0 ) < CurTime() then
+        picker.glee_NextSkullNotActiveHint = CurTime() + notActiveHintCooldown
+        huntersGlee_Notify( { picker }, {
+            text = "SKULL CANNOT BE OBTAINED",
+            description = "Repoulsive energy detected.\nPicking it up would mean serious harm.",
+            kind = "bad",
+            time = notActiveHintCooldown
+        } )
+
+    end
     return true
 
 end )

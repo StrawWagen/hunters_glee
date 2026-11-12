@@ -314,33 +314,71 @@ function ENT:UpdateGivenScore()
 
 end
 
+-- whoever's around the target right now, the hunter lands where they stand
+-- the target gets a countdown instead
+function ENT:GetBystanders()
+    local target = self.inversionTarget
+    local checkPos = target:GetShootPos()
+    local bystanders = {}
+    local inserted = { [target] = true }
+
+    for _, thing in ipairs( ents.FindInPVS( checkPos ) ) do
+        if thing:IsPlayer() and not inserted[thing] then
+            inserted[thing] = true
+            table.insert( bystanders, thing )
+
+        end
+    end
+
+    local dist = 1500^2
+    for _, ply in player.Iterator() do
+        if not inserted[ply] and ply:GetPos():DistToSqr( checkPos ) < dist then
+            inserted[ply] = true
+            table.insert( bystanders, ply )
+
+        end
+    end
+
+    return bystanders
+
+end
+
+-- one more RETREAT every second the inversion charges
+function ENT:WarnBystanders( retreats )
+    local bystanders = self:GetBystanders()
+    if #bystanders <= 0 then return end
+
+    local retreatLine = string.Trim( string.rep( "RETREAT. ", retreats ) )
+
+    huntersGlee_NotifyLivingAndDead( bystanders, {
+        text = "INVERTING TEMPORAL ANOMALY DETECTED",
+        description = self.inversionTarget:Nick() .. ", IS THE ENERGY ORIGIN\nLIKELY SOUL TO BLAME: " .. self.inversionPlacerNickAlive .. "\n" .. retreatLine,
+        kind = retreats == 1 and "alert" or "bad", -- only the first one makes a sound
+        time = 2,
+        replaceKey = self.inversionKey,
+    }, {
+        text = self.inversionPlacerNickDead .. " has begun a temporal inversion on " .. self.inversionTarget:Nick(),
+        time = 2,
+        replaceKey = self.inversionKey,
+    } )
+
+end
+
 function ENT:Place()
     local plyToSwap = self:GetCurrTarget()
     local furthestTerminator = self:GetFurthestTerminator()
 
     if not IsValid( plyToSwap ) or not IsValid( furthestTerminator ) then return end
 
-    local checkPos = plyToSwap:GetShootPos()
-    local plysToAlert = {}
-    local inserted = {}
-    for _, thing in ipairs( ents.FindInPVS( checkPos ) ) do
-        if thing:IsPlayer() then
-            inserted[thing] = true
-            table.insert( plysToAlert, thing )
+    -- per target, or one inversion ending would take down another's warnings
+    local warningKey = "inversion_" .. tostring( plyToSwap:GetCreationID() )
 
-        end
-    end
-    local dist = 1500^2
-    for _, ply in player.Iterator() do
-        if not inserted[ply] and ply:GetPos():DistToSqr( checkPos ) < dist then
-            inserted[ply] = true
-            table.insert( plysToAlert, ply )
+    self.inversionTarget = plyToSwap
+    self.inversionPlacerNickAlive = GAMEMODE:SuitNameOf( self.player ) -- self.player is gone once we detach
+    self.inversionPlacerNickDead = self.player:Nick()
+    self.inversionKey = warningKey
 
-        end
-    end
-
-
-    huntersGlee_Announce( plysToAlert, 5, 8, self.player:Nick() .. " has begun a temporal inversion...\nGET AWAY FROM " .. plyToSwap:Nick() .. "!" )
+    self:WarnBystanders( 1 )
     plyToSwap:EmitSound( "buttons/combine_button3.wav", 100, 100 )
     plyToSwap:EmitSound( "hl1/ambience/port_suckin1.wav", 100, 80 )
 
@@ -348,18 +386,28 @@ function ENT:Place()
     local steps = 14
 
     timer.Create( timerName, 1, steps, function()
-        if not IsValid( self ) then timer.Remove( timerName ) return end
-        if not IsValid( plyToSwap ) then timer.Remove( timerName ) return end
+        if not IsValid( plyToSwap ) or not IsValid( self ) then
+            timer.Remove( timerName )
+            huntersGlee_CancelNotify( player.GetAll(), warningKey )
+            return
+
+        end
         furthestTerminator = furthestTerminator or self:GetFurthestTerminator()
         if not IsValid( furthestTerminator ) then return end
         if plyToSwap:Health() <= 0 then
             self:SwapPlayerAndTerminator( plyToSwap, furthestTerminator )
             timer.Remove( timerName )
+            huntersGlee_CancelNotify( player.GetAll(), warningKey, { noFade = true } )
             return
 
         end
 
         local countdown = timer.RepsLeft( timerName )
+
+        if countdown > 0 then
+            self:WarnBystanders( steps - countdown + 1 )
+
+        end
 
         if countdown == 12 then
             plyToSwap:EmitSound( "ambient/levels/labs/teleport_mechanism_windup5.wav", 75, 75, 1, CHAN_STATIC )
@@ -379,12 +427,19 @@ function ENT:Place()
         if countdown == 0 then
             self:SwapPlayerAndTerminator( plyToSwap, furthestTerminator )
             SafeRemoveEntity( self )
+            huntersGlee_CancelNotify( player.GetAll(), warningKey, { noFade = true } )
 
-        elseif countdown <= 8 then
+        elseif countdown <= 8 then -- last 8s of the countdown get a visual countdown
             GAMEMODE:GivePanic( plyToSwap, 50 )
             local pitch = 80 + math.abs( countdown - 14 ) * 2
             plyToSwap:EmitSound( "Grenade.ImpactSoft", 75, pitch )
-            huntersGlee_Announce( { plyToSwap }, 10, 2, "Inversion in... " .. countdown )
+            huntersGlee_Notify( { plyToSwap }, {
+                text = "TEMPORAL ENERGY PEAKING...",
+                description = tostring( countdown ),
+                kind = "bad",
+                time = 2,
+                replaceKey = warningKey,
+            } )
 
         else
             GAMEMODE:GivePanic( plyToSwap, 10 )

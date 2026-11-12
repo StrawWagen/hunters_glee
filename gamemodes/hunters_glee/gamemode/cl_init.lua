@@ -23,6 +23,11 @@ include( "modules/firsttimeplayers/cl_firsttimeplayers.lua" )
 include( "modules/firsttimeplayers/cl_spawnprotection.lua" )
 include( "modules/firsttimeplayers/cl_gleetings.lua" )
 
+include( "modules/guilt/sh_innocenthalo.lua" ) -- after the status effects
+
+include( "modules/panic/cl_tunnelvision.lua" )
+include( "modules/panic/cl_heartattacktunnel.lua" )
+
 include( "modules/modelscale/cl_modelscale.lua" )
 
 include( "modules/escaping/cl_escaping.lua" )
@@ -84,6 +89,7 @@ include( "modules/orbitcamera/cl_orbitcamera.lua" )
 include( "modules/clhud/cl_plynames.lua" )
 include( "modules/clhud/cl_whowespectating.lua" )
 include( "modules/clhud/cl_bosshealthbar.lua" )
+include( "modules/clhud/cl_noticefeed.lua" )
 
 
 -- from https://github.com/Facepunch/garrysmod/blob/e189f14c088298ca800136fcfcfaf5d8535b6648/garrysmod/lua/includes/modules/killicon.lua#L202

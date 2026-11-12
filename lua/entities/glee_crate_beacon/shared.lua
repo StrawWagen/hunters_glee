@@ -204,7 +204,7 @@ function ENT:LoseDeposit( culprit )
         huntersGlee_Announce( { placer }, 5, 10, thief:Nick() .. " beat the beacon, they took the deposit." )
 
     else
-        huntersGlee_Announce( { placer }, 5, 10, "Your beacon was beaten early, you are left poorer than before." )
+        huntersGlee_Announce( { placer }, 5, 10, "Your beacon was broken early, you are left poorer than before." )
 
     end
 end

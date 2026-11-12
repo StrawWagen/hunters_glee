@@ -12,8 +12,49 @@ local jumpedInSteamID -- skipped it, until their first real hunt ends
 local regretPendingSteamID -- that hunt ended with nobody out, until the win screen's done
 local regretAskedSteamID -- asked if they'd rather go back, until they answer
 
--- by SteamID, so a crash and rejoin doesn't cost them it. Cleared on map change
-GAMEMODE.firstTimePlayerSteamIDs = GAMEMODE.firstTimePlayerSteamIDs or {}
+-- First time status, the os.time() it runs out, by SteamID
+-- saved in PData so it outlasts rejoins and map changes. Wall clock, not playtime
+local firstTimeStatusDuration = 60 * 60
+local firstTimeStatusPDataName = "glee_firsttimeplayer"
+GAMEMODE.firstTimeStatusExpiries = GAMEMODE.firstTimeStatusExpiries or {}
+
+local function hasFirstTimeStatus( ply )
+    if ply:IsBot() then return ply.glee_firstTimeBot == true end
+
+    local expiry = GAMEMODE.firstTimeStatusExpiries[ply:SteamID()]
+    return expiry ~= nil and expiry > os.time()
+
+end
+
+-- never extends a live status, re-taking the tutorial doesn't buy more time
+local function giveFirstTimeStatus( ply )
+    if hasFirstTimeStatus( ply ) then return end
+
+    local expiry = os.time() + firstTimeStatusDuration
+    GAMEMODE.firstTimeStatusExpiries[ply:SteamID()] = expiry
+    ply:SetPData( firstTimeStatusPDataName, expiry )
+
+end
+
+hook.Add( "PlayerInitialSpawn", "glee_firsttimeply_loadstatus", function( ply )
+    -- half of them come in new. a flag on the bot, they all share one SteamID
+    if ply:IsBot() then
+        ply.glee_firstTimeBot = math.random( 2 ) == 1
+        return
+
+    end
+
+    local expiry = tonumber( ply:GetPData( firstTimeStatusPDataName ) )
+    if not expiry or expiry <= os.time() then return end
+
+    GAMEMODE.firstTimeStatusExpiries[ply:SteamID()] = expiry
+
+end )
+
+hook.Add( "huntersglee_round_firstsetup", "glee_wipe_expired_firsttimestatus", function()
+    GAMEMODE:WipeExpiredPData( firstTimeStatusPDataName )
+
+end )
 
 util.AddNetworkString( "glee_askforgleetings" )
 util.AddNetworkString( "glee_tutorial_jumpin" )
@@ -127,7 +168,7 @@ local function tutorialize( ply, decreeName )
     end
     sendTutorialDecree( ply, decreeName )
 
-    GAMEMODE.firstTimePlayerSteamIDs[ply:SteamID()] = true
+    giveFirstTimeStatus( ply )
 
 end
 
@@ -167,7 +208,7 @@ end
 -- Is this player new to this experience, do they qualify for extra protections?
 -- needs extra checks because the convar can be faked
 function GAMEMODE:IsFirstTimePlayer( ply )
-    return self.firstTimePlayerSteamIDs[ply:SteamID()] and ply:BankFundsFast() < 5000 and self:GetPersistentGuilt( ply ) < 5 -- dont let guilty players exploit this by resetting the convar
+    return hasFirstTimeStatus( ply ) and ply:BankFundsFast() < 2000 and self:GetPersistentGuilt( ply ) < 4 -- dont let guilty players exploit this by resetting the convar
 
 end
 
@@ -182,7 +223,7 @@ function GAMEMODE:TutorialIsHoldingTheRound( players )
     local inTutorial = 0
 
     for _, ply in ipairs( players ) do
-        if not self.firstTimePlayerSteamIDs[ply:SteamID()] then continue end
+        if not hasFirstTimeStatus( ply ) then continue end
         if not ply.glee_importantSpawnProtection and isEducated( ply ) then continue end
 
         inTutorial = inTutorial + 1
@@ -321,7 +362,8 @@ local ghostShopHintDelay = 5
 
 -- a new player's first death with others still alive, tell them dying's where the haunting starts
 hook.Add( "PlayerDeath", "glee_tutorial_ghostshophint", function( ply )
-    if not GAMEMODE.firstTimePlayerSteamIDs[ply:SteamID()] then return end
+    if ply:IsBot() then return end
+    if not hasFirstTimeStatus( ply ) then return end
     if player.GetCount() < 2 then return end
     if GAMEMODE:HasLearnedLesson( ply, "DiedTimeToContinueShoppingHint" ) then return end
 

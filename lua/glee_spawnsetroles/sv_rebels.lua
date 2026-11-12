@@ -164,7 +164,8 @@ local roles = {
         },
         statusEffects = { "juggernaut" },
         leastGuiltyFirst = true, -- reward innocent players with the best class
-        ratio = 0.1,
+        ratio = 0.05,
+        minPlayers = 5,
     },
 }
 

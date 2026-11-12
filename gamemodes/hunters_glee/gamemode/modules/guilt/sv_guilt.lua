@@ -12,8 +12,13 @@ hook.Add( "huntersglee_round_into_active", "glee_slighting_initialize", function
     GAMEMODE.roundExtraData.mischievousnessReasons = {}
     GAMEMODE.roundExtraData.nextHomicidalGleeSurfaces = {}
     GAMEMODE.roundExtraData.newbieKillers = {}
+    GAMEMODE.roundExtraData.reviveForgivableKillers = {}
+    GAMEMODE.roundExtraData.reviveForgivenessUsedAnyone = {}
+    GAMEMODE.roundExtraData.reviveForgivenessUsedNewbie = {}
 
 end )
+
+local developerVar = GetConVar( "developer" )
 
 local autoHomicidalEvilnessIncrements = 200
 local extraAfterFirstSurface = 100
@@ -181,14 +186,9 @@ end
     @desc Reacts to a player killing a truly, INNOCENT soul.
         adds a massive downside to killing people for no reason
     @param attacker: The player who did the killing.
-    @param died: The player who died.
-    @param persistGuiltMul: Scales the persistent guilt it adds, nil for 1.
     @return: None
 --]]---------------------------------------------------------
-function GM:OnKilledTrulyInnocentSoul( attacker, died, persistGuiltMul )
-
-    hook.Run( "glee_onkilledtrulyinnocentsoul", attacker, died, persistGuiltMul )
-
+function GM:OnKilledTrulyInnocentSoul( attacker )
     -- every 2 innocent player kills, it surfaces
     local currentEvilnessToSurface = GAMEMODE.roundExtraData.nextHomicidalGleeSurfaces[attacker:SteamID()] or autoHomicidalEvilnessIncrements
 
@@ -220,6 +220,8 @@ function GM:OnKilledTrulyInnocentSoul( attacker, died, persistGuiltMul )
     end )
 end
 
+local smitingRelief = 1 -- days, infernal summons carry their own, see glee_infernal_persecutors
+
 hook.Add( "PlayerDeath", "glee_storeslights", function( died, inflictor, attacker )
     if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
 
@@ -229,12 +231,20 @@ hook.Add( "PlayerDeath", "glee_storeslights", function( died, inflictor, attacke
     if not attacker:IsPlayer() then return end
 
     local persistGuiltMul = 1
+    local _, diedsGuiltData = GAMEMODE:GetPlysGuiltLevel( died )
 
     -- some guilt-free inflictors still punish killing the innocent
+    -- only divine lightning sets glee_InnocentVictimGuiltMul, and it rewards smiting the wicked
     if inflictor.glee_GuiltFreeInflictor then
         local innocentMul = inflictor.glee_InnocentVictimGuiltMul
         if not innocentMul then return end
-        if GAMEMODE:GetStoredPersistentGuilt( died ) >= 1 then return end
+
+        if diedsGuiltData.godlySlayingRelievesGuilt and GAMEMODE:PersistentGuiltIsEnabled() then
+            GAMEMODE:IncrementPersistentGuilt( attacker, -smitingRelief, "A guilty player is smitten...\nYou feel less guilty already." )
+
+        end
+
+        if diedsGuiltData.killedForNoGuilt then return end
 
         persistGuiltMul = innocentMul
 
@@ -272,12 +282,39 @@ hook.Add( "PlayerDeath", "glee_storeslights", function( died, inflictor, attacke
     end
     GAMEMODE:AddSlight( attacker, died, slightAmnt, reason )
 
+    -- persistent guilt is decided by the victim's guilt tier, not by IsInnocent
+    -- before the glee check, so the guilt this adds counts toward surfacing
+    if not diedsGuiltData.killedForNoGuilt then
+        hook.Run( "glee_onguiltykill", attacker, died, persistGuiltMul )
+
+    end
+
     -- automatic homicidal glee surfacing below
 
     -- only for killing innocent people
     if not GAMEMODE:IsInnocent( died ) then return end
 
-    GAMEMODE:OnKilledTrulyInnocentSoul( attacker, died, persistGuiltMul )
+    GAMEMODE:OnKilledTrulyInnocentSoul( attacker )
+
+end )
+
+-- infernal summons forgive whoever summoned them, for each of the wicked they kill
+hook.Add( "PlayerDeath", "glee_summonsrelieveguilt", function( died, _inflictor, attacker )
+    if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
+    if not GAMEMODE:PersistentGuiltIsEnabled() then return end
+    if not IsValid( attacker ) then return end
+
+    local relief = attacker.glee_SummonerGuiltRelief
+    if not relief then return end
+
+    local summoner = attacker.glee_Summoner
+    if not IsValid( summoner ) then return end
+    if summoner == died then return end
+
+    local _, diedsGuiltData = GAMEMODE:GetPlysGuiltLevel( died )
+    if not diedsGuiltData.godlySlayingRelievesGuilt then return end
+
+    GAMEMODE:IncrementPersistentGuilt( summoner, -relief, "Your skeletons punished a wicked soul...\nThings are how they should be.\nYou feel less guilty already." )
 
 end )
 
@@ -319,7 +356,8 @@ hook.Add( "EntityTakeDamage", "huntersglee_makepvpreallybad", function( dmgTarg,
 
         end
 
-        local sacredDamage = attackerIsHorriblyEvil and GAMEMODE:GetStoredPersistentGuilt( dmgTarg ) < 1
+        local _, targsGuiltData = GAMEMODE:GetPlysGuiltLevel( dmgTarg )
+        local sacredDamage = attackerIsHorriblyEvil and not targsGuiltData.killedForNoGuilt
 
         -- for items that should always do full damage
         -- eg, items placed by dead players
@@ -404,7 +442,10 @@ function GM:GetStoredPersistentGuilt( ply )
 
 end
 
-function GM:IncrementPersistentGuilt( ply, add )
+local guiltTierFlashes = 3 -- a worse guilt tier can't go unnoticed
+local guiltTierFlashInterval = 0.75
+
+function GM:IncrementPersistentGuilt( ply, add, msg )
     local daysToAdd = dayInSeconds * ( add or 1 )
     local currentTime = os.time()
     local oldPersistentGuilt = ply:GetPData( "glee_persistentguilt", currentTime )
@@ -424,16 +465,65 @@ function GM:IncrementPersistentGuilt( ply, add )
 
     local inDaysOld = getGuiltInDays( oldPersistentGuilt )
     local inDays = getGuiltInDays( newPersistentGuilt )
+
+    -- GetPlysGuiltLevel reads the networked days, so this is before they change
+    local oldLevel = self:GetPlysGuiltLevel( ply )
     ply:SetNWFloat( "glee_persistentguilt_days", inDays )
+
+    if developerVar:GetBool() then
+        permaPrint( ply, "now has " .. inDays .. " days of guilt..." )
+
+    end
 
     net.Start( "glee_persistguiltchanged" )
         net.WriteFloat( inDaysOld )
         net.WriteFloat( inDays )
     net.Send( ply )
 
-end
+    local kind
+    local extraFlashes
+    local flashInterval
 
-local developerVar = GetConVar( "developer" )
+    if newPersistentGuilt > oldPersistentGuilt then
+        kind = "alert"
+
+        local level, levelData = self:GetPlysGuiltLevel( ply )
+        if level > oldLevel then
+            extraFlashes = guiltTierFlashes
+            flashInterval = guiltTierFlashInterval
+
+        end
+
+        if not msg then
+            if level > oldLevel then -- play transition message if this teir has one
+                msg = levelData.message
+
+            elseif inDays <= 1 then -- first day of guilt
+                msg = "Killing an innocent soul...\nYou feel... Guilty?"
+
+            elseif inDays <= 5 then -- first 5 days
+                msg = "Your guilt grows"
+                for _ = 1, math.floor( inDays ) do
+                    msg = msg .. "."
+
+                end
+            end
+        end
+    end
+    if newPersistentGuilt < oldPersistentGuilt then
+        kind = "good"
+
+        if not msg then
+            msg = "You feel some of your guilt fade..."
+
+        end
+    end
+
+    if msg and msg ~= "" then
+        huntersGlee_Notify( { ply }, { text = msg, kind = kind, time = 10, extraFlashes = extraFlashes, flashInterval = flashInterval } )
+
+    end
+end
 
 -- persistent guilt is a dedicated server only mechanic
 -- developer 1 enables it for testing
@@ -443,29 +533,10 @@ function GM:PersistentGuiltIsEnabled()
 end
 
 -- guilt is the timestamp they're guilty until, so every row already in the past is dead weight
--- PData keys are "<steamid64>[<name>]", and LIKE treats _ as a single-char wildcard, hence the escape
--- value is a TEXT column, so a bare compare is lexicographic, and only correct while every
--- timestamp is the same digit count. the CAST makes it numeric
-local wipeStaleGuiltQuery = [[
-    DELETE FROM playerpdata
-    WHERE infoid LIKE '%[glee\_persistentguilt]' ESCAPE '\'
-    AND CAST( value AS INTEGER ) < ?
-]]
-
 hook.Add( "huntersglee_round_firstsetup", "glee_wipe_stale_guilt", function()
-    local wiped = sql.QueryTyped( wipeStaleGuiltQuery, os.time() )
-    if wiped == false then
-        ErrorNoHaltWithStack( "glee stale guilt wipe failed: " .. tostring( sql.LastError() ) )
-        return
+    local wipedCount = GAMEMODE:WipeExpiredPData( "glee_persistentguilt" )
+    if not wipedCount then return end
 
-    end
-
-    -- changes() reports the last write on the connection, so nothing may query between here and the delete
-    local changed = sql.QueryTyped( "SELECT changes() AS wipedCount" )
-    if not changed then return end
-
-    -- QueryTyped, not Query, so this is a number and not a string
-    local wipedCount = changed[1].wipedCount
     if wipedCount <= 0 then
         if not game.IsDedicated() then return end -- only notify no change if we are a dedicated server
 
@@ -488,18 +559,39 @@ hook.Add( "PlayerInitialSpawn", "glee_checkpersistentguilt", function( ply )
 
 end )
 
-hook.Add( "glee_onkilledtrulyinnocentsoul", "glee_incrementpersistentguilt", function( attacker, died, persistGuiltMul )
+local function isNewbieKill( killer, died )
+    return GAMEMODE:IsFirstTimePlayer( died ) and not GAMEMODE:IsFirstTimePlayer( killer )
+
+end
+
+-- before any persistGuiltMul
+local function guiltyKillDays( killer, died )
+    if isNewbieKill( killer, died ) then return 10 end
+    return 1
+
+end
+
+hook.Add( "glee_onguiltykill", "glee_incrementpersistentguilt", function( attacker, died, persistGuiltMul )
     if not GAMEMODE:PersistentGuiltIsEnabled() then return end
 
-    local daysToAdd = 1
-    local killedNewbie = GAMEMODE:IsFirstTimePlayer( died ) and not GAMEMODE:IsFirstTimePlayer( attacker )
+    local msg
+
+    local killedNewbie = isNewbieKill( attacker, died )
+    local daysToAdd = guiltyKillDays( attacker, died )
     if killedNewbie then
-        daysToAdd = 10
+        msg = "They were new here...\nYour guilt is spiraling out of control!"
 
     end
 
-    daysToAdd = daysToAdd * ( persistGuiltMul or 1 )
-    GAMEMODE:IncrementPersistentGuilt( attacker, daysToAdd )
+    persistGuiltMul = persistGuiltMul or 1
+    daysToAdd = daysToAdd * persistGuiltMul
+    GAMEMODE:IncrementPersistentGuilt( attacker, daysToAdd, msg )
+
+    -- scaled kills come from divine lightning, a deliberate smite, never an accident
+    if persistGuiltMul == 1 then
+        GAMEMODE.roundExtraData.reviveForgivableKillers[died] = attacker
+
+    end
 
     if not killedNewbie then return end
 
@@ -509,6 +601,48 @@ hook.Add( "glee_onkilledtrulyinnocentsoul", "glee_incrementpersistentguilt", fun
     allNewbieKillers[died] = diedsKillers
 
 end )
+
+--[[---------------------------------------------------------
+    GM:ForgiveKillByRevive
+    @desc Reviving the player you just killed takes back the guilt for it.
+      Each killer gets one forgiveness of anyone a round, plus one more of a new player.
+    @param reviver: The player using the revive kit.
+    @param revived: The player being brought back.
+    @return: True if guilt was forgiven
+--]]---------------------------------------------------------
+function GM:ForgiveKillByRevive( reviver, revived )
+    local forgivableKillers = self.roundExtraData.reviveForgivableKillers
+    if not forgivableKillers then return false end
+    if forgivableKillers[revived] ~= reviver then return false end
+
+    local reviveForgivenessUsedNewbie = self.roundExtraData.reviveForgivenessUsedNewbie
+    local reviveForgivenessUsedAnyone = self.roundExtraData.reviveForgivenessUsedAnyone
+
+    -- a new player uses their own forgiveness first, then the one for anyone
+    if isNewbieKill( reviver, revived ) and not reviveForgivenessUsedNewbie[reviver] then
+        reviveForgivenessUsedNewbie[reviver] = true
+
+    elseif not reviveForgivenessUsedAnyone[reviver] then
+        reviveForgivenessUsedAnyone[reviver] = true
+
+    else
+        return false
+
+    end
+
+    forgivableKillers[revived] = nil
+
+    -- they made it right, so a rage quit shouldn't cost them the newbie guilt again
+    local newbiesKillers = self.roundExtraData.newbieKillers[revived]
+    if newbiesKillers then
+        newbiesKillers[reviver] = nil
+
+    end
+
+    self:IncrementPersistentGuilt( reviver, -guiltyKillDays( reviver, revived ), "You brought them back.\nSuch a weight off your chest..." )
+    return true
+
+end
 
 -- a new player who rage quits after being killed costs each killer their newbie guilt again
 hook.Add( "PlayerDisconnected", "glee_newbieragequit_guilt", function( leaver )
@@ -526,19 +660,18 @@ hook.Add( "PlayerDisconnected", "glee_newbieragequit_guilt", function( leaver )
 
     for killer, daysGiven in pairs( leaversKillers ) do
         if not IsValid( killer ) then continue end
-        GAMEMODE:IncrementPersistentGuilt( killer, daysGiven )
-        huntersGlee_Announce( { killer }, 10, 8, msg )
+        GAMEMODE:IncrementPersistentGuilt( killer, daysGiven, msg )
 
     end
 end )
 
 
-concommand.Add( "glee_test_guilt_reset", function( caller, _, args )
+concommand.Add( "glee_test_guilt_reset", function( caller, _, _args, argStr )
     if IsValid( caller ) and not caller:IsAdmin() then return end
 
-    local ply, steamId = GAMEMODE:FindPlayerByArg( args[1] )
+    local ply, steamId, failReason = GAMEMODE:FindPlayerByArg( GAMEMODE:ArgWords( argStr )[1] )
     if not steamId then
-        permaPrint( "Usage: glee_test_guilt_reset <player>, offline players by SteamID" )
+        permaPrint( failReason or "Usage: glee_test_guilt_reset <player>, offline players by SteamID" )
         return
 
     end
@@ -555,12 +688,13 @@ concommand.Add( "glee_test_guilt_reset", function( caller, _, args )
     end
 end )
 
-concommand.Add( "glee_test_guilt_adddays", function( caller, _, args )
+concommand.Add( "glee_test_guilt_adddays", function( caller, _, _args, argStr )
     if IsValid( caller ) and not caller:IsAdmin() then return end
 
-    local ply, steamId = GAMEMODE:FindPlayerByArg( args[1] )
-    local days = tonumber( args[2] )
-    if not args[1] or not days then
+    local words = GAMEMODE:ArgWords( argStr )
+    local ply, steamId, failReason = GAMEMODE:FindPlayerByArg( words[1] )
+    local days = tonumber( words[2] )
+    if not words[1] or not days then
         permaPrint( "Usage: glee_test_guilt_adddays <player> <days>" )
         return
 
@@ -568,7 +702,7 @@ concommand.Add( "glee_test_guilt_adddays", function( caller, _, args )
 
     -- IncrementPersistentGuilt works off a live player ( GetPData/SetPData/net ), so they must be online
     if not IsValid( ply ) then
-        permaPrint( "GLEE: glee_test_guilt_adddays needs " .. ( steamId or args[1] ) .. " to be online." )
+        permaPrint( failReason or "GLEE: glee_test_guilt_adddays needs " .. steamId .. " to be online." )
         return
 
     end
