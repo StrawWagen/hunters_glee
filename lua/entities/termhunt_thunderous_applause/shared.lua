@@ -113,8 +113,21 @@ function ENT:WarnNearbyPlayers( strikePos, placerNick )
 
         end
     end
-    huntersGlee_Announce( softwarnPlayers, 100, 15, "Something isn't right...\nYour hair is standing on end... " )
-    huntersGlee_Announce( hardwarnPlayers, 100, 15, placerNick .. " is.. Applauding! Thunderously!" )
+    huntersGlee_Announce( softwarnPlayers, 50, 8, "Something isn't right...\nYour hair is standing on end... " )
+    huntersGlee_Notify( softwarnPlayers, {
+        text = "EXTREME STATIC ELECTRICITY DETECTED",
+        description = "RETREAT. RETREAT. RETREAT. RETREAT.",
+        kind = "alert",
+        extraFlashes = 16,
+        flashInterval = 0.4,
+        time = 15,
+        onlyWhile = "alive",
+    } )
+
+    huntersGlee_Notify( hardwarnPlayers, {
+        text = placerNick .. " is.. Applauding! Thunderously!",
+        time = 15
+    } )
 
 end
 

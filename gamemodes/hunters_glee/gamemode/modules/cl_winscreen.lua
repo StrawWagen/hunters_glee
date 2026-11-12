@@ -155,6 +155,11 @@ hook.Add( "glee_blockGenericAnnouncements", "cl_winscreen_block_announcements", 
 
 end )
 
+hook.Add( "glee_hideNotices", "cl_winscreen_hide_notices", function()
+    if winScreenActive then return true end
+
+end )
+
 hook.Add( "glee_winScreenEnded", "cl_winscreen_reset", function()
     winScreenActive = false
     sections = {}

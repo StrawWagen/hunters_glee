@@ -204,7 +204,7 @@ if CLIENT then
         if self:GetClass() ~= "screamer_crate" then return end
         if GAMEMODE:HasLearnedLesson( "BeaconSurvived" ) then return end
 
-        return true, "Place the supplies NEAR a survivor, but not too near.\nIf they break the crate, or its beacon, before the first beep,\nthey'll STEAL the deposit...\nSmart enemies can HEAR the beacon."
+        return true, "Place the supplies NEAR a bodied soul, but not too near.\nIf they break the crate, or its beacon, before the first beep,\nthey'll STEAL the deposit...\nSmart enemies can HEAR the beacon."
 
     end
 

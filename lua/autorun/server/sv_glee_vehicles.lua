@@ -76,11 +76,56 @@ local function spawnSeat( host, offset, angle )
 
 end
 
+local defaultRiderHeal = 5
+local defaultRiderCalm = 5
+-- infernal deals end at full health, stopping here keeps them infernal
+local riderHealCap = 0.5
+
+-- true escape riders are safe now, patch them up and calm them down
+local function startComfortingRiders( host )
+    local cfg = host.glee_Vehicle.cfg
+    local heal = cfg.riderHeal or defaultRiderHeal
+    local calm = cfg.riderCalm or defaultRiderCalm
+
+    local timerName = "glee_vehicle_comfortriders_" .. host:GetCreationID()
+    timer.Create( timerName, 1, 0, function()
+        if not IsValid( host ) then
+            timer.Remove( timerName )
+            return
+
+        end
+
+        for _, seat in EntityPairs( host.glee_Vehicle.seats ) do
+            local rider = seat:GetDriver()
+            if not IsValid( rider ) then continue end
+            if not rider:Alive() then continue end
+
+            local healCap = rider:GetMaxHealth() * riderHealCap
+            if rider:Health() < healCap then
+                rider:SetHealth( math.min( rider:Health() + heal, healCap ) )
+                rider.glee_LastSetHealthReason = "glee_trueescape_regen"
+
+            end
+
+            -- gamemode only, there's no panic outside it
+            if GAMEMODE.GivePanic then
+                GAMEMODE:GivePanic( rider, -calm )
+
+            end
+        end
+    end )
+end
+
 -- cfg:
 --   seats       { { pos = Vector, ang = Angle }, ... }, local to the host
 --   exitOffset  world space, from the seat they left
 --   exitText    progress bar text while holding use to leave
 --   canBoard    optional, function( host, ply ), false refuses them
+--   trueEscape  optional, a vehicle earned with a countdown, that protects its riders and carries them out of the map
+--               boarding it runs glee_blockboard_trueescape( ply, host ), true refuses them
+--               riders heal up to half health, and calm down
+--   riderHeal   optional, trueEscape health healed a second, default 5
+--   riderCalm   optional, trueEscape panic calmed a second, default 5
 function gleeVehicles.Setup( host, cfg )
     host.glee_Vehicle = {
         cfg = cfg,
@@ -89,6 +134,11 @@ function gleeVehicles.Setup( host, cfg )
 
     for _, data in ipairs( cfg.seats ) do
         spawnSeat( host, data.pos, data.ang )
+
+    end
+
+    if cfg.trueEscape then
+        startComfortingRiders( host )
 
     end
 end
@@ -140,8 +190,9 @@ end
 
 -- returns true if they're now seated
 function gleeVehicles.TryBoard( host, ply )
-    local canBoard = host.glee_Vehicle.cfg.canBoard
-    if canBoard and not canBoard( host, ply ) then return false end
+    local cfg = host.glee_Vehicle.cfg
+    if cfg.trueEscape and hook.Run( "glee_blockboard_trueescape", ply, host ) == true then return false end
+    if cfg.canBoard and not cfg.canBoard( host, ply ) then return false end
 
     local freeSeat = gleeVehicles.GetFreeSeat( host )
     if not freeSeat then return false end

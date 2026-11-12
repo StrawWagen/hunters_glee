@@ -795,7 +795,7 @@ local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they 
                 end
 
                 if nearestDist < tooFarDist * 0.5 and not hunter.glee_FodderWasNearPlayerAtLeast then -- bot is close, give it a second chance, but still bite the cutoffs above
-                    debugPrint( "FORGIVE STALE", hunter )
+                    debugPrint( "FORGIVE STALE", hunter, nearestDist < tooFarDist * 0.5, hunter.glee_FodderWasNearPlayerAtLeast )
                     hunter.glee_FodderWasNearPlayerAtLeast = true
                     hunter.glee_NoEnemyToRemove = hunter.glee_NoEnemyToRemove * 2 -- still remove eventually
                     return

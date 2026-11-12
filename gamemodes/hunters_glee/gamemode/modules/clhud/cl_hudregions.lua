@@ -22,9 +22,7 @@ function GM:ImUsingHudSpace( name, x, y, w, h )
 
 end
 
--- The bottom of the lowest thing x, y, w, h runs into, or nil when it is clear.
--- Draw below what you get back
-function GM:HudSpaceInMyWay( x, y, w, h )
+local function lowestInTheWay( x, y, w, h )
     local thisFrame = FrameNumber()
     local lowest = nil
 
@@ -41,5 +39,19 @@ function GM:HudSpaceInMyWay( x, y, w, h )
     end
 
     return lowest
+
+end
+
+-- The y to draw x, y, w, h at so it runs into nothing, gap below whatever it dodged.
+-- Moving down can land on something else, so it keeps going until it's clear
+function GM:ClearHudY( x, y, w, h, gap )
+    local lowest = lowestInTheWay( x, y, w, h )
+    while lowest do
+        y = lowest + gap
+        lowest = lowestInTheWay( x, y, w, h )
+
+    end
+
+    return y
 
 end

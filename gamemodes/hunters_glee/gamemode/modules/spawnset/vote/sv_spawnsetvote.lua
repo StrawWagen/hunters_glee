@@ -104,15 +104,17 @@ function spawnSetVote:BeginVote( duration, maxOptions, toAdd )
             local easy = option.easy
 
             local chance = GAMEMODE:GetSpawnsetVotableChance( key )
+            local unvotedCount = GAMEMODE.glee_UnvotedSpawnsetCounts[key]
 
-            if isnumber( chance ) and chance < rareChance then -- if rtm is being done a bunch of times, make rare ones more common
+            -- if rtm is being done a bunch of times, make rare ones more common
+            -- unless people already saw it on a ballot and passed on it
+            if isnumber( chance ) and chance < rareChance and not unvotedCount then
                 local added = GAMEMODE.glee_ConsecutiveSpawnsetVotes * chancePerConsecutiveVote
                 local newChance = chance + added
                 chance = math.min( newChance, rareChance )
 
             end
 
-            local unvotedCount = GAMEMODE.glee_UnvotedSpawnsetCounts[key]
             local commonChance = chance or 100
             if unvotedCount and commonChance > rareChance then -- common ones nobody votes for fade out
                 local lost = unvotedCount * math.random( chanceLostPerUnvotedAppearance[1], chanceLostPerUnvotedAppearance[2] )
@@ -170,7 +172,10 @@ function spawnSetVote:BeginVote( duration, maxOptions, toAdd )
             local nominator = player.GetBySteamID64( steamID64 )
             if not IsValid( nominator ) then continue end
 
-            nominator:PrintMessage( HUD_PRINTTALK, "Your nomination of " .. GAMEMODE:GetPrettyNameOfSpawnSet( nomination.setName ) .. " is held for the next Misery vote." )
+            huntersGlee_Notify( { nominator }, {
+                text = "Your nomination of " .. GAMEMODE:GetPrettyNameOfSpawnSet( nomination.setName ) .. " is held for the next Misery vote.",
+                time = 15,
+            } )
 
         end
     end

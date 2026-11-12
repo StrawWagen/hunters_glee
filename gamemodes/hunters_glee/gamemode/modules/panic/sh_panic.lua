@@ -83,6 +83,7 @@ elseif SERVER then
 
     local fleeDist = 1500
     local maxPanic = 115
+    local deathImminentKey = "glee_panic_deathimminent"
 
     function GM:PanicThinkSV( ply )
         local panic = self:GetPanic( ply )
@@ -96,6 +97,7 @@ elseif SERVER then
 
         elseif plysHealth <= 10 then
             panicDrain = 0.1
+            huntersGlee_Notify( { ply }, { text = "USER DEATH IMMINIENT", description = "SEEK. MEDICAL. ATTENTION. IMMEDIATELY.", kind = "bad", replaceKey = deathImminentKey, onlyWhile = "alive" } )
 
         elseif plysHealth <= 20 then
             panicDrain = 0.25
@@ -356,7 +358,8 @@ elseif SERVER then
         end
     end )
 
-    hook.Add( "PlayerDeath", "glee_panic_stopbreathingsnd", function( victim )
+    -- Post, it's the one KillSilent runs too, escaping uses that
+    hook.Add( "PostPlayerDeath", "glee_panic_stopbreathingsnd", function( victim )
         GAMEMODE:SetPanic( victim, 0 )
         if victim.huntersglee_panicSound == nil or not victim.huntersglee_panicSound:IsPlaying() then return end
         victim.huntersglee_panicSound:Stop()

@@ -16,8 +16,8 @@ end
 local function linkedHunterGuiltDays()
     -- one more terminator, among terminators, is no great sin
     if GAMEMODE:PartialClassIsInSpawnPool( "terminator_nextbot_snail" ) then return 0 end
-    if GAMEMODE:MiseryIsHardcore() then return 1 end
-    return 0.25
+    if GAMEMODE:MiseryIsHardcore() then return 1, "Linked hunters don't belong...\nYou feel as guilty as a murderer..." end
+    return 0.25, "Linked hunters don't belong...\nYour guilt grows."
 
 end
 
@@ -249,9 +249,9 @@ local items = {
             GAMEMODE:CloseShopOnPly( purchaser )
 
             if GAMEMODE:PersistentGuiltIsEnabled() then
-                local guiltDays = linkedHunterGuiltDays()
+                local guiltDays, msg = linkedHunterGuiltDays()
                 if guiltDays > 0 then
-                    GAMEMODE:IncrementPersistentGuilt( purchaser, guiltDays )
+                    GAMEMODE:IncrementPersistentGuilt( purchaser, guiltDays, msg )
 
                 end
             end
@@ -350,8 +350,8 @@ local items = {
         weight = 20,
         shPurchaseCheck = { shopHelpers.deadCheck, ghostCanPurchase },
         globalCooldowns = {
-            onGhostPlace = { time = 120, reason = "It is too soon for another inversion to begin." },
-            onRoundStart = { time = 120, reason = "Not unlocked yet." },
+            onGhostPlace = { time = 120, reason = "It is too soon for another inversion to begin.", ignoredWithCheats = true },
+            onRoundStart = { time = 120, reason = "Not unlocked yet.", ignoredWithCheats = true },
         },
         svOnPurchaseFunc = function( purchaser, itemIdentifier )
             shopHelpers.setupPlacable( "player_swapper", purchaser, itemIdentifier )

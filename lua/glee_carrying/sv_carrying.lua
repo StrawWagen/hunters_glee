@@ -15,7 +15,12 @@ function glee_Carrying.HintHandsFull( ply )
     if ( ply.glee_NextHandsFullHint or 0 ) > CurTime() then return end
     ply.glee_NextHandsFullHint = CurTime() + hintCooldown
 
-    huntersGlee_Announce( { ply }, 5, hintCooldown, "You already have something on your back.\nPress Reload to set this down." )
+    huntersGlee_Notify( { ply }, {
+        text = "No space on back.",
+        description = "Press Reload to set this down.",
+        kind = "bad",
+        time = hintCooldown,
+    } )
     ply:EmitSound( "common/wpn_denyselect.wav", 65, math.random( 95, 105 ) )
 
 end
@@ -26,7 +31,12 @@ function glee_Carrying.HintCantBackpack( ply )
     if ( ply.glee_NextHandsFullHint or 0 ) > CurTime() then return end
     ply.glee_NextHandsFullHint = CurTime() + hintCooldown
 
-    huntersGlee_Announce( { ply }, 5, hintCooldown, "You can't fit this on your back!\nPress Reload to set it down." )
+    huntersGlee_Notify( { ply }, {
+        text = "TOO BIG TO PUT ON BACK!",
+        description = "Press Reload to set it down.",
+        kind = "bad",
+        time = hintCooldown,
+    } )
 
 end
 
@@ -115,9 +125,9 @@ end
 -- The use wheel --------------------------------------------------------------
 
 -- the client can't see everything that refuses an action, constraints for one, so it's told
-local function announceRefusal( ply, reason )
+local function notifyRefusal( ply, reason )
     if not reason then return end
-    huntersGlee_Announce( { ply }, 5, 2, reason )
+    huntersGlee_Notify( { ply }, { text = reason, kind = "bad", time = 2 } )
 
 end
 
@@ -146,7 +156,7 @@ net.Receive( "glee_carrying_wheelpick", function( _, ply )
 
     local canPick, reason = glee_Carrying.CanPick( ply, ent, key )
     if not canPick then
-        announceRefusal( ply, reason )
+        notifyRefusal( ply, reason )
         return
 
     end
@@ -230,7 +240,7 @@ hook.Add( "KeyPress", "glee_carrying_heldaction", function( ply, key )
     if not ent then return end
 
     if not canPick then
-        announceRefusal( ply, reason )
+        notifyRefusal( ply, reason )
         return
 
     end

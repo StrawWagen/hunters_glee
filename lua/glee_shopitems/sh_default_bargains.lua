@@ -216,6 +216,7 @@ if SERVER then
 
             end
 
+            -- other things set DSP too, reapplying this often keeps them from overriding it
             self:Timer( "manage_deafness", 0.1, 0, function()
                 if owner:Health() <= 0 then self:UnDeafInternal() return end
                 self:GiveDeaf()
@@ -424,6 +425,7 @@ if SERVER then
             end )
 
             self:Timer( "fish_lunged_panic", 2, 0, function()
+                if owner:Health() <= 0 then return end
                 if owner:WaterLevel() < 3 then
                     GAMEMODE:GivePanic( owner, 15 )
                 end
@@ -564,15 +566,18 @@ if SERVER then
 
                 end
 
-                if self.lastDeathsHintedAt ~= owner:Deaths() then
-                    self.lastDeathsHintedAt = owner:Deaths()
-                    huntersGlee_Announce( { owner }, 50, 5, "Your growth...\nIt's consuming you..." )
+                huntersGlee_Notify( { owner }, {
+                    text = "ABNORMAL TISSUE GROWTH DETECTED",
+                    kind = "bad",
+                    time = 5,
+                } )
 
-                end
-
-                if damage > 10 and self.lastDeathsBigHintedAt ~= owner:Deaths() then
-                    self.lastDeathsBigHintedAt = owner:Deaths()
-                    huntersGlee_Announce( { owner }, 50, 5, "oh GOD, your growth...\nit hurts" )
+                if damage > 10 then
+                    huntersGlee_Notify( { owner }, {
+                        text = "WARNING: TUMOR HEMORRHAGE DETECTED",
+                        kind = "alert",
+                        time = 5,
+                    } )
 
                 end
 
@@ -712,9 +717,13 @@ if SERVER then
 
                 GAMEMODE:GivePanic( owner, panic )
 
-                if panic >= noticeablePanic and self.lastDeathsHintedAt ~= owner:Deaths() then
-                    self.lastDeathsHintedAt = owner:Deaths()
-                    huntersGlee_Announce( { owner }, 25, 5, "Someone else...\nThey make me feel, anxious..." )
+                if panic >= noticeablePanic then
+                    huntersGlee_Notify( { owner }, {
+                        text = "Elevated anxiety detected",
+                        description = "Increase distance from others.",
+                        kind = "bad",
+                        time = 5,
+                    } )
 
                 end
 
@@ -728,8 +737,6 @@ if SERVER then
 
     GAMEMODE:RegisterStatusEffect( "body_odor",
         function( self, owner ) -- setup func
-            self.victimDeathsHintedAt = {}
-
             self:Timer( "stink_panic", panicTickInterval, 0, function()
                 if owner:Health() <= 0 then return end
 
@@ -747,17 +754,19 @@ if SERVER then
 
                     if panic < noticeablePanic then continue end
 
-                    if self.victimDeathsHintedAt[other] ~= other:Deaths() then
-                        self.victimDeathsHintedAt[other] = other:Deaths()
-                        huntersGlee_Announce( { other }, 5, 5, "Ugh...\n" .. owner:Nick() .. " reeks." )
+                    huntersGlee_Notify( { other }, {
+                        text = "NOXIOUS ODOR DETECTED",
+                        description = "Origin: " .. owner:Nick() .. ". Move away.",
+                        kind = "bad",
+                        time = 5,
+                    } )
 
-                    end
-
-                    if self.lastDeathsHintedAt ~= owner:Deaths() then
-                        self.lastDeathsHintedAt = owner:Deaths()
-                        huntersGlee_Announce( { owner }, 25, 5, "They can smell you...\nNobody can stand to be near you." )
-
-                    end
+                    huntersGlee_Notify( { owner }, {
+                        text = "UNRULY ODOR RESPONSE DETECTED",
+                        description = "Increase your distance to others.",
+                        kind = "bad",
+                        time = 5,
+                    } )
                 end
             end )
         end
@@ -801,9 +810,13 @@ if SERVER then
                 local panic = math.Clamp( abandonedFor * abandonmentRamp, abandonmentMinPanic, abandonmentMaxPanic )
                 GAMEMODE:GivePanic( owner, panic )
 
-                if panic >= noticeablePanic and self.lastDeathsHintedAt ~= owner:Deaths() then
-                    self.lastDeathsHintedAt = owner:Deaths()
-                    huntersGlee_Announce( { owner }, 25, 5, "Where did everyone go...?\nDid they abandon you?!" )
+                if panic >= noticeablePanic then
+                    huntersGlee_Notify( { owner }, {
+                        text = "Elevated anxiety detected",
+                        description = "Seek social contact immediately.",
+                        kind = "bad",
+                        time = 5,
+                    } )
 
                 end
 
@@ -840,51 +853,48 @@ if SERVER then
 
     GAMEMODE:RegisterStatusEffect( "parasitic_vibes",
         function( self, owner ) -- setup func
-            self.victimDeathsHintedAt = {}
-
             self:Timer( "drain_life", lifeTransferInterval, 0, function()
                 if owner:Health() <= 0 then return end
+                if owner:Health() >= owner:GetMaxHealth() then return end
 
+                local room = owner:GetMaxHealth() - owner:Health()
                 local drained = 0
                 for _, victim in ipairs( lifeTransferTargets( owner ) ) do
+                    if drained >= room then break end
+
                     local victimHealth = victim:Health()
-                    local taken = math.min( lifeTransferPerPly, victimHealth - lifeTransferFloor( victim ) )
+                    local taken = math.min( lifeTransferPerPly, victimHealth - lifeTransferFloor( victim ), room - drained )
                     if taken <= 0 then continue end
 
                     victim:SetHealth( victimHealth - taken )
                     victim.glee_LastSetHealthReason = "glee_parasitic_vibes_drained"
                     drained = drained + taken
 
-                    if self.victimDeathsHintedAt[victim] ~= victim:Deaths() then
-                        self.victimDeathsHintedAt[victim] = victim:Deaths()
-                        huntersGlee_Announce( { victim }, 5, 5, "You feel... drained.\nBeing near " .. owner:Nick() .. " saps your strength." )
-
-                    end
+                    huntersGlee_Notify( { victim }, {
+                        text = "WARNING: VITALS DECLINING",
+                        description = "Origin: " .. owner:Nick() .. ".\nIncrease distance immediately.",
+                        kind = "bad",
+                        time = 5,
+                    } )
                 end
 
                 if drained <= 0 then return end
 
-                local ownerHealth = owner:Health()
-                local healed = math.max( ownerHealth, math.min( ownerHealth + drained, owner:GetMaxHealth() ) )
-                if healed ~= ownerHealth then
-                    owner:SetHealth( healed )
-                    owner.glee_LastSetHealthReason = "glee_parasitic_vibes_fed"
+                owner:SetHealth( owner:Health() + drained )
+                owner.glee_LastSetHealthReason = "glee_parasitic_vibes_fed"
 
-                end
-
-                if self.lastDeathsHintedAt ~= owner:Deaths() then
-                    self.lastDeathsHintedAt = owner:Deaths()
-                    huntersGlee_Announce( { owner }, 25, 5, "Their life force...\nIt flows into you." )
-
-                end
+                huntersGlee_Notify( { owner }, {
+                    text = "UNEXPLAINED VITALS INCREASE",
+                    description = "Remain near others to sustain.",
+                    kind = "good",
+                    time = 5,
+                } )
             end )
         end
     )
 
     GAMEMODE:RegisterStatusEffect( "bleeding_heart",
         function( self, owner ) -- setup func
-            self.recipientDeathsHintedAt = {}
-
             self:Timer( "give_life", lifeTransferInterval, 0, function()
                 if owner:Health() <= 0 then return end
 
@@ -900,24 +910,81 @@ if SERVER then
                     owner:SetHealth( owner:Health() - given )
                     owner.glee_LastSetHealthReason = "glee_bleeding_heart_drained"
 
-                    if self.recipientDeathsHintedAt[recipient] ~= recipient:Deaths() then
-                        self.recipientDeathsHintedAt[recipient] = recipient:Deaths()
-                        huntersGlee_Announce( { recipient }, 5, 5, "You feel... better?\n" .. owner:Nick() .. " is giving you their life." )
+                    huntersGlee_Notify( { recipient }, {
+                        text = "VITALS IMPROVING",
+                        description = "Source: " .. owner:Nick() .. ". Remain nearby.",
+                        kind = "good",
+                        time = 5,
+                    } )
 
-                    end
-
-                    if self.lastDeathsHintedAt ~= owner:Deaths() then
-                        self.lastDeathsHintedAt = owner:Deaths()
-                        huntersGlee_Announce( { owner }, 25, 5, "They need you...\nYou can't help but give." )
-
-                    end
+                    huntersGlee_Notify( { owner }, {
+                        text = "WARNING: VITALS DECLINING",
+                        description = "Distance yourself from others.",
+                        kind = "bad",
+                        time = 5,
+                    } )
                 end
+            end )
+        end
+    )
+
+
+    GAMEMODE:RegisterStatusEffect( "speechless",
+        function( self, owner ) -- setup func
+            self:Hook( "PlayerSay", function( speaker )
+                if speaker ~= owner then return end
+                if owner:Health() <= 0 then return end
+
+                owner:ConCommand( "glee_taunts_open" )
+                return "" -- PlayerSay wants a string, empty is what blocks the message
+
+            end )
+
+            self:Hook( "PlayerCanHearPlayersVoice", function( _listener, talker )
+                if talker ~= owner then return end
+                if owner:Health() <= 0 then return end
+
+                return false
+
             end )
         end
     )
 end
 
 if CLIENT then
+    -- push to talk holds the taunt wheel open instead
+    GAMEMODE:RegisterStatusEffect( "speechless",
+        function( self, owner ) -- setup func
+            if owner ~= LocalPlayer() then return end
+
+            self:Hook( "PlayerBindPress", function( _, bind, pressed, code )
+                if not pressed then return end
+                if not string.find( bind, "+voicerecord", 1, true ) then return end
+                if owner:Health() <= 0 then return end
+
+                self.heldVoiceKey = code
+                RunConsoleCommand( "+glee_taunts" )
+                return true
+
+            end )
+
+            -- the blocked press never sends -voicerecord, so watch the key itself
+            self:Hook( "Think", function()
+                if not self.heldVoiceKey then return end
+                if input.IsButtonDown( self.heldVoiceKey ) then return end
+
+                self.heldVoiceKey = nil
+                RunConsoleCommand( "-glee_taunts" )
+
+            end )
+        end,
+        function( self ) -- teardown, don't leave the wheel stuck open
+            if not self.heldVoiceKey then return end
+            RunConsoleCommand( "-glee_taunts" )
+
+        end
+    )
+
     local stinkAlpha = 40
     local stinkOwnAlpha = 25 -- the owner's eyes are in the middle of it
 
@@ -1244,10 +1311,13 @@ if SERVER then
                 end )
             end )
 
-            self:HookOnce( "PlayerSpawn", function( spawned )
-                if not spawned:HasStatusEffect( "blindness" ) then return end
+            self:Hook( "PlayerSpawn", function( spawned )
+                if spawned ~= owner then return end
+
                 timer.Simple( 0, function()
-                    if not IsValid( spawned ) then return end
+                    if not IsValid( owner ) then return end
+                    if not owner:HasStatusEffect( "blindness" ) then return end
+
                     self:RestoreEyes()
                     self:MakeEyesCloudy()
 
@@ -1586,7 +1656,7 @@ local items = {
         shCost = -75,
         markup = 0.25,
         cooldown = math.huge,
-        tags = { "MUTATIONS", "Debuff", "Bargain", "Essential" },
+        tags = { "MUTATIONS", "Debuff", "Bargain", "RareBargain", "Essential" },
         slots = { "physiology" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
@@ -1606,7 +1676,7 @@ local items = {
         shCost = -200,
         markup = 0.25,
         cooldown = math.huge,
-        tags = { "MUTATIONS", "Debuff", "Bargain", "Essential" },
+        tags = { "MUTATIONS", "Debuff", "Bargain", "RareBargain", "Essential" },
         slots = { "physiology" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
@@ -1617,6 +1687,25 @@ local items = {
         shCanShowInShop = shopHelpers.hasMultiplePeople,
         svOnPurchaseFunc = function( ply )
             ply:GiveStatusEffect( "bleeding_heart" )
+
+        end,
+    },
+    ["speechless"] = {
+        name = "Speechless.",
+        desc = "Your tongue, removed." .. GAMEMODE.glee_BargainDescrip,
+        shCost = -350,
+        markup = 0.25,
+        cooldown = math.huge,
+        tags = { "MUTATIONS", "Debuff", "Bargain" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_INACTIVE,
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = -90,
+        shPurchaseCheck = { shopHelpers.aliveCheck, },
+        shCanShowInShop = shopHelpers.hasMultiplePeople,
+        svOnPurchaseFunc = function( ply )
+            ply:GiveStatusEffect( "speechless" )
 
         end,
     },

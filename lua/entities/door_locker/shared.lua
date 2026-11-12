@@ -151,8 +151,9 @@ end
 local function DoorOnUsedInitial( door, thingUsingTheDoor, currentlyProcessingPlayer )
     if not currentlyProcessingPlayer.GivePlayerScore then return end
 
-    local msg = ""
+    local msg = GAMEMODE:GetNameOfBot( thingUsingTheDoor ) .. " used one of your locked doors."
     local score = 0
+    local inTheFeed -- the small fry, the rest keeps the middle of the screen
 
     -- check if the thing using the door is a player
     if thingUsingTheDoor:IsPlayer() then
@@ -176,7 +177,13 @@ local function DoorOnUsedInitial( door, thingUsingTheDoor, currentlyProcessingPl
     elseif thingUsingTheDoor:IsNextBot() then
         -- give the player a bit less score
         score = 80
-        msg = GAMEMODE:GetNameOfBot( thingUsingTheDoor ) .. " used one of your locked doors, you gain 80 score!"
+        inTheFeed = {
+            text = GAMEMODE:GetNameOfBot( thingUsingTheDoor ) .. " used one of your locked doors.",
+            description = "You gain 80 score!",
+            kind = "good",
+            time = 6,
+            style = "soulthought",
+        }
 
     end
 
@@ -185,7 +192,14 @@ local function DoorOnUsedInitial( door, thingUsingTheDoor, currentlyProcessingPl
         GAMEMODE:SendPlacableScorePopup( currentlyProcessingPlayer, door, score )
 
     end
-    huntersGlee_Announce( { currentlyProcessingPlayer }, 5, 6, msg )
+
+    if inTheFeed then
+        huntersGlee_Notify( { currentlyProcessingPlayer }, inTheFeed )
+
+    else
+        huntersGlee_Announce( { currentlyProcessingPlayer }, 5, 6, msg )
+
+    end
 
 end
 
@@ -195,7 +209,7 @@ function ENT:Place()
     -- GetCanPlace is cached on a timer, the door may have broken/been aimed away from since
     local canPlace, reason = self:CalculateCanPlace()
     if not canPlace then
-        if reason then huntersGlee_Announce( { self.player }, 10, 5, reason ) end
+        if reason then huntersGlee_Notify( { self.player }, { text = reason, kind = "bad", time = 5 } ) end
         return
 
     end

@@ -308,7 +308,6 @@ else
     local stopTapeAt
     local recordingCam
     local writer
-    local errColor = Color( 255, 0, 0 )
     local savedColor = Color( 0, 255, 255 )
     local baseConfig = {
         container = "webm",
@@ -451,7 +450,12 @@ else
             local width = encoderSafeSize( math.min( w, baseConfig.width ) )
             local height = encoderSafeSize( ( width * h ) / w )
             if width < minRecordSize or height < minRecordSize then
-                chat.AddText( errColor, "Couldn't record video: your game window is too small or too stretched." )
+                huntersGlee_Notify( nil, {
+                    text = "Couldn't record video.",
+                    description = "Your game window is too small or too stretched.",
+                    kind = "bad",
+                    time = 6,
+                } )
                 return
 
             end
@@ -474,7 +478,12 @@ else
                 beginRecording()
 
             else
-                chat.AddText( errColor, "Couldn't record video: " .. recordErr )
+                huntersGlee_Notify( nil, {
+                    text = "Couldn't record video.",
+                    description = recordErr,
+                    kind = "bad",
+                    time = 6,
+                } )
 
             end
         end

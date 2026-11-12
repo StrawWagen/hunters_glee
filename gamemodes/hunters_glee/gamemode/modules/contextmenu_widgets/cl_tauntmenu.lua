@@ -29,6 +29,9 @@ local danceActs = {
 }
 
 local function buildTauntWheel( held )
+    local ply = LocalPlayer()
+    ply.oldScrollPositions = ply.oldScrollPositions or {}
+
     local wheel = vgui.Create( "glee_wheel" )
 
     local outer = wheel:Style():Scaled( OUTER_RADIUS_1080P )
@@ -43,16 +46,23 @@ local function buildTauntWheel( held )
 
     end
 
+    function wheel:OnPageChanged( page )
+        ply.oldScrollPositions["tauntwheel"] = page
+
+    end
+
     if held then
+        -- stays on page 1, held can't scroll back off a saved page
         wheel:HoldAim()
 
     else
+        wheel:SetPage( ply.oldScrollPositions["tauntwheel"] or 1 )
         wheel:MakePopup()
         terminator_Extras.easyClosePanel( wheel )
 
     end
 
-    LocalPlayer():EmitSound( "physics/wood/wood_crate_impact_soft3.wav", 50, 200, 0.45 )
+    ply:EmitSound( "physics/wood/wood_crate_impact_soft3.wav", 50, 200, 0.45 )
 
     return wheel
 
@@ -60,7 +70,12 @@ end
 
 local function openTauntWheel( held )
     if LocalPlayer():Health() <= 0 then
-        LocalPlayer():PrintMessage( HUD_PRINTTALK, "Dead people can't taunt!" )
+        huntersGlee_Notify( nil, {
+            text = "You have no body to taunt with...",
+            kind = "bad",
+            time = 6,
+            style = "soulthought",
+        } )
         return
 
     end

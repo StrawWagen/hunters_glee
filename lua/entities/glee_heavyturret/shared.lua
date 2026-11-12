@@ -1179,11 +1179,21 @@ local goodDispositions = {
     [D_FR] = true,
 }
 
+-- grigori, scary as a hunter
+local function isEnemyPlayer( ply )
+    if not ply.HasStatusEffect then return false end -- status effects are Hunter's Glee only
+
+    return ply:Alive() and ply:HasStatusEffect( "divine_chosen" )
+
+end
+
 function ENT:IsValidTarget( ent )
     if ent == self then return false end
-    if not ent:IsNPC() then return false end -- hunters too, see terminator_nextbot_base's IsNPC hack
     if ent:IsFlagSet( FL_NOTARGET ) then return false end
     if ent:Health() <= 0 then return false end
+
+    if ent:IsPlayer() then return isEnemyPlayer( ent ) end
+    if not ent:IsNPC() then return false end -- hunters too, see terminator_nextbot_base's IsNPC hack
 
     return goodDispositions[self:Disposition( ent )] == true
 

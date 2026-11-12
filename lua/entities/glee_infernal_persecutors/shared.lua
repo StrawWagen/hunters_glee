@@ -24,6 +24,7 @@ ENT.MinNpcs = 4
 ENT.MaxNpcs = 5
 
 ENT.PersistGuiltAdded = 1
+ENT.GuiltReliefPerSlaying = 1.5 -- days off the summoner's guilt, for each godlySlayingRelievesGuilt player the npcs kill
 
 -- configurable distances
 ENT.GuiltyCheckRadius = 2500 -- alive players within this decide the cost tier
@@ -181,10 +182,16 @@ function ENT:UpdateGivenScore()
 
 end
 
-function ENT:SpawnANpc( aroundPos, isLeader )
+function ENT:SpawnANpc( aroundPos, isLeader, summoner )
     local class = isLeader and self.LeaderNpcClass or self.NpcClass
     local npc = ents.Create( class )
     if not IsValid( npc ) then return end
+
+    if IsValid( summoner ) then
+        npc.glee_Summoner = summoner
+        npc.glee_SummonerGuiltRelief = self.GuiltReliefPerSlaying
+
+    end
 
     local modelRad = self:GetModelRadius()
 
@@ -238,10 +245,11 @@ function ENT:Place()
 
     GAMEMODE:AddMischievousness( self.player, 10, "summoned infernal hecklers" )
     if self.PersistGuiltAdded and self.PersistGuiltAdded > 0 then
-        GAMEMODE:IncrementPersistentGuilt( self.player, self.PersistGuiltAdded )
+        GAMEMODE:IncrementPersistentGuilt( self.player, self.PersistGuiltAdded, "Your guilt grows..." )
 
     end
 
+    local summoner = self.player -- detaching forgets them
     self:DetachFromOwner()
 
     local baseDelay = 2
@@ -280,7 +288,7 @@ function ENT:Place()
         local isLeader = self.DoLeaderNpc and i == 1
         timer.Simple( baseDelay + ( i - 1 ) * betweenSpawnsDelay, function()
             if not IsValid( self ) then return end
-            self:SpawnANpc( myPos, isLeader )
+            self:SpawnANpc( myPos, isLeader, summoner )
 
             self:BumpNearbyEnts()
 

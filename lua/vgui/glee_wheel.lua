@@ -27,6 +27,7 @@
             Release it when the key comes up, that picks whatever's aimed at, then closes.
 
     past 8 items it pages, the mouse wheel flips them.
+    SetPage opens it on a page, OnPageChanged is how you remember one.
     keys 1 to 8 pick on the current page.
     Close fades it out, then removes it.
 ]]
@@ -101,6 +102,10 @@ end
 
 -- stub
 PANEL.OnItemSelected = function( _self, _item, _index )
+end
+
+-- stub, the mouse wheel flipped to this page
+PANEL.OnPageChanged = function( _self, _page )
 end
 
 -- stub, polled for the items on the page
@@ -186,7 +191,7 @@ end
 
 local function setPage( self, page )
     page = ( ( page - 1 ) % pageCount( self ) ) + 1
-    if page == self._page then return end
+    if page == self._page then return false end
 
     self._page = page
     self._hovered = nil
@@ -197,7 +202,16 @@ local function setPage( self, page )
 
     end
 
-    self:Style():PlaySound( "switch", 100, nil, 0.3, 60 )
+    return true
+
+end
+
+-- jumps there, no flip sound and no turning grip
+-- after SetItems, that starts back on page 1
+PANEL.SetPage = function( self, page )
+    self._pageSteps = page - 1
+    self._pageScroll = page - 1
+    setPage( self, page )
 
 end
 
@@ -328,7 +342,12 @@ PANEL.OnMouseWheeled = function( self, delta )
     if pageCount( self ) <= 1 then return end
 
     self._pageSteps = self._pageSteps - delta
-    setPage( self, self._pageSteps + 1 )
+    if setPage( self, self._pageSteps + 1 ) then
+        self:Style():PlaySound( "switch", 100, nil, 0.3, 60 )
+        self:OnPageChanged( self._page )
+
+    end
+
     return true
 
 end

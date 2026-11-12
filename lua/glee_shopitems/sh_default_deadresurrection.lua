@@ -300,7 +300,15 @@ if SERVER then
                             if owner:Health() < owner:GetMaxHealth() + -1 then return end
 
                             owner.glee_InfernalDealPermaGuiltHinted = true
-                            huntersGlee_Announce( { owner }, 100, 10, "The deal isn't lifing...\nYou have harmed too many innocent souls.\nYou are one with the infernal powers." )
+                            huntersGlee_Notify( { owner }, {
+                                text = "INFERNAL CONTRACT STILL BINDING",
+                                description = "Too many innocent casualties.\nYour guilt is manifesting.",
+                                kind = "bad",
+                                time = 15,
+                                extraFlashes = 8,
+                                flashInterval = 1,
+
+                            } )
 
                         end
                         return
@@ -317,7 +325,12 @@ if SERVER then
 
                     owner:RemoveStatusEffect( "infernalintervention_rawendofthedeal" )
 
-                    huntersGlee_Announce( { owner }, 20, 5, "Is the deal over?\nIt's like a weight has been lifted..." )
+                    huntersGlee_Notify( { owner }, {
+                        text = "INFERNAL CONTRACT VOID",
+                        description = "Vitals normalizing.",
+                        kind = "good",
+                        time = 5,
+                    } )
 
                 end
             end )
@@ -331,6 +344,18 @@ if SERVER then
 
             owner:RemoveBoneManips( "infernalintervention" )
 
+        end
+    )
+else
+    GAMEMODE:RegisterStatusEffect( "infernalintervention_rawendofthedeal",
+        function( self, owner ) -- setup func
+            if LocalPlayer() ~= owner then return end
+
+            -- the tilt is part of the deal, the server teardown fixes it
+            self:Hook( "glee_blockTauntAngFix", function()
+                return true
+
+            end )
         end
     )
 end
@@ -467,6 +492,10 @@ if CLIENT then
                 return true
 
             end )
+            self:Hook( "glee_hideNotices", function()
+                return true
+
+            end )
             self:Hook( "glee_blockDramaticAnnouncements", function( _, priority )
                 if priority >= 1000 then return end
                 return true
@@ -576,8 +605,6 @@ if SERVER then
                     GAMEMODE.roundExtraData.divineChosenSpent[potentialChosen:GetCreationID()] = true
                     potentialChosen:RemoveStatusEffect( "divine_chosen" )
 
-                    huntersGlee_Announce( player.GetAll(), 500, 15, string.upper( potentialChosen:Nick() ) .. " has FAILED their divine task..." )
-
                     timer.Simple( 0.1, function()
                         if not IsValid( potentialChosen ) then return end
                         if potentialChosen:Health() <= 1 then return end
@@ -588,6 +615,32 @@ if SERVER then
                     end )
 
                     table.insert( failedChosen, potentialChosen )
+
+                end
+
+                -- every Grigori runs out of patience at once, so they all fail in one notice
+                if #failedChosen > 0 then
+                    local names = {}
+                    for _, failed in ipairs( failedChosen ) do
+                        names[#names + 1] = string.upper( failed:Nick() )
+
+                    end
+
+                    local text
+                    if #names == 1 then
+                        text = names[1] .. " has FAILED their divine task..."
+
+                    else
+                        local last = table.remove( names )
+                        text = table.concat( names, ", " ) .. " and " .. last .. " have FAILED their divine tasks..."
+
+                    end
+
+                    huntersGlee_Notify( player.GetAll(), {
+                        text = text,
+                        kind = "alert",
+                        time = 18
+                    } )
 
                 end
 
@@ -683,6 +736,10 @@ if SERVER then
             -- grigori cannot escape
             self:HookOnce( "glee_blockescape_invehicle", function( escaper, _ )
                 if escaper:HasStatusEffect( "divine_chosen" ) then return true end
+
+            end )
+            self:HookOnce( "glee_blockboard_trueescape", function( boarder, _ )
+                if boarder:HasStatusEffect( "divine_chosen" ) then return true end
 
             end )
 

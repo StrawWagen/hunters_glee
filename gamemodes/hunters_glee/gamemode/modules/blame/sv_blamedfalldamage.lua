@@ -44,14 +44,8 @@ end )
 hook.Add( "EntityTakeDamage", "glee_blamefalldamage", function( target, dmg )
     local attacker = target.glee_fallDamageAttacker
     if not attacker then return end
-    if not IsValid( attacker ) then attacker = game.GetWorld() end
     if not dmg:IsFallDamage() then return end
 
-    dmg:SetAttacker( attacker )
-
-    local inflictor = target.glee_fallDamageInflictor
-    if not inflictor then return end
-    if not IsValid( inflictor ) then inflictor = game.GetWorld() end
-    dmg:SetInflictor( inflictor )
+    GAMEMODE:ApplyDamageBlame( dmg, attacker, target.glee_fallDamageInflictor )
 
 end, HOOK_HIGH )

@@ -1285,7 +1285,7 @@ function GM:ShowShop()
         -- they'll mash the shop key, only tell them why every so often
         if hint and nextBlockedHint < CurTime() then
             nextBlockedHint = CurTime() + 5
-            LocalPlayer():PrintMessage( HUD_PRINTTALK, hint )
+            huntersGlee_Notify( nil, { text = hint, kind = "bad", time = 6 } )
 
         end
         return

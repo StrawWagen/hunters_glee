@@ -110,6 +110,38 @@ end
 
 do
     local string_StartWith = string.StartWith
+
+    local function syncEffect( ent, effectName, has )
+        if has then
+            ent:StatusEffectApplyCL( effectName )
+
+        else
+            ent:StatusEffectRemoveCL( effectName )
+
+        end
+    end
+
+    -- setups can lean on LocalPlayer(), which isn't valid while we're still loading in
+    -- so changes wait here until InitPostEntity. already loaded means an autorefresh
+    local loadedIn = IsValid( LocalPlayer() )
+    local waitingChanges = {}
+
+    hook.Add( "InitPostEntity", "glee_statuseffects_applywaiting", function()
+        loadedIn = true
+
+        for ent, effectNames in pairs( waitingChanges ) do
+            if not IsValid( ent ) then continue end
+
+            -- read it fresh, it may have flipped more than once while we waited
+            for effectName in pairs( effectNames ) do
+                syncEffect( ent, effectName, ent:GetNW2Bool( nw2NamePrefix .. effectName, false ) )
+
+            end
+        end
+        waitingChanges = {}
+
+    end )
+
     hook.Add( "EntityNetworkedVarChanged", "glee_detecteffectadd", function( ent, varName, old, new )
         if not string_StartWith( varName, nw2NamePrefix ) then return end
 
@@ -119,12 +151,14 @@ do
 
         end
 
-        if new == true then
-            ent:StatusEffectApplyCL( effectName )
-
-        else
-            ent:StatusEffectRemoveCL( effectName )
+        if not loadedIn then
+            waitingChanges[ent] = waitingChanges[ent] or {}
+            waitingChanges[ent][effectName] = true
+            return
 
         end
+
+        syncEffect( ent, effectName, new == true )
+
     end )
 end

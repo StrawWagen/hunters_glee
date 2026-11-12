@@ -67,7 +67,8 @@ local function allRidersOf( vehicle )
 
 end
 
-local textDisplayDuration = 4
+local textDisplayDuration = 8
+local textDisplayDurationNobodyLeft = 4
 
 function GM:escapifyVehicle( vehicle )
     local driver
@@ -102,7 +103,11 @@ function GM:escapifyVehicle( vehicle )
 
     if #escapedRiders <= 0 then return end
 
-    local delayUntil = CurTime() + textDisplayDuration + 0.15
+    -- with nobody left, the round ends as soon as this text is gone
+    local nobodyLeft = potentialEscapersCount() <= 0
+    local displayDuration = nobodyLeft and textDisplayDurationNobodyLeft or textDisplayDuration
+
+    local delayUntil = CurTime() + displayDuration + 0.15
     self:DelayRoundEndingUntil( delayUntil )
 
     for _, ply in player.Iterator() do
@@ -114,42 +119,74 @@ function GM:escapifyVehicle( vehicle )
 
     if riderCount > 0 then
         if IsValid( driver ) then
-            huntersGlee_AnnounceDramatic( actualRidersNoDriver, 1000, textDisplayDuration, "You've escaped!\nYou can finally leave this all behind, thanks to...\n" .. driver:Nick() )
+            huntersGlee_AnnounceDramatic( actualRidersNoDriver, 1000, displayDuration, table.concat( {
+                "You've escaped!\n",
+                "You can finally leave this all behind, thanks to...\n",
+                driver:Nick(),
+            } ) )
 
             local increase = riderCount * self:GetEscapeRewardPerRider()
             driver:GivePlayerScore( increase )
 
             local sOrNoS = riderCount == 1 and "" or "s"
-            huntersGlee_AnnounceDramatic( { driver }, 1000, textDisplayDuration, "You helped " .. riderCount .. " soul" .. sOrNoS .. " escape...\n+" .. increase .. " Score." )
+            huntersGlee_AnnounceDramatic( { driver }, 1000, displayDuration, table.concat( {
+                "You helped ", riderCount, " soul", sOrNoS, " escape...\n",
+                "+", increase, " Score.",
+            } ) )
 
-            GAMEMODE:IncrementPersistentGuilt( driver, -( riderCount * 0.25 ) )
+            GAMEMODE:IncrementPersistentGuilt( driver, -( riderCount * 0.35 ), "They escaped because of you...\nYou feel a bit less guilty already." )
 
-            huntersGlee_AnnounceDramatic( everyoneElse, 50, textDisplayDuration, driver:Nick() .. " helped " .. riderCount .. " soul" .. sOrNoS .. " escape..." )
+            huntersGlee_NotifyLivingAndDead( everyoneElse, {
+                text = "WARNING: SOUL UPLIFT DETECTED",
+                description = driver:Nick() .. " helped " .. riderCount .. " soul" .. sOrNoS .. " escape...",
+                kind = "alert",
+                time = displayDuration,
+            }, {
+                text = driver:Nick() .. " helped " .. riderCount .. " soul" .. sOrNoS .. " escape...",
+                kind = "good",
+                time = displayDuration,
+            } )
 
         else
-            local escapablePlyCount = potentialEscapersCount()
-            if escapablePlyCount > 0 then
-                huntersGlee_AnnounceDramatic( escapedRiders, 1000, textDisplayDuration, "You've escaped!\nBut who did you leave behind?" )
-
-                local sOrNoS = riderCount == 1 and "" or "s"
-                local veOrS = riderCount == 1 and "s" or "ve"
-                huntersGlee_AnnounceDramatic( everyoneElse, 50, textDisplayDuration, riderCount .. " soul" .. sOrNoS .. " ha" .. veOrS .. " escaped the hunt..." )
+            if not nobodyLeft then
+                huntersGlee_AnnounceDramatic( escapedRiders, 1000, displayDuration, "You've escaped!\nBut who did you leave behind?" )
 
             else
-                huntersGlee_AnnounceDramatic( escapedRiders, 1000, textDisplayDuration, "You've escaped!\nYou can finally leave this all behind..." )
+                huntersGlee_AnnounceDramatic( escapedRiders, 1000, displayDuration, "You've escaped!\nYou can finally leave this all behind..." )
 
             end
+            local sOrNoS = riderCount == 1 and "" or "s"
+            local veOrS = riderCount == 1 and "s" or "ve"
+            huntersGlee_NotifyLivingAndDead( everyoneElse, {
+                text = "WARNING: SOUL UPLIFT DETECTED",
+                description = riderCount .. " soul" .. sOrNoS .. " ha" .. veOrS .. " escaped the hunt...",
+                kind = "alert",
+                time = displayDuration,
+            }, {
+                text = riderCount .. " soul" .. sOrNoS .. " ha" .. veOrS .. " escaped the hunt...",
+                kind = "good",
+                time = displayDuration,
+            } )
         end
     else
-        local escapablePlyCount = potentialEscapersCount()
-        if escapablePlyCount > 0 then
-            huntersGlee_AnnounceDramatic( { driver }, 1000, textDisplayDuration, "You've escaped!\nBut who did you leave behind?" )
-            huntersGlee_AnnounceDramatic( everyoneElse, 50, textDisplayDuration, driver:Nick() .. " has escaped!" )
+        if not nobodyLeft then
+            huntersGlee_AnnounceDramatic( { driver }, 1000, displayDuration, "You've escaped!\nBut who did you leave behind?" )
 
         else
-            huntersGlee_AnnounceDramatic( { driver }, 1000, textDisplayDuration, "You've escaped!\nYou can finally leave this all behind..." )
+            huntersGlee_AnnounceDramatic( { driver }, 1000, displayDuration, "You've escaped!\nYou can finally leave this all behind..." )
 
         end
+
+        huntersGlee_NotifyLivingAndDead( everyoneElse, {
+            text = "WARNING: SOUL UPLIFT DETECTED",
+            description = driver:Nick() .. " has escaped...",
+            kind = "alert",
+            time = displayDuration,
+        }, {
+            text = driver:Nick() .. " has escaped!",
+            kind = "good",
+            time = displayDuration,
+        } )
     end
 
     SafeRemoveEntity( vehicle )
@@ -235,15 +272,39 @@ GAMEMODE:RegisterStatusEffect( "boss_defeat_resistance",
 
 hook.Add( "glee_onboss_defeated", "glee_escapeviabossdefeat", function( boss, attacker )
     local playerCount = player.GetCount()
-    local msg
+    local header
     if playerCount <= 1 then
-        msg = "You've HUNTED " .. GAMEMODE:GetNameOfBot( boss ) .. "\nYou're finally, truly safe..."
+        header = table.concat( {
+            "You've HUNTED ", GAMEMODE:GetNameOfBot( boss ), "\n",
+        } )
 
     else
-        msg = GAMEMODE:GetNameOfBot( boss ) .. "\nWAS KILLED BY\n" .. GAMEMODE:GetNameOfBot( attacker ) .. "\nYou're finally, truly safe..."
-
+        header = table.concat( {
+            GAMEMODE:GetNameOfBot( boss ), "\n",
+            "WAS KILLED BY\n",
+            GAMEMODE:GetNameOfBot( attacker ), "\n",
+        } )
     end
-    huntersGlee_AnnounceDramatic( player.GetAll(), 1000, 8, msg )
+
+    local escapedPlys = {}
+    local deadPlys = {}
+    local livingPlys = {}
+    for _, ply in player.Iterator() do
+        if ply:HasEscaped() then
+            table.insert( escapedPlys, ply )
+
+        elseif not ply:Alive() or ply:Health() <= 0 then
+            table.insert( deadPlys, ply )
+
+        else
+            table.insert( livingPlys, ply )
+
+        end
+    end
+
+    huntersGlee_AnnounceDramatic( livingPlys, 1000, 8, header .. "You're finally, truly safe..." )
+    huntersGlee_AnnounceDramatic( deadPlys, 1000, 8, header .. "If only you were still alive..." )
+    huntersGlee_AnnounceDramatic( escapedPlys, 1000, 8, header .. "They'll be joining you now..." )
 
     local alivePlayers = GAMEMODE:getAlivePlayers()
     for _, ply in ipairs( alivePlayers ) do
@@ -266,7 +327,10 @@ hook.Add( "glee_onboss_defeated", "glee_escapeviabossdefeat", function( boss, at
 end )
 
 hook.Add( "glee_onboss_crappydefeated", "glee_escapeviabossdefeat", function( boss )
-    local msg = GAMEMODE:GetNameOfBot( boss ) .. "\nHas died an ungleeful death..."
+    local msg = table.concat( {
+        GAMEMODE:GetNameOfBot( boss ), "\n",
+        "Has died an ungleeful death...",
+    } )
 
     huntersGlee_AnnounceDramatic( player.GetAll(), 1000, 8, msg )
 
@@ -349,10 +413,12 @@ function GM:GiveEscapeRewardTo( ply )
             table.insert( msgParts, everyoneEscaped and "\nDOUBLE BOON!!!" or "\nEnvoy's Boon!" )
 
             local holders = envoyHelpedCount == 1 and " Prospective Account Holder" or " Prospective Account Holders"
-            ply:PrintMessage( HUD_PRINTTALK, table.concat( {
-                "Envoy's Boon: ", envoyHelpedCount, holders, " tasted emerging Freedom, thanks to you. ",
-                "Escape Multiplier ", math.Round( mapModesMultiplier, 2 ), "x -> ", math.Round( theMultiplier, 2 ), "x",
-            } ) )
+            huntersGlee_Notify( { ply }, {
+                text = "Envoy's Boon: " .. envoyHelpedCount .. holders .. " tasted emerging Freedom, thanks to you.",
+                description = "Escape Multiplier " .. math.Round( mapModesMultiplier, 2 ) .. "x -> " .. math.Round( theMultiplier, 2 ) .. "x",
+                kind = "jackpot",
+                time = 18,
+            } )
 
         end
 
@@ -404,7 +470,10 @@ function GM:GiveEscapeRewardTo( ply )
             local sOrNoS = totalSkulls == 1 and "" or "s"
             local skullMsg
             if hasLoophole then
-                skullMsg = "Relaying your " .. totalSkulls .. " cashed out skull" .. sOrNoS .. " off-world...\nStraight into your bank..."
+                skullMsg = table.concat( {
+                    "Relaying your ", totalSkulls, " cashed out skull", sOrNoS, " off-world...\n",
+                    "Straight into your bank...",
+                } )
 
             elseif hasGains then
                 skullMsg = "Cashing out your " .. totalSkulls .. " skull" .. sOrNoS .. ", with Skull Gains..."

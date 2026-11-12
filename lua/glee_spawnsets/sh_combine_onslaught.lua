@@ -26,28 +26,16 @@ if SERVER then
         chanceToBeVotable = 0.5,
         spawns = {
             {
-                name = "combine_metropolice",
-                prettyName = "A Metrocop",
-                class = "terminator_nextbot_cmetro",
-                spawnType = "hunter",
-                difficultyCost = { 1 },
-                difficultyStopAfter = { 50, 100 },
-                countClass = genericCombineCounter,
-                minCount = { 4 },
-                postSpawnedFuncs = { angerOnSpawn },
-            },
-            {
                 hardRandomChance = { 0, 15 },
-                name = "combine_soldier_rareearly",
+                name = "combine_soldier_early",
                 prettyName = "A Combine Soldier",
                 class = "terminator_nextbot_csoldier",
                 spawnType = "hunter",
                 spawnSameZ = true,
                 difficultyCost = { 2, 4 },
-                difficultyNeeded = { 15, 25 },
                 difficultyStopAfter = { 100 },
                 countClass = "terminator_nextbot_csoldier",
-                maxCount = { 1, 2 },
+                maxCount = { 2, 4 },
                 postSpawnedFuncs = { angerOnSpawn },
             },
             {
@@ -57,10 +45,10 @@ if SERVER then
                 spawnType = "hunter",
                 spawnSameZ = true,
                 difficultyCost = { 8, 10 },
-                difficultyNeeded = { 50, 100 },
-                difficultyStopAfter = { 200 },
+                difficultyNeeded = { 15, 25 },
+                difficultyStopAfter = { 300 },
                 countClass = "terminator_nextbot_csoldier",
-                maxCount = { 3, 4 },
+                maxCount = { 4, 5 },
                 postSpawnedFuncs = { angerOnSpawn },
             },
             {
@@ -69,8 +57,8 @@ if SERVER then
                 class = "terminator_nextbot_csoldier",
                 spawnType = "hunter",
                 spawnSameZ = true,
-                difficultyCost = { 10, 12 },
-                difficultyNeeded = { 150, 200 },
+                difficultyCost = { 2, 4 },
+                difficultyNeeded = { 100, 150 },
                 countClass = genericCombineCounter,
                 postSpawnedFuncs = { angerOnSpawn },
             },
@@ -81,7 +69,7 @@ if SERVER then
                 class = "terminator_nextbot_cshotgunsoldier",
                 spawnType = "hunter",
                 difficultyCost = { 20, 30 },
-                difficultyNeeded = { 50, 100 },
+                difficultyNeeded = { 25, 50 },
                 countClass = "terminator_nextbot_cshotgunsoldier",
                 maxCount = { 4 },
                 postSpawnedFuncs = { angerOnSpawn },
@@ -105,7 +93,7 @@ if SERVER then
                 class = "terminator_nextbot_celitesoldier",
                 spawnType = "hunter",
                 difficultyCost = { 10, 20 },
-                difficultyNeeded = { 50, 100 },
+                difficultyNeeded = { 25, 50 },
                 countClass = "terminator_nextbot_celitesoldier",
                 maxCount = { 1 },
                 postSpawnedFuncs = { angerOnSpawn },
@@ -176,6 +164,7 @@ function set:Activate()
     setHelpers.setBaseRole( self, "rebel" )
     setHelpers.addRoleVariant( self, "medic" )
     setHelpers.addRoleVariant( self, "engineer" )
+    setHelpers.addRoleVariant( self, "reporter" )
     setHelpers.addRoleVariant( self, "juggernaut" )
 
     setHelpers.addStartWeapon( self, { class = "weapon_smg1", purchaseClips = 3 } )
