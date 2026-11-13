@@ -44,6 +44,9 @@ PANEL.Init = function( self )
     self._oldCount      = 0
     self._oldCompare    = 0
 
+    self._neverShowing    = false
+    self._setupFadeDelays = nil -- while neverShowing, what to go back to
+
 end
 
 -- The colour role between changes. Defaults to "text"
@@ -238,8 +241,19 @@ PANEL.ManageHudState = function( self, ply, cur, alwaysShow, neverShow )
 
     doFlash = doFlash and stayPresent
 
-    if neverShow then
+    -- neverShow fades it at once, then hands back whatever delays it was set up with
+    if neverShow and not self._neverShowing then
+        self._neverShowing    = true
+        self._setupFadeDelays = self:GetDoFadeDelays()
         self:SetDoFadeDelays( false )
+
+    elseif not neverShow and self._neverShowing then
+        self._neverShowing = false
+        self:SetDoFadeDelays( self._setupFadeDelays )
+
+    end
+
+    if neverShow then
         stayPresent = false
         doFlash     = false
 

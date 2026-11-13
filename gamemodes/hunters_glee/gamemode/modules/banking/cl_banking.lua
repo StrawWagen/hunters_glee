@@ -39,6 +39,18 @@ function meta:BankHasAccount()
 
 end
 
+hook.Add( "huntersglee_cl_displayhint_poststack", "glee_bankaccounthint", function( me )
+    if GAMEMODE:HasLearnedLesson( "OpenedBankAccount" ) then return end
+    if me:BankHasAccount() then GAMEMODE:LearnLesson( "OpenedBankAccount" ) return end -- also catches accounts opened before this lesson existed
+    if GAMEMODE:ShopOpenBlocked() then return end
+    if not GAMEMODE:canShowInShop( me, "bankopenaccount" ) then return end
+    if me:GetScore() < GAMEMODE:shopItemCost( "bankopenaccount", me ) then return end
+    if me:GetNWInt( "termHuntPlyBPM" ) > 75 then return end -- calm, like the open shop hints
+
+    return true, "SAVE YOUR SCORE...\nOpen a Bank Account in the shop.\nSave it for another time."
+
+end )
+
 local nextAsk = 0
 local currCallback
 function GAMEMODE:RequestAllBankAccounts( callback )

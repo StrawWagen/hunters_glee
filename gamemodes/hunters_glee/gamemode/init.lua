@@ -411,6 +411,8 @@ function GM:Think()
 
         end
     elseif currState == self.ROUND_INACTIVE then -- round is waiting to begin, discounts on shopitems
+        -- new players get the tutorial as they load, not after sitting through the countdown
+        self:TutorializeNewPlayers( players )
 
         local doPatchingText = nil
 
@@ -1075,6 +1077,10 @@ function GM:roundEnd()
 
 
     self.deadPlayers = {}
+    if self.QueueDeadPlayersSync then -- the tissue reclaimer's, its holders stop pointing at last round's deaths
+        self:QueueDeadPlayersSync()
+
+    end
     self:SetRoundState( self.ROUND_LIMBO )
     timer.Simple( 0, function()
         if plyCount <= 0 then return end

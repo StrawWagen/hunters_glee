@@ -16,9 +16,9 @@ game.AddAmmoType( {
 
 } )
 
--- the tissue reclaimer's, heals and revives
+-- the Medical Tissue Reclaimer's, heals and revives
 game.AddAmmoType( {
-    name = "GLEE_JUICE",
+    name = "GLEE_RECLAMATION_MATERIAL",
     dmgtype = DMG_GENERIC,
     tracer = TRACER_NONE,
     maxcarry = 9999,

@@ -169,12 +169,23 @@ function ENT:SkeletonJumpFX()
 
 end
 
+function ENT:SkeletonSpotFX() end -- the Call below does this job
+
 ENT.MyClassTask = {
     OnStart = function( self, data )
         data.nextCall = CurTime() + 3
 
     end,
     BehaveUpdateMotion = function( self, data )
+        local evenLeaps = self:Health() <= self:GetMaxHealth() * 0.5
+        if not evenLeaps then
+            self.Term_Leaps = false
+            return
+
+        end
+
+        self.Term_Leaps = true
+
         local clock = CurTime() % 30
         local theTimeToMax = clock < 5
         local theTimeToMin = clock > 18

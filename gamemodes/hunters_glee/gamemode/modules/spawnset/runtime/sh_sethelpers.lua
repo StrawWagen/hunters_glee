@@ -58,7 +58,7 @@ function setHelpers.makeHardcore( lifecycle )
 end
 
 -- no "Resurrecting" tagged shop items
--- so the only revives are Tissue Reclaimers found in crates
+-- so the only revives are Medical Tissue Reclaimers found in crates
 -- call from an sh_ spawnset's Activate
 function setHelpers.makeNoReviving( lifecycle )
     lifecycle:Hook( "glee_shop_canshow", "glee_makeNoReviving", function( ply, itemData )

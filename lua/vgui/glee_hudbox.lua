@@ -66,6 +66,8 @@ PANEL.Init = function( self )
 
     self._flashContentColor = "flash"
 
+    self:SetHudBlur( true )
+
 end
 
 -- One of the STATE_ constants, see the top of this file
@@ -121,6 +123,11 @@ PANEL.SetDoFadeDelays = function( self, doDelays )
 
 end
 
+PANEL.GetDoFadeDelays = function( self )
+    return self._doFadeDelays
+
+end
+
 -- Alpha lost per second while in FADING state, out of 255.
 PANEL.SetFadeSpeed = function( self, speed )
     self._fadeSpeed = speed
@@ -171,9 +178,7 @@ PANEL.Think = function( self )
 
     elseif state == FADING then
         goinAway = true
-        -- _fadeStartDelay is never nil, it defaults to 0, so this check of it and the one
-        -- below always pass
-        if self._doFadeDelays and self._fadeStartDelay and self._fadeStartTime > cur then
+        if self._doFadeDelays and self._fadeStartTime > cur then
             self._stateAlpha = 255
 
         else
@@ -190,7 +195,7 @@ PANEL.Think = function( self )
 
     end
 
-    if not goinAway and self._fadeStartDelay then
+    if not goinAway then
         self._fadeStartTime = cur + self._fadeStartDelay
 
     end

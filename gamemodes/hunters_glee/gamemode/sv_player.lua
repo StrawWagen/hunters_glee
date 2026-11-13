@@ -655,6 +655,9 @@ local function cleanupBeforeSpectating( ply )
     end
     ply:Spectate( OBS_MODE_ROAMING )
 
+    ply:SetHealth( 0 ) -- just in case, you never know
+    ply.glee_LastSetHealthReason = "cleanupBeforeSpectating"
+
 end
 
 function GM:spectatifyPlayer( ply )

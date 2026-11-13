@@ -13,14 +13,49 @@ local laneSpacing      = terminator_Extras.glee_Style( "hl2" ):Metric( "laneSpac
 local hour = 60 * 60
 
 -- ---------------------------------------------------------------------------
+-- Boxes driven by a think
+-- A think is the box's ManageHudState, see glee_countbox's, and ends in showText
+-- ---------------------------------------------------------------------------
+
+-- "" means it's going away, the last text fades out with it instead of an empty box
+local function showText( box, text, stayPresent, doFlash, alwaysShow, neverShow )
+    if text ~= "" then
+        box:SetText( text )
+        box:AutoSize()
+
+    end
+
+    local doFadeDelays = true
+    if alwaysShow and text ~= "" then
+        stayPresent = true
+
+    elseif neverShow then
+        stayPresent  = false
+        doFlash      = false
+        doFadeDelays = false
+
+    end
+
+    if stayPresent then
+        if doFlash then box:SetState( box.STATE_FLASH ) end
+        box:SetState( box.STATE_NORMAL )
+
+    else
+        box:SetDoFadeDelays( doFadeDelays )
+        box:SetState( box.STATE_FADING )
+
+    end
+end
+
+
+-- ---------------------------------------------------------------------------
 -- Round info
--- think returns: text, stayPresent, doFlash, xOffset, textColor
 -- ---------------------------------------------------------------------------
 
 local oldInfo         = "---"
 local infoColorExpiry = 0
 
-local function thinkRoundInfo( ply, cur )
+local function thinkRoundInfo( box, ply, cur, alwaysShow, neverShow )
     local spawnSetName = GAMEMODE:GetSpawnSetName()
     local typeVal = GAMEMODE:GetPrettyNameOfSpawnSet( spawnSetName )
     if typeVal == "" then
@@ -56,10 +91,12 @@ local function thinkRoundInfo( ply, cur )
 
     end
 
-    local textColor   = infoColorExpiry > cur and "alert" or "happy"
-    local stayPresent = GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE
+    box:SetContentColor( infoColorExpiry > cur and "alert" or "happy" )
 
-    return combinedString, stayPresent, doFlash, 0, textColor
+    local stayPresent = GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE
+    showText( box, combinedString, stayPresent, doFlash, alwaysShow, neverShow )
+
+    return 0
 
 end
 
@@ -67,6 +104,15 @@ end
 
 
 -- Hint system
+-- Every hint source returns: true, text, hintData
+-- The first source with a hint wins. hintData is optional, a table of
+--     urgent = true -- bigger and shaking, keep it for the few hints that must never be missed
+--     return true, "Press \" Q \" to open the shop.", { urgent = true }
+
+local nextPossessHint = 0 -- the escaped player's possess hint, pushed back while it can't apply
+local wasAHunterOnTheMap = false
+local aliveDarkChecks = 0
+local deadDarkChecks = 0
 
 -- deliberately not a lesson, this one nags again every session
 hook.Add( "InitPostEntity", "glee_clreadhints", function()
@@ -158,7 +204,7 @@ net.Receive( "glee_starteddriving", function()
     LocalPlayer():EmitSound( "weapons/crossbow/bolt_fly4.wav", 100, 150, 1 )
     LocalPlayer():EmitSound( "ambient/levels/labs/electric_explosion5.wav", 100, 200, 1 )
     LocalPlayer():EmitSound( "ui/buttonclick.wav", 100, 80, 1 )
-    LocalPlayer().glee_NextControlSomethingHint = CurTime() + 60
+    nextPossessHint = CurTime() + 60
 
     GAMEMODE:ResetOrbitDistance()
 
@@ -174,6 +220,140 @@ net.Receive( "glee_stoppeddriving", function()
 end )
 
 
+local urgentHint = { urgent = true }
+
+local aliveDarkLightSqr = 0.005
+local aliveDarkChecksNeeded = 50 -- hint checks run 10 times a second
+
+
+-- Crouch jump hint
+-- After a jump, look for a ledge in front of them that only a crouch jump reaches.
+-- Once found, the hint sticks to that ledge until they get up there, or walk away.
+
+local crouchJumpSearchTime   = 3 -- seconds after pressing jump
+local crouchJumpBailDelay    = 0.15
+local crouchJumpHullScale    = 0.75
+local crouchJumpMinLedge     = 36 -- lowest ledge worth the hint, found by testing in game
+local crouchJumpForgetDistSqr = 150^2
+local crouchJumpLearnDistSqr = 64^2
+
+local crouchJumpSearchUntil = 0
+local nextCrouchJumpCheck = 0
+local crouchJumpLedge -- the ledge the hint is stuck to
+
+hook.Add( "KeyPress", "glee_crouchjumphint", function( ply, key )
+    if key ~= IN_JUMP then return end
+    if ply ~= LocalPlayer() then return end
+    if not IsFirstTimePredicted() then return end
+
+    crouchJumpSearchUntil = CurTime() + crouchJumpSearchTime
+
+end )
+
+local function findCrouchJumpLedge( me )
+    local feet = me:GetPos()
+    local up = vector_up
+
+    -- how high a crouch jump gets their feet
+    local apex = me:GetJumpPower() ^ 2 / ( 2 * GetConVar( "sv_gravity" ):GetFloat() )
+    local _, standMaxs = me:GetHull()
+    local _, duckMaxs = me:GetHullDuck()
+    local minReach = crouchJumpMinLedge
+    local maxReach = apex + ( standMaxs.z - duckMaxs.z )
+
+    local halfWidth = standMaxs.x * crouchJumpHullScale
+    local hullMins = Vector( -halfWidth, -halfWidth, -1 )
+    local hullMaxs = Vector( halfWidth, halfWidth, 1 )
+
+    local forward = me:GetAimVector()
+    forward.z = 0
+    forward:Normalize()
+
+    local lookAhead = standMaxs.x + halfWidth + 8 -- just past their own hull
+    local ledgeCheckPos = feet + forward * lookAhead
+    local downStart = ledgeCheckPos + up * ( maxReach + 1 )
+
+    -- clear path from their eyes to above the ledge
+    local clearTr = util.TraceLine( {
+        start = me:GetShootPos(),
+        endpos = downStart,
+        mask = MASK_PLAYERSOLID,
+        filter = me,
+    } )
+    if clearTr.Hit then return end
+
+    -- a wall, not a ramp they could walk up
+    local wallTr = util.TraceLine( {
+        start = feet + up * ( me:GetStepSize() + 1 ),
+        endpos = ledgeCheckPos + up * ( me:GetStepSize() + 1 ),
+        mask = MASK_PLAYERSOLID,
+        filter = me,
+    } )
+    if not wallTr.Hit or math.abs( wallTr.HitNormal.z ) > 0.3 then return end
+
+    local downTr = util.TraceHull( {
+        start = downStart,
+        endpos = ledgeCheckPos + up * minReach,
+        mins = hullMins,
+        maxs = hullMaxs,
+        mask = MASK_PLAYERSOLID,
+        filter = me,
+    } )
+    if downTr.StartSolid or not downTr.Hit then return end
+    if downTr.HitNormal.z < 0.7 then return end -- too steep to stand on
+
+    -- room for them to crouch up there
+    local headroomTr = util.TraceHull( {
+        start = downTr.HitPos + up,
+        endpos = downTr.HitPos + up * duckMaxs.z,
+        mins = hullMins,
+        maxs = hullMaxs,
+        mask = MASK_PLAYERSOLID,
+        filter = me,
+    } )
+    if headroomTr.Hit then return end
+
+    return downTr.HitPos
+
+end
+
+local function crouchJumpHint( me, cur )
+    if GAMEMODE:HasLearnedLesson( "CrouchJumped" ) then return end
+
+    if crouchJumpLedge then
+        local feet = me:GetPos()
+        local distSqr = feet:DistToSqr( crouchJumpLedge )
+        if distSqr > crouchJumpForgetDistSqr then
+            crouchJumpLedge = nil
+
+        elseif me:OnGround() and feet.z >= crouchJumpLedge.z - 2 and distSqr < crouchJumpLearnDistSqr then
+            crouchJumpLedge = nil
+            GAMEMODE:LearnLesson( "CrouchJumped" )
+
+        else
+            return true, "Hold CROUCH while midair.\nTo jump over high ledges.", urgentHint
+
+        end
+        return
+
+    end
+
+    if crouchJumpSearchUntil < cur then return end -- only if they are failing a jump
+    if nextCrouchJumpCheck > cur then return end
+    if me:GetMoveType() ~= MOVETYPE_WALK or me:WaterLevel() >= 2 then return end
+
+    local found = findCrouchJumpLedge( me )
+    if not found then
+        nextCrouchJumpCheck = cur + crouchJumpBailDelay
+        return
+
+    end
+    crouchJumpLedge = found
+
+    return true, "Hold CROUCH while midair.\nTo jump over high ledges.", urgentHint
+
+end
+
 local function genericHints()
     local me = LocalPlayer()
 
@@ -186,13 +366,13 @@ local function genericHints()
 
     local wepOwnedByMe = IsValid( wep ) and wep:GetOwner() == me
 
-    local isWepHintPreStack, wepHintPreStack
+    local isWepHintPreStack, wepHintPreStack, wepHintPreStackData
     if wep and wep.HintPreStack and wepOwnedByMe then
-        isWepHintPreStack, wepHintPreStack = wep:HintPreStack()
+        isWepHintPreStack, wepHintPreStack, wepHintPreStackData = wep:HintPreStack()
 
     end
     if isWepHintPreStack then
-        return true, wepHintPreStack
+        return true, wepHintPreStack, wepHintPreStackData
 
     end
 
@@ -201,9 +381,31 @@ local function genericHints()
     local GAMMODE = GAMEMODE
 
     if not dead then
-        local result, hooksHint = hook.Run( "huntersglee_cl_displayhint_prealivehints", me )
+        if not GAMMODE:HasLearnedLesson( "UsedAliveFlashlight" ) and render.GetLightColor( me:GetShootPos() ):LengthSqr() < aliveDarkLightSqr then
+            aliveDarkChecks = aliveDarkChecks + 1
+
+        else
+            aliveDarkChecks = 0
+
+        end
+
+        if aliveDarkChecks >= aliveDarkChecksNeeded and not GAMMODE:UnboundHintSkipped( "impulse 100" ) then
+            local flashlightValid, flashlightPhrase = GAMEMODE:TranslatedBind( "impulse 100" )
+            if not flashlightValid then return GAMMODE:UnboundHint( "impulse 100", "You're missing out on your flashlight..." ) end
+
+            return true, "Press " .. string.upper( flashlightPhrase ) .. " to toggle your flashlight.\nIt uses Battery charge."
+
+        end
+
+        local isCrouchJumpHint, crouchJumpText, crouchJumpData = crouchJumpHint( me, CurTime() )
+        if isCrouchJumpHint then
+            return true, crouchJumpText, crouchJumpData
+
+        end
+
+        local result, hooksHint, hooksHintData = hook.Run( "huntersglee_cl_displayhint_prealivehints", me )
         if result then
-            return result, hooksHint
+            return result, hooksHint, hooksHintData
 
         end
 
@@ -217,15 +419,21 @@ local function genericHints()
 
         local timeToBuy = not hasBoughtSomething and myScore >= 25 and inBetween
         local meagreWealth = not hasBoughtSomething and myScore >= 75
-        local blockShop = hook.Run( "glee_blockshopopen" )
+        local blockShop = GAMMODE:ShopOpenBlocked()
+
+        -- Preparing's ticking away, and shop markups kick in once the hunt starts
+        if not GAMMODE:HasLearnedLesson( "OpenedAliveShop" ) and not blockShop and timeToBuy and me:GetNWInt( "termHuntPlyBPM" ) <= 80 then
+            return true, "Spend before the HUNT.\nPress " .. string.upper( phrase ) .. " to open the SHOP.\nWhile discounts last...", urgentHint
+
+        end
 
         -- hey you should open the shop!!!!
         if not blockShop and ( timeToBuy or meagreWealth ) then
             if not GAMMODE:HasLearnedLesson( "OpenedAliveShop" ) and me:GetNWInt( "termHuntPlyBPM" ) <= 80 then
-                return true, "UNSPENT SCORE: " .. myScore .. "\nScore exists to be spent.\nPress\" " .. string.upper( phrase ) .. " \" uplink to the shop."
+                return true, "UNSPENT SCORE: " .. myScore .. "\nScore exists to be spent.\nPress\" " .. string.upper( phrase ) .. " \" uplink to the shop.", urgentHint
 
             elseif not hasBoughtSomething and me:GetNWInt( "termHuntPlyBPM" ) <= 75 then
-                return true, "YOU HAVE UNREALIZED SCORE\nPurchase something, a loadout, DEFEND YOURSELF.\nPress \" " .. string.upper( phrase ) .. " \" to open the shop."
+                return true, "YOU HAVE UNREALIZED SCORE\nPurchase something, a loadout, DEFEND YOURSELF.\nPress \" " .. string.upper( phrase ) .. " \" to open the shop.", urgentHint
 
             end
         end
@@ -233,14 +441,14 @@ local function genericHints()
         if not blockShop and not GAMMODE:HasLearnedLesson( "BoughtSignalFlare" ) and GAMMODE:canShowInShop( me, "signalflare" ) then
             local skulls = me:GetSkulls()
             if skulls >= GAMMODE:shopItemSkullCost( "signalflare", me ) then
-                return true, "EXTRACTION POSSIBLE\nBuy an Escape Flaregun from the shop.\nSPEND YOUR SKULLS"
+                return true, "EXTRACTION POSSIBLE\nBuy an Escape Flaregun from the shop.\nSPEND YOUR SKULLS", urgentHint
 
             end
         end
 
-        result, hooksHint = hook.Run( "huntersglee_cl_displayhint_postalivehints", me )
+        result, hooksHint, hooksHintData = hook.Run( "huntersglee_cl_displayhint_postalivehints", me )
         if result then
-            return result, hooksHint
+            return result, hooksHint, hooksHintData
 
         end
 
@@ -249,9 +457,9 @@ local function genericHints()
         local myScore = me:GetScore()
         local hasEscaped = me:HasEscaped()
 
-        local result, hooksHint = hook.Run( "huntersglee_cl_displayhint_predeadhints", me )
+        local result, hooksHint, hooksHintData = hook.Run( "huntersglee_cl_displayhint_predeadhints", me )
         if result then
-            return result, hooksHint
+            return result, hooksHint, hooksHintData
 
         elseif not GAMMODE:HasLearnedLesson( "SpectatedSomeone" ) and not GAMMODE:UnboundHintSkipped( "+attack" ) then
             local valid, phrase = GAMEMODE:TranslatedBind( "+attack" )
@@ -268,19 +476,18 @@ local function genericHints()
         elseif not GAMMODE:HasLearnedLesson( "StoppedSpectating" ) and IsValid( me:GetObserverTarget() ) then
             return true, "Press any movement key to stop following stuff!"
 
-        elseif not GAMMODE:HasLearnedLesson( "OpenedDeadShop" ) then
+        elseif not GAMMODE:HasLearnedLesson( "OpenedDeadShop" ) and not GAMMODE:ShopOpenBlocked() then
             local valid, phrase = GAMEMODE:TranslatedBind( "+menu" )
-            if hook.Run( "glee_blockshopopen" ) then GAMMODE:LearnLesson( "OpenedDeadShop" ) return end
             if not valid then return GAMMODE:UnboundHint( "+menu", "You're missing out on the ghost shop...\nDeath is not the end.", true ) end
 
             if me.glee_SpawnedInDeadTutorialPlease then
-                return true, "Press \" " .. string.upper( phrase ) .. " \" to open the shop.\nDIVINE INTERVENTION AWAITS."
+                return true, "Press \" " .. string.upper( phrase ) .. " \" to open the shop.\nDIVINE INTERVENTION AWAITS.", urgentHint
 
             else
-                return true, "Death is not the end.\nPress \" " .. string.upper( phrase ) .. " \" to open the shop."
+                return true, "Death is not the end.\nPress \" " .. string.upper( phrase ) .. " \" to open the shop.", urgentHint
 
             end
-        elseif not GAMMODE:HasLearnedLesson( "BoughtAGhostItem" ) and not hook.Run( "glee_blockshopopen" ) then
+        elseif not GAMMODE:HasLearnedLesson( "BoughtAGhostItem" ) and not GAMMODE:ShopOpenBlocked() then
             if me.glee_SpawnedInDeadTutorialPlease then
                 local valid, phrase = GAMEMODE:TranslatedBind( "+menu" )
                 if not valid then
@@ -300,25 +507,25 @@ local function genericHints()
                 return true, "Purchase 'Sacrifices' to make score while dead!"
 
             end
-        elseif not me.glee_HasDoneSpectateFlashlight and not GAMMODE:UnboundHintSkipped( "+impulse 100" ) and ( me.flashlightAdditive or 0 ) >= 100 and render.GetLightColor( me:GetPos() ):LengthSqr() < 0.008 then
-            local valid, phrase = GAMEMODE:TranslatedBind( "+impulse 100" )
-            if not valid then return GAMMODE:UnboundHint( "+impulse 100", "You're missing out on the spectate flashlight..." ) end
+        elseif not me.glee_HasDoneSpectateFlashlight and not GAMMODE:UnboundHintSkipped( "impulse 100" ) and deadDarkChecks >= 100 and render.GetLightColor( me:GetPos() ):LengthSqr() < 0.008 then
+            local valid, phrase = GAMEMODE:TranslatedBind( "impulse 100" )
+            if not valid then return GAMMODE:UnboundHint( "impulse 100", "You're missing out on the spectate flashlight..." ) end
 
             return true, "Press " .. phrase .. " to toggle the spectate flashlight!"
 
-        elseif not hasEscaped and not GAMMODE:HasLearnedLesson( "BoughtDivineIntervention" ) and GAMMODE:canShowInShop( me, "resurrection" ) and not hook.Run( "glee_blockshopopen" ) then
+        elseif not hasEscaped and not GAMMODE:HasLearnedLesson( "BoughtDivineIntervention" ) and GAMMODE:canShowInShop( me, "resurrection" ) and not GAMMODE:ShopOpenBlocked() then
             if myScore >= GAMMODE:shopItemCost( "resurrection", me ) then
                 return true, "You now have enough to buy DIVINE INTERVENTION in the shop.\nYour temporary form awaits..."
 
             elseif myScore > -1 then
-                return true, "Keep placing 'Sacrifices'\nAll of them can earn you Score,\nif you're clever with them..."
+                return true, "Keep placing 'Sacrifices'\nAll of them can earn you Score,\nif you're clever with them...", urgentHint
 
             else
-                return true, "You are in DEBT.\nKeep placing sacrifices.\nThey can get you out of this hole.\nIf you're clever with them..."
+                return true, "You are in DEBT.\nKeep placing sacrifices.\nThey can get you out of this hole.\nIf you're clever with them...", urgentHint
 
             end
-        elseif hasEscaped and ( me.glee_NextControlSomethingHint or 0 ) < CurTime() and GAMEMODE:RoundState() == GAMEMODE.ROUND_ACTIVE and player.GetCount() > 1 then
-            if not me.glee_WasATerminatorOnTheMap then
+        elseif hasEscaped and nextPossessHint < CurTime() and GAMEMODE:RoundState() == GAMEMODE.ROUND_ACTIVE and player.GetCount() > 1 then
+            if not wasAHunterOnTheMap then
                 local wasBased
                 for _, ent in ents.Iterator() do
                     if not ent.isTerminatorHunterBased then continue end
@@ -327,18 +534,18 @@ local function genericHints()
 
                 end
                 if not wasBased then
-                    me.glee_NextControlSomethingHint = CurTime() + 15
-                    return
+                    nextPossessHint = CurTime() + 15
+                    return -- one return every 15s is fine here
 
                 else
-                    me.glee_WasATerminatorOnTheMap = true
+                    wasAHunterOnTheMap = true
 
                 end
             end
 
             if IsValid( me:GetDrivingEntity() ) then
-                me.glee_NextControlSomethingHint = CurTime() + 60
-                return
+                nextPossessHint = CurTime() + 60
+                return -- one return every 60s is fine
 
             end
 
@@ -363,33 +570,33 @@ local function genericHints()
 
         -- dont spam flicker the flashlight hint
         if not me.glee_HasDoneSpectateFlashlight and render.GetLightColor( me:GetPos() ):LengthSqr() < 0.005 then
-            me.flashlightAdditive = ( me.flashlightAdditive or 0 ) + 1
+            deadDarkChecks = deadDarkChecks + 1
 
         else
-            me.flashlightAdditive = 0
+            deadDarkChecks = 0
 
         end
 
-        result, hooksHint = hook.Run( "huntersglee_cl_displayhint_postdeadhints", me )
+        result, hooksHint, hooksHintData = hook.Run( "huntersglee_cl_displayhint_postdeadhints", me )
         if result then
-            return result, hooksHint
+            return result, hooksHint, hooksHintData
 
         end
     end
 
-    local isWepHintPostStack, wepHintPostStack
+    local isWepHintPostStack, wepHintPostStack, wepHintPostStackData
     if wep and wep.HintPostStack and wepOwnedByMe then
-        isWepHintPostStack, wepHintPostStack = wep:HintPostStack()
+        isWepHintPostStack, wepHintPostStack, wepHintPostStackData = wep:HintPostStack()
 
     end
     if isWepHintPostStack then
-        return true, wepHintPostStack
+        return true, wepHintPostStack, wepHintPostStackData
 
     end
 
-    local result, hooksHint = hook.Run( "huntersglee_cl_displayhint_poststack", me )
+    local result, hooksHint, hooksHintData = hook.Run( "huntersglee_cl_displayhint_poststack", me )
     if result then
-        return result, hooksHint
+        return result, hooksHint, hooksHintData
 
     end
 end
@@ -397,43 +604,74 @@ end
 
 -- ---------------------------------------------------------------------------
 -- Hint think
--- think returns: text, stayPresent, doFlash, xOffset
 -- ---------------------------------------------------------------------------
 
 local nextHintCheck    = 0
 local needsHints
 local hint
+local hintData
+local wasUrgent
 local nextHintFlash    = 0
+local urgentShakeUntil = 0
+
+local urgentShakeDuration = 1
+local urgentShakeMaxSize  = glee_sizeScaled( nil, 2 ) -- the same as the score's
 
 local tackleTheDamnHintSound = Sound( "common/wpn_select.wav" )
 
-local function thinkHint( _ply, cur )
+local function thinkHint( box, _ply, cur, alwaysShow, neverShow )
     if GAMEMODE:RoundState() == GAMEMODE.ROUND_LIMBO then
-        return "", false, false, 0
+        showText( box, "", false, false, alwaysShow, neverShow )
+        return 0
 
     end
     if nextHintCheck < cur then
-        needsHints, hint = genericHints()
+        needsHints, hint, hintData = genericHints()
         nextHintCheck    = cur + math.Rand( 0.09, 0.1 )
 
     end
 
     if not needsHints then
-        return "", false, false, 0
+        wasUrgent = false
+        showText( box, "", false, false, alwaysShow, neverShow )
+        return 0
 
     end
+
+    local urgent = hintData and hintData.urgent
+
+    -- an urgent hint doesn't wait out the last hint's flash cooldown
+    if urgent and not wasUrgent then
+        nextHintFlash = 0
+
+    end
+    wasUrgent = urgent
 
     local doFlash = false
     if nextHintFlash < cur then
         doFlash       = true
         nextHintFlash = cur + 8
+        if urgent then
+            urgentShakeUntil = cur + urgentShakeDuration
+
+        end
         if system.HasFocus() then
             LocalPlayer():EmitSound( tackleTheDamnHintSound, 60, 120, 0.4 )
 
         end
     end
 
-    return hint, true, doFlash, 0 -- dont override color
+    local xOffset = 0
+    if urgent and urgentShakeUntil > cur then
+        local shakeScale = ( urgentShakeUntil - cur ) / urgentShakeDuration * urgentShakeMaxSize
+        xOffset = math.Rand( -shakeScale, shakeScale )
+
+    end
+
+    box:SetFont( urgent and "hintUrgent" or "medium" )
+    showText( box, hint, true, doFlash, alwaysShow, neverShow )
+
+    return xOffset
 
 end
 
@@ -443,7 +681,7 @@ end
 -- ---------------------------------------------------------------------------
 
 -- Order here is top to bottom on screen. An entry needs either a think, or a panelClass
--- whose panel has ManageHudState; the manager calls think on anything without one.
+-- whose panel has its own ManageHudState
 local hudEntries = {
     {
         key             = "roundInfo",
@@ -485,6 +723,7 @@ local hudEntries = {
     {
         key             = "hint",
         flashDuration   = 0.15,
+        fadeSpeed       = 1500, -- a hint that stopped being true shouldn't linger
         think           = thinkHint,
     },
 }
@@ -512,6 +751,10 @@ local function createTopLeftBoxes()
         end
         if entry.setup then
             entry.setup( box )
+
+        end
+        if entry.think then
+            box.ManageHudState = entry.think
 
         end
     end
@@ -561,7 +804,6 @@ hook.Add( "glee_cl_topleftinfo", "glee_topleftinfo_draw", function( ply, cur )
         local box = terminator_Extras["gleeHud_TL_" .. entry.key]
         if not IsValid( box ) then continue end
 
-        local xOffset      = 0
         local forceThisKey = alwaysShow
 
         local plsPaint = pleasePaintFor[entry.key]
@@ -570,39 +812,7 @@ hook.Add( "glee_cl_topleftinfo", "glee_topleftinfo_draw", function( ply, cur )
 
         end
 
-        if box.ManageHudState then
-            xOffset = box:ManageHudState( ply, cur, forceThisKey, neverShow ) or 0
-
-        else
-            local doFadeDelays = true
-            local text, stayPresent, doFlash, textColor -- localize these so...
-            text, stayPresent, doFlash, xOffset, textColor = entry.think( ply, cur ) -- xOffset can leak out of this scope
-
-            if textColor then box:SetContentColor( textColor ) end
-
-            box:SetText( text or "" )
-            box:AutoSize()
-
-            if forceThisKey and text ~= "" then
-                stayPresent = true
-
-            elseif neverShow then
-                stayPresent = false
-                doFlash      = false
-                doFadeDelays = false
-
-            end
-
-            if stayPresent then
-                if doFlash then box:SetState( box.STATE_FLASH ) end
-                box:SetState( box.STATE_NORMAL )
-
-            else
-                box:SetDoFadeDelays( doFadeDelays )
-                box:SetState( box.STATE_FADING )
-
-            end
-        end
+        local xOffset = box:ManageHudState( ply, cur, forceThisKey, neverShow ) or 0
 
         box:SetPos( x + xOffset, laneY )
 

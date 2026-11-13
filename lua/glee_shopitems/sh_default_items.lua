@@ -229,11 +229,11 @@ local items = {
     },
     -- heal jooce, and soft reason to get around the map, go places people have died
     ["healthkit"] = {
-        name = "Tissue Reclaimer",
-        desc = "Heals the living, revives the dead.\nYou gain score for healing players, 300 per resurrection.\nHealing yourself is unweildy and slow.\nExcess health you find, will reload it.",
-        shCost = 80,
-        markup = 2,
-        markupPerPurchase = 0.15,
+        name = "Medical Tissue\nReclaimer",
+        desc = "Reclaim flesh. Restore the living, revive the dead.\nGives 300 score for reviving players. Less for healing\nHealing yourself is unweildy and slow.\nExcess health you find, will reload it.",
+        shCost = 75,
+        markup = 1.5,
+        markupPerPurchase = 0.25,
         cooldown = 0.5,
         tags = { "ITEMS", "Essential", "Resurrecting", "Weapon", "Utility" },
         purchaseTimes = {
@@ -247,7 +247,7 @@ local items = {
             shopHelpers.purchaseWeapon( purchaser, {
                 class = "termhunt_tissue_reclaimer",
                 confirmSoundWeight = 1,
-                ammoType = "GLEE_JUICE",
+                ammoType = "GLEE_RECLAMATION_MATERIAL",
                 resupplyClips = 1,
 
             } )
@@ -287,7 +287,7 @@ local items = {
         markup = 2,
         markupPerPurchase = 1.5,
         cooldown = 5,
-        tags = { "ITEMS", "Utility" },
+        tags = { "ITEMS", "Utility", "Essential" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -368,7 +368,7 @@ local items = {
         markup = 1.5,
         markupPerPurchase = 0.25,
         cooldown = 0.5,
-        tags = { "ITEMS", "Essential", "Weapon" },
+        tags = { "ITEMS", "Weapon" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,

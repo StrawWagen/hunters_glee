@@ -44,7 +44,7 @@ local set = {
             preSpawnedFuncs = {
                 function( _, spawned )
                     spawned.SpawnHeadlessChance = 80
-                    spawned.SkeleRareRunning = false
+                    spawned.SkeleRunsAfterEnemySprints = false
 
                 end,
             },
@@ -59,7 +59,7 @@ local set = {
             difficultyCost = 6,
             preSpawnedFuncs = {
                 function( _, spawned )
-                    spawned.SkeleRareRunning = false
+                    spawned.SkeleRunsAfterEnemySprints = false
 
                 end,
             },
@@ -76,7 +76,7 @@ local set = {
             maxCount = { 1 },
             preSpawnedFuncs = {
                 function( _, spawned )
-                    spawned.SkeleRareRunning = false
+                    spawned.SkeleRunsAfterEnemySprints = false
 
                 end,
             },
@@ -102,7 +102,7 @@ local set = {
             maxCount = { 10 },
             preSpawnedFuncs = {
                 function( _, spawned )
-                    spawned.SkeleRareRunning = false
+                    spawned.SkeleRunsAfterEnemySprints = false
 
                 end,
             },

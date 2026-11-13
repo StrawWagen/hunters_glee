@@ -47,12 +47,41 @@ if CLIENT then
 
     local render_MaterialOverride = render.MaterialOverride
     local render_SetColorModulation = render.SetColorModulation
+    local cam_PushModelMatrix = cam.PushModelMatrix
+    local cam_PopModelMatrix = cam.PopModelMatrix
+    local math_Rand = math.Rand
+
+    -- after a hit, set by eff_huntersglee_skeletonhurt, the glow shakes and flashes brighter
+    local hurtJitterTime = 0.15
+    local hurtJitterSize = 2 -- units, shrinks to nothing over hurtJitterTime
+    local jitterMatrix = Matrix()
+    local jitterOffset = Vector()
 
     function ENT:Draw()
-        entMeta.DrawModel( self )
-        render_MaterialOverride( emptool_Glow )
-        render_SetColorModulation( 1, 0.5, 0 )
         entMeta.DrawModel( self ) -- saves an _index call vs self:DrawModel()
+
+        -- set by eff_huntersglee_skeletondeath, the glow cutting out is the kill confirm
+        if self.glee_skeleDead then return end
+
+        render_MaterialOverride( emptool_Glow )
+
+        local sinceHurt = CurTime() - ( self.glee_lastSkeleHurt or 0 )
+        if sinceHurt < hurtJitterTime then
+            local size = hurtJitterSize * ( 1 - sinceHurt / hurtJitterTime )
+            jitterOffset:SetUnpacked( math_Rand( -size, size ), math_Rand( -size, size ), math_Rand( -size, size ) )
+            jitterMatrix:SetTranslation( jitterOffset )
+
+            render_SetColorModulation( 1, 1, 0.6 )
+            cam_PushModelMatrix( jitterMatrix )
+            entMeta.DrawModel( self )
+            cam_PopModelMatrix()
+
+        else
+            render_SetColorModulation( 1, 0.5, 0 )
+            entMeta.DrawModel( self )
+
+        end
+
         render_MaterialOverride( nil )
         render_SetColorModulation( 1, 1, 1 )
 
@@ -216,6 +245,17 @@ function ENT:SkeletonDeathFX()
 
 end
 
+-- kept apart from the death scream, that one is the kill confirm
+function ENT:SkeletonSpotFX()
+    self:Term_SpeakSoundNow( "npc/stalker/go_alert2a.wav", math.random( 10, 30 ), 10 )
+
+end
+
+ENT.SkeleSpotScreamCooldown = 20 -- so losing sight for a moment doesn't scream again
+
+-- how long they keep running after their enemy stops sprinting, so tapping shift doesn't flicker their speed
+local sprintMemory = 5
+
 local skins = {
     0,
     2,
@@ -284,6 +324,27 @@ ENT.MyClassTask = {
             rate = self.SkeleDeathAnimRate,
         }
     end,
+    OnStartDying = function( self )
+        local fx = EffectData()
+        fx:SetOrigin( self:WorldSpaceCenter() )
+        fx:SetEntity( self )
+        util.Effect( "eff_huntersglee_skeletondeath", fx )
+
+    end,
+    OnDamaged = function( self, _data, dmg )
+        local hitPos = dmg:GetDamagePosition()
+        if hitPos:IsZero() then -- melee and blasts often leave it unset
+            hitPos = self:WorldSpaceCenter()
+
+        end
+
+        local fx = EffectData()
+        fx:SetOrigin( hitPos )
+        fx:SetEntity( self )
+        fx:SetScale( math.Clamp( dmg:GetDamage() / 20, 0.25, 3 ) )
+        util.Effect( "eff_huntersglee_skeletonhurt", fx )
+
+    end,
     NewWaterLevelWhileFalling = function( self, data, waterLevel )
         if waterLevel < 3 then return end
         self:TakeDamage( self:Health(), game.GetWorld(), game.GetWorld() )
@@ -308,9 +369,27 @@ ENT.MyClassTask = {
         self:SkeletonJumpFX( height )
 
     end,
+    EnemyFound = function( self, data )
+        local cur = CurTime()
+        if ( data.nextSpotScream or 0 ) > cur then return end
+
+        data.nextSpotScream = cur + self.SkeleSpotScreamCooldown
+        self:SkeletonSpotFX()
+
+    end,
+    -- rubberbanding for players who haven't found the sprint key yet
     ShouldRun = function( self, data )
-        if not self.SkeleRareRunning then return end
-        if self:Health() > self:GetMaxHealth() * 0.9 then return false end
+        if not self.SkeleRunsAfterEnemySprints then return end
+
+        local cur = CurTime()
+        local enemy = self:GetEnemy()
+        if IsValid( enemy ) and enemy:IsPlayer() and enemy:IsSprinting() then
+            data.enemySprintedAt = cur
+
+        end
+
+        local sprintedRecently = data.enemySprintedAt and cur - data.enemySprintedAt < sprintMemory
+        if not sprintedRecently then return false end
 
     end,
 }
@@ -359,6 +438,9 @@ function ENT:DoCustomTasks( defaultTasks )
         ["movement_duelenemy"] = {
             BehaveUpdateMotion = function( self, data )
                 local myTbl = entMeta.GetTable( self )
+
+                if myTbl.term_Dead then return end
+
                 local enemy = myTbl.GetEnemy( self )
 
                 if IsValid( enemy ) and enemy:Alive() then
@@ -385,7 +467,7 @@ function ENT:DoCustomTasks( defaultTasks )
                     end
 
                     myTbl.GotoPosSimple( self, myTbl, gotoPos, 35, true )
-                    if not fodder and not myTbl.Term_LeapMinimizesHeight and self:IsOnGround() and myTbl.DistToEnemy < myTbl.DuelEnemyDist then
+                    if myTbl.Term_Leaps and not fodder and not myTbl.Term_LeapMinimizesHeight and self:IsOnGround() and myTbl.DistToEnemy < myTbl.DuelEnemyDist then
                         self:Anger( 5 )
                         if math.random( 0, 100 ) < 5 and self:GetVelocity():Length() <= myTbl.MoveSpeed then
                             myTbl.JumpToPos( self, enemy:GetPos() ) -- jump directly to enemy's pos 

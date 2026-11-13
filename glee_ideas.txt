@@ -616,13 +616,13 @@ goes in a glee rebinding menu?
 -- gm_born
     -- cant pickup suit when you have suit
     -- suit is something people have to learn
+    -- upgrade suit increase feel
 -- stuff overlays in top left ( discord ) conflicts with hints 
 
 -- stuff in the corner is easy to miss 
 -- bigger initial hints
 -- infernal heckler needs to have more powerful feeling to match its threat
     -- draw playermodel with energy
--- upgrade suit increase feel
 -- shoot beartrap to break beartrap
 -- E to interact is weak
 -- add hints
@@ -636,7 +636,7 @@ goes in a glee rebinding menu?
 -- open bank account hint
 -- rpg ( role playing game? )
 -- first bargain you buy has a confirmation dialog
--- give all vending machines without 
+-- give all vending machines without names or buttons next to them functionality?
 -- invisible wall hint?
 -- crouch jump hint?
 -- HIM SWITCHED TARGETS TO A NEW PLAYER
@@ -647,7 +647,7 @@ goes in a glee rebinding menu?
 -- cancel taunts?
 -- flashlight hint!!!!!
 -- unsufficient power for flashlight hint
--- additional weapon pickup fails with carryable on back
+-- additional weapon pickup fails with carryable on back -- done
 
 -- favourites as reduced selection of the rest of the shop
 -- text can advance by itself when you are shift tabbed 

@@ -1126,6 +1126,7 @@ function ENT:Initialize()
 
     self:SetMaxHealth( maxHealth )
     self:SetHealth( maxHealth )
+    self:SetBloodColor( BLOOD_COLOR_MECH ) -- sparks when shot, and the tissue reclaimer won't heal it
 
     local phys = self:GetPhysicsObject()
     if IsValid( phys ) then

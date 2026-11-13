@@ -27,7 +27,7 @@ local set = {
             maxCount = { 1 },
             preSpawnedFuncs = {
                 function( _, spawned )
-                    spawned.SkeleRareRunning = false
+                    spawned.SkeleRunsAfterEnemySprints = false
 
                 end,
             },
@@ -43,7 +43,7 @@ local set = {
             maxCount = { 1 },
             preSpawnedFuncs = {
                 function( _, spawned )
-                    spawned.SkeleRareRunning = false
+                    spawned.SkeleRunsAfterEnemySprints = false
 
                 end,
             },
