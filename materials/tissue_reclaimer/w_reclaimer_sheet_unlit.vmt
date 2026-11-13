@@ -1,0 +1,5 @@
+// w_reclaimer_sheet without its glow, for when the tissue reclaimer is out of material
+"VertexLitGeneric"
+{
+	"$baseTexture" "Models/Weapons/w_physics/w_physics_sheet2"
+}
