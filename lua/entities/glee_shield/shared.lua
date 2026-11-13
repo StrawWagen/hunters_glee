@@ -26,10 +26,10 @@ glee_Carrying.MakeCarryable( ENT, "glee_backpackable_shield" )
 
 function ENT:Initialize()
     self:SetModel( self.Model )
-	self:PhysicsInit( SOLID_VPHYSICS )
-	self:SetSolid( SOLID_VPHYSICS )
-	--self:SetCollisionGroup( COLLISION_GROUP_WEAPON )
-	self:DrawShadow( true )
+    self:PhysicsInit( SOLID_VPHYSICS )
+    self:SetSolid( SOLID_VPHYSICS )
+    --self:SetCollisionGroup( COLLISION_GROUP_WEAPON )
+    self:DrawShadow( true )
 end
 
 if SERVER then
