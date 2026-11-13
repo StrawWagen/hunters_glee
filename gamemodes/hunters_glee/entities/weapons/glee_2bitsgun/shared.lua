@@ -8,7 +8,7 @@ SWEP.Author = "2-bit, glee'd by dedactedlife & IndefiniteXD"
 SWEP.Category = "Hunter's Glee"
 
 if CLIENT then
-    terminator_Extras.glee_CL_SetupSwep( SWEP, "glee_2bitsgun", "materials/vgui/hud/killicon/glee_2bitsgun.png" )
+    terminator_Extras.glee_CL_SetupSwep( SWEP, "glee_2bitsgun", "materials/entities/glee_2bitsgun.png" )
 
 end
 
