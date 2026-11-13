@@ -28,14 +28,13 @@ SWEP.HeldModelPos, SWEP.HeldModelAng = terminator_Extras.glee_Carrying.SCKToLoca
 
 SWEP.ViewModelBoneMods = glee_Carrying.ElitesBoneMods( 0, 0, 0 )
 
-SWEP.WorldModelHandPos, SWEP.WorldModelHandAng = terminator_Extras.glee_Carrying.SCKToLocal( Vector( 5, 10, 38 ), Angle( 180, 180, 0 ) )
-SWEP.WorldModelBackPos = Vector( -20, -6, 0 )
---SWEP.WorldModelBackScale = 12.0
---SWEP.WorldModelHandScale = 12.0
+SWEP.WorldModelHandPos, SWEP.WorldModelHandAng = terminator_Extras.glee_Carrying.SCKToLocal( Vector( 6, 10, 38 ), Angle( 180, 180, 0 ) )
+SWEP.WorldModelBackPos = Vector( -26, -7, 2 )
+SWEP.WorldModelBackScale = 0.8
 SWEP.WorldModelBackAng = Angle( 180, 90, 90 )
 
 SWEP.SpeedModifier = -50
-SWEP.PlaceAng = Angle( 0, 180, 0 )
+SWEP.PlaceAng = Angle( 0, 0, 0 )
 SWEP.PlacedSound = {
     pitch = 80,
     sounds = {
