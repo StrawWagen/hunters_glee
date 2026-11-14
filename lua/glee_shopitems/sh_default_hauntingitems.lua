@@ -23,6 +23,7 @@ end
 
 if SERVER then
     local linked_hunter = {
+        name = "linked_hunter",
         class = "terminator_nextbot_snail_disguised",
         spawnBelow = true,
     }

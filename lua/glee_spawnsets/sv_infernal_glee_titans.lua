@@ -4,7 +4,7 @@ local set = {
     prettyName = "The Infernal Titans",
     description = "They're huge, on fire, and bad to the bone...",
     difficultyPerMin = "default*3", -- difficulty per minute
-    waveInterval = "default", -- time between spawn waves
+    waveInterval = "default*0.35", -- time between spawn waves
     diffBumpWhenWaveKilled = "default*4", -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
     startingBudget = "default", -- so budget isnt 0
     spawnCountPerDifficulty = "default",
@@ -24,11 +24,10 @@ local set = {
             spawnType = "hunter",
             spawnSameZ = true,
             difficultyCost = 4,
-            countClass = "terminator_nextbot_infernalskeleton",
             maxCount = { 1 },
             preSpawnedFuncs = {
                 function( _, spawned )
-                    spawned.SkeleRareRunning = false
+                    spawned.SkeleRunsAfterEnemySprints = false
 
                 end,
             },
@@ -41,11 +40,10 @@ local set = {
             spawnType = "hunter",
             spawnSameZ = true,
             difficultyCost = 4,
-            countClass = "terminator_nextbot_infernalskeleton_large",
             maxCount = { 1 },
             preSpawnedFuncs = {
                 function( _, spawned )
-                    spawned.SkeleRareRunning = false
+                    spawned.SkeleRunsAfterEnemySprints = false
 
                 end,
             },
@@ -58,7 +56,6 @@ local set = {
             spawnSameZ = true,
             preferredEFlags = GAMEMODE.NavEFlags.UNDER_SKY,
             difficultyCost = { 15, 25 },
-            countClass = "terminator_nextbot_infernalskeleton_big",
             maxCount = { 5 },
         },
         {
@@ -70,7 +67,6 @@ local set = {
             spawnSameZ = true,
             preferredEFlags = GAMEMODE.NavEFlags.UNDER_SKY,
             difficultyCost = { 100, 200 },
-            countClass = "terminator_nextbot_infernalskeleton_big",
             maxCount = { 20 },
         },
         {

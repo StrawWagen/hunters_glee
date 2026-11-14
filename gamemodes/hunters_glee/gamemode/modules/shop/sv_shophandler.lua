@@ -28,7 +28,12 @@ function GM:purchaseItem( ply, toPurchase )
                 permaPrint( notPurchasableReason ) -- we need to know WHY!!!
 
             else
-                huntersGlee_Notify( { ply }, { text = notPurchasableReason, kind = "bad", time = 6 } )
+                huntersGlee_Notify( { ply }, {
+                    text = notPurchasableReason,
+                    kind = "bad",
+                    time = 6,
+                    replaceKey = "glee_couldntpurchase"
+                } ) -- reasons count down, they'd stack
 
             end
             hook.Run( "glee_CouldntPurchase", ply, toPurchase, notPurchasableReason )

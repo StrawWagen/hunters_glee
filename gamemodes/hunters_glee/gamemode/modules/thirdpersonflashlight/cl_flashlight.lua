@@ -8,8 +8,6 @@ local notPlayerFlashlights = setmetatable( {}, { __mode = "k" } )
 local flashlitPlayers = {}
 
 local notInWorldHull = Vector( 10, 10, 10 )
-local hiddenLightPos = Vector( 0, 0, -32000 ) -- below any map, pointed further down at nothing
-local hiddenLightAng = Angle( 90, 0, 0 )
 local ownLightUpdated = false
 local ownLightColor = Color( 255, 255, 255 )
 
@@ -212,8 +210,10 @@ local function getHandLedBlend( ply, handLed )
 end
 
 -- whether last frame was drawn from our eyes, not a camera prop, or anything else moving the view
-local viewWasAtOwnEyes = true
+-- false until the first frame is drawn, there's no last view to carry the viewmodel from before then
+local viewWasAtOwnEyes = false
 local maxViewOffsetSqr = 8^2 -- view bob from other addons
+local lastViewPos, lastViewAng -- where last frame was drawn from, the viewmodel was placed relative to it
 
 -- seeing through our own eyes, with a viewmodel
 local function isInOwnFirstPerson( ply )
@@ -251,7 +251,8 @@ local function getFlashlightOrigin( ply, eyeAng )
 
                 if muzzlePos then
                     -- the viewmodel only moves to this frame's view after PreRender, so carry it there ourselves
-                    local localPos, localAng = WorldToLocal( muzzlePos, muzzleAng, viewModel:GetPos(), viewModel:GetAngles() )
+                    -- from the view it was last placed for, not the viewmodel itself, sights, sway and GetViewModelPosition offset it from that
+                    local localPos, localAng = WorldToLocal( muzzlePos, muzzleAng, lastViewPos, lastViewAng )
                     return LocalToWorld( localPos, localAng, ply:EyePos(), ply:EyeAngles() )
 
                 end
@@ -367,8 +368,8 @@ hook.Add( "Think", "glee_HideFlashlights", function()
     for _, flashlight in ipairs( flashlights ) do
         local ply = getLightsOwner( flashlight )
         if ply and shouldHideLight( ply ) then
-            flashlight:SetPos( hiddenLightPos )
-            flashlight:SetAngles( hiddenLightAng )
+            flashlight:SetPos( GAMEMODE.FlashlightHiddenPos )
+            flashlight:SetAngles( GAMEMODE.FlashlightHiddenAng )
 
         end
     end
@@ -564,7 +565,9 @@ hook.Add( "PostDrawTranslucentRenderables", "glee_DrawFlashlightGlow", function(
     if drawingDepth or drawingSkybox then return end
 
     local me = LocalPlayer()
-    viewWasAtOwnEyes = EyePos():DistToSqr( me:EyePos() ) < maxViewOffsetSqr
+    lastViewPos = EyePos()
+    lastViewAng = EyeAngles()
+    viewWasAtOwnEyes = lastViewPos:DistToSqr( me:EyePos() ) < maxViewOffsetSqr
 
     for ply in pairs( flashlitPlayers ) do
         if IsValid( ply ) and ( ply ~= me or ply:ShouldDrawLocalPlayer() ) then

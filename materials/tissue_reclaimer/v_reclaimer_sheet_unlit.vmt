@@ -1,0 +1,20 @@
+// v_reclaimer_sheet without its glow, for when the tissue reclaimer is out of material
+"VertexLitGeneric"
+{
+	"$baseTexture" "Models/Weapons/V_physcannon/v_superphyscannon_sheet"
+
+	$detail Models/Weapons/V_physcannon/v_superphyscannon_detail
+	$detailscale 1
+	$detailblendfactor 1.0
+	$detailblendmode 0
+
+	"$bumpmap" "models/weapons/v_physcannon/v_superphyscannon_normal"
+
+	"$phong" "1"
+	"$phongtint" "[0.9 0.8 0.7]"
+	"$phongboost" "0.8"
+	"$phongexponent" "6"
+	"$phongfresnelranges" "[0.3 0.6 1]"
+
+	"$rimlight" "0"
+}

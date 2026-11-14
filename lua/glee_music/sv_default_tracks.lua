@@ -2,6 +2,8 @@
 local vacant = "VACANT"
 local compakt = "COMPAKT"
 local kelley = "KELLYBAILEY"
+local alexscott = "ALEXSCOTT"
+local michealgorg = "MICHEALGORG"
 
 local tracks = {
     heliEvac = {
@@ -49,6 +51,33 @@ local tracks = {
         neverOverrides = { "grigoriArrival", "secondGrigoriArrival" },
         alwaysOverrides = { "roundEnd", "roundWin", "roundPerfectWin" },
     },
+
+    heliLateLeave = {
+        sounds = {
+            {
+                author = alexscott,
+                maxDifficulty = 100,
+                snd = "hunters_glee/music/ALEXSCOTT/glee_allsoulsaboard_alt.mp3"
+            },
+            {
+                author = michealgorg,
+                minDifficulty = 100,
+                snd = "hunters_glee/music/MICHEALGORG/boons_freak-rain-sound-188158_(consolidated).wav"
+            },
+        },
+        neverOverrides = { "heliEvac" },
+    },
+
+    heliLeaveAllSoulsBoonSoon = {
+        sounds = {
+            {
+                author = michealgorg,
+                snd = "hunters_glee/music/MICHEALGORG/Weird_little_test_haha_hh_hh.wav"
+            },
+        },
+        neverOverrides = { "heliEvac" },
+    },
+
     tutorialPickedHardOption = {
         sounds = {
             {

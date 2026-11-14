@@ -339,6 +339,29 @@ end )
 
 -- begin escaping rewards
 
+--[[---------------------------------------------------------
+    GM:IsBoonable
+    @desc Did everyone escape? That's a boon.
+      Astrally projected players chose to leave their body, so they don't rob everyone else of it.
+    @param isImpendingEscaper: Optional, returns true for a player who's about to escape, so they count as escaped already.
+    @return: True if the round would end in a boon
+--]]---------------------------------------------------------
+function GM:IsBoonable( isImpendingEscaper )
+    local someoneEscaped = false
+    for _, ply in player.Iterator() do
+        if ply:HasEscaped() or ( isImpendingEscaper and isImpendingEscaper( ply ) ) then
+            someoneEscaped = true
+
+        elseif not ply:HasStatusEffect( "astrallyprojected" ) then
+            return false
+
+        end
+    end
+    -- a round where everyone astrally projected isn't a round where everyone escaped
+    return someoneEscaped
+
+end
+
 -- flat 50% discount on all shop items if EVERYONE escaped
 -- hook.Add( "huntersglee_round_pre_into_inactive", )
 

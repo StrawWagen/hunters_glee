@@ -49,6 +49,7 @@ PANEL.Init = function( self )
 
     self._backdrop     = "bg"
     self._contentColor = "happy"
+    self._hudBlur      = false
 
     self._drawContent = Color( 0, 0, 0, 0 ) -- Paint's scratch, the content colour faded
 
@@ -188,7 +189,7 @@ local function widestLine( font, text )
     local widest = 0
 
     for line in ( text .. "\n" ):gmatch( "([^\n]*)\n" ) do
-        widest = math.max( widest, ( surface.GetTextSize( line ) ) ) -- the brackets drop the height
+        widest = math.max( widest, surface.GetTextSize( line ) ) -- the brackets drop the height
 
     end
 
@@ -244,6 +245,12 @@ PANEL.SetBackdrop = function( self, family )
 
 end
 
+-- Blur what's behind the backdrop while there's text, as a hud box, see handle:Background. glee_hudbox turns it on
+PANEL.SetHudBlur = function( self, hudBlur )
+    self._hudBlur = hudBlur
+
+end
+
 -- A role or a Color, for the text or material. Its alpha is scaled by GetFade.
 PANEL.SetContentColor = function( self, color )
     self._contentColor = color
@@ -279,7 +286,8 @@ PANEL.Paint = function( self, w, h )
     local style = self:Style()
 
     if self:GetPaintBackground() then
-        style:Background( 0, 0, w, h, self._backdrop, self._cornerRadius, fade, self:GetVisualState(), self )
+        local isHud = self._hudBlur and hasText( self ) -- an icon reads fine without it, the blur is for text
+        style:Background( 0, 0, w, h, self._backdrop, self._cornerRadius, fade, self:GetVisualState(), self, isHud )
 
     end
 

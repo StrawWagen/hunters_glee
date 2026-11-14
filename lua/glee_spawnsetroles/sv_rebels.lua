@@ -7,7 +7,7 @@
     },
     ["medic"] = {
         base = "rebel",
-        startWeapons = { "termhunt_medkit" },
+        startWeapons = { "glee_tissue_reclaimer" },
         ratio = 0.25,
         leastGuiltyFirst = true,
     },
@@ -124,7 +124,7 @@ local roles = {
     ["medic"] = {
         base = "rebel",
         models = modelsIn( "/group03m/" ),
-        startWeapons = { "termhunt_medkit", "termhunt_reviver" },
+        startWeapons = { "glee_tissue_reclaimer" },
         -- rounded up, so a squad always has a medic
         ratio = 0.25,
         -- alone, there's nobody to heal or revive

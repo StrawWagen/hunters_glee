@@ -227,36 +227,6 @@ local items = {
             } )
         end,
     },
-    -- heal jooce
-    ["healthkit"] = {
-        name = "Medkit",
-        desc = "Heals.\nYou gain score for healing players.\nHealing yourself is unweildy and slow.\nExcess health you find, will reload it.",
-        shCost = 80,
-        markup = 2,
-        markupPerPurchase = 0.15,
-        cooldown = 0.5,
-        tags = { "ITEMS", "Essential", "Weapon", "Utility" },
-        purchaseTimes = {
-            GAMEMODE.ROUND_INACTIVE,
-            GAMEMODE.ROUND_ACTIVE,
-        },
-        weight = -100,
-        shPurchaseCheck = shopHelpers.aliveCheck,
-        svOnPurchaseFunc = function( purchaser )
-            local medkit = "termhunt_medkit"
-            local weap = purchaser:GetWeapon( medkit )
-            local hasWeap = IsValid( weap )
-
-            if hasWeap then
-                weap:HealJuice( 200 )
-
-            else
-                purchaser:Give( medkit, false )
-                shopHelpers.loadoutConfirm( purchaser, 1 )
-
-            end
-        end,
-    },
     -- funny bear trap
     ["beartrap"] = {
         name = "Six Beartraps",
@@ -291,7 +261,7 @@ local items = {
         markup = 2,
         markupPerPurchase = 1.5,
         cooldown = 5,
-        tags = { "ITEMS", "Utility" },
+        tags = { "ITEMS", "Utility", "Essential" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -312,7 +282,7 @@ local items = {
     -- terminator doesnt like taking damage from this, will save your ass
     ["ar2"] = {
         name = "Pulse Rifle",
-        desc = "Ar2 + Balls.\nIt takes 2 AR2 balls to kill a terminator.",
+        desc = "Combine Technology.\nSecondary fire to shoot Dark Energy Orbs.\nThey do serious damage to even metallic enemies.",
         shCost = 75,
         markup = 2,
         markupPerPurchase = 0.4,
@@ -372,7 +342,7 @@ local items = {
         markup = 1.5,
         markupPerPurchase = 0.25,
         cooldown = 0.5,
-        tags = { "ITEMS", "Essential", "Weapon" },
+        tags = { "ITEMS", "Weapon" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -573,6 +543,30 @@ local items = {
                 confirmSoundWeight = 1,
 
             } )
+        end,
+    },
+    -- carried in, placed down, see glee_backpackable_shield
+    ["riot_shield"] = {
+        name = "Riot Shield",
+        desc = "Absorbs damage.\nUltimate protection, with a view!",
+        shCost = 0,
+        shSkullCost = 2,
+        cooldown = 5,
+        tags = { "ITEMS", "Utility", "SkullCost" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_INACTIVE,
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = 925,
+        shPurchaseCheck = { shopHelpers.aliveCheck, function( purchaser )
+            return terminator_Extras.glee_Carrying.HasRoomFor( purchaser, "glee_backpackable_shield" )
+
+        end },
+        svOnPurchaseFunc = function( purchaser )
+            if not terminator_Extras.glee_Carrying.GiveNewCarryable( purchaser, "glee_backpackable_shield" ) then return end
+
+            shopHelpers.loadoutConfirm( purchaser, 1 )
+
         end,
     },
     ["grigorigun"] = {

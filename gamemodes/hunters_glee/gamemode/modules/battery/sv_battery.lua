@@ -56,6 +56,26 @@ function plyMeta:BatteryNag( time )
 
 end
 
+local insufficientNotifyInterval = 0.5 -- signal relay asks every time signal strength updates
+
+-- They tried to use suit power with none left
+function plyMeta:BatteryInsufficientNag( time )
+    doBatteryNag( self, time )
+
+    local cur = CurTime()
+    if ( self.glee_NextInsufficientNotify or 0 ) > cur then return end
+    self.glee_NextInsufficientNotify = cur + insufficientNotifyInterval
+
+    huntersGlee_Notify( { self }, {
+        text = "INSUFFICIENT POWER",
+        description = "Seek additional SUIT energy.",
+        kind = "bad",
+        time = 2,
+        replaceKey = "glee_insufficientpower",
+        onlyWhile = "alive",
+    } )
+end
+
 function plyMeta:GivePlayerBatteryCharge( add )
     if hook.Run( "huntersglee_givebattery", self, add ) == false then return end
 
@@ -156,7 +176,7 @@ hook.Add( "glee_battery_onnotempty", "fixflashlight", checkFlashlightBrightness 
 hook.Add( "glee_PlayerSwitchFlashlight", "glee_battery_flashlight", function( ply, enabling )
     local charged = ply:PlayerHasBatteryCharge()
     if not charged and enabling then
-        ply:BatteryNag( 0.5 )
+        ply:BatteryInsufficientNag( 0.5 )
 
     elseif charged then
         -- check
@@ -188,7 +208,7 @@ end )
 hook.Add( "KeyPress", "glee_zoomcost", function( ply, key )
     if key ~= IN_ZOOM then return end
     if not ply:PlayerHasBatteryCharge() then
-        ply:BatteryNag( 0.5 )
+        ply:BatteryInsufficientNag( 0.5 )
         return
 
     end

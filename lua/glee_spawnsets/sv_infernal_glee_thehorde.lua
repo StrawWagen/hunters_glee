@@ -4,7 +4,7 @@ local set = {
     prettyName = "The Infernal Horde",
     description = "It burns, it burns! IT BURNS!",
     difficultyPerMin = "default*3", -- difficulty per minute
-    waveInterval = "default", -- time between spawn waves
+    waveInterval = "default*0.35", -- time between spawn waves
     diffBumpWhenWaveKilled = "default*4", -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
     startingBudget = "default", -- so budget isnt 0
     spawnCountPerDifficulty = "default",
@@ -44,7 +44,7 @@ local set = {
             preSpawnedFuncs = {
                 function( _, spawned )
                     spawned.SpawnHeadlessChance = 80
-                    spawned.SkeleRareRunning = false
+                    spawned.SkeleRunsAfterEnemySprints = false
 
                 end,
             },
@@ -59,7 +59,7 @@ local set = {
             difficultyCost = 6,
             preSpawnedFuncs = {
                 function( _, spawned )
-                    spawned.SkeleRareRunning = false
+                    spawned.SkeleRunsAfterEnemySprints = false
 
                 end,
             },
@@ -73,11 +73,10 @@ local set = {
             spawnSameZ = true,
             preferredEFlags = GAMEMODE.NavEFlags.UNDER_SKY,
             difficultyCost = { 50, 100 },
-            countClass = "terminator_nextbot_infernalskeleton_large",
             maxCount = { 1 },
             preSpawnedFuncs = {
                 function( _, spawned )
-                    spawned.SkeleRareRunning = false
+                    spawned.SkeleRunsAfterEnemySprints = false
 
                 end,
             },
@@ -91,7 +90,6 @@ local set = {
             spawnSameZ = true,
             preferredEFlags = GAMEMODE.NavEFlags.UNDER_SKY,
             difficultyCost = { 100, 200 },
-            countClass = "terminator_nextbot_infernalskeleton_big",
             maxCount = { 1 },
         },
         {
@@ -101,11 +99,10 @@ local set = {
             class = "terminator_nextbot_infernalskeleton_large", -- class spawned
             spawnType = "hunter",
             difficultyCost = { 500, 1000 },
-            countClass = "terminator_nextbot_infernalskeleton_large",
             maxCount = { 10 },
             preSpawnedFuncs = {
                 function( _, spawned )
-                    spawned.SkeleRareRunning = false
+                    spawned.SkeleRunsAfterEnemySprints = false
 
                 end,
             },
@@ -118,7 +115,6 @@ local set = {
             spawnType = "hunter",
             spawnSameZ = true,
             difficultyCost = { 1000, 2000 },
-            countClass = "terminator_nextbot_infernalskeleton_big",
             maxCount = { 10 },
         },
     }

@@ -51,6 +51,11 @@ SWEP.ViewModelOffset = Vector( 0, 0, 0 ) -- the whole viewmodel, arms and held m
 -- this one's Maxwell's pose, palms rolled up
 SWEP.ViewModelBoneMods = glee_Carrying.ElitesBoneMods( 0, -80.047, 71.204 )
 
+-- true shows the carried entity itself in first person while it's out, riding the hand, see WorldModelHandBone
+-- for things where they really are matters, like a riot shield
+-- the HeldModel ones below do nothing then
+SWEP.ShowCarriedInHands = false
+
 -- the carried entity's model, drawn on the viewmodel
 SWEP.HeldModelBone = "ValveBiped.Bip01_R_Hand"
 SWEP.HeldModelPos = Vector( 0, 0, 0 )
@@ -86,6 +91,8 @@ SWEP.PlacedSound = {
 SWEP.PlacedUpOffset = 0 -- off the floor, along its slope, for a model whose bounds don't reach its real base
 SWEP.PlaceGhostAng = nil -- PlaceAng for the preview only, when its still pose sits differently than the placed entity's
 SWEP.PlaceMinFloorUp = 0.25 -- of the surface normal, steeper than this isn't a floor
+SWEP.PlaceDropFraction = 0.5 -- of PlaceDistance, how far it drops to find a floor when not aimed at one
+SWEP.PlaceDropWalkback = 10 -- off the wall or ceiling it was aimed at before dropping, so it isn't placed half inside it
 SWEP.PlaceCoreFraction = 0.5 -- of its narrowest width, how much of its middle has to be clear to place it
 SWEP.PlaceCoreLift = 18 -- step height, clutter under it lower than this doesn't block a place
 
@@ -295,7 +302,7 @@ local function averageFloorNormal( center, yawAng, mins, maxs, rise, filter )
 
 end
 
--- where it'd land, on the floor the placer's aiming at, tilted to its slope
+-- where it'd land, on the floor the placer's aiming at or just below it, tilted to its slope
 -- returns pos, ang, and the slope's angle before PlaceAng, for the ghost to apply its own
 -- nil and why when it can't go there, "nofloor" or "blocked"
 -- fits the model at scale 1, so it's off for anything that was scaled before it was carried
@@ -311,7 +318,17 @@ function SWEP:GetPlacement( placer )
         endpos = shootPos + placer:GetAimVector() * self.PlaceDistance,
         filter = filter,
     } )
-    if not floorTr.Hit or floorTr.HitNormal.z < self.PlaceMinFloorUp then return nil, "nofloor" end
+    if not floorTr.Hit or floorTr.HitNormal.z < self.PlaceMinFloorUp then
+        -- aimed at a wall, the ceiling, or the air, drop it from there
+        local dropStart = floorTr.HitPos + floorTr.HitNormal * self.PlaceDropWalkback
+        floorTr = util.TraceLine( {
+            start = dropStart,
+            endpos = dropStart - Vector( 0, 0, self.PlaceDistance * self.PlaceDropFraction ),
+            filter = filter,
+        } )
+        if not floorTr.Hit or floorTr.HitNormal.z < self.PlaceMinFloorUp then return nil, "nofloor" end
+
+    end
 
     local modelMins, modelMaxs = ent:GetModelBounds()
     local mins, maxs = placedBounds( modelMins, modelMaxs, self.PlaceAng )
@@ -624,6 +641,7 @@ if SERVER then
             collisionGroup = ent:GetCollisionGroup(),
             customCollisionCheck = ent:GetCustomCollisionCheck(),
             notSolid = bit.band( ent:GetSolidFlags(), FSOLID_NOT_SOLID ) ~= 0,
+            blocksLOS = not ent:IsEFlagSet( EFL_DONTBLOCKLOS ),
             motionEnabled = IsValid( phys ) and phys:IsMotionEnabled(),
             collisionsEnabled = IsValid( phys ) and phys:IsCollisionEnabled(),
         }
@@ -694,7 +712,7 @@ if SERVER then
     end
 
     -- takes ent on as what this carries
-    -- frozen, walked through but still shot, and riding the owner's back
+    -- frozen, walked through but still shot, seen through, and riding the owner's back
     -- StopCarrying undoes all of it
     -- removing ent removes this weapon
     function SWEP:StartCarrying( ent )
@@ -727,6 +745,10 @@ if SERVER then
         ent:SetSolid( SOLID_BBOX )
         ent:SetNotSolid( false )
         ent:SetCollisionGroup( COLLISION_GROUP_WEAPON )
+
+        -- the engine refuses a weapon pickup unless the weapon can see the player's eyes
+        -- something on their back is in the way of that
+        ent:AddEFlags( EFL_DONTBLOCKLOS )
 
         -- so glee_carrying's ShouldCollide is asked about it, see there
         ent:SetCustomCollisionCheck( true )
@@ -813,6 +835,11 @@ if SERVER then
         ent:SetSolid( state.solidType )
         ent:SetNotSolid( state.notSolid )
         ent:SetCollisionGroup( state.collisionGroup )
+
+        if state.blocksLOS then
+            ent:RemoveEFlags( EFL_DONTBLOCKLOS )
+
+        end
 
         ent:SetCustomCollisionCheck( state.customCollisionCheck )
         ent:CollisionRulesChanged()
@@ -1151,6 +1178,8 @@ function SWEP:PostDrawViewModel( vm )
 
     end
     self.glee_HiddenMaterialCount = nil
+
+    if self.ShowCarriedInHands then return end
 
     local held = self:EnsureHeldModel( vm )
     if not held then return end

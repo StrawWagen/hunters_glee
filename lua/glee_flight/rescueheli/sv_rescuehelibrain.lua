@@ -235,7 +235,10 @@ function rescueHeli.Think( self )
             state.currentHeliTask = "rescue_switchToEscape"
             state.currentHeliGoal = "escape"
             huntersGlee_AnnounceDramatic( player.GetAll(), 502, 5, "Rescue is leaving, it's been here too long..." )
+            if GAMEMODE.IsReallyHuntersGlee then
+                GAMEMODE:SendMusic( "tracks/heliLateLeave" )
 
+            end
         elseif self:Health() < self:GetMaxHealth() * 0.5 then
             state.currentHeliTask = "rescue_switchToEscape"
             state.currentHeliGoal = "escape"
@@ -246,6 +249,14 @@ function rescueHeli.Think( self )
             state.currentHeliGoal = "escape"
             if someoneRescuable then
                 huntersGlee_AnnounceDramatic( player.GetAll(), 502, 5, "Rescue is departing!\nAll souls aboard!" )
+                local function isAboard( ply )
+                    return gleeVehicles.IsRiding( ply, self )
+
+                end
+                if GAMEMODE.IsReallyHuntersGlee and GAMEMODE:IsBoonable( isAboard ) then
+                    GAMEMODE:SendMusic( "tracks/heliLeaveAllSoulsBoonSoon" )
+
+                end
 
             else
                 huntersGlee_AnnounceDramatic( player.GetAll(), 502, 5, "Rescue is departing!\nThere's nobody left to save..." )

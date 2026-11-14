@@ -169,7 +169,7 @@ ENT.CollisionBounds = { Vector( -standxy, -standxy, 0 ), Vector( standxy, standx
 ENT.CrouchCollisionBounds = { Vector( -crouchxy, -crouchxy, 0 ), Vector( crouchxy, crouchxy, 30 ) } -- this is then scaled by modelscale
 ENT.MyPhysicsMass = 2000
 
-ENT.SpawnHealth = 2500
+ENT.SpawnHealth = 3500
 
 ENT.FistDamageMul = 10
 ENT.FistRangeMul = 1.75
@@ -202,7 +202,7 @@ ENT.infernSkele_IdleSounds = {
 ENT.SkeleDeathAnim = ACT_GMOD_GESTURE_TAUNT_ZOMBIE
 ENT.SkeleDeathAnimRate = 0.35
 ENT.SkeleCallInterval = 35
-ENT.SkeleRareRunning = false
+ENT.SkeleRunsAfterEnemySprints = false
 
 
 function ENT:SkeletonDeathFX()

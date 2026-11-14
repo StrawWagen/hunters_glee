@@ -82,7 +82,6 @@ namedDecrees.tutorial_chooser = function()
         "DIE.",
         "Oh,\nyou will die.",
         "But don't worry.\nDeath is not the end.",
-        "It's time now.",
         "Time to choose...",
         choices = {
             { "The Infernal Horde\nWeaklings.\nTo prepare you...", playInfernalHordeSound },
@@ -95,18 +94,37 @@ namedDecrees.tutorial_chooser = function()
     } )
 end
 
--- every other new player on the tutorial misery
+-- every other new player on the tutorial misery. The chooser can still pick a real one while they read
 namedDecrees.tutorial_infernal = function()
     showTutorial( {
         "Welcome.\nTo the hunt!",
         "This is your first hunt,\nis it not?",
-        "We have chosen, this MISERY for you.",
-        "You must hunt the Infernal Horde...",
-        "Extremely weak enemies, for YOU to HUNT.",
-        "You will still, DIE.",
-        "But don't worry, that's the best part.",
-        "Because then,\nthe HAUNTING will begin",
-        "Let the Hunt....\nBEGIN!",
+
+        branches = {
+            pick = function()
+                if GetGlobalString( "GLEE_SpawnSetName" ) == GAMEMODE.TheTutorialMisery then return "infernal" end
+                return "glee"
+            end,
+
+            infernal = {
+                "You must hunt the Infernal Horde...",
+                "Extremely weak enemies, for YOU to HUNT.",
+                "You will still, DIE.",
+                "But don't worry, that's the best part.",
+                "Because then,\nthe HAUNTING will begin",
+                "Let the Hunt....\nBEGIN!",
+            },
+            glee = {
+                interrupt = { "Wait...", "A TRUE MISERY\nhas been chosen..." },
+                "You will be HUNTED..",
+                "by CRUEL, intelligent,\nUNSTOPPABLE enemies.",
+                "They will HUNT. you.",
+                "You will DIE.",
+                "But don't worry, that's the best part.",
+                "Because then,\nthe HAUNTING will begin",
+                "Let the Hunt....\nBEGIN!",
+            },
+        },
     } )
 end
 
@@ -197,20 +215,62 @@ namedDecrees.ghostshop = function()
 
     end
 
+    -- revived partway through, the server sends it again on their next death
     local decree = {
-        "What a shame...",
-        "You've DIED.",
-        "This,\nthis is an OPPORTUNITY!",
-        "That body was...\nHolding you back.",
-        "The HUNT...\nIt hasn't ended.",
-        "It's time to HAUNT,\nthe living...",
-        "Haunt, for a PROFIT?",
-        openShopLine,
+        branches = {
+            pick = function() return LocalPlayer():Health() > 0 and "revived" or "dead" end,
+
+            dead = {
+                "What a shame...",
+                "You've DIED.",
+                "This,\nthis is an OPPORTUNITY!",
+                "That body was...\nHolding you back.",
+                "The HUNT...\nIt hasn't ended.",
+                "It's time to HAUNT,\nthe living...",
+                "Haunt, for a PROFIT?",
+                openShopLine,
+            },
+            revived = {
+                interrupt = { "Oh, Nevermind.\nYou're alive.", "We'll speak again soon" },
+            },
+        },
+        onFinished = function()
+            if LocalPlayer():Health() > 0 then return end -- we'll speak again soon
+            GAMEMODE:LearnLesson( "DiedTimeToContinueShoppingHint" )
+
+        end,
     }
-    tellOfDivineIntervention( decree, { "DIVINE INTERVENTION AWAITS." }, { "Happy HAUNTING..." } )
+    tellOfDivineIntervention( decree.branches.dead, { "DIVINE INTERVENTION AWAITS." }, { "Happy HAUNTING..." } )
 
     GAMEMODE:ShowDecree( decree )
 
+end
+
+-- ghostshop, for those who spawned in dead. Their first death since coming back, the ghostly tutorial covered haunting
+namedDecrees.diedafterspawningindead = function()
+    GAMEMODE:ShowDecree( {
+        branches = {
+            pick = function() return LocalPlayer():Health() > 0 and "revived" or "dead" end,
+
+            dead = {
+                "You finally, died properly.",
+                "Was it gleeful?",
+                "Inhabiting that body?",
+                "Death will always be...",
+                "AN OPPORTUNITY.",
+                "So HAUNT.\nEarn your way back.",
+                "Death is nowhere near the end...",
+            },
+            revived = {
+                interrupt = { "Oh, Nevermind.\nYou're alive.", "We'll speak again soon" },
+            },
+        },
+        onFinished = function()
+            if LocalPlayer():Health() > 0 then return end -- we'll speak again soon
+            GAMEMODE:LearnLesson( "DiedTimeToContinueShoppingHint" )
+
+        end,
+    } )
 end
 
 -- dead, somewhere Divine Intervention's on sale, after an earlier decree couldn't mention it.
@@ -233,7 +293,7 @@ namedDecrees.escapedeasy = function()
         "You've passed the first...\nTEST.",
         "That Misery was made to prepare you..",
         "For the TRUE, hard MISERIES.\nThat await you...",
-        "Type \" !rtm \"\nTo begin a Misery vote...",
+        "Type \" !rtm \" in chat,\nTo begin a Misery vote...",
     } )
 end
 

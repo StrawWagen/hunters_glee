@@ -218,12 +218,6 @@ if SERVER then
         end )
     end
 
-    -- KillSilent leaves health above 0, and Alive() can lag behind health during DoPlayerDeath, so check both
-    local function seesThroughOwnEyes( ply )
-        return ply:Alive() and ply:Health() > 0 and ply:GetObserverMode() == OBS_MODE_NONE
-
-    end
-
     -- their cam, if it's out and droppable
     local function holdingCamActive( ply )
         local cam = ply:GetActiveWeapon()
@@ -245,7 +239,7 @@ if SERVER then
 
             end
             -- still held while dead means a KillSilent skipped DoPlayerDeath's drop
-            if seesThroughOwnEyes( holder ) then return end
+            if holder:SeesThroughOwnEyes() then return end
             if holdingCamActive( holder ) ~= cam then return end
 
             timer.Remove( timerName )
@@ -265,7 +259,7 @@ if SERVER then
         ply:DropWeaponKeepAmmo( cam )
         timer.Simple( 0, function()
             if not IsValid( cam ) or IsValid( cam:GetOwner() ) then return end
-            if IsValid( ply ) and not seesThroughOwnEyes( ply ) then return end
+            if IsValid( ply ) and not ply:SeesThroughOwnEyes() then return end
 
             cam:Remove()
 
@@ -288,7 +282,7 @@ if SERVER then
         -- a stripping grabber takes your eyes right after the drop
         timer.Simple( 0, function()
             if not IsValid( self ) or not IsValid( holder ) then return end
-            if seesThroughOwnEyes( holder ) then return end
+            if holder:SeesThroughOwnEyes() then return end
 
             biasAimTowards( self, holder, dropSpot )
 
@@ -337,11 +331,6 @@ else
     -- a 32:9 screen still makes 480x128
     local minRecordSize = 120
 
-    local function seesThroughOwnEyes( ply )
-        return ply:Alive() and ply:GetObserverMode() == OBS_MODE_NONE
-
-    end
-
     -- in the holder's hand while held, otherwise wherever the cam itself lies
     local function lensPose( cam )
         local holder = cam:GetOwner()
@@ -367,7 +356,7 @@ else
         if not IsValid( recordingCam ) then return end
 
         local holder = recordingCam:GetOwner()
-        if seesThroughOwnEyes( me ) then
+        if me:SeesThroughOwnEyes() then
             -- dropped by hand, the server only drops it for us once we're out of our eyes
             if holder ~= me then return end
             return "ours"

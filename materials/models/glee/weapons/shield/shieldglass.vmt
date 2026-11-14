@@ -1,0 +1,6 @@
+"VertexLitGeneric"
+{
+	"$basetexture" "models/glee/weapons/shield/shieldglass"
+	// It's glass so we don't need half-lambertian lighting
+	"$translucent" 	1
+}

@@ -42,8 +42,8 @@ glee_Turrets.UseActions = {
 function glee_Turrets.CanUseAction( turret, ply, key )
     if key ~= "resupply" then return true end
     if not ply.PlayerHasBatteryCharge then return false end -- suit charge is the gamemode's
-    if glee_Turrets.GetAmmo( turret ) >= glee_Turrets.GetMaxAmmo( turret ) then return false, "It's fully loaded." end
-    if not ply:PlayerHasBatteryCharge() then return false, "You've got no suit charge to spare." end
+    if glee_Turrets.GetAmmo( turret ) >= glee_Turrets.GetMaxAmmo( turret ) then return false, "CANNOT CHARGE\nFully charged." end
+    if not ply:PlayerHasBatteryCharge() then return false, "CANNOT CHARGE\nNo charge to give." end
 
     return true
 

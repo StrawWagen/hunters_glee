@@ -91,7 +91,6 @@ GAMEMODE:RegisterStatusEffect( "spawn_protection",
         owner:GodEnable()
         owner:SetCollisionGroup( COLLISION_GROUP_IN_VEHICLE )
         owner:Fire( "alpha", 0, 0 )
-        owner:SetNWBool( "glee_firstowner_sheltering", true )
 
         self:HookOnce( "glee_ply_blockhuntability", function( ply )
             if ply:HasStatusEffect( "spawn_protection" ) then return true end
@@ -148,6 +147,18 @@ local function shelterPly( ply )
     end )
 end
 
+-- so their first Preparing has something to spend, score only builds up during the hunt
+local freeScore = 100
+
+-- FREE SCORE!!!
+local function giveFreeScore( ply )
+    if hasFirstTimeStatus( ply ) then return end
+    if ply:BankHasAccount() then return end -- nuh uh
+
+    ply:GivePlayerScore( freeScore )
+
+end
+
 -- decreeName is one of cl_firsttimeplayers.lua's tutorial_ decrees
 local function tutorialize( ply, decreeName )
     permaPrint( "GLEE: Tutorializing ", ply )
@@ -156,13 +167,18 @@ local function tutorialize( ply, decreeName )
 
     end
     asked[ply] = true
-    if not alreadyDone[ply:SteamID()] then -- NEVER give god/notarg more than once per session
-        alreadyDone[ply:SteamID()] = true
-        if decreeName == "tutorial_ghostly" and ply:Health() > 0 then
+    -- even on a rejoin, the decree tells them they're dead
+    if decreeName == "tutorial_ghostly" then
+        GAMEMODE:LearnLesson( ply, "SpawnedInDead" ) -- their first real death gets diedafterspawningindead, not ghostshop
+        if ply:Health() > 0 then
             ply:KillSilent()
 
         end
+    end
+    if not alreadyDone[ply:SteamID()] then -- NEVER give god/notarg more than once per session
+        alreadyDone[ply:SteamID()] = true
         shelterPly( ply )
+        giveFreeScore( ply ) -- wait, FREE score? FREE???
         ply:SetNW2Bool( "glee_firsttime_divinediscount", true )
 
     end
@@ -253,13 +269,14 @@ function GAMEMODE:TutorializeNewPlayers( players )
         RunConsoleCommand( "huntersglee_misery", self.TheTutorialMisery )
 
     end
-    -- spawn in dead if round didn't JUST start right now
-    local ghostly = not switchingToTutorialMisery and GAMEMODE:getRemaining( GAMEMODE.termHunt_roundBegunTime, CurTime() ) > 5
+    local hunting = self:RoundState() == self.ROUND_ACTIVE
+    -- spawn in dead if the hunt's been going a while
+    local ghostly = hunting and self:getRemaining( self.termHunt_roundBegunTime, CurTime() ) > 5
 
     -- the cvar change applies after this, so the current misery can still be the old one
     local onTutorialMisery = switchingToTutorialMisery or self:GetSpawnSet() == self.TheTutorialMisery
     local chooser
-    if onTutorialMisery and not ghostly and not tutorialChoiceOffered then
+    if onTutorialMisery and not hunting and not tutorialChoiceOffered then
         for _, ply in ipairs( nonKnowers ) do
             if not chooser or ply:TimeConnected() > chooser:TimeConnected() then
                 chooser = ply
@@ -302,6 +319,8 @@ net.Receive( "glee_tutorial_jumpin", function( _, ply )
 
     jumpedInSteamID = ply:SteamID()
     RunConsoleCommand( "huntersglee_misery", "hunters_glee" )
+    GAMEMODE:BumpSessionDifficulty( 20, "tutorial_jumpin" ) -- give em a truly miserable first impression
+    GAMEMODE:BumpRoundDifficulty( 20, "tutorial_jumpin" )
     GAMEMODE:LearnLesson( ply, "ExperiencedMiseryVote" ) -- skip the .tutorialExit options
 
     hook.Add( "terminator_enemythink", "glee_playTutorialHardOptionTrack", function( bot, spotted )
@@ -360,7 +379,8 @@ end )
 
 local ghostShopHintDelay = 5
 
--- a new player's first death with others still alive, tell them dying's where the haunting starts
+-- a new player's first death with others still alive, tell them dying's where the haunting starts.
+-- KillSilent doesn't run PlayerDeath, so for those who spawned in dead, this is their first death since coming back
 hook.Add( "PlayerDeath", "glee_tutorial_ghostshophint", function( ply )
     if ply:IsBot() then return end
     if not hasFirstTimeStatus( ply ) then return end
@@ -371,10 +391,16 @@ hook.Add( "PlayerDeath", "glee_tutorial_ghostshophint", function( ply )
         if not IsValid( ply ) then return end
         if ply:Alive() then return end
         if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
-        if not GAMEMODE:LearnLesson( ply, "DiedTimeToContinueShoppingHint" ) then return end
+        if GAMEMODE:HasLearnedLesson( ply, "DiedTimeToContinueShoppingHint" ) then return end -- the client learns it once they've seen it all
 
-        sendTutorialDecree( ply, "ghostshop" )
+        -- the ghostly tutorial already told them about haunting
+        if GAMEMODE:HasLearnedLesson( ply, "SpawnedInDead" ) then
+            sendTutorialDecree( ply, "diedafterspawningindead" )
 
+        else
+            sendTutorialDecree( ply, "ghostshop" )
+
+        end
     end )
 end )
 

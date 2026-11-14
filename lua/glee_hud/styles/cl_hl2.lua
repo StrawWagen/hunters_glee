@@ -22,6 +22,7 @@ terminator_Extras.glee_RegisterStyle( "hl2", {
         medium      = { size = 28, weight = 1000 },
         mediumLarge = { size = mediumLargeSize, weight = 2000, scanlines = 1 },
         placing     = { size = 40, weight = 1000 }, -- the readout while placing something
+        hintUrgent  = { size = 40, weight = 2000 }, -- a hint that must never be missed, see cl_topleftinfo.lua
 
         -- A name is whatever the player typed, and the decorative faces lack the glyphs, so
         -- it names its own face. sizeMul 1 keeps it this size in a style that shrinks its face

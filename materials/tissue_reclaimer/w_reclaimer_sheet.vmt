@@ -1,0 +1,8 @@
+// the tissue reclaimer's world model, models/weapons/w_physics/w_physics_sheet2 with a fixed reclamation green glow
+// not the original's PlayerWeaponColor proxy, that's gmod's physgun colour
+"VertexLitGeneric"
+{
+	"$baseTexture" "Models/Weapons/w_physics/w_physics_sheet2"
+	"$selfillum" "1"
+	"$selfillumtint" "[0.5 2.1 0.8]"
+}

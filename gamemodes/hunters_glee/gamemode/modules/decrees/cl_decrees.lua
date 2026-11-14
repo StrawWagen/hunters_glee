@@ -11,10 +11,30 @@
             },
             muffle = true, -- optional, muffles the world while it's up
             onClose = function() end, -- optional, runs however it ended
+            onFinished = function() end, -- optional, runs when it reaches its end or they close it
         } )
 
     Only draws. Anything the server needs to hear about, the caller sends itself.
     A decree shown while another is up waits its turn.
+
+    Branches, for a decree that should change course when the world does:
+
+        GAMEMODE:ShowDecree( {
+            "Welcome.\nTo the hunt!", -- every path starts here, the branch point is after the last of these
+
+            branches = {
+                -- asked at the branch point, then again before every line after it
+                pick = function() return LocalPlayer():Alive() and "revived" or "dead" end,
+
+                dead = { "You've DIED.", "Time to HAUNT." },
+                revived = {
+                    interrupt = { "Oh, Nevermind." }, -- only played when it cuts in on another path
+                    "We'll speak again soon",
+                },
+            },
+        } )
+
+    A pick that changes after the branch point plays the new path's interrupt, then that path from its start.
 ]]
 
 local GAMEMODE = GAMEMODE or GM
@@ -217,6 +237,8 @@ open = function( def )
         decree:PlaySound( "arrival", math.random( 70, 80 ), CHAN_STATIC )
         decree:PlaySound( "arrival", math.random( 50, 60 ), CHAN_STATIC )
 
+        if def.onFinished then def.onFinished() end
+
         popup:Remove()
 
     end
@@ -244,7 +266,6 @@ open = function( def )
     lineButton:Dock( FILL )
     lineButton:SetText( "" )
 
-    lineButton.index = 0
     lineButton.nextPress = 0
     lineButton.nextFlash = 0
     lineButton.lastThink = CurTime()
@@ -254,17 +275,61 @@ open = function( def )
     lineButton.jitterY = 0
     lineButton.line = decree:NewArrival( "huge" )
 
-    local function showLine()
-        lineButton.line:SetText( def[lineButton.index] )
+    local function showLine( text )
+        lineButton.line:SetText( text )
         lineButton.elapsed = 0
         lineButton.clickPlsGoFaster = 0
         lineButton.nextAutomatic = nil
 
     end
 
+    -- the lines still to come, front first. starts as the ones before the branch point
+    local upcoming = {}
+    for _, text in ipairs( def ) do
+        upcoming[#upcoming + 1] = text
+
+    end
+
+    local branches = def.branches
+    local pathName -- nil until the branch point
+
+    local function takePath( name, cutIn )
+        local path = branches[name]
+        pathName = name
+
+        upcoming = {}
+        if cutIn and path.interrupt then
+            for _, text in ipairs( path.interrupt ) do
+                upcoming[#upcoming + 1] = text
+
+            end
+        end
+        for _, text in ipairs( path ) do
+            upcoming[#upcoming + 1] = text
+
+        end
+    end
+
+    local function followBranches()
+        if not branches then return end
+
+        if not pathName then
+            if #upcoming > 0 then return end -- not at the branch point yet
+            takePath( branches.pick(), false )
+            return
+
+        end
+
+        local wanted = branches.pick()
+        if wanted ~= pathName then takePath( wanted, true ) end
+
+    end
+
     local function nextLine()
-        lineButton.index = lineButton.index + 1
-        if def[lineButton.index] then showLine() return end
+        followBranches()
+
+        local text = table.remove( upcoming, 1 )
+        if text then showLine( text ) return end
 
         if def.choices then
             lineButton:Remove()

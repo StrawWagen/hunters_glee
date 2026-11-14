@@ -43,7 +43,6 @@ if hasSanic then
         class = "npc_sanic",
         spawnType = "hunter",
         difficultyCost = { 10 },
-        countClass = "npc_sanic",
         maxCount = { 50 },
         postSpawnedFuncs = { randomizeVar }, -- this can be nil
     }
@@ -70,7 +69,6 @@ if hasObunga then
         class = "npc_obunga",
         spawnType = "hunter",
         difficultyCost = { 15 },
-        countClass = "npc_obunga",
         maxCount = { 50 },
         postSpawnedFuncs = { randomizeVar }, -- this can be nil
     }

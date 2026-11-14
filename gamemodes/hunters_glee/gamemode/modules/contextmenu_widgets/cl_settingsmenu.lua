@@ -142,6 +142,12 @@ local settingsCategories = {
                 desc = "Blur whatever is behind menus like this one, so they're easier to read.",
             },
             {
+                cvar = "cl_huntersglee_blurhud",
+                type = "check",
+                prettyName = "Blur behind the HUD",
+                desc = "Blur whatever is behind HUD text, like your score and notices, so it's easier to read.",
+            },
+            {
                 cvar = "cl_huntersglee_highcontrast",
                 type = "check",
                 prettyName = "High contrast",

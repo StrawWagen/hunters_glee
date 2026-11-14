@@ -238,10 +238,16 @@ local blurredFamilies = {
     bgDark = 2, -- RNDX's blur intensity
 }
 
--- RNDX blur intensity behind a backdrop of this family, nil for none. For gui that draws its own backdrop shape
-function styleHandle:BackdropBlur( family )
-    if not blurMenus:GetBool() then return end
-    return blurredFamilies[family]
+-- hud boxes sit over the world, a light blur keeps them readable without darkening them
+local blurHud = CreateClientConVar( "cl_huntersglee_blurhud", "1", true, false, "Blur whatever is behind glee hud boxes?", 0, 1 )
+local hudBlurIntensity = 0.2 -- just takes the edge off what's behind, much more and it clashes with the engine's own hud
+
+-- RNDX blur intensity behind a backdrop of this family, nil for none. For gui that draws its own backdrop shape.
+-- isHud for a hud box, see glee_panel's SetHudBlur
+function styleHandle:BackdropBlur( family, isHud )
+    local familyBlur = blurredFamilies[family]
+    if familyBlur and blurMenus:GetBool() then return familyBlur end
+    if isHud and blurHud:GetBool() then return hudBlurIntensity end
 
 end
 
@@ -256,12 +262,13 @@ end
     @param state: "idle", "hovered", "pressed", "chosen" or "disabled". Defaults to idle.
     @param cache: A table that lives as long as the backdrop, the panel itself usually.
         A shape that has to hold still between frames, like a torn strip, is kept on it.
+    @param isHud: true for a hud box, blurred lightly while cl_huntersglee_blurhud is on.
     @return: None
 --]]---------------------------------------------------------
-function styleHandle:Background( x, y, w, h, family, cornerRadius, fade, state, cache )
+function styleHandle:Background( x, y, w, h, family, cornerRadius, fade, state, cache, isHud )
     local style = self:Settings()
 
-    local blur = self:BackdropBlur( family )
+    local blur = self:BackdropBlur( family, isHud )
 
     style.background(
         style, x, y, w, h,

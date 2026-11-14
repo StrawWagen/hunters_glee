@@ -79,6 +79,7 @@ if CLIENT then
 
         if not owner:GetNW2Bool( "gleenailer_nailattempted", false ) then return true, "PRIMARY ATTACK to nail things together." end
         if not owner:GetNW2Bool( "gleenailer_goodnailed", false ) then return true, "The nails have to go through something.\nLike a prop to a wall, a door to it's frame?\nYou can't nail a wall to itself, etc." end
+        if not GAMEMODE:HasLearnedLesson( "PulledANail" ) then return true, "SECONDARY ATTACK to pull nails." end
 
     end
 
@@ -445,6 +446,10 @@ function SWEP:SecondaryAttack() -- pull nails or melee attack
     if SERVER then
         nearestNail:Break()
         nearestNail:EmitSound( "physics/metal/metal_box_impact_hard" .. math.random( 1, 3 ) .. ".wav", 70, math.random( 90, 120 ) )
+        if GAMEMODE.LearnLesson then -- spawnable outside glee
+            GAMEMODE:LearnLesson( owner, "PulledANail" )
+
+        end
 
     end
 

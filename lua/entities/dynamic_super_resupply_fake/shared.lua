@@ -44,7 +44,7 @@ function ENT:rareCreationOptions()
         { class = "item_rpg_round", count = 3 },
         { class = "weapon_pistol" },
         { class = "termhunt_aeromatix_flare_gun" },
-        { class = "termhunt_reviver" },
+        { class = "glee_tissue_reclaimer" },
         { class = "termhunt_weapon_hammer" },
         { class = "termhunt_score_pickup", count = 6 },
         { class = "termhunt_taucannon" }

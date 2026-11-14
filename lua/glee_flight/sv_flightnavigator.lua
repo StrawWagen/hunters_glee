@@ -62,6 +62,62 @@ local function teleportTo( ent, navData, pos )
 
 end
 
+local hardUnstuckMinAreaSize = 250
+local hardUnstuckHeight = Vector( 0, 0, 250 )
+
+-- above a big area under the sky, preferably the nearest busy one we can see
+-- skipLos, for when nothing's visible from myPos, like from the void
+local function findHardUnstuckPos( myPos, skipLos )
+    local areas = GAMEMODE:GetAreasInOccupiedGroupWithEFlag( GAMEMODE.NavEFlags.UNDER_SKY )
+
+    local anArea
+    local perfectArea
+    local perfectAreaDist = math.huge
+
+    for _, area in ipairs( areas ) do
+        if not IsValid( area ) then continue end
+        if math.min( area:GetSizeX(), area:GetSizeY() ) < hardUnstuckMinAreaSize then continue end
+
+        anArea = area
+        if not GAMEMODE.navmeshActivityHeatmap[area] then continue end -- only teleport to spots people have been
+        local areaCenter = area:GetCenter()
+        if not skipLos and not terminator_Extras.PosCanSee( myPos, areaCenter + hardUnstuckHeight ) then continue end
+
+        local distSqr = myPos:DistToSqr( areaCenter )
+        if distSqr > perfectAreaDist then continue end
+        perfectAreaDist = distSqr
+        perfectArea = area
+
+    end
+
+    local foundArea = IsValid( perfectArea ) and perfectArea or anArea
+    if not IsValid( foundArea ) then return end
+
+    return foundArea:GetCenter() + hardUnstuckHeight
+
+end
+
+-- in the void, something's gone wrong, hard unstuck right away
+-- returns true if it teleported us
+local function escapeTheVoid( ent, navData )
+    if util.IsInWorld( ent:WorldSpaceCenter() ) then return false end
+    if not GAMEMODE.IsReallyHuntersGlee then return false end
+
+    local escapePos = findHardUnstuckPos( ent:WorldSpaceCenter(), true )
+    if not escapePos then return false end
+
+    teleportTo( ent, navData, escapePos )
+    navData.lastBestPos = nil
+    navData.lastBestPenalty = nil
+
+    if isDebugging( navData ) then
+        permaPrint( "flightnav escaped the void" )
+
+    end
+    return true
+
+end
+
 local function manageSpeedLimit( ent, navData, idealMovePos, loveSkybox )
     local speedOverride = navData.speedOverride
     if speedOverride then
@@ -198,6 +254,8 @@ function gleeFlightNavigator.Steer( ent, idealMovePos, loveSkybox )
     local navData = ent.glee_FlightNav
     local cfg = navData.cfg
     local debugging = isDebugging( navData )
+
+    if escapeTheVoid( ent, navData ) then return false end
 
     local myPos = ent:GetPos()
     local ourVel = navData.measuredVel
@@ -388,36 +446,8 @@ function gleeFlightNavigator.Steer( ent, idealMovePos, loveSkybox )
                 unstuckEscapePos = myPos + trySoftUnstuckOffset
 
             else
-                local areas = GAMEMODE:GetAreasInOccupiedGroupWithEFlag( GAMEMODE.NavEFlags.UNDER_SKY )
+                unstuckEscapePos = findHardUnstuckPos( myPos )
 
-                local minSize = 250
-                local centerOffset = Vector( 0, 0, 250 )
-
-                local anArea
-                local perfectArea
-                local perfectAreaDist = math.huge
-
-                for _, area in ipairs( areas ) do
-                    if not IsValid( area ) then continue end
-                    if math.min( area:GetSizeX(), area:GetSizeY() ) < minSize then continue end
-
-                    anArea = area
-                    if not GAMEMODE.navmeshActivityHeatmap[area] then continue end
-                    local areaCenter = area:GetCenter()
-                    if not terminator_Extras.PosCanSee( myPos, areaCenter + centerOffset ) then continue end
-
-                    local distSqr = myPos:DistToSqr( areaCenter )
-                    if distSqr > perfectAreaDist then continue end
-                    perfectAreaDist = distSqr
-                    perfectArea = area
-
-                end
-
-                local foundArea = IsValid( perfectArea ) and perfectArea or anArea
-                if IsValid( foundArea ) then
-                    unstuckEscapePos = foundArea:GetCenter() + centerOffset
-
-                end
             end
 
             seeSoft = terminator_Extras.PosCanSee( myPos, unstuckEscapePos )

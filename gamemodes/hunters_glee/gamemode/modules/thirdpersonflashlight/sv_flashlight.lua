@@ -92,22 +92,9 @@ local function TPF_SetupProjectedTexture( ply )
 	local theLight = ents.Create( "env_projectedtexture" )
 	if not IsValid( theLight ) then return end
 
-	local attachmentId = ply:LookupAttachment( "eyes" )
-	local theFlashlightPos = ply:GetShootPos()
-	local theFlashlightAngles = ply:EyeAngles()
-	if attachmentId > 0 then
-		local attachDat = ply:GetAttachment( attachmentId )
-		if attachDat then
-			theFlashlightPos = attachDat.Pos
-			theFlashlightAngles = attachDat.Ang
-
-		end
-	end
-
-	theFlashlightPos = theFlashlightPos + theFlashlightAngles:Forward() * 15
-
-	theLight:SetPos( theFlashlightPos )
-	theLight:SetAngles( theFlashlightAngles )
+	-- the client shows it for a frame before cl_flashlight first places it
+	theLight:SetPos( GAMEMODE.FlashlightHiddenPos )
+	theLight:SetAngles( GAMEMODE.FlashlightHiddenAng )
 
 	theLight:SetKeyValue( "enableshadows", 1 )
 	theLight:SetKeyValue( "shadowquality", 0 )
@@ -211,6 +198,8 @@ hook.Add( "PlayerSwitchFlashlight", "TPF_HookFlashlightEnabled", function( ply, 
 
 	if not getPlayersLight( ply ) then
 		if not ply:SeesThroughOwnEyes() then return false end
+
+		GAMEMODE:LearnLesson( ply, "UsedAliveFlashlight" )
 
 		local hookRes = hook.Run( "glee_PlayerSwitchFlashlight", ply, true )
 		if hookRes == false then return false end

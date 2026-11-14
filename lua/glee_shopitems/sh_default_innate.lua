@@ -743,7 +743,7 @@ if SERVER then
                 if owner:Health() <= 0 then return end
 
                 if owner:Armor() <= 0 then
-                    ply:BatteryNag( 1.25 )
+                    ply:BatteryInsufficientNag( 1.25 )
                     return
                 end
 

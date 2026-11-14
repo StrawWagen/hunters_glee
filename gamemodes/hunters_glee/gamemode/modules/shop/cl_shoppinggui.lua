@@ -1262,25 +1262,17 @@ local enableShopVar = GetConVar( "huntersglee_enableshop" )
 
 local nextBlockedHint = 0
 
+-- Whether pressing the shop key would do nothing, and why. Hints pointing at the shop check this too
+function GM:ShopOpenBlocked()
+    if not enableShopVar:GetBool() then return true, "Shop was disabled via \"huntersglee_enableshop 0\"" end
+    return hook.Run( "glee_blockshopopen" )
+
+end
+
 function GM:ShowShop()
     if nextShopOpen > CurTime() then return end
 
-    local block
-    local hint
-
-    if not enableShopVar:GetBool() then
-        block = true
-        hint = "Shop was disabled via \"huntersglee_enableshop 0\""
-
-    end
-
-    local blocked, blockedReason = hook.Run( "glee_blockshopopen" )
-    if blocked then
-        block = true
-        hint = blockedReason
-
-    end
-
+    local block, hint = self:ShopOpenBlocked()
     if block then
         -- they'll mash the shop key, only tell them why every so often
         if hint and nextBlockedHint < CurTime() then

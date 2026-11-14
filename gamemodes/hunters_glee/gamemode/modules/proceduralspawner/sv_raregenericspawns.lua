@@ -5,6 +5,10 @@ local spawns = {
         prob = 0.005,
         minAreaSize = 50,
     },
+    ["glee_2bitsgun"] = {
+        prob = 0.005,
+        minAreaSize = 100,
+    },
     ["manhack_welder"] = {
         prob = 0.001,
         minAreaSize = 75,

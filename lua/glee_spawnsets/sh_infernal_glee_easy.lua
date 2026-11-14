@@ -39,13 +39,12 @@ if SERVER then -- NavEFlags no exist on client
                 spawnType = "hunter",
                 spawnAbove = true,
                 difficultyCost = 125,
-                countClass = "terminator_nextbot_infernalskeleton",
                 maxCount = { 1 },
                 preSpawnedFuncs = { function( _, spawned )
                     spawned.SpawnHealth = spawned.SpawnHealth * 0.5
                     spawned.FistDamageMul = 0.2
                     spawned.SpawnHeadlessChance = 0
-                    spawned.SkeleRareRunning = true
+                    spawned.SkeleRunsAfterEnemySprints = true
 
                 end },
             },
@@ -58,13 +57,12 @@ if SERVER then -- NavEFlags no exist on client
                 preferredEFlags = GAMEMODE.NavEFlags.UNDER_SKY,
                 difficultyCost = 90,
                 minutesNeeded = { 1, 2 },
-                countClass = "terminator_nextbot_infernalskeleton",
                 maxCount = { 4 },
                 preSpawnedFuncs = { function( _, spawned )
                     spawned.SpawnHealth = spawned.SpawnHealth * 0.5
                     spawned.FistDamageMul = 0.2
                     spawned.SpawnHeadlessChance = 0
-                    spawned.SkeleRareRunning = true
+                    spawned.SkeleRunsAfterEnemySprints = true
 
                 end },
             },
@@ -76,12 +74,11 @@ if SERVER then -- NavEFlags no exist on client
                 spawnSameZ = true,
                 preferredEFlags = GAMEMODE.NavEFlags.UNDER_SKY,
                 difficultyCost = 500,
-                countClass = "terminator_nextbot_infernalskeleton",
                 preSpawnedFuncs = { function( _, spawned )
                     spawned.SpawnHealth = spawned.SpawnHealth * 0.5
                     spawned.FistDamageMul = 0.2
                     spawned.SpawnHeadlessChance = 0
-                    spawned.SkeleRareRunning = true
+                    spawned.SkeleRunsAfterEnemySprints = true
 
                 end },
             },
@@ -93,7 +90,6 @@ if SERVER then -- NavEFlags no exist on client
                 spawnType = "hunter",
                 spawnAbove = true,
                 difficultyCost = { 1500, 2500 }, -- super rare early one, just added in here for fun
-                countClass = "terminator_nextbot_infernalskeleton_large",
                 maxCount = { 1 },
                 isBoss = true, -- kill it to win!
                 preSpawnedFuncs = { function( _, spawned )
@@ -111,7 +107,6 @@ if SERVER then -- NavEFlags no exist on client
                 preferredEFlags = GAMEMODE.NavEFlags.UNDER_SKY,
                 difficultyCost = 150,
                 minutesNeeded = { 3, 4 },
-                countClass = "terminator_nextbot_infernalskeleton_large",
                 maxCount = { 1 },
                 isBoss = true, -- kill it to win!
                 preSpawnedFuncs = { function( _, spawned )
@@ -125,6 +120,22 @@ if SERVER then -- NavEFlags no exist on client
 
 end
 
+
+local urgentHint = { urgent = true }
+
+local buttonClasses = {
+    func_button = true,
+    func_rot_button = true,
+}
+
+local function buttonHint( me )
+    if GAMEMODE:HasLearnedLesson( me, "PressedAButton" ) then return end
+    local valid, phrase = GAMEMODE:TranslatedBind( "+use" )
+    if not valid then return GAMEMODE:UnboundHint( "+use", "You can't press buttons..." ) end
+
+    return true, "Press " .. string.upper( phrase ) .. " to interact with buttons!"
+
+end
 
 local nearbyEntHints = {
     item_item_crate = function( me )
@@ -142,7 +153,13 @@ local nearbyEntHints = {
         local valid, phrase = GAMEMODE:TranslatedBind( "+use" )
         if not valid then return GAMEMODE:UnboundHint( "+use", "You can't open doors..." ) end
 
-        return true, "Press " .. phrase .. " to open doors!"
+        return true, "Press " .. string.upper( phrase ) .. " to open doors!"
+
+    end,
+    item_battery = function( me )
+        if me:Armor() < me:GetMaxArmor() then return end
+        if not me:IsPlayerHolding() then return end
+        return true, "FULL BATTERY"
 
     end,
     terminator_nextbot_infernalskeleton_slow = function( _me )
@@ -150,6 +167,32 @@ local nearbyEntHints = {
 
     end
 }
+for class in pairs( buttonClasses ) do
+    nearbyEntHints[class] = buttonHint
+
+end
+
+-- surfaces you can walk into but can't see
+local invisibleTextures = {
+    ["TOOLS/TOOLSPLAYERCLIP"] = true,
+    ["TOOLS/TOOLSCLIP"] = true,
+    ["TOOLS/TOOLSINVISIBLE"] = true,
+}
+local invisibleWallDist = 64
+
+local function isAimingAtInvisibleWall( ply )
+    local start = ply:GetShootPos()
+    local tr = util.TraceLine( {
+        start = start,
+        endpos = start + ply:GetAimVector() * invisibleWallDist,
+        mask = MASK_PLAYERSOLID,
+        filter = ply,
+    } )
+    if not tr.HitWorld then return false end
+
+    return tr.HitSky or tr.HitNoDraw or invisibleTextures[string.upper( tr.HitTexture )] or false
+
+end
 
 function set:Activate()
     self:Hook( "glee_shop_canshow", function( _identifier, itemData )
@@ -169,13 +212,43 @@ function set:Activate()
     end )
     if SERVER then
         self:Hook( "PlayerUse", function( ply, used )
-            if used:GetClass() ~= "prop_door_rotating" then return end
-            GAMEMODE:LearnLesson( ply, "OpenedADoor" )
+            local class = used:GetClass()
+            if class == "prop_door_rotating" then
+                GAMEMODE:LearnLesson( ply, "OpenedADoor" )
 
+            elseif buttonClasses[class] then
+                GAMEMODE:LearnLesson( ply, "PressedAButton" )
+
+            end
+        end )
+
+        -- the engine hands out battery charge itself, so this checks what it gave a tick later
+        self:Hook( "PlayerCanPickupItem", function( ply, item )
+            if item:GetClass() ~= "item_battery" then return end
+            local oldArmor = ply:Armor()
+            if oldArmor >= ply:GetMaxArmor() then return end -- asked every tick they stand on one
+
+            timer.Simple( 0, function()
+                if not IsValid( ply ) then return end
+                local gained = ply:Armor() - oldArmor
+                if gained <= 0 then return end
+
+                huntersGlee_Notify( { ply }, {
+                    text = "BATTERY CHARGED +" .. gained,
+                    kind = "good",
+                    replaceKey = "glee_tutorial_suitcharged",
+                    onlyWhile = "alive",
+                } )
+            end )
         end )
 
     elseif CLIENT then
         self:Hook( "huntersglee_cl_displayhint_prealivehints", function( ply )
+            if isAimingAtInvisibleWall( ply ) then
+                return true, "CANNOT PROCEED\nunexplained surface detected"
+
+            end
+
             local myPos = ply:GetShootPos()
             local nearbyEnts = ents.FindInCone( myPos, ply:GetAimVector(), 250, math.cos( math.rad( 80 ) ) )
             local nearestDist = math.huge
@@ -208,10 +281,10 @@ function set:Activate()
 
             if ply:GetSkulls() < 1 then
                 if not GAMEMODE:HasLearnedLesson( "FoundInfernalSkeleton" ) then
-                    return true, "The infernal horde is amassing somewhere...\nHunt them down."
+                    return true, "The infernal horde is amassing somewhere...\nHunt them down.", urgentHint
 
-                elseif GAMEMODE:HasLearnedLesson( "PickedUpSkull" ) and not GetGlobal2Bool( "glee_pleaseshow_rtmtutorialhint", false ) then
-                    return true, "Some of the infernal skeletons still have heads...\nCollect their skulls."
+                elseif not GAMEMODE:HasLearnedLesson( "PickedUpSkull" ) and not GetGlobal2Bool( "glee_pleaseshow_rtmtutorialhint", false ) then
+                    return true, "Some of the infernal skeletons still have heads...\nCollect their skulls.", urgentHint
 
                 end
             end

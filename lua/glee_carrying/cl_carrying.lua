@@ -6,52 +6,30 @@ local glee_Carrying = terminator_Extras.glee_Carrying
 
 -- in first person, the carrier sees right through what they carry
 -- it rides their bones, so it'd sit right in front of the camera
-local function isHiddenFromView( ent )
+-- unless it's out, and its weapon shows it in hands, see glee_backpackable_base's ShowCarriedInHands
+function glee_Carrying.IsHiddenFromView( ent )
     local wep = glee_Carrying.GetCarrierWeapon( ent )
     if not IsValid( wep ) then return false end
 
     local carrier = wep:GetOwner()
     if carrier ~= LocalPlayer() then return false end
+    if wep.ShowCarriedInHands and not wep:GetOnBack() then return false end
 
     return not carrier:ShouldDrawLocalPlayer()
 
 end
 
--- draws it the way it would've drawn anyway, unless it's hidden
--- stays on after it's put down, that's fine, it only hides while carried
-function glee_Carrying.DrawUnlessHidden( ent, flags )
-    if isHiddenFromView( ent ) then return end
-
-    local underneath = ent.glee_PreCarryRenderOverride
-    if underneath then
-        underneath( ent, flags )
-
-    -- RenderOverride stands in for both Draw and DrawTranslucent, each pass gets the one it'd have run
-    elseif bit.band( flags, STUDIO_TRANSPARENCY ) ~= 0 and ent.DrawTranslucent then
-        ent:DrawTranslucent( flags )
-
-    elseif ent.Draw then
-        ent:Draw( flags )
-
-    else
-        ent:DrawModel( flags )
-
-    end
-end
-
 -- clientside models stuck onto carried things, see terminator_cl_extramodels.lua in the terminator addon
 hook.Add( "ShouldDrawMyExtraModels", "glee_carrying_hidefromcarrier", function( ent )
-    if isHiddenFromView( ent ) then return false end
+    if glee_Carrying.IsHiddenFromView( ent ) then return false end
 
 end )
 
--- kept on the table, so it's the same function after an autorefresh
--- a new one would look like something else replaced it, and get wrapped in itself
--- looks DrawUnlessHidden up by name each call, so an autorefresh still reaches it
-glee_Carrying.CarriedRenderOverride = glee_Carrying.CarriedRenderOverride or function( ent, flags )
-    glee_Carrying.DrawUnlessHidden( ent, flags )
-
-end
+-- what this client has set NoDraw on, so it only ever clears its own
+-- not RenderOverride, there's only one of those, and a scripted entity's Draw runs around it anyway
+-- kept on the table, or an autorefresh would forget what it hid
+glee_Carrying.ClientHidden = glee_Carrying.ClientHidden or setmetatable( {}, { __mode = "k" } )
+local hiddenByUs = glee_Carrying.ClientHidden
 
 -- what this client has turned ShouldCollide on for, and what it was before
 -- the server sets that flag on what it carries, but the wiki never says it's networked
@@ -76,8 +54,9 @@ local function stopCollisionCheck( ent )
 
 end
 
--- wraps each carried thing's RenderOverride, so it can hide
--- per entity, so it reaches props and engine entities too, they've no ENT table to put it on
+-- hides what the carrier shouldn't see, see glee_Carrying.IsHiddenFromView
+-- set again every frame, NoDraw's one of the effects flags the server networks, an update can clear it
+-- updates are read before Think, so it's back on before anything draws
 -- polled, the weapon can reach this client after the thing it carries does
 -- and until then the carrier reads as nobody, so collision rules are worked out here too
 hook.Add( "Think", "glee_carrying_hidefromcarrier", function()
@@ -95,13 +74,27 @@ hook.Add( "Think", "glee_carrying_hidefromcarrier", function()
 
         carried[ent] = true
 
-        -- again whenever something else swaps it out, eg the ent setting its own
-        local wrapper = glee_Carrying.CarriedRenderOverride
-        if ent.RenderOverride ~= wrapper then
-            ent.glee_PreCarryRenderOverride = ent.RenderOverride
-            ent.RenderOverride = wrapper
+        if glee_Carrying.IsHiddenFromView( ent ) then
+            ent:SetNoDraw( true )
+            hiddenByUs[ent] = true
+
+        elseif hiddenByUs[ent] then
+            ent:SetNoDraw( false )
+            hiddenByUs[ent] = nil
 
         end
+    end
+
+    -- put down, dropped, or the weapon's gone
+    for ent in pairs( hiddenByUs ) do
+        if carried[ent] then continue end
+
+        if IsValid( ent ) then
+            ent:SetNoDraw( false )
+
+        end
+        hiddenByUs[ent] = nil
+
     end
 
     -- only their own projectiles are predicted, so only what they carry needs the client's answer
@@ -130,11 +123,91 @@ hook.Add( "Think", "glee_carrying_hidefromcarrier", function()
 end )
 
 
+-- OVERRIDING ENGINE "Impact" EFFECT HACK --
+-- fixes other people seeing people shoot stuff on their back
+
+-- what's on their back reaches past their eyes
+-- their bullets go through it, but the impact the server sends lands on it, right where the shot started
+-- this takes over the engine's "Impact", and traces those again, past what they carry
+-- a hit on something carried, this close to where the shot started, came from inside it
+-- someone else's shot can't start that close
+local fromInsideDist = 8
+
+-- as far as a bullet goes
+local bulletRange = 56756
+
+-- the impact with what the shot really hit, or nil if it hit nothing
+local function pastCarried( data, carried )
+    local carrier = glee_Carrying.GetCarrierWeapon( carried ):GetOwner()
+    if not IsValid( carrier ) then return end
+
+    local start = data:GetStart()
+    local dir = data:GetOrigin() - start
+    dir:Normalize()
+
+    local tr = util.TraceLine( {
+        start = start,
+        endpos = start + dir * bulletRange,
+        mask = MASK_SHOT,
+        filter = glee_Carrying.GetCarrierTraceFilter( carrier ),
+    } )
+    if not tr.Hit or tr.HitSky then return end
+
+    data:SetOrigin( tr.HitPos )
+    data:SetEntity( tr.Entity )
+    data:SetSurfaceProp( tr.SurfaceProps )
+    data:SetHitBox( tr.HitBox )
+
+    return data
+
+end
+
+local IMPACT = {}
+
+function IMPACT:Init( data )
+    local hitEnt = data:GetEntity()
+
+    if IsValid( hitEnt ) and glee_Carrying.IsCarried( hitEnt ) and data:GetStart():DistToSqr( data:GetOrigin() ) < fromInsideDist ^ 2 then
+        data = pastCarried( data, hitEnt )
+        if not data then return end
+
+    end
+
+    -- false hands it to the engine's own, true would land it back here
+    util.Effect( "Impact", data, false )
+
+end
+
+function IMPACT:Think()
+    return false
+
+end
+
+function IMPACT:Render()
+end
+
+-- only once something's been carried, until then every impact is the engine's alone
+-- there's no unregistering, it stays for the session
+local impactOverridden = false
+
+local function overrideImpact()
+    if impactOverridden then return end
+    impactOverridden = true
+
+    effects.Register( IMPACT, "Impact" )
+
+end
+
+
 -- sh_carrying's ShouldCollide reads the carrier, so a new carrier changes its answer
 -- the server calls CollisionRulesChanged itself as it picks up and puts down
 -- the client finds out when the carrier var arrives
+-- any change means carrying happens here, so it's when the impact hack goes in too
+-- the weapon can arrive after this, so its value isn't checked
 hook.Add( "EntityNetworkedVarChanged", "glee_carrying_collisionrules", function( ent, name )
     if name ~= "glee_CarrierWeapon" then return end
+
+    overrideImpact()
 
     -- a tick late, the var's not set till after this hook
     timer.Simple( 0, function()

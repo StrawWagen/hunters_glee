@@ -543,7 +543,7 @@ Number values can be:
 | `chanceToBeVotableWhenHard` | ❌ | Percent chance to appear in !rtm when this misery's escape multiplier is 1x or more, for making spawnsets fade into the background when they no longer challenge the host |
 | `easy` | ❌ | Marks this as a beginner misery. Tagged `(EASY)` in the !rtm vote, and while an easy one is active the vote prefers offering other easy ones. Also soft-caps its escape reward multiplier |
 | `hordeSpawn` | ❌ | `true` Always reuses the last good spawn area, stacking hunter spawns into a horde. Defaults to true for waves of 8+ spawns, `false` disables it even then. |
-| `slotSizes` | ❌ | How many hunters fit in each `.slots` slot, eg `{ miniboss = 1 }`. Takes the usual number values, or `"minutes*N"` to grow with the round, `"minutes*0.1"` is one slot every 10 minutes, `"minutes*0.2"` is one every 5. Without it every slot holds 1 |
+| `slotSizes` | ❌ | How many hunters fit in each `.slots` slot, eg `{ miniboss = 1 }`. Takes the usual number values, or `"minutes*N"` / `"difficulty*N"` to grow with the round, `"minutes*0.1"` is one slot every 10 minutes, `"difficulty*0.01"` is one every 100 difficulty. Without it every slot holds 1 |
 | `Activate` | ❌ | Called when this becomes the active misery ( see Spawnset Lifecycle ) |
 | `OnRemove` | ❌ | Called when the misery changes away from this ( see Spawnset Lifecycle ) |
 
@@ -571,7 +571,7 @@ Number values can be:
 | `firmPreferredEFlags` | ❌ | `true` stops `preferredEFlags` from bending, the entry never spawns outside those areas, and is never picked on maps without them |
 | `canSpawnOnMap` | ❌ | `function(spawnData)`, asked once a map, after the navmesh is categorized. Return false and the entry never spawns on this map, eg the map's too cramped for it. A misery none of whose entries can spawn is left out of the vote, and can't be nominated. If it's already active, one !rtm is enough to start a vote |
 | `areaFilter` | ❌ | `function(spawnData, area)`, return false and the entry won't spawn in that nav area. Pair it with `canSpawnOnMap`, an entry no area passes holds up its wave until it's dropped |
-| `preSpawnedFuncs` | ❌ | Functions called before hunter:SetPos() and hunter:Spawn() : `function(spawnData, npc, spawnPos)`. spawnPos is 20 units above the nav area, hunters fall into place |
+| `preSpawnedFuncs` | ❌ | Functions called before hunter:SetPos() and hunter:Spawn() : `function(spawnData, npc, spawnPos)`. Change spawnPos to move where it spawns. From the spawner, it's 20 units above the nav area, hunters fall into place |
 | `postSpawnedFuncs` | ❌ | Functions called after hunter:Spawn() : `function(spawnData, npc)` |
 | `isBoss` | ❌ | `true` marks as boss; `false` opts out of auto-detection. When the boss is killed, all alive players escape. Cleanup that removes boring hunters leaves it alone while it's battling, and lag never removes it. Auto-detected when `spawnSet.maxSpawnCount <= 1` (highest `difficultyCost` entry becomes boss). |
 | `hordeSpawn` | ❌ | Toggle last good area re-use for just this spawn. `false` opts out of the spawnset's `hordeSpawn` |
