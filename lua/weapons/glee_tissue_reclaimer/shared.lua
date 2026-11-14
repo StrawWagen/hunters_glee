@@ -48,7 +48,7 @@ SWEP.SelfHealInterval = 0.4 -- healing yourself, 5 hp a second
 SWEP.ReclamationPerHealth = 0.5 -- rounded up, it's whole ammo
 SWEP.ReviveCost = 100
 
-local CLASS = "termhunt_tissue_reclaimer"
+local CLASS = "glee_tissue_reclaimer"
 
 local DenySound = Sound( "WallHealth.Deny" ) -- out of reclamation material
 local ReviveSound = Sound( "items/medshot4.wav" )

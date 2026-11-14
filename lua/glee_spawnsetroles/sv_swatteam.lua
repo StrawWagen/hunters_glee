@@ -39,7 +39,7 @@ local roles = {
         models = modelsIn( "/group03m/" ),
         ratio = 0.25,
         minPlayers = 2,
-        startWeapons = { "termhunt_medkit", "termhunt_reviver" },
+        startWeapons = { "glee_tissue_reclaimer" },
         leastGuiltyFirst = true, -- the medic is important
     },
     ["tank"] = {

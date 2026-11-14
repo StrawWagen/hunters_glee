@@ -245,7 +245,7 @@ local items = {
         svOnPurchaseFunc = function( purchaser )
             -- a first purchase gets the DefaultClip from Give
             shopHelpers.purchaseWeapon( purchaser, {
-                class = "termhunt_tissue_reclaimer",
+                class = "glee_tissue_reclaimer",
                 confirmSoundWeight = 1,
                 ammoType = "GLEE_RECLAMATION_MATERIAL",
                 resupplyClips = 1,
