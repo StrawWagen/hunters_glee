@@ -867,6 +867,32 @@ end
 
 
 local items = {
+    -- heal jooce, and soft reason to get around the map, go places people have died
+    ["reclaimer"] = {
+        name = "Medical Tissue\nReclaimer",
+        desc = "Reclaim flesh. Restore the living, revive the dead.\nGives 300 score for reviving players. Less for healing\nHealing yourself is unweildy and slow.\nExcess health you find, will reload it.",
+        shCost = 75,
+        markup = 1.5,
+        markupPerPurchase = 0.25,
+        cooldown = 0.5,
+        tags = { "ITEMS", "Essential", "Resurrecting", "Weapon", "Utility" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_INACTIVE,
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = -100,
+        shPurchaseCheck = shopHelpers.aliveCheck,
+        svOnPurchaseFunc = function( purchaser )
+            -- a first purchase gets the DefaultClip from Give
+            shopHelpers.purchaseWeapon( purchaser, {
+                class = "glee_tissue_reclaimer",
+                confirmSoundWeight = 1,
+                ammoType = "GLEE_RECLAMATION_MATERIAL",
+                resupplyClips = 1,
+
+            } )
+        end,
+    },
     -- lets dead people take the initiative
     ["resurrection"] = {
         name = "Divine Intervention",
