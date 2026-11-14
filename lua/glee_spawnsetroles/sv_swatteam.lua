@@ -52,7 +52,7 @@ end
 
 local roles = {
     ["swatGrunt"] = {
-        models = {"models/player/swat.mdl"},
+        models = { "models/player/swat.mdl" },
         startWeapons = {
             {
                 class = "weapon_smg1",
@@ -74,7 +74,7 @@ local roles = {
     },
     ["tank"] = {
         base = "grunt",
-        models = {"models/player/riot.mdl"},
+        models = { "models/player/riot.mdl" },
         ratio = 0.25,
         startWeapons = {
             {
@@ -90,7 +90,7 @@ local roles = {
     },
     ["sniper"] = {
         base = "grunt",
-        models = {"models/player/urban.mdl"},
+        models = { "models/player/urban.mdl" },
         minPlayers = 3, -- balancing purposes
         ratio = 0.25,
         startWeapons = {
