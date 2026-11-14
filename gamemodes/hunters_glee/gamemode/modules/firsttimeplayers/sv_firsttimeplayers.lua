@@ -319,6 +319,7 @@ net.Receive( "glee_tutorial_jumpin", function( _, ply )
 
     jumpedInSteamID = ply:SteamID()
     RunConsoleCommand( "huntersglee_misery", "hunters_glee" )
+    GAMEMODE:BumpSessionDifficulty( 40, "tutorial_jumpin" ) -- give em a truly miserable first impression
     GAMEMODE:LearnLesson( ply, "ExperiencedMiseryVote" ) -- skip the .tutorialExit options
 
     hook.Add( "terminator_enemythink", "glee_playTutorialHardOptionTrack", function( bot, spotted )
