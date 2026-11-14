@@ -51,6 +51,11 @@ SWEP.ViewModelOffset = Vector( 0, 0, 0 ) -- the whole viewmodel, arms and held m
 -- this one's Maxwell's pose, palms rolled up
 SWEP.ViewModelBoneMods = glee_Carrying.ElitesBoneMods( 0, -80.047, 71.204 )
 
+-- true shows the carried entity itself in first person while it's out, riding the hand, see WorldModelHandBone
+-- for things where they really are matters, like a riot shield
+-- the HeldModel ones below do nothing then
+SWEP.ShowCarriedInHands = false
+
 -- the carried entity's model, drawn on the viewmodel
 SWEP.HeldModelBone = "ValveBiped.Bip01_R_Hand"
 SWEP.HeldModelPos = Vector( 0, 0, 0 )
@@ -86,6 +91,8 @@ SWEP.PlacedSound = {
 SWEP.PlacedUpOffset = 0 -- off the floor, along its slope, for a model whose bounds don't reach its real base
 SWEP.PlaceGhostAng = nil -- PlaceAng for the preview only, when its still pose sits differently than the placed entity's
 SWEP.PlaceMinFloorUp = 0.25 -- of the surface normal, steeper than this isn't a floor
+SWEP.PlaceDropFraction = 0.5 -- of PlaceDistance, how far it drops to find a floor when not aimed at one
+SWEP.PlaceDropWalkback = 10 -- off the wall or ceiling it was aimed at before dropping, so it isn't placed half inside it
 SWEP.PlaceCoreFraction = 0.5 -- of its narrowest width, how much of its middle has to be clear to place it
 SWEP.PlaceCoreLift = 18 -- step height, clutter under it lower than this doesn't block a place
 
@@ -295,7 +302,7 @@ local function averageFloorNormal( center, yawAng, mins, maxs, rise, filter )
 
 end
 
--- where it'd land, on the floor the placer's aiming at, tilted to its slope
+-- where it'd land, on the floor the placer's aiming at or just below it, tilted to its slope
 -- returns pos, ang, and the slope's angle before PlaceAng, for the ghost to apply its own
 -- nil and why when it can't go there, "nofloor" or "blocked"
 -- fits the model at scale 1, so it's off for anything that was scaled before it was carried
@@ -311,7 +318,17 @@ function SWEP:GetPlacement( placer )
         endpos = shootPos + placer:GetAimVector() * self.PlaceDistance,
         filter = filter,
     } )
-    if not floorTr.Hit or floorTr.HitNormal.z < self.PlaceMinFloorUp then return nil, "nofloor" end
+    if not floorTr.Hit or floorTr.HitNormal.z < self.PlaceMinFloorUp then
+        -- aimed at a wall, the ceiling, or the air, drop it from there
+        local dropStart = floorTr.HitPos + floorTr.HitNormal * self.PlaceDropWalkback
+        floorTr = util.TraceLine( {
+            start = dropStart,
+            endpos = dropStart - Vector( 0, 0, self.PlaceDistance * self.PlaceDropFraction ),
+            filter = filter,
+        } )
+        if not floorTr.Hit or floorTr.HitNormal.z < self.PlaceMinFloorUp then return nil, "nofloor" end
+
+    end
 
     local modelMins, modelMaxs = ent:GetModelBounds()
     local mins, maxs = placedBounds( modelMins, modelMaxs, self.PlaceAng )
@@ -1161,6 +1178,8 @@ function SWEP:PostDrawViewModel( vm )
 
     end
     self.glee_HiddenMaterialCount = nil
+
+    if self.ShowCarriedInHands then return end
 
     local held = self:EnsureHeldModel( vm )
     if not held then return end

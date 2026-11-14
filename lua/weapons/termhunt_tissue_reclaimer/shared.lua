@@ -369,19 +369,39 @@ local healScorePerHealth = 0.2 -- healing other players, 8 for 40 health
 local denyRepeat = 1 -- seconds between deny sounds, holding on with none left
 local aimCheckInterval = 0.1 -- seconds between the server's checks for AimedHealable
 
+-- npc classes that are all machine, see https://wiki.facepunch.com/gmod/Enums/CLASS
+-- CLASS_COMBINE isn't, it's soldiers and turrets both
+local machineClasses = {
+    [CLASS_COMBINE_GUNSHIP] = true,
+    [CLASS_MANHACK] = true,
+    [CLASS_MILITARY] = true,
+    [CLASS_SCANNER] = true,
+    [CLASS_MISSILE] = true,
+    [CLASS_HACKED_ROLLERMINE] = true,
+    [CLASS_MACHINE] = true,
+    [CLASS_PORTAL_TURRET] = true,
+}
+
 -- machines have no tissue to reclaim
 local function isOrganic( ent )
     if ent.DoMetallicDamage then return false end
+    if ent.GetNPCClass and machineClasses[ent:GetNPCClass()] then return false end -- server only
     if ent.GetBloodColor and ent:GetBloodColor() == BLOOD_COLOR_MECH then return false end -- GetBloodColor may be server only
     return true
 
 end
 
-local function isHealable( ent )
+-- a player or npc that's alive, organic or not
+local function isLiving( ent )
     if not IsValid( ent ) then return false end
     if not ( ent:IsPlayer() or ent:IsNPC() ) then return false end
+    return ent:Health() > 0
+
+end
+
+local function isHealable( ent )
+    if not isLiving( ent ) then return false end
     if not isOrganic( ent ) then return false end
-    if ent:Health() <= 0 then return false end
 
     return ent:Health() < ent:GetMaxHealth()
 
@@ -717,10 +737,14 @@ local function notifyNothingToReclaim( wep, aimed )
         description = "Aim at someone hurt, or a death location.",
     }
 
-    local living = IsValid( aimed ) and ( aimed:IsPlayer() or aimed:IsNPC() ) and aimed:Health() > 0
+    local living = isLiving( aimed )
     if living and not isOrganic( aimed ) then
         notice.text = "NO TISSUE DETECTED"
         notice.description = "That's a machine."
+
+    elseif living and aimed.GetBloodColor and aimed:GetBloodColor() == DONT_BLEED then -- like floor turrets, still healable
+        notice.text = "TISSUE UNCLEAR"
+        notice.description = "Whatever it's made of, it's at full health."
 
     elseif living then
         notice.text = "TISSUE INTACT"

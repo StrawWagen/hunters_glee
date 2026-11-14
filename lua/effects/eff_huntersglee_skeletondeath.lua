@@ -1,4 +1,4 @@
--- An infernal skeleton starting its death anim. Its glow cuts out and its bones crumble, see terminator_nextbot_infernalskeleton.lua
+-- An infernal skeleton dying. Its glow cuts out and its bones crumble, see terminator_nextbot_infernalskeleton.lua
 -- local fx = EffectData()
 -- fx:SetOrigin( skeleton:WorldSpaceCenter() )
 -- fx:SetEntity( skeleton )

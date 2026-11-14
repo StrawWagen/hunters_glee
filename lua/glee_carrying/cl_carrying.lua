@@ -6,52 +6,30 @@ local glee_Carrying = terminator_Extras.glee_Carrying
 
 -- in first person, the carrier sees right through what they carry
 -- it rides their bones, so it'd sit right in front of the camera
-local function isHiddenFromView( ent )
+-- unless it's out, and its weapon shows it in hands, see glee_backpackable_base's ShowCarriedInHands
+function glee_Carrying.IsHiddenFromView( ent )
     local wep = glee_Carrying.GetCarrierWeapon( ent )
     if not IsValid( wep ) then return false end
 
     local carrier = wep:GetOwner()
     if carrier ~= LocalPlayer() then return false end
+    if wep.ShowCarriedInHands and not wep:GetOnBack() then return false end
 
     return not carrier:ShouldDrawLocalPlayer()
 
 end
 
--- draws it the way it would've drawn anyway, unless it's hidden
--- stays on after it's put down, that's fine, it only hides while carried
-function glee_Carrying.DrawUnlessHidden( ent, flags )
-    if isHiddenFromView( ent ) then return end
-
-    local underneath = ent.glee_PreCarryRenderOverride
-    if underneath then
-        underneath( ent, flags )
-
-    -- RenderOverride stands in for both Draw and DrawTranslucent, each pass gets the one it'd have run
-    elseif bit.band( flags, STUDIO_TRANSPARENCY ) ~= 0 and ent.DrawTranslucent then
-        ent:DrawTranslucent( flags )
-
-    elseif ent.Draw then
-        ent:Draw( flags )
-
-    else
-        ent:DrawModel( flags )
-
-    end
-end
-
 -- clientside models stuck onto carried things, see terminator_cl_extramodels.lua in the terminator addon
 hook.Add( "ShouldDrawMyExtraModels", "glee_carrying_hidefromcarrier", function( ent )
-    if isHiddenFromView( ent ) then return false end
+    if glee_Carrying.IsHiddenFromView( ent ) then return false end
 
 end )
 
--- kept on the table, so it's the same function after an autorefresh
--- a new one would look like something else replaced it, and get wrapped in itself
--- looks DrawUnlessHidden up by name each call, so an autorefresh still reaches it
-glee_Carrying.CarriedRenderOverride = glee_Carrying.CarriedRenderOverride or function( ent, flags )
-    glee_Carrying.DrawUnlessHidden( ent, flags )
-
-end
+-- what this client has set NoDraw on, so it only ever clears its own
+-- not RenderOverride, there's only one of those, and a scripted entity's Draw runs around it anyway
+-- kept on the table, or an autorefresh would forget what it hid
+glee_Carrying.ClientHidden = glee_Carrying.ClientHidden or setmetatable( {}, { __mode = "k" } )
+local hiddenByUs = glee_Carrying.ClientHidden
 
 -- what this client has turned ShouldCollide on for, and what it was before
 -- the server sets that flag on what it carries, but the wiki never says it's networked
@@ -76,8 +54,9 @@ local function stopCollisionCheck( ent )
 
 end
 
--- wraps each carried thing's RenderOverride, so it can hide
--- per entity, so it reaches props and engine entities too, they've no ENT table to put it on
+-- hides what the carrier shouldn't see, see glee_Carrying.IsHiddenFromView
+-- set again every frame, NoDraw's one of the effects flags the server networks, an update can clear it
+-- updates are read before Think, so it's back on before anything draws
 -- polled, the weapon can reach this client after the thing it carries does
 -- and until then the carrier reads as nobody, so collision rules are worked out here too
 hook.Add( "Think", "glee_carrying_hidefromcarrier", function()
@@ -95,13 +74,27 @@ hook.Add( "Think", "glee_carrying_hidefromcarrier", function()
 
         carried[ent] = true
 
-        -- again whenever something else swaps it out, eg the ent setting its own
-        local wrapper = glee_Carrying.CarriedRenderOverride
-        if ent.RenderOverride ~= wrapper then
-            ent.glee_PreCarryRenderOverride = ent.RenderOverride
-            ent.RenderOverride = wrapper
+        if glee_Carrying.IsHiddenFromView( ent ) then
+            ent:SetNoDraw( true )
+            hiddenByUs[ent] = true
+
+        elseif hiddenByUs[ent] then
+            ent:SetNoDraw( false )
+            hiddenByUs[ent] = nil
 
         end
+    end
+
+    -- put down, dropped, or the weapon's gone
+    for ent in pairs( hiddenByUs ) do
+        if carried[ent] then continue end
+
+        if IsValid( ent ) then
+            ent:SetNoDraw( false )
+
+        end
+        hiddenByUs[ent] = nil
+
     end
 
     -- only their own projectiles are predicted, so only what they carry needs the client's answer

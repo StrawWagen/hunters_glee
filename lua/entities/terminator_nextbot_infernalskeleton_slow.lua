@@ -86,6 +86,7 @@ ENT.AngryLoopingSounds = { "ambient/levels/citadel/datatransrandom02.wav" }
 ENT.FistDamageType = DMG_BURN
 
 function ENT:SkeletonSpotFX() end -- we aren't strong enough to be worth screaming
+function ENT:SkeletonChargeFX() end
 
 ENT.infernSkele_IdleSounds = {
     "ambient/levels/citadel/strange_talk1.wav",

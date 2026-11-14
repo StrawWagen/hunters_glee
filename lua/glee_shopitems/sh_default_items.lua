@@ -308,7 +308,7 @@ local items = {
     -- terminator doesnt like taking damage from this, will save your ass
     ["ar2"] = {
         name = "Pulse Rifle",
-        desc = "Ar2 + Balls.\nIt takes 2 AR2 balls to kill a terminator.",
+        desc = "Combine Technology.\nSecondary fire to shoot Dark Energy Orbs.\nThey do serious damage to even metallic enemies.",
         shCost = 75,
         markup = 2,
         markupPerPurchase = 0.4,
@@ -569,6 +569,30 @@ local items = {
                 confirmSoundWeight = 1,
 
             } )
+        end,
+    },
+    -- carried in, placed down, see glee_backpackable_shield
+    ["riot_shield"] = {
+        name = "Riot Shield",
+        desc = "Can save your life, most of the time.",
+        shCost = 0,
+        shSkullCost = 2,
+        cooldown = 5,
+        tags = { "ITEMS", "Utility", "SkullCost" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_INACTIVE,
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = 925,
+        shPurchaseCheck = { shopHelpers.aliveCheck, function( purchaser )
+            return terminator_Extras.glee_Carrying.HasRoomFor( purchaser, "glee_backpackable_shield" )
+
+        end },
+        svOnPurchaseFunc = function( purchaser )
+            if not terminator_Extras.glee_Carrying.GiveNewCarryable( purchaser, "glee_backpackable_shield" ) then return end
+
+            shopHelpers.loadoutConfirm( purchaser, 1 )
+
         end,
     },
     ["grigorigun"] = {

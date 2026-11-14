@@ -2,7 +2,7 @@ AddCSLuaFile()
 
 SWEP.Base = "glee_backpackable_base"
 
-SWEP.PrintName = "Glee Shield"
+SWEP.PrintName = "Riot Shield"
 SWEP.Author = "dedactedlife & IndefiniteXD"
 SWEP.Purpose = "Can save your life, most of the time."
 SWEP.Slot = 4
@@ -15,7 +15,7 @@ SWEP.UseHands = false
 local glee_Carrying = terminator_Extras.glee_Carrying
 
 if CLIENT then
-    terminator_Extras.glee_CL_SetupSwep( SWEP, "glee_backpackable_shield", "materials/entities/glee_backpackable_shield.png" )
+    terminator_Extras.glee_CL_SetupSwep( SWEP, "glee_backpackable_shield", "materials/vgui/hud/glee_backpackable_shield.png" )
 
 end
 
@@ -23,12 +23,11 @@ terminator_Extras.glee_Carrying.RegisterCarryable( "glee_shield", "glee_backpack
 
 SWEP.CarryEntClass = "glee_shield"
 
-SWEP.HeldModelPos, SWEP.HeldModelAng = terminator_Extras.glee_Carrying.SCKToLocal( Vector( 5, 4.75, 49.5 ), Angle( 0, 0, -180 ) )
---SWEP.HeldModelScale = 10.0
+SWEP.ShowCarriedInHands = true -- it blocks where it really is, so that's where it's drawn
 
 SWEP.ViewModelBoneMods = glee_Carrying.ElitesBoneMods( 0, 0, 0 )
 
-SWEP.WorldModelHandPos, SWEP.WorldModelHandAng = terminator_Extras.glee_Carrying.SCKToLocal( Vector( 6, 10, 38 ), Angle( 180, 180, 0 ) )
+SWEP.WorldModelHandPos, SWEP.WorldModelHandAng = terminator_Extras.glee_Carrying.SCKToLocal( Vector( 1, 10, 38 ), Angle( 180, 180, 0 ) )
 SWEP.WorldModelBackPos = Vector( -26, -7, 2 )
 SWEP.WorldModelBackScale = 0.8
 SWEP.WorldModelBackAng = Angle( 180, 90, 90 )

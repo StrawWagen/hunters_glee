@@ -247,11 +247,18 @@ end
 
 -- kept apart from the death scream, that one is the kill confirm
 function ENT:SkeletonSpotFX()
-    self:Term_SpeakSoundNow( "npc/stalker/go_alert2a.wav", math.random( 10, 30 ), 10 )
+    self:Term_SpeakSoundNow( "npc/stalker/stalker_alert" .. math.random( 1, 2 ) .. "b.wav", math.random( 10, 30 ), 10 )
 
 end
 
 ENT.SkeleSpotScreamCooldown = 20 -- so losing sight for a moment doesn't scream again
+
+function ENT:SkeletonChargeFX()
+    self:Term_SpeakSoundNow( "npc/stalker/stalker_scream" .. math.random( 2, 3 ) .. ".wav", math.random( 10, 30 ), 10 )
+
+end
+
+ENT.SkeleChargeScreamCooldown = 6 -- so stopping and starting mid chase doesn't scream again
 
 -- how long they keep running after their enemy stops sprinting, so tapping shift doesn't flicker their speed
 local sprintMemory = 5
@@ -272,6 +279,15 @@ ENT.SpawnHeadlessChance = 75
 ENT.SkeleDeathAnim = ACT_GMOD_DEATH
 ENT.SkeleDeathAnimRate = 2
 
+
+-- runs the moment they die, before the death anim or ragdoll, so every kill crumbles
+function ENT:AdditionalOnKilled()
+    local fx = EffectData()
+    fx:SetOrigin( self:WorldSpaceCenter() )
+    fx:SetEntity( self )
+    util.Effect( "eff_huntersglee_skeletondeath", fx )
+
+end
 
 ENT.MyClassTask = {
     OnCreated = function( self, data )
@@ -324,13 +340,6 @@ ENT.MyClassTask = {
             rate = self.SkeleDeathAnimRate,
         }
     end,
-    OnStartDying = function( self )
-        local fx = EffectData()
-        fx:SetOrigin( self:WorldSpaceCenter() )
-        fx:SetEntity( self )
-        util.Effect( "eff_huntersglee_skeletondeath", fx )
-
-    end,
     OnDamaged = function( self, _data, dmg )
         local hitPos = dmg:GetDamagePosition()
         if hitPos:IsZero() then -- melee and blasts often leave it unset
@@ -370,6 +379,8 @@ ENT.MyClassTask = {
 
     end,
     EnemyFound = function( self, data )
+        if self:Health() <= 0 then return end -- death anims keep thinking, this would cut off the death scream
+
         local cur = CurTime()
         if ( data.nextSpotScream or 0 ) > cur then return end
 
@@ -390,6 +401,23 @@ ENT.MyClassTask = {
 
         local sprintedRecently = data.enemySprintedAt and cur - data.enemySprintedAt < sprintMemory
         if not sprintedRecently then return false end
+
+    end,
+    -- watches the final speed, ShouldRun alone doesn't know what the movement tasks decided
+    ModifyMovementSpeed = function( self, data, speed )
+        if self:Health() <= 0 then return end -- same as EnemyFound, the killing hit angers them into running
+
+        local running = speed >= self.RunSpeed
+        local startedRunning = running and not data.wasRunning
+        data.wasRunning = running
+        if not startedRunning then return end
+        if not IsValid( self:GetEnemy() ) then return end
+
+        local cur = CurTime()
+        if ( data.nextChargeScream or 0 ) > cur then return end
+
+        data.nextChargeScream = cur + self.SkeleChargeScreamCooldown
+        self:SkeletonChargeFX()
 
     end,
 }
