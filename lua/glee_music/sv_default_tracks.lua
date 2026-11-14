@@ -68,6 +68,16 @@ local tracks = {
         neverOverrides = { "heliEvac" },
     },
 
+    heliLeaveAllSoulsBoonSoon = {
+        sounds = {
+            {
+                author = michealgorg,
+                snd = "hunters_glee/music/MICHEALGORG/Weird_little_test_haha_hh_hh.wav"
+            },
+        },
+        neverOverrides = { "heliEvac" },
+    },
+
     tutorialPickedHardOption = {
         sounds = {
             {

@@ -1044,22 +1044,14 @@ function GM:roundEnd()
 
     GAMEMODE.roundExtraData.roundDuration = CurTime() - self.termHunt_roundBegunTime
 
-    GAMEMODE.roundExtraData.everyoneEscaped = true
+    GAMEMODE.roundExtraData.everyoneEscaped = self:IsBoonable()
     GAMEMODE.roundExtraData.someoneEscaped = false
     for _, ply in player.Iterator() do
-        local hasEscaped = ply:HasEscaped()
-        if hasEscaped then
+        if ply:HasEscaped() then
             GAMEMODE.roundExtraData.someoneEscaped = true
-
-        elseif not ply:HasStatusEffect( "astrallyprojected" ) then -- they chose to leave their body, don't rob everyone else of the boon
-            GAMEMODE.roundExtraData.everyoneEscaped = false
+            break
 
         end
-    end
-    -- a round where everyone astrally projected isn't a round where everyone escaped
-    if not GAMEMODE.roundExtraData.someoneEscaped then
-        GAMEMODE.roundExtraData.everyoneEscaped = false
-
     end
 
     SetGlobalBool( "glee_EveryoneEscapedLastRound", GAMEMODE.roundExtraData.everyoneEscaped )
