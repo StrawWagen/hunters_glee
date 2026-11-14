@@ -97,7 +97,7 @@ elseif SERVER then
 
         elseif plysHealth <= 10 then
             panicDrain = 0.1
-            huntersGlee_Notify( { ply }, { text = "USER DEATH IMMINIENT", description = "SEEK. MEDICAL. ATTENTION. IMMEDIATELY.", kind = "bad", replaceKey = deathImminentKey, onlyWhile = "alive" } )
+            huntersGlee_Notify( { ply }, { text = "USER DEATH IMMINENT", description = "SEEK. MEDICAL. ATTENTION. IMMEDIATELY.", kind = "bad", replaceKey = deathImminentKey, onlyWhile = "alive" } )
 
         elseif plysHealth <= 20 then
             panicDrain = 0.25

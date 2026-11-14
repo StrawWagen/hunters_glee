@@ -204,6 +204,9 @@ ENT.SkeleDeathAnimRate = 0.35
 ENT.SkeleCallInterval = 35
 ENT.SkeleRunsAfterEnemySprints = false
 
+function ENT:SkeletonSpotFX() end -- mid screaming, let the below ones take over
+function ENT:SkeletonChargeFX() end
+
 
 function ENT:SkeletonDeathFX()
     local allPlyFilter = terminator_Extras.recipFilterAllTargetablePlayers()

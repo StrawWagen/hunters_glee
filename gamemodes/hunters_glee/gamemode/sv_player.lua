@@ -501,6 +501,12 @@ local function setHeartAttackScore( ply, score, threshold )
 
 end
 
+-- each stage replaces the last, resent every think so it stays up until the danger passes
+local function notifyHeartStage( ply, text, description )
+    huntersGlee_Notify( { ply }, { text = text, description = description, kind = "bad", replaceKey = "glee_heartattack_stage", onlyWhile = "alive" } )
+
+end
+
 function GM:DoHeartAttackThink( ply )
     if not IsValid( ply ) then return end
     local nextThink = ply.glee_NextHeartAttackThink or 0
@@ -514,6 +520,7 @@ function GM:DoHeartAttackThink( ply )
     if heartAttackScore > threshold then
         heartAttackScore = heartAttackScore + 50
         setHeartAttackScore( ply, heartAttackScore, threshold ) -- before the damage, dying clears it
+        notifyHeartStage( ply, "VENTRICULAR FIBRILLATION", "USER DEATH IMMINENT" )
 
         local damage = ( ply:GetMaxHealth() / 10 ) + ( heartAttackScore / threshold )
 
@@ -534,10 +541,12 @@ function GM:DoHeartAttackThink( ply )
     elseif heartAttackScore > threshold * 0.533 then
         setHeartAttackScore( ply, heartAttackScore + 4, threshold )
         GAMEMODE:GivePanic( ply, 12 )
+        notifyHeartStage( ply, "CARDIAC FAILURE IMMINENT", "SEEK. MEDICAL. ATTENTION." )
 
     elseif heartAttackScore > threshold * math.Rand( 0.3, 0.4 ) then
         setHeartAttackScore( ply, heartAttackScore + -0.5, threshold )
         GAMEMODE:GivePanic( ply, 6 )
+        notifyHeartStage( ply, "VENTRICULAR TACHYCARDIA", "REDUCE. HEART RATE. IMMEDIATELY." )
 
     else
         setHeartAttackScore( ply, math.max( heartAttackScore + -2, 0 ), threshold )
