@@ -4,19 +4,12 @@ local set = {
     name = "riots_glee", -- unique name
 }
 
-local function giveCamera( _, hunter )
-    hunter:Give( "gmod_camera" )
-end
-
 local function giveRandomWeapon( _, hunter )
-    local wpns = {"weapon_crowbar","weapon_shotgun","weapon_smg1"}
+    local wpns = { "weapon_crowbar", "weapon_shotgun", "weapon_smg1" }
 
-    hunter:Give( wpns[math.random(#wpns)] )
+    hunter:Give( wpns[math.random( #wpns )] )
+
 end
-
-local annihilated = 0
-local limit = 100
-local ended = false
 
 if SERVER then
     local setSv = {
@@ -46,6 +39,7 @@ if SERVER then
     }
 
     table.Merge( set, setSv )
+
 end
 
 function set:Activate()
@@ -59,6 +53,7 @@ function set:Activate()
     setHelpers.addRoleVariant( self, "medic" )
     setHelpers.addRoleVariant( self, "tank" )
     setHelpers.addRoleVariant( self, "sniper" )
+
 end
 
 -- put the spawnset IN the global table to be gobbled
