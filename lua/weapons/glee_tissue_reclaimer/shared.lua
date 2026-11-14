@@ -995,7 +995,7 @@ function SWEP:ResurrectPly( ply )
 
     GAMEMODE:ForgiveKillByRevive( owner, ply )
 
-    -- their corpse went into them. Spawning leaves a player's death ragdoll lying around otherwise
+    -- if they have a ragdoll entity, remove it
     SafeRemoveEntity( ply:GetRagdollEntity() )
 
     self:SendReviveJolt( ply )
@@ -1007,13 +1007,13 @@ end
 
 
 -- Shoving the medic ---------------------------------------------------------
--- the medic gets shoved around by the bones going in, down and away from the body
+-- the medic gets shoved around by the bones going in, down and away from the death pos
 -- the server can't see the clients' corpses, so it shoves on the same schedule, for a typical one
 local shoveBoneCount = 15 -- a player ragdoll's physics objects
 local shoveFromFrac = 0.8 -- the bones before this are spread out enough to go in without a shove
 local shoveDown = 120
 local shoveAway = 60 -- keep it gentle, moving reviveReach from where the revive started cancels it
-local shoveSpread = 60 -- degrees either side of straight away from the body
+local shoveSpread = 60 -- degrees either side of straight away from the death pos
 local shoveSounds = {
     Sound( "weapons/physcannon/superphys_small_zap1.wav" ),
     Sound( "weapons/physcannon/superphys_small_zap2.wav" ),
