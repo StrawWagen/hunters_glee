@@ -104,6 +104,10 @@ function SWEP:SetupDataTables()
     self:NetworkVar( "Bool", "OutOfMaterial" ) -- can't afford a heal tick, its glow goes out
     -- the server's, the client can't see everything that decides it, see PrimaryHealTarget
     self:NetworkVar( "Bool", "AimedHealable" ) -- aimed at someone primary would heal, the prongs part for it
+    -- the server's, every client reclaims their copy of the corpse off these
+    -- datatable vars arrive in one snapshot, so a client never sees a new target with the last one's progress
+    self:NetworkVar( "Entity", "RevivingTarget" )
+    self:NetworkVar( "Float", "RevivingProgress" ) -- 0 to 1
 
 end
 
@@ -114,7 +118,7 @@ end
 
 -- networked, unlike self.resurrecting, so every client knows too
 function SWEP:IsReviving()
-    return IsValid( self:GetNWEntity( "RevivingTarget", NULL ) )
+    return IsValid( self:GetRevivingTarget() )
 
 end
 
@@ -876,7 +880,13 @@ function SWEP:StartResurrect( ent, resurrectPos )
     self.toResurrect = ent
     self.toResurrectPos = resurrectPos
 
-    self:SetNWEntity( "RevivingTarget", ent ) -- for every client to reclaim their copy of the corpse
+    -- a re-press on the same dead player resumes, the progress bar's kept per dead player, see Think
+    if ent ~= self.lastResurrectTarget then
+        self:SetRevivingProgress( 0 )
+
+    end
+    self.lastResurrectTarget = ent
+    self:SetRevivingTarget( ent )
 
     self.resurrectStartPos = owner:GetPos()
 
@@ -1155,11 +1165,13 @@ function SWEP:Think()
             end
 
         else
-            local progress = generic_WaitForProgressBar( owner, "glee_resurrector", reviveBarSpeed, reviveBarChunk, nil )
-            self:SetNWFloat( "RevivingProgress", progress / 100 ) -- clients reclaim the corpse off this
+            local barId = "glee_resurrector" .. ent:GetCreationID() -- each dead player's own, so someone new starts at 0
+            local progress = generic_WaitForProgressBar( owner, barId, reviveBarSpeed, reviveBarChunk, nil )
+            self:SetRevivingProgress( progress / 100 )
             self:ReclaimShoves( progress / 100 )
             if progress >= 100 then
-                generic_KillProgressBar( owner, "glee_resurrector" )
+                generic_KillProgressBar( owner, barId )
+                self:SetRevivingProgress( 0 ) -- they're up, reviving them again starts over
                 self:ResurrectPly( ent )
                 done = true
 
@@ -1170,7 +1182,7 @@ function SWEP:Think()
             self.resurrecting = nil
             self.toResurrect = nil
             self.resurrectStartPos = nil
-            self:SetNWEntity( "RevivingTarget", NULL )
+            self:SetRevivingTarget( NULL )
 
         end
     end
@@ -2901,7 +2913,7 @@ if CLIENT then
             end
 
             -- brightens when aimed close enough to revive, see FindRevivable, and while they're revived, for everyone watching
-            local revivingThem = self:GetNWEntity( "RevivingTarget", NULL ) == data.ply
+            local revivingThem = self:GetRevivingTarget() == data.ply
             local aimedAt = aimPos and aimPos:DistToSqr( data.pos ) < reviveReach^2
             local bright = ( aimedAt or revivingThem ) and 1 or 0.45
             local beamStrength = revivingThem and 2 or 1
@@ -2919,7 +2931,7 @@ if CLIENT then
             local builtHeight = drawHologram( holo, standPos, standAng, color, built, bright )
 
             if revivingThem then
-                reviveFrac = self:GetNWFloat( "RevivingProgress", 0 )
+                reviveFrac = self:GetRevivingProgress()
                 reclaimBones( self, data.ply, holo, reviveFrac )
 
             end

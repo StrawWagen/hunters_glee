@@ -43,6 +43,10 @@ local discardEntryAtFails = 1000
 -- lag only bumps difficulty when it starts, a host tabbed out of a listen server lags forever
 local wasLagging = false
 
+-- lagging with this many out? they're probably the cause, back way off
+local crowdedCount = 15
+local crowdedLagBackoff = 5
+
 -- the spawnset module ( sv_spawnset.lua ) hands us a freshly parsed set via this
 -- hook; we attach the spawner's own runtime fields to it, so the module stays
 -- ignorant of spawner internals while we keep the convenience of storing them
@@ -113,6 +117,20 @@ local function aliveHuntersCount()
 
     end
     return aliveTermsCount
+
+end
+
+-- leftovers from past spawnsets lag too, so unlike aliveHuntersCount, this counts every spawnset
+local function allAliveHuntersCount()
+    local count = 0
+    for _, hunter in pairs( GAMEMODE.glee_Hunters ) do
+        if not IsValid( hunter ) then continue end
+        if hunter:Health() <= 0 then continue end
+
+        count = count + 1
+
+    end
+    return count
 
 end
 
@@ -537,10 +555,10 @@ hook.Add( "glee_sv_validgmthink_active", "glee_anti_abysmallag", function( _, _,
 
     local _, currTickrate = GAMEMODE:IsLagging()
 
-    if currTickrate > 3 then return end -- not lagging abysmally? ok
+    if currTickrate > 4 then return end -- not lagging abysmally? ok
 
     debugPrint( "session is extremely laggy: REMOVING OLDEST BOT" )
-    nextLagCheck = cur + 1 -- FIX THE LAG
+    nextLagCheck = cur + 0.5 -- FIX THE LAG
 
     local allHunters = {}
     terminator_Extras.tableAdd( allHunters, GAMEMODE.glee_Hunters )
@@ -597,6 +615,13 @@ function GM:SpawnWaveSpawnIn()
         if lagging then
             debugPrint( "not spawning hunter, laggy, tickrate is " .. currTickrate .. " threshold is " .. threshold )
             nextHunterSpawn = cur + 1
+
+            local huntersOut = allAliveHuntersCount()
+            if huntersOut > crowdedCount then
+                debugPrint( "lagging with " .. huntersOut .. " hunters out, backing off for " .. crowdedLagBackoff )
+                nextHunterSpawn = cur + crowdedLagBackoff
+
+            end
 
             -- bump the difficulty up, unlock the harder enemies sooner!
             if startedLagging then

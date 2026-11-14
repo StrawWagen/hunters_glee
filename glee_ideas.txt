@@ -262,6 +262,26 @@ divine intervention description change ( encase yourself within a weak shell of 
 -- hackily make crapvidcam more likely to point at the player when dropped -- done
 -- say Prospective Account Holders under ply's name if you have envoy -- done
 
+-- dead air when round starting -- done, tutorial crawl now starts during setup
+-- gm_born
+    -- cant pickup suit when you have suit -- done, now notifies
+    -- suit is something people have to learn -- done
+    -- upgrade suit increase feel -- done
+-- stuff in the corner is easy to miss -- done, background now blurry
+-- make bad notifies less hard to see ( default to having blurring background on all hud elements? ) -- done
+-- bigger initial hints -- done
+-- infernal heckler needs to have more powerful feeling to match its threat -- done
+-- tutorial enemies don't sprint if their enemy never sprinted before -- done
+-- type "!rtm" makes them type it without opening chat -- done
+-- open bank account hint -- done
+-- invisible wall hint? -- done
+-- crouch jump hint? -- done
+-- pull nails hint? -- done
+-- R to start placing should drop the ghost to the floor when aiming upwards -- done
+-- put turret in tutorial misery -- done
+-- flashlight hint!!!!! -- done
+-- insufficient power for flashlight hint -- done
+-- additional weapon pickup fails with carryable on back -- done
 
 
 -- make radio a purchasable item, moving all global/prox chat stuff to settings menu
@@ -612,42 +632,24 @@ goes in a glee rebinding menu?
 -- metal box for comedic effect
 
 -- fishing while dead
--- dead air when round starting
--- gm_born
-    -- cant pickup suit when you have suit
-    -- suit is something people have to learn
-    -- upgrade suit increase feel
--- stuff overlays in top left ( discord ) conflicts with hints 
 
--- stuff in the corner is easy to miss 
--- bigger initial hints
--- infernal heckler needs to have more powerful feeling to match its threat
-    -- draw playermodel with energy
 -- shoot beartrap to break beartrap
 -- E to interact is weak
--- add hints
--- tutorial enemies don't sprint if their enemy never sprinted before
 -- shove rename to hands
 -- different hint in later tutorial rounds
 -- a body with a skull hint plays through objects
--- a flaregun 
+-- a flaregun hint was misunderstood 
 -- grab the rope hint
--- type "!rtm" makes them type it without opening chat
--- open bank account hint
 -- rpg ( role playing game? )
 -- first bargain you buy has a confirmation dialog
 -- give all vending machines without names or buttons next to them functionality?
--- invisible wall hint?
--- crouch jump hint?
 -- HIM SWITCHED TARGETS TO A NEW PLAYER
--- make bad notifies less hard to see ( default to having blurring background on all hud elements? )
--- pull nails?
--- R to start placing should drop the ghost to the floor when aiming upwards
--- put turret in tutorial misery
 -- cancel taunts?
--- flashlight hint!!!!!
--- unsufficient power for flashlight hint
--- additional weapon pickup fails with carryable on back -- done
 
 -- favourites as reduced selection of the rest of the shop
 -- text can advance by itself when you are shift tabbed 
+
+
+-- shield on back eating bullets?
+-- get rid of progress bar for reviver
+-- ragdoll progress carrying between revives

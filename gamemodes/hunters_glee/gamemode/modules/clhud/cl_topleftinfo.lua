@@ -439,7 +439,7 @@ local function genericHints()
             end
         end
 
-        if not blockShop and not GAMMODE:HasLearnedLesson( "BoughtSignalFlare" ) and GAMMODE:canShowInShop( me, "signalflare" ) then
+        if not blockShop and not GAMMODE:HasLearnedLesson( "BoughtSignalFlare" ) and not GAMMODE:HasLearnedLesson( "SuccessfullyCalledHeli" ) and GAMMODE:canShowInShop( me, "signalflare" ) then
             local skulls = me:GetSkulls()
             if skulls >= GAMMODE:shopItemSkullCost( "signalflare", me ) then
                 return true, "EXTRACTION POSSIBLE\nBuy an Escape Flaregun from the shop.\nSPEND YOUR SKULLS", urgentHint

@@ -204,8 +204,23 @@ ENT.SkeleDeathAnimRate = 0.35
 ENT.SkeleCallInterval = 35
 ENT.SkeleRunsAfterEnemySprints = false
 
-function ENT:SkeletonSpotFX() end -- mid screaming, let the below ones take over
-function ENT:SkeletonChargeFX() end
+function ENT:SkeletonSpotFX()
+    self:Term_SpeakSoundNow( "npc/stalker/stalker_alert" .. math.random( 1, 2 ) .. "b.wav", math.random( 25, 35 ), -10 )
+
+end
+
+function ENT:SkeletonChargeFX()
+    -- catch any charges that happened without a warning
+    local calledRecently = CurTime() - self:GetLastActionTime( "Call" ) < self.SkeleCallInterval
+    if IsValid( self:GetEnemy() ) and not calledRecently and self:CanTakeAction( "Call" ) then
+        self:TakeAction( "Call" )
+        return
+
+    end
+
+    self:Term_SpeakSoundNow( "npc/stalker/stalker_scream" .. math.random( 2, 3 ) .. ".wav", math.random( -10, -5 ) )
+
+end
 
 
 function ENT:SkeletonDeathFX()

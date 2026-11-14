@@ -252,6 +252,13 @@ function ENT:Place()
     local summoner = self.player -- detaching forgets them
     self:DetachFromOwner()
 
+    -- the fire's burst relieves guilt like the skeletons do, see ENT:Touch
+    if IsValid( summoner ) then
+        self.glee_Summoner = summoner
+        self.glee_SummonerGuiltRelief = self.GuiltReliefPerSlaying
+
+    end
+
     local baseDelay = 2
     local betweenSpawnsDelay = 0.15
 
@@ -303,7 +310,30 @@ function ENT:Place()
     end )
 end
 
+ENT.DealBurstDamage = 5
+
+-- burns the damned harder, once each
+-- dealt by this ent, so a kill reaches the summoner's guilt relief
+function ENT:BurstOnDealHolder( touched )
+    if not touched:IsPlayer() then return end
+    if not touched:HasStatusEffect( "infernalintervention_rawendofthedeal" ) then return end
+
+    self.burstedPlys = self.burstedPlys or {}
+    if self.burstedPlys[touched] then return end
+    self.burstedPlys[touched] = true
+
+    local dmg = DamageInfo()
+    dmg:SetDamage( self.DealBurstDamage )
+    dmg:SetDamageType( DMG_BURN )
+    dmg:SetAttacker( self )
+    dmg:SetInflictor( self )
+    dmg:SetDamagePosition( touched:WorldSpaceCenter() )
+    touched:TakeDamageInfo( dmg )
+
+end
+
 function ENT:Touch( touched )
+    self:BurstOnDealHolder( touched )
     touched:Ignite( 5 )
 
 end

@@ -6,6 +6,7 @@ ENT.PrintName = "Infernal Heckler"
 ENT.Spawnable = false
 
 ENT.TERM_FISTS = "weapon_infernalskeleton_fists"
+ENT.FistAttackAnim = ACT_GMOD_GESTURE_RANGE_ZOMBIE
 ENT.PlayerColorVec = Vector( 1, 0, 0 ) -- used for player color
 
 ENT.SubCategory = "Hunter's Glee"
@@ -406,6 +407,8 @@ ENT.MyClassTask = {
     -- watches the final speed, ShouldRun alone doesn't know what the movement tasks decided
     ModifyMovementSpeed = function( self, data, speed )
         if self:Health() <= 0 then return end -- same as EnemyFound, the killing hit angers them into running
+
+        if self:GetCurrentSpeed() <= self.MoveSpeed then return end -- hasn't started getting up to speed
 
         local running = speed >= self.RunSpeed
         local startedRunning = running and not data.wasRunning

@@ -9,7 +9,7 @@ GM.glee_SpawnSetVote = spawnSetVote
 -- below this, a spawnset is rare; rare ones get bumped up to it, common ones decay down to it if people are spamming votes
 local rareChance = 15
 
-local chancePerConsecutiveVote = 0.1
+local chancePerConsecutiveVote = 0.5
 GM.glee_ConsecutiveSpawnsetVotes = GM.glee_ConsecutiveSpawnsetVotes or 0
 
 local chanceLostPerUnvotedAppearance = { 4, 8 }
@@ -88,6 +88,8 @@ function spawnSetVote:BeginVote( duration, maxOptions, toAdd )
 
         end
 
+        local consecutiveVotes = GAMEMODE.glee_ConsecutiveSpawnsetVotes
+
         while table.Count( toBrowse ) > 0 do
             if ( #toAdd + 1 ) > maxOptions then break end
 
@@ -107,10 +109,17 @@ function spawnSetVote:BeginVote( duration, maxOptions, toAdd )
             local unvotedCount = GAMEMODE.glee_UnvotedSpawnsetCounts[key]
 
             -- if rtm is being done a bunch of times, make rare ones more common
-            -- unless people already saw it on a ballot and passed on it
-            if isnumber( chance ) and chance < rareChance and not unvotedCount then
-                local added = GAMEMODE.glee_ConsecutiveSpawnsetVotes * chancePerConsecutiveVote
+            if consecutiveVotes >= 1 and isnumber( chance ) and chance < rareChance then
+                local added = consecutiveVotes * chancePerConsecutiveVote
+                if unvotedCount then
+                    added = -added
+
+                end
                 local newChance = chance + added
+                newChance = math.max( chance * 0.01, newChance )
+
+                -- print( unvotedCount, chance, newChance, key )
+
                 chance = math.min( newChance, rareChance )
 
             end
