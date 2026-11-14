@@ -3,7 +3,7 @@ AddCSLuaFile()
 ENT.Base = "base_gmodentity"
 ENT.Type = "anim"
 ENT.PrintName   = "Riot Shield"
-ENT.Author      = "dedactedlife and IndefiniteXD"
+ENT.Author      = "dedactedlife, IndefiniteXD & straw w wagen"
 ENT.Purpose     = "No bullets shall pass!"
 ENT.Spawnable   = true
 ENT.AdminOnly   = game.IsDedicated()
