@@ -293,7 +293,7 @@ namedDecrees.escapedeasy = function()
         "You've passed the first...\nTEST.",
         "That Misery was made to prepare you..",
         "For the TRUE, hard MISERIES.\nThat await you...",
-        "Type \" !rtm \"\nTo begin a Misery vote...",
+        "Type \" !rtm \" in chat,\nTo begin a Misery vote...",
     } )
 end
 
