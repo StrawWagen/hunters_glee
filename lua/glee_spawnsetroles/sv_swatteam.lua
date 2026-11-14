@@ -1,33 +1,3 @@
---[[
-    Roles are kits a misery hands its players, see setHelpers.setBaseRole.
-
-    ["rebel"] = {
-        models = "models/player/group03/male_07.mdl",
-        startWeapons = { "weapon_crowbar" },
-    },
-    ["medic"] = {
-        base = "rebel",
-        startWeapons = { "termhunt_medkit" },
-        ratio = 0.25,
-        leastGuiltyFirst = true,
-    },
-
-    Every field is optional.
-        models: a model path, or a list of them. Leave it out to wear their own.
-        startWeapons: a list, each works like setHelpers.addStartWeapon's weapon.
-        defaultWeapons: same, for addDefaultWeapon.
-        statusEffects: a list of status effect names, kept for as long as they have the role.
-
-    A role with a base is a variant of it.
-        Its weapons and status effects come on top of the base's, its models replace the base's.
-
-    How setHelpers.addRoleVariant picks who gets a variant, every round.
-    Leave these out and only setHelpers.setPlayerRoleVariant hands it out.
-        ratio: of the players on its base, rounded up, 0.25 of 5 is 2.
-        count: a flat number of players, instead of ratio.
-        minPlayers: with fewer on its base, nobody gets it.
-        leastGuiltyFirst, mostGuiltyFirst: by persistent guilt, random otherwise.
---]]
 
 local function twoOrThreeClips()
     return math.random( 4, 5 )
