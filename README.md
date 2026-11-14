@@ -571,7 +571,7 @@ Number values can be:
 | `firmPreferredEFlags` | ❌ | `true` stops `preferredEFlags` from bending, the entry never spawns outside those areas, and is never picked on maps without them |
 | `canSpawnOnMap` | ❌ | `function(spawnData)`, asked once a map, after the navmesh is categorized. Return false and the entry never spawns on this map, eg the map's too cramped for it. A misery none of whose entries can spawn is left out of the vote, and can't be nominated. If it's already active, one !rtm is enough to start a vote |
 | `areaFilter` | ❌ | `function(spawnData, area)`, return false and the entry won't spawn in that nav area. Pair it with `canSpawnOnMap`, an entry no area passes holds up its wave until it's dropped |
-| `preSpawnedFuncs` | ❌ | Functions called before hunter:SetPos() and hunter:Spawn() : `function(spawnData, npc, spawnPos)`. spawnPos is 20 units above the nav area, hunters fall into place |
+| `preSpawnedFuncs` | ❌ | Functions called before hunter:SetPos() and hunter:Spawn() : `function(spawnData, npc, spawnPos)`. Change spawnPos to move where it spawns. From the spawner, it's 20 units above the nav area, hunters fall into place |
 | `postSpawnedFuncs` | ❌ | Functions called after hunter:Spawn() : `function(spawnData, npc)` |
 | `isBoss` | ❌ | `true` marks as boss; `false` opts out of auto-detection. When the boss is killed, all alive players escape. Cleanup that removes boring hunters leaves it alone while it's battling, and lag never removes it. Auto-detected when `spawnSet.maxSpawnCount <= 1` (highest `difficultyCost` entry becomes boss). |
 | `hordeSpawn` | ❌ | Toggle last good area re-use for just this spawn. `false` opts out of the spawnset's `hordeSpawn` |

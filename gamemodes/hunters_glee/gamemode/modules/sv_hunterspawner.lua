@@ -984,37 +984,49 @@ hook.Add( "terminator_event_spawned", "glee_capture_eventspawns", function( _, s
 end )
 
 
-local randYawAng = Angle( 0, 0, 0 )
+--[[---------------------------------------------------------
+    GM:SpawnAndSetupSpawnEntry
+    @desc Spawns a hunter from a spawnset .spawns style entry, runs its pre/post funcs, and registers it.
+      GAMEMODE:SpawnAndSetupSpawnEntry( { name = "my_hunter", class = "terminator_nextbot" }, { spawnPos = pos, spawnAng = ang } )
+    @param spawnEntry: The entry to spawn, needs a .name and .class.
+    @param spawningData: .spawnPos and .spawnAng, where it goes.
+      .spawnArea, optional, the nav area it spawned in. Kills by it make that area a preferred spawn.
+      .fromMiseryWave, leave nil for rare spawns "outside" the wave. True counts it toward the misery's caps.
+    @return: The hunter, or nil if it couldn't be made
+--]]---------------------------------------------------------
+function GM:SpawnAndSetupSpawnEntry( spawnEntry, spawningData )
+    local data = spawningData
 
-
-
-function GM:AttemptToSpawnHunter( spawnEntry, fromMiseryWave )
-    local spawnPos, spawnArea, valid = self:MarchValidHunterPos( spawnEntry )
-    if not valid then return end
+    if not spawnEntry.name then ErrorNoHaltWithStack( "No .name" ) return end
+    if not spawnEntry.class then ErrorNoHaltWithStack( "No .class" ) return end
+    if not data.spawnPos then ErrorNoHaltWithStack( "No .spawnPos" ) return end
+    if not data.spawnAng then ErrorNoHaltWithStack( "No .spawnAng" ) return end
 
     local class = spawnEntry.class
 
     local hunter = ents.Create( class )
     if not IsValid( hunter ) then return end
 
+    -- preSpawnedFuncs can move this
+    local spawnPos = Vector( data.spawnPos )
     if spawnEntry.preSpawnedFuncs then
         for _, func in ipairs( spawnEntry.preSpawnedFuncs ) do
-            ProtectedCall( function( _spawnEntry, _hunter, _spawnPos ) func( _spawnEntry, _hunter, _spawnPos ) end, spawnEntry, hunter, spawnPos )
+            ProtectedCall( func, spawnEntry, hunter, spawnPos )
 
         end
     end
 
     hunter:SetPos( spawnPos )
-    randYawAng.y = math.random( -180, 180 )
-    hunter:SetAngles( randYawAng )
+    hunter:SetAngles( data.spawnAng )
     hunter:Spawn()
-    hunter.glee_SpawnArea = spawnArea -- so we can prefer to spawn enemies from this area, if this bot ends up killing someone!
+
     hunter.glee_SpawnEntry = spawnEntry
+    hunter.glee_SpawnArea = data.spawnArea -- so we can prefer to spawn enemies from this area, if this bot ends up killing someone!
 
     -- before registering, the stale removal reads its max health then, and these can set it
     if spawnEntry.postSpawnedFuncs then
         for _, func in ipairs( spawnEntry.postSpawnedFuncs ) do
-            ProtectedCall( function( _spawnEntry, _hunter ) func( _spawnEntry, _hunter ) end, spawnEntry, hunter )
+            ProtectedCall( func, spawnEntry, hunter )
 
         end
     end
@@ -1025,7 +1037,8 @@ function GM:AttemptToSpawnHunter( spawnEntry, fromMiseryWave )
 
     end
 
-    self:RegisterAsSpawnedHunter( hunter, fromMiseryWave )
+    self:RegisterAsSpawnedHunter( hunter, data.fromMiseryWave )
+
     if spawnEntry.removeAfterStillSeconds then
         manageIfStill( hunter, spawnEntry.removeAfterStillSeconds )
 
@@ -1034,6 +1047,26 @@ function GM:AttemptToSpawnHunter( spawnEntry, fromMiseryWave )
         self:RegisterBoss( hunter )
 
     end
+    return hunter
+
+end
+
+
+local randYawAng = Angle( 0, 0, 0 )
+
+function GM:AttemptToSpawnHunter( spawnEntry, fromMiseryWave )
+    local spawnPos, spawnArea, valid = self:MarchValidHunterPos( spawnEntry )
+    if not valid then return end
+
+    randYawAng.y = math.random( -180, 180 )
+    local hunter = self:SpawnAndSetupSpawnEntry( spawnEntry, {
+        spawnPos = spawnPos,
+        spawnAng = randYawAng,
+        spawnArea = spawnArea,
+        fromMiseryWave = fromMiseryWave,
+    } )
+
+    if not IsValid( hunter ) then return end
 
     permaPrint( hunter ) -- i like this print, you cannot make me remove it
     if debuggingVar:GetBool() then
