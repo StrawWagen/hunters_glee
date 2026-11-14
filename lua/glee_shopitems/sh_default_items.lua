@@ -574,7 +574,7 @@ local items = {
     -- carried in, placed down, see glee_backpackable_shield
     ["riot_shield"] = {
         name = "Riot Shield",
-        desc = "Can save your life, most of the time.",
+        desc = "Absorbs damage.\nUltimate protection, with a view!",
         shCost = 0,
         shSkullCost = 2,
         cooldown = 5,

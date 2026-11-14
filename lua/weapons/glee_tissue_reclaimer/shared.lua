@@ -7,7 +7,7 @@ AddCSLuaFile()
     Hold secondary to heal yourself.
     Reclamation material comes from buying another, and from health pickups found while already at full health.
 
-    Read top to bottom: setup, telling the owner no, the viewmodel, healing, picking up material, reviving,
+    Read top to bottom: setup, telling the owner no, the viewmodel, who's healable, healing, picking up material, reviving,
     then Think, which runs it all every tick.
     After that the hud, the client's half, beams, projection, corpse and sounds, tied together in SWEP:DrawBeams at its bottom,
     and last, where dead players' positions come from.
@@ -351,43 +351,31 @@ function SWEP:OwnerChanged()
 end
 
 
--- Healing -------------------------------------------------------------------
--- a hold, primary on someone else, secondary on yourself, a few health a tick
--- healing yourself turns the kit onto its medic first. To the left, the viewmodel has no right side to show
--- it stays turned a moment after letting go, so a quick re-press doesn't wait on the turn again
--- healing someone else or reviving turns it back quicker
--- all predicted, run from Think, so the beams, their sound and the turn start without waiting on the server
-
-local selfAimLinger = 0.5 -- seconds it stays turned onto the medic after letting go
-local selfAimCutTo = 0.1 -- seconds left turned, once it's cut short
-local selfAimInTime = 0.35 -- seconds turning all the way onto the medic
-local selfAimOutTime = 0.4 -- seconds turning back
-local selfHealYaw = 35 -- degrees the viewmodel turns left, tune in game
-local selfHealPitch = 8 -- degrees it tips down toward the chest, tune in game
-local selfHealShift = 16 -- units it slides right, so turning left doesn't swing it across the view
-local healScorePerHealth = 0.2 -- healing other players, 8 for 40 health
-local denyRepeat = 1 -- seconds between deny sounds, holding on with none left
-local aimCheckInterval = 0.1 -- seconds between the server's checks for AimedHealable
+-- Who's healable ------------------------------------------------------------
+-- the server's to judge, the client only gets where the owner's aiming, see TraceAim
 
 -- npc classes that are all machine, see https://wiki.facepunch.com/gmod/Enums/CLASS
 -- CLASS_COMBINE isn't, it's soldiers and turrets both
-local machineClasses = {
-    [CLASS_COMBINE_GUNSHIP] = true,
-    [CLASS_MANHACK] = true,
-    [CLASS_MILITARY] = true,
-    [CLASS_SCANNER] = true,
-    [CLASS_MISSILE] = true,
-    [CLASS_HACKED_ROLLERMINE] = true,
-    [CLASS_MACHINE] = true,
-    [CLASS_PORTAL_TURRET] = true,
-}
+local machineClasses
+if SERVER then -- the enums don't exist on the client
+    machineClasses = {
+        [CLASS_COMBINE_GUNSHIP] = true,
+        [CLASS_MANHACK] = true,
+        [CLASS_MILITARY] = true,
+        [CLASS_SCANNER] = true,
+        [CLASS_MISSILE] = true,
+        [CLASS_HACKED_ROLLERMINE] = true,
+        [CLASS_MACHINE] = true,
+        [CLASS_PORTAL_TURRET] = true,
+    }
+end
 
 -- machines have no tissue to reclaim
+-- server only, none of what says so is right on the client, see PrimaryHealTarget
 local function isOrganic( ent )
     if ent.DoMetallicDamage then return false end
-    if ent.GetNPCClass and machineClasses[ent:GetNPCClass()] then return false end -- server only
-    if ent.GetBloodColor and ent:GetBloodColor() == BLOOD_COLOR_MECH then return false end -- GetBloodColor may be server only
-    return true
+    if ent.GetNPCClass and machineClasses[ent:GetNPCClass()] then return false end
+    return ent:GetBloodColor() ~= BLOOD_COLOR_MECH
 
 end
 
@@ -407,42 +395,74 @@ local function isHealable( ent )
 
 end
 
--- the hurt player or npc being aimed at, nil if there's none, and the aim's trace, see FindRevivable
--- a precise line first, then a fat hull for a near miss, like the shove's
-function SWEP:TraceHealTarget()
-    local owner = self:GetOwner()
+local function aimTraceData( owner )
     local shootPos = owner:GetShootPos()
-    local trace = {
+    return {
         start = shootPos,
         endpos = shootPos + owner:GetAimVector() * healReach,
         filter = owner,
     }
 
-    -- only the server rewinds, the client already sees everyone where they were
-    local lagCompensate = SERVER and owner:IsPlayer()
-    if lagCompensate then
-        owner:LagCompensation( true )
+end
 
-    end
-
-    local aimTrace = util.TraceLine( trace )
-    local target = aimTrace.Entity
-    if not isHealable( target ) then
-        trace.mins = -healHull
-        trace.maxs = healHull
-        target = util.TraceHull( trace ).Entity
-
-    end
-
-    if lagCompensate then
-        owner:LagCompensation( false )
-
-    end
-
-    if not isHealable( target ) then return nil, aimTrace end
-    return target, aimTrace
+-- where the owner's aiming, out to heal reach, see FindRevivable
+function SWEP:TraceAim()
+    return util.TraceLine( aimTraceData( self:GetOwner() ) )
 
 end
+
+if SERVER then
+    -- the hurt player or npc being aimed at, nil if there's none, and the aim's trace, see TraceAim
+    -- a precise line first, then a fat hull for a near miss, like the shove's
+    function SWEP:TraceHealTarget()
+        local owner = self:GetOwner()
+
+        local lagCompensate = owner:IsPlayer()
+        if lagCompensate then
+            owner:LagCompensation( true )
+
+        end
+
+        local aimTrace = self:TraceAim()
+        local target = aimTrace.Entity
+        if not isHealable( target ) then
+            local trace = aimTraceData( owner )
+            trace.mins = -healHull
+            trace.maxs = healHull
+            target = util.TraceHull( trace ).Entity
+
+        end
+
+        if lagCompensate then
+            owner:LagCompensation( false )
+
+        end
+
+        if not isHealable( target ) then return nil, aimTrace end
+        return target, aimTrace
+
+    end
+end
+
+
+-- Healing -------------------------------------------------------------------
+-- a hold, primary on someone else, secondary on yourself, a few health a tick
+-- healing yourself turns the kit onto its medic first. To the left, the viewmodel has no right side to show
+-- it stays turned a moment after letting go, so a quick re-press doesn't wait on the turn again
+-- healing someone else or reviving turns it back quicker
+-- predicted, run from Think, so the beams, their sound and the turn start without waiting on the server
+-- who primary heals is the server's, see PrimaryHealTarget
+
+local selfAimLinger = 0.5 -- seconds it stays turned onto the medic after letting go
+local selfAimCutTo = 0.1 -- seconds left turned, once it's cut short
+local selfAimInTime = 0.35 -- seconds turning all the way onto the medic
+local selfAimOutTime = 0.4 -- seconds turning back
+local selfHealYaw = 35 -- degrees the viewmodel turns left, tune in game
+local selfHealPitch = 8 -- degrees it tips down toward the chest, tune in game
+local selfHealShift = 16 -- units it slides right, so turning left doesn't swing it across the view
+local healScorePerHealth = 0.2 -- healing other players, 8 for 40 health
+local denyRepeat = 1 -- seconds between deny sounds, holding on with none left
+local aimCheckInterval = 0.1 -- seconds between the server's checks for AimedHealable
 
 function SWEP:HealCost( health )
     return math.ceil( health * self.ReclamationPerHealth )
@@ -571,7 +591,7 @@ function SWEP:HealTick( healTarget )
     end
 end
 
--- who primary heals, the server's to pick. The client can't see everything that decides it, eg terminators' IsNPC, DoMetallicDamage
+-- who primary heals, the server's to pick. The client can't see everything that decides it, eg terminators' IsNPC, see isOrganic
 -- so the client keeps whoever the server last picked, a round trip late
 function SWEP:PrimaryHealTarget()
     if SERVER then
@@ -742,9 +762,9 @@ local function notifyNothingToReclaim( wep, aimed )
         notice.text = "NO TISSUE DETECTED"
         notice.description = "That's a machine."
 
-    elseif living and aimed.GetBloodColor and aimed:GetBloodColor() == DONT_BLEED then -- like floor turrets, still healable
+    elseif living and aimed:GetBloodColor() == DONT_BLEED then -- like floor turrets, still healable
         notice.text = "TISSUE UNCLEAR"
-        notice.description = "Whatever it's made of, it's at full health."
+        notice.description = "Healable, but at full health."
 
     elseif living then
         notice.text = "TISSUE INTACT"
@@ -766,7 +786,7 @@ local function notifyNothingToReclaim( wep, aimed )
 
 end
 
--- the server judges what was clicked, and says why it failed. The client can disagree on who's healable, see PrimaryHealTarget
+-- the server judges what was clicked, and says why it failed. The client can't judge who's healable, see PrimaryHealTarget
 function SWEP:PrimaryAttack()
     local owner = self:GetOwner()
     if not IsValid( owner ) then return end
@@ -784,12 +804,21 @@ function SWEP:PrimaryAttack()
 
     end
 
-    local healTarget, aimTrace = self:TraceHealTarget()
-    if healTarget then return end -- healing's held, see HealThink
+    -- healing's held, see HealThink. The client goes by the server's last check, a round trip late
+    local aimTrace
+    if SERVER then
+        local healTarget
+        healTarget, aimTrace = self:TraceHealTarget()
+        if healTarget then return end
+
+    else
+        if self:GetAimedHealable() then return end
+        aimTrace = self:TraceAim()
+
+    end
 
     local toRevive, resurrectPos = self:FindRevivable( aimTrace )
     if not IsValid( toRevive ) or not owner:IsPlayer() then
-        -- the server's call, it can heal what the client thinks it can't, see PrimaryHealTarget
         if SERVER then
             playServerOneShot( self, DryFireSound )
             self:PlayViewModelOnce( "fire" )
@@ -2489,16 +2518,20 @@ if CLIENT then
     -- healing others is clean, every ray lands on them
     -- healing yourself isn't, the kit has to turn its beams back on its own medic, and most of the material splashes on the floor
 
-    local healFadeIn = 0.1 -- seconds
-    local healFadeOut = 0.25
-    local healReaimInterval = 0.12 -- seconds between picking new bones and spill points for the rays
-    local healRayCount = 4
-    local healOtherStrength = 2.5 -- times the beams' usual widths, healing someone else pours far more material
-    local healSelfBend = 1 -- see drawBeam, the kit isn't built to point at its own medic
-    local spillCount = 4 -- a self heal's rays that miss, onto the floor around them
-    local spillRadiusMin, spillRadiusMax = 24, 64
-    local spillTraceUp = Vector( 0, 0, 32 )
-    local spillTraceDown = Vector( 0, 0, -96 )
+    -- a table, the file's at lua's limit of 200 locals
+    local healBeams = {
+        fadeIn = 0.1, -- seconds
+        fadeOut = 0.25,
+        reaimInterval = 0.12, -- seconds between picking new bones and spill points for the rays
+        rayCount = 4,
+        otherStrength = 2.5, -- times the beams' usual widths, healing someone else pours far more material
+        selfBend = 1, -- see drawBeam, the kit isn't built to point at its own medic
+        spillCount = 4, -- a self heal's rays that miss, onto the floor around them
+        spillRadiusMin = 24,
+        spillRadiusMax = 64,
+        spillTraceUp = Vector( 0, 0, 32 ),
+        spillTraceDown = Vector( 0, 0, -96 ),
+    }
 
     -- somewhere on the floor around pos, just under it, so a beam to it splashes there. nil when there's no floor
     local function spillPoint( pos )
@@ -2506,8 +2539,8 @@ if CLIENT then
         offset.z = 0
         offset:Normalize()
 
-        local from = pos + offset * math.Rand( spillRadiusMin, spillRadiusMax ) + spillTraceUp
-        local tr = util.TraceLine( { start = from, endpos = from + spillTraceDown, mask = MASK_SOLID_BRUSHONLY } )
+        local from = pos + offset * math.Rand( healBeams.spillRadiusMin, healBeams.spillRadiusMax ) + healBeams.spillTraceUp
+        local tr = util.TraceLine( { start = from, endpos = from + healBeams.spillTraceDown, mask = MASK_SOLID_BRUSHONLY } )
         if not tr.Hit or tr.StartSolid then return end
 
         return tr.HitPos - tr.HitNormal * 2
@@ -2516,13 +2549,13 @@ if CLIENT then
 
     -- new spots for the rays healing others, new spill points healing yourself
     local function reaimHealing( healing, isSelf )
-        healing.nextReaim = CurTime() + healReaimInterval
+        healing.nextReaim = CurTime() + healBeams.reaimInterval
         healing.raySpots = {}
         healing.spills = {}
 
         local healTarget = healing.healTarget
         if isSelf then
-            for _ = 1, spillCount do
+            for _ = 1, healBeams.spillCount do
                 local spill = spillPoint( healTarget:GetPos() )
                 if spill then
                     table.insert( healing.spills, spill )
@@ -2533,7 +2566,7 @@ if CLIENT then
 
         end
 
-        for ray = 1, healRayCount do
+        for ray = 1, healBeams.rayCount do
             healing.raySpots[ray] = randomSpot( healTarget ) -- nil without any bones, and the list stays empty
 
         end
@@ -2551,10 +2584,10 @@ if CLIENT then
                 self.glee_healing = healing
 
             end
-            healing.alpha = math.min( healing.alpha + FrameTime() / healFadeIn, 1 )
+            healing.alpha = math.min( healing.alpha + FrameTime() / healBeams.fadeIn, 1 )
 
         elseif healing then
-            healing.alpha = healing.alpha - FrameTime() / healFadeOut
+            healing.alpha = healing.alpha - FrameTime() / healBeams.fadeOut
 
         end
 
@@ -2578,11 +2611,11 @@ if CLIENT then
         local chest = healTarget:WorldSpaceCenter()
 
         if not isSelf then
-            drawBeam( startPos, barrelDir, chest, reclamationColor, 1, alpha, beamWidth * healOtherStrength, diffuseWidth * healOtherStrength )
+            drawBeam( startPos, barrelDir, chest, reclamationColor, 1, alpha, beamWidth * healBeams.otherStrength, diffuseWidth * healBeams.otherStrength )
             for ray, spot in ipairs( healing.raySpots ) do
                 local rayEnd = spotPos( healTarget, spot )
                 if rayEnd then
-                    drawBeam( tips[( ray - 1 ) % tipCount + 1] or startPos, barrelDir, rayEnd, reclamationColor, 1, alpha, rayWidth * healOtherStrength )
+                    drawBeam( tips[( ray - 1 ) % tipCount + 1] or startPos, barrelDir, rayEnd, reclamationColor, 1, alpha, rayWidth * healBeams.otherStrength )
 
                 end
             end
@@ -2591,9 +2624,9 @@ if CLIENT then
         end
 
         -- out of the barrel, turned onto the medic, then hooking back onto them, the rest spill
-        drawBeam( startPos, barrelDir, chest, reclamationColor, 1, alpha, beamWidth, nil, healSelfBend )
+        drawBeam( startPos, barrelDir, chest, reclamationColor, 1, alpha, beamWidth, nil, healBeams.selfBend )
         for spill, spillPos in ipairs( healing.spills ) do
-            drawBeam( tips[( spill - 1 ) % tipCount + 1] or startPos, barrelDir, spillPos, reclamationColor, 1, 0.5 * alpha, rayWidth, nil, healSelfBend )
+            drawBeam( tips[( spill - 1 ) % tipCount + 1] or startPos, barrelDir, spillPos, reclamationColor, 1, 0.5 * alpha, rayWidth, nil, healBeams.selfBend )
 
         end
     end
@@ -2833,8 +2866,7 @@ if CLIENT then
         -- the same trace PrimaryAttack revives from
         local aimPos
         if isMine then
-            local _, aimTrace = self:TraceHealTarget()
-            aimPos = aimTrace.HitPos
+            aimPos = self:TraceAim().HitPos
 
         end
         local aimedHealable = self:GetAimedHealable()
