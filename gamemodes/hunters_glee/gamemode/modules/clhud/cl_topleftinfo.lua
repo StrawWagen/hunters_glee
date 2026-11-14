@@ -300,6 +300,7 @@ local function findCrouchJumpLedge( me )
         filter = me,
     } )
     if downTr.StartSolid or not downTr.Hit then return end
+    if not downTr.HitWorld then return end -- clients can't tell frozen props from loose ones
     if downTr.HitNormal.z < 0.7 then return end -- too steep to stand on
 
     -- room for them to crouch up there
