@@ -4,12 +4,13 @@
     ["rebel"] = {
         models = "models/player/group03/male_07.mdl",
         startWeapons = { "weapon_crowbar" },
-    },
-    ["medic"] = {
-        base = "rebel",
-        startWeapons = { "glee_tissue_reclaimer" },
-        ratio = 0.25,
-        leastGuiltyFirst = true,
+        variants = {
+            ["medic"] = {
+                startWeapons = { "glee_tissue_reclaimer" },
+                ratio = 0.25,
+                leastGuiltyFirst = true,
+            },
+        },
     },
 
     Every field is optional.
@@ -17,9 +18,11 @@
         startWeapons: a list, each works like setHelpers.addStartWeapon's weapon.
         defaultWeapons: same, for addDefaultWeapon.
         statusEffects: a list of status effect names, kept for as long as they have the role.
+        variants: kits for some of the players on this role, by name, see setHelpers.addRoleVariant.
 
-    A role with a base is a variant of it.
-        Its weapons and status effects come on top of the base's, its models replace the base's.
+    A variant takes the same fields, except variants.
+        Its weapons and status effects come on top of its base's, its models replace the base's.
+        Its name only has to be unique inside its base, two bases can each have a medic.
 
     How setHelpers.addRoleVariant picks who gets a variant, every round.
     Leave these out and only setHelpers.setPlayerRoleVariant hands it out.
@@ -108,6 +111,7 @@ local rebelSecondaries = {
     {
         class = "termhunt_lockpick",
     },
+
 }
 
 local function randomSecondary()
@@ -119,53 +123,58 @@ local roles = {
     ["rebel"] = {
         models = modelsIn( "/group03/" ),
         startWeapons = { randomPrimary, randomSecondary },
-    },
-    -- heals and revives the squad
-    ["medic"] = {
-        base = "rebel",
-        models = modelsIn( "/group03m/" ),
-        startWeapons = { "glee_tissue_reclaimer" },
-        -- rounded up, so a squad always has a medic
-        ratio = 0.25,
-        -- alone, there's nobody to heal or revive
-        minPlayers = 2,
-        -- the squad's trusted with their lives
-        leastGuiltyFirst = true,
-    },
-    -- documents the glee
-    ["reporter"] = {
-        base = "rebel",
-        startWeapons = { "weapon_glee_crapvidcam" },
-        count = 1,
-    },
-    ["engineer"] = {
-        base = "rebel",
-        startWeapons = {
-            "weapon_physcannon",
-            "glee_backpackable_turret",
-            {
-                class = "termhunt_weapon_hammer",
-                purchaseClips = 3,
-            }
-        },
-        ratio = 0.25,
-    },
-    ["juggernaut"] = {
-        base = "rebel",
-        startWeapons = {
-            {
-                class = "termhunt_ar3",
-                purchaseClips = 3,
+        variants = {
+            -- heals and revives the squad
+            ["medic"] = {
+                models = modelsIn( "/group03m/" ),
+                startWeapons = { "glee_tissue_reclaimer" },
+                -- rounded up, so a squad always has a medic
+                ratio = 0.25,
+                -- alone, there's nobody to heal or revive
+                minPlayers = 2,
+                -- the squad's trusted with their lives
+                leastGuiltyFirst = true,
             },
-            {
-                class = "weapon_rpg",
-                purchaseClips = 4,
+            -- documents the glee
+            ["reporter"] = {
+                startWeapons = { "weapon_glee_crapvidcam" },
+                count = 1,
+            },
+            ["engineer"] = {
+                startWeapons = {
+                    "weapon_physcannon",
+                    "glee_backpackable_turret",
+                    {
+                        class = "termhunt_weapon_hammer",
+                        purchaseClips = 3,
+                    }
+                },
+                ratio = 0.25,
+            },
+            -- walks point, the squad shoots from behind it
+            ["shieldbearer"] = {
+                startWeapons = { "glee_backpackable_shield" },
+                ratio = 0.15,
+                -- any fewer, and there's barely a squad to hide behind it
+                minPlayers = 3,
+            },
+            ["juggernaut"] = {
+                startWeapons = {
+                    {
+                        class = "termhunt_ar3",
+                        purchaseClips = 3,
+                    },
+                    {
+                        class = "weapon_rpg",
+                        purchaseClips = 4,
+                    },
+                },
+                statusEffects = { "juggernaut" },
+                leastGuiltyFirst = true, -- reward innocent players with the best class
+                ratio = 0.05,
+                minPlayers = 5,
             },
         },
-        statusEffects = { "juggernaut" },
-        leastGuiltyFirst = true, -- reward innocent players with the best class
-        ratio = 0.05,
-        minPlayers = 5,
     },
 }
 

@@ -157,6 +157,7 @@ function set:Activate()
     setHelpers.setBaseRole( self, "rebel" )
     setHelpers.addRoleVariant( self, "medic" )
     setHelpers.addRoleVariant( self, "engineer" )
+    setHelpers.addRoleVariant( self, "shieldbearer" )
     setHelpers.addRoleVariant( self, "reporter" )
     setHelpers.addRoleVariant( self, "juggernaut" )
 

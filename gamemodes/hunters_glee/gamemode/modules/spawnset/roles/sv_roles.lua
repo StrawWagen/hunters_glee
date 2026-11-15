@@ -13,6 +13,18 @@ local function registeredRole( name )
 
 end
 
+-- variants live inside their base role, so two bases can each have their own medic
+-- base is { name, role }, like roles.base
+local function registeredVariant( base, name )
+    local role = base.role.variants and base.role.variants[name]
+    if not role then
+        error( "GLEE: Role '" .. base.name .. "' has no variant named '" .. tostring( name ) .. "', see lua/glee_spawnsetroles/", 3 )
+
+    end
+    return { name = name, role = role, baseName = base.name }
+
+end
+
 -- the same face every spawn, so the squad can tell each other apart
 local function stablePick( ply, models )
     if isstring( models ) then return models end
@@ -30,7 +42,7 @@ local function baseRoleOf( roles, _ply )
 
 end
 
--- { name, role }, or nil for a plain base
+-- { name, role, baseName }, or nil for a plain base
 local function variantOf( roles, ply )
     return roles.variantsById[ply:SteamID64()]
 
@@ -152,7 +164,7 @@ end
 -- slots count who's connected, so someone leaving frees theirs
 local function fillVariant( roles, variant, candidates )
     local pick = variant.pick
-    local baseName = variant.role.base
+    local baseName = variant.baseName
 
     local onBase = 0
     local given = 0
@@ -234,10 +246,6 @@ function setHelpers.setBaseRole( lifecycle, name )
     end
 
     local role = registeredRole( name )
-    if role.base then
-        error( "GLEE: '" .. name .. "' is a variant of '" .. role.base .. "', use addRoleVariant or setPlayerRoleVariant", 2 )
-
-    end
 
     local roles = {
         base = { name = name, role = role },
@@ -355,13 +363,9 @@ function setHelpers.addRoleVariant( lifecycle, name, pick )
 
     end
 
-    local role = registeredRole( name )
-    if not role.base then
-        error( "GLEE: '" .. name .. "' has no base, so it isn't a variant, use setBaseRole", 2 )
+    local variant = registeredVariant( roles.base, name )
 
-    end
-
-    pick = pick or pickFieldsOf( role )
+    pick = pick or pickFieldsOf( variant.role )
     if pick.ratio and pick.count then
         error( "GLEE: Variant '" .. name .. "' has both a ratio and a count, pick one", 2 )
 
@@ -375,7 +379,7 @@ function setHelpers.addRoleVariant( lifecycle, name, pick )
 
     end
 
-    local variant = { name = name, role = role, pick = pick }
+    variant.pick = pick
     table.insert( roles.autoVariants, variant )
 
     fillVariant( roles, variant, player.GetAll() )
@@ -406,13 +410,6 @@ function setHelpers.setPlayerRoleVariant( lifecycle, ply, name )
 
     end
 
-    local role = registeredRole( name )
-    local baseName = baseRoleOf( roles, ply ).name
-    if role.base ~= baseName then
-        error( "GLEE: '" .. name .. "' isn't a variant of their base role, '" .. baseName .. "'", 2 )
-
-    end
-
-    setVariant( roles, ply, { name = name, role = role } )
+    setVariant( roles, ply, registeredVariant( baseRoleOf( roles, ply ), name ) )
 
 end

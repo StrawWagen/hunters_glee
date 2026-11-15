@@ -25,6 +25,7 @@ local function broadcastMusic( trackName, path, data, recipients )
     net.Start( "glee_playmusic" )
         net.WriteString( trackName )
         net.WriteString( path )
+        net.WriteString( data.author or "" )
         net.WriteFloat(  data.pitch )
         net.WriteFloat(  data.vol )
         net.WriteFloat(  data.fadeInLength )
@@ -62,7 +63,7 @@ function GM:SendMusic( path, data )
     -- if it's a music track, resolve it to a path and data
     elseif self:IsPathAMusicTrack( path ) then -- tracks/NAME
         local name = string.sub( path, 8 )
-        local resolvedPath, trackData = self:GetAMusicTrack( name )
+        local resolvedPath, trackData, author = self:GetAMusicTrack( name )
         if not resolvedPath then
             if self.musicTracks[name] then
                 error( "glee_music: track \"" .. name .. "\" has no sounds for difficulty " .. self:GetCurrWaveDifficulty() )
@@ -82,6 +83,7 @@ function GM:SendMusic( path, data )
         path      = resolvedPath
         trackName = name
         data      = table.Copy( trackData )  -- avoid mutating trackData
+        data.author = author
 
     end
 
@@ -90,6 +92,12 @@ function GM:SendMusic( path, data )
 
 end
 
+
+-- our own music sits in a folder named after who made it, hunters_glee/music/VACANT/...
+local function authorFromPath( path )
+    return string.match( path, "hunters_glee/music/([^/]+)/" )
+
+end
 
 function GM:GetAMusicTrack( name )
     local trackData = self.musicTracks[name]
@@ -100,6 +108,7 @@ function GM:GetAMusicTrack( name )
     local currDiff = self:GetCurrWaveDifficulty()
     local sounds   = trackData.sounds
     local path
+    local author
     local checked  = 0
 
     -- Cycle round-robin through the list, skipping entries that don't fit the current difficulty.
@@ -113,11 +122,12 @@ function GM:GetAMusicTrack( name )
         if picked.minDifficulty and currDiff < picked.minDifficulty then continue end
         if picked.maxDifficulty and currDiff > picked.maxDifficulty then continue end
 
-        path = picked.snd
+        path   = picked.snd
+        author = picked.author or authorFromPath( path )
 
     end
 
-    return path, trackData
+    return path, trackData, author
 
 end
 

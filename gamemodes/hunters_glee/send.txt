@@ -56,6 +56,7 @@ gamemodes\hunters_glee\gamemode\modules\guilt\sh_innocenthalo.lua
 
 gamemodes\hunters_glee\gamemode\modules\deadplayerfx\cl_souls.lua
 gamemodes\hunters_glee\gamemode\modules\deadplayerfx\cl_deaddesaturation.lua
+gamemodes\hunters_glee\gamemode\modules\deadpositions\cl_deadpositions.lua
 
 gamemodes\hunters_glee\gamemode\modules\bonemaniphandler\cl_bonemanip.lua
 

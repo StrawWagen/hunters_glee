@@ -653,3 +653,5 @@ goes in a glee rebinding menu?
 -- shield on back eating bullets?
 -- get rid of progress bar for reviver
 -- ragdoll progress carrying between revives
+
+-- holstered escape flaregun goes on hip

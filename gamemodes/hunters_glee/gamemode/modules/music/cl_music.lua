@@ -1,6 +1,7 @@
 
 local defaultMusicVolume = 0.5
 local volumeVar = CreateClientConVar( "cl_huntersglee_musicvolume", "-1", true, false, "Glee music volume, -1 for default, " .. defaultMusicVolume, -1, 1 )
+local notifyVar = CreateClientConVar( "cl_huntersglee_musicnotify", "1", true, false, "Show the name and author of each song as it starts", 0, 1 )
 
 -- All active-sound state lives here; nil means nothing is playing.
 local currentSound     = nil
@@ -73,7 +74,63 @@ local function stopAndClear()
 
 end
 
-local function startSound( path, pitch, vol, offset, fadeInLength, fadeOutLength, entity, startFadeOutDist, endFadeOutDist )
+local function updateDistanceMult()
+    local ply = LocalPlayer()
+    if not IsValid( ply ) then return end
+
+    local dist  = ply:GetPos():Distance( currentSound.entity:GetPos() )
+    local range = math.max( currentSound.endFadeOutDist - currentSound.startFadeOutDist, 1 )
+    local t     = math.Clamp( ( dist - currentSound.startFadeOutDist ) / range, 0, 1 )
+    currentSound.distanceMult = 1 - t
+
+end
+
+-- the living hear it through their suit, the dead have no suit
+local function announceTrack( path, author, vol )
+    if not notifyVar:GetBool() then return end
+
+    -- the new sound's distanceMult starts at 1 until Think catches up
+    if currentSound.entity and IsValid( currentSound.entity ) then
+        updateDistanceMult()
+
+    end
+    if getEffectiveVol( vol ) <= 0 then return end
+
+    local fileName = string.GetFileFromFilename( path )
+    local alive = LocalPlayer():Health() > 0
+    local data
+
+    if alive then
+        local description = fileName
+        if author ~= "" then description = description .. "\nBY " .. author end
+
+        data = {
+            text = "INCOMING AUDIOSTREAM",
+            description = description,
+            onlyWhile = "alive",
+        }
+
+    else
+        local description = fileName
+        if author ~= "" then description = description .. "\nby " .. author end
+
+        data = {
+            text = "Incoming Music...",
+            description = description,
+            style = "soulthought",
+            onlyWhile = "dead",
+        }
+
+    end
+
+    data.replaceKey = "glee_music"
+    data.time = 10
+    huntersGlee_Notify( nil, data )
+
+end
+
+-- announce is false for restarts of the same song, see the recovery check in Think
+local function startSound( path, pitch, vol, offset, fadeInLength, fadeOutLength, entity, startFadeOutDist, endFadeOutDist, author, announce )
     if currentSound and IsValid( currentSound.channel ) then
         currentSound.channel:Stop()
 
@@ -97,6 +154,7 @@ local function startSound( path, pitch, vol, offset, fadeInLength, fadeOutLength
         startFadeOutDist = startFadeOutDist or 0,
         endFadeOutDist   = endFadeOutDist   or 0,
         distanceMult     = 1,
+        author           = author,
     }
 
     -- sound.PlayFile finds sounds relative to the garrysmod folder
@@ -148,12 +206,16 @@ local function startSound( path, pitch, vol, offset, fadeInLength, fadeOutLength
 
         channel:Play()
 
+        if announce then
+            announceTrack( path, author, vol )
+
+        end
     end )
 end
 
-local function beginFade( path, pitch, vol, fadeInLength, fadeOutLength, entity, startFadeOutDist, endFadeOutDist )
+local function beginFade( path, pitch, vol, fadeInLength, fadeOutLength, entity, startFadeOutDist, endFadeOutDist, author, announce )
     if not isPlaying() then
-        startSound( path, pitch, vol, 0, fadeInLength, fadeOutLength, entity, startFadeOutDist, endFadeOutDist )
+        startSound( path, pitch, vol, 0, fadeInLength, fadeOutLength, entity, startFadeOutDist, endFadeOutDist, author, announce )
         return
 
     end
@@ -174,6 +236,8 @@ local function beginFade( path, pitch, vol, fadeInLength, fadeOutLength, entity,
         entity           = entity,
         startFadeOutDist = startFadeOutDist,
         endFadeOutDist   = endFadeOutDist,
+        author           = author,
+        announce         = announce,
     }
 
 end
@@ -190,14 +254,8 @@ hook.Add( "Think", "glee_music_think", function()
 
         end
 
-        local ply = LocalPlayer()
-        if IsValid( ply ) then
-            local dist  = ply:GetPos():Distance( currentSound.entity:GetPos() )
-            local range = math.max( currentSound.endFadeOutDist - currentSound.startFadeOutDist, 1 )
-            local t     = math.Clamp( ( dist - currentSound.startFadeOutDist ) / range, 0, 1 )
-            currentSound.distanceMult = 1 - t
+        updateDistanceMult()
 
-        end
     end
 
     -- Fade-in: ramps volume up after a new sound begins (runs every frame)
@@ -228,7 +286,7 @@ hook.Add( "Think", "glee_music_think", function()
             local p = currentSound.pending
             endCurrentSong()
             if p then
-                startSound( p.path, p.pitch, p.vol, 0, p.fadeInLength, p.fadeOutLength, p.entity, p.startFadeOutDist, p.endFadeOutDist )
+                startSound( p.path, p.pitch, p.vol, 0, p.fadeInLength, p.fadeOutLength, p.entity, p.startFadeOutDist, p.endFadeOutDist, p.author, p.announce )
 
             end
         end
@@ -250,7 +308,7 @@ hook.Add( "Think", "glee_music_think", function()
     -- keep playing thru stopsound calls
     if not IsValid( currentSound.channel ) then
         local offset = now - currentSound.startTime
-        startSound( currentSound.path, currentSound.pitch, currentSound.vol, offset, 0, 0, currentSound.entity, currentSound.startFadeOutDist, currentSound.endFadeOutDist )
+        startSound( currentSound.path, currentSound.pitch, currentSound.vol, offset, 0, 0, currentSound.entity, currentSound.startFadeOutDist, currentSound.endFadeOutDist, currentSound.author, false )
         return
 
     end
@@ -264,7 +322,7 @@ hook.Add( "Think", "glee_music_think", function()
 
         if len > 0 and expectedPos < len - 1 then
             -- Stopped before the track ended; restart from estimated position
-            startSound( currentSound.path, currentSound.pitch, currentSound.vol, expectedPos, 0, 0, currentSound.entity, currentSound.startFadeOutDist, currentSound.endFadeOutDist )
+            startSound( currentSound.path, currentSound.pitch, currentSound.vol, expectedPos, 0, 0, currentSound.entity, currentSound.startFadeOutDist, currentSound.endFadeOutDist, currentSound.author, false )
 
         else
             -- Natural end (or indeterminate length); clear currentSound
@@ -293,6 +351,7 @@ end
 net.Receive( "glee_playmusic", function()
     local trackName     = net.ReadString()
     local path          = net.ReadString()
+    local author        = net.ReadString()
     local pitch         = net.ReadFloat()
     local vol           = net.ReadFloat()
     local fadeInLength  = net.ReadFloat()
@@ -335,7 +394,9 @@ net.Receive( "glee_playmusic", function()
 
     end
 
-    beginFade( path, pitch, vol, fadeInLength, fadeOutLength, entity, startFadeOutDist, endFadeOutDist )
+    -- raw paths are one off sound effects, only named tracks are songs
+    local announce = trackName ~= ""
+    beginFade( path, pitch, vol, fadeInLength, fadeOutLength, entity, startFadeOutDist, endFadeOutDist, author, announce )
 
 end )
 

@@ -11,6 +11,7 @@ AddCSLuaFile( "modules/modelscale/cl_modelscale.lua" )
 
 AddCSLuaFile( "modules/deadplayerfx/cl_souls.lua" )
 AddCSLuaFile( "modules/deadplayerfx/cl_deaddesaturation.lua" )
+AddCSLuaFile( "modules/deadpositions/cl_deadpositions.lua" )
 
 AddCSLuaFile( "modules/bonemaniphandler/cl_bonemanip.lua" )
 
@@ -124,6 +125,7 @@ include( "modules/lessons/sv_lessons.lua" )
 
 include( "modules/sv_modelspeaking.lua" )
 include( "modules/sv_fullload.lua" )
+include( "modules/deadpositions/sv_deadpositions.lua" )
 
 include( "modules/statuseffects/sv_statuseffects.lua" )
 
@@ -1069,10 +1071,7 @@ function GM:roundEnd()
 
 
     self.deadPlayers = {}
-    if self.QueueDeadPlayersSync then -- the tissue reclaimer's, its holders stop pointing at last round's deaths
-        self:QueueDeadPlayersSync()
-
-    end
+    self:QueueDeadPlayersSync() -- so tissue reclaimers stop pointing at last round's deaths
     self:SetRoundState( self.ROUND_LIMBO )
     timer.Simple( 0, function()
         if plyCount <= 0 then return end

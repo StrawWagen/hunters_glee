@@ -90,28 +90,68 @@ end
 GM.mapEscapeCountsCache = {}
 GM.spawnsetEscapeCountsCache = {}
 
-function GM:UpdateEscapeCounts()
-    -- has the map or spawnset been escaped?
-    local escaped = GetGlobalInt( "glee_EscapedCount" )
-    local remained = GetGlobalInt( "glee_RemainedCount" )
+-- once per round, a round cut short by a vote that then carries on mustn't count twice
+local function writeEscapeCounts( escaped, remained )
+    if GAMEMODE.escapeCountsWritten then return end
     -- if hasn't been escaped or died to, don't write anything
     if escaped + remained == 0 then return end
+
+    GAMEMODE.escapeCountsWritten = true
 
     local mapName = game.GetMap()
     local spawnSetName = GAMEMODE:GetSpawnSet()
 
     sql.Begin()
         addCounts( "glee_escape_by_map", "mapname", mapName, escaped, remained )
-        self.mapEscapeCountsCache[mapName] = nil
+        GAMEMODE.mapEscapeCountsCache[mapName] = nil
 
         addCounts( "glee_escape_by_spawnset", "spawnset", spawnSetName, escaped, remained )
-        self.spawnsetEscapeCountsCache[spawnSetName] = nil
+        GAMEMODE.spawnsetEscapeCountsCache[spawnSetName] = nil
 
     sql.Commit()
 
     GAMEMODE:SyncCurrEscapeMuls()
 
 end
+
+-- new round starting up, new territory, can now write escape counts for it
+hook.Add( "huntersglee_round_into_active", "glee_escapecounts_newround", function()
+    GAMEMODE.escapeCountsWritten = nil
+
+end )
+
+-- has the map or spawnset been escaped?
+function GM:UpdateEscapeCounts()
+    writeEscapeCounts( GetGlobalInt( "glee_EscapedCount" ), GetGlobalInt( "glee_RemainedCount" ) )
+
+end
+
+-- ============================================================
+-- Rounds the server voted out of
+
+-- this misery was hard enough to captivate people to survive 10 minutes
+local slogMinActiveTime = 10 * 60
+
+hook.Add( "MapVote_VoteStarted", "glee_escapecounts_votedout", function()
+    local state = GAMEMODE:RoundState()
+
+    -- round's over, counts are already tallied, setup just hasn't written them yet
+    if state == GAMEMODE.ROUND_LIMBO then
+        GAMEMODE:UpdateEscapeCounts()
+        return
+
+    end
+
+    if state ~= GAMEMODE.ROUND_ACTIVE then return end
+
+    local activeTime = CurTime() - ( GAMEMODE.termHunt_roundBegunTime or math.huge )
+    if activeTime < slogMinActiveTime then return end
+
+    -- the round never ended, so it counts as unbeaten
+    -- everyone remained, escaped players included
+    writeEscapeCounts( 0, player.GetCount() )
+
+end )
 
 -- ============================================================
 -- Reading

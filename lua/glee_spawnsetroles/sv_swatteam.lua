@@ -33,45 +33,45 @@ local roles = {
                 purchaseClips = twoOrThreeClips,
             },
         },
-    },
-    ["medic"] = {
-        base = "grunt",
-        models = modelsIn( "/group03m/" ),
-        ratio = 0.25,
-        minPlayers = 2,
-        startWeapons = { "glee_tissue_reclaimer" },
-        leastGuiltyFirst = true, -- the medic is important
-    },
-    ["tank"] = {
-        base = "grunt",
-        models = { "models/player/riot.mdl" },
-        ratio = 0.25,
-        startWeapons = {
-            {
-                class = "weapon_ar2",
-                purchaseClips = twoOrThreeClips,
+        variants = {
+            ["medic"] = {
+                models = modelsIn( "/group03m/" ),
+                ratio = 0.25,
+                minPlayers = 2,
+                startWeapons = { "glee_tissue_reclaimer" },
+                leastGuiltyFirst = true, -- the medic is important
             },
-            {
-                class = "weapon_shotgun",
-                purchaseClips = twoOrThreeClips,
+            ["tank"] = {
+                models = { "models/player/riot.mdl" },
+                ratio = 0.25,
+                startWeapons = {
+                    {
+                        class = "weapon_ar2",
+                        purchaseClips = twoOrThreeClips,
+                    },
+                    {
+                        class = "weapon_shotgun",
+                        purchaseClips = twoOrThreeClips,
+                    },
+                    "glee_backpackable_shield"
+                },
+                leastGuiltyFirst = true, -- fun role for nice players
             },
-            "glee_backpackable_shield"
-        },
-    },
-    ["sniper"] = {
-        base = "grunt",
-        models = { "models/player/urban.mdl" },
-        minPlayers = 3, -- balancing purposes
-        ratio = 0.25,
-        startWeapons = {
-            {
-                class = "weapon_crossbow",
-                purchaseClips = twoOrThreeClips,
+            ["sniper"] = {
+                models = { "models/player/urban.mdl" },
+                minPlayers = 3, -- balancing purposes
+                ratio = 0.25,
+                startWeapons = {
+                    {
+                        class = "weapon_crossbow",
+                        purchaseClips = twoOrThreeClips,
+                    },
+                    {
+                        class = "weapon_357",
+                        purchaseClips = twoOrThreeClips,
+                    }
+                },
             },
-            {
-                class = "weapon_357",
-                purchaseClips = twoOrThreeClips,
-            }
         },
     },
 }

@@ -126,9 +126,13 @@ do
     local loadedIn = IsValid( LocalPlayer() )
     local waitingChanges = {}
 
-    hook.Add( "InitPostEntity", "glee_statuseffects_applywaiting", function()
-        loadedIn = true
+    -- LocalPlayer() can still be NULL at InitPostEntity, so check it too
+    local function isReady()
+        return loadedIn and IsValid( LocalPlayer() )
 
+    end
+
+    local function applyWaiting()
         for ent, effectNames in pairs( waitingChanges ) do
             if not IsValid( ent ) then continue end
 
@@ -140,6 +144,23 @@ do
         end
         waitingChanges = {}
 
+    end
+
+    hook.Add( "InitPostEntity", "glee_statuseffects_applywaiting", function()
+        loadedIn = true
+        if isReady() then
+            applyWaiting()
+            return
+
+        end
+
+        timer.Create( "glee_statuseffects_applywaiting", 0, 0, function()
+            if not isReady() then return end
+
+            timer.Remove( "glee_statuseffects_applywaiting" )
+            applyWaiting()
+
+        end )
     end )
 
     hook.Add( "EntityNetworkedVarChanged", "glee_detecteffectadd", function( ent, varName, old, new )
@@ -151,7 +172,7 @@ do
 
         end
 
-        if not loadedIn then
+        if not isReady() then
             waitingChanges[ent] = waitingChanges[ent] or {}
             waitingChanges[ent][effectName] = true
             return

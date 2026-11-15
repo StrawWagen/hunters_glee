@@ -177,7 +177,7 @@ if CLIENT then
     local urgentHint = { urgent = true }
     local biggerBPM = 90
 
-    hook.Add( "huntersglee_cl_displayhint_poststack", "glee_rappel_HOLDSPACEDAMNIT", function( ply )
+    hook.Add( "huntersglee_cl_displayhint_prestack", "glee_rappel_HOLDSPACEDAMNIT", function( ply )
         if not IsValid( ply ) then return end
         if not ply:GetNWBool( "glee_IsRappelling", false ) then return end
         if ply:GetNWInt( "glee_RappellReeledInCount", 0 ) >= 150 then return end

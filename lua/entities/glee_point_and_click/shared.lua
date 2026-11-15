@@ -30,6 +30,8 @@ ENT.CostPerAccel = 1
 
 ENT.CostVehicleExitInit = 200 -- Cost to rip someone out of a vehicle if they are in one BEFORE the grab starts.
 ENT.CostInnocentEscapeHeliRider = 5000 -- Cost to rip an innocent player out of the escape heli
+ENT.GuiltInnocentEscapeHeliRider = 1 -- days of persistent guilt for it, same as a kill
+ENT.GuiltEscapeHeliRider = 0.1 -- days of persistent guilt for ripping out anyone else, except those who spawn infernal
 ENT.CostVehicleExit = 50 -- Cost to auto-rip someone out of a vehicle while already grabbed.
 
 ENT.CostHighColor = Color( 255, 100, 100, 255 )
@@ -505,6 +507,18 @@ function ENT:Place()
     local target = self:GetCurrTarget()
     local score = self:GetGivenScore()
 
+    local ripGuilt
+    if target.InVehicle and target:InVehicle() and terminator_Extras.gleeVehicles.IsInEscapeSeat( target ) then
+        local _, targetsGuiltData = GAMEMODE:GetPlysGuiltLevel( target )
+        if GAMEMODE:IsInnocent( target ) then
+            ripGuilt = self.GuiltInnocentEscapeHeliRider
+
+        elseif not targetsGuiltData.alwaysTakingTheDeal then
+            ripGuilt = self.GuiltEscapeHeliRider
+
+        end
+    end
+
     if target.InVehicle and target:InVehicle() then
         target:ExitVehicle() -- Get out!
 
@@ -530,6 +544,11 @@ function ENT:Place()
     if owner.GivePlayerScore and score then
         owner:GivePlayerScore( score )
         GAMEMODE:sendPurchaseConfirm( owner, score )
+
+    end
+
+    if ripGuilt and GAMEMODE:PersistentGuiltIsEnabled() then
+        GAMEMODE:IncrementPersistentGuilt( owner, ripGuilt, "You tore them from their escape...\nYou feel... Guilty?" )
 
     end
 

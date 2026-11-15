@@ -44,6 +44,12 @@ local settingsCategories = {
                 desc = "Change the music's volume. Default is -1 which translates to 0.5",
             },
             {
+                cvar = "cl_huntersglee_musicnotify",
+                type = "check",
+                prettyName = "Song notices",
+                desc = "Show the name and author of each song as it starts.",
+            },
+            {
                 cvar = "cl_huntersglee_guiscale",
                 type = "slider",
                 min = 0.2,

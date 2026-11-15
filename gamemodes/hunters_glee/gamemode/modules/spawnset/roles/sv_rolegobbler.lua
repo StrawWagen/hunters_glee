@@ -31,6 +31,12 @@ end
 -- ran inside each role file, with roles keyed by name
 function GM:GobbleRoles( roles )
     for name, data in pairs( roles ) do
+        -- a reused name quietly replaces the first file's role, in every misery using it
+        -- a late gobble is a dev re-running a file, replacing is the point there
+        if self.gleeRoles[name] and not self.GobbledRoles then
+            ErrorNoHaltWithStack( "GLEE: Two role files define '" .. name .. "', rename one" )
+
+        end
         self.gleeRoles[name] = data
 
     end

@@ -40,6 +40,7 @@ include( "modules/banking/cl_bankconsent.lua" )
 
 include( "modules/deadplayerfx/cl_souls.lua" )
 include( "modules/deadplayerfx/cl_deaddesaturation.lua" )
+include( "modules/deadpositions/cl_deadpositions.lua" )
 
 include( "modules/bonemaniphandler/cl_bonemanip.lua" )
 

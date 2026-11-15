@@ -235,7 +235,7 @@ if SERVER then
             if not IsValid( ply ) then return end
             huntersGlee_NotifyLivingAndDead( player.GetAll(), {
                 text = "ATM INBOUND",
-                description = ply:Nick() .. "'s OVERPOWERING wealth is\nmost likely to blame...",
+                description = ply:Nick() .. "'s GLUTTONOUS wealth is\nmost likely to blame...",
                 kind = "good",
                 time = 6,
             }, {
