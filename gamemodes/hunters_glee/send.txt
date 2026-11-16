@@ -104,7 +104,6 @@ gamemodes\hunters_glee\gamemode\modules\spawnset\core\sh_spawnsetlifecyclebase.l
 gamemodes\hunters_glee\gamemode\modules\spawnset\core\sh_spawnsetregistry.lua
 gamemodes\hunters_glee\gamemode\modules\spawnset\core\sh_spawnsetcommands.lua
 gamemodes\hunters_glee\gamemode\modules\spawnset\runtime\sh_spawnpoolutil.lua
-gamemodes\hunters_glee\gamemode\modules\spawnset\runtime\sh_spawnsetcontent.lua
 gamemodes\hunters_glee\gamemode\modules\spawnset\runtime\sh_sethelpers.lua
 gamemodes\hunters_glee\gamemode\modules\spawnset\bosses\sh_bosshandler.lua
 gamemodes\hunters_glee\gamemode\modules\spawnset\vote\cl_spawnsetvote.lua

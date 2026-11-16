@@ -470,7 +470,7 @@ local mySpawnSet = {
     description = "It's my misery, it's custom!",   -- Description, best used as a "hint" that teases the spawnset's content
     author = "Me",                                  -- Optional, credited in the vote tooltip
     
-    -- Use "default" to borrow the default misery's values, or "default*2" for multipliers, see Example B
+    -- Use "default" to borrow the default misery's values, or "default*2" for multipliers, see Example C
     -- Difficulty is very dynamic, so it's best to use "default" or multipliers of it,
     -- unless you know what you're doing. 
     difficultyPerMin = "default",
@@ -505,7 +505,27 @@ local mySpawnSet = {
 table.insert( GLEE_SPAWNSETS, mySpawnSet )
 ```
 
-#### Spawnset Example B: Borrowing from other miseries
+#### Spawnset Example B: Importing another misery's hunters
+
+```lua
+-- lua/glee_spawnsets/sv_wraiths_again.lua
+
+local wraithsAgain = {
+    name = "wraiths_again",
+    prettyName = "Wraiths Again",
+    description = "They never really left.",
+    importedMiserySpawns = {
+        { name = "hunters_glee_wraiths" },              -- every one of its .spawns entries, as is
+    },
+}
+
+table.insert( GLEE_SPAWNSETS, wraithsAgain )
+```
+
+Only the `.spawns` come along.
+Everything else still comes from `default`, Example C borrows the rest too.
+
+#### Spawnset Example C: Borrowing from other miseries
 
 Anything a misery leaves out comes from `default`.
 Any other misery can be borrowed from the same way, by name.
@@ -554,7 +574,7 @@ Two entries with the same name is an error, even when they come from different m
 It's never in the vote, and can't be picked.
 `default` is one.
 
-#### Spawnset Example C: Functions on spawn!
+#### Spawnset Example D: Functions on spawn!
 
 ```lua
 -- lua/glee_spawnsets/sv_the_true_machine.lua
@@ -596,7 +616,7 @@ local trueHorror = {
 table.insert( GLEE_SPAWNSETS, trueHorror )
 ```
 
-#### Spawnset Example D: Lifecycle
+#### Spawnset Example E: Lifecycle
 
 - `Activate` - the misery changed TO this spawnset
 - `OnRemove` - the misery changed AWAY from this spawnset
@@ -675,7 +695,7 @@ My solution? Dynamic values.
 
 Number values can be:
 - `nil` - Use the `default` misery's value, see [lua/glee_spawnsets/sv_default.lua](lua/glee_spawnsets/sv_default.lua)
-- `"some_misery"` or `"some_misery*N"` - Borrow that misery's value, or N times it, see Example B
+- `"some_misery"` or `"some_misery*N"` - Borrow that misery's value, or N times it, see Example C
 - `{ min, max }` - Random value in range is chosen at the start of each round.
 - `{ n }` - A one member table, same as writing the number directly
 - `function( spawnSet )` - Called each round, return a number, `{ min, max }` or `{ n }`
@@ -703,7 +723,7 @@ Sounds must be in a subfolder of `sound/`, so a sound's path always has a `/`.
 | `description` | ✅ | Description shown to players, best used as a hint that teases what's coming |
 | `spawns` | ✅ | THE indexed table of potential spawns ( see below ). Optional with `importedMiserySpawns` |
 | `author` | ❌ | Who made it, shown under the description as "by ..." |
-| `importedMiserySpawns` | ❌ | Copies other miseries' `.spawns` entries in, see Example B |
+| `importedMiserySpawns` | ❌ | Copies other miseries' `.spawns` entries in, see Examples B and C |
 | `chanceToBeVotable` | ❌ | Percent chance to appear in the !rtm vote, 0-100, accepts float. nil is always |
 | `chanceToBeVotableWhenHard` | ❌ | Used instead while this misery still challenges the host, judged by its escape multiplier. Set it higher, so it sticks around while it's fun and fades out once they've mastered it |
 | `easy` | ❌ | Marks this as a beginner misery. Tagged `(EASY)` in the !rtm vote, and while an easy one is active the vote prefers offering other easy ones. Also soft-caps its escape reward multiplier |
@@ -713,8 +733,8 @@ Sounds must be in a subfolder of `sound/`, so a sound's path always has a `/`.
 | `roundStartSound` | ❌ | Sound on round start |
 | `roundEarlyStartSound` | ❌ | Played 10s before the round starts, only if `roundStartSound` is "" |
 | `roundEndSound` | ❌ | Sound on round end, when nobody escaped |
-| `Activate` | ❌ | Called when this becomes the active misery ( see Example D ) |
-| `OnRemove` | ❌ | Called when the misery changes away from this ( see Example D ) |
+| `Activate` | ❌ | Called when this becomes the active misery ( see Example E ) |
+| `OnRemove` | ❌ | Called when the misery changes away from this ( see Example E ) |
 
 <details>
 <summary>Advanced fields, best left alone until you know you need them</summary>

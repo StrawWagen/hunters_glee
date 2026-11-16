@@ -48,7 +48,7 @@ local exampleSet = {
     },
 }
 
--- runs when the misery changes to this one, see "Spawnset Example D: Lifecycle" in the README
+-- runs when the misery changes to this one, see "Spawnset Example E: Lifecycle" in the README
 -- function exampleSet:Activate()
 --     GAMEMODE.setHelpers.overridePlayerModel( self, function( ply ) return "models/player/group03/male_07.mdl" end )
 -- end
