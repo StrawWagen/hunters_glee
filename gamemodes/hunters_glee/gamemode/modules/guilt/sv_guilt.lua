@@ -1,7 +1,6 @@
 
 -- keep track of who's pissed off who this round
 
-util.AddNetworkString( "glee_persistguiltchanged" )
 util.AddNetworkString( "glee_dealtpvpdamage" )
 util.AddNetworkString( "glee_homicidallygleeful" )
 
@@ -456,29 +455,24 @@ function GM:IncrementPersistentGuilt( ply, add, msg )
 
     local newPersistentGuilt = math.max( oldPersistentGuilt, currentTime ) + daysToAdd
 
-    -- guilt is the timestamp they are guilty until, so anything before now is just
-    -- zero; writing it would store a number that reads as nothing, and announce a
-    -- change the player cannot see
-    if newPersistentGuilt < currentTime then return end
+    -- guilt is the timestamp they are guilty until, so anything before now is just zero
+    if newPersistentGuilt < currentTime then
+        if oldPersistentGuilt <= currentTime then return end -- already zero, nothing they'd see change
+        newPersistentGuilt = currentTime
+
+    end
 
     ply:SetPData( "glee_persistentguilt", newPersistentGuilt )
 
     local inDaysOld = getGuiltInDays( oldPersistentGuilt )
     local inDays = getGuiltInDays( newPersistentGuilt )
 
-    -- GetPlysGuiltLevel reads the networked days, so this is before they change
-    local oldLevel = self:GetPlysGuiltLevel( ply )
     ply:SetNWFloat( "glee_persistentguilt_days", inDays )
 
     if developerVar:GetBool() then
         permaPrint( ply, "now has " .. inDays .. " days of guilt..." )
 
     end
-
-    net.Start( "glee_persistguiltchanged" )
-        net.WriteFloat( inDaysOld )
-        net.WriteFloat( inDays )
-    net.Send( ply )
 
     local kind
     local extraFlashes
@@ -487,7 +481,8 @@ function GM:IncrementPersistentGuilt( ply, add, msg )
     if newPersistentGuilt > oldPersistentGuilt then
         kind = "alert"
 
-        local level, levelData = self:GetPlysGuiltLevel( ply )
+        local oldLevel = getGuiltLevel( inDaysOld )
+        local level, levelData = getGuiltLevel( inDays )
         if level > oldLevel then
             extraFlashes = guiltTierFlashes
             flashInterval = guiltTierFlashInterval
@@ -495,7 +490,7 @@ function GM:IncrementPersistentGuilt( ply, add, msg )
         end
 
         if not msg then
-            if level > oldLevel then -- play transition message if this teir has one
+            if level > oldLevel and levelData.message then -- play transition message if this teir has one
                 msg = levelData.message
 
             elseif inDays <= 1 then -- first day of guilt

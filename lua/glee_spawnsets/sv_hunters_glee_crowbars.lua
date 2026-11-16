@@ -28,37 +28,36 @@ local function setFistsAsCrowbar( _spawnset, npc )
 end
 
 local defaultSpawnSet = {
-    name = "hunters_glee_crowbars", -- unique name
+    name = "hunters_glee_crowbars",
     prettyName = "Crowbar's Glee",
     description = "Why would you ever want the Terminators to run out of crowbars?",
-    difficultyPerMin = "default", -- difficulty per minute
-    waveInterval = "default", -- time between spawn waves
-    diffBumpWhenWaveKilled = "default", -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
-    startingBudget = "default", -- so budget isnt 0
-    spawnCountPerDifficulty = "default*4", -- max of ten at 10 minutes
+    difficultyPerMin = "default",
+    waveInterval = "default",
+    diffBumpWhenWaveKilled = "default",
+    startingBudget = "default",
+    spawnCountPerDifficulty = "default*4",
     startingSpawnCount = "default",
-    maxSpawnCount = "default*2", -- hard cap on count
+    maxSpawnCount = "default*2",
     maxSpawnDist = "default",
     roundEndSound = "default",
-    roundStartSound = "default", -- the horn
+    roundStartSound = "default",
     roundEarlyStartSound = "default",
-    genericSpawnerRate = "default", -- speeds up or slows down the crate/beartrap/etc spawner
+    genericSpawnerRate = "default",
     chanceToBeVotable = 1,
     spawns = {
         {
             hardRandomChance = nil,
-            name = "terminator", -- unique name
+            name = "terminator",
             prettyName = "A Crowbar Slingin' Terminator",
-            class = "terminator_nextbot_snail", -- class spawned
+            class = "terminator_nextbot_snail",
             spawnType = "hunter",
             difficultyCost = { 10 },
-            countClass = "terminator_nextbot_snail*", -- class COUNTED, uses findbyclass
-            minCount = { 2 }, -- will ALWAYS maintain this count
-            preSpawnedFuncs = { giveCrowbar }, -- this can be nil
+            countClass = "terminator_nextbot_snail*",
+            minCount = { 2 },
+            preSpawnedFuncs = { giveCrowbar },
             postSpawnedFuncs = { setFistsAsCrowbar },
         },
     }
 }
 
--- put the spawnset IN the global table to be gobbled
 table.insert( GLEE_SPAWNSETS, defaultSpawnSet )

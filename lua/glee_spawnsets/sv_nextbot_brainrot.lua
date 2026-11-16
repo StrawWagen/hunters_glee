@@ -1,4 +1,3 @@
-
 local hasSanic = scripted_ents.GetStored( "npc_sanic" )
 local hasObunga = scripted_ents.GetStored( "npc_obunga" )
 
@@ -6,16 +5,16 @@ if not ( hasSanic or hasObunga ) then return end -- you are safe
 
 
 local set = {
-    name = "nextbot_brainrot", -- unique name
+    name = "nextbot_brainrot",
     prettyName = "PNG Nextbot Brainrot",
     description = "Sanic, and/or Obunga.\nObjectively shallower gameplay.\nYou happy now?",
-    difficultyPerMin = { 100 / 10, 1000 / 10 }, -- difficulty per minute
-    waveInterval = { 60, 120 }, -- time between spawn waves
-    diffBumpWhenWaveKilled = 50, -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
-    startingBudget = "default", -- so budget isnt 0
+    difficultyPerMin = { 100 / 10, 1000 / 10 },
+    waveInterval = { 60, 120 },
+    diffBumpWhenWaveKilled = 50,
+    startingBudget = "default",
     spawnCountPerDifficulty = { 0.05 },
     startingSpawnCount = { 0, 2 },
-    maxSpawnCount = 50, -- hard cap on count
+    maxSpawnCount = 50,
     maxSpawnDist = "default",
     roundEndSound = "default",
     roundStartSound = "default",
@@ -37,14 +36,14 @@ if hasSanic then
     end
 
     local npc = {
-        hardRandomChance = { 15, 75 }, -- chance this is even checked
+        hardRandomChance = { 15, 75 },
         name = "brainrot_sanic",
         prettyName = "A Sanic",
         class = "npc_sanic",
         spawnType = "hunter",
         difficultyCost = { 10 },
         maxCount = { 50 },
-        postSpawnedFuncs = { randomizeVar }, -- this can be nil
+        postSpawnedFuncs = { randomizeVar },
     }
     table.insert( set.spawns, npc )
     table.insert( set.resourcesAdded, "174117071" )
@@ -63,14 +62,14 @@ if hasObunga then
 
     end
     local npc = {
-        hardRandomChance = { 15, 75 }, -- chance this is even checked
+        hardRandomChance = { 15, 75 },
         name = "brainrot_obunga",
         prettyName = "An Obunga",
         class = "npc_obunga",
         spawnType = "hunter",
         difficultyCost = { 15 },
         maxCount = { 50 },
-        postSpawnedFuncs = { randomizeVar }, -- this can be nil
+        postSpawnedFuncs = { randomizeVar },
     }
     table.insert( set.spawns, npc )
     table.insert( set.resourcesAdded, "2803406998" )
@@ -90,5 +89,4 @@ function set:Activate()
     end )
 end
 
--- put the spawnset IN the global table to be gobbled
 table.insert( GLEE_SPAWNSETS, set )

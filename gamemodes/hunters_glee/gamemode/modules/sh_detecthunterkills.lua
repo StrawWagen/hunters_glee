@@ -20,8 +20,8 @@ if SERVER then
         local attackersKillCount = attacker:GetNW2Int( "glee_hunterkills", 0 )
         attackersKillCount = attackersKillCount + 1
 
-        hook.Run( "huntersglee_plykilledhunter", attacker, killed )
         attacker:SetNW2Int( "glee_hunterkills", attackersKillCount )
+        hook.Run( "huntersglee_plykilledhunter", attacker, killed )
 
     end )
 end

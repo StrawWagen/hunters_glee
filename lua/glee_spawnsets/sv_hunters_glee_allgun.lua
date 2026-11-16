@@ -32,13 +32,13 @@ end
 
 
 local set = {
-    name = "hunters_glee_allgun", -- unique name
+    name = "hunters_glee_allgun",
     prettyName = "Heavily Armed Glee",
     description = "Say hello to their little friends.",
-    difficultyPerMin = "default*1.5", -- difficulty per minute
-    waveInterval = "default", -- time between spawn waves
-    diffBumpWhenWaveKilled = { 10, 25 }, -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
-    startingBudget = "default", -- so budget isnt 0
+    difficultyPerMin = "default*1.5",
+    waveInterval = "default",
+    diffBumpWhenWaveKilled = { 10, 25 },
+    startingBudget = "default",
     spawnCountPerDifficulty = "default",
     startingSpawnCount = 5,
     maxSpawnCount = 10,
@@ -49,86 +49,85 @@ local set = {
     spawns = {
         {
             hardRandomChance = nil,
-            name = "terminator_pistol", -- unique name
+            name = "terminator_pistol",
             prettyName = "A Pistoling Terminator",
-            class = "terminator_nextbot_snail", -- class spawned
+            class = "terminator_nextbot_snail",
             spawnType = "hunter",
             difficultyCost = { 1, 3 },
-            countClass = "terminator_nextbot_snail*", -- class COUNTED, uses findbyclass
+            countClass = "terminator_nextbot_snail*",
             postSpawnedFuncs = { givePistol },
         },
         {
             hardRandomChance = nil,
-            name = "terminator_smg", -- unique name
+            name = "terminator_smg",
             prettyName = "A Submachinegunning Terminator",
-            class = "terminator_nextbot_snail", -- class spawned
+            class = "terminator_nextbot_snail",
             spawnType = "hunter",
             difficultyCost = { 2, 4 },
-            countClass = "terminator_nextbot_snail*", -- class COUNTED, uses findbyclass
+            countClass = "terminator_nextbot_snail*",
             postSpawnedFuncs = { giveSMG },
         },
         {
             hardRandomChance = nil,
-            name = "terminator_ar2", -- unique name
+            name = "terminator_ar2",
             prettyName = "A Pulse Riflin' Terminator",
-            class = "terminator_nextbot_snail", -- class spawned
+            class = "terminator_nextbot_snail",
             spawnType = "hunter",
             difficultyCost = { 6, 12 },
-            countClass = "terminator_nextbot_snail*", -- class COUNTED, uses findbyclass
+            countClass = "terminator_nextbot_snail*",
             postSpawnedFuncs = { giveAR2 },
         },
         {
             hardRandomChance = nil,
-            name = "terminator_357", -- unique name
+            name = "terminator_357",
             prettyName = "A Revolver-Wielding Terminator",
-            class = "terminator_nextbot_snail", -- class spawned
+            class = "terminator_nextbot_snail",
             spawnType = "hunter",
             difficultyCost = { 6, 12 },
-            countClass = "terminator_nextbot_snail*", -- class COUNTED, uses findbyclass
+            countClass = "terminator_nextbot_snail*",
             postSpawnedFuncs = { give357 },
         },
         {
             hardRandomChance = { 0, 20 },
-            name = "terminator_xbow", -- unique name
+            name = "terminator_xbow",
             prettyName = "A Bolti'n Terminator",
-            class = "terminator_nextbot_snail", -- class spawned
+            class = "terminator_nextbot_snail",
             spawnType = "hunter",
             difficultyCost = { 50, 150 },
-            countClass = "terminator_nextbot_snail*", -- class COUNTED, uses findbyclass
+            countClass = "terminator_nextbot_snail*",
             postSpawnedFuncs = { giveXBOW },
         },
         {
             hardRandomChance = { 5, 75 },
-            name = "terminator_rpg", -- unique name
+            name = "terminator_rpg",
             prettyName = "A Rocket Propelled Terminator",
-            class = "terminator_nextbot_snail", -- class spawned
+            class = "terminator_nextbot_snail",
             spawnType = "hunter",
             difficultyCost = { 25, 75 },
-            countClass = "terminator_nextbot_snail*", -- class COUNTED, uses findbyclass
+            countClass = "terminator_nextbot_snail*",
             postSpawnedFuncs = { giveRPG },
         },
         {
             hardRandomChance = { 5, 20 },
-            name = "terminator_ar3", -- unique name
+            name = "terminator_ar3",
             prettyName = "An AR3-Annihilating Terminator",
-            class = "terminator_nextbot_snail", -- class spawned
+            class = "terminator_nextbot_snail",
             spawnType = "hunter",
             difficultyCost = { 50, 150 },
-            countClass = "terminator_nextbot_snail*", -- class COUNTED, uses findbyclass
+            countClass = "terminator_nextbot_snail*",
             postSpawnedFuncs = { giveAR3 },
         },
         {
             hardRandomChance = { 5, 20 },
-            name = "terminator_taucannon", -- unique name
+            name = "terminator_taucannon",
             prettyName = "A Tau-Blasting Terminator",
-            class = "terminator_nextbot_snail", -- class spawned
+            class = "terminator_nextbot_snail",
             spawnType = "hunter",
             difficultyCost = { 100, 200 },
-            countClass = "terminator_nextbot_snail*", -- class COUNTED, uses findbyclass
+            countClass = "terminator_nextbot_snail*",
             postSpawnedFuncs = { giveTauCannon },
         },
     }
 }
 
--- put the spawnset IN the global table to be gobbled
 table.insert( GLEE_SPAWNSETS, set )

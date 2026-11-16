@@ -26,7 +26,7 @@ local function prefixOf( fileName )
 end
 
 -- clients ask for their files long before the first round sets up, so these go out at load,
--- not alongside the include pass in GobbleSpawnsets. bad prefixes are left for that pass to complain about
+-- not alongside the include pass in GobbleSpawnSets. bad prefixes are left for that pass to complain about
 local filesAtLoad = file.Find( "glee_spawnsets/*.lua", "LUA" )
 for _, fileName in ipairs( filesAtLoad ) do
     local prefix = prefixOf( fileName )
@@ -37,9 +37,13 @@ for _, fileName in ipairs( filesAtLoad ) do
 
 end
 
--- includes every spawnset file this realm should run, then registers what they defined.
--- clientside files are only listed here, the client includes those itself
-function GM:GobbleSpawnsets()
+--[[---------------------------------------------------------
+    GM:GobbleSpawnSets
+    @desc Includes every spawnset file this realm should run.
+    Clientside files are only listed, in self.validClientSpawnsetFiles, the client includes those itself.
+    @return: Every misery the files defined, as they wrote them, for GM:BakeSpawnSets.
+--]]---------------------------------------------------------
+function GM:GobbleSpawnSets()
     GLEE_SPAWNSETS = {}
     self.validClientSpawnsetFiles = {}
 
@@ -64,19 +68,15 @@ function GM:GobbleSpawnsets()
         end
     end
 
-    local count = 0
-    for _, spawnSet in pairs( GLEE_SPAWNSETS ) do
-        if self:RegisterSpawnSet( spawnSet ) then
-            count = count + 1
-
-        end
-    end
+    local gobbled = GLEE_SPAWNSETS
     GLEE_SPAWNSETS = nil
 
-    return count
+    return gobbled
 
 end
 
+
+-- spawnset syncing begin
 
 local function writeOptionalFloat( num )
     net.WriteBool( num ~= nil )
@@ -86,7 +86,7 @@ local function writeOptionalFloat( num )
 end
 
 -- the only spawnset fields clients get, everything else stays on the server.
--- cl_spawnsetgobbler's readPublicSet mirrors this, field for field
+-- cl_spawnsetloader's readPublicSet mirrors this, field for field
 local function writePublicSet( spawnSet )
     net.WriteString( spawnSet.name )
     net.WriteString( spawnSet.prettyName )
@@ -100,12 +100,12 @@ local function writePublicSet( spawnSet )
 end
 
 -- clients get the files to include(), and the public fields of every spawnset we registered
-util.AddNetworkString( "glee_spawnsetgobble" )
+util.AddNetworkString( "glee_spawnsetload" )
 
 function GM:UpdateSpawnsetsFor( plyOrPlys )
     if not self.validClientSpawnsetFiles then return end
 
-    net.Start( "glee_spawnsetgobble" )
+    net.Start( "glee_spawnsetload" )
         net.WriteUInt( table.Count( self.validClientSpawnsetFiles ), 16 )
         for fileName, _ in pairs( self.validClientSpawnsetFiles ) do
             net.WriteString( fileName )
@@ -136,12 +136,12 @@ function GM:TellClientsSpawnsetActivated( setName )
 end
 
 
-hook.Add( "glee_post_spawnsetgobble", "glee_spawnsetgobbler_resend", function()
+hook.Add( "glee_post_spawnsetload", "glee_spawnsetloader_resend", function()
     GAMEMODE:UpdateSpawnsetsFor( player.GetAll() )
 
 end )
 
-hook.Add( "glee_full_load", "glee_spawnsetgobbler_send", function( ply )
+hook.Add( "glee_full_load", "glee_spawnsetloader_send", function( ply )
     GAMEMODE:UpdateSpawnsetsFor( ply )
 
 end )

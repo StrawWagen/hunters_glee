@@ -1,18 +1,17 @@
-
 local set = {
-    name = "infernal_glee_easy", -- unique name
+    name = "infernal_glee_easy",
 }
 if SERVER then -- NavEFlags no exist on client
     local setSv = {
         prettyName = "Mildly Gleeful Inferno",
         description = "It burns, it burns! IT BURNS!",
-        difficultyPerMin = "default*0.5", -- difficulty per minute
-        waveInterval = "default*0.35", -- time between spawn waves
-        diffBumpWhenWaveKilled = "default*4", -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
-        startingBudget = "default", -- so budget isnt 0
+        difficultyPerMin = "default*0.5",
+        waveInterval = "default*0.35",
+        diffBumpWhenWaveKilled = "default*4",
+        startingBudget = "default",
         spawnCountPerDifficulty = "default*0.5",
         startingSpawnCount = "default*5",
-        maxSpawnCount = { 25 }, -- hard cap on count
+        maxSpawnCount = { 25 },
         maxSpawnDist = "default*0.15", -- spawn close, these cant pathfind
         minSpawnDist = "default*0.15",
         roundEndSound = "default",
@@ -24,18 +23,18 @@ if SERVER then -- NavEFlags no exist on client
         easy = true,
         spawns = {
             {
-                name = "infernal_ambler", -- unique name
+                name = "infernal_ambler",
                 prettyName = "An Infernal Ambler",
-                class = "terminator_nextbot_infernalskeleton_slow", -- class spawned
+                class = "terminator_nextbot_infernalskeleton_slow",
                 spawnType = "hunter",
                 spawnSameZ = true,
                 preferredEFlags = GAMEMODE.NavEFlags.UNDER_SKY,
                 difficultyCost = 2,
             },
             {
-                name = "infernal_heckler_RAREEARLY", -- unique name
+                name = "infernal_heckler_RAREEARLY",
                 prettyName = "An Infernal Heckler",
-                class = "terminator_nextbot_infernalskeleton", -- class spawned
+                class = "terminator_nextbot_infernalskeleton",
                 spawnType = "hunter",
                 spawnAbove = true,
                 difficultyCost = 125,
@@ -49,9 +48,9 @@ if SERVER then -- NavEFlags no exist on client
                 end },
             },
             {
-                name = "infernal_heckler", -- unique name
+                name = "infernal_heckler",
                 prettyName = "An Infernal Heckler",
-                class = "terminator_nextbot_infernalskeleton", -- class spawned
+                class = "terminator_nextbot_infernalskeleton",
                 spawnType = "hunter",
                 spawnSameZ = true,
                 preferredEFlags = GAMEMODE.NavEFlags.UNDER_SKY,
@@ -67,9 +66,9 @@ if SERVER then -- NavEFlags no exist on client
                 end },
             },
             {
-                name = "infernal_heckler_RARENUMEROUS", -- unique name
+                name = "infernal_heckler_RARENUMEROUS",
                 prettyName = "An Infernal Heckler",
-                class = "terminator_nextbot_infernalskeleton", -- class spawned
+                class = "terminator_nextbot_infernalskeleton",
                 spawnType = "hunter",
                 spawnSameZ = true,
                 preferredEFlags = GAMEMODE.NavEFlags.UNDER_SKY,
@@ -84,9 +83,9 @@ if SERVER then -- NavEFlags no exist on client
             },
             {
                 hardRandomChance = 5,
-                name = "the_infernal_rumbler_RAREEARLY", -- unique name
+                name = "the_infernal_rumbler_RAREEARLY",
                 prettyName = "The Infernal Rumbler",
-                class = "terminator_nextbot_infernalskeleton_large", -- class spawned
+                class = "terminator_nextbot_infernalskeleton_large",
                 spawnType = "hunter",
                 spawnAbove = true,
                 difficultyCost = { 1500, 2500 }, -- super rare early one, just added in here for fun
@@ -99,9 +98,9 @@ if SERVER then -- NavEFlags no exist on client
             },
             {
                 hardRandomChance = 15,
-                name = "the_infernal_rumbler", -- unique name
+                name = "the_infernal_rumbler",
                 prettyName = "The Infernal Rumbler",
-                class = "terminator_nextbot_infernalskeleton_large", -- class spawned
+                class = "terminator_nextbot_infernalskeleton_large",
                 spawnType = "hunter",
                 spawnSameZ = true,
                 preferredEFlags = GAMEMODE.NavEFlags.UNDER_SKY,
@@ -292,5 +291,4 @@ function set:Activate()
     end
 end
 
--- put the spawnset IN the global table to be gobbled
 table.insert( GLEE_SPAWNSETS, set )

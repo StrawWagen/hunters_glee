@@ -1,8 +1,8 @@
 
 local GM = GM or GAMEMODE
 
--- Every registered misery, keyed by name.
--- The server holds the full definitions. Clients only hold the public fields sv_spawnsetgobbler sends,
+-- Every registered misery, keyed by name, sv_spawnsetregistry registers them.
+-- The server holds the full definitions. Clients only hold the public fields sv_spawnsetloader sends,
 -- with their cl_/sh_ file's functions merged on top, and are empty until that first send arrives.
 GM.RegisteredSpawnSets = GM.RegisteredSpawnSets or {}
 

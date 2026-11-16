@@ -56,19 +56,9 @@ function PLAYER:SetupDataTables()
 end
 
 
+-- the rest comes from the misery's .defaultWeapons, see sv_spawnweapons
 function PLAYER:Loadout()
-    local camera = self.Player:Give( "gmod_camera" )
-    function camera:AllowsAutoSwitchTo() -- annoying
-        return false
-
-    end
-    camera.AutoSwitchTo = false
-
     self.Player:Give( "termhunt_shove" )
-    self.Player:Give( "termhunt_radio" )
-    self.Player:Give( "weapon_crowbar" )
-
-    self.Player:SelectWeapon( "weapon_crowbar" )
 
 end
 

@@ -283,6 +283,9 @@ divine intervention description change ( encase yourself within a weak shell of 
 -- insufficient power for flashlight hint -- done
 -- additional weapon pickup fails with carryable on back -- done
 
+-- shield on back eating bullets? --done
+-- ragdoll progress carrying between revives -- done
+
 
 -- make radio a purchasable item, moving all global/prox chat stuff to settings menu
 -- gateway to expensive items, airdropped in
@@ -650,8 +653,12 @@ goes in a glee rebinding menu?
 -- text can advance by itself when you are shift tabbed 
 
 
--- shield on back eating bullets?
--- get rid of progress bar for reviver
--- ragdoll progress carrying between revives
+-- get rid of progress bar for reviver 
 
 -- holstered escape flaregun goes on hip
+
+-- bank hacker item that lets you see the roll of current misery in new menu, see a bunch of raw gamemode data
+
+-- custom mixed misery rules
+-- rotatingWaves, makes every wave come from a different misery
+-- optional, don't error if this misery doesn't exist 

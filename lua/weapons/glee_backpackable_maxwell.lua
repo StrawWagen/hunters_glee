@@ -54,12 +54,7 @@ function SWEP:PurrHeal( amount )
 	local owner = self:GetOwner()
 	if not IsValid( owner ) then return end
 
-	if owner:Health() < owner:GetMaxHealth() then
-		local newHealth = math.min( owner:Health() + amount, owner:GetMaxHealth() )
-		owner:SetHealth( newHealth )
-		owner.glee_LastSetHealthReason = "glee_maxwell_regen"
-
-	end
+	owner:AddHealth( amount, "glee_maxwell_regen" )
 
 	owner:EmitSound( "hunters_glee/purr.ogg", 80 )
 	self.NextHeal = CurTime() + 8

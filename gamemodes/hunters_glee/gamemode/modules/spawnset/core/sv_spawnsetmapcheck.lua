@@ -57,7 +57,7 @@ local developer = GetConVar( "developer" )
 -- one with no spawns at all meant it
 local function findUnsuitedSpawnsets()
     if not GAMEMODE.glee_NavpatcherFinished then return end
-    if not GAMEMODE.GobbledSpawnsets then return end
+    if not GAMEMODE.SpawnSetsLoaded then return end
 
     local unsuited = {}
     for setName, spawnSet in pairs( GAMEMODE:GetSpawnSets() ) do
@@ -94,7 +94,7 @@ hook.Add( "glee_navpatcher_finish", "glee_spawnsetmapcheck", function()
 
 end )
 
-hook.Add( "glee_post_spawnsetgobble", "glee_spawnsetmapcheck", findUnsuitedSpawnsets )
+hook.Add( "glee_post_spawnsetload", "glee_spawnsetmapcheck", findUnsuitedSpawnsets )
 
 hook.Add( "glee_post_new_spawnset", "glee_spawnsetmapcheck", warnIfActiveIsUnsuited )
 

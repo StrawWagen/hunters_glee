@@ -2,17 +2,15 @@
 -- huntersglee_misery_setto combines_glee_squadtest
 
 local set = {
-    name = "combines_glee_onesquad", -- unique name
+    name = "combines_glee_onesquad",
     prettyName = "The Long Patrol",
     description = "One squad, forever.",
-    difficultyPerMin = "default",
     waveInterval = { 10 }, -- refill dead members quickly
-    diffBumpWhenWaveKilled = "default",
     startingSpawnCount = 6,
     maxSpawnCount = 6,
     hordeSpawn = true, -- spawn them together, so they form one squad
-    roundEndSound = "music/hl2_song6.mp3",
-    roundStartSound = "ambient/alarms/scanner_alert_pass1.wav",
+    roundEndSound = "combines_glee",
+    roundStartSound = "combines_glee",
     chanceToBeVotable = 0.1,
     spawns = {
         -- minCount bypasses the budget, so the squad's always full

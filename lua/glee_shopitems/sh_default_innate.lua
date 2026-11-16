@@ -29,11 +29,7 @@ if SERVER then
                 if ply ~= owner then return end
                 if ply:Health() <= 0 then return end
 
-                local amount = 1
-
-                local newHealth = math.Clamp( owner:Health() + amount, 0, owner:GetMaxHealth() )
-                owner:SetHealth( newHealth )
-                owner.glee_LastSetHealthReason = "glee_superior_metabolism"
+                owner:AddHealth( 1, "glee_superior_metabolism" )
 
             end )
         end
@@ -1140,6 +1136,7 @@ end
 
 
 if CLIENT then
+    -- makes chameleon apply to viewmodel hands too, credit Mathias
     GAMEMODE:RegisterStatusEffect( "chameleon", function( self, owner )
         if LocalPlayer() ~= owner then return end
 

@@ -1,13 +1,12 @@
-
 local terminatorSpawnSet = {
-    name = "hunters_glee_wraiths", -- unique name
+    name = "hunters_glee_wraiths",
     prettyName = "Terminator Wraiths",
     description = "Tons of cloaking terminators, are you up for a real challenge?",
-    difficultyPerMin = "default", -- difficulty per minute
-    waveInterval = "default", -- time between spawn waves
-    diffBumpWhenWaveKilled = "default", -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
-    startingBudget = "default", -- so budget isnt 0
-    spawnCountPerDifficulty = "default", -- max of ten at 10 minutes
+    difficultyPerMin = "default",
+    waveInterval = "default",
+    diffBumpWhenWaveKilled = "default",
+    startingBudget = "default",
+    spawnCountPerDifficulty = "default",
     startingSpawnCount = "default",
     maxSpawnCount = "default",
     maxSpawnDist = "default",

@@ -7,7 +7,7 @@ local function readOptionalFloat()
 
 end
 
--- mirrors sv_spawnsetgobbler's writePublicSet, field for field
+-- mirrors sv_spawnsetloader's writePublicSet, field for field
 local function readPublicSet()
     local name = net.ReadString()
     local prettyName = net.ReadString()
@@ -83,7 +83,7 @@ end
 
 local nextGobble = 0
 
-net.Receive( "glee_spawnsetgobble", function()
+net.Receive( "glee_spawnsetload", function()
     if nextGobble > CurTime() then return end
     nextGobble = CurTime() + 0.1
 
@@ -121,7 +121,7 @@ net.Receive( "glee_spawnsetgobble", function()
     GLEE_SPAWNSETS = nil
 
     permaPrint( "GLEE: CL Gobbled " .. setCount .. " spawnsets..." )
-    hook.Run( "glee_post_spawnsetgobble" )
+    hook.Run( "glee_post_spawnsetload" )
 
     if activeSetName == "" then return end
     activate( activeSetName )

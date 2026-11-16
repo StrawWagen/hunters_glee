@@ -14,6 +14,7 @@ SWEP.ViewModelFOV = 54
 SWEP.UseHands = true
 
 SWEP.HoldType = "slam"
+SWEP.GleeFlashlightInHand = true -- no barrel, the flashlight's held in the off hand
 SWEP.Weight = 1
 
 local entMeta = FindMetaTable( "Entity" )

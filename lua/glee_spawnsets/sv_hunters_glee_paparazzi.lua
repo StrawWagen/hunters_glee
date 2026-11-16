@@ -4,16 +4,16 @@ local function giveCamera( _, hunter )
 end
 
 local set = {
-    name = "hunters_glee_paparazzi", -- unique name
+    name = "hunters_glee_paparazzi",
     prettyName = "Paparazzi's Glee",
     description = "Oh god, they're taking photos of us!",
-    difficultyPerMin = "default*3", -- difficulty per minute
-    waveInterval = "default", -- time between spawn waves
-    diffBumpWhenWaveKilled = { 15, 25 }, -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
-    startingBudget = "default", -- so budget isnt 0
+    difficultyPerMin = "default*3",
+    waveInterval = "default",
+    diffBumpWhenWaveKilled = { 15, 25 },
+    startingBudget = "default",
     spawnCountPerDifficulty = "default",
     startingSpawnCount = "default",
-    maxSpawnCount = { 40 }, -- hard cap on count
+    maxSpawnCount = { 40 },
     maxSpawnDist = "default",
     roundEndSound = "default",
     roundStartSound = "default",
@@ -21,18 +21,17 @@ local set = {
     spawns = {
         {
             hardRandomChance = nil,
-            name = "paparazzi", -- unique name
+            name = "paparazzi",
             prettyName = "Paparazzi",
-            class = "terminator_nextbot_fakeply", -- class spawned
+            class = "terminator_nextbot_fakeply",
             spawnType = "hunter",
             difficultyCost = 2,
-            countClass = "terminator_nextbot*", -- class COUNTED, uses findbyclass
-            minCount = { 0 }, -- will ALWAYS maintain this count
-            maxCount = { 20 }, -- will never exceed this count, uses findbycount
+            countClass = "terminator_nextbot*",
+            minCount = { 0 },
+            maxCount = { 20 },
             postSpawnedFuncs = { giveCamera },
         },
     }
 }
 
--- put the spawnset IN the global table to be gobbled
 table.insert( GLEE_SPAWNSETS, set )

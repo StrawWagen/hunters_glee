@@ -200,6 +200,8 @@ end
 
 
 local silent = {
+    mowingDownEnemies = {
+    },
     death = {
     },
     panicBuildingScreams = {
@@ -215,6 +217,8 @@ GM:AddModelSounds( "corpse1", silent ) -- ditto
 GM:AddModelSounds( "charple", silent ) -- ditto
 
 local skeleton = {
+    mowingDownEnemies = {
+    },
     death = {
         "hunters_glee/skeleton_death_sound.mp3" -- lmao
     },
@@ -229,6 +233,33 @@ GM:AddModelSounds( "skeleton", skeleton )
 
 local generic = {
     onRoundStart = {
+    },
+    mowingDownEnemies = { -- models without their own list fall back to these, give them an empty one to stay quiet
+        "vo/npc/male01/gotone01.wav",
+        "vo/npc/male01/gotone02.wav",
+        "vo/npc/male01/likethat.wav",
+        "vo/npc/male01/fantastic01.wav",
+        "vo/npc/male01/fantastic02.wav",
+        "vo/npc/male01/finally.wav",
+        "vo/episode_1/npc/male01/cit_kill01.wav",
+        "vo/episode_1/npc/male01/cit_kill02.wav",
+        "vo/episode_1/npc/male01/cit_kill03.wav",
+        "vo/episode_1/npc/male01/cit_kill04.wav",
+        "vo/episode_1/npc/male01/cit_kill05.wav",
+        "vo/episode_1/npc/male01/cit_kill06.wav",
+        "vo/episode_1/npc/male01/cit_kill07.wav",
+        "vo/episode_1/npc/male01/cit_kill08.wav",
+        "vo/episode_1/npc/male01/cit_kill09.wav",
+        "vo/episode_1/npc/male01/cit_kill10.wav",
+        "vo/episode_1/npc/male01/cit_kill11.wav",
+        "vo/episode_1/npc/male01/cit_kill12.wav",
+        "vo/episode_1/npc/male01/cit_kill13.wav",
+        "vo/episode_1/npc/male01/cit_kill14.wav",
+        "vo/episode_1/npc/male01/cit_kill15.wav",
+        "vo/episode_1/npc/male01/cit_kill16.wav",
+        "vo/episode_1/npc/male01/cit_kill17.wav",
+        "vo/episode_1/npc/male01/cit_kill18.wav", -- female01 stops at 18, 19 and 20 would be silent on female models
+
     },
     death = {
         "player/death1.wav",
@@ -303,6 +334,8 @@ local generic = {
 GM:AddModelSounds( "generic", generic )
 
 local zombie = {
+    mowingDownEnemies = {
+    },
     death = {
         "npc/zombie/zombie_die1.wav",
         "npc/zombie/zombie_die2.wav",
@@ -332,6 +365,15 @@ GM:AddModelSounds( "zombie", zombie )
 GM:AddModelSoundAlias( "skeleton", "zombie" )
 
 local police = {
+    mowingDownEnemies = {
+        "npc/metropolice/vo/chuckle.wav",
+        "npc/metropolice/vo/classifyasdbthisblockready.wav",
+        "npc/metropolice/vo/finalverdictadministered.wav",
+        "npc/metropolice/vo/firingtoexposetarget.wav",
+        "npc/metropolice/vo/shotsfiredhostilemalignants.wav",
+        "npc/metropolice/vo/suspectisbleeding.wav",
+
+    },
     death = {
         "npc/metropolice/die1.wav",
         "npc/metropolice/die2.wav",
@@ -367,6 +409,22 @@ local police = {
 GM:AddModelSounds( "police", police )
 
 local combine = {
+    onRoundStart = {
+        "npc/combine_soldier/vo/readyweaponshostilesinbound.wav",
+        "npc/combine_soldier/vo/stayalertreportsightlines.wav",
+        "npc/combine_soldier/vo/teamdeployedandscanning.wav",
+        "npc/combine_soldier/vo/weaponsoffsafeprepforcontact.wav",
+
+    },
+    mowingDownEnemies = {
+        "npc/combine_soldier/vo/confirmsectornotsterile.wav",
+        "npc/combine_soldier/vo/executingfullresponse.wav",
+        "npc/combine_soldier/vo/heavyresistance.wav",
+        "npc/combine_soldier/vo/sectorisnotsecure.wav",
+        "npc/combine_soldier/vo/targetcompromisedmovein.wav",
+        "npc/combine_soldier/vo/weareinaninfestationzone.wav",
+
+    },
     death = {
         "npc/combine_soldier/die1.wav",
         "npc/combine_soldier/die2.wav",
@@ -398,6 +456,16 @@ local combine = {
 GM:AddModelSounds( "combine_", combine )
 
 local barney = {
+    mowingDownEnemies = {
+        "vo/npc/barney/ba_laugh01.wav",
+        "vo/npc/barney/ba_laugh02.wav",
+        "vo/npc/barney/ba_laugh03.wav",
+        "vo/npc/barney/ba_laugh04.wav",
+        "vo/npc/barney/ba_ohyeah.wav",
+        "vo/npc/barney/ba_bringiton.wav",
+        "vo/npc/barney/ba_gotone.wav",
+
+    },
     death = {
         "vo/npc/barney/ba_pain06.wav",
         "vo/npc/barney/ba_pain07.wav",
@@ -420,6 +488,7 @@ local barney = {
 
     },
     panicReleaseScreamsChased = {
+        "vo/k_lab/ba_headhumper02.wav",
         "vo/npc/barney/ba_hereitcomes.wav",
         "vo/npc/barney/ba_getdown.wav",
         "vo/npc/barney/ba_getoutofway.wav",
@@ -442,6 +511,8 @@ GM:AddModelSounds( "group", citizen )
 GM:AddModelSoundAlias( "mossman", "group" ) -- mossman doesnt have any good sounds :(
 
 local kleiner = {
+    mowingDownEnemies = {
+    },
     death = {
         "vo/k_lab/kl_ahhhh.wav",
         "vo/k_lab/kl_dearme.wav",
@@ -469,6 +540,8 @@ local kleiner = {
 GM:AddModelSounds( "kleiner", kleiner )
 
 local alyx = {
+    mowingDownEnemies = {
+    },
     death = {
         "vo/npc/alyx/uggh02.wav",
         "vo/npc/alyx/hurt04.wav",
@@ -511,6 +584,12 @@ local alyx = {
 GM:AddModelSounds( "alyx", alyx )
 
 local breen = {
+    mowingDownEnemies = {
+        "vo/citadel/br_laugh01.wav",
+        "vo/citadel/br_mock06.wav",
+        "vo/citadel/br_mock09.wav",
+
+    },
     death = {
         "vo/citadel/br_no.wav",
         "vo/citadel/br_youneedme.wav",
@@ -545,6 +624,8 @@ local eli = {
         "vo/outland_11a/silo/eli_silo_happeningagain03.wav",
 
     },
+    mowingDownEnemies = {
+    },
     death = {
         "vo/citadel/eli_alyx01.wav",
         "vo/citadel/eli_alyxsweetheart.wav",
@@ -574,6 +655,8 @@ local eli = {
         "vo/outland_11a/silo/eli_silo_useit02.wav",
         "vo/k_lab/eli_behindyou.wav",
         "vo/novaprospekt/eli_nevermindme01.wav",
+        "vo/k_lab/eli_behindyou.wav",
+        "vo/novaprospekt/eli_nevermindme01.wav",
 
     }
 }
@@ -585,6 +668,8 @@ local gman = {
         "vo/citadel/gman_exit02.wav",
         "vo/outland_02/junction/gman_mono34.wav",
 
+    },
+    mowingDownEnemies = {
     },
     death = {
         "vo/citadel/gman_exit10.wav",
@@ -600,8 +685,6 @@ local gman = {
     },
     panicReleaseScreamsChased = {
         "vo/citadel/gman_exit03.wav",
-        "vo/k_lab/eli_behindyou.wav",
-        "vo/novaprospekt/eli_nevermindme01.wav",
 
     }
 }
@@ -613,6 +696,34 @@ local grigori = {
         "vo/ravenholm/bucket_guardwell.wav",
         "vo/ravenholm/bucket_patience.wav",
         "vo/ravenholm/grave_stayclose.wav",
+        "vo/ravenholm/cartrap_better.wav",
+        "vo/ravenholm/cartrap_iamgrig.wav",
+        "vo/ravenholm/engage05.wav",
+        "vo/ravenholm/engage06.wav",
+        "vo/ravenholm/engage07.wav",
+        "vo/ravenholm/firetrap_vigil.wav",
+        "vo/ravenholm/grave_follow.wav",
+        "vo/ravenholm/grave_stayclose.wav",
+        "vo/ravenholm/monk_kill02.wav",
+        "vo/ravenholm/shotgun_advice.wav",
+        "vo/ravenholm/shotgun_theycome.wav",
+
+    },
+    mowingDownEnemies = {
+        "vo/ravenholm/madlaugh01.wav",
+        "vo/ravenholm/madlaugh02.wav",
+        "vo/ravenholm/madlaugh03.wav",
+        "vo/ravenholm/madlaugh04.wav",
+        "vo/ravenholm/monk_kill01.wav",
+        "vo/ravenholm/monk_kill03.wav",
+        "vo/ravenholm/monk_kill04.wav",
+        "vo/ravenholm/monk_kill05.wav",
+        "vo/ravenholm/monk_kill06.wav",
+        "vo/ravenholm/monk_kill07.wav",
+        "vo/ravenholm/monk_kill08.wav",
+        "vo/ravenholm/monk_kill09.wav",
+        "vo/ravenholm/monk_kill10.wav",
+        "vo/ravenholm/monk_kill11.wav",
 
     },
     death = {
@@ -662,6 +773,35 @@ local css = {
         "bot/whos_the_man.wav",
         "bot/you_heard_the_man_lets_go.wav",
         "bot/yea_baby.wav",
+        "bot/tag_them_and_bag_them.wav",
+
+    },
+    mowingDownEnemies = {
+        "bot/a_bunch_of_them.wav",
+        "bot/and_thats_how_its_done.wav",
+        "bot/do_not_mess_with_me.wav",
+        "bot/i_got_more_where_that_came_from.wav",
+        "bot/its_a_party.wav",
+        "bot/oh_yea.wav",
+        "bot/oh_yea2.wav",
+        "bot/owned.wav",
+        "bot/ruined_his_day.wav",
+        "bot/thats_the_way_this_is_done.wav",
+        "bot/theres_too_many_of_them.wav",
+        "bot/theres_too_many.wav",
+        "bot/they_never_knew_what_hit_them.wav",
+        "bot/theyre_all_over_the_place2.wav",
+        "bot/theyre_everywhere2.wav",
+        "bot/this_is_my_house.wav",
+        "bot/too_many2.wav",
+        "bot/very_nice.wav",
+        "bot/who_wants_some_more.wav",
+        "bot/whoo.wav",
+        "bot/whoo2.wav",
+        "bot/whos_the_man.wav",
+        "bot/yea_baby.wav",
+        "bot/yesss.wav",
+        "bot/yesss2.wav",
 
     },
     death = {

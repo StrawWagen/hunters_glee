@@ -1,15 +1,14 @@
-
 local set = {
-    name = "infernal_glee_titans", -- unique name
+    name = "infernal_glee_titans",
     prettyName = "The Infernal Titans",
     description = "They're huge, on fire, and bad to the bone...",
-    difficultyPerMin = "default*3", -- difficulty per minute
-    waveInterval = "default*0.35", -- time between spawn waves
-    diffBumpWhenWaveKilled = "default*4", -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
-    startingBudget = "default", -- so budget isnt 0
+    difficultyPerMin = "default*3",
+    waveInterval = "default*0.35",
+    diffBumpWhenWaveKilled = "default*4",
+    startingBudget = "default",
     spawnCountPerDifficulty = "default",
     startingSpawnCount = { 5 },
-    maxSpawnCount = { 40 }, -- hard cap on count
+    maxSpawnCount = { 40 },
     maxSpawnDist = "default*0.5", -- spawn close, these cant pathfind
     roundEndSound = "default",
     roundEarlyStartSound = "hunters_glee/music/alexscott/glee_inferno_titans.mp3",
@@ -18,9 +17,9 @@ local set = {
     spawns = {
         {
             hardRandomChance = 50,
-            name = "infernalskele", -- unique name
+            name = "infernalskele",
             prettyName = "The Infernal Heckler",
-            class = "terminator_nextbot_infernalskeleton", -- class spawned
+            class = "terminator_nextbot_infernalskeleton",
             spawnType = "hunter",
             spawnSameZ = true,
             difficultyCost = 4,
@@ -34,9 +33,9 @@ local set = {
         },
         {
             hardRandomChance = 25,
-            name = "infernalrumbler", -- unique name
+            name = "infernalrumbler",
             prettyName = "The Infernal Rumbler",
-            class = "terminator_nextbot_infernalskeleton_large", -- class spawned
+            class = "terminator_nextbot_infernalskeleton_large",
             spawnType = "hunter",
             spawnSameZ = true,
             difficultyCost = 4,
@@ -49,9 +48,9 @@ local set = {
             },
         },
         {
-            name = "infernalskele_big_EARLY", -- unique name
+            name = "infernalskele_big_EARLY",
             prettyName = "An Infernal Sentinel",
-            class = "terminator_nextbot_infernalskeleton_big", -- class spawned
+            class = "terminator_nextbot_infernalskeleton_big",
             spawnType = "hunter",
             spawnSameZ = true,
             preferredEFlags = GAMEMODE.NavEFlags.UNDER_SKY,
@@ -60,9 +59,9 @@ local set = {
         },
         {
             hardRandomChance = 75,
-            name = "infernalskele_big", -- unique name
+            name = "infernalskele_big",
             prettyName = "An Infernal Sentinel",
-            class = "terminator_nextbot_infernalskeleton_big", -- class spawned
+            class = "terminator_nextbot_infernalskeleton_big",
             spawnType = "hunter",
             spawnSameZ = true,
             preferredEFlags = GAMEMODE.NavEFlags.UNDER_SKY,
@@ -71,9 +70,9 @@ local set = {
         },
         {
             hardRandomChance = 50,
-            name = "infernalskele_big_LATE", -- unique name
+            name = "infernalskele_big_LATE",
             prettyName = "An Infernal Sentinel",
-            class = "terminator_nextbot_infernalskeleton_big", -- class spawned
+            class = "terminator_nextbot_infernalskeleton_big",
             spawnType = "hunter",
             spawnSameZ = true,
             preferredEFlags = GAMEMODE.NavEFlags.UNDER_SKY,
@@ -82,5 +81,4 @@ local set = {
     }
 }
 
--- put the spawnset IN the global table to be gobbled
 table.insert( GLEE_SPAWNSETS, set )

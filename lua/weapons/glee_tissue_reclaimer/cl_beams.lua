@@ -264,7 +264,8 @@ end
 local vmBeamAttachment = "muzzle"
 local wmBeamAttachment = "core"
 local vmProngTips = { "fork1t", "fork2t" }
-local wmProngTips = { "fork1t", "fork2t", "fork3t" }
+-- w_physics has no attachments but core, so the world model has no tips, its rays leave from the beam start instead
+local noProngTips = {}
 
 -- seeing through owner's eyes, with their viewmodel, ours or a spectated player's
 local function isSeenInFirstPerson( owner )
@@ -299,17 +300,26 @@ local function getKitAttachment( wep, vm, name )
 
 end
 
--- BeamStart and ProngTips are found once a frame, every view that frame sees the kit in the same place
+-- BeamStart and ProngTips are found once a frame, for the viewmodel and the world model apart
+-- a frame draws more than one view, eg water reflections, which can see the world model while our eyes see the viewmodel
 -- what they return is shared until the next frame, don't change it
 
 -- where the beams leave the kit, and the kit's angles, for holding beams relative to it
 function SWEP:BeamStart()
+    local vm = self:SeenViewModel()
+    local starts = self.glee_beamStarts
+    if not starts then
+        starts = { vm = {}, wm = {} }
+        self.glee_beamStarts = starts
+
+    end
+
+    local cached = vm and starts.vm or starts.wm
     local frame = FrameNumber()
-    if self.glee_beamStartFrame == frame then return self.glee_beamStartPos, self.glee_beamStartAng end
-    self.glee_beamStartFrame = frame
+    if cached.frame == frame then return cached.pos, cached.ang end
+    cached.frame = frame
 
     local pos, ang
-    local vm = self:SeenViewModel()
     if vm then
         pos, ang = getKitAttachment( self, vm, vmBeamAttachment )
 
@@ -319,13 +329,16 @@ function SWEP:BeamStart()
 
     end
 
-    self.glee_beamStartPos, self.glee_beamStartAng = pos, ang
+    cached.pos, cached.ang = pos, ang
     return pos, ang
 
 end
 
 -- where the rays leave, empty if none of the tips could be found
 function SWEP:ProngTips()
+    local vm = self:SeenViewModel()
+    if not vm then return noProngTips end
+
     local tips = self.glee_prongTips
     local frame = FrameNumber()
     if tips and self.glee_prongTipsFrame == frame then return tips end
@@ -334,11 +347,8 @@ function SWEP:ProngTips()
     tips = tips or {}
     self.glee_prongTips = tips
 
-    local vm = self:SeenViewModel()
-    local names = vm and vmProngTips or wmProngTips
-
     local count = 0
-    for _, name in ipairs( names ) do
+    for _, name in ipairs( vmProngTips ) do
         local pos = getKitAttachment( self, vm, name )
         if pos then
             count = count + 1

@@ -67,11 +67,11 @@ hunters_glee/
 
 ## Contributing
 
-Hunter's Glee is designed to be extensible. The two main ways to add content are **shop items** and **spawnsets**.
+Hunter's Glee is designed to be extensible. The two main ways to add content are **shop items** and **spawnsets** (Miseries).
 
 ### Adding Shop Items
 
-Shop items are defined in `lua/glee_shopitems/`. Files are auto-loaded based on their prefix:
+Shop items are defined in [lua/glee_shopitems/](lua/glee_shopitems/). Files are auto-loaded based on their prefix:
 - `sh_` - Shared (runs on both client and server)
 - `sv_` - Server only
 - `cl_` - Client only
@@ -439,7 +439,7 @@ also register with no funcs at all ( like channel_666 ), if you just want a flag
 ### Adding Spawnsets
 
 Spawnsets(Miseries) are the #1 way to change up the hunt.
-They're defined in `lua/glee_spawnsets/` and auto-loaded.
+They're defined in [lua/glee_spawnsets/](lua/glee_spawnsets/) and auto-loaded.
 Third party addons can define their own spawnsets, they just have to be in the right spot.
 
 Files are auto-loaded based on their prefix, same as shop items:
@@ -456,6 +456,9 @@ So a `cl_` file needs nothing but a `name` matching the spawnset it's adding to.
 A spawnset that only exists clientside is dropped, because it can never be picked.
 It complains in console, and errors outright with `developer 1`.
 
+The quickest start is copying [lua/glee_spawnsets/sv_default_example.lua](lua/glee_spawnsets/sv_default_example.lua).
+Every field is in the Reference tables at the end.
+
 #### Spawnset Example A: Your first spawnset
 
 ```lua
@@ -467,7 +470,7 @@ local mySpawnSet = {
     description = "It's my misery, it's custom!",   -- Description, best used as a "hint" that teases the spawnset's content
     author = "Me",                                  -- Optional, credited in the vote tooltip
     
-    -- Use "default" to inherit base values, or "default*2" for multipliers
+    -- Use "default" to borrow the default misery's values, or "default*2" for multipliers, see Example B
     -- Difficulty is very dynamic, so it's best to use "default" or multipliers of it,
     -- unless you know what you're doing. 
     difficultyPerMin = "default",
@@ -487,7 +490,7 @@ local mySpawnSet = {
         },
         {
             hardRandomChance = { 5, 20 },              -- x% chance to be considered, rolled multiple times per wave, more if there's more budget
-            name = "hunter",
+            name = "scary_hunter",
             prettyName = "A Scary Hunter",
             class = "terminator_nextbot",              -- Spawns the "overcharged" terminator
             spawnType = "hunter",
@@ -502,87 +505,56 @@ local mySpawnSet = {
 table.insert( GLEE_SPAWNSETS, mySpawnSet )
 ```
 
-#### Spawnset Values
+#### Spawnset Example B: Borrowing from other miseries
 
-I had a problem when developing this.
-Each round was feeling the same,
-and I was updating spawnset values all over the place.
-My solution? Dynamic values.
+Anything a misery leaves out comes from `default`.
+Any other misery can be borrowed from the same way, by name.
 
-Number values can be:
-- `"nil"` -- Use base spawnset value
-- `"default"` - Explicity use base spawnset value
-- `"default*N"` - Multiply base value by N
-- `{ min, max }` - Random value in range is chosen at the start of each round.
-- `{ n }` - A one member table, same as writing the number directly
-- `function( spawnSet )` - Called each round, return any of the above and it gets parsed too
-- `Direct number` - 8, 10, 11.25, etc ( not recommended, random value in range is much more fun )
+```lua
+-- lua/glee_spawnsets/sv_the_haunted_machine.lua
 
-#### Spawnset Fields
+local hauntedMachine = {
+    name = "the_haunted_machine",
+    prettyName = "The Haunted Machine",
+    description = "Something followed them out of the factory.",
+    maxSpawnCount = "hunters_glee*1.5",                 -- 1.5x Hunter's Glee's cap
+    waveInterval = "hunters_glee_wraiths",              -- the wraiths' pacing
+    roundEndSound = "hunters_glee_wraiths",             -- and their round end sound
+    importedMiserySpawns = {
+        {
+            name = "hunters_glee",                      -- every one of its .spawns entries...
+            overrides = {
+                terminator_doppleganger = NULL,         -- ...except this one
+            },
+        },
+        {
+            name = "hunters_glee_wraiths",
+            overrides = {
+                terminator_invisible = {                -- change only these fields
+                    prettyName = "A Haunted Terminator",
+                    difficultyNeeded = { 50, 100 },     -- only shows up after 5 - 10 minutes
+                    minCount = NULL,                    -- NULL unsets a field, so it's no longer always kept around
+                },
+            },
+        },
+    },
+}
 
-| Field | Required | Description |
-|-------|----------|-------------|
-| `name` | ✅ | Unique identifier, should match filename |
-| `prettyName` | ✅ | Display name for voting/UI |
-| `description` | ✅ | Description shown to players |
-| `author` | ❌ | Who made it, shown under the description as "by ..." |
-| `spawns` | ✅ | THE indexed table of potential spawns ( see below ) |
-| `difficultyPerMin` | ❌ | How fast difficulty scales |
-| `waveInterval` | ❌ | Time between spawn waves, skipped if all hunters are cleared |
-| `diffBumpWhenWaveKilled` | ❌ | Difficulty boost when wave cleared |
-| `startingBudget` | ❌ | Initial spawn budget |
-| `spawnCountPerDifficulty` | ❌ | Spawns per difficulty point |
-| `startingSpawnCount` | ❌ | Initial spawn count |
-| `maxSpawnCount` | ❌ | Hard cap on enemy count |
-| `maxSpawnDist` | ❌ | Soft cap on the dynamically marching spawn distance, only broken if there's nowhere hidden to spawn enemies |
-| `roundStartSound` | ❌ | Sound on round start |
-| `roundEndSound` | ❌ | Sound on round end |
-| `roundEarlyStartSound` | ❌ | Alt start sound, played 10s before start, only plays if roundStartSound is "" |
-| `genericSpawnerRate` | ❌ | Multiplier on procedural spawn delays ( crates, flareguns, beartraps, skulls, gas, vehicles, etc ). Bigger for slower spawns, smaller for faster |
-| `chanceToBeVotable` | ❌ | Percent chance to appear in !rtm vote, 0-100, accepts float |
-| `chanceToBeVotableWhenHard` | ❌ | Percent chance to appear in !rtm when this misery's escape multiplier is 1x or more, for making spawnsets fade into the background when they no longer challenge the host |
-| `easy` | ❌ | Marks this as a beginner misery. Tagged `(EASY)` in the !rtm vote, and while an easy one is active the vote prefers offering other easy ones. Also soft-caps its escape reward multiplier |
-| `hordeSpawn` | ❌ | `true` Always reuses the last good spawn area, stacking hunter spawns into a horde. Defaults to true for waves of 8+ spawns, `false` disables it even then. |
-| `slotSizes` | ❌ | How many hunters fit in each `.slots` slot, eg `{ miniboss = 1 }`. Takes the usual number values, or `"minutes*N"` / `"difficulty*N"` to grow with the round, `"minutes*0.1"` is one slot every 10 minutes, `"difficulty*0.01"` is one every 100 difficulty. Without it every slot holds 1 |
-| `Activate` | ❌ | Called when this becomes the active misery ( see Spawnset Lifecycle ) |
-| `OnRemove` | ❌ | Called when the misery changes away from this ( see Spawnset Lifecycle ) |
+table.insert( GLEE_SPAWNSETS, hauntedMachine )
+```
 
-#### .spawns Entries
+Imported entries go after the misery's own `.spawns`, in the order they're listed.
+A misery needs `.spawns`, `.importedMiserySpawns`, or both.
+Two entries with the same name is an error, even when they come from different miseries. Rename an imported one with an override.
+`NULL` only means something in overrides, it drops the entry or unsets the field, like it was never written.
+`optional = true` on an import skips it when that misery isn't installed, eg one from another addon.
+`needsEveryMisery = true` on the misery itself makes it quietly not load instead, when any misery it borrows or imports from isn't installed.
 
-| Field | Required | Description |
-|-------|----------|-------------|
-| `name` | ✅ | Unique identifier for this spawn entry |
-| `prettyName` | ✅ | Display name |
-| `class` | ✅ | Entity class to spawn |
-| `spawnType` | ✅ | Spawning algorithm type, only supports `"hunter"` presently |
-| `difficultyCost` | ✅ | Budget cost to spawn, spawns are checked from highest to lowest cost |
-| `difficultyNeeded` | ❌ | Difficulty threshold needed to start spawning, good if you want difficult enemies to all start spawning suddenly |
-| `difficultyStopAfter` | ❌ | Difficulty threshold to stop spawning past, the mirror of `difficultyNeeded`, for enemies that should drop out of the pool later on |
-| `countClass` | ❌ | Class pattern for .min/max count counting ( `*` = wildcard ). Falls back to `class` if nil |
-| `minCount` | ❌ | Minimum maintained count, hard minimum, bypasses budget |
-| `maxCount` | ❌ | Maximum allowed count |
-| `slots` | ❌ | Slots this takes up, eg `{ "miniboss" }`. Only spawns while every one of its slots has room, see the spawnset's `slotSizes` |
-| `cooldown` | ❌ | Seconds this has to stay gone before it spawns again. A wave can still spawn several, but no more until they've all died or despawned, then the cooldown starts |
-| `hardRandomChance` | ❌ | Percent chance to even be considered, works since spawns are checked from highest to lowest cost. Rolled multiple times per wave, more if there's more budget |
-| `spawnSameZ` | ❌ | Prefer spawning at roughly the same height as a player |
-| `spawnAbove` | ❌ | Prefer spawning above the highest player |
-| `spawnBelow` | ❌ | Prefer spawning below the lowest player |
-| `preferredEFlags` | ❌ | Prefer nav areas carrying all of these Extra Navmesh flags ( see sv_navmeshcategorizer ) |
-| `firmPreferredEFlags` | ❌ | `true` stops `preferredEFlags` from bending, the entry never spawns outside those areas, and is never picked on maps without them |
-| `canSpawnOnMap` | ❌ | `function(spawnData)`, asked once a map, after the navmesh is categorized. Return false and the entry never spawns on this map, eg the map's too cramped for it. A misery none of whose entries can spawn is left out of the vote, and can't be nominated. If it's already active, one !rtm is enough to start a vote |
-| `areaFilter` | ❌ | `function(spawnData, area)`, return false and the entry won't spawn in that nav area. Pair it with `canSpawnOnMap`, an entry no area passes holds up its wave until it's dropped |
-| `preSpawnedFuncs` | ❌ | Functions called before hunter:SetPos() and hunter:Spawn() : `function(spawnData, npc, spawnPos)`. Change spawnPos to move where it spawns. From the spawner, it's 20 units above the nav area, hunters fall into place |
-| `postSpawnedFuncs` | ❌ | Functions called after hunter:Spawn() : `function(spawnData, npc)` |
-| `isBoss` | ❌ | `true` marks as boss; `false` opts out of auto-detection. When the boss is killed, all alive players escape. Cleanup that removes boring hunters leaves it alone while it's battling, and lag never removes it. Auto-detected when `spawnSet.maxSpawnCount <= 1` (highest `difficultyCost` entry becomes boss). |
-| `hordeSpawn` | ❌ | Toggle last good area re-use for just this spawn. `false` opts out of the spawnset's `hordeSpawn` |
-| `scaryAsATerminator` | ❌ | `true` makes players panic like it's a full hp terminator, for low hp npcs that are scarier than they look |
-| `removeAfterStillSeconds` | ❌ | Removes the hunter once it's stayed within 50 units of one spot for this many seconds. Only counts while the round is active |
+`template = true` makes a misery that's only there to borrow from.
+It's never in the vote, and can't be picked.
+`default` is one.
 
-Only one of `spawnSameZ`, `spawnAbove`, `spawnBelow` applies, they're checked in that order.
-Those three and `preferredEFlags` all loosen the longer the spawner fails to find a spot, so they bend rather than block. A non-firm `preferredEFlags` is ignored outright on maps without those flags.
-`areaFilter` and a firm `preferredEFlags` never bend, an entry they leave nowhere to go holds up its wave for about a minute, then gets dropped from it.
-
-#### Spawnset Example B: Functions on spawn!
+#### Spawnset Example C: Functions on spawn!
 
 ```lua
 -- lua/glee_spawnsets/sv_the_true_machine.lua
@@ -624,7 +596,7 @@ local trueHorror = {
 table.insert( GLEE_SPAWNSETS, trueHorror )
 ```
 
-#### Spawnset Lifecycle
+#### Spawnset Example D: Lifecycle
 
 - `Activate` - the misery changed TO this spawnset
 - `OnRemove` - the misery changed AWAY from this spawnset
@@ -652,8 +624,9 @@ end
 These are removed for you when the misery changes.
 Only write an `OnRemove` for things you didn't make through `self`.
 
-`self`'s values are the ones you WROTE, not this round's roll.
+`self`'s values are the misery's, before this round's roll.
 A `waveInterval` of `{ 60, 90 }` is still `{ 60, 90 }` here, use `GAMEMODE:GetSpawnSet()` for the rolled number.
+Borrowed values are already filled in, a `waveInterval` of `"default"` is default's range, and imported `.spawns` entries are already in.
 
 A `cl_` file with the same `name` gets its own `Activate`, for HUD and sounds.
 
@@ -663,19 +636,23 @@ A `cl_` file with the same `name` gets its own `Activate`, for HUD and sounds.
 
 ```lua
 function set:Activate()
-    -- an RPG every spawn, with 3 rockets more than it comes with
-    GAMEMODE.setHelpers.addDefaultWeapon( self, { class = "weapon_rpg", ammoType = "RPG_Round", purchaseClips = 3 } )
-    -- everyone's a rebel
-    GAMEMODE.setHelpers.overridePlayerModel( self, function( ply ) return "models/player/group03/male_07.mdl" end )
+    -- everyone's kleiner
+    GAMEMODE.setHelpers.overridePlayerModel( self, function( ply ) return "models/player/kleiner.mdl" end )
+    -- and the richest player gets an RPG every spawn, with 3 rockets more than it comes with
+    GAMEMODE:AddMiserySpawnWeapon( self, "default", { class = "weapon_rpg", ammoType = "RPG_Round", purchaseClips = 3 }, function( ply )
+        return ply == GAMEMODE:GetRichestPlayer()
+
+    end )
 
 end
 ```
 
+Weapons everyone gets belong in `.startWeapons` and `.defaultWeapons`, `GAMEMODE:AddMiserySpawnWeapon` is for the rest.
+`"start"` gives one per round, `"default"` one per life, both on top of the misery's own.
 Weapons are a class, or a `shopHelpers.purchaseWeapon` table when they should come with ammo.
 Any of that table's fields but `class` can be a `function( ply )`, for ammo that depends on how many are playing.
 The weapon itself can be a `function( ply )` too, for a random pick. It's called once per player per round.
-`addStartWeapon` gives one per round instead of one per life.
-Add your own with `sh_`/`sv_`/`cl_` files in `lua/glee_sethelpers/`. They're included before any spawnset, during gamemode load, so reach the table through `GM`.
+Add your own with `sh_`/`sv_`/`cl_` files in [lua/glee_sethelpers/](lua/glee_sethelpers/). They're included before any spawnset, during gamemode load, so reach the table through `GM`.
 
 ```lua
 -- lua/glee_sethelpers/sv_my_helpers.lua
@@ -686,6 +663,135 @@ function setHelpers.postSpawnedRed( spawnData, npc )
 
 end
 ```
+
+#### Reference
+
+##### Spawnset Values
+
+I had a problem when developing this.
+Each round was feeling the same,
+and I was updating spawnset values all over the place.
+My solution? Dynamic values.
+
+Number values can be:
+- `nil` - Use the `default` misery's value, see [lua/glee_spawnsets/sv_default.lua](lua/glee_spawnsets/sv_default.lua)
+- `"some_misery"` or `"some_misery*N"` - Borrow that misery's value, or N times it, see Example B
+- `{ min, max }` - Random value in range is chosen at the start of each round.
+- `{ n }` - A one member table, same as writing the number directly
+- `function( spawnSet )` - Called each round, return a number, `{ min, max }` or `{ n }`
+- `Direct number` - 8, 10, 11.25, etc ( not recommended, random value in range is much more fun )
+
+`nil` and borrowing only work on the misery's own fields.
+`.spawns` entries and `slotSizes` take the rest, a `nil` there is just unset.
+
+Sound values can be:
+- `nil` - Use the `default` misery's sound
+- `"some/path"` - A sound path, or a music track like `"tracks/roundEnd"`
+- `"some_misery"` - Borrow that misery's sound
+- `""` - Silence
+
+The rule is the `/`.
+A sound value without one is ALWAYS a misery's name.
+Sounds must be in a subfolder of `sound/`, so a sound's path always has a `/`.
+
+##### Spawnset Fields
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `name` | ✅ | Unique identifier, should match filename |
+| `prettyName` | ✅ | Display name for voting/UI |
+| `description` | ✅ | Description shown to players, best used as a hint that teases what's coming |
+| `spawns` | ✅ | THE indexed table of potential spawns ( see below ). Optional with `importedMiserySpawns` |
+| `author` | ❌ | Who made it, shown under the description as "by ..." |
+| `importedMiserySpawns` | ❌ | Copies other miseries' `.spawns` entries in, see Example B |
+| `chanceToBeVotable` | ❌ | Percent chance to appear in the !rtm vote, 0-100, accepts float. nil is always |
+| `chanceToBeVotableWhenHard` | ❌ | Used instead while this misery still challenges the host, judged by its escape multiplier. Set it higher, so it sticks around while it's fun and fades out once they've mastered it |
+| `easy` | ❌ | Marks this as a beginner misery. Tagged `(EASY)` in the !rtm vote, and while an easy one is active the vote prefers offering other easy ones. Also soft-caps its escape reward multiplier |
+| `maxSpawnCount` | ❌ | Hard cap on hunter count. 10 is default, 6 is `hunters_glee`, 60 is `combine_onslaught` |
+| `waveInterval` | ❌ | Seconds between spawn waves, skipped if all hunters are cleared. Default is 60 - 96 |
+| `startingSpawnCount` | ❌ | How many hunters it wants at the start, grows with `spawnCountPerDifficulty`. About 2 by default, 8 is `combine_onslaught` |
+| `roundStartSound` | ❌ | Sound on round start |
+| `roundEarlyStartSound` | ❌ | Played 10s before the round starts, only if `roundStartSound` is "" |
+| `roundEndSound` | ❌ | Sound on round end, when nobody escaped |
+| `Activate` | ❌ | Called when this becomes the active misery ( see Example D ) |
+| `OnRemove` | ❌ | Called when the misery changes away from this ( see Example D ) |
+
+<details>
+<summary>Advanced fields, best left alone until you know you need them</summary>
+
+| Field | Description |
+|-------|-------------|
+| `template` | `true` makes this a misery to borrow from, never voted for or picked |
+| `difficultyPerMin` | Difficulty gained per minute. Write it as `100 / 10` for 100 difficulty at 10 minutes |
+| `diffBumpWhenWaveKilled` | Difficulty added to the round when a wave is completely killed |
+| `startingBudget` | Added to every wave's budget, so more and pricier hunters each wave. Doesn't unlock `difficultyNeeded` entries |
+| `spawnCountPerDifficulty` | Added to the wanted hunter count per difficulty. Default adds about 8 - 10 per 100 difficulty |
+| `maxSpawnDist` | Soft cap on the dynamically marching spawn distance, only broken if there's nowhere hidden to spawn enemies |
+| `minSpawnDist` | Never spawns closer than this. Don't shrink it, anything closer feels unfair |
+| `genericSpawnerRate` | Multiplier on procedural spawn delays ( crates, flareguns, beartraps, skulls, gas, vehicles, etc ). Bigger for slower spawns, smaller for faster |
+| `breathingRoom` | Scales an extra delay between waves for players who are overwhelmed. 0 is off, for really easy miseries |
+| `hordeSpawn` | `true` Always reuses the last good spawn area, stacking hunter spawns into a horde. Defaults to true for waves of 8+ spawns, `false` disables it even then |
+| `rotatingWaves` | `true` makes each wave come from one group, taking turns. The misery's own `.spawns` are one group, and each misery it imports from is another. A group with nothing to spawn still spends its turn. Each group stacks its hordes in its own spot |
+| `slotSizes` | How many hunters fit in each `.slots` slot, eg `{ miniboss = 1 }`. Takes a number, `{ min, max }`, `{ n }` or a function, but not a misery's name. Or `"minutes*N"` / `"difficulty*N"` to grow with the round, `"minutes*0.1"` is one slot every 10 minutes, `"difficulty*0.01"` is one every 100 difficulty. Without it every slot holds 1 |
+| `startWeapons` | Weapons everyone gets once a round, eg `{ { class = "weapon_smg1", purchaseClips = 3 } }`. See Set Helpers for what each one can be |
+| `defaultWeapons` | Weapons everyone gets every life. Default is the crowbar, camera and radio, a list here replaces all three. The first one's what they're holding when they spawn |
+| `roundWinSound` | Sound on round end, when someone escaped |
+| `roundPerfectWinSound` | Sound on round end, when everyone escaped |
+| `highIntensitySound` | Played when things get really intense, like a wave wiped with no more than 1/4 of players alive |
+| `grigoriArrivalSound` | Played when grigori arrives |
+| `secondGrigoriArrivalSound` | Played when the second grigori arrives |
+| `noMoreGrigoriSound` | Played when there are no more grigori |
+| `tutorialExit` | `true` puts it in the server's first ever vote, the way out of the tutorial misery. Leave this alone, it's for the stock miseries |
+
+</details>
+
+##### .spawns Entries
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `name` | ✅ | Unique identifier for this spawn entry |
+| `prettyName` | ✅ | Display name |
+| `class` | ✅ | Entity class to spawn |
+| `spawnType` | ✅ | Spawning algorithm type, only supports `"hunter"` presently |
+| `difficultyCost` | ✅ | Budget cost to spawn, spawns are checked from highest to lowest cost |
+| `difficultyNeeded` | ❌ | Difficulty threshold needed to start spawning, good if you want difficult enemies to all start spawning suddenly. 100 is roughly 10 minutes, sooner if waves get wiped |
+| `difficultyStopAfter` | ❌ | Difficulty threshold to stop spawning past, the mirror of `difficultyNeeded`, for enemies that should drop out of the pool later on |
+| `hardRandomChance` | ❌ | Percent chance to even be considered, works since spawns are checked from highest to lowest cost. Rolled multiple times per wave, more if there's more budget |
+| `countClass` | ❌ | Class pattern for .min/max count counting ( `*` = wildcard ). Falls back to `class` if nil |
+| `minCount` | ❌ | Minimum maintained count, hard minimum, bypasses budget |
+| `maxCount` | ❌ | Maximum allowed count |
+| `postSpawnedFuncs` | ❌ | Functions called after hunter:Spawn() : `function(spawnData, npc)` |
+| `isBoss` | ❌ | `true` marks as boss; `false` opts out of auto-detection. When the boss is killed, all alive players escape. Cleanup that removes boring hunters leaves it alone while it's battling, and lag never removes it. Auto-detected when `spawnSet.maxSpawnCount <= 1` (highest `difficultyCost` entry becomes boss). |
+
+<details>
+<summary>Advanced fields, for spawns that need special handling</summary>
+
+| Field | Description |
+|-------|-------------|
+| `cooldown` | Seconds this has to stay gone before it spawns again. A wave can still spawn several, but no more until they've all died or despawned, then the cooldown starts |
+| `slots` | Slots this takes up, eg `{ "miniboss" }`. Only spawns while every one of its slots has room, see the spawnset's `slotSizes` |
+| `spawnSameZ` | Prefer spawning at roughly the same height as a player |
+| `spawnAbove` | Prefer spawning above the highest player |
+| `spawnBelow` | Prefer spawning below the lowest player |
+| `preferredEFlags` | Prefer nav areas carrying all of these Extra Navmesh flags ( see sv_navmeshcategorizer ) |
+| `firmPreferredEFlags` | `true` stops `preferredEFlags` from bending, the entry never spawns outside those areas, and is never picked on maps without them |
+| `canSpawnOnMap` | `function(spawnData)`, asked once a map, after the navmesh is categorized. Return false and the entry never spawns on this map, eg the map's too cramped for it. A misery none of whose entries can spawn is left out of the vote, and can't be nominated. If it's already active, one !rtm is enough to start a vote |
+| `areaFilter` | `function(spawnData, area)`, return false and the entry won't spawn in that nav area. Pair it with `canSpawnOnMap`, an entry no area passes holds up its wave until it's dropped |
+| `preSpawnedFuncs` | Functions called before hunter:SetPos() and hunter:Spawn() : `function(spawnData, npc, spawnPos)`. Change spawnPos to move where it spawns. From the spawner, it's 20 units above the nav area, hunters fall into place |
+| `hordeSpawn` | Toggle last good area re-use for just this spawn. `false` opts out of the spawnset's `hordeSpawn` |
+| `scaryAsATerminator` | `true` makes players panic like it's a full hp terminator, for low hp npcs that are scarier than they look |
+| `removeAfterStillSeconds` | Removes the hunter once it's stayed within 50 units of one spot for this many seconds. Only counts while the round is active |
+
+Only one of `spawnSameZ`, `spawnAbove`, `spawnBelow` applies, they're checked in that order.
+Those three and `preferredEFlags` all loosen the longer the spawner fails to find a spot, so they bend rather than block. A non-firm `preferredEFlags` is ignored outright on maps without those flags.
+`areaFilter` and a firm `preferredEFlags` never bend, an entry they leave nowhere to go holds up its wave for about a minute, then gets dropped from it.
+The gunship in [sv_combines_glee.lua](lua/glee_spawnsets/sv_combines_glee.lua) uses all of these.
+
+</details>
+
+Most miseries pair entries, a rare few early, then lots once the round heats up.
+The rare one is pricey with a low `maxCount`, the common one is cheap with a high `difficultyNeeded`.
+See [sv_combines_glee.lua](lua/glee_spawnsets/sv_combines_glee.lua)'s shotgunners.
 
 ---
 
@@ -708,7 +814,7 @@ Referenced throughout the codebase:
 
 See [LICENSE](LICENSE) for details.
 
-Rounded shapes, soft shadows and blur are drawn with [RNDX](https://github.com/Srlion/RNDX) by Srlion, MIT licensed, at `lua/glee_hud/rndx.lua`.
+Rounded shapes, soft shadows and blur are drawn with [RNDX](https://github.com/Srlion/RNDX) by Srlion, MIT licensed, at [lua/glee_hud/rndx.lua](lua/glee_hud/rndx.lua).
 
 ---
 

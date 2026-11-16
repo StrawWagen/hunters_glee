@@ -13,6 +13,7 @@ SWEP.ProjectileClass = ""
 SWEP.InfiniteAmmo = nil
 SWEP.IdleHoldType = "normal"
 SWEP.ThrowingHoldType = "melee"
+SWEP.GleeFlashlightInHand = true -- no barrel, the flashlight's held in the off hand
 
 SWEP.ModelScale = 1
 SWEP.ModelMaterial = nil

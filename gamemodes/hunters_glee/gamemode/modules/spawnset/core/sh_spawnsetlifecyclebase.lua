@@ -37,6 +37,18 @@ function lifecycle:Apply( unparsedSpawnset )
     local unparsedCopy = table.Copy( unparsedSpawnset )
     table.Merge( self, unparsedCopy )
 
+    -- before Activate, so the misery's own kit comes before anything its setHelpers add
+    if SERVER then
+        for _, weapon in ipairs( self.startWeapons ) do
+            GAMEMODE:AddMiserySpawnWeapon( self, "start", weapon )
+
+        end
+        for _, weapon in ipairs( self.defaultWeapons ) do
+            GAMEMODE:AddMiserySpawnWeapon( self, "default", weapon )
+
+        end
+    end
+
     if self.Activate then
         ProtectedCall( self.Activate, self )
 

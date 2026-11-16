@@ -1,33 +1,36 @@
 local set = {
-    name = "combines_glee_gunship", -- unique name
+    name = "combines_glee_gunship",
     prettyName = "The Combine Gunship",
     description = "Something circles overhead.\nBring it down, or keep your head down.",
-    difficultyPerMin = "default", -- difficulty per minute
-    waveInterval = "default", -- time between spawn waves
-    diffBumpWhenWaveKilled = "default", -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
     startingSpawnCount = 1,
     maxSpawnCount = 1,
-    roundEndSound = "music/hl2_song6.mp3",
+    roundEndSound = "combines_glee",
     roundStartSound = "ambient/levels/streetwar/gunship_distant1.wav",
     chanceToBeVotable = 0.5,
-    spawns = {
+    -- just the raid's gunship, there from the start
+    importedMiserySpawns = {
         {
-            name = "the_gunship",
-            prettyName = "The Combine Gunship",
-            class = "npc_combinegunship",
-            spawnType = "hunter",
-            isBoss = true,
-            difficultyCost = 1,
-            maxCount = 1,
-            preferredEFlags = GAMEMODE.NavEFlags.UNDER_SKY,
-            firmPreferredEFlags = true,
-            -- the gunship module loads with the addon, look it up when called
-            canSpawnOnMap = function( ... ) return terminator_Extras.glee_Gunship.CanSpawnOnMap( ... ) end,
-            areaFilter = function( ... ) return terminator_Extras.glee_Gunship.AreaFilter( ... ) end,
-            preSpawnedFuncs = { function( ... ) terminator_Extras.glee_Gunship.PreSpawn( ... ) end },
-            postSpawnedFuncs = { function( ... ) terminator_Extras.glee_Gunship.PostSpawn( ... ) end },
+            name = "combines_glee",
+            overrides = {
+                combine_metropolice = NULL,
+                combine_soldier_rareearly = NULL,
+                combine_soldier_early = NULL,
+                combine_soldier = NULL,
+                combine_shotgun_RARE = NULL,
+                combine_shotgun_COMMON = NULL,
+                combine_elite_RARE = NULL,
+                combine_elite_COMMON = NULL,
+                combine_rocketeer = NULL,
+                combine_gunship = {
+                    difficultyCost = 1,
+                    difficultyNeeded = NULL,
+                    minutesNeeded = NULL,
+                    -- no arrival sound, roundStartSound already announces it
+                    postSpawnedFuncs = { function( ... ) terminator_Extras.glee_Gunship.PostSpawn( ... ) end },
+                },
+            },
         },
-    }
+    },
 }
 
 function set:Activate()

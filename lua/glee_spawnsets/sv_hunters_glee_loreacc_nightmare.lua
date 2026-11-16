@@ -1,4 +1,3 @@
--- overcharged hunters, dont have to copy this
 local overchargedChanceAtMinutes = {
     [0] = math.Rand( 1, 5 ),
     [2] = math.Rand( 5, 25 ),
@@ -33,16 +32,16 @@ local function postSpawnedOvercharge( spawnDat, spawned )
 end
 
 local set = {
-    name = "hunters_glee_loreacc_nightmare", -- unique name
+    name = "hunters_glee_loreacc_nightmare",
     prettyName = "Lore Accurate Nightmare",
     description = "There's too many of them,\nand they're unstoppable.\nWhat a nightmare.",
-    difficultyPerMin = "default*2.5", -- difficulty per minute
-    waveInterval = "default", -- time between spawn waves
-    diffBumpWhenWaveKilled = "default", -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
-    startingBudget = "default", -- so budget isnt 0
+    difficultyPerMin = "default*2.5",
+    waveInterval = "default",
+    diffBumpWhenWaveKilled = "default",
+    startingBudget = "default",
     spawnCountPerDifficulty = { 0.2, 0.35 },
     startingSpawnCount = { 1, 4 },
-    maxSpawnCount = { 10 }, -- hard cap on count
+    maxSpawnCount = { 10 },
     maxSpawnDist = "default",
     roundEndSound = "default",
     roundStartSound = "default",
@@ -52,16 +51,16 @@ local set = {
     spawns = {
         {
             hardRandomChance = nil,
-            name = "terminator_loreaccurate", -- unique name
+            name = "terminator_loreaccurate",
             prettyName = "A Lore Accurate Terminator",
-            class = "terminator_nextbot_loreaccurate", -- class spawned
+            class = "terminator_nextbot_loreaccurate",
             spawnType = "hunter",
             difficultyCost = 5,
-            countClass = "terminator_nextbot_loreaccurate*", -- class COUNTED, uses findbyclass
-            postSpawnedFuncs = { postSpawnedOvercharge }, -- this can be nil
+            countClass = "terminator_nextbot_loreaccurate*",
+            postSpawnedFuncs = { postSpawnedOvercharge },
         },
         {
-            hardRandomChance = { 0.1, 1 }, -- chance this is even checked
+            hardRandomChance = { 0.1, 1 },
             name = "terminator_doppleganger",
             prettyName = "Terminator Doppleganger",
             class = "terminator_nextbot_snail_disguised",
@@ -74,5 +73,4 @@ local set = {
     }
 }
 
--- put the spawnset IN the global table to be gobbled
 table.insert( GLEE_SPAWNSETS, set )

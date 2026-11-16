@@ -494,19 +494,19 @@ function GM:TeleportRoomCheck()
         if forceReset then
             doReset = true
             reason = "TEMPORAL DISPLACEMENT DETECTED"
-            whatHappens = "You are being sent to an under-utilized sub-locale.\nBRACE..."
+            whatHappens = "You are being sent to an under-utilized sub-locale."
 
         elseif not plysNearestNav or not plysNearestNav.IsValid then
             doReset = true
             reason = "TEMPORAL MISPLACEMENT DETECTED"
-            whatHappens = "A bodied soul was misplaced\nBRACE..."
+            whatHappens = "A bodied soul was misplaced"
 
         else
             local moveType = ply:GetMoveType()
             if moveType ~= MOVETYPE_NOCLIP and not GAMEMODE:NavAreaExistsInGroups( plysNearestNav, GAMEMODE.biggestNavmeshGroups ) then
                 doReset = true
                 reason = "TEMPORAL MISPLACEMENT DETECTED"
-                whatHappens = "A bodied soul was in a fragment\nBRACE..."
+                whatHappens = "A bodied soul was in a fragment"
             end
         end
         if doReset then

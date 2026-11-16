@@ -1,23 +1,15 @@
 
-local isnumber = isnumber
 local isstring = isstring
-local isfunction = isfunction
 local GAMEMODE = GAMEMODE or GM
 
-local function errorCatchingMitt( errMessage )
-    ErrorNoHaltWithStack( errMessage )
-
-end
-
--- sibling file in this same core/ folder, field defaults and validators
-local schema = include( "sv_spawnsetschema.lua" )
-local setDefaults = schema.setDefaults
-local rawSpawnSetFields = schema.rawSpawnSetFields
-local spawnDefaults = schema.spawnDefaults
-local slotSizeDefaults = schema.slotSizeDefaults
+-- what every field holds, and its validators
+local schema = include( "hunters_glee/gamemode/modules/spawnset/fields/sv_spawnsetschema.lua" )
+local yapErr = schema.yapErr
+local isRollable = schema.isRollable
+local isWeaponList = schema.isWeaponList
+local defaultedFieldKinds = schema.defaultedFieldKinds
 local validSpawnTypes = schema.validSpawnTypes
-local rawSpawnFieldValidators = schema.rawSpawnFieldValidators
-local slotSizeScales = schema.slotSizeScales
+local unrolledSpawnFieldValidators = schema.unrolledSpawnFieldValidators
 local setCommonTypos = schema.setCommonTypos
 local spawnCommonTypos = schema.spawnCommonTypos
 
@@ -28,77 +20,6 @@ local function findTypo( tbl, commonTypos )
         if tbl[typo] ~= nil then return typo, correct end
 
     end
-end
-
--- "default*1.5" gives "default", 1.5
--- nil for anything else, eg "default*1.2.3" or 5
-local function splitMul( str )
-    if not isstring( str ) then return end
-
-    local word, mulStr = string.match( str, "^(%a+)%*([%d%.]+)$" )
-    if not word then return end
-
-    local mul = tonumber( mulStr )
-    if not mul then return end
-
-    return word, mul
-
-end
-
-local function asParsed( toParse, name, defaultsTbl )
-    local finalMul = 1
-    local default = defaultsTbl[name]
-    if default then
-        if not toParse then
-            -- soft default
-            toParse = default
-
-        elseif isstring( toParse ) then
-            -- explicit default
-            if toParse == "default" then
-                toParse = default
-
-            else
-                -- dynamically mul the default!
-                -- eg default*1.5, default*0.25
-                -- much better than setting something independant from the default
-                -- because the defaults will change eventually....
-                local word, mul = splitMul( toParse )
-                if word == "default" then
-                    toParse = default
-                    finalMul = mul
-
-                end
-            end
-        end
-
-    elseif not toParse then
-        return nil -- no default, and nothing to parse
-
-    end
-
-    -- number or parsed default
-    if isnumber( toParse ) then return toParse * finalMul end
-
-    -- accepts functions
-    if isfunction( toParse ) then return toParse end
-
-    -- allow strings if we expect them
-    if isstring( default ) and isstring( toParse ) then
-        return toParse
-
-    end
-
-    -- 1 member table
-    if #toParse <= 1 and isnumber( toParse[1] ) then return toParse[1] * finalMul end
-    -- 2 member tables, picked num will be between them, different each round
-    if #toParse <= 2 and isnumber( toParse[1] ) and isnumber( toParse[2] ) then return math.Rand( toParse[1], toParse[2] ) * finalMul end
-
-end
-
-local function yapErr( spawnSet, yapStr )
-    ErrorNoHaltWithStack( "GLEE: spawnSet " .. spawnSet.name .. " " .. yapStr )
-
 end
 
 function GM:IsValidSpawnSet( spawnSet )
@@ -119,8 +40,22 @@ function GM:IsValidSpawnSet( spawnSet )
     if not isstring( spawnSet.description ) then yapErr( spawnSet, "has invalid .description" ) return end
     if spawnSet.author ~= nil and not isstring( spawnSet.author ) then yapErr( spawnSet, "has invalid .author" ) return end
 
-    for name, _ in pairs( setDefaults ) do
-        if not asParsed( spawnSet[name], name, setDefaults ) then
+    -- validate more complex variables
+    for name, kind in pairs( defaultedFieldKinds ) do
+        local value = spawnSet[name]
+        local valid
+        if kind == "sound" then
+            valid = isstring( value )
+
+        elseif kind == "weapons" then
+            valid = isWeaponList( value )
+
+        else
+            valid = isRollable( value )
+
+        end
+
+        if not valid then
             yapErr( spawnSet, "has invalid ." .. name )
             return
 
@@ -131,9 +66,8 @@ function GM:IsValidSpawnSet( spawnSet )
     if slotSizes ~= nil then
         if not istable( slotSizes ) then yapErr( spawnSet, "has invalid .slotSizes" ) return end
         for slot, size in pairs( slotSizes ) do
-            local scale = splitMul( size )
-            local isScaled = scale and slotSizeScales[scale]
-            if not isScaled and not asParsed( size, slot, slotSizeDefaults ) then
+            local isScaled = istable( size ) and size.scale ~= nil
+            if not isScaled and not isRollable( size ) then
                 yapErr( spawnSet, "has invalid .slotSizes " .. slot )
                 return
 
@@ -143,23 +77,15 @@ function GM:IsValidSpawnSet( spawnSet )
 
     local spawns = spawnSet.spawns
     if not istable( spawns ) then yapErr( spawnSet, "has invalid .spawns" ) return end
-    local seenNames = {}
     for ind, spawn in ipairs( spawns ) do
         local name = spawn.name
         if not isstring( name ) then
-            PrintTable( spawn )
+            permaPrintTable( spawn ) -- give them a hint to find this invalid spawn entry, otherwise just giving them a shot in the dark
             permaPrint( spawn.name )
             yapErr( spawnSet, "entry " .. ind .. " has invalid .name in .spawns" )
             return
 
         end
-
-        -- .cooldown is tracked by name, so entries sharing one share a cooldown
-        if seenNames[name] and developerVar:GetBool() then
-            permaPrint( "GLEE: spawnSet " .. spawnSet.name .. " has more than one .spawns entry named " .. name )
-
-        end
-        seenNames[name] = true
 
         local spawnTypo, spawnCorrect = findTypo( spawn, spawnCommonTypos )
         if spawnTypo then yapErr( spawnSet, ".spawns " .. name .. " has ." .. spawnTypo .. ", did you mean ." .. spawnCorrect .. "?" ) return end
@@ -168,7 +94,7 @@ function GM:IsValidSpawnSet( spawnSet )
         if not isstring( spawn.class ) then yapErr( spawnSet, ".spawns " .. name .. " invalid .class" ) return end
         if not validSpawnTypes[spawn.spawnType] then yapErr( spawnSet, ".spawns " .. name .. " invalid .spawnType" ) return end
 
-        for fieldName, validator in pairs( rawSpawnFieldValidators ) do
+        for fieldName, validator in pairs( unrolledSpawnFieldValidators ) do
             local whatSpawnHas = spawn[fieldName]
             if not whatSpawnHas then continue end
             local valid, notValidReason = validator( whatSpawnHas )
@@ -176,10 +102,8 @@ function GM:IsValidSpawnSet( spawnSet )
 
         end
 
-        local minCount = asParsed( spawn.minCount, "minCount", spawnDefaults )
-        if not minCount then yapErr( spawnSet, ".spawns " .. name .. " invalid .minCount" ) return end
-        local maxCount = asParsed( spawn.maxCount, "maxCount", spawnDefaults )
-        if not maxCount then yapErr( spawnSet, ".spawns " .. name .. " invalid .maxCount" ) return end
+        if not isRollable( spawn.minCount ) then yapErr( spawnSet, ".spawns " .. name .. " invalid .minCount" ) return end
+        if not isRollable( spawn.maxCount ) then yapErr( spawnSet, ".spawns " .. name .. " invalid .maxCount" ) return end
 
         -- nil falls back to .class
         local countClass = spawn.countClass
@@ -189,7 +113,7 @@ function GM:IsValidSpawnSet( spawnSet )
 
         end
         -- only .minCount and .maxCount read it
-        local hasMinMax = maxCount > -1 or minCount > -1
+        local hasMinMax = spawn.maxCount ~= -1 or spawn.minCount ~= -1 -- -1 is the baker's default, see spawnDefaults
         if countClass and not hasMinMax and developerVar:GetBool() then
             permaPrint( "GLEE: spawnSet " .. spawnSet.name .. " .spawns entry " .. name .. " has a .countClass but no .minCount or .maxCount" )
 
@@ -199,9 +123,9 @@ function GM:IsValidSpawnSet( spawnSet )
 
         end
 
-        if not asParsed( spawn.difficultyCost, "difficultyCost", spawnDefaults ) then yapErr( spawnSet, ".spawns " .. name .. " invalid .difficultyCost" ) return end
+        if not isRollable( spawn.difficultyCost ) then yapErr( spawnSet, ".spawns " .. name .. " invalid .difficultyCost" ) return end
 
-        if spawn.cooldown ~= nil and not asParsed( spawn.cooldown, "cooldown", spawnDefaults ) then yapErr( spawnSet, ".spawns " .. name .. " invalid .cooldown" ) return end
+        if spawn.cooldown ~= nil and not isRollable( spawn.cooldown ) then yapErr( spawnSet, ".spawns " .. name .. " invalid .cooldown" ) return end
 
         -- without .slotSizes, every slot holds 1
         if slotSizes and spawn.slots then
@@ -214,100 +138,6 @@ function GM:IsValidSpawnSet( spawnSet )
     end
 
     return true
-end
-
--- parse spawnset variables into numbers
-local function parse( tbl, name, defaultsTbl, spawnSet )
-    local toParse = tbl[name]
-    local parsed = asParsed( toParse, name, defaultsTbl )
-
-    if isfunction( parsed ) then
-        -- it accepts functions!!!!!!
-        --[[eg,
-            .maxCount = function( spawnSet )
-                return spawnset.maxSpawnCount
-            end,
-        --]]
-        local noErrors, returned = xpcall( toParse, errorCatchingMitt, spawnSet )
-        if noErrors == false then
-            yapErr( spawnSet, " ." .. name .. " function errored! " )
-            return
-
-        end
-
-        returned = asParsed( returned, name, defaultsTbl ) -- parse the result too...
-        if not returned then yapErr( spawnSet, " invalid return from ." .. name .. "\n(or an unexpected function on the spawnset tbl)" ) return end
-
-        tbl[name] = returned
-
-    elseif isnumber( parsed ) or isstring( parsed ) then
-        tbl[name] = parsed
-
-    end
-end
-
--- spawnsets are parsed when they're set via rtm, on setup
--- but they're ALSO parsed EVERY ROUND
-
--- turn the spawnset config into usable data
--- eg;
---  .maxSpawnDist = 5000, always 5000
---  .maxSpawnDist = "default", always default, as defined by the setDefaults tbl
---  .maxSpawnDist = "default*0.75", always 75% of default
---  .maxSpawnDist = { 4000, 6000 }, a random value between 4k and 6k, different between each round
-
-function GM:ParsedSpawnSet( asRegistered )
-    local spawnSet = table.Copy( asRegistered )
-
-    local setParsed = {}
-    for name, _ in pairs( spawnSet ) do -- parse all existing spawnset variables
-        if rawSpawnSetFields[name] then setParsed[name] = true continue end
-        parse( spawnSet, name, setDefaults, spawnSet )
-        setParsed[name] = true
-
-    end
-    for name, _ in pairs( setDefaults ) do -- setup the nil defaults that weren't set
-        if setParsed[name] then continue end
-        if rawSpawnSetFields[name] then continue end
-        parse( spawnSet, name, setDefaults, spawnSet )
-
-    end
-
-    local slotSizes = spawnSet.slotSizes
-    if slotSizes then
-        for slot, size in pairs( slotSizes ) do
-            local scale, mul = splitMul( size )
-            if scale then
-                slotSizes[slot] = { scale = scale, mul = mul }
-
-            else
-                parse( slotSizes, slot, slotSizeDefaults, spawnSet )
-
-            end
-        end
-    end
-
-    for _, currSpawn in ipairs( spawnSet.spawns ) do
-        local spawnParsed = {}
-        for name, _ in pairs( currSpawn ) do -- parse all existing spawnset variables
-            if rawSpawnFieldValidators[name] then spawnParsed[name] = true continue end
-            parse( currSpawn, name, spawnDefaults, spawnSet )
-            spawnParsed[name] = true
-
-        end
-        for name, _ in pairs( spawnDefaults ) do -- get the nil defaults
-            if spawnParsed[name] then continue end
-            if rawSpawnFieldValidators[name] then continue end
-            parse( currSpawn, name, spawnDefaults, spawnSet )
-
-        end
-    end
-
-    -- let consumers ( eg the spawner ) attach their own runtime fields to the parsed set
-    -- the spawnset module deliberately knows nothing about what those fields are
-    hook.Run( "glee_spawnset_parsed", spawnSet )
-
-    return spawnSet
 
 end
 
@@ -323,9 +153,9 @@ function GM:SetSpawnSet( setName, rebuildLifecycle )
     local asRegistered = self.RegisteredSpawnSets[setName]
     if not asRegistered then ErrorNoHaltWithStack( "GLEE: Tried to enable invalid spawnset " .. setName ) return end
 
-    local spawnSet = self:ParsedSpawnSet( asRegistered )
+    local rolledSpawnSet = self:RolledSpawnSet( asRegistered )
 
-    self:HandleBossDetection( spawnSet )
+    self:HandleBossDetection( rolledSpawnSet )
 
     if newLifecycle and self.CurrSpawnSetLifecycle then
         self.CurrSpawnSetLifecycle:InternalTeardown()
@@ -334,7 +164,7 @@ function GM:SetSpawnSet( setName, rebuildLifecycle )
     end
 
     self.CurrSpawnSetName = setName
-    self.CurrSpawnSet = spawnSet
+    self.CurrSpawnSet = rolledSpawnSet
 
     SetGlobalString( "GLEE_SpawnSetName", setName )
 
@@ -347,27 +177,15 @@ function GM:SetSpawnSet( setName, rebuildLifecycle )
     end
 
     if isNewSet then
-        hook.Run( "glee_post_new_spawnset", setName, spawnSet, oldSetName )
+        hook.Run( "glee_post_new_spawnset", setName, rolledSpawnSet, oldSetName )
         permaPrint( "GLEE: Misery set to, " .. setName )
 
     else
-        hook.Run( "glee_post_refresh_spawnset", setName, spawnSet, oldSetName )
+        hook.Run( "glee_post_refresh_spawnset", setName, rolledSpawnSet, oldSetName )
 
     end
 
-    hook.Run( "glee_post_set_spawnset", setName, spawnSet, oldSetName )
-
-end
-
-function GM:RegisterSpawnSet( spawnSet )
-    if not self:IsValidSpawnSet( spawnSet ) then permaPrint( "GLEE: tried to register inavlid spawnset" ) return end
-
-    local exists = self.RegisteredSpawnSets[spawnSet.name]
-    if exists then permaPrint( "GLEE, overriding old " .. spawnSet.name .. " spawnSet" ) end
-
-    self.RegisteredSpawnSets[spawnSet.name] = spawnSet
-
-    return true
+    hook.Run( "glee_post_set_spawnset", setName, rolledSpawnSet, oldSetName )
 
 end
 
@@ -412,10 +230,10 @@ end
 
 local spawnSetVar = CreateConVar( "huntersglee_misery", defaultSpawnSetName, { FCVAR_ARCHIVE, FCVAR_REPLICATED, FCVAR_NOTIFY }, "What spawnset the gamemode should use." )
 cvars.AddChangeCallback( "huntersglee_misery", function( _, _, new )
-    if not GAMEMODE.GobbledSpawnsets then -- wait until spawnsets are valid
-        hook.Add( "glee_post_spawnsetgobble", "glee_validatecvar_delayed", function()
+    if not GAMEMODE.SpawnSetsLoaded then -- wait until spawnsets are valid
+        hook.Add( "glee_post_spawnsetload", "glee_validatecvar_delayed", function()
             postSetSpawnset( new )
-            hook.Remove( "glee_post_spawnsetgobble", "glee_validatecvar_delayed" )
+            hook.Remove( "glee_post_spawnsetload", "glee_validatecvar_delayed" )
 
         end )
     else
@@ -426,35 +244,9 @@ cvars.AddChangeCallback( "huntersglee_misery", function( _, _, new )
 end, "glee_notifyinvalidspawnsets" )
 
 
-function GM:SpawnSetInitialThink()
-    -- first, the misery activated below can hand out roles
-    self:RolesInitialThink()
-
-    local count = self:GobbleSpawnsets()
-    permaPrint( "GLEE: Gobbled " .. count .. " spawnsets..." )
-
-    self.GobbledSpawnsets = true
-    hook.Run( "glee_post_spawnsetgobble" )
-
-    local spawnSetPicked = spawnSetVar:GetString()
-    if not self:IsValidSpawnSet( spawnSetPicked ) then
-        permaPrint( "GLEE: INVALID SPAWNSET " .. spawnSetPicked )
-        spawnSetPicked = defaultSpawnSetName
-        RunConsoleCommand( "huntersglee_misery", spawnSetPicked )
-
-    end
-
-    -- startup, or gmod_admin_cleanup, which just reloaded every spawnset
-    self:SetSpawnSet( spawnSetPicked, true )
-
-end
-
--- gobble all the custom spawnsets
-hook.Add( "huntersglee_round_firstsetup", "glee_spawnset_think", function() GAMEMODE:SpawnSetInitialThink() end )
-
--- re-parse the spawnset when a new round is started
+-- re-roll the spawnset when a new round is started
 -- so each round gets a different roll of all the random fields in the spawnsets
-hook.Add( "huntersglee_round_leave_limbo", "glee_spawnset_reparse", function() GAMEMODE:SetSpawnSet( spawnSetVar:GetString() ) end )
+hook.Add( "huntersglee_round_leave_limbo", "glee_spawnset_reroll", function() GAMEMODE:SetSpawnSet( spawnSetVar:GetString() ) end )
 
 
 local veteranSpawnSetName = "hunters_glee"
@@ -491,3 +283,33 @@ hook.Add( "glee_full_load", "glee_resetspawnset_onjoin", function( ply )
 
     end )
 end )
+
+
+function GM:SpawnSetInitialThink()
+
+    -- all raw unbaked spawnsets
+    local gobbled = self:GobbleSpawnSets()
+    permaPrint( "GLEE: Gobbled " .. #gobbled .. " spawnsets..." )
+
+    -- do spawnset inheritance, etc
+    local toRegister, templates = self:BakeSpawnSets( gobbled )
+
+    -- finally, register them, put them in a spot, ready to be applied, played
+    local count = self:RegisterSpawnSets( toRegister, templates )
+    permaPrint( "GLEE: Registered " .. count .. " spawnsets..." )
+
+    self.SpawnSetsLoaded = true
+    hook.Run( "glee_post_spawnsetload" )
+
+    local spawnSetPicked = spawnSetVar:GetString()
+    if not self:IsValidSpawnSet( spawnSetPicked ) then
+        permaPrint( "GLEE: INVALID SPAWNSET " .. spawnSetPicked )
+        spawnSetPicked = defaultSpawnSetName
+        RunConsoleCommand( "huntersglee_misery", spawnSetPicked )
+
+    end
+
+    -- startup, or gmod_admin_cleanup, which just reloaded every spawnset
+    self:SetSpawnSet( spawnSetPicked, true )
+
+end

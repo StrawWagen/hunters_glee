@@ -163,10 +163,15 @@ function ENT:Place()
         if not target.glee_Blessed then blessCancel() return end
         if target:Health() <= 0 then blessCancel() return end
 
-        local newHealth = math.Round( target:Health() + target.glee_BlessRegen )
-        newHealth = math.min( newHealth, target:GetMaxHealth() )
-        target:SetHealth( newHealth )
-        target.glee_LastSetHealthReason = "glee_blessing"
+        local heal = math.Round( target.glee_BlessRegen )
+        if target:IsPlayer() then
+            target:AddHealth( heal, "glee_blessing" )
+
+        elseif target:Health() < target:GetMaxHealth() then
+            target:SetHealth( math.min( target:Health() + heal, target:GetMaxHealth() ) )
+            target.glee_LastSetHealthReason = "glee_blessing"
+
+        end
 
         local armor = target:Armor()
         target:SetArmor( math.min( armor + 1, math.max( target:GetMaxArmor(), armor ) ) ) -- :)

@@ -1,14 +1,14 @@
 local set = {
-    name = "hunters_glee_easy", -- unique name
+    name = "hunters_glee_easy",
     prettyName = "Gleefully Relaxed Hunters",
     description = "Smart, bulletproof, cruel enemies, in very limited numbers. Beware.",
-    difficultyPerMin = "default", -- difficulty per minute
-    waveInterval = "default", -- time between spawn waves
-    diffBumpWhenWaveKilled = { 5, 10 }, -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
-    startingBudget = "default", -- so budget isnt 0
+    difficultyPerMin = "default",
+    waveInterval = "default",
+    diffBumpWhenWaveKilled = { 5, 10 },
+    startingBudget = "default",
     spawnCountPerDifficulty = "default*0.5",
     startingSpawnCount = 1,
-    maxSpawnCount = 2, -- hard cap on count
+    maxSpawnCount = 2,
     maxSpawnDist = { 2500, 3500 }, -- CLOSE!
     roundEndSound = "default",
     roundStartSound = "default",
@@ -20,25 +20,25 @@ local set = {
     spawns = {
         {
             hardRandomChance = nil,
-            name = "terminator_rusty", -- unique name
+            name = "terminator_rusty",
             prettyName = "A Terminator",
-            class = "terminator_nextbot_snail_skinlessrusty", -- class spawned
+            class = "terminator_nextbot_snail_skinlessrusty",
             spawnType = "hunter",
             difficultyCost = { 5, 10 },
             difficultyStopAfter = { 50, 75 },
-            minCount = { 1 }, -- will ALWAYS maintain this count
-            maxCount = { 1 }, -- will ALWAYS maintain this count
+            minCount = { 1 },
+            maxCount = { 1 },
         },
         {
             hardRandomChance = nil,
-            name = "terminator", -- unique name
+            name = "terminator",
             prettyName = "A Terminator",
-            class = "terminator_nextbot_snail", -- class spawned
+            class = "terminator_nextbot_snail",
             spawnType = "hunter",
             difficultyCost = { 15, 25 },
         },
         {
-            hardRandomChance = { 0, 2 }, -- chance this is even checked
+            hardRandomChance = { 0, 2 },
             name = "terminator_doppleganger",
             prettyName = "Terminator Doppleganger",
             class = "terminator_nextbot_snail_disguised",
@@ -48,5 +48,4 @@ local set = {
     }
 }
 
--- put the spawnset IN the global table to be gobbled
 table.insert( GLEE_SPAWNSETS, set )

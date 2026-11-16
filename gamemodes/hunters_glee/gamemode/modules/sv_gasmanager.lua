@@ -163,6 +163,16 @@ function GM:AddGasUser( ent )
 
 end
 
+-- stop spawning gas around them, before they're removed
+function GM:RemoveGasUser( ent )
+    if not self.GasUsers then return end
+    table.RemoveByValue( self.GasUsers, ent )
+
+    if not IsValid( ent ) then return end
+    ent:RemoveCallOnRemove( "glee_gasuser_cleanup" )
+
+end
+
 function GM:GetGasUsers()
     return self.GasUsers or {}
 

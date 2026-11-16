@@ -43,6 +43,13 @@ local resists = {
     [DMG_CRUSH] = 0.75,
 }
 
+-- every type in resists, so damage a shield does nothing to is let through without looking for shields
+local resistedTypes = 0
+for type in pairs( resists ) do
+    resistedTypes = bit.bor( resistedTypes, type )
+
+end
+
 -- melee comes in every shape, the hit position can't be trusted
 -- terminator fists put it mid air when their trace misses, see weapon_terminatorfists_term's DealDamage
 local meleeTypes = bit.bor( DMG_CLUB, DMG_SLASH, DMG_CRUSH )
@@ -227,6 +234,20 @@ local function wherePastShield( shield, from, to, pos )
 
 end
 
+-- the carrier's own shots, the engine's traces skip what they own, this has to as well
+-- or the line from their eyes runs through the shield on their back
+-- firedBy is the inflictor's parent, a held weapon's is its holder
+-- shots from their eyes catch the rest, whatever they have out, and when they're the inflictor themselves
+local function isOwnShot( shield, firedBy, from )
+    local owner = shield:GetOwner()
+    if not IsValid( owner ) then return false end
+    if firedBy == owner then return true end
+    if not owner.GetShootPos then return false end
+
+    return from:DistToSqr( owner:GetShootPos() ) < 1
+
+end
+
 -- sound.Play goes out on CHAN_STATIC, so a shotgun's pellets all play over each other
 local function playHitSound( dmg, damage, pos )
     local path = impactSound.sounds[math.random( #impactSound.sounds )]
@@ -327,7 +348,9 @@ function ENT:OnTakeDamage( dmg )
 end
 
 hook.Add( "EntityTakeDamage", "glee_shield_resist", function( victim, dmg )
+    if not next( shields ) then return end
     if shields[victim] then return end
+    if bit.band( dmg:GetDamageType(), resistedTypes ) == 0 then return end
 
     local resist = resistFor( dmg )
     if resist <= 0 then return end
@@ -335,8 +358,11 @@ hook.Add( "EntityTakeDamage", "glee_shield_resist", function( victim, dmg )
     local from, to, pos = damageLine( dmg, victim )
     if not from then return end
 
+    local inflictor = dmg:GetInflictor()
+    local firedBy = IsValid( inflictor ) and inflictor:GetParent()
+
     for shield in pairs( shields ) do
-        local blockedAt = IsValid( shield ) and wherePastShield( shield, from, to, pos )
+        local blockedAt = IsValid( shield ) and not isOwnShot( shield, firedBy, from ) and wherePastShield( shield, from, to, pos )
         if blockedAt then
             -- the shield's own damage lands back in this hook, shields[victim] lets it through
             local blocked = DamageInfo()

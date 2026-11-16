@@ -88,7 +88,7 @@ AddCSLuaFile( "modules/guilt/sh_guilt.lua" )
 AddCSLuaFile( "modules/guilt/sh_innocenthalo.lua" )
 AddCSLuaFile( "modules/battery/sh_battery.lua" )
 AddCSLuaFile( "modules/spawnset/vote/cl_spawnsetvote.lua" )
-AddCSLuaFile( "modules/spawnset/core/cl_spawnsetgobbler.lua" )
+AddCSLuaFile( "modules/spawnset/core/cl_spawnsetloader.lua" )
 AddCSLuaFile( "modules/spawnset/seen/cl_seenmiseries.lua" )
 AddCSLuaFile( "modules/spawnset/core/sh_spawnsetlifecyclebase.lua" )
 AddCSLuaFile( "modules/spawnset/core/sh_spawnsetregistry.lua" )
@@ -145,8 +145,11 @@ include( "modules/sv_hunterspawner.lua" )
 include( "modules/sv_scoredropping.lua" )
 include( "modules/sv_rejoinpersist.lua" )
 include( "modules/sv_firstfallgrace.lua" )
-include( "modules/spawnset/core/sv_spawnsetgobbler.lua" )
+include( "modules/spawnset/core/sv_spawnsetloader.lua" )
 include( "modules/spawnset/core/sv_spawnset.lua" )
+include( "modules/spawnset/fields/sv_spawnsetbaker.lua" )
+include( "modules/spawnset/core/sv_spawnsetregistry.lua" )
+include( "modules/spawnset/fields/sv_spawnsetroller.lua" )
 include( "modules/spawnset/core/sv_spawnsetmapcheck.lua" )
 include( "modules/blame/sv_blamehelpers.lua" )
 include( "modules/blame/sv_blamedfalldamage.lua" )
@@ -162,6 +165,7 @@ include( "modules/spawnset/nominate/sv_spawnsetnominate.lua" )
 include( "modules/spawnset/bosses/sv_bosshandler.lua" )
 include( "modules/spawnset/bosses/sv_bossbattling.lua" )
 include( "modules/spawnset/runtime/sv_breathingroom.lua" )
+include( "modules/spawnset/runtime/sv_spawnweapons.lua" )
 include( "modules/spawnset/roles/sv_rolegobbler.lua" )
 include( "modules/spawnset/roles/sv_roles.lua" )
 include( "modules/sv_falldamage_andgoomba.lua" )
@@ -1235,6 +1239,12 @@ function GM:setupFinish()
         self.isBadSingleplayer = true
 
     end
+
+    -- gobble and parse all potential misery roles
+    self:RolesInitialThink()
+
+    -- gobble and parse all miseries
+    self:SpawnSetInitialThink()
 
     hook.Run( "huntersglee_round_into_inactive" )
     hook.Run( "huntersglee_round_firstsetup" )

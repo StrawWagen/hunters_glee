@@ -615,18 +615,59 @@ end )
 
 
 hook.Add( "huntersglee_player_into_active", "glee_yaponroundstart", function( ply )
-    if math.random( 0, 100 ) > 25 then return end -- 25% chance to play a line
+    if math.random( 0, 100 ) > 50 then return end -- 50% chance to play a line
     if player.GetCount() < 5 then return end -- only when it's PACKED!
     if GAMEMODE:GetPanic( ply ) > 25 then return end
 
     local line = GAMEMODE:GetRandModelLine( ply, "onRoundStart" )
     if not line then return end
 
-    timer.Simple( math.Rand( 5, 15 ), function()
+    timer.Simple( math.Rand( 5, 25 ), function()
         if not IsValid( ply ) then return end
         if ply:Health() <= 0 then return end
         if ply:IsSpeaking() then return end -- they're already saying something in vc!
         ply:EmitSound( line, 75, math.random( 99, 101 ), 1, CHAN_AUTO )
+
+    end )
+end )
+
+local mowingKillsNeeded = 5
+local mowingWindow = 8 -- kills older than this don't count towards the streak
+local mowingCooldown = 38
+
+hook.Add( "OnNPCKilled", "glee_yaponmowingdown", function( _, attacker )
+    if not IsValid( attacker ) or not attacker:IsPlayer() then return end
+
+    local cur = CurTime()
+    local recentKills = attacker.glee_RecentNPCKills
+    if not recentKills then
+        recentKills = {}
+        attacker.glee_RecentNPCKills = recentKills
+
+    end
+
+    for i = #recentKills, 1, -1 do
+        if recentKills[i] + mowingWindow < cur then
+            table.remove( recentKills, i )
+
+        end
+    end
+    table.insert( recentKills, cur )
+
+    if #recentKills < mowingKillsNeeded then return end
+    if ( attacker.glee_NextMowingLine or 0 ) > cur then return end
+    if GAMEMODE:GetPanic( attacker ) > 25 then return end -- only play these when we're calm
+
+    local line = GAMEMODE:GetRandModelLine( attacker, "mowingDownEnemies" )
+    if not line then return end
+
+    attacker.glee_NextMowingLine = cur + mowingCooldown
+
+    timer.Simple( math.Rand( 0.5, 2 ), function()
+        if not IsValid( attacker ) then return end
+        if attacker:Health() <= 0 then return end
+        if attacker:IsSpeaking() then return end
+        attacker:EmitSound( line, 75, math.random( 99, 101 ), 1, CHAN_AUTO )
 
     end )
 end )
@@ -1513,6 +1554,16 @@ hook.Add( "PlayerCanPickupWeapon", "noPainfulPickup", function( _ply, weapon )
 
 end )
 
+hook.Add( "WeaponEquip", "glee_cameranoautoswitch", function( wep )
+    if wep:GetClass() ~= "gmod_camera" then return end
+    function wep:AllowsAutoSwitchTo() -- annoying
+        return false
+
+    end
+    wep.AutoSwitchTo = false
+
+end )
+
 hook.Add( "WeaponEquip", "glee_fixignitedweapons", function( wep, ply )
     if not wep:IsOnFire() then return end
     wep:Extinguish()
@@ -1531,6 +1582,54 @@ local unwrappedStripWeapons = plyMeta.glee_UnwrappedStripWeapons
 function plyMeta:StripWeapons( ... )
     ProtectedCall( hook.Run, "glee_PreStripWeapons", self ) -- an erroring listener can't stop the strip
     return unwrappedStripWeapons( self, ... )
+
+end
+
+--[[---------------------------------------------------------
+    plyMeta:CanAddHealth
+    @desc Whether a heal would go through.
+          glee_blockaddhealth( ply, amount, reason ) gets a say, return true to block it.
+          Check it before taking health from someone else to give them.
+    @param amount: How much the heal is.
+    @param reason: What AddHealth would be passed.
+    @return: bool
+--]]---------------------------------------------------------
+function plyMeta:CanAddHealth( amount, reason )
+    return not hook.Run( "glee_blockaddhealth", self, amount, reason )
+
+end
+
+--[[---------------------------------------------------------
+    plyMeta:AddHealth
+    @desc Heals them up to their max health.
+          Overheal they already have is kept, never snapped back down to max.
+    @param amount: How much to heal.
+    @param reason: Stored in glee_LastSetHealthReason.
+    @return: None
+--]]---------------------------------------------------------
+function plyMeta:AddHealth( amount, reason )
+    local health = self:Health()
+    local maxHealth = self:GetMaxHealth()
+    if health >= maxHealth then return end
+    if not self:CanAddHealth( amount, reason ) then return end
+
+    self:SetHealth( math.min( health + amount, maxHealth ) )
+    self.glee_LastSetHealthReason = reason
+
+end
+
+--[[---------------------------------------------------------
+    plyMeta:AddOverhealableHealth
+    @desc Heals them with no cap, past their max health.
+    @param amount: How much to heal.
+    @param reason: Stored in glee_LastSetHealthReason.
+    @return: None
+--]]---------------------------------------------------------
+function plyMeta:AddOverhealableHealth( amount, reason )
+    if not self:CanAddHealth( amount, reason ) then return end
+
+    self:SetHealth( self:Health() + amount )
+    self.glee_LastSetHealthReason = reason
 
 end
 

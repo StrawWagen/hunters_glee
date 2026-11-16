@@ -462,6 +462,8 @@ local cubeSides = {
 -- so render.RenderFlashlights can be handed the same function every time
 local drawing = {}
 
+local untinted = Vector( 1, 1, 1 )
+
 local function drawParts()
     cam.PushModelMatrix( drawing.matrix )
     for _, part in ipairs( drawing.parts ) do
@@ -492,6 +494,14 @@ local function drawMeshes( shield, translucent )
     drawing.matrix = bone * shield.glee_PartsBindPose -- bone matrices carry the model scale too
     drawing.parts = parts
     drawing.translucent = translucent
+
+    -- a model drawn see-through leaves its alpha and colour on the material it used, for the next to draw over
+    -- an IMesh never does, so it'd draw with whatever was last left, like the placement ghost's
+    for _, part in ipairs( parts ) do
+        part.material:SetFloat( "$alpha", 1 )
+        part.material:SetVector( "$color", untinted )
+
+    end
 
     local center = shield:WorldSpaceCenter()
     render.SuppressEngineLighting( true )

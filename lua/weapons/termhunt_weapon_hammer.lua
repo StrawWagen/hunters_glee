@@ -13,6 +13,7 @@ SWEP.Base                 = "weapon_base"                       -- What base sho
 SWEP.ViewModel             = "models/weapons/c_barricadeswep.mdl" -- The viewModel, the model you see when you are holding it. FROM BARRICADE SWEP
 SWEP.WorldModel         = "models/weapons/w_buzzhammer.mdl"     -- The world model, The model you when it's down on the ground.
 SWEP.HoldType             = "melee"                             -- How the swep is hold Pistol smg grenade melee.
+SWEP.GleeFlashlightInHand = true                                -- no barrel, the flashlight's held in the off hand
 SWEP.PrintName             = "Nailer"                           -- your sweps name.
 SWEP.Category             = "Hunter's Glee"                     -- Make your own category for the swep.
 SWEP.Instructions         = "Nail stuff together!"              -- How do people use your swep.

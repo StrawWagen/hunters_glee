@@ -856,6 +856,7 @@ if SERVER then
             self:Timer( "drain_life", lifeTransferInterval, 0, function()
                 if owner:Health() <= 0 then return end
                 if owner:Health() >= owner:GetMaxHealth() then return end
+                if not owner:CanAddHealth( lifeTransferPerPly, "glee_parasitic_vibes_fed" ) then return end
 
                 local room = owner:GetMaxHealth() - owner:Health()
                 local drained = 0
@@ -880,8 +881,7 @@ if SERVER then
 
                 if drained <= 0 then return end
 
-                owner:SetHealth( owner:Health() + drained )
-                owner.glee_LastSetHealthReason = "glee_parasitic_vibes_fed"
+                owner:AddHealth( drained, "glee_parasitic_vibes_fed" )
 
                 huntersGlee_Notify( { owner }, {
                     text = "UNEXPLAINED VITALS INCREASE",
@@ -903,9 +903,9 @@ if SERVER then
                     local spareHealth = owner:Health() - lifeTransferFloor( owner )
                     local given = math.min( lifeTransferPerPly, spareHealth, recipient:GetMaxHealth() - recipientHealth )
                     if given <= 0 then continue end
+                    if not recipient:CanAddHealth( given, "glee_bleeding_heart_given" ) then continue end
 
-                    recipient:SetHealth( recipientHealth + given )
-                    recipient.glee_LastSetHealthReason = "glee_bleeding_heart_given"
+                    recipient:AddHealth( given, "glee_bleeding_heart_given" )
 
                     owner:SetHealth( owner:Health() - given )
                     owner.glee_LastSetHealthReason = "glee_bleeding_heart_drained"
@@ -925,6 +925,68 @@ if SERVER then
                     } )
                 end
             end )
+        end
+    )
+
+
+    -- gas is the only thing that heals them
+    local gasGuzzlerHeal = 200
+    local gasGuzzlerReason = "glee_gas_guzzler_drank"
+
+    GAMEMODE:RegisterStatusEffect( "gas_guzzler",
+        function( self, owner ) -- setup func
+            local allowedHealth -- nil while dead, so whatever health they respawn with counts
+
+            GAMEMODE:AddGasUser( owner ) -- gas spawns around them, vehicles or not
+
+            self:Hook( "glee_blockaddhealth", function( ply, _amount, reason )
+                if ply ~= owner then return end
+                if reason == gasGuzzlerReason then return end
+                return true
+
+            end )
+
+            -- the heals that SetHealth directly, the reclaimer and the like, are undone the next tick
+            self:Timer( "no_other_healing", 0, 0, function()
+                local health = owner:Health()
+                if health <= 0 then allowedHealth = nil return end
+
+                if not allowedHealth or health < allowedHealth then
+                    allowedHealth = health
+                    return
+
+                end
+                if health == allowedHealth then return end
+
+                owner:SetHealth( allowedHealth )
+                owner.glee_LastSetHealthReason = "glee_gas_guzzler_nohealing"
+
+            end )
+
+            -- primary fire on nothing, they drink the can instead
+            self:Hook( "glee_gascan_tryuse", function( user )
+                if user ~= owner then return end
+
+                owner:AddOverhealableHealth( gasGuzzlerHeal, gasGuzzlerReason )
+                allowedHealth = owner:Health()
+
+                owner:ViewPunch( Angle( -10, 0, 0 ) )
+                owner:EmitSound( "ambient/water/water_in_boat1.wav", 65, math.random( 120, 140 ) )
+                owner:EmitSound( "npc/barnacle/barnacle_gulp1.wav", 70, math.random( 90, 110 ) )
+
+                timer.Simple( 0.4, function()
+                    if not IsValid( owner ) then return end
+                    owner:EmitSound( "npc/barnacle/barnacle_gulp2.wav", 70, math.random( 90, 110 ) )
+
+                end )
+
+                return true
+
+            end )
+        end,
+        function( _, owner ) -- teardown func
+            GAMEMODE:RemoveGasUser( owner )
+
         end
     )
 
@@ -1657,7 +1719,7 @@ local items = {
         markup = 0.25,
         cooldown = math.huge,
         tags = { "MUTATIONS", "Debuff", "Bargain", "RareBargain", "Essential" },
-        slots = { "physiology" },
+        slots = { "physiology", "healingsource" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
@@ -1672,7 +1734,7 @@ local items = {
     },
     ["bleedingheart"] = {
         name = "Altruistic Physiology",
-        desc = "You just want everyone to be happy your entire life.\nYour physiology has finally adapted to your soul.\nYou give your life force to everyone around you." .. GAMEMODE.glee_BargainDescrip,
+        desc = "You've just wanted everyone to be happy your entire life.\nYour physiology has finally adapted to your soul.\nYou give your life force to everyone around you." .. GAMEMODE.glee_BargainDescrip,
         shCost = -200,
         markup = 0.25,
         cooldown = math.huge,
@@ -1687,6 +1749,25 @@ local items = {
         shCanShowInShop = shopHelpers.hasMultiplePeople,
         svOnPurchaseFunc = function( ply )
             ply:GiveStatusEffect( "bleeding_heart" )
+
+        end,
+    },
+    ["gasguzzler"] = {
+        name = "Gas Guzzler.",
+        desc = "Years of huffing at the pump.\nGas is the only thing that heals you now." .. GAMEMODE.glee_BargainDescrip,
+        shCost = -400,
+        markup = 0.25,
+        cooldown = math.huge,
+        tags = { "MUTATIONS", "Debuff", "Bargain", "RareBargain" },
+        slots = { "healingsource" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_INACTIVE,
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = -90,
+        shPurchaseCheck = { shopHelpers.aliveCheck, },
+        svOnPurchaseFunc = function( ply )
+            ply:GiveStatusEffect( "gas_guzzler" )
 
         end,
     },

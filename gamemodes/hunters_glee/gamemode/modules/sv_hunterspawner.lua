@@ -47,35 +47,61 @@ local wasLagging = false
 local crowdedCount = 15
 local crowdedLagBackoff = 5
 
+-- an imported entry's group is the misery that wrote it, the misery's own entries are one group
+local function groupOf( spawnSet, spawnEntry )
+    return spawnEntry.importedEntryOriginalSource or spawnSet.name
+
+end
+
 -- the spawnset module ( sv_spawnset.lua ) hands us a freshly parsed set via this
--- hook; we attach the spawner's own runtime fields to it, so the module stays
--- ignorant of spawner internals while we keep the convenience of storing them
+-- hook; we give it a fresh .spawner table for our own runtime state, so the module stays
+-- ignorant of spawner internals while we keep the convenience of storing it
 -- right on the parsed set
-hook.Add( "glee_spawnset_parsed", "glee_spawner_runtimefields", function( spawnSet )
-    -- build the spawner radius marchers from maxSpawnDist and minSpawnDist
-    spawnSet.dynamicTooCloseDist = spawnSet.maxSpawnDist * 0.5
-    spawnSet.dynamicTooFarDist = spawnSet.maxSpawnDist
-    spawnSet.softMinRadius = spawnSet.minSpawnDist + 500
+hook.Add( "glee_spawnset_rolled", "glee_spawner_runtimefields", function( spawnSet )
+    -- every group, in .spawns order, own entries first then each import
+    local groups = {}
+    local seenGroups = {}
+    for _, spawnEntry in ipairs( spawnSet.spawns ) do
+        local group = groupOf( spawnSet, spawnEntry )
+        if seenGroups[group] then continue end
 
-    -- pool of areas bots can potentially spawn in
-    spawnSet.areaPoolCache = nil
-    spawnSet.areaPoolCacheWeight = 0
+        seenGroups[group] = true
+        table.insert( groups, group )
 
-    -- last spawn area, so we can skip checking visibility again and again if we find a good spot
-    spawnSet.lastGoodSpawnArea = nil
-    spawnSet.lastGoodSpawnAreaWeight = 0
+    end
 
-    spawnSet.greatSpawnAreasMask = {}
-    spawnSet.greatSpawnAreasIndexed = {}
+    spawnSet.spawner = {
+        -- build the spawner radius marchers from maxSpawnDist and minSpawnDist
+        dynamicTooCloseDist = spawnSet.maxSpawnDist * 0.5,
+        dynamicTooFarDist = spawnSet.maxSpawnDist,
+        softMinRadius = spawnSet.minSpawnDist + 500,
 
-    spawnSet.staleSpawnAreasMask = {}
-    spawnSet.staleSpawnAreasIndexed = {}
+        -- pool of areas bots can potentially spawn in
+        areaPoolCache = nil,
+        areaPoolCacheWeight = 0,
 
-    spawnSet.forwardSpawnAreasMask = {} -- area = when it's forgotten
-    spawnSet.forwardSpawnAreasIndexed = {}
+        -- group = its last good spawn area, see goodSpawnAreaOf
+        goodSpawnAreas = {},
 
-    -- .spawns entry name = when its .cooldown ends, math.huge while it's alive or queued
-    spawnSet.cooldownsUntil = {}
+        -- rotatingWaves, each wave picks from the next group in turn
+        groups = groups,
+        groupTurn = 1,
+
+        -- each too close spawn bites dynamicTooCloseDist by more
+        dynamicTooCloseFailCounts = -2,
+
+        greatSpawnAreasMask = {},
+        greatSpawnAreasIndexed = {},
+
+        staleSpawnAreasMask = {},
+        staleSpawnAreasIndexed = {},
+
+        forwardSpawnAreasMask = {}, -- area = when it's forgotten
+        forwardSpawnAreasIndexed = {},
+
+        -- .spawns entry name = when its .cooldown ends, math.huge while it's alive or queued
+        cooldownsUntil = {},
+    }
 
 end )
 
@@ -181,7 +207,7 @@ end
 
 -- a .cooldown starts once the entry's last hunter is gone
 local function updateCooldowns( spawnSet, entryCounts, cur )
-    local cooldownsUntil = spawnSet.cooldownsUntil
+    local cooldownsUntil = spawnSet.spawner.cooldownsUntil
     for _, spawnEntry in ipairs( spawnSet.spawns ) do
         local cooldown = spawnEntry.cooldown
         if not cooldown then continue end
@@ -203,12 +229,33 @@ local function slotSize( spawnSet, slot, minutes, difficulty )
     if not slotSizes then return 1 end
 
     local size = slotSizes[slot]
-    if istable( size ) then -- "minutes*N" or "difficulty*N", parsed in ParsedSpawnSet
+    if istable( size ) then -- "minutes*N" or "difficulty*N", see sv_spawnsetbaker
         local units = { minutes = minutes, difficulty = difficulty }
         size = math.floor( units[size.scale] * size.mul )
 
     end
     return size
+
+end
+
+-- the entries this wave picks from
+-- with rotatingWaves, only the group whose turn it is, and the turn passes on every call
+local function waveSpawns( spawnSet )
+    local spawns = spawnSet.spawns
+    local spawner = spawnSet.spawner
+    local groups = spawner.groups
+    if not spawnSet.rotatingWaves or #groups <= 0 then return spawns end
+
+    local group = groups[spawner.groupTurn]
+    spawner.groupTurn = spawner.groupTurn % #groups + 1
+
+    local inGroup = {}
+    for _, spawnEntry in ipairs( spawns ) do
+        if groupOf( spawnSet, spawnEntry ) ~= group then continue end
+        table.insert( inGroup, spawnEntry )
+
+    end
+    return inGroup
 
 end
 
@@ -389,8 +436,8 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
         local budget = difficulty + spawnSet.startingBudget
         local classCounts = {}
         local pickedSpawns = {}
-        local spawns = spawnSet.spawns
-        local cooldownsUntil = spawnSet.cooldownsUntil
+        local spawns = waveSpawns( spawnSet )
+        local cooldownsUntil = spawnSet.spawner.cooldownsUntil
 
         local slotRoom = {}
         local function slotsHaveRoom( slots )
@@ -534,6 +581,10 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
 
             end, pickedSpawns )
 
+        elseif spawnSet.rotatingWaves then
+            -- that group's turn is spent, the next one waits a full interval
+            GAMEMODE.nextSpawnWave = cur + spawnSet.waveInterval / speedOverride
+
         else
             -- dont spam checks
             GAMEMODE.nextSpawnWave = cur + ( spawnSet.waveInterval / 20 ) / speedOverride
@@ -657,7 +708,7 @@ function GM:SpawnWaveSpawnIn()
 
         else
             local _, spawnSet = self:GetSpawnSet()
-            debugPrint( "didnt spawn", currSpawnEntry.name, currSpawnEntry.prettyName, spawnSet.dynamicTooCloseDist, spawnSet.dynamicTooFarDist )
+            debugPrint( "didnt spawn", currSpawnEntry.name, currSpawnEntry.prettyName, spawnSet.spawner.dynamicTooCloseDist, spawnSet.spawner.dynamicTooFarDist )
 
             if fails > discardEntryAtFails then
                 permaPrint( "GLEE: " .. currSpawnEntry.name .. " couldn't find anywhere to spawn, dropping it from the wave" )
@@ -801,7 +852,7 @@ local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they 
         if itsRemovalTime then -- booring enem
             local _, spawnSet = GAMEMODE:GetSpawnSet()
             if spawnSet then -- so boring, lets get ready to remove this bot, and maybe forgive them if we're wrong
-                local tooFarDist = spawnSet.dynamicTooFarDist
+                local tooFarDist = spawnSet.spawner.dynamicTooFarDist
                 local noEnemyToRemoveI = hunter.glee_NoEnemyToRemove
                 local spawnDistBite = noEnemyToRemoveI * 3
 
@@ -831,6 +882,8 @@ local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they 
                 GAMEMODE:AdjustDynamicTooFarCutoff( spawnDistBite * 1.5, spawnSet )
                 debugPrint( "stale bite", spawnDistBite )
 
+                spawnSet.spawner.areaPoolCacheWeight = spawnSet.spawner.areaPoolCacheWeight - 1 -- move the pool if too many bots are stale, it's probably behind the ply by now
+
             end
             local spawnArea = hunter.glee_SpawnArea
             GAMEMODE:UnmarkSpawnAreaAsGreat( spawnArea )
@@ -843,7 +896,6 @@ local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they 
             end
             SafeRemoveEntity( hunter )
             debugPrint( "REMOVE STALE", hunter )
-            spawnSet.areaPoolCacheWeight = spawnSet.areaPoolCacheWeight - 1 -- move the pool if too many bots are stale, it's probably behind the ply by now
             return
 
         end
@@ -1109,12 +1161,14 @@ end
 -- OVERCOMPLICATED!!!!!!
 function GM:AdjustDynamicTooCloseCutoff( adjust, spawnSet )
     if not spawnSet then
+        local _
         _, spawnSet = self:GetSpawnSet()
 
     end
-    local old = spawnSet.dynamicTooCloseDist
+    local spawner = spawnSet.spawner
+    local old = spawner.dynamicTooCloseDist
     local new = old + adjust
-    if new < old and new < spawnSet.softMinRadius then -- slow down when we're below the soft radius
+    if new < old and new < spawner.softMinRadius then -- slow down when we're below the soft radius
         new = old + ( adjust / 4 )
 
     end
@@ -1134,7 +1188,7 @@ function GM:AdjustDynamicTooCloseCutoff( adjust, spawnSet )
         min = hardMinSpawnDist -- maps below this size are not supported
     end
 
-    spawnSet.dynamicTooCloseDist = math.Clamp( new, min, max )
+    spawner.dynamicTooCloseDist = math.Clamp( new, min, max )
 
 end
 
@@ -1143,15 +1197,16 @@ function GM:AdjustDynamicTooFarCutoff( adjust, spawnSet )
         _, spawnSet = self:GetSpawnSet()
 
     end
-    local old = spawnSet.dynamicTooFarDist + adjust
+    local spawner = spawnSet.spawner
+    local old = spawner.dynamicTooFarDist
     local new = old + adjust
-    if new < old and new < spawnSet.softMinRadius then -- slow down when we're below the soft radius
+    if new < old and new < spawner.softMinRadius then -- slow down when we're below the soft radius
         new = old + ( adjust / 4 )
 
     end
-    local min = spawnSet.dynamicTooCloseDist + 1000
-    local max = math.max( spawnSet.maxSpawnDist, spawnSet.dynamicTooCloseDist + 2000 )
-    spawnSet.dynamicTooFarDist = math.Clamp( new, min, max )
+    local min = spawner.dynamicTooCloseDist + 1000
+    local max = math.max( spawnSet.maxSpawnDist, spawner.dynamicTooCloseDist + 2000 )
+    spawner.dynamicTooFarDist = math.Clamp( new, min, max )
 
 end
 
@@ -1160,10 +1215,11 @@ function GM:MarkSpawnAreaAsGreat( area )
     if not spawnSet then return end
     if not IsValid( area ) then return end
 
-    if spawnSet.greatSpawnAreasMask[area] then return end
+    local spawner = spawnSet.spawner
+    if spawner.greatSpawnAreasMask[area] then return end
 
-    spawnSet.greatSpawnAreasMask[area] = true
-    spawnSet.greatSpawnAreasIndexed[#spawnSet.greatSpawnAreasIndexed + 1] = area
+    spawner.greatSpawnAreasMask[area] = true
+    spawner.greatSpawnAreasIndexed[#spawner.greatSpawnAreasIndexed + 1] = area
 
 end
 
@@ -1172,12 +1228,13 @@ function GM:UnmarkSpawnAreaAsGreat( area )
     if not spawnSet then return end
     if not area or not IsValid( area ) then return end
 
-    if not spawnSet.greatSpawnAreasMask[area] then return end
-    spawnSet.greatSpawnAreasMask[area] = nil
+    local spawner = spawnSet.spawner
+    if not spawner.greatSpawnAreasMask[area] then return end
+    spawner.greatSpawnAreasMask[area] = nil
 
-    for ind, checkArea in ipairs( spawnSet.greatSpawnAreasIndexed ) do
+    for ind, checkArea in ipairs( spawner.greatSpawnAreasIndexed ) do
         if checkArea ~= area then continue end
-        table.remove( spawnSet.greatSpawnAreasIndexed, ind )
+        table.remove( spawner.greatSpawnAreasIndexed, ind )
         break
 
     end
@@ -1188,10 +1245,11 @@ function GM:MarkSpawnAreaAsStale( area )
     if not spawnSet then return end
     if not IsValid( area ) then return end
 
-    if spawnSet.staleSpawnAreasMask[area] then return end
+    local spawner = spawnSet.spawner
+    if spawner.staleSpawnAreasMask[area] then return end
 
-    spawnSet.staleSpawnAreasMask[area] = true
-    spawnSet.staleSpawnAreasIndexed[#spawnSet.staleSpawnAreasIndexed + 1] = area
+    spawner.staleSpawnAreasMask[area] = true
+    spawner.staleSpawnAreasIndexed[#spawner.staleSpawnAreasIndexed + 1] = area
 
     self:ForgetForwardSpawnArea( area, spawnSet )
 
@@ -1202,12 +1260,13 @@ function GM:UnmarkSpawnAreaAsStale( area )
     if not spawnSet then return end
     if not area or not IsValid( area ) then return end
 
-    if not spawnSet.staleSpawnAreasMask[area] then return end
-    spawnSet.staleSpawnAreasMask[area] = nil
+    local spawner = spawnSet.spawner
+    if not spawner.staleSpawnAreasMask[area] then return end
+    spawner.staleSpawnAreasMask[area] = nil
 
-    for ind, checkArea in ipairs( spawnSet.staleSpawnAreasIndexed ) do
+    for ind, checkArea in ipairs( spawner.staleSpawnAreasIndexed ) do
         if checkArea ~= area then continue end
-        table.remove( spawnSet.staleSpawnAreasIndexed, ind )
+        table.remove( spawner.staleSpawnAreasIndexed, ind )
         break
 
     end
@@ -1217,10 +1276,12 @@ function GM:RememberForwardSpawnArea( npc, area )
     local _, spawnSet = self:GetSpawnSet()
     if not spawnSet then return end
     if not area or not IsValid( area ) then return end
-    if spawnSet.staleSpawnAreasMask[area] then return end
 
-    local alreadyRemembered = spawnSet.forwardSpawnAreasMask[area]
-    spawnSet.forwardSpawnAreasMask[area] = CurTime() + forwardSpawnLifetime
+    local spawner = spawnSet.spawner
+    if spawner.staleSpawnAreasMask[area] then return end
+
+    local alreadyRemembered = spawner.forwardSpawnAreasMask[area]
+    spawner.forwardSpawnAreasMask[area] = CurTime() + forwardSpawnLifetime
     if alreadyRemembered then return end
 
     if debuggingVar:GetBool() then
@@ -1231,7 +1292,7 @@ function GM:RememberForwardSpawnArea( npc, area )
 
     end
 
-    local indexed = spawnSet.forwardSpawnAreasIndexed
+    local indexed = spawner.forwardSpawnAreasIndexed
     indexed[#indexed + 1] = area
     if #indexed > forwardSpawnMaxAreas then
         self:ForgetForwardSpawnArea( indexed[1], spawnSet )
@@ -1240,12 +1301,13 @@ function GM:RememberForwardSpawnArea( npc, area )
 end
 
 function GM:ForgetForwardSpawnArea( area, spawnSet )
-    if not spawnSet.forwardSpawnAreasMask[area] then return end
-    spawnSet.forwardSpawnAreasMask[area] = nil
+    local spawner = spawnSet.spawner
+    if not spawner.forwardSpawnAreasMask[area] then return end
+    spawner.forwardSpawnAreasMask[area] = nil
 
-    for ind, checkArea in ipairs( spawnSet.forwardSpawnAreasIndexed ) do
+    for ind, checkArea in ipairs( spawner.forwardSpawnAreasIndexed ) do
         if checkArea ~= area then continue end
-        table.remove( spawnSet.forwardSpawnAreasIndexed, ind )
+        table.remove( spawner.forwardSpawnAreasIndexed, ind )
         break
 
     end
@@ -1253,8 +1315,8 @@ end
 
 -- forgets expired areas, then returns a random remembered one, or nil
 function GM:PickForwardSpawnArea( spawnSet )
-    local indexed = spawnSet.forwardSpawnAreasIndexed
-    local mask = spawnSet.forwardSpawnAreasMask
+    local indexed = spawnSet.spawner.forwardSpawnAreasIndexed
+    local mask = spawnSet.spawner.forwardSpawnAreasMask
     local cur = CurTime()
     for ind = #indexed, 1, -1 do
         local area = indexed[ind]
@@ -1275,14 +1337,40 @@ local up50 = Vector( 0, 0, 50 )
 local tries = 10
 local shallowWaterOffset = Vector( 0, 0, 150 )
 
+-- the last good spawn area, so we can skip checking visibility again and again if we find a good spot
+-- with rotatingWaves each group keeps its own, so each group's hordes stack up in their own spot
+local function goodSpawnAreaOf( spawnSet, spawnEntry )
+    local group = spawnSet.name
+    if spawnSet.rotatingWaves then
+        group = groupOf( spawnSet, spawnEntry )
+
+    end
+
+    local goodSpawnAreas = spawnSet.spawner.goodSpawnAreas
+    local goodSpawnArea = goodSpawnAreas[group]
+    if not goodSpawnArea then
+        goodSpawnArea = {
+            area = nil,
+            weight = 0,
+            breakingMaxDist = nil, -- true when area was found past maxSpawnDist
+        }
+        goodSpawnAreas[group] = goodSpawnArea
+
+    end
+    return goodSpawnArea
+
+end
+
 -- spawn a hunter as far away as possible from every player by inching a distance check around
 -- made to be really random/overcomplicated so you never really know where they'll spawn from
 -- RAAAGH WHY DID I MAKE THIS SO OVERCOMPLCATED
 function GM:MarchValidHunterPos( spawnEntry )
     local _, spawnSet = self:GetSpawnSet()
-    local dynamicTooCloseFailCounts = spawnSet.dynamicTooCloseFailCounts or -2
-    local dynamicTooCloseDist = spawnSet.dynamicTooCloseDist
-    local dynamicTooFarDist = spawnSet.dynamicTooFarDist
+    local spawner = spawnSet.spawner
+    local goodSpawnArea = goodSpawnAreaOf( spawnSet, spawnEntry )
+    local dynamicTooCloseFailCounts = spawner.dynamicTooCloseFailCounts
+    local dynamicTooCloseDist = spawner.dynamicTooCloseDist
+    local dynamicTooFarDist = spawner.dynamicTooFarDist
     local breakingMaxDist
 
     if not self.biggestNavmeshGroups then return nil, nil, nil end
@@ -1310,11 +1398,11 @@ function GM:MarchValidHunterPos( spawnEntry )
     end
 
     local areas
-    local useCache = spawnSet.areaPoolCache and spawnSet.areaPoolCacheWeight > 0
+    local useCache = spawner.areaPoolCache and spawner.areaPoolCacheWeight > 0
     -- use cached result of below
     if useCache then
-        areas = spawnSet.areaPoolCache
-        spawnSet.areaPoolCacheWeight = spawnSet.areaPoolCacheWeight - 1
+        areas = spawner.areaPoolCache
+        spawner.areaPoolCacheWeight = spawner.areaPoolCacheWeight - 1
 
     end
 
@@ -1361,8 +1449,8 @@ function GM:MarchValidHunterPos( spawnEntry )
 
     -- dont use those expensive funcs up there every time
     if areas and not useCache then
-        spawnSet.areaPoolCache = areas
-        spawnSet.areaPoolCacheWeight = math.random( 5, 15 )
+        spawner.areaPoolCache = areas
+        spawner.areaPoolCacheWeight = math.random( 5, 15 )
 
     end
 
@@ -1387,15 +1475,15 @@ function GM:MarchValidHunterPos( spawnEntry )
         -- failing alot,
         -- or breaking max spawn dist
         -- prefer areas that spawned bots, that players killed
-        elseif ( breakingMaxDist or ( fails > 10 and cost > tries * 0.75 ) ) and #spawnSet.greatSpawnAreasIndexed >= 1 then
-            currentArea = spawnSet.greatSpawnAreasIndexed[math.random( 1, #spawnSet.greatSpawnAreasIndexed )]
-            breakingMaxDist = spawnSet.goodAreaBreakingMaxDist
+        elseif ( breakingMaxDist or ( fails > 10 and cost > tries * 0.75 ) ) and #spawner.greatSpawnAreasIndexed >= 1 then
+            currentArea = spawner.greatSpawnAreasIndexed[math.random( 1, #spawner.greatSpawnAreasIndexed )]
+            breakingMaxDist = goodSpawnArea.breakingMaxDist
 
         -- if we have a good spawn area, use it NOW!
-        elseif cost < tries * 0.5 and doHordeSpawn and IsValid( spawnSet.lastGoodSpawnArea ) and spawnSet.lastGoodSpawnAreaWeight > 0 then
-            currentArea = spawnSet.lastGoodSpawnArea
-            breakingMaxDist = spawnSet.goodAreaBreakingMaxDist
-            if spawnSet.staleSpawnAreasMask[currentArea] then
+        elseif cost < tries * 0.5 and doHordeSpawn and IsValid( goodSpawnArea.area ) and goodSpawnArea.weight > 0 then
+            currentArea = goodSpawnArea.area
+            breakingMaxDist = goodSpawnArea.breakingMaxDist
+            if spawner.staleSpawnAreasMask[currentArea] then
                 goodAreaBite = 10
 
             else
@@ -1409,16 +1497,16 @@ function GM:MarchValidHunterPos( spawnEntry )
         end
 
         if goodAreaBite then
-            spawnSet.lastGoodSpawnAreaWeight = spawnSet.lastGoodSpawnAreaWeight - goodAreaBite
-            if spawnSet.lastGoodSpawnAreaWeight <= 0 then
-                spawnSet.lastGoodSpawnArea = nil
-                spawnSet.lastGoodSpawnAreaWeight = 0
+            goodSpawnArea.weight = goodSpawnArea.weight - goodAreaBite
+            if goodSpawnArea.weight <= 0 then
+                goodSpawnArea.area = nil
+                goodSpawnArea.weight = 0
 
             end
         end
 
         if not currentArea or not IsValid( currentArea ) then continue end -- outdated
-        -- great/good spawn areas and the area cache are shared by every entry in the spawnset
+        -- great spawn areas and the area cache are shared by every entry in the spawnset, and the good spawn area by its group
         if firmPreference and not self:HasAllExtraFlags( currentArea, preferredEFlags ) then continue end
         if spawnEntry.areaFilter and not spawnEntry.areaFilter( spawnEntry, currentArea ) then continue end
 
@@ -1612,7 +1700,7 @@ function GM:MarchValidHunterPos( spawnEntry )
             elseif breakingMaxDist then
                 GAMEMODE:AdjustDynamicTooCloseCutoff( 0, spawnSet )
                 GAMEMODE:AdjustDynamicTooFarCutoff( 200, spawnSet )
-                debugPrint( "good spawn with breakingMaxDist", breakingMaxDist, spawnSet.goodAreaBreakingMaxDist )
+                debugPrint( "good spawn with breakingMaxDist", breakingMaxDist, goodSpawnArea.breakingMaxDist )
 
             else
                 GAMEMODE.roundExtraData.hunterSpawnerOverFailed = nil
@@ -1624,15 +1712,15 @@ function GM:MarchValidHunterPos( spawnEntry )
 
             -- good spawnpoint, spawn here
             fails = 0
-            spawnSet.dynamicTooCloseFailCounts = -2
+            spawner.dynamicTooCloseFailCounts = -2
             if justSpawnSomething then
                 GAMEMODE:BumpSessionDifficulty( spawnSet.diffBumpWhenWaveKilled / 4, "just_spawn_something" ) -- blast difficulty up
 
             end
 
-            local currentIsGreat = spawnSet.greatSpawnAreasMask[currentArea]
-            local currentIsStale = spawnSet.staleSpawnAreasMask[currentArea]
-            local isGoodArea = IsValid( spawnSet.lastGoodSpawnArea )
+            local currentIsGreat = spawner.greatSpawnAreasMask[currentArea]
+            local currentIsStale = spawner.staleSpawnAreasMask[currentArea]
+            local isGoodArea = IsValid( goodSpawnArea.area )
 
             -- chance to march goodSpawnAreas in a random direction, so the spawns stack up less
             -- also places goodSpawnAreas next to random spawns if we're not doing horde spawning, keeping goodSpawnArea up to date
@@ -1640,13 +1728,13 @@ function GM:MarchValidHunterPos( spawnEntry )
                 local potentials = currentArea:GetAdjacentAreas()
                 table.Shuffle( potentials )
                 for _, adjArea in ipairs( potentials ) do
-                    if spawnSet.staleSpawnAreasMask[adjArea] then continue end -- this area produced stale hunters!
+                    if spawner.staleSpawnAreasMask[adjArea] then continue end -- this area produced stale hunters!
                     if adjArea:GetSizeX() <= 25 or adjArea:GetSizeY() <= 25 then continue end -- too small
                     if nearestPlyPos and adjArea:IsVisible( nearestPlyPos ) then continue end -- dont regress
                     if preferredEFlags and not self:HasAllExtraFlags( adjArea, preferredEFlags ) then continue end -- respect it!
-                    spawnSet.lastGoodSpawnArea = adjArea
-                    spawnSet.goodAreaBreakingMaxDist = breakingMaxDist
-                    spawnSet.lastGoodSpawnAreaWeight = math.random( 5, 15 )
+                    goodSpawnArea.area = adjArea
+                    goodSpawnArea.breakingMaxDist = breakingMaxDist
+                    goodSpawnArea.weight = math.random( 5, 15 )
                     break
 
                 end
@@ -1655,14 +1743,14 @@ function GM:MarchValidHunterPos( spawnEntry )
             elseif not isGoodArea then
                 -- found a GREAT spawn area! use it for a while!
                 if currentIsGreat then
-                    spawnSet.lastGoodSpawnArea = currentArea
-                    spawnSet.goodAreaBreakingMaxDist = breakingMaxDist
-                    spawnSet.lastGoodSpawnAreaWeight = math.random( 25, 50 )
+                    goodSpawnArea.area = currentArea
+                    goodSpawnArea.breakingMaxDist = breakingMaxDist
+                    goodSpawnArea.weight = math.random( 25, 50 )
 
                 elseif not currentIsStale then
-                    spawnSet.lastGoodSpawnArea = currentArea
-                    spawnSet.goodAreaBreakingMaxDist = breakingMaxDist
-                    spawnSet.lastGoodSpawnAreaWeight = math.random( 1, 5 )
+                    goodSpawnArea.area = currentArea
+                    goodSpawnArea.breakingMaxDist = breakingMaxDist
+                    goodSpawnArea.weight = math.random( 1, 5 )
 
                 end
             end
@@ -1677,7 +1765,7 @@ function GM:MarchValidHunterPos( spawnEntry )
 
         if tooClose then
             dynamicTooCloseFailCounts = dynamicTooCloseFailCounts + 1
-            spawnSet.dynamicTooCloseFailCounts = dynamicTooCloseFailCounts
+            spawner.dynamicTooCloseFailCounts = dynamicTooCloseFailCounts
             GAMEMODE:AdjustDynamicTooCloseCutoff( -( dynamicTooCloseFailCounts * 5 ), spawnSet ) -- let it get closer next time
             debugPrint( "too close bite" )
 

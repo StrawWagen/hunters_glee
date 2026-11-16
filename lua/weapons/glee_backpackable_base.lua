@@ -37,6 +37,7 @@ SWEP.DrawAmmo = false
 SWEP.CarryEntClass = nil
 
 SWEP.HoldType = "duel" -- never "normal", the gamemode's dropper refuses to drop those
+SWEP.GleeFlashlightInHand = true -- the carried thing has no barrel, the flashlight's held in the off hand
 
 -- the elites' arms, posed into holding something out in front, guns shrunk away
 SWEP.ViewModel = "models/weapons/cstrike/c_pist_elite.mdl"

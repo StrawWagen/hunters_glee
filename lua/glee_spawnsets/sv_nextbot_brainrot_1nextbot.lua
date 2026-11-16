@@ -1,4 +1,3 @@
-
 local hasSanic = scripted_ents.GetStored( "npc_sanic" )
 local hasObunga = scripted_ents.GetStored( "npc_obunga" )
 
@@ -6,12 +5,12 @@ if not ( hasSanic or hasObunga ) then return end -- you are safe
 
 
 local set = {
-    name = "nextbot_brainrot_1nextbot", -- unique name
+    name = "nextbot_brainrot_1nextbot",
     prettyName = "The PNG Nextbot",
     description = "The true smartest enemy.",
     resourcesAdded = {},
     spawns = {},
-    maxSpawnCount = 1, -- hard cap on count
+    maxSpawnCount = 1,
     chanceToBeVotable = 0.25,
     chanceToBeVotableWhenHard = 1,
     easy = true,
@@ -39,7 +38,7 @@ if hasSanic then
         spawnType = "hunter",
         difficultyCost = { 10 },
         maxCount = { 1 },
-        postSpawnedFuncs = { randomizeVar }, -- this can be nil
+        postSpawnedFuncs = { randomizeVar },
         isBoss = true,
     }
     table.insert( set.spawns, npc )
@@ -68,7 +67,7 @@ if hasObunga then
         spawnType = "hunter",
         difficultyCost = { 15 },
         maxCount = { 1 },
-        postSpawnedFuncs = { randomizeVar }, -- this can be nil
+        postSpawnedFuncs = { randomizeVar },
         isBoss = true,
     }
     table.insert( set.spawns, npc )
@@ -95,5 +94,4 @@ function set:Activate()
     end )
 end
 
--- put the spawnset IN the global table to be gobbled
 table.insert( GLEE_SPAWNSETS, set )

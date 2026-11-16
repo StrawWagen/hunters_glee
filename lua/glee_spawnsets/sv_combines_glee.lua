@@ -2,13 +2,10 @@
 
 local genericCombineCounter = "terminator_nextbot_c*"
 
-local zambieSpawnSet = {
-    name = "combines_glee", -- unique name
+local spawnSet = {
+    name = "combines_glee",
     prettyName = "Combine RAID!",
     description = "Get down!",
-    difficultyPerMin = "default", -- difficulty per minute
-    waveInterval = "default", -- time between spawn waves
-    diffBumpWhenWaveKilled = "default", -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
     startingSpawnCount = 4,
     maxSpawnCount = 40,
     roundEndSound = "music/hl2_song6.mp3",
@@ -24,7 +21,6 @@ local zambieSpawnSet = {
             difficultyStopAfter = { 50, 100 },
             countClass = genericCombineCounter,
             minCount = { 4 },
-            postSpawnedFuncs = nil,
         },
         {
             hardRandomChance = { 0, 15 },
@@ -37,7 +33,6 @@ local zambieSpawnSet = {
             difficultyNeeded = { 15, 25 },
             difficultyStopAfter = { 100 },
             maxCount = { 1, 2 },
-            postSpawnedFuncs = nil,
         },
         {
             name = "combine_soldier_early", -- small squads, before they flood in
@@ -49,7 +44,6 @@ local zambieSpawnSet = {
             difficultyNeeded = { 50, 100 },
             difficultyStopAfter = { 300 },
             maxCount = { 3, 4 },
-            postSpawnedFuncs = nil,
         },
         {
             name = "combine_soldier",
@@ -60,7 +54,6 @@ local zambieSpawnSet = {
             difficultyCost = { 2, 4 },
             difficultyNeeded = { 100, 150 },
             countClass = genericCombineCounter,
-            postSpawnedFuncs = nil,
         },
         {
             hardRandomChance = { 0, 15 },
@@ -71,7 +64,6 @@ local zambieSpawnSet = {
             difficultyCost = { 20, 30 },
             difficultyNeeded = { 50, 100 },
             maxCount = { 4 },
-            postSpawnedFuncs = nil,
         },
         {
             hardRandomChance = { 25, 45 },
@@ -83,7 +75,6 @@ local zambieSpawnSet = {
             difficultyCost = { 4, 6 },
             difficultyNeeded = { 150, 200 },
             countClass = genericCombineCounter,
-            postSpawnedFuncs = nil,
         },
         {
             hardRandomChance = { 0, 5 },
@@ -94,7 +85,6 @@ local zambieSpawnSet = {
             difficultyCost = { 10, 20 },
             difficultyNeeded = { 50, 100 },
             maxCount = { 1 },
-            postSpawnedFuncs = nil,
         },
         {
             name = "combine_elite_COMMON", -- spawns early with a max count
@@ -105,7 +95,6 @@ local zambieSpawnSet = {
             difficultyCost = { 5, 15 },
             difficultyNeeded = { 150, 200 },
             maxCount = { 4 },
-            postSpawnedFuncs = nil,
         },
         {
             hardRandomChance = { 0, 5 },
@@ -116,7 +105,6 @@ local zambieSpawnSet = {
             difficultyCost = { 10, 20 },
             difficultyNeeded = { 150, 300 },
             maxCount = { 4 },
-            postSpawnedFuncs = nil,
         },
         {
             name = "combine_gunship",
@@ -147,7 +135,7 @@ local zambieSpawnSet = {
     }
 }
 
-function zambieSpawnSet:Activate()
+function spawnSet:Activate()
     self:Hook( "glee_gunship_firstspottedplayer", function()
         -- once per round, this misery can stay active across many rounds
         local roundData = GAMEMODE.roundExtraData
@@ -166,4 +154,4 @@ function zambieSpawnSet:Activate()
     end )
 end
 
-table.insert( GLEE_SPAWNSETS, zambieSpawnSet )
+table.insert( GLEE_SPAWNSETS, spawnSet )

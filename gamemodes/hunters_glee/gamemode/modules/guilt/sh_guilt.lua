@@ -187,17 +187,6 @@ hook.Add( "glee_shop_canpurchase", "glee_guiltycantbuydivine", function( purchas
 end )
 
 if CLIENT then
-    net.Receive( "glee_persistguiltchanged", function()
-        local oldGuiltInDays = net.ReadFloat()
-        local newGuiltInDays = net.ReadFloat()
-        if newGuiltInDays > oldGuiltInDays then
-            hook.Run( "glee_persistentguilt_increased", newGuiltInDays )
-
-        else
-            hook.Run( "glee_persistentguilt_decreased", newGuiltInDays )
-
-        end
-    end )
     net.Receive( "glee_dealtpvpdamage", function()
         local damage = net.ReadInt( 16 )
         hook.Run( "glee_dealtpvpdamage", damage )

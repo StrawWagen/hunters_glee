@@ -101,9 +101,7 @@ if SERVER then
                 if math.random( 0, 100 ) > healAmount then return end
 
                 healAmount = healAmount * 0.75
-                local newHealth = math.min( owner:Health() + healAmount, owner:GetMaxHealth() )
-                owner:SetHealth( newHealth )
-                owner.glee_LastSetHealthReason = "glee_divineintervention_blessing"
+                owner:AddHealth( healAmount, "glee_divineintervention_blessing" )
 
                 local armor = owner:Armor()
                 local newArmor = math.min( armor + healAmount * 0.5, math.max( owner:GetMaxArmor(), armor ) )

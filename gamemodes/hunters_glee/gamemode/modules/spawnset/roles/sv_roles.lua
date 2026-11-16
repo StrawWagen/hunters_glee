@@ -60,7 +60,7 @@ end
 
 local function giveWeapons( ply, weapons )
     for _, weapon in ipairs( weapons or {} ) do
-        setHelpers.giveWeapon( ply, weapon )
+        GAMEMODE:GiveMiserySpawnWeapon( ply, weapon )
 
     end
 end
@@ -236,7 +236,7 @@ end
     setHelpers.setBaseRole( self, "rebel" )
     setHelpers.addRoleVariant( self, "medic" )
 
-    Call from a spawnset's Activate, serverside, once.
+    Call from a spawnset's Activate, serverside.
     It owns the misery's player models, don't also call overridePlayerModel.
 --]]---------------------------------------------------------
 function setHelpers.setBaseRole( lifecycle, name )
@@ -265,11 +265,11 @@ function setHelpers.setBaseRole( lifecycle, name )
 
     end
     for _, weapon in ipairs( role.startWeapons or {} ) do
-        setHelpers.addStartWeapon( lifecycle, weapon, isOnBase )
+        GAMEMODE:AddMiserySpawnWeapon( lifecycle, "start", weapon, isOnBase )
 
     end
     for _, weapon in ipairs( role.defaultWeapons or {} ) do
-        setHelpers.addDefaultWeapon( lifecycle, weapon, isOnBase )
+        GAMEMODE:AddMiserySpawnWeapon( lifecycle, "default", weapon, isOnBase )
 
     end
 

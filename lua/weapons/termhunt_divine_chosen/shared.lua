@@ -301,11 +301,7 @@ function SWEP:ChosenThink()
     local ownersArmor = owner:Armor()
     if ownersHealth > 0 and self.nextHealthRegen < CurTime() then
         self.nextHealthRegen = CurTime() + 0.05
-        if ownersHealth < maxHp then
-            owner:SetHealth( math.Clamp( ownersHealth + 4, 0, maxHp ) )
-            owner.glee_LastSetHealthReason = "glee_chosen_regen"
-
-        end
+        owner:AddHealth( 4, "glee_chosen_regen" )
         if ownersArmor < maxArmor then
             owner:SetArmor( math.Clamp( ownersArmor + 1, 0, maxArmor ) )
 

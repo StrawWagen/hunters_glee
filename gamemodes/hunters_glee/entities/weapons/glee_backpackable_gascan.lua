@@ -44,6 +44,7 @@ SWEP.PlaceAng = Angle( 0, 90, 0 ) -- facing back at whoever placed it
 local fuelReach = 100
 
 -- Fuels the vehicle they're aiming at, if it's waiting for gas, using up the can and this weapon
+-- Aimed at anything else, glee_gascan_tryuse( owner, gas, wep ) gets a say, return true to use the can up
 function SWEP:PrimaryAttack()
     self:SetNextPrimaryFire( CurTime() + 0.5 )
     if not SERVER then return end
@@ -66,9 +67,15 @@ function SWEP:PrimaryAttack()
         veh = veh:GetParent()
 
     end
-    if not IsValid( veh ) then return end
 
-    if not GAMEMODE:FuelVehicle( veh, gas ) then return end
+    if IsValid( veh ) then
+        if not GAMEMODE:FuelVehicle( veh, gas ) then return end
+
+    else
+        if not hook.Run( "glee_gascan_tryuse", owner, gas, self ) then return end
+        SafeRemoveEntity( gas )
+
+    end
 
     -- the can's used up, let go of first so the switch away isn't held up by the hands being full
     self:StopCarrying()

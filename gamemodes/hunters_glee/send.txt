@@ -99,7 +99,7 @@ gamemodes\hunters_glee\gamemode\modules\shopitems\sh_itemverification.lua
 gamemodes\hunters_glee\gamemode\modules\statuseffects\cl_statuseffects.lua
 gamemodes\hunters_glee\gamemode\modules\statuseffects\sh_statuseffectbase.lua
 
-gamemodes\hunters_glee\gamemode\modules\spawnset\core\cl_spawnsetgobbler.lua
+gamemodes\hunters_glee\gamemode\modules\spawnset\core\cl_spawnsetloader.lua
 gamemodes\hunters_glee\gamemode\modules\spawnset\core\sh_spawnsetlifecyclebase.lua
 gamemodes\hunters_glee\gamemode\modules\spawnset\core\sh_spawnsetregistry.lua
 gamemodes\hunters_glee\gamemode\modules\spawnset\core\sh_spawnsetcommands.lua

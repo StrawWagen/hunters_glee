@@ -33,6 +33,7 @@ SWEP.ViewModelFOV = 54
 SWEP.UseHands = true
 
 SWEP.HoldType = "physgun"
+SWEP.GleeFlashlightInHand = true -- no barrel to mount the flashlight on, it's held in the off hand
 
 -- reclamation material is the owner's GLEE_RECLAMATION_MATERIAL ammo, no clip
 SWEP.Primary.ClipSize = -1

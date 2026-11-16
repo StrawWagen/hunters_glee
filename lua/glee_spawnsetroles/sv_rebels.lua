@@ -3,7 +3,7 @@
 
     ["rebel"] = {
         models = "models/player/group03/male_07.mdl",
-        startWeapons = { "weapon_crowbar" },
+        startWeapons = { "weapon_pistol" },
         variants = {
             ["medic"] = {
                 startWeapons = { "glee_tissue_reclaimer" },
@@ -15,8 +15,8 @@
 
     Every field is optional.
         models: a model path, or a list of them. Leave it out to wear their own.
-        startWeapons: a list, each works like setHelpers.addStartWeapon's weapon.
-        defaultWeapons: same, for addDefaultWeapon.
+        startWeapons: a list, each works like GAMEMODE:AddMiserySpawnWeapon's weapon, once a round.
+        defaultWeapons: same, every life.
         statusEffects: a list of status effect names, kept for as long as they have the role.
         variants: kits for some of the players on this role, by name, see setHelpers.addRoleVariant.
 

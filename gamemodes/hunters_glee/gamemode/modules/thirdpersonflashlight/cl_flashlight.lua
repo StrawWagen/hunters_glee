@@ -33,6 +33,7 @@ local emptyHandedHoldTypes = {
     normal = true,
 }
 
+
 -- "normal" holdtype activities, to the one handed pistol pose that holds the lamp out
 local lampHoldActivities = {}
 for offset = 0, 9 do
@@ -78,14 +79,14 @@ end
 -- weapon models that shine from somewhere of their own, in their root bone's space
 -- pos is offset from the top front middle of their bounds, ang turns the root bone's forward down the barrel
 local lightSourceModels = {
-    ["models/maxofs2d/camera.mdl"] = { pos = Vector( 3, -5, -12 ), ang = Angle( 0, 0, 0 ) }, -- the flash, above the lens
+    ["models/maxofs2d/camera.mdl"] = { pos = Vector( 3, -5, -9 ), ang = Angle( 0, 0, 0 ) }, -- the flash, above the lens
     ["models/weapons/taummod/w_gauss.mdl"] = { pos = Vector( -12, 5, -15 ), ang = Angle( 0, 0, 0 ) }, -- termhunt_taucannon, on top of the body, behind the prongs
-    ["models/weapons/w_rocket_launcher.mdl"] = { pos = Vector( -30, 4, -26 ), ang = Angle( 0, 0, 0 ) }, -- termhunt_taucannon, on top of the body, behind the prongs
+    ["models/weapons/w_rocket_launcher.mdl"] = { pos = Vector( -30, 4, -26 ), ang = Angle( 0, 0, 0 ) }, -- weapon_rpg, on top of the body, behind the prongs
 }
 local lowerModelNames = {}
 local lightSourceLocalPositions = {}
 
--- pos and ang of ent's entry in lightSourceModels, nil if it has none
+-- world pos and ang of ent's entry in lightSourceModels, nil if it has none
 local function getModelLightSource( ent )
     local mdl = ent:GetModel()
     if not mdl then return end
@@ -108,8 +109,11 @@ local function getModelLightSource( ent )
     if not localPos then
         local mins, maxs = ent:GetModelBounds()
         localPos = Vector( maxs.x, ( mins.y + maxs.y ) / 2, maxs.z ) + lightSource.pos
-        lightSourceLocalPositions[lowerMdl] = localPos
+        -- a model that hasn't loaded yet has empty bounds, caching those would misplace the light all session
+        if mins ~= maxs then
+            lightSourceLocalPositions[lowerMdl] = localPos
 
+        end
     end
 
     return LocalToWorld( localPos, lightSource.ang, rootMatrix:GetTranslation(), rootMatrix:GetAngles() )
@@ -171,9 +175,15 @@ local function getMuzzle( ent )
     end
 end
 
-local function isEmptyHanded( ply )
-    local wep = ply:GetActiveWeapon()
+local function isEmptyHanded( wep )
     return not IsValid( wep ) or emptyHandedHoldTypes[wep:GetHoldType()]
+
+end
+
+-- holding a weapon with no barrel to mount a light on, the lamp goes in the off hand instead, the weapon keeps its pose
+-- SWEPs ask for it with SWEP.GleeFlashlightInHand = true
+local function isLampInOffHand( wep )
+    return wep.GleeFlashlightInHand or false
 
 end
 
@@ -209,17 +219,36 @@ local function getHandLedBlend( ply, handLed )
 
 end
 
--- whether last frame was drawn from our eyes, not a camera prop, or anything else moving the view
--- false until the first frame is drawn, there's no last view to carry the viewmodel from before then
-local viewWasAtOwnEyes = false
-local maxViewOffsetSqr = 8^2 -- view bob from other addons
-local lastViewPos, lastViewAng -- where last frame was drawn from, the viewmodel was placed relative to it
+-- the last frame our viewmodel drew. only the main view draws it, so stair smoothing and view bob can't fool it
+local viewModelDrawnFrame = -1
 
--- seeing through our own eyes, with a viewmodel
+hook.Add( "PostDrawViewModel", "glee_FlashlightViewModelDrawn", function()
+    viewModelDrawnFrame = FrameNumber()
+
+end )
+
+-- seeing through our own eyes, in first person
 local function isInOwnFirstPerson( ply )
-    return ply == LocalPlayer() and viewWasAtOwnEyes and not ply:IsPlayingTaunt2() and not ply:ShouldDrawLocalPlayer() and ply:GetObserverMode() == OBS_MODE_NONE
+    if ply ~= LocalPlayer() then return false end
+    if ply:IsPlayingTaunt2() or ply:ShouldDrawLocalPlayer() then return false end
+    if ply:GetObserverMode() ~= OBS_MODE_NONE then return false end
+
+    if viewModelDrawnFrame >= FrameNumber() - 1 then return true end
+
+    -- empty handed, or a SWEP that draws no viewmodel
+    return ply:GetViewEntity() == ply
 
 end
+
+-- draws where every flashlight comes from, see drawFlashlightDebug
+local debugConVarName = "cl_glee_flashlight_debug"
+local debugConVar = CreateClientConVar( debugConVarName, "0", false, false, "Draw where each flashlight is placed from", 0, 1 )
+
+-- read every frame, a change callback keeps it in sync so nothing asks the convar each time, see setDebugging
+local debugging = false
+
+-- which way getFlashlightOrigin found the origin last call, only written while debugging
+local originSource
 
 -- returns where the beam starts and which way it points
 -- then where and how to draw the lamp, only when there's no weapon muzzle to shine from
@@ -230,8 +259,9 @@ local function getFlashlightOrigin( ply, eyeAng )
 
     end
 
-    local emptyHanded = isEmptyHanded( ply )
-    if not emptyHanded then
+    local wep = ply:GetActiveWeapon()
+    local emptyHanded = isEmptyHanded( wep )
+    if not emptyHanded and not isLampInOffHand( wep ) then
         local muzzlePos, muzzleAng
         -- the world model's muzzle sits somewhere else entirely from the gun you see in first person
         if isInOwnFirstPerson( ply ) then
@@ -249,26 +279,32 @@ local function getFlashlightOrigin( ply, eyeAng )
                     end
                 end
 
+                -- the viewmodel's already placed for this frame by PreRender, its attachments can be used as is
+                -- keeps the attachment's own angle, some weapons aim the light off the view, eg sideways
                 if muzzlePos then
-                    -- the viewmodel only moves to this frame's view after PreRender, so carry it there ourselves
-                    -- from the view it was last placed for, not the viewmodel itself, sights, sway and GetViewModelPosition offset it from that
-                    local localPos, localAng = WorldToLocal( muzzlePos, muzzleAng, lastViewPos, lastViewAng )
-                    return LocalToWorld( localPos, localAng, ply:EyePos(), ply:EyeAngles() )
+                    if debugging then originSource = "viewmodel" end
+                    return muzzlePos, muzzleAng
 
                 end
             end
         end
 
-        local wep = ply:GetActiveWeapon()
         if not muzzlePos then
             local mounted = getAttachment( wep, flashlightMountName )
-            if mounted then return mounted.Pos, mounted.Ang end
+            if mounted then
+                if debugging then originSource = "mount" end
+                return mounted.Pos, mounted.Ang
 
+            end
+        end
+        if not muzzlePos then
             muzzlePos, muzzleAng = getModelLightSource( wep )
+            if debugging then originSource = "lightsource" end
 
         end
         if not muzzlePos then
             muzzlePos, muzzleAng = getMuzzle( wep )
+            if debugging then originSource = "muzzle" end
 
         end
         if muzzlePos then
@@ -327,16 +363,19 @@ local function getFlashlightOrigin( ply, eyeAng )
 
         end
 
+        if debugging then originSource = "lamp" end
         return lampPos + lampAng:Forward() * lampLensOffset, beamAng, lampPos, lampAng
 
     end
 
     local bodyPos = getAttachmentPos( ply, "chest" ) or getAttachmentPos( ply, "eyes" )
     if bodyPos then
+        if debugging then originSource = "body" end
         return bodyPos + eyeAng:Forward() * bodyLightForward, eyeAng
 
     end
 
+    if debugging then originSource = "center" end
     return ply:WorldSpaceCenter() + eyeAng:Up() * ( ply:OBBMaxs().z * 0.3 ) + eyeAng:Forward() * bodyLightForward, eyeAng
 
 end
@@ -412,6 +451,96 @@ local function removeOwnFirstPersonLight( ply )
 
 end
 
+-- each way getFlashlightOrigin can find the origin gets its own color
+local debugSourceColors = {
+    viewmodel = Color( 0, 255, 255 ),
+    mount = Color( 0, 255, 0 ),
+    lightsource = Color( 255, 0, 255 ),
+    muzzle = Color( 255, 255, 0 ),
+    lamp = Color( 255, 140, 0 ),
+    body = Color( 160, 160, 160 ),
+    center = Color( 90, 90, 90 ),
+}
+local debugTraceHitColor = Color( 255, 0, 0 ) -- the world pushed the origin back
+local debugTraceClearColor = Color( 255, 0, 0, 40 )
+local debugBoxMins = Vector( -0.5, -0.5, -0.5 )
+local debugBoxMaxs = Vector( 0.5, 0.5, 0.5 )
+local debugBeamLength = 24
+local debugLineHeight = 12
+
+-- flashlight -> what manageFlashlight placed it with this frame, tables reused across frames
+-- keyed by light, not player, so a player with two lights shows two entries
+local debugEntries = setmetatable( {}, { __mode = "k" } )
+
+local function recordFlashlightDebug( flashlight, ply, untracedOrigin, origin, beamAng, trace )
+    local entry = debugEntries[flashlight]
+    if not entry then
+        entry = {}
+        debugEntries[flashlight] = entry
+
+    end
+
+    entry.frame = FrameNumber()
+    entry.source = originSource
+    entry.origin = origin
+    entry.untracedOrigin = untracedOrigin
+    entry.beamDir = beamAng:Forward()
+    entry.traceStart = trace.StartPos
+    entry.traceHit = trace.Hit
+    entry.text1 = "light " .. flashlight:EntIndex() .. ", " .. ply:Nick() .. ", first person: " .. tostring( isInOwnFirstPerson( ply ) )
+    entry.text2 = "viewmodel drawn frames ago: " .. ( FrameNumber() - viewModelDrawnFrame )
+
+end
+
+-- drawn over everything, viewmodel included, for exactly the frame it was recorded
+local function drawFlashlightDebug()
+    local frame = FrameNumber()
+
+    cam.Start3D()
+    for _, entry in pairs( debugEntries ) do
+        if entry.frame == frame then
+            local color = debugSourceColors[entry.source] or color_white
+            render.DrawWireframeBox( entry.origin, angle_zero, debugBoxMins, debugBoxMaxs, color, false )
+            render.DrawLine( entry.origin, entry.origin + entry.beamDir * debugBeamLength, color, false )
+            render.DrawLine( entry.traceStart, entry.untracedOrigin, entry.traceHit and debugTraceHitColor or debugTraceClearColor, false )
+
+        end
+    end
+    cam.End3D()
+
+    for _, entry in pairs( debugEntries ) do
+        if entry.frame == frame then
+            local screen = entry.origin:ToScreen()
+            if screen.visible then
+                local color = debugSourceColors[entry.source] or color_white
+                draw.SimpleText( entry.source or "?", "DebugFixed", screen.x, screen.y, color )
+                draw.SimpleText( entry.text1, "DebugFixed", screen.x, screen.y + debugLineHeight, color )
+                draw.SimpleText( entry.text2, "DebugFixed", screen.x, screen.y + debugLineHeight * 2, color )
+
+            end
+        end
+    end
+end
+
+-- only hooked while debugging, so it costs nothing otherwise
+local function setDebugging( enabled )
+    debugging = enabled
+    if enabled then
+        hook.Add( "HUDPaint", "glee_FlashlightDebug", drawFlashlightDebug )
+
+    else
+        hook.Remove( "HUDPaint", "glee_FlashlightDebug" )
+        table.Empty( debugEntries )
+
+    end
+end
+
+setDebugging( debugConVar:GetBool() )
+cvars.AddChangeCallback( debugConVarName, function( _, _, newValue )
+    setDebugging( tobool( newValue ) )
+
+end, "glee_flashlight_debug" )
+
 -- returns false when the flashlight should stop being tracked
 local function manageFlashlight( flashlight )
     if not IsValid( flashlight ) then return false end
@@ -443,13 +572,16 @@ local function manageFlashlight( flashlight )
         filter = ply,
 
     } )
+    local untracedOrigin = origin
     if result.Hit then
         origin = result.HitPos
 
     end
 
-    flashlight.glee_DebugPos = origin -- TEMP DEBUG
-    flashlight.glee_DebugAng = beamAng -- TEMP DEBUG
+    if debugging then
+        recordFlashlightDebug( flashlight, ply, untracedOrigin, origin, beamAng, result )
+
+    end
 
     if isInOwnFirstPerson( ply ) then
         updateOwnFirstPersonLight( ply, origin, beamAng )
@@ -544,7 +676,7 @@ end )
 -- clientside only, the server still animates them empty handed
 hook.Add( "TranslateActivity", "glee_FlashlightLampHoldPose", function( ply, act )
     if not flashlitPlayers[ply] then return end
-    if not isEmptyHanded( ply ) then return end
+    if not isEmptyHanded( ply:GetActiveWeapon() ) then return end
 
     local translated = GAMEMODE:TranslateActivity( ply, act )
     return lampHoldActivities[translated] -- nil keeps whatever else the weapon picked, like the shove's sprint
@@ -565,9 +697,6 @@ hook.Add( "PostDrawTranslucentRenderables", "glee_DrawFlashlightGlow", function(
     if drawingDepth or drawingSkybox then return end
 
     local me = LocalPlayer()
-    lastViewPos = EyePos()
-    lastViewAng = EyeAngles()
-    viewWasAtOwnEyes = lastViewPos:DistToSqr( me:EyePos() ) < maxViewOffsetSqr
 
     for ply in pairs( flashlitPlayers ) do
         if IsValid( ply ) and ( ply ~= me or ply:ShouldDrawLocalPlayer() ) then

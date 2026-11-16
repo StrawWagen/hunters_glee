@@ -1,7 +1,7 @@
 -- incase we keep: paparazzi = reporter
 
 local set = {
-    name = "riots_glee", -- unique name
+    name = "riots_glee",
 }
 
 local function giveRandomWeapon( _, hunter )
@@ -16,8 +16,8 @@ if SERVER then
         prettyName = "Riot's Glee",
         author = "dedactedlife and IndefiniteXD",
         description = "They're mad at your creations, and want all of you dead. Stop them.",
-        difficultyPerMin = "default", -- difficulty per minute
-        waveInterval = "default", -- time between spawn waves
+        difficultyPerMin = "default",
+        waveInterval = "default",
         maxSpawnDist = { 2500, 3500 }, -- CLOSE!
         startingSpawnCount = 1,
         maxSpawnCount = 12,
@@ -25,14 +25,14 @@ if SERVER then
         spawns = {
             {
                 hardRandomChance = nil,
-                name = "angry_rioter", -- unique name
+                name = "angry_rioter",
                 prettyName = "Angry Rioter",
-                class = "terminator_nextbot_fakeply", -- class spawned
+                class = "terminator_nextbot_fakeply",
                 spawnType = "hunter",
                 difficultyCost = 1,
-                countClass = "terminator_nextbot*", -- class COUNTED, uses findbyclass
-                minCount = { 0 }, -- will ALWAYS maintain this count
-                maxCount = { 12 }, -- will never exceed this count, uses findbycount
+                countClass = "terminator_nextbot*",
+                minCount = { 0 },
+                maxCount = { 12 },
                 postSpawnedFuncs = { giveRandomWeapon },
             }
         }
@@ -56,5 +56,4 @@ function set:Activate()
 
 end
 
--- put the spawnset IN the global table to be gobbled
 table.insert( GLEE_SPAWNSETS, set )
