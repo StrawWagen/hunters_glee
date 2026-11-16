@@ -512,6 +512,9 @@ GM:AddModelSoundAlias( "mossman", "group" ) -- mossman doesnt have any good soun
 
 local kleiner = {
     mowingDownEnemies = {
+        "combined/k_lab/k_lab_kl_wishiknew_cc.wav",
+        "vo/k_lab2/kl_slowteleport01.wav",
+        "vo/k_lab/kl_excellent.wav",
     },
     death = {
         "vo/k_lab/kl_ahhhh.wav",

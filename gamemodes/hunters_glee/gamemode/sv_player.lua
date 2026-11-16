@@ -631,9 +631,9 @@ hook.Add( "huntersglee_player_into_active", "glee_yaponroundstart", function( pl
     end )
 end )
 
-local mowingKillsNeeded = 5
-local mowingWindow = 8 -- kills older than this don't count towards the streak
-local mowingCooldown = 38
+local mowingKillsNeeded = 8
+local mowingWindow = 16 -- kills older than this don't count towards the streak
+local mowingCooldown = 240
 
 hook.Add( "OnNPCKilled", "glee_yaponmowingdown", function( _, attacker )
     if not IsValid( attacker ) or not attacker:IsPlayer() then return end
