@@ -324,24 +324,28 @@ if CLIENT then
 
     -- each type gets its own shapes, not just its own colour, so they read apart without telling colours apart
     -- blobs are layers, drawn in order. strandWidth scales the width a strand gets from its target's size
+    -- locals, not Material( ) inline in the blob tables
+    -- Material also returns a number, and the last call in a table puts it in there too
+    local blobThreat = Material( "hunters_glee/sixth_sense/blob_threat" )
+    local blobThreatSpikes = Material( "hunters_glee/sixth_sense/blob_threat_spikes" )
+    local blobLoot = Material( "hunters_glee/sixth_sense/blob_loot" )
+    local blobFriendly = Material( "hunters_glee/sixth_sense/blob_friendly" )
+
     local threatStyle = {
         strand = Material( "hunters_glee/sixth_sense/strand_threat" ),
         strandWidth = 3,
-        blob = {
-            Material( "hunters_glee/sixth_sense/blob_threat" ),
-            Material( "hunters_glee/sixth_sense/blob_threat_spikes" ),
-        },
+        blob = { blobThreat, blobThreatSpikes },
     }
     local senseStyles = {
         [SENSE_LOOT] = {
             strand = Material( "hunters_glee/sixth_sense/strand_loot" ),
             strandWidth = 1,
-            blob = { Material( "hunters_glee/sixth_sense/blob_loot" ) },
+            blob = { blobLoot },
         },
         [SENSE_FRIENDLY] = {
             strand = Material( "hunters_glee/sixth_sense/strand_friendly" ),
             strandWidth = 5,
-            blob = { Material( "hunters_glee/sixth_sense/blob_friendly" ) },
+            blob = { blobFriendly },
         },
         [SENSE_HAZARD] = threatStyle,
         [SENSE_HOSTILE] = threatStyle,

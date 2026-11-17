@@ -37,11 +37,12 @@ local SLIDE_PITCH_BASE       = 85
 local SLIDE_PITCH_SPAN       = 25
 
 local skullMat = Material( "vgui/hud/deadshopicon.png", "smooth noclamp" )
-local medalMats = {
-    Material( "icon16/award_star_gold_1.png", "smooth" ),
-    Material( "icon16/award_star_silver_1.png", "smooth" ),
-    Material( "icon16/award_star_bronze_3.png", "smooth" ),
-}
+-- locals, not Material( ) inline in the table
+-- Material also returns a number, and the last call in a table puts it in there too
+local goldMat = Material( "icon16/award_star_gold_1.png", "smooth" )
+local silverMat = Material( "icon16/award_star_silver_1.png", "smooth" )
+local bronzeMat = Material( "icon16/award_star_bronze_3.png", "smooth" )
+local medalMats = { goldMat, silverMat, bronzeMat }
 
 -- nil when the leaderboard can be shown
 local function blockReason()
