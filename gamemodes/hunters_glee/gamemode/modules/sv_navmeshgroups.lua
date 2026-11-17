@@ -514,9 +514,19 @@ function GM:TeleportRoomCheck()
         end
     end
     if doReset then
+        -- later spawns, eg the dead, avoid the map spawns too
         GAMEMODE.doNotUseMapSpawns = true
-        for _, plyGettinRespawned in ipairs( player.GetAll() ) do
-            plyGettinRespawned:KillSilent()
+
+        -- moved, not killed, so nobody's loadout or role is touched
+        -- the first one moved is who everyone else gathers around
+        local anchor
+        for _, plyGettinMoved in ipairs( GAMEMODE:getAlivePlayers() ) do
+            local pos = GAMEMODE:ClaimSpawnPos( plyGettinMoved, anchor )
+            if pos then
+                GAMEMODE:PutAtSpawnPos( plyGettinMoved, pos, anchor )
+
+            end
+            anchor = anchor or plyGettinMoved
 
         end
         permaPrint( reason ) -- log it

@@ -1331,6 +1331,94 @@ local spaceCheckUpOffset = Vector( 0, 0, 64 )
 local spaceCheckHull = Vector( 17, 17, 2 )
 local occupiedSpawnAreas = {}
 
+-- dont put another player here!
+local function holdSpawnArea( area )
+    local id = area:GetID()
+    occupiedSpawnAreas[id] = true
+    timer.Simple( 5, function()
+        occupiedSpawnAreas[id] = nil
+
+    end )
+end
+
+--[[---------------------------------------------------------
+    GM:ClaimSpawnPos
+    @desc Where ply should be put, near anchor so everyone ends up together.
+    With no anchor, on maps with a tp room, it's a big navmesh group instead.
+    The spot is held for 5 seconds, so the next player doesn't land on top of them.
+    @param ply: Who's being placed.
+    @param anchor: Who to put them near, an alive player, or nil.
+    @return: The position, or nil when there's nowhere better than where they are.
+--]]---------------------------------------------------------
+function GM:ClaimSpawnPos( ply, anchor )
+    if IsValid( anchor ) and not hook.Run( "huntersglee_blockspawn_nearplayers", ply, anchor ) and self.hasNavmesh then
+        for count = 1, 12 do
+            local start = anchor:GetPos()
+
+            -- traces a path along the navmesh away from anchor
+            -- won't go through playerclips
+            local center, area = self:GetNearbyWalkableArea( anchor, start, count, occupiedSpawnAreas )
+
+            if center then
+                center = center + Vector( 0, 0, 10 )
+
+                local tDat = {}
+                tDat.start = center
+                tDat.endpos = center + spaceCheckUpOffset
+                tDat.mask = bit.bor( MASK_SOLID, CONTENTS_PLAYERCLIP )
+                tDat.maxs = spaceCheckHull
+                tDat.mins = -spaceCheckHull
+                local isClear = not util.TraceHull( tDat ).Hit
+
+                if isClear then
+                    if area then
+                        holdSpawnArea( area )
+
+                    end
+                    return center
+
+                end
+            end
+        end
+
+    -- no player to spawn around? and map has a tp room?
+    elseif self.doNotUseMapSpawns and self.biggestNavmeshGroups then
+        -- if we aren't the first person spawning, then always spawn us in occupied groups
+        if IsValid( anchor ) then
+            local randomUsedArea = self:GetAreaInOccupiedBigGroupOrRandomBigGroup()
+            if IsValid( randomUsedArea ) then
+                return randomUsedArea:GetCenter()
+
+            end
+        end
+        -- we are first person spawning, use a random group and then everyone will spawn around us
+        return self:FindValidNavAreaCenter( self.biggestNavmeshGroups )
+
+    end
+end
+
+--[[---------------------------------------------------------
+    GM:PutAtSpawnPos
+    @desc Teleports ply to pos, then turns them to face anchor, so it's easy to find each other.
+    @param ply: Who's being placed.
+    @param pos: Where, eg from GM:ClaimSpawnPos.
+    @param anchor: Who to face, or nil.
+    @return: None
+--]]---------------------------------------------------------
+function GM:PutAtSpawnPos( ply, pos, anchor )
+    ply:TeleportTo( pos + Vector( 0, 0, 15 ) )
+
+    timer.Simple( engine.TickInterval(), function()
+        if not IsValid( ply ) then return end
+        if not IsValid( anchor ) then return end
+        local dirToAnchor = terminator_Extras.dirToPos( ply:GetShootPos(), anchor:GetShootPos() )
+        local ang = dirToAnchor:Angle()
+        ang.r = 0
+        ply:SetEyeAngles( ang )
+
+    end )
+end
+
 
 function GM:PlayerSpawn( ply, transiton )
 
@@ -1346,7 +1434,6 @@ function GM:PlayerSpawn( ply, transiton )
 
     local anotherAlivePlayer = GAMEMODE:anotherAlivePlayer( ply )
     local newPos = nil
-    local center, area = nil, nil
 
     local trueRespawn = not ply.glee_usedTrueRespawn
     local unstuckOrigin = ply.glee_unstuckOrigin
@@ -1362,83 +1449,16 @@ function GM:PlayerSpawn( ply, transiton )
 
     -- only set their pos if this :Spawn was caused by a death
     elseif trueRespawn then
-        -- no special spot to respawn, we'll respawn somewhere near another player, if possible
-        if IsValid( anotherAlivePlayer ) and not hook.Run( "huntersglee_blockspawn_nearplayers", ply, anotherAlivePlayer ) and GAMEMODE.hasNavmesh then
-            for count = 1, 12 do
+        newPos = GAMEMODE:ClaimSpawnPos( ply, anotherAlivePlayer )
 
-                local start = anotherAlivePlayer:GetPos()
-
-                -- traces a path along the navmesh away from anotherAlivePlayer
-                -- won't go through playerclips 
-                center, area = GAMEMODE:GetNearbyWalkableArea( anotherAlivePlayer, start, count, occupiedSpawnAreas )
-
-                if center then
-                    center = center + Vector( 0, 0, 10 )
-
-                    local tDat = {}
-                    tDat.start = center
-                    tDat.endpos = center + spaceCheckUpOffset
-                    tDat.mask = bit.bor( MASK_SOLID, CONTENTS_PLAYERCLIP )
-                    tDat.maxs = spaceCheckHull
-                    tDat.mins = -spaceCheckHull
-                    local isClear = not util.TraceHull( tDat ).Hit
-                    local valid = isClear
-
-                    if valid then
-                        newPos = center
-                        break
-
-                    end
-                end
-            end
-        -- no player to spawn around? and map has a tp room?
-        elseif GAMEMODE.doNotUseMapSpawns and GAMEMODE.biggestNavmeshGroups then
-            -- if we aren't the first person spawning, then always spawn us in occupied groups
-            if IsValid( anotherAlivePlayer ) then
-                local randomUsedArea = GAMEMODE:GetAreaInOccupiedBigGroupOrRandomBigGroup()
-                if IsValid( randomUsedArea ) then
-                    newPos = randomUsedArea:GetCenter()
-
-                -- fallback
-                else
-                    newPos = GAMEMODE:FindValidNavAreaCenter( GAMEMODE.biggestNavmeshGroups )
-
-                end
-            -- we are first person spawning, use a random group and then everyone will spawn around us
-            else
-                newPos = GAMEMODE:FindValidNavAreaCenter( GAMEMODE.biggestNavmeshGroups )
-
-            end
-        end
     end
 
-    -- if there was a good spawn pos to put us at..
     if newPos then
-        local offsettedNewPos = newPos + Vector( 0, 0, 15 )
         timer.Simple( engine.TickInterval(), function()
             if not IsValid( ply ) then return end
-            ply:TeleportTo( offsettedNewPos )
+            GAMEMODE:PutAtSpawnPos( ply, newPos, anotherAlivePlayer )
 
         end )
-        -- look at our anchor ply so its easy to find eachother
-        timer.Simple( engine.TickInterval() * 2, function()
-            if not IsValid( ply ) then return end
-            if not IsValid( anotherAlivePlayer ) then return end
-            local dirToMainPlayer = terminator_Extras.dirToPos( ply:GetShootPos(), anotherAlivePlayer:GetShootPos() )
-            local ang = dirToMainPlayer:Angle()
-            ang.r = 0
-            ply:SetEyeAngles( ang )
-
-        end )
-        -- dont put another player here!
-        if area then
-            local id = area:GetID()
-            occupiedSpawnAreas[id] = true
-            timer.Simple( 5, function()
-                occupiedSpawnAreas[id] = nil
-
-            end )
-        end
     end
 
     -- Stop observer mode
