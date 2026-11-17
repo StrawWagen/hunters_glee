@@ -82,7 +82,19 @@ function SWEP:Deploy()
 
 end
 
-function SWEP:Holster()
+function SWEP:Holster( switchingTo )
+    -- charge can't be banked across a weapon switch, that'd dodge the overcharge
+    -- no switchingTo means a strip or removal, so don't fire then
+    if SERVER and self:GetChargeLevel() > 0 then
+        if IsValid( switchingTo ) then
+            self:DumpCharge()
+
+        else
+            self:SetChargeLevel( 0 )
+
+        end
+    end
+
     self:KillSound()
     return true
 

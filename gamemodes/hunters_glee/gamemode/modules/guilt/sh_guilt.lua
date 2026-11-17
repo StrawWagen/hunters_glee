@@ -84,7 +84,7 @@ GM.PermaGuiltInfo = {
         killedForNoGuilt = true,
     },
     [PermaGuiltLevels.EXTREMELY_GUILTY] = {
-        desc = "You're extremely evil. The divine ways are closed to you. You are always one with the infernal powers. Smiting you atones for past sins.",
+        desc = "You're extremely evil. The divine ways are closed to you. You are always one with the infernal powers. Smiting you atones for past sins. Shoves hurt you badly.",
         message = "You're extremely evil.\nYou are now one with the infernal powers.",
         color = evilColor,
         divineItemsNotPurchaseable = true,
@@ -96,7 +96,7 @@ GM.PermaGuiltInfo = {
         godlySlayingRelievesGuilt = true, -- divine lightning and infernal summons forgive whoever killed them, see sv_guilt
     },
     [PermaGuiltLevels.SUPREMELY_GUILTY] = {
-        desc = "You're supremely evil. The divine ways are closed to you. You are always one with the infernal powers. Smiting you atones for past sins. You are punished wickedly for harming the innocent. All shop item cooldowns are longer.",
+        desc = "You're supremely evil. The divine ways are closed to you. You are always one with the infernal powers. Smiting you atones for past sins. Shoves hurt you badly. You are punished wickedly for harming the innocent. All shop item cooldowns are longer. You join the hunt dead.",
         message = "You're supremely evil.\nYou are now punished wickedly for harming the innocent.",
         color = evilColor,
         divineItemsNotPurchaseable = true,
@@ -108,6 +108,7 @@ GM.PermaGuiltInfo = {
         cooldownMul = 2,
         killedForNoGuilt = true,
         godlySlayingRelievesGuilt = true,
+        joinsTheHuntDead = true,
     },
 }
 

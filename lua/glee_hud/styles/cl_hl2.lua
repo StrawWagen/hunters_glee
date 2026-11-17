@@ -77,6 +77,10 @@ terminator_Extras.glee_RegisterStyle( "hl2", {
 
     shadowColor = Color( 0, 0, 0, 200 ),
 
+    -- RNDX blur intensity behind hud boxes, 0 for none. Just takes the edge off what's behind,
+    -- much more and it clashes with the engine's own hud
+    hudBlur = 0.2,
+
     -- layered over every style's own look, soulthought's and the decrees' included
     highContrast = {
         everyTextColor = Color( 255, 255, 255, 255 ),

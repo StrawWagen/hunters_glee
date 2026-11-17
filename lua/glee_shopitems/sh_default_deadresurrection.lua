@@ -181,19 +181,31 @@ end
 local shriveledScale = Vector( 0.5, 0.5, 0.5 )
 local crumpleForce = Vector( 0, 0, -150000 )
 
+local guiltyShoveDamage = { 25, 45 } -- taken, after the damage weakness doubles it
+
 if SERVER then
     GAMEMODE:RegisterStatusEffect( "infernalintervention_rawendofthedeal",
         function( self, owner ) -- setup func
             -- shove infernal intervention players to kill them with no blame
+            -- HookOnce, so self is whoever registered it first, check the shoved player instead
             self:HookOnce( "glee_shover_shove", function( shoved )
                 if not shoved:IsPlayer() then return end
                 if not shoved:HasStatusEffect( "infernalintervention_rawendofthedeal" ) then return end
 
+                local damage = math.random( 1, 3 )
+                if GAMEMODE:PersistentGuiltIsEnabled() then
+                    local _, guiltData = GAMEMODE:GetPlysGuiltLevel( shoved )
+                    if guiltData.alwaysTakingTheDeal then
+                        damage = math.random( guiltyShoveDamage[1], guiltyShoveDamage[2] ) / 2
+
+                    end
+                end
+
                 local dmgInfo = DamageInfo()
-                dmgInfo:SetDamage( math.random( 1, 3 ) )
+                dmgInfo:SetDamage( damage )
                 dmgInfo:SetAttacker( game.GetWorld() )
                 dmgInfo:SetInflictor( game.GetWorld() )
-                if shoved:Health() <= 5 then
+                if shoved:Health() <= damage * 2 then
                     dmgInfo:SetDamageForce( crumpleForce )
 
                 end

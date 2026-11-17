@@ -173,7 +173,7 @@ local function getRawCounts( cache, tblName, keyCol, keyVal )
 
 end
 
-local rewardPerStaleWeek = 0.1
+local rewardPerStaleWeek = 0.25
 local maxStaleReward = 2.5
 
 local function escapeRatioToMultiplier( escaped, remained, staleSince )
@@ -185,13 +185,13 @@ local function escapeRatioToMultiplier( escaped, remained, staleSince )
         addedByRatio = addedByRatio + math.Clamp( remained * 0.005, 0, 1.5 ) -- and continue up to 5x for really miserable maps
 
     else -- the normal path
-        local escapedWeighted = escaped * 1.4
+        local escapedWeighted = escaped * 1.25
         local ratio = remained / escapedWeighted
         ratio = ratio - 1
         -- if 10 escaped and 0 remained,  ratio is -1
-        -- if 20 escaped and 60 remained, ratio is 1.14
-        -- if 40 escaped and 60 remained, ratio is 0.07
-        -- if 80 escaped and 60 remained, ratio is -0.46
+        -- if 20 escaped and 60 remained, ratio is 1.4
+        -- if 40 escaped and 60 remained, ratio is 0.2
+        -- if 80 escaped and 60 remained, ratio is -0.4
 
         if ratio <= 0 then
             addedByRatio = math.Clamp( ratio, -1, 0 ) -- easy map, down to 0x ( floored later )

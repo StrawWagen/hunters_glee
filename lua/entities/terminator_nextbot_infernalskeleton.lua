@@ -40,7 +40,8 @@ if CLIENT then
 
         local fireEffects = self:GetFireEffects()
         local fire = fireEffects[math.random( 1, #fireEffects )]
-        CreateParticleSystem( self, fire, PATTACH_ABSORIGIN_FOLLOW, 0, offsetVec )
+        -- put out by eff_huntersglee_skeletondeath
+        self.glee_skeleFire = CreateParticleSystem( self, fire, PATTACH_ABSORIGIN_FOLLOW, 0, offsetVec )
 
     end
 

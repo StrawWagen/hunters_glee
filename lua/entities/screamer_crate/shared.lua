@@ -625,11 +625,6 @@ function ENT:DoScoreThink()
     self:UpdateGivenScore()
     self:BlamingThink()
 
-    if self:GetGivenScore() >= 0 then
-        self.lastProfitableTime = CurTime()
-
-    end
-
     local canPlace, noBuyReason = self:GlobalCooldownCanPlace()
     if canPlace then
         canPlace, noBuyReason = self:CalculateCanPlace()
@@ -833,15 +828,11 @@ function ENT:PlaceFailed()
 
 end
 
--- the score they read off the HUD is a little behind the server's,
--- so a spot that only just stopped paying still counts as paying
-local lossGateGrace = 0.5
-
 function ENT:BlockedForLoss( ply )
     if not self:IsLossGated( ply ) then return false end
     if ply:KeyDown( IN_RELOAD ) then return false end
 
-    return ( self.lastProfitableTime or 0 ) + lossGateGrace < CurTime()
+    return true
 
 end
 

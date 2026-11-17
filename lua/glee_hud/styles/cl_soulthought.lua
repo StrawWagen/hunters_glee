@@ -66,6 +66,9 @@ terminator_Extras.glee_RegisterStyle( "soulthought", {
 
     shadowColor = Color( 0, 0, 0, 230 ),
 
+    -- stacked boxes' smudges overlap, and each one's blur would blur its neighbour's again
+    hudBlur = 0,
+
     metrics = {
         -- for cl_plynames
         -- shrinks the panel itself, so that the fading away 'shadow' becomes the background of the nameplate

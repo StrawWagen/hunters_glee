@@ -22,6 +22,7 @@
     backdrops       family .. state -> Color, what every background draws in, see
                     handle:BackdropColor
     shadowColor     behind text drawn through handle:Draw
+    hudBlur         how hard hud boxes blur what's behind them, 0 for not at all
     metrics         name -> 1080p pixels, scaled by the build
     sounds          setName -> sound paths, see handle:PlaySound
     background      draws a backdrop, and blurs behind it when asked, signature on hl2

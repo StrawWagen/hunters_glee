@@ -554,6 +554,19 @@ hook.Add( "PlayerInitialSpawn", "glee_checkpersistentguilt", function( ply )
 
 end )
 
+hook.Add( "glee_full_load", "glee_guiltyjoinhuntdead", function( ply )
+    if not GAMEMODE:PersistentGuiltIsEnabled() then return end
+    if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
+    if ply:Health() <= 0 then return end
+
+    local _, guiltData = GAMEMODE:GetPlysGuiltLevel( ply )
+    if not guiltData.joinsTheHuntDead then return end
+
+    ply:KillSilent()
+    huntersGlee_Notify( { ply }, { text = "Your sins are too great.\nYou join the hunt among the dead.", kind = "alert", time = 10 } )
+
+end )
+
 local function isNewbieKill( killer, died )
     return GAMEMODE:IsFirstTimePlayer( died ) and not GAMEMODE:IsFirstTimePlayer( killer )
 

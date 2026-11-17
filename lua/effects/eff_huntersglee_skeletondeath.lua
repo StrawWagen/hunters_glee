@@ -1,4 +1,4 @@
--- An infernal skeleton dying. Its glow cuts out and its bones crumble, see terminator_nextbot_infernalskeleton.lua
+-- An infernal skeleton dying. Its glow and flames cut out and its bones crumble, see terminator_nextbot_infernalskeleton.lua
 -- local fx = EffectData()
 -- fx:SetOrigin( skeleton:WorldSpaceCenter() )
 -- fx:SetEntity( skeleton )
@@ -23,6 +23,12 @@ function EFFECT:Init( data )
     if not IsValid( skeleton ) then return end
 
     skeleton.glee_skeleDead = true
+
+    local fire = skeleton.glee_skeleFire
+    if IsValid( fire ) then
+        fire:StopEmission( false, true )
+
+    end
 
     local scale = skeleton:GetModelScale()
     local scaleSqr = scale * scale
