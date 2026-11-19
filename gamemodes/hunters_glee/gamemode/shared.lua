@@ -78,7 +78,7 @@ function GM:SharedSetup()
 
 end
 
-function GM:PostCleanupMap()
+local function postCleanupMap()
 
     GAMEMODE:SharedSetup()
 
@@ -103,6 +103,10 @@ function GM:PostCleanupMap()
 
     end
 end
+
+-- round reset, status effect cleanup, and player setup all live in here, any addon's PostCleanupMap hook returning a value would skip GM:PostCleanupMap
+-- with ULib, HOOK_MONITOR_HIGH runs this before every other hook, so none of them can skip it
+hook.Add( "PostCleanupMap", "glee_postcleanupmap", postCleanupMap, HOOK_MONITOR_HIGH )
 
 function GM:InitPostEntity()
     GAMEMODE:SharedSetup()

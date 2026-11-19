@@ -56,6 +56,8 @@ local vecNeg5Hundred = Vector( 0, 0, -500 )
 local vectorUp25 = Vector( 0, 0, 25 )
 local bigNegativeZ = Vector( 0, 0, -6000 )
 
+local maxPlayerIgniteTime = 6 -- seconds, a full powa * 5 burn is a death sentence for players
+
 function terminator_Extras.glee_PowafulLightning( inflic, attacker, strikingPos, powa )
 
     local strikePosSkyTr = terminator_Extras.getSkyTr( strikingPos )
@@ -207,7 +209,12 @@ function terminator_Extras.glee_PowafulLightning( inflic, attacker, strikingPos,
         thing:TakeDamageInfo( damage )
 
         if thing ~= attacker and thing:IsSolid() and not ( thing:IsWeapon() and IsValid( thing:GetOwner() ) and thing:GetOwner():IsPlayer() ) then
-            thing:Fire( "IgniteLifetime", powa * 5 )
+            local igniteTime = powa * 5
+            if thing:IsPlayer() then
+                igniteTime = math.min( igniteTime, maxPlayerIgniteTime )
+
+            end
+            thing:Fire( "IgniteLifetime", igniteTime )
 
         end
     end

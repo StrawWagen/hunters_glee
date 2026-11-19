@@ -662,3 +662,26 @@ goes in a glee rebinding menu?
 -- custom mixed misery rules
 -- rotatingWaves, makes every wave come from a different misery
 -- optional, don't error if this misery doesn't exist 
+
+-- tip the bank when signing
+-- command to reset your own hints
+-- blastcrabs spawn thru walls
+-- black bars
+-- tank zambs move faster while on fire?
+-- players spawning into the server needs a stronger effect
+-- tissue out of range, tries to move body towards hologram
+-- hologram makes it hard to see the snapping body gag
+-- insufficient reclimation material makes them think of the corpse not being here
+-- dont finish the job with reclaimer, leave a body 
+-- is turret placing hint big?
+-- reclaimer removes decals from the wall?
+-- shop stays open after round ends
+
+-- HIM
+fullscreen datamosh effect
+all other visuals are off, so of course people focus on the speaking
+teleport people out of the void? you have entered the confusion realms
+catacombs of solaris
+i have drank my cup of dust
+-- !!! UNEARNED STEALING
+HIM is a strong case of apocryphal design

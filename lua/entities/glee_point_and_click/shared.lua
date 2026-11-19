@@ -419,6 +419,14 @@ function ENT:PostInitializeFunc()
 
 end
 
+-- Runs every tick over every entity in a 2048 sphere, so metatable checks, not :IsPlayer() and friends' _index calls.
+local getmetatable = getmetatable
+local grabbableMetas = {
+    [FindMetaTable( "Player" )] = true,
+    [FindMetaTable( "NPC" )] = true,
+    [FindMetaTable( "NextBot" )] = true,
+}
+
 function ENT:GetNearestTarget()
     local nearestPly
     local nearestDistance = math.huge
@@ -426,20 +434,20 @@ function ENT:GetNearestTarget()
     local owner = self.player
 
     for _, ent in ipairs( ents.FindInSphere( myPos, 2048 ) ) do
-        if ent:IsPlayer() or ent:IsNPC() or ent:IsPlayer() then
+        if grabbableMetas[getmetatable( ent )] then
             if ent == owner then continue end
             if ent:Health() <= 0 then continue end
             if ent.IsHomeless or ent.isGleeRescueHeli then continue end
             if not IsValid( ent:GetPhysicsObject() ) then continue end
+
+            -- Distance before the hook and trace, so only a new nearest pays for them.
+            local distance = myPos:Distance( ent:NearestPoint( myPos ) )
+            if distance >= nearestDistance then continue end
             if hook.Run( "glee_pointandclick_cantarget", self, ent ) == false then continue end
             if not terminator_Extras.PosCanSee( myPos, ent:WorldSpaceCenter() ) then continue end
 
-            local distance = myPos:Distance( ent:NearestPoint( myPos ) )
-            if distance < nearestDistance then
-                nearestPly = ent
-                nearestDistance = distance
-
-            end
+            nearestPly = ent
+            nearestDistance = distance
         end
     end
 

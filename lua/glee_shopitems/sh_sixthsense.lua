@@ -401,7 +401,8 @@ if CLIENT then
     -- must outlast the longest gap between updates to one target, server's pathRefreshMax + maxPaths * pathSendDelayMax, or live strands dim
     local strandFadeDelay = 4.5
     local strandFadeDuration = 1.5
-    local strandSnapDuration = 0.8
+    local strandCrossfadeDuration = 0.8 -- old shape fades out in place as the new one fades in, morphing between them reads as the whole strand sliding
+    local strandSameTolerance = 64 -- a new path this close to the old one keeps the old shape, so most refreshes change nothing
     local strandGrowDuration = 1.2 -- new strands creep out to full length over this
     local strandGrowEdge = 150 -- how soft the creeping tip is
     local strandAttentionLoseTime = 0.25 -- seconds for strands to fade out once we move too fast
@@ -481,19 +482,32 @@ if CLIENT then
 
     end
 
-    -- relies on resamplePath spacing every point but the last wispSpacing apart
-    local function samplePathAt( points, dist )
-        local count = #points
-        local index = math.floor( dist / wispSpacing ) + 1
-        if index >= count then return points[count].pos:Unpack() end
+    local strandSameToleranceSqr = strandSameTolerance ^ 2
 
-        local from = points[index]
-        local to = points[index + 1]
-        local span = to.dist - from.dist
-        local fraction = span > 0 and math.Clamp( ( dist - from.dist ) / span, 0, 1 ) or 0
-        local fromPos = from.pos
-        local toPos = to.pos
-        return Lerp( fraction, fromPos.x, toPos.x ), Lerp( fraction, fromPos.y, toPos.y ), Lerp( fraction, fromPos.z, toPos.z )
+    -- the start is skipped, it's pinned to us and shifts with every step we take
+    local function staysNear( points, otherPoints )
+        for _, point in ipairs( points ) do
+            if point.dist < wispPinBlend then continue end
+
+            local pos = point.pos
+            local near = false
+            for _, otherPoint in ipairs( otherPoints ) do
+                if pos:DistToSqr( otherPoint.pos ) < strandSameToleranceSqr then
+                    near = true
+                    break
+
+                end
+            end
+            if not near then return false end
+
+        end
+        return true
+
+    end
+
+    local function isSameShape( path, otherPath )
+        if path.senseType ~= otherPath.senseType then return false end
+        return staysNear( path.points, otherPath.points ) and staysNear( otherPath.points, path.points )
 
     end
 
@@ -524,8 +538,15 @@ if CLIENT then
         path.waveLength = wispWaveLength * ( 1 + ( seed - 0.5 ) * 2 * wispVariance )
         path.driftSpeed = wispDriftSpeed * ( 1 + ( 0.5 - seed ) * 2 * wispVariance )
 
-        -- snap from the old shape. if the old one was still snapping itself, it jumps to where it was headed
         local previous = effect.strands[entIndex]
+        if previous and isSameShape( path, previous ) then
+            previous.size = path.size
+            previous.received = CurTime()
+            return
+
+        end
+
+        -- crossfade from the old shape. if the old one was still crossfading itself, its own old shape drops
         if previous then
             previous.previous = nil
             path.previous = previous
@@ -536,27 +557,16 @@ if CLIENT then
 
         end
         path.received = CurTime()
+        path.crossfadeStart = CurTime()
         effect.strands[entIndex] = path
 
     end )
 
     local strandColor = Color( 255, 255, 255, 255 )
 
-    local function drawStrand( path, startPos, curTime, staleness )
+    local function drawStrand( path, startPos, curTime, visibility )
         local points = path.points
         local length = path.length
-
-        local previous = path.previous
-        local snap = 1
-        if previous then
-            snap = math.Clamp( ( curTime - path.received ) / strandSnapDuration, 0, 1 )
-            snap = snap * snap * ( 3 - 2 * snap )
-            if snap >= 1 then
-                path.previous = nil
-                previous = nil
-
-            end
-        end
 
         local senseColor = senseColors[path.senseType]
         local style = senseStyles[path.senseType]
@@ -576,11 +586,6 @@ if CLIENT then
         local reach = ( 1 - ( 1 - grow ) ^ 2 ) * ( length + strandGrowEdge )
 
         local pinX, pinY, pinZ = ( startPos - path.builtFrom ):Unpack()
-        local oldPinX, oldPinY, oldPinZ
-        if previous then
-            oldPinX, oldPinY, oldPinZ = ( startPos - previous.builtFrom ):Unpack()
-
-        end
 
         render.StartBeam( #points )
         for _, point in ipairs( points ) do
@@ -598,20 +603,13 @@ if CLIENT then
             local x = pos.x + pinX * pinWeight
             local y = pos.y + pinY * pinWeight
             local z = pos.z + pinZ * pinWeight
-            if previous then
-                local oldX, oldY, oldZ = samplePathAt( previous.points, dist )
-                x = Lerp( snap, oldX + oldPinX * pinWeight, x )
-                y = Lerp( snap, oldY + oldPinY * pinWeight, y )
-                z = Lerp( snap, oldZ + oldPinZ * pinWeight, z )
-
-            end
 
             local side = point.side
             wispPos:SetUnpacked( x + side.x * sway, y + side.y * sway, z + rise )
 
             local grown = math.Clamp( ( reach - dist ) / strandGrowEdge, 0, 1 )
 
-            local brightness = ( 1 - along ) * fadeIn * grown * ( 1 - staleness ) * wispAlpha
+            local brightness = ( 1 - along ) * fadeIn * grown * visibility * wispAlpha
             strandColor.r = senseColor.r * brightness
             strandColor.g = senseColor.g * brightness
             strandColor.b = senseColor.b * brightness
@@ -658,7 +656,23 @@ if CLIENT then
                         continue
 
                     end
-                    drawStrand( path, startPos, curTime, 1 - ( 1 - staleness ) * attention )
+                    local visibility = ( 1 - staleness ) * attention
+
+                    local previous = path.previous
+                    if previous then
+                        local blend = math.Clamp( ( curTime - path.crossfadeStart ) / strandCrossfadeDuration, 0, 1 )
+                        blend = blend * blend * ( 3 - 2 * blend )
+                        if blend >= 1 then
+                            path.previous = nil
+
+                        else
+                            drawStrand( previous, startPos, curTime, visibility * ( 1 - blend ) )
+
+                        end
+                        visibility = visibility * blend
+
+                    end
+                    drawStrand( path, startPos, curTime, visibility )
 
                 end
             end )
@@ -779,6 +793,9 @@ if SERVER then
     local pathSendDelayMax = 0.5 -- after each path is sent
 
     local maxPaths = 4
+    -- closer than this the blobs take over
+    -- keep it above the client's wispPinBlend, isSameShape ignores everything a path has inside that
+    local minPathDistance = 300
     local maxNetPoints = 63 -- networked in 6 bits
     local shownPathLength = 1600
     local hoverOffset = Vector( 0, 0, 48 )
@@ -815,6 +832,7 @@ if SERVER then
 
             local dist = ent:GetPos():Distance( myPos )
             if dist > maxDistance then continue end
+            if dist < minPathDistance then continue end
 
             local entsTbl = entMeta.GetTable( ent )
 
