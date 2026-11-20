@@ -142,7 +142,7 @@ function plyMeta:DropWeaponKeepAmmo( wep, force )
     -- a tick late, a carried thing releases itself as it drops, and a switch in the same tick still sees it held
     timer.Simple( 0, function()
         if not IsValid( self ) then return end
-        self:SelectWeapon( "termhunt_shove" )
+        self:SelectWeapon( "termhunt_hands" )
 
     end )
 

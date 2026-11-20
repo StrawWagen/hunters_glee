@@ -286,6 +286,10 @@ divine intervention description change ( encase yourself within a weak shell of 
 -- shield on back eating bullets? --done
 -- ragdoll progress carrying between revives -- done
 
+-- shoot beartrap to break beartrap -- done
+-- shove rename to hands -- done
+
+
 
 -- make radio a purchasable item, moving all global/prox chat stuff to settings menu
 -- gateway to expensive items, airdropped in
@@ -636,9 +640,7 @@ goes in a glee rebinding menu?
 
 -- fishing while dead
 
--- shoot beartrap to break beartrap
 -- E to interact is weak
--- shove rename to hands
 -- different hint in later tutorial rounds
 -- a body with a skull hint plays through objects
 -- a flaregun hint was misunderstood 
@@ -677,6 +679,10 @@ goes in a glee rebinding menu?
 -- reclaimer removes decals from the wall?
 -- shop stays open after round ends
 
+-- make ALL func_movelinear do at least 1 crushing damage
+-- snap post-respawn unstucks to navmesh
+-- impulse 201
+
 -- HIM
 fullscreen datamosh effect
 all other visuals are off, so of course people focus on the speaking
@@ -685,3 +691,4 @@ catacombs of solaris
 i have drank my cup of dust
 -- !!! UNEARNED STEALING
 HIM is a strong case of apocryphal design
+

@@ -492,6 +492,18 @@ hook.Add( "glee_shover_preshove", "glee_unchainsleepers", function( shoved )
 
 end )
 
+-- weak forces come constantly, eg a phantom pushing whatever it's near
+-- lazy keeps that from waking whole piles under load
+hook.Add( "zambies_glee_preapplyweakforce_toprop", "glee_unchainsleepers", function( pushed )
+    unchainSleeperLazy( pushed )
+
+end )
+
+hook.Add( "zambies_glee_preapplyforce_toprop", "glee_unchainsleepers", function( thrown )
+    unchainSleeper( thrown )
+
+end )
+
 local propsInMap = 0
 local wepGibCount = 0
 hook.Add( "PreCleanupMap", "glee_smartsleep_resetpropcount", function()

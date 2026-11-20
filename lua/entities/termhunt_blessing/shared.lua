@@ -18,6 +18,11 @@ ENT.PosOffset = Vector( 0, 0, 10 )
 ENT.CanInstantlyProfit = false
 ENT.CanProfitLater = false
 
+if SERVER then
+    util.AddNetworkString( "glee_blessing_strength" )
+
+end
+
 if CLIENT then
     function ENT:DoHudStuff()
         local scoreGained = math.Round( self:GetGivenScore() )
@@ -25,6 +30,66 @@ if CLIENT then
         self:DrawPlacingLine( "Blessing Cost: " .. scoreGained )
 
     end
+
+    -- HACK, the local player's abs angles carry their eye pitch, so follow mode tilts the effect with their view
+    -- on ourselves we drive control point 0 by hand every frame instead, yaw only
+    local localUpright = Angle()
+
+    local function startLocalFollow( ply, effect )
+        hook.Add( "Think", "glee_blessing_localfollow", function()
+            if not IsValid( effect ) or not IsValid( ply ) then
+                hook.Remove( "Think", "glee_blessing_localfollow" )
+                return
+
+            end
+
+            localUpright.y = ply:GetAngles().y
+            effect:SetControlPoint( 0, ply:GetPos() )
+            effect:SetControlPointOrientation( 0, localUpright:Forward(), localUpright:Right(), localUpright:Up() )
+
+        end )
+    end
+
+    -- glow on whoever's blessed, control point 1's x is the spawn rate, 1 is normal speed
+    local function updateBlessingEffect( ent, strength )
+        local effect = ent.glee_blessingEffect
+        if strength <= 0 then
+            if IsValid( effect ) then effect:StopEmission() end
+            ent.glee_blessingEffect = nil
+            return
+
+        end
+
+        if not IsValid( effect ) then
+            local isLocal = ent == LocalPlayer()
+            if isLocal then
+                effect = CreateParticleSystem( ent, "glee_ghostly_blessing_firstperson", PATTACH_ABSORIGIN )
+
+            else
+                effect = CreateParticleSystem( ent, "glee_ghostly_blessing_world", PATTACH_ABSORIGIN_FOLLOW )
+
+            end
+            if not effect then return end
+            ent.glee_blessingEffect = effect
+
+            if isLocal then
+                startLocalFollow( ent, effect )
+
+            end
+        end
+
+        effect:SetControlPoint( 1, Vector( strength, 0, 0 ) )
+
+    end
+
+    -- sent every second, so an effect lost to PVS comes back on the next one
+    net.Receive( "glee_blessing_strength", function()
+        local ent = net.ReadEntity()
+        local strength = net.ReadFloat()
+        if not IsValid( ent ) then return end
+        updateBlessingEffect( ent, strength )
+
+    end )
 end
 
 function ENT:CalculateCanPlace()
@@ -57,7 +122,16 @@ end
 
 local blessTime = 120 -- seconds
 local blessTimeBackup = 140 -- in case the timer errors
+local blessCountdownTime = 10 -- the fading notice, and the particles' final drop to 0
 local notifDistCutoff = 2500
+
+local function sendBlessingStrength( target, strength )
+    net.Start( "glee_blessing_strength" )
+        net.WriteEntity( target )
+        net.WriteFloat( strength )
+    net.Broadcast()
+
+end
 
 function ENT:Place()
     local target = self:GetCurrTarget()
@@ -130,6 +204,7 @@ function ENT:Place()
     target.glee_Blessed = true
     target.glee_BlessedExpires = CurTime() + blessTimeBackup -- backup if timer errors
     target.glee_BlessRegen = 10
+    sendBlessingStrength( target, 1 )
 
     target:EmitSound( "music/hl2_song10.mp3", 70, math.random( 60, 70 ), 0.5, CHAN_STATIC )
     target:EmitSound( "items/smallmedkit1.wav", 75, math.random( 50, 60 ), 1, CHAN_STATIC )
@@ -144,6 +219,7 @@ function ENT:Place()
 
         target.glee_Blessed = nil
         target.glee_BlessedExpires = nil
+        sendBlessingStrength( target, 0 )
 
         if target:IsPlayer() then
             huntersGlee_CancelNotify( { target }, "divineBlessed", { noFade = true } )
@@ -184,12 +260,25 @@ function ENT:Place()
         local timeLeft = timer.RepsLeft( timerName )
         timeLeft = timeLeft + -1
 
-        local fading = timeLeft <= 10 and timeLeft > 0
-        if fading then
+        local countingDown = timeLeft <= blessCountdownTime and timeLeft > 0
+        -- compounds every tick, so timeLeft / 5 must stay at or below 1 or the regen spikes instead of fading
+        if timeLeft <= 5 and timeLeft > 0 then
             target.glee_BlessRegen = target.glee_BlessRegen * ( timeLeft / 5 )
 
         end
-        if fading and target:IsPlayer() then
+
+        -- particles go 100% to 50% before the countdown, then 50% to 0 during it
+        local strength
+        if timeLeft > blessCountdownTime then
+            strength = 0.5 + 0.5 * ( timeLeft - blessCountdownTime ) / ( blessTime - blessCountdownTime )
+
+        else
+            strength = 0.5 * math.max( timeLeft, 0 ) / blessCountdownTime
+
+        end
+        sendBlessingStrength( target, strength )
+
+        if countingDown and target:IsPlayer() then
             huntersGlee_Notify( { target }, {
                 text = "DIVINE BLESSING FADING",
                 description = "Blessing projected to end in... " .. timeLeft,
