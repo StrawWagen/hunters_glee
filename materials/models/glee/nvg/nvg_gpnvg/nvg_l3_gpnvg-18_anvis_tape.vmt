@@ -1,0 +1,13 @@
+VertexLitGeneric
+{
+    $basetexture "models/glee/nvg/nvg_gpnvg/nvg_l3_gpnvg-18_anvis_tape_diff"
+
+    $bumpmap "models/glee/nvg/nvg_gpnvg/nvg_l3_gpnvg-18_anvis_tape_nrm"
+    $basemapalphaphongmask "0"
+    $phong 1
+    $phongfresnelranges "[0 0.5 1]"
+
+    $envmapmask "models/glee/nvg/nvg_gpnvg/nvg_l3_gpnvg-18_anvis_tape_gloss"
+    $envmap "env_cubemap"
+    $envmaptint "[0.05 0.05 0.05]"
+}
