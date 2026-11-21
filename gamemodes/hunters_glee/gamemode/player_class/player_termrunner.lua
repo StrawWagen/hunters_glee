@@ -58,7 +58,7 @@ end
 
 -- the rest comes from the misery's .defaultWeapons, see sv_spawnweapons
 function PLAYER:Loadout()
-    self.Player:Give( "termhunt_shove" )
+    self.Player:Give( "termhunt_hands" )
 
 end
 

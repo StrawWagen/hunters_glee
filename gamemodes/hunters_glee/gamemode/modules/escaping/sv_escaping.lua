@@ -343,6 +343,7 @@ end )
     GM:IsBoonable
     @desc Did everyone escape? That's a boon.
       Astrally projected players chose to leave their body, so they don't rob everyone else of it.
+      Spawn protected players are new or still loading in, they never had the chance.
     @param isImpendingEscaper: Optional, returns true for a player who's about to escape, so they count as escaped already.
     @return: True if the round would end in a boon
 --]]---------------------------------------------------------
@@ -352,7 +353,7 @@ function GM:IsBoonable( isImpendingEscaper )
         if ply:HasEscaped() or ( isImpendingEscaper and isImpendingEscaper( ply ) ) then
             someoneEscaped = true
 
-        elseif not ply:HasStatusEffect( "astrallyprojected" ) then
+        elseif not ply:HasStatusEffect( "astrallyprojected" ) and not ply:HasStatusEffect( "spawn_protection" ) then
             return false
 
         end

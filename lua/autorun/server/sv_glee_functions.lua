@@ -38,7 +38,7 @@ function terminator_Extras.glee_RemoveSpentWeapon( wep )
             if not IsValid( wep ) then return end
             if not IsValid( owner ) then return end
             if owner:GetActiveWeapon() ~= wep then return end
-            owner:SelectWeapon( "termhunt_shove" )
+            owner:SelectWeapon( "termhunt_hands" )
 
         end )
     end

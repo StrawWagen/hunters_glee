@@ -250,6 +250,7 @@ function ENT:DoScore( reciever )
 end
 
 local closeEnoughToStepOn = 10^2
+local bodyHintTrData = { mask = MASK_SOLID }
 
 -- fires every tick for everything in our trigger bounds, including the ragdoll we're parented to
 function ENT:Touch( touched )
@@ -266,9 +267,22 @@ function ENT:Touch( touched )
         myTbl.DoScore( self, touched )
 
     elseif touchedIsPly and entMeta.IsRagdoll( parent ) and touchedTbl.glee_skullhinted and not touchedTbl.glee_skullInBodyHint then
-        touchedTbl.glee_skullInBodyHint = true
-        huntersGlee_Announce( { touched }, 11, 10, "A body...\nWith a skull...?" )
+        -- the ragdoll trigger is big, don't hint through walls
+        -- rate limited per player, so one player standing here doesn't starve the others
+        if ( touchedTbl.glee_nextSkullInBodyTrace or 0 ) < CurTime() then
+            touchedTbl.glee_nextSkullInBodyTrace = CurTime() + math.Rand( 0.1, 0.25 )
 
+            bodyHintTrData.start = entMeta.WorldSpaceCenter( self )
+            bodyHintTrData.endpos = touched:GetShootPos()
+            bodyHintTrData.filter = { self, parent, touched }
+            local result = util.TraceLine( bodyHintTrData )
+
+            if not result.Hit then
+                touchedTbl.glee_skullInBodyHint = true
+                huntersGlee_Announce( { touched }, 11, 10, "A body...\nWith a skull...?" )
+
+            end
+        end
     end
 
     if myTbl.GetIsTerminatorSkull( self ) then return end

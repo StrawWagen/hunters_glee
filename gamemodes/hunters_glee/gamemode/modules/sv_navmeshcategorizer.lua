@@ -1,6 +1,6 @@
 
 local bit = bit
-
+local math = math
 
 local GAMEMODE = GAMEMODE or GM
 
@@ -188,6 +188,8 @@ local function reset()
     GAMEMODE.underSkySquares = {}
     GAMEMODE.navmeshDeepUnderSkySurfaceArea = 0
     GAMEMODE.navmeshDeepUnderNoSkySurfaceArea = 0
+    GAMEMODE.navmeshFullMins = Vector( math.huge, math.huge, math.huge ) -- box around every navarea center
+    GAMEMODE.navmeshFullMaxs = Vector( -math.huge, -math.huge, -math.huge )
 
 end
 
@@ -220,6 +222,16 @@ and
 
 hook.Add( "glee_navmesh_visit", "glee_precache_extraflags", function( area )
     local areasCenter = area:GetCenter()
+
+    local mins = GAMEMODE.navmeshFullMins
+    mins.x = math.min( mins.x, areasCenter.x )
+    mins.y = math.min( mins.y, areasCenter.y )
+    mins.z = math.min( mins.z, areasCenter.z )
+
+    local maxs = GAMEMODE.navmeshFullMaxs
+    maxs.x = math.max( maxs.x, areasCenter.x )
+    maxs.y = math.max( maxs.y, areasCenter.y )
+    maxs.z = math.max( maxs.z, areasCenter.z )
 
     local areasSurface = areasSurfaceArea( area )
     GAMEMODE.navmeshTotalSurfaceArea = GAMEMODE.navmeshTotalSurfaceArea + areasSurface

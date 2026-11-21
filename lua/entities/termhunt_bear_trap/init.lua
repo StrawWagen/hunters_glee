@@ -42,6 +42,7 @@ end
 
 function ENT:Snap( snapped )
     hook.Run( "glee_beartrap_snapped", self, snapped )
+    self.dmg = 0
     self:SetPlaybackRate( 1 )
     self:SetCycle( 0 )
     self:SetSequence( "Snap" )
@@ -281,10 +282,13 @@ function ENT:OnTakeDamage( dmg )
     if self.dmg < 45 then return end
 
     if self:IsReadyToSpring() then
-        self.dmg = 0
         self:Snap()
 
-    elseif self.dmg > 120 and dmg:IsDamageType( DMG_CLUB ) then
+    elseif self.dmg > 120 and dmg:IsDamageType( DMG_CLUB ) then -- terminator fists, hunters prying a trap off
+        self:EmitSound( "doors/vent_open1.wav", 90, 110, 1, CHAN_STATIC )
+        self:PickUp()
+
+    elseif self.dmg > 150 and dmg:IsDamageType( bit.bor( DMG_BULLET, DMG_BUCKSHOT ) ) then -- shooting yourself free, loud and quick vs the silent USE
         self:EmitSound( "doors/vent_open1.wav", 90, 110, 1, CHAN_STATIC )
         self:PickUp()
 

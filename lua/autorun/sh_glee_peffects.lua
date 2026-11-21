@@ -38,6 +38,11 @@ local function doPrecache()
     PrecacheParticleSystem( "glee_atm_burrow_pebbles" )
     PrecacheParticleSystem( "glee_atm_burrow_breach" )
 
+    game.AddParticles( "particles/glee/glee_ghostly_blessing_world.pcf" ) -- healing orbs follow bones in this one
+    PrecacheParticleSystem( "glee_ghostly_blessing_world" )
+    game.AddParticles( "particles/glee/glee_ghostly_blessing_firstperson.pcf" )
+    PrecacheParticleSystem( "glee_ghostly_blessing_firstperson" )
+
 end
 if engine.ActiveGamemode() == "hunters_glee" then
     doPrecache()

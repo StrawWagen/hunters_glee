@@ -126,13 +126,19 @@ function GM:IsInnocent( ply )
 end
 
 --[[---------------------------------------------------------
-    GM:IsHorriblyEvil
-    @desc Is this player's total evilness above autoHomicidalEvilnessIncrements, x2?
+    GM:IsEvil
+    @desc Has this player settled into evil, through this round's feuds and mischief, or a guilt tier flagged evil?
+      The evil fight eachother at full damage, and hit the innocent much softer.
     @param ply: The player to check.
     @return: Boolean
+    @return: Total evilness amount, this round's
 --]]---------------------------------------------------------
-function GM:IsHorriblyEvil( ply )
+function GM:IsEvil( ply )
     local innocent, evilness = self:IsInnocent( ply )
+
+    local _, guiltData = self:GetPlysGuiltLevel( ply )
+    if guiltData.evil then return true, evilness end
+
     if innocent then return false, evilness end
 
     return evilness >= autoHomicidalEvilnessIncrements * 2, evilness
@@ -329,88 +335,178 @@ hook.Add( "huntersglee_player_reset", "glee_reset_autohomicidalgleehint", functi
 end )
 
 
+-- -----------------------------------------------------------------------
+-- PVP DAMAGE
+-- players hurting players, scaled hardest when it's a guilty kill
+-- -----------------------------------------------------------------------
+
+local function isEvil( ply )
+    return GAMEMODE:IsEvil( ply )
+
+end
+
+local function isHomicidallyGleeful( ply )
+    return ply.glee_guiltyHomicidalGlee == true
+
+end
+
+-- the same line the halos are drawn at
+local function killingThemIsGuilty( ply )
+    local _, guiltData = GAMEMODE:GetPlysGuiltLevel( ply )
+    return not guiltData.killedForNoGuilt
+
+end
+
+-- off on listen servers, everyone there reads as 0 days
+local function hasZeroToOneDaysOfGuilt( ply )
+    if not GAMEMODE:PersistentGuiltIsEnabled() then return false end
+    return GAMEMODE:GetPersistentGuilt( ply ) < GAMEMODE.PermaGuiltLevels.BARELY_GUILTY
+
+end
+
+local function isNew( ply )
+    return GAMEMODE:IsFirstTimePlayer( ply )
+
+end
+
+local function isNotNew( ply )
+    return not GAMEMODE:IsFirstTimePlayer( ply )
+
+end
+
+-- items that should always do full damage, eg, items placed by dead players
+local function isGuiltFree( inflictor )
+    return IsValid( inflictor ) and inflictor.glee_GuiltFreeInflictor == true
+
+end
+
+local function isNotGuiltFree( inflictor )
+    return not isGuiltFree( inflictor )
+
+end
+
+-- read top to bottom, the first rule that applies is the one used
+-- appliesIf leaves out whoever doesn't matter
+-- ballMaxHealth replaces the combine ball's damage, as a fraction of the victim's max health
+-- everythingElse is bullets, melee, fire, anything not an explosion or a ball
+local pvpDamageRules = {
+    { -- both evil, they can fight eachother fine
+        appliesIf = {
+            attacker = isEvil,
+            victim = isEvil,
+        },
+        fullDamage = true,
+    },
+    { -- guilty enough to trigger homicidal glee, no protection
+        appliesIf = {
+            victim = isHomicidallyGleeful,
+        },
+        fullDamage = true,
+    },
+    { -- so glancing hits on new players don't cost a huge pile of guilt
+        appliesIf = {
+            attacker = isNotNew,
+            victim = isNew,
+            inflictor = isNotGuiltFree,
+        },
+        explosive = 0.05,
+        ballMaxHealth = 0.1,
+        everythingElse = 0.05,
+    },
+    { -- above the guilt-free items, those don't help the evil
+        appliesIf = {
+            attacker = isEvil,
+            victim = killingThemIsGuilty,
+        },
+        explosive = 0.25,
+        ballMaxHealth = 0.25,
+        everythingElse = 0.25,
+    },
+    {
+        appliesIf = {
+            inflictor = isGuiltFree,
+        },
+        fullDamage = true,
+    },
+    { -- keeps pvp off the people who've stayed clean
+        appliesIf = {
+            attacker = hasZeroToOneDaysOfGuilt,
+            victim = killingThemIsGuilty,
+        },
+        explosive = 0.25,
+        ballMaxHealth = 0.5,
+        everythingElse = 0.25,
+    },
+    {
+        appliesIf = {},
+        explosive = 0.75,
+        ballMaxHealth = 0.9,
+        everythingElse = 0.5,
+    },
+}
+
+local function firstApplyingRule( attacker, victim, inflictor )
+    for _, rule in ipairs( pvpDamageRules ) do
+        local appliesIf = rule.appliesIf
+        if appliesIf.attacker and not appliesIf.attacker( attacker ) then continue end
+        if appliesIf.victim and not appliesIf.victim( victim ) then continue end
+        if appliesIf.inflictor and not appliesIf.inflictor( inflictor ) then continue end
+
+        return rule
+
+    end
+end
+
 hook.Add( "EntityTakeDamage", "huntersglee_makepvpreallybad", function( dmgTarg, dmg )
     if dmg:IsFallDamage() then return end -- shoving and goomba doesnt get scaled
 
     local attacker = dmg:GetAttacker()
     local inflictor = dmg:GetInflictor()
-    local areBothPlayers = dmgTarg:IsPlayer() and attacker:IsPlayer()
-    local selfDamage = dmgTarg == attacker
 
-    if selfDamage then return end -- they're damaging themselves? go ahead
-    if not areBothPlayers then return end
+    if dmgTarg == attacker then return end -- they're damaging themselves? go ahead
+    if not dmgTarg:IsPlayer() or not attacker:IsPlayer() then return end
 
-    local attackerIsHorriblyEvil = GAMEMODE:IsHorriblyEvil( attacker )
-    local targIsHorriblyEvil = GAMEMODE:IsHorriblyEvil( dmgTarg )
-
-    if attackerIsHorriblyEvil and targIsHorriblyEvil then return end -- if both are evil, they can fight eachother fine
-
-    if GAMEMODE.blockPvp == true then
+    if GAMEMODE.blockPvp == true then -- round setup
         dmg:ScaleDamage( 0 )
-
-    else
-        -- they were guilty enough to trigger homicidal glee, no protect for this guy
-        if dmgTarg.glee_guiltyHomicidalGlee then
-            return
-
-        end
-
-        local _, targsGuiltData = GAMEMODE:GetPlysGuiltLevel( dmgTarg )
-        local sacredDamage = attackerIsHorriblyEvil and not targsGuiltData.killedForNoGuilt
-
-        -- for items that should always do full damage
-        -- eg, items placed by dead players
-        if inflictor and inflictor.glee_GuiltFreeInflictor and not sacredDamage then
-            return
-
-        end
-
-        if dmg:IsDamageType( DMG_DISSOLVE ) and inflictor and inflictor:GetClass() == "prop_combine_ball" then -- special cball case
-            local nextpermittedballdamage = dmgTarg.huntersglee_nextpermittedballdamage or 0
-            if nextpermittedballdamage > CurTime() then
-                dmg:ScaleDamage( 0 )
-                return
-
-            end
-            dmgTarg.huntersglee_nextpermittedballdamage = CurTime() + 0.5
-
-            local fullHealthPercent = 0.9
-            if sacredDamage then
-                fullHealthPercent = 0.25
-
-            end
-
-            dmg:SetDamage( dmgTarg:GetMaxHealth() * fullHealthPercent )
-            dmg:SetDamageForce( dmg:GetDamageForce() * 12 )
-            dmgTarg:EmitSound( "NPC_CombineBall.KillImpact" )
-
-            local damagedplayercount = inflictor.huntersglee_ball_damagedplayercount or 0
-            inflictor.huntersglee_ball_damagedplayercount = damagedplayercount + 1
-
-            if inflictor.huntersglee_ball_damagedplayercount >= 6 then
-                inflictor:Fire( "Explode" )
-
-            end
-        else
-            if sacredDamage then -- huge resistance if horribly evil player is attacking innocent one
-                dmg:ScaleDamage( 0.25 )
-
-            else
-                if dmg:IsExplosionDamage() then
-                    dmg:ScaleDamage( 0.75 )
-
-                else
-                    dmg:ScaleDamage( 0.5 )
-
-                end
-            end
-        end
-
-        net.Start( "glee_dealtpvpdamage" )
-            net.WriteInt( math.Round( dmg:GetDamage() ), 16 )
-        net.Send( attacker )
+        return
 
     end
+
+    local rule = firstApplyingRule( attacker, dmgTarg, inflictor )
+    if rule.fullDamage then return end
+
+    if dmg:IsDamageType( DMG_DISSOLVE ) and IsValid( inflictor ) and inflictor:GetClass() == "prop_combine_ball" then
+        local nextpermittedballdamage = dmgTarg.huntersglee_nextpermittedballdamage or 0
+        if nextpermittedballdamage > CurTime() then
+            dmg:ScaleDamage( 0 )
+            return
+
+        end
+        dmgTarg.huntersglee_nextpermittedballdamage = CurTime() + 0.5
+
+        dmg:SetDamage( dmgTarg:GetMaxHealth() * rule.ballMaxHealth )
+        dmg:SetDamageForce( dmg:GetDamageForce() * 12 )
+        dmgTarg:EmitSound( "NPC_CombineBall.KillImpact" )
+
+        local damagedplayercount = inflictor.huntersglee_ball_damagedplayercount or 0
+        inflictor.huntersglee_ball_damagedplayercount = damagedplayercount + 1
+
+        if inflictor.huntersglee_ball_damagedplayercount >= 6 then
+            inflictor:Fire( "Explode" )
+
+        end
+    elseif dmg:IsExplosionDamage() then
+        dmg:ScaleDamage( rule.explosive )
+
+    else
+        dmg:ScaleDamage( rule.everythingElse )
+
+    end
+
+    net.Start( "glee_dealtpvpdamage" )
+        net.WriteInt( math.Round( dmg:GetDamage() ), 16 )
+    net.Send( attacker )
+
 end )
 
 hook.Add( "glee_homicidallygleeful", "glee_homicidalglee_sendtodancer", function( dancer )
@@ -515,7 +611,8 @@ function GM:IncrementPersistentGuilt( ply, add, msg )
     end
 
     if msg and msg ~= "" then
-        huntersGlee_Notify( { ply }, { text = msg, kind = kind, time = 10, extraFlashes = extraFlashes, flashInterval = flashInterval } )
+        local time = math.max( 10, daysToAdd * 2 )
+        huntersGlee_Notify( { ply }, { text = msg, kind = kind, time = time, extraFlashes = extraFlashes, flashInterval = flashInterval } )
 
     end
 end

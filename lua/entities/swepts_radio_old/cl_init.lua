@@ -1,5 +1,10 @@
 include( "shared.lua" )
 
+function ENT:Initialize()
+    self:SetupStations()
+
+end
+
 function ENT:Draw()
     self:DrawModel()
 
