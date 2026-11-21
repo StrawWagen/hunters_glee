@@ -141,3 +141,4 @@ A hook that runs all the time costs something every frame, for every player.
 `GM:Move` and its family, `Think`, `Tick`, `OnEntityCreated`, `EntityTakeDamage`, things like that.
 It's worth checking whether a rarer hook can do the job.
 When it really does need to be hot, keeping the work inside it small goes a long way.
+Use termhunt_hands's running code as an example of correctly managed expensive logic that always runs in the background
