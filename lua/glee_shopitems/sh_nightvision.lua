@@ -1,7 +1,7 @@
 
 local shopHelpers = GAMEMODE.shopHelpers
 
--- the three night vision goggles, see lua/autorun/sh_glee_nightvision.lua
+-- the three night vision goggles, see lua/weapons/glee_nvg_base
 
 local skullCost = 7
 
@@ -11,9 +11,9 @@ local function noGogglesYet( purchaser )
 
 end
 
-local function goggles( class, desc, weight )
+local function goggles( class, name, desc, weight )
     return {
-        name = GleeNVG.kinds[class].name,
+        name = name,
         desc = desc .. "\nSits in slot 6, left click with them out to flip them down.\nHold V with them out to throw them down.\nOnly one pair at a time.",
         shCost = 0,
         shSkullCost = skullCost,
@@ -36,9 +36,9 @@ local function goggles( class, desc, weight )
 end
 
 local items = {
-    ["nvg_gpnvg"] = goggles( "glee_nvg_gpnvg", "See in the dark.\nEverything turns black or light green.", 1050 ),
-    ["nvg_t7"] = goggles( "glee_nvg_t7", "See heat.\nAnything alive, and every body, glows white mint.", 1051 ),
-    ["nvg_pvs14"] = goggles( "glee_nvg_pvs14", "A green light that lights up the dark.\nE with them out: radar on/off, or change its wavelength.\nThe radar's bouncing rays leave a blip on anything alive they hit.", 1052 ),
+    ["nvg_gpnvg"] = goggles( "glee_nvg_gpnvg", "GPNVG-18 Night Vision", "See in the dark.\nEverything turns black or green.", 1050 ),
+    ["nvg_t7"] = goggles( "glee_nvg_t7", "T-7 Thermal", "See heat.\nAnything alive, and every body, glows red orange.", 1051 ),
+    ["nvg_pvs14"] = goggles( "glee_nvg_pvs14", "PVS-14 Haptic Vision", "A light that lights up the dark, and stronger, redder colours.\nE with them out: radar on/off, its wavelength, or its cone.\nThe radar's rays go through walls, and show where in the cone they hit anything alive.", 1052 ),
 }
 
 GAMEMODE:GobbleShopItems( items )

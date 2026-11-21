@@ -1,7 +1,7 @@
 AddCSLuaFile()
 
 -- A pair of night vision goggles lying around, from the entities tab. Use it to put them in slot 6.
--- Each glee_nvgpickup_* sets ENT.Gives to its glee_nvg_* weapon, see lua/autorun/sh_glee_nightvision.lua.
+-- Each glee_nvgpickup_* sets ENT.Gives to its glee_nvg_* weapon, and takes that weapon's model.
 
 ENT.Type = "anim"
 ENT.Base = "base_anim"
@@ -11,7 +11,8 @@ ENT.Spawnable = false
 ENT.Gives = ""
 
 function ENT:Initialize()
-    self:SetModel( self.Model )
+    local stored = weapons.GetStored( self.Gives )
+    self:SetModel( stored and stored.WorldModel or "models/glee/nvg/nvg_gpnvg.mdl" )
     if not SERVER then return end
 
     self:PhysicsInit( SOLID_VPHYSICS )

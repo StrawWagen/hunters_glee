@@ -1,6 +1,16 @@
 AddCSLuaFile()
 
--- Thermal. A dark world, anything warm shows up white mint. See glee_nvg_base and lua/autorun/sh_glee_nightvision.lua.
+-- Thermal. Dulled, darker colours with a little night vision, anything warm shows up red orange. The rest is glee_nvg_base.
 
 SWEP.Base = "glee_nvg_base"
-GleeNVG_SetupSwep( SWEP, "glee_nvg_t7" )
+SWEP.PrintName = "T-7 Thermal"
+SWEP.Category = "Hunter's Glee"
+SWEP.Spawnable = true
+SWEP.WorldModel = "models/glee/nvg/nvg_t7.mdl"
+
+SWEP.GleeNVG = {
+    lamp = 0.001,
+    gain = 0.6,
+    saturation = 0.4, -- dulled colours
+    heatColor = Color( 255, 90, 20 ), -- red orange
+}
