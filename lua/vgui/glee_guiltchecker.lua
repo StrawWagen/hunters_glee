@@ -52,7 +52,7 @@ local METER_UNLIT_COLOR = "bgDark"
 local function evilFraction( days )
     local levels = GAMEMODE.PermaGuiltLevels
 
-    local firstEvilDay = levels.ALMOST_GUILTY
+    local firstEvilDay = levels.GUILTY
     local worstDay     = levels.EXTREMELY_GUILTY
 
     local daysIntoEvil = days - firstEvilDay
