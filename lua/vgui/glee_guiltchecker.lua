@@ -173,18 +173,18 @@ PANEL.Refresh = function( self )
 
     end
 
-    return level, days
+    return level, days, tierData
 
 end
 
 PANEL.Think = function( self )
-    local level, days = self:Refresh()
+    local level, days, tierData = self:Refresh()
     if not level then return end
 
     -- the description stays steady; it's the guilt itself that throbs
     self._desc:SetState( self._desc.STATE_NORMAL )
 
-    local evil = level >= GAMEMODE.PermaGuiltLevels.ALMOST_GUILTY
+    local evil = tierData.evil == true
 
     -- only read in URGENT, so it costs nothing to set while they're still innocent
     local throbInterval = Lerp( evilFraction( days ), THROB_SLOWEST, THROB_FASTEST )

@@ -218,6 +218,21 @@ bankFunctions.giveItem = function( ply, name )
 
 end
 
+-- false when the player has no account, or it doesn't hold the item
+bankFunctions.takeItem = function( ply, name )
+    local account = GAMEMODE.bankInfoTable.accounts[ply:SteamID()]
+    if not account or not account.items then return false end
+    if not account.items[name] then return false end
+
+    account.items[name] = nil
+
+    somethingHasChanged = true
+    bankFunctions.checkBankAccount( ply )
+
+    return true
+
+end
+
 -- Unregistered items are kept, so an item file failing to load can't wipe everyone's purchases.
 bankFunctions.pruneExpiredItems = function( account )
     if not account.items then return end
@@ -464,5 +479,16 @@ function meta:GiveBankItem( name )
 
     end
     return given
+
+end
+
+-- false when the player has no account, or it doesn't hold the item
+function meta:TakeBankItem( name )
+    local taken = bankFunctions.takeItem( self, name )
+    if taken then
+        bankFunctions.updateBankTimer()
+
+    end
+    return taken
 
 end

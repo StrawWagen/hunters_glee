@@ -683,6 +683,11 @@ goes in a glee rebinding menu?
 -- snap post-respawn unstucks to navmesh
 -- impulse 201
 
+-- ULTRAWIDE AND HINTS?
+-- place with mouse1, do cool interactions with R?
+-- spray key open taunt menu if client uploads are disabled?
+
+
 -- HIM
 fullscreen datamosh effect
 all other visuals are off, so of course people focus on the speaking
@@ -691,4 +696,3 @@ catacombs of solaris
 i have drank my cup of dust
 -- !!! UNEARNED STEALING
 HIM is a strong case of apocryphal design
-

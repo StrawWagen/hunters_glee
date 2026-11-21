@@ -1091,7 +1091,7 @@ function GM:roundEnd()
         for _, ply in player.Iterator() do
             if ply:HasEscaped() then
                 escapedCount = escapedCount + 1
-            else
+            elseif not ply:HasStatusEffect( "spawn_protection" ) then -- new or still loading in, they didn't stay behind
                 remainedCount = remainedCount + 1
             end
         end

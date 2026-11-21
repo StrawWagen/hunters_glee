@@ -15,6 +15,8 @@ ENT.Spawnable = true
 
 terminator_Extras.glee_Carrying.MakeCarryable( ENT, "glee_backpackable_radio" )
 
+ENT.isGleeRadio = true -- inherited, so radios based off this one can be tuned too
+
 ENT.GleeUseActions = {
     terminator_Extras.glee_Carrying.PickUpAction,
     { key = "tune", label = "Tune" },
@@ -24,10 +26,12 @@ ENT.GleeUseWheelOnly = true -- there's nothing for a plain +use to do on it
 -- How near a player has to stay to tune it. Its menu closes past this
 ENT.TuneRange = 400
 
--- Song 0 is off. https://combineoverwiki.net/wiki/Half-Life_2_soundtrack
--- loop: clients play these through BASS, which ignores a wav's loop points
 ENT.OffSound = "ambient/_period.wav"
-ENT.Stations = {
+
+-- Song 0 is off. https://combineoverwiki.net/wiki/Half-Life_2_soundtrack
+-- paths are under sound/
+-- loop: clients play these through BASS, which ignores a wav's loop points
+local stations = {
     { name = "The Innsbruck Experiment",        path = "music/hl2_song4.mp3" },
     { name = "Brane Scan",                      path = "music/hl2_song31.mp3" },
     { name = "Dark Energy",                     path = "music/hl2_song3.mp3" },
@@ -94,6 +98,13 @@ ENT.Stations = {
     { name = "VACANT: ROOT_ESTRANGE.ogg",                            path = "hunters_glee/music/VACANT/ROOT_ESTRANGE.ogg" },
     { name = "VACANT: without-Under-naN-oK.ogg",                     path = "hunters_glee/music/VACANT/without-Under-naN-oK.ogg" },
 }
+
+-- Radios based off this one override it with their own stations
+-- runs as it's initialized, on server and client
+function ENT:SetupStations()
+    self.Stations = stations
+
+end
 
 function ENT:SetupDataTables()
     self:NetworkVar( "Int", 0, "Song" ) -- index into Stations, 0 is off

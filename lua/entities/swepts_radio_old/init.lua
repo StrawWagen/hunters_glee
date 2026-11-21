@@ -9,6 +9,8 @@ util.AddNetworkString( "glee_radio_tune" )
 local tuneCooldown = 0.2
 
 function ENT:Initialize()
+    self:SetupStations()
+
     self:SetModel( "models/props_lab/citizenradio.mdl" )
     self:PhysicsInit( SOLID_VPHYSICS )
     self:SetMoveType( MOVETYPE_VPHYSICS )
@@ -93,7 +95,7 @@ net.Receive( "glee_radio_tune", function( _, ply )
     local radio = net.ReadEntity()
     local index = net.ReadUInt( 8 )
 
-    if not IsValid( radio ) or radio:GetClass() ~= "swepts_radio_old" then return end
+    if not IsValid( radio ) or not radio.isGleeRadio then return end
     if not radio:CanBeTunedBy( ply ) then return end
     if index ~= 0 and not radio.Stations[index] then return end
     if index == radio:GetSong() then return end

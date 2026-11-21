@@ -1,6 +1,7 @@
 
 -- Halos over the innocent, the players it's a guilty kill to kill
--- Only the GUILTY see them, they're the ones who need the reminder
+-- Only guilt tiers flagged evil see them, they're the ones who need the reminder
+-- any lower and they'd be one of the first things a new player sees, they're jarring
 --
 -- the server only picks who wears one, that's WHO GETS A HALO
 -- the client starts at the bottom of the file, in PUTTING IT ON
@@ -705,16 +706,16 @@ if CLIENT then
 
     end
 
-    -- checked once, when the halo goes on. someone turning GUILTY mid round sees them next round
-    local function localPlyIsGuilty()
-        local level = GAMEMODE:GetPlysGuiltLevel( LocalPlayer() )
-        return level >= GAMEMODE.PermaGuiltLevels.GUILTY
+    -- checked once, when the halo goes on. someone crossing the line mid round sees them next round
+    local function localPlySeesHalos()
+        local _, guiltData = GAMEMODE:GetPlysGuiltLevel( LocalPlayer() )
+        return guiltData.evil == true
 
     end
 
     -- where it sits is picked once too, a model change to one without that bone or attachment loses the halo until it's reapplied
     local function putOnHalo( self, owner )
-        if not localPlyIsGuilty() then return end
+        if not localPlySeesHalos() then return end
 
         local name = self:GetPrintName()
         self:HookOnce( "RenderScene", noteMainView )
