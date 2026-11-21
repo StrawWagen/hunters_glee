@@ -155,9 +155,9 @@ local nearbyEntHints = {
         return true, "Press " .. string.upper( phrase ) .. " to open doors!"
 
     end,
-    item_battery = function( me )
+    item_battery = function( me, battery )
         if me:Armor() < me:GetMaxArmor() then return end
-        if not me:IsPlayerHolding() then return end
+        if glee_Carrying.GetPhysicsHeld( me ) ~= battery then return end
         return true, "FULL BATTERY"
 
     end,
