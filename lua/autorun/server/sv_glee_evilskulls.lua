@@ -3,46 +3,12 @@
 -- in glee those count for nothing, so swap each one for a termhunt_skull_pickup right where it is, keeping its momentum
 -- only runs in the gamemode itself, sandbox keeps the addons' plain bone props
 
+-- the addons call EvilBoneSpilled( bone, source ) on every bone they spill or spit, see their eggs' Bone and the crawler's Spit
+-- so only their own skulls are ever swapped, a skull prop someone spawns is left alone, however close it is
+
 local IsValid = IsValid
-local CurTime = CurTime
 
 local skullModel = "models/gibs/hgibs.mdl"
-
-local eggClasses = {
-    evil_crawler_egg = true,
-    evil_snake_egg = true,
-}
-
--- how close a skull has to be to a cracked egg or a crawler to count as its skull
--- eggs fling bones out at up to 180 u/s from ~10 units off center, crawlers spit them up to 280 u/s from 4 units away
-local eggReach = 64
-local crawlerReach = 48
-local eggMemory = 1 -- seconds a cracked egg is remembered for, the bones spawn on the same tick it breaks
-
--- eggs remove themselves right after spilling their bones, so remember where they cracked
-local crackedEggs = {}
-
-local function nearCrackedEgg( pos )
-    local cur = CurTime()
-    local reachSqr = eggReach^2
-    for i = #crackedEggs, 1, -1 do
-        local egg = crackedEggs[i]
-        if egg.time + eggMemory < cur then
-            table.remove( crackedEggs, i )
-
-        elseif egg.pos:DistToSqr( pos ) < reachSqr then
-            return true
-
-        end
-    end
-end
-
-local function nearCrawler( pos )
-    for _, ent in ipairs( ents.FindInSphere( pos, crawlerReach ) ) do
-        if ent:GetClass() == "evil_crawler" then return true end
-
-    end
-end
 
 local function convertSkull( prop )
     local pos = prop:GetPos()
@@ -76,28 +42,16 @@ local function convertSkull( prop )
 end
 
 local function setupHooks()
-    hook.Add( "EntityRemoved", "glee_evilskulls_eggcracked", function( ent )
-        if not eggClasses[ent:GetClass()] then return end
-        if not ent.Broken then return end -- hatched, no bones
+    hook.Add( "EvilBoneSpilled", "glee_evilskulls_convert", function( bone )
+        if not IsValid( bone ) then return end
+        if string.lower( bone:GetModel() or "" ) ~= skullModel then return end -- ribs and spines stay bones
 
-        table.insert( crackedEggs, { pos = ent:WorldSpaceCenter(), time = CurTime() } )
-
-    end )
-
-    hook.Add( "OnEntityCreated", "glee_evilskulls_convert", function( ent )
-        if not IsValid( ent ) then return end
-        if ent:GetClass() ~= "prop_physics" then return end
-
-        -- model and position are set after creation, check next tick
+        -- a tick later, so it's flying with the speed it was given
         timer.Simple( 0, function()
-            if not IsValid( ent ) then return end
-            if ent.EvilEggFed then return end -- already being swallowed by an egg
-            if string.lower( ent:GetModel() or "" ) ~= skullModel then return end
+            if not IsValid( bone ) then return end
+            if bone.EvilEggFed then return end -- already being swallowed by an egg
 
-            local pos = ent:WorldSpaceCenter()
-            if not nearCrackedEgg( pos ) and not nearCrawler( pos ) then return end
-
-            convertSkull( ent )
+            convertSkull( bone )
 
         end )
     end )
