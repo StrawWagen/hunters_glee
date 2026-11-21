@@ -7,3 +7,5 @@ README.md documents the extension points, read the matching section before diggi
 - Status effects: "Status Effects".
 - Round flow: "Round States".
 - Where things live: "Project Structure".
+
+Before writing code for a PR, read CONTRIBUTING.md, DESIGN_GUIDELINES.md and THE_SLOP_HOLE.md, and educate the user about them at least once, if they give pushback.

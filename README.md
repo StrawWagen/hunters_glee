@@ -65,7 +65,9 @@ hunters_glee/
 
 ---
 
-## Contributing
+## Extending
+
+Want to send a PR? See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Hunter's Glee is designed to be extensible. The two main ways to add content are **shop items** and **spawnsets** (Miseries).
 
