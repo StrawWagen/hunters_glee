@@ -7,6 +7,7 @@ AddCSLuaFile()
 ENT.Type = "anim"
 ENT.Base = "base_anim"
 ENT.PrintName = "Night Vision Pack"
+ENT.Information = "A small package with a device that allows easy traversal through the night"
 ENT.Category = "Hunter's Glee"
 ENT.Spawnable = true
 ENT.AdminOnly = game.IsDedicated()
