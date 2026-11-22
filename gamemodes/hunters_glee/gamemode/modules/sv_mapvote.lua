@@ -24,7 +24,7 @@ hook.Add( "glee_sv_canroundstart", "glee_mapvote_holdround", function()
         voteLeft = math.max( math.ceil( MapVote.state.endTime - CurTime() ), 0 )
 
     end
-    return false, "Locale shift vote... ", voteLeft
+    return false, "VOTING...", voteLeft
 
 end )
 
@@ -108,14 +108,26 @@ end
 
 hook.Add( "huntersglee_round_firstsetup", "glee_mapvote_setup", startTheMapVoteTimer )
 
+local function unqueue()
+    mapVoteQueued = nil
+    mapVoteIncrement = 0
+    huntersGlee_CancelNotify( player.GetAll(), countdownKey, { noFade = true } )
+
+end
+
+-- MapVote.Start doesn't check for a running vote, it wipes it
+-- so a vote players start themselves counts as the forced one
+hook.Add( "MapVote_VoteStarted", "glee_mapvote_fillsforced", function()
+    if not mapVoteQueued then return end
+    unqueue()
+
+end )
+
 -- the preparation countdown ran out into glee_mapvote_holdround
 -- a vote that fails to start holds nothing, so the round just carries on
 hook.Add( "glee_sv_roundstartheld", "glee_mapvote_startforced", function()
     if not mapVoteQueued then return end
-
-    mapVoteQueued = nil
-    mapVoteIncrement = 0
-    huntersGlee_CancelNotify( player.GetAll(), countdownKey, { noFade = true } )
+    unqueue()
 
     GAMEMODE:SpeakAsHuntersGlee( "Starting forced mapvote..." )
     MapVote.Start()
@@ -124,8 +136,4 @@ hook.Add( "glee_sv_roundstartheld", "glee_mapvote_startforced", function()
 
 end )
 
-hook.Add( "huntersglee_emptyserver", "glee_mapvote_reset", function()
-    mapVoteIncrement = 0
-    mapVoteQueued = nil
-
-end )
+hook.Add( "huntersglee_emptyserver", "glee_mapvote_reset", unqueue )
