@@ -94,10 +94,7 @@ end
 
 function SWEP:Initialize()
     self:SetHoldType( self.HoldType )
-    if CLIENT then
-        self.Reclaimer.existing[self] = true
 
-    end
 end
 
 function SWEP:SetupDataTables()
@@ -828,6 +825,7 @@ end
 -- The other files -----------------------------------------------------------
 -- what they share with this file and each other goes through SWEP.Reclaimer
 -- each takes what it needs at its top, and adds what the files after it need at its bottom
+-- only at load, every weapon gets its own deep copy of this table, so self.Reclaimer shares nothing
 
 SWEP.Reclaimer = {
     CLASS = CLASS,
@@ -845,7 +843,6 @@ SWEP.Reclaimer = {
     clearFailedNotifies = clearFailedNotifies,
     isLiving = isLiving,
     isOrganic = isOrganic,
-    existing = {}, -- client only, see cl_draw.lua's beam hook
 }
 
 if SERVER then

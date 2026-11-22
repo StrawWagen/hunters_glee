@@ -2,6 +2,8 @@
 -- drawn for everyone who can see it held, from the viewmodel in first person, the world model otherwise
 -- the healing's beams, the loops and the projection's sounds, then SWEP:DrawBeams at the bottom, which ties it all together
 
+DEFINE_BASECLASS( "weapon_base" )
+
 local reclaimer = SWEP.Reclaimer
 local CLASS = reclaimer.CLASS
 local reviveReach = reclaimer.reviveReach
@@ -588,30 +590,32 @@ function SWEP:DrawBeams()
 
 end
 
--- every reclaimer this client knows of, added in SWEP:Initialize
--- so the hook below checks a couple of weapons a frame, not what every player is holding
--- pruned here, not in OnRemove, the client calls OnRemove on a full update without removing it
-local existing = reclaimer.existing
-for _, wep in ipairs( ents.FindByClass( CLASS ) ) do -- for autorefresh, these won't Initialize again
-    existing[wep] = true
+-- held reclaimers renew this every frame they animate, so the hook below never asks every player what they're holding
+-- same as termhunt_hands' sprinting
+local heldUntil = {}
+local heldLinger = 0.1 -- seconds
+
+function SWEP:TranslateActivity( act )
+    heldUntil[self] = CurTime() + heldLinger
+    return BaseClass.TranslateActivity( self, act )
 
 end
 
 hook.Add( "PostDrawTranslucentRenderables", "glee_reclaimer_drawbeams", function( drawingDepth, drawingSkybox )
     if drawingDepth or drawingSkybox then return end
 
-    for wep in pairs( existing ) do
-        if not IsValid( wep ) then
-            existing[wep] = nil
+    local now = CurTime()
+    for wep, untilTime in pairs( heldUntil ) do
+        if untilTime < now or not IsValid( wep ) then
+            heldUntil[wep] = nil
             continue
 
         end
 
         local owner = wep:GetOwner()
         if not IsValid( owner ) then continue end
-        if not owner:IsPlayer() then continue end
-        if owner:GetActiveWeapon() ~= wep then continue end
-        if owner:IsDormant() then continue end
+        if not owner:IsPlayer() then continue end -- npcs translate activities too
+        if owner:GetActiveWeapon() ~= wep then continue end -- the linger outlasts a holster, which already stopped its sounds
         if owner:Health() <= 0 then continue end
 
         wep:DrawBeams()

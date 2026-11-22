@@ -1173,7 +1173,7 @@ if SERVER then
 
                     end
 
-                    GAMEMODE:HandleRagdollSkulling( ragdoll )
+                    GAMEMODE:HandleRagdollSkulling( ragdoll, owner.glee_SkullWorth )
 
                     ragdoll:SetNW2Entity( "glee_astralprojection_ragdoll_owner", owner )
                     ragdoll:SetNWString( "glee_lookedat_statusline", "Just sleeping..." )

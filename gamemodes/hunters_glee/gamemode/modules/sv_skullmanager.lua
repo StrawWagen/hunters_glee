@@ -52,7 +52,13 @@ function GM:SpawnASkull( pos, ang, termSkull, persistParent )
 
 end
 
-function GM:HandleRagdollSkulling( ragdoll )
+--[[---------------------------------------------------------
+    GM:HandleRagdollSkulling
+    @desc Puts a skull pickup in the ragdoll's head, if it has one.
+    @param ragdoll: The body to skull.
+    @param skullWorth: Optional, how many skulls it's worth. 1 if nil.
+---------------------------------------------------------]]
+function GM:HandleRagdollSkulling( ragdoll, skullWorth )
     local canSkull = glee_RagdollHasASkull( ragdoll )
     if not canSkull then return end
 
@@ -60,6 +66,10 @@ function GM:HandleRagdollSkulling( ragdoll )
     if not skull then return end
     if not skull:AttachToRagdollsSkull( ragdoll ) then SafeRemoveEntity( skull ) return end
 
+    if skullWorth then
+        skull:SetSkulls( skullWorth )
+
+    end
 end
 
 local spawnableStates = {
