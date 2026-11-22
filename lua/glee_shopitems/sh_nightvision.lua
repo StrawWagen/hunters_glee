@@ -16,7 +16,7 @@ end
 local items = {
     ["nvg_pack"] = {
         name = "Night Vision Pack",
-        desc = "E with it out to pick which pair comes out: GPNVG-18, T-7 Thermal, or the PVS-14 Haptic\nleft click with them out to flip them down.\nOnly one pair at a time.",
+        desc = "A pack with a pair of goggles inside, for a hunter who hasn't decided how they want to see yet.\nE with it out to pick which pair comes out: GPNVG-18, T-7 Thermal, or the PVS-14 Haptic.\nLeft click with them out to flip them down.\nOnly one pair at a time.",
         shCost = 0,
         shSkullCost = packCost,
         cooldown = 0.5,

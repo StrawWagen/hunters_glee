@@ -5,6 +5,7 @@ AddCSLuaFile()
 SWEP.Base = "glee_nvg_base"
 SWEP.PrintName = "GPNVG-18 Night Vision"
 SWEP.Category = "Hunter's Glee"
+SWEP.Author = "ye"
 SWEP.Spawnable = true
 SWEP.WorldModel = "models/glee/nvg/nvg_gpnvg.mdl"
 

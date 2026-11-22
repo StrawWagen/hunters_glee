@@ -5,6 +5,7 @@ AddCSLuaFile()
 SWEP.Base = "glee_nvg_base"
 SWEP.PrintName = "T-7 Thermal"
 SWEP.Category = "Hunter's Glee"
+SWEP.Author = "ye"
 SWEP.Spawnable = true
 SWEP.WorldModel = "models/glee/nvg/nvg_t7.mdl"
 
