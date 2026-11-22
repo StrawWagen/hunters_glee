@@ -1,24 +1,26 @@
 local shopHelpers = GAMEMODE.shopHelpers
 
--- the night vision pack, see lua/weapons/glee_nvg_pack
--- one pack, three skulls. E with it out picks which pair of goggles comes out of it, and the haptic
--- pair wants one more skull on top of that, taken when it's picked
+-- one random pair of goggles, three skulls. the haptic pair is in the pool too, no extra charge on top
+-- the goggles themselves are lua/weapons/glee_nvg_base and its children
 
-local packCost = 3
+local goggles = {
+    "glee_nvg_gpnvg",
+    "glee_nvg_t7",
+    "glee_nvg_pvs14",
+}
 
-local function noPackAlready( purchaser )
+local function noGogglesAlready( purchaser )
     if IsValid( purchaser:GetGleeNVG() ) then return false, "You can only carry one pair of goggles." end
-    if purchaser:HasWeapon( "glee_nvg_pack" ) then return false, "You're already carrying a pack." end
     return true
 
 end
 
 local items = {
-    ["nvg_pack"] = {
-        name = "Night Vision Pack",
-        desc = "A small package with a device that allows easy traversal through the night",
+    ["nvg"] = {
+        name = "NVG",
+        desc = ":Random electro-optical combine surplus",
         shCost = 0,
-        shSkullCost = packCost,
+        shSkullCost = 3,
         cooldown = 0.5,
         tags = { "ITEMS", "Utility", "SkullCost" },
         purchaseTimes = {
@@ -26,10 +28,10 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = 937, -- sits between Riot Shield (2 skulls, 925) and Annabelle (4, 950): this costs 3
-        shPurchaseCheck = { shopHelpers.aliveCheck, noPackAlready },
+        shPurchaseCheck = { shopHelpers.aliveCheck, noGogglesAlready },
         svOnPurchaseFunc = function( purchaser )
             shopHelpers.purchaseWeapon( purchaser, {
-                class = "glee_nvg_pack",
+                class = goggles[ math.random( #goggles ) ],
                 confirmSoundWeight = 1,
 
             } )
