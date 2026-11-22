@@ -33,16 +33,15 @@ local winScreenActive = false
 local function buildSections( startTime )
     sections = {}
 
-    -- SECTION 1: Hunt's Tally
-    local totalScore = GetGlobalInt( "glee_TotalScore", 0 )
-    totalScore = math.Round( totalScore )
+    -- SECTION 1: Hunt's Heartbeats
+    local totalHeartbeats = GetGlobalInt( "glee_TotalHeartbeats", 0 )
 
     sections[1] = {
         startTime = startTime + SECTION_DELAY,
         hitPitch = 30,
         entries = {
-            { text = "Hunt's Tally",         color = "endscreen" },
-            { text = tostring( totalScore ), color = "endscreen" },
+            { text = "Hunt's Heartbeats",         color = "endscreen" },
+            { text = tostring( totalHeartbeats ), color = "endscreen" },
         },
     }
 

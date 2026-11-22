@@ -141,6 +141,10 @@ include( "modules/sv_gasmanager.lua" )
 include( "modules/sv_skullmanager.lua" )
 include( "modules/killfeed/sv_killfeednames.lua" )
 include( "modules/sv_hunterspawner.lua" )
+include( "modules/stale/sv_battlememory.lua" )
+include( "modules/stale/sv_stalehunters.lua" ) -- after the spawner, they share its debug convar
+include( "modules/stale/sv_stillhunters.lua" )
+include( "modules/stale/sv_wrongnavgroup.lua" )
 include( "modules/sv_scoredropping.lua" )
 include( "modules/sv_rejoinpersist.lua" )
 include( "modules/sv_firstfallgrace.lua" )
@@ -162,7 +166,6 @@ include( "modules/spawnset/vote/sv_spawnsetvote.lua" )
 include( "modules/spawnset/seen/sv_seenmiseries.lua" )
 include( "modules/spawnset/nominate/sv_spawnsetnominate.lua" )
 include( "modules/spawnset/bosses/sv_bosshandler.lua" )
-include( "modules/spawnset/bosses/sv_bossbattling.lua" )
 include( "modules/spawnset/runtime/sv_breathingroom.lua" )
 include( "modules/spawnset/runtime/sv_spawnweapons.lua" )
 include( "modules/spawnset/runtime/sv_spawnsetcontent.lua" )
@@ -266,7 +269,7 @@ function GM:TermHuntSetup()
     self.glee_Hunters                   = {}
     self.glee_OtherScaryThings          = {} -- not hunters, but raise bpm like one, eg grigori
     self.deadPlayers                    = {}
-    self.roundScore                     = {}
+    self.roundHeartbeats                = {}
     self.roundExtraData                 = {} -- helper tbl that is reset on round end
     self.navmeshActivityHeatmap         = {} -- what navareas are players sticking to this session?
 
@@ -422,6 +425,15 @@ function GM:Think()
 
         local doPatchingText = nil
 
+        -- the navpatcher doesn't run in singleplayer, so a round never starts
+        -- stay in this state for good, so people can still test things
+        local singleplayer = game.SinglePlayer()
+        if singleplayer then
+            self:NotifySingleplayer( players )
+            self.singleplayerWaitStart = self.singleplayerWaitStart or cur
+
+        end
+
         -- make the countdown wait if everyone has spawn protection
         -- a proper wait, resets the entire countdown
         -- doesn't replay the ten seconds hook if it already ran, that's fine
@@ -431,15 +443,18 @@ function GM:Think()
             readyToStart = true
 
         end
-        if not readyToStart then
+        if singleplayer or not readyToStart then
             self.termHunt_roundStartTime = cur + self.termHunt_roundStartOffset
 
         end
 
-        if self.termHunt_roundStartTime < cur then
+        -- letting go of a hold moves the start time, so untilStart comes after
+        local held, heldName, heldTime = self:RoundStartHeld( cur )
+        local untilStart = self.termHunt_roundStartTime - cur
+
+        if untilStart < 0 and not held then
             if self.HuntersGleeDoneTheGreedyPatch then
                 self:roundStart() --
-                self.isBadSingleplayer = nil -- display that message once!
 
             else
                 -- let the patcher be a bit more laggy
@@ -448,10 +463,6 @@ function GM:Think()
 
             end
         else
-            if self.isBadSingleplayer then
-                huntersGlee_Announce( players, 1000, 1, "This gamemode is at its best when started with at least 2 player slots.\nThat doesn't mean you need 2 people!\nJust click the green \"Single Player\" and choose another option!" )
-
-            end
             self.blockPvp       = true
             self.doProxChat     = false
             self.autoRespawn    = true
@@ -460,14 +471,21 @@ function GM:Think()
             hook.Run( "glee_sv_validgmthink_inactive", players, currState, cur )
             hook.Run( "glee_sv_validgmthink_not_over", players, currState, cur )
 
-            local untilStart = self.termHunt_roundStartTime - cur
-            if untilStart <= 10 and not self.roundExtraData.calledTenSecondsHook then
+            if untilStart <= 10 and not singleplayer and not held and not self.roundExtraData.calledTenSecondsHook then
                 self.roundExtraData.calledTenSecondsHook = true
                 hook.Run( "huntersglee_round_tenseconds_before_active" )
 
             end
         end
-        if doPatchingText then
+        if singleplayer then
+            displayName = "Restart with 2+ player slots. You have been waiting in SINGLEPLAYER for... "
+            displayTime = self:getRemaining( self.singleplayerWaitStart, cur )
+
+        elseif held and untilStart < 0 then
+            displayName = heldName or "Round held... "
+            displayTime = heldTime or 0
+
+        elseif doPatchingText then
             displayName = "Please wait, navmesh is being patched... "
             displayTime = self:getRemaining( self.termHunt_roundStartTime, cur )
 
@@ -571,20 +589,19 @@ function GM:alivePlayersOrAll( plys )
 
 end
 
-function GM:plysRoundScore( ply )
-    return self.roundScore[ply:GetCreationID()] or 0
+function GM:plysRoundHeartbeats( ply )
+    return self.roundHeartbeats[ply:GetCreationID()] or 0
 
 end
 
-function GM:calculateTotalScore()
+function GM:calculateTotalHeartbeats()
     local plyFinal = player.GetAll()
-    local totalScore = 0
+    local totalHeartbeats = 0
     for _, ply in ipairs( plyFinal ) do
-        local theirScore = self:plysRoundScore( ply )
-        totalScore = totalScore + theirScore
+        totalHeartbeats = totalHeartbeats + self:plysRoundHeartbeats( ply )
 
     end
-    return totalScore
+    return totalHeartbeats
 
 end
 
@@ -669,99 +686,6 @@ function GM:initDependenciesCheck()
 
 end
 
---- some coroutine stuff
-local getGroupsInPlayCheck = 0
-local groupsInPlay = {}
-local correctGroupsCor = nil
-
-local function huntersAreInCorrectGroupsFunc()
-    if getGroupsInPlayCheck < CurTime() then
-        getGroupsInPlayCheck = CurTime() + 15
-        table.Empty( groupsInPlay )
-        groupsInPlay = GAMEMODE:GetNavmeshGroupsWithPlayers( true )
-
-    end
-
-    if #groupsInPlay <= 0 then coroutine.yield( "done" ) return end
-
-    local hunters = {}
-    for _, hunter in ipairs( GAMEMODE.glee_Hunters ) do
-        if IsValid( hunter ) and hunter:Health() > 0 then
-            table.insert( hunters, hunter )
-
-        end
-    end
-
-    local huntersNotInPlay = {}
-    for _, hunter in ipairs( hunters ) do
-        coroutine.yield()
-        if not IsValid( hunter ) then continue end
-        local huntersNav = hunter.TerminatorNextBot and hunter:GetTrueCurrentNavArea() or GAMEMODE:getNearestNav( hunter:GetPos(), 1000 )
-
-        if not GAMEMODE:GetGroupThatNavareaExistsIn( huntersNav, groupsInPlay, true ) then
-            table.insert( huntersNotInPlay, hunter )
-
-        end
-    end
-
-    for _, hunterNotInPlay in ipairs( huntersNotInPlay ) do
-        local incorrectGroupCount = hunterNotInPlay.glee_IncorrectGroupCount or 0
-        if not IsValid( hunterNotInPlay ) then continue end
-
-        local battling = hunterNotInPlay.TerminatorNextBot and IsValid( hunterNotInPlay:GetEnemy() )
-        local pathing = hunterNotInPlay.TerminatorNextBot and hunterNotInPlay:GetPath() and hunterNotInPlay:GetPath():GetLength() > 500
-        -- flying bosses are nowhere near the navmesh, so they're never in play
-        local battlingBoss = GAMEMODE:IsThisABattlingBoss( hunterNotInPlay )
-        if battling or pathing or battlingBoss then
-            hunterNotInPlay.glee_IncorrectGroupCount = nil
-
-        elseif incorrectGroupCount > 50 then
-            SafeRemoveEntity( hunterNotInPlay )
-
-        else
-            hunterNotInPlay.glee_IncorrectGroupCount = incorrectGroupCount + 1
-            --debugoverlay.Cross( hunterNotInPlay:GetPos(), 100, 10, color_white, true )
-
-        end
-    end
-
-    coroutine.yield( "done" )
-
-end
-
--- silly localization
-local SysTime = SysTime
-local abs_Local = math.abs
-local coroutine_status = coroutine.status
-local coroutine_resume = coroutine.resume
-local nextGroupCheckStart = 0
-
-hook.Add( "glee_sv_validgmthink_active", "glee_checkhunters_areinvalidgroups", function()
-    if not correctGroupsCor then
-        if nextGroupCheckStart < CurTime() then
-            correctGroupsCor = coroutine.create( huntersAreInCorrectGroupsFunc )
-            nextGroupCheckStart = CurTime() + 5
-
-        end
-
-    elseif coroutine_status( correctGroupsCor ) ~= "dead" then
-        local oldTime = SysTime()
-        local noErrors, result = nil
-        while abs_Local( oldTime - SysTime() ) < 0.0002 and not result and coroutine_status( correctGroupsCor ) ~= "dead" do
-            noErrors, result = coroutine_resume( correctGroupsCor )
-            if noErrors == false then ErrorNoHaltWithStack( result ) break end
-
-        end
-        if result == "done" then
-            correctGroupsCor = nil
-
-        end
-    else
-        correctGroupsCor = nil
-
-    end
-end )
-
 GM.HuntersGleeNeedsRepatching = true
 
 -- do the navmesh patching
@@ -800,8 +724,8 @@ function GM:SetupTheLargestGroupsNStuff()
             end
 
             local oldTime = SysTime()
-            while abs_Local( oldTime - SysTime() ) < maxTime and self.GreedyPatchCouroutine and coroutine_status( self.GreedyPatchCouroutine ) ~= "dead" do
-                patchResult, curError = coroutine_resume( self.GreedyPatchCouroutine, self )
+            while math.abs( oldTime - SysTime() ) < maxTime and self.GreedyPatchCouroutine and coroutine.status( self.GreedyPatchCouroutine ) ~= "dead" do
+                patchResult, curError = coroutine.resume( self.GreedyPatchCouroutine, self )
 
                 if curError and curError ~= "done" then
                     local stack = debug.traceback( self.GreedyPatchCouroutine )
@@ -978,6 +902,70 @@ function GM:GenerateANavmeshPls()
     end )
 end
 
+--[[---------------------------------------------------------
+    GM:NotifySingleplayer
+    Tells each player once how to get out of singleplayer.
+    The round info hud says it too, this is the how-to, so it can go away.
+    @param players: A table of players.
+    @return: None
+--]]---------------------------------------------------------
+function GM:NotifySingleplayer( players )
+    self.glee_SingleplayerNotified = self.glee_SingleplayerNotified or {}
+    local unnotified = {}
+    for _, ply in ipairs( players ) do
+        if self.glee_SingleplayerNotified[ply] then continue end
+        self.glee_SingleplayerNotified[ply] = true
+        unnotified[#unnotified + 1] = ply
+
+    end
+    if #unnotified <= 0 then return end
+
+    huntersGlee_Notify( unnotified, {
+        text = "Rounds don't start in singleplayer.",
+        description = "Go to the main menu, Start New Game, click the green \"Single Player\" button and pick 2 or more players.\nYou don't need a second person!",
+        time = 60,
+    } )
+
+end
+
+-- the ten seconds hook's start sting has to fit in this, so it plays again after a hold
+local countdownAfterHold = 10
+
+--[[---------------------------------------------------------
+    GM:RoundStartHeld
+    Whether something is holding the round at the end of the countdown, eg the mapvote.
+    Asks glee_sv_canroundstart, return false from it to hold, plus the hud's text and number.
+    Return nothing to let it start, a true would silence everyone else's hold.
+    The countdown still runs out first, then glee_sv_roundstartheld runs once.
+    Letting go gives a fresh countdown, so the round never starts with no warning.
+    @param cur: CurTime().
+    @return: true while held, then the hud's text and number, either can be nil.
+--]]---------------------------------------------------------
+function GM:RoundStartHeld( cur )
+    local untilStart = self.termHunt_roundStartTime - cur
+    local wasHeld = self.roundExtraData.roundStartHeld
+
+    -- nothing to hold this far out
+    if untilStart > countdownAfterHold and not wasHeld then return false end
+
+    local canStart, heldName, heldTime = hook.Run( "glee_sv_canroundstart" )
+    local held = canStart == false
+
+    if held and untilStart < 0 and not wasHeld then
+        self.roundExtraData.roundStartHeld = true
+        hook.Run( "glee_sv_roundstartheld" )
+
+    elseif not held and wasHeld then
+        self.roundExtraData.roundStartHeld = nil
+        self.roundExtraData.calledTenSecondsHook = nil
+        self.termHunt_roundStartTime = cur + countdownAfterHold
+
+    end
+
+    return held, heldName, heldTime
+
+end
+
 function GM:RemoveHunters()
     if self.glee_Hunters then
         for _, hunter in ipairs( self.glee_Hunters ) do
@@ -1018,8 +1006,7 @@ function GM:roundStart()
     self.termHunt_roundStartTime = math.huge
     self.termHunt_roundBegunTime = CurTime()
     self:SetRoundState( self.ROUND_ACTIVE )
-    self.roundScore = nil
-    self.roundScore = {}
+    self.roundHeartbeats = {}
     self.roundDiffBump = 0
     self.lastSpawnWave = CurTime() -- might cause bugs
 
@@ -1081,10 +1068,10 @@ function GM:roundEnd()
         if plyCount <= 0 then return end
 
         local winner = self:calculateWinner()
-        local totalScore = self:calculateTotalScore()
+        local totalHeartbeats = self:calculateTotalHeartbeats()
 
         SetGlobalBool( "glee_DisplayWinners", true )
-        SetGlobalInt( "glee_TotalScore", math.Round( totalScore ) )
+        SetGlobalInt( "glee_TotalHeartbeats", totalHeartbeats )
 
         local escapedCount = 0
         local remainedCount = 0
@@ -1230,13 +1217,6 @@ function GM:setupFinish()
 
         self.termHunt_roundStartTime = CurTime() + time
         self.termHunt_roundStartOffset = time
-
-    end
-    if game.SinglePlayer() then
-        local time = self.roundStartAfterNavCheck
-        self.termHunt_roundStartTime = CurTime() + time
-        self.termHunt_roundStartOffset = time
-        self.isBadSingleplayer = true
 
     end
 

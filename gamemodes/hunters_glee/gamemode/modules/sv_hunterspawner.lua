@@ -728,241 +728,106 @@ hook.Add( "PostCleanupMap", "glee_resethunterspawnerstats", function()
 
 end )
 
--- how many seconds of the hunter's max health it needs to be without an enemy before it gets removed
--- 0.5 ratio means, 100 hp hunter needs to be without an enemy for 50 seconds before it gets removed
-local staleRatio = 0.5
+-- where each hunter was last unseen, forward spawns pour in from there
+local nextHiddenSample = 0
+hook.Add( "glee_sv_validgmthink_active", "glee_samplehiddenareas", function( _, _, cur )
+    if nextHiddenSample > cur then return end
+    nextHiddenSample = cur + forwardSampleInterval
 
-local krangledStaleRatioMin = 100 -- dont remove krangled npcs below this hp too fast!
-
--- krangled npcs have no enemy to check, so closing in on the nearest player counts instead
-local krangledProgressInterval = 5
-local krangledProgressDist = 200 -- per interval, slow creepers still go stale
-
--- make the spawner spawn npcs closer if bots aren't finding enemies
-local function manageIfStale( hunter ) -- dont let fodder npcs do whatever they want, remove them and march the spawn distances smaller if they're being boring
-    local maxHp = hunter:GetMaxHealth()
-    local noEnemyToRemove = maxHp * staleRatio -- enemies with more hp get more leeway
-    local startingCount = math.random( -30, -15 )
-    local krangled = true
-
-    if hunter.GetEnemy then
-        krangled = false
-
-    elseif hunter.GetTarget then
-        krangled = false
-
-    end
-
-    if krangled then
-        startingCount = startingCount * 2
-        noEnemyToRemove = math.max( noEnemyToRemove, krangledStaleRatioMin * staleRatio ) -- floor this for weird enemies
-
-    end
-    local goodHunter = hunter.isTerminatorHunterBased and not hunter.IsFodder
-    if goodHunter then -- good enemy, give it more leeway
-        noEnemyToRemove = noEnemyToRemove * 2
-
-    end
-
-    hunter.glee_StaleNoEnemyCount = startingCount
-    hunter.glee_NoEnemyToRemove = noEnemyToRemove
-    hunter.glee_StaleKrangled = krangled
-
-    hook.Add( "glee_hunter_nearbyaply", hunter, function( me, nearestHunter ) -- so they dont delete when they're nearby a ply, eg, they bought chameleon 
-        if me ~= nearestHunter then return end
-        local count = nearestHunter.glee_StaleNoEnemyCount
-        if count <= 0 then return end -- negative is spawn grace, leave it
-
-        nearestHunter.glee_StaleNoEnemyCount = math.max( count - 1, 0 )
-
-    end )
-
-    local timerAdjusted
-    local nextProgressSample = 0
-    local nextHiddenSample = 0
-    local lastProgressDist
-    local closingIn
-    local timerName = "glee_fodderhunter_removestale_" .. hunter:GetCreationID()
-    timer.Create( timerName, math.Rand( 0.75, 1.25 ), 0, function()
-        if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
-        if not IsValid( hunter ) then timer.Remove( timerName ) return end
-
-        -- it killed a player, it's doing its job!
-        if not timerAdjusted and ( ( hunter.glee_FodderKills or 0 ) >= 1 or hunter.glee_InterestingHunter ) then
-            timerAdjusted = true
-            local newInterval = math.Rand( 1.75, 2.25 )
-            if not hunter.IsFodder then
-                newInterval = newInterval * 2 -- good hunter, give it more leeway
-
-            end
-            timer.Adjust( timerName, newInterval, 0 ) -- dont count this guy up fast at all
-            hunter.glee_StaleNoEnemyCount = startingCount -- and reset the count
-
-        end
-
-        local enemy
-        if hunter.GetEnemy then
-            enemy = hunter:GetEnemy()
-
-        elseif hunter.GetTarget then
-            enemy = hunter:GetTarget()
-
-        end
-        local oldCount = hunter.glee_StaleNoEnemyCount
-
-        if krangled and nextProgressSample < CurTime() then
-            nextProgressSample = CurTime() + krangledProgressInterval
-            local _, nearestDistSqr = GAMEMODE:nearestAlivePlayer( hunter:GetPos() )
-            local nearestDist = math.sqrt( nearestDistSqr )
-            closingIn = lastProgressDist and ( lastProgressDist - nearestDist ) > krangledProgressDist
-            lastProgressDist = nearestDist
-
-        end
-
-        local krangledSeesEnemy = ( hunter.glee_SeeEnemy or 0 ) > CurTime()
-        local seesEnemy = hunter.IsSeeEnemy or krangledSeesEnemy
-
-        if not seesEnemy and nextHiddenSample < CurTime() then
-            if debuggingVar:GetBool() then
-                debugoverlay.Cross( hunter:WorldSpaceCenter(), 5, 1, Color( 255, 255, 0 ), false )
-
-            end
-            nextHiddenSample = CurTime() + forwardSampleInterval
-            hunter.glee_LastHiddenArea = hunter.TerminatorNextBot and hunter:GetTrueCurrentNavArea() or GAMEMODE:getNearestNav( hunter:GetPos(), 200 )
-
-        end
-
-        -- full leeway once the battle's over
-        if GAMEMODE:IsThisABattlingBoss( hunter ) then
-            hunter.glee_StaleNoEnemyCount = startingCount
-            return
-
-        end
-
-        local goodEnemy = IsValid( enemy ) and enemy.isTerminatorHunterChummy ~= hunter.isTerminatorHunterChummy
-
-        if seesEnemy or goodEnemy or closingIn then
-            hunter.glee_StaleNoEnemyCount = math.min( 0, oldCount + -1 ) -- good enemy, snap count down and march it into the negatives
-            return
-
-        end
-
-        local itsRemovalTime = oldCount >= hunter.glee_NoEnemyToRemove
-
-        if itsRemovalTime then -- booring enem
-            local _, spawnSet = GAMEMODE:GetSpawnSet()
-            if spawnSet then -- so boring, lets get ready to remove this bot, and maybe forgive them if we're wrong
-                local tooFarDist = spawnSet.spawner.dynamicTooFarDist
-                local noEnemyToRemoveI = hunter.glee_NoEnemyToRemove
-                local spawnDistBite = noEnemyToRemoveI * 3
-
-                debugPrint( "stale" )
-
-                local _, nearestDistSqr = GAMEMODE:nearestAlivePlayer( hunter:GetPos() )
-                local nearestDist = math.sqrt( nearestDistSqr )
-                if nearestDist > tooFarDist * 5 then -- way too far
-                    spawnDistBite = noEnemyToRemoveI * 8
-                    debugPrint( "way too far" )
-
-                elseif nearestDist > tooFarDist * 2.5 then -- too far
-                    spawnDistBite = noEnemyToRemoveI * 6
-                    debugPrint( "too far" )
-
-                end
-
-                if nearestDist < tooFarDist * 0.5 and not hunter.glee_FodderWasNearPlayerAtLeast then -- bot is close, give it a second chance, but still bite the cutoffs above
-                    debugPrint( "FORGIVE STALE", hunter, nearestDist < tooFarDist * 0.5, hunter.glee_FodderWasNearPlayerAtLeast )
-                    hunter.glee_FodderWasNearPlayerAtLeast = true
-                    hunter.glee_NoEnemyToRemove = hunter.glee_NoEnemyToRemove * 2 -- still remove eventually
-                    return
-
-                end
-
-                GAMEMODE:AdjustDynamicTooCloseCutoff( spawnDistBite, spawnSet )
-                GAMEMODE:AdjustDynamicTooFarCutoff( spawnDistBite * 1.5, spawnSet )
-                debugPrint( "stale bite", spawnDistBite )
-
-                spawnSet.spawner.areaPoolCacheWeight = spawnSet.spawner.areaPoolCacheWeight - 1 -- move the pool if too many bots are stale, it's probably behind the ply by now
-
-            end
-            local spawnArea = hunter.glee_SpawnArea
-            GAMEMODE:UnmarkSpawnAreaAsGreat( spawnArea )
-            GAMEMODE:MarkSpawnAreaAsStale( spawnArea )
-            if IsValid( spawnArea ) then
-                for _, neighbor in ipairs( spawnArea:GetAdjacentAreas() ) do
-                    GAMEMODE:MarkSpawnAreaAsStale( neighbor )
-
-                end
-            end
-            SafeRemoveEntity( hunter )
-            debugPrint( "REMOVE STALE", hunter )
-            return
-
-        end
-
-        hunter.glee_StaleNoEnemyCount = oldCount + 1 -- boring
-
-    end )
-end
-
-local function staleTrackedHunterOf( ent )
-    if not IsValid( ent ) then return end
-    if ent.glee_StaleNoEnemyCount then return ent end
-
-    local owner = ent:GetOwner() -- projectiles, thrown props
-    if IsValid( owner ) and owner.glee_StaleNoEnemyCount then return owner end
-
-end
-
--- for krangled npcs that kill with ply:Kill() or world damage, so nothing names them as the killer
-local krangledKillCreditDistSqr = 250^2
-
-local function nearestKrangledHunter( pos )
-    local nearest
-    local nearestDistSqr = krangledKillCreditDistSqr
-    for _, hunter in pairs( GAMEMODE.glee_Hunters ) do
+    for _, hunter in ipairs( GAMEMODE.glee_Hunters ) do
         if not IsValid( hunter ) then continue end
-        if not hunter.glee_StaleKrangled then continue end
 
-        local distSqr = hunter:GetPos():DistToSqr( pos )
-        if distSqr < nearestDistSqr then
-            nearest = hunter
-            nearestDistSqr = distSqr
+        local krangledSeesEnemy = ( hunter.glee_SeeEnemy or 0 ) > cur
+        if hunter.IsSeeEnemy or krangledSeesEnemy then continue end
+
+        if debuggingVar:GetBool() then
+            debugoverlay.Cross( hunter:WorldSpaceCenter(), 5, 1, Color( 255, 255, 0 ), false )
 
         end
+        hunter.glee_LastHiddenArea = hunter.TerminatorNextBot and hunter:GetTrueCurrentNavArea() or GAMEMODE:getNearestNav( hunter:GetPos(), 200 )
+
     end
-    return nearest
+end )
+
+-- What the stale hunters tell the spawner, see modules/stale
+
+--[[---------------------------------------------------------
+    GM:GetDynamicTooFarDist
+    @desc How far from players hunters can spawn right now.
+    @return: number, or nil without a misery
+--]]---------------------------------------------------------
+function GM:GetDynamicTooFarDist()
+    local _, spawnSet = self:GetSpawnSet()
+    if not spawnSet then return end
+    return spawnSet.spawner.dynamicTooFarDist
 
 end
 
--- track kills from hunters, so we dont despawn the ones getting the job done.
-hook.Add( "PlayerDeath", "glee_fodderenemy_catchkrangled", function( died, inflic, attacker )
-    local killer = staleTrackedHunterOf( inflic ) or staleTrackedHunterOf( attacker ) or nearestKrangledHunter( died:GetPos() )
-    if not killer then return end
-    if not killer:GetNW2Bool( "glee_IsHunter" ) then return end
+--[[---------------------------------------------------------
+    GM:LearnFromStaleHunter
+    @desc A hunter went stale, so spawn closer, and away from where it spawned.
+    @param hunter: The stale hunter.
+    @param nearestDist: How far it was from the nearest player, farther bites the spawn distances harder.
+    @param staleness: How long it went without an enemy, longer bites harder.
+    @return: None
+--]]---------------------------------------------------------
+function GM:LearnFromStaleHunter( hunter, nearestDist, staleness )
+    local _, spawnSet = self:GetSpawnSet()
+    if spawnSet then
+        local tooFarDist = spawnSet.spawner.dynamicTooFarDist
+        local spawnDistBite = staleness * 3
 
-    GAMEMODE:MarkBossAsBattling( killer )
+        if nearestDist > tooFarDist * 5 then -- way too far
+            spawnDistBite = staleness * 8
+            debugPrint( "way too far" )
 
-    local oldCount = killer.glee_StaleNoEnemyCount
+        elseif nearestDist > tooFarDist * 2.5 then -- too far
+            spawnDistBite = staleness * 6
+            debugPrint( "too far" )
 
+        end
+
+        self:AdjustDynamicTooCloseCutoff( spawnDistBite, spawnSet )
+        self:AdjustDynamicTooFarCutoff( spawnDistBite * 1.5, spawnSet )
+        debugPrint( "stale bite", spawnDistBite )
+
+        spawnSet.spawner.areaPoolCacheWeight = spawnSet.spawner.areaPoolCacheWeight - 1 -- move the pool if too many bots are stale, it's probably behind the ply by now
+
+    end
+    local spawnArea = hunter.glee_SpawnArea
+    self:UnmarkSpawnAreaAsGreat( spawnArea )
+    self:MarkSpawnAreaAsStale( spawnArea )
+    if IsValid( spawnArea ) then
+        for _, neighbor in ipairs( spawnArea:GetAdjacentAreas() ) do
+            self:MarkSpawnAreaAsStale( neighbor )
+
+        end
+    end
+end
+
+--[[---------------------------------------------------------
+    GM:LearnFromHunterKill
+    @desc A hunter killed a player, so spawn more where it spawned, and where it snuck up from.
+    @param killer: The hunter.
+    @param died: The player it killed.
+    @return: None
+--]]---------------------------------------------------------
+function GM:LearnFromHunterKill( killer, died )
     if debuggingVar:GetBool() and IsValid( killer.glee_SpawnArea ) then
         debugoverlay.Line( killer:GetPos(), killer.glee_SpawnArea:GetCenter(), 10, Color( 0, 255, 0 ), true )
 
     end
     local spawnArea = killer.glee_SpawnArea
     local meleeKill = killer:GetPos():Distance( died:GetPos() ) < 250 -- nearby kills always count as great, because they somehow got to the enemy
-    if meleeKill or GAMEMODE:GetAreasHeatmapWeight( spawnArea ) then -- mark as great if nearby died, or people have been here
-        GAMEMODE:UnmarkSpawnAreaAsStale( spawnArea )
-        GAMEMODE:MarkSpawnAreaAsGreat( spawnArea )
+    if meleeKill or self:GetAreasHeatmapWeight( spawnArea ) then -- mark as great if nearby died, or people have been here
+        self:UnmarkSpawnAreaAsStale( spawnArea )
+        self:MarkSpawnAreaAsGreat( spawnArea )
 
     end
 
-    GAMEMODE:RememberForwardSpawnArea( died, killer.glee_LastHiddenArea )
+    self:RememberForwardSpawnArea( died, killer.glee_LastHiddenArea )
 
-    killer.glee_FodderKills = ( killer.glee_FodderKills or 0 ) + 1
-    killer.glee_StaleNoEnemyCount = math.min( -30, oldCount + -30 )
-
-end )
+end
 
 -- anything holding ground against hunters, a hunter that gets close before dying to it makes a forward spawn area
 hook.Add( "PlayerInitialSpawn", "glee_triggersforwardspawns", function( ply )
@@ -1008,37 +873,6 @@ hook.Add( "OnNPCKilled", "glee_goodkilledhunters", function( npc, attacker )
 end )
 
 
--- wandering within this of where it last moved from still counts as standing still
-local stillWanderDistSqr = 50^2
-
--- for .removeAfterStillSeconds, catches hunters that got wedged somewhere, or never could move
-local function manageIfStill( hunter, secondsToRemove )
-    local anchor = hunter:GetPos()
-    local stillFor = 0
-    local timerName = "glee_hunter_removestill_" .. hunter:GetCreationID()
-    timer.Create( timerName, 1, 0, function()
-        if not IsValid( hunter ) then timer.Remove( timerName ) return end
-        if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
-
-        local pos = hunter:GetPos()
-        if pos:DistToSqr( anchor ) > stillWanderDistSqr then
-            anchor = pos
-            stillFor = 0
-            return
-
-        end
-
-        stillFor = stillFor + 1
-        if stillFor < secondsToRemove then return end
-
-        timer.Remove( timerName )
-        SafeRemoveEntity( hunter )
-        debugPrint( "REMOVE STILL", hunter )
-
-    end )
-end
-
-
 function GM:RegisterAsSpawnedHunter( hunter, fromMiseryWave )
     table.insert( self.glee_Hunters, hunter )
     hunter:SetNW2Bool( "glee_IsHunter", true )
@@ -1051,7 +885,7 @@ function GM:RegisterAsSpawnedHunter( hunter, fromMiseryWave )
 
     end
 
-    manageIfStale( hunter )
+    self:ManageIfStale( hunter )
 
 end
 
@@ -1117,7 +951,7 @@ function GM:SpawnAndSetupSpawnEntry( spawnEntry, spawningData )
     self:RegisterAsSpawnedHunter( hunter, data.fromMiseryWave )
 
     if spawnEntry.removeAfterStillSeconds then
-        manageIfStill( hunter, spawnEntry.removeAfterStillSeconds )
+        self:ManageIfStill( hunter, spawnEntry.removeAfterStillSeconds )
 
     end
     if spawnEntry.isBoss then

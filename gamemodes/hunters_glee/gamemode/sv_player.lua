@@ -479,15 +479,12 @@ function GM:EmulateHistoricHighBPM( ply )
 
 end
 
--- used by hunts tally
-hook.Add( "huntersglee_givenscore", "huntersglee_storealivescoring", function( scorer, addedscore )
-    if not IsValid( scorer ) then return end
-    if scorer:Health() <= 0 then return end
-    if addedscore < 1 then return end
+-- used by hunt's heartbeats, on the round end screen
+hook.Add( "huntersglee_heartbeat_beat", "huntersglee_storeroundheartbeats", function( ply )
     if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
 
-    local oldPlyScore = GAMEMODE.roundScore[scorer:GetCreationID()] or 0
-    GAMEMODE.roundScore[scorer:GetCreationID()] = oldPlyScore + addedscore
+    local id = ply:GetCreationID()
+    GAMEMODE.roundHeartbeats[id] = ( GAMEMODE.roundHeartbeats[id] or 0 ) + 1
 
 end )
 

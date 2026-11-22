@@ -63,6 +63,32 @@ They make great first PRs.
 - Miseries: README, "Adding Spawnsets". Examples live in [lua/glee_spawnsets/](lua/glee_spawnsets/).
 - Bargains and other shop items: README, "Adding Shop Items".
 
+### Things the dead and escaped can spawn
+
+The most valuable place to add something, and the most challenging.
+Being dead is the most interesting and novel part of Glee, the ghost shop especially.
+
+The dead shop has two kinds of item.
+- **Sacrifices** can be profitable, they can make ghosts money.
+- **Gifts** are ways for ghosts to apply influence.
+
+The best of either are neutral parties, that get the living interacting.
+They're also the hardest to come up with.
+A Door Locker can help someone fleeing a hunter, or trap them.
+Supplies help whoever gets there first. (A player, or a terminator?)
+ETC.
+
+Abuse is usually handled with cost, not hard caps.
+Placing near the living, near clutter, or over and over gets more expensive.
+
+Escaped players get **[Horrors](lua/glee_shopitems/sh_default_horrors.lua)**, on top of the rest of the dead shop.
+They have the power to end or continue the round at will.
+Every Horror is a reward for escaping, the most difficult part of Glee.
+Horrors should reward their escaped placers with power or profit. (both at once?)
+
+Most dead shop items are built on `screamer_crate`, see [sh_default_hauntingitems.lua](lua/glee_shopitems/sh_default_hauntingitems.lua)
+and `shopHelpers.setupPlacable` in the README.
+
 ### Shop real estate
 
 > Remove this section after the shop rewrite.
@@ -102,11 +128,26 @@ Glee's weapons live in `lua/weapons/` so players can use them in sandbox and oth
 Support out there is limited, but the weapons themselves should work.
 Some are tied to Glee's systems by design, like the tissue reclaimer, and that's fine.
 
+### HUD and menus
+
+Everything Glee draws on screen goes through the style system, in [lua/glee_hud/](lua/glee_hud/).
+It's what gives Glee one consistent look, the HL2 HUD while alive, soulthought while dead.
+A color, font or sound changed in a style changes everywhere that uses it.
+High contrast mode and switching styles on death come along for free.
+
+A hardcoded `Color()` or font opts out of all of that, and becomes one more thing to hunt down next time the look changes.
+
 ### Models and materials
 
 New models go under `models/glee/`, and their materials under `materials/models/glee/`.
+
 Overriding base game models, or another addon's, is best avoided.
 Keeping everything under `glee/` means we rarely conflict with other addons.
+
+It's easy to assume you can just move a model's materials to a new folder.
+You can't, a model finds its materials through a path hardcoded inside the `.mdl` file, its [$cdmaterials](https://developer.valvesoftware.com/wiki/$cdmaterials).
+Moving them means editing that path in the file itself,
+or decompiling and recompiling the model with [Crowbar](https://developer.valvesoftware.com/wiki/Crowbar).
 
 ### File size
 
@@ -141,4 +182,4 @@ A hook that runs all the time costs something every frame, for every player.
 `GM:Move` and its family, `Think`, `Tick`, `OnEntityCreated`, `EntityTakeDamage`, things like that.
 It's worth checking whether a rarer hook can do the job.
 When it really does need to be hot, keeping the work inside it small goes a long way.
-Use termhunt_hands's running code as an example of correctly managed expensive logic that always runs in the background
+Use termhunt_hands's running code as an example of correctly managed expensive logic that always runs in the background.

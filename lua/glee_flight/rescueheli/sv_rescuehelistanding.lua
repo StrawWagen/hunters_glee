@@ -157,6 +157,7 @@ function rescueHeli.SetupStanding( heli )
                 dmgInfo:SetDamageForce( Vector( 0, 0, 0 ) )
 
             end
+            if dmgInfo:IsFallDamage() then return end -- players land on it all the time, that's not an attack
             if not IsValid( attacker ) then return end
             if not attacker:IsPlayer() then return end
 

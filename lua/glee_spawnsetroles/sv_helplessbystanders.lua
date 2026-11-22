@@ -27,11 +27,13 @@ local roles = {
             ["photographer"] = {
                 startWeapons = { "gmod_camera" },
                 ratio = 0.25,
+                minPlayers = 2,
             },
             -- documents the suffering
             ["reporter"] = {
                 startWeapons = { "weapon_glee_crapvidcam" },
                 count = 1,
+                minPlayers = 5,
             },
         },
     },
