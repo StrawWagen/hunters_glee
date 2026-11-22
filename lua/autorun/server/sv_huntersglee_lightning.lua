@@ -48,11 +48,8 @@ end )
 
 if not SERVER then return end
 
-util.AddNetworkString( "glee_lightning_sound" )
+util.AddNetworkString( "glee_lightning_strike" )
 
-local recipFilterEveryone = RecipientFilter()
-
-local vecNeg5Hundred = Vector( 0, 0, -500 )
 local vectorUp25 = Vector( 0, 0, 25 )
 local bigNegativeZ = Vector( 0, 0, -6000 )
 
@@ -85,14 +82,6 @@ function terminator_Extras.glee_PowafulLightning( inflic, attacker, strikingPos,
     -- call the hunters
     sound.EmitHint( SOUND_COMBAT, strikingPos, 8000, 1, inflic )
 
-    for index = 1, powa * 2 do
-        local size = index * 5
-        local offset = Vector( math.random( -size, size ), math.random( -size, size ) )
-        local target = strikingPos + vecNeg5Hundred + offset
-        util.Decal( "Scorch", strikingPos + vectorUp25 + offset, target, nil )
-
-    end
-
     local closeShakeLength = 1.5 + ( powa / 4 )
     local distAdd = powa * 100
 
@@ -105,14 +94,6 @@ function terminator_Extras.glee_PowafulLightning( inflic, attacker, strikingPos,
 
     end )
 
-    local noDust = waterSurfaceStrike and 1 or 0
-
-    local flash = EffectData()
-        flash:SetScale( powa / 2 )
-        flash:SetOrigin( strikingPos + vector_up )
-        flash:SetFlags( noDust )
-    util.Effect( "eff_huntersglee_strikeeffect", flash )
-
     if waterSurfaceStrike then
         local sploosh = EffectData()
             sploosh:SetOrigin( strikingPos )
@@ -121,10 +102,8 @@ function terminator_Extras.glee_PowafulLightning( inflic, attacker, strikingPos,
 
     end
 
-    -- the arc wanders up out of the strike, one beam per step, and gives up once it has
-    -- spent 10 steps running outside the map
-    recipFilterEveryone:AddAllPlayers()
-
+    -- the arc wanders up out of the strike and gives up once it has spent 10 steps running
+    -- outside the map. walked here because util.IsInWorld is serverside, drawn on the client
     local arcDist = 25000
     local arcPoints = 50
     local wanderDir = vector_up
@@ -145,18 +124,6 @@ function terminator_Extras.glee_PowafulLightning( inflic, attacker, strikingPos,
 
         else
             inWallCount = 0
-
-        end
-    end
-
-    for key, point in ipairs( pointTable ) do
-        local nextPoint = pointTable[key + 1]
-        if nextPoint then
-            local beam = EffectData()
-            beam:SetStart( point )
-            beam:SetOrigin( nextPoint )
-            beam:SetScale( powa )
-            util.Effect( "eff_termhunt_plasmaarc", beam, recipFilterEveryone )
 
         end
     end
@@ -219,11 +186,17 @@ function terminator_Extras.glee_PowafulLightning( inflic, attacker, strikingPos,
         end
     end
 
-    -- every clap, woosh and thud is picked and played in cl_huntersglee_lightning.lua,
-    -- so a listener can turn the whole strike down without the server knowing
-    net.Start( "glee_lightning_sound" )
+    -- the flash, scorches, arc and every sound are played in cl_huntersglee_lightning.lua
+    -- one reliable message instead of ~50 effects, which blew the temp entity cap and got strikes dropped
+    net.Start( "glee_lightning_strike" )
         net.WriteVector( strikingPos )
         net.WriteFloat( powa )
+        net.WriteBool( waterSurfaceStrike )
+        net.WriteUInt( #pointTable, 6 ) -- arcPoints is 50
+        for _, point in ipairs( pointTable ) do
+            net.WriteVector( point )
+
+        end
     net.Broadcast()
 
     if powa >= 5.5 then

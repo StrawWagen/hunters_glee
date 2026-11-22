@@ -83,7 +83,7 @@ local function postCleanupMap()
     GAMEMODE:SharedSetup()
 
     if SERVER then
-        GAMEMODE:removeBlockers()
+        GAMEMODE:ApplyMapHacks()
 
         hook.Run( "glee_post_cleanupmap" )
 

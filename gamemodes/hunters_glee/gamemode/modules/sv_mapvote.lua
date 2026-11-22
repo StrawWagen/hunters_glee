@@ -47,7 +47,7 @@ local function notifyQueued()
         time = 30,
     }, {
         text = "FORCED MAP VOTE QUEUED",
-        description = "This hunt will be going somewhere new soon.",
+        description = "This hunt will be somewhere new soon...",
         kind = "alert",
         time = 30,
     } )

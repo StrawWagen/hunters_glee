@@ -24,6 +24,7 @@ local poseHologram = reclaimer.poseHologram
 local getBonePos = reclaimer.getBonePos
 local drawHologram = reclaimer.drawHologram
 local reclaimBones = reclaimer.reclaimBones
+local restoreHologram = reclaimer.restoreHologram
 
 -- The healing's beams ---------------------------------------------------
 -- held on whoever the kit's healing, see HealTarget
@@ -427,6 +428,8 @@ end )
 
 -- Drawing it all --------------------------------------------------------
 
+local revivingBright = 0.6 -- the projection while it's revived, under the 1 it brightens to when aimed
+
 -- see HeldProjection and drawBeam, one for each DrawBeams draws
 local heldAim = {}
 local pointerBeam = {}
@@ -510,10 +513,18 @@ function SWEP:DrawBeams()
 
         end
 
-        -- brightens when aimed close enough to revive, see FindRevivable, and while they're revived, for everyone watching
+        -- brightens when aimed close enough to revive, see FindRevivable
+        -- dims again while they're revived, for everyone watching, the corpse snapping into it is the show
         local revivingThem = self:GetRevivingTarget() == data.ply
         local aimedAt = aimPos and aimPos:DistToSqr( data.pos ) < reviveReach^2
-        local bright = ( aimedAt or revivingThem ) and 1 or 0.45
+        local bright = 0.45
+        if revivingThem then
+            bright = revivingBright
+
+        elseif aimedAt then
+            bright = 1
+
+        end
         local beamStrength = revivingThem and 2 or 1
         local built = math.Clamp( ( CurTime() - self.glee_projectStart ) / buildTime, 0, 1 )
 
@@ -540,6 +551,9 @@ function SWEP:DrawBeams()
         if revivingThem then
             reviveFrac = self:GetRevivingProgress()
             reclaimBones( self, data.ply, holo, reviveFrac, simple )
+
+        else
+            restoreHologram( holo )
 
         end
 
@@ -574,16 +588,31 @@ function SWEP:DrawBeams()
 
 end
 
+-- every reclaimer this client knows of, added in SWEP:Initialize
+-- so the hook below checks a couple of weapons a frame, not what every player is holding
+-- pruned here, not in OnRemove, the client calls OnRemove on a full update without removing it
+local existing = reclaimer.existing
+for _, wep in ipairs( ents.FindByClass( CLASS ) ) do -- for autorefresh, these won't Initialize again
+    existing[wep] = true
+
+end
+
 hook.Add( "PostDrawTranslucentRenderables", "glee_reclaimer_drawbeams", function( drawingDepth, drawingSkybox )
     if drawingDepth or drawingSkybox then return end
 
-    for _, ply in player.Iterator() do
-        if ply:IsDormant() then continue end
-        if ply:Health() <= 0 then continue end
+    for wep in pairs( existing ) do
+        if not IsValid( wep ) then
+            existing[wep] = nil
+            continue
 
-        local wep = ply:GetActiveWeapon()
-        if not IsValid( wep ) then continue end
-        if wep:GetClass() ~= CLASS then continue end
+        end
+
+        local owner = wep:GetOwner()
+        if not IsValid( owner ) then continue end
+        if not owner:IsPlayer() then continue end
+        if owner:GetActiveWeapon() ~= wep then continue end
+        if owner:IsDormant() then continue end
+        if owner:Health() <= 0 then continue end
 
         wep:DrawBeams()
 

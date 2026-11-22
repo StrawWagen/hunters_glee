@@ -1025,20 +1025,30 @@ hook.Add( "Think", "glee_backpackable_placementghost", function()
 
 end )
 
+local urgentHint = { urgent = true }
+
+function SWEP:HintPreStack()
+    if GAMEMODE:HasLearnedLesson( placedLesson ) then return end
+    -- they've found R, let the post stack say where to aim
+    if self:IsPreviewingPlacement() then return end
+
+    local valid, phrase = GAMEMODE:TranslatedBind( "+reload" )
+    if not valid then
+        local shown, unboundText = GAMEMODE:UnboundHint( "+reload", "You can't set this down...", true )
+        return shown, unboundText, urgentHint
+
+    end
+
+    return true, "Hold " .. string.upper( phrase ) .. " to start PLACING this.", urgentHint
+
+end
+
 function SWEP:HintPostStack()
     if self:IsPreviewingPlacement() and not IsValid( self.glee_PlacementGhost ) then
         if self.glee_PlacementDenied == "blocked" then return true, "Something's in the way." end
         return true, "Aim at some nearby, flat floor."
 
     end
-
-    if GAMEMODE:HasLearnedLesson( placedLesson ) then return end
-
-    local valid, phrase = GAMEMODE:TranslatedBind( "+reload" )
-    if not valid then return GAMEMODE:UnboundHint( "+reload", "You can't set this down...", true ) end
-
-    return true, "Hold " .. string.upper( phrase ) .. " to start PLACING this."
-
 end
 
 -- a copy of the carried entity's model, on the viewmodel's HeldModelBone this frame

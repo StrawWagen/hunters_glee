@@ -136,6 +136,7 @@ include( "modules/sv_navmeshgroups.lua" )
 include( "modules/sv_navpatcher.lua" )
 include( "modules/sv_navmeshcategorizer.lua" )
 include( "modules/sv_doorbash.lua" )
+include( "modules/sv_maphacks.lua" )
 include( "modules/sv_mapvote.lua" )
 include( "modules/sv_gasmanager.lua" )
 include( "modules/sv_skullmanager.lua" )
@@ -756,36 +757,6 @@ function GM:SetupTheLargestGroupsNStuff()
     end )
 end
 
-function GM:removeBlockers() -- mess up locked doors on door heavy maps
-    local doors = ents.FindByClass( "prop_door_rotating" )
-    for _, door in ipairs( doors ) do
-        door:SetKeyValue( "returndelay", "-1" )
-
-    end
-    if #doors > 30 then
-        for _, door in ipairs( doors ) do
-            if door:GetInternalVariable( "m_bLocked" ) ~= true then continue end
-            if not terminator_Extras.CanBashDoor( door ) then continue end -- door is decor
-
-            local areaIsBig = nil
-            local area = self:getNearestNavFloor( door:WorldSpaceCenter() )
-
-            if area and area:IsValid() then
-                -- door is creating blocked flag, unlock it!
-                local maxSize = math.max( area:GetSizeX(), area:GetSizeY() )
-                areaIsBig = maxSize > 26
-
-            end
-
-            if not areaIsBig then continue end
-
-            door:Fire( "Unlock" )
-
-        end
-    end
-end
-
-
 -- when the last player leaves, runs huntersglee_emptyserver once, then cleans up the map, which puts the gamemode back into setup and removes all the hunters
 -- returns true while empty, so the gamemode doesn't think
 function GM:handleEmptyServer( players )
@@ -1204,7 +1175,7 @@ function GM:setupFinish()
 
     else
         self:SetupTheLargestGroupsNStuff()
-        self:removeBlockers()
+        self:ApplyMapHacks()
         self:SetRoundState( self.ROUND_INACTIVE )
 
         local var = GetConVar( "sv_cheats" )

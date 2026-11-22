@@ -12,6 +12,7 @@ ENT.PlayerColorVec = Vector( 1, 0, 0 ) -- used for player color
 ENT.SubCategory = "Hunter's Glee"
 
 ENT.IsFodder = true
+ENT.IgniteOnHit = true -- shared, eff_huntersglee_skeletondeath only plays the fiery burst for skeletons that burn
 
 terminator_Extras.RegisterNPC( "terminator_nextbot_infernalskeleton", ENT, {
     Weapons = { "weapon_infernalskeleton_fists" },
@@ -186,7 +187,6 @@ ENT.IdleActivityTranslations = {
     [ACT_LAND]                          = ACT_LAND,
 }
 
-ENT.IgniteOnHit = true
 ENT.FistRangeMul = 0.9
 
 function ENT:PostHitObject( object, damage )

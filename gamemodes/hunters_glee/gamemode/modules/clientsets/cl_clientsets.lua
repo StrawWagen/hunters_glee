@@ -155,18 +155,24 @@ function setMeta:Add( key )
 
 end
 
+-- The server follows along, an empty sync is a reset there too
+function setMeta:Reset()
+    table.Empty( self.pending )
+    if not self.keys then return end
+
+    table.Empty( self.keys )
+    self:RequestSave( true )
+    self:LazySync()
+
+end
+
 net.Receive( "glee_clientsets", function()
     local set = sets[net.ReadString()]
     if not set then return end
 
     local mode = net.ReadUInt( 2 )
     if mode == modeReset then
-        table.Empty( set.pending )
-        if not set.keys then return end
-
-        table.Empty( set.keys )
-        set:RequestSave( true )
-        set:LazySync()
+        set:Reset()
 
     elseif mode == modeAdd then
         -- the server added this one, so it already knows, no sync back

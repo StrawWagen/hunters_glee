@@ -90,11 +90,16 @@ net.Receive( "glee_clientsets", function( _, ply )
     if nextSync > CurTime() then return end
     state.nextSync = CurTime() + 0.01
 
-    -- the client sends its whole set every time, so this replaces rather than merges, an empty set
-    -- arrives as a reset. what we added ourselves is kept, the client may not have had it when it sent
-    local keys = table.Copy( state.serverAdded )
-
+    -- the client sends its whole set every time, so this replaces rather than merges.
+    -- what we added ourselves is kept, the client may not have had it when it sent.
+    -- an empty set is a reset, so that goes too
     local count = net.ReadUInt( 12 )
+    if count == 0 then
+        state.serverAdded = {}
+
+    end
+
+    local keys = table.Copy( state.serverAdded )
     for _ = 1, count do
         keys[net.ReadString()] = true
 

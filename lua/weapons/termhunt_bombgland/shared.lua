@@ -220,7 +220,8 @@ function SWEP:BoomUser( attacker )
     local bombCount = self:GetBombs()
 
     if bombCount > self.BombsPerBigBomb then
-        terminator_Extras.DoPFXAtPos( "glee_gland_explosion_big", worldSpaceC )
+        local splodeScale = math.min( bombCount / self.BombsPerBigBomb, 4 ) -- same cap as the damage below
+        terminator_Extras.DoReliableEffect( "eff_huntersglee_glandsplode", worldSpaceC, { magnitude = splodeScale } )
 
     end
 

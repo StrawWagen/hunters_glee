@@ -210,13 +210,15 @@ end
 
 -- gmod's physgun is these same models, glowing in its owner's weapon colour
 -- so the kit draws with its own copies of their materials, glowing reclamation green, see materials/tissue_reclaimer
--- overridden only for the draw, the viewmodel is shared with every other weapon
+-- the viewmodel's are overridden only for the draw, it's shared with every other weapon
+-- the world model's are its own sub materials, an override can't survive its owner being drawn mid DrawModel
+-- see "Recolouring a weapon" in the terminator addon's readme
 -- the unlit copies are for when it's out of material
 local vmGlowMat = Material( "tissue_reclaimer/v_reclaimer_sheet" )
-local wmGlowMat = Material( "tissue_reclaimer/w_reclaimer_sheet" )
 local vmUnlitMat = Material( "tissue_reclaimer/v_reclaimer_sheet_unlit" )
-local wmUnlitMat = Material( "tissue_reclaimer/w_reclaimer_sheet_unlit" )
-local wmGlowSlots = { 0, 1 } -- w_physics's material slots that use w_physics_sheet2, on its glowing skin
+local wmGlowMat = "tissue_reclaimer/w_reclaimer_sheet"
+local wmUnlitMat = "tissue_reclaimer/w_reclaimer_sheet_unlit"
+local wmGlowSlots = { 0, 1 } -- w_physics_sheet and w_physics_sheet2
 
 -- dropped, nobody's ammo is in it, so it glows
 function SWEP:IsGlowing()
@@ -225,19 +227,19 @@ function SWEP:IsGlowing()
 end
 
 function SWEP:DrawWorldModel( flags )
+
     self:SetPoseParameter( "active", self.glee_prongOpen or 0 )
     self:InvalidateBoneCache() -- the beams may have read its attachments already this frame
 
+    -- checked every draw, they're clientside, and anything networked could put the originals back
     local mat = self:IsGlowing() and wmGlowMat or wmUnlitMat
     for _, slot in ipairs( wmGlowSlots ) do
-        render.MaterialOverrideByIndex( slot, mat )
+        if self:GetSubMaterial( slot ) ~= mat then
+            self:SetSubMaterial( slot, mat )
 
+        end
     end
     self:DrawModel( flags )
-    for _, slot in ipairs( wmGlowSlots ) do
-        render.MaterialOverrideByIndex( slot, nil )
-
-    end
 
     terminator_Extras.DrawMyExtraModels( self, wmKitExtras, flags )
 

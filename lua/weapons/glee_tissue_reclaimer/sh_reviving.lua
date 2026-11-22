@@ -41,11 +41,12 @@ function SWEP:CanResurrect( ply )
 
 end
 
--- the dead player whose position is nearest where we're aiming, within reviveReach
-function SWEP:FindRevivable( aimTrace )
+-- the dead player whose position is nearest where we're aiming, within reach, reviveReach if not given
+function SWEP:FindRevivable( aimTrace, reach )
     local center = aimTrace.HitPos
     local nearest, nearestPos
-    local nearestDistSqr = reviveReach^2
+    reach = reach or reviveReach
+    local nearestDistSqr = reach^2
 
     for _, data in pairs( self:GetGamemodeDeadPlayerData() ) do
         if not IsValid( data.ply ) then continue end
@@ -62,8 +63,11 @@ function SWEP:FindRevivable( aimTrace )
 
 end
 
--- why primary found nothing to heal or revive, aimed is what the aim's line hit
-local function notifyNothingToReclaim( wep, aimed )
+local nearMissReach = reviveReach * 4
+
+-- why primary found nothing to heal or revive
+local function notifyNothingToReclaim( wep, aimTrace )
+    local aimed = aimTrace.Entity
     local notice = {
         text = "NO TISSUE FOUND",
         description = "Aim at someone hurt, or a death location.",
@@ -87,6 +91,11 @@ local function notifyNothingToReclaim( wep, aimed )
             notice.description = "It's at full health."
 
         end
+
+    -- players aim at the corpse and think they have to drag it back, it's the death location that revives
+    elseif IsValid( wep:FindRevivable( aimTrace, nearMissReach ) ) then
+        notice.text = "DEATH LOCATION DESYNCED"
+        notice.description = "Reclaimer must be aligned with death location."
 
     elseif IsValid( aimed ) then
         notice.text = "INCOMPATIBLE TISSUE"
@@ -134,7 +143,7 @@ function SWEP:PrimaryAttack()
         if SERVER then
             playServerOneShot( self, DryFireSound )
             self:PlayViewModelOnce( "fire" )
-            notifyNothingToReclaim( self, aimTrace.Entity )
+            notifyNothingToReclaim( self, aimTrace )
 
         end
         self:SetNextPrimaryFire( CurTime() + 0.1 )
@@ -146,7 +155,7 @@ function SWEP:PrimaryAttack()
         if SERVER then
             playServerSound( self, ReviveDenySound, 75, 80 )
             notifyFromServer( self, {
-                text = "INSUFFICIENT RECLAMATION MATERIAL",
+                text = "INSUFFICIENT RECLAMATION JUICE",
                 description = "Complete Reclamation needs " .. self.ReviveCost .. ", " .. self:Ammo1() .. " remaining.",
                 replaceKey = "glee_reclaimer_reclamation",
             } )

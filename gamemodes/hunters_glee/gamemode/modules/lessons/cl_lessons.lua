@@ -38,3 +38,10 @@ concommand.Add( "glee_test_printlearnedlessons", function()
     PrintTable( lessons.keys )
 
 end )
+
+-- see all the lessons again
+concommand.Add( "glee_test_resetmylessons", function()
+    lessons:Reset()
+    permaPrint( "GLEE: your lessons were reset" )
+
+end, nil, "Reset your own hints" )
