@@ -28,6 +28,11 @@ net.Receive( "glee_nvg_hapticpick", function( _, ply )
         wep:SetCone( nextIndex )
         ply:EmitSound( "buttons/lightswitch2.wav", 55, 150 - nextIndex * 15, 0.6 )
 
+    elseif key == "resolution" then
+        local nextIndex = wep:GetResolution() % #wep.Resolutions + 1
+        wep:SetResolution( nextIndex )
+        ply:EmitSound( "buttons/lightswitch2.wav", 55, 120 + nextIndex * 10, 0.6 )
+
     elseif key == "wavelength" then
         local nextIndex = wep:GetWavelength() % #wep.Wavelengths + 1
         wep:SetWavelength( nextIndex )

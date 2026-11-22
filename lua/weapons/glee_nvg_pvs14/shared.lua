@@ -17,22 +17,31 @@ SWEP.WorldModel = "models/glee/nvg/nvg_pvs14.mdl"
 
 SWEP.GleeNVG = {
     lamp = 0.6,
-    lampColor = Color( 80, 80, 80 ),
+    lampColor = Color( 70, 70, 100 ),
     gain = 1, -- no brightening, just the colour pass below
     saturation = 1.5, -- stronger colours
-    tint = Color( 150, 150, 255 ), -- a little redder
+    tint = Color( 230, 230, 255 ),
 }
 
 -- rays = fired per frame, pierce = total hammer units of solid each can go through before it stops
 -- short waves are many rays that barely get through anything, long waves are few that go through a lot
 SWEP.Wavelengths = {
-    { name = "Short", rays = 60, pierce = 64 },
-    { name = "Medium", rays = 20, pierce = 256 },
-    { name = "Long", rays = 8, pierce = 1024 },
+    { name = "Short", rays = 120, pierce = 64 },
+    { name = "Medium", rays = 50, pierce = 256 },
+    { name = "Long", rays = 20, pierce = 512  },
 }
 
 -- how wide the cone the rays come out in is, whole width in degrees, picked from the wheel
 SWEP.Cones = { 90, 40, 10 }
+
+-- how many points the whole sweep has, picked from the wheel; a frame only walks a slice of them
+-- Low carries the old Max density, and the rest are stepped up from it
+SWEP.Resolutions = {
+    { name = "Low", points = 1920 },
+    { name = "Standard", points = 3840 },
+    { name = "High", points = 7680 },
+    { name = "Max", points = 15360 },
+}
 
 -- every this many units of solid a ray goes through, it's knocked this many degrees off course
 SWEP.PierceDeflectEvery = 50
@@ -42,6 +51,7 @@ function SWEP:SetupDataTables()
     self:NetworkVar( "Bool", 0, "RadarOn" )
     self:NetworkVar( "Int", 0, "Wavelength" ) -- index into SWEP.Wavelengths
     self:NetworkVar( "Int", 1, "Cone" ) -- index into SWEP.Cones
+    self:NetworkVar( "Int", 2, "Resolution" ) -- index into SWEP.Resolutions
 
 end
 
@@ -50,4 +60,13 @@ function SWEP:Initialize()
     self:SetWavelength( 1 )
     self:SetCone( 1 )
 
+    -- by name, so the default stays Standard if the list is ever reordered
+    self:SetResolution( 1 )
+    for i, resolution in ipairs( self.Resolutions ) do
+        if resolution.name == "Standard" then
+            self:SetResolution( i )
+            break
+
+        end
+    end
 end
