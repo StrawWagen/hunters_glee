@@ -25,7 +25,7 @@ local items = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
         },
-        weight = 1050,
+        weight = 937, -- sits between Riot Shield (2 skulls, 925) and Annabelle (4, 950): this costs 3
         shPurchaseCheck = { shopHelpers.aliveCheck, noPackAlready },
         svOnPurchaseFunc = function( purchaser )
             shopHelpers.purchaseWeapon( purchaser, {
