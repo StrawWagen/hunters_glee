@@ -578,26 +578,10 @@ function ENT:DoCustomTasks( defaultTasks )
                         if not IsValid( myNav ) then
                             self:TaskComplete( "movement_wander" )
                             self:StartTask( "movement_handler", "i ended up somewhere wrong!" )
+                            return
 
                         end
-                        local areasToCheck = myNav:GetAdjacentAreas()
-                        areasToCheck[#areasToCheck + 1] = myNav
-                        local areasAlreadyAdded = {}
-                        for _, area in ipairs( areasToCheck ) do
-                            areasAlreadyAdded[area] = true
-
-                        end
-                        coroutine_yield()
-                        local finalAreasToCheck = {}
-                        for _, area in ipairs( areasToCheck ) do
-                            local areasNeighbors = area:GetAdjacentAreas()
-                            for _, neighbor in ipairs( areasNeighbors ) do
-                                if areasAlreadyAdded[neighbor] then continue end
-                                areasAlreadyAdded[neighbor] = true
-                                finalAreasToCheck[#finalAreasToCheck + 1] = neighbor
-
-                            end
-                        end
+                        local finalAreasToCheck = myTbl.GetSimpleGoalAreas( myNav )
                         coroutine_yield()
 
                         local lastArea = data.LastWanderArea
@@ -608,6 +592,7 @@ function ENT:DoCustomTasks( defaultTasks )
                         end
                         local canStandRn = myTbl.CanStandUp( self, myTbl )
                         for _ = 1, 20 do
+                            if #finalAreasToCheck <= 0 then break end -- math.random( 1, 0 ) errors
                             coroutine_yield()
 
                             local area = table.remove( finalAreasToCheck, math.random( 1, #finalAreasToCheck ) )
