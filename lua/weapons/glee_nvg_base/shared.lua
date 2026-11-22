@@ -1,7 +1,7 @@
 
 -- Base of the night vision goggles, bought in the shop (see glee_shopitems/sh_nightvision.lua), kept in weapon slot 6.
 -- Left click with them out flips them down or up, that's the only way. Hold V with them out to throw them down,
--- through glee's own weapon dropper. Gone when you die. Only one pair carried at a time, whatever the kind.
+-- through glee's own weapon dropper. Dropped when you die, flipped down or not. Only one pair carried at a time, whatever the kind.
 -- Models and sounds come from Neosun's Cooler Nightvision, workshop 3425531829, copied into
 -- models/glee/nvg, materials/models/glee/nvg and sound/hunters_glee/nvg, so only glee is needed.
 -- The .mdl files had their internal name and texture folder paths repointed there.
@@ -47,7 +47,7 @@ SWEP.Secondary.Ammo = "none"
 -- saturation = 0 turns the picture grey, 1 keeps the map's colours, above 1 makes them stronger
 -- bloom = glare around bright spots
 -- tint = the picture is then multiplied by this, black stays black and white becomes this colour
--- heatColor = draw living npcs, players and nextbots, and every ragdoll, in this colour on top
+-- heatColor = draw living npcs, players and nextbots in this colour on top; ragdolls get a flat grey
 SWEP.GleeNVG = {}
 
 -- each goggle file has to set these on its own table, the spawnmenu reads that and not the base's:
@@ -81,10 +81,10 @@ function SWEP:Holster()
 
 end
 
--- glee's weapon dropper asks this for both hold V and dying. throwable while alive, gone when you die, like the radio
+-- glee's weapon dropper asks this for both hold V and dying. throwable while alive, and dropped on death
+-- too, whether the pair was flipped down on their head or just sitting in the inventory
 function SWEP:ShouldDropOnDie()
-    local owner = self:GetOwner()
-    return IsValid( owner ) and owner:Health() > 0
+    return true
 
 end
 

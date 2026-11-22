@@ -13,5 +13,9 @@ SWEP.GleeNVG = {
     lamp = 0.001,
     gain = 0.6,
     saturation = 0.4, -- dulled colours
-    heatColor = Color( 255, 255, 255 ), -- white hot: npcs, players and ragdolls read as pure white silhouettes
+    heatColor = Color( 255, 255, 255 ), -- white hot: npcs and players read as pure white silhouettes, ragdolls as flat grey
+    -- the goggles hum while they're down, the same sweep loop the haptic radar runs on. the base
+    -- starts it when this class is the one flipped down and stops it when they come back up
+    runSound = "sound/glee/nvg/motiontracker_noise_loop.wav",
+    runSoundVolume = 0.35,
 }

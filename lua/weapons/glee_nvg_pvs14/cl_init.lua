@@ -122,20 +122,26 @@ end )
 
 -- the radar ---------------------------------------------------------------------
 
-local maxRange = 8000 -- furthest a ray goes in total, solid included
+local maxRange = 8000 -- fallback ray length, used only if a wavelength entry doesn't set .length
 local pierceStep = 8 -- how finely the far side of a wall is looked for, smaller is exact but more traces
 local maxWalls = 12 -- most separate pieces of solid one ray goes into
 local minPierceCost = 32 -- least a single piece of solid can cost, in pierce units. thin shells - terrain
 -- displacements, thin brushes - measure as barely anything thick, so without a floor a ray slips through
 -- a hill for a couple of units and quietly crosses the whole map
 local detectLife = 10 -- a target counts as new again after this long without being hit
-local detectSound = "buttons/blip1.wav"
+local detectSound = "buttons/combine_button7.wav" -- combine terminal chirp, short and electronic
 
-local coneColor = Color( 255, 200, 30, 120 ) -- HL2 hud yellow, bright enough to read on dark maps
-local markLife = 3 -- how long a hit's mark stays in the cone
+local coneColor = Color( 255, 200, 30, 51 ) -- HL2 hud yellow, 80% transparent so the map reads straight through it
+MsgN( "[glee] pvs14 cone alpha loaded: ", coneColor.a ) -- temporary, says which copy of this file the client got
+local markLifeDefault = 3 -- fallback only; the real number is SWEP.MarkLife in shared.lua
+local function markLifeOf( wep )
+    return ( wep and wep.MarkLife ) or markLifeDefault
+
+end
 local markSize = 3
-local markColor = Color( 255, 60, 60 )
-local maxMarks = 64
+local markColorPlayer = Color( 70, 150, 255 ) -- other people read blue
+local markColorOther = Color( 255, 60, 60 ) -- everything else, NPCs and the evil creatures, reads red
+local maxMarks = 200
 
 local scanColor = Color( 15, 90, 30, 77 ) -- dark green, 70% see through: where the sweep is right now
 local scanLife = 0.2 -- how long the sweep's band hangs on screen after a slice
@@ -143,11 +149,50 @@ local scanSize = 3
 local scanHead = {} -- the slice fired last frame: first, count, halfCone, points, born
 
 local detected = {} -- [ent] = { pos = where it was last hit, seen = when }
-local marks = {} -- { dir = the direction it was caught on, relative to the view, born }
+local marks = {} -- { dir = the direction it was caught on, relative to the view, color, ent, sweep, born }
 local scanIndex = 1 -- where the next frame's slice of the sweep starts
 local sweepPass = 0 -- completed sweeps so far; each one nudges the grid to creep across the last one's gaps
 local shiftSteps = 16 -- a sweep moves the grid a 16th of a cell sideways, so it drifts about a pixel at a time
 local shiftElevSteps = 3 -- the vertical drift is three times the sideways one: 3 pixels down, 1 pixel left
+
+-- the handheld radar's sweep, taken from the Alien: Isolation - Motion Tracker addon (it plays
+-- sound/weapons/motiontracker_noise_loop.wav, shipped here as glee/nvg/motiontracker_noise_loop.wav).
+-- a 2.17s loop on its own channel while the radar is up, so it runs under the sweep instead of pinging over it
+local radarLoopSound = "sound/glee/nvg/motiontracker_noise_loop.wav"
+local radarLoopVolume = 0.35
+local radarLoop = nil -- the playing IGModAudioChannel
+
+local function stopRadarLoop()
+    if not radarLoop then return end
+    radarLoop:Stop()
+    radarLoop = nil
+
+end
+
+local function startRadarLoop()
+    if radarLoop then
+        -- the file ran out before the radar did: start it again rather than going quiet
+        if radarLoop:GetState() == ( GMOD_CHANNEL_STOPPED or 0 ) then
+            radarLoop = nil
+
+        else
+            return
+
+        end
+    end
+
+    sound.PlayFile( radarLoopSound, "noblock", function( channel, errID, errStr )
+        if not channel then
+            MsgN( "[glee] nvg radar loop failed: ", errID, " ", errStr )
+            return
+
+        end
+        radarLoop = channel
+        channel:SetVolume( radarLoopVolume )
+        channel:Play()
+
+    end )
+end
 
 local function radarRunning( me )
     if not IsValid( me ) or not me:Alive() then return end
@@ -163,6 +208,8 @@ local function isTarget( ent, me )
     if not IsValid( ent ) or ent == me then return false end
     if ent:IsPlayer() then return ent:Alive() end
     if ent:IsNPC() or ent:IsNextBot() then return ent:Health() > 0 end
+    -- only engine-drawn things are contacts: the evil addons' creatures are left off the haptic
+    -- entirely, they are not a radar target at any range
     return false
 
 end
@@ -178,13 +225,42 @@ local function hitTarget( ent, pos )
 
     end
     detected[ent] = { pos = pos, seen = CurTime() }
-    surface.PlaySound( detectSound )
+    -- surface.PlaySound is fixed at full volume, so this is emitted instead to halve it.
+    -- level 75 is normal attenuation, and the emitter is the listener, so it lands in their ears
+    LocalPlayer():EmitSound( detectSound, 75, 100, 0.5 )
 
 end
 
-local function addMark( localDir )
+local function readsAsPlayer( ent )
+    return ent:IsPlayer()
+
+end
+
+local function markColorFor( ent )
+    return IsValid( ent ) and readsAsPlayer( ent ) and markColorPlayer or markColorOther
+
+end
+
+local function addMark( worldPos, color, ent )
+    -- caught again on a later sweep, so it has moved: its blips from the sweeps before this one go,
+    -- and the cone shows where it is now instead of the trail behind it. same-sweep hits stay, a
+    -- big thing can legitimately be caught on more than one ray
+    if ent then
+        for i = #marks, 1, -1 do
+            local mark = marks[i]
+            if mark.ent == ent and mark.sweep < sweepPass then table.remove( marks, i ) end
+
+        end
+    end
+
     if #marks >= maxMarks then table.remove( marks, 1 ) end
-    marks[#marks + 1] = { dir = localDir, born = CurTime() }
+    marks[#marks + 1] = {
+        pos = worldPos,
+        color = color or markColorOther,
+        born = CurTime(),
+        ent = ent,
+        sweep = sweepPass,
+    }
 
 end
 
@@ -228,20 +304,21 @@ local function deflect( dir, degrees )
 end
 
 -- one ray, piercing what it hits until it's out of pierce, range or walls, hits sky, or finds a target
-local function castRay( me, wep, start, dir, pierce )
+local function castRay( me, wep, start, dir, pierce, maxLength, deflectEvery, deflectDegrees )
+    maxLength = maxLength or maxRange
     local travelled = 0
     for _ = 1, maxWalls do
-        local tr = trace( start, start + dir * ( maxRange - travelled ), me )
+        local tr = trace( start, start + dir * ( maxLength - travelled ), me )
         if not tr.Hit or tr.HitSky then return end
         if isTarget( tr.Entity, me ) then
             hitTarget( tr.Entity, tr.HitPos )
-            return true
+            return tr.Entity, tr.HitPos
 
         end
 
         local entry = tr.HitPos
         travelled = travelled + start:Distance( entry )
-        local thickness = solidThickness( me, entry, dir, math.min( pierce, maxRange - travelled ) )
+        local thickness = solidThickness( me, entry, dir, math.min( pierce, maxLength - travelled ) )
         if not thickness then return end
 
         -- charge the real thickness, but never less than one wall's worth: a displacement hill is a
@@ -249,14 +326,19 @@ local function castRay( me, wep, start, dir, pierce )
         pierce = pierce - math.max( thickness, minPierceCost )
         travelled = travelled + thickness
         start = entry + dir * ( thickness + 1 )
-        dir = deflect( dir, thickness / wep.PierceDeflectEvery * wep.PierceDeflectDegrees )
-        if pierce <= 0 or travelled >= maxRange then return end
+        -- both numbers live on the wavelength; a wavelength that leaves either out gets a straight ray
+        if deflectEvery and deflectEvery > 0 and deflectDegrees and deflectDegrees ~= 0 then
+            dir = deflect( dir, thickness / deflectEvery * deflectDegrees )
+
+        end
+        if pierce <= 0 or travelled >= maxLength then return end
 
     end
 end
 
--- a cone's worth of directions laid out in rows, top to bottom, so the rays fill the circle
--- instead of scattering. built once per cone size, ray count and shift, since it never changes
+-- a cone's worth of directions, filled as a grid and then ordered from the middle outwards, so a
+-- sweep opens at the crosshair and ripples towards the edge instead of raking the cone top to bottom.
+-- built once per cone size, ray count and shift, since it never changes
 -- shift (in cells, 0 up to 1) slides every row across and down by that fraction of a cell, so each
 -- sweep samples a slightly different set of points and the gaps between them get filled in over time.
 -- the two axes are separate so the drift can lean: shiftElev in cells down, shiftAz in cells left
@@ -294,17 +376,30 @@ local function discDirs( halfAngle, count, shiftAz, shiftElev )
     end
 
     discCache[key] = dirs
+    -- x is cos(offset from the middle), so sorting descending walks outwards ring by ring. equal
+    -- radii are broken by azimuth, so each ring still reads as one tidy circle rather than a scatter
+    table.sort( dirs, function( a, b )
+        if a.x ~= b.x then return a.x > b.x end
+        return math.atan2( a.z, a.y ) < math.atan2( b.z, b.y )
+
+    end )
     return dirs
 
 end
+
+-- the rays are the only way the haptic finds anything, so a creature that traces pass through (the
+-- snakes and fungus are both SOLID_NONE) simply never shows on it. that is deliberate: the old soft
+-- fallback walked every marked creature in the cone each frame and blipped it without a sweep ever
+-- reaching it, which made the fungus light up the radar on sight. those show up in thermal instead
 
 local function pulse( me, wep )
     local wavelength = wavelengthOf( wep )
     local eyePos = me:EyePos()
     local ang = me:EyeAngles()
-    local up = ang:Up()
     local halfCone = math.rad( coneOf( wep ) / 2 )
-    local origin = eyePos - up * 4
+    -- rays leave from the eye itself, not from a point nudged down the face, so what the haptic
+    -- reports lines up exactly with where the wearer is looking from
+    local origin = eyePos
 
     -- the pattern is a fixed grid of points; each frame walks only a slice of it, so a full sweep
     -- takes points / rays frames instead of costing the whole grid every frame. the grid creeps
@@ -318,7 +413,18 @@ local function pulse( me, wep )
     for n = 0, perFrame - 1 do
         local localDir = dirs[( scanIndex - 1 + n ) % count + 1]
         local dir = LocalToWorld( localDir, angle_zero, vector_origin, ang )
-        if castRay( me, wep, origin, dir, wavelength.pierce ) then addMark( localDir ) end
+        local hit, hitPos = castRay( me, wep, origin, dir, wavelength.pierce, wavelength.length,
+            wavelength.deflectEvery, wavelength.deflectDegrees )
+        -- only a ray that ended on a target gets here. a wall, the sky, an exhausted pierce budget
+        -- and running out of range all return nothing from castRay, so geometry never leaves a blip
+        if hit then
+            -- the ray bends on every wall it pierces, so hitPos does not sit on the line the wearer
+            -- fired along. the blip goes at the closest point of that original line to the contact:
+            -- correct bearing, correct depth, and it parallaxes properly as the view moves
+            local reach = math.max( ( hitPos - origin ):Dot( dir ), 0 )
+            addMark( origin + dir * reach, markColorFor( hit ), hit )
+
+        end
 
     end
 
@@ -329,6 +435,7 @@ local function pulse( me, wep )
     scanHead.points = resolutionOf( wep ).points
     scanHead.shiftAz = shiftAz
     scanHead.shiftElev = shiftElev
+    scanHead.ang = ang
     scanHead.born = CurTime()
 
     local before = scanIndex
@@ -338,46 +445,98 @@ end
 
 hook.Add( "Think", "glee_nvg_hapticradar", function()
     local now = CurTime()
+    local me = LocalPlayer()
+    local wep = radarRunning( me )
+    local life = markLifeOf( wep )
 
     for ent, record in pairs( detected ) do
         if now - record.seen > detectLife then detected[ent] = nil end
 
     end
     for i = #marks, 1, -1 do
-        if now - marks[i].born > markLife then table.remove( marks, i ) end
+        if now - marks[i].born > life then table.remove( marks, i ) end
 
     end
 
-    local me = LocalPlayer()
-    local wep = radarRunning( me )
-    if not wep then return end
+    if not wep then
+        stopRadarLoop()
+        return
+
+    end
+
+    startRadarLoop()
     pulse( me, wep ) -- every frame
 
 end )
 
--- where a direction relative to the view lands on screen, nil if it's behind
-local function viewDirToScreen( localDir, eyePos, eyeAng )
-    if localDir.x <= 0.01 then return end
-    local worldDir = LocalToWorld( localDir, angle_zero, vector_origin, eyeAng )
-    local scr = ( eyePos + worldDir * 100 ):ToScreen()
+-- where a world point lands on screen, nil if it's behind the view
+local function pointToScreen( pos )
+    local scr = pos:ToScreen()
     if not scr.visible then return end
     return scr.x, scr.y
 
 end
 
--- the cone's edge around the crosshair, and a mark wherever a ray that hit something started off
+-- where a world direction lands on screen, nil if it's behind. directions are kept in world space
+-- so a blip stays over the angle it was found at: looking around slides it across the screen, and
+-- turning away takes it off screen, instead of it riding along with the camera
+local function viewDirToScreen( dir, eyePos, eyeAng )
+    if dir:Dot( eyeAng:Forward() ) <= 0.01 then return end
+    local scr = ( eyePos + dir * 100 ):ToScreen()
+    if not scr.visible then return end
+    return scr.x, scr.y
+
+end
+
+-- surface.DrawCircle draws its outline solid whatever alpha it is handed, so the ring is walked by
+-- hand instead: surface.DrawLine takes the colour set before it, alpha included, which is the only
+-- reason this ring can be see through at all
+local coneSegments = 120 -- points around the ring, plenty to read as a smooth circle
+
+local function drawConeRing( cx, cy, radius, color )
+    draw.NoTexture()
+    surface.SetDrawColor( color.r, color.g, color.b, color.a )
+
+    local step = math.pi * 2 / coneSegments
+    local px, py = cx + radius, cy
+    for i = 1, coneSegments do
+        local at = i * step
+        local x, y = cx + math.cos( at ) * radius, cy + math.sin( at ) * radius
+        surface.DrawLine( px, py, x, y )
+        px, py = x, y
+
+    end
+end
+
+-- what to call the thing a blip belongs to: a player's name, an entity's own print name, else its
+-- class, which is at least honest about what the radar caught
+local function nameOf( ent )
+    if not IsValid( ent ) then return end
+    if ent:IsPlayer() then return ent:Nick() end
+
+    local name = ent.PrintName
+    if name and name ~= "" then return name end
+    return ent:GetClass()
+
+end
+
+-- the cone's edge around the crosshair, and a mark where each ray touched what it found. blips sit
+-- in world space, so moving the view shifts them by their distance: close targets slide fast, far
+-- ones barely move, which is where the depth in the radar comes from
 hook.Add( "HUDPaint", "glee_nvg_hapticcone", function()
     local me = LocalPlayer()
     local wep = radarRunning( me )
     if not wep then return end
 
+    local life = markLifeOf( wep )
     local eyePos, eyeAng = EyePos(), EyeAngles()
     local cx, cy = ScrW() / 2, ScrH() / 2
     local halfCone = math.rad( coneOf( wep ) / 2 )
-    local edgeX, edgeY = viewDirToScreen( Vector( math.cos( halfCone ), 0, math.sin( halfCone ) ), eyePos, eyeAng )
+    local edgeLocal = Vector( math.cos( halfCone ), 0, math.sin( halfCone ) )
+    local edgeX, edgeY = viewDirToScreen( LocalToWorld( edgeLocal, angle_zero, vector_origin, eyeAng ), eyePos, eyeAng )
     if edgeX then
         local radius = math.sqrt( ( edgeX - cx ) ^ 2 + ( edgeY - cy ) ^ 2 )
-        surface.DrawCircle( cx, cy, radius, coneColor.r, coneColor.g, coneColor.b, coneColor.a )
+        drawConeRing( cx, cy, radius, coneColor )
 
     end
 
@@ -391,18 +550,59 @@ hook.Add( "HUDPaint", "glee_nvg_hapticcone", function()
         surface.SetDrawColor( scanColor.r, scanColor.g, scanColor.b, scanColor.a * fade )
         for n = 0, scanHead.count - 1 do
             local localDir = dirs[( scanHead.first - 1 + n ) % total + 1]
-            local x, y = viewDirToScreen( localDir, eyePos, eyeAng )
+            -- the band belongs to the sweep that made it, at the angle the wearer was facing then
+            local bandDir = LocalToWorld( localDir, angle_zero, vector_origin, scanHead.ang or eyeAng )
+            local x, y = viewDirToScreen( bandDir, eyePos, eyeAng )
             if x then surface.DrawRect( x - scanSize, y - scanSize, scanSize * 2, scanSize * 2 ) end
 
         end
     end
 
+    -- every target gets a name, on its newest blip: a crowd of zombies reads as a crowd instead of
+    -- one anonymous "Zombie". marks go oldest first, so later ones overwrite the slot's position
+    local labels, labelSlot = {}, {}
+
     for _, mark in ipairs( marks ) do
-        local x, y = viewDirToScreen( mark.dir, eyePos, eyeAng )
+        local x, y = pointToScreen( mark.pos )
         if x then
-            local alpha = 255 * ( 1 - ( now - mark.born ) / markLife )
-            surface.SetDrawColor( markColor.r, markColor.g, markColor.b, alpha )
+            local alpha = 255 * ( 1 - ( now - mark.born ) / life )
+            local color = mark.color
+            surface.SetDrawColor( color.r, color.g, color.b, alpha )
             surface.DrawRect( x - markSize, y - markSize, markSize * 2, markSize * 2 )
+
+            if IsValid( mark.ent ) then
+                local slot = labelSlot[mark.ent]
+                if slot then
+                    labels[slot].x = x
+                    labels[slot].y = y
+                    labels[slot].pos = mark.pos
+                    labels[slot].born = mark.born
+
+                else
+                    labels[#labels + 1] = { ent = mark.ent, x = x, y = y, pos = mark.pos, color = color, born = mark.born }
+                    labelSlot[mark.ent] = #labels
+
+                end
+            end
+        end
+    end
+
+    for _, label in ipairs( labels ) do
+        local name = nameOf( label.ent )
+        if name and name ~= "" then
+            -- the outline fades with the text: left on full black it outlives the glyphs and reads
+            -- as black text at the end of the fade instead of nothing at all
+            local alpha = math.Clamp( 255 * ( 1 - ( now - label.born ) / life ), 0, 255 )
+            draw.SimpleTextOutlined( name, "DermaDefaultBold", label.x + 10, label.y - 6,
+                Color( label.color.r, label.color.g, label.color.b, alpha ),
+                TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, 1, Color( 0, 0, 0, alpha ) )
+
+            -- hammer units from the eye to where the blip actually sits, recomputed as the wearer
+            -- moves so the number tracks the blip's range instead of the moment it was found
+            local dist = math.Round( eyePos:Distance( label.pos ) )
+            draw.SimpleTextOutlined( dist .. "u", "DermaDefault", label.x + 10, label.y + 9,
+                Color( label.color.r, label.color.g, label.color.b, alpha ),
+                TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, 1, Color( 0, 0, 0, alpha ) )
 
         end
     end

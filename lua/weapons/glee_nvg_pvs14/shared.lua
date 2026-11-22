@@ -19,21 +19,29 @@ SWEP.WorldModel = "models/glee/nvg/nvg_pvs14.mdl"
 SWEP.GleeNVG = {
     lamp = 0.6,
     lampColor = Color( 70, 70, 100 ),
+    lampFarZ = 2500, -- the haptic's lamp is a short throw, half the base 5000, so it reads close only
     gain = 1, -- no brightening, just the colour pass below
     saturation = 1.5, -- stronger colours
     tint = Color( 230, 230, 255 ),
 }
 
--- rays = fired per frame, pierce = total hammer units of solid each can go through before it stops
+-- rays = fired per frame, pierce = total hammer units of solid each can go through before it stops,
+-- length = how far one ray travels in total, solid and air together, before it gives up,
+-- deflectEvery / deflectDegrees = every this many units of solid bends the ray this many degrees
 -- short waves are many rays that barely get through anything, long waves are few that go through a lot
 SWEP.Wavelengths = {
-    { name = "Short", rays = 120, pierce = 64 },
-    { name = "Medium", rays = 50, pierce = 256 },
-    { name = "Long", rays = 20, pierce = 512  },
+    { name = "Short",  rays = 120, pierce = 64,   length = 4000,  deflectEvery = 50, deflectDegrees = 5 },
+    { name = "Medium", rays = 50,  pierce = 256,  length = 8000,  deflectEvery = 50, deflectDegrees = 5 },
+    { name = "Long",   rays = 20,  pierce = 512,  length = 12000, deflectEvery = 50, deflectDegrees = 5 },
+    { name = "ELong",  rays = 10,  pierce = 1024, length = 20000, deflectEvery = 50, deflectDegrees = 1 },
 }
 
 -- how wide the cone the rays come out in is, whole width in degrees, picked from the wheel
 SWEP.Cones = { 90, 40, 10 }
+
+-- how long a blip stays in the cone before it's gone, in seconds. the fade is spread over this same
+-- window, so this one number is the blip's lifetime and its decay rate both
+SWEP.MarkLife = 10
 
 -- how many points the whole sweep has, picked from the wheel; a frame only walks a slice of them
 -- Low carries the old Max density, and the rest are stepped up from it
@@ -43,10 +51,6 @@ SWEP.Resolutions = {
     { name = "High", points = 7680 },
     { name = "Max", points = 15360 },
 }
-
--- every this many units of solid a ray goes through, it's knocked this many degrees off course
-SWEP.PierceDeflectEvery = 50
-SWEP.PierceDeflectDegrees = 3
 
 function SWEP:SetupDataTables()
     self:NetworkVar( "Bool", 0, "RadarOn" )
@@ -60,6 +64,15 @@ function SWEP:Initialize()
     self:SetHoldType( self.HoldType )
     self:SetWavelength( 1 )
     self:SetCone( 1 )
+
+    -- by name, so the default stays Medium if the list is ever reordered
+    for i, wavelength in ipairs( self.Wavelengths ) do
+        if wavelength.name == "Medium" then
+            self:SetWavelength( i )
+            break
+
+        end
+    end
 
     -- by name, so the default stays Standard if the list is ever reordered
     self:SetResolution( 1 )

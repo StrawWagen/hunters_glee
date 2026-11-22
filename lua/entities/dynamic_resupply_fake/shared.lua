@@ -46,6 +46,9 @@ function ENT:rareCreationOptions()
         { class = "termhunt_skull_pickup" },
         { class = "weapon_pistol" },
         { class = "glee_tissue_reclaimer" },
+        { class = "glee_nvg_gpnvg" },
+        { class = "glee_nvg_t7" },
+        { class = "glee_nvg_pvs14" },
         { class = "termhunt_weapon_hammer" },
 
     }

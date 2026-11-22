@@ -1,6 +1,6 @@
 local shopHelpers = GAMEMODE.shopHelpers
 
--- one random pair of goggles, three skulls. the haptic pair is in the pool too, no extra charge on top
+-- one random pair of goggles for 600 points. the haptic pair is in the pool too, no extra charge on top
 -- the goggles themselves are lua/weapons/glee_nvg_base and its children
 
 local goggles = {
@@ -18,16 +18,19 @@ end
 local items = {
     ["nvg"] = {
         name = "NVG",
-        desc = ":Random electro-optical combine surplus",
-        shCost = 0,
-        shSkullCost = 3,
+        desc = "Random electro-optical combine surplus??",
+        shCost = 600,
+        shSkullCost = 0,
+        -- flat price, forever: markup stays at 1x even mid-hunt, and there is no markupPerPurchase
+        -- here at all, so buying a second pair later costs the same 600 as the first
+        markup = 1,
         cooldown = 0.5,
-        tags = { "ITEMS", "Utility", "SkullCost" },
+        tags = { "ITEMS", "Utility" },
         purchaseTimes = {
             GAMEMODE.ROUND_INACTIVE,
             GAMEMODE.ROUND_ACTIVE,
         },
-        weight = 937, -- sits between Riot Shield (2 skulls, 925) and Annabelle (4, 950): this costs 3
+        weight = 780, -- 600 points is the priciest plain item, so it sits at the end of the point-priced run, before the skull-cost block (925+)
         shPurchaseCheck = { shopHelpers.aliveCheck, noGogglesAlready },
         svOnPurchaseFunc = function( purchaser )
             shopHelpers.purchaseWeapon( purchaser, {
