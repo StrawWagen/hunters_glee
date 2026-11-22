@@ -5,7 +5,7 @@ include( "shared.lua" )
 
 local LocalPlayer = LocalPlayer
 
-local wornModels = {} -- [ply] = ClientsideModel
+local wornModels = setmetatable( {}, { __mode = "k" } ) -- [ply] = the goggles model on their head
 local heatEnts = {}
 local nextHeatScan = 0
 local heatScanInterval = 0.25
@@ -164,47 +164,30 @@ hook.Add( "RenderScreenspaceEffects", "glee_nvg_vision", function()
 end )
 
 -- the goggles on the head of everyone who has them flipped down, placed like the nvg mod does
+-- terminator_Extras parents them to the eyes attachment and draws them, and hides them from whoever is inside that player
 local wornOffset = Vector( -4, 0, -2 ) -- from the "eyes" attachment
 local wornAngle = Angle( 0, 0, 0 )
+local wornKey = "glee_nvg_worn"
 
-local function removeWorn( ply )
-    local mdl = wornModels[ply]
-    if IsValid( mdl ) then mdl:Remove() end
+local function refreshWorn( ply )
+    local _, _, stored = ply:GetGleeNVGOn()
+    local model = stored and stored.WorldModel
+    if wornModels[ply] == model then return end
+
     wornModels[ply] = nil
+    terminator_Extras.RemoveMyExtraModels( ply, wornKey )
+    if not model then return end
+
+    wornModels[ply] = model
+    terminator_Extras.AttachMyExtraModels( ply, {
+        { model = model, attachment = "eyes", pos = wornOffset, ang = wornAngle, hideWhenDead = true },
+    }, wornKey )
 
 end
 
-hook.Add( "PostPlayerDraw", "glee_nvg_worn", function( ply )
-    local _, _, stored = ply:GetGleeNVGOn()
-    local model = stored and stored.WorldModel
-    if not model or ( ply == LocalPlayer() and not ply:ShouldDrawLocalPlayer() ) then
-        if wornModels[ply] then removeWorn( ply ) end
-        return
-
+hook.Add( "Think", "glee_nvg_worn", function()
+    for _, ply in ipairs( player.GetAll() ) do
+        refreshWorn( ply )
     end
-
-    local mdl = wornModels[ply]
-    if not IsValid( mdl ) or mdl:GetModel() ~= model then
-        removeWorn( ply )
-        mdl = ClientsideModel( model )
-        if not IsValid( mdl ) then return end
-        mdl:SetNoDraw( true )
-        wornModels[ply] = mdl
-
-    end
-
-    local att = ply:GetAttachment( ply:LookupAttachment( "eyes" ) )
-    if not att then return end
-
-    local pos, ang = LocalToWorld( wornOffset, wornAngle, att.Pos, att.Ang )
-    mdl:SetPos( pos )
-    mdl:SetAngles( ang )
-    mdl:SetupBones()
-    mdl:DrawModel()
-
-end )
-
-hook.Add( "EntityRemoved", "glee_nvg_worn", function( ent )
-    if wornModels[ent] then removeWorn( ent ) end
 
 end )

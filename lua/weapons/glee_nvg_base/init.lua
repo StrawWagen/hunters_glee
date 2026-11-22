@@ -41,7 +41,14 @@ function plyMeta:SetGleeNVGOn( class, quiet )
 
     local stored = weapons.GetStored( class ~= "" and class or old )
     local base = weapons.GetStored( "glee_nvg_base" )
-    local snd = class == "" and ( stored and stored.GleeNVGOffSound or base.GleeNVGOffSound ) or ( stored and stored.GleeNVGOnSound or base.GleeNVGOnSound )
+    local snd
+    if class == "" then
+        snd = stored and stored.GleeNVGOffSound or base.GleeNVGOffSound
+
+    else
+        snd = stored and stored.GleeNVGOnSound or base.GleeNVGOnSound
+
+    end
     self:EmitSound( snd, 60, math.random( 95, 105 ), 0.8 )
 
 end
