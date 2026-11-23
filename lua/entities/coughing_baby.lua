@@ -239,7 +239,7 @@ function ENT:SpawnSoul()
     end
 
     soul:EmitSound(SOUL_SOUND, 75, 100) -- Quieter crying sound
-    soul:SetRenderFX(kRenderFxHologram) -- Set as hologram render effect
+    soul:SetRenderFX( kRenderFxHologram ) -- Set as hologram render effect
 end
 
 if CLIENT then
@@ -247,3 +247,19 @@ if CLIENT then
         self:DrawModel()
     end
 end
+
+local GAMEMODE = GAMEMODE or GM
+if not GAMEMODE.RandomlySpawnEntTbl then return end
+
+
+local count = 1
+if math.random( 0, 100 ) <= 5 then
+    count = math.random( 15, 25 )
+
+end
+
+GAMEMODE:RandomlySpawnEntTbl( "coughing_baby", {
+    maxCount = count,
+    chance = math.Rand( 0.3, 0.9 ),
+    minAreaSize = 25,
+} )
