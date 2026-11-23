@@ -344,6 +344,20 @@ end
 -- the two axes are separate so the drift can lean: shiftElev in cells down, shiftAz in cells left
 local discCache = {}
 
+-- the radar's cone is squashed into a pancake, not a circle: the straight top and bottom run at
+-- this fraction of the cone's half width, and the ends stay round. 1 would be the old circle
+local pancakeSquash = 0.3
+-- the corners stay softly rounded: radius as a fraction of the pancake's half height
+local pancakeCorner = 0.2
+
+-- a direction from its screen-plane offsets: u is y/x (left), v is z/x (up). the normalisation
+-- keeps it a unit vector, and constant v stays level on screen, which is what makes the pancake's
+-- top and bottom actually straight instead of bowed by the perspective divide
+local function pancakeDir( u, v )
+    local inv = 1 / math.sqrt( 1 + u * u + v * v )
+    return Vector( inv, u * inv, v * inv )
+end
+
 local function discDirs( halfAngle, count, shiftAz, shiftElev )
     shiftAz = shiftAz or 0
     shiftElev = shiftElev or 0
@@ -352,27 +366,32 @@ local function discDirs( halfAngle, count, shiftAz, shiftElev )
     if cached then return cached end
 
     local dirs = {}
-    local rows = math.max( 1, math.floor( math.sqrt( count ) + 0.5 ) )
-    local cell = 2 * halfAngle / rows
+    local halfWidthUV = math.tan( halfAngle )
+    local halfElevUV = halfWidthUV * pancakeSquash
+    local corner = math.min( halfElevUV * pancakeCorner, halfElevUV )
+    local innerU = halfWidthUV - corner
+    local innerV = halfElevUV - corner
+    -- a rounded rectangle in the screen plane: straight sides, small round corners
+    local area = 4 * halfWidthUV * halfElevUV - ( 4 - math.pi ) * corner * corner
+    local cell = math.sqrt( math.max( area, 1e-6 ) / math.max( count, 1 ) )
+    local rows = math.max( 1, math.floor( 2 * halfElevUV / cell + 0.5 ) )
+    local rowStep = 2 * halfElevUV / rows
 
     for r = 0, rows - 1 do
-        local elev = halfAngle - ( r + 0.5 + shiftElev ) * cell -- +halfAngle is the top of the circle
-        local halfWidth = math.sqrt( math.max( halfAngle * halfAngle - elev * elev, 0 ) )
-        local cols = math.max( 1, math.floor( 2 * halfWidth / cell + 0.5 ) )
-        local step = 2 * halfWidth / cols
+        local v = halfElevUV - ( r + 0.5 + shiftElev ) * rowStep
+        if math.abs( v ) <= halfElevUV + 1e-9 then
+            -- rows inside the corner band are shortened by the corner circle; the rest run full width
+            local over = math.abs( v ) - innerV
+            local reach = corner
+            if over > 0 then reach = math.sqrt( math.max( corner * corner - over * over, 0 ) ) end
+            local halfWidth = innerU + reach
+            local cols = math.max( 1, math.floor( 2 * halfWidth / cell + 0.5 ) )
+            local step = 2 * halfWidth / cols
 
-        for c = 0, cols - 1 do
-            local idx = ( c + 0.5 + shiftAz ) % cols -- the shift rolls along the row and wraps
-            -- idx already carries the half-cell centre, so no extra +0.5 here: adding one
-            -- shifted every row half a cell towards +y (left in Source), which read as the
-            -- sweep reaching further left of the crosshair than right
-            local az = -halfWidth + idx * step
-            local off = math.sqrt( elev * elev + az * az )
-            if off < 1e-6 then
-                dirs[#dirs + 1] = Vector( 1, 0, 0 )
-            else
-                local s = math.sin( off ) / off
-                dirs[#dirs + 1] = Vector( math.cos( off ), s * az, s * elev )
+            for c = 0, cols - 1 do
+                local idx = ( c + 0.5 + shiftAz ) % cols -- the shift rolls along the row and wraps
+                -- idx carries the half-cell centre; no extra half step, or the row leans left
+                dirs[#dirs + 1] = pancakeDir( -halfWidth + idx * step, v )
 
             end
         end
@@ -380,12 +399,68 @@ local function discDirs( halfAngle, count, shiftAz, shiftElev )
 
     discCache[key] = dirs
     -- x is cos(offset from the middle), so sorting descending walks outwards ring by ring. equal
-    -- radii are broken by azimuth, so each ring still reads as one tidy circle rather than a scatter
+    -- radii are broken by azimuth, so each ring still reads as one tidy band rather than a scatter
     table.sort( dirs, function( a, b )
         if a.x ~= b.x then return a.x > b.x end
         return math.atan2( a.z, a.y ) < math.atan2( b.z, b.y )
 
     end )
+    return dirs
+
+end
+
+-- the pancake's outline, in the screen plane's offsets. same mapping as the rays, so the line
+-- drawn on screen is the boundary they fill: straight sides with small round corners
+local outlineSegments = 20 -- points along each side
+local cornerSegments = 6 -- points on each round corner
+local outlineCache = {}
+
+local function pancakeOutline( halfAngle )
+    local cached = outlineCache[halfAngle]
+    if cached then return cached end
+
+    local halfWidthUV = math.tan( halfAngle )
+    local halfElevUV = halfWidthUV * pancakeSquash
+    local corner = math.min( halfElevUV * pancakeCorner, halfElevUV )
+    local innerU = halfWidthUV - corner
+    local innerV = halfElevUV - corner
+    local dirs = {}
+
+    local function add( u, v )
+        dirs[#dirs + 1] = pancakeDir( u, v )
+
+    end
+
+    for i = 0, outlineSegments do
+        add( -innerU + 2 * innerU * i / outlineSegments, halfElevUV ) -- top, left to right
+    end
+    for i = 1, cornerSegments do
+        local at = math.pi / 2 - ( math.pi / 2 ) * i / cornerSegments
+        add( innerU + corner * math.cos( at ), innerV + corner * math.sin( at ) ) -- top right corner
+    end
+    for i = 1, outlineSegments do
+        add( halfWidthUV, innerV - 2 * innerV * i / outlineSegments ) -- right side, top to bottom
+    end
+    for i = 1, cornerSegments do
+        local at = -( math.pi / 2 ) * i / cornerSegments
+        add( innerU + corner * math.cos( at ), -innerV + corner * math.sin( at ) ) -- bottom right corner
+    end
+    for i = 1, outlineSegments do
+        add( innerU - 2 * innerU * i / outlineSegments, -halfElevUV ) -- bottom, right to left
+    end
+    for i = 1, cornerSegments do
+        local at = -math.pi / 2 - ( math.pi / 2 ) * i / cornerSegments
+        add( -innerU + corner * math.cos( at ), -innerV + corner * math.sin( at ) ) -- bottom left corner
+    end
+    for i = 1, outlineSegments do
+        add( -halfWidthUV, -innerV + 2 * innerV * i / outlineSegments ) -- left side, bottom to top
+    end
+    for i = 1, cornerSegments do
+        local at = math.pi - ( math.pi / 2 ) * i / cornerSegments
+        add( -innerU + corner * math.cos( at ), innerV + corner * math.sin( at ) ) -- top left corner
+    end
+
+    outlineCache[halfAngle] = dirs
     return dirs
 
 end
@@ -491,25 +566,19 @@ local function viewDirToScreen( dir, eyePos, eyeAng )
 
 end
 
--- surface.DrawCircle draws its outline solid whatever alpha it is handed, so the ring is walked by
--- hand instead: surface.DrawLine takes the colour set before it, alpha included, which is the only
--- reason this ring can be see through at all
-local coneSegments = 120 -- points around the ring, plenty to read as a smooth circle
+-- the outline can run off the screen at wide cones, and a line that stops at the edge reads as a
+-- gap, so this one takes the projection even when the point is outside the screen. anything behind
+-- the view is still dropped, which is what the forward dot test is for
+local function outlineDirToScreen( dir, eyePos, eyeAng )
+    if dir:Dot( eyeAng:Forward() ) <= 0.01 then return end
+    local scr = ( eyePos + dir * 100 ):ToScreen()
+    return scr.x, scr.y
 
-local function drawConeRing( cx, cy, radius, color )
-    draw.NoTexture()
-    surface.SetDrawColor( color.r, color.g, color.b, color.a )
-
-    local step = math.pi * 2 / coneSegments
-    local px, py = cx + radius, cy
-    for i = 1, coneSegments do
-        local at = i * step
-        local x, y = cx + math.cos( at ) * radius, cy + math.sin( at ) * radius
-        surface.DrawLine( px, py, x, y )
-        px, py = x, y
-
-    end
 end
+
+-- surface.DrawCircle draws its outline solid whatever alpha it is handed, so the outline is walked
+-- by hand instead: surface.DrawLine takes the colour set before it, alpha included, which is the
+-- only reason this outline can be see through at all
 
 -- what to call the thing a blip belongs to: a player's name, an entity's own print name, else its
 -- class, which is at least honest about what the radar caught
@@ -533,13 +602,20 @@ hook.Add( "HUDPaint", "glee_nvg_hapticcone", function()
 
     local life = markLifeOf( wep )
     local eyePos, eyeAng = EyePos(), EyeAngles()
-    local cx, cy = ScrW() / 2, ScrH() / 2
     local halfCone = math.rad( coneOf( wep ) / 2 )
-    local edgeLocal = Vector( math.cos( halfCone ), 0, math.sin( halfCone ) )
-    local edgeX, edgeY = viewDirToScreen( LocalToWorld( edgeLocal, angle_zero, vector_origin, eyeAng ), eyePos, eyeAng )
-    if edgeX then
-        local radius = math.sqrt( ( edgeX - cx ) ^ 2 + ( edgeY - cy ) ^ 2 )
-        drawConeRing( cx, cy, radius, coneColor )
+
+    -- the pancake outline: straight sides with small round corners. every point of it is a direction
+    -- a ray can fire along, so the line drawn is exactly the shape the sweep fills
+    draw.NoTexture()
+    surface.SetDrawColor( coneColor.r, coneColor.g, coneColor.b, coneColor.a )
+    local prevX, prevY
+    for _, localDir in ipairs( pancakeOutline( halfCone ) ) do
+        local x, y = outlineDirToScreen( LocalToWorld( localDir, angle_zero, vector_origin, eyeAng ), eyePos, eyeAng )
+        if x and prevX then
+            surface.DrawLine( prevX, prevY, x, y )
+
+        end
+        prevX, prevY = x, y
 
     end
 
