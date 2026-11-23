@@ -1,8 +1,9 @@
 include( "shared.lua" )
 
--- the haptic goggles' use wheel and radar, all clientside, only the wearer sees the cone and its marks
+DEFINE_BASECLASS( "glee_nvg_base" )
 
-local hapticClass = "glee_nvg_pvs14"
+-- the haptic goggles' wheel and radar, all clientside, only the wearer sees the cone and its marks
+-- the radar runs from SetupWear, at the bottom
 
 local function wavelengthOf( wep )
     local wavelengths = wep.Wavelengths
@@ -32,93 +33,27 @@ end
 
 -- the wheel ---------------------------------------------------------------------
 
-local OUTER_RADIUS_1080P = 300
+-- the goggles' own, then the radar's, keys handled by OnWheelPick in init.lua
+function SWEP:GetWheelActions()
+    local actions = BaseClass.GetWheelActions( self )
 
--- built when it opens, so the labels say what picking them does right now
-local function wheelActions( wep )
-    local wavelengths = wep.Wavelengths
-    local nextIndex = wep:GetWavelength() % #wavelengths + 1
-    local cones = wep.Cones
-    local nextCone = wep:GetCone() % #cones + 1
-    local resolutions = wep.Resolutions
-    local nextResolution = wep:GetResolution() % #resolutions + 1
-    return {
-        { key = "radar", label = "Radar: " .. ( wep:GetRadarOn() and "On" or "Off" ) },
-        { key = "wavelength", label = "Wl: " .. wavelengthOf( wep ).name .. " > " .. wavelengths[nextIndex].name },
-        { key = "cone", label = "Cone: " .. coneOf( wep ) .. "° > " .. cones[nextCone] .. "°" },
-        { key = "resolution", label = "Res: " .. resolutionOf( wep ).name .. " > " .. resolutions[nextResolution].name },
-    }
-end
+    local wavelengths = self.Wavelengths
+    local nextIndex = self:GetWavelength() % #wavelengths + 1
+    local cones = self.Cones
+    local nextCone = self:GetCone() % #cones + 1
+    local resolutions = self.Resolutions
+    local nextResolution = self:GetResolution() % #resolutions + 1
 
--- glee_carrying's use wheel, opened on the held goggles instead of something aimed at
--- shares glee_Carrying.CurrentWheel, so its own CreateMove lets go of it when use is released
-local function openWheel( ply, wep )
-    local carrying = terminator_Extras and terminator_Extras.glee_Carrying
-    if not carrying then return end
-
-    local oldWheel = carrying.CurrentWheel
-    if IsValid( oldWheel ) then oldWheel:Remove() end
-
-    local wheel = vgui.Create( "glee_wheel" )
-    if not IsValid( wheel ) then return end
-    local outer = wheel:Style():Scaled( OUTER_RADIUS_1080P )
-
-    wheel:SetSize( outer * 2, outer * 2 )
-    wheel:SetItems( wheelActions( wep ) )
-    wheel:Center()
-
-    function wheel:GetItemStatus()
-        return IsValid( wep ) and ply:GetActiveWeapon() == wep
-
-    end
-
-    function wheel:OnItemSelected( item )
-        net.Start( "glee_nvg_hapticpick" )
-            net.WriteString( item.key )
-        net.SendToServer()
-        self:Close()
-
-    end
-
-    hook.Add( "Think", wheel, function( self )
-        if IsValid( wep ) and ply:Alive() and ply:GetActiveWeapon() == wep then return end
-        self:Close()
-
-    end )
-
-    wheel:HoldAim()
-    ply:EmitSound( "physics/wood/wood_crate_impact_soft3.wav", 50, 200, 0.45 )
-
-    carrying.CurrentWheel = wheel
-
-end
-
--- E with the goggles out, and nothing usable in front, so doors and pickups still work
-local function aimingAtSomething( ply )
-    local carrying = terminator_Extras and terminator_Extras.glee_Carrying
-    local range = carrying and carrying.UseRange or 90
-    local shootPos = ply:EyePos()
-    local tr = util.TraceLine( {
-        start = shootPos,
-        endpos = shootPos + ply:GetAimVector() * range,
-        filter = ply,
+    table.Add( actions, {
+        { key = "radar", label = "Radar: " .. ( self:GetRadarOn() and "On" or "Off" ) },
+        { key = "wavelength", label = "Wl: " .. wavelengthOf( self ).name .. " > " .. wavelengths[nextIndex].name },
+        { key = "cone", label = "Cone: " .. coneOf( self ) .. "° > " .. cones[nextCone] .. "°" },
+        { key = "resolution", label = "Res: " .. resolutionOf( self ).name .. " > " .. resolutions[nextResolution].name },
     } )
-    return IsValid( tr.Entity )
+
+    return actions
 
 end
-
--- PlayerBindPress only runs when a key's pressed, not every tick
--- returns nothing so +use still goes through, glee_carrying's own CreateMove lets go of the wheel on release
-hook.Add( "PlayerBindPress", "glee_nvg_hapticwheel", function( ply, bind, pressed )
-    if not pressed or bind ~= "+use" then return end
-    local wep = ply:GetActiveWeapon()
-    if not IsValid( wep ) or wep:GetClass() ~= hapticClass then return end
-    if not ply:Alive() or ply:InVehicle() then return end
-    if aimingAtSomething( ply ) then return end
-
-    openWheel( ply, wep )
-
-end )
 
 -- the radar ---------------------------------------------------------------------
 
@@ -132,7 +67,6 @@ local detectLife = 10 -- a target counts as new again after this long without be
 local detectSound = "buttons/combine_button7.wav" -- combine terminal chirp, short and electronic
 
 local coneColor = Color( 255, 200, 30, 51 ) -- HL2 hud yellow, 80% transparent so the map reads straight through it
-MsgN( "[glee] pvs14 cone alpha loaded: ", coneColor.a ) -- temporary, says which copy of this file the client got
 local markLifeDefault = 3 -- fallback only; the real number is SWEP.MarkLife in shared.lua
 local function markLifeOf( wep )
     return ( wep and wep.MarkLife ) or markLifeDefault
@@ -194,13 +128,8 @@ local function startRadarLoop()
     end )
 end
 
-local function radarRunning( me )
-    if not IsValid( me ) or not me:Alive() then return end
-    if me:GetGleeNVGOnClass() ~= hapticClass then return end
-    local wep = me:GetWeapon( hapticClass )
-    if not IsValid( wep ) then return end
-    if not wep:GetRadarOn() then return end
-    return wep
+local function radarRunning( wep, wearer )
+    return wep:GetRadarOn() and wep:GetDown() and wearer:Alive()
 
 end
 
@@ -521,10 +450,8 @@ local function pulse( me, wep )
     if scanIndex <= before then sweepPass = sweepPass + 1 end -- the cursor came back round: one sweep done
 end
 
-hook.Add( "Think", "glee_nvg_hapticradar", function()
+local function radarThink( wep, wearer )
     local now = CurTime()
-    local me = LocalPlayer()
-    local wep = radarRunning( me )
     local life = markLifeOf( wep )
 
     for ent, record in pairs( detected ) do
@@ -536,16 +463,16 @@ hook.Add( "Think", "glee_nvg_hapticradar", function()
 
     end
 
-    if not wep then
+    if not radarRunning( wep, wearer ) then
         stopRadarLoop()
         return
 
     end
 
     startRadarLoop()
-    pulse( me, wep ) -- every frame
+    pulse( wearer, wep ) -- every frame
 
-end )
+end
 
 -- where a world point lands on screen, nil if it's behind the view
 local function pointToScreen( pos )
@@ -595,10 +522,8 @@ end
 -- the cone's edge around the crosshair, and a mark where each ray touched what it found. blips sit
 -- in world space, so moving the view shifts them by their distance: close targets slide fast, far
 -- ones barely move, which is where the depth in the radar comes from
-hook.Add( "HUDPaint", "glee_nvg_hapticcone", function()
-    local me = LocalPlayer()
-    local wep = radarRunning( me )
-    if not wep then return end
+local function drawRadar( wep, wearer )
+    if not radarRunning( wep, wearer ) then return end
 
     local life = markLifeOf( wep )
     local eyePos, eyeAng = EyePos(), EyeAngles()
@@ -685,4 +610,30 @@ hook.Add( "HUDPaint", "glee_nvg_hapticcone", function()
 
         end
     end
-end )
+end
+
+
+-- putting them on -----------------------------------------------------------------
+
+function SWEP.SetupWear( wear )
+    BaseClass.SetupWear( wear )
+
+    local wearer = wear.wearer
+
+    wear:OnRemove( function()
+        stopRadarLoop()
+        table.Empty( detected )
+        table.Empty( marks )
+
+    end )
+
+    wear:Hook( "Think", function( wep )
+        radarThink( wep, wearer )
+
+    end )
+
+    wear:Hook( "HUDPaint", function( wep )
+        drawRadar( wep, wearer )
+
+    end )
+end

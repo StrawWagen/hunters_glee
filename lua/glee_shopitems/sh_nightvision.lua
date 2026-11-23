@@ -9,8 +9,13 @@ local goggles = {
     "glee_nvg_pvs14",
 }
 
-local function noGogglesAlready( purchaser )
-    if IsValid( purchaser:GetGleeNVG() ) then return false, "You can only carry one pair of goggles." end
+-- every pair, it's random which they get
+local function canWearGoggles( purchaser )
+    for _, class in ipairs( goggles ) do
+        local canWear, reason = purchaser:CanGleeWear( weapons.Get( class ) )
+        if not canWear then return false, reason end
+
+    end
     return true
 
 end
@@ -31,7 +36,7 @@ local items = {
             GAMEMODE.ROUND_ACTIVE,
         },
         weight = 780, -- 600 points is the priciest plain item, so it sits at the end of the point-priced run, before the skull-cost block (925+)
-        shPurchaseCheck = { shopHelpers.aliveCheck, noGogglesAlready },
+        shPurchaseCheck = { shopHelpers.aliveCheck, canWearGoggles },
         svOnPurchaseFunc = function( purchaser )
             shopHelpers.purchaseWeapon( purchaser, {
                 class = goggles[ math.random( #goggles ) ],

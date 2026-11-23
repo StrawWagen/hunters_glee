@@ -2,41 +2,33 @@ AddCSLuaFile( "shared.lua" )
 AddCSLuaFile( "cl_init.lua" )
 include( "shared.lua" )
 
--- picks from the haptic goggles' use wheel, the radar state lives on the weapon so it stays with the goggles if thrown
+DEFINE_BASECLASS( "glee_nvg_base" )
 
-util.AddNetworkString( "glee_nvg_hapticpick" )
-
-local hapticClass = "glee_nvg_pvs14"
-local pickCooldown = 0.2
-
-net.Receive( "glee_nvg_hapticpick", function( _, ply )
-    if ( ply.glee_NextHapticPick or 0 ) > CurTime() then return end
-    ply.glee_NextHapticPick = CurTime() + pickCooldown
-    if not ply:Alive() then return end
-
-    local wep = ply:GetActiveWeapon()
-    if not IsValid( wep ) or wep:GetClass() ~= hapticClass then return end
-
-    local key = net.ReadString()
+-- the radar's keys on the wheel, see GetWheelActions in cl_init.lua
+-- the radar's settings live on the weapon, so they stay with the goggles if thrown
+function SWEP:OnWheelPick( ply, key )
     if key == "radar" then
-        local on = not wep:GetRadarOn()
-        wep:SetRadarOn( on )
+        local on = not self:GetRadarOn()
+        self:SetRadarOn( on )
         ply:EmitSound( on and "buttons/button17.wav" or "buttons/button16.wav", 55, 120, 0.6 )
 
     elseif key == "cone" then
-        local nextIndex = wep:GetCone() % #wep.Cones + 1
-        wep:SetCone( nextIndex )
+        local nextIndex = self:GetCone() % #self.Cones + 1
+        self:SetCone( nextIndex )
         ply:EmitSound( "buttons/lightswitch2.wav", 55, 150 - nextIndex * 15, 0.6 )
 
     elseif key == "resolution" then
-        local nextIndex = wep:GetResolution() % #wep.Resolutions + 1
-        wep:SetResolution( nextIndex )
+        local nextIndex = self:GetResolution() % #self.Resolutions + 1
+        self:SetResolution( nextIndex )
         ply:EmitSound( "buttons/lightswitch2.wav", 55, 120 + nextIndex * 10, 0.6 )
 
     elseif key == "wavelength" then
-        local nextIndex = wep:GetWavelength() % #wep.Wavelengths + 1
-        wep:SetWavelength( nextIndex )
+        local nextIndex = self:GetWavelength() % #self.Wavelengths + 1
+        self:SetWavelength( nextIndex )
         ply:EmitSound( "buttons/lightswitch2.wav", 55, 90 + nextIndex * 15, 0.6 )
 
+    else
+        BaseClass.OnWheelPick( self, ply, key )
+
     end
-end )
+end

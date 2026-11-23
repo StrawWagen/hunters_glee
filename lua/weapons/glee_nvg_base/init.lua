@@ -2,93 +2,41 @@ AddCSLuaFile( "shared.lua" )
 AddCSLuaFile( "cl_init.lua" )
 include( "shared.lua" )
 
--- the server side of the goggles, flipping them and keeping who has them on right
+DEFINE_BASECLASS( "glee_wearable_base" )
 
-local nwKey = "glee_nvg_on"
-local toggleCooldown = 0.4
+util.AddNetworkString( "glee_nvg_wheelpick" )
 
-local function turnOff( self, owner )
-    if not IsValid( owner ) or not owner:IsPlayer() then return end
-    if owner:GetGleeNVGOnClass() ~= self:GetClass() then return end
-    owner:SetGleeNVGOn( nil, true )
+local pickCooldown = 0.2
 
-end
-
+-- picked up again, they start flipped up
 function SWEP:OnDrop()
-    turnOff( self, self.glee_LastNVGOwner )
+    self:SetDown( false )
+    BaseClass.OnDrop( self )
 
 end
 
-function SWEP:OnRemove()
-    turnOff( self, self:GetOwner() )
+-- one of the wheel's keys, see GetWheelActions in cl_init.lua
+-- goggles with more on their wheel handle theirs, then hand the rest to this
+function SWEP:OnWheelPick( ply, key )
+    if key ~= "flip" then return end
+
+    local down = not self:GetDown()
+    self:SetDown( down )
+
+    local snd = down and self.GleeNVGOnSound or self.GleeNVGOffSound
+    ply:EmitSound( snd, 60, math.random( 95, 105 ), 0.8 )
 
 end
 
-function SWEP:Equip( owner )
-    self.glee_LastNVGOwner = owner
+-- by key, not wheel slot, it only picks from the goggles in their hands
+net.Receive( "glee_nvg_wheelpick", function( _, ply )
+    if ( ply.glee_NextNVGWheelPick or 0 ) > CurTime() then return end
+    ply.glee_NextNVGWheelPick = CurTime() + pickCooldown
+    if not ply:Alive() then return end
 
-end
+    local wep = ply:GetActiveWeapon()
+    if not IsValid( wep ) or not wep.OnWheelPick then return end
 
-local plyMeta = FindMetaTable( "Player" )
+    wep:OnWheelPick( ply, net.ReadString() )
 
-function plyMeta:SetGleeNVGOn( class, quiet )
-    class = class or ""
-    local old = self:GetNW2String( nwKey, "" )
-    if old == class then return end
-
-    self:SetNW2String( nwKey, class )
-    if quiet then return end
-
-    local stored = weapons.GetStored( class ~= "" and class or old )
-    local base = weapons.GetStored( "glee_nvg_base" )
-    local snd
-    if class == "" then
-        snd = stored and stored.GleeNVGOffSound or base.GleeNVGOffSound
-
-    else
-        snd = stored and stored.GleeNVGOnSound or base.GleeNVGOnSound
-
-    end
-    self:EmitSound( snd, 60, math.random( 95, 105 ), 0.8 )
-
-end
-
--- flip the goggles in the inventory down, or back up. called by the goggles' left click
-function plyMeta:ToggleGleeNVG()
-    if not self:Alive() then return end
-    local nextToggle = self.glee_NextNVGToggle or 0
-    if nextToggle > CurTime() then return end
-
-    local wep = self:GetGleeNVG()
-    if not IsValid( wep ) then self:SetGleeNVGOn( nil, true ) return end
-
-    self.glee_NextNVGToggle = CurTime() + toggleCooldown
-    if self:GetGleeNVGOnClass() ~= "" then
-        self:SetGleeNVGOn( nil )
-
-    else
-        self:SetGleeNVGOn( wep:GetClass() )
-
-    end
-end
-
-hook.Add( "PlayerDeath", "glee_nvg_off", function( ply ) ply:SetGleeNVGOn( nil, true ) end )
-hook.Add( "PlayerSpawn", "glee_nvg_off", function( ply ) ply:SetGleeNVGOn( nil, true ) end )
-
--- only one pair of goggles in the inventory, whatever the kind
-hook.Add( "PlayerCanPickupWeapon", "glee_nvg_onlyone", function( ply, wep )
-    if not wep.IsGleeNVG then return end
-    if IsValid( ply:GetGleeNVG() ) then return false end
-
-end )
-
--- goggles that left the inventory, thrown, stripped or removed, can't stay on
-timer.Create( "glee_nvg_validate", 0.5, 0, function()
-    for _, ply in player.Iterator() do
-        local class = ply:GetGleeNVGOnClass()
-        if class ~= "" and not ply:HasWeapon( class ) then
-            ply:SetGleeNVGOn( nil, true )
-
-        end
-    end
 end )
