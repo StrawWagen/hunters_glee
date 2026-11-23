@@ -363,7 +363,10 @@ local function discDirs( halfAngle, count, shiftAz, shiftElev )
 
         for c = 0, cols - 1 do
             local idx = ( c + 0.5 + shiftAz ) % cols -- the shift rolls along the row and wraps
-            local az = -halfWidth + ( idx + 0.5 ) * step
+            -- idx already carries the half-cell centre, so no extra +0.5 here: adding one
+            -- shifted every row half a cell towards +y (left in Source), which read as the
+            -- sweep reaching further left of the crosshair than right
+            local az = -halfWidth + idx * step
             local off = math.sqrt( elev * elev + az * az )
             if off < 1e-6 then
                 dirs[#dirs + 1] = Vector( 1, 0, 0 )
