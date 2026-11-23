@@ -233,10 +233,9 @@ function set:Activate()
                 if gained <= 0 then return end
 
                 huntersGlee_Notify( { ply }, {
-                    text = "BATTERY CHARGED +" .. gained,
+                    text = { alive = "BATTERY CHARGED +" .. gained },
                     kind = "good",
                     replaceKey = "glee_tutorial_suitcharged",
-                    onlyWhile = "alive",
                 } )
             end )
         end )

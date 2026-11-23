@@ -265,7 +265,7 @@ if SERVER then
             end
 
             -- apply effects on spawn
-            self:Hook( "glee_true_PlayerSpawn", function( spawned )
+            self:Hook( "glee_EarnedPlayerSpawn", function( spawned )
                 if spawned ~= owner then return end
 
                 self:ApplyEffects()

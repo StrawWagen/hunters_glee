@@ -67,12 +67,11 @@ function plyMeta:BatteryInsufficientNag( time )
     self.glee_NextInsufficientNotify = cur + insufficientNotifyInterval
 
     huntersGlee_Notify( { self }, {
-        text = "INSUFFICIENT POWER",
+        text = { alive = "INSUFFICIENT POWER" },
         description = "Seek additional SUIT energy.",
         kind = "bad",
         time = 2,
         replaceKey = "glee_insufficientpower",
-        onlyWhile = "alive",
     } )
 end
 
@@ -230,7 +229,7 @@ end )
 
 local hasSpawned = {}
 
-hook.Add( "glee_true_PlayerSpawn", "glee_chargeplayersbatteries", function( spawned )
+hook.Add( "glee_EarnedPlayerSpawn", "glee_chargeplayersbatteries", function( spawned )
     -- fully charge while round is inactive
     -- or if this is their first time spawning into the session
     if hasSpawned[spawned] and GAMEMODE:RoundState() == GAMEMODE.ROUND_ACTIVE then return end

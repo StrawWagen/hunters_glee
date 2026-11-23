@@ -350,10 +350,9 @@ end
 
 local function noticeHomicidalAction( time )
     huntersGlee_Notify( nil, {
-        text = "Homicidal action detected.\nFriendlies display on cooldown...",
+        text = { alive = "Homicidal action detected.\nFriendlies display on cooldown..." }, -- the feed is the suit talking, the dead have no suit
         kind = "bad",
         time = time,
-        onlyWhile = "alive", -- the feed is the suit talking, the dead have no suit
     } )
 
 end

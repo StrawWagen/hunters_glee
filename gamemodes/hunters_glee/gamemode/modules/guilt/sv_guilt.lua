@@ -611,7 +611,7 @@ function GM:IncrementPersistentGuilt( ply, add, msg )
     end
 
     if msg and msg ~= "" then
-        local time = math.max( 10, daysToAdd * 2 )
+        local time = math.max( 10, ( add or 1 ) * 2 )
         huntersGlee_Notify( { ply }, { text = msg, kind = kind, time = time, extraFlashes = extraFlashes, flashInterval = flashInterval } )
 
     end

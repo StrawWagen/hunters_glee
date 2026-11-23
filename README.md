@@ -436,6 +436,43 @@ Each entry is a [MyExtraModels](../terminator-hunter/README.md#entmyextramodels)
 A client registration is entirely optional, plenty of effects are server-only. You can
 also register with no funcs at all ( like channel_666 ), if you just want a flag other code can check.
 
+#### Stacking modifiers
+
+```lua
+owner:DoSpeedModifier( "caffeinated", 100 ) -- setup
+owner:DoSpeedModifier( "caffeinated", nil ) -- teardown
+```
+
+Max health, run speed and bone manips have lots of things changing them at once.
+So don't set them directly, give the player a keyed entry, and take it off when you're done.
+The result is every key's entry combined.
+Entries survive death.
+
+**Max health**, [sv_maxhealth.lua](gamemodes/hunters_glee/gamemode/modules/maxhealth/sv_maxhealth.lua)
+- `ply:DoMaxHealthAdd( key, amount )` adds onto the playermodel's health, 100 for most.
+- `ply:DoMaxHealthFloor( key, floor )` raises it to at least this. Players already above keep theirs.
+- `ply:DoMaxHealthMul( key, mul )` multiplies it, stacking with every other mul.
+- `ply:DoMaxHealthCap( key, cap )` caps the result.
+
+Health keeps its ratio, a player at half health stays at half.
+Juggernaut, in sh_default_innate.lua, is a mul.
+For anything a key can't say, the `glee_ply_maxhealth` hook runs last, see sv_maxhealth.lua.
+
+**Run speed**, [sv_speedhandler.lua](gamemodes/hunters_glee/gamemode/modules/sv_speedhandler.lua)
+- `ply:DoSpeedModifier( key, amount )` adds onto the player class's run speed.
+- `ply:DoSpeedClamp( key, amount )` caps run speed at the class's plus this. The lowest clamp wins.
+
+Sprinting on hands goes up to 200 past run speed, on top of all of this.
+
+**Bones**, [sv_bonemanip.lua](gamemodes/hunters_glee/gamemode/modules/bonemaniphandler/sv_bonemanip.lua), server only
+- `ent:ApplyBoneScaleManip( key, bone, scale )`, scales are multiplied together.
+- `ent:ApplyBonePosManip( key, bone, pos )` and `ent:ApplyBoneAngleManip( key, bone, ang )` are added together.
+- `ent:RemoveBoneManips( key )` takes off every bone this key touched.
+- `ent:CopyBoneManipsTo( target )` copies every key's entries onto, say, a ragdoll.
+
+Big head, in sh_default_bargains.lua, is a scale.
+Plain `ManipulateBone*` calls still work, they all share one key, `"default"`.
+
 ---
 
 ### Adding Spawnsets
@@ -772,7 +809,7 @@ Sounds must be in a subfolder of `sound/`, so a sound's path always has a `/`.
 | `rotatingWaves` | `true` makes each wave come from one group, taking turns. The misery's own `.spawns` are one group, and each misery it imports from is another. A group with nothing to spawn still spends its turn. Each group stacks its hordes in its own spot |
 | `slotSizes` | How many hunters fit in each `.slots` slot, eg `{ miniboss = 1 }`. Takes a number, `{ min, max }`, `{ n }` or a function, but not a misery's name. Or `"minutes*N"` / `"difficulty*N"` to grow with the round, `"minutes*0.1"` is one slot every 10 minutes, `"difficulty*0.01"` is one every 100 difficulty. Without it every slot holds 1. Slots are a hard cap on how many can be out at once. To ramp a count up, `difficultyCost` usually does it, see How a wave is built |
 | `startWeapons` | Weapons everyone gets once a round, eg `{ { class = "weapon_smg1", purchaseClips = 3 } }`. See Set Helpers for what each one can be |
-| `defaultWeapons` | Weapons everyone gets every life. Default is the crowbar, camera and radio, a list here replaces all three. The first one's what they're holding when they spawn |
+| `defaultWeapons` | Weapons everyone gets every life. Default is the crowbar, camera and radio, a list here replaces all three. They spawn holding the last weapon they were given: start weapons come after these, and a role's weapons after the misery's |
 | `roundWinSound` | Sound on round end, when someone escaped |
 | `roundPerfectWinSound` | Sound on round end, when everyone escaped |
 | `highIntensitySound` | Played when things get really intense, like a wave wiped with no more than 1/4 of players alive |

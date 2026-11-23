@@ -212,7 +212,7 @@ if SERVER then
         effect.fromPermaGuiltLevel = true
 
     end
-    hook.Add( "glee_true_PlayerSpawn", "glee_permainfernal", function( spawned )
+    hook.Add( "glee_EarnedPlayerSpawn", "glee_permainfernal", function( spawned )
         if not active then return end
         ProtectedCall( function( spawnedP )
             applyPermaInfernal( spawnedP )

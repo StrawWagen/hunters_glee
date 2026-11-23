@@ -97,7 +97,7 @@ elseif SERVER then
 
         elseif plysHealth <= 10 then
             panicDrain = 0.1
-            huntersGlee_Notify( { ply }, { text = "USER DEATH IMMINENT", description = "SEEK. MEDICAL. ATTENTION. IMMEDIATELY.", kind = "bad", replaceKey = deathImminentKey, onlyWhile = "alive" } )
+            huntersGlee_Notify( { ply }, { text = { alive = "USER DEATH IMMINENT" }, description = "SEEK. MEDICAL. ATTENTION. IMMEDIATELY.", kind = "bad", replaceKey = deathImminentKey } )
 
         elseif plysHealth <= 20 then
             panicDrain = 0.25
@@ -418,7 +418,7 @@ elseif SERVER then
         end
     end )
 
-    hook.Add( "glee_true_PlayerSpawn", "glee_panic_resetsounds", function( ply )
+    hook.Add( "glee_EarnedPlayerSpawn", "glee_panic_resetsounds", function( ply )
         resetPanicSounds( ply )
 
     end )

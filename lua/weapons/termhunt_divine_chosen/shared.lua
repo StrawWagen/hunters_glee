@@ -2,6 +2,8 @@ AddCSLuaFile()
 
 local entMeta = FindMetaTable( "Entity" )
 
+local chosenMaxHealth = 200 -- a floor, players with more keep theirs
+
 SWEP.Author = "Straw W Wagen."
 SWEP.Contact = ""
 SWEP.Purpose = "Your powers as the holy chosen."
@@ -133,6 +135,12 @@ function SWEP:Equip()
     self.ownersOriginalModel = owner:GetModel()
     owner:SetModel( "models/player/monk.mdl" )
 
+    if GAMEMODE.IsReallyHuntersGlee then
+        owner:DoMaxHealthFloor( "divine_chosen", chosenMaxHealth )
+        self.maxHealthFloored = true
+
+    end
+
     local timerId = "huntersglee_regenammochosen" .. self:GetCreationID()
     self.timerId = timerId
     local hookId = "huntersglee_blockchosenselfdamage" .. self:GetCreationID()
@@ -256,7 +264,19 @@ function SWEP:ShutDown()
 
     end
 
-    if self.modifiedMaxHp and validOwner and owner:GetMaxHealth() == self.maxHpModifedTo and owner:Health() > 0 then
+    if self.maxHealthFloored then
+        self.maxHealthFloored = nil
+
+        if validOwner then
+            owner:DoMaxHealthFloor( "divine_chosen", nil )
+            if owner:Health() > 0 then
+                owner:SetHealth( owner:GetMaxHealth() )
+                owner.glee_LastSetHealthReason = "glee_chosen_maxhpreset"
+
+            end
+        end
+    -- outside the gamemode, there's no ply:DoMaxHealthFloor
+    elseif self.modifiedMaxHp and validOwner and owner:GetMaxHealth() == self.maxHpModifedTo and owner:Health() > 0 then
         owner:SetMaxHealth( owner:GetNW2Int( "glee_BaseHealth", 100 ) )
         owner.glee_LastSetMaxHealthReason = "glee_chosen_maxhpreset"
         owner:SetHealth( owner:GetMaxHealth() )
@@ -290,10 +310,11 @@ function SWEP:ChosenThink()
     local owner = self:GetOwner()
     local maxHp = owner:GetMaxHealth()
     local maxArmor = owner:GetMaxArmor()
-    if maxHp < 200 then
+    -- in the gamemode, the max health floor from Equip does this
+    if not self.maxHealthFloored and maxHp < chosenMaxHealth then
         self.modifiedMaxHp = true
-        self.maxHpModifedTo = 200
-        owner:SetMaxHealth( 200 )
+        self.maxHpModifedTo = chosenMaxHealth
+        owner:SetMaxHealth( chosenMaxHealth )
         owner.glee_LastSetMaxHealthReason = "glee_chosen_maxhpboost"
 
     end

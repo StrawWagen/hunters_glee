@@ -97,35 +97,21 @@ local function announceTrack( path, author, vol )
     if getEffectiveVol( vol ) <= 0 then return end
 
     local fileName = string.GetFileFromFilename( path )
-    local alive = LocalPlayer():Health() > 0
-    local data
-
-    if alive then
-        local description = fileName
-        if author ~= "" then description = description .. "\nBY " .. author end
-
-        data = {
-            text = "INCOMING AUDIOSTREAM",
-            description = description,
-            onlyWhile = "alive",
-        }
-
-    else
-        local description = fileName
-        if author ~= "" then description = description .. "\nby " .. author end
-
-        data = {
-            text = "Incoming Music...",
-            description = description,
-            style = "soulthought",
-            onlyWhile = "dead",
-        }
+    local aliveDescription = fileName
+    local deadDescription = fileName
+    if author ~= "" then
+        aliveDescription = aliveDescription .. "\nBY " .. author
+        deadDescription = deadDescription .. "\nby " .. author
 
     end
 
-    data.replaceKey = "glee_music"
-    data.time = 10
-    huntersGlee_Notify( nil, data )
+    huntersGlee_Notify( nil, {
+        text = { alive = "INCOMING AUDIOSTREAM", dead = "Incoming Music..." },
+        description = { alive = aliveDescription, dead = deadDescription },
+        style = { dead = "soulthought" },
+        replaceKey = "glee_music",
+        time = 10,
+    } )
 
 end
 

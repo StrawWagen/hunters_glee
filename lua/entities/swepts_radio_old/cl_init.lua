@@ -75,12 +75,14 @@ local function startChannel( radio, state, handOff )
     state.loading = true
 
     local gen = state.loadGen
-    local station = radio.Stations[radio:GetSong()]
+    local song = radio:GetSong()
+    local station = radio.Stations[song]
     local flat = state.flat
     local flags = flat and "noblock noplay" or "3d noblock noplay"
 
     sound.PlayFile( "sound/" .. station.path, flags, function( channel )
-        if state.loadGen ~= gen or not IsValid( radio ) then
+        -- the song can change before Think catches it and bumps loadGen
+        if state.loadGen ~= gen or not IsValid( radio ) or radio:GetSong() ~= song then
             if IsValid( channel ) then channel:Stop() end
             return
 
