@@ -50,6 +50,7 @@ hunters_glee/
 │   ├── glee_music/                    # Music track definitions (auto-loaded)
 │   ├── glee_hud/                      # HUD drawing, fonts, and the swappable HUD styles
 │   ├── glee_carrying/                 # Carrying big entities as weapons, and the use wheel
+│   ├── glee_wearing/                  # Wearables, goggles and the like, one SWEP and hooks each
 │   ├── glee_turrets/                  # The shop's turrets: names, ammo, recharging
 │   ├── autorun/                       # Loaded by gmod itself, so it runs outside the gamemode too
 │   ├── entities/                      # Custom entities

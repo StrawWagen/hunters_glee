@@ -1,7 +1,6 @@
 
 -- Haptic vision. A dim light from the eyes lights the dark, the colours come up stronger and redder, and it has a radar.
--- E with them out (not aimed at anything usable) opens a use wheel: radar on/off, or cycle the wavelength.
--- E with them out also changes how wide the cone the rays come out in is.
+-- Its wheel adds the radar to the goggles' own: on/off, the wavelength, the cone's width, and the resolution.
 -- While the radar's on and they're flipped down, the wearer's client fires rays every frame from their eyes, inside the
 -- cone, which is drawn around the crosshair. Rays don't bounce, they pierce: through walls and props, up to the
 -- wavelength's pierce in total, knocked a little off course by every bit of solid. The rays aren't drawn.
@@ -10,6 +9,8 @@
 -- The rest is glee_nvg_base.
 
 SWEP.Base = "glee_nvg_base"
+DEFINE_BASECLASS( "glee_nvg_base" )
+
 SWEP.PrintName = "PVS-14 Haptic Vision"
 SWEP.Category = "Hunter's Glee"
 SWEP.Author = "ye"
@@ -53,15 +54,17 @@ SWEP.Resolutions = {
 }
 
 function SWEP:SetupDataTables()
-    self:NetworkVar( "Bool", 0, "RadarOn" )
-    self:NetworkVar( "Int", 0, "Wavelength" ) -- index into SWEP.Wavelengths
-    self:NetworkVar( "Int", 1, "Cone" ) -- index into SWEP.Cones
-    self:NetworkVar( "Int", 2, "Resolution" ) -- index into SWEP.Resolutions
+    BaseClass.SetupDataTables( self )
+
+    self:NetworkVar( "Bool", "RadarOn" )
+    self:NetworkVar( "Int", "Wavelength" ) -- index into SWEP.Wavelengths
+    self:NetworkVar( "Int", "Cone" ) -- index into SWEP.Cones
+    self:NetworkVar( "Int", "Resolution" ) -- index into SWEP.Resolutions
 
 end
 
 function SWEP:Initialize()
-    self:SetHoldType( self.HoldType )
+    BaseClass.Initialize( self )
     self:SetWavelength( 1 )
     self:SetCone( 1 )
 
