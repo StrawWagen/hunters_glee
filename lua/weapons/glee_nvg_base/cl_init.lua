@@ -141,9 +141,17 @@ function SWEP:GetWheelActions()
     }
 end
 
+-- asks the server to run one of the goggles' actions, by key, see OnWheelPick
+local function sendPick( key )
+    net.Start( "glee_nvg_wheelpick" )
+        net.WriteString( key )
+    net.SendToServer()
+
+end
+
 -- held open while attack is, letting go picks
 -- shares glee_Carrying.CurrentWheel, so only one wheel's ever open
-local function openWheel( wearer, wep )
+local function openWheel( wearer, wep, actions )
     local carrying = terminator_Extras.glee_Carrying
 
     local oldWheel = carrying.CurrentWheel
@@ -154,7 +162,7 @@ local function openWheel( wearer, wep )
     local outer = wheel:Style():Scaled( OUTER_RADIUS_1080P )
 
     wheel:SetSize( outer * 2, outer * 2 )
-    wheel:SetItems( wep:GetWheelActions() )
+    wheel:SetItems( actions )
     wheel:Center()
 
     function wheel:GetItemStatus()
@@ -163,9 +171,7 @@ local function openWheel( wearer, wep )
     end
 
     function wheel:OnItemSelected( item )
-        net.Start( "glee_nvg_wheelpick" )
-            net.WriteString( item.key )
-        net.SendToServer()
+        sendPick( item.key )
         self:Close()
 
     end
@@ -207,7 +213,16 @@ function SWEP.SetupWear( wear )
         end
 
         if wearer:GetActiveWeapon() ~= wep or not wearer:Alive() or wearer:InVehicle() then return end
-        wheel = openWheel( wearer, wep )
+
+        -- one action just runs, several open the wheel, as glee_carrying's use does
+        local actions = wep:GetWheelActions()
+        if #actions == 1 then
+            sendPick( actions[1].key )
+            return
+
+        end
+
+        wheel = openWheel( wearer, wep, actions )
 
     end )
 

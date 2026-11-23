@@ -1,7 +1,8 @@
 
 -- Night vision goggles, worn on the eyes while carried, see glee_wearable_base.
 -- Bought in the shop, see glee_shopitems/sh_nightvision.lua.
--- Hold left click with them out for their wheel, flipping them down or up is on it.
+-- Left click with them out flips them down or up.
+-- Goggles with more to them, eg the haptic, hold left click for a wheel instead, flipping is on it.
 -- Models and sounds come from Neosun's Cooler Nightvision, workshop 3425531829, copied into
 -- models/glee/nvg, materials/models/glee/nvg and sound/hunters_glee/nvg, so only glee is needed.
 -- The .mdl files had their internal name and texture folder paths repointed there.
