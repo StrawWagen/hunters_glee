@@ -500,7 +500,7 @@ end
 
 -- each stage replaces the last, resent every think so it stays up until the danger passes
 local function notifyHeartStage( ply, text, description )
-    huntersGlee_Notify( { ply }, { text = text, description = description, kind = "bad", replaceKey = "glee_heartattack_stage", onlyWhile = "alive" } )
+    huntersGlee_Notify( { ply }, { text = { alive = text }, description = description, kind = "bad", replaceKey = "glee_heartattack_stage" } )
 
 end
 
@@ -1229,7 +1229,7 @@ end
 hook.Add( "PostPlayerDeath", "glee_spectatedthingdied", markDied )
 hook.Add( "OnNPCKilled", "glee_spectatedthingdied", markDied )
 
-hook.Add( "glee_true_PlayerSpawn", "glee_spectatedthingdied", function( ply )
+hook.Add( "glee_EarnedPlayerSpawn", "glee_spectatedthingdied", function( ply )
     ply.glee_Died = nil
 
 end )
@@ -1314,7 +1314,7 @@ function GM:PlayerDeathThink( ply )
 end
 
 
--- glee_true_PlayerSpawn check
+-- glee_EarnedPlayerSpawn check
 hook.Add( "PostPlayerDeath", "glee_onlyfixspawn_ifdied", function( ply )
     ply.glee_usedTrueRespawn = nil
 
@@ -1436,7 +1436,7 @@ function GM:PlayerSpawn( ply, transiton )
     local unstuckOrigin = ply.glee_unstuckOrigin
 
     if trueRespawn then
-        hook.Run( "glee_true_PlayerSpawn", ply )
+        hook.Run( "glee_EarnedPlayerSpawn", ply )
 
     end
 
@@ -1486,6 +1486,9 @@ function GM:PlayerSpawn( ply, transiton )
     hook.Call( "PlayerSetModel", GAMEMODE, ply )
 
     ply:SetupHands()
+
+    -- the player class just reset max health to its own
+    ply:UpdateMaxHealth( "PlayerSpawn" )
 
     GAMEMODE.deadPlayers[ply:GetCreationID()] = nil
 

@@ -7,16 +7,6 @@ local doMaxHealthVar = CreateConVar( "huntersglee_playermodelscaling_maxhealth",
 
 util.AddNetworkString( "GLEE_PDM:UpdatePlyHull" )
 
-local function boundPlysHealthToModel( ply )
-    local plysHealth = ply:Health()
-    local newHealth = math.min( plysHealth, ply:GetMaxHealth() )
-    if plysHealth > newHealth then
-        ply:SetHealth( newHealth )
-        ply.glee_LastSetHealthReason = "PDM_PlayerSpawn"
-
-    end
-end
-
 -- gate a bunch of the extra setters for players bigger/smaller than usual
 -- default hullz is 72
 local dontActivateMax = 78
@@ -134,16 +124,10 @@ local function Update( ply )
 
     end
 
+    -- off, glee_BaseHealth stays unset, and ply:UpdateMaxHealth reads it as 100
     if doMaxHealthVar:GetBool() then
-        local newMaxHealth = character_chars["health"]
-        ply:SetNW2Int( "glee_BaseHealth", newMaxHealth )
-        ply:SetMaxHealth( newMaxHealth )
-        ply.glee_LastSetMaxHealthReason = "PDM_Update"
-        boundPlysHealthToModel( ply )
-
-    else
-        -- keep glee_BaseHealth meaningful for consumers ( divine chosen, innate hp )
-        ply:SetNW2Int( "glee_BaseHealth", ply:GetMaxHealth() )
+        ply:SetNW2Int( "glee_BaseHealth", character_chars["health"] )
+        ply:UpdateMaxHealth( "PDM_Update" )
 
     end
 
@@ -183,9 +167,12 @@ end )
 
 -- tick if either scaling or maxhealth scaling is enabled.
 local scaleTick = enabledVar:GetBool() or doMaxHealthVar:GetBool()
+-- off, Update never sets the view offsets, so checking them would Update every tick
+local checkViewOffsets = enabledVar:GetBool()
 
 cvars.AddChangeCallback( "huntersglee_playermodelscaling", function( _, _, new )
     scaleTick = tobool( new ) or doMaxHealthVar:GetBool()
+    checkViewOffsets = tobool( new )
 
 end, "glee_scaletick_detectchange" )
 
@@ -203,7 +190,8 @@ hook.Add( "PlayerTick", "GLEE_PDM:PlayerTick", function( ply )
         ply.PDM_ModelPath ~= ply:GetModel()
         or ply.PDM_Spawned
         or (
-            chars ~= nil
+            checkViewOffsets
+            and chars ~= nil
             and (
                 ply:GetViewOffset()[3] ~= chars["height"]
                 or ply:GetViewOffsetDucked()[3] ~= chars["heightduck"]

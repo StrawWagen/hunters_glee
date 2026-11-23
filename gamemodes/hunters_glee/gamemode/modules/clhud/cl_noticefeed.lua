@@ -4,6 +4,7 @@
 
     A stack of glee_noticeboxes in the bottom right, newest at the bottom.
     Each fades out once its time is up, and is removed once it's gone.
+    Each keeps its alive and dead fields, and switches over when the player dies or spawns.
     The stack sits above the ammo counter, and sinks into its place once there hasn't been one for a while.
 
     Return true from glee_hideNotices to hide the feed, like glee_blockGenericAnnouncements hides
@@ -84,29 +85,83 @@ local function setKind( notice, kind )
 
 end
 
+local function stateNow()
+    local ply = LocalPlayer()
+    if not IsValid( ply ) then return "dead" end
+
+    return huntersGlee_NotifyStateOf( ply )
+
+end
+
+-- the same fields in both states, for notices from outside huntersGlee_Notify
+local function inBothStates( fields )
+    return { alive = fields, dead = fields }
+
+end
+
+-- text and description with {+bind}s filled in, nil if glee_blockNotices blocks them
+local function filledText( fields )
+    local text = GAMEMODE:FillBinds( fields.text )
+    local description = fields.description and GAMEMODE:FillBinds( fields.description )
+    if hook.Run( "glee_blockNotices", text, description, fields.kind ) then return end
+
+    return text, description
+
+end
+
+-- what a state looks like, its time and flashes are set on arrival alone
+local function showFields( notice, fields, text, description )
+    notice.replaceKey = fields.replaceKey
+    terminator_Extras.glee_SetPanelStyle( notice.box, fields.style ) -- nil goes back to the hud's own
+    setText( notice, text, description )
+    setKind( notice, fields.kind )
+
+end
+
+-- After a death or spawn, false if the notice has nothing for the new state
+local function switchState( notice, state )
+    local fields = notice.states[state]
+    if not fields then return false end
+
+    local text, description = filledText( fields )
+    if not text then return false end
+
+    notice.state = state
+    showFields( notice, fields, text, description )
+
+    local box = notice.box
+    if notice.expiresAt > CurTime() then
+        box:SetState( box.STATE_FLASH )
+
+    end
+
+    return true
+
+end
+
 --[[---------------------------------------------------------
     GM:AddNotice
     Puts a message in the feed, or flashes the one already showing it.
+    Nothing for the player's state, nothing shown.
     huntersGlee_Notify calls this, call that instead.
-    @param data: huntersGlee_Notify's, every field filled in but description, replaceKey, style,
-        extraFlashes, flashInterval and onlyWhile. A flashInterval of 0 is the default too, it's what the net sends for none.
+    @param states: { alive = fields, dead = fields }, either nil for nothing in that state.
+        fields are huntersGlee_Notify's, plain values, every one filled in but description, replaceKey, style,
+        extraFlashes and flashInterval. A flashInterval of 0 is the default too, it's what the net sends for none.
         {+bind}s are filled in here.
     @return: None
 --]]---------------------------------------------------------
-function GM:AddNotice( data )
-    local text = self:FillBinds( data.text )
-    local description = data.description and self:FillBinds( data.description )
-    if hook.Run( "glee_blockNotices", text, description, data.kind ) then return end
+function GM:AddNotice( states )
+    local state = stateNow()
+    local fields = states[state]
+    if not fields then return end
 
-    local existing = findByKey( data.replaceKey ) or findSame( text, description )
+    local text, description = filledText( fields )
+    if not text then return end
+
+    local existing = findByKey( fields.replaceKey ) or findSame( text, description )
     local notice = existing or newNotice()
-    notice.replaceKey = data.replaceKey
-    -- a resend can land after the death did, it can't forget it was held
-    if notice.onlyWhile ~= data.onlyWhile then
-        notice.onlyWhileHeld = false
-
-    end
-    notice.onlyWhile = data.onlyWhile
+    notice.states = states
+    notice.state = state
 
     -- a countdown updates the one box every second, logging each would flood the console
     if not existing and printNotices:GetBool() then
@@ -114,20 +169,17 @@ function GM:AddNotice( data )
         permaPrint( "Notice; " .. string.gsub( line, "\n", " " ) )
 
     end
-    notice.expiresAt = CurTime() + data.time
+    notice.expiresAt = CurTime() + fields.time
+
+    showFields( notice, fields, text, description )
 
     local box = notice.box
-    terminator_Extras.glee_SetPanelStyle( box, data.style ) -- nil goes back to the hud's own
-
-    setText( notice, text, description )
-    setKind( notice, data.kind )
-
     box:SetState( box.STATE_FLASH )
 
     -- the same message again without flashes doesn't cut the first one's short
-    local extraFlashes = data.extraFlashes or 0
+    local extraFlashes = fields.extraFlashes or 0
     if extraFlashes > 0 then
-        local flashInterval = data.flashInterval
+        local flashInterval = fields.flashInterval
         if not flashInterval or flashInterval <= 0 then
             flashInterval = DEFAULT_FLASH_INTERVAL
 
@@ -138,7 +190,7 @@ function GM:AddNotice( data )
 
     end
 
-    local sound = huntersGlee_NotifyKinds[data.kind].sound
+    local sound = huntersGlee_NotifyKinds[fields.kind].sound
     if sound and not hook.Run( "glee_hideNotices" ) then
         box:Style():PlaySound( sound, 100, CHAN_STATIC, 0.5 )
 
@@ -170,24 +222,33 @@ function GM:CancelNotice( replaceKey, data )
 end
 
 
+-- written in the same order by sh_glee_notify.lua
+local function readState()
+    if not net.ReadBool() then return end
+
+    local fields = {}
+    fields.text = net.ReadString()
+    fields.description = net.ReadString()
+    fields.kind = net.ReadString()
+    fields.time = net.ReadFloat()
+    fields.replaceKey = net.ReadString()
+    fields.style = net.ReadString()
+    fields.extraFlashes = net.ReadUInt( 8 )
+    fields.flashInterval = net.ReadFloat()
+
+    if fields.description == "" then fields.description = nil end
+    if fields.replaceKey == "" then fields.replaceKey = nil end
+    if fields.style == "" then fields.style = nil end
+
+    return fields
+
+end
+
 net.Receive( "glee_notify", function()
-    local data = {}
-    data.text = net.ReadString()
-    data.description = net.ReadString()
-    data.kind = net.ReadString()
-    data.time = net.ReadFloat()
-    data.replaceKey = net.ReadString()
-    data.style = net.ReadString()
-    data.extraFlashes = net.ReadUInt( 8 )
-    data.flashInterval = net.ReadFloat()
-    data.onlyWhile = net.ReadString()
+    local alive = readState()
+    local dead = readState()
 
-    if data.description == "" then data.description = nil end
-    if data.replaceKey == "" then data.replaceKey = nil end
-    if data.style == "" then data.style = nil end
-    if data.onlyWhile == "" then data.onlyWhile = nil end
-
-    GAMEMODE:AddNotice( data )
+    GAMEMODE:AddNotice( { alive = alive, dead = dead } )
 
 end )
 
@@ -248,26 +309,11 @@ local function updateGap()
 
 end
 
--- The message can land before the health update does, so onlyWhile has to have held once first
-local function outlivedOnlyWhile( notice, isAlive )
-    if not notice.onlyWhile then return false end
-
-    if isAlive == ( notice.onlyWhile == "alive" ) then
-        notice.onlyWhileHeld = true
-        return false
-
-    end
-
-    return notice.onlyWhileHeld
-
-end
-
 -- before GM:HUDPaint, so the claim is in before anything dodging it looks
 hook.Add( "HUDPaint", "glee_noticefeed_layout", function()
     updateGap()
 
-    local ply = LocalPlayer()
-    local isAlive = IsValid( ply ) and ply:Health() > 0
+    local state = stateNow()
     local cur = CurTime()
     local right = ScrW() - paddingFromEdge * 1.5
     local stackBottom = ScrH() - currentGap
@@ -286,7 +332,7 @@ hook.Add( "HUDPaint", "glee_noticefeed_layout", function()
 
         end
 
-        if outlivedOnlyWhile( notice, isAlive ) then
+        if notice.state ~= state and not switchState( notice, state ) then
             box:Remove()
             table.remove( notices, index )
             continue
@@ -359,11 +405,11 @@ local kindOfNotifyType = {
 function notification.AddLegacy( text, notifyType, time )
     if not text or text == "" then return end -- nothing to show, it'd be an empty box
 
-    GAMEMODE:AddNotice( {
+    GAMEMODE:AddNotice( inBothStates( {
         text = text,
         kind = kindOfNotifyType[notifyType] or "info",
         time = time or 5,
-    } )
+    } ) )
 
 end
 
@@ -377,17 +423,18 @@ function notification.AddProgress( id, text, frac )
 
     local notice = findByKey( id )
     if notice then
+        notice.states[notice.state].text = text -- one table in both states, see inBothStates
         setText( notice, text )
         return
 
     end
 
-    GAMEMODE:AddNotice( {
+    GAMEMODE:AddNotice( inBothStates( {
         text = text,
         kind = "info",
         time = math.huge,
         replaceKey = id,
-    } )
+    } ) )
 
 end
 

@@ -450,34 +450,9 @@ if SERVER then
 
     GAMEMODE:RegisterStatusEffect( "juggernaut",
         function( self, owner ) -- setup func
-            function self:ApplyJuggernaut()
-                local currentHealthRatio = owner:Health() / owner:GetMaxHealth()
+            owner:DoMaxHealthMul( "juggernaut", 5 ) -- 500 by default
 
-                local newMaxHealth = owner:GetNW2Int( "glee_BaseHealth", 100 ) * 5 -- 500 by default
-                local newHealth = newMaxHealth * currentHealthRatio
-
-                owner:SetMaxHealth( newMaxHealth )
-                owner.glee_LastSetMaxHealthReason = "glee_juggernaut"
-                owner:SetHealth( newHealth )
-                owner.glee_LastSetHealthReason = "glee_juggernaut"
-
-                owner:DoSpeedClamp( "juggernautclamp", 0 ) -- blocks speed modifiers from increasing speed beyond normal sprint speed
-
-            end
-
-            self:ApplyJuggernaut()
-
-            self:Hook( "PlayerSpawn", function( spawned )
-                if spawned ~= owner then return end
-
-                timer.Simple( 0.1, function()
-                    if not IsValid( owner ) then return end
-                    if not owner:HasStatusEffect( "juggernaut" ) then return end
-
-                    self:ApplyJuggernaut()
-
-                end )
-            end )
+            owner:DoSpeedClamp( "juggernautclamp", 0 ) -- blocks speed modifiers from increasing speed beyond normal sprint speed
 
             self:HookOnce( "PlayerFootstep", function( ply, _, foot ) -- clomp clomp
                 if not ply:HasStatusEffect( "juggernaut" ) then return end
@@ -508,6 +483,7 @@ if SERVER then
         end,
         function( _, owner ) -- teardown func
             owner:DoSpeedClamp( "juggernautclamp", nil )
+            owner:DoMaxHealthMul( "juggernaut", nil )
 
         end
     )

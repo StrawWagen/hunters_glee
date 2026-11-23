@@ -137,13 +137,12 @@ function ENT:WarnNearbyPlayers( strikePos, placerNick )
     end
     huntersGlee_Announce( softwarnPlayers, 100, chargeTime, "Weird, it feels like your hair's standing up..." )
     huntersGlee_Notify( softwarnPlayers, {
-        text = "STATIC ELECTRICITY DETECTED",
+        text = { alive = "STATIC ELECTRICITY DETECTED" },
         description = "RETREAT.",
         kind = "alert",
         extraFlashes = 4,
         flashInterval = 1,
         time = 8,
-        onlyWhile = "alive",
     } )
     huntersGlee_Notify( hardwarnPlayers, {
         text = placerNick .. " has begun a Divine Clap.",

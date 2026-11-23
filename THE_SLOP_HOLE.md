@@ -85,6 +85,67 @@ It does all the messy parts for you, so read it before writing a `ClientsideMode
 
 ---
 
+## Player spawns
+
+`PlayerSpawn` runs on every `ply:Spawn()`, including ones that aren't a new life.
+`glee_EarnedPlayerSpawn` runs only on the first spawn after a death, or after joining.
+It's fired from `GM:PlayerSpawn` in [sv_player.lua](gamemodes/hunters_glee/gamemode/sv_player.lua).
+
+- **`glee_EarnedPlayerSpawn`, for a new life.** Handing out items, resetting per-life state, rolling something fresh.
+  Like `glee_spawnweapons` in [sv_spawnweapons.lua](gamemodes/hunters_glee/gamemode/modules/spawnset/runtime/sv_spawnweapons.lua), or the tumor in [sh_default_bargains.lua](lua/glee_shopitems/sh_default_bargains.lua).
+  On `PlayerSpawn`, these would hand out twice, or reset mid-life.
+- **`PlayerSpawn`, for re-applying what every spawn wipes.** Model, speed, bone manips, open menus.
+  Like `big_head`, also in sh_default_bargains.lua.
+  On `glee_EarnedPlayerSpawn`, these would quietly fall off after a spawn that wasn't a new life.
+
+Both run before `GM:PlayerSpawn` sets the model and loadout, and before the player is moved to their spawn point.
+Anything that depends on those waits a tick, like `big_head` does.
+
+---
+
+## Stacking modifiers
+
+Max health, run speed and bone manips are shared by everything that changes them.
+Each source sets its own keyed entry, and the result is all of them combined.
+Setting the value directly gets overwritten, or overwrites someone else's.
+README.md, "Stacking modifiers", lists them all.
+
+- **Pick a key only your feature uses.** Two sources on one key overwrite each other.
+- **Take your entry off when you're done.** Entries live on the entity, and survive death.
+- **Max health:** `DoMaxHealthMul` and friends, never `SetMaxHealth` on players.
+  Base health comes from the playermodel's size, don't assume 100.
+- **Run speed:** `DoSpeedModifier`, never `SetRunSpeed`.
+  `DoSpeedClamp` is an offset from the default speed, not an absolute max.
+  Run speed isn't top speed, sprinting on [the hands](lua/weapons/termhunt_hands/shared.lua) goes up to 200 past it.
+- **Bones:** `ApplyBoneScaleManip` and friends, server only.
+  Plain `ManipulateBone*` calls are overridden, and every one of them shares the `"default"` key.
+  So setting a bone back to scale 1 only clears `"default"`, every other key's entry stays on it.
+  Clientside, `ManipulateBone*` is the engine's, nothing is keyed.
+- **These only exist in the gamemode.** lua/weapons and lua/entities load outside it too.
+  Code there that can run in sandbox needs a fallback, like [termhunt_divine_chosen](lua/weapons/termhunt_divine_chosen/shared.lua).
+
+---
+
+## Engine calls Glee has its own version of
+
+The engine's call still works, but skips something Glee relies on.
+
+- **Healing:** `ply:AddHealth( amount, reason )`, or `AddOverhealableHealth` to go past max.
+  A bare `SetHealth` heal skips `glee_blockaddhealth`, which some bargains use to stop healing.
+  Taking health from someone to give it to someone else? Check `CanAddHealth` first.
+  All three are in [sv_player.lua](gamemodes/hunters_glee/gamemode/sv_player.lua).
+- **Setting health yourself:** set `ply.glee_LastSetHealthReason` alongside it, it's how a debugger finds who did it.
+- **Fire:** `ent:Ignite( length, radius, attacker, inflictor )`.
+  Naming who lit it is how guilt, summoner relief and the killfeed credit fire kills.
+  Without one, the flame has to guess, see [sv_blamedfire.lua](gamemodes/hunters_glee/gamemode/modules/blame/sv_blamedfire.lua).
+- **Dropping weapons:** `ply:DropWeaponKeepAmmo( wep )`, or `DropActiveWeaponKeepAmmo`, which has the guards.
+  A plain `DropWeapon` leaves the ammo behind with the player, instead of in the weapon.
+  See [sv_weapondropper.lua](gamemodes/hunters_glee/gamemode/modules/weapondropper/sv_weapondropper.lua).
+- **Stripping weapons:** `StripWeapons` runs `glee_PreStripWeapons` first.
+  Hook that for anything that should leave the player's hands, instead of vanishing with them.
+
+---
+
 ## Moving a model's materials under glee/
 
 New materials belong under `materials/models/glee/`, see DESIGN_GUIDELINES.md, "Models and materials".

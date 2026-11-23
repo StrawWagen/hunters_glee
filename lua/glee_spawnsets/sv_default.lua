@@ -31,7 +31,7 @@ local defaultSpawnSet = {
     secondGrigoriArrivalSound = "tracks/secondGrigoriArrival", -- played when grigori arrives
     noMoreGrigoriSound = "tracks/stopper/grigori", -- played when there are no more grigori
     startWeapons = {},
-    defaultWeapons = { "weapon_crowbar", "gmod_camera", "termhunt_radio" }, -- the first one's what they're holding on spawn
+    defaultWeapons = { "gmod_camera", "termhunt_radio", "weapon_crowbar" }, -- the last one's what they're holding on spawn
 }
 
 table.insert( GLEE_SPAWNSETS, defaultSpawnSet )

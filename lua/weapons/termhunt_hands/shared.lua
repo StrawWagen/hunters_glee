@@ -170,8 +170,6 @@ function SWEP:PrimaryAttack( firstMul )
     local Force = AimVector
 
     if IsValid( Hit ) then
-
-        print( "hi" )
         self:SendWeaponAnim( ACT_VM_PRIMARYATTACK )
 
         local parent = Hit:GetParent()
@@ -256,6 +254,14 @@ function SWEP:OnDrop()
     end
 end
 
+-- Sprinting on hands
+-- hold sprint and run straight, and speed ramps up to 200 past run speed
+-- turning, strafing, crouching or hitting a wall drops you back to run speed
+--
+-- means the fastest way for a default player to move is with carefully steered foreward momentum
+-- breaks the stupid looking boring jump spam muscle memory of gmod sandbox players
+-- bhopping still wins, it just needs upgrades
+-- no weapon out while you do it, high risk, high reward
 do
     local CurTime = CurTime
     local IsValid = IsValid
@@ -270,11 +276,10 @@ do
     local allowedTurnRate = 10
     local fullSprintSpeedAdd = 200 -- doesn't buff quite up to this, probably the engine trying to slow down the player
     local startPlayingFastRun = fullSprintSpeedAdd / 4
-    local sprintRamp = 1.003
+    local sprintRamp = 1.22 -- speed multiplies by this every second, about 3 seconds to full sprint
+    local sprintRampPerTick = sprintRamp ^ engine.TickInterval()
 
     if isGlee then
-        GAMEMODE.FullSprintSpeedAdd = fullSprintSpeedAdd
-
         function GAMEMODE:GetFullBoostedSprint( ply )
             local boost = earnedSpeed[ply]
             return boost
@@ -373,7 +378,7 @@ do
         end
 
         local oldSpeed = earnedSpeed[ply] or runSpeed
-        local newSpeed = math.Clamp( oldSpeed * sprintRamp, 0, fullSprintSpeed )
+        local newSpeed = math.Clamp( oldSpeed * sprintRampPerTick, 0, fullSprintSpeed )
 
         newSpeeds[ply] = newSpeed
 
