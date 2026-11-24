@@ -130,6 +130,18 @@ function SWEP:PrimaryAttack()
     end
 
     local toRevive, resurrectPos = self:FindRevivable( aimTrace )
+
+    -- another addon's entity, see SpecialInteractions. Server only, since the handler writes to its
+    -- entity, and only while there's no one to revive: the dead come first
+    if SERVER and not IsValid( toRevive ) then
+        local interaction, ent = self:SpecialInteractionAt( aimTrace )
+        if interaction then
+            interaction.primaryAttack( self, ent, aimTrace )
+            return
+
+        end
+    end
+
     if not IsValid( toRevive ) or not owner:IsPlayer() then
         if SERVER then
             playServerOneShot( self, DryFireSound )

@@ -521,6 +521,29 @@ local function nameOf( ent )
 
 end
 
+-- the blip labels' face follows the hl2 style's, so changing glee's font moves them too. Their
+-- sizes stay the radar's own: the labels are pinned to world points, not laid out in a hud box
+local labelFace = nil
+local labelNameFont = "DermaDefaultBold"
+local labelDistFont = "DermaDefault"
+
+local function labelFonts()
+    if not terminator_Extras or not terminator_Extras.glee_Style then
+        return labelNameFont, labelDistFont
+
+    end
+
+    local face = terminator_Extras.glee_Style( "hl2" ):Settings().fontName
+    if face == labelFace then return labelNameFont, labelDistFont end
+
+    labelFace = face
+    labelNameFont, labelDistFont = "glee_nvg_haptic_name", "glee_nvg_haptic_dist"
+    surface.CreateFont( labelNameFont, { font = face, size = 20, weight = 700, antialias = true } )
+    surface.CreateFont( labelDistFont, { font = face, size = 18, weight = 400, antialias = true } )
+    return labelNameFont, labelDistFont
+
+end
+
 -- the cone's edge around the crosshair, and a mark where each ray touched what it found. blips sit
 -- in world space, so moving the view shifts them by their distance: close targets slide fast, far
 -- ones barely move, which is where the depth in the radar comes from
@@ -600,20 +623,22 @@ local function drawRadar( wep, wearer )
         end
     end
 
+    local nameFont, distFont = labelFonts()
+
     for _, label in ipairs( labels ) do
         local name = nameOf( label.ent )
         if name and name ~= "" then
             -- the outline fades with the text: left on full black it outlives the glyphs and reads
             -- as black text at the end of the fade instead of nothing at all
             local alpha = math.Clamp( 255 * ( 1 - ( now - label.born ) / life ), 0, 255 )
-            draw.SimpleTextOutlined( name, "DermaDefaultBold", label.x + 10, label.y - 6,
+            draw.SimpleTextOutlined( name, nameFont, label.x + 10, label.y - 9,
                 Color( label.color.r, label.color.g, label.color.b, alpha ),
                 TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, 1, Color( 0, 0, 0, alpha ) )
 
             -- hammer units from the eye to where the blip actually sits, recomputed as the wearer
             -- moves so the number tracks the blip's range instead of the moment it was found
             local dist = math.Round( eyePos:Distance( label.pos ) )
-            draw.SimpleTextOutlined( dist .. "u", "DermaDefault", label.x + 10, label.y + 9,
+            draw.SimpleTextOutlined( dist .. "u", distFont, label.x + 10, label.y + 13,
                 Color( label.color.r, label.color.g, label.color.b, alpha ),
                 TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, 1, Color( 0, 0, 0, alpha ) )
 
