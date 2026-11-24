@@ -139,7 +139,8 @@ local function whileDeadPaintOtherPlys( localPlayer, cur )
     if IsValid( spectateTarg ) and spectateTarg.Nick then
         focusEnt = spectateTarg
 
-    elseif IsValid( trace.Entity ) and ( trace.Entity.Nick or trace.Entity:GetNW2Bool( "glee_IsSpectatable", false ) ) then
+    -- the watching camera's looking for them, not at them, no spectate prompts
+    elseif not GAMEMODE:IsSpectateWatching() and IsValid( trace.Entity ) and ( trace.Entity.Nick or trace.Entity:GetNW2Bool( "glee_IsSpectatable", false ) ) then
         focusEnt = trace.Entity
 
     end

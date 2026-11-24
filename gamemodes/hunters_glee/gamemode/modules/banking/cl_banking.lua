@@ -45,7 +45,7 @@ hook.Add( "huntersglee_cl_displayhint_poststack", "glee_bankaccounthint", functi
     if GAMEMODE:ShopOpenBlocked() then return end
     if not GAMEMODE:canShowInShop( me, "bankopenaccount" ) then return end
     if me:GetScore() < GAMEMODE:shopItemCost( "bankopenaccount", me ) then return end
-    if me:GetNWInt( "termHuntPlyBPM" ) > 75 then return end -- calm, like the open shop hints
+    if not me:IsCalm() then return end
 
     return true, "SAVE YOUR SCORE...\nOpen a Bank Account in the shop.\nSave it for another time."
 

@@ -33,6 +33,11 @@ gamemodes\hunters_glee\gamemode\modules\sh_compathacks.lua
 gamemodes\hunters_glee\gamemode\modules\sh_danceslowdown.lua
 gamemodes\hunters_glee\gamemode\modules\sh_detecthunterkills.lua
 
+gamemodes\hunters_glee\gamemode\modules\voicestats\sh_voicestats.lua
+gamemodes\hunters_glee\gamemode\modules\spectatewatching\sh_spectatewatching.lua
+gamemodes\hunters_glee\gamemode\modules\spectatewatching\cl_watchscorer.lua
+gamemodes\hunters_glee\gamemode\modules\spectatewatching\cl_watchcamera.lua
+
 gamemodes\hunters_glee\gamemode\modules\signalstrength\cl_signalstrength.lua
 
 gamemodes\hunters_glee\gamemode\player_class\player_termrunner.lua

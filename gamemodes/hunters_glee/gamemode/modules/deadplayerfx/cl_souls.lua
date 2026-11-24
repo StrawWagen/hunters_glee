@@ -5,19 +5,12 @@ local ownSoulNearFade = CreateClientConVar( "cl_huntersglee_ownsoul_nearfade", 0
 
 local LocalPlayer = LocalPlayer
 local IsValid = IsValid
-local bit = bit
-local util = util
 
 local upToDateData = {}
 local souls = {}
 local vec_zero = Vector( 0, 0, 0 )
 local fallbackHeadBone = 10
 local rotator = Angle( -89.9, 90, 0 )
-
-local function inWall( pos )
-    return bit.band( util.PointContents( pos ), MASK_SOLID_BRUSHONLY ) > 0
-
-end
 
 local function boneCountFixed( soul ) -- "Entity:GetPhysicsObjectNum - Out of bounds physics object - max 14, got 15 (x28)"
     return soul:GetPhysicsObjectCount() + -1
@@ -222,7 +215,7 @@ local function soulGotoPos( soul, pos, ang )
 
     elseif dist > tooFarWake then
         tryWake = true
-    elseif not inWall( pos ) and not inWall( soulsPos ) then
+    elseif not GAMEMODE:IsInWall( pos ) and not GAMEMODE:IsInWall( soulsPos ) then
         collisionsDesired = true
 
     end

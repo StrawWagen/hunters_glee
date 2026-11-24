@@ -20,6 +20,8 @@ ENT.TriggerBoundsRagdoll = 56
 function ENT:SetupDataTables()
     self:NetworkVar( "Bool", "IsTerminatorSkull" )
     self:NetworkVar( "Int", "Skulls" )
+    -- whose head this was, "" for skulls nobody died for. A SteamID, so it survives them rejoining
+    self:NetworkVar( "String", "OwnerSteamID64" )
 
     if SERVER then
         self:SetSkulls( 1 )
@@ -224,7 +226,7 @@ function ENT:DoScore( reciever )
 
             end
         end
-    elseif not reciever.glee_selfskullhinted and self.skullSteamId and self.skullSteamId == reciever:SteamID64() then
+    elseif not reciever.glee_selfskullhinted and self:GetOwnerSteamID64() == reciever:SteamID64() then
         reciever.glee_selfskullhinted = true
         reciever.glee_skullhinted = true
         huntersGlee_Announce( { reciever }, 10, 10, "My skull...\nWhy did I come back here?" )
@@ -237,7 +239,7 @@ function ENT:DoScore( reciever )
 
     elseif not reciever.glee_skullhinted then
         reciever.glee_skullhinted = true
-        if self.skullSteamId then
+        if self:GetOwnerSteamID64() ~= "" then
             huntersGlee_Announce( { reciever }, 10, 10, "That's their skull..." )
             GAMEMODE:GivePanic( reciever, 60 )
 

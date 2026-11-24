@@ -13,6 +13,9 @@ AddCSLuaFile( "modules/deadplayerfx/cl_souls.lua" )
 AddCSLuaFile( "modules/deadplayerfx/cl_deaddesaturation.lua" )
 AddCSLuaFile( "modules/deadpositions/cl_deadpositions.lua" )
 
+AddCSLuaFile( "modules/spectatewatching/cl_watchscorer.lua" )
+AddCSLuaFile( "modules/spectatewatching/cl_watchcamera.lua" )
+
 AddCSLuaFile( "modules/bonemaniphandler/cl_bonemanip.lua" )
 
 AddCSLuaFile( "modules/escaping/cl_escaping.lua" )
@@ -76,6 +79,8 @@ AddCSLuaFile( "modules/sh_danceslowdown.lua" )
 AddCSLuaFile( "modules/sh_playerdrowning.lua" )
 AddCSLuaFile( "modules/sh_compathacks.lua" )
 AddCSLuaFile( "modules/sh_detecthunterkills.lua" )
+AddCSLuaFile( "modules/voicestats/sh_voicestats.lua" )
+AddCSLuaFile( "modules/spectatewatching/sh_spectatewatching.lua" )
 
 AddCSLuaFile( "modules/shopitems/cl_shopgobbler.lua" )
 AddCSLuaFile( "modules/shopitems/sh_shophelpers.lua" )

@@ -97,6 +97,12 @@ function GM:WhoImWatching( ply )
     local driven = ply:GetDrivingEntity()
     if IsValid( driven ) then return driven, "Posessing" end
 
+    if GAMEMODE:IsSpectateWatching() then
+        local watched = GAMEMODE:WatchedPerson()
+        if IsValid( watched ) then return watched, "Watching" end
+
+    end
+
     local observed = ply:GetObserverTarget()
     if IsValid( observed ) then return observed, "Spectating" end
 
