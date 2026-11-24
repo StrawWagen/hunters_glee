@@ -867,6 +867,21 @@ function GM:FixAnglesOf( ply )
     end )
 end
 
+--[[---------------------------------------------------------
+    GM:MoveSpectatorTo
+    @desc Puts a spectator at thing's eyes. Things without eyes leave them where they are.
+    @param ply: The spectator.
+    @param thing: Where to put them.
+    @return bool: Whether they moved.
+--]]---------------------------------------------------------
+function GM:MoveSpectatorTo( ply, thing )
+    if not thing.GetShootPos then return false end
+
+    ply:SetPos( thing:GetShootPos() )
+    return true
+
+end
+
 function GM:StopSpectatingThing( ply )
     local target = ply:GetObserverTarget()
     ply:SetObserverMode( OBS_MODE_ROAMING )
@@ -884,10 +899,8 @@ function GM:StopSpectatingThing( ply )
         local callRemoveName = "glee_unfollow_" .. ply:GetCreationID()
         target:RemoveCallOnRemove( callRemoveName )
 
-        if target.GetShootPos then
-            ply:SetPos( target:GetShootPos() )
+        self:MoveSpectatorTo( ply, target )
 
-        end
     end
 
     ply:SetNotSolid( true )
@@ -944,15 +957,9 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
         if ply.spectateDoFreecam > CurTime() then return end
 
         shutDownDeathCam( ply )
-        if ply.glee_KillerToSpectate then
-            GAMEMODE:SpectateThing( ply, ply.glee_KillerToSpectate )
+        GAMEMODE:StopSpectatingThing( ply )
+        GAMEMODE:StartSpectateWatching( ply )
 
-            ply.glee_KillerToSpectate = nil
-
-        else
-            GAMEMODE:StopSpectatingThing( ply )
-
-        end
     -- start spectating! or switch to the next spectate target!
     elseif keyPressed == IN_ATTACK or keyPressed == IN_ATTACK2 then
         local direction
@@ -1109,35 +1116,8 @@ local function DoKeyPressSpectateSwitch( ply, keyPressed )
     -- the thing we were spectating just died!
     elseif followingThing and currentlySpectating.glee_Died then
         GAMEMODE:StopSpectatingThing( ply )
+        GAMEMODE:StartSpectateWatching( ply )
 
-        local toWatch
-        local time
-
-        -- it has a real killer, spectate that!
-        if currentlySpectating.glee_KillerToSpectate then
-            toWatch = currentlySpectating.glee_KillerToSpectate
-            time = 2
-
-        -- otherwise, spectate someone else alive
-        else
-            time = math.random( 10, 15 )
-
-        end
-
-        local afkCheckPos = ply:GetPos()
-
-        -- only auto-spectate killer, or random ply, if we're laid back, the kind of player to just watch without flying around 
-        timer.Simple( time, function()
-            if not IsValid( ply ) then return end -- lol ragequit
-            if ply:Health() > 0 then return end
-            if ply:GetPos():Distance( afkCheckPos ) > 25 then return end
-
-            toWatch = IsValid( toWatch ) and toWatch or GAMEMODE:anotherAlivePlayer( ply )
-            if not IsValid( toWatch ) then return end -- everyone is dead
-
-            GAMEMODE:SpectateThing( ply, toWatch )
-
-        end )
     end
 end
 
@@ -1212,11 +1192,18 @@ function GM:managePlayerSpectating()
     end
 end
 
--- spectate what killed us
-hook.Add( "PlayerDeath", "glee_spectatedeadplayers", function( died, _, killer )
-    if not IsValid( killer ) then return end
-    if died == killer then return end
-    died.glee_KillerToSpectate = killer
+-- see meta:GetKiller
+hook.Add( "PlayerDeath", "glee_rememberkiller", function( died, _, killer )
+    if not IsValid( killer ) or died == killer then
+        killer = NULL
+
+    end
+    died:SetNW2Entity( "glee_Killer", killer )
+
+end )
+
+hook.Add( "glee_EarnedPlayerSpawn", "glee_forgetkiller", function( ply )
+    ply:SetNW2Entity( "glee_Killer", NULL )
 
 end )
 

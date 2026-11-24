@@ -120,7 +120,7 @@ hook.Add( "PlayerDeath", "glee_dropplayerskulls", function( died, _, attacker )
     local newSkull = GAMEMODE:SpawnASkull( died:GetShootPos(), died:GetAimVector():Angle(), nil, died )
 
     newSkull.nextPickup = CurTime() + 1
-    newSkull.skullSteamId = died:SteamID64()
+    newSkull:SetOwnerSteamID64( died:SteamID64() )
     newSkull.fromSomethingWitnessable = true
 
 end )
@@ -138,7 +138,7 @@ hook.Add( "PreCleanupMap", "glee_savepersistentskulls", function()
         skullTbl.ang = skull:GetAngles()
         skullTbl.persist = true
         skullTbl.termSkull = skull:GetIsTerminatorSkull()
-        skullTbl.skullSteamId = skull.skullSteamId
+        skullTbl.ownerSteamID64 = skull:GetOwnerSteamID64()
         skullTbl.skulls = skull:GetSkulls()
 
         table.insert( GAMEMODE.persistentSkulls, skullTbl )
@@ -159,7 +159,7 @@ hook.Add( "huntersglee_round_into_active", "glee_loadpersistentskulls", function
                 skull.persistentSkull = true
 
             end
-            skull.skullSteamId = skullTbl.skullSteamId
+            skull:SetOwnerSteamID64( skullTbl.ownerSteamID64 )
             skull:SetSkulls( skullTbl.skulls )
             skull:SetPos( skullTbl.pos )
             skull:SetAngles( skullTbl.ang )

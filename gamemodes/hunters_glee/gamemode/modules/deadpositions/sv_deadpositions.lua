@@ -28,6 +28,7 @@ local function sendDeadPlayers()
     for _, data in ipairs( list ) do
         net.WriteEntity( data.ply )
         net.WriteVector( data.pos )
+        net.WriteFloat( data.time )
 
     end
     net.Broadcast()
@@ -76,7 +77,7 @@ hook.Add( "PlayerDeath", "saveResurrectPos", function( victim )
 
     end
 
-    GAMEMODE.deadPlayers[victim:GetCreationID()] = { ply = victim, pos = pos }
+    GAMEMODE.deadPlayers[victim:GetCreationID()] = { ply = victim, pos = pos, time = CurTime() }
     GAMEMODE:QueueDeadPlayersSync()
 
 end )

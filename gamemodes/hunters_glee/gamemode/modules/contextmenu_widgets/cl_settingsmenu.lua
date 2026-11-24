@@ -203,6 +203,32 @@ local settingsCategories = {
                 desc = "How transparent should your own soul be when it's near you",
             },
             {
+                cvar = "cl_huntersglee_spectatewatch",
+                type = "check",
+                prettyName = "AFK camera",
+                desc = "Let a camera take over watching for you, when you're dead and AFK?",
+            },
+            {
+                cvar = "cl_huntersglee_spectatewatch_afktime",
+                type = "slider",
+                min = 0,
+                max = 60,
+                decimals = 0,
+                defaultValue = 15, -- what the -1 default resolves to, see sh_spectatewatching.lua
+                prettyName = "AFK camera timeout",
+                desc = "Don't touch any movement keys while dead for this long, and the AFK camera takes over. Default is -1, which translates to 15",
+            },
+            {
+                cvar = "cl_huntersglee_spectatewatch_afktime_void",
+                type = "slider",
+                min = 0,
+                max = 30,
+                decimals = 0,
+                defaultValue = 1, -- what the -1 default resolves to, see sh_spectatewatching.lua
+                prettyName = "AFK camera timeout (void)",
+                desc = "The same, while you're outside the map. Default is -1, which translates to 1",
+            },
+            {
                 cvar = "cl_huntersglee_unprofitableplacing_gate",
                 type = "check",
                 prettyName = "Place unprofitably without confirming",

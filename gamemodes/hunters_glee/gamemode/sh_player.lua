@@ -14,6 +14,10 @@ function GM:GetBotScaryness( ent, bot ) -- AAH
     local maxScaryness = 1.25
 
     local entsHealth = ent:Health()
+    if entsHealth <= 0 then -- the dead measure like the healthy, the watching camera asks as a dead player
+        entsHealth = ent:GetMaxHealth()
+
+    end
     if entsHealth <= 5 then
         minScaryness = 1.25
 
@@ -73,6 +77,21 @@ end
 
 function meta:HasEscaped()
     return self:GetNWInt( "glee_spectateteam", 0 ) == GAMEMODE.TEAM_ESCAPED
+
+end
+
+GM.CalmBPM = 80 -- resting is 60
+
+-- nothing's chasing them, calm enough to read a hint
+function meta:IsCalm()
+    return self:GetNWInt( "termHuntPlyBPM" ) <= GAMEMODE.CalmBPM
+
+end
+
+-- what killed them this death, NULL while alive, or when nothing else did it
+-- a NW2 var, so other players only see it while this player's in their PVS
+function meta:GetKiller()
+    return self:GetNW2Entity( "glee_Killer" )
 
 end
 
