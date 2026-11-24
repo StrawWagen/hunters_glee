@@ -79,7 +79,7 @@ local maxMarks = 200
 
 local scanColor = Color( 15, 90, 30, 77 ) -- dark green, 70% see through: where the sweep is right now
 local scanLife = 0.2 -- how long the sweep's band hangs on screen after a slice
-local scanSize = 3
+local scanSize = 2
 local scanHead = {} -- the slice fired last frame: first, count, halfCone, points, born
 
 local detected = {} -- [ent] = { pos = where it was last hit, seen = when }
@@ -137,8 +137,6 @@ local function isTarget( ent, me )
     if not IsValid( ent ) or ent == me then return false end
     if ent:IsPlayer() then return ent:Alive() end
     if ent:IsNPC() or ent:IsNextBot() then return ent:Health() > 0 end
-    -- only engine-drawn things are contacts: the evil addons' creatures are left off the haptic
-    -- entirely, they are not a radar target at any range
     return false
 
 end
@@ -170,7 +168,7 @@ local function markColorFor( ent )
 
 end
 
-local function addMark( worldPos, color, ent )
+local function addMark( worldPos, color, ent, bare )
     -- caught again on a later sweep, so it has moved: its blips from the sweeps before this one go,
     -- and the cone shows where it is now instead of the trail behind it. same-sweep hits stay, a
     -- big thing can legitimately be caught on more than one ray
@@ -189,6 +187,7 @@ local function addMark( worldPos, color, ent )
         born = CurTime(),
         ent = ent,
         sweep = sweepPass,
+        bare = bare, -- nothing but the target on that line, see pulse
     }
 
 end
@@ -273,11 +272,22 @@ end
 -- the two axes are separate so the drift can lean: shiftElev in cells down, shiftAz in cells left
 local discCache = {}
 
--- the radar's cone is squashed into a pancake, not a circle: the straight top and bottom run at
--- this fraction of the cone's half width, and the ends stay round. 1 would be the old circle
-local pancakeSquash = 0.3
--- the corners stay softly rounded: radius as a fraction of the pancake's half height
-local pancakeCorner = 0.2
+-- the radar's cone is the circle it always was, with the top and bottom sliced off flat: a band
+-- cut out of that circle. this is how tall the band is, as a fraction of the circle's radius. 1
+-- would be the whole circle again, 0 a line through its middle
+-- the narrow cone is small enough to be the whole circle; the wider ones flatten out to the band
+local bandSquash = 0.3
+local bandFullCone = 10 -- this wide, whole circle
+local bandFlatCone = 40 -- this wide, the band above
+local function bandOf( halfAngle )
+    local cone = math.deg( halfAngle ) * 2
+    if cone <= bandFullCone then return 1 end
+    if cone >= bandFlatCone then return bandSquash end
+
+    local t = ( cone - bandFullCone ) / ( bandFlatCone - bandFullCone )
+    return 1 + ( bandSquash - 1 ) * t
+
+end
 
 -- a direction from its screen-plane offsets: u is y/x (left), v is z/x (up). the normalisation
 -- keeps it a unit vector, and constant v stays level on screen, which is what makes the pancake's
@@ -295,13 +305,13 @@ local function discDirs( halfAngle, count, shiftAz, shiftElev )
     if cached then return cached end
 
     local dirs = {}
-    local halfWidthUV = math.tan( halfAngle )
-    local halfElevUV = halfWidthUV * pancakeSquash
-    local corner = math.min( halfElevUV * pancakeCorner, halfElevUV )
-    local innerU = halfWidthUV - corner
-    local innerV = halfElevUV - corner
-    -- a rounded rectangle in the screen plane: straight sides, small round corners
-    local area = 4 * halfWidthUV * halfElevUV - ( 4 - math.pi ) * corner * corner
+    local radiusUV = math.tan( halfAngle )
+    local halfElevUV = radiusUV * bandOf( halfAngle )
+    -- a band cut from that circle: every row reaches out to the circle's own edge, so the sides
+    -- keep the circle's curve while the top and bottom are flat cuts across it
+    local topU = math.sqrt( math.max( radiusUV * radiusUV - halfElevUV * halfElevUV, 0 ) )
+    local area = 2 * halfElevUV * topU
+        + 2 * radiusUV * radiusUV * math.asin( math.min( halfElevUV / math.max( radiusUV, 1e-9 ), 1 ) )
     local cell = math.sqrt( math.max( area, 1e-6 ) / math.max( count, 1 ) )
     local rows = math.max( 1, math.floor( 2 * halfElevUV / cell + 0.5 ) )
     local rowStep = 2 * halfElevUV / rows
@@ -309,11 +319,8 @@ local function discDirs( halfAngle, count, shiftAz, shiftElev )
     for r = 0, rows - 1 do
         local v = halfElevUV - ( r + 0.5 + shiftElev ) * rowStep
         if math.abs( v ) <= halfElevUV + 1e-9 then
-            -- rows inside the corner band are shortened by the corner circle; the rest run full width
-            local over = math.abs( v ) - innerV
-            local reach = corner
-            if over > 0 then reach = math.sqrt( math.max( corner * corner - over * over, 0 ) ) end
-            local halfWidth = innerU + reach
+            -- the row is only as wide as the circle still is at that height
+            local halfWidth = math.sqrt( math.max( radiusUV * radiusUV - v * v, 0 ) )
             local cols = math.max( 1, math.floor( 2 * halfWidth / cell + 0.5 ) )
             local step = 2 * halfWidth / cols
 
@@ -338,21 +345,22 @@ local function discDirs( halfAngle, count, shiftAz, shiftElev )
 
 end
 
--- the pancake's outline, in the screen plane's offsets. same mapping as the rays, so the line
--- drawn on screen is the boundary they fill: straight sides with small round corners
-local outlineSegments = 20 -- points along each side
-local cornerSegments = 6 -- points on each round corner
+-- the band's outline, in the screen plane's offsets. same mapping as the rays, so the line drawn
+-- on screen is the boundary they fill: the circle's own arc down each side, flat top and bottom
+-- where it was cut
+local outlineSegments = 20 -- points along the flat top and bottom
+local arcSegments = 24 -- points along each side's arc
 local outlineCache = {}
 
 local function pancakeOutline( halfAngle )
     local cached = outlineCache[halfAngle]
     if cached then return cached end
 
-    local halfWidthUV = math.tan( halfAngle )
-    local halfElevUV = halfWidthUV * pancakeSquash
-    local corner = math.min( halfElevUV * pancakeCorner, halfElevUV )
-    local innerU = halfWidthUV - corner
-    local innerV = halfElevUV - corner
+    local radiusUV = math.tan( halfAngle )
+    local halfElevUV = radiusUV * bandOf( halfAngle )
+    -- where the cut meets the circle, as an angle round it
+    local cutAngle = math.asin( math.min( halfElevUV / math.max( radiusUV, 1e-9 ), 1 ) )
+    local topU = radiusUV * math.cos( cutAngle )
     local dirs = {}
 
     local function add( u, v )
@@ -361,32 +369,18 @@ local function pancakeOutline( halfAngle )
     end
 
     for i = 0, outlineSegments do
-        add( -innerU + 2 * innerU * i / outlineSegments, halfElevUV ) -- top, left to right
+        add( -topU + 2 * topU * i / outlineSegments, halfElevUV ) -- top, left to right
     end
-    for i = 1, cornerSegments do
-        local at = math.pi / 2 - ( math.pi / 2 ) * i / cornerSegments
-        add( innerU + corner * math.cos( at ), innerV + corner * math.sin( at ) ) -- top right corner
-    end
-    for i = 1, outlineSegments do
-        add( halfWidthUV, innerV - 2 * innerV * i / outlineSegments ) -- right side, top to bottom
-    end
-    for i = 1, cornerSegments do
-        local at = -( math.pi / 2 ) * i / cornerSegments
-        add( innerU + corner * math.cos( at ), -innerV + corner * math.sin( at ) ) -- bottom right corner
+    for i = 1, arcSegments do
+        local at = cutAngle - 2 * cutAngle * i / arcSegments
+        add( radiusUV * math.cos( at ), radiusUV * math.sin( at ) ) -- right arc, top to bottom
     end
     for i = 1, outlineSegments do
-        add( innerU - 2 * innerU * i / outlineSegments, -halfElevUV ) -- bottom, right to left
+        add( topU - 2 * topU * i / outlineSegments, -halfElevUV ) -- bottom, right to left
     end
-    for i = 1, cornerSegments do
-        local at = -math.pi / 2 - ( math.pi / 2 ) * i / cornerSegments
-        add( -innerU + corner * math.cos( at ), -innerV + corner * math.sin( at ) ) -- bottom left corner
-    end
-    for i = 1, outlineSegments do
-        add( -halfWidthUV, -innerV + 2 * innerV * i / outlineSegments ) -- left side, bottom to top
-    end
-    for i = 1, cornerSegments do
-        local at = math.pi - ( math.pi / 2 ) * i / cornerSegments
-        add( -innerU + corner * math.cos( at ), innerV + corner * math.sin( at ) ) -- top left corner
+    for i = 1, arcSegments do
+        local at = -cutAngle + 2 * cutAngle * i / arcSegments
+        add( -radiusUV * math.cos( at ), radiusUV * math.sin( at ) ) -- left arc, bottom to top
     end
 
     outlineCache[halfAngle] = dirs
@@ -425,11 +419,19 @@ local function pulse( me, wep )
         -- only a ray that ended on a target gets here. a wall, the sky, an exhausted pierce budget
         -- and running out of range all return nothing from castRay, so geometry never leaves a blip
         if hit then
+            -- a second ray up the same bearing, plain: no piercing, no deflection, it stops at the
+            -- first solid. a contact that only came through a wall or off a bent ray still has that
+            -- wall or that thing in the way, so this lands on something other than the target and
+            -- the blip is drawn at full size. a contact with nothing else on the line is a bare
+            -- one, and it gets a single pixel instead
+            local sight = trace( origin, origin + dir * ( wavelength.length or maxRange ), me )
+            local bare = not sight.Hit or sight.Entity == hit
+
             -- the ray bends on every wall it pierces, so hitPos does not sit on the line the wearer
             -- fired along. the blip goes at the closest point of that original line to the contact:
             -- correct bearing, correct depth, and it parallaxes properly as the view moves
             local reach = math.max( ( hitPos - origin ):Dot( dir ), 0 )
-            addMark( origin + dir * reach, markColorFor( hit ), hit )
+            addMark( origin + dir * reach, markColorFor( hit ), hit, bare )
 
         end
 
@@ -529,7 +531,7 @@ local function drawRadar( wep, wearer )
     local eyePos, eyeAng = EyePos(), EyeAngles()
     local halfCone = math.rad( coneOf( wep ) / 2 )
 
-    -- the pancake outline: straight sides with small round corners. every point of it is a direction
+    -- the band outline: the circle's arc down each side, flat top and bottom. every point of it is a direction
     -- a ray can fire along, so the line drawn is exactly the shape the sweep fills
     draw.NoTexture()
     surface.SetDrawColor( coneColor.r, coneColor.g, coneColor.b, coneColor.a )
@@ -572,7 +574,14 @@ local function drawRadar( wep, wearer )
             local alpha = 255 * ( 1 - ( now - mark.born ) / life )
             local color = mark.color
             surface.SetDrawColor( color.r, color.g, color.b, alpha )
-            surface.DrawRect( x - markSize, y - markSize, markSize * 2, markSize * 2 )
+            if mark.bare then
+                -- seen with nothing else on the line: a 2x2 dot, snapped to whole pixels.
+                -- ToScreen hands back fractions, and a rect starting on one loses its edge
+                -- column to the rasteriser, which is what made 2x2 read as a single pixel
+                surface.DrawRect( math.floor( x ), math.floor( y ), 2, 2 )
+            else
+                surface.DrawRect( x - markSize, y - markSize, markSize * 2, markSize * 2 )
+            end
 
             if IsValid( mark.ent ) then
                 local slot = labelSlot[mark.ent]
