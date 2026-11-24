@@ -651,6 +651,42 @@ local function paintWedges( self, style, centerX, centerY, now )
     end
 end
 
+-- a label wider than the wedge it sits in is broken between words: draw.SimpleText draws one line
+-- whatever it is handed and draw.DrawText only honours a written \n, so the breaks are found by
+-- measuring. a single word too wide for the wedge keeps its own line rather than being cut in two
+local function wrappedLines( label, font, maxWidth )
+    surface.SetFont( font )
+
+    local lines = {}
+    local line = ""
+
+    for word in string.gmatch( label, "%S+" ) do
+        local candidate = line == "" and word or line .. " " .. word
+        if line ~= "" and surface.GetTextSize( candidate ) > maxWidth then
+            lines[#lines + 1] = line
+            line = word
+
+        else
+            line = candidate
+
+        end
+    end
+
+    lines[#lines + 1] = line
+
+    return lines
+
+end
+
+-- how much room one line needs, from the font's own letters rather than a guess
+local function lineHeight( font )
+    surface.SetFont( font )
+    local _, height = surface.GetTextSize( "Ag" )
+
+    return height
+
+end
+
 -- each wedge's icon, or its label
 -- coloured like a settings row's text, happy or disabled
 -- the rest dim while one's hovered
@@ -680,7 +716,17 @@ local function paintContents( self, style, centerX, centerY )
                 surface.DrawTexturedRect( x - iconSize * 0.5, y - iconSize * 0.5, iconSize, iconSize )
 
             else
-                draw.SimpleText( item.label or "", font, x, y, color, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
+                -- wrapped into the wedge's own width, so a long label stacks onto a second line
+                -- instead of running under the wedges beside it. stacked about the same middle
+                local width = ( data.inner + data.outer ) * 0.5 * spanRad - gap
+                local lines = wrappedLines( item.label or "", font, width )
+                local height = lineHeight( font )
+                local top = y - ( #lines - 1 ) * height * 0.5
+
+                for i = 1, #lines do
+                    draw.SimpleText( lines[i], font, x, top + ( i - 1 ) * height, color, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
+
+                end
 
             end
         end

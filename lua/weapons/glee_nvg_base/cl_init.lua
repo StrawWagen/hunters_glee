@@ -12,6 +12,7 @@ local lampFarZDefault = 5000 -- every goggle's light reaches this far unless its
 -- keeping it duller than the living is the point: a corpse on the floor should not read as a person
 local ragdollColor = Color( 110, 110, 110 )
 local heatScanInterval = 0.25
+local heatRangeDefault = 3000 -- hammer units: past this a warm thing stops shading over at all
 
 local runSoundDefaultVolume = 0.35
 
@@ -47,10 +48,13 @@ local function scanHeat( me )
     end
 end
 
-local function drawHeat( me, color )
+-- warm things thin out with distance instead of jumping from solid to gone, so a crowd across the
+-- map no longer paints the horizon
+local function drawHeat( me, color, range )
     scanHeat( me )
     if #heatEnts <= 0 then return end
 
+    local eyePos = me:EyePos()
     cam.Start3D()
         render.SuppressEngineLighting( true )
         render.ResetModelLighting( 1, 1, 1 )
@@ -66,16 +70,93 @@ local function drawHeat( me, color )
 
             for _, ent in ipairs( heatEnts ) do
                 if IsValid( ent ) and ent:IsRagdoll() == ragdolls then
-                    ent:DrawModel()
+                    local fade = 1 - ( ent:WorldSpaceCenter() - eyePos ):Length() / range
+                    if fade > 0 then
+                        render.SetBlend( fade )
+                        ent:DrawModel()
 
+                    end
                 end
             end
         end
 
+        render.SetBlend( 1 )
         render.SetColorModulation( 1, 1, 1 )
         render.MaterialOverride()
         render.SuppressEngineLighting( false )
     cam.End3D()
+
+end
+
+
+-- Corner occlusion -----------------------------------------------------------
+
+-- the goggles read as a tube: the picture dims towards the frame, and the corners, where two edges
+-- meet, are darker than either of them. one-pixel strips down the ramp and a plain slab past it, so
+-- the fade is a gradient and not a band
+local vignetteAlpha = 255 -- black
+
+-- how dark a pixel is, from how far out it sits: out of half the screen, so 0 is the middle and the
+-- edge itself is 1
+local function edgeAlpha( out, half, start, finish )
+    local reach = 1 - out / half
+
+    if reach >= finish then return vignetteAlpha end
+    if reach <= start then return 0 end
+
+    local t = ( reach - start ) / ( finish - start )
+    return math.floor( vignetteAlpha * t * t + 0.5 )
+
+end
+
+-- start is where the fade begins and finish where it is solid black, both shares of the way from the
+-- middle of the screen to its edge: { start = 0.5, finish = 0.8 } fades in from halfway out and is
+-- black over the last fifth
+local function drawVignette( vignette )
+    local start = math.Clamp( vignette.start or 0.5, 0, 1 )
+    local finish = math.Clamp( vignette.finish or 1, 0, 1 )
+    if finish <= start then return end
+
+    local w, h = ScrW(), ScrH()
+    local halfW, halfH = w * 0.5, h * 0.5
+
+    -- solid from the edge in to finish, then the ramp, which runs out at start
+    local solidX = math.floor( halfW * ( 1 - finish ) )
+    local solidY = math.floor( halfH * ( 1 - finish ) )
+    local rampX = math.floor( halfW * ( 1 - start ) )
+    local rampY = math.floor( halfH * ( 1 - start ) )
+
+    cam.Start2D()
+        -- each set runs the whole other axis, so the four corners take one of each and come out
+        -- darker than either edge on its own
+        if solidX > 0 then
+            surface.SetDrawColor( 0, 0, 0, vignetteAlpha )
+            surface.DrawRect( 0, 0, solidX, h )
+            surface.DrawRect( w - solidX, 0, solidX, h )
+
+        end
+
+        for out = solidX, rampX - 1 do
+            surface.SetDrawColor( 0, 0, 0, edgeAlpha( out, halfW, start, finish ) )
+            surface.DrawRect( out, 0, 1, h )
+            surface.DrawRect( w - 1 - out, 0, 1, h )
+
+        end
+
+        if solidY > 0 then
+            surface.SetDrawColor( 0, 0, 0, vignetteAlpha )
+            surface.DrawRect( 0, 0, w, solidY )
+            surface.DrawRect( 0, h - solidY, w, solidY )
+
+        end
+
+        for out = solidY, rampY - 1 do
+            surface.SetDrawColor( 0, 0, 0, edgeAlpha( out, halfH, start, finish ) )
+            surface.DrawRect( 0, out, w, 1 )
+            surface.DrawRect( 0, h - 1 - out, w, 1 )
+
+        end
+    cam.End2D()
 
 end
 
@@ -123,7 +204,10 @@ local function drawVision( vision, wearer )
     end
 
     -- after the gain and tint, so warm things keep their exact colour
-    if vision.heatColor then drawHeat( wearer, vision.heatColor ) end
+    if vision.heatColor then drawHeat( wearer, vision.heatColor, vision.heatRange or heatRangeDefault ) end
+
+    -- last, in front of everything seen through the tube
+    if vision.vignette then drawVignette( vision.vignette ) end
 
 end
 

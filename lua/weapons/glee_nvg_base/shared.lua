@@ -30,6 +30,8 @@ SWEP.WornAttachmentPos = Vector( -4, 0, -2 )
 -- bloom = glare around bright spots
 -- tint = the picture is then multiplied by this, black stays black and white becomes this colour
 -- heatColor = draw living npcs, players and nextbots in this colour on top; ragdolls get a flat grey
+-- heatRange = how far from the eyes that heat colour still shows, in hammer units: past it nothing is shaded over
+-- vignette = { start = , finish = } darkens the edges and corners, both shares of the way from the middle of the screen to its edge: start is where the fade begins, finish where it is solid black
 -- runSound, runSoundVolume = a loop that hums while they're down
 SWEP.GleeNVG = {}
 

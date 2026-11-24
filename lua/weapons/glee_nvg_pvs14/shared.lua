@@ -24,6 +24,7 @@ SWEP.GleeNVG = {
     gain = 1, -- no brightening, just the colour pass below
     saturation = 1.5, -- stronger colours
     tint = Color( 230, 230, 255 ),
+    vignette = { start = 0.5, finish = 0.95 }, -- the same tube rim the thermal wears
 }
 
 -- rays = fired per frame, pierce = total hammer units of solid each can go through before it stops,
@@ -48,7 +49,7 @@ SWEP.MarkLife = 10
 -- Low carries the old Max density, and the rest are stepped up from it
 SWEP.Resolutions = {
     { name = "Low", points = 1920 },
-    { name = "Standard", points = 3840 },
+    { name = "Medium", points = 3840 },
     { name = "High", points = 7680 },
     { name = "Max", points = 15360 },
 }
@@ -68,6 +69,11 @@ function SWEP:Initialize()
     self:SetWavelength( 1 )
     self:SetCone( 1 )
 
+    -- on out of the box: the radar is the goggles' whole point, and a wearer who has never opened the
+    -- wheel should still see it. server only, since the value is networked and the client would be
+    -- writing over what the server is already sending it
+    if SERVER then self:SetRadarOn( true ) end
+
     -- by name, so the default stays Medium if the list is ever reordered
     for i, wavelength in ipairs( self.Wavelengths ) do
         if wavelength.name == "Medium" then
@@ -77,10 +83,10 @@ function SWEP:Initialize()
         end
     end
 
-    -- by name, so the default stays Standard if the list is ever reordered
+    -- by name, so the default stays Medium if the list is ever reordered
     self:SetResolution( 1 )
     for i, resolution in ipairs( self.Resolutions ) do
-        if resolution.name == "Standard" then
+        if resolution.name == "Medium" then
             self:SetResolution( i )
             break
 

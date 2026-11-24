@@ -22,9 +22,9 @@ local function resolutionOf( wep )
     local resolution = resolutions[wep:GetResolution()]
     if resolution then return resolution end
 
-    -- an unset index falls back to Standard rather than whatever happens to be first
+    -- an unset index falls back to Medium rather than whatever happens to be first
     for _, other in ipairs( resolutions ) do
-        if other.name == "Standard" then return other end
+        if other.name == "Medium" then return other end
 
     end
     return resolutions[1]
@@ -37,18 +37,13 @@ end
 function SWEP:GetWheelActions()
     local actions = BaseClass.GetWheelActions( self )
 
-    local wavelengths = self.Wavelengths
-    local nextIndex = self:GetWavelength() % #wavelengths + 1
-    local cones = self.Cones
-    local nextCone = self:GetCone() % #cones + 1
-    local resolutions = self.Resolutions
-    local nextResolution = self:GetResolution() % #resolutions + 1
-
+    -- the value each is set to now, nothing about what picking would change it to: the wheel is a
+    -- readout, and an entry that tried to say both ran past its wedge
     table.Add( actions, {
         { key = "radar", label = "Radar: " .. ( self:GetRadarOn() and "On" or "Off" ) },
-        { key = "wavelength", label = "Wl: " .. wavelengthOf( self ).name .. " > " .. wavelengths[nextIndex].name },
-        { key = "cone", label = "Cone: " .. coneOf( self ) .. "° > " .. cones[nextCone] .. "°" },
-        { key = "resolution", label = "Res: " .. resolutionOf( self ).name .. " > " .. resolutions[nextResolution].name },
+        { key = "wavelength", label = "Wl: " .. wavelengthOf( self ).name },
+        { key = "resolution", label = "Res: " .. resolutionOf( self ).name },
+        { key = "cone", label = "Cone: " .. coneOf( self ) .. "°" },
     } )
 
     return actions
@@ -80,6 +75,14 @@ local maxMarks = 200
 local scanColor = Color( 15, 90, 30, 77 ) -- dark green, 70% see through: where the sweep is right now
 local scanLife = 0.2 -- how long the sweep's band hangs on screen after a slice
 local scanSize = 2
+-- the cone's edge, in three rings: the thick one on the cone's own line, then two thinner ones a
+-- 4px gap outside each. offsets are from the cone's own line to the middle of the ring, so the
+-- clear space stays even whatever the widths are
+local coneRings = {
+    { offset = 0, width = 3 },
+    { offset = 6.5, width = 2 },
+    { offset = 12, width = 1 },
+}
 local scanHead = {} -- the slice fired last frame: first, count, halfCone, points, born
 
 local detected = {} -- [ent] = { pos = where it was last hit, seen = when }
@@ -547,6 +550,82 @@ end
 -- the cone's edge around the crosshair, and a mark where each ray touched what it found. blips sit
 -- in world space, so moving the view shifts them by their distance: close targets slide fast, far
 -- ones barely move, which is where the depth in the radar comes from
+
+-- surface.DrawLine is one pixel wide whatever it is handed, so a ring of width n is n of them side
+-- by side, and a line is the one shape this hud already draws with. the points they run between sit
+-- on each vertex's bisector rather than on each segment's own normal: the end of one segment and the
+-- start of the next are then the same point, so a corner has nothing to leave open. 1/cos of half
+-- the turn is how much further along that bisector an offset has to sit to stay the same distance
+-- from the cone's line round the corner, clamped so a hairpin cannot throw a spike across the screen
+local function segmentNormal( from, to, axisX, axisY )
+    local dx, dy = to.x - from.x, to.y - from.y
+    local length = math.sqrt( dx * dx + dy * dy )
+    if length < 0.001 then return end
+
+    local nx, ny = dy / length, -dx / length
+    if nx * ( from.x - axisX ) + ny * ( from.y - axisY ) < 0 then nx, ny = -nx, -ny end
+    return nx, ny
+
+end
+
+local miterX, miterY, miterScale = {}, {}, {}
+
+local function miterLoop( points, axisX, axisY )
+    local last = #points
+
+    for i = 1, last do
+        local point = points[i]
+        local inX, inY = segmentNormal( points[( i - 2 ) % last + 1], point, axisX, axisY )
+        local outX, outY = segmentNormal( point, points[i % last + 1], axisX, axisY )
+
+        inX, inY = inX or outX, inY or outY
+        outX, outY = outX or inX, outY or inY
+
+        if not inX then
+            miterX[i], miterY[i], miterScale[i] = 0, 0, 0
+
+        else
+            local mx, my = inX + outX, inY + outY
+            local length = math.sqrt( mx * mx + my * my )
+
+            if length > 0.001 then
+                mx, my = mx / length, my / length
+                miterX[i], miterY[i] = mx, my
+                miterScale[i] = 1 / math.max( mx * inX + my * inY, 0.4 )
+
+            else
+                miterX[i], miterY[i], miterScale[i] = outX, outY, 1
+
+            end
+        end
+    end
+
+end
+
+-- one ring of the edge: a line per pixel of its width, each walking the same loop a pixel further
+-- out. offsets are snapped to whole pixels, because a line laid down on a fraction of one covers
+-- two of them at half strength and the ring reads thicker than it is
+local function drawRing( points, ring )
+    local last = #points
+    local first = math.floor( ring.offset - ( ring.width - 1 ) * 0.5 + 0.5 )
+
+    for pixel = 0, ring.width - 1 do
+        local reach = first + pixel
+
+        for i = 1, last do
+            local j = i % last + 1
+            local from = reach * miterScale[i]
+            local to = reach * miterScale[j]
+
+            surface.DrawLine(
+                points[i].x + miterX[i] * from, points[i].y + miterY[i] * from,
+                points[j].x + miterX[j] * to, points[j].y + miterY[j] * to )
+        end
+    end
+
+end
+
+
 local function drawRadar( wep, wearer )
     if not radarRunning( wep, wearer ) then return end
 
@@ -554,19 +633,40 @@ local function drawRadar( wep, wearer )
     local eyePos, eyeAng = EyePos(), EyeAngles()
     local halfCone = math.rad( coneOf( wep ) / 2 )
 
-    -- the band outline: the circle's arc down each side, flat top and bottom. every point of it is a direction
-    -- a ray can fire along, so the line drawn is exactly the shape the sweep fills
-    draw.NoTexture()
-    surface.SetDrawColor( coneColor.r, coneColor.g, coneColor.b, coneColor.a )
-    local prevX, prevY
+    -- the band outline: the circle's arc down each side, flat top and bottom. every point of it is a
+    -- direction a ray can fire along, so the rings drawn are exactly the shape the sweep fills
+    local outline = {}
     for _, localDir in ipairs( pancakeOutline( halfCone ) ) do
         local x, y = outlineDirToScreen( LocalToWorld( localDir, angle_zero, vector_origin, eyeAng ), eyePos, eyeAng )
-        if x and prevX then
-            surface.DrawLine( prevX, prevY, x, y )
+        if x then
+            local previous = outline[#outline]
+            -- the generator ends where it started, so the last point is the first point's neighbour
+            -- and not a second copy of it: counted once, the loop closes with one segment rather
+            -- than none
+            if not previous or math.abs( x - previous.x ) > 0.01 or math.abs( y - previous.y ) > 0.01 then
+                outline[#outline + 1] = { x = x, y = y }
 
+            end
         end
-        prevX, prevY = x, y
 
+    end
+
+    -- the generator ends where it started, so the last point is a second copy of the first: dropped,
+    -- because a zero-length segment has no direction to lay a ring's width along
+    if #outline > 1 then
+        local first, final = outline[1], outline[#outline]
+        if math.abs( first.x - final.x ) < 0.01 and math.abs( first.y - final.y ) < 0.01 then
+            outline[#outline] = nil
+        end
+    end
+
+    draw.NoTexture()
+    surface.SetDrawColor( coneColor.r, coneColor.g, coneColor.b, coneColor.a )
+    local forwardX, forwardY = outlineDirToScreen( eyeAng:Forward(), eyePos, eyeAng )
+    local axisX, axisY = forwardX or ScrW() * 0.5, forwardY or ScrH() * 0.5
+    miterLoop( outline, axisX, axisY )
+    for _, ring in ipairs( coneRings ) do
+        drawRing( outline, ring )
     end
 
     local now = CurTime()
