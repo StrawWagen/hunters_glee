@@ -56,22 +56,37 @@ local function drawHeat( me, color, range )
 
     local eyePos = me:EyePos()
     cam.Start3D()
+        -- the 3D state belongs to the frame, not to this pass: hooks that draw things earlier in it can
+        -- leave blend, depth, cull and colour behind, and clear them only when they run again, a frame
+        -- later. start from the engine's own defaults so nothing spawned elsewhere can clip, tint or
+        -- blend the heat
+        render.SetStencilEnable( false )
+        render.SetScissorRect( 0, 0, 0, 0, false )
+        render.OverrideDepthEnable( false, false )
+        render.OverrideColorWriteEnable( false, false )
+        render.OverrideAlphaWriteEnable( false, false )
+        render.OverrideBlend( false )
+        render.CullMode( MATERIAL_CULLMODE_CCW )
+        render.DepthRange( 0, 1 )
         render.SuppressEngineLighting( true )
         render.ResetModelLighting( 1, 1, 1 )
-        render.MaterialOverride( white )
-        render.SetBlend( 1 )
 
         -- two passes, warm first then the grey dead, since the colour modulation is one setting for
         -- the whole draw call
         for pass = 1, 2 do
             local ragdolls = pass == 2
             local shade = ragdolls and ragdollColor or color
-            render.SetColorModulation( shade.r / 255, shade.g / 255, shade.b / 255 )
+            local red, green, blue = shade.r / 255, shade.g / 255, shade.b / 255
 
             for _, ent in ipairs( heatEnts ) do
                 if IsValid( ent ) and ent:IsRagdoll() == ragdolls then
                     local fade = 1 - ( ent:WorldSpaceCenter() - eyePos ):Length() / range
                     if fade > 0 then
+                        -- set again per entity rather than once for the pass: model drawing in this
+                        -- pack tends to hand these back as defaults instead of what it found, which
+                        -- leaves every one drawn after it in the wrong colour or the wrong material
+                        render.MaterialOverride( white )
+                        render.SetColorModulation( red, green, blue )
                         render.SetBlend( fade )
                         ent:DrawModel()
 
@@ -282,13 +297,23 @@ function SWEP.SetupWear( wear )
 
     -- CreateMove, not PrimaryAttack, that never runs clientside in singleplayer
     local attackWasDown = false
+    local wasActive, cameToHand = false, 0
     local wheel
 
+    -- a click that lands as they come to hand is not for them: it is the same click that asked for the
+    -- swap, as picking a weapon off a slot bar is, and it used to flip these on its way through
+    local settleTime = 0.2
+
     wear:Hook( "CreateMove", function( wep, cmd )
+        local active = wearer:GetActiveWeapon() == wep
+        if active and not wasActive then cameToHand = CurTime() end
+        wasActive = active
+
         local attackDown = cmd:KeyDown( IN_ATTACK )
         if attackDown == attackWasDown then return end
         attackWasDown = attackDown
 
+        -- releasing always comes through: a wheel opened on the press still has to close
         if not attackDown then
             if IsValid( wheel ) then wheel:Release() end
             wheel = nil
@@ -296,7 +321,11 @@ function SWEP.SetupWear( wear )
 
         end
 
-        if wearer:GetActiveWeapon() ~= wep or not wearer:Alive() or wearer:InVehicle() then return end
+        if not active or CurTime() - cameToHand < settleTime then return end
+        -- the cursor is a panel's, so the click is going to that and not to what's in hand: the slot
+        -- bar picks with it, and the click that picks the tool used to reach these first
+        if vgui.CursorVisible() or gui.IsGameUIVisible() then return end
+        if not wearer:Alive() or wearer:InVehicle() then return end
 
         -- one action just runs, several open the wheel, as glee_carrying's use does
         local actions = wep:GetWheelActions()

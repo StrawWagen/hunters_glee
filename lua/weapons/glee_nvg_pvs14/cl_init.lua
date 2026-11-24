@@ -76,13 +76,32 @@ local scanColor = Color( 15, 90, 30, 77 ) -- dark green, 70% see through: where 
 local scanLife = 0.2 -- how long the sweep's band hangs on screen after a slice
 local scanSize = 2
 -- the cone's edge, in three rings: the thick one on the cone's own line, then two thinner ones a
--- 4px gap outside each. offsets are from the cone's own line to the middle of the ring, so the
--- clear space stays even whatever the widths are
+-- 4px gap outside each at 1080p. offsets are from the cone's own line to the middle of the ring, so
+-- the clear space stays even whatever the widths are
 local coneRings = {
     { offset = 0, width = 3 },
     { offset = 6.5, width = 2 },
     { offset = 12, width = 1 },
 }
+
+-- a ring's width is a count of one-pixel lines, not a length, so it cannot be scaled after the fact:
+-- the set for a given scale is built once and handed back, one entry per ring either way
+local coneRingsScaled, coneRingsScale
+local function ringsFor( scale )
+    if coneRingsScale == scale then return coneRingsScaled end
+
+    coneRingsScale, coneRingsScaled = scale, {}
+
+    for i, ring in ipairs( coneRings ) do
+        coneRingsScaled[i] = {
+            offset = ring.offset * scale,
+            width = math.max( 1, math.floor( ring.width * scale + 0.5 ) ),
+        }
+    end
+
+    return coneRingsScaled
+
+end
 local scanHead = {} -- the slice fired last frame: first, count, halfCone, points, born
 
 local detected = {} -- [ent] = { pos = where it was last hit, seen = when }
@@ -524,26 +543,50 @@ local function nameOf( ent )
 
 end
 
--- the blip labels' face follows the hl2 style's, so changing glee's font moves them too. Their
--- sizes stay the radar's own: the labels are pinned to world points, not laid out in a hud box
+-- everything the radar paints is sized in pixels against a 1080p screen: the blips and the labels
+-- then keep the same weight at any resolution instead of shrinking into the picture as it grows
+local function hudScale()
+    return math.Clamp( ScrH() / 1080, 0.75, 2.5 )
+
+end
+
+-- the blip labels' face follows the hl2 style's, so changing glee's font moves them too. sizes and
+-- offsets scale off the screen height against 1080p: the labels are pinned to world points rather
+-- than laid out in a hud box, so without this they would read smaller with every step up in
+-- resolution, while the wheel beside them grew
 local labelFace = nil
 local labelNameFont = "DermaDefaultBold"
 local labelDistFont = "DermaDefault"
+local labelBuiltSize, labelBuiltScale
+
+-- the label's own sizes and distances at 1080p: the two faces, how far right of the blip it sits,
+-- and how far each line drops
+local labelNameSize, labelDistSize = 20, 18
+local labelGap, labelNameDrop, labelDistDrop = 10, 9, 13
 
 local function labelFonts()
+    local scale = hudScale()
+    local nameSize = math.max( 10, math.floor( labelNameSize * scale + 0.5 ) )
+    local distSize = math.max( 9, math.floor( labelDistSize * scale + 0.5 ) )
+
     if not terminator_Extras or not terminator_Extras.glee_Style then
-        return labelNameFont, labelDistFont
+        return labelNameFont, labelDistFont, 1
 
     end
 
     local face = terminator_Extras.glee_Style( "hl2" ):Settings().fontName
-    if face == labelFace then return labelNameFont, labelDistFont end
+    if face == labelFace and nameSize == labelBuiltSize then
+        return labelNameFont, labelDistFont, labelBuiltScale
 
-    labelFace = face
-    labelNameFont, labelDistFont = "glee_nvg_haptic_name", "glee_nvg_haptic_dist"
-    surface.CreateFont( labelNameFont, { font = face, size = 20, weight = 700, antialias = true } )
-    surface.CreateFont( labelDistFont, { font = face, size = 18, weight = 400, antialias = true } )
-    return labelNameFont, labelDistFont
+    end
+
+    -- a font is baked at one size, so a new screen height means a new pair: naming them after the
+    -- size keeps the old pair from being handed back by a stale name
+    labelFace, labelBuiltSize, labelBuiltScale = face, nameSize, scale
+    labelNameFont, labelDistFont = "glee_nvg_haptic_name_" .. nameSize, "glee_nvg_haptic_dist_" .. distSize
+    surface.CreateFont( labelNameFont, { font = face, size = nameSize, weight = 700, antialias = true } )
+    surface.CreateFont( labelDistFont, { font = face, size = distSize, weight = 400, antialias = true } )
+    return labelNameFont, labelDistFont, scale
 
 end
 
@@ -664,12 +707,19 @@ local function drawRadar( wep, wearer )
     surface.SetDrawColor( coneColor.r, coneColor.g, coneColor.b, coneColor.a )
     local forwardX, forwardY = outlineDirToScreen( eyeAng:Forward(), eyePos, eyeAng )
     local axisX, axisY = forwardX or ScrW() * 0.5, forwardY or ScrH() * 0.5
+    local scale = hudScale()
     miterLoop( outline, axisX, axisY )
-    for _, ring in ipairs( coneRings ) do
+    for _, ring in ipairs( ringsFor( scale ) ) do
         drawRing( outline, ring )
     end
 
     local now = CurTime()
+    -- the marks are pixel dots, so they take the same 1080p scale the labels do: at 1080p they keep
+    -- the sizes they were tuned at, and on a taller screen they grow so a blip still reads as a
+    -- dot of the same weight against the picture rather than shrinking into it
+    local scanPixel = math.max( 1, math.floor( scanSize * scale + 0.5 ) )
+    local markPixel = math.max( 2, math.floor( markSize * scale + 0.5 ) )
+    local barePixel = math.max( 2, math.floor( 2 * scale + 0.5 ) )
 
     -- the band of points the sweep is currently working through, fading out behind it
     if scanHead.born and now - scanHead.born < scanLife then
@@ -682,7 +732,7 @@ local function drawRadar( wep, wearer )
             -- the band belongs to the sweep that made it, at the angle the wearer was facing then
             local bandDir = LocalToWorld( localDir, angle_zero, vector_origin, scanHead.ang or eyeAng )
             local x, y = viewDirToScreen( bandDir, eyePos, eyeAng )
-            if x then surface.DrawRect( x - scanSize, y - scanSize, scanSize * 2, scanSize * 2 ) end
+            if x then surface.DrawRect( x - scanPixel, y - scanPixel, scanPixel * 2, scanPixel * 2 ) end
 
         end
     end
@@ -701,9 +751,9 @@ local function drawRadar( wep, wearer )
                 -- seen with nothing else on the line: a 2x2 dot, snapped to whole pixels.
                 -- ToScreen hands back fractions, and a rect starting on one loses its edge
                 -- column to the rasteriser, which is what made 2x2 read as a single pixel
-                surface.DrawRect( math.floor( x ), math.floor( y ), 2, 2 )
+                surface.DrawRect( math.floor( x ), math.floor( y ), barePixel, barePixel )
             else
-                surface.DrawRect( x - markSize, y - markSize, markSize * 2, markSize * 2 )
+                surface.DrawRect( x - markPixel, y - markPixel, markPixel * 2, markPixel * 2 )
             end
 
             if IsValid( mark.ent ) then
@@ -723,7 +773,7 @@ local function drawRadar( wep, wearer )
         end
     end
 
-    local nameFont, distFont = labelFonts()
+    local nameFont, distFont, labelScale = labelFonts()
 
     for _, label in ipairs( labels ) do
         local name = nameOf( label.ent )
@@ -731,14 +781,14 @@ local function drawRadar( wep, wearer )
             -- the outline fades with the text: left on full black it outlives the glyphs and reads
             -- as black text at the end of the fade instead of nothing at all
             local alpha = math.Clamp( 255 * ( 1 - ( now - label.born ) / life ), 0, 255 )
-            draw.SimpleTextOutlined( name, nameFont, label.x + 10, label.y - 9,
+            draw.SimpleTextOutlined( name, nameFont, label.x + labelGap * labelScale, label.y - labelNameDrop * labelScale,
                 Color( label.color.r, label.color.g, label.color.b, alpha ),
                 TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, 1, Color( 0, 0, 0, alpha ) )
 
             -- hammer units from the eye to where the blip actually sits, recomputed as the wearer
             -- moves so the number tracks the blip's range instead of the moment it was found
             local dist = math.Round( eyePos:Distance( label.pos ) )
-            draw.SimpleTextOutlined( dist .. "u", distFont, label.x + 10, label.y + 13,
+            draw.SimpleTextOutlined( dist .. "u", distFont, label.x + labelGap * labelScale, label.y + labelDistDrop * labelScale,
                 Color( label.color.r, label.color.g, label.color.b, alpha ),
                 TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, 1, Color( 0, 0, 0, alpha ) )
 
