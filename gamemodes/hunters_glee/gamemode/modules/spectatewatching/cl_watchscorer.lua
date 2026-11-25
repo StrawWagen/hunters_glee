@@ -8,7 +8,7 @@ local tune = {
 
     baseScore = 100, -- a quiet player doing nothing much. Hunters never score above this
     spokeRecently = 100, -- talked at all in the last GM.VoiceStatsWindow seconds
-    perTalkSecond = 2, -- each second they talked in that window
+    perTalkSecond = 6, -- each second they talked in that window
     micspamAbove = 0.9, -- talking more than this much of the window...
     micspamMul = 0.25, -- ...scales the talk seconds by this. Micspam isn't as fun as people talking
     lowHealth = 150, -- at 0% health, down to nothing at full
