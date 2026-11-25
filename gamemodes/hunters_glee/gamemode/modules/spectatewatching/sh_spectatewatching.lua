@@ -135,9 +135,9 @@ elseif CLIENT then
     CreateClientConVar( "huntersglee_debug_spectatewatching", 0, false, false, "Draw the watching camera's targets, spots and aim. Needs developer 1", 0, 1 )
 
     local enabledVar = CreateClientConVar( "cl_huntersglee_spectatewatch", 1, true, false,
-        "Let the AFK camera take over watching for you, when you're dead and AFK?", 0, 1 )
+        "Become transfixed when you're dead and AFK? A camera takes over watching for you", 0, 1 )
     local idleToWatchVar = CreateClientConVar( "cl_huntersglee_spectatewatch_afktime", -1, true, false,
-        "Seconds dead and AFK in free roam before the camera starts watching for you, -1 for default, " .. idleToWatch, -1 )
+        "Seconds dead and AFK in free roam before you become transfixed, -1 for default, " .. idleToWatch, -1 )
     local idleInVoidVar = CreateClientConVar( "cl_huntersglee_spectatewatch_afktime_void", -1, true, false,
         "The same, while you're in a wall or the void, -1 for default, " .. idleInVoid, -1 )
 

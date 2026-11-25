@@ -2,8 +2,9 @@
     Who you are watching, or what you have taken over, in a box across the top of the
     screen while you are dead.
 
-    A glee_hudbox like the top left lane's, so it reads as the same hud. It never
-    fades: it is either showing who you are watching or it is gone.
+    A glee_hudbox like the top left lane's, so it reads as the same hud. It is either
+    showing who you are watching or it is gone.
+    Except while transfixed, then it fades with the camera's grip, in as it tightens, out as you fight it.
 
     Label and name are painted here rather than set as one string, because they can be
     in different fonts. See nameFontRole.
@@ -41,6 +42,13 @@ local function createBox()
     box.label = ""
     box.watched = ""
     box.watchedHasNick = false
+    box.gripFade = 1
+
+    local hudboxFade = box.GetFade
+    function box:GetFade()
+        return hudboxFade( self ) * self.gripFade
+
+    end
 
     -- the box's content colour, faded. Nothing sets it, so it's the "happy" role
     function box:PaintContent( w, _h, textColor )
@@ -91,20 +99,25 @@ local function hasNick( ent )
 
 end
 
--- What a dead player is watching, and the word for it. Nothing when there's nothing to watch.
+local transfixedFullyShownAtGrip = 0.5 -- transfixed, the box is fully shown once the camera's grip is this tight, see GM:SpectateWatchingRamp
+
+-- What a dead player is watching, the word for it, and how faded the box showing it is, 0 to 1. Nothing when there's nothing to watch.
 -- Driving first: spectate targets don't update while you drive, so that one is stale
 function GM:WhoImWatching( ply )
     local driven = ply:GetDrivingEntity()
-    if IsValid( driven ) then return driven, "Posessing" end
+    if IsValid( driven ) then return driven, "Posessing", 1 end
 
     if GAMEMODE:IsSpectateWatching() then
         local watched = GAMEMODE:WatchedPerson()
-        if IsValid( watched ) then return watched, "Watching" end
+        if IsValid( watched ) then
+            local transfixedFade = math.min( GAMEMODE:SpectateWatchingRamp() / transfixedFullyShownAtGrip, 1 )
+            return watched, "Transfixed by...", transfixedFade
 
+        end
     end
 
     local observed = ply:GetObserverTarget()
-    if IsValid( observed ) then return observed, "Spectating" end
+    if IsValid( observed ) then return observed, "Spectating", 1 end
 
 end
 
@@ -118,7 +131,7 @@ end
 hook.Add( "glee_cl_deadplyhud", "glee_whowespectating_draw", function( ply, _cur )
     if not IsValid( box ) then return end
 
-    local watched, label = GAMEMODE:WhoImWatching( ply )
+    local watched, label, fade = GAMEMODE:WhoImWatching( ply )
     if not watched or not GAMEMODE:CanShowDefaultHud() then
         hideBox()
         return
@@ -132,6 +145,7 @@ hook.Add( "glee_cl_deadplyhud", "glee_whowespectating_draw", function( ply, _cur
     box.label = label
     box.watched = inBossSlot and "" or GAMEMODE:GetNameOfBot( watched )
     box.watchedHasNick = hasNick( watched )
+    box.gripFade = fade
     sizeBox()
     box:SetState( box.STATE_NORMAL )
 

@@ -205,8 +205,8 @@ local settingsCategories = {
             {
                 cvar = "cl_huntersglee_spectatewatch",
                 type = "check",
-                prettyName = "AFK camera",
-                desc = "Let a camera take over watching for you, when you're dead and AFK?",
+                prettyName = "Transfixing",
+                desc = "Become transfixed by the Embodied souls when you're dead and AFK? Move to snap out of it.",
             },
             {
                 cvar = "cl_huntersglee_spectatewatch_afktime",
@@ -215,8 +215,8 @@ local settingsCategories = {
                 max = 60,
                 decimals = 0,
                 defaultValue = 15, -- what the -1 default resolves to, see sh_spectatewatching.lua
-                prettyName = "AFK camera timeout",
-                desc = "Don't touch any movement keys while dead for this long, and the AFK camera takes over. Default is -1, which translates to 15",
+                prettyName = "Transfixed after",
+                desc = "Seconds dead without pressing, moving or looking around. Default is -1, which translates to 15",
             },
             {
                 cvar = "cl_huntersglee_spectatewatch_afktime_void",
@@ -225,14 +225,14 @@ local settingsCategories = {
                 max = 30,
                 decimals = 0,
                 defaultValue = 1, -- what the -1 default resolves to, see sh_spectatewatching.lua
-                prettyName = "AFK camera timeout (void)",
-                desc = "The same, while you're outside the map. Default is -1, which translates to 1",
+                prettyName = "Transfixed after (void)",
+                desc = "The same, while you're in a wall or outside the map. Default is -1, which translates to 1",
             },
             {
                 cvar = "cl_huntersglee_spectatewatch_names",
                 type = "check",
-                prettyName = "AFK camera player names",
-                desc = "Draw player names on the HUD while the AFK camera's watching?",
+                prettyName = "Names while Transfixed",
+                desc = "Draw player names on the HUD while you're transfixed?",
             },
             {
                 cvar = "cl_huntersglee_unprofitableplacing_gate",
