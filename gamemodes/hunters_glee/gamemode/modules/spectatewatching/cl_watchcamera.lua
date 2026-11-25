@@ -38,6 +38,7 @@ local tune = {
     viewDistSoftMax = 250, -- drifting, further than this from a target it can see, the camera creeps in...
     creepPerUnit = 4, -- ...this fast per unit past it. Too small a change for a spot's score to bother with
     creepMaxSpeed = 150,
+    unseenPerUnit = 2, -- can't see them, score lost per unit away, so it keeps closing in
     elevation = 15, -- degrees above or below the target that spots prefer, looking straight up or down spins the view
 
     -- going round the target, drifting and seeing them, see updateSwing
@@ -558,13 +559,20 @@ local function elevationOff( spot )
 
 end
 
--- drifting, a viewing range from the target, and moving is cheap
+-- drifting, a viewing range from the target, and moving is cheap.
+-- Can't see them, closer is better inside the range too, or it sits still a floor below them
 local function driftScore( spot )
     local dist = spot:Distance( watchPos ) - targetExtent
     local outOfRange = math.max( 0, tune.viewDistMin - dist, dist - tune.viewDistMax )
     local bands = outOfRange / ( tune.viewDistMax - tune.viewDistMin ) -- never capped, far off, every step closer has to count
 
     local score = -bands * tune.outOfRangePenalty
+    if not camSeesTarget then
+        -- capped at the range, more would outweigh the void's cost, and it'd dig through everything
+        local distInRange = math.Clamp( dist, tune.viewDistMin, tune.viewDistMax ) - tune.viewDistMin
+        score = score - distInRange * tune.unseenPerUnit
+
+    end
     score = score - math.min( spot:Distance( camPos ) / searchReach, 1 ) * tune.travelPenalty
 
     return score

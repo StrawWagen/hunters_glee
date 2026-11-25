@@ -228,7 +228,9 @@ elseif CLIENT then
     --]]---------------------------------------------------------
     function GM:StartSpectateWatching()
         if not enabledVar:GetBool() then return end
-        if LocalPlayer():Health() > 0 then return end
+        local me = LocalPlayer()
+        if not IsValid( me ) then return end -- the server's ask can land before we've loaded in, being idle starts it soon enough
+        if me:Health() > 0 then return end
         if watching then return end
 
         startWatching()
