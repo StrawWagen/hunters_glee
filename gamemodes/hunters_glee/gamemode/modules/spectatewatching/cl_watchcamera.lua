@@ -634,7 +634,7 @@ local function scoreSpot( spot, seesTarget )
         if seesTarget then
             score = score + tune.losScore
 
-            if GAMEMODE:WatchCanSee( spot, watchPos, watchBody, MASK_SOLID_BRUSHONLY ) then
+            if GAMEMODE:WatchCanSee( spot, watchPos, watchBody, MASK_SOLID ) then
                 score = score + tune.clearLosScore
 
             end
