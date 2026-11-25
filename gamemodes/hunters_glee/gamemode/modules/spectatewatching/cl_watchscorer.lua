@@ -12,8 +12,8 @@ local tune = {
     micspamAbove = 0.9, -- talking more than this much of the window...
     micspamMul = 0.25, -- ...scales the talk seconds by this. Micspam isn't as fun as people talking
     lowHealth = 150, -- at 0% health, down to nothing at full
-    firstSkull = 150, -- having any skulls at all
-    perSkull = 20, -- each skull after the first
+    firstSkull = 100, -- having any skulls at all
+    perSkull = 10, -- each skull after the first
     calm = -50, -- nothing's chasing them, see ply:IsCalm()
     escapeFlareMul = 2, -- carrying an escape flare gun, they might be about to escape. Times everything above
     ownerlessSkull = 100, -- skulls nobody died for, whose owner left, or from an earlier death of theirs
@@ -44,7 +44,9 @@ local tune = {
     aimFadeFrom = 0.5, -- fraction of their aim radius where their pull starts fading out
     currentAimWeight = 2, -- the current target's pull, times its score
     nearbySlack = 300, -- targets this much past their aim radius are kept for the aim point too, they move between passes
-    obscuredAimMul = 0.25, -- pull of nearby targets the camera can't see, looking at a wall isn't watching them
+    obscuredAimMul = 0.15, -- pull of nearby targets the camera can't see, on the aim. Looking at a wall isn't watching them
+    obscuredGroupMul = 0.25, -- the same, on the group's spot
+    groupHeightMul = 2, -- height counts this much more towards the group's distance, mentos shaped, someone a floor away isn't with them
     aimLosInterval = 0.25, -- seconds between line of sight checks on each nearby target
     companyRadius = 500, -- a living player pulling the aim this close to the current target is company. The camera settles with company, orbits and pulls in on skulls without
 
@@ -80,8 +82,9 @@ local nextPass = 0
 
 --[[ Line of sight ]]
 
+local seeThroughMask = bit.bor( CONTENTS_SOLID, CONTENTS_MOVEABLE ) -- see through windows and grates
+
 local losTrace = {
-    mask = bit.bor( CONTENTS_SOLID, CONTENTS_MOVEABLE ), -- see through windows and grates
     mins = Vector( 0, 0, 0 ),
     maxs = Vector( 0, 0, 0 ),
 }
@@ -118,9 +121,11 @@ end
     @param from: Vector
     @param to: Vector
     @param ent: What's at to, nil for an empty spot. The trace ignores it, and narrows to fit it
+    @param mask: Optional, sees through windows and grates without one.
+        Some maps build solid looking things out of grates, lifts included. MASK_SOLID_BRUSHONLY sees through nothing.
     @return boolean
 --]]---------------------------------------------------------
-function GM:WatchCanSee( from, to, ent )
+function GM:WatchCanSee( from, to, ent, mask )
     if not IsValid( ent ) then
         ent = nil
 
@@ -132,6 +137,7 @@ function GM:WatchCanSee( from, to, ent )
     losTrace.start = from
     losTrace.endpos = to
     losTrace.filter = ent
+    losTrace.mask = mask or seeThroughMask
     return not util.TraceHull( losTrace ).Hit
 
 end
@@ -588,16 +594,23 @@ local function aimSees( camPos, ent, cur )
 
 end
 
+-- full pull inside aimFadeFrom, none at the radius, so walking across it doesn't jerk the aim
+local function pullFade( dist, radius )
+    local fadeFrom = radius * tune.aimFadeFrom
+    return math.Clamp( ( radius - dist ) / ( radius - fadeFrom ), 0, 1 )
+
+end
+
 --[[---------------------------------------------------------
     GM:WatchAimPoint
     @desc Where the camera should look this frame, and where the group it's watching is.
         Both are the current target, pulled towards anything interesting nearby.
-        The aim point pulls less towards what the camera can't see, so it moves when the camera does.
-        The group's spot doesn't care what the camera sees, so moving the camera never moves it. Move the camera relative to that one.
+        Both pull less towards what the camera can't see, someone behind a wall isn't part of what it's watching.
+        So both move when the camera does.
     @param target: The current target.
     @param camPos: Where the camera is.
     @return Vector: The aim point.
-    @return Vector: The group's spot.
+    @return Vector: The group's spot, move the camera relative to this one.
     @return Vector: The current target's own spot.
     @return Vector: The current target's velocity.
     @return Entity: What the current target's spot is on, see GM:WatchAimPosOf.
@@ -618,11 +631,13 @@ function GM:WatchAimPoint( target, camPos )
         if not IsValid( ent ) then continue end
 
         local weight
+        local groupsWeight
         local pos
         local seen = true
         if ent == target then
             pos = targetPos
             weight = math.max( candidate.score, 1 ) * tune.currentAimWeight -- 1, so a target scoring nothing still holds the aim
+            groupsWeight = weight
 
         else
             pos = self:WatchAimPosOf( ent )
@@ -630,11 +645,12 @@ function GM:WatchAimPoint( target, camPos )
             local radius = tune.aimRadii[candidate.kind]
             if dist >= radius then continue end
 
-            local fadeFrom = radius * tune.aimFadeFrom
+            weight = candidate.score * pullFade( dist, radius )
 
-            -- full pull inside fadeFrom, none at the edge, so walking across it doesn't jerk the aim
-            local fade = math.Clamp( ( radius - dist ) / ( radius - fadeFrom ), 0, 1 )
-            weight = candidate.score * fade
+            local rise = ( pos.z - targetPos.z ) * tune.groupHeightMul
+            local groupDist = math.sqrt( pos:Distance2DSqr( targetPos ) + rise * rise )
+            groupsWeight = candidate.score * pullFade( groupDist, radius )
+
             seen = aimSees( camPos, ent, cur )
 
             if weight > 0 and dist < tune.companyRadius and candidate.kind == "player" and not isDead( ent ) then
@@ -644,12 +660,16 @@ function GM:WatchAimPoint( target, camPos )
         end
 
         if weight > 0 then
-            groupSum:Add( pos * weight )
-            groupWeight = groupWeight + weight
-
             local aimsWeight = seen and weight or weight * tune.obscuredAimMul
             aimSum:Add( pos * aimsWeight )
             aimWeight = aimWeight + aimsWeight
+
+            if not seen then
+                groupsWeight = groupsWeight * tune.obscuredGroupMul
+
+            end
+            groupSum:Add( pos * groupsWeight )
+            groupWeight = groupWeight + groupsWeight
 
         end
     end

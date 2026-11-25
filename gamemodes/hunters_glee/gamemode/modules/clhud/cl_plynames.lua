@@ -12,6 +12,7 @@ terminator_Extras.glee_EntNamePanels = terminator_Extras.glee_EntNamePanels or {
 local nearbyPlayersHudVar = CreateClientConVar( "cl_huntersglee_draw_nearby_players", "1", true, false, "Draw nearby player locations?" )
 local nearbyFriendsOnly = CreateClientConVar( "cl_huntersglee_draw_nearby_friendsonly", "0", true, false, "Only draw the location of nearby players on your friends list?" )
 local drawPlayerNamesWhenDead = CreateClientConVar( "cl_huntersglee_draw_playernames_whendead", "1", true, false, "Draw player names when you're dead?" )
+local drawPlayerNamesWhileWatching = CreateClientConVar( "cl_huntersglee_spectatewatch_names", "0", true, false, "Draw player names while the AFK camera's watching?" )
 
 local function createNamePanel( ent )
     if IsValid( ent.gleeEntNamePanel ) then ent.gleeEntNamePanel:Remove() end
@@ -129,6 +130,12 @@ local function envoysExtraLine( isEnvoy, ent )
 end
 
 local function whileDeadPaintOtherPlys( localPlayer, cur )
+    if GAMEMODE:IsSpectateWatching() and not drawPlayerNamesWhileWatching:GetBool() then
+        cleanupPanels()
+        return
+
+    end
+
     local inEye      = localPlayer:GetObserverMode() == OBS_MODE_IN_EYE
     local hasObsTarg = IsValid( localPlayer:GetObserverTarget() )
 

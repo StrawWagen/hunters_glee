@@ -229,6 +229,12 @@ local settingsCategories = {
                 desc = "The same, while you're outside the map. Default is -1, which translates to 1",
             },
             {
+                cvar = "cl_huntersglee_spectatewatch_names",
+                type = "check",
+                prettyName = "AFK camera player names",
+                desc = "Draw player names on the HUD while the AFK camera's watching?",
+            },
+            {
                 cvar = "cl_huntersglee_unprofitableplacing_gate",
                 type = "check",
                 prettyName = "Place unprofitably without confirming",
