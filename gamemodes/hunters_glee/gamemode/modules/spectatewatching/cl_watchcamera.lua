@@ -30,7 +30,7 @@ local tune = {
     viewRate = 3, -- how fast the view turns towards the aim point
     maxTurnSpeed = 120, -- degrees per second, a big jump in the aim point becomes a fast pan, not a snap
     maxPitch = 80, -- straight up or down spins the yaw, never quite get there
-    groupPosRate = 0.5, -- how fast the camera's copy of the group's spot catches up, slow, so the scores shifting barely move it
+    groupPosRate = 0.5, -- how fast the camera's copy of the group's spot catches up. Slow, it moves when the camera does, and the camera moves relative to it
 
     -- how far it watches from, distances from the target's edge
     viewDistMin = 150, -- closest a spot should be
@@ -103,6 +103,7 @@ local tune = {
 
     -- what a spot scores. Line of sight leads, the wall penalties sit under everything
     losScore = 1000, -- seeing the target
+    clearLosScore = 500, -- seeing them with no window or grate in the way either, some of those look solid, see GM:WatchCanSee
     groupLosScore = 500, -- seeing the group's spot, only on top of seeing the target
     predictedLosScore = 300, -- seeing where the target's about to be
     outOfRangePenalty = 300, -- per band width, viewDistMax - viewDistMin, outside that range
@@ -594,7 +595,7 @@ local function wallBackScore( spot )
 
 end
 
--- Settled, everything's from the group's spot, which the camera can't move, so it can't chase its own tail.
+-- Settled, everything's from the group's spot, which the camera barely moves, its slow ease keeps it from chasing its own tail.
 -- The far end of a range from them, a wall behind, moving is dear
 local function settledScore( spot )
     local score = 0
@@ -632,6 +633,11 @@ local function scoreSpot( spot, seesTarget )
         end
         if seesTarget then
             score = score + tune.losScore
+
+            if GAMEMODE:WatchCanSee( spot, watchPos, watchBody, MASK_SOLID_BRUSHONLY ) then
+                score = score + tune.clearLosScore
+
+            end
 
             -- the rest of the group in view too, on top of the target, never instead of them
             if GAMEMODE:WatchCanSee( spot, groupPos ) then

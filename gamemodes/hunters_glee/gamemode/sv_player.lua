@@ -96,7 +96,7 @@ function GM:calculateBPM( cur, players )
             -- is player inside mentos shaped volume?????
             -- means less score if ply is simply above enemy
             local mentosShapedDistance = nearestHunter:EyePos() - plyPos
-            mentosShapedDistance.z = mentosShapedDistance.z / 2
+            mentosShapedDistance.z = mentosShapedDistance.z * 2
 
             nearestHunterScaryness = self:GetBotScaryness( ply, nearestHunter )
 

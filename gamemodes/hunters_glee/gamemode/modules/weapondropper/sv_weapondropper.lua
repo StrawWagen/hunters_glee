@@ -128,6 +128,7 @@ end
 local carriedThrowSpeed = 500
 local carriedThrowLift = 150
 local carriedThrowSpin = 360
+local carriedThrowCreditTime = 10 -- seconds a thrown thing's crush kills stay the thrower's, as the skull's
 
 function plyMeta:DropWeaponKeepAmmo( wep, force )
 
@@ -194,6 +195,13 @@ function plyMeta:DropWeaponKeepAmmo( wep, force )
         if thrown then
             flungObj:AddVelocity( forceDir * carriedThrowSpeed + Vector( 0, 0, carriedThrowLift ) )
             flungObj:AddAngleVelocity( VectorRand() * carriedThrowSpin )
+
+            -- a throw is theirs, so its kills are pvp, guilt and all
+            -- not as they die, the dead don't throw, it's just falling from their hands
+            if self:Health() > 0 then
+                flung:SetPhysicsAttacker( self, carriedThrowCreditTime )
+
+            end
             return
 
         end
