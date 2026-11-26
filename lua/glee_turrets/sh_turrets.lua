@@ -32,14 +32,14 @@ function glee_Turrets.GetName( turret )
 
 end
 
--- a shop turret's wheel, OnUseAction's server side, see sv_turrets
-glee_Turrets.UseActions = {
+-- a shop turret's wheel, OnGleeAction's server side, see sv_turrets
+glee_Turrets.Actions = {
     terminator_Extras.glee_Carrying.PickUpAction,
     { key = "resupply", label = "Recharge" },
     { key = "rename", label = "Rename" },
 }
 
-function glee_Turrets.CanUseAction( turret, ply, key )
+function glee_Turrets.CanGleeAction( turret, ply, key )
     if key ~= "resupply" then return true end
     if not ply.PlayerHasBatteryCharge then return false end -- suit charge is the gamemode's
     if glee_Turrets.GetAmmo( turret ) >= glee_Turrets.GetMaxAmmo( turret ) then return false, "CANNOT CHARGE\nFully charged." end

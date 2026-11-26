@@ -17,7 +17,7 @@ terminator_Extras.glee_Carrying.MakeCarryable( ENT, "glee_backpackable_radio" )
 
 ENT.isGleeRadio = true -- inherited, so radios based off this one can be tuned too
 
-ENT.GleeUseActions = {
+ENT.GleeActions = {
     terminator_Extras.glee_Carrying.PickUpAction,
     { key = "tune", label = "Tune" },
 }
@@ -121,8 +121,8 @@ function ENT:CanBeTunedBy( ply )
 
 end
 
--- Only ever "tune", glee_Carrying answers its PickUpAction itself
-function ENT:CanUseAction( ply )
+-- Only ever "tune", PickUpAction checks itself
+function ENT:CanGleeAction( ply )
     return self:CanBeTunedBy( ply )
 
 end

@@ -72,8 +72,8 @@ end
 
 -- Tuning --------------------------------------------------------------------
 
--- The wheel's pick, see glee_carrying. Only ever "tune", checked against CanUseAction already
-function ENT:OnUseAction( ply )
+-- The wheel's pick, see glee_actions. Only ever "tune", checked against CanGleeAction already
+function ENT:OnGleeAction( ply )
     self:OpenTunerFor( ply )
 
     return true

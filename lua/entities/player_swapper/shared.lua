@@ -99,6 +99,8 @@ if CLIENT then
 
             currTarget:DrawModel()
             materialOverride()
+            -- or the tint leaks onto whatever's drawn next this frame, eg the goggles' heat pass
+            setColorModulation( 1, 1, 1 )
 
         cam_End3D();
 

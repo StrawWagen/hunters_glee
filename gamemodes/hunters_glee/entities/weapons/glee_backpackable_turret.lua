@@ -19,12 +19,12 @@ SWEP.ViewModelOffset = Vector( 8, 0, 0 )
 
 local glee_Turrets = terminator_Extras.glee_Turrets
 
-terminator_Extras.glee_Carrying.RegisterUseActions( "npc_turret_floor", "glee_shopturret", {
+terminator_Extras.glee_Actions.Register( "npc_turret_floor", "glee_shopturret", {
     Matches = glee_Turrets.IsShopTurret,
     GleeCarryWeapon = "glee_backpackable_turret",
-    GleeUseActions = glee_Turrets.UseActions,
-    CanUseAction = glee_Turrets.CanUseAction,
-    OnUseAction = glee_Turrets.OnUseAction,
+    GleeActions = glee_Turrets.Actions,
+    CanGleeAction = glee_Turrets.CanGleeAction,
+    OnGleeAction = glee_Turrets.OnGleeAction,
 } )
 
 -- any floor turret, whoever's side it's on

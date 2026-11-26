@@ -8,7 +8,7 @@ ENT.AutomaticFrameAdvance = true
 
 terminator_Extras.glee_Carrying.MakeCarryable( ENT, "glee_backpackable_maxwell" )
 
-ENT.GleeUseActions = {
+ENT.GleeActions = {
 	terminator_Extras.glee_Carrying.PickUpAction,
 	{ key = "pet", label = "Pet" },
 }

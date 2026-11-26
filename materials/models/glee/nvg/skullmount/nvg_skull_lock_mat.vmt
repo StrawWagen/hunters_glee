@@ -1,0 +1,13 @@
+VertexLitGeneric
+{
+    $basetexture "models/glee/nvg/skullmount/nvg_skull_lock_diffuse"
+
+    $bumpmap "models/glee/nvg/skullmount/nvg_skull_lock_normal"
+    $basemapalphaphongmask "1"
+    $phong 1
+    $phongfresnelranges "[0 0.5 1]"
+
+    $envmapmask "models/glee/nvg/skullmount/nvg_skull_lock_gloss"
+    $envmap "env_cubemap"
+    $envmaptint "[0.01 0.01 0.01]"
+} 

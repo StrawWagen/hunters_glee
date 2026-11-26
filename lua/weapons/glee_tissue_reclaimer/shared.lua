@@ -7,8 +7,8 @@ AddCSLuaFile()
     Hold secondary to heal yourself.
     Reclamation juice comes from buying another, and from health pickups found while already at full health.
 
-    Read top to bottom: setup, telling the owner no, the viewmodel, who's healable, healing, picking up material,
-    then Think, which runs it all every tick.
+    Read top to bottom: setup, telling the owner no, other addons' entities, the viewmodel, who's healable, healing,
+    picking up material, then Think, which runs it all every tick.
 
     The rest is in the files included at the bottom, each read top to bottom too:
     sh_reviving.lua, reviving, and the medic's shoves
@@ -514,6 +514,82 @@ local function playServerDeny( wep )
     playServerSound( wep, DenySound )
     notifyFromServer( wep, insufficientNotice() )
 
+end
+
+-- Other addons' entities ----------------------------------------------------
+-- The kit's left click is free on most things, since healing is the hold. A classname in
+-- SpecialInteractions gets the click instead, so another mod's entities are handled here, apart
+-- from the healing. The mod they come from need not be installed: a key is only a classname,
+-- nothing here loads the other addon, and every handler checks the fields it uses first.
+
+local FEED_COST = 10 -- reclamation material per body
+local FEED_DELAY = 1 -- seconds the click is held off after a body goes in
+
+SWEP.SpecialInteractions = {
+    ["evil_fungus"] = {
+        -- the strand has no solid body, so the aim trace lands on the world under it. The patch is
+        -- found by its mat instead: the one with a node nearest where the aim lands
+        find = function( tr )
+            local best, bestDist
+            for _, ent in ipairs( ents.FindByClass( "evil_fungus" ) ) do
+                local mat = ent.Mat
+                if mat and mat.Nearest and not ent.Absorbed then
+                    local node, dist = mat:Nearest( tr.HitPos, 48 )
+                    if node and ( not bestDist or dist < bestDist ) then
+                        best, bestDist = ent, dist
+
+                    end
+                end
+            end
+            return best
+
+        end,
+
+        -- FEED_COST buys the strand one body, at the node nearest the click
+        -- the fungus's own food goes in the same way, see its Digest
+        -- FEED_DELAY makes a held trigger pay once per body, not once per frame
+        primaryAttack = function( wep, ent, tr )
+            local mat = ent.Mat
+            if not mat or not mat.SetMass or not ent.Closest then return end
+
+            local node = ent:Closest( tr.HitPos )
+            if not node or node.dead then return end
+
+            if wep:Ammo1() < FEED_COST then
+                playServerDeny( wep )
+                return
+
+            end
+
+            wep:TakePrimaryAmmo( FEED_COST )
+            mat:SetMass( node, ( node.m or 0 ) + 1 )
+            playServerOneShot( wep, AbsorbSound )
+            wep:SetNextPrimaryFire( CurTime() + FEED_DELAY )
+
+        end,
+    },
+}
+
+-- the interaction for what a click landed on, by classname. A registered class may have no solid
+-- body, so a click on the world also offers itself to each entry's find, which reads where the aim
+-- landed instead of what it hit. Nil when nothing of another addon's is there
+function SWEP:SpecialInteractionAt( tr )
+    local ent = IsValid( tr.Entity ) and tr.Entity
+    if ent then
+        local direct = self.SpecialInteractions[ent:GetClass()]
+        if direct then return direct, ent end
+
+    end
+
+    if not tr.HitWorld then return end
+
+    for _, candidate in pairs( self.SpecialInteractions ) do
+        if candidate.find then
+            local found = candidate.find( tr )
+            if IsValid( found ) then return candidate, found end
+
+        end
+    end
 end
 
 -- only the deny, holding it down is up to HealThink
