@@ -545,9 +545,9 @@ SWEP.SpecialInteractions = {
 
         end,
 
-        -- ten points of reclamation material buy one body for the strand, added at the node nearest
-        -- the click: the fungus's own food goes in the same way, see its Digest. Feeding holds the
-        -- click off for a moment, so a held trigger pays once per body instead of once per frame
+        -- FEED_COST buys the strand one body, at the node nearest the click
+        -- the fungus's own food goes in the same way, see its Digest
+        -- FEED_DELAY makes a held trigger pay once per body, not once per frame
         primaryAttack = function( wep, ent, tr )
             local mat = ent.Mat
             if not mat or not mat.SetMass or not ent.Closest then return end

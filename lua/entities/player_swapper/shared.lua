@@ -99,8 +99,8 @@ if CLIENT then
 
             currTarget:DrawModel()
             materialOverride()
-            setColorModulation( 1, 1, 1 ) -- without this the tint outlives the highlight and reaches
-            -- whatever is drawn after it this frame, which is the goggles' heat pass
+            -- or the tint leaks onto whatever's drawn next this frame, eg the goggles' heat pass
+            setColorModulation( 1, 1, 1 )
 
         cam_End3D();
 

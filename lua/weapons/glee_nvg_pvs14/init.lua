@@ -4,9 +4,9 @@ include( "shared.lua" )
 
 DEFINE_BASECLASS( "glee_nvg_base" )
 
--- the radar's keys on the wheel, see GetWheelActions in cl_init.lua
+-- the radar's keys, see GetGleeActions in shared.lua, glee_actions has checked it's offered
 -- the radar's settings live on the weapon, so they stay with the goggles if thrown
-function SWEP:OnWheelPick( ply, key )
+function SWEP:OnGleeAction( ply, key )
     if key == "radar" then
         local on = not self:GetRadarOn()
         self:SetRadarOn( on )
@@ -28,7 +28,10 @@ function SWEP:OnWheelPick( ply, key )
         ply:EmitSound( "buttons/lightswitch2.wav", 55, 90 + nextIndex * 15, 0.6 )
 
     else
-        BaseClass.OnWheelPick( self, ply, key )
+        return BaseClass.OnGleeAction( self, ply, key )
 
     end
+
+    return true
+
 end

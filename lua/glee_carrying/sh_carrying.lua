@@ -11,10 +11,9 @@
         Call these on the actual ENT tbl:
             glee_Carrying.MakeCarryable( ENT, weaponClass ) -- registers it to the carrying system
 
-            -- and its USE actions, mandatory, nothing can pick it up without these
-            -- if the tbl's count is 1, ( should be just glee_Carrying.PickUpAction ),
-            -- physics picking it up, and pressing R will trigger the action
-            ENT.GleeUseActions = { glee_Carrying.PickUpAction } -- USE wheel actions, see below
+            -- and its actions, mandatory, nothing can pick it up without PickUpAction in them
+            -- if it's the only one, physics picking it up, and pressing R will trigger it
+            ENT.GleeActions = { glee_Carrying.PickUpAction } -- see glee_actions/sh_actions.lua
 
         If you want to make an engine class carryable:
             glee_Carrying.RegisterCarryable( class, weaponClass, matches, extras )
@@ -22,27 +21,23 @@
         Lifted with use, reload carries it, see GetHeldPickUp.
 
     USE WHEEL
-        defaults to having the USE wheel take a moment to open, so ENT:Use can run.
+        Holding use on something with actions opens a wheel of them, see glee_actions.
+        It's the "use" reach, below.
+        defaults to having the wheel take a moment to open, so ENT:Use can run.
         set .GleeUseWheelOnly to have it open instantly.
 
-        -- these are all your actions
-        -- you'll want to include glee_Carrying.PickUpAction, it's the "Pick Up" action.
-        ENT.GleeUseActions = {
-            glee_Carrying.PickUpAction, -- built in "Pick up", carries the ent. key "carry", skips the two below
+        ENT.GleeActions = {
+            glee_Carrying.PickUpAction, -- built in "Pick up", carries the ent. key "carry", skips CanGleeAction and OnGleeAction
             { key = "tune", label = "Tune", icon = Material( "..." ) },
         }
-        -- and some stubs
-        function ENT:CanUseAction( ply, key ) end -- shared, can this action be ran? return true  allows, return false, reason  greys it out
-        function ENT:OnUseAction( ply, key ) end  -- server
-        function ENT:CanPickUp( ply ) end         -- shared, optional. CanUseAction, for PickUpAction
-
-        engine class? see RegisterUseActions.
+        function ENT:CanPickUp( ply ) end -- shared, optional. CanGleeAction, for PickUpAction
 ]]
 
 terminator_Extras = terminator_Extras or {}
 terminator_Extras.glee_Carrying = terminator_Extras.glee_Carrying or {}
 
 local glee_Carrying = terminator_Extras.glee_Carrying
+local glee_Actions = terminator_Extras.glee_Actions
 
 -- a default action, makes you pick up an ent
 local pickUpAction = {
@@ -52,14 +47,16 @@ local pickUpAction = {
     hint = "This is holdable\nPress %s to hold it in your hands",
     shortHint = "Holdable, press %s",
     lesson = "PutAwayAHoldable",
-}
 
---[[
--- so,
-ENT.GleeUseActions = {
-    glee_Carrying.PickUpAction, -- this is pickUpAction
+    canPick = function( ent, ply )
+        return glee_Carrying.CanCarry( ply, ent )
+
+    end,
+    run = function( ent, ply )
+        return glee_Carrying.Carry( ply, ent )
+
+    end,
 }
---]]
 
 do
     -- autorefresh bs
@@ -81,65 +78,12 @@ glee_Carrying.PickUpAction = pickUpAction
 
 glee_Carrying.UseRange = 90
 -- times UseRange, how far off an open wheel can still be picked from
--- client and server share it, so a wheel that's still showing never gets its pick refused
 glee_Carrying.UseRangeSlack = 1.5
-
--- RegisterUseActions defs, by class
--- kept on the table, other files registered these, an autorefresh of this file won't run them again
-glee_Carrying.ClassUseDefs = glee_Carrying.ClassUseDefs or {}
-local classDefs = glee_Carrying.ClassUseDefs
-
--- shared, gives an engine class a use wheel
--- def takes the same fields as an ENT, see the top of this file
--- its functions take the ent first, eg def.CanUseAction( ent, ply, key )
--- def.Matches( ent ), optional, narrows it down within the class
--- registering the same id again replaces it, so autorefresh is fine
-function glee_Carrying.RegisterUseActions( class, id, def )
-    def.Id = id
-
-    local defs = classDefs[class] or {}
-    classDefs[class] = defs
-
-    for index, existing in ipairs( defs ) do
-        if existing.Id == id then
-            defs[index] = def
-            return
-
-        end
-    end
-
-    table.insert( defs, def )
-
-end
-
--- where an ent's wheel is defined, the ent itself, or a def registered for its class
--- nil when it has neither
--- a def with Matches beats a catch-all, whatever order they were registered in
-local function getDef( ent )
-    if ent.GleeUseActions then return ent end
-
-    local defs = classDefs[ent:GetClass()]
-    if not defs then return end
-
-    local catchAll
-    for _, def in ipairs( defs ) do
-        if not def.Matches then
-            catchAll = catchAll or def
-
-        elseif def.Matches( ent ) then
-            return def
-
-        end
-    end
-
-    return catchAll
-
-end
 
 -- GleeUseWheelOnly, for ents where a plain +use does nothing useful
 -- use opens the wheel the moment it's pressed, and can't lift the ent
 function glee_Carrying.IsUseWheelOnly( ent )
-    local def = getDef( ent )
+    local def = glee_Actions.GetDef( ent )
 
     return def and def.GleeUseWheelOnly or false
 
@@ -166,14 +110,11 @@ local function getWithoutPickUp( actions )
 
 end
 
--- nil when it has no wheel
+-- what use offers on ent, nil when nothing
 -- PickUpAction's left out while it's carried, nil if that leaves nothing
 -- don't edit what it returns, it can be a shared cached table
 function glee_Carrying.GetUseActions( ent )
-    local def = getDef( ent )
-    if not def then return end
-
-    local actions = def.GleeUseActions
+    local actions = glee_Actions.Get( ent )
     if not actions or not glee_Carrying.IsCarried( ent ) then return actions end
 
     local filtered = getWithoutPickUp( actions )
@@ -193,29 +134,32 @@ function glee_Carrying.InUseRange( ply, ent, slack )
 
 end
 
--- can ply pick this action off ent's wheel?
--- never when they're dead, or carrying it
--- otherwise it's the ent's CanUseAction, and its reason if it gives one
--- no CanUseAction allows everything
--- PickUpAction asks CanCarry instead
-function glee_Carrying.CanPick( ply, ent, key )
-    if not ply:Alive() then return false end
-    if glee_Carrying.IsCarriedBy( ent, ply ) then return false end
-    if key == glee_Carrying.PickUpAction.key then return glee_Carrying.CanCarry( ply, ent ) end
-
-    local def = getDef( ent )
-    if not def or not def.CanUseAction then return true end
-
-    local canPick, reason = def.CanUseAction( ent, ply, key )
-    return canPick, reason
-
-end
-
 -- what they're lifting with use, NULL if nothing
 function glee_Carrying.GetPhysicsHeld( ply )
     return ply:GetNW2Entity( "glee_PhysicsHeld" )
 
 end
+
+-- holding use on it, see cl_carrying
+-- never what they carry themselves
+glee_Actions.RegisterReach( "use", {
+    InReach = function( ply, ent )
+        if not ply:Alive() or glee_Carrying.IsCarriedBy( ent, ply ) then return false end
+        return glee_Carrying.InUseRange( ply, ent, glee_Carrying.UseRangeSlack )
+
+    end,
+
+    Actions = function( ent )
+        return glee_Carrying.GetUseActions( ent )
+
+    end,
+
+    -- the press already went through as a +use, which may have lifted what it's now picking from
+    BeforeRun = function( ply, ent )
+        if glee_Carrying.GetPhysicsHeld( ply ) == ent then ply:DropObject() end
+
+    end,
+} )
 
 -- just PickUpAction, nothing else
 -- these don't open a wheel, they're lifted with use, then reload carries them
@@ -226,15 +170,10 @@ function glee_Carrying.IsLiftThenReload( actions )
 
 end
 
--- does its wheel have PickUpAction right now?
+-- does use offer PickUpAction on it right now?
 -- not whether this player can carry it, that's CanCarry
 function glee_Carrying.OffersPickUp( ent )
-    for _, action in ipairs( glee_Carrying.GetUseActions( ent ) or {} ) do
-        if action.key == glee_Carrying.PickUpAction.key then return true end
-
-    end
-
-    return false
+    return glee_Actions.Find( glee_Carrying.GetUseActions( ent ), glee_Carrying.PickUpAction.key ) ~= nil
 
 end
 
@@ -247,25 +186,10 @@ function glee_Carrying.GetHeldPickUp( ply )
     if not IsValid( ent ) then return end
     if not glee_Carrying.OffersPickUp( ent ) then return end
 
-    local pickUpAction = glee_Carrying.PickUpAction
-    local canPick, reason = glee_Carrying.CanPick( ply, ent, pickUpAction.key )
+    local canPick, reason = glee_Actions.CanPick( ply, ent, pickUpAction.key )
 
     return ent, pickUpAction, canPick, reason
 
-end
-
-if SERVER then
-    -- runs the ent's OnUseAction, true when it went through
-    -- PickUpAction runs Carry instead
-    function glee_Carrying.RunAction( ply, ent, key )
-        if key == glee_Carrying.PickUpAction.key then return glee_Carrying.Carry( ply, ent ) end
-
-        local def = getDef( ent )
-        if not def or not def.OnUseAction then return end
-
-        return def.OnUseAction( ent, ply, key )
-
-    end
 end
 
 
@@ -393,7 +317,7 @@ end
 function glee_Carrying.GetCarryWeaponClass( ent )
     if ent.GleeCarryWeapon then return ent.GleeCarryWeapon end
 
-    local def = getDef( ent )
+    local def = glee_Actions.GetDef( ent )
     if not def then return end
 
     return def.GleeCarryWeapon
@@ -408,7 +332,7 @@ function glee_Carrying.CanCarry( ply, ent )
     if glee_Carrying.IsCarried( ent ) then return false end
     if ent:GetNW2Bool( "glee_Nailed", false ) then return false, "It's nailed down." end -- see termhunt_weapon_hammer
 
-    local def = getDef( ent )
+    local def = glee_Actions.GetDef( ent )
     if def and def.CanPickUp then
         local canPickUp, reason = def.CanPickUp( ent, ply )
         if not canPickUp then return false, reason end
@@ -485,7 +409,7 @@ function glee_Carrying.HasRoomFor( ply, weaponClass )
 end
 
 -- only sets which weapon carries it
--- use can't pick it up until PickUpAction's in its GleeUseActions too
+-- use can't pick it up until PickUpAction's in its GleeActions too
 function glee_Carrying.MakeCarryable( ENT, weaponClass )
     ENT.GleeCarryWeapon = weaponClass
     registerTwin( weaponClass )
@@ -500,14 +424,14 @@ function glee_Carrying.RegisterCarryable( class, weaponClass, matches, extras )
     local def = {
         Matches = matches,
         GleeCarryWeapon = weaponClass,
-        GleeUseActions = { glee_Carrying.PickUpAction },
+        GleeActions = { glee_Carrying.PickUpAction },
     }
     for key, value in pairs( extras or {} ) do
         def[key] = value
 
     end
 
-    glee_Carrying.RegisterUseActions( class, weaponClass, def )
+    glee_Actions.Register( class, weaponClass, def )
     registerTwin( weaponClass )
 
 end

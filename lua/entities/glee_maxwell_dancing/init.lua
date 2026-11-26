@@ -40,9 +40,9 @@ local petSpinStopSpeed = 20
 local petSpinFlySpeed = 1440 -- a pet about every third of a second gets there
 local flyUpSpeed = 500
 
--- The wheel's pick, see glee_carrying. Only ever "pet", glee_Carrying answers its PickUpAction itself.
+-- The wheel's pick, see glee_actions. Only ever "pet", PickUpAction runs itself.
 -- Dancing, each pet spins him faster, the way he's already going. Carried or tumbling he just purrs
-function ENT:OnUseAction()
+function ENT:OnGleeAction()
 	self:EmitSound( "npc/footsteps/softshoe_generic6.wav", 60, math.random( 140, 160 ), 0.6 )
 	self:EmitSound( "hunters_glee/purr.ogg", 70, math.random( 120, 140 ), 1, CHAN_ITEM )
 

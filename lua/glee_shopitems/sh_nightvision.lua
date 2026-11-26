@@ -12,7 +12,7 @@ local goggles = {
 -- every pair, it's random which they get
 local function canWearGoggles( purchaser )
     for _, class in ipairs( goggles ) do
-        local canWear, reason = purchaser:CanGleeWear( weapons.Get( class ) )
+        local canWear, reason = purchaser:CanGleeWear( class )
         if not canWear then return false, reason end
 
     end
@@ -39,7 +39,7 @@ local items = {
         shPurchaseCheck = { shopHelpers.aliveCheck, canWearGoggles },
         svOnPurchaseFunc = function( purchaser )
             shopHelpers.purchaseWeapon( purchaser, {
-                class = goggles[ math.random( #goggles ) ],
+                class = goggles[math.random( #goggles )],
                 confirmSoundWeight = 1,
 
             } )

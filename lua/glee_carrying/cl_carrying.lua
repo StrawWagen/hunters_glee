@@ -1,5 +1,6 @@
 
 local glee_Carrying = terminator_Extras.glee_Carrying
+local glee_Actions = terminator_Extras.glee_Actions
 
 
 -- Carrying -------------------------------------------------------------------
@@ -220,14 +221,7 @@ end )
 
 -- The use wheel --------------------------------------------------------------
 
-local OUTER_RADIUS_1080P = 300
 local WHEEL_OPEN_DELAY = 0.25 -- use held this long opens the wheel, let go sooner and it was just a +use
-
--- on the table, so an autorefresh while one's open can still release it, its hooks hold the mouse
-local function getCurrentWheel()
-    return glee_Carrying.CurrentWheel
-
-end
 
 local useWasDown = false
 
@@ -252,80 +246,27 @@ local function findTarget( ply )
 
 end
 
--- asks the server to run one of ent's actions, it checks everything again
--- sent by key, not wheel slot, the actions can change in between
--- eg someone else picks it up
-local function sendPick( ent, key )
-    net.Start( "glee_carrying_wheelpick" )
-        net.WriteEntity( ent )
-        net.WriteString( key )
-    net.SendToServer()
-
-end
-
--- the mouse aims it while use stays held, letting go of use picks
--- replaces any wheel already open
-local function openWheel( ply, ent )
-    local oldWheel = getCurrentWheel()
-    if IsValid( oldWheel ) then oldWheel:Remove() end
-
-    local wheel = vgui.Create( "glee_wheel" )
-    local outer = wheel:Style():Scaled( OUTER_RADIUS_1080P )
-
-    wheel:SetSize( outer * 2, outer * 2 )
-    wheel:SetItems( glee_Carrying.GetUseActions( ent ) )
-    wheel:Center()
-
-    function wheel:GetItemStatus( item )
-        if not IsValid( ent ) then return false end
-
-        -- just the yes or no, glee_wheel reads a second return as a cooldown
-        local canPick = glee_Carrying.CanPick( ply, ent, item.key )
-        return canPick
-
-    end
-
-    function wheel:OnItemSelected( item )
-        sendPick( ent, item.key )
-        self:Close()
-
-    end
-
-    hook.Add( "Think", wheel, function( self )
-        if IsValid( ent ) and ply:Alive() and glee_Carrying.InUseRange( ply, ent, glee_Carrying.UseRangeSlack ) then return end
-
-        self:Close()
-
-    end )
-
-    wheel:HoldAim()
-    ply:EmitSound( "physics/wood/wood_crate_impact_soft3.wav", 50, 200, 0.45 )
-
-    -- the press already went through as a +use, which may have lifted it
-    net.Start( "glee_carrying_wheelopened" )
-    net.SendToServer()
-
-    glee_Carrying.CurrentWheel = wheel
-
-end
-
 -- what using ent does, decided here and nowhere else
--- one action just runs, several open the wheel
+-- one action just runs, several open the wheel, held while use is
 -- a lone PickUpAction is left to use, which lifts it, then reload carries it
 -- wheel-only ents can't be lifted, so theirs just runs
-local function useOn( ply, ent )
+local function useOn( ent )
     local actions = glee_Carrying.GetUseActions( ent )
     if not actions then return end
 
     if glee_Carrying.IsLiftThenReload( actions ) and not glee_Carrying.IsUseWheelOnly( ent ) then return end
 
     if #actions == 1 then
-        sendPick( ent, actions[1].key )
+        glee_Actions.SendPick( "use", ent, actions[1].key )
         return
 
     end
 
-    openWheel( ply, ent )
+    glee_Actions.OpenWheel( "use", ent, "+use" )
+
+    -- the press already went through as a +use, which may have lifted it
+    net.Start( "glee_carrying_wheelopened" )
+    net.SendToServer()
 
 end
 
@@ -338,12 +279,8 @@ hook.Add( "CreateMove", "glee_carrying_holduse", function( cmd )
         useWasDown = useDown
         pressedEnt = nil
 
-        if not useDown then
-            local wheel = getCurrentWheel()
-            if IsValid( wheel ) then wheel:Release() end
-            return
-
-        end
+        -- an open wheel lets go of itself, see HoldAim
+        if not useDown then return end
 
         if not ply:Alive() or ply:InVehicle() then return end
 
@@ -351,7 +288,7 @@ hook.Add( "CreateMove", "glee_carrying_holduse", function( cmd )
 
         -- GleeUseWheelOnly, a plain +use does nothing on these, so there's nothing to wait out
         if target and glee_Carrying.IsUseWheelOnly( target ) then
-            useOn( ply, target )
+            useOn( target )
             return
 
         end
@@ -367,10 +304,9 @@ hook.Add( "CreateMove", "glee_carrying_holduse", function( cmd )
     local ent = pressedEnt
     pressedEnt = nil
 
-    if not IsValid( ent ) or not ply:Alive() then return end
-    if not glee_Carrying.InUseRange( ply, ent, glee_Carrying.UseRangeSlack ) then return end
+    if not IsValid( ent ) or not glee_Actions.GetReach( "use" ).InReach( ply, ent ) then return end
 
-    useOn( ply, ent )
+    useOn( ent )
 
 end )
 

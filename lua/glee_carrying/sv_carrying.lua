@@ -1,7 +1,7 @@
 
 local glee_Carrying = terminator_Extras.glee_Carrying
+local glee_Actions = terminator_Extras.glee_Actions
 
-util.AddNetworkString( "glee_carrying_wheelpick" )
 util.AddNetworkString( "glee_carrying_wheelopened" )
 
 
@@ -124,52 +124,7 @@ end
 
 -- The use wheel --------------------------------------------------------------
 
--- the client can't see everything that refuses an action, constraints for one, so it's told
-local function notifyRefusal( ply, reason )
-    if not reason then return end
-    huntersGlee_Notify( { ply }, { text = reason, kind = "bad", time = 2 } )
-
-end
-
-local pickCooldown = 0.2
-
-net.Receive( "glee_carrying_wheelpick", function( _, ply )
-    if ( ply.glee_NextUseWheelPick or 0 ) > CurTime() then return end
-    ply.glee_NextUseWheelPick = CurTime() + pickCooldown
-
-    local ent = net.ReadEntity()
-    local key = net.ReadString()
-
-    if not IsValid( ent ) then return end
-
-    -- only what it offers right now, a key the wheel showed may be gone since
-    local offered = false
-    for _, action in ipairs( glee_Carrying.GetUseActions( ent ) or {} ) do
-        if action.key == key then
-            offered = true
-            break
-
-        end
-    end
-    if not offered then return end
-    if not glee_Carrying.InUseRange( ply, ent, glee_Carrying.UseRangeSlack ) then return end
-
-    local canPick, reason = glee_Carrying.CanPick( ply, ent, key )
-    if not canPick then
-        notifyRefusal( ply, reason )
-        return
-
-    end
-
-    -- a held use already went through as a +use, which may have lifted what it's now picking from
-    if glee_Carrying.GetPhysicsHeld( ply ) == ent then
-        ply:DropObject()
-
-    end
-
-    glee_Carrying.RunAction( ply, ent, key )
-
-end )
+-- picks come in through glee_actions, use is its "use" reach, see sh_carrying
 
 -- a held use already lifted whatever its first tick landed on, the wheel's taking over from that
 net.Receive( "glee_carrying_wheelopened", function( _, ply )
@@ -239,14 +194,15 @@ hook.Add( "KeyPress", "glee_carrying_heldaction", function( ply, key )
     local ent, action, canPick, reason = glee_Carrying.GetHeldPickUp( ply )
     if not ent then return end
 
+    -- the client can't see everything that refuses it, constraints for one, so it's told
     if not canPick then
-        notifyRefusal( ply, reason )
+        if reason then huntersGlee_Notify( { ply }, { text = reason, kind = "bad", time = 2 } ) end
         return
 
     end
 
     ply:DropObject()
-    local worked = glee_Carrying.RunAction( ply, ent, action.key )
+    local worked = glee_Actions.Run( ply, ent, action.key )
 
     -- lessons are the gamemode's, outside it there's no hint to grow out of
     if worked and action.lesson and GAMEMODE.LearnLesson then

@@ -215,9 +215,6 @@ util.AddNetworkString( "glee_requestallbankaccounts" )
 
 resource.AddWorkshop( "2848253104" ) -- gamemode
 resource.AddWorkshop( "2944078031" ) -- bot/model
--- the haptic radar's sweep lives inside glee, so clients get it from the server and nobody needs the
--- Alien: Isolation - Motion Tracker addon subscribed just to hear the goggles running
-resource.AddFile( "sound/glee/nvg/motiontracker_noise_loop.wav" )
 
 local GM = GM or GAMEMODE
 

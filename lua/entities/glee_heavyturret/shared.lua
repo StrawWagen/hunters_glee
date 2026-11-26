@@ -27,17 +27,16 @@ end
 glee_Carrying.MakeCarryable( ENT, "glee_backpackable_heavyturret" )
 
 local function withShopTurretActions( action )
-    local actions = table.Add( {}, glee_Turrets.UseActions )
+    local actions = table.Add( {}, glee_Turrets.Actions )
     table.insert( actions, action )
 
     return actions
 
 end
 
-local detachedUseActions = withShopTurretActions( { key = "attach", label = "Attach" } )
-local attachedUseActions = withShopTurretActions( { key = "detach", label = "Detach" } )
+local detachedActions = withShopTurretActions( { key = "attach", label = "Attach" } )
+local attachedActions = withShopTurretActions( { key = "detach", label = "Detach" } )
 
-ENT.GleeUseActions = detachedUseActions
 ENT.GleeUseWheelOnly = true
 
 function ENT:SetupDataTables()
@@ -53,12 +52,11 @@ function ENT:SetupDataTables()
     -- through its armour, see ENT:OnTakeDamage, picks its damaged effects
     self:NetworkVar( "Int", "HitsTaken" )
 
-    self:NetworkVarNotify( "Attached", self.OnAttachedChanged )
-
 end
 
-function ENT:OnAttachedChanged( _, _, attached )
-    self.GleeUseActions = attached and attachedUseActions or detachedUseActions
+-- see glee_actions
+function ENT:GetGleeActions()
+    return self:GetAttached() and attachedActions or detachedActions
 
 end
 
@@ -89,9 +87,9 @@ function ENT:FindAttachGround()
 
 end
 
-function ENT:CanUseAction( ply, key )
+function ENT:CanGleeAction( ply, key )
     if key == "detach" then return self:GetAttached() end
-    if key ~= "attach" then return glee_Turrets.CanUseAction( self, ply, key ) end
+    if key ~= "attach" then return glee_Turrets.CanGleeAction( self, ply, key ) end
 
     local ground, reason = self:FindAttachGround()
     return ground ~= nil, reason
@@ -1066,11 +1064,11 @@ function ENT:SpawnFunction( ply, tr, class )
 
 end
 
-function ENT:OnUseAction( ply, key )
+function ENT:OnGleeAction( ply, key )
     if key == "attach" then return self:Attach() end
     if key == "detach" then return self:Detach() end
 
-    return glee_Turrets.OnUseAction( self, ply, key )
+    return glee_Turrets.OnGleeAction( self, ply, key )
 
 end
 

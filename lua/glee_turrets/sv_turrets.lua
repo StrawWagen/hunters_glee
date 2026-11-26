@@ -36,7 +36,7 @@ function glee_Turrets.AddAmmo( turret, amount )
 end
 
 -- resupply spends what suit charge they have, up to a full resupply's worth
-function glee_Turrets.OnUseAction( turret, ply, key )
+function glee_Turrets.OnGleeAction( turret, ply, key )
     if key == "rename" then
         ply.glee_RenamingTurret = turret
         ply.glee_RenamingTurretUntil = CurTime() + renameWindow

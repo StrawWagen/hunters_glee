@@ -4,8 +4,8 @@
 -- While the radar's on and they're flipped down, the wearer's client fires rays every frame from their eyes, inside the
 -- cone, which is drawn around the crosshair. Rays don't bounce, they pierce: through walls and props, up to the
 -- wavelength's pierce in total, knocked a little off course by every bit of solid. The rays aren't drawn.
--- A ray that hits a living player, npc or nextbot flashes a mark in the cone where that ray started off.
--- A newly found target beeps once, and counts as new again after 10 seconds without being hit. See cl_init.lua.
+-- A ray that hits a living player, npc or nextbot flashes a mark in the cone, on the bearing it was fired along.
+-- A newly found target beeps once, and counts as new again once it's gone unhit a while. See cl_init.lua.
 -- The rest is glee_nvg_base.
 
 SWEP.Base = "glee_nvg_base"
@@ -20,11 +20,11 @@ SWEP.WorldModel = "models/glee/nvg/nvg_pvs14.mdl"
 SWEP.GleeNVG = {
     lamp = 0.6,
     lampColor = Color( 70, 70, 100 ),
-    lampFarZ = 2500, -- the haptic's lamp is a short throw, half the base 5000, so it reads close only
+    lampFarZ = 2500, -- a short throw, it only lights what's close
     gain = 1, -- no brightening, just the colour pass below
     saturation = 1.5, -- stronger colours
     tint = Color( 230, 230, 255 ),
-    vignette = { start = 0.5, finish = 0.95 }, -- the same tube rim the thermal wears
+    vignette = { start = 0.5, finish = 0.95 },
 }
 
 -- rays = fired per frame, pierce = total hammer units of solid each can go through before it stops,
@@ -46,7 +46,6 @@ SWEP.Cones = { 90, 40, 10 }
 SWEP.MarkLife = 10
 
 -- how many points the whole sweep has, picked from the wheel; a frame only walks a slice of them
--- Low carries the old Max density, and the rest are stepped up from it
 SWEP.Resolutions = {
     { name = "Low", points = 1920 },
     { name = "Medium", points = 3840 },
@@ -64,6 +63,38 @@ function SWEP:SetupDataTables()
 
 end
 
+-- the picked entry, or the first while the index hasn't arrived yet
+function SWEP:CurrentWavelength()
+    return self.Wavelengths[self:GetWavelength()] or self.Wavelengths[1]
+
+end
+
+function SWEP:CurrentCone()
+    return self.Cones[self:GetCone()] or self.Cones[1]
+
+end
+
+function SWEP:CurrentResolution()
+    return self.Resolutions[self:GetResolution()] or self.Resolutions[1]
+
+end
+
+-- the goggles' own, then the radar's, keys handled by OnGleeAction in init.lua
+function SWEP:GetGleeActions()
+    local actions = BaseClass.GetGleeActions( self )
+
+    -- each shows its current value, picking steps it to the next
+    table.Add( actions, {
+        { key = "radar", label = "Radar: " .. ( self:GetRadarOn() and "On" or "Off" ) },
+        { key = "wavelength", label = "Wl: " .. self:CurrentWavelength().name },
+        { key = "resolution", label = "Res: " .. self:CurrentResolution().name },
+        { key = "cone", label = "Cone: " .. self:CurrentCone() .. "°" },
+    } )
+
+    return actions
+
+end
+
 function SWEP:Initialize()
     BaseClass.Initialize( self )
     self:SetWavelength( 1 )
@@ -74,7 +105,7 @@ function SWEP:Initialize()
     -- writing over what the server is already sending it
     if SERVER then self:SetRadarOn( true ) end
 
-    -- by name, so the default stays Medium if the list is ever reordered
+    -- wavelength and resolution default to Medium by name, so reordering the lists keeps it
     for i, wavelength in ipairs( self.Wavelengths ) do
         if wavelength.name == "Medium" then
             self:SetWavelength( i )
@@ -83,7 +114,6 @@ function SWEP:Initialize()
         end
     end
 
-    -- by name, so the default stays Medium if the list is ever reordered
     self:SetResolution( 1 )
     for i, resolution in ipairs( self.Resolutions ) do
         if resolution.name == "Medium" then

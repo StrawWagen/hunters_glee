@@ -33,12 +33,7 @@ local function buildTauntWheel( held )
     ply.oldScrollPositions = ply.oldScrollPositions or {}
 
     local wheel = vgui.Create( "glee_wheel" )
-
-    local outer = wheel:Style():Scaled( OUTER_RADIUS_1080P )
-
-    wheel:SetSize( outer * 2, outer * 2 )
     wheel:SetItems( danceActs )
-    wheel:Center()
 
     function wheel:OnItemSelected( item )
         LocalPlayer():ConCommand( "act " .. item.key )
@@ -53,16 +48,19 @@ local function buildTauntWheel( held )
 
     if held then
         -- stays on page 1, held can't scroll back off a saved page
-        wheel:HoldAim()
+        -- no bind, -glee_taunts lets go of it
+        terminator_Extras.glee_FlickPickWheel( wheel )
 
     else
+        local outer = wheel:Style():Scaled( OUTER_RADIUS_1080P )
+        wheel:SetSize( outer * 2, outer * 2 )
+        wheel:Center()
         wheel:SetPage( ply.oldScrollPositions["tauntwheel"] or 1 )
         wheel:MakePopup()
         terminator_Extras.easyClosePanel( wheel )
+        ply:EmitSound( "physics/wood/wood_crate_impact_soft3.wav", 50, 200, 0.45 )
 
     end
-
-    ply:EmitSound( "physics/wood/wood_crate_impact_soft3.wav", 50, 200, 0.45 )
 
     return wheel
 
@@ -80,21 +78,11 @@ local function openTauntWheel( held )
 
     end
 
-    -- the old wheel's OnRemove clears the holder, so it has to go before the new one is stored
-    if IsValid( GAMEMODE.glee_TauntMenu_Holder ) then
-        GAMEMODE.glee_TauntMenu_Holder:Remove()
+    if IsValid( GAMEMODE.glee_TauntMenu_Holder ) then GAMEMODE.glee_TauntMenu_Holder:Remove() end
 
-    end
+    -- for -glee_taunts to let go of
+    GAMEMODE.glee_TauntMenu_Holder = buildTauntWheel( held )
 
-    local newWheel = buildTauntWheel( held )
-    GAMEMODE.glee_TauntMenu_Holder = newWheel
-
-    function newWheel:OnRemove()
-        if GAMEMODE.glee_TauntMenu_Holder ~= self then return end
-
-        GAMEMODE.glee_TauntMenu_Holder = nil
-
-    end
 end
 
 concommand.Add( "glee_taunts_open", function()

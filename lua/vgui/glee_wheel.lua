@@ -14,6 +14,9 @@
             return canPick, cooldownEnd, cooldownLength
         end
 
+        -- optional, polled every frame, true closes it, eg what it picks for went out of reach
+        function wheel:ShouldClose() end
+
     up to 8 wedges a page, clockwise from the top.
     picked by direction from the centre, so a flick picks without aiming at the wedge.
     each wedge shows its icon, or its label while hovered or when it has no icon.
@@ -24,7 +27,9 @@
             off the panel, that's easyClosePanel's job.
         held, HoldAim it while a key is down.
             the mouse aims, the view holds still.
-            Release it when the key comes up, that picks whatever's aimed at, then closes.
+            letting go picks whatever's aimed at, then closes.
+            HoldAim( bind ) lets go when that bind's key comes up, or call Release yourself.
+            for a quick pick off a key, glee_FlickPickWheel does all that, see the bottom.
 
     past 8 items it pages, the mouse wheel flips them.
     SetPage opens it on a page, OnPageChanged is how you remember one.
@@ -94,6 +99,7 @@ PANEL.Init = function( self )
     self._chosenAt   = nil
 
     self._held = false
+    self._holdBind = nil
     self._aimX, self._aimY = 0, 0
 
     self._drawColor = Color( 0, 0, 0, 0 )
@@ -114,6 +120,12 @@ end
 -- the wedge only sweeps when it gets both
 PANEL.GetItemStatus = function( _self, _item, _index )
     return true
+
+end
+
+-- stub, polled every frame, true closes it
+PANEL.ShouldClose = function( _self )
+    return false
 
 end
 
@@ -360,9 +372,20 @@ PANEL.OnKeyCodePressed = function( self, keyCode )
 
 end
 
+-- input, not KeyDown, the player's keys aren't known clientside in singleplayer
+local function isBindDown( bind )
+    local key = input.LookupBinding( bind )
+    if not key then return false end
+
+    return input.IsButtonDown( input.GetKeyCode( key ) )
+
+end
+
 -- the mouse aims from the centre, and the view holds still, until Release or Close
-PANEL.HoldAim = function( self )
+-- bind, optional, eg "+attack", Releases it once that bind's key is up
+PANEL.HoldAim = function( self, bind )
     self._held = true
+    self._holdBind = bind
     self._aimX, self._aimY = 0, 0
 
     hook.Add( "InputMouseApply", self, function( wheel, _cmd, x, y )
@@ -427,6 +450,18 @@ end
 
 PANEL.Think = function( self )
     if self._exitingAt then return end
+
+    if self:ShouldClose() then
+        self:Close()
+        return
+
+    end
+
+    if self._holdBind and not isBindDown( self._holdBind ) then
+        self:Release()
+        return
+
+    end
 
     pollStatuses( self )
 
@@ -651,9 +686,9 @@ local function paintWedges( self, style, centerX, centerY, now )
     end
 end
 
--- a label wider than the wedge it sits in is broken between words: draw.SimpleText draws one line
--- whatever it is handed and draw.DrawText only honours a written \n, so the breaks are found by
--- measuring. a single word too wide for the wedge keeps its own line rather than being cut in two
+-- breaks a label between words, to fit maxWidth
+-- measured, since draw.DrawText only breaks on a written \n
+-- a single word too wide keeps its own line, it's never cut
 local function wrappedLines( label, font, maxWidth )
     surface.SetFont( font )
 
@@ -678,7 +713,6 @@ local function wrappedLines( label, font, maxWidth )
 
 end
 
--- how much room one line needs, from the font's own letters rather than a guess
 local function lineHeight( font )
     surface.SetFont( font )
     local _, height = surface.GetTextSize( "Ag" )
@@ -716,8 +750,8 @@ local function paintContents( self, style, centerX, centerY )
                 surface.DrawTexturedRect( x - iconSize * 0.5, y - iconSize * 0.5, iconSize, iconSize )
 
             else
-                -- wrapped into the wedge's own width, so a long label stacks onto a second line
-                -- instead of running under the wedges beside it. stacked about the same middle
+                -- wrapped to the wedge's width, so it doesn't run under the wedges beside it
+                -- the lines are stacked about the wedge's middle
                 local width = ( data.inner + data.outer ) * 0.5 * spanRad - gap
                 local lines = wrappedLines( item.label or "", font, width )
                 local height = lineHeight( font )
@@ -772,3 +806,30 @@ PANEL.Paint = function( self, w, h )
 end
 
 vgui.Register( "glee_wheel", PANEL, "glee_panel" )
+
+
+-- Flick pick ------------------------------------------------------------------
+
+local OUTER_RADIUS_1080P = 300
+
+terminator_Extras = terminator_Extras or {}
+
+-- make a wheel that's held open on a key, flicked toward a pick, and let go
+-- for simple interactions only, a pick that's wrong has to cost nothing, there's no confirming it
+-- sizes and centres it, and takes over from the last one, only one's ever up
+-- arg1, the wheel, with its items set
+-- arg2, optional bind, eg "+use", letting go of its key picks. without one, call wheel:Release yourself
+function terminator_Extras.glee_FlickPickWheel( wheel, bind )
+    -- on terminator_Extras, so an autorefresh of this file still finds it, a held one holds the mouse
+    local old = terminator_Extras.glee_FlickPickedWheel
+    if IsValid( old ) then old:Remove() end
+    terminator_Extras.glee_FlickPickedWheel = wheel
+
+    local outer = wheel:Style():Scaled( OUTER_RADIUS_1080P )
+    wheel:SetSize( outer * 2, outer * 2 )
+    wheel:Center()
+
+    wheel:HoldAim( bind )
+    LocalPlayer():EmitSound( "physics/wood/wood_crate_impact_soft3.wav", 50, 200, 0.45 )
+
+end

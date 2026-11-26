@@ -6,7 +6,9 @@ AddCSLuaFile()
         SWEP.Base = "glee_wearable_base"
         SWEP.GleeWearSlot = "head"
         SWEP.WorldModel = "models/..."
-        -- then where it sits on the wearer, below
+        SWEP.WornOnBone = {
+            { bone = "ValveBiped.Bip01_Head1", pos = Vector( 0, 0, 0 ), ang = Angle( 0, 0, 0 ) },
+        }
 
     Worn while it's carried.
     Hold V with it out to throw it, and it's dropped on death, both through the gamemode's dropper.
@@ -41,16 +43,13 @@ SWEP.Secondary.Ammo = "none"
 -- one wearable per slot, any name, eg "eyes", "head"
 SWEP.GleeWearSlot = nil
 
--- where WorldModel sits on the wearer
--- on this bone, or this attachment when their playermodel hasn't got the bone
--- each with its own offset, the two don't face the same way
--- nil skips either
-SWEP.WornBone = nil
-SWEP.WornBonePos = Vector( 0, 0, 0 )
-SWEP.WornBoneAng = Angle( 0, 0, 0 )
-SWEP.WornAttachment = nil
-SWEP.WornAttachmentPos = Vector( 0, 0, 0 )
-SWEP.WornAttachmentAng = Angle( 0, 0, 0 )
+-- the models it's worn as, terminator_Extras entries, see ENT.MyExtraModels in terminator_nextbot
+-- on bones, or on attachments when the wearer's playermodel hasn't got the bones
+-- each list has its own offsets, bones and attachments don't face the same way
+-- an entry without a model is the WorldModel
+-- save with it on to see a change, autorefresh puts it on again
+SWEP.WornOnBone = nil
+SWEP.WornOnAttachment = nil
 
 -- runs as it's put on, see the top of glee_wearing/sh_wearing.lua
 function SWEP.SetupWear( _wear )
@@ -93,8 +92,10 @@ if SERVER then
 
     end
 
-    -- not GetOwner, that's gone by OnDrop
-    function SWEP:OnDrop()
+    -- not OnDrop, that misses the drop on death
+    -- the old owner's gone by now, so it's the wearer Equip remembered that comes off
+    function SWEP:OwnerChanged()
+        if self:GetOwner() == self.glee_Wearer then return end
         takeOff( self )
 
     end
