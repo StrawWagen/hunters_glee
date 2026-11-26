@@ -51,12 +51,21 @@ local function broadcastMusic( trackName, path, data, recipients )
 
 end
 
+--[[---------------------------------------------------------
+    GM:SendMusic
+    @desc Plays music for everyone, eg GAMEMODE:SendMusic( "tracks/gunshipBattle" )
+    @param path: A track, "tracks/NAME", a stopper, "tracks/stopper/NAME", or a raw sound path.
+    @param data: Optional. For raw paths, the sound's settings, like a track's fields in sv_default_tracks.
+    For tracks, only these are read, and only for this one send.
+    .trackOverrides, fields that replace the track's own.
+    .trackAdditions, lists added onto the track's own, eg { neverOverrides = { "gunshipBattle" } }
+--]]---------------------------------------------------------
 function GM:SendMusic( path, data )
     local initialPath = path
     local trackName   = ""
     -- stop current track if it's name can be found in the path
-    if self:IsPathATrackStopper( path ) then -- tracks/stoppers/NAME
-        trackPart = string.sub( path, 17 )
+    if self:IsPathATrackStopper( path ) then -- tracks/stopper/NAME
+        local trackPart = string.sub( path, 16 )
         self:StopMusicTrackPart( trackPart )
         return
 
@@ -80,11 +89,31 @@ function GM:SendMusic( path, data )
             error( "glee_music: invalid track: " .. initialPath )
 
         end
+        local trackOverrides = data and data.trackOverrides
+        local trackAdditions = data and data.trackAdditions
         path      = resolvedPath
         trackName = name
         data      = table.Copy( trackData )  -- avoid mutating trackData
         data.author = author
 
+        if trackOverrides then
+            for key, value in pairs( trackOverrides ) do
+                data[key] = value
+
+            end
+        end
+        -- after the overrides, so an overridden list can still be added to
+        if trackAdditions then
+            for key, additions in pairs( trackAdditions ) do
+                -- a copy, an overridden list is the caller's table
+                local list = table.Copy( data[key] or {} )
+                data[key] = list
+                for _, addition in ipairs( additions ) do
+                    table.insert( list, addition )
+
+                end
+            end
+        end
     end
 
     data = data or {}
@@ -133,6 +162,7 @@ end
 
 
 -- Shuffle randomOrder tracks at the start of each round.
+-- Only the order is random, GetAMusicTrack still plays them round robin, so each send is a different song.
 hook.Add( "huntersglee_round_into_active", "glee_randomize_music_tracks", function()
     if not GAMEMODE.musicTracks then return end
     for _, trackData in pairs( GAMEMODE.musicTracks ) do

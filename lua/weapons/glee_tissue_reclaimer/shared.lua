@@ -1,11 +1,11 @@
 AddCSLuaFile()
 
 --[[------------------------------------
-    Medical Tissue Reclaimer: heals the living, revives the dead, both out of one pool of reclamation material.
+    Medical Tissue Reclaimer: heals the living, revives the dead, both out of one pool of reclamation juice.
 
     Hold primary on a hurt player to heal them, or on a dead player's projection to revive them.
     Hold secondary to heal yourself.
-    Reclamation material comes from buying another, and from health pickups found while already at full health.
+    Reclamation juice comes from buying another, and from health pickups found while already at full health.
 
     Read top to bottom: setup, telling the owner no, other addons' entities, the viewmodel, who's healable, healing,
     picking up material, then Think, which runs it all every tick.
@@ -35,7 +35,7 @@ SWEP.UseHands = true
 SWEP.HoldType = "physgun"
 SWEP.GleeFlashlightInHand = true -- no barrel to mount the flashlight on, it's held in the off hand
 
--- reclamation material is the owner's GLEE_RECLAMATION_MATERIAL ammo, no clip
+-- reclamation juice is the owner's GLEE_RECLAMATION_MATERIAL ammo, no clip
 SWEP.Primary.ClipSize = -1
 SWEP.Primary.DefaultClip = 200 -- also what each shop resupply adds
 SWEP.Primary.Automatic = false
@@ -145,7 +145,7 @@ end
 
 if CLIENT then
     terminator_Extras.glee_CL_SetupSwep( SWEP, CLASS, "materials/vgui/hud/" .. CLASS .. ".png" )
-    language.Add( "GLEE_RECLAMATION_MATERIAL_ammo", "Reclamation Material" )
+    language.Add( "GLEE_RECLAMATION_MATERIAL_ammo", "Reclamation Juice" )
 
 end
 
@@ -179,7 +179,7 @@ local function playServerOneShot( wep, snd )
 
 end
 
-local outOfMaterialText = "NO RECLAMATION MATERIAL LEFT" -- the notify's, and the hint's, see HintPostStack
+local outOfMaterialText = "NO RECLAMATION JUICE LEFT" -- the notify's, and the hint's, see HintPostStack
 
 -- out of material, nothing else it says matters, so it's said over every other failure
 -- one replaceKey from both realms, see notifyFailed and notifyFromServer
@@ -492,7 +492,7 @@ end
 
 local function insufficientNotice()
     return {
-        text = "INSUFFICIENT RECLAMATION MATERIAL",
+        text = "INSUFFICIENT RECLAMATION JUICE",
         description = "Reclamation halted.",
         replaceKey = "glee_reclaimer_reclamation",
     }
@@ -777,7 +777,7 @@ hook.Add( "PlayerCanPickupItem", "glee_reclaimer_absorbsitems", function( ply, i
 
         huntersGlee_Notify( { ply }, {
             text = "MATERIAL RECLAIMED",
-            description = "+" .. toGive .. " Reclamation Material, from " .. absorbedNames[itemsClass] .. ".",
+            description = "+" .. toGive .. " Reclamation Juice, from " .. absorbedNames[itemsClass] .. ".",
             kind = "good",
             replaceKey = "glee_reclaimer_absorbed",
         } )
@@ -861,7 +861,8 @@ function SWEP:Think()
             owner:EmitSound( ReviveDenySound, 75, 80 )
 
             -- letting go is on purpose, and getting up shows for itself
-            local why = tooFar and "Tissue out of range." or cantAfford and "Insufficient reclamation material."
+            -- tooFar is the medic walking off, "tissue out of range" had players dragging the body to the projection
+            local why = tooFar and "Desynced with death location." or cantAfford and "Insufficient reclamation juice."
             if why then
                 huntersGlee_Notify( { owner }, {
                     text = "REVIVAL INTERRUPTED",
@@ -900,6 +901,7 @@ end
 -- The other files -----------------------------------------------------------
 -- what they share with this file and each other goes through SWEP.Reclaimer
 -- each takes what it needs at its top, and adds what the files after it need at its bottom
+-- only at load, every weapon gets its own deep copy of this table, so self.Reclaimer shares nothing
 
 SWEP.Reclaimer = {
     CLASS = CLASS,

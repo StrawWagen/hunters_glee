@@ -286,6 +286,18 @@ divine intervention description change ( encase yourself within a weak shell of 
 -- shield on back eating bullets? --done
 -- ragdoll progress carrying between revives -- done
 
+-- shoot beartrap to break beartrap -- done
+-- shove rename to hands -- done
+-- tissue out of range, tries to move body towards hologram -- done
+-- hologram makes it hard to see the snapping body gag -- done
+-- insufficient reclimation material makes them think of the corpse not being here -- done
+-- is turret placing hint big? -- done
+
+-- custom mixed misery rules -- done
+    -- rotatingWaves, makes every wave come from a different misery -- done
+    -- optional, don't error if this misery doesn't exist  -- done
+
+
 
 -- make radio a purchasable item, moving all global/prox chat stuff to settings menu
 -- gateway to expensive items, airdropped in
@@ -636,9 +648,7 @@ goes in a glee rebinding menu?
 
 -- fishing while dead
 
--- shoot beartrap to break beartrap
 -- E to interact is weak
--- shove rename to hands
 -- different hint in later tutorial rounds
 -- a body with a skull hint plays through objects
 -- a flaregun hint was misunderstood 
@@ -659,23 +669,24 @@ goes in a glee rebinding menu?
 
 -- bank hacker item that lets you see the roll of current misery in new menu, see a bunch of raw gamemode data
 
--- custom mixed misery rules
--- rotatingWaves, makes every wave come from a different misery
--- optional, don't error if this misery doesn't exist 
-
 -- tip the bank when signing
 -- command to reset your own hints
 -- blastcrabs spawn thru walls
 -- black bars
 -- tank zambs move faster while on fire?
 -- players spawning into the server needs a stronger effect
--- tissue out of range, tries to move body towards hologram
--- hologram makes it hard to see the snapping body gag
--- insufficient reclimation material makes them think of the corpse not being here
 -- dont finish the job with reclaimer, leave a body 
--- is turret placing hint big?
 -- reclaimer removes decals from the wall?
 -- shop stays open after round ends
+
+-- make ALL func_movelinear do at least 1 crushing damage
+-- snap post-respawn unstucks to navmesh
+-- impulse 201
+
+-- ULTRAWIDE AND HINTS?
+-- place with mouse1, do cool interactions with R?
+-- spray key open taunt menu if client uploads are disabled?
+
 
 -- HIM
 fullscreen datamosh effect
@@ -685,3 +696,5 @@ catacombs of solaris
 i have drank my cup of dust
 -- !!! UNEARNED STEALING
 HIM is a strong case of apocryphal design
+
+-- goop that reinforces func breakable surf windows

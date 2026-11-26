@@ -42,6 +42,9 @@ include( "modules/deadplayerfx/cl_souls.lua" )
 include( "modules/deadplayerfx/cl_deaddesaturation.lua" )
 include( "modules/deadpositions/cl_deadpositions.lua" )
 
+include( "modules/spectatewatching/cl_watchscorer.lua" )
+include( "modules/spectatewatching/cl_watchcamera.lua" )
+
 include( "modules/bonemaniphandler/cl_bonemanip.lua" )
 
 include( "modules/contextmenu_widgets/cl_desktopwindowgate.lua" ) -- the widgets gate their icons through it

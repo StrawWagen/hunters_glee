@@ -58,13 +58,6 @@ local function modelOf( roles, ply )
 
 end
 
-local function giveWeapons( ply, weapons )
-    for _, weapon in ipairs( weapons or {} ) do
-        GAMEMODE:GiveMiserySpawnWeapon( ply, weapon )
-
-    end
-end
-
 -- the base's and the variant's, as a set of names
 local function statusEffectsOf( roles, ply )
     local effects = {}
@@ -92,7 +85,7 @@ local function giveStatusEffects( roles, ply )
     end
 end
 
--- the dead get their start weapons on their next spawn
+-- the dead get its weapons on their next spawn, start weapons only if they haven't had them this round
 -- taking a variant away doesn't touch the last one's weapons, they just stop coming back on respawn
 -- its status effects do go, effects outlive death so the dead lose them too
 local function setVariant( roles, ply, variant )
@@ -103,9 +96,7 @@ local function setVariant( roles, ply, variant )
 
     local oldEffects = statusEffectsOf( roles, ply )
 
-    local id = ply:SteamID64()
-    roles.variantsById[id] = variant
-    roles.owedStartWeapons[id] = nil
+    roles.variantsById[ply:SteamID64()] = variant
 
     local newEffects = statusEffectsOf( roles, ply )
     for name in pairs( oldEffects ) do
@@ -114,19 +105,13 @@ local function setVariant( roles, ply, variant )
 
     end
 
-    if not ply:Alive() then
-        if variant then
-            roles.owedStartWeapons[id] = true
-
-        end
-        return
-
-    end
+    if not ply:Alive() then return end
 
     if variant then
-        giveWeapons( ply, variant.role.startWeapons )
-        giveWeapons( ply, variant.role.defaultWeapons )
+        for _, added in ipairs( roles.variantWeapons[variant.name] ) do
+            GAMEMODE:GiveMiserySpawnWeapon( ply, added )
 
+        end
     end
     giveStatusEffects( roles, ply )
     setHelpers.redressPlayer( ply )
@@ -253,7 +238,8 @@ function setHelpers.setBaseRole( lifecycle, name )
         autoVariants = {},
         -- by SteamID64, so rejoining keeps it
         variantsById = {},
-        owedStartWeapons = {},
+        -- [variant name] = what AddMiserySpawnWeapon returned, for handing them out mid-life
+        variantWeapons = {},
         -- picks made since the last round ended are for the next round, eg a misery voted in during limbo
         rerollDue = false,
     }
@@ -270,6 +256,28 @@ function setHelpers.setBaseRole( lifecycle, name )
     end
     for _, weapon in ipairs( role.defaultWeapons or {} ) do
         GAMEMODE:AddMiserySpawnWeapon( lifecycle, "default", weapon, isOnBase )
+
+    end
+
+    -- every variant, not just addRoleVariant's, setPlayerRoleVariant can hand any of them out
+    -- after the base's, so a variant's weapons are the ones they're holding
+    for variantName, variantRole in SortedPairs( role.variants or {} ) do
+        local function isOnVariant( ply )
+            local variant = variantOf( roles, ply )
+            return variant ~= nil and variant.name == variantName
+
+        end
+
+        local added = {}
+        for _, weapon in ipairs( variantRole.startWeapons or {} ) do
+            table.insert( added, GAMEMODE:AddMiserySpawnWeapon( lifecycle, "start", weapon, isOnVariant ) )
+
+        end
+        for _, weapon in ipairs( variantRole.defaultWeapons or {} ) do
+            table.insert( added, GAMEMODE:AddMiserySpawnWeapon( lifecycle, "default", weapon, isOnVariant ) )
+
+        end
+        roles.variantWeapons[variantName] = added
 
     end
 
@@ -293,7 +301,7 @@ function setHelpers.setBaseRole( lifecycle, name )
         end
     end )
 
-    lifecycle:Hook( "glee_true_PlayerSpawn", "glee_roles", function( ply )
+    lifecycle:Hook( "glee_EarnedPlayerSpawn", "glee_roles", function( ply )
         local id = ply:SteamID64()
         if not roles.seenThisRound[id] then
             roles.seenThisRound[id] = true
@@ -302,16 +310,6 @@ function setHelpers.setBaseRole( lifecycle, name )
         end
 
         giveStatusEffects( roles, ply )
-
-        local variant = variantOf( roles, ply )
-        if not variant then return end
-
-        if roles.owedStartWeapons[id] then
-            roles.owedStartWeapons[id] = nil
-            giveWeapons( ply, variant.role.startWeapons )
-
-        end
-        giveWeapons( ply, variant.role.defaultWeapons )
 
     end )
 

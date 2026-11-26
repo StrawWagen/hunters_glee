@@ -176,7 +176,35 @@ local function manageSpeedLimit( ent, navData, idealMovePos, loveSkybox )
     end
 
     ent:SetSaveValue( "m_flPathMaxSpeed", newSpeed )
-    return newSpeed
+
+end
+
+-- MoveTopSpeed is for huge maps with a ton of ground to cover
+-- anything smaller, like a courtyard, and it blitzes in way faster than it can stop
+local launchMinRoom = 4000
+
+-- far from the goal, with nothing but air between us and it
+local function hasRoomToLaunch( ent, navData, goalPos )
+    local myPos = ent:GetPos()
+    if myPos:Distance( goalPos ) < launchMinRoom then return false end
+
+    local obstacleHull = navData.cfg.obstacleHull
+    local launchTrData = {
+        start = myPos,
+        endpos = goalPos,
+        mask = MASK_SOLID_BRUSHONLY,
+        mins = Vector( -obstacleHull, -obstacleHull, -obstacleHull / 4 ),
+        maxs = Vector( obstacleHull, obstacleHull, obstacleHull / 4 ),
+
+    }
+    local launchTrResult = util.TraceHull( launchTrData )
+
+    if isDebugging( navData ) then
+        debugoverlay.SweptBox( launchTrData.start, launchTrResult.HitPos, launchTrData.mins, launchTrData.maxs, Angle( 0, 0, 0 ), 5, Color( 255, 150, 0 ) )
+
+    end
+
+    return not launchTrResult.Hit
 
 end
 
@@ -188,7 +216,7 @@ end
 --   obstacleHull               half-width of the "is the way ahead blocked" trace
 --   wayfindingHull             half-size of the sampling traces
 --   slowMovingHull             half-size of the sampling traces when slow, to squeeze through gaps
---   startAtTopSpeed            optional, starts at full speed if the way's clear, for flyers arriving from the skybox
+--   startAtTopSpeed            optional, starts at full speed if there's a ton of open air to the first goal, for flyers arriving from the skybox
 --   wanderHeight               above the floor, for WanderPos, see behaviours/sv_wander
 --   debugConVar                optional, draws the traces
 -- call after Spawn, ent has to take the SetTrack input
@@ -208,9 +236,9 @@ function gleeFlightNavigator.Attach( ent, cfg, firstGoalPos )
     end )
 
     pointTrackAt( ent, navData, firstGoalPos )
+    manageSpeedLimit( ent, navData, firstGoalPos )
 
-    local topSpeed = manageSpeedLimit( ent, navData, firstGoalPos )
-    if cfg.startAtTopSpeed and topSpeed >= cfg.speedLimit * 0.5 then
+    if cfg.startAtTopSpeed and hasRoomToLaunch( ent, navData, firstGoalPos ) then
         ent:Fire( "MoveTopSpeed", 1, 0.1 )
 
     end

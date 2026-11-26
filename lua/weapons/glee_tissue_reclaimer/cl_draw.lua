@@ -2,6 +2,8 @@
 -- drawn for everyone who can see it held, from the viewmodel in first person, the world model otherwise
 -- the healing's beams, the loops and the projection's sounds, then SWEP:DrawBeams at the bottom, which ties it all together
 
+DEFINE_BASECLASS( "weapon_base" )
+
 local reclaimer = SWEP.Reclaimer
 local CLASS = reclaimer.CLASS
 local reviveReach = reclaimer.reviveReach
@@ -24,6 +26,7 @@ local poseHologram = reclaimer.poseHologram
 local getBonePos = reclaimer.getBonePos
 local drawHologram = reclaimer.drawHologram
 local reclaimBones = reclaimer.reclaimBones
+local restoreHologram = reclaimer.restoreHologram
 
 -- The healing's beams ---------------------------------------------------
 -- held on whoever the kit's healing, see HealTarget
@@ -427,6 +430,8 @@ end )
 
 -- Drawing it all --------------------------------------------------------
 
+local revivingBright = 0.6 -- the projection while it's revived, under the 1 it brightens to when aimed
+
 -- see HeldProjection and drawBeam, one for each DrawBeams draws
 local heldAim = {}
 local pointerBeam = {}
@@ -510,10 +515,18 @@ function SWEP:DrawBeams()
 
         end
 
-        -- brightens when aimed close enough to revive, see FindRevivable, and while they're revived, for everyone watching
+        -- brightens when aimed close enough to revive, see FindRevivable
+        -- dims again while they're revived, for everyone watching, the corpse snapping into it is the show
         local revivingThem = self:GetRevivingTarget() == data.ply
         local aimedAt = aimPos and aimPos:DistToSqr( data.pos ) < reviveReach^2
-        local bright = ( aimedAt or revivingThem ) and 1 or 0.45
+        local bright = 0.45
+        if revivingThem then
+            bright = revivingBright
+
+        elseif aimedAt then
+            bright = 1
+
+        end
         local beamStrength = revivingThem and 2 or 1
         local built = math.Clamp( ( CurTime() - self.glee_projectStart ) / buildTime, 0, 1 )
 
@@ -540,6 +553,9 @@ function SWEP:DrawBeams()
         if revivingThem then
             reviveFrac = self:GetRevivingProgress()
             reclaimBones( self, data.ply, holo, reviveFrac, simple )
+
+        else
+            restoreHologram( holo )
 
         end
 
@@ -574,16 +590,33 @@ function SWEP:DrawBeams()
 
 end
 
+-- held reclaimers renew this every frame they animate, so the hook below never asks every player what they're holding
+-- same as termhunt_hands' sprinting
+local heldUntil = {}
+local heldLinger = 0.1 -- seconds
+
+function SWEP:TranslateActivity( act )
+    heldUntil[self] = CurTime() + heldLinger
+    return BaseClass.TranslateActivity( self, act )
+
+end
+
 hook.Add( "PostDrawTranslucentRenderables", "glee_reclaimer_drawbeams", function( drawingDepth, drawingSkybox )
     if drawingDepth or drawingSkybox then return end
 
-    for _, ply in player.Iterator() do
-        if ply:IsDormant() then continue end
-        if ply:Health() <= 0 then continue end
+    local now = CurTime()
+    for wep, untilTime in pairs( heldUntil ) do
+        if untilTime < now or not IsValid( wep ) then
+            heldUntil[wep] = nil
+            continue
 
-        local wep = ply:GetActiveWeapon()
-        if not IsValid( wep ) then continue end
-        if wep:GetClass() ~= CLASS then continue end
+        end
+
+        local owner = wep:GetOwner()
+        if not IsValid( owner ) then continue end
+        if not owner:IsPlayer() then continue end -- npcs translate activities too
+        if owner:GetActiveWeapon() ~= wep then continue end -- the linger outlasts a holster, which already stopped its sounds
+        if owner:Health() <= 0 then continue end
 
         wep:DrawBeams()
 

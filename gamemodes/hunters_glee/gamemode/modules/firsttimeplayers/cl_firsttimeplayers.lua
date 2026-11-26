@@ -17,6 +17,15 @@ local function tutorialLessonName( level )
 
 end
 
+local function spectateWatchPls()
+    timer.Create( "glee_spectatewatch_whenwedie", 0, 0, function()
+        if LocalPlayer():Health() > 0 then return end
+        GAMEMODE:StartSpectateWatching()
+        timer.Remove( "glee_spectatewatch_whenwedie" )
+
+    end )
+end
+
 -- The convar, then a lesson. Some players' convars don't save, and they'd get the tutorial every time
 function GAMEMODE:HasSeenTutorial()
     local level = tutorialLevel()
@@ -161,19 +170,31 @@ namedDecrees.tutorial_ghostly = function()
     if GAMEMODE:HasSeenTutorial() then return end
     LocalPlayer().glee_SpawnedInDeadTutorialPlease = true
 
+    spectateWatchPls()
+
+    -- the next round can start partway through, respawning them
     local decree = {
         "Welcome.\nTo the hunt!",
-        "You are...",
-        "Temporarily...",
-        "Separate from your body.",
-        "...",
-        "You are DEAD.",
-        "But don't worry.",
-        "Your SOUL persists...",
-        "Death is only temporary.",
+        branches = {
+            pick = function() return LocalPlayer():Health() > 0 and "revived" or "dead" end,
+
+            dead = {
+                "You are...",
+                "Temporarily...",
+                "Separate from your body.",
+                "...",
+                "You are DEAD.",
+                "But don't worry.",
+                "Your SOUL persists...",
+                "Death is only temporary.",
+            },
+            revived = {
+                interrupt = { "Oh, Nevermind.\nYou're alive.", "We'll speak again soon" },
+            },
+        },
     }
 
-    tellOfDivineIntervention( decree,
+    tellOfDivineIntervention( decree.branches.dead,
         { "DIVINE INTERVENTION AWAITS YOU", "Just, be ready to pay the price..." },
         { "The GLEE of HAUNTING,\nawaits you...", "HAUNT THEM." }
     )
@@ -215,6 +236,8 @@ namedDecrees.ghostshop = function()
 
     end
 
+    spectateWatchPls()
+
     -- revived partway through, the server sends it again on their next death
     local decree = {
         branches = {
@@ -248,6 +271,9 @@ end
 
 -- ghostshop, for those who spawned in dead. Their first death since coming back, the ghostly tutorial covered haunting
 namedDecrees.diedafterspawningindead = function()
+
+    spectateWatchPls()
+
     GAMEMODE:ShowDecree( {
         branches = {
             pick = function() return LocalPlayer():Health() > 0 and "revived" or "dead" end,

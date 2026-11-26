@@ -20,6 +20,8 @@ ENT.TriggerBoundsRagdoll = 56
 function ENT:SetupDataTables()
     self:NetworkVar( "Bool", "IsTerminatorSkull" )
     self:NetworkVar( "Int", "Skulls" )
+    -- whose head this was, "" for skulls nobody died for. A SteamID, so it survives them rejoining
+    self:NetworkVar( "String", "OwnerSteamID64" )
 
     if SERVER then
         self:SetSkulls( 1 )
@@ -224,7 +226,7 @@ function ENT:DoScore( reciever )
 
             end
         end
-    elseif not reciever.glee_selfskullhinted and self.skullSteamId and self.skullSteamId == reciever:SteamID64() then
+    elseif not reciever.glee_selfskullhinted and self:GetOwnerSteamID64() == reciever:SteamID64() then
         reciever.glee_selfskullhinted = true
         reciever.glee_skullhinted = true
         huntersGlee_Announce( { reciever }, 10, 10, "My skull...\nWhy did I come back here?" )
@@ -237,7 +239,7 @@ function ENT:DoScore( reciever )
 
     elseif not reciever.glee_skullhinted then
         reciever.glee_skullhinted = true
-        if self.skullSteamId then
+        if self:GetOwnerSteamID64() ~= "" then
             huntersGlee_Announce( { reciever }, 10, 10, "That's their skull..." )
             GAMEMODE:GivePanic( reciever, 60 )
 
@@ -250,6 +252,7 @@ function ENT:DoScore( reciever )
 end
 
 local closeEnoughToStepOn = 10^2
+local bodyHintTrData = { mask = MASK_SOLID }
 
 -- fires every tick for everything in our trigger bounds, including the ragdoll we're parented to
 function ENT:Touch( touched )
@@ -266,9 +269,22 @@ function ENT:Touch( touched )
         myTbl.DoScore( self, touched )
 
     elseif touchedIsPly and entMeta.IsRagdoll( parent ) and touchedTbl.glee_skullhinted and not touchedTbl.glee_skullInBodyHint then
-        touchedTbl.glee_skullInBodyHint = true
-        huntersGlee_Announce( { touched }, 11, 10, "A body...\nWith a skull...?" )
+        -- the ragdoll trigger is big, don't hint through walls
+        -- rate limited per player, so one player standing here doesn't starve the others
+        if ( touchedTbl.glee_nextSkullInBodyTrace or 0 ) < CurTime() then
+            touchedTbl.glee_nextSkullInBodyTrace = CurTime() + math.Rand( 0.1, 0.25 )
 
+            bodyHintTrData.start = entMeta.WorldSpaceCenter( self )
+            bodyHintTrData.endpos = touched:GetShootPos()
+            bodyHintTrData.filter = { self, parent, touched }
+            local result = util.TraceLine( bodyHintTrData )
+
+            if not result.Hit then
+                touchedTbl.glee_skullInBodyHint = true
+                huntersGlee_Announce( { touched }, 11, 10, "A body...\nWith a skull...?" )
+
+            end
+        end
     end
 
     if myTbl.GetIsTerminatorSkull( self ) then return end

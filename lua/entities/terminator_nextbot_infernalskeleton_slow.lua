@@ -8,6 +8,7 @@ ENT.PrintName = "Infernal Ambler"
 ENT.Spawnable = false
 
 ENT.IsFodder = true
+ENT.IgniteOnHit = false
 
 terminator_Extras.RegisterNPC( "terminator_nextbot_infernalskeleton_slow", ENT, {
     Weapons = { "weapon_infernalskeleton_fists" },
@@ -21,7 +22,6 @@ end
 
 ENT.SpawnHealth = 25
 ENT.SpawnHeadlessChance = 85
-ENT.IgniteOnHit = false
 
 ENT.FistDamageMul = 0.1
 ENT.FistRangeMul = 0.75

@@ -9,6 +9,9 @@ local GAMEMODE = GAMEMODE or GM
     Each misery's .startWeapons and .defaultWeapons come in when it activates, see the default misery for everyone's kit.
     GM:AddMiserySpawnWeapon adds more, eg a role's.
     Everything leaves with the lifecycle that added it.
+
+    On spawn they get every default weapon, then the start weapons they're owed, in the order they were added.
+    The last one they got is what they're holding, so a role's weapons beat the misery's.
 --]]
 
 -- [kind] = entries, in the order they were added
@@ -84,14 +87,30 @@ local function giveWeapon( ply, entry )
 
 end
 
-local function makeWeaponEntry( weapon, shouldGiveFunc )
+local function makeWeaponEntry( kind, weapon, shouldGiveFunc )
     return {
+        kind = kind,
         weapon = weapon,
         shouldGiveFunc = shouldGiveFunc,
         picks = {},
         -- by SteamID64, so rejoining doesn't earn another, start weapons only
         given = {},
     }
+end
+
+-- giveWeapon, but a start weapon only once a round
+-- only marked given once shouldGiveFunc says yes, so someone handed a role while dead still gets its start weapons
+local function giveOwed( ply, entry )
+    if entry.shouldGiveFunc and not entry.shouldGiveFunc( ply ) then return end
+
+    if entry.kind == "start" then
+        local id = ply:SteamID64()
+        if entry.given[id] then return end
+        entry.given[id] = true
+
+    end
+    return giveWeapon( ply, entry )
+
 end
 
 
@@ -105,14 +124,15 @@ end
     While the round's waiting to start it's topped up, except carryables like the sentry turret.
     Once the hunt's on, losing it is for keeps.
     "default" is every time they come back from the dead, round or no round.
-    A spawn that isn't after a death doesn't count, eg the gamemode unsticking them, see glee_true_PlayerSpawn.
+    A spawn that isn't after a death doesn't count, eg the gamemode unsticking them, see glee_EarnedPlayerSpawn.
     @param lifecycle: What it leaves with, eg the misery's.
     @param kind: "start" or "default".
     @param weapon: A class, or a shopHelpers.purchaseWeapon table for one that comes with extra ammo.
     Any of the table's fields but class can be a function( ply ), eg ammo that depends on how many are playing.
     Or a function( ply ) returning either, eg a random pick, called once per player per round.
     @param shouldGiveFunc: Optional, function( ply ), return false to leave them out.
-    @return: None
+    It's asked again on every spawn, so who gets it can change mid-round.
+    @return: The added weapon, for GM:GiveMiserySpawnWeapon.
 --]]---------------------------------------------------------
 function GM:AddMiserySpawnWeapon( lifecycle, kind, weapon, shouldGiveFunc )
     local list = lists[kind]
@@ -121,7 +141,7 @@ function GM:AddMiserySpawnWeapon( lifecycle, kind, weapon, shouldGiveFunc )
 
     end
 
-    local entry = makeWeaponEntry( weapon, shouldGiveFunc )
+    local entry = makeWeaponEntry( kind, weapon, shouldGiveFunc )
     table.insert( list, entry )
     lifecycle:AddTeardown( function()
         table.RemoveByValue( list, entry )
@@ -129,24 +149,24 @@ function GM:AddMiserySpawnWeapon( lifecycle, kind, weapon, shouldGiveFunc )
     end )
 
     for _, ply in ipairs( self:getAlivePlayers() ) do
-        if kind == "start" then
-            entry.given[ply:SteamID64()] = true
-
-        end
-        giveWeapon( ply, entry )
+        giveOwed( ply, entry )
 
     end
+    return entry
+
 end
 
 --[[---------------------------------------------------------
     GM:GiveMiserySpawnWeapon
-    @desc Gives ply weapon right now, a function weapon is rolled fresh every call.
+    @desc Gives ply an added weapon right now, if its shouldGiveFunc lets them have it.
+    For when shouldGiveFunc starts saying yes mid-life, eg a role handed out.
+    A start weapon counts as their one for the round, they won't get another on spawn.
     @param ply: Who gets it.
-    @param weapon: Anything GM:AddMiserySpawnWeapon's weapon takes.
-    @return: What they hold of it, nil when there's no room to carry it.
+    @param added: What GM:AddMiserySpawnWeapon returned.
+    @return: What they hold of it, nil when they're turned down, already had their start one, or have no room to carry it.
 --]]---------------------------------------------------------
-function GM:GiveMiserySpawnWeapon( ply, weapon )
-    return giveWeapon( ply, makeWeaponEntry( weapon ) )
+function GM:GiveMiserySpawnWeapon( ply, added )
+    return giveOwed( ply, added )
 
 end
 
@@ -175,37 +195,44 @@ hook.Add( "huntersglee_round_into_inactive", "glee_spawnweapons", function()
     end
 end )
 
--- the first default weapon is what they're holding when they spawn, eg the default misery's crowbar
--- a tick late, Loadout's shove comes after glee_true_PlayerSpawn, and would be picked over it
-local function holdFirstDefault( ply )
-    local first = lists.default[1]
-    if not first then return end
+-- defaults before starts, so the first life ends on the start weapon and the rest on the last default
+local spawnOrder = { "default", "start" }
 
-    local class = classOf( weaponFor( ply, first ) )
+-- the last spawn weapon they hold is what they're holding
+-- worked out a tick late, after other glee_EarnedPlayerSpawn hooks are done changing things, eg a role handed to a late joiner
+-- and Loadout's shove comes after glee_EarnedPlayerSpawn, it'd be picked over ours
+local function holdLastGiven( ply )
     timer.Simple( 0, function()
         if not IsValid( ply ) then return end
-        if not ply:HasWeapon( class ) then return end
-        ply:SelectWeapon( class )
+
+        local last
+        for _, kind in ipairs( spawnOrder ) do
+            for _, entry in ipairs( lists[kind] ) do
+                if entry.shouldGiveFunc and not entry.shouldGiveFunc( ply ) then continue end
+
+                local class = classOf( weaponFor( ply, entry ) )
+                -- it's on their back, not in their hands
+                if isCarryable( class ) then continue end
+                if not ply:HasWeapon( class ) then continue end
+                last = class
+
+            end
+        end
+        if not last then return end
+        ply:SelectWeapon( last )
 
     end )
 end
 
-hook.Add( "glee_true_PlayerSpawn", "glee_spawnweapons", function( spawned )
-    for _, entry in ipairs( lists.default ) do
-        giveWeapon( spawned, entry )
+hook.Add( "glee_EarnedPlayerSpawn", "glee_spawnweapons", function( spawned )
+    for _, kind in ipairs( spawnOrder ) do
+        for _, entry in ipairs( lists[kind] ) do
+            giveOwed( spawned, entry )
 
+        end
     end
 
-    local id = spawned:SteamID64()
-    for _, entry in ipairs( lists.start ) do
-        if entry.given[id] then continue end
-        entry.given[id] = true
-
-        giveWeapon( spawned, entry )
-
-    end
-
-    holdFirstDefault( spawned )
+    holdLastGiven( spawned )
 
 end )
 

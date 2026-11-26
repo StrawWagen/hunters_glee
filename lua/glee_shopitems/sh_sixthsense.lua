@@ -790,9 +790,17 @@ if SERVER then
     -- randomized so strands don't all update in sync, client's strandFadeDelay must outlast the longest gap these allow
     local pathRefreshMin = 1
     local pathRefreshMax = 2
-    local pathSendDelayMax = 0.5 -- after each path is sent
+    local pathSendDelayMax = 0.3 -- after each path is sent
 
-    local maxPaths = 4
+    -- each type gets its reserved strands first, so a crowd of hunters can't drown out everything else
+    -- the rest go to whatever matters most, and a type with nothing sensed hands its reserve back
+    -- traps reserve none, they compete for what's left
+    local maxPaths = 8
+    local reservedPaths = {
+        [SENSE_HOSTILE] = 6,
+        [SENSE_LOOT] = 1,
+        [SENSE_FRIENDLY] = 1,
+    }
     -- closer than this the blobs take over
     -- keep it above the client's wispPinBlend, isSameShape ignores everything a path has inside that
     local minPathDistance = 300
@@ -853,6 +861,39 @@ if SERVER then
 
         table.sort( sensed, function( a, b ) return a.priority > b.priority end )
         return sensed
+
+    end
+
+    -- sensed is sorted most important first, and what this returns keeps that order
+    local function pickPathTargets( sensed )
+        local reserved = {}
+        local reservedCount = 0
+        local reservesLeft = table.Copy( reservedPaths )
+        for _, target in ipairs( sensed ) do
+            if reservedCount >= maxPaths then break end
+
+            local left = reservesLeft[target.senseType]
+            if not left or left <= 0 then continue end
+
+            reservesLeft[target.senseType] = left - 1
+            reserved[target] = true
+            reservedCount = reservedCount + 1
+
+        end
+
+        local openSlots = maxPaths - reservedCount
+        local picked = {}
+        for _, target in ipairs( sensed ) do
+            if reserved[target] then
+                picked[#picked + 1] = target
+
+            elseif openSlots > 0 then
+                openSlots = openSlots - 1
+                picked[#picked + 1] = target
+
+            end
+        end
+        return picked
 
     end
 
@@ -922,9 +963,7 @@ if SERVER then
 
     -- one pass, builds paths to the most important stuff we sense, calling onPathBuilt( path ) as each finishes
     local function buildSensePaths( owner, onPathBuilt )
-        local sensed = collectSensed( owner )
-        for i = 1, math.min( maxPaths, #sensed ) do
-            local target = sensed[i]
+        for _, target in ipairs( pickPathTargets( collectSensed( owner ) ) ) do
             local ent = target.ent
             if not IsValid( ent ) then continue end
             if not IsValid( owner ) then return end

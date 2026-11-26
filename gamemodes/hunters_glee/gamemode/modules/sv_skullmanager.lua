@@ -52,7 +52,13 @@ function GM:SpawnASkull( pos, ang, termSkull, persistParent )
 
 end
 
-function GM:HandleRagdollSkulling( ragdoll )
+--[[---------------------------------------------------------
+    GM:HandleRagdollSkulling
+    @desc Puts a skull pickup in the ragdoll's head, if it has one.
+    @param ragdoll: The body to skull.
+    @param skullWorth: Optional, how many skulls it's worth. 1 if nil.
+---------------------------------------------------------]]
+function GM:HandleRagdollSkulling( ragdoll, skullWorth )
     local canSkull = glee_RagdollHasASkull( ragdoll )
     if not canSkull then return end
 
@@ -60,6 +66,10 @@ function GM:HandleRagdollSkulling( ragdoll )
     if not skull then return end
     if not skull:AttachToRagdollsSkull( ragdoll ) then SafeRemoveEntity( skull ) return end
 
+    if skullWorth then
+        skull:SetSkulls( skullWorth )
+
+    end
 end
 
 local spawnableStates = {
@@ -110,7 +120,7 @@ hook.Add( "PlayerDeath", "glee_dropplayerskulls", function( died, _, attacker )
     local newSkull = GAMEMODE:SpawnASkull( died:GetShootPos(), died:GetAimVector():Angle(), nil, died )
 
     newSkull.nextPickup = CurTime() + 1
-    newSkull.skullSteamId = died:SteamID64()
+    newSkull:SetOwnerSteamID64( died:SteamID64() )
     newSkull.fromSomethingWitnessable = true
 
 end )
@@ -128,7 +138,7 @@ hook.Add( "PreCleanupMap", "glee_savepersistentskulls", function()
         skullTbl.ang = skull:GetAngles()
         skullTbl.persist = true
         skullTbl.termSkull = skull:GetIsTerminatorSkull()
-        skullTbl.skullSteamId = skull.skullSteamId
+        skullTbl.ownerSteamID64 = skull:GetOwnerSteamID64()
         skullTbl.skulls = skull:GetSkulls()
 
         table.insert( GAMEMODE.persistentSkulls, skullTbl )
@@ -149,7 +159,7 @@ hook.Add( "huntersglee_round_into_active", "glee_loadpersistentskulls", function
                 skull.persistentSkull = true
 
             end
-            skull.skullSteamId = skullTbl.skullSteamId
+            skull:SetOwnerSteamID64( skullTbl.ownerSteamID64 )
             skull:SetSkulls( skullTbl.skulls )
             skull:SetPos( skullTbl.pos )
             skull:SetAngles( skullTbl.ang )

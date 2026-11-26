@@ -609,7 +609,7 @@ if SERVER then
 
             self:NewTumor()
 
-            self:Hook( "glee_true_PlayerSpawn", function( spawned )
+            self:Hook( "glee_EarnedPlayerSpawn", function( spawned )
                 if spawned ~= owner then return end
                 self:NewTumor()
 
@@ -783,7 +783,7 @@ if SERVER then
         function( self, owner ) -- setup func
             self.lastHadCompany = CurTime()
 
-            self:Hook( "glee_true_PlayerSpawn", function( spawned )
+            self:Hook( "glee_EarnedPlayerSpawn", function( spawned )
                 if spawned ~= owner then return end
                 self.lastHadCompany = CurTime()
 
@@ -1173,7 +1173,7 @@ if SERVER then
 
                     end
 
-                    GAMEMODE:HandleRagdollSkulling( ragdoll )
+                    GAMEMODE:HandleRagdollSkulling( ragdoll, owner.glee_SkullWorth )
 
                     ragdoll:SetNW2Entity( "glee_astralprojection_ragdoll_owner", owner )
                     ragdoll:SetNWString( "glee_lookedat_statusline", "Just sleeping..." )

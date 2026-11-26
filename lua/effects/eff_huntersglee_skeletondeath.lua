@@ -30,6 +30,11 @@ function EFFECT:Init( data )
 
     end
 
+    if skeleton.IgniteOnHit then
+        skeleton:CreateParticleEffect( "glee_infernal_skeleton_death", 0 )
+
+    end
+
     local scale = skeleton:GetModelScale()
     local scaleSqr = scale * scale
     local getBonePos = terminator_Extras.GetRandomHitboxPoint

@@ -139,6 +139,7 @@ local roles = {
             ["reporter"] = {
                 startWeapons = { "weapon_glee_crapvidcam" },
                 count = 1,
+                minPlayers = 5,
             },
             ["engineer"] = {
                 startWeapons = {

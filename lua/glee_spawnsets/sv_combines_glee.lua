@@ -144,7 +144,6 @@ function spawnSet:Activate()
         GAMEMODE:SendMusic( "tracks/gunshipBattle" )
 
     end )
-    -- the track's list plays round robin, so this is a different song for the last stretch
     self:Hook( "glee_gunship_desperate", function()
         local roundData = GAMEMODE.roundExtraData
         if roundData.gunshipPlayedDesperateTrack then return end

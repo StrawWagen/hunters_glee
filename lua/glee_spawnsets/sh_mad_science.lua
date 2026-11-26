@@ -15,9 +15,9 @@ if SERVER then
         hordeSpawn = true,
         chanceToBeVotable = 0.5,
         defaultWeapons = {
-            { class = "termhunt_taucannon", ammoType = "Uranium_235", purchaseClips = 1 },
             "gmod_camera",
             "termhunt_radio",
+            { class = "termhunt_taucannon", ammoType = "Uranium_235", purchaseClips = 1 },
         },
         spawns = {
             {

@@ -54,10 +54,10 @@ end
 function plyMeta:RefreshPlayerSpeed()
     self.glee_speedmodifiers = self.glee_speedmodifiers or {}
     self.glee_maxspeedmodifiers = self.glee_maxspeedmodifiers or {}
-    self.glee_defaultspeed = self.glee_defaultspeed or self:GetRunSpeed() -- sets the default here!
 
     local walkSpeed = self:GetWalkSpeed()
-    local defaultSpeed = self.glee_defaultspeed
+    -- from the class, GetRunSpeed is what this function sets
+    local defaultSpeed = baseclass.Get( player_manager.GetPlayerClass( self ) ).RunSpeed
     local totalSpeedModifier = 0
 
     for key, modifier in pairs( self.glee_speedmodifiers ) do

@@ -1,6 +1,6 @@
 -- The Medical Tissue Reclaimer's projection, included by shared.lua
 -- the kit projects the dead back up, standing where they'll be revived, built from the feet up as you close in
--- while someone's revived, their corpse is pulled into the projection, bone by bone
+-- while someone's revived, their corpse is pulled into the projection, bone by bone, each taking its glowing bone's place
 
 local reclaimer = SWEP.Reclaimer
 local boneSnapFrac = reclaimer.boneSnapFrac
@@ -100,6 +100,7 @@ function SWEP:GetHologram( dead )
     end
 
     copyBoneManips( holo, dead )
+    holo.glee_hiddenCount = nil -- the copy shows every bone again, see giveWayToCorpse
 
     local pose = holo:SelectWeightedSequence( hologramAct )
     if pose < 0 then
@@ -142,6 +143,14 @@ local function getBonePos( holo, boneId )
 
 end
 
+-- each bone going in cuts the projection out for a beat, then it jitters back, like the infernal skeleton's glow when hurt
+-- so every snap gets a moment with nothing glowing over it. Set by reclaimBones
+local crackCutTime = 0.05
+local crackJitterTime = 0.15
+local crackJitterSize = 2 -- units, shrinks to nothing over crackJitterTime
+local jitterMatrix = Matrix()
+local jitterOffset = Vector()
+
 -- posed at pos and ang by poseHologram
 -- built 0 to 1, how far up from the feet it's been built, a line glows across the build
 -- returns how high it's built
@@ -159,11 +168,28 @@ local function drawHologram( holo, pos, ang, color, built, bright )
 
     end
 
-    render.MaterialOverride( hologramMat )
-    render.SetColorModulation( color.r / 255 * bright, color.g / 255 * bright, color.b / 255 * bright )
-    holo:DrawModel()
-    render.SetColorModulation( 1, 1, 1 )
-    render.MaterialOverride( nil )
+    local sinceCrack = CurTime() - ( holo.glee_crackedAt or 0 )
+    if sinceCrack >= crackCutTime then
+        local jittering = sinceCrack < crackCutTime + crackJitterTime
+        if jittering then
+            local size = crackJitterSize * ( 1 - ( sinceCrack - crackCutTime ) / crackJitterTime )
+            jitterOffset:SetUnpacked( math.Rand( -size, size ), math.Rand( -size, size ), math.Rand( -size, size ) )
+            jitterMatrix:SetTranslation( jitterOffset )
+            cam.PushModelMatrix( jitterMatrix )
+
+        end
+
+        render.MaterialOverride( hologramMat )
+        render.SetColorModulation( color.r / 255 * bright, color.g / 255 * bright, color.b / 255 * bright )
+        holo:DrawModel()
+        render.SetColorModulation( 1, 1, 1 )
+        render.MaterialOverride( nil )
+
+        if jittering then
+            cam.PopModelMatrix()
+
+        end
+    end
 
     if building then
         render.PopCustomClipPlane()
@@ -432,6 +458,42 @@ local function newReclaimOrder( rag )
 end
 
 
+-- The projection giving way ---------------------------------------------
+-- each bone the corpse puts into the projection is hidden there, so the snapping corpse isn't drawn over by its glow
+-- shrunk, not scaled to 0, the corpse's bones still read their angles off the projection's, see moveBoneToHologram
+local hiddenScale = 0.01
+
+-- the first count of rag's reclaim order hidden on holo, the rest at their usual shape
+local function giveWayToCorpse( holo, rag, count )
+    local order = rag.glee_reclaimOrder
+    if holo.glee_hiddenCount == count and holo.glee_hiddenOrder == order then return end
+    holo.glee_hiddenCount = count
+    holo.glee_hiddenOrder = order
+
+    local from = getShapeSource( holo.glee_dead, holo:GetModel() )
+    local groups = getGrowGroups( rag ) -- same model as holo, see getCorpse, so the same bones
+    for pos, physIndex in ipairs( order ) do
+        local scale = pos <= count and hiddenScale or 1
+        for _, bone in ipairs( groups[physIndex] or {} ) do
+            holo:ManipulateBoneScale( bone, from:GetManipulateBoneScale( bone ) * scale )
+
+        end
+    end
+end
+
+-- every bone shown again, for when holo's no longer being revived
+local function restoreHologram( holo )
+    if not holo.glee_hiddenCount then return end
+    holo.glee_hiddenCount = nil
+    holo.glee_hiddenOrder = nil
+
+    if IsValid( holo.glee_dead ) then
+        copyBoneManips( holo, holo.glee_dead )
+
+    end
+end
+
+
 -- Letting go ------------------------------------------------------------
 -- frozen physics objects are stubborn, they need waking as well as unfreezing, like cl_souls does
 local function releaseRagdoll( rag )
@@ -685,11 +747,13 @@ local function reclaimBones( wep, dead, holo, reviveFrac, simple )
             if not catchingUp then
                 sound.Play( fleshSounds[math.random( #fleshSounds )], bonePos, 70, math.random( 90, 110 ) )
                 boneGoesIn( wep, bonePos, reclaimedCount, boneCount )
+                holo.glee_crackedAt = CurTime()
 
             end
         elseif bonePos and reclaimedCount >= crackedCount and not catchingUp then
             sound.Play( boneBreakSounds[math.random( #boneBreakSounds )], bonePos, 70, math.random( 90, 110 ) )
             boneGoesIn( wep, bonePos, reclaimedCount, boneCount )
+            holo.glee_crackedAt = CurTime()
 
         end
         reclaimedCount = reclaimedCount + 1
@@ -699,6 +763,7 @@ local function reclaimBones( wep, dead, holo, reviveFrac, simple )
     rag.glee_reclaimNextBone = reclaimedCount
     rag.glee_reclaimCracked = math.max( crackedCount, reclaimedCount )
 
+    giveWayToCorpse( holo, rag, reclaimedCount )
     pullLooseBones( rag, holo, reclaimedCount, reviveFrac )
     if not simple then
         drawTendrils( wep, rag, reclaimedCount, reviveFrac )
@@ -760,3 +825,4 @@ reclaimer.poseHologram = poseHologram
 reclaimer.getBonePos = getBonePos
 reclaimer.drawHologram = drawHologram
 reclaimer.reclaimBones = reclaimBones
+reclaimer.restoreHologram = restoreHologram

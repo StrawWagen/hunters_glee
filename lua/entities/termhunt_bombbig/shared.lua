@@ -94,13 +94,6 @@ function ENT:OnTakeDamage( dmg )
     end
 end
 
-function ENT:BloodPlaster( pos, count )
-    for _ = 1, count do
-        util.Decal( "Blood", pos, pos + ( VectorRand() * math.random( 100, 1000 ) ), nil )
-
-    end
-end
-
 function ENT:OnRemove()
 
     if not SERVER then return end
@@ -136,14 +129,7 @@ function ENT:OnRemove()
     terminator_Extras.GleeFancySplode( worldSpaceC, 3 * 115, 6 * 115, attacker, self, true )
     util.BlastDamage( self, attacker, worldSpaceC, 200, 200 )
 
-    terminator_Extras.DoPFXAtPos( "glee_gland_explosion_big", worldSpaceC )
-
-    local BloodPlaster = self.BloodPlaster
-
-    timer.Simple( 0, function()
-        BloodPlaster( self, worldSpaceC, 50 )
-
-    end )
+    terminator_Extras.DoReliableEffect( "eff_huntersglee_glandsplode", worldSpaceC, { magnitude = 1 } )
 
 end
 

@@ -423,17 +423,17 @@ local function genericHints()
         local blockShop = GAMMODE:ShopOpenBlocked()
 
         -- Preparing's ticking away, and shop markups kick in once the hunt starts
-        if not GAMMODE:HasLearnedLesson( "OpenedAliveShop" ) and not blockShop and timeToBuy and me:GetNWInt( "termHuntPlyBPM" ) <= 80 then
+        if not GAMMODE:HasLearnedLesson( "OpenedAliveShop" ) and not blockShop and timeToBuy and me:IsCalm() then
             return true, "Spend before the HUNT.\nPress " .. string.upper( phrase ) .. " to open the SHOP.\nWhile discounts last...", urgentHint
 
         end
 
         -- hey you should open the shop!!!!
         if not blockShop and ( timeToBuy or meagreWealth ) then
-            if not GAMMODE:HasLearnedLesson( "OpenedAliveShop" ) and me:GetNWInt( "termHuntPlyBPM" ) <= 80 then
+            if not GAMMODE:HasLearnedLesson( "OpenedAliveShop" ) and me:IsCalm() then
                 return true, "UNSPENT SCORE: " .. myScore .. "\nScore exists to be spent.\nPress\" " .. string.upper( phrase ) .. " \" uplink to the shop.", urgentHint
 
-            elseif not hasBoughtSomething and me:GetNWInt( "termHuntPlyBPM" ) <= 75 then
+            elseif not hasBoughtSomething and me:IsCalm() then
                 return true, "YOU HAVE UNREALIZED SCORE\nPurchase something, a loadout, DEFEND YOURSELF.\nPress \" " .. string.upper( phrase ) .. " \" to open the shop.", urgentHint
 
             end

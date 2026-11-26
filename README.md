@@ -67,7 +67,9 @@ hunters_glee/
 
 ---
 
-## Contributing
+## Extending
+
+Want to send a PR? See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Hunter's Glee is designed to be extensible. The two main ways to add content are **shop items** and **spawnsets** (Miseries).
 
@@ -436,6 +438,43 @@ Each entry is a [MyExtraModels](../terminator-hunter/README.md#entmyextramodels)
 A client registration is entirely optional, plenty of effects are server-only. You can
 also register with no funcs at all ( like channel_666 ), if you just want a flag other code can check.
 
+#### Stacking modifiers
+
+```lua
+owner:DoSpeedModifier( "caffeinated", 100 ) -- setup
+owner:DoSpeedModifier( "caffeinated", nil ) -- teardown
+```
+
+Max health, run speed and bone manips have lots of things changing them at once.
+So don't set them directly, give the player a keyed entry, and take it off when you're done.
+The result is every key's entry combined.
+Entries survive death.
+
+**Max health**, [sv_maxhealth.lua](gamemodes/hunters_glee/gamemode/modules/maxhealth/sv_maxhealth.lua)
+- `ply:DoMaxHealthAdd( key, amount )` adds onto the playermodel's health, 100 for most.
+- `ply:DoMaxHealthFloor( key, floor )` raises it to at least this. Players already above keep theirs.
+- `ply:DoMaxHealthMul( key, mul )` multiplies it, stacking with every other mul.
+- `ply:DoMaxHealthCap( key, cap )` caps the result.
+
+Health keeps its ratio, a player at half health stays at half.
+Juggernaut, in sh_default_innate.lua, is a mul.
+For anything a key can't say, the `glee_ply_maxhealth` hook runs last, see sv_maxhealth.lua.
+
+**Run speed**, [sv_speedhandler.lua](gamemodes/hunters_glee/gamemode/modules/sv_speedhandler.lua)
+- `ply:DoSpeedModifier( key, amount )` adds onto the player class's run speed.
+- `ply:DoSpeedClamp( key, amount )` caps run speed at the class's plus this. The lowest clamp wins.
+
+Sprinting on hands goes up to 200 past run speed, on top of all of this.
+
+**Bones**, [sv_bonemanip.lua](gamemodes/hunters_glee/gamemode/modules/bonemaniphandler/sv_bonemanip.lua), server only
+- `ent:ApplyBoneScaleManip( key, bone, scale )`, scales are multiplied together.
+- `ent:ApplyBonePosManip( key, bone, pos )` and `ent:ApplyBoneAngleManip( key, bone, ang )` are added together.
+- `ent:RemoveBoneManips( key )` takes off every bone this key touched.
+- `ent:CopyBoneManipsTo( target )` copies every key's entries onto, say, a ragdoll.
+
+Big head, in sh_default_bargains.lua, is a scale.
+Plain `ManipulateBone*` calls still work, they all share one key, `"default"`.
+
 ---
 
 ### Adding Spawnsets
@@ -686,6 +725,22 @@ function setHelpers.postSpawnedRed( spawnData, npc )
 end
 ```
 
+#### How a wave is built
+
+Every wave, the spawner works out how many hunters it wants,
+and how much it can spend.
+
+It wants `startingSpawnCount`, plus `spawnCountPerDifficulty` per difficulty.
+Never fewer than the player count, up to 8.
+Never more than `maxSpawnCount`.
+
+It can spend `difficulty + startingBudget`, on that wave alone.
+Pricier entries are tried first.
+
+So `difficultyCost` is how you pace a hunter.
+At 20, the first wave affords 1, and more each wave as difficulty climbs.
+At 1, the first wave fills the cap.
+
 #### Reference
 
 ##### Spawnset Values
@@ -731,7 +786,7 @@ Sounds must be in a subfolder of `sound/`, so a sound's path always has a `/`.
 | `easy` | ❌ | Marks this as a beginner misery. Tagged `(EASY)` in the !rtm vote, and while an easy one is active the vote prefers offering other easy ones. Also soft-caps its escape reward multiplier |
 | `maxSpawnCount` | ❌ | Hard cap on hunter count. 10 is default, 6 is `hunters_glee`, 60 is `combine_onslaught` |
 | `waveInterval` | ❌ | Seconds between spawn waves, skipped if all hunters are cleared. Default is 60 - 96 |
-| `startingSpawnCount` | ❌ | How many hunters it wants at the start, grows with `spawnCountPerDifficulty`. About 2 by default, 8 is `combine_onslaught` |
+| `startingSpawnCount` | ❌ | How many hunters it wants at the start, grows with `spawnCountPerDifficulty`. Never below the player count, up to 8. About 2 by default, 8 is `combine_onslaught` |
 | `roundStartSound` | ❌ | Sound on round start |
 | `roundEarlyStartSound` | ❌ | Played 10s before the round starts, only if `roundStartSound` is "" |
 | `roundEndSound` | ❌ | Sound on round end, when nobody escaped |
@@ -754,9 +809,9 @@ Sounds must be in a subfolder of `sound/`, so a sound's path always has a `/`.
 | `breathingRoom` | Scales an extra delay between waves for players who are overwhelmed. 0 is off, for really easy miseries |
 | `hordeSpawn` | `true` Always reuses the last good spawn area, stacking hunter spawns into a horde. Defaults to true for waves of 8+ spawns, `false` disables it even then |
 | `rotatingWaves` | `true` makes each wave come from one group, taking turns. The misery's own `.spawns` are one group, and each misery it imports from is another. A group with nothing to spawn still spends its turn. Each group stacks its hordes in its own spot |
-| `slotSizes` | How many hunters fit in each `.slots` slot, eg `{ miniboss = 1 }`. Takes a number, `{ min, max }`, `{ n }` or a function, but not a misery's name. Or `"minutes*N"` / `"difficulty*N"` to grow with the round, `"minutes*0.1"` is one slot every 10 minutes, `"difficulty*0.01"` is one every 100 difficulty. Without it every slot holds 1 |
+| `slotSizes` | How many hunters fit in each `.slots` slot, eg `{ miniboss = 1 }`. Takes a number, `{ min, max }`, `{ n }` or a function, but not a misery's name. Or `"minutes*N"` / `"difficulty*N"` to grow with the round, `"minutes*0.1"` is one slot every 10 minutes, `"difficulty*0.01"` is one every 100 difficulty. Without it every slot holds 1. Slots are a hard cap on how many can be out at once. To ramp a count up, `difficultyCost` usually does it, see How a wave is built |
 | `startWeapons` | Weapons everyone gets once a round, eg `{ { class = "weapon_smg1", purchaseClips = 3 } }`. See Set Helpers for what each one can be |
-| `defaultWeapons` | Weapons everyone gets every life. Default is the crowbar, camera and radio, a list here replaces all three. The first one's what they're holding when they spawn |
+| `defaultWeapons` | Weapons everyone gets every life. Default is the crowbar, camera and radio, a list here replaces all three. They spawn holding the last weapon they were given: start weapons come after these, and a role's weapons after the misery's |
 | `roundWinSound` | Sound on round end, when someone escaped |
 | `roundPerfectWinSound` | Sound on round end, when everyone escaped |
 | `highIntensitySound` | Played when things get really intense, like a wave wiped with no more than 1/4 of players alive |
@@ -775,7 +830,7 @@ Sounds must be in a subfolder of `sound/`, so a sound's path always has a `/`.
 | `prettyName` | ✅ | Display name |
 | `class` | ✅ | Entity class to spawn |
 | `spawnType` | ✅ | Spawning algorithm type, only supports `"hunter"` presently |
-| `difficultyCost` | ✅ | Budget cost to spawn, spawns are checked from highest to lowest cost |
+| `difficultyCost` | ✅ | Budget cost to spawn, spawns are checked from highest to lowest cost. Paces how many arrive each wave, see How a wave is built |
 | `difficultyNeeded` | ❌ | Difficulty threshold needed to start spawning, good if you want difficult enemies to all start spawning suddenly. 100 is roughly 10 minutes, sooner if waves get wiped |
 | `difficultyStopAfter` | ❌ | Difficulty threshold to stop spawning past, the mirror of `difficultyNeeded`, for enemies that should drop out of the pool later on |
 | `hardRandomChance` | ❌ | Percent chance to even be considered, works since spawns are checked from highest to lowest cost. Rolled multiple times per wave, more if there's more budget |
@@ -783,7 +838,7 @@ Sounds must be in a subfolder of `sound/`, so a sound's path always has a `/`.
 | `minCount` | ❌ | Minimum maintained count, hard minimum, bypasses budget |
 | `maxCount` | ❌ | Maximum allowed count |
 | `postSpawnedFuncs` | ❌ | Functions called after hunter:Spawn() : `function(spawnData, npc)` |
-| `isBoss` | ❌ | `true` marks as boss; `false` opts out of auto-detection. When the boss is killed, all alive players escape. Cleanup that removes boring hunters leaves it alone while it's battling, and lag never removes it. Auto-detected when `spawnSet.maxSpawnCount <= 1` (highest `difficultyCost` entry becomes boss). |
+| `isBoss` | ❌ | `true` marks as boss; `false` opts out of auto-detection. When the boss is killed, all alive players escape. Cleanup that removes boring hunters leaves any hunter alone for a while after it fights a player, a boss for a full 10 minutes. Lag never removes a boss. Auto-detected when `spawnSet.maxSpawnCount <= 1` (highest `difficultyCost` entry becomes boss). |
 
 <details>
 <summary>Advanced fields, for spawns that need special handling</summary>

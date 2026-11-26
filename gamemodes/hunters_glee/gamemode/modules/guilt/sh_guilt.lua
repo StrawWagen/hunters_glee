@@ -6,8 +6,8 @@ local PermaGuiltLevels = {
     SLIGHTLY_GUILTY = 1,
     BARELY_GUILTY = 2,
     SOMEWHAT_GUILTY = 5,
-    ALMOST_GUILTY = 10,
-    GUILTY = 20,
+    GUILTY = 10,
+    RATHER_GUILTY = 20,
     VERY_GUILTY = 35,
     EXTREMELY_GUILTY = 50,
     SUPREMELY_GUILTY = 100,
@@ -48,31 +48,33 @@ GM.PermaGuiltInfo = {
         color = colorMix( calmColor, evilColor, 0.25 ),
     },
     [PermaGuiltLevels.BARELY_GUILTY]  = {
-        desc = "You're just starting to become evil... Nobody will feel guilty for killing you.",
+        desc = "You're becoming evil... Nobody will feel guilty for killing you.",
         color = colorMix( calmColor, evilColor, 0.25 ),
         killedForNoGuilt = true,
     },
     [PermaGuiltLevels.SOMEWHAT_GUILTY]  = {
-        desc = "You're a bit evil.",
-        message = "Your guilt grows.\nYou're a bit evil.",
+        desc = "You're almost evil.",
+        message = "Your guilt grows.\nYou're almost evil.",
         color = colorMix( calmColor, evilColor, 0.5 ),
         divineCostMul = 1.15,
         killedForNoGuilt = true,
     },
-    [PermaGuiltLevels.ALMOST_GUILTY]  = {
-        desc = "Things can't continue like this. You're almost evil.",
+    [PermaGuiltLevels.GUILTY]  = {
+        desc = "You're evil. You see halos over the innocent. You deal reduced damage to the innocent.",
         color = colorMix( calmColor, evilColor, 0.7 ),
-        message = "Your guilt grows.\nYou're almost evil.",
+        message = "You're evil.\nThe divine actors are displeased.",
         divineCostMul = 1.25,
         killedForNoGuilt = true,
+        evil = true, -- see GM:IsEvil
     },
-    [PermaGuiltLevels.GUILTY]  = {
-        desc = "You're evil. Your access to divine avenues is limited. You see halos over the innocent.",
+    [PermaGuiltLevels.RATHER_GUILTY]  = {
+        desc = "You're rather evil. Your access to divine avenues is limited.",
         color = colorMix( calmColor, evilColor, 0.8 ),
-        message = "You're evil.\nThe divine actors are displeased.",
+        message = "You're rather evil.\nThe divine actors are tightening their grip...",
         divineCostMul = 1.5,
         canPurchaseForgivenessRitual = true,
         killedForNoGuilt = true,
+        evil = true,
     },
     [PermaGuiltLevels.VERY_GUILTY] = {
         desc = "You're very evil. Divine paths are almost out of your reach.",
@@ -80,8 +82,8 @@ GM.PermaGuiltInfo = {
         message = "You're very evil.\nThe divine paths are closing...",
         divineCostMul = 2.5,
         canPurchaseForgivenessRitual = true,
-        horriblyEvil = true,
         killedForNoGuilt = true,
+        evil = true,
     },
     [PermaGuiltLevels.EXTREMELY_GUILTY] = {
         desc = "You're extremely evil. The divine ways are closed to you. You are always one with the infernal powers. Smiting you atones for past sins. Shoves hurt you badly.",
@@ -90,9 +92,9 @@ GM.PermaGuiltInfo = {
         divineItemsNotPurchaseable = true,
         alwaysTakingTheDeal = true,
         canPurchaseForgivenessRitual = true,
-        horriblyEvil = true,
         cooldownMul = 1.25,
         killedForNoGuilt = true,
+        evil = true,
         godlySlayingRelievesGuilt = true, -- divine lightning and infernal summons forgive whoever killed them, see sv_guilt
     },
     [PermaGuiltLevels.SUPREMELY_GUILTY] = {
@@ -104,9 +106,9 @@ GM.PermaGuiltInfo = {
         gleefulOnInnocentDamage = true,
         ignitesWhenGuiltyGleeful = true,
         canPurchaseForgivenessRitual = true,
-        horriblyEvil = true,
         cooldownMul = 2,
         killedForNoGuilt = true,
+        evil = true,
         godlySlayingRelievesGuilt = true,
         joinsTheHuntDead = true,
     },
@@ -210,7 +212,7 @@ if SERVER then
         effect.fromPermaGuiltLevel = true
 
     end
-    hook.Add( "glee_true_PlayerSpawn", "glee_permainfernal", function( spawned )
+    hook.Add( "glee_EarnedPlayerSpawn", "glee_permainfernal", function( spawned )
         if not active then return end
         ProtectedCall( function( spawnedP )
             applyPermaInfernal( spawnedP )

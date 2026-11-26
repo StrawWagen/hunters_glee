@@ -1,7 +1,34 @@
 
--- Every sound a lightning strike makes. The server sends one message per strike saying
--- where it landed and how hard, and the thresholds below decide the rest, so all of it
--- can be scaled by a setting the server never sees.
+-- Everything you see and hear from a lightning strike. The server sends one reliable message
+-- per strike saying where it landed, how hard, and the arc it walked. The thresholds below
+-- decide the rest, so the sounds can be scaled by a setting the server never sees.
+
+local vecUp25 = Vector( 0, 0, 25 )
+local vecDown500 = Vector( 0, 0, -500 )
+
+local function strikeVisuals( strikingPos, powa, waterSurfaceStrike, arcPoints )
+    for index = 1, powa * 2 do
+        local size = index * 5
+        local offset = Vector( math.random( -size, size ), math.random( -size, size ) )
+        util.Decal( "Scorch", strikingPos + vecUp25 + offset, strikingPos + vecDown500 + offset )
+
+    end
+
+    local flash = EffectData()
+    flash:SetScale( powa / 2 )
+    flash:SetOrigin( strikingPos + vector_up )
+    flash:SetFlags( waterSurfaceStrike and 1 or 0 ) -- no dust kicked up off water
+    util.Effect( "eff_huntersglee_strikeeffect", flash )
+
+    for i = 1, #arcPoints - 1 do
+        local beam = EffectData()
+        beam:SetStart( arcPoints[i] )
+        beam:SetOrigin( arcPoints[i + 1] )
+        beam:SetScale( powa )
+        util.Effect( "eff_termhunt_plasmaarc", beam )
+
+    end
+end
 
 local thunderClaps = {
     "hunters_glee/397952_kinoton_thunder-clap-and-rumble-1.wav",
@@ -27,9 +54,18 @@ end
 
 local downOffset = Vector( 0, 0, -30 )
 
-net.Receive( "glee_lightning_sound", function()
-    local strikingPos = net.ReadVector()
-    local powa        = net.ReadFloat()
+net.Receive( "glee_lightning_strike", function()
+    local strikingPos        = net.ReadVector()
+    local powa               = net.ReadFloat()
+    local waterSurfaceStrike = net.ReadBool()
+
+    local arcPoints = {}
+    for i = 1, net.ReadUInt( 6 ) do
+        arcPoints[i] = net.ReadVector()
+
+    end
+
+    strikeVisuals( strikingPos, powa, waterSurfaceStrike, arcPoints )
 
     local volumeMul = lightningVolume()
     if volumeMul <= 0 then return end

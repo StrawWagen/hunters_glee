@@ -22,6 +22,7 @@ local set = {
                 combine_elite_COMMON = NULL,
                 combine_rocketeer = NULL,
                 combine_gunship = {
+                    -- only 1 can exist, so the cost never limits it
                     difficultyCost = 1,
                     difficultyNeeded = NULL,
                     minutesNeeded = NULL,
@@ -42,7 +43,6 @@ function set:Activate()
         GAMEMODE:SendMusic( "tracks/gunshipBattle" )
 
     end )
-    -- the track's list plays round robin, so this is a different song for the last stretch
     self:Hook( "glee_gunship_desperate", function()
         local roundData = GAMEMODE.roundExtraData
         if roundData.gunshipPlayedDesperateTrack then return end

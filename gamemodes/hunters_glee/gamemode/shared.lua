@@ -45,6 +45,8 @@ include( "modules/guilt/sh_guilt.lua" )
 include( "modules/battery/sh_battery.lua" )
 include( "modules/thirdpersonflashlight/sh_flashlight.lua" )
 include( "modules/sh_detecthunterkills.lua" )
+include( "modules/voicestats/sh_voicestats.lua" )
+include( "modules/spectatewatching/sh_spectatewatching.lua" )
 include( "modules/shopitems/sh_shophelpers.lua" )
 include( "modules/spawnset/core/sh_spawnsetregistry.lua" )
 include( "modules/spawnset/core/sh_spawnsetcommands.lua" )
@@ -83,7 +85,7 @@ local function postCleanupMap()
     GAMEMODE:SharedSetup()
 
     if SERVER then
-        GAMEMODE:removeBlockers()
+        GAMEMODE:ApplyMapHacks()
 
         hook.Run( "glee_post_cleanupmap" )
 

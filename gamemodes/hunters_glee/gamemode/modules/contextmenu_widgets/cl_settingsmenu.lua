@@ -203,6 +203,38 @@ local settingsCategories = {
                 desc = "How transparent should your own soul be when it's near you",
             },
             {
+                cvar = "cl_huntersglee_spectatewatch",
+                type = "check",
+                prettyName = "Transfixing",
+                desc = "Become transfixed by the Embodied souls when you're dead and AFK? Move to snap out of it.",
+            },
+            {
+                cvar = "cl_huntersglee_spectatewatch_afktime",
+                type = "slider",
+                min = 0,
+                max = 60,
+                decimals = 0,
+                defaultValue = 15, -- what the -1 default resolves to, see sh_spectatewatching.lua
+                prettyName = "Transfixed after",
+                desc = "Seconds dead without pressing, moving or looking around. Default is -1, which translates to 15",
+            },
+            {
+                cvar = "cl_huntersglee_spectatewatch_afktime_void",
+                type = "slider",
+                min = 0,
+                max = 30,
+                decimals = 0,
+                defaultValue = 1, -- what the -1 default resolves to, see sh_spectatewatching.lua
+                prettyName = "Transfixed after (void)",
+                desc = "The same, while you're in a wall or outside the map. Default is -1, which translates to 1",
+            },
+            {
+                cvar = "cl_huntersglee_spectatewatch_names",
+                type = "check",
+                prettyName = "Names while Transfixed",
+                desc = "Draw player names on the HUD while you're transfixed?",
+            },
+            {
                 cvar = "cl_huntersglee_unprofitableplacing_gate",
                 type = "check",
                 prettyName = "Place unprofitably without confirming",
