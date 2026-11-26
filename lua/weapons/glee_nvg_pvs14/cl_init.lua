@@ -175,19 +175,26 @@ local function trace( start, endpos, filter )
 
 end
 
+local isInWall = terminator_Extras.glee_IsInWall
+
 -- how far through the solid at entry, along dir, the far side is. nil if not within budget
 -- steps forward and traces back to the entry, the first step that isn't still inside is past the far side,
 -- and its trace back stops on the far side's face
-local function solidThickness( me, entry, dir, budget )
+-- inWorld is whether entry is on a world brush. those steps check point contents instead, far cheaper,
+-- and only the step that comes out gets traced. it matters, the ground and the void past the map are
+-- deeper than any budget, so every ray aimed at them walks the whole thing
+local function solidThickness( me, entry, dir, budget, inWorld )
     local stepped = 0
     while stepped < budget do
         stepped = math.min( stepped + pierceStep, budget )
         local probe = entry + dir * stepped
-        local back = trace( probe, entry, me )
-        if not back.StartSolid then
-            if not back.Hit then return stepped end -- thinner than a step
-            return stepped * ( 1 - back.Fraction ) -- back.Fraction is how far the far face is from probe
+        if not ( inWorld and isInWall( probe ) ) then
+            local back = trace( probe, entry, me )
+            if not back.StartSolid then
+                if not back.Hit then return stepped end -- thinner than a step
+                return stepped * ( 1 - back.Fraction ) -- back.Fraction is how far the far face is from probe
 
+            end
         end
     end
 end
@@ -215,7 +222,7 @@ local function castRay( me, start, dir, pierce, maxLength, deflectEvery, deflect
 
         local entry = tr.HitPos
         travelled = travelled + start:Distance( entry )
-        local thickness = solidThickness( me, entry, dir, math.min( pierce, maxLength - travelled ) )
+        local thickness = solidThickness( me, entry, dir, math.min( pierce, maxLength - travelled ), tr.HitWorld )
         if not thickness then return end
 
         -- charge the real thickness, but never less than one wall's worth: a displacement hill is a

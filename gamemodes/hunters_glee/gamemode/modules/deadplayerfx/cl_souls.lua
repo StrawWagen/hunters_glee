@@ -215,7 +215,7 @@ local function soulGotoPos( soul, pos, ang )
 
     elseif dist > tooFarWake then
         tryWake = true
-    elseif not GAMEMODE:IsInWall( pos ) and not GAMEMODE:IsInWall( soulsPos ) then
+    elseif not terminator_Extras.glee_IsInWall( pos ) and not terminator_Extras.glee_IsInWall( soulsPos ) then
         collisionsDesired = true
 
     end

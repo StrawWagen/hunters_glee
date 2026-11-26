@@ -257,7 +257,7 @@ end
 
 -- actually in the wall, brushing one isn't buried
 local function isBuried( pos )
-    return GAMEMODE:IsInWall( pos ) or sweepSmall( pos, pos ).StartSolid
+    return terminator_Extras.glee_IsInWall( pos ) or sweepSmall( pos, pos ).StartSolid
 
 end
 
@@ -626,7 +626,7 @@ end
 -- seesTarget, when the caller's already traced it, nil to trace here
 local function scoreSpot( spot, seesTarget )
     local score = 0
-    if GAMEMODE:IsInWall( spot ) then
+    if terminator_Extras.glee_IsInWall( spot ) then
         score = score - voidCost
 
     else
@@ -699,7 +699,7 @@ end
 -- Drifting, a spot in the void is dug straight into too, its cost is in its score.
 -- Buried, it's going through regardless
 local function considerSpot( spot )
-    local inVoid = GAMEMODE:IsInWall( spot )
+    local inVoid = terminator_Extras.glee_IsInWall( spot )
     local seesTarget
     local throughWalls = false
     if mode == MODE_DRIFT then
@@ -726,7 +726,7 @@ local function considerSpot( spot )
 
     local score = scoreSpot( spot, seesTarget )
     if debugging then
-        debugoverlay.Line( camPos, spot, debugLife, GAMEMODE:IsInWall( spot ) and debugBuried or debugSampled, true )
+        debugoverlay.Line( camPos, spot, debugLife, terminator_Extras.glee_IsInWall( spot ) and debugBuried or debugSampled, true )
 
     end
 
@@ -770,7 +770,7 @@ end
 -- Seeing them, there's a way through the air, so it never does. Call after camSeesTarget's updated.
 -- Inside it already, it's just a bit worse than open air
 local function updateVoidCost( dt )
-    if GAMEMODE:IsInWall( camPos ) then
+    if terminator_Extras.glee_IsInWall( camPos ) then
         voidCost = tune.voidCostInside
         return
 
@@ -1165,7 +1165,7 @@ end
 -- Why settling ends. nil while it carries on
 local function settledExit( dt )
     if buried then
-        return debugging and ( GAMEMODE:IsInWall( camPos ) and "buried, inside a wall or the void" or "buried, within a few units of a wall" ) or true
+        return debugging and ( terminator_Extras.glee_IsInWall( camPos ) and "buried, inside a wall or the void" or "buried, within a few units of a wall" ) or true
 
     end
 

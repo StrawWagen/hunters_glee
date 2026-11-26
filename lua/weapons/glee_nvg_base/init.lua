@@ -4,9 +4,11 @@ include( "shared.lua" )
 
 DEFINE_BASECLASS( "glee_wearable_base" )
 
--- a new owner gets them flipped up
+-- handed straight to a player, bought or spawnmenu given, they come flipped down
+-- Give equips right as it creates, so that's how it's told apart
+-- picked up off the ground, they're flipped up, found ones shouldn't blind whoever grabs them
 function SWEP:OwnerChanged()
-    self:SetDown( false )
+    self:SetDown( CurTime() - self:GetCreationTime() <= 0.1 )
     BaseClass.OwnerChanged( self )
 
 end

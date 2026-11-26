@@ -173,7 +173,7 @@ elseif CLIENT then
         if idleFor < math.min( openTime, voidTime ) then return end
         if me:Health() > 0 or me:GetObserverMode() ~= OBS_MODE_ROAMING then return end
 
-        local needed = GAMEMODE:IsInWall( me:EyePos() ) and voidTime or openTime
+        local needed = terminator_Extras.glee_IsInWall( me:EyePos() ) and voidTime or openTime
         if idleFor < needed then return end
 
         startWatching( true )

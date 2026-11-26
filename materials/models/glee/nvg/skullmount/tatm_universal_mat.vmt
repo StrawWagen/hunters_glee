@@ -7,7 +7,6 @@ VertexLitGeneric
     $phong 1
     $phongfresnelranges "[0 0.5 1]"
 
-    $envmapmask "models/glee/nvg/skullmount/tatm_universal_gloss"
     $envmap "env_cubemap"
     $envmaptint "[0.05 0.05 0.05]"
 }

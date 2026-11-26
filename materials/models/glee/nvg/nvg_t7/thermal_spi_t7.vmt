@@ -7,7 +7,6 @@ VertexLitGeneric
     $phong 1
     $phongfresnelranges "[0 0.5 1]"
 
-    $envmapmask "models/glee/nvg/nvg_t7/thermal_spi_t7_gloss"
     $envmap "env_cubemap"
     $envmaptint "[0.1 0.1 0.1]"
 }

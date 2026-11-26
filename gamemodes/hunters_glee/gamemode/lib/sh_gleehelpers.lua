@@ -1,17 +1,5 @@
 
 do
-    local bit_band = bit.band
-    local util_PointContents = util.PointContents
-
-    -- Inside a wall, or out in the void past the map's edge, both read as solid brush.
-    -- Works clientside, unlike util.IsInWorld
-    function GM:IsInWall( pos )
-        return bit_band( util_PointContents( pos ), MASK_SOLID_BRUSHONLY ) > 0
-
-    end
-end
-
-do
     local string = string
 
     -- Shared, so clients can name things themselves. Set a pretty name with
