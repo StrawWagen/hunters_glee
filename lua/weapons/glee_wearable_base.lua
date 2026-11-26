@@ -12,9 +12,11 @@ AddCSLuaFile()
 
     Worn while it's carried.
     Hold V with it out to throw it, and it's dropped on death, both through the gamemode's dropper.
+    Left click with it out offers its actions, see glee_actions, Take off is on every wearable.
 ]]
 
 SWEP.Base = "weapon_base"
+DEFINE_BASECLASS( "weapon_base" )
 SWEP.Spawnable = false
 SWEP.Category = "Hunter's Glee"
 SWEP.DrawWeaponInfoBox = false
@@ -60,7 +62,51 @@ function SWEP:Initialize()
 
 end
 
+-- the click that picked it off the weapon selector is still down, it's not for it
+function SWEP:Deploy()
+    local owner = self:GetOwner()
+    self.glee_AttackBlocked = IsValid( owner ) and owner:KeyDown( IN_ATTACK )
+    return BaseClass.Deploy( self )
+
+end
+
+function SWEP:Think()
+    if not self.glee_AttackBlocked then return end
+    if self:GetOwner():KeyDown( IN_ATTACK ) then return end
+    self.glee_AttackBlocked = nil
+
+end
+
+-- what left click offers, each key's run by OnGleeAction, below
+-- wearables with more add theirs to this, see glee_nvg_base
+-- a new table every call, so they can
+function SWEP:GetGleeActions()
+    return {
+        { key = "takeoff", label = "Take off" },
+    }
+end
+
+-- one action just runs, several open the wheel, held while attack is
 function SWEP:PrimaryAttack()
+    if self.glee_AttackBlocked then return end
+
+    local actions = self:GetGleeActions()
+    if #actions == 1 then
+        if SERVER then terminator_Extras.glee_Actions.Pick( self:GetOwner(), "held", self, actions[1].key ) end
+        return
+
+    end
+
+    if SERVER then
+        -- singleplayer never runs it clientside on its own
+        if game.SinglePlayer() then self:CallOnClient( "PrimaryAttack" ) end
+        return
+
+    end
+
+    if not IsFirstTimePredicted() then return end
+    terminator_Extras.glee_Actions.OpenWheel( "held", self, "+attack" )
+
 end
 
 function SWEP:SecondaryAttack()
@@ -102,6 +148,27 @@ if SERVER then
 
     function SWEP:OnRemove()
         takeOff( self )
+
+    end
+
+    -- TODO: conflicts with the gamemode's V drop, see glee_dropcurrentweapon in sv_weapondropper.lua
+    -- that drop is a progress bar filled while V is held, then a cooldown, nextDropWeaponThink
+    -- a pick is one click, so Take off skips both. Wearables need a take off time and delay that fit both
+    -- one of GetGleeActions' keys, glee_actions has checked it's offered
+    -- wearables with more handle theirs, then hand the rest to this
+    function SWEP:OnGleeAction( ply, key )
+        if key ~= "takeoff" then return end
+
+        -- the gamemode's dropper keeps the ammo and throws it, outside the gamemode there's only the engine's
+        if ply.DropWeaponKeepAmmo then
+            ply:DropWeaponKeepAmmo( self )
+
+        else
+            ply:DropWeapon( self )
+
+        end
+
+        return true
 
     end
 end

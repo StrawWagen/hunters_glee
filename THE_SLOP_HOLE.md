@@ -20,11 +20,11 @@ Questions only the maintainer can answer, like whether an idea fits, are what th
 
 - **Check whether it already exists.** Glee is big, and the thing you're about to write is often already here.
   Grep for it before designing anything.
-- **Build it the way Glee already builds that kind of thing.** If something similar exists, copy how it works.
+- **Build it the way Glee already builds that kind of thing.** If something similar exists, make sure you don't miss the lessons of the past.
   Each choice in it was likely made for a reason, so learn the reason, not just the shape.
   For example, shop items, music and spawnsets are all loaded from `lua/glee_*/` the same way.
   [sv_shopgobbler.lua](gamemodes/hunters_glee/gamemode/modules/shopitems/sv_shopgobbler.lua) and the other loaders explain why in comments.
-- **Never trust a name or a comment.** Read the function, and what it calls.
+- **Never fully trust a name or a comment.** Read the function, and what it calls.
   Names were picked before the code finished changing, and comments go stale.
 - **Find every call site before changing a signature.** Half a function's contract is how it's used.
 - **Public functions and hooks are probably used by other people's addons.**
@@ -56,9 +56,62 @@ Questions only the maintainer can answer, like whether an idea fits, are what th
 
 ---
 
+## gmod_admin_cleanup and autorefresh
+
+Glee is ideally developed without restarting the session.
+Restarting means reloading all lua for every change, depending on hardware and addon count, this can take ages.
+
+### gmod_admin_cleanup is Glee's reload button
+
+Changed a shop item, misery, role etc? Run `gmod_admin_cleanup`, not a restart.
+When you hand a change to your contributor to test, that's the step you give them.
+
+Anything that's loaded using the "gobbling" pattern will re-gobble on gmod_admin_cleanup
+- **Shop items**, from `lua/glee_shopitems/`.
+- **Miseries**, from `lua/glee_spawnsets/`, gobbled and baked again, and the running one starts fresh.
+- **Roles**, from `lua/glee_spawnsetroles/`.
+- **Music**, from `lua/glee_music/`.
+
+Then the whole gamemode sets up again, players included.
+Every entity the map didn't spawn is removed, and the map's own come back fresh.
+
+- **Saving one of those files does nothing on its own, on purpose.** The gobblers use `CompileFile`, not `include`.
+  That's so saving a shop item doesn't autorefresh the whole gamemode, see [sv_shopgobbler.lua](gamemodes/hunters_glee/gamemode/modules/shopitems/sv_shopgobbler.lua).
+  The "Gobbled late" warning is telling you to run `gmod_admin_cleanup`, don't work around it.
+- **Anything new and extensible should reload the same way.** Load it like the gobblers do, so `gmod_admin_cleanup` picks it up.
+  A registry built once when its file loads goes stale, and only a restart fixes it.
+- **Make it a real fresh start.** Lua state isn't touched, tables, timers and hooks all carry on.
+  State that outlives the entities leaks into the next test.
+  Reset it on `glee_post_realcleanupmap`, like the rescue heli's timer in [sv_rescuehelicall.lua](lua/glee_flight/rescueheli/sv_rescuehelicall.lua).
+  Not `PostCleanupMap`, Glee's round reset cleans up the map too, so that runs every round.
+- **Tables of entities end up holding removed ones.** Store per entity state on the entity, it goes when the entity does.
+  If it has to be a table, use weak keys, or clear it on cleanup.
+
+### Autorefresh
+
+For everything else, like entities, weapons and the gamemode's own files, saving is enough.
+Autorefresh runs the saved file again, top to bottom, with everything already spawned still around.
+
+- **File level `local` state starts over.** Whatever it was tracking gets forgotten, and the stuff already spawned breaks.
+  Keep that state on a table that survives the reload, and take a local to it.
+  Like [sv_rtm.lua](gamemodes/hunters_glee/gamemode/modules/spawnset/vote/sv_rtm.lua):
+  ```lua
+  local RTM = GM.glee_RTM or {}
+  GM.glee_RTM = RTM
+  ```
+  It's all over Glee, on `GM`, or on `terminator_Extras` for files outside the gamemode.
+- **The local is there for speed, where speed matters.** `GAMEMODE.glee_RTM` is two table lookups, every time it runs.
+  `RTM` is a local, and costs next to nothing.
+  In a hook that runs constantly, like `EntityFireBullets` or `Think`, that adds up.
+  In code that runs once a round, or when someone buys something, it doesn't.
+  There, reading `GAMEMODE.glee_RTM` directly is fine, and one less thing to keep track of.
+  If you do take a local, empty the table in place, never swap in a new one, or the local is left holding the old table.
+
+---
+
 ## HUD and menus
 
-Draw through the style system, never with hardcoded colors, fonts or sounds.
+Draw through the style system, never with hardcoded colors, fonts or sounds (rare exceptions are acceptable, but should be earned).
 Why it matters is in DESIGN_GUIDELINES.md, "HUD and menus".
 
 - **Panels:** build from the `glee_` panels in [lua/vgui/](lua/vgui/). They pick up their style from their parent.
@@ -100,6 +153,36 @@ It's fired from `GM:PlayerSpawn` in [sv_player.lua](gamemodes/hunters_glee/gamem
 
 Both run before `GM:PlayerSpawn` sets the model and loadout, and before the player is moved to their spawn point.
 Anything that depends on those waits a tick, like `big_head` does.
+
+---
+
+## Status effects
+
+Anything a player has for a while is a status effect. An item's ongoing effect, a bargain, a debuff.
+README.md, "Status Effects", has the API. These are the parts that trip people up.
+
+- **Hooks and timers go through the effect.** `self:Hook`, `self:HookOnce`, `self:Timer`, never a file level `hook.Add`.
+  Removing the effect removes them.
+- **Both just make a hook.** It fires for everything that runs it, not only whoever has the effect.
+  Check inside the hook that you've got the right target.
+- **`self:Hook` makes one per effect.** Ten players with it, ten hooks. Check the target against `owner`.
+- **`self:HookOnce` makes one, as long as anything has the effect.** Only the first effect's function is added, every later one's is thrown away.
+  So `owner`, `self` and setup's locals belong to whoever got it first, and they may not even have it anymore.
+  Check the target with `ply:HasStatusEffect( name )` instead, and get its own effect with `ply:GetStatusEffect( name )`.
+  Like `mecha_legs` in [sh_default_innate.lua](lua/glee_shopitems/sh_default_innate.lua).
+- **Pick `HookOnce` for hooks that fire constantly.** Think, footsteps, drawing. `Hook` for rare ones.
+- **Players keep effects through death.** Unless `self:SetPlyRemoveOnDeath( true )`.
+  NPCs always lose them, because they're removed when they die.
+- **`GiveStatusEffect` runs setup, then hands back the effect.** Anything you set on it afterwards isn't there during setup, only in later hooks and timers.
+
+Clientside is its own registration, `RegisterStatusEffect` again inside `if CLIENT then`.
+Effects are only given on the server, the client's copy sets up and tears down as the server's comes and goes.
+See [cl_statuseffects.lua](gamemodes/hunters_glee/gamemode/modules/statuseffects/cl_statuseffects.lua).
+
+- **Setup runs for every entity with the effect, not just you.** HUD stuff checks `LocalPlayer() ~= owner` first.
+- **The client's effect is its own copy.** Anything set on the server's effect isn't on it, network what the client needs yourself.
+- **`HasStatusEffect` works everywhere.** Even for effects with no client registration, it reads a networked bool.
+  `GetStatusEffect` only returns something when the client registered the effect too.
 
 ---
 

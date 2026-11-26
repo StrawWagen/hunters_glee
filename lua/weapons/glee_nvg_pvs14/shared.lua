@@ -13,6 +13,7 @@ DEFINE_BASECLASS( "glee_nvg_base" )
 
 SWEP.PrintName = "PVS-14 Haptic Vision"
 SWEP.Category = "Hunter's Glee"
+SWEP.SubCategory = "Night Vision"
 SWEP.Author = "ye"
 SWEP.Spawnable = true
 SWEP.WorldModel = "models/glee/nvg/nvg_pvs14.mdl"

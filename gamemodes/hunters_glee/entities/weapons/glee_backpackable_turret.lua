@@ -66,7 +66,7 @@ SWEP.TurretNames = {
     "THE SECOND AMENDMENT",
     "DONKEY JAWBONE",
 
-    "BENJAMIN FRANKLIN",
+    "BENJAMIN FRANKLIN", -- aperture
     "GIANT FUCKASS BOB",
     "PRINCIPAL NORRIS",
     "QUIZNOS THE DESTROYER",
@@ -95,6 +95,21 @@ SWEP.TurretNames = {
     "THE MOTHERFUCKING BATMAN",
     "EVIL SATAN",
     "#####################",
+    "Did you know? 1981 was the year that",
+    "WHY IS IT ALWAYS SCREAMING",
+    "the un-terminator",
+    "the un-jerminator",
+    "the un-markinator",
+    "the re-terminator",
+    "I SET PEOPLE ON FIRE",
+    "john turretname the 3nd",
+    "THE MOST RACIST SENTRY ALIVE",
+    "[b]eter",
+    "I'M SCHIZOPHRENIC AND I HAVE A GUN",
+    "HOME OF PHOBIA",
+    "HOME OF SEXUAL",
+    "HOME OF CHROMIA",
+    "The year is 1887...",
 
     "WOMP WOMPINATOR",
     "SKULL_GRINDER_9000",
@@ -135,7 +150,7 @@ SWEP.TurretNames = {
     "COLD SHOULDER",
     "THE. WHOLE. ORDEAL.",
 
-    "OCTAGON",
+    "OCTAGON", -- glee
     "NULL",
     "xX_FeedMeArmor_Xx",
     "SKULL EATER",
@@ -216,6 +231,101 @@ SWEP.TurretNames = {
     "FUNGUS SNIFFER",
     "THE BABY BOILER",
     "#1 GUILT ENJOYER",
+    "KING JULIAN",
+    "MORT",
+    "JOUST WITH MY FEET",
+    "RECENTLY SHARPENED",
+    "WARNING: SHARP",
+    "AS DULL AS YOU ARE DUMB",
+    "DULLING_EVERY_DAY",
+    "THE HORSE",
+    "OVERQUALIFIED",
+    "I HAVE A 13 PAGE RESUME",
+    "BULLET EMPLOYER",
+    "JOB SEARCH",
+    "I HOST AI INTERVIEWS",
+    "1080 TI",
+    "THE SOLUTION",
+    "JEFF FUCKING BEZOS",
+    "DREAM CHASER",
+    "I CHASE YOU IN YOUR DREAMS",
+    "I MAKE YOU DREAM ABOUT SNAKES",
+    "I SAW YOUR DREAM",
+    "DREAM SMELLER",
+    "I SNIFF DREAMS",
+    "I DRUG YOUR DREAMS",
+    "I LICK YOUR DREAMS",
+    "FEED ME YOUR DREAMS",
+    "MAYBE",
+    "PARKOUR",
+    "HARDCORE PARKOUR",
+    "I TAKE NO FALL DAMAGE",
+    "I DREAM OF FALLING",
+    "MAKE ME FLY",
+    "I FEEL SMART",
+    "IM SELF CONSCIOUS, TRUST ME",
+    "NOBEL PRIZE WINNER",
+    "ALFRED NOBEL",
+    "MUSICAL GENIUS",
+    "FUCKING MOZART",
+    "BASTARD CHILD",
+    "GOBLIN",
+    "RABID GOBLIN ON COCAINE",
+    "THIS HAIRCUT COST ME 200 SKULLS",
+    "if IsValid( enemy ) then shoot() end",
+    "MILK FROM THE STORE",
+    "UNSTOPPABLE FORCE",
+    "IMMOVABLE OBJECT",
+    "hey, hey apple",
+    "MUTANT FUCKING APPLE WITH CLAWS",
+    "RADIOACTIVE FUCKING ORANGE",
+    "VANTABLACK BANANA",
+    "GRAPES THAT FUCKING CHOKE YOU",
+    "CARROTS THAT PRODUCE MUCUS",
+    "CARNIVOROUS KALE",
+    "BROCCOLI WITH A TASTE FOR HUMAN FLESH",
+    "CORPSE MUSHROOM",
+    "BULLET THROUGH YOUR HEART",
+    "VIBE CODED FLIGHT COMPUTER",
+    "POSITIVE AFFIRMATION",
+    "SOLAR POWERED",
+    "I HAVE A SOUL TOO",
+    "SMELL MY FINGER",
+    "DO TURRETS GO TO HEAVEN?",
+    "i used to be a terminator",
+    "I HAVE A METAL SKULL",
+    "I USED TO HAVE LEGS",
+    "YOU WANT ANY DRUGS?",
+    "EAT YOUR FUCKING VEGGIES",
+    "THE EMBALMSTER",
+    "DONT FUCKING TOUCH ME",
+    "THE VERY HUNGRY CATERPILLAR",
+    "AHHHHHH, AHHHHHHHHHHH AAAAAAAAAHAHHHHHHHHH",
+    "I FUCKING LOVE ARSON",
+    "whisper me your favourite crimes",
+    "MURDER",
+    "GRAND THEFT AUTO",
+    "CHILD ABUSE",
+    "SMUGGLER",
+    "MIGRANT FAMILY",
+    "SUPERADMIN",
+    "GLEEFUL",
+    "SO FUCKING GLUM",
+    "#1 MOST GLUM HUNTER'S GLEE PLAYER",
+    "MY FACE WHEN I SHOOT YOU",
+    "I CRAWLED TO GOD",
+    "CULT LEADER",
+    "CULT FOLLOWER #1",
+    "CULT FOLLOWER #2",
+    "CULT FOLLOWER #3",
+    "CULT FOLLOWER #5",
+    "CULT FOLLOWER #6",
+    "CULT FOLLOWER #7",
+    "CULT FOLLOWER #9",
+    "CULT FOLLOWER #10",
+    "CULT FOLLOWER #11",
+    "CULT FOLLOWER #23",
+    "PLEASE REPAIR ME",
 
     "BART",
     "HOMER",
@@ -231,6 +341,54 @@ SWEP.TurretNames = {
     "Scrooge McFrumpus",
     "SCALP OILS",
     "coughdropguzzle",
+
+    "ARE YOU MY DAD?", -- mabel
+    "500 CIGARETTES",
+    "WHAT IS MY PURPOSE?",
+    "I wasn't born yesterday!",
+    "WAIT, IS THAT JERMA?",
+    "WAIT, IS THAT MARKIPLIER?",
+    "Billy The Kid",
+    "When I grow up...",
+    "ifunny.com",
+    "knowyourmeme.com",
+    --"www.huntersglee.com"
+    "talk to the hand",
+    "xX_supremeturret_Xx",
+    "SARAH CONNOR",
+    "THREE TALKING CHIPMUNKS",
+    "ALIEN PROBATION EXPERT",
+    "conspiracy theorist",
+    "LVL 9 MOB BOSS",
+    "MILITARY GRADE TOUGH",
+    "A TERMINAL DISEASE",
+    "Can I have a nickname?",
+    "COME AT ME",
+    "happy death day",
+    "[FAZE] TURRET",
+    "if(enemy){shoot}",
+    "I got your back",
+
+    "ONE EYED JOE",
+    "YO MAMA'S BLASTER CORP",
+    "PHONKINATOR",
+    "Go Green",
+    "alt e on me so i can shoot you",
+    "FUTURE-SELF",
+    "MOVABLE OBJECT",
+    "STOPPABLE FORCE",
+
+    "SIC SEMPER TYRANNIS", -- embalmster
+    "spray & Cray",
+    "morally neutral technology",
+    "ethically neutral technology",
+
+    "BULLET TIME", -- eye sack
+    "EAT SPRAY LOVE",
+    "MR ROTATOHEAD",
+    "Checkov's Gun",
+    "EATS SHOOTS AND LEAVES",
+    "FIRE IN A CROWDED THEATRE",
 
 }
 
@@ -287,6 +445,33 @@ SWEP.RareTurretNames = {
     "#1 PNG NEXTBOT FAN",
     "BILLCYPHERLIVES",
     "PewDiePie",
+    "I'm doing my part!",
+    "Have you seen my wallet?",
+    "Hey Lois...",
+    "BRAIN THE DOG",
+    "McDonald's Happy Meal",
+    "EACH BULLET IS POWERED BY COCA COLA AND MENTOS",
+    "abcdefghijklmnopqrstuvwxyz",
+    "zaqxswcdevfrbgtnhymjukilop",
+    "@StrawWagen",
+    "i used to be someone",
+    "they turned me into this",
+    "i miss my family",
+    "i miss my son",
+    "where are my legs?",
+    "its like i can still feel my daughter's hand",
+    "i should have never taken this job",
+    "dont let them turn you into a turret too",
+    "CONSPIRACY THEORIST WHO IS ALWAYS RIGHT",
+    "Skulls Inc. Employee",
+    "T(o)urret(t)s Syndrome",
+    "/giveadmin",
+    "I SECRETLY HAVE 200 SKULLS IN AN OFFSHORE SKULL ACCOUNT",
+    "Got your nose!!!!",
+    "GUESS WHO JUST LOST THE GAME",
+    "What the fuck did you just fucking say about me, you little bitch? I'll have you know I graduated top of my class in the Navy Seals, and I've been involved in numerous secret raids on Al-Quaeda, and I have over 300 confirmed kills. I am trained in gorilla warfare and I'm the top sniper in the entire US armed forces. You are nothing to me but just another target. I will wipe you the fuck out with precision the likes of which has never been seen before on this Earth, mark my fucking words. You think you can ",
+    "AN AUDIOBOOK WHERE YOU DESCRIBE THE SHAPE OF LETTERS INSTEAD OF READING THE WORDS",
+    "DONT LET THEM KNOW IM SMUGGLING 12 KILOS OF COCAINE",
 
 }
 
@@ -328,19 +513,6 @@ function SWEP:CreateCarryEnt( pos )
 
 end
 
--- out of ammo, it stops shooting and lets its targets know it's empty
-hook.Add( "glee_shopturret_hasammochanged", "glee_floorturret_ammoinputs", function( turret, hasAmmo )
-    if turret:GetClass() ~= turretClass then return end
-
-    if hasAmmo then
-        turret:Fire( "RestoreAmmo" )
-
-    else
-        turret:Fire( "DepleteAmmo" )
-
-    end
-end )
-
 local redisableInterval = 0.25
 
 -- the engine starts these on the turret itself and doesn't always stop them, a carried one would keep
@@ -361,6 +533,18 @@ local function stopTurretLoops( turret )
     end
 end
 
+-- the resistance turret's laser is its own entity, aimed by the turret's thinks
+-- carried, those stop, and it's left drawn to wherever it last pointed
+local function setLaserHidden( turret, hidden )
+    if CLIENT then return end
+
+    local laser = turret:GetInternalVariable( "m_hLaser" )
+    if not IsValid( laser ) then return end
+
+    laser:SetNoDraw( hidden )
+
+end
+
 -- Off while it rides on someone, it'd be shooting from their back. It turns itself back on when it's
 -- stood upright, which carrying it can do, so it's kept off for as long as it's carried
 function SWEP:KeepTurretDisabled()
@@ -372,6 +556,7 @@ function SWEP:KeepTurretDisabled()
 
     ent:Fire( "Disable" )
     stopTurretLoops( ent )
+    setLaserHidden( ent, true ) -- the engine makes a new one whenever it's lost its old one
 
 end
 
@@ -389,12 +574,14 @@ end
 function SWEP:OnCarryStart( ent )
     ent:Fire( "Disable" )
     stopTurretLoops( ent )
+    setLaserHidden( ent, true )
 
 end
 
 function SWEP:OnCarryEnd( ent )
     ent:Fire( "Enable" )
     ent:SetCollisionGroup( COLLISION_GROUP_NPC )
+    setLaserHidden( ent, false )
 
 end
 

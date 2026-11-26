@@ -112,9 +112,34 @@ end
 
 GAMEMODE.activeEffectsCount = GAMEMODE.activeEffectsCount or {}
 
+local developerVar = GetConVar( "developer" )
+
+-- only the first effect's func is ever hooked, so its owner and self are the first effect's, not the hooked entity's
+-- developer only, walking upvalues on every give isn't free
+local function errorIfCapturesFirstEffect( effect, func )
+    local owner = effect:GetOwner()
+
+    local index = 1
+    while true do
+        local name, value = debug.getupvalue( func, index )
+        if name == nil then return end
+
+        if rawequal( value, effect ) or rawequal( value, owner ) then
+            error( "GLEE: statusEffect:HookOnce's func uses '" .. name .. "', that's whoever got " .. effect:GetPrintName() .. " first. Use ply:GetStatusEffect() on the hook's own args", 3 )
+
+        end
+        index = index + 1
+
+    end
+end
+
 function statusEffect:HookOnce( hookName, func )
     if isstring( func ) then
         error( "GLEE: statusEffect:HookOnce doesn't need a hook name!" )
+
+    end
+    if developerVar:GetInt() >= 1 then
+        errorIfCapturesFirstEffect( self, func )
 
     end
 

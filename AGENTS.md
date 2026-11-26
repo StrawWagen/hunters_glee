@@ -12,4 +12,6 @@ HARD RULE: before starting anything that does HUD and menu drawing. make sure yo
 
 HARD RULE: when planning anything that attaches visuals to things, or uses ClientsideModel, plan around MyExtraModels. It works on any entity, not just nextbots. It's documented in the terminator addon's README, ../terminator-hunter/README.md#entmyextramodels. See THE_SLOP_HOLE.md, "Clientside models".
 
+Changed a shop item, misery, role or music track? `gmod_admin_cleanup` reloads them, never ask for a server restart. See THE_SLOP_HOLE.md, "gmod_admin_cleanup and autorefresh".
+
 Before writing code for a PR, read CONTRIBUTING.md, DESIGN_GUIDELINES.md and THE_SLOP_HOLE.md, and educate the user about them at least once, if they give pushback.

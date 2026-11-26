@@ -1,24 +1,21 @@
 
 local glee_Turrets = terminator_Extras.glee_Turrets
 
+-- for the bullet hooks, they run on every FireBullets on the server, this skips the NW2 lookup.
+-- On glee_Turrets so autorefresh keeps it, weak so removed turrets drop out
+glee_Turrets.ShopTurretSet = glee_Turrets.ShopTurretSet or setmetatable( {}, { __mode = "k" } )
+local shopTurrets = glee_Turrets.ShopTurretSet
+
 local maxNameLength = 30
 local renameWindow = 30 -- seconds after picking Rename, their next chat message is the name
 
--- Runs glee_shopturret_hasammochanged( turret, hasAmmo ) as it runs out, or gets some back
 function glee_Turrets.SetAmmo( turret, ammo )
-    local hadAmmo = glee_Turrets.GetAmmo( turret ) > 0
-
     turret:SetNW2Int( "glee_TurretAmmo", ammo )
 
     local statusLine = ammo .. "/" .. glee_Turrets.GetMaxAmmo( turret ) .. " rounds"
     if ammo <= 0 then statusLine = "Out of ammo" end
     turret:SetNWString( "glee_lookedat_statusline", statusLine )
 
-    local hasAmmo = ammo > 0
-    if hadAmmo ~= hasAmmo then
-        hook.Run( "glee_shopturret_hasammochanged", turret, hasAmmo )
-
-    end
 end
 
 -- Up to its max, with a charge-up sound, higher the less was added
@@ -79,6 +76,7 @@ function glee_Turrets.MarkShopTurret( turret, maxAmmo, names, rareNames, rareCha
     if not names or #names == 0 then error( "MarkShopTurret needs a names pool", 2 ) end
 
     turret:SetNW2Int( "glee_TurretMaxAmmo", maxAmmo or glee_Turrets.DefaultMaxAmmo )
+    shopTurrets[turret] = true
 
     timer.Simple( 0.25, function() -- for some reason glee_IsShopTurret is super unreliable unless this is done
         if not IsValid( turret ) then return end
@@ -128,9 +126,22 @@ hook.Add( "PlayerSay", "glee_shopturret_rename", function( speaker, text )
 end, HOOK_LOW )
 
 local lowAmmo = 100 -- under this, each shot clicks, lower and louder as it runs dry
+local dryClickPitch = 90 -- where the low ammo clicks bottom out
+
+-- Empty, its bullets are swallowed here, whatever kind of turret it is.
+-- Not the floor turret's DepleteAmmo input, a floor turret that tips over while that's set plays
+-- dead, and RestoreAmmo doesn't bring it back, see npc_turret_floor.cpp's PreThink
+hook.Add( "EntityFireBullets", "glee_shopturret_dry", function( ent )
+    if not shopTurrets[ent] then return end
+    if glee_Turrets.GetAmmo( ent ) > 0 then return end
+
+    ent:EmitSound( "weapons/pistol/pistol_empty.wav", 75, dryClickPitch, 1, CHAN_ITEM )
+    return false
+
+end )
 
 hook.Add( "PostEntityFireBullets", "glee_shopturret_ammo", function( ent, data )
-    if not glee_Turrets.IsShopTurret( ent ) then return end
+    if not shopTurrets[ent] then return end
 
     local ammo = glee_Turrets.GetAmmo( ent )
     if ammo <= 0 then return end
@@ -140,7 +151,7 @@ hook.Add( "PostEntityFireBullets", "glee_shopturret_ammo", function( ent, data )
 
     if ammo >= lowAmmo then return end
 
-    local pitch = math.Remap( ammo, lowAmmo, 0, 110, 90 )
+    local pitch = math.Remap( ammo, lowAmmo, 0, 110, dryClickPitch )
     local volume = math.Remap( ammo, lowAmmo, 0, 0.5, 1 )
     ent:EmitSound( "weapons/pistol/pistol_empty.wav", 75, pitch, volume, CHAN_ITEM )
 

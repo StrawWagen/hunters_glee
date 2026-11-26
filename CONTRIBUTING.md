@@ -5,7 +5,7 @@ Thanks for wanting to help!
 Have an idea? Read [DESIGN_GUIDELINES.md](DESIGN_GUIDELINES.md) first, it covers what fits in Glee.
 Want to add content? The [README](README.md) documents miseries, shop items and status effects.
 Using an AI agent? Point it at [THE_SLOP_HOLE.md](THE_SLOP_HOLE.md) too.
-AI-written PRs get held to a higher bar, so keep them small, and make sure you understand every line.
+AI-written PRs get held to a higher bar, because every line could be a hallucination, so don't get attached to them.
 
 ---
 

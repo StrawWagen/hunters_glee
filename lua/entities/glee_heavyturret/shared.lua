@@ -899,10 +899,15 @@ local gibParts = { hookMine, monitor }
 local gibThrowSpeed = 250
 local gibLifetime = { 60, 90 } -- seconds, each its own
 
+local function nineTo13YearOldYear()
+    return os.date( "*t" ).year - math.random( 5, 13 )
+
+end
+
 -- a kid's username, born 9 to 13 years ago, whatever year it is now
 local function kidUsername( name )
     return function()
-        return name .. ( os.date( "*t" ).year - math.random( 5, 13 ) )
+        return name .. nineTo13YearOldYear()
 
     end
 end
@@ -924,6 +929,7 @@ ENT.TurretNames = {
     "fat",
     "burger tank",
     "pew pew pew",
+    "pew pew",
     "nerf gun",
     "gary",
     "nicholas",
@@ -968,6 +974,10 @@ ENT.TurretNames = {
     "newb",
     "noob",
     "glum",
+    "tangerine",
+    "apple",
+    "no swearing please",
+    "careful im fragile",
 
     "):",
     ":(",
@@ -985,6 +995,9 @@ ENT.TurretNames = {
     "scoundrel",
     "lil` tony",
     ":steamhappy:",
+    "the moon isn't real",
+    "garold",
+    "jary",
 
     "betsy",
     "daisy",
@@ -1024,6 +1037,26 @@ ENT.TurretNames = {
     "jamaltheunicorn552",
     "i am alive",
 
+    "i wanna be a cowboy baby!", -- mabel
+    "i'm doing my part!",
+    "what did I sign up for?",
+    "i'll do my best",
+    "a bad haircut",
+    "am i in a simulation?",
+    "twig legs",
+    "which team am i on?",
+    "Hi friend",
+    "#pwned",
+
+    "moet's art",
+
+    "ill be your huckleberry",
+    "pablojuan" .. nineTo13YearOldYear() .. "@outlook.com",
+    "bro",
+
+    "your biggest fan", -- embalmster
+    "microscopic hay dust",
+
 }
 
 ENT.RareNameChance = 0.01
@@ -1043,6 +1076,15 @@ ENT.RareTurretNames = {
     kidUsername( "minecraft unblocked free download no virus " ),
     "thephonkmaster875",
     "iamtherich",
+    "i'm underqualified",
+    "i'm too tired for this",
+    "guard dog",
+    "insert name here",
+    "take that evil do-er!",
+    "cupid's bow and arrow",
+    "evil torture device",
+    "knee surgery",
+    "bisexual vampire",
 }
 
 -- plus or minus 10%

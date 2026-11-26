@@ -14,7 +14,7 @@ end
 -- one of GetGleeActions' keys, in shared.lua, glee_actions has checked it's offered
 -- goggles with more handle theirs, then hand the rest to this
 function SWEP:OnGleeAction( ply, key )
-    if key ~= "flip" then return end
+    if key ~= "flip" then return BaseClass.OnGleeAction( self, ply, key ) end
 
     local down = not self:GetDown()
     self:SetDown( down )
