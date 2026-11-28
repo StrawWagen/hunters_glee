@@ -53,6 +53,23 @@ function GM:SpawnASkull( pos, ang, termSkull, persistParent )
 end
 
 --[[---------------------------------------------------------
+    GM:MarkSkullFromDeath
+    @desc Makes a just spawned skull look like it came out of something that died.
+        Players who saw it happen, and the killer, get the "something died here" hints.
+    @param skull: The skull, call this right after GM:SpawnASkull.
+    @param killer: Optional, whatever made the kill.
+---------------------------------------------------------]]
+function GM:MarkSkullFromDeath( skull, killer )
+    skull.fromSomethingWitnessable = true
+    skull.nextPickup = CurTime() + 1
+
+    if IsValid( killer ) then
+        skull.killersCreationID = killer:GetCreationID()
+
+    end
+end
+
+--[[---------------------------------------------------------
     GM:HandleRagdollSkulling
     @desc Puts a skull pickup in the ragdoll's head, if it has one.
     @param ragdoll: The body to skull.
@@ -93,18 +110,7 @@ local function spawnTermSkull( died, dmg, _ )
     end
 
     local newSkull = GAMEMODE:SpawnASkull( died:GetShootPos(), died:GetAimVector():Angle(), died.DoMetallicDamage, died )
-
-    -- makes "erm something must have died here" hints better
-    newSkull.fromSomethingWitnessable = true
-    newSkull.nextPickup = CurTime() + 1
-
-    if not dmg then return end
-
-    local attacker = dmg:GetAttacker()
-    if not IsValid( attacker ) then return end
-
-    local attackersCreationID = attacker:GetCreationID()
-    newSkull.killersCreationID = attackersCreationID
+    GAMEMODE:MarkSkullFromDeath( newSkull, dmg and dmg:GetAttacker() )
 
 end
 
@@ -118,10 +124,8 @@ hook.Add( "PlayerDeath", "glee_dropplayerskulls", function( died, _, attacker )
     if GAMEMODE:RoundState() ~= GAMEMODE.ROUND_ACTIVE then return end
     if attacker == died then return end
     local newSkull = GAMEMODE:SpawnASkull( died:GetShootPos(), died:GetAimVector():Angle(), nil, died )
-
-    newSkull.nextPickup = CurTime() + 1
+    GAMEMODE:MarkSkullFromDeath( newSkull )
     newSkull:SetOwnerSteamID64( died:SteamID64() )
-    newSkull.fromSomethingWitnessable = true
 
 end )
 
@@ -327,6 +331,56 @@ hook.Add( "glee_procskulls_skullspawned", "tracklastskull", function( skull )
 
 end )
 
+-- rare procedural skulls get nailed to a nearby wall
+-- shoot it or pull the nail to get it, see termhunt_weapon_hammer
+
+local nailedChanceMin = 15
+local nailedChanceMax = 50
+local nailedMaxChanceDifficulty = 100
+local nailSinkDist = 5 -- how far off the wall the nail's origin sits, like the hammer's
+
+local wallDirections = {
+    Vector( 1, 0, 0 ),
+    Vector( 0.5, 0.5, 0 ),
+    Vector( 0, 1, 0 ),
+    Vector( -0.5, 0.5, 0 ),
+    Vector( -1, 0, 0 ),
+    Vector( -0.5, -0.5, 0 ),
+    Vector( 0, -1, 0 ),
+    Vector( 0.5, -0.5, 0 ),
+}
+
+hook.Add( "glee_procskulls_skullspawned", "glee_nailskulltowall", function( skull )
+    local chance = math.Remap( GAMEMODE:GetBumpedDifficulty(), 0, nailedMaxChanceDifficulty, nailedChanceMin, nailedChanceMax )
+    chance = math.Clamp( chance, nailedChanceMin, nailedChanceMax )
+    if math.random( 1, 100 ) > chance then return end
+
+    local offsetted = skull:WorldSpaceCenter() + VectorRand():GetNormalized() * math.random( 50, 350 )
+    if not util.IsInWorld( offsetted ) then return end
+
+    local _, hits = terminator_Extras.GetNookScore( offsetted, nil, wallDirections )
+    local nearestFraction = 1
+    for fraction in pairs( hits ) do
+        if fraction < nearestFraction then
+            nearestFraction = fraction
+
+        end
+    end
+    if nearestFraction >= 1 then return end -- nothing in range
+
+    local wallTrace = hits[nearestFraction]
+    local hitPos = wallTrace.HitPos
+    local hitNormal = wallTrace.HitNormal
+
+    local centerOffset = skull:WorldSpaceCenter() - skull:GetPos()
+    skull:SetPos( hitPos + hitNormal * skull:BoundingRadius() - centerOffset )
+
+    local nailPos = skull:WorldToLocal( hitPos + hitNormal * nailSinkDist )
+    local nailAng = skull:WorldToLocalAngles( ( -hitNormal ):Angle() )
+    MakeNail( skull, game.GetWorld(), 0, 0, 50000, nailPos, nailAng ) -- see termhunt_weapon_hammer
+
+end )
+
 local nextCalculate = 0
 
 local function checkSkulls()
@@ -400,6 +454,15 @@ hook.Add( "glee_plypickedupskull", "glee_skullpickupsinkillfeed", function( pick
     GAMEMODE:SendDeathNotice( picker, inflic, nil, 0 )
     GAMEMODE:LearnLesson( picker, "PickedUpSkull" )
 
+end )
+
+hook.Add( "glee_plypickedupskull", "glee_skullpickupnotice", function( picker, skull )
+    huntersGlee_Notify( { picker }, {
+        text = { alive = "Skulls +{num}" },
+        icon = { alive = "vgui/hud/deadshopicon_transparent.png" },
+        addNum = skull:GetScore(),
+        time = 5,
+    } )
 end )
 
 local notActiveHintCooldown = 1

@@ -4,7 +4,8 @@
 -- While the radar's on and they're flipped down, the wearer's client fires rays every frame from their eyes, inside the
 -- cone, which is drawn around the crosshair. Rays don't bounce, they pierce: through walls and props, up to the
 -- wavelength's pierce in total, knocked a little off course by every bit of solid. The rays aren't drawn.
--- A ray that hits a living player, npc or nextbot flashes a mark in the cone, on the bearing it was fired along.
+-- A ray that hits a living player, npc or nextbot leaves a blip, on the bearing it was fired along, and each
+-- target's blips get a box round them, with a line up to its name over the cone.
 -- A newly found target beeps once, and counts as new again once it's gone unhit a while. See cl_init.lua.
 -- The rest is glee_nvg_base.
 
@@ -13,10 +14,10 @@ DEFINE_BASECLASS( "glee_nvg_base" )
 
 SWEP.PrintName = "PVS-14 Haptic Vision"
 SWEP.Category = "Hunter's Glee"
-SWEP.SubCategory = "Night Vision"
-SWEP.Author = "ye"
+SWEP.SubCategory = "Vision Augments"
+SWEP.Author = "ye + Straw W Wagen"
 SWEP.Spawnable = true
-SWEP.WorldModel = "models/glee/nvg/nvg_pvs14.mdl"
+SWEP.WorldModel = "models/glee/nvg/nvg_t7.mdl"
 
 SWEP.GleeNVG = {
     lamp = 0.6,
@@ -25,28 +26,33 @@ SWEP.GleeNVG = {
     gain = 1, -- no brightening, just the colour pass below
     saturation = 1.5, -- stronger colours
     tint = Color( 230, 230, 255 ),
-    vignette = { start = 0.5, finish = 0.95 },
+    vignette = { start = 0.5, finish = 0.95, aspect = "full", roundness = 4 }, -- one tube, a monocular
 }
 
--- rays = fired per frame, pierce = total hammer units of solid each can go through before it stops,
+-- raysPerSecond = fired per second, spread over the frames, so the sweep runs the same speed at any framerate
+-- a full sweep takes the cone's points / raysPerSecond seconds, see SWEP.Resolutions
+-- pierce = total hammer units of solid each can go through before it stops,
 -- length = how far one ray travels in total, solid and air together, before it gives up,
 -- deflectEvery / deflectDegrees = every this many units of solid bends the ray this many degrees
 -- short waves are many rays that barely get through anything, long waves are few that go through a lot
+-- name fits the wheel, fullName is for the readout under the cone, when it's different
 SWEP.Wavelengths = {
-    { name = "Short",  rays = 120, pierce = 64,   length = 4000,  deflectEvery = 50, deflectDegrees = 5 },
-    { name = "Medium", rays = 50,  pierce = 256,  length = 8000,  deflectEvery = 50, deflectDegrees = 5 },
-    { name = "Long",   rays = 20,  pierce = 512,  length = 12000, deflectEvery = 50, deflectDegrees = 5 },
-    { name = "ELong",  rays = 10,  pierce = 1024, length = 20000, deflectEvery = 50, deflectDegrees = 1 },
+    { name = "Short",  raysPerSecond = 7200, pierce = 64,   length = 4000,  deflectEvery = 50, deflectDegrees = 5 },
+    { name = "Medium", raysPerSecond = 3000, pierce = 256,  length = 8000,  deflectEvery = 50, deflectDegrees = 5 },
+    { name = "Long",   raysPerSecond = 1200, pierce = 512,  length = 12000, deflectEvery = 50, deflectDegrees = 5 },
+    { name = "ELong",  fullName = "Extra Long", raysPerSecond = 600,  pierce = 1024, length = 20000, deflectEvery = 50, deflectDegrees = 1 },
 }
+
+-- under SlowFps the sweep fires SlowShare of its rays per second
+-- more rays on a frame that's already slow makes the next one slower still
+SWEP.SlowFps = 30
+SWEP.SlowShare = 0.5
 
 -- how wide the cone the rays come out in is, whole width in degrees, picked from the wheel
 SWEP.Cones = { 90, 40, 10 }
 
--- how long a blip stays in the cone before it's gone, in seconds. the fade is spread over this same
--- window, so this one number is the blip's lifetime and its decay rate both
-SWEP.MarkLife = 10
-
--- how many points the whole sweep has, picked from the wheel; a frame only walks a slice of them
+-- how dense the sweep's points are, picked from the wheel; a frame only walks a slice of them
+-- points is how many fill the widest cone, a narrower one gets fewer, spaced the same
 SWEP.Resolutions = {
     { name = "Low", points = 1920 },
     { name = "Medium", points = 3840 },
@@ -84,12 +90,21 @@ end
 function SWEP:GetGleeActions()
     local actions = BaseClass.GetGleeActions( self )
 
-    -- each shows its current value, picking steps it to the next
+    -- each shows its current value, and hovered, the one picking it steps to
+    local function setting( key, name, current, upcoming )
+        return { key = key, label = name .. ": " .. current, hoveredLabel = "Next:\n" .. name .. ": " .. upcoming }
+
+    end
+
+    local nextWavelength = self.Wavelengths[self:NextIndex( self.Wavelengths, self:GetWavelength() )]
+    local nextResolution = self.Resolutions[self:NextIndex( self.Resolutions, self:GetResolution() )]
+    local nextCone = self.Cones[self:NextIndex( self.Cones, self:GetCone() )]
+
     table.Add( actions, {
-        { key = "radar", label = "Radar: " .. ( self:GetRadarOn() and "On" or "Off" ) },
-        { key = "wavelength", label = "Wl: " .. self:CurrentWavelength().name },
-        { key = "resolution", label = "Res: " .. self:CurrentResolution().name },
-        { key = "cone", label = "Cone: " .. self:CurrentCone() .. "°" },
+        setting( "radar", "Radar", self:GetRadarOn() and "On" or "Off", self:GetRadarOn() and "Off" or "On" ),
+        setting( "wavelength", "Wl", self:CurrentWavelength().name, nextWavelength.name ),
+        setting( "resolution", "Res", self:CurrentResolution().name, nextResolution.name ),
+        setting( "cone", "Cone", self:CurrentCone() .. "°", nextCone .. "°" ),
     } )
 
     return actions

@@ -157,6 +157,44 @@ hook.Add( "PostEntityFireBullets", "glee_shopturret_ammo", function( ent, data )
 
 end )
 
+-- npc_turret_floor's own tipped check, its up against the world's, see npc_turret_floor.cpp's OnSide
+-- matching it means FL_NOTARGET goes on as the turret gives up
+local tippedUpDot = 0.5
+
+-- Tipped over and loose.
+-- Welded or frozen, it's mounted, and can point any way it likes, eg under a helicopter
+-- up, the turret's upright direction, not every model's is its GetUp
+function glee_Turrets.IsTipped( turret, up )
+    if up.z >= tippedUpDot then return false end
+    if constraint.FindConstraint( turret, "Weld" ) then return false end
+
+    local phys = turret:GetPhysicsObject()
+    if IsValid( phys ) and not phys:IsMotionEnabled() then return false end
+
+    return true
+
+end
+
+-- Tipped floor turrets get FL_NOTARGET, like the heavy turret's ENT:UpdateSad.
+-- Every floor turret, whoever's side it's on, so other addons' NPCs leave them be too
+local tippedCheckInterval = 0.5
+
+timer.Create( "glee_floorturrets_notargettipped", tippedCheckInterval, 0, function()
+    for _, turret in ipairs( ents.FindByClass( "npc_turret_floor" ) ) do
+        local tipped = not terminator_Extras.glee_Carrying.IsCarried( turret ) and glee_Turrets.IsTipped( turret, turret:GetUp() )
+        if tipped == ( turret.glee_Tipped or false ) then continue end
+
+        turret.glee_Tipped = tipped
+        if tipped then
+            turret:AddFlags( FL_NOTARGET )
+
+        else
+            turret:RemoveFlags( FL_NOTARGET )
+
+        end
+    end
+end )
+
 local roundsPerShockDamage = 2
 
 -- Post, after every EntityTakeDamage hook's had its say, some add DMG_SHOCK, eg the galvanizing gland's melee

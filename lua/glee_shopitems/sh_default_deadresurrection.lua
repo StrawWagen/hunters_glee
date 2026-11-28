@@ -230,6 +230,14 @@ if SERVER then
                 end
             end )
 
+            -- reaching full health voids the deal, they have to earn it
+            self:HookOnce( "glee_blockaddhealth", function( ply, _amount, reason )
+                if reason ~= "glee_ambientregen" then return end
+                if not ply:HasStatusEffect( "infernalintervention_rawendofthedeal" ) then return end
+                return true
+
+            end )
+
             function self:ApplyEffects()
                 -- shrivel all bones
                 local bc = owner:GetBoneCount() or 0

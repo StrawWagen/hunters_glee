@@ -118,8 +118,15 @@ Why it matters is in DESIGN_GUIDELINES.md, "HUD and menus".
 - **Everything else:** get a handle with `terminator_Extras.glee_Style( "hl2" )`, and ask it for roles.
   `handle:Color`, `handle:Font`, `handle:Metric`, `handle:Draw`, `handle:PlaySound`.
   [cl_stylehandle.lua](lua/glee_hud/cl_stylehandle.lua) explains handles, [cl_style.lua](lua/glee_hud/cl_style.lua) explains styles.
-- **Missing a role?** Add it to [cl_hl2.lua](lua/glee_hud/styles/cl_hl2.lua), the base every style inherits from.
-  Don't reach for a `Color()` literal instead.
+- **Use the roles that are already there.** A role names what something means, not where it's drawn.
+  `text` is Glee talking, `alert` is "needs you now". Map what you're building onto those.
+  How faint something is belongs in your drawing code, as a share of the role's alpha, not in a new colour.
+- **Wanting a new role is a warning sign.** If you catch yourself porting a colour or a font into a style, stop and ask:
+  why am I building something that doesn't match Glee's look? How do I make it fit the minimalist language already here?
+  Turning your own palette into roles doesn't get rid of a single literal, it just moves them.
+  Every style but hl2 then draws your feature in hl2's colours, and the look stops being one look.
+- **A new role is a last resort**, for a meaning Glee has no word for yet.
+  Add it to [cl_hl2.lua](lua/glee_hud/styles/cl_hl2.lua), the base every style inherits from, and give the other styles their own take on it.
 
 ---
 
@@ -135,6 +142,56 @@ It does all the messy parts for you, so read it before writing a `ClientsideMode
 - **On a status effect's owner:** status effects already have this built in.
   `data.extraModels` in [cl_statuseffects.lua](gamemodes/hunters_glee/gamemode/modules/statuseffects/cl_statuseffects.lua),
   or `statusEffect:AddExtraModel` in [sh_statuseffectbase.lua](gamemodes/hunters_glee/gamemode/modules/statuseffects/sh_statuseffectbase.lua) when the model depends on the owner.
+
+---
+
+## Looping sounds on weapons
+
+```lua
+function SWEP:StopHum()
+    if self.glee_hum then
+        self.glee_hum:Stop()
+    end
+    self.glee_hum = nil
+end
+
+-- every tick
+function SWEP:UpdateHum()
+    if not self:ShouldHum() then
+        self:StopHum()
+        return
+    end
+    if self.glee_hum and self.glee_hum:IsPlaying() then return end
+
+    self:StopHum()
+    self.glee_hum = CreateSound( self, humPath )
+    self.glee_hum:Play()
+end
+```
+
+A looping sound plays until something stops it.
+Not when the weapon is holstered, dropped or removed, and never on its own.
+A missed stop is a sound stuck in someone's ears for the rest of the round, so Glee's weapons stop loops militantly.
+
+The [tissue reclaimer](lua/weapons/glee_tissue_reclaimer/cl_draw.lua) is the one to copy, it's built like [the heavy turret's](lua/entities/glee_heavyturret/shared.lua) hums.
+
+- **Every tick, work out what should be playing, and make it so.** Don't start a loop on one event and trust another to stop it.
+  `WantedLoops` says what should be going, `UpdateLoopSounds` starts, retunes or stops to match.
+- **Restart anything that isn't playing.** The engine drops loops out from under you, `stopsound` for one.
+  `IsPlaying()` coming back false means build a fresh one.
+- **Stopping and forgetting go together.** One stop function stops the sound and nils the field, so the next check starts clean.
+- **Call it from every way the weapon goes quiet.** `Holster`, `OnDrop`, `OwnerChanged`, `OnRemove`, and having nothing to do.
+  Like `KillSound` in [the tau cannon](lua/weapons/termhunt_taucannon/shared.lua#L238), and `KillSizzle` in [the AR3](lua/weapons/termhunt_ar3.lua#L222).
+- **A loop made on the owner is on the player, not the weapon.** `CreateSound( owner, ... )` doesn't care that the weapon is gone.
+  The tau cannon and AR3 back their stop up with a `CallOnRemove` on the weapon.
+- **Loops other players hear go clientside.** A serverside loop only reaches whoever was in earshot when it started.
+  Clientside, nothing else stops the loop on a kit somebody stopped holding.
+  So a `Think` [checks every held kit](lua/weapons/glee_tissue_reclaimer/cl_draw.lua#L393), and stops any that were sounding last time but aren't held now.
+- **Retune only on a change.** Each `ChangePitch` or `ChangeVolume` starts its slide over.
+- **`sound.PlayFile` loops are their own thing.** For a hum on its own channel, like the goggles'.
+  When the file runs out the channel stops, `GetState()` is `GMOD_CHANNEL_STOPPED`, start it again.
+  It loads in the background, so don't start a second while the first is loading, and check it's still wanted when it arrives.
+  [glee_nvg_base/cl_init.lua](lua/weapons/glee_nvg_base/cl_init.lua#L260) does both.
 
 ---
 
@@ -226,6 +283,34 @@ The engine's call still works, but skips something Glee relies on.
   See [sv_weapondropper.lua](gamemodes/hunters_glee/gamemode/modules/weapondropper/sv_weapondropper.lua).
 - **Stripping weapons:** `StripWeapons` runs `glee_PreStripWeapons` first.
   Hook that for anything that should leave the player's hands, instead of vanishing with them.
+
+---
+
+## Other addons' entities
+
+```lua
+SWEP.SpecialInteractions = {
+    ["evil_fungus"] = {
+        find = function( tr ) ... end,
+        primaryAttack = function( wep, ent, tr ) ... end,
+    },
+}
+```
+
+Glee handles another mod's entities with a table keyed by classname, each entry saying what to do with that class.
+The mod never has to be installed.
+A key is only a classname, nothing loads the other addon, and an entry for a class that never spawns does nothing.
+
+- **Check before you touch.** Every entry checks the other addon's globals, fields and methods exist before using them.
+  `EvilCrawler and ent.GetAct and ...`, never straight to `ent:GetAct()`. Their addon updates without asking you.
+- **Add an entry, not a branch.** A new mod's entity is a new key in the table, not an `if class == ...` in the middle of the code.
+- **What it's drawn as isn't what it is.** Custom meshes are common. The model can be a stand-in, the evil crawler's is a popcan.
+  Traces hit what it collides with, which can be far smaller than what's drawn.
+- **It won't be an NPC or a nextbot.** `IsNPC`, `IsNextBot` and `Health` checks miss most custom creatures, they track being alive their own way.
+
+The ones to copy:
+- [The tissue reclaimer's SpecialInteractions](lua/weapons/glee_tissue_reclaimer/shared.lua#L519), what its click does to them.
+- `otherAlive` beside `terminator_Extras.glee_IsAliveThing`, in [sh_glee_functions.lua](lua/autorun/sh_glee_functions.lua), what counts as alive for the goggles.
 
 ---
 

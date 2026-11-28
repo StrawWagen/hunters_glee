@@ -272,6 +272,17 @@ function GM:BumpRoundDifficulty( amount, reason )
 
 end
 
+--[[---------------------------------------------------------
+    GM:GetBumpedDifficulty
+    @desc Difficulty from this round's bumps, plus the session's.
+    Over 100 is a hard session.
+    @return number
+---------------------------------------------------------]]
+function GM:GetBumpedDifficulty()
+    return self.sessionDiffBump + self.roundDiffBump
+
+end
+
 
 -- difficulty rubberbanding below
 local failuresToHalveDifficulty = 2
@@ -406,7 +417,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_spawnhunters_datadriven", functio
 
     local diffPerMin = spawnSet.difficultyPerMin
     local difficulty = diffPerMin * minutes
-    difficulty = difficulty + GAMEMODE.sessionDiffBump + GAMEMODE.roundDiffBump
+    difficulty = difficulty + GAMEMODE:GetBumpedDifficulty()
 
     local countWanted
     local overrideCount = overrideCountVar:GetInt()
@@ -621,6 +632,7 @@ hook.Add( "glee_sv_validgmthink_active", "glee_anti_abysmallag", function( _, _,
         if not IsValid( hunter ) then continue end
         if hunter:Health() <= 0 then continue end
         if GAMEMODE:IsActiveBoss( hunter ) then continue end -- the round's whole point, it stays
+        if hunter.glee_NoLagCleanup then continue end -- the npc_* sweep catches non-hunters, like the rescue heli
 
         local creationID = hunter:GetCreationID()
         if creationID < oldestTime then

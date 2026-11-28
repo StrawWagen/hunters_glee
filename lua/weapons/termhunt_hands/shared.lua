@@ -31,6 +31,7 @@ SWEP.Secondary.Automatic   = true
 SWEP.Secondary.Ammo        = "none"
 
 SWEP.ViewModel = "models/glee/weapons/hands/glee_stronwagen_hands.mdl"
+SWEP.ViewModelFOV = 80
 SWEP.UseHands = true
 
 if CLIENT then
@@ -140,6 +141,10 @@ function SWEP:MissAnim()
     end )
 end
 
+local vecZero = Vector( 0, 0, 0 )
+local angZero = Angle( 0, 0, 0 )
+local maxBounceSpeed = 800 -- running into a wall and shoving bounces you back at your run-in speed, up to this
+
 function SWEP:PrimaryAttack( firstMul )
     if not SERVER then return end
     if not self:CanPrimaryAttack() then return end
@@ -167,10 +172,10 @@ function SWEP:PrimaryAttack( firstMul )
     local Trace = util.TraceHull( TraceDat )
     local Hit = Trace.Entity
 
-    local Force = AimVector
+    local forceDir = ( AimVector * 0.5 ) + ( Trace.Normal * 0.5 )
 
     if IsValid( Hit ) then
-        self:SendWeaponAnim( ACT_VM_PRIMARYATTACK )
+        self:SendWeaponAnim( ACT_VM_PRIMARYATTACK_1 )
 
         local parent = Hit:GetParent()
         if IsValid( parent ) and IsValid( parent:GetPhysicsObject() ) then
@@ -180,7 +185,8 @@ function SWEP:PrimaryAttack( firstMul )
         hook.Run( "glee_shover_preshove", Hit, owner )
         local Phys = Hit:GetPhysicsObject()
         if Phys and IsValid( Phys ) then
-            Force.z = math.Clamp( Force.z, 0.5, 1 )
+            local Force = Vector( forceDir.x, forceDir.y, forceDir.z )
+            Force.z = math.Clamp( forceDir.z, 0.5, 1 )
             self:ShoveSound( pitchAdded )
             if Hit:IsPlayer() then
                 Force = Force * 500
@@ -218,14 +224,54 @@ function SWEP:PrimaryAttack( firstMul )
         hook.Run( "glee_shover_shove", Hit, owner )
 
     elseif Hit:IsWorld() and not Trace.HitSky and owner:GetEyeTrace().HitWorld then -- check eyetrace too, make sure we dont do the 5 sec cooldown when they just barely missed an entity
-        self:SetNextPrimaryFire( CurTime() + 2.2 )
         local mul = -150
         mul = mul * ( owner.parkourForce or 0.3 )
-        Force = Force * mul * firstMul
+        local Force = forceDir * mul * firstMul
+
+        self:SetNextPrimaryFire( CurTime() + 2.2 )
         self:ShoveSound( -15 + pitchAdded )
-        owner:SetVelocity( ( owner:GetVelocity() * 0.4 ) + Force )
         owner:ViewPunch( Angle( -20, 0, 0 ) * firstMul )
         self:ShoveAnim()
+
+        local ownersVel = owner:GetVelocity()
+
+        -- z dropped, so jumping or falling with no sideways motion still pushes straight back
+        local flatVel = Vector( ownersVel.x, ownersVel.y, 0 )
+        local movementDir = flatVel:GetNormalized()
+        local product = movementDir:Dot( forceDir )
+        local towardsWall = product > 0.9 -- forceDir is the aim, so positive is into the wall
+        if product > 0.35 or product < -0.9 or flatVel:Length() <= 50 then
+            self:SendWeaponAnim( ACT_VM_HITCENTER )
+
+        else
+            -- x is forward, y is left
+            local localVel = WorldToLocal( ownersVel, angZero, vecZero, owner:EyeAngles() )
+            local isLeft = localVel.y > 0
+            if isLeft then
+                self:SendWeaponAnim( ACT_VM_HITLEFT )
+
+            else
+                self:SendWeaponAnim( ACT_VM_HITRIGHT )
+
+            end
+        end
+
+        -- SetVelocity adds on players, so -flatVel cancels the run-in, then the bounce is added on top
+        -- flatVel keeps z out of it, falling at a wall shouldn't launch you up
+        local finalVel
+        if towardsWall then
+            local bounceSpeed = math.min( flatVel:Length(), maxBounceSpeed )
+            finalVel = -flatVel + ( -movementDir * bounceSpeed ) + Force
+
+        else
+            finalVel = ( ownersVel * 0.4 ) + Force
+
+        end
+        owner:SetVelocity( finalVel )
+        timer.Simple( 0, function()
+            print( owner:GetVelocity() )
+
+        end )
 
     else
         NoHit = true

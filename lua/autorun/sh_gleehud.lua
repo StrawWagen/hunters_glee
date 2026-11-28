@@ -3,6 +3,8 @@ if SERVER then
 
     AddCSLuaFile( "glee_hud/rndx.lua" )
     AddCSLuaFile( "glee_hud/cl_draw.lua" )
+    AddCSLuaFile( "glee_hud/cl_iconbake.lua" )
+    AddCSLuaFile( "glee_hud/cl_icons.lua" )
     AddCSLuaFile( "glee_hud/cl_style.lua" )
 
     AddCSLuaFile( "glee_hud/styles/cl_hl2.lua" )

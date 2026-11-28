@@ -16,8 +16,19 @@
             time = 10,
         } )
 
-    No text for their state, no message. text = { alive = "..." } is for the living only.
+    No text and no icon for their state, no message. text = { alive = "..." } is for the living only.
+    Beside that, a plain icon = "..." would still show the dead the icon alone, give it as { alive = "..." } too.
     A message up when the player dies or spawns switches to the other state's fields, or goes away if it has none.
+
+    An icon sits on the right, drawn in the message's colour. Either can go without the other.
+
+        huntersGlee_Notify( { ply }, {
+            text = "Pulse Ammo +{num}",
+            addNum = 100,
+            icon = "entities/item_battery.png",
+        } )
+
+    addNum keeps a running total in the {num}, the same message again adds to it.
 
     The same message again flashes the one already up and restarts its time.
     Messages sharing a replaceKey replace each other, for a count that keeps changing.
@@ -63,12 +74,33 @@ local function pick( value, state )
 
 end
 
--- one state's fields, plain values with defaults filled in, nil if there's no text for it.
+local function checkedOptionalString( value, name )
+    if value ~= nil and ( not isstring( value ) or value == "" ) then error( "GLEE: notify " .. name .. " has to be a string", 5 ) end
+
+end
+
+-- one state's fields, plain values with defaults filled in, nil if there's no text or icon for it.
 -- Errors at the caller of huntersGlee_Notify
 local function checkedState( data, state )
     local text = pick( data.text, state )
-    if text == nil then return end
-    if not isstring( text ) or text == "" then error( "GLEE: notify text has to be a string", 4 ) end
+    local icon = pick( data.icon, state )
+    local iconWeapon = pick( data.iconWeapon, state )
+    if text == nil and icon == nil and iconWeapon == nil then return end
+
+    checkedOptionalString( text, "text" )
+    checkedOptionalString( icon, "icon" )
+    checkedOptionalString( iconWeapon, "iconWeapon" )
+    if icon and iconWeapon then error( "GLEE: notify takes an icon or an iconWeapon, not both", 4 ) end
+
+    local iconSize = pick( data.iconSize, state )
+    if iconSize ~= nil and ( not isnumber( iconSize ) or iconSize <= 0 ) then error( "GLEE: notify iconSize has to be above 0", 4 ) end
+
+    local iconBadge = pick( data.iconBadge, state )
+    checkedOptionalString( iconBadge, "iconBadge" )
+    if iconBadge and not icon and not iconWeapon then error( "GLEE: notify iconBadge needs an icon to sit on", 4 ) end
+
+    local addNum = pick( data.addNum, state )
+    if addNum ~= nil and not isnumber( addNum ) then error( "GLEE: notify addNum has to be a number", 4 ) end
 
     local kind = pick( data.kind, state ) or defaultKind
     if not huntersGlee_NotifyKinds[kind] then error( "GLEE: no notify kind \"" .. tostring( kind ) .. "\"", 4 ) end
@@ -82,6 +114,9 @@ local function checkedState( data, state )
     local time = pick( data.time, state ) or defaultTime
     if not isnumber( time ) then error( "GLEE: notify time has to be a number", 4 ) end
 
+    local think = pick( data.think, state )
+    if think ~= nil and not isfunction( think ) then error( "GLEE: notify think has to be a function", 4 ) end
+
     local description = pick( data.description, state )
 
     return {
@@ -93,6 +128,12 @@ local function checkedState( data, state )
         style = pick( data.style, state ),
         extraFlashes = extraFlashes,
         flashInterval = pick( data.flashInterval, state ),
+        icon = icon,
+        iconWeapon = iconWeapon,
+        iconSize = iconSize,
+        iconBadge = iconBadge,
+        addNum = addNum,
+        think = think,
     }
 
 end
@@ -116,7 +157,7 @@ local function checkedData( data )
         alive = checkedState( data, "alive" ),
         dead = checkedState( data, "dead" ),
     }
-    if not states.alive and not states.dead then error( "GLEE: notify needs text", 3 ) end
+    if not states.alive and not states.dead then error( "GLEE: notify needs text or an icon", 3 ) end
 
     return states
 
@@ -127,11 +168,19 @@ local function checkedReplaceKey( replaceKey )
 
 end
 
--- chat prints each line apart
+-- chat prints each line apart. nil for an icon alone, chat can't show it.
+-- {num} is just the one addNum, chat can't add up
 local function oneLine( fields )
     local text = fields.text
+    if not text then return end
+
     if fields.description then
         text = text .. " " .. fields.description
+
+    end
+
+    if fields.addNum then
+        text = string.gsub( text, "{num}", tostring( fields.addNum ) )
 
     end
 
@@ -162,7 +211,7 @@ if SERVER then
         net.WriteBool( fields ~= nil )
         if not fields then return end
 
-        net.WriteString( fields.text )
+        net.WriteString( fields.text or "" )
         net.WriteString( fields.description or "" )
         net.WriteString( fields.kind )
         net.WriteFloat( fields.time )
@@ -170,6 +219,13 @@ if SERVER then
         net.WriteString( fields.style or "" )
         net.WriteUInt( fields.extraFlashes or 0, 8 )
         net.WriteFloat( fields.flashInterval or 0 )
+        net.WriteString( fields.icon or "" )
+        net.WriteString( fields.iconWeapon or "" )
+        net.WriteFloat( fields.iconSize or 0 )
+        net.WriteString( fields.iconBadge or "" )
+
+        net.WriteBool( fields.addNum ~= nil )
+        if fields.addNum then net.WriteDouble( fields.addNum ) end
 
     end
 
@@ -178,7 +234,8 @@ if SERVER then
 
         if not inGlee() then
             for _, ply in ipairs( sendTo ) do
-                ply:ChatPrint( oneLine( states[huntersGlee_NotifyStateOf( ply )] ) )
+                local line = oneLine( states[huntersGlee_NotifyStateOf( ply )] )
+                if line then ply:ChatPrint( line ) end
 
             end
             return
@@ -203,8 +260,15 @@ if SERVER then
         Sent next tick, so a death or spawn this tick reaches the client first.
         @param plys: A table of players.
         @param data: Any field can be { alive = ..., dead = ... } instead, see the top of the file.
-            text, the message, newlines and {+bind}s welcome.
+            text, the message, newlines and {+bind}s welcome. Optional with an icon.
             description, optional, drawn smaller under the text.
+            icon, optional, a material path. Drawn in the message's colour, if it has transparency.
+            iconWeapon, optional, a weapon class, instead of icon.
+                Its own selection icon while you hold one, its spawn icon otherwise.
+            iconSize, optional, the icon's height as a fraction of the screen's. Left out, it's capped small.
+            iconBadge, optional, a few characters at the icon's top left, like a weapon's slot.
+            addNum, optional, added to a total that goes in the text's {num}.
+                The same message again, while it's up, adds to the total instead of starting over.
             kind, a key of huntersGlee_NotifyKinds, defaults to info.
             time, seconds before it fades, defaults to 6.
             replaceKey, any string, a later message with the same one replaces this.
@@ -212,11 +276,14 @@ if SERVER then
                 "soulthought" for news of something they did while dead.
             extraFlashes, optional, times it flashes again after the first, for messages that can't be missed.
             flashInterval, optional, seconds between those flashes, defaults to 0.5.
+            think, client only, a function run every frame it's up, handed the notice.
+                It can change its time or take it down, see noticeMeta in cl_noticefeed.lua.
         @return: None
     --]]---------------------------------------------------------
     function huntersGlee_Notify( plys, data )
         if not istable( plys ) then error( "GLEE: notify needs a table of players", 2 ) end
         local states = checkedData( data )
+        if data.think ~= nil then error( "GLEE: notify think is client only, a function can't be sent", 2 ) end
 
         timer.Simple( 0, function()
             send( plys, states )
@@ -299,7 +366,8 @@ function huntersGlee_Notify( plys, data )
 
     if not inGlee() then
         local fields = states[huntersGlee_NotifyStateOf( LocalPlayer() )]
-        if fields then chat.AddText( huntersGlee_NotifyKinds[fields.kind].chatColor, oneLine( fields ) ) end
+        local line = fields and oneLine( fields )
+        if line then chat.AddText( huntersGlee_NotifyKinds[fields.kind].chatColor, line ) end
         return
 
     end

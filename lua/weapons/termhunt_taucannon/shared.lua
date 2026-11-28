@@ -273,7 +273,7 @@ function SWEP:Think()
         end
     end
 
-    if owner:IsPlayer() and CHARGING then
+    if owner:IsPlayer() and CHARGING and chargeLevel > 0 then
         if not self.chargeSound then -- first think, create the sound
             local chargeSound = CreateSound( owner, "hunters_glee/weapons/gauss/chargeloop.wav" )
             self.chargeSound = chargeSound

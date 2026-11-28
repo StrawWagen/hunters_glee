@@ -70,9 +70,45 @@ function SWEP:Deploy()
 
 end
 
+local loneHoldBar = "glee_wearable_lonehold"
+local loneHoldInterval = 0.05 -- how often the bar networks, same as the V drop's
+
+-- a lone action with hold fills the progress bar while attack's down, then runs
+-- several, the wheel does the holding
+local function thinkLoneHold( wep, owner )
+    local action
+    if owner:KeyDown( IN_ATTACK ) and not wep.glee_AttackBlocked then
+        local actions = wep:GetGleeActions()
+        if #actions == 1 and actions[1].hold then action = actions[1] end
+
+    end
+
+    if not action then
+        -- let go early, it starts over next time
+        if wep.glee_LoneHolding then generic_KillProgressBar( owner, loneHoldBar ) end
+        wep.glee_LoneHolding = nil
+        return
+
+    end
+
+    wep.glee_LoneHolding = true
+    local chunk = 100 * loneHoldInterval / action.hold
+    local progress = generic_WaitForProgressBar( owner, loneHoldBar, loneHoldInterval, chunk, { progInfo = action.label } )
+    if progress < 100 then return end
+
+    generic_KillProgressBar( owner, loneHoldBar )
+    wep.glee_LoneHolding = nil
+    wep.glee_AttackBlocked = true -- not again until they let go
+    terminator_Extras.glee_Actions.Pick( owner, "held", wep, action.key )
+
+end
+
 function SWEP:Think()
+    local owner = self:GetOwner()
+    if SERVER then thinkLoneHold( self, owner ) end
+
     if not self.glee_AttackBlocked then return end
-    if self:GetOwner():KeyDown( IN_ATTACK ) then return end
+    if owner:KeyDown( IN_ATTACK ) then return end
     self.glee_AttackBlocked = nil
 
 end
@@ -82,17 +118,18 @@ end
 -- a new table every call, so they can
 function SWEP:GetGleeActions()
     return {
-        { key = "takeoff", label = "Take off" },
+        { key = "takeoff", label = "Take off", hold = 0.5 },
     }
 end
 
 -- one action just runs, several open the wheel, held while attack is
+-- a lone one with hold is filled in Think instead
 function SWEP:PrimaryAttack()
     if self.glee_AttackBlocked then return end
 
     local actions = self:GetGleeActions()
     if #actions == 1 then
-        if SERVER then terminator_Extras.glee_Actions.Pick( self:GetOwner(), "held", self, actions[1].key ) end
+        if SERVER and not actions[1].hold then terminator_Extras.glee_Actions.Pick( self:GetOwner(), "held", self, actions[1].key ) end
         return
 
     end
@@ -153,7 +190,7 @@ if SERVER then
 
     -- TODO: conflicts with the gamemode's V drop, see glee_dropcurrentweapon in sv_weapondropper.lua
     -- that drop is a progress bar filled while V is held, then a cooldown, nextDropWeaponThink
-    -- a pick is one click, so Take off skips both. Wearables need a take off time and delay that fit both
+    -- Take off has its own hold, but skips the cooldown. Wearables need a delay that fits both
     -- one of GetGleeActions' keys, glee_actions has checked it's offered
     -- wearables with more handle theirs, then hand the rest to this
     function SWEP:OnGleeAction( ply, key )

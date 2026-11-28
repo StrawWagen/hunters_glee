@@ -48,6 +48,7 @@ function ENT:rareCreationOptions()
         { class = "glee_tissue_reclaimer" },
         { class = "glee_nvg_gpnvg" },
         { class = "glee_nvg_t7" },
+        { class = "glee_nvg_t7_deep" },
         { class = "glee_nvg_pvs14" },
         { class = "termhunt_weapon_hammer" },
 

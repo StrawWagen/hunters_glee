@@ -182,6 +182,16 @@ function ENT:DoScore( reciever )
     local parent = self:GetParent()
     if IsValid( parent ) and parent:IsRagdoll() then return end
 
+    if self:GetNW2Bool( "glee_Nailed", false ) then -- see termhunt_weapon_hammer
+        if reciever.glee_skullhinted and not reciever.glee_skullNailedHint then
+            reciever.glee_skullNailedHint = true
+            huntersGlee_Announce( { reciever }, 11, 10, "A skull...\nNailed down...?" )
+
+        end
+        return
+
+    end
+
     local blockPickup = hook.Run( "glee_blockskullpickup", reciever, self )
     if blockPickup == true then return end
 

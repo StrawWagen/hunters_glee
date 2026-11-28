@@ -20,6 +20,7 @@
     up to 8 wedges a page, clockwise from the top.
     picked by direction from the centre, so a flick picks without aiming at the wedge.
     each wedge shows its icon, or its label while hovered or when it has no icon.
+    hoveredLabel, if it has one, stands in for the label while hovered.
 
     two ways to aim it:
         clicked, MakePopup it.
@@ -31,9 +32,12 @@
             HoldAim( bind ) lets go when that bind's key comes up, or call Release yourself.
             for a quick pick off a key, glee_FlickPickWheel does all that, see the bottom.
 
+    an item with hold isn't picked on the release, it fills from the middle out first.
+    aiming off it closes the wheel, picking nothing, for things that hurt to pick by accident.
+
     past 8 items it pages, the mouse wheel flips them.
     SetPage opens it on a page, OnPageChanged is how you remember one.
-    keys 1 to 8 pick on the current page.
+    keys 1 to 8 pick on the current page, hold or not, a key press is already deliberate.
     Close fades it out, then removes it.
 ]]
 
@@ -62,6 +66,9 @@ local COOLDOWN_SWEEP_ALPHA = 40
 local LIFTED_PX            = 0.5 -- pushed further than this, a wedge takes its piece of the ring with it
 
 local STATUS_POLL_INTERVAL = 0.1 -- the shop caches canPurchase this long too
+
+-- a hold survives the aim slipping off for this share of its length, letting go of a key jolts the mouse
+local HOLD_SLIP_SHARE = 0.1
 
 local LABEL_FONT = "medium" -- a font role
 
@@ -102,6 +109,11 @@ PANEL.Init = function( self )
     self._holdBind = nil
     self._aimX, self._aimY = 0, 0
 
+    -- the hold item filling, see Holding
+    self._holdSlot   = nil
+    self._holdStart  = nil
+    self._holdLength = nil
+
     self._drawColor = Color( 0, 0, 0, 0 )
 
 end
@@ -129,7 +141,10 @@ PANEL.ShouldClose = function( _self )
 
 end
 
--- items: { { label = "Wave", icon = Material or nil }, ... }
+-- items: { { label = "Wave", icon = Material or nil, hoveredLabel = string or nil, hold = number or nil }, ... }
+-- hoveredLabel replaces the label while it's hovered, eg what picking it changes a setting to
+-- hold, seconds it fills for before it's picked
+-- labels break on \n, and wrap to the wedge
 -- anything else on an item is yours, it's handed back to OnItemSelected
 -- starts back on page 1
 PANEL.SetItems = function( self, items )
@@ -139,6 +154,7 @@ PANEL.SetItems = function( self, items )
     self._pageScroll = 0
     self._hovered = nil
     self._chosenSlot = nil
+    self._holdSlot = nil
     self._statuses = {}
     self._nextStatusPoll = 0
 
@@ -327,6 +343,56 @@ local function selectSlot( self, slot )
 
 end
 
+
+-- Holding ---------------------------------------------------------------------
+
+-- a hold item starts filling instead of being picked
+-- true when it started
+local function startHold( self, slot )
+    local item = self._items[pageRange( self ) + slot - 1]
+    if not item or not item.hold or not canPickSlot( self, slot ) then return false end
+
+    self._holdSlot = slot
+    self._holdStart = RealTime()
+    self._holdLength = item.hold
+    return true
+
+end
+
+-- 0 to 1, how full the hold's wedge is
+local function holdProgress( self )
+    return math.Clamp( ( RealTime() - self._holdStart ) / self._holdLength, 0, 1 )
+
+end
+
+-- full, it's picked
+-- aimed off it, past the slip, the wheel closes on nothing
+-- OnItemSelected may Close or Remove the wheel, check IsValid after this
+local function thinkHold( self )
+    local slot = self._holdSlot
+    local held = RealTime() - self._holdStart
+    local slipped = slotUnderAim( self ) ~= slot and held > self._holdLength * HOLD_SLIP_SHARE
+    if slipped or not canPickSlot( self, slot ) then
+        self:Close()
+        return
+
+    end
+
+    if held < self._holdLength then return end
+
+    self._holdSlot = nil
+    selectSlot( self, slot )
+    if IsValid( self ) and self._held then self:Close() end
+
+end
+
+-- picks slot, or starts its hold
+local function pickOrHold( self, slot )
+    if startHold( self, slot ) then return end
+    selectSlot( self, slot )
+
+end
+
 PANEL.OnMousePressed = function( self, mouseCode )
     if mouseCode ~= MOUSE_LEFT then return end
 
@@ -338,6 +404,7 @@ PANEL.OnMouseReleased = function( self, mouseCode )
     if mouseCode ~= MOUSE_LEFT then return end
 
     self._pressed = false
+    if self._holdSlot then return end
 
     local slot = slotUnderAim( self )
     if not slot then
@@ -346,12 +413,13 @@ PANEL.OnMouseReleased = function( self, mouseCode )
 
     end
 
-    selectSlot( self, slot )
+    pickOrHold( self, slot )
 
 end
 
+-- not while holding, the hold's slot would be a different item on the next page
 PANEL.OnMouseWheeled = function( self, delta )
-    if pageCount( self ) <= 1 then return end
+    if pageCount( self ) <= 1 or self._holdSlot then return end
 
     self._pageSteps = self._pageSteps - delta
     if setPage( self, self._pageSteps + 1 ) then
@@ -406,10 +474,12 @@ PANEL.HoldAim = function( self, bind )
 end
 
 -- does nothing unless HoldAim'd, a clicked wheel isn't closed by some key coming up
+-- on a hold item it stays up, aim held, until the hold's done
 PANEL.Release = function( self )
-    if not self._held or self._exitingAt then return end
+    if not self._held or self._exitingAt or self._holdSlot then return end
 
     local slot = slotUnderAim( self )
+    if slot and startHold( self, slot ) then return end
     if slot then selectSlot( self, slot ) end
 
     if IsValid( self ) then self:Close() end
@@ -422,6 +492,7 @@ PANEL.Close = function( self )
     if self._exitingAt then return end
 
     self._exitingAt = RealTime()
+    self._holdSlot = nil -- or it'd keep filling while it fades
     self:SetMouseInputEnabled( false )
     self:SetKeyboardInputEnabled( false )
     hook.Remove( "InputMouseApply", self )
@@ -457,13 +528,17 @@ PANEL.Think = function( self )
 
     end
 
-    if self._holdBind and not isBindDown( self._holdBind ) then
+    pollStatuses( self )
+
+    if self._holdSlot then
+        thinkHold( self )
+        if not IsValid( self ) or self._exitingAt then return end
+
+    elseif self._holdBind and not isBindDown( self._holdBind ) then
         self:Release()
-        return
+        if not IsValid( self ) or self._exitingAt or self._holdSlot then return end
 
     end
-
-    pollStatuses( self )
 
     -- a release off the panel never reaches OnMouseReleased
     if self._pressed and not input.IsMouseDown( MOUSE_LEFT ) then self._pressed = false end
@@ -576,7 +651,7 @@ local function fadedColor( self, color, alphaMul )
 
 end
 
--- plain fills over the backdrops, the page grip and the cooldown sweep
+-- plain fills over the backdrops, the page grip, the cooldown sweep and the hold
 -- the backdrops themselves are the style's, see handle:ArcBackground
 -- fromFrac and toFrac, 0 to 1, keep part of it, clockwise
 -- RNDX like the backdrops, surface would blend it darker
@@ -666,6 +741,15 @@ local function paintWedge( self, style, slot, centerX, centerY, pad, gap, chosen
         drawWedge( wedgeX, wedgeY, wedgeInner, wedgeOuter, data.startDeg, data.endDeg, gap, sweepColor, 1 - remaining, 1 )
 
     end
+
+    -- the hold, filling from the middle out, the way it was aimed
+    -- in the chosen colour, so it hands straight over to the pick's flash
+    if slot == self._holdSlot then
+        local fillOuter = Lerp( holdProgress( self ), wedgeInner, wedgeOuter )
+        local fillColor = fadedColor( self, style:BackdropColor( "bg", "chosen" ), data.fade )
+        drawWedge( wedgeX, wedgeY, wedgeInner, fillOuter, data.startDeg, data.endDeg, gap, fillColor, 0, 1 )
+
+    end
 end
 
 local function paintWedges( self, style, centerX, centerY, now )
@@ -686,28 +770,31 @@ local function paintWedges( self, style, centerX, centerY, now )
     end
 end
 
--- breaks a label between words, to fit maxWidth
--- measured, since draw.DrawText only breaks on a written \n
+-- breaks a label between words, to fit maxWidth, and wherever it has a \n
 -- a single word too wide keeps its own line, it's never cut
 local function wrappedLines( label, font, maxWidth )
     surface.SetFont( font )
 
     local lines = {}
-    local line = ""
 
-    for word in string.gmatch( label, "%S+" ) do
-        local candidate = line == "" and word or line .. " " .. word
-        if line ~= "" and surface.GetTextSize( candidate ) > maxWidth then
-            lines[#lines + 1] = line
-            line = word
+    for written in string.gmatch( label .. "\n", "(.-)\n" ) do
+        local line = ""
 
-        else
-            line = candidate
+        for word in string.gmatch( written, "%S+" ) do
+            local candidate = line == "" and word or line .. " " .. word
+            if line ~= "" and surface.GetTextSize( candidate ) > maxWidth then
+                lines[#lines + 1] = line
+                line = word
 
+            else
+                line = candidate
+
+            end
         end
-    end
 
-    lines[#lines + 1] = line
+        lines[#lines + 1] = line
+
+    end
 
     return lines
 
@@ -753,7 +840,8 @@ local function paintContents( self, style, centerX, centerY )
                 -- wrapped to the wedge's width, so it doesn't run under the wedges beside it
                 -- the lines are stacked about the wedge's middle
                 local width = ( data.inner + data.outer ) * 0.5 * spanRad - gap
-                local lines = wrappedLines( item.label or "", font, width )
+                local label = data.hover >= 0.5 and item.hoveredLabel or item.label
+                local lines = wrappedLines( label or "", font, width )
                 local height = lineHeight( font )
                 local top = y - ( #lines - 1 ) * height * 0.5
 

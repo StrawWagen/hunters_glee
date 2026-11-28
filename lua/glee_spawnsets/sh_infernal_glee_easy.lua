@@ -157,9 +157,12 @@ local nearbyEntHints = {
     end,
     item_battery = function( me, battery )
         if me:Armor() < me:GetMaxArmor() then return end
-        if glee_Carrying.GetPhysicsHeld( me ) ~= battery then return end
-        return true, "FULL BATTERY"
-
+        if terminator_Extras.glee_Carrying.GetPhysicsHeld( me ) ~= battery then return end
+        huntersGlee_Notify( { me }, {
+            text = "FULL BATTERY",
+            kind = "bad",
+            replaceKey = "glee_tutorial_suitcharged",
+        } )
     end,
     terminator_nextbot_infernalskeleton_slow = function( _me )
         GAMEMODE:LearnLesson( "FoundInfernalSkeleton" )

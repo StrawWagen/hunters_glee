@@ -1,169 +1,165 @@
 include( "shared.lua" )
 
--- the goggles' vision, the lamp, the picture, heat, and the hum
+-- the goggles' vision, the lamp, the picture, and the hum
 -- only the wearer's client runs it, and only while they're carried, see SetupWear at the bottom
-
-local white = Material( "models/debug/debugwhite" )
 
 local lampFov = 170
 local lampFarZDefault = 5000 -- every goggle's light reaches this far unless its vision says otherwise
 
--- ragdolls are cold bodies rather than warm ones, so they get a flat grey instead of the heat colour.
--- keeping it duller than the living is the point: a corpse on the floor should not read as a person
-local ragdollColor = Color( 110, 110, 110 )
-local heatScanInterval = 0.25
-local heatRangeDefault = 3000 -- hammer units: past this a warm thing stops shading over at all
-
 local runSoundDefaultVolume = 0.35
 
-local function isSeeing( wep, wearer )
-    return wep:GetDown() and wearer:Alive()
 
-end
+-- Flipping -------------------------------------------------------------------
 
+-- flipping sweeps a black bar across the eyes, top to bottom going down, bottom to top going up
+-- the picture swaps while the bar covers the screen
+-- the bar always heads for where they're flipped to, so spamming the flip holds it mid screen
 
--- Heat -----------------------------------------------------------------------
+local flipWipeTime = 0.15 -- seconds for the bar to cross the whole screen
+local flipWipeFade = 0.3 -- the soft edge above and below the bar, a share of the screen's height
 
--- anything warm: living players, npcs and nextbots, and every ragdoll
-local function isHot( ent, me )
-    if not IsValid( ent ) or ent:IsDormant() or ent:GetNoDraw() then return false end
-    if ent == me and not me:ShouldDrawLocalPlayer() then return false end
-    if ent:IsPlayer() then return ent:Alive() end
-    if ent:IsNPC() or ent:IsNextBot() then return ent:Health() > 0 end
-    return ent:IsRagdoll()
-
-end
-
-local heatEnts = {}
-local nextHeatScan = 0
-
-local function scanHeat( me )
-    if nextHeatScan > CurTime() then return end
-    nextHeatScan = CurTime() + heatScanInterval
-
-    heatEnts = {}
-    for _, ent in ents.Iterator() do
-        if isHot( ent, me ) then heatEnts[#heatEnts + 1] = ent end
+-- glee_FlipShare, 0 flipped up, 1 down, between while the bar's crossing
+local function advanceFlip( wep, wearer )
+    local target = wep:GetDown() and 1 or 0
+    if not wearer:Alive() then
+        wep.glee_FlipShare = target
+        return
 
     end
+
+    wep.glee_FlipShare = math.Approach( wep.glee_FlipShare or 0, target, FrameTime() / flipWipeTime )
+
 end
 
--- warm things fade with distance, gone by range
-local function drawHeat( me, color, range )
-    scanHeat( me )
-    if #heatEnts <= 0 then return end
+-- the bar's past halfway, the vision's on. everything the goggles do checks this, not GetDown
+function SWEP:IsGleeSeeing( wearer )
+    return ( self.glee_FlipShare or 0 ) > 0.5 and wearer:Alive()
 
-    local eyePos = me:EyePos()
-    cam.Start3D()
-        -- hooks drawing earlier in the frame can leave blend, depth, cull and colour state behind
-        -- start from the engine's defaults, so none of it clips, tints or blends the heat
-        render.SetStencilEnable( false )
-        render.SetScissorRect( 0, 0, 0, 0, false )
-        render.OverrideDepthEnable( false, false )
-        render.OverrideColorWriteEnable( false, false )
-        render.OverrideAlphaWriteEnable( false, false )
-        render.OverrideBlend( false )
-        render.CullMode( MATERIAL_CULLMODE_CCW )
-        render.DepthRange( 0, 1 )
-        render.SuppressEngineLighting( true )
-        render.ResetModelLighting( 1, 1, 1 )
+end
 
-        -- two passes, warm first then the grey dead, since the colour modulation is one setting for
-        -- the whole draw call
-        for pass = 1, 2 do
-            local ragdolls = pass == 2
-            local shade = ragdolls and ragdollColor or color
-            local red, green, blue = shade.r / 255, shade.g / 255, shade.b / 255
+-- where the bar's solid part starts, and how tall its soft edges are, in pixels
+-- the bar and its edges sit just above the screen at 0, the solid part covers it at 0.5, just below at 1
+local function flipWipeTop( share )
+    local h = ScrH()
+    local fade = h * flipWipeFade
+    return Lerp( share, -( h + fade ), h + fade ), fade
 
-            for _, ent in ipairs( heatEnts ) do
-                if IsValid( ent ) and ent:IsRagdoll() == ragdolls then
-                    local fade = 1 - ( ent:WorldSpaceCenter() - eyePos ):Length() / range
-                    if fade > 0 then
-                        -- per entity, not once per pass
-                        -- an entity's own draw code can reset these to defaults when it's done
-                        render.MaterialOverride( white )
-                        render.SetColorModulation( red, green, blue )
-                        render.SetBlend( fade )
-                        ent:DrawModel()
+end
 
-                    end
-                end
-            end
-        end
-
-        render.SetBlend( 1 )
-        render.SetColorModulation( 1, 1, 1 )
-        render.MaterialOverride()
-        render.SuppressEngineLighting( false )
-    cam.End3D()
+-- pixels down from where the goggles' frame rests, the vignette and anything drawn on the hud
+-- the frame rides just above the bar, the goggles slide down over the eyes with it, and back up
+-- 0 once they're down, offset everything screen anchored by this
+function SWEP:GleeFlipOffset()
+    local top, fade = flipWipeTop( self.glee_FlipShare or 0 )
+    return top - ScrH() - fade
 
 end
 
 
 -- Corner occlusion -----------------------------------------------------------
 
--- the goggles read as a tube, the picture dims towards the edges, darkest in the corners
--- one-pixel strips down the ramp, so the fade is a gradient and not a band
-local vignetteAlpha = 255 -- black
+-- the goggles read as one round tube, the picture darkens towards its edge
+-- rings of vertex coloured triangles, the same way as the gamemode's tunnel vision, panic/cl_tunnelvision.lua
 
--- how dark a strip is, from how many pixels in from the edge it sits
-local function edgeAlpha( out, half, start, finish )
-    local reach = 1 - out / half
+-- each ring's a polygon this many sided, fewer and the corners show in the gradient on wide tubes
+local vignetteSegments = 128
 
-    if reach >= finish then return vignetteAlpha end
-    if reach <= start then return 0 end
+-- out from start to finish, a share of the way there and how dark, smooths the edge
+local vignetteRings = {
+    { share = 0, alpha = 0 },
+    { share = 0.4, alpha = 0.2 },
+    { share = 0.75, alpha = 0.6 },
+    { share = 1, alpha = 1 },
+    { alpha = 1 }, -- no share, past every corner of the screen
+}
 
-    local t = ( reach - start ) / ( finish - start )
-    return math.floor( vignetteAlpha * t * t + 0.5 )
+local vignetteCos, vignetteSin = {}, {}
+for seg = 0, vignetteSegments do
+    local ang = seg / vignetteSegments * math.pi * 2
+    vignetteCos[seg] = math.cos( ang )
+    vignetteSin[seg] = math.sin( ang )
 
 end
 
--- { start = 0.5, finish = 0.8 } fades in from halfway out, and is solid black over the last fifth
--- both are shares of the way from the middle of the screen to its edge
-local function drawVignette( vignette )
+local vignetteShares = {}
+
+-- the shape's edge at a share of 1, in pixels out from the middle, per segment
+local vignetteEdgeX, vignetteEdgeY = {}, {}
+
+-- a superellipse, roundness 2 is a circle, higher pushes it out towards a square's corners
+-- spanX, spanY = pixels a share of 1 reaches, sideways and up
+local function shapeVignette( spanX, spanY, roundness )
+    for seg = 0, vignetteSegments do
+        local cos, sin = vignetteCos[seg], vignetteSin[seg]
+        local scale = ( math.abs( cos ) ^ roundness + math.abs( sin ) ^ roundness ) ^ ( -1 / roundness )
+        vignetteEdgeX[seg] = cos * scale * spanX
+        vignetteEdgeY[seg] = sin * scale * spanY
+
+    end
+end
+
+local function vignetteVertex( x, y, alpha )
+    mesh.Position( x, y, 0 )
+    mesh.Color( 0, 0, 0, alpha * 255 )
+    mesh.AdvanceVertex()
+
+end
+
+-- { start = 0.5, finish = 0.8 } starts darkening halfway out, and is solid black past four fifths
+-- aspect = "square", as wide as tall, start and finish are shares of the way to the screen's nearer edge
+--          "full", stretched to the screen, shares of the way to each edge, a border round it
+-- roundness = 2 for round, 4 a rounded square, higher gets squarer. the corners poke out past start and finish
+-- offsetY, pixels down from the screen's middle, see GleeFlipOffset
+local function drawVignette( vignette, offsetY )
     local start = math.Clamp( vignette.start or 0.5, 0, 1 )
     local finish = math.Clamp( vignette.finish or 1, 0, 1 )
     if finish <= start then return end
 
     local w, h = ScrW(), ScrH()
-    local halfW, halfH = w * 0.5, h * 0.5
+    local centerX, centerY = w * 0.5, h * 0.5 + offsetY
+    local spanX, spanY = w * 0.5, h * 0.5
+    if vignette.aspect ~= "full" then
+        local shorter = math.min( spanX, spanY )
+        spanX, spanY = shorter, shorter
 
-    -- solid from the edge in to finish, then the ramp, which runs out at start
-    local solidX = math.floor( halfW * ( 1 - finish ) )
-    local solidY = math.floor( halfH * ( 1 - finish ) )
-    local rampX = math.floor( halfW * ( 1 - start ) )
-    local rampY = math.floor( halfH * ( 1 - start ) )
+    end
+    shapeVignette( spanX, spanY, vignette.roundness or 2 )
+
+    for index, ring in ipairs( vignetteRings ) do
+        local share = ring.share
+        vignetteShares[index] = share and start + ( finish - start ) * share or ( w + h ) / math.min( spanX, spanY )
+
+    end
 
     cam.Start2D()
-        -- each set runs the whole other axis, so the four corners take one of each and come out
-        -- darker than either edge on its own
-        if solidX > 0 then
-            surface.SetDrawColor( 0, 0, 0, vignetteAlpha )
-            surface.DrawRect( 0, 0, solidX, h )
-            surface.DrawRect( w - solidX, 0, solidX, h )
+        cam.IgnoreZ( true ) -- the viewmodel's still in the depth buffer, it'd cut its shape out of the dark
+        render.SetColorMaterial()
+        mesh.Begin( MATERIAL_TRIANGLES, ( #vignetteRings - 1 ) * vignetteSegments * 2 )
+        for index = 1, #vignetteRings - 1 do
+            local innerAlpha, outerAlpha = vignetteRings[index].alpha, vignetteRings[index + 1].alpha
+            local innerShare, outerShare = vignetteShares[index], vignetteShares[index + 1]
 
+            for seg = 0, vignetteSegments - 1 do
+                local edgeAX, edgeAY = vignetteEdgeX[seg], vignetteEdgeY[seg]
+                local edgeBX, edgeBY = vignetteEdgeX[seg + 1], vignetteEdgeY[seg + 1]
+
+                local innerAX, innerAY = centerX + edgeAX * innerShare, centerY + edgeAY * innerShare
+                local innerBX, innerBY = centerX + edgeBX * innerShare, centerY + edgeBY * innerShare
+                local outerAX, outerAY = centerX + edgeAX * outerShare, centerY + edgeAY * outerShare
+                local outerBX, outerBY = centerX + edgeBX * outerShare, centerY + edgeBY * outerShare
+
+                vignetteVertex( innerAX, innerAY, innerAlpha )
+                vignetteVertex( outerAX, outerAY, outerAlpha )
+                vignetteVertex( outerBX, outerBY, outerAlpha )
+
+                vignetteVertex( innerAX, innerAY, innerAlpha )
+                vignetteVertex( outerBX, outerBY, outerAlpha )
+                vignetteVertex( innerBX, innerBY, innerAlpha )
+
+            end
         end
-
-        for out = solidX, rampX - 1 do
-            surface.SetDrawColor( 0, 0, 0, edgeAlpha( out, halfW, start, finish ) )
-            surface.DrawRect( out, 0, 1, h )
-            surface.DrawRect( w - 1 - out, 0, 1, h )
-
-        end
-
-        if solidY > 0 then
-            surface.SetDrawColor( 0, 0, 0, vignetteAlpha )
-            surface.DrawRect( 0, 0, w, solidY )
-            surface.DrawRect( 0, h - solidY, w, solidY )
-
-        end
-
-        for out = solidY, rampY - 1 do
-            surface.SetDrawColor( 0, 0, 0, edgeAlpha( out, halfH, start, finish ) )
-            surface.DrawRect( 0, out, w, 1 )
-            surface.DrawRect( 0, h - 1 - out, w, 1 )
-
-        end
+        mesh.End()
+        cam.IgnoreZ( false )
     cam.End2D()
 
 end
@@ -183,7 +179,24 @@ local colorMod = {
     ["$pp_colour_mulb"] = 0,
 }
 
-local function drawVision( vision, wearer )
+-- hooks drawing earlier in the frame can leave stencil, scissor, depth, colour, blend and cull state behind
+-- starts from the engine's defaults, so none of it clips or blends the goggles' own passes
+local function resetRenderState()
+    render.SetStencilEnable( false )
+    render.SetScissorRect( 0, 0, 0, 0, false )
+    render.OverrideDepthEnable( false, false )
+    render.OverrideColorWriteEnable( false, false )
+    render.OverrideAlphaWriteEnable( false, false )
+    render.OverrideBlend( false )
+    render.CullMode( MATERIAL_CULLMODE_CCW )
+    render.DepthRange( 0, 1 )
+
+end
+
+local function drawVision( wep, wearer )
+    local vision = wep.GleeNVG
+    resetRenderState()
+
     -- saturation, then gain, the map's own light and shadows stay, just brighter
     local gain = vision.gain
     if gain then
@@ -211,11 +224,44 @@ local function drawVision( vision, wearer )
 
     end
 
-    -- after the gain and tint, so warm things keep their exact colour
-    if vision.heatColor then drawHeat( wearer, vision.heatColor, vision.heatRange or heatRangeDefault ) end
+    -- the goggles' own, see DrawGleeVision in shared.lua
+    if wep.DrawGleeVision then wep:DrawGleeVision( wearer ) end
 
     -- last, in front of everything seen through the tube
-    if vision.vignette then drawVignette( vision.vignette ) end
+    local vignette = wep:CurrentVignette()
+    if vignette then drawVignette( vignette, wep:GleeFlipOffset() ) end
+
+end
+
+-- a strip across the screen, fading from fromAlpha at the top to toAlpha at the bottom
+local function wipeStrip( w, top, bottom, fromAlpha, toAlpha )
+    vignetteVertex( 0, top, fromAlpha )
+    vignetteVertex( w, top, fromAlpha )
+    vignetteVertex( w, bottom, toAlpha )
+    vignetteVertex( 0, bottom, toAlpha )
+
+end
+
+local function drawFlipWipe( wep, wearer )
+    local share = wep.glee_FlipShare or 0
+    if share <= 0 or share >= 1 or not wearer:Alive() then return end
+
+    resetRenderState()
+
+    local w = ScrW()
+    local top, fade = flipWipeTop( share )
+    local bottom = top + ScrH()
+
+    cam.Start2D()
+        cam.IgnoreZ( true ) -- same as the vignette, the viewmodel's depth would cut through it
+        render.SetColorMaterial()
+        mesh.Begin( MATERIAL_QUADS, 3 )
+            wipeStrip( w, top - fade, top, 0, 1 )
+            wipeStrip( w, top, bottom, 1, 1 )
+            wipeStrip( w, bottom, bottom + fade, 1, 0 )
+        mesh.End()
+        cam.IgnoreZ( false )
+    cam.End2D()
 
 end
 
@@ -236,10 +282,21 @@ function SWEP.SetupWear( wear )
     end
     wear:OnRemove( removeLamp )
 
+    wear:Hook( "Think", function( wep )
+        advanceFlip( wep, wearer )
+
+    end )
+    -- the share only moves while they're worn, taken off they're flipped up, see OwnerChanged in init.lua
+    wear:OnRemove( function()
+        local wep = wear.weapon
+        if IsValid( wep ) then wep.glee_FlipShare = 0 end
+
+    end )
+
     wear:Hook( "PreRender", function( wep )
         local vision = wep.GleeNVG
         local brightness = vision.lamp
-        if not brightness or not isSeeing( wep, wearer ) then
+        if not brightness or not wep:IsGleeSeeing( wearer ) then
             removeLamp()
             return
 
@@ -270,8 +327,16 @@ function SWEP.SetupWear( wear )
     end )
 
     wear:Hook( "RenderScreenspaceEffects", function( wep )
-        if not isSeeing( wep, wearer ) then return end
-        drawVision( wep.GleeNVG, wearer )
+        if wep:IsGleeSeeing( wearer ) then drawVision( wep, wearer ) end
+        drawFlipWipe( wep, wearer )
+
+    end )
+
+    -- the goggles' own, drawn into the world, before the picture's made from it, see DrawGleeWorld in shared.lua
+    wear:Hook( "PostDrawTranslucentRenderables", function( wep, drawingDepth, drawingSkybox )
+        if drawingDepth or drawingSkybox then return end
+        if not wep.DrawGleeWorld or not wep:IsGleeSeeing( wearer ) then return end
+        wep:DrawGleeWorld( wearer )
 
     end )
 
@@ -314,7 +379,7 @@ function SWEP.SetupWear( wear )
 
     wear:Hook( "Think", function( wep )
         local vision = wep.GleeNVG
-        local path = isSeeing( wep, wearer ) and vision.runSound
+        local path = wep:IsGleeSeeing( wearer ) and vision.runSound
         if not path then
             stopRunSound()
             return

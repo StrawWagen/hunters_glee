@@ -64,6 +64,8 @@ if not terminator_Extras.glee_RNDX then
 end
 
 include( "glee_hud/cl_draw.lua" )
+include( "glee_hud/cl_iconbake.lua" )
+include( "glee_hud/cl_icons.lua" )
 include( "glee_hud/cl_style.lua" ) -- brings the base style, hl2, with it
 
 include( "glee_hud/styles/cl_soulthought.lua" )

@@ -850,7 +850,6 @@ local quietRetargetTime = 3 -- a new target this soon after the last one makes n
 local floorTurretSoundPitch = 70 -- its sounds, lower, it's bigger
 
 -- tipped over like a floor turret, it gives up and cries, see ENT:IsSad
-local sadUpDot = 0.5 -- npc_turret_floor's own tipped check, its up against the world's
 -- the klaxon below, quieter, at its own pitch, restarted every loopDuration
 local sadCry = { path = "ambient/alarms/klaxon1.wav", level = 65, pitch = 100, loopDuration = 2 }
 
@@ -1234,7 +1233,7 @@ function ENT:IsValidTarget( ent )
     if ent:Health() <= 0 then return false end
 
     if ent:IsPlayer() then return isEnemyPlayer( ent ) end
-    if not ent:IsNPC() then return false end -- hunters too, see terminator_nextbot_base's IsNPC hack
+    if not ent:IsNPC() and not ent:IsNextBot() then return false end
 
     return goodDispositions[self:Disposition( ent )] == true
 
@@ -1685,17 +1684,9 @@ function ENT:Think()
 
 end
 
--- tipped over and loose
--- welded or frozen, it's mounted, and can point any way it likes, eg under a helicopter
 function ENT:IsSad()
     -- the model's upside down, see SpawnFunction, upright is its up facing the floor
-    if -self:GetUp().z >= sadUpDot then return false end
-    if constraint.FindConstraint( self, "Weld" ) then return false end
-
-    local phys = self:GetPhysicsObject()
-    if IsValid( phys ) and not phys:IsMotionEnabled() then return false end
-
-    return true
+    return glee_Turrets.IsTipped( self, -self:GetUp() )
 
 end
 

@@ -145,6 +145,12 @@ function styleHandle:Scaled( pixels1080 )
 
 end
 
+-- Scaled, unrounded. For sizes that round themselves later, or are only ever a fraction of a pixel apart
+function styleHandle:ScaledExact( pixels1080 )
+    return glee_sizeScaledExact( nil, pixels1080 ) * self:Settings().scale
+
+end
+
 -- A length off the style's metrics, like "blockPadding", in this scale's pixels.
 -- An unknown one warns once and is 0
 function styleHandle:Metric( metricName )

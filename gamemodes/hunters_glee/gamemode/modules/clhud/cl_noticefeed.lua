@@ -3,7 +3,8 @@
     gmod's notification library is pointed here too, so addons' notices match.
 
     A stack of glee_noticeboxes in the bottom right, newest at the bottom.
-    Each fades out once its time is up, and is removed once it's gone.
+    Icons are glee_hud/cl_icons.lua's, baked here, in the layout, before the boxes paint.
+    Each fades out once its time is up, and is removed once it's gone. A client notice's think can change that, see noticeMeta.
     Each keeps its alive and dead fields, and switches over when the player dies or spawns.
     The stack sits above the ammo counter, and sinks into its place once there hasn't been one for a while.
 
@@ -26,8 +27,12 @@ local ALMOST_FADED = 25 -- below this alpha the gap a fading box leaves starts c
 local GAP_RISE_TIME = 0.15 -- seconds to get up out of the ammo counter's way
 local GAP_DROP_DELAY = 5 -- seconds with no ammo counter before the stack comes down, so swapping weapons doesn't bounce it
 local GAP_DROP_TIME = 3 -- seconds to come down. much slower and the text visibly ticks down a pixel at a time
+local ICON_SIZE = 48 -- 1080p pixels, scaled by the style
+local ICON_MAX_SCREEN = 0.05 -- of the screen's height, past this an icon stops growing with the gui scale
 
 local printNotices = CreateClientConVar( "cl_huntersglee_printnotices", "1", true, false, "Print notices in console?", 0, 1 )
+local uncappedIcons = CreateClientConVar( "cl_huntersglee_noticeicons_uncapped", "0", true, false, "Let notice icons grow past their cap, with the gui scale?", 0, 1 )
+local iconScale = CreateClientConVar( "glee_notify_iconscale", "1", true, false, "Scales every notice's icon.", 0.1, 2 )
 
 -- an autorefresh would orphan the old boxes
 for _, notice in ipairs( terminator_Extras.gleeHud_Notices or {} ) do
@@ -47,11 +52,37 @@ local function findByKey( replaceKey )
     end
 end
 
-local function findSame( text, description )
+-- What makes two messages the same one. From the text before its {num} is filled, so a running total finds itself
+local function identityOf( text, description, fields )
+    return table.concat( { text or "", description or "", fields.icon or "", fields.iconWeapon or "" }, "\0" )
+
+end
+
+local function findSame( identity )
     for _, notice in ipairs( notices ) do
-        if notice.text == text and notice.description == description then return notice end
+        if notice.identity == identity then return notice end
 
     end
+end
+
+-- What a notice's think is handed, to change it while it's up
+local noticeMeta = {}
+noticeMeta.__index = noticeMeta
+
+function noticeMeta:GetTimeLeft()
+    return math.max( self.expiresAt - CurTime(), 0 )
+
+end
+
+function noticeMeta:SetTimeLeft( seconds )
+    self.expiresAt = CurTime() + seconds
+
+end
+
+-- fades out, like huntersGlee_CancelNotify
+function noticeMeta:Cancel()
+    self.expiresAt = 0
+
 end
 
 local function newNotice()
@@ -63,7 +94,7 @@ local function newNotice()
     box:SetFadeSpeed( FADE_SPEED )
     box:SetDoFadeDelays( false )
 
-    local notice = { box = box }
+    local notice = setmetatable( { box = box }, noticeMeta )
     notices[#notices + 1] = notice
 
     return notice
@@ -99,13 +130,49 @@ local function inBothStates( fields )
 
 end
 
--- text and description with {+bind}s filled in, nil if glee_blockNotices blocks them
+-- text and description with {+bind}s filled in, {num} left for the total
 local function filledText( fields )
-    local text = GAMEMODE:FillBinds( fields.text )
+    local text = fields.text and GAMEMODE:FillBinds( fields.text )
     local description = fields.description and GAMEMODE:FillBinds( fields.description )
-    if hook.Run( "glee_blockNotices", text, description, fields.kind ) then return end
 
     return text, description
+
+end
+
+local function withTotal( text, total )
+    if not text or not total then return text end
+
+    return ( string.gsub( text, "{num}", tostring( total ) ) )
+
+end
+
+-- true if glee_blockNotices blocks it. text is nil for an icon alone
+local function blocked( text, description, fields )
+    return hook.Run( "glee_blockNotices", text, description, fields.kind ) == true
+
+end
+
+local function iconOf( fields )
+    if fields.iconWeapon then return terminator_Extras.glee_WeaponIcon( fields.iconWeapon ) end
+    if fields.icon then return terminator_Extras.glee_MaterialIcon( fields.icon ) end
+
+end
+
+-- in the box's style, so after the style's set. Every frame, the style can change
+local function unscaledIconHeight( box, iconSize )
+    if iconSize then return ScrH() * iconSize end
+
+    local style = box:Style()
+    local height = style:Scaled( ICON_SIZE )
+    if uncappedIcons:GetBool() then return height end
+
+    return math.min( height, style:Settings().iconMaxSize, ScrH() * ICON_MAX_SCREEN )
+
+end
+
+-- the player's scale goes on last, past the cap
+local function iconHeight( box, iconSize )
+    return unscaledIconHeight( box, iconSize ) * iconScale:GetFloat()
 
 end
 
@@ -116,6 +183,10 @@ local function showFields( notice, fields, text, description )
     setText( notice, text, description )
     setKind( notice, fields.kind )
 
+    notice.icon = iconOf( fields )
+    notice.iconSize = fields.iconSize
+    notice.iconBadge = fields.iconBadge
+
 end
 
 -- After a death or spawn, false if the notice has nothing for the new state
@@ -124,7 +195,8 @@ local function switchState( notice, state )
     if not fields then return false end
 
     local text, description = filledText( fields )
-    if not text then return false end
+    text = withTotal( text, notice.total )
+    if blocked( text, description, fields ) then return false end
 
     notice.state = state
     showFields( notice, fields, text, description )
@@ -145,9 +217,9 @@ end
     Nothing for the player's state, nothing shown.
     huntersGlee_Notify calls this, call that instead.
     @param states: { alive = fields, dead = fields }, either nil for nothing in that state.
-        fields are huntersGlee_Notify's, plain values, every one filled in but description, replaceKey, style,
-        extraFlashes and flashInterval. A flashInterval of 0 is the default too, it's what the net sends for none.
-        {+bind}s are filled in here.
+        fields are huntersGlee_Notify's, plain values. kind and time are always filled in, text or an icon is there.
+        A flashInterval of 0 is the default too, it's what the net sends for none.
+        {+bind}s and {num} are filled in here.
     @return: None
 --]]---------------------------------------------------------
 function GM:AddNotice( states )
@@ -156,16 +228,31 @@ function GM:AddNotice( states )
     if not fields then return end
 
     local text, description = filledText( fields )
-    if not text then return end
+    local identity = identityOf( text, description, fields )
+    local existing = findByKey( fields.replaceKey ) or findSame( identity )
 
-    local existing = findByKey( fields.replaceKey ) or findSame( text, description )
+    local total = fields.addNum
+    if total and existing and existing.total then
+        total = existing.total + total
+
+    end
+
+    text = withTotal( text, total )
+    if blocked( text, description, fields ) then return end
+
     local notice = existing or newNotice()
     notice.states = states
     notice.state = state
+    notice.identity = identity
+    notice.total = total
 
     -- a countdown updates the one box every second, logging each would flood the console
     if not existing and printNotices:GetBool() then
-        local line = description and text .. " - " .. description or text
+        local line = text or fields.iconWeapon or fields.icon
+        if description then
+            line = line .. " - " .. description
+
+        end
         permaPrint( "Notice; " .. string.gsub( line, "\n", " " ) )
 
     end
@@ -217,7 +304,7 @@ function GM:CancelNotice( replaceKey, data )
 
     end
 
-    notice.expiresAt = 0
+    notice:Cancel()
 
 end
 
@@ -235,10 +322,24 @@ local function readState()
     fields.style = net.ReadString()
     fields.extraFlashes = net.ReadUInt( 8 )
     fields.flashInterval = net.ReadFloat()
+    fields.icon = net.ReadString()
+    fields.iconWeapon = net.ReadString()
+    fields.iconSize = net.ReadFloat()
+    fields.iconBadge = net.ReadString()
 
+    if net.ReadBool() then
+        fields.addNum = net.ReadDouble()
+
+    end
+
+    if fields.text == "" then fields.text = nil end
     if fields.description == "" then fields.description = nil end
     if fields.replaceKey == "" then fields.replaceKey = nil end
     if fields.style == "" then fields.style = nil end
+    if fields.icon == "" then fields.icon = nil end
+    if fields.iconWeapon == "" then fields.iconWeapon = nil end
+    if fields.iconSize <= 0 then fields.iconSize = nil end
+    if fields.iconBadge == "" then fields.iconBadge = nil end
 
     return fields
 
@@ -309,6 +410,19 @@ local function updateGap()
 
 end
 
+-- Every notice's, every frame, so an erroring think is dropped or it'd spam the console.
+-- Not once it's fading, it's on its way out
+local function runThink( notice, cur )
+    local fields = notice.states[notice.state]
+    local think = fields.think
+    if not think or notice.expiresAt <= cur then return end
+
+    if not xpcall( think, ErrorNoHaltWithStack, notice ) then
+        fields.think = nil
+
+    end
+end
+
 -- before GM:HUDPaint, so the claim is in before anything dodging it looks
 hook.Add( "HUDPaint", "glee_noticefeed_layout", function()
     updateGap()
@@ -339,6 +453,7 @@ hook.Add( "HUDPaint", "glee_noticefeed_layout", function()
 
         end
 
+        runThink( notice, cur )
         local expired = notice.expiresAt <= cur
 
         -- a hidden box doesn't think, so it would never fade to HIDDEN
@@ -367,7 +482,12 @@ hook.Add( "HUDPaint", "glee_noticefeed_layout", function()
             end
         end
 
-        -- every frame, a style change swaps the fonts out from under it
+        -- out here, a panel's Paint would bake it offset by the panel's position
+        local icon = notice.icon
+        if icon then icon:Bake() end
+
+        -- every frame, a style change swaps the fonts and icon size out from under it
+        box:SetIcon( icon, icon and iconHeight( box, notice.iconSize ), notice.iconBadge )
         box:AutoSize()
 
         local w, h = box:GetSize()

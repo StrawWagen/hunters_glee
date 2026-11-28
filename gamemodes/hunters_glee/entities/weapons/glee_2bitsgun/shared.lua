@@ -25,7 +25,7 @@ SWEP.ViewModelFlip = true
 
 SWEP.Slot = 1
 SWEP.SlotPos = 1
-SWEP.Weight = 5
+SWEP.Weight = 9999
 SWEP.AutoSwitchTo = false
 SWEP.AutoSwitchFrom = false
 

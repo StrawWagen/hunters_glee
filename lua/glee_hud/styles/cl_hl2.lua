@@ -19,6 +19,7 @@ terminator_Extras.glee_RegisterStyle( "hl2", {
         small       = { size = 22, weight = 1000 },
         notice      = { size = 24, weight = 1000 }, -- the notice feed's, see cl_noticefeed.lua
         noticeDescription = { size = 20, weight = 1000 },
+        noticeBadge = { size = 16, weight = 1000 }, -- at a notice icon's top left, like a weapon's slot
         medium      = { size = 28, weight = 1000 },
         mediumLarge = { size = mediumLargeSize, weight = 2000, scanlines = 1 },
         placing     = { size = 40, weight = 1000 }, -- the readout while placing something

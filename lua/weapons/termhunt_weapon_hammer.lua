@@ -113,8 +113,13 @@ sound.Add( {
     }
 } )
 
+local glee_Carrying = terminator_Extras.glee_Carrying
+
 local nailTooCloseDist = 3
 local nailFindDist = nailTooCloseDist * 5
+
+-- as far as GetEyeTrace reaches
+local aimTraceLength = 32768
 
 function SWEP:Initialize()
     self:SetHoldType( self.HoldType )
@@ -261,6 +266,18 @@ function SWEP:ValidEntityToNail( ent, physBone )
 
 end
 
+-- what they're aiming at, never what's on their back
+-- not GetEyeTrace, clientside that hits their backpack, see glee_Carrying.GetCarrierTraceFilter
+function SWEP:GetAimTrace( owner )
+    local shootPos = owner:GetShootPos()
+    return util.TraceLine( {
+        start = shootPos,
+        endpos = shootPos + owner:GetAimVector() * aimTraceLength,
+        filter = glee_Carrying.GetCarrierTraceFilter( owner ),
+    } )
+
+end
+
 function SWEP:GetNailPos( owner, trace )
     local currOffset = ( owner:GetAimVector() * math.random( 4, 6 ) )
     return trace.HitPos - currOffset
@@ -311,7 +328,7 @@ function SWEP:Swing( owner, noNail ) -- create nail or melee attack
 
     self:SetNextPrimaryFire( CurTime() + self.Primary.Delay / 2 ) -- always do half delay
 
-    local trace = owner:GetEyeTrace()
+    local trace = self:GetAimTrace( owner )
 
     owner:SetNW2Bool( "gleenailer_nailattempted", true )
 
@@ -330,7 +347,8 @@ function SWEP:Swing( owner, noNail ) -- create nail or melee attack
     tr.start = trace.HitPos
     tr.endpos = trace.HitPos + ( owner:GetAimVector() * 20.0 )
 
-    tr.filter = { owner, whatWeHit }
+    tr.filter = glee_Carrying.GetCarrierTraceFilter( owner )
+    table.insert( tr.filter, whatWeHit )
     local nails = whatWeHit.huntersglee_breakablenails or {}
     table.Add( tr.filter, nails )
 
@@ -419,7 +437,7 @@ function SWEP:SecondaryAttack() -- pull nails or melee attack
 
     local owner = self:GetOwner()
 
-    local trace = owner:GetEyeTrace()
+    local trace = self:GetAimTrace( owner )
     local tooFar = trace.HitPos:DistToSqr( owner:GetShootPos() ) > self.Primary.Distance^2
     if tooFar then
         self:Miss()

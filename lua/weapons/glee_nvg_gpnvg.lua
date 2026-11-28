@@ -5,7 +5,7 @@ AddCSLuaFile()
 SWEP.Base = "glee_nvg_base"
 SWEP.PrintName = "GPNVG-18 Night Vision"
 SWEP.Category = "Hunter's Glee"
-SWEP.SubCategory = "Night Vision"
+SWEP.SubCategory = "Vision Augments"
 SWEP.Author = "ye"
 SWEP.Spawnable = true
 SWEP.WorldModel = "models/glee/nvg/nvg_gpnvg.mdl"
@@ -16,4 +16,5 @@ SWEP.GleeNVG = {
     saturation = 0,
     bloom = { darken = 0.6, multiply = 2, size = 6, passes = 2 },
     tint = Color( 80, 255, 80 ), -- green
+    vignette = { start = 0.8, finish = 1, aspect = "full", roundness = 4 }, -- four tubes side by side, so just a border
 }

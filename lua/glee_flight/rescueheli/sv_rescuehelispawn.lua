@@ -68,6 +68,7 @@ function rescueHeli.Spawn( spawnPos, faceDir, targetPos )
     heli:Fire( "EnableDeadlyShooting", 1, 0.1 )
 
     heli.isGleeRescueHeli = true
+    heli.glee_NoLagCleanup = true
     heli:SetNWBool( "isGleeRescueHeli", true )
 
     heli:Spawn()

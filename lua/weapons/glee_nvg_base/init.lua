@@ -18,12 +18,21 @@ end
 function SWEP:OnGleeAction( ply, key )
     if key ~= "flip" then return BaseClass.OnGleeAction( self, ply, key ) end
 
-    local down = not self:GetDown()
-    self:SetDown( down )
-
-    local snd = down and self.GleeNVGOnSound or self.GleeNVGOffSound
-    ply:EmitSound( snd, 60, math.random( 95, 105 ), 0.8 )
+    self:SetDown( not self:GetDown() )
 
     return true
+
+end
+
+-- NetworkVarNotify on Down, see shared.lua. Runs on every SetDown, changed or not
+-- dropped goggles flip up with no owner, those stay quiet
+function SWEP:OnDownChanged( _name, old, new )
+    if old == new then return end
+
+    local owner = self:GetOwner()
+    if not IsValid( owner ) then return end
+
+    local snd = new and self.GleeNVGOnSound or self.GleeNVGOffSound
+    owner:EmitSound( snd, 60, math.random( 95, 105 ), 0.8 )
 
 end

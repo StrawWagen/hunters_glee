@@ -76,6 +76,11 @@ local function wornModels( wearer, class )
 
 end
 
+local function slotFullReason( slot )
+    return "You're already wearing something in \"" .. slot .. "\" slot."
+
+end
+
 -- could they put class on? false, reason if not, the reason's shown to them
 -- shared, so the shop greys out when the server would refuse
 function plyMeta:CanGleeWear( class )
@@ -83,7 +88,7 @@ function plyMeta:CanGleeWear( class )
 
     local slot = getWearableMember( class, "GleeWearSlot" )
     if not slot then return false end
-    if self:GetGleeWornClass( slot ) ~= "" then return false, "You're already wearing one of these." end
+    if self:GetGleeWornClass( slot ) ~= "" then return false, slotFullReason( slot ) end
     if not wornModels( self, class ) then return false, "There's nowhere on you to put this." end
 
     return true
@@ -97,9 +102,32 @@ if SERVER then
 
     end
 
+    -- the pickup check runs every tick they stand on one, so the full slot only says so this often
+    local slotFullNotifyGap = 4
+
+    local function refuseWear( ply, class )
+        local can, reason = ply:CanGleeWear( class )
+        if can then return end
+
+        if reason == slotFullReason( getWearableMember( class, "GleeWearSlot" ) ) and ( ply.glee_NextSlotFullNotify or 0 ) <= CurTime() then
+            ply.glee_NextSlotFullNotify = CurTime() + slotFullNotifyGap
+            huntersGlee_Notify( { ply }, { text = reason, kind = "bad", time = 2 } )
+
+        end
+        return false
+
+    end
+
     hook.Add( "PlayerCanPickupWeapon", "glee_wearing_canwear", function( ply, wep )
         if not wep.GleeWearSlot then return end
-        if not ply:CanGleeWear( wep:GetClass() ) then return false end
+        return refuseWear( ply, wep:GetClass() )
+
+    end )
+
+    -- the spawnmenu's give, refused up front, same rule as the pickup above
+    hook.Add( "PlayerGiveSWEP", "glee_wearing_canwear", function( ply, class )
+        if not getWearableMember( class, "GleeWearSlot" ) then return end
+        return refuseWear( ply, class )
 
     end )
 end
@@ -202,6 +230,16 @@ hook.Add( "PreRegisterSWEP", "glee_wearing_autorefresh", function( _swep, refres
 
     -- next tick, the refreshed class isn't registered yet
     timer.Simple( 0, function()
+        -- BaseClass tables are only filled on the first load, see weapons.OnLoaded, a refresh leaves them stale
+        -- refreshed the same way, or a SetupWear calling BaseClass.SetupWear keeps putting on its base's old one
+        for _, stored in ipairs( weapons.GetList() ) do
+            local class = stored.ClassName
+            if class == refreshed or weapons.IsBasedOn( class, refreshed ) then
+                baseclass.Set( class, weapons.Get( class ) )
+
+            end
+        end
+
         for _, ply in player.Iterator() do
             for name, var in pairs( ply:GetNW2VarTable() ) do
                 local class = var.value

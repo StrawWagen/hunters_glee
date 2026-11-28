@@ -5,6 +5,7 @@ SWEP.Base = "glee_simple_base_throwing"
 SWEP.PrintName = "Skulls"
 SWEP.Category = "Hunter's Glee"
 SWEP.UseHands = true
+SWEP.glee_NoticePickupIcon = false -- picking up skulls has its own notice, see sv_skullmanager.lua
 
 if CLIENT then
     terminator_Extras.glee_CL_SetupSwep( SWEP, "glee_throwable_skull", "materials/vgui/hud/glee_throwable_skull.png" )

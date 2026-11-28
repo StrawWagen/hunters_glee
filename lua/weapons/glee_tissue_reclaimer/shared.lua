@@ -750,11 +750,6 @@ local reclamationToGive = {
     item_healthvial = 10,
 
 }
-local absorbedNames = {
-    item_healthkit = "a health kit",
-    item_healthvial = "a health vial",
-
-}
 
 hook.Add( "PlayerCanPickupItem", "glee_reclaimer_absorbsitems", function( ply, item )
     local itemsClass = item:GetClass()
@@ -770,16 +765,16 @@ hook.Add( "PlayerCanPickupItem", "glee_reclaimer_absorbsitems", function( ply, i
 
     timer.Simple( 0, function()
         if not IsValid( ply ) then return end
-        ply:GiveAmmo( toGive, "GLEE_RECLAMATION_MATERIAL" )
+        ply:GiveAmmo( toGive, "GLEE_RECLAMATION_MATERIAL", true ) -- has its own notice, below
         local pit = 100 + ( 200 / toGive )
         ply:EmitSound( AbsorbSound, 55, pit, 1, CHAN_BODY )
         SafeRemoveEntity( item )
 
         huntersGlee_Notify( { ply }, {
-            text = "MATERIAL RECLAIMED",
-            description = "+" .. toGive .. " Reclamation Juice, from " .. absorbedNames[itemsClass] .. ".",
+            text = "Reclamation Juice +{num}",
+            iconWeapon = CLASS, -- one icon for kits and vials alike, so they add to the same total
+            addNum = toGive,
             kind = "good",
-            replaceKey = "glee_reclaimer_absorbed",
         } )
 
     end )

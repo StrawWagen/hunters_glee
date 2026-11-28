@@ -484,6 +484,40 @@ local items = {
             } )
         end,
     },
+    -- one random pair of goggles for 600 points. the haptic pair is in the pool too, no extra charge on top
+    ["nvg"] = {
+        name = "Surplus Vision\nAugmenting Goggles",
+        desc = "See the world in a totally different way.\nCould be night vision, motion vision, etc.",
+        shCost = 200,
+        shSkullCost = 0,
+        markup = 2,
+        cooldown = 0.5,
+        tags = { "ITEMS", "Utility" },
+        purchaseTimes = {
+            GAMEMODE.ROUND_INACTIVE,
+            GAMEMODE.ROUND_ACTIVE,
+        },
+        weight = 780, -- 600 points is the priciest plain item, so it sits at the end of the point-priced run, before the skull-cost block (925+)
+        -- every pair's worn like the base, so it stands in for whichever they get
+        shPurchaseCheck = { shopHelpers.aliveCheck, function( purchaser )
+            return purchaser:CanGleeWear( "glee_nvg_base" )
+
+        end },
+        svOnPurchaseFunc = function( purchaser )
+            -- the goggles themselves are lua/weapons/glee_nvg_base and its children
+            local goggles = {
+                "glee_nvg_gpnvg",
+                "glee_nvg_t7",
+                "glee_nvg_t7_deep",
+                "glee_nvg_pvs14",
+            }
+            shopHelpers.purchaseWeapon( purchaser, {
+                class = goggles[math.random( #goggles )],
+                confirmSoundWeight = 1,
+
+            } )
+        end,
+    },
     ["skullcache"] = {
         name = "Hidden Skull Cache",
         desc = "A hidden cache of skulls\nOnly purchasable if you've escaped at least once...\nWill be nearby your most remote death.\nYou've escaped once, and unlocked this.",

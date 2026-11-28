@@ -94,6 +94,7 @@ include( "modules/clhud/cl_plynames.lua" )
 include( "modules/clhud/cl_whowespectating.lua" )
 include( "modules/clhud/cl_bosshealthbar.lua" )
 include( "modules/clhud/cl_noticefeed.lua" )
+include( "modules/pickupnotices/cl_pickupnotices.lua" )
 
 
 -- from https://github.com/Facepunch/garrysmod/blob/e189f14c088298ca800136fcfcfaf5d8535b6648/garrysmod/lua/includes/modules/killicon.lua#L202

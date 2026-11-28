@@ -54,6 +54,9 @@ gamemodes\hunters_glee\gamemode\modules\clhud\cl_whowespectating.lua
 gamemodes\hunters_glee\gamemode\modules\clhud\cl_bosshealthbar.lua
 gamemodes\hunters_glee\gamemode\modules\clhud\cl_noticefeed.lua
 
+gamemodes\hunters_glee\gamemode\modules\pickupnotices\sh_pickupnotices.lua
+gamemodes\hunters_glee\gamemode\modules\pickupnotices\cl_pickupnotices.lua
+
 gamemodes\hunters_glee\gamemode\modules\battery\sh_battery.lua
 
 gamemodes\hunters_glee\gamemode\modules\guilt\sh_guilt.lua

@@ -3,11 +3,13 @@
 
         ENT.GleeActions = {
             { key = "tune", label = "Tune", icon = Material( "..." ) },
+            { key = "scrap", label = "Scrap", hold = 1 }, -- held on for a second first, see glee_wheel
         }
         function ENT:CanGleeAction( ply, key ) end -- shared, optional. true, or false and a reason, that greys it out
         function ENT:OnGleeAction( ply, key ) end  -- server, true when it went through
 
         -- instead of GleeActions, for actions that change, eg a label showing a setting
+        -- hoveredLabel, shown while it's hovered, can say what picking it changes the setting to
         function ENT:GetGleeActions() end
 
     SWEPs take the same fields.
@@ -18,6 +20,7 @@
 
     Sometimes there's only one, an entity that only ever has one, or a list slimmed down while it's carried.
     That one skips the wheel and just runs, see Pick.
+    Unless it has hold, that's up to the reach, see glee_wearable_base and glee_carrying.
 
     How the player gets at the entity is a reach, see RegisterReach.
     glee_carrying's use is one, holding the SWEP is another, "held", below.

@@ -57,6 +57,7 @@ include( "modules/spawnset/runtime/sh_sethelpers.lua" )
 include( "modules/spawnset/bosses/sh_bosshandler.lua" )
 include( "modules/unsandboxing/sh_unsandboxing.lua" )
 include( "modules/stickyslams/sh_stickyslams.lua" )
+include( "modules/pickupnotices/sh_pickupnotices.lua" )
 
 include( "modules/shop/sh_shopshared.lua" )
 include( "modules/shop/sh_globalcooldowns.lua" )

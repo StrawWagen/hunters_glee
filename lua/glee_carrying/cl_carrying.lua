@@ -248,6 +248,7 @@ end
 
 -- what using ent does, decided here and nowhere else
 -- one action just runs, several open the wheel, held while use is
+-- a lone one with hold opens the wheel too, it does the holding
 -- a lone PickUpAction is left to use, which lifts it, then reload carries it
 -- wheel-only ents can't be lifted, so theirs just runs
 local function useOn( ent )
@@ -256,7 +257,7 @@ local function useOn( ent )
 
     if glee_Carrying.IsLiftThenReload( actions ) and not glee_Carrying.IsUseWheelOnly( ent ) then return end
 
-    if #actions == 1 then
+    if #actions == 1 and not actions[1].hold then
         glee_Actions.SendPick( "use", ent, actions[1].key )
         return
 
